@@ -1,0 +1,152 @@
+#![allow(dead_code)]
+
+use serde_json::{Value, json};
+
+use cow_sdk_orderbook::{Address, ApiContext, AppDataHash, CowEnv, OrderUid, SupportedChainId};
+
+pub fn address(value: &str) -> Address {
+    Address::new(value).expect("test address literal must be valid")
+}
+
+pub fn app_data_hash(value: &str) -> AppDataHash {
+    AppDataHash::new(value).expect("test app-data hash literal must be valid")
+}
+
+pub fn order_uid(value: &str) -> OrderUid {
+    OrderUid::new(value).expect("test order uid literal must be valid")
+}
+
+pub fn default_context(chain_id: SupportedChainId, env: CowEnv) -> ApiContext {
+    ApiContext {
+        chain_id,
+        env,
+        base_urls: None,
+        api_key: None,
+    }
+}
+
+pub fn sample_order_uid() -> OrderUid {
+    order_uid(
+        "0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710",
+    )
+}
+
+pub fn sample_app_data_hash() -> AppDataHash {
+    app_data_hash("0x0000000000000000000000000000000000000000000000000000000000000000")
+}
+
+pub fn sample_owner() -> Address {
+    address("0x6810e776880c02933d47db1b9fc05908e5386b96")
+}
+
+pub fn sample_buy_token() -> Address {
+    address("0x1111111111111111111111111111111111111111")
+}
+
+pub fn sample_signature() -> &'static str {
+    "0x4d306ce7c770d22005bcfc00223f8d9aaa04e8a20099cc986cb9ccf60c7e876b777ceafb1e03f359ebc6d3dc84245d111a3df584212b5679cb5f9e6717b69b031b"
+}
+
+pub fn sample_tx_hash() -> &'static str {
+    "0xd51f28edffcaaa76be4a22f6375ad289272c037f3cc072345676e88d92ced8b5"
+}
+
+pub fn sample_order_json(uid: &OrderUid) -> Value {
+    json!({
+        "sellToken": sample_owner().as_str(),
+        "buyToken": sample_buy_token().as_str(),
+        "receiver": sample_owner().as_str(),
+        "sellAmount": "1234567890",
+        "buyAmount": "1200000000",
+        "validTo": 1_700_000_000,
+        "appData": sample_app_data_hash().as_str(),
+        "feeAmount": "1000",
+        "kind": "buy",
+        "partiallyFillable": true,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20",
+        "signingScheme": "eip712",
+        "signature": "0x1234",
+        "owner": sample_owner().as_str(),
+        "uid": uid.as_str(),
+        "creationDate": "2020-12-03T18:35:18.814523Z",
+        "executedSellAmount": "100",
+        "executedSellAmountBeforeFees": "99",
+        "executedBuyAmount": "90",
+        "executedFeeAmount": "11",
+        "executedFee": "9",
+        "invalidated": false,
+        "status": "open",
+        "class": "market"
+    })
+}
+
+pub fn sample_ethflow_order_json(uid: &OrderUid) -> Value {
+    json!({
+        "sellToken": sample_owner().as_str(),
+        "buyToken": sample_buy_token().as_str(),
+        "receiver": sample_owner().as_str(),
+        "sellAmount": "1234567890",
+        "buyAmount": "1200000000",
+        "validTo": 4_294_967_295u32,
+        "appData": sample_app_data_hash().as_str(),
+        "feeAmount": "1000",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20",
+        "signingScheme": "eip712",
+        "signature": "0x1234",
+        "owner": "0xba3cb449bd2b4adddbc894d8697f5170800eadec",
+        "uid": uid.as_str(),
+        "executedSellAmount": "100",
+        "executedBuyAmount": "90",
+        "executedFeeAmount": "10",
+        "status": "open",
+        "class": "market",
+        "onchainUser": sample_owner().as_str(),
+        "ethflowData": {
+            "refundTxHash": null,
+            "userValidTo": 1_700_000_123u32
+        }
+    })
+}
+
+pub fn sample_quote_response_json() -> Value {
+    json!({
+        "quote": {
+            "sellToken": sample_owner().as_str(),
+            "buyToken": sample_buy_token().as_str(),
+            "receiver": sample_owner().as_str(),
+            "sellAmount": "1000",
+            "buyAmount": "900",
+            "validTo": 1700000000,
+            "appData": sample_app_data_hash().as_str(),
+            "feeAmount": "10",
+            "kind": "sell",
+            "partiallyFillable": false,
+            "sellTokenBalance": "erc20",
+            "buyTokenBalance": "erc20"
+        },
+        "from": sample_owner().as_str(),
+        "expiration": "2026-04-08T10:00:00Z",
+        "id": 42,
+        "verified": true,
+        "protocolFeeBps": "2"
+    })
+}
+
+pub fn sample_trade_json() -> Value {
+    json!({
+        "blockNumber": 1,
+        "logIndex": 0,
+        "orderUid": sample_order_uid().as_str(),
+        "owner": sample_owner().as_str(),
+        "sellToken": sample_owner().as_str(),
+        "buyToken": sample_buy_token().as_str(),
+        "sellAmount": "1000",
+        "sellAmountBeforeFees": "990",
+        "buyAmount": "900",
+        "transactionHash": sample_tx_hash()
+    })
+}

@@ -1,0 +1,397 @@
+mod common;
+
+use cow_sdk_orderbook::{
+    ApiContextOverride, AppDataObject, CowEnv, EcdsaSigningScheme, GetOrdersRequest,
+    GetTradesRequest, OrderBookApi, OrderCancellations, OrderCreation, OrderStatus, QuoteSide,
+    SigningScheme, SupportedChainId,
+};
+use serde_json::json;
+use wiremock::{
+    Mock, MockServer, ResponseTemplate,
+    matchers::{body_partial_json, method, path, query_param},
+};
+
+use crate::common::{
+    default_context, sample_app_data_hash, sample_order_json, sample_order_uid, sample_owner,
+    sample_quote_response_json, sample_signature, sample_trade_json, sample_tx_hash,
+};
+
+#[tokio::test]
+async fn version_endpoint_matches_transport_contract() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/version"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("v1.2.3"))
+        .mount(&server)
+        .await;
+
+    let api = OrderBookApi::new_with_base_url(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        server.uri(),
+    );
+
+    let version = api
+        .get_version()
+        .await
+        .expect("version request should succeed");
+
+    assert_eq!(version, "v1.2.3");
+}
+
+#[test]
+fn order_link_uses_chain_aware_urls_for_gnosis_and_mainnet() {
+    let uid = sample_order_uid();
+    let gnosis = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod));
+    let mainnet = gnosis.clone().with_context_override(ApiContextOverride {
+        chain_id: Some(SupportedChainId::Mainnet),
+        ..ApiContextOverride::default()
+    });
+
+    assert_eq!(
+        gnosis
+            .get_order_link(&uid)
+            .expect("gnosis order link should resolve"),
+        format!("https://api.cow.fi/xdai/api/v1/orders/{}", uid.as_str())
+    );
+    assert_eq!(
+        mainnet
+            .get_order_link(&uid)
+            .expect("mainnet order link should resolve"),
+        format!("https://api.cow.fi/mainnet/api/v1/orders/{}", uid.as_str())
+    );
+}
+
+#[tokio::test]
+async fn get_orders_uses_default_pagination_and_transforms_orders() {
+    let server = MockServer::start().await;
+    let uid = sample_order_uid();
+    Mock::given(method("GET"))
+        .and(path(format!(
+            "/api/v1/account/{}/orders",
+            sample_owner().as_str()
+        )))
+        .and(query_param("offset", "0"))
+        .and(query_param("limit", "1000"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(vec![sample_order_json(&uid)]))
+        .mount(&server)
+        .await;
+
+    let api = OrderBookApi::new_with_base_url(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        server.uri(),
+    );
+
+    let orders = api
+        .get_orders(&GetOrdersRequest::new(sample_owner()))
+        .await
+        .expect("orders request should succeed");
+
+    assert_eq!(orders.len(), 1);
+    assert_eq!(orders[0].uid, uid);
+    assert_eq!(orders[0].total_fee, "20");
+}
+
+#[tokio::test]
+async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/v2/trades"))
+        .and(query_param("owner", sample_owner().as_str()))
+        .and(query_param("offset", "0"))
+        .and(query_param("limit", "10"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(vec![sample_trade_json()]))
+        .mount(&server)
+        .await;
+
+    let api = OrderBookApi::new_with_base_url(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        server.uri(),
+    );
+    let trades = api
+        .get_trades(&GetTradesRequest::by_owner(sample_owner()))
+        .await
+        .expect("trade request should succeed");
+
+    assert_eq!(trades.len(), 1);
+    assert_eq!(trades[0].transaction_hash, sample_tx_hash());
+
+    let invalid = api
+        .get_trades(&GetTradesRequest {
+            owner: Some(sample_owner()),
+            order_uid: Some(sample_order_uid()),
+            offset: 0,
+            limit: 10,
+        })
+        .await
+        .expect_err("owner+uid request must fail before transport");
+
+    match invalid {
+        cow_sdk_orderbook::OrderbookError::InvalidTradesQuery(message) => {
+            assert!(message.contains("exactly one"));
+        }
+        other => panic!("expected InvalidTradesQuery, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn get_quote_and_send_order_cover_quote_and_duplicate_order_paths() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/api/v1/quote"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(sample_quote_response_json()))
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/api/v1/orders"))
+        .respond_with(ResponseTemplate::new(400).set_body_json(json!({
+            "errorType": "DuplicateOrder",
+            "description": "order already exists"
+        })))
+        .mount(&server)
+        .await;
+
+    let api = OrderBookApi::new_with_base_url(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        server.uri(),
+    );
+    let quote = api
+        .get_quote(&cow_sdk_orderbook::OrderQuoteRequest::new(
+            sample_owner(),
+            crate::common::sample_buy_token(),
+            sample_owner(),
+            QuoteSide::sell("1000000"),
+        ))
+        .await
+        .expect("quote should succeed");
+
+    let order = OrderCreation::from_quote(
+        &quote.quote,
+        sample_owner(),
+        None,
+        SigningScheme::Eip712,
+        sample_signature(),
+    )
+    .with_quote_id(quote.id.expect("fixture includes quote id"));
+
+    let error = api
+        .send_order(&order)
+        .await
+        .expect_err("duplicate order should surface API error");
+
+    match error {
+        cow_sdk_orderbook::OrderbookError::Api(api_error) => {
+            assert_eq!(api_error.status, 400);
+            assert_eq!(api_error.error_type(), Some("DuplicateOrder"));
+        }
+        other => panic!("expected API error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn signed_cancellations_use_delete_orders_route() {
+    let server = MockServer::start().await;
+    Mock::given(method("DELETE"))
+        .and(path("/api/v1/orders"))
+        .respond_with(ResponseTemplate::new(204))
+        .mount(&server)
+        .await;
+
+    let api = OrderBookApi::new_with_base_url(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        server.uri(),
+    );
+    let cancellation = OrderCancellations {
+        order_uids: vec![sample_order_uid()],
+        signature: sample_signature().to_owned(),
+        signing_scheme: EcdsaSigningScheme::Eip712,
+    };
+
+    api.send_signed_order_cancellations(&cancellation)
+        .await
+        .expect("signed cancellation should succeed");
+}
+
+#[tokio::test]
+async fn order_lookup_falls_back_to_staging_only_on_404() {
+    let prod = MockServer::start().await;
+    let staging = MockServer::start().await;
+    let uid = sample_order_uid();
+
+    Mock::given(method("GET"))
+        .and(path(format!("/api/v1/orders/{}", uid.as_str())))
+        .respond_with(ResponseTemplate::new(404).set_body_json(json!({
+            "errorType": "NotFound",
+            "description": "missing in prod"
+        })))
+        .mount(&prod)
+        .await;
+    Mock::given(method("GET"))
+        .and(path(format!("/api/v1/orders/{}", uid.as_str())))
+        .respond_with(ResponseTemplate::new(200).set_body_json(sample_order_json(&uid)))
+        .mount(&staging)
+        .await;
+
+    let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
+        .with_env_base_url(CowEnv::Prod, prod.uri())
+        .with_env_base_url(CowEnv::Staging, staging.uri());
+
+    let order = api
+        .get_order_multi_env(&uid)
+        .await
+        .expect("staging fallback should succeed");
+
+    assert_eq!(order.uid, uid);
+    assert_eq!(order.status, OrderStatus::Open);
+}
+
+#[tokio::test]
+async fn app_data_transport_helpers_use_get_and_put_hash_routes() {
+    let server = MockServer::start().await;
+    let hash = sample_app_data_hash();
+
+    Mock::given(method("GET"))
+        .and(path(format!("/api/v1/app_data/{}", hash.as_str())))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "fullAppData": "{\"metadata\":true}"
+        })))
+        .mount(&server)
+        .await;
+    Mock::given(method("PUT"))
+        .and(path(format!("/api/v1/app_data/{}", hash.as_str())))
+        .and(body_partial_json(
+            json!({ "fullAppData": "{\"metadata\":true}" }),
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "fullAppData": "{\"metadata\":true}"
+        })))
+        .mount(&server)
+        .await;
+
+    let api = OrderBookApi::new_with_base_url(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        server.uri(),
+    );
+
+    let downloaded: AppDataObject = api
+        .get_app_data(&hash)
+        .await
+        .expect("app-data fetch should succeed");
+    let uploaded = api
+        .upload_app_data(&hash, "{\"metadata\":true}")
+        .await
+        .expect("app-data upload should succeed");
+
+    assert_eq!(downloaded.full_app_data, "{\"metadata\":true}");
+    assert_eq!(uploaded.full_app_data, "{\"metadata\":true}");
+}
+
+#[tokio::test]
+async fn native_price_surplus_solver_competition_and_auction_routes_are_covered() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("GET"))
+        .and(path(format!(
+            "/api/v1/token/{}/native_price",
+            sample_owner().as_str()
+        )))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "price": 0.0004 })))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path(format!(
+            "/api/v1/users/{}/total_surplus",
+            sample_owner().as_str()
+        )))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "totalSurplus": "100000000"
+        })))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/solver_competition/7"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "auctionId": 7
+        })))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path(format!(
+            "/api/v1/solver_competition/by_tx_hash/{}",
+            sample_tx_hash()
+        )))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "auctionId": 8
+        })))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/auction"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": 1,
+            "block": 100,
+            "orders": [],
+            "prices": {}
+        })))
+        .mount(&server)
+        .await;
+
+    let api = OrderBookApi::new_with_base_url(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        server.uri(),
+    );
+
+    let native_price = api
+        .get_native_price(&sample_owner())
+        .await
+        .expect("native price request should succeed");
+    let surplus = api
+        .get_total_surplus(&sample_owner())
+        .await
+        .expect("surplus request should succeed");
+    let by_auction = api
+        .get_solver_competition_by_auction_id(7)
+        .await
+        .expect("competition by auction id should succeed");
+    let by_tx = api
+        .get_solver_competition_by_tx_hash(sample_tx_hash())
+        .await
+        .expect("competition by tx hash should succeed");
+    let auction = api
+        .get_auction()
+        .await
+        .expect("auction request should succeed");
+
+    assert_eq!(native_price.price, 0.0004);
+    assert_eq!(surplus.total_surplus, "100000000");
+    assert_eq!(by_auction.auction_id, Some(7));
+    assert_eq!(by_tx.auction_id, Some(8));
+    assert_eq!(auction.id, Some(1));
+}
+
+#[tokio::test]
+async fn get_order_status_route_is_typed() {
+    let server = MockServer::start().await;
+    let uid = sample_order_uid();
+    Mock::given(method("GET"))
+        .and(path(format!("/api/v1/orders/{}/status", uid.as_str())))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "type": "open",
+            "value": null
+        })))
+        .mount(&server)
+        .await;
+
+    let api = OrderBookApi::new_with_base_url(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        server.uri(),
+    );
+    let status = api
+        .get_order_competition_status(&uid)
+        .await
+        .expect("status request should succeed");
+
+    assert_eq!(
+        status.kind,
+        cow_sdk_orderbook::CompetitionOrderStatusKind::Open
+    );
+}
