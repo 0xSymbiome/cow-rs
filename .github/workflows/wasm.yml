@@ -1,0 +1,39 @@
+name: wasm-compatibility
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Build SDK for wasm
+        run: cargo build --target wasm32-unknown-unknown -p cow-sdk
+      - name: Build SDK for wasm with browser wallet
+        run: cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
+      - name: Build browser-wallet crate for wasm
+        run: cargo build --target wasm32-unknown-unknown -p cow-sdk-browser-wallet
+      - name: Build app-data for wasm
+        run: cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
+      - name: Check SDK examples for wasm
+        run: cargo check --target wasm32-unknown-unknown -p cow-sdk --examples
+      - name: Build sdk verification console
+        run: cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/sdk-verification-console/Cargo.toml
+      - name: Build browser wallet console
+        run: cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --locked
+      - name: Build sdk verification console web package
+        working-directory: examples/wasm/sdk-verification-console
+        run: wasm-pack build --target web
+      - name: Build browser wallet console web package
+        working-directory: examples/wasm/browser-wallet-console
+        run: wasm-pack build --target web
