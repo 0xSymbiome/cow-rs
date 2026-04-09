@@ -1,0 +1,366 @@
+use cow_sdk_core::{
+    Address, AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle, GraphTransport,
+    HttpTransport, PinningTransport, Provider, Signer, TransactionReceipt, TransactionRequest,
+    TypedDataDomain, TypedDataField,
+};
+
+#[derive(Clone)]
+struct MockSigner {
+    address: Address,
+    provider_hint: Option<String>,
+}
+
+impl Signer for MockSigner {
+    type Provider = String;
+    type Error = String;
+
+    fn connect(&mut self, provider: Self::Provider) {
+        self.provider_hint = Some(provider);
+    }
+
+    fn get_address(&self) -> Result<Address, Self::Error> {
+        Ok(self.address.clone())
+    }
+
+    fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
+        Ok(format!("signed-message:{}", message.len()))
+    }
+
+    fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
+        Ok(format!("signed-transaction:{}", tx.to.is_some()))
+    }
+
+    fn sign_typed_data(
+        &self,
+        domain: &TypedDataDomain,
+        fields: &[TypedDataField],
+        value_json: &str,
+    ) -> Result<String, Self::Error> {
+        Ok(format!(
+            "{}:{}:{}",
+            domain.name,
+            fields.len(),
+            value_json.len()
+        ))
+    }
+
+    fn send_transaction(
+        &self,
+        _tx: &TransactionRequest,
+    ) -> Result<TransactionReceipt, Self::Error> {
+        Ok(TransactionReceipt {
+            transaction_hash: "0xfacecafe".to_owned(),
+        })
+    }
+
+    fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+        Ok("21000".to_owned())
+    }
+}
+
+struct MockProvider {
+    signer: Option<MockSigner>,
+    provider_hint: String,
+}
+
+impl Provider for MockProvider {
+    type Signer = MockSigner;
+    type Error = String;
+
+    fn signer_or_null(&self) -> Option<&Self::Signer> {
+        self.signer.as_ref()
+    }
+
+    fn get_chain_id(&self) -> Result<u64, Self::Error> {
+        Ok(1)
+    }
+
+    fn get_code(&self, address: &Address) -> Result<Option<String>, Self::Error> {
+        Ok(Some(address.normalized_key()))
+    }
+
+    fn get_transaction_receipt(
+        &self,
+        transaction_hash: &str,
+    ) -> Result<Option<TransactionReceipt>, Self::Error> {
+        Ok(Some(TransactionReceipt {
+            transaction_hash: transaction_hash.to_owned(),
+        }))
+    }
+
+    fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
+        Ok(self.signer.clone().unwrap())
+    }
+
+    fn get_storage_at(&self, _address: &Address, slot: &str) -> Result<String, Self::Error> {
+        Ok(format!("slot:{slot}"))
+    }
+
+    fn call(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+        Ok("call-result".to_owned())
+    }
+
+    fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
+        Ok(format!("read:{}", request.method))
+    }
+
+    fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
+        Ok(BlockInfo {
+            number: 1,
+            hash: Some("0xabc".to_owned()),
+        })
+    }
+
+    fn set_signer(&mut self, signer: Self::Signer) {
+        self.signer = Some(signer);
+    }
+
+    fn set_provider(&mut self, provider_hint: String) {
+        self.provider_hint = provider_hint;
+    }
+
+    fn get_contract(
+        &self,
+        address: &Address,
+        abi_json: &str,
+    ) -> Result<ContractHandle, Self::Error> {
+        Ok(ContractHandle {
+            address: address.clone(),
+            abi_json: abi_json.to_owned(),
+        })
+    }
+}
+
+struct MockHttp;
+
+impl HttpTransport for MockHttp {
+    type Error = String;
+
+    fn get(&self, path: &str) -> Result<String, Self::Error> {
+        Ok(format!("GET:{path}"))
+    }
+
+    fn post(&self, path: &str, body: &str) -> Result<String, Self::Error> {
+        Ok(format!("POST:{path}:{body}"))
+    }
+
+    fn delete(&self, path: &str, body: &str) -> Result<String, Self::Error> {
+        Ok(format!("DELETE:{path}:{body}"))
+    }
+}
+
+struct MockGraph;
+
+impl GraphTransport for MockGraph {
+    type Error = String;
+
+    fn execute(
+        &self,
+        endpoint: &str,
+        query: &str,
+        variables_json: Option<&str>,
+    ) -> Result<String, Self::Error> {
+        Ok(format!(
+            "{endpoint}|{query}|{}",
+            variables_json.unwrap_or("{}")
+        ))
+    }
+}
+
+struct MockPinning;
+
+impl PinningTransport for MockPinning {
+    type Error = String;
+
+    fn pin_json(&self, payload: &str) -> Result<String, Self::Error> {
+        Ok(format!("cid:{payload}"))
+    }
+}
+
+#[test]
+fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
+    let signer = MockSigner {
+        address: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        provider_hint: None,
+    };
+    let mut provider = MockProvider {
+        signer: Some(signer.clone()),
+        provider_hint: "initial".to_owned(),
+    };
+
+    let mut active_signer = Provider::create_signer(&provider, "local").unwrap();
+    active_signer.connect("rpc://local".to_owned());
+    assert_eq!(
+        Signer::get_address(&active_signer).unwrap().as_str(),
+        "0x1111111111111111111111111111111111111111"
+    );
+    assert_eq!(
+        Signer::sign_message(&active_signer, b"cow").unwrap(),
+        "signed-message:3"
+    );
+
+    let tx = TransactionRequest {
+        to: Some(Address::new("0x2222222222222222222222222222222222222222").unwrap()),
+        data: Some("0x01020304".to_owned()),
+        value: Some("0".to_owned()),
+        gas_limit: Some("21000".to_owned()),
+    };
+    assert_eq!(
+        Signer::sign_transaction(&active_signer, &tx).unwrap(),
+        "signed-transaction:true"
+    );
+
+    let domain = TypedDataDomain {
+        name: "Gnosis Protocol".to_owned(),
+        version: "v2".to_owned(),
+        chain_id: 1,
+        verifying_contract: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+    };
+    let field = TypedDataField {
+        name: "sellToken".to_owned(),
+        kind: "address".to_owned(),
+    };
+    assert_eq!(
+        Signer::sign_typed_data(&active_signer, &domain, &[field], "{\"kind\":\"sell\"}").unwrap(),
+        "Gnosis Protocol:1:15"
+    );
+    assert_eq!(Signer::estimate_gas(&active_signer, &tx).unwrap(), "21000");
+    assert_eq!(
+        Signer::send_transaction(&active_signer, &tx)
+            .unwrap()
+            .transaction_hash,
+        "0xfacecafe"
+    );
+
+    assert_eq!(Provider::get_chain_id(&provider).unwrap(), 1);
+    assert_eq!(
+        Provider::get_code(
+            &provider,
+            &Address::new("0x4444444444444444444444444444444444444444").unwrap(),
+        )
+        .unwrap()
+        .unwrap(),
+        "0x4444444444444444444444444444444444444444"
+    );
+    assert_eq!(
+        Provider::get_transaction_receipt(&provider, "0xbeef")
+            .unwrap()
+            .unwrap()
+            .transaction_hash,
+        "0xbeef"
+    );
+    assert_eq!(
+        Provider::get_storage_at(
+            &provider,
+            &Address::new("0x5555555555555555555555555555555555555555").unwrap(),
+            "0x0",
+        )
+        .unwrap(),
+        "slot:0x0"
+    );
+    assert_eq!(Provider::call(&provider, &tx).unwrap(), "call-result");
+    assert_eq!(
+        Provider::read_contract(
+            &provider,
+            &ContractCall {
+                address: Address::new("0x6666666666666666666666666666666666666666").unwrap(),
+                method: "balanceOf".to_owned(),
+                abi_json: "[]".to_owned(),
+                args_json: "[\"0xabc\"]".to_owned(),
+            },
+        )
+        .unwrap(),
+        "read:balanceOf"
+    );
+    assert_eq!(Provider::get_block(&provider, "latest").unwrap().number, 1);
+    provider.set_provider("rpc://updated".to_owned());
+    provider.set_signer(signer);
+    assert_eq!(provider.provider_hint, "rpc://updated");
+    assert_eq!(
+        Provider::get_contract(
+            &provider,
+            &Address::new("0x7777777777777777777777777777777777777777").unwrap(),
+            "[{\"type\":\"function\"}]",
+        )
+        .unwrap()
+        .abi_json,
+        "[{\"type\":\"function\"}]"
+    );
+}
+
+#[test]
+fn http_graph_and_pinning_transports_cover_shared_io_boundaries() {
+    let http = MockHttp;
+    let graph = MockGraph;
+    let pinning = MockPinning;
+
+    assert_eq!(http.get("/orders").unwrap(), "GET:/orders");
+    assert_eq!(
+        http.post("/quote", "{\"kind\":\"sell\"}").unwrap(),
+        "POST:/quote:{\"kind\":\"sell\"}"
+    );
+    assert_eq!(
+        http.delete("/orders", "{\"uid\":\"0x1\"}").unwrap(),
+        "DELETE:/orders:{\"uid\":\"0x1\"}"
+    );
+    assert_eq!(
+        graph
+            .execute(
+                "https://api.thegraph.com",
+                "query Totals {}",
+                Some("{\"days\":7}")
+            )
+            .unwrap(),
+        "https://api.thegraph.com|query Totals {}|{\"days\":7}"
+    );
+    assert_eq!(
+        pinning.pin_json("{\"appCode\":\"CoW Swap\"}").unwrap(),
+        "cid:{\"appCode\":\"CoW Swap\"}"
+    );
+}
+
+#[tokio::test]
+async fn sync_runtime_contracts_gain_async_compatibility_through_blanket_impls() {
+    let signer = MockSigner {
+        address: Address::new("0x9999999999999999999999999999999999999999").unwrap(),
+        provider_hint: None,
+    };
+    let provider = MockProvider {
+        signer: Some(signer.clone()),
+        provider_hint: "rpc://test".to_owned(),
+    };
+
+    let tx = TransactionRequest {
+        to: Some(Address::new("0x8888888888888888888888888888888888888888").unwrap()),
+        data: Some("0x1234".to_owned()),
+        value: Some("0".to_owned()),
+        gas_limit: Some("21000".to_owned()),
+    };
+
+    let async_signer = AsyncProvider::create_signer(&provider, "blanket")
+        .await
+        .unwrap();
+    assert_eq!(
+        AsyncSigner::get_address(&async_signer)
+            .await
+            .unwrap()
+            .as_str(),
+        "0x9999999999999999999999999999999999999999"
+    );
+    assert_eq!(
+        AsyncSigner::estimate_gas(&async_signer, &tx).await.unwrap(),
+        "21000"
+    );
+    assert_eq!(
+        AsyncSigner::send_transaction(&async_signer, &tx)
+            .await
+            .unwrap()
+            .transaction_hash,
+        "0xfacecafe"
+    );
+    assert_eq!(AsyncProvider::get_chain_id(&provider).await.unwrap(), 1);
+    assert_eq!(
+        AsyncProvider::call(&provider, &tx).await.unwrap(),
+        "call-result"
+    );
+}

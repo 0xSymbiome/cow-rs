@@ -1,0 +1,264 @@
+use serde::{Deserialize, Serialize};
+
+use crate::types::{Address, ChainId};
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TypedDataDomain {
+    pub name: String,
+    pub version: String,
+    pub chain_id: ChainId,
+    pub verifying_contract: Address,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TypedDataField {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub kind: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct TransactionRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub to: Option<Address>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gas_limit: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransactionReceipt {
+    pub transaction_hash: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BlockInfo {
+    pub number: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hash: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ContractCall {
+    pub address: Address,
+    pub method: String,
+    pub abi_json: String,
+    pub args_json: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ContractHandle {
+    pub address: Address,
+    pub abi_json: String,
+}
+
+pub trait Signer {
+    type Provider;
+    type Error;
+
+    fn connect(&mut self, provider: Self::Provider);
+    fn get_address(&self) -> Result<Address, Self::Error>;
+    fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error>;
+    fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
+    fn sign_typed_data(
+        &self,
+        domain: &TypedDataDomain,
+        fields: &[TypedDataField],
+        value_json: &str,
+    ) -> Result<String, Self::Error>;
+    fn send_transaction(&self, tx: &TransactionRequest) -> Result<TransactionReceipt, Self::Error>;
+    fn estimate_gas(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
+}
+
+#[allow(async_fn_in_trait)]
+pub trait AsyncSigner {
+    type Error;
+
+    async fn get_address(&self) -> Result<Address, Self::Error>;
+    async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error>;
+    async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
+    async fn sign_typed_data(
+        &self,
+        domain: &TypedDataDomain,
+        fields: &[TypedDataField],
+        value_json: &str,
+    ) -> Result<String, Self::Error>;
+    async fn send_transaction(
+        &self,
+        tx: &TransactionRequest,
+    ) -> Result<TransactionReceipt, Self::Error>;
+    async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
+}
+
+impl<T> AsyncSigner for T
+where
+    T: Signer,
+{
+    type Error = T::Error;
+
+    async fn get_address(&self) -> Result<Address, Self::Error> {
+        Signer::get_address(self)
+    }
+
+    async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
+        Signer::sign_message(self, message)
+    }
+
+    async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
+        Signer::sign_transaction(self, tx)
+    }
+
+    async fn sign_typed_data(
+        &self,
+        domain: &TypedDataDomain,
+        fields: &[TypedDataField],
+        value_json: &str,
+    ) -> Result<String, Self::Error> {
+        Signer::sign_typed_data(self, domain, fields, value_json)
+    }
+
+    async fn send_transaction(
+        &self,
+        tx: &TransactionRequest,
+    ) -> Result<TransactionReceipt, Self::Error> {
+        Signer::send_transaction(self, tx)
+    }
+
+    async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
+        Signer::estimate_gas(self, tx)
+    }
+}
+
+pub trait Provider {
+    type Signer;
+    type Error;
+
+    fn signer_or_null(&self) -> Option<&Self::Signer>;
+    fn get_chain_id(&self) -> Result<ChainId, Self::Error>;
+    fn get_code(&self, address: &Address) -> Result<Option<String>, Self::Error>;
+    fn get_transaction_receipt(
+        &self,
+        transaction_hash: &str,
+    ) -> Result<Option<TransactionReceipt>, Self::Error>;
+    fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error>;
+    fn get_storage_at(&self, address: &Address, slot: &str) -> Result<String, Self::Error>;
+    fn call(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
+    fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error>;
+    fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error>;
+    fn set_signer(&mut self, signer: Self::Signer);
+    fn set_provider(&mut self, provider_hint: String);
+    fn get_contract(
+        &self,
+        address: &Address,
+        abi_json: &str,
+    ) -> Result<ContractHandle, Self::Error>;
+}
+
+#[allow(async_fn_in_trait)]
+pub trait AsyncProvider {
+    type Signer: AsyncSigner<Error = Self::Error>;
+    type Error;
+
+    async fn get_chain_id(&self) -> Result<ChainId, Self::Error>;
+    async fn get_code(&self, address: &Address) -> Result<Option<String>, Self::Error>;
+    async fn get_transaction_receipt(
+        &self,
+        transaction_hash: &str,
+    ) -> Result<Option<TransactionReceipt>, Self::Error>;
+    async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error>;
+    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<String, Self::Error>;
+    async fn call(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
+    async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error>;
+    async fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error>;
+    async fn get_contract(
+        &self,
+        address: &Address,
+        abi_json: &str,
+    ) -> Result<ContractHandle, Self::Error>;
+}
+
+impl<T> AsyncProvider for T
+where
+    T: Provider,
+    T::Signer: AsyncSigner<Error = T::Error>,
+{
+    type Signer = T::Signer;
+    type Error = T::Error;
+
+    async fn get_chain_id(&self) -> Result<ChainId, Self::Error> {
+        Provider::get_chain_id(self)
+    }
+
+    async fn get_code(&self, address: &Address) -> Result<Option<String>, Self::Error> {
+        Provider::get_code(self, address)
+    }
+
+    async fn get_transaction_receipt(
+        &self,
+        transaction_hash: &str,
+    ) -> Result<Option<TransactionReceipt>, Self::Error> {
+        Provider::get_transaction_receipt(self, transaction_hash)
+    }
+
+    async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error> {
+        Provider::create_signer(self, signer_hint)
+    }
+
+    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<String, Self::Error> {
+        Provider::get_storage_at(self, address, slot)
+    }
+
+    async fn call(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
+        Provider::call(self, tx)
+    }
+
+    async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
+        Provider::read_contract(self, request)
+    }
+
+    async fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error> {
+        Provider::get_block(self, block_tag)
+    }
+
+    async fn get_contract(
+        &self,
+        address: &Address,
+        abi_json: &str,
+    ) -> Result<ContractHandle, Self::Error> {
+        Provider::get_contract(self, address, abi_json)
+    }
+}
+
+pub trait HttpTransport {
+    type Error;
+
+    fn get(&self, path: &str) -> Result<String, Self::Error>;
+    fn post(&self, path: &str, body: &str) -> Result<String, Self::Error>;
+    fn delete(&self, path: &str, body: &str) -> Result<String, Self::Error>;
+}
+
+pub trait GraphTransport {
+    type Error;
+
+    fn execute(
+        &self,
+        endpoint: &str,
+        query: &str,
+        variables_json: Option<&str>,
+    ) -> Result<String, Self::Error>;
+}
+
+pub trait PinningTransport {
+    type Error;
+
+    fn pin_json(&self, payload: &str) -> Result<String, Self::Error>;
+}

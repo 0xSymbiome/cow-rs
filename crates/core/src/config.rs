@@ -1,0 +1,314 @@
+use std::collections::BTreeMap;
+
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::{
+    errors::{CoreError, ValidationError},
+    types::{Address, ChainId, TokenInfo},
+};
+
+pub const ENVS_LIST: [CowEnv; 2] = [CowEnv::Prod, CowEnv::Staging];
+pub const EVM_NATIVE_CURRENCY_ADDRESS: &str = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+pub const MAX_VALID_TO_EPOCH: u32 = 4_294_967_295;
+
+const PROD_BASE_URL: &str = "https://api.cow.fi";
+const STAGING_BASE_URL: &str = "https://barn.api.cow.fi";
+const PARTNER_PROD_BASE_URL: &str = "https://partners.cow.fi";
+const PARTNER_STAGING_BASE_URL: &str = "https://partners.barn.cow.fi";
+const SETTLEMENT_CONTRACT_ADDRESS: &str = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41";
+const SETTLEMENT_CONTRACT_ADDRESS_STAGING: &str = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13";
+const VAULT_RELAYER_ADDRESS: &str = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110";
+const VAULT_RELAYER_ADDRESS_STAGING: &str = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2";
+const ETH_FLOW_ADDRESS: &str = "0xba3cb449bd2b4adddbc894d8697f5170800eadec";
+const ETH_FLOW_ADDRESS_STAGING: &str = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC";
+const TOKEN_LIST_IMAGES_PATH: &str = "https://files.cow.fi/token-lists/images";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[repr(u64)]
+pub enum SupportedChainId {
+    Mainnet = 1,
+    Bnb = 56,
+    GnosisChain = 100,
+    Polygon = 137,
+    Base = 8453,
+    Plasma = 9745,
+    ArbitrumOne = 42161,
+    Avalanche = 43114,
+    Ink = 57073,
+    Linea = 59144,
+    Sepolia = 11155111,
+}
+
+impl SupportedChainId {
+    pub const ALL: [Self; 11] = [
+        Self::Mainnet,
+        Self::Bnb,
+        Self::GnosisChain,
+        Self::Polygon,
+        Self::Base,
+        Self::Plasma,
+        Self::ArbitrumOne,
+        Self::Avalanche,
+        Self::Ink,
+        Self::Linea,
+        Self::Sepolia,
+    ];
+
+    pub fn api_path(self) -> &'static str {
+        match self {
+            Self::Mainnet => "mainnet",
+            Self::Bnb => "bnb",
+            Self::GnosisChain => "xdai",
+            Self::Polygon => "polygon",
+            Self::Base => "base",
+            Self::Plasma => "plasma",
+            Self::ArbitrumOne => "arbitrum_one",
+            Self::Avalanche => "avalanche",
+            Self::Ink => "ink",
+            Self::Linea => "linea",
+            Self::Sepolia => "sepolia",
+        }
+    }
+}
+
+impl TryFrom<ChainId> for SupportedChainId {
+    type Error = ValidationError;
+
+    fn try_from(value: ChainId) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(Self::Mainnet),
+            56 => Ok(Self::Bnb),
+            100 => Ok(Self::GnosisChain),
+            137 => Ok(Self::Polygon),
+            8453 => Ok(Self::Base),
+            9745 => Ok(Self::Plasma),
+            42161 => Ok(Self::ArbitrumOne),
+            43114 => Ok(Self::Avalanche),
+            57073 => Ok(Self::Ink),
+            59144 => Ok(Self::Linea),
+            11155111 => Ok(Self::Sepolia),
+            chain_id => Err(ValidationError::UnsupportedChain { chain_id }),
+        }
+    }
+}
+
+impl From<SupportedChainId> for ChainId {
+    fn from(value: SupportedChainId) -> Self {
+        value as ChainId
+    }
+}
+
+impl Serialize for SupportedChainId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u64((*self).into())
+    }
+}
+
+impl<'de> Deserialize<'de> for SupportedChainId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = ChainId::deserialize(deserializer)?;
+        Self::try_from(value).map_err(serde::de::Error::custom)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CowEnv {
+    Prod,
+    Staging,
+}
+
+impl CowEnv {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Prod => "prod",
+            Self::Staging => "staging",
+        }
+    }
+}
+
+pub type ApiBaseUrls = BTreeMap<ChainId, String>;
+pub type AddressPerChain = BTreeMap<ChainId, Address>;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProtocolOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub env: Option<CowEnv>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub settlement_contract_override: Option<AddressPerChain>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub eth_flow_contract_override: Option<AddressPerChain>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiContext {
+    pub chain_id: SupportedChainId,
+    pub env: CowEnv,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub base_urls: Option<ApiBaseUrls>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub api_key: Option<String>,
+}
+
+impl Default for ApiContext {
+    fn default() -> Self {
+        Self {
+            chain_id: SupportedChainId::Mainnet,
+            env: CowEnv::Prod,
+            base_urls: None,
+            api_key: None,
+        }
+    }
+}
+
+impl ApiContext {
+    pub fn resolved_base_url(&self) -> Result<String, CoreError> {
+        let chain_id: ChainId = self.chain_id.into();
+        let partner_api = self.api_key.is_some();
+        let default_urls = default_api_base_urls(self.env, partner_api);
+        let base_urls = self.base_urls.as_ref().unwrap_or(&default_urls);
+
+        base_urls
+            .get(&chain_id)
+            .cloned()
+            .ok_or_else(|| CoreError::MissingBaseUrl {
+                chain_id,
+                env: self.env.as_str().to_owned(),
+                partner_api,
+            })
+    }
+}
+
+pub fn default_api_base_urls(env: CowEnv, partner_api: bool) -> ApiBaseUrls {
+    SupportedChainId::ALL
+        .into_iter()
+        .map(|chain_id| {
+            let base = match (env, partner_api) {
+                (CowEnv::Prod, false) => PROD_BASE_URL,
+                (CowEnv::Staging, false) => STAGING_BASE_URL,
+                (CowEnv::Prod, true) => PARTNER_PROD_BASE_URL,
+                (CowEnv::Staging, true) => PARTNER_STAGING_BASE_URL,
+            };
+            (chain_id.into(), format!("{base}/{}", chain_id.api_path()))
+        })
+        .collect()
+}
+
+pub fn settlement_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
+    match env {
+        CowEnv::Prod => address_literal(SETTLEMENT_CONTRACT_ADDRESS),
+        CowEnv::Staging => address_literal(SETTLEMENT_CONTRACT_ADDRESS_STAGING),
+    }
+}
+
+pub fn vault_relayer_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
+    match env {
+        CowEnv::Prod => address_literal(VAULT_RELAYER_ADDRESS),
+        CowEnv::Staging => address_literal(VAULT_RELAYER_ADDRESS_STAGING),
+    }
+}
+
+pub fn eth_flow_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
+    match env {
+        CowEnv::Prod => address_literal(ETH_FLOW_ADDRESS),
+        CowEnv::Staging => address_literal(ETH_FLOW_ADDRESS_STAGING),
+    }
+}
+
+pub fn wrapped_native_token(chain_id: SupportedChainId) -> TokenInfo {
+    let (address, decimals, name, symbol) = match chain_id {
+        SupportedChainId::Mainnet => (
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+            18,
+            "Wrapped Ether",
+            "WETH",
+        ),
+        SupportedChainId::GnosisChain => (
+            "0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d",
+            18,
+            "Wrapped XDAI",
+            "WXDAI",
+        ),
+        SupportedChainId::ArbitrumOne => (
+            "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+            18,
+            "Wrapped Ether",
+            "WETH",
+        ),
+        SupportedChainId::Base => (
+            "0x4200000000000000000000000000000000000006",
+            18,
+            "Wrapped Ether",
+            "WETH",
+        ),
+        SupportedChainId::Sepolia => (
+            "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
+            18,
+            "Wrapped Ether",
+            "WETH",
+        ),
+        SupportedChainId::Polygon => (
+            "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
+            18,
+            "Wrapped POL",
+            "WPOL",
+        ),
+        SupportedChainId::Avalanche => (
+            "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
+            18,
+            "Wrapped AVAX",
+            "WAVAX",
+        ),
+        SupportedChainId::Bnb => (
+            "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+            18,
+            "Wrapped BNB",
+            "WBNB",
+        ),
+        SupportedChainId::Plasma => (
+            "0x6100e367285b01f48d07953803a2d8dca5d19873",
+            18,
+            "Wrapped XPL",
+            "WXPL",
+        ),
+        SupportedChainId::Linea => (
+            "0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f",
+            18,
+            "Wrapped Ether",
+            "WETH",
+        ),
+        SupportedChainId::Ink => (
+            "0x4200000000000000000000000000000000000006",
+            18,
+            "Wrapped Ether",
+            "WETH",
+        ),
+    };
+
+    let address = address_literal(address);
+
+    TokenInfo {
+        chain_id: chain_id.into(),
+        logo_url: Some(format!(
+            "{TOKEN_LIST_IMAGES_PATH}/{}/{}/logo.png",
+            ChainId::from(chain_id),
+            address.normalized_key()
+        )),
+        address,
+        decimals,
+        name: name.to_owned(),
+        symbol: symbol.to_owned(),
+    }
+}
+
+fn address_literal(value: &str) -> Address {
+    Address::new(value).expect("static address literals must remain valid")
+}
