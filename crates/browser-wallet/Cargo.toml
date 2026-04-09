@@ -1,0 +1,35 @@
+[package]
+name = "cow-sdk-browser-wallet"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Browser wallet integration for the CoW Protocol Rust SDK"
+readme = "../../README.md"
+documentation = "https://docs.rs/cow-sdk-browser-wallet"
+homepage = "https://github.com/cowdao-grants/cow-rs"
+keywords = ["cow-protocol", "wallet", "wasm", "eip1193"]
+categories = ["api-bindings", "cryptography::cryptocurrencies", "wasm"]
+
+[dependencies]
+async-trait = "0.1.89"
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+ethabi = "18.0.0"
+hex.workspace = true
+num-bigint.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2.17", features = ["js"] }
+js-sys = "0.3.82"
+serde-wasm-bindgen = "0.6.5"
+wasm-bindgen = "0.2.117"
+wasm-bindgen-futures = "0.4.55"
+web-sys = { version = "0.3.82", features = ["Window"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }

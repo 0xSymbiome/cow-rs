@@ -1,0 +1,31 @@
+[package]
+name = "cow-sdk-app-data"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "CoW Protocol app-data encoding, schema validation, and CID compatibility"
+readme = "../../README.md"
+documentation = "https://docs.rs/cow-sdk-app-data"
+homepage = "https://github.com/cowdao-grants/cow-rs"
+keywords = ["cow-protocol", "app-data", "cid", "metadata"]
+categories = ["encoding", "cryptography::cryptocurrencies"]
+
+[dependencies]
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+cid = "0.11.1"
+include_dir = "0.7.4"
+ipfs-cid = "2.0.0"
+jsonschema.workspace = true
+multibase.workspace = true
+multihash = "0.19.3"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true, features = ["preserve_order"] }
+sha3.workspace = true
+thiserror.workspace = true
+hex.workspace = true
+
+[dev-dependencies]
+serde_json = { workspace = true, features = ["preserve_order"] }

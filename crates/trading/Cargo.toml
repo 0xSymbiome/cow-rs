@@ -1,0 +1,34 @@
+[package]
+name = "cow-sdk-trading"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "High-level CoW Protocol trading orchestration surface"
+readme = "../../README.md"
+documentation = "https://docs.rs/cow-sdk-trading"
+homepage = "https://github.com/cowdao-grants/cow-rs"
+keywords = ["cow-protocol", "trading", "sdk", "defi"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[dependencies]
+async-trait = "0.1.89"
+cow-sdk-app-data = { path = "../app-data", version = "0.1.0" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0" }
+cow-sdk-signing = { path = "../signing", version = "0.1.0" }
+hex.workspace = true
+num-bigint.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-time = "1.1.0"

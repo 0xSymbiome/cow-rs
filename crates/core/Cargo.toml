@@ -1,0 +1,23 @@
+[package]
+name = "cow-sdk-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Shared CoW Protocol core types and validation primitives"
+readme = "../../README.md"
+documentation = "https://docs.rs/cow-sdk-core"
+homepage = "https://github.com/cowdao-grants/cow-rs"
+keywords = ["cow-protocol", "defi", "core", "trading"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[dependencies]
+hex.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

@@ -1,0 +1,31 @@
+[package]
+name = "cow-sdk-subgraph"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Typed CoW Protocol subgraph query primitives"
+readme = "../../README.md"
+documentation = "https://docs.rs/cow-sdk-subgraph"
+homepage = "https://github.com/cowdao-grants/cow-rs"
+keywords = ["cow-protocol", "subgraph", "graphql", "analytics"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[dependencies]
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+thiserror.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = { workspace = true, features = ["json", "rustls"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+reqwest = { workspace = true, features = ["json"] }
+
+[dev-dependencies]
+serde_json.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+wiremock = "0.6.5"
