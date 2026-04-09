@@ -1,0 +1,456 @@
+meta:
+  schema_version: 2
+  generated_at_utc: 2026-04-08T00:00:00Z
+  purpose: pinned upstream source contract for committed parity fixtures
+repositories:
+- id: cow-sdk
+  remote: https://github.com/cowprotocol/cow-sdk.git
+  commit: 17fcfc590be8529dc4fe05b1c472fef1b07b47f4
+  role: primary
+  optional_local_path: cow-protocol/cow-sdk
+  producer_paths:
+  - packages/common/src/adapters/AbstractSigner.ts
+  - packages/common/src/adapters/AbstractProviderAdapter.ts
+  - packages/common/src/utils/address.ts
+  - packages/common/src/utils/address.test.ts
+  - packages/common/src/utils/token.ts
+  - packages/common/src/utils/token.test.ts
+  - packages/config/src/types/configs.ts
+  - packages/config/src/chains/types.ts
+  - packages/config/src/constants/addresses.ts
+  - packages/config/src/constants/wrappedTokens.ts
+  - packages/trading/src/index.ts
+  - packages/trading/src/types.ts
+  - packages/trading/src/appDataUtils.ts
+  - packages/trading/src/appDataUtils.test.ts
+  - packages/trading/src/getQuote.ts
+  - packages/trading/src/getQuote.test.ts
+  - packages/trading/src/getOrderToSign.ts
+  - packages/trading/src/getOrderToSign.test.ts
+  - packages/trading/src/getOrderTypedData.ts
+  - packages/trading/src/getOrderTypedData.test.ts
+  - packages/trading/src/calculateUniqueOrderId.ts
+  - packages/trading/src/calculateUniqueOrderId.test.ts
+  - packages/trading/src/getSettlementContract.ts
+  - packages/trading/src/getSettlementContract.test.ts
+  - packages/trading/src/getPreSignTransaction.ts
+  - packages/trading/src/getPreSignTransaction.test.ts
+  - packages/trading/src/getEthFlowTransaction.ts
+  - packages/trading/src/getEthFlowTransaction.test.ts
+  - packages/trading/src/onChainCancellation.ts
+  - packages/trading/src/onChainCancellation.test.ts
+  - packages/trading/src/postCoWProtocolTrade.ts
+  - packages/trading/src/postCoWProtocolTrade.test.ts
+  - packages/trading/src/postLimitOrder.ts
+  - packages/trading/src/postLimitOrder.test.ts
+  - packages/trading/src/postSellNativeCurrencyOrder.ts
+  - packages/trading/src/postSellNativeCurrencyOrder.test.ts
+  - packages/trading/src/postSwapOrder.ts
+  - packages/trading/src/postSwapOrder.test.ts
+  - packages/trading/src/resolveSlippageSuggestion.ts
+  - packages/trading/src/resolveSlippageSuggestion.test.ts
+  - packages/trading/src/suggestSlippageBps.ts
+  - packages/trading/src/suggestSlippageBps.test.ts
+  - packages/trading/src/suggestSlippageFromFee.ts
+  - packages/trading/src/suggestSlippageFromFee.test.ts
+  - packages/trading/src/suggestSlippageFromVolume.ts
+  - packages/trading/src/suggestSlippageFromVolume.test.ts
+  - packages/trading/src/tradingSdk.ts
+  - packages/trading/src/tradingSdk.test.ts
+  - packages/order-signing/src/orderSigningUtils.ts
+  - packages/order-signing/src/utils.ts
+  - packages/order-signing/src/types.ts
+  - packages/order-signing/tests/orderSigningUtils.test.ts
+  - packages/order-book/src/api.ts
+  - packages/order-book/src/api.spec.ts
+  - packages/order-book/src/request.ts
+  - packages/order-book/src/request.test.ts
+  - packages/order-book/src/transformOrder.ts
+  - packages/order-book/src/transformOrder.test.ts
+  - packages/order-book/src/types.ts
+  - packages/contracts-ts/src/ContractsTs.ts
+  - packages/contracts-ts/src/types.ts
+  - packages/contracts-ts/src/order.ts
+  - packages/contracts-ts/src/sign.ts
+  - packages/contracts-ts/src/settlement.ts
+  - packages/contracts-ts/src/swap.ts
+  - packages/contracts-ts/src/interaction.ts
+  - packages/contracts-ts/src/proxy.ts
+  - packages/contracts-ts/src/vault.ts
+  - packages/contracts-ts/src/reader.ts
+  - packages/contracts-ts/tests/order.test.ts
+  - packages/contracts-ts/tests/order-processing.test.ts
+  - packages/contracts-ts/tests/settlement.test.ts
+  - packages/contracts-ts/tests/signature.test.ts
+  - packages/contracts-ts/tests/deployment.test.ts
+  - packages/contracts-ts/tests/vault.test.ts
+  - packages/contracts-ts/tests/reader.test.ts
+  - packages/app-data/src/api/appDataHexToCid.ts
+  - packages/app-data/src/mocks.ts
+  - packages/app-data/src/api/appDataHexToCid.spec.ts
+  - packages/app-data/src/api/cidToAppDataHex.ts
+  - packages/app-data/src/api/cidToAppDataHex.test.ts
+  - packages/app-data/src/api/generateAppDataDoc.ts
+  - packages/app-data/src/api/generateAppDataDoc.spec.ts
+  - packages/app-data/src/api/getAppDataInfo.ts
+  - packages/app-data/src/api/getAppDataInfo.spec.ts
+  - packages/app-data/src/api/getAppDataSchema.ts
+  - packages/app-data/src/api/getAppDataSchema.spec.ts
+  - packages/app-data/src/api/validateAppDataDoc.ts
+  - packages/app-data/src/api/validateAppDataDoc.spec.ts
+  - packages/app-data/src/api/fetchDocFromCid.ts
+  - packages/app-data/src/api/fetchDocFromCid.spec.ts
+  - packages/app-data/src/api/fetchDocFromAppData.ts
+  - packages/app-data/src/api/fetchDocFromAppData.spec.ts
+  - packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.ts
+  - packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.spec.ts
+  - packages/app-data/src/types.ts
+  - packages/app-data/src/consts.ts
+  - packages/app-data/src/importSchema.ts
+  - packages/app-data/src/utils/ipfs.ts
+  - packages/app-data/src/utils/stringify.ts
+  - packages/app-data/src/generatedTypes/index.ts
+  - packages/app-data/src/generatedTypes/latest.ts
+  - packages/app-data/test/schema.spec.ts
+  - packages/app-data/test/schema-1.5.0.spec.ts
+  - packages/app-data/test/flashloan-v1.7.0.spec.ts
+  - packages/app-data/test/wrappers.v1.13.0.spec.ts
+  - packages/subgraph/src/api.ts
+  - packages/subgraph/src/api.spec.ts
+  - packages/subgraph/src/graphql.ts
+  - packages/subgraph/src/queries.ts
+  - packages/sdk/src/index.ts
+  - packages/sdk/src/typedoc-entry.ts
+  - packages/sdk/package.json
+  - packages/sdk/README.md
+- id: contracts
+  remote: https://github.com/cowprotocol/contracts.git
+  commit: c94c595a791681cf8ba7495117dcde397b932885
+  role: primary
+  optional_local_path: cow-protocol/contracts
+  producer_paths:
+  - src/ts/order.ts
+  - src/ts/sign.ts
+  - src/ts/settlement.ts
+  - src/ts/swap.ts
+  - src/ts/interaction.ts
+  - src/ts/vault.ts
+  - src/ts/proxy.ts
+  - test/GPv2Order/PackOrderUidParams.t.sol
+  - test/GPv2Order/ExtractOrderUidParams.t.sol
+  - test/GPv2Trade/ExtractFlags.t.sol
+  - test/GPv2Trade/ExtractOrder.t.sol
+  - test/GPv2Settlement/OrderRefunds.t.sol
+  - test/GPv2Settlement/Swap/Swap.t.sol
+- id: services
+  remote: https://github.com/cowprotocol/services.git
+  commit: cfbec985dfe476bf7ef42750435f7d5a12223a85
+  role: reference-only
+  optional_local_path: cow-protocol/services
+  producer_paths:
+  - crates/orderbook/openapi.yml
+  - crates/shared/src/order_validation.rs
+  - crates/orderbook/src/app_data.rs
+fixtures:
+- surface: core
+  file: parity/fixtures/core.json
+  source_refs:
+  - repo: cow-sdk
+    path: packages/common/src/adapters/AbstractSigner.ts
+  - repo: cow-sdk
+    path: packages/common/src/adapters/AbstractProviderAdapter.ts
+  - repo: cow-sdk
+    path: packages/common/src/utils/address.ts
+  - repo: cow-sdk
+    path: packages/common/src/utils/address.test.ts
+  - repo: cow-sdk
+    path: packages/common/src/utils/token.ts
+  - repo: cow-sdk
+    path: packages/common/src/utils/token.test.ts
+  - repo: cow-sdk
+    path: packages/config/src/types/configs.ts
+  - repo: cow-sdk
+    path: packages/config/src/chains/types.ts
+  - repo: cow-sdk
+    path: packages/config/src/constants/addresses.ts
+  - repo: cow-sdk
+    path: packages/config/src/constants/wrappedTokens.ts
+  - repo: cow-sdk
+    path: packages/order-signing/src/types.ts
+  - repo: cow-sdk
+    path: packages/order-book/src/types.ts
+  - repo: contracts
+    path: src/ts/order.ts
+- surface: contracts
+  file: parity/fixtures/contracts.json
+  source_refs:
+  - repo: contracts
+    path: src/ts/order.ts
+  - repo: contracts
+    path: src/ts/sign.ts
+  - repo: contracts
+    path: src/ts/settlement.ts
+  - repo: contracts
+    path: src/ts/swap.ts
+  - repo: contracts
+    path: src/ts/interaction.ts
+  - repo: contracts
+    path: src/ts/vault.ts
+  - repo: contracts
+    path: src/ts/proxy.ts
+  - repo: contracts
+    path: test/GPv2Order/PackOrderUidParams.t.sol
+  - repo: contracts
+    path: test/GPv2Order/ExtractOrderUidParams.t.sol
+  - repo: contracts
+    path: test/GPv2Trade/ExtractFlags.t.sol
+  - repo: contracts
+    path: test/GPv2Trade/ExtractOrder.t.sol
+  - repo: contracts
+    path: test/GPv2Settlement/OrderRefunds.t.sol
+  - repo: contracts
+    path: test/GPv2Settlement/Swap/Swap.t.sol
+  - repo: cow-sdk
+    path: packages/contracts-ts/src/order.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/src/sign.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/src/settlement.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/src/swap.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/src/interaction.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/src/proxy.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/src/vault.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/src/reader.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/tests/order.test.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/tests/order-processing.test.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/tests/settlement.test.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/tests/signature.test.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/tests/deployment.test.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/tests/vault.test.ts
+  - repo: cow-sdk
+    path: packages/contracts-ts/tests/reader.test.ts
+- surface: signing
+  file: parity/fixtures/signing.json
+  source_refs:
+  - repo: cow-sdk
+    path: packages/order-signing/src/orderSigningUtils.ts
+  - repo: cow-sdk
+    path: packages/order-signing/src/utils.ts
+  - repo: cow-sdk
+    path: packages/order-signing/src/types.ts
+  - repo: cow-sdk
+    path: packages/order-signing/tests/orderSigningUtils.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getOrderTypedData.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getOrderTypedData.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/calculateUniqueOrderId.ts
+  - repo: cow-sdk
+    path: packages/trading/src/calculateUniqueOrderId.test.ts
+  - repo: contracts
+    path: src/ts/order.ts
+  - repo: contracts
+    path: src/ts/sign.ts
+- surface: app-data
+  file: parity/fixtures/app-data.json
+  source_refs:
+  - repo: cow-sdk
+    path: packages/app-data/src/api/appDataHexToCid.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/appDataHexToCid.spec.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/cidToAppDataHex.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/cidToAppDataHex.test.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/generateAppDataDoc.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/generateAppDataDoc.spec.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/getAppDataInfo.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/getAppDataInfo.spec.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/getAppDataSchema.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/getAppDataSchema.spec.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/validateAppDataDoc.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/validateAppDataDoc.spec.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/fetchDocFromCid.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/fetchDocFromCid.spec.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/fetchDocFromAppData.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/fetchDocFromAppData.spec.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.spec.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/types.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/consts.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/importSchema.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/utils/ipfs.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/utils/stringify.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/generatedTypes/index.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/generatedTypes/latest.ts
+  - repo: cow-sdk
+    path: packages/app-data/src/mocks.ts
+  - repo: cow-sdk
+    path: packages/app-data/test/schema.spec.ts
+  - repo: cow-sdk
+    path: packages/app-data/test/schema-1.5.0.spec.ts
+  - repo: cow-sdk
+    path: packages/app-data/test/flashloan-v1.7.0.spec.ts
+  - repo: cow-sdk
+    path: packages/app-data/test/wrappers.v1.13.0.spec.ts
+- surface: orderbook
+  file: parity/fixtures/orderbook.json
+  source_refs:
+  - repo: cow-sdk
+    path: packages/order-book/src/api.ts
+  - repo: cow-sdk
+    path: packages/order-book/src/api.spec.ts
+  - repo: cow-sdk
+    path: packages/order-book/src/request.ts
+  - repo: cow-sdk
+    path: packages/order-book/src/request.test.ts
+  - repo: cow-sdk
+    path: packages/order-book/src/transformOrder.ts
+  - repo: cow-sdk
+    path: packages/order-book/src/transformOrder.test.ts
+  - repo: cow-sdk
+    path: packages/order-book/src/types.ts
+  - repo: services
+    path: crates/orderbook/openapi.yml
+  - repo: services
+    path: crates/shared/src/order_validation.rs
+  - repo: services
+    path: crates/orderbook/src/app_data.rs
+- surface: trading
+  file: parity/fixtures/trading.json
+  source_refs:
+  - repo: cow-sdk
+    path: packages/trading/src/index.ts
+  - repo: cow-sdk
+    path: packages/trading/src/types.ts
+  - repo: cow-sdk
+    path: packages/trading/src/appDataUtils.ts
+  - repo: cow-sdk
+    path: packages/trading/src/appDataUtils.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getQuote.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getQuote.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getOrderToSign.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getOrderToSign.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/postSwapOrder.ts
+  - repo: cow-sdk
+    path: packages/trading/src/postSwapOrder.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/postCoWProtocolTrade.ts
+  - repo: cow-sdk
+    path: packages/trading/src/postCoWProtocolTrade.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/postLimitOrder.ts
+  - repo: cow-sdk
+    path: packages/trading/src/postLimitOrder.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/postSellNativeCurrencyOrder.ts
+  - repo: cow-sdk
+    path: packages/trading/src/postSellNativeCurrencyOrder.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getOrderTypedData.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getPreSignTransaction.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getPreSignTransaction.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getEthFlowTransaction.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getEthFlowTransaction.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getSettlementContract.ts
+  - repo: cow-sdk
+    path: packages/trading/src/getSettlementContract.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/onChainCancellation.ts
+  - repo: cow-sdk
+    path: packages/trading/src/onChainCancellation.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/resolveSlippageSuggestion.ts
+  - repo: cow-sdk
+    path: packages/trading/src/resolveSlippageSuggestion.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/suggestSlippageBps.ts
+  - repo: cow-sdk
+    path: packages/trading/src/suggestSlippageBps.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/suggestSlippageFromFee.ts
+  - repo: cow-sdk
+    path: packages/trading/src/suggestSlippageFromFee.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/suggestSlippageFromVolume.ts
+  - repo: cow-sdk
+    path: packages/trading/src/suggestSlippageFromVolume.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/tradingSdk.ts
+  - repo: cow-sdk
+    path: packages/trading/src/tradingSdk.test.ts
+  - repo: cow-sdk
+    path: packages/trading/src/calculateUniqueOrderId.test.ts
+- surface: subgraph
+  file: parity/fixtures/subgraph.json
+  source_refs:
+  - repo: cow-sdk
+    path: packages/subgraph/src/api.ts
+  - repo: cow-sdk
+    path: packages/subgraph/src/queries.ts
+  - repo: cow-sdk
+    path: packages/subgraph/src/graphql.ts
+  - repo: cow-sdk
+    path: packages/subgraph/src/api.spec.ts
+- surface: sdk
+  file: parity/fixtures/sdk.json
+  source_refs:
+  - repo: cow-sdk
+    path: packages/sdk/src/index.ts
+  - repo: cow-sdk
+    path: packages/sdk/src/typedoc-entry.ts
+  - repo: cow-sdk
+    path: packages/sdk/package.json
+  - repo: cow-sdk
+    path: packages/sdk/README.md
+validation:
+  standalone_repo_contract:
+  - cargo build --workspace
+  - cargo test --workspace
+  maintainer_refresh_contract:
+  - cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root <path> --contracts-root <path> --services-root <path>
+  - cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot --output parity/source-lock.yaml --cow-sdk-root <path> --contracts-root <path> --services-root <path>
+  - cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-app-data-schemas --source-lock parity/source-lock.yaml --cow-sdk-root <path>

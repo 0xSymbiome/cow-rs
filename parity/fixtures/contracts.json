@@ -1,0 +1,395 @@
+{
+  "schema_version": 1,
+  "surface": "contracts",
+  "generated_at_utc": "2026-04-08T00:00:00Z",
+  "generator": "curated-from-pinned-upstream-tests",
+  "source_refs": [
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "src/ts/order.ts",
+      "anchors": [
+        "ORDER_TYPE_FIELDS",
+        "BUY_ETH_ADDRESS",
+        "ORDER_UID_LENGTH",
+        "hashOrderCancellation",
+        "hashOrderCancellations",
+        "normalizeBuyTokenBalance",
+        "extractOrderUidParams"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "src/ts/sign.ts",
+      "anchors": [
+        "SigningScheme",
+        "EIP1271_MAGICVALUE",
+        "encodeEip1271SignatureData",
+        "decodeEip1271SignatureData"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "src/ts/settlement.ts",
+      "anchors": [
+        "FLAG_MASKS",
+        "encodeOrderFlags",
+        "decodeOrderFlags",
+        "encodeTradeFlags",
+        "decodeTradeFlags",
+        "TokenRegistry",
+        "SettlementEncoder"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "src/ts/swap.ts",
+      "anchors": [
+        "encodeSwapStep",
+        "SwapEncoder"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "src/ts/interaction.ts",
+      "anchors": [
+        "normalizeInteraction",
+        "normalizeInteractions"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "src/ts/vault.ts",
+      "anchors": [
+        "VAULT_INTERFACE",
+        "grantRequiredRoles"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "src/ts/proxy.ts",
+      "anchors": [
+        "IMPLEMENTATION_STORAGE_SLOT",
+        "OWNER_STORAGE_SLOT",
+        "implementationAddress",
+        "ownerAddress",
+        "EIP173_PROXY_ABI"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "test/GPv2Order/PackOrderUidParams.t.sol",
+      "anchors": [
+        "packOrderUidParams"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "test/GPv2Order/ExtractOrderUidParams.t.sol",
+      "anchors": [
+        "extractOrderUidParams"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "test/GPv2Trade/ExtractFlags.t.sol",
+      "anchors": [
+        "extractFlags"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "test/GPv2Trade/ExtractOrder.t.sol",
+      "anchors": [
+        "extractOrder"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "test/GPv2Settlement/OrderRefunds.t.sol",
+      "anchors": [
+        "freeFilledAmountStorage",
+        "freePreSignatureStorage"
+      ]
+    },
+    {
+      "repo": "contracts",
+      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "path": "test/GPv2Settlement/Swap/Swap.t.sol",
+      "anchors": [
+        "swap"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/contracts-ts/tests/order.test.ts",
+      "anchors": [
+        "hashOrder",
+        "computeOrderUid",
+        "extractOrderUidParams",
+        "encodeSigningScheme",
+        "decodeSigningScheme",
+        "encodeTradeFlags",
+        "decodeTradeFlags"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/contracts-ts/tests/order-processing.test.ts",
+      "anchors": [
+        "normalizeOrder",
+        "timestamp",
+        "hashify",
+        "normalizeBuyTokenBalance",
+        "packOrderUidParams",
+        "decodeOrder",
+        "TokenRegistry"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/contracts-ts/tests/settlement.test.ts",
+      "anchors": [
+        "SettlementEncoder",
+        "encodeOrderRefunds",
+        "encodedSetup"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/contracts-ts/tests/signature.test.ts",
+      "anchors": [
+        "normalizeInteraction",
+        "normalizeInteractions",
+        "encodeEip1271SignatureData",
+        "decodeEip1271SignatureData",
+        "EIP1271_MAGICVALUE"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/contracts-ts/tests/deployment.test.ts",
+      "anchors": [
+        "deterministicDeploymentAddress",
+        "implementationAddress",
+        "ownerAddress"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/contracts-ts/tests/vault.test.ts",
+      "anchors": [
+        "grantRequiredRoles"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/contracts-ts/tests/reader.test.ts",
+      "anchors": [
+        "AllowListReader",
+        "SettlementReader",
+        "TradeSimulator"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "contracts-order-type-fields",
+      "kind": "contract-shape",
+      "description": "Order field layout must match the canonical contracts TypeScript order type field order.",
+      "expected": {
+        "fields": [
+          "sellToken",
+          "buyToken",
+          "receiver",
+          "sellAmount",
+          "buyAmount",
+          "validTo",
+          "appData",
+          "feeAmount",
+          "kind",
+          "partiallyFillable",
+          "sellTokenBalance",
+          "buyTokenBalance"
+        ]
+      }
+    },
+    {
+      "id": "contracts-order-type-hash",
+      "kind": "positive",
+      "description": "The canonical order type hash matches the public contracts-ts helper constant.",
+      "expected": {
+        "hash": "0xd5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489"
+      }
+    },
+    {
+      "id": "contracts-cancellation-type-fields",
+      "kind": "contract-shape",
+      "description": "Order cancellation typed data uses a single orderUids bytes[] field.",
+      "expected": {
+        "fields": [
+          "orderUids"
+        ]
+      }
+    },
+    {
+      "id": "contracts-order-uid-length",
+      "kind": "positive",
+      "description": "Packed order UIDs are 56 bytes and therefore 112 hex characters without the 0x prefix.",
+      "expected": {
+        "bytes": 56,
+        "hex_chars": 112
+      }
+    },
+    {
+      "id": "contracts-extract-order-uid-invalid-length",
+      "kind": "negative",
+      "description": "Order UID extraction must reject payloads whose byte length is not 56.",
+      "expected": {
+        "must_reject": true,
+        "error_contains": "invalid order UID length"
+      }
+    },
+    {
+      "id": "contracts-buy-balance-normalization",
+      "kind": "behavior-scenario",
+      "description": "Buy token balance value external normalizes to erc20 in the contracts order helpers.",
+      "input": {
+        "buy_token_balance": "external"
+      },
+      "expected": {
+        "normalized_buy_token_balance": "erc20"
+      }
+    },
+    {
+      "id": "contracts-signing-scheme-discriminants",
+      "kind": "contract-shape",
+      "description": "Signing scheme discriminants must match the canonical on-chain encoding order.",
+      "expected": {
+        "EIP712": 0,
+        "ETHSIGN": 1,
+        "EIP1271": 2,
+        "PRESIGN": 3
+      }
+    },
+    {
+      "id": "contracts-eip1271-magic-value",
+      "kind": "positive",
+      "description": "The EIP-1271 success value remains the standard 0x1626ba7e.",
+      "expected": {
+        "magic_value": "0x1626ba7e"
+      }
+    },
+    {
+      "id": "contracts-interaction-defaults",
+      "kind": "behavior-scenario",
+      "description": "Interaction normalization defaults missing value and calldata to zero-value call semantics.",
+      "expected": {
+        "value": "0",
+        "call_data": "0x"
+      }
+    },
+    {
+      "id": "contracts-deployment-constants",
+      "kind": "contract-shape",
+      "description": "Deterministic deployment uses the pinned salt and Arachnid deployment proxy address.",
+      "expected": {
+        "salt": "0x4d61747472657373657320696e204265726c696e210000000000000000000000",
+        "deployer_contract": "0x4e59b44847b379578588920ca78fbf26c0b4956c"
+      }
+    },
+    {
+      "id": "contracts-proxy-storage-slots",
+      "kind": "contract-shape",
+      "description": "Proxy helpers read EIP-1967 implementation and admin storage slots.",
+      "expected": {
+        "implementation_slot": "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+        "owner_slot": "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
+      }
+    },
+    {
+      "id": "contracts-order-flags-default-sell",
+      "kind": "positive",
+      "description": "Default sell-order flags encode to zero for sell, fill-or-kill, erc20, erc20.",
+      "expected": {
+        "encoded_flags": 0
+      }
+    },
+    {
+      "id": "contracts-order-flags-buy-partial-internal",
+      "kind": "positive",
+      "description": "Buy plus partially-fillable plus internal balances encodes to the canonical bitfield layout.",
+      "expected": {
+        "encoded_flags": 31
+      }
+    },
+    {
+      "id": "contracts-trade-flags-presign",
+      "kind": "positive",
+      "description": "Presign trade flags append the signing scheme bits on top of the order flag layout.",
+      "expected": {
+        "encoded_flags": 96
+      }
+    },
+    {
+      "id": "contracts-order-refund-method-names",
+      "kind": "contract-shape",
+      "description": "Settlement order refund encoding targets the two canonical storage-freeing functions.",
+      "expected": {
+        "methods": [
+          "freeFilledAmountStorage",
+          "freePreSignatureStorage"
+        ]
+      }
+    },
+    {
+      "id": "contracts-swap-default-user-data",
+      "kind": "behavior-scenario",
+      "description": "Swap step encoding defaults missing userData to 0x.",
+      "expected": {
+        "user_data": "0x"
+      }
+    },
+    {
+      "id": "contracts-vault-required-methods",
+      "kind": "contract-shape",
+      "description": "Vault relayer role grants cover the two expected Vault entrypoints.",
+      "expected": {
+        "methods": [
+          "manageUserBalance",
+          "batchSwap"
+        ]
+      }
+    },
+    {
+      "id": "contracts-reader-helper-surface",
+      "kind": "contract-shape",
+      "description": "The contracts helper layer includes the three reader-oriented public helpers from contracts-ts.",
+      "expected": {
+        "helpers": [
+          "AllowListReader",
+          "SettlementReader",
+          "TradeSimulator"
+        ]
+      }
+    }
+  ]
+}

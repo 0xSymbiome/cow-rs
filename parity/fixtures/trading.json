@@ -1,0 +1,432 @@
+{
+  "schema_version": 1,
+  "surface": "trading",
+  "generated_at_utc": "2026-04-08T00:00:00Z",
+  "generator": "curated-from-pinned-upstream-tests",
+  "source_refs": [
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/index.ts",
+      "anchors": [
+        "trading public surface",
+        "TradingSdk export"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/types.ts",
+      "anchors": [
+        "TradeBaseParameters",
+        "QuoteResults",
+        "OrderPostingResult",
+        "PostTradeAdditionalParams"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/appDataUtils.test.ts",
+      "anchors": [
+        "build app data",
+        "partner fee metadata"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/getQuote.ts",
+      "anchors": [
+        "ETH_FLOW_AUX_QUOTE_PARAMS",
+        "validFor and validTo validation",
+        "PriceQuality.OPTIMAL"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/getQuote.test.ts",
+      "anchors": [
+        "Should add slippageBps and appCode from parameters",
+        "Should use DEFAULT_QUOTE_VALIDITY when neither validFor nor validTo are provided",
+        "Should use exact validTo when provided",
+        "Should throw error when both validFor and validTo are provided",
+        "Then should override sell token with wrapped one",
+        "Default slippage should be 2%",
+        "Should use suggested slippage when AUTO slippage is used and suggestion is provided"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/getOrderToSign.test.ts",
+      "anchors": [
+        "When validTo is not set, then should use validFor parameter instead",
+        "When sell order and cost/slippage adjustments disabled, then buy amount should remain unchanged",
+        "When buy order and cost/slippage adjustments disabled, then sell amount should remain unchanged"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/postSwapOrder.test.ts",
+      "anchors": [
+        "Sell order amounts should take fees and slippage into account",
+        "Buy order amounts should take fees and slippage into account",
+        "When partner fee is specified, then it must be reflected in appData",
+        "When receiver/validTo is present in advancedSettings quoteRequest, then it should end up in the order"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/postCoWProtocolTrade.test.ts",
+      "anchors": [
+        "should use owner address as from parameter in sendOrder",
+        "should call uploadAppData with appDataKeccak256 and fullAppData",
+        "should pass settlementContractOverride to signOrder",
+        "should pass env to signOrder options"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/postLimitOrder.test.ts",
+      "anchors": [
+        "Should call order posting with all specified parameters",
+        "applyCostsSlippageAndFees false"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/postSellNativeCurrencyOrder.test.ts",
+      "anchors": [
+        "Should call checkEthFlowOrderExists if it is set",
+        "Should upload appData",
+        "When transaction gas estimation is failed, then should use fallback value + 20%"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/getOrderTypedData.test.ts",
+      "anchors": [
+        "should return domain with default production settlement contract address",
+        "should use settlementContractOverride when provided"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/getPreSignTransaction.test.ts",
+      "anchors": [
+        "Should call gas estimation and return estimated value + 20%",
+        "Tx value should always be zero",
+        "should prioritize settlementContractOverride over staging env"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/getEthFlowTransaction.test.ts",
+      "anchors": [
+        "Should always override sell token with wrapped native token",
+        "Transaction value should be equal to sell amount",
+        "should prioritize ethFlowContractOverride over staging env"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/getSettlementContract.test.ts",
+      "anchors": [
+        "should use default production address when no options provided",
+        "should prioritize settlementContractOverride over staging env"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/onChainCancellation.test.ts",
+      "anchors": [
+        "should return cancellation with estimated gas when estimation succeeds",
+        "should return fallback gas when estimation fails",
+        "should use owner as receiver when receiver is not set"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/resolveSlippageSuggestion.test.ts",
+      "anchors": [
+        "When priceQuality defaults to OPTIMAL",
+        "When priceQuality is FAST",
+        "Should pass isEthFlow flag to suggestSlippageBps"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/suggestSlippageBps.test.ts",
+      "anchors": [
+        "Lower bound clamping",
+        "Upper bound clamping"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/suggestSlippageFromFee.test.ts",
+      "anchors": [
+        "handle different factors",
+        "Handle fee edge cases"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/suggestSlippageFromVolume.test.ts",
+      "anchors": [
+        "Sell orders",
+        "Buy orders",
+        "Handle edge case with sellAmount"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/tradingSdk.test.ts",
+      "anchors": [
+        "getQuoteOnly",
+        "offChainCancelOrder",
+        "getCowProtocolAllowance",
+        "approveCowProtocol",
+        "onChainCancelOrder",
+        "settlementContractOverride and ethFlowContractOverride"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/trading/src/calculateUniqueOrderId.test.ts",
+      "anchors": [
+        "Should always set validTo to the maximum value",
+        "Should always set sellToken to wrapped native token"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "trading-sell-order-amount-adjustment",
+      "kind": "behavior-scenario",
+      "description": "Sell-order posting uses quote fee plus slippage-adjusted buy amount.",
+      "input": {
+        "quote_sell_amount": "98646335338956442",
+        "quote_buy_amount": "30000000000000000000",
+        "quote_fee_amount": "1353664661043558",
+        "slippage_bps": 50
+      },
+      "expected": {
+        "sell_amount": "100000000000000000",
+        "buy_amount": "29850000000000000000"
+      }
+    },
+    {
+      "id": "trading-buy-order-amount-adjustment",
+      "kind": "behavior-scenario",
+      "description": "Buy-order posting uses fee-inclusive plus slippage-adjusted sell amount while keeping buy amount fixed.",
+      "input": {
+        "quote_sell_amount": "1005456782512030400",
+        "quote_buy_amount": "400000000000000000000",
+        "quote_fee_amount": "1112955650440102",
+        "slippage_bps": 50
+      },
+      "expected": {
+        "sell_amount": "1011602586853282854",
+        "buy_amount": "400000000000000000000"
+      }
+    },
+    {
+      "id": "trading-quote-app-data-enrichment",
+      "kind": "behavior-scenario",
+      "description": "Quote requests enrich appData with appCode and slippage settings before submission.",
+      "input": {
+        "appCode": "0x007",
+        "slippageBps": 76
+      },
+      "expected": {
+        "appDataFields": [
+          "appCode",
+          "metadata.quote.slippageBips"
+        ],
+        "priceQuality": "optimal"
+      }
+    },
+    {
+      "id": "trading-quote-validity-contract",
+      "kind": "behavior-scenario",
+      "description": "Quote requests default to validFor 1800 seconds, allow exact validTo, and reject simultaneous validFor plus validTo.",
+      "input": {
+        "default_valid_for_seconds": 1800,
+        "exact_valid_to": 2524608000
+      },
+      "expected": {
+        "default_uses_valid_for": true,
+        "exact_valid_to_overrides_valid_for": true,
+        "simultaneous_valid_for_and_valid_to_error": "Cannot specify both validFor and validTo. Use validFor for relative time or validTo for absolute time."
+      }
+    },
+    {
+      "id": "trading-eth-sell-defaults",
+      "kind": "behavior-scenario",
+      "description": "Selling native ETH uses the wrapped native token address, EIP1271 onchain quote flags, and the chain default ETH flow slippage when slippage is omitted.",
+      "expected": {
+        "uses_wrapped_native_token": true,
+        "uses_chain_default_eth_flow_slippage": true,
+        "signing_scheme": "eip1271",
+        "onchain_order": true,
+        "verification_gas_limit": 0
+      }
+    },
+    {
+      "id": "trading-auto-slippage-suggestion",
+      "kind": "behavior-scenario",
+      "description": "AUTO slippage adopts the suggested slippage when provided and otherwise falls back to the chain default.",
+      "input": {
+        "suggested_slippage_bps": 200,
+        "default_non_ethflow_slippage_bps": 50
+      },
+      "expected": {
+        "uses_suggested_slippage_when_present": true,
+        "uses_default_when_suggestion_missing": true
+      }
+    },
+    {
+      "id": "trading-slippage-helper-bounds",
+      "kind": "behavior-scenario",
+      "description": "Slippage helper outputs clamp to 0 for non-EthFlow negatives, clamp to the EthFlow minimum for EthFlow orders, and cap at 10000 bps.",
+      "expected": {
+        "non_ethflow_min_bps": 0,
+        "max_bps": 10000,
+        "ethflow_minimum_is_chain_default": true
+      }
+    },
+    {
+      "id": "trading-partner-fee-in-app-data",
+      "kind": "behavior-scenario",
+      "description": "Partner fee settings are copied into appData metadata before order submission.",
+      "input": {
+        "partnerFee": {
+          "volumeBps": 50,
+          "recipient": "synthetic-recipient"
+        }
+      },
+      "expected": {
+        "metadata_path": "partnerFee"
+      }
+    },
+    {
+      "id": "trading-post-override-propagation",
+      "kind": "behavior-scenario",
+      "description": "Advanced quoteRequest overrides such as receiver and validTo propagate into the final order, and owner takes precedence over signer for the from and receiver fields.",
+      "input": {
+        "receiver": "synthetic-receiver",
+        "validTo": 5600000
+      },
+      "expected": {
+        "receiver_propagates": true,
+        "valid_to_propagates": true,
+        "owner_precedence_for_from_and_receiver": true
+      }
+    },
+    {
+      "id": "trading-order-to-sign-disable-adjustments",
+      "kind": "behavior-scenario",
+      "description": "When applyCostsSlippageAndFees is false, quote-to-order conversion preserves caller amounts instead of applying slippage or cost adjustments.",
+      "expected": {
+        "sell_order_preserves_buy_amount": true,
+        "buy_order_preserves_sell_amount": true
+      }
+    },
+    {
+      "id": "trading-limit-order-disable-adjustments",
+      "kind": "behavior-scenario",
+      "description": "Limit-order posting delegates with applyCostsSlippageAndFees disabled.",
+      "expected": {
+        "apply_costs_slippage_and_fees": false
+      }
+    },
+    {
+      "id": "trading-presign-transaction-contract-selection",
+      "kind": "behavior-scenario",
+      "description": "Pre-sign transactions always have zero value, add a 20 percent gas margin, and honor settlementContractOverride before env defaults.",
+      "expected": {
+        "gas_margin_percent": 20,
+        "transaction_value": "0",
+        "settlement_override_precedence": true
+      }
+    },
+    {
+      "id": "trading-ethflow-transaction-contract-selection",
+      "kind": "behavior-scenario",
+      "description": "EthFlow transactions replace the sell token with wrapped native, set transaction value to the sell amount, and honor ethFlowContractOverride before env defaults.",
+      "expected": {
+        "uses_wrapped_native_token": true,
+        "transaction_value_equals_sell_amount": true,
+        "ethflow_override_precedence": true,
+        "gas_margin_percent": 20
+      }
+    },
+    {
+      "id": "trading-native-sell-post-flow",
+      "kind": "behavior-scenario",
+      "description": "Native-sell posting uploads appData, emits a transaction to send on chain, and supports duplicate-order callbacks for unique order id collision handling.",
+      "expected": {
+        "uploads_app_data": true,
+        "sends_transaction": true,
+        "duplicate_check_callback_supported": true
+      }
+    },
+    {
+      "id": "trading-onchain-cancellation-routing",
+      "kind": "behavior-scenario",
+      "description": "On-chain cancellation routes regular orders through settlement and EthFlow orders through the EthFlow contract while preserving fallback gas handling.",
+      "expected": {
+        "regular_orders_use_settlement": true,
+        "ethflow_orders_use_ethflow": true,
+        "fallback_gas": 150000
+      }
+    },
+    {
+      "id": "trading-sdk-quote-only-owner-mode",
+      "kind": "behavior-scenario",
+      "description": "TradingSdk quote-only mode works without a signer when owner is explicit, uses owner as from, and raises explicit errors when chainId or appCode are missing.",
+      "expected": {
+        "signer_optional_for_quote_only": true,
+        "owner_used_as_from": true,
+        "missing_chainid_error": true,
+        "missing_appcode_error": true
+      }
+    },
+    {
+      "id": "trading-sdk-allowance-approval-boundaries",
+      "kind": "behavior-scenario",
+      "description": "Allowance reads and approval transaction creation remain explicit runtime-boundary helpers with call-level chainId resolution over trader defaults.",
+      "expected": {
+        "explicit_runtime_adapter_required": true,
+        "call_params_override_trader_chainid": true
+      }
+    },
+    {
+      "id": "trading-sdk-contract-override-precedence",
+      "kind": "behavior-scenario",
+      "description": "Call-level settlement and EthFlow overrides take precedence over trader-level overrides, which take precedence over env defaults.",
+      "expected": {
+        "call_overrides_trader": true,
+        "trader_overrides_env": true
+      }
+    }
+  ]
+}

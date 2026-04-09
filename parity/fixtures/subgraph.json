@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "surface": "subgraph",
+  "generated_at_utc": "2026-04-08T00:00:00Z",
+  "generator": "curated-from-pinned-upstream-tests",
+  "source_refs": [
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/subgraph/src/api.ts",
+      "anchors": [
+        "SUBGRAPH_BASE_URL",
+        "SUBGRAPH_PROD_CONFIG",
+        "getTotals",
+        "getLastDaysVolume",
+        "getLastHoursVolume",
+        "runQuery",
+        "getEnvConfigs"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/subgraph/src/queries.ts",
+      "anchors": [
+        "query Totals",
+        "query LastDaysVolume",
+        "query LastHoursVolume"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/subgraph/src/graphql.ts",
+      "anchors": [
+        "export type TotalsQuery",
+        "export type LastDaysVolumeQuery",
+        "export type LastHoursVolumeQuery"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/subgraph/src/api.spec.ts",
+      "anchors": [
+        "Valid: Get Totals",
+        "Valid: Get Last 7 days volume",
+        "Valid: Get Last 24 hours volume",
+        "Valid: Run custom query",
+        "Invalid: non-existent query",
+        "Uses urls from custom env config"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "subgraph-prod-url-resolution",
+      "kind": "behavior-contract",
+      "description": "The subgraph client derives production gateway URLs from the caller API key, keeps explicit per-chain mappings, and marks unsupported chains as unavailable.",
+      "expected": {
+        "base_url_template": "https://gateway.thegraph.com/api/{apiKey}/subgraphs/id/{subgraphId}",
+        "supported_urls": {
+          "mainnet": "https://gateway.thegraph.com/api/{apiKey}/subgraphs/id/8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD",
+          "gnosis_chain": "https://gateway.thegraph.com/api/{apiKey}/subgraphs/id/HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq",
+          "arbitrum_one": "https://gateway.thegraph.com/api/{apiKey}/subgraphs/id/CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc",
+          "base": "https://gateway.thegraph.com/api/{apiKey}/subgraphs/id/EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg",
+          "sepolia": "https://gateway.thegraph.com/api/{apiKey}/subgraphs/id/31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y"
+        },
+        "unsupported_chains": [
+          "polygon",
+          "avalanche",
+          "bnb",
+          "linea",
+          "plasma",
+          "ink"
+        ]
+      }
+    },
+    {
+      "id": "subgraph-totals-query-contract",
+      "kind": "behavior-contract",
+      "description": "getTotals uses the Totals operation and returns the first totals row with the canonical aggregate fields.",
+      "expected": {
+        "operation_name": "Totals",
+        "root_field": "totals",
+        "item_fields": [
+          "tokens",
+          "orders",
+          "traders",
+          "settlements",
+          "volumeUsd",
+          "volumeEth",
+          "feesUsd",
+          "feesEth"
+        ]
+      }
+    },
+    {
+      "id": "subgraph-last-days-volume-query-contract",
+      "kind": "behavior-contract",
+      "description": "getLastDaysVolume uses an explicit days variable and returns dailyTotals ordered descending by timestamp.",
+      "expected": {
+        "operation_name": "LastDaysVolume",
+        "root_field": "dailyTotals",
+        "variable_name": "days",
+        "order_by": "timestamp",
+        "order_direction": "desc",
+        "item_fields": [
+          "timestamp",
+          "volumeUsd"
+        ]
+      }
+    },
+    {
+      "id": "subgraph-last-hours-volume-query-contract",
+      "kind": "behavior-contract",
+      "description": "getLastHoursVolume uses an explicit hours variable and returns hourlyTotals ordered descending by timestamp.",
+      "expected": {
+        "operation_name": "LastHoursVolume",
+        "root_field": "hourlyTotals",
+        "variable_name": "hours",
+        "order_by": "timestamp",
+        "order_direction": "desc",
+        "item_fields": [
+          "timestamp",
+          "volumeUsd"
+        ]
+      }
+    },
+    {
+      "id": "subgraph-custom-query-support",
+      "kind": "behavior-scenario",
+      "description": "runQuery accepts caller-supplied GraphQL documents plus optional variables for custom analytics queries.",
+      "input": {
+        "example_operation_name": "TokensByVolume",
+        "example_root_field": "tokens"
+      },
+      "expected": {
+        "accepts_custom_query": true,
+        "accepts_variables": true
+      }
+    },
+    {
+      "id": "subgraph-custom-base-url-override",
+      "kind": "behavior-scenario",
+      "description": "A call or client context can replace the production URL map with explicit baseUrls overrides.",
+      "expected": {
+        "override_field": "baseUrls",
+        "override_wins_over_prod_config": true
+      }
+    },
+    {
+      "id": "subgraph-generated-type-contract",
+      "kind": "behavior-contract",
+      "description": "Totals, dailyTotals, and hourlyTotals response shapes are anchored to the upstream generated GraphQL contract instead of ad hoc JSON maps.",
+      "expected": {
+        "types": [
+          "TotalsQuery",
+          "LastDaysVolumeQuery",
+          "LastHoursVolumeQuery"
+        ]
+      }
+    },
+    {
+      "id": "subgraph-unsupported-network-error",
+      "kind": "negative",
+      "description": "When the resolved chain maps to a null subgraph URL, the client rejects instead of attempting a request.",
+      "input": {
+        "chain": "polygon"
+      },
+      "expected": {
+        "must_reject": true,
+        "reason_contains": "Unsupported Network"
+      }
+    },
+    {
+      "id": "subgraph-empty-totals-error",
+      "kind": "negative",
+      "description": "getTotals rejects when the response has no totals rows instead of returning a synthetic default.",
+      "expected": {
+        "must_reject": true,
+        "reason_contains": "No totals found"
+      }
+    },
+    {
+      "id": "subgraph-invalid-query-error",
+      "kind": "negative",
+      "description": "Invalid GraphQL queries surface a typed error that preserves query and variable context instead of silent success.",
+      "input": {
+        "operation_name": "InvalidQuery"
+      },
+      "expected": {
+        "must_reject": true,
+        "reason_contains": [
+          "Error running query",
+          "InvalidQuery"
+        ]
+      }
+    }
+  ]
+}

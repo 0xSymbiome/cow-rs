@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "surface": "orderbook",
+  "generated_at_utc": "2026-04-08T00:00:00Z",
+  "generator": "curated-from-pinned-upstream-tests",
+  "source_refs": [
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/order-book/src/api.ts",
+      "anchors": [
+        "ORDER_BOOK_PROD_CONFIG",
+        "ORDER_BOOK_STAGING_CONFIG",
+        "ORDER_BOOK_PARTNER_PROD_CONFIG",
+        "ORDER_BOOK_PARTNER_STAGING_CONFIG",
+        "getVersion",
+        "getTrades",
+        "getOrders",
+        "getTxOrders",
+        "getOrder",
+        "getOrderCompetitionStatus",
+        "getOrderMultiEnv",
+        "getQuote",
+        "sendSignedOrderCancellations",
+        "sendOrder",
+        "getNativePrice",
+        "getTotalSurplus",
+        "getAppData",
+        "uploadAppData",
+        "getSolverCompetition",
+        "getOrderLink"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/order-book/src/api.spec.ts",
+      "anchors": [
+        "Valid: Get version",
+        "Valid: Get an order",
+        "Valid: Get last 5 orders for a given trader",
+        "Valid: Get last 5 trades for a given trader",
+        "Valid: Send an order",
+        "Valid: Send sign order cancellation",
+        "DuplicateOrder",
+        "Transform EthFlow orders",
+        "getOrderMultiEnv() should fallback to another env",
+        "Valid: Get AppData",
+        "Valid: Upload AppData",
+        "Valid: Get solver competition by auctionId",
+        "Valid: Get solver competition by tx hash"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/order-book/src/request.ts",
+      "anchors": [
+        "OrderBookApiError",
+        "DEFAULT_BACKOFF_OPTIONS",
+        "DEFAULT_LIMITER_OPTIONS",
+        "request"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/order-book/src/request.test.ts",
+      "anchors": [
+        "Fetch with backoff",
+        "No re-attempt if SUCCESS",
+        "Don't reattempt after FAILING the MAXIMUM number of times"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/order-book/src/transformOrder.ts",
+      "anchors": [
+        "transformOrder",
+        "addTotalFeeToOrder",
+        "transformEthFlowOrder"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/order-book/src/transformOrder.test.ts",
+      "anchors": [
+        "describe('transformOrder')",
+        "should use sum of executedFeeAmount and executedFee"
+      ]
+    },
+    {
+      "repo": "cow-sdk",
+      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "path": "packages/order-book/src/types.ts",
+      "anchors": [
+        "EnrichedOrder",
+        "Amounts",
+        "Costs",
+        "QuoteAmountsAndCosts"
+      ]
+    },
+    {
+      "repo": "services",
+      "commit": "cfbec985dfe476bf7ef42750435f7d5a12223a85",
+      "path": "crates/orderbook/openapi.yml",
+      "anchors": []
+    },
+    {
+      "repo": "services",
+      "commit": "cfbec985dfe476bf7ef42750435f7d5a12223a85",
+      "path": "crates/shared/src/order_validation.rs",
+      "anchors": []
+    },
+    {
+      "repo": "services",
+      "commit": "cfbec985dfe476bf7ef42750435f7d5a12223a85",
+      "path": "crates/orderbook/src/app_data.rs",
+      "anchors": [
+        "Registry",
+        "register",
+        "find"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "orderbook-base-url-resolution",
+      "kind": "behavior-contract",
+      "description": "Orderbook exposes explicit prod, staging, and partner base URL maps keyed by supported chain identifiers, and partner URLs are selected only when an API key is present.",
+      "expected": {
+        "prod_mainnet": "https://api.cow.fi/mainnet",
+        "prod_gnosis": "https://api.cow.fi/xdai",
+        "staging_mainnet": "https://barn.api.cow.fi/mainnet",
+        "partner_prod_mainnet": "https://partners.cow.fi/mainnet",
+        "partner_staging_mainnet": "https://partners.barn.cow.fi/mainnet"
+      }
+    },
+    {
+      "id": "orderbook-version-endpoint",
+      "kind": "behavior-scenario",
+      "description": "The client exposes a version endpoint at GET /api/v1/version.",
+      "expected": {
+        "method": "GET",
+        "path": "/api/v1/version"
+      }
+    },
+    {
+      "id": "orderbook-get-order-endpoints",
+      "kind": "behavior-scenario",
+      "description": "The orderbook API surface exposes chain-aware order lookup endpoints for gnosis and mainnet.",
+      "input": {
+        "uid": "0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710"
+      },
+      "expected": {
+        "gnosis_path": "https://api.cow.fi/xdai/api/v1/orders/{uid}",
+        "mainnet_path": "https://api.cow.fi/mainnet/api/v1/orders/{uid}"
+      }
+    },
+    {
+      "id": "orderbook-get-order-multi-env-fallback",
+      "kind": "behavior-scenario",
+      "description": "Order lookup can retry against the alternate environment only when the first response is a 404 API error.",
+      "expected": {
+        "fallback_on_status": 404,
+        "primary_env": "prod",
+        "fallback_env": "staging"
+      }
+    },
+    {
+      "id": "orderbook-get-orders-pagination",
+      "kind": "behavior-contract",
+      "description": "Orders-by-owner requests default to offset 0 and limit 1000 and build the /api/v1/account/{owner}/orders query string explicitly.",
+      "expected": {
+        "path_template": "/api/v1/account/{owner}/orders?offset={offset}&limit={limit}",
+        "default_offset": 0,
+        "default_limit": 1000
+      }
+    },
+    {
+      "id": "orderbook-get-trades-query-contract",
+      "kind": "behavior-contract",
+      "description": "Trades queries require exactly one of owner or orderUid, target /api/v2/trades, and default to offset 0 and limit 10.",
+      "expected": {
+        "path": "/api/v2/trades",
+        "requires_exactly_one_of": [
+          "owner",
+          "orderUid"
+        ],
+        "default_offset": 0,
+        "default_limit": 10
+      }
+    },
+    {
+      "id": "orderbook-get-tx-orders-endpoint",
+      "kind": "behavior-scenario",
+      "description": "Settlement transaction order lookup uses GET /api/v1/transactions/{txHash}/orders.",
+      "expected": {
+        "method": "GET",
+        "path_template": "/api/v1/transactions/{txHash}/orders"
+      }
+    },
+    {
+      "id": "orderbook-auction-endpoint",
+      "kind": "behavior-scenario",
+      "description": "Orderbook exposes the current auction route at GET /api/v1/auction with typed orders and prices payloads.",
+      "expected": {
+        "method": "GET",
+        "path": "/api/v1/auction"
+      }
+    },
+    {
+      "id": "orderbook-quote-endpoint",
+      "kind": "behavior-scenario",
+      "description": "Quote requests are sent as POST /api/v1/quote and return a hydrated quote object with quote data, from, expiration, optional id, and verified flag.",
+      "expected": {
+        "method": "POST",
+        "path": "/api/v1/quote",
+        "response_fields": [
+          "quote",
+          "from",
+          "expiration",
+          "id",
+          "verified"
+        ]
+      }
+    },
+    {
+      "id": "orderbook-signed-cancellation-route",
+      "kind": "behavior-scenario",
+      "description": "Signed order cancellations are sent as DELETE requests to the orders endpoint.",
+      "expected": {
+        "method": "DELETE",
+        "path": "https://api.cow.fi/xdai/api/v1/orders"
+      }
+    },
+    {
+      "id": "orderbook-duplicate-order-error",
+      "kind": "negative",
+      "description": "Duplicate order submission surfaces a DuplicateOrder error body on HTTP 400.",
+      "expected": {
+        "status": 400,
+        "errorType": "DuplicateOrder"
+      }
+    },
+    {
+      "id": "orderbook-app-data-transport",
+      "kind": "behavior-contract",
+      "description": "Orderbook exposes app-data fetch and upload endpoints as transport-only helpers using GET and PUT /api/v1/app_data/{hash} with fullAppData payloads.",
+      "expected": {
+        "get_path_template": "/api/v1/app_data/{appDataHash}",
+        "put_path_template": "/api/v1/app_data/{appDataHash}",
+        "payload_field": "fullAppData"
+      }
+    },
+    {
+      "id": "orderbook-native-price-and-surplus-endpoints",
+      "kind": "behavior-scenario",
+      "description": "Orderbook exposes token native-price and user total-surplus endpoints.",
+      "expected": {
+        "native_price_path_template": "/api/v1/token/{token}/native_price",
+        "total_surplus_path_template": "/api/v1/users/{address}/total_surplus"
+      }
+    },
+    {
+      "id": "orderbook-solver-competition-routes",
+      "kind": "behavior-scenario",
+      "description": "Solver competition lookups support both auction-id and tx-hash route forms.",
+      "expected": {
+        "auction_id_path_template": "/api/v1/solver_competition/{auctionId}",
+        "tx_hash_path_template": "/api/v1/solver_competition/by_tx_hash/{txHash}"
+      }
+    },
+    {
+      "id": "orderbook-request-helper-policy",
+      "kind": "behavior-contract",
+      "description": "The request helper exposes a typed OrderBookApiError with response and body, default retry policy for selected transient status codes, and explicit default limiter settings.",
+      "expected": {
+        "error_type": "OrderBookApiError",
+        "retry_statuses": [
+          408,
+          425,
+          429,
+          500,
+          502,
+          503,
+          504
+        ],
+        "default_tokens_per_interval": 5,
+        "default_interval": "second"
+      }
+    },
+    {
+      "id": "orderbook-total-fee-transform",
+      "kind": "behavior-contract",
+      "description": "Order transforms compute totalFee as executedFeeAmount plus executedFee, tolerating missing executedFee values.",
+      "expected": {
+        "total_fee_formula": "executedFeeAmount + executedFee",
+        "missing_executed_fee_defaults_to": "0"
+      }
+    },
+    {
+      "id": "orderbook-ethflow-transform",
+      "kind": "behavior-scenario",
+      "description": "EthFlow orders map owner to onchainUser, sellToken to ETH, and validTo to userValidTo when transformed for consumers.",
+      "expected": {
+        "owner_from_field": "onchainUser",
+        "sell_token": "ETH_ADDRESS",
+        "valid_to_from_field": "ethflowData.userValidTo"
+      }
+    }
+  ]
+}
