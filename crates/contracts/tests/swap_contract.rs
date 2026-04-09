@@ -1,0 +1,96 @@
+mod common;
+
+use cow_sdk_contracts::{BatchSwapStep, Order, Signature, Swap, SwapEncoder, encode_swap_step};
+use cow_sdk_core::{Address, AppDataHex, OrderBalance, OrderKind, TypedDataDomain};
+
+use common::fixture_case;
+
+fn sample_domain() -> TypedDataDomain {
+    TypedDataDomain {
+        name: "Gnosis Protocol".to_owned(),
+        version: "v2".to_owned(),
+        chain_id: 1,
+        verifying_contract: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
+    }
+}
+
+fn sample_order(kind: OrderKind) -> Order {
+    Order {
+        sell_token: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
+        buy_token: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
+        receiver: None,
+        sell_amount: "1000000000000000000".to_owned(),
+        buy_amount: "2000000000000000000000".to_owned(),
+        valid_to: 1_709_990_000,
+        app_data: AppDataHex::new(
+            "0x0000000000000000000000000000000000000000000000000000000000000000",
+        )
+        .unwrap(),
+        fee_amount: "5000000000000000".to_owned(),
+        kind,
+        partially_fillable: false,
+        sell_token_balance: Some(OrderBalance::Erc20),
+        buy_token_balance: Some(OrderBalance::Erc20),
+    }
+}
+
+fn sample_signature() -> Signature {
+    Signature::PreSign {
+        owner: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+    }
+}
+
+#[test]
+fn swap_step_encoding_defaults_user_data_and_indexes_tokens() {
+    let fixture = fixture_case("contracts-swap-default-user-data");
+    let mut encoder = SwapEncoder::new(sample_domain());
+
+    let swap = Swap {
+        pool_id: format!("0x{}", "11".repeat(32)),
+        asset_in: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
+        asset_out: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
+        amount: "42".to_owned(),
+        user_data: None,
+    };
+    encoder.encode_swap_step(std::slice::from_ref(&swap));
+    let encoded = encoder.swaps();
+    assert_eq!(
+        encoded,
+        vec![BatchSwapStep {
+            pool_id: swap.pool_id.clone(),
+            asset_in_index: 0,
+            asset_out_index: 1,
+            amount: "42".to_owned(),
+            user_data: fixture["expected"]["user_data"]
+                .as_str()
+                .unwrap()
+                .to_owned(),
+        }]
+    );
+
+    let step = encode_swap_step(&mut cow_sdk_contracts::TokenRegistry::new(), &swap);
+    assert_eq!(step.user_data, "0x");
+}
+
+#[test]
+fn swap_encoder_uses_contract_default_limit_amounts() {
+    let mut sell_encoder = SwapEncoder::new(sample_domain());
+    sell_encoder
+        .encode_trade(&sample_order(OrderKind::Sell), &sample_signature(), None)
+        .unwrap();
+    assert_eq!(
+        sell_encoder.trade().unwrap().executed_amount,
+        "2000000000000000000000"
+    );
+
+    let mut buy_encoder = SwapEncoder::new(sample_domain());
+    buy_encoder
+        .encode_trade(&sample_order(OrderKind::Buy), &sample_signature(), None)
+        .unwrap();
+    assert_eq!(
+        buy_encoder.trade().unwrap().executed_amount,
+        "1000000000000000000"
+    );
+
+    assert!(SwapEncoder::new(sample_domain()).encoded_swap().is_err());
+}
