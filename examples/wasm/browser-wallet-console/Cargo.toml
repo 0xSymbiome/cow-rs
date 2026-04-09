@@ -1,0 +1,25 @@
+[workspace]
+members = []
+resolver = "2"
+
+[package]
+name = "cow-sdk-browser-wallet-console-wasm"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94.1"
+publish = false
+license = "GPL-3.0"
+repository = "https://github.com/cowdao-grants/cow-rs"
+description = "Wallet-backed WASM console for the CoW Rust SDK"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+async-trait = "0.1.89"
+console_error_panic_hook = "0.1.7"
+cow-sdk = { path = "../../../crates/sdk", features = ["browser-wallet"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+wasm-bindgen = "0.2.117"
+wasm-bindgen-futures = "0.4.55"

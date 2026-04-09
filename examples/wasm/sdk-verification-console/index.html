@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>cow-rs WASM Verification Console</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f1e6;
+      --panel: rgba(255, 251, 242, 0.94);
+      --panel-strong: #fffdfa;
+      --ink: #1f2329;
+      --muted: #6c726c;
+      --accent: #0b6e4f;
+      --accent-soft: rgba(11, 110, 79, 0.12);
+      --border: rgba(31, 35, 41, 0.12);
+      --shadow: 0 20px 45px rgba(31, 35, 41, 0.08);
+      --code: #14181d;
+      --code-bg: #f0ebdf;
+      --warn: #8e5300;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, rgba(11, 110, 79, 0.18), transparent 26rem),
+        radial-gradient(circle at top right, rgba(196, 136, 0, 0.12), transparent 24rem),
+        linear-gradient(180deg, #faf7ef 0%, var(--bg) 100%);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Iosevka Etoile", "IBM Plex Sans", sans-serif;
+    }
+
+    main {
+      max-width: 96rem;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+    }
+
+    .hero {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 1.3fr 1fr;
+      align-items: start;
+      margin-bottom: 1.5rem;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.9rem;
+    }
+
+    h1 {
+      margin: 0 0 0.75rem;
+      font-size: clamp(2.4rem, 5vw, 4.8rem);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+    }
+
+    .lead {
+      max-width: 46rem;
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      border-radius: 1.25rem;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 1rem 1.1rem 0.25rem;
+      border-bottom: 1px solid rgba(31, 35, 41, 0.05);
+    }
+
+    .panel-header h2,
+    .panel-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .panel-body {
+      padding: 1rem 1.1rem 1.1rem;
+    }
+
+    .runtime-grid,
+    .field-grid {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .field-grid.single {
+      grid-template-columns: 1fr;
+    }
+
+    .stack {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid rgba(31, 35, 41, 0.12);
+      background: var(--panel-strong);
+      color: var(--ink);
+      border-radius: 0.9rem;
+      padding: 0.8rem 0.9rem;
+      font: inherit;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(11, 110, 79, 0.35);
+      box-shadow: 0 0 0 0.25rem rgba(11, 110, 79, 0.12);
+    }
+
+    textarea {
+      min-height: 11rem;
+      resize: vertical;
+      font-family: "Iosevka Etoile", "IBM Plex Mono", monospace;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 0.72rem 1rem;
+      background: var(--ink);
+      color: #f8f4ea;
+      font: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+      box-shadow: 0 0.7rem 1.4rem rgba(31, 35, 41, 0.14);
+    }
+
+    button.alt {
+      background: rgba(11, 110, 79, 0.14);
+      color: var(--accent);
+      box-shadow: none;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      transform: none;
+      cursor: wait;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-7 { grid-column: span 7; }
+    .span-8 { grid-column: span 8; }
+
+    .output {
+      margin: 0;
+      min-height: 12rem;
+      padding: 1rem;
+      border-top: 1px solid rgba(31, 35, 41, 0.07);
+      background:
+        linear-gradient(180deg, rgba(240, 235, 223, 0.72), rgba(240, 235, 223, 0.4));
+      color: var(--code);
+      font-family: "Iosevka Etoile", "IBM Plex Mono", monospace;
+      font-size: 0.83rem;
+      line-height: 1.52;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: auto;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .warning {
+      border-radius: 0.9rem;
+      padding: 0.75rem 0.9rem;
+      background: rgba(142, 83, 0, 0.08);
+      color: var(--warn);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 1024px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .span-4,
+      .span-5,
+      .span-6,
+      .span-7,
+      .span-8 {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      main {
+        padding-inline: 0.85rem;
+      }
+
+      .runtime-grid,
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 2.35rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div>
+        <div class="eyebrow">WASM Verification Console</div>
+        <h1>cow-rs browser surface</h1>
+        <p class="lead">
+          Editable browser console for current `cow-sdk` capability checks on `wasm32-unknown-unknown`.
+        </p>
+      </div>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Runtime</h2>
+        </div>
+        <div class="panel-body stack">
+          <div class="runtime-grid">
+            <div>
+              <label for="chain-id">Chain</label>
+              <select id="chain-id"></select>
+            </div>
+            <div>
+              <label for="env">Environment</label>
+              <select id="env">
+                <option value="prod">prod</option>
+                <option value="staging">staging</option>
+              </select>
+            </div>
+            <div>
+              <label for="app-code">App Code</label>
+              <input id="app-code" value="cow-rs/wasm-console">
+            </div>
+            <div>
+              <label for="owner">Owner</label>
+              <input id="owner" value="0x4444444444444444444444444444444444444444">
+            </div>
+          </div>
+          <div class="button-row">
+            <button id="btn-capability">Capability Report</button>
+            <button id="btn-chains" class="alt">Supported Chains</button>
+          </div>
+        </div>
+        <pre id="runtime-output" class="output">Loading...</pre>
+      </section>
+    </section>
+
+    <section class="grid">
+      <article class="panel span-6">
+        <div class="panel-header">
+          <h3>App Data</h3>
+        </div>
+        <div class="panel-body stack">
+          <div>
+            <label for="appdata-doc">Document JSON</label>
+            <textarea id="appdata-doc">{
+  "version": "1.14.0",
+  "appCode": "cow-rs/wasm-console",
+  "environment": "browser",
+  "metadata": {
+    "quote": {
+      "slippageBips": 50
+    }
+  }
+}</textarea>
+          </div>
+          <div class="field-grid">
+            <div>
+              <label for="appdata-hex">App Data Hex</label>
+              <input id="appdata-hex" value="0x6caf30d0b35e6523444e6a6eb9c5562ba5480cdab16e00cb46963f1dc6cda0e1">
+            </div>
+            <div>
+              <label for="appdata-cid">CID</label>
+              <input id="appdata-cid" value="f01551b206caf30d0b35e6523444e6a6eb9c5562ba5480cdab16e00cb46963f1dc6cda0e1">
+            </div>
+          </div>
+          <div class="button-row">
+            <button id="btn-appdata-report">Inspect</button>
+            <button id="btn-appdata-schema" class="alt">Schema</button>
+            <button id="btn-hex-to-cid" class="alt">Hex to CID</button>
+            <button id="btn-cid-to-hex" class="alt">CID to Hex</button>
+          </div>
+        </div>
+        <pre id="appdata-output" class="output">Ready.</pre>
+      </article>
+
+      <article class="panel span-6">
+        <div class="panel-header">
+          <h3>Order Envelope</h3>
+        </div>
+        <div class="panel-body stack">
+          <div>
+            <label for="order-json">Unsigned Order JSON</label>
+            <textarea id="order-json">{
+  "sellToken": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  "buyToken": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  "receiver": "0x4444444444444444444444444444444444444444",
+  "sellAmount": "100000000000000000",
+  "buyAmount": "250000000",
+  "validTo": 1900000000,
+  "appData": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "feeAmount": "0",
+  "kind": "sell",
+  "partiallyFillable": false,
+  "sellTokenBalance": "erc20",
+  "buyTokenBalance": "erc20"
+}</textarea>
+          </div>
+          <div>
+            <label for="eip1271-signature">ECDSA Signature for EIP-1271 Payload</label>
+            <input id="eip1271-signature" placeholder="0x...">
+          </div>
+          <div class="button-row">
+            <button id="btn-order-envelope">Build Envelope</button>
+            <button id="btn-eip1271" class="alt">EIP-1271 Payload</button>
+          </div>
+        </div>
+        <pre id="order-output" class="output">Ready.</pre>
+      </article>
+
+      <article class="panel span-6">
+        <div class="panel-header">
+          <h3>Trading Quote Preview</h3>
+        </div>
+        <div class="panel-body stack">
+          <div>
+            <label for="trade-json">Trade Parameters JSON</label>
+            <textarea id="trade-json">{
+  "kind": "sell",
+  "sellToken": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  "sellTokenDecimals": 18,
+  "buyToken": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  "buyTokenDecimals": 6,
+  "amount": "100000000000000000",
+  "slippageBps": 50
+}</textarea>
+          </div>
+          <div class="button-row">
+            <button id="btn-trading-quote">Quote Only</button>
+            <button id="btn-trading-defaults" class="alt">Defaults</button>
+          </div>
+        </div>
+        <pre id="trading-output" class="output">Ready.</pre>
+      </article>
+
+      <article class="panel span-6">
+        <div class="panel-header">
+          <h3>Approval Builder</h3>
+        </div>
+        <div class="panel-body stack">
+          <div>
+            <label for="approval-json">Approval Parameters JSON</label>
+            <textarea id="approval-json">{
+  "tokenAddress": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  "amount": "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+}</textarea>
+          </div>
+          <div class="button-row">
+            <button id="btn-approval">Build Approval Transaction</button>
+          </div>
+        </div>
+        <pre id="approval-output" class="output">Ready.</pre>
+      </article>
+
+      <article class="panel span-8">
+        <div class="panel-header">
+          <h3>Orderbook Live</h3>
+        </div>
+        <div class="panel-body stack">
+          <div>
+            <label for="quote-request-json">Quote Request JSON</label>
+            <textarea id="quote-request-json">{
+  "sellToken": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  "buyToken": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  "from": "0x4444444444444444444444444444444444444444",
+  "kind": "sell",
+  "sellAmountBeforeFee": "100000000000000000"
+}</textarea>
+          </div>
+          <div class="field-grid">
+            <div>
+              <label for="lookup-order-uid">Order UID</label>
+              <input id="lookup-order-uid" placeholder="0x...">
+            </div>
+            <div>
+              <label for="lookup-token">Token Address</label>
+              <input id="lookup-token" value="0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48">
+            </div>
+            <div>
+              <label for="lookup-owner">Owner Address</label>
+              <input id="lookup-owner" value="0x4444444444444444444444444444444444444444">
+            </div>
+            <div>
+              <label for="lookup-appdata-hex">App Data Hex</label>
+              <input id="lookup-appdata-hex" value="0x6caf30d0b35e6523444e6a6eb9c5562ba5480cdab16e00cb46963f1dc6cda0e1">
+            </div>
+          </div>
+          <div class="button-row">
+            <button id="btn-ob-version">Version</button>
+            <button id="btn-ob-quote">Quote</button>
+            <button id="btn-ob-auction" class="alt">Auction</button>
+            <button id="btn-ob-order" class="alt">Order</button>
+            <button id="btn-ob-owner-orders" class="alt">Owner Orders</button>
+            <button id="btn-ob-owner-trades" class="alt">Owner Trades</button>
+            <button id="btn-ob-order-trades" class="alt">Order Trades</button>
+            <button id="btn-ob-native-price" class="alt">Native Price</button>
+            <button id="btn-ob-surplus" class="alt">Total Surplus</button>
+            <button id="btn-ob-appdata" class="alt">App Data</button>
+          </div>
+        </div>
+        <pre id="orderbook-output" class="output">Ready.</pre>
+      </article>
+
+      <article class="panel span-4">
+        <div class="panel-header">
+          <h3>Subgraph</h3>
+        </div>
+        <div class="panel-body stack">
+          <div class="warning">Requires a The Graph API key.</div>
+          <div>
+            <label for="subgraph-api-key">API Key</label>
+            <input id="subgraph-api-key" placeholder="graph key">
+          </div>
+          <div class="field-grid">
+            <div>
+              <label for="subgraph-days">Days</label>
+              <input id="subgraph-days" type="number" value="7" min="1">
+            </div>
+            <div>
+              <label for="subgraph-hours">Hours</label>
+              <input id="subgraph-hours" type="number" value="24" min="1">
+            </div>
+          </div>
+          <div class="button-row">
+            <button id="btn-subgraph-totals">Totals</button>
+            <button id="btn-subgraph-days" class="alt">Last Days</button>
+            <button id="btn-subgraph-hours" class="alt">Last Hours</button>
+          </div>
+        </div>
+        <pre id="subgraph-output" class="output">Ready.</pre>
+      </article>
+    </section>
+  </main>
+
+  <script type="module">
+    const render = (id, value) => {
+      document.getElementById(id).textContent = value;
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    const formatError = (error) => {
+      if (error instanceof Error && error.message) {
+        return `Error\n\n${error.message}`;
+      }
+      return `Error\n\n${String(error)}`;
+    };
+
+    const tryParseJson = (text) => {
+      try {
+        return JSON.parse(text);
+      } catch {
+        return null;
+      }
+    };
+
+    const syncAppDataInputs = (payload) => {
+      if (!payload || typeof payload !== "object") {
+        return;
+      }
+      if (typeof payload.appDataHex === "string") {
+        $("appdata-hex").value = payload.appDataHex;
+      }
+      if (typeof payload.cid === "string") {
+        $("appdata-cid").value = payload.cid;
+      }
+    };
+
+    const runtime = () => ({
+      chainId: Number($("chain-id").value),
+      env: $("env").value,
+      appCode: $("app-code").value.trim(),
+      owner: $("owner").value.trim(),
+      subgraphApiKey: $("subgraph-api-key").value.trim(),
+    });
+
+    const withTask = (buttonId, outputId, task) => {
+      $(buttonId).addEventListener("click", async () => {
+        const button = $(buttonId);
+        const original = button.textContent;
+        button.disabled = true;
+        render(outputId, "Working...");
+        try {
+          const result = await task();
+          render(outputId, result);
+        } catch (error) {
+          render(outputId, formatError(error));
+        } finally {
+          button.disabled = false;
+          button.textContent = original;
+        }
+      });
+    };
+
+    const populateChains = (chainReport) => {
+      const select = $("chain-id");
+      select.innerHTML = "";
+      for (const chain of chainReport) {
+        const option = document.createElement("option");
+        option.value = String(chain.chainId);
+        option.textContent = `${chain.name} (${chain.chainId})`;
+        if (chain.chainId === 1) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      }
+    };
+
+    const renderServeHint = () => {
+      const message = "Open this page through HTTP.\n\nDo not use file://.\n\nBuild:\nwasm-pack build --target web\n\nServe this directory, for example:\npython -m http.server 8080\nbunx serve . --listen 8080";
+      for (const id of [
+        "runtime-output",
+        "appdata-output",
+        "order-output",
+        "trading-output",
+        "approval-output",
+        "orderbook-output",
+        "subgraph-output",
+      ]) {
+        render(id, message);
+      }
+    };
+
+    try {
+      if (window.location.protocol === "file:") {
+        renderServeHint();
+      } else {
+        const wasm = await import("./pkg/cow_sdk_examples_wasm.js");
+        await wasm.default();
+
+        const chains = JSON.parse(await wasm.supported_chains_json());
+        populateChains(chains);
+        render("runtime-output", await wasm.capability_report_json(runtime().chainId, runtime().env));
+        const initialAppData = await wasm.app_data_report_json($("appdata-doc").value);
+        syncAppDataInputs(tryParseJson(initialAppData));
+        render("appdata-output", initialAppData);
+
+        withTask("btn-capability", "runtime-output", () =>
+          wasm.capability_report_json(runtime().chainId, runtime().env)
+        );
+        withTask("btn-chains", "runtime-output", () => wasm.supported_chains_json());
+
+        withTask("btn-appdata-report", "appdata-output", async () => {
+          const result = await wasm.app_data_report_json($("appdata-doc").value);
+          syncAppDataInputs(tryParseJson(result));
+          return result;
+        });
+        withTask("btn-appdata-schema", "appdata-output", () =>
+          wasm.app_data_schema_json($("appdata-doc").value)
+        );
+        withTask("btn-hex-to-cid", "appdata-output", async () => {
+          const result = await wasm.cid_from_hex_json($("appdata-hex").value.trim());
+          syncAppDataInputs(tryParseJson(result));
+          return result;
+        });
+        withTask("btn-cid-to-hex", "appdata-output", async () => {
+          const result = await wasm.hex_from_cid_json($("appdata-cid").value.trim());
+          syncAppDataInputs(tryParseJson(result));
+          return result;
+        });
+
+        withTask("btn-order-envelope", "order-output", () =>
+          wasm.order_envelope_preview_json(
+            runtime().chainId,
+            $("order-json").value,
+            runtime().owner
+          )
+        );
+        withTask("btn-eip1271", "order-output", () =>
+          wasm.eip1271_payload_preview_json(
+            $("order-json").value,
+            $("eip1271-signature").value.trim()
+          )
+        );
+
+        withTask("btn-trading-quote", "trading-output", () =>
+          wasm.trading_quote_preview_json(
+            runtime().chainId,
+            runtime().env,
+            runtime().appCode,
+            runtime().owner,
+            $("trade-json").value
+          )
+        );
+        withTask("btn-trading-defaults", "trading-output", () =>
+          wasm.trading_defaults_json()
+        );
+
+        withTask("btn-approval", "approval-output", () =>
+          wasm.approval_transaction_preview_json(
+            runtime().chainId,
+            runtime().env,
+            $("approval-json").value
+          )
+        );
+
+        withTask("btn-ob-version", "orderbook-output", () =>
+          wasm.orderbook_version_json(runtime().chainId, runtime().env)
+        );
+        withTask("btn-ob-quote", "orderbook-output", () =>
+          wasm.orderbook_quote_json(
+            runtime().chainId,
+            runtime().env,
+            $("quote-request-json").value
+          )
+        );
+        withTask("btn-ob-auction", "orderbook-output", () =>
+          wasm.orderbook_auction_json(runtime().chainId, runtime().env)
+        );
+        withTask("btn-ob-order", "orderbook-output", () =>
+          wasm.orderbook_order_json(
+            runtime().chainId,
+            runtime().env,
+            $("lookup-order-uid").value.trim()
+          )
+        );
+        withTask("btn-ob-owner-orders", "orderbook-output", () =>
+          wasm.orderbook_orders_by_owner_json(
+            runtime().chainId,
+            runtime().env,
+            $("lookup-owner").value.trim()
+          )
+        );
+        withTask("btn-ob-owner-trades", "orderbook-output", () =>
+          wasm.orderbook_trades_by_owner_json(
+            runtime().chainId,
+            runtime().env,
+            $("lookup-owner").value.trim()
+          )
+        );
+        withTask("btn-ob-order-trades", "orderbook-output", () =>
+          wasm.orderbook_trades_by_order_json(
+            runtime().chainId,
+            runtime().env,
+            $("lookup-order-uid").value.trim()
+          )
+        );
+        withTask("btn-ob-native-price", "orderbook-output", () =>
+          wasm.orderbook_native_price_json(
+            runtime().chainId,
+            runtime().env,
+            $("lookup-token").value.trim()
+          )
+        );
+        withTask("btn-ob-surplus", "orderbook-output", () =>
+          wasm.orderbook_total_surplus_json(
+            runtime().chainId,
+            runtime().env,
+            $("lookup-owner").value.trim()
+          )
+        );
+        withTask("btn-ob-appdata", "orderbook-output", () =>
+          wasm.orderbook_app_data_json(
+            runtime().chainId,
+            runtime().env,
+            $("lookup-appdata-hex").value.trim()
+          )
+        );
+
+        withTask("btn-subgraph-totals", "subgraph-output", () =>
+          wasm.subgraph_totals_json(runtime().chainId, runtime().subgraphApiKey)
+        );
+        withTask("btn-subgraph-days", "subgraph-output", () =>
+          wasm.subgraph_last_days_volume_json(
+            runtime().chainId,
+            runtime().subgraphApiKey,
+            Number($("subgraph-days").value)
+          )
+        );
+        withTask("btn-subgraph-hours", "subgraph-output", () =>
+          wasm.subgraph_last_hours_volume_json(
+            runtime().chainId,
+            runtime().subgraphApiKey,
+            Number($("subgraph-hours").value)
+          )
+        );
+      }
+    } catch (error) {
+      const message = `Failed to load the WASM module.\n\n${String(error)}\n\nBuild:\nwasm-pack build --target web\n\nServe this directory over HTTP.`;
+      for (const id of [
+        "runtime-output",
+        "appdata-output",
+        "order-output",
+        "trading-output",
+        "approval-output",
+        "orderbook-output",
+        "subgraph-output",
+      ]) {
+        render(id, message);
+      }
+    }
+  </script>
+</body>
+</html>

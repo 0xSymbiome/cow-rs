@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>cow-rs Browser Wallet Console</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f4ec;
+      --panel: rgba(255, 252, 245, 0.94);
+      --panel-strong: #fffdfa;
+      --ink: #182126;
+      --muted: #66707a;
+      --accent: #00684a;
+      --accent-soft: rgba(0, 104, 74, 0.11);
+      --border: rgba(24, 33, 38, 0.12);
+      --shadow: 0 20px 48px rgba(24, 33, 38, 0.08);
+      --code-bg: #f0ebde;
+      --warn: #8b5200;
+      --warn-bg: rgba(139, 82, 0, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, rgba(0, 104, 74, 0.15), transparent 24rem),
+        radial-gradient(circle at top right, rgba(191, 131, 0, 0.12), transparent 22rem),
+        linear-gradient(180deg, #fcf8ef 0%, var(--bg) 100%);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Iosevka Etoile", "IBM Plex Sans", sans-serif;
+    }
+
+    main {
+      max-width: 100rem;
+      margin: 0 auto;
+      padding: 2rem 1.2rem 3rem;
+    }
+
+    .hero {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: 1.4fr 1fr;
+      align-items: start;
+      margin-bottom: 1.25rem;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 0.8rem;
+    }
+
+    h1 {
+      margin: 0 0 0.75rem;
+      font-size: clamp(2.4rem, 5vw, 4.6rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 46rem;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      border-radius: 1.25rem;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 1rem 1.1rem 0.35rem;
+      border-bottom: 1px solid rgba(24, 33, 38, 0.06);
+    }
+
+    .panel-header h2,
+    .panel-header h3 {
+      margin: 0;
+      font-size: 0.98rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .panel-body {
+      padding: 1rem 1.1rem 1.1rem;
+    }
+
+    .warning {
+      display: none;
+      margin-bottom: 1rem;
+      padding: 0.85rem 1rem;
+      border-radius: 0.9rem;
+      background: var(--warn-bg);
+      color: var(--warn);
+      line-height: 1.45;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-7 { grid-column: span 7; }
+    .span-8 { grid-column: span 8; }
+
+    .field-grid {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .field-grid.single {
+      grid-template-columns: 1fr;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.35rem;
+      color: var(--muted);
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid rgba(24, 33, 38, 0.12);
+      border-radius: 0.9rem;
+      padding: 0.78rem 0.9rem;
+      background: var(--panel-strong);
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(0, 104, 74, 0.36);
+      box-shadow: 0 0 0 0.24rem rgba(0, 104, 74, 0.12);
+    }
+
+    textarea {
+      min-height: 10rem;
+      resize: vertical;
+      font-family: "Iosevka Etoile", "IBM Plex Mono", monospace;
+      line-height: 1.45;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 0.72rem 1rem;
+      background: var(--ink);
+      color: #faf6ee;
+      font: inherit;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 0.7rem 1.4rem rgba(24, 33, 38, 0.12);
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+
+    button.alt {
+      background: rgba(0, 104, 74, 0.14);
+      color: var(--accent);
+      box-shadow: none;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { opacity: 0.55; transform: none; cursor: wait; }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .output {
+      margin: 0;
+      min-height: 15rem;
+      padding: 1rem;
+      border-top: 1px solid rgba(24, 33, 38, 0.06);
+      background: linear-gradient(180deg, rgba(240, 235, 222, 0.7), rgba(240, 235, 222, 0.42));
+      color: var(--ink);
+      font-family: "Iosevka Etoile", "IBM Plex Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.52;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: auto;
+    }
+
+    @media (max-width: 1024px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .span-4,
+      .span-5,
+      .span-6,
+      .span-7,
+      .span-8 {
+        grid-column: 1 / -1;
+      }
+
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="warning" id="transport-warning"></div>
+
+    <section class="hero">
+      <div>
+        <div class="tag">Browser Wallet Surface</div>
+        <h1>cow-rs Wallet Console</h1>
+        <p class="lead">
+          This console keeps deterministic and wallet-backed browser proof separate. Use
+          <code>Mock Wallet</code> for a no-extension async flow through the public SDK,
+          and <code>Injected Wallet</code> for live <code>window.ethereum</code> connect,
+          sign, quote, submit, and cancel actions.
+        </p>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Run Mode</h2>
+        </div>
+        <div class="panel-body">
+          <div class="field-grid">
+            <div>
+              <label for="chain-id">Chain Id</label>
+              <input id="chain-id" value="11155111">
+            </div>
+            <div>
+              <label for="env">Env</label>
+              <select id="env">
+                <option value="prod">prod</option>
+                <option value="staging">staging</option>
+              </select>
+            </div>
+            <div>
+              <label for="app-code">App Code</label>
+              <input id="app-code" value="cow-rs/browser-wallet-console">
+            </div>
+            <div>
+              <label for="message">Message</label>
+              <input id="message" value="cow-rs browser wallet check">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel span-4">
+        <div class="panel-header">
+          <h3>Trade Input</h3>
+        </div>
+        <div class="panel-body">
+          <label for="trade-json">Trade Parameters</label>
+          <textarea id="trade-json"></textarea>
+          <div class="button-row" style="margin-top: 0.75rem;">
+            <button class="alt" id="refresh-samples">Reload Samples</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel span-4">
+        <div class="panel-header">
+          <h3>Order Input</h3>
+        </div>
+        <div class="panel-body">
+          <label for="order-json">Unsigned Order</label>
+          <textarea id="order-json"></textarea>
+        </div>
+      </div>
+
+      <div class="panel span-4">
+        <div class="panel-header">
+          <h3>Approval Input</h3>
+        </div>
+        <div class="panel-body">
+          <label for="approval-json">Approval Parameters</label>
+          <textarea id="approval-json"></textarea>
+          <div style="margin-top: 0.75rem;">
+            <label for="order-uid">Order Uid</label>
+            <input id="order-uid" placeholder="Filled after live submit or paste manually">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel span-6">
+        <div class="panel-header">
+          <h3>Mock Wallet</h3>
+        </div>
+        <div class="panel-body">
+          <p class="hint">
+            Deterministic browser proof using the public `cow-sdk` browser-wallet surface and a local mock orderbook.
+          </p>
+          <div class="button-row">
+            <button id="mock-status">Status</button>
+            <button id="mock-connect" class="alt">Connect</button>
+            <button id="mock-sign-message">Sign Message</button>
+            <button id="mock-approval" class="alt">Approval Flow</button>
+            <button id="mock-trading">Trade And Cancel</button>
+          </div>
+        </div>
+        <pre class="output" id="mock-output">Loading...</pre>
+      </div>
+
+      <div class="panel span-6">
+        <div class="panel-header">
+          <h3>Injected Wallet</h3>
+        </div>
+        <div class="panel-body">
+          <p class="hint">
+            Live wallet path for connect, sign, quote, submit, and cancel through the root `cow-sdk` surface.
+            Reset Session clears local state only.
+          </p>
+          <div class="button-row">
+            <button id="detect-wallet">Detect</button>
+            <button id="connect-wallet" class="alt">Connect</button>
+            <button id="reset-wallet">Reset Session</button>
+            <button id="refresh-wallet">Refresh</button>
+            <button id="switch-wallet" class="alt">Switch Chain</button>
+            <button id="sign-message">Sign Message</button>
+            <button id="sign-order" class="alt">Sign Order</button>
+            <button id="live-quote">Live Quote</button>
+            <button id="submit-order" class="alt">Submit Order</button>
+            <button id="cancel-order">Cancel Order</button>
+          </div>
+        </div>
+        <pre class="output" id="injected-output">Loading...</pre>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    const warningEl = document.getElementById("transport-warning");
+    const mockOutput = document.getElementById("mock-output");
+    const injectedOutput = document.getElementById("injected-output");
+    const chainInput = document.getElementById("chain-id");
+    const envInput = document.getElementById("env");
+    const appCodeInput = document.getElementById("app-code");
+    const messageInput = document.getElementById("message");
+    const tradeInput = document.getElementById("trade-json");
+    const orderInput = document.getElementById("order-json");
+    const approvalInput = document.getElementById("approval-json");
+    const orderUidInput = document.getElementById("order-uid");
+
+    if (window.location.protocol === "file:") {
+      warningEl.style.display = "block";
+      warningEl.textContent = "Serve this folder over HTTP. Browsers block WASM module loading from file:// origins.";
+      mockOutput.textContent = "HTTP transport required.";
+      injectedOutput.textContent = "HTTP transport required.";
+      throw new Error("HTTP transport required");
+    }
+
+    let wasm;
+    try {
+      wasm = await import("./pkg/cow_sdk_browser_wallet_console_wasm.js");
+      await wasm.default();
+    } catch (error) {
+      warningEl.style.display = "block";
+      warningEl.textContent = `Unable to load the browser-wallet console bundle: ${error}`;
+      mockOutput.textContent = String(error);
+      injectedOutput.textContent = String(error);
+      throw error;
+    }
+
+    const consoleState = new wasm.BrowserWalletConsole();
+
+    const chainId = () => Number.parseInt(chainInput.value, 10);
+    const env = () => envInput.value;
+    const appCode = () => appCodeInput.value.trim();
+    const message = () => messageInput.value;
+
+    async function refreshSamples() {
+      tradeInput.value = consoleState.sample_trade_json(chainId());
+      orderInput.value = consoleState.sample_order_json(chainId());
+      approvalInput.value = consoleState.sample_approval_json(chainId());
+    }
+
+    async function run(target, button, action) {
+      const previous = target.textContent;
+      button.disabled = true;
+      target.textContent = "Running...";
+      try {
+        const result = await action();
+        target.textContent = result;
+        const liveUid = consoleState.last_live_order_uid();
+        orderUidInput.value = liveUid ?? "";
+      } catch (error) {
+        target.textContent = String(error);
+      } finally {
+        button.disabled = false;
+      }
+      return previous;
+    }
+
+    document.getElementById("refresh-samples").addEventListener("click", async (event) => {
+      event.preventDefault();
+      await refreshSamples();
+    });
+
+    document.getElementById("mock-status").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(mockOutput, button, () => consoleState.mock_status_json());
+    });
+
+    document.getElementById("mock-connect").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(mockOutput, button, () => consoleState.mock_connect_json());
+    });
+
+    document.getElementById("mock-sign-message").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(mockOutput, button, () => consoleState.mock_sign_message_json(message()));
+    });
+
+    document.getElementById("mock-approval").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(mockOutput, button, () =>
+        consoleState.mock_approval_flow_json(chainId(), env(), approvalInput.value)
+      );
+    });
+
+    document.getElementById("mock-trading").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(mockOutput, button, () =>
+        consoleState.mock_trading_flow_json(chainId(), env(), appCode(), tradeInput.value)
+      );
+    });
+
+    document.getElementById("detect-wallet").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () => consoleState.injected_detection_json());
+    });
+
+    document.getElementById("connect-wallet").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () => consoleState.injected_connect_json());
+    });
+
+    document.getElementById("reset-wallet").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () => consoleState.injected_reset_session_json());
+    });
+
+    document.getElementById("refresh-wallet").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () => consoleState.injected_refresh_json());
+    });
+
+    document.getElementById("switch-wallet").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () => consoleState.injected_switch_chain_json(chainId()));
+    });
+
+    document.getElementById("sign-message").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () => consoleState.injected_sign_message_json(message()));
+    });
+
+    document.getElementById("sign-order").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () =>
+        consoleState.injected_sign_order_json(chainId(), orderInput.value)
+      );
+    });
+
+    document.getElementById("live-quote").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () =>
+        consoleState.injected_quote_json(chainId(), env(), appCode(), tradeInput.value)
+      );
+    });
+
+    document.getElementById("submit-order").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () =>
+        consoleState.injected_submit_order_json(chainId(), env(), appCode(), tradeInput.value)
+      );
+    });
+
+    document.getElementById("cancel-order").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () =>
+        consoleState.injected_cancel_order_json(
+          chainId(),
+          env(),
+          appCode(),
+          orderUidInput.value.trim()
+        )
+      );
+    });
+
+    await refreshSamples();
+    mockOutput.textContent = consoleState.mock_status_json();
+    injectedOutput.textContent = await consoleState.injected_detection_json();
+  </script>
+</body>
+</html>
