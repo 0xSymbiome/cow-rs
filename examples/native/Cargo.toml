@@ -1,0 +1,56 @@
+[workspace]
+members = []
+resolver = "2"
+
+[package]
+name = "cow-sdk-examples-native"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94.1"
+publish = false
+description = "Native consumer-facing capability scenarios for cow-rs"
+
+[dependencies]
+async-trait = "0.1.89"
+cow-sdk = { path = "../../crates/sdk" }
+cow-sdk-subgraph = { path = "../../crates/subgraph" }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+tokio = { version = "1.51.1", features = ["macros", "rt-multi-thread"] }
+wiremock = "0.6.5"
+
+[[example]]
+name = "sdk_surface_report"
+path = "scenarios/sdk_surface_report.rs"
+
+[[example]]
+name = "app_data_roundtrip"
+path = "scenarios/app_data_roundtrip.rs"
+
+[[example]]
+name = "signing_roundtrip"
+path = "scenarios/signing_roundtrip.rs"
+
+[[example]]
+name = "quote_only_simulation"
+path = "scenarios/quote_only_simulation.rs"
+
+[[example]]
+name = "limit_order_simulation"
+path = "scenarios/limit_order_simulation.rs"
+
+[[example]]
+name = "order_lifecycle_simulation"
+path = "scenarios/order_lifecycle_simulation.rs"
+
+[[example]]
+name = "orderbook_transport_roundtrip"
+path = "scenarios/orderbook_transport_roundtrip.rs"
+
+[[example]]
+name = "trading_sdk_simulation"
+path = "scenarios/trading_sdk_simulation.rs"
+
+[[example]]
+name = "subgraph_query_roundtrip"
+path = "scenarios/subgraph_query_roundtrip.rs"
