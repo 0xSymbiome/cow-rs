@@ -1,0 +1,176 @@
+use std::{collections::BTreeMap, sync::OnceLock};
+
+use include_dir::{Dir, DirEntry, File, include_dir};
+use jsonschema::{Draft, Resource};
+use serde_json::Value;
+
+use crate::{AppDataDoc, AppDataError, AppDataParams, LATEST_APP_DATA_VERSION, ValidationResult};
+
+static SCHEMAS_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/schemas");
+static SCHEMA_RESOURCES: OnceLock<BTreeMap<String, Value>> = OnceLock::new();
+static ROOT_SCHEMAS: OnceLock<BTreeMap<String, Value>> = OnceLock::new();
+
+const SCHEMA_BASE_URI: &str = "https://cowswap.exchange/schemas/app-data/";
+
+pub fn generate_app_data_doc(params: AppDataParams) -> AppDataDoc {
+    let mut doc = serde_json::Map::new();
+    doc.insert(
+        "appCode".to_string(),
+        Value::String(params.app_code.unwrap_or_else(|| "CoW Swap".to_string())),
+    );
+    if let Some(environment) = params.environment {
+        doc.insert("environment".to_string(), Value::String(environment));
+    }
+    doc.insert("metadata".to_string(), Value::Object(params.metadata));
+    doc.insert(
+        "version".to_string(),
+        Value::String(LATEST_APP_DATA_VERSION.to_string()),
+    );
+    Value::Object(doc)
+}
+
+pub fn get_app_data_schema(version: &str) -> Result<AppDataDoc, AppDataError> {
+    validate_schema_version(version)?;
+    root_schemas()
+        .get(version)
+        .cloned()
+        .ok_or_else(|| AppDataError::UnknownSchemaVersion(version.to_string()))
+}
+
+pub fn validate_app_data_doc(app_data_doc: &AppDataDoc) -> ValidationResult {
+    match validate_app_data_doc_inner(app_data_doc) {
+        Ok(()) => ValidationResult {
+            success: true,
+            errors: None,
+        },
+        Err(err) => ValidationResult {
+            success: false,
+            errors: Some(err.to_string()),
+        },
+    }
+}
+
+pub fn extract_schema_version(app_data_doc: &AppDataDoc) -> Result<&str, AppDataError> {
+    app_data_doc
+        .get("version")
+        .and_then(Value::as_str)
+        .ok_or(AppDataError::MissingSchemaVersion)
+}
+
+fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataError> {
+    let version = extract_schema_version(app_data_doc)?;
+    let schema = get_app_data_schema(version)?;
+
+    let mut options = jsonschema::options().with_draft(Draft::Draft7);
+    for (uri, resource) in schema_resources() {
+        options = options.with_resource(uri.clone(), Resource::from_contents(resource.clone()));
+    }
+
+    let validator = options
+        .build(&schema)
+        .map_err(|err| AppDataError::Schema(err.to_string()))?;
+
+    let mut errors = validator.iter_errors(app_data_doc);
+    if let Some(first) = errors.next() {
+        let mut rendered = render_validation_error(&first);
+        for error in errors {
+            rendered.push_str("; ");
+            rendered.push_str(&render_validation_error(&error));
+        }
+        return Err(AppDataError::Schema(rendered));
+    }
+
+    Ok(())
+}
+
+fn render_validation_error(error: &jsonschema::ValidationError<'_>) -> String {
+    let path = error.instance_path().to_string();
+    if path.is_empty() {
+        format!("data {}", error)
+    } else {
+        format!("data{} {}", path, error)
+    }
+}
+
+fn schema_resources() -> &'static BTreeMap<String, Value> {
+    SCHEMA_RESOURCES.get_or_init(|| {
+        let mut resources = BTreeMap::new();
+        collect_files(&SCHEMAS_DIR, "", &mut resources);
+        resources
+    })
+}
+
+fn root_schemas() -> &'static BTreeMap<String, Value> {
+    ROOT_SCHEMAS.get_or_init(|| {
+        let mut schemas = BTreeMap::new();
+        for (uri, resource) in schema_resources() {
+            let relative = uri
+                .strip_prefix(SCHEMA_BASE_URI)
+                .expect("schema URIs are always rooted under SCHEMA_BASE_URI");
+            if let Some(version) = relative
+                .strip_prefix('v')
+                .and_then(|rest| rest.strip_suffix(".json"))
+            {
+                schemas.insert(version.to_string(), resource.clone());
+            }
+        }
+        schemas
+    })
+}
+
+fn collect_files(dir: &Dir<'_>, prefix: &str, resources: &mut BTreeMap<String, Value>) {
+    for entry in dir.entries() {
+        match entry {
+            DirEntry::Dir(child) => {
+                let child_prefix = if prefix.is_empty() {
+                    child.path().to_string_lossy().replace('\\', "/")
+                } else {
+                    format!(
+                        "{prefix}/{}",
+                        child
+                            .path()
+                            .file_name()
+                            .expect("embedded dir has file name")
+                            .to_string_lossy()
+                    )
+                };
+                collect_files(child, &child_prefix, resources);
+            }
+            DirEntry::File(file) => collect_file(file, prefix, resources),
+        }
+    }
+}
+
+fn collect_file(file: &File<'_>, prefix: &str, resources: &mut BTreeMap<String, Value>) {
+    let file_name = file
+        .path()
+        .file_name()
+        .expect("embedded file has file name")
+        .to_string_lossy();
+    let relative = if prefix.is_empty() {
+        file_name.to_string()
+    } else {
+        format!("{prefix}/{file_name}")
+    };
+    let uri = format!("{SCHEMA_BASE_URI}{relative}");
+    let resource: Value =
+        serde_json::from_slice(file.contents()).expect("embedded schema json is valid");
+    resources.insert(uri, resource);
+}
+
+fn validate_schema_version(version: &str) -> Result<(), AppDataError> {
+    let mut parts = version.split('.');
+    let valid = parts.next().is_some_and(is_digits)
+        && parts.next().is_some_and(is_digits)
+        && parts.next().is_some_and(is_digits)
+        && parts.next().is_none();
+    if valid {
+        Ok(())
+    } else {
+        Err(AppDataError::InvalidSchemaVersion(version.to_string()))
+    }
+}
+
+fn is_digits(part: &str) -> bool {
+    !part.is_empty() && part.chars().all(|ch| ch.is_ascii_digit())
+}
