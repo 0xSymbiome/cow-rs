@@ -390,6 +390,7 @@ name = "cow-sdk-core"
 version = "0.1.0"
 dependencies = [
  "hex",
+ "http",
  "num-bigint",
  "serde",
  "serde_json",

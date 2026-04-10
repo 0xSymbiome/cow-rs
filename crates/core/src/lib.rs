@@ -4,10 +4,10 @@ pub mod traits;
 pub mod types;
 
 pub use config::{
-    AddressPerChain, ApiBaseUrls, ApiContext, CowEnv, ENVS_LIST, EVM_NATIVE_CURRENCY_ADDRESS,
-    MAX_VALID_TO_EPOCH, ProtocolOptions, SupportedChainId, default_api_base_urls,
-    eth_flow_contract_address, settlement_contract_address, vault_relayer_address,
-    wrapped_native_token,
+    AddressPerChain, ApiBaseUrls, ApiContext, CowEnv, DEFAULT_HTTP_TIMEOUT, ENVS_LIST,
+    EVM_NATIVE_CURRENCY_ADDRESS, HttpClientPolicy, MAX_VALID_TO_EPOCH, ProtocolOptions,
+    SupportedChainId, default_api_base_urls, eth_flow_contract_address,
+    settlement_contract_address, vault_relayer_address, wrapped_native_token,
 };
 pub use errors::{CoreError, CowRsError, ValidationError};
 pub use traits::{

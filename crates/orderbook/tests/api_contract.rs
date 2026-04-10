@@ -1,9 +1,11 @@
 mod common;
 
+use cow_sdk_core::{DEFAULT_HTTP_TIMEOUT, HttpClientPolicy};
 use cow_sdk_orderbook::{
-    ApiContextOverride, AppDataObject, CowEnv, EcdsaSigningScheme, GetOrdersRequest,
-    GetTradesRequest, OrderBookApi, OrderCancellations, OrderCreation, OrderStatus, QuoteSide,
-    SigningScheme, SupportedChainId,
+    ApiContextOverride, AppDataObject, CowEnv, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
+    EcdsaSigningScheme, GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderBookTransportPolicy,
+    OrderCancellations, OrderCreation, OrderStatus, QuoteSide, RequestPolicy, SigningScheme,
+    SupportedChainId,
 };
 use serde_json::json;
 use wiremock::{
@@ -36,6 +38,58 @@ async fn version_endpoint_matches_transport_contract() {
         .expect("version request should succeed");
 
     assert_eq!(version, "v1.2.3");
+}
+
+#[test]
+fn default_transport_policy_is_explicit_and_reviewable() {
+    let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod));
+    let policy = api.transport_policy();
+
+    assert_eq!(policy.client_policy().timeout(), Some(DEFAULT_HTTP_TIMEOUT));
+    assert_eq!(
+        policy.client_policy().user_agent(),
+        DEFAULT_ORDERBOOK_USER_AGENT
+    );
+    assert_eq!(policy.request_policy().max_attempts, DEFAULT_MAX_ATTEMPTS);
+}
+
+#[tokio::test]
+async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/version"))
+        .and(wiremock::matchers::header(
+            "user-agent",
+            "custom-orderbook-client/9.9.9",
+        ))
+        .respond_with(ResponseTemplate::new(200).set_body_string("v9.9.9"))
+        .mount(&server)
+        .await;
+
+    let transport_policy = OrderBookTransportPolicy::default()
+        .with_client_policy(
+            HttpClientPolicy::new("custom-orderbook-client/9.9.9")
+                .expect("custom header must be valid")
+                .without_timeout(),
+        )
+        .with_request_policy(RequestPolicy {
+            max_attempts: 1,
+            ..RequestPolicy::default()
+        });
+    let api = OrderBookApi::new_with_transport_policy(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        transport_policy,
+    )
+    .with_env_base_url(CowEnv::Prod, server.uri());
+
+    let version = api
+        .get_version()
+        .await
+        .expect("custom client policy should succeed");
+
+    assert_eq!(version, "v9.9.9");
+    assert_eq!(api.client_policy().timeout(), None);
+    assert_eq!(api.request_policy().max_attempts, 1);
 }
 
 #[test]

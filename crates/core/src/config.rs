@@ -1,5 +1,6 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, time::Duration};
 
+use http::HeaderValue;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
@@ -9,6 +10,7 @@ use crate::{
 
 pub const ENVS_LIST: [CowEnv; 2] = [CowEnv::Prod, CowEnv::Staging];
 pub const EVM_NATIVE_CURRENCY_ADDRESS: &str = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(10);
 pub const MAX_VALID_TO_EPOCH: u32 = 4_294_967_295;
 
 const PROD_BASE_URL: &str = "https://api.cow.fi";
@@ -135,6 +137,56 @@ impl CowEnv {
 
 pub type ApiBaseUrls = BTreeMap<ChainId, String>;
 pub type AddressPerChain = BTreeMap<ChainId, Address>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HttpClientPolicy {
+    timeout: Option<Duration>,
+    user_agent: String,
+}
+
+impl HttpClientPolicy {
+    pub fn new(user_agent: impl Into<String>) -> Result<Self, ValidationError> {
+        Self::with_timeout_and_user_agent(DEFAULT_HTTP_TIMEOUT, user_agent)
+    }
+
+    pub fn with_timeout_and_user_agent(
+        timeout: Duration,
+        user_agent: impl Into<String>,
+    ) -> Result<Self, ValidationError> {
+        let user_agent = validate_user_agent(user_agent.into())?;
+
+        Ok(Self {
+            timeout: Some(timeout),
+            user_agent,
+        })
+    }
+
+    pub fn without_timeout(mut self) -> Self {
+        self.timeout = None;
+        self
+    }
+
+    pub fn with_timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = Some(timeout);
+        self
+    }
+
+    pub fn try_with_user_agent(
+        mut self,
+        user_agent: impl Into<String>,
+    ) -> Result<Self, ValidationError> {
+        self.user_agent = validate_user_agent(user_agent.into())?;
+        Ok(self)
+    }
+
+    pub fn timeout(&self) -> Option<Duration> {
+        self.timeout
+    }
+
+    pub fn user_agent(&self) -> &str {
+        &self.user_agent
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -311,4 +363,18 @@ pub fn wrapped_native_token(chain_id: SupportedChainId) -> TokenInfo {
 
 fn address_literal(value: &str) -> Address {
     Address::new(value).expect("static address literals must remain valid")
+}
+
+fn validate_user_agent(user_agent: String) -> Result<String, ValidationError> {
+    if user_agent.trim().is_empty() {
+        return Err(ValidationError::EmptyField {
+            field: "user_agent",
+        });
+    }
+
+    HeaderValue::from_str(&user_agent).map_err(|_| ValidationError::InvalidHttpHeaderValue {
+        field: "user_agent",
+    })?;
+
+    Ok(user_agent)
 }

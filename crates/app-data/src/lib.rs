@@ -12,8 +12,9 @@ pub use cid::{
 };
 pub use errors::AppDataError;
 pub use fetch::{
-    IpfsFetchTransport, fetch_doc_from_app_data_hex, fetch_doc_from_app_data_hex_legacy,
-    fetch_doc_from_cid,
+    IpfsFetchPolicy, IpfsFetchTransport, fetch_doc_from_app_data_hex,
+    fetch_doc_from_app_data_hex_legacy, fetch_doc_from_app_data_hex_legacy_with_policy,
+    fetch_doc_from_app_data_hex_with_policy, fetch_doc_from_cid, fetch_doc_from_cid_with_policy,
 };
 pub use info::{
     AppDataSource, digest_from_cid, get_app_data_cid, get_app_data_content, get_app_data_info,

@@ -31,7 +31,30 @@ Then inspect the crate tests that cover the surface under review. The most usefu
 | `GraphTransport` | Deferred adapter contract | Kept as an extension seam. The subgraph client currently owns typed GraphQL query execution directly. |
 | `PinningTransport` | Deferred adapter contract | Kept as an extension seam. App-data pinning currently uses app-data-specific request and credential semantics. |
 
-The deferred transport traits should not be read as a claim that every transport crate routes through `cow-sdk-core` today. They are stable adapter contracts for consumers and future internal unification.
+The deferred transport traits should not be read as a claim that every transport crate routes through `cow-sdk-core` today. They are stable adapter contracts for consumers and future adapter work.
+
+## Transport Policy Review
+
+Review transport configuration in two passes:
+
+1. Shared client settings:
+   `cow_sdk_core::HttpClientPolicy` owns timeout and user-agent only.
+2. Crate-local request behavior:
+   orderbook, subgraph, and app-data each keep their own transport policy surface where semantics differ.
+
+Use this split when evaluating changes:
+
+| Surface | Shared input | Crate-local behavior that must stay explicit |
+| --- | --- | --- |
+| `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` retry and rate-limit behavior; `ApiContext` chain/env/base URLs; explicit env override builders; optional `X-API-Key` header handling. |
+| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` client wiring; `SubgraphConfig` chain and base URL selection; API-key-derived production endpoints. |
+| `cow-sdk-app-data` | `IpfsFetchPolicy` read base URI | `IpfsConfig` write URI and pinning credentials; upload semantics remain separate from fetch. |
+
+Default client policy is explicit and test-covered:
+
+- native and wasm clients use a 10-second default timeout unless the caller disables it
+- each transport crate sets its own crate-specific default user-agent
+- base URL overrides remain separate from shared client settings
 
 ## DTO Boundaries
 
@@ -79,7 +102,7 @@ This avoids a single crate becoming the owner of unrelated concerns while still 
 
 ## Generated Or Schema-Derived Artifacts
 
-No generated or schema-derived public API is introduced here. If schema mirrors are added later for drift evidence, they should remain internal or test-only unless a later change explicitly promotes them into the public SDK API.
+No generated or schema-derived public API is introduced here. If schema mirrors are added later for drift evidence, they should remain non-public or test-only unless a later change explicitly promotes them into the public SDK API.
 
 Orderbook OpenAPI and subgraph query evidence is tied to pinned entries in `parity/source-lock.yaml`; see [Parity Scope](parity-scope.md).
 

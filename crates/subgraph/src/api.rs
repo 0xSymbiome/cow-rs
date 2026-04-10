@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use cow_sdk_core::SupportedChainId;
+use cow_sdk_core::{HttpClientPolicy, SupportedChainId};
 use reqwest::Client;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
@@ -14,6 +14,8 @@ use crate::{
 const SUBGRAPH_BASE_URL: &str = "https://gateway.thegraph.com/api/";
 
 pub const API_NAME: &str = "CoW Protocol Subgraph";
+pub const DEFAULT_SUBGRAPH_USER_AGENT: &str =
+    concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
 pub type SubgraphApiBaseUrls = BTreeMap<SupportedChainId, Option<String>>;
 
@@ -38,11 +40,41 @@ pub struct SubgraphConfigOverride {
     pub base_urls: Option<SubgraphApiBaseUrls>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SubgraphTransportPolicy {
+    client: HttpClientPolicy,
+}
+
+impl Default for SubgraphTransportPolicy {
+    fn default() -> Self {
+        Self {
+            client: HttpClientPolicy::new(DEFAULT_SUBGRAPH_USER_AGENT)
+                .expect("static subgraph user-agent must remain valid"),
+        }
+    }
+}
+
+impl SubgraphTransportPolicy {
+    pub fn new(client: HttpClientPolicy) -> Self {
+        Self { client }
+    }
+
+    pub fn client_policy(&self) -> &HttpClientPolicy {
+        &self.client
+    }
+
+    pub fn with_client_policy(mut self, client: HttpClientPolicy) -> Self {
+        self.client = client;
+        self
+    }
+}
+
 #[derive(Clone)]
 pub struct SubgraphApi {
     client: Client,
     config: SubgraphConfig,
     prod_config: SubgraphApiBaseUrls,
+    transport_policy: SubgraphTransportPolicy,
 }
 
 impl SubgraphApi {
@@ -51,12 +83,21 @@ impl SubgraphApi {
     }
 
     pub fn with_config(api_key: impl Into<String>, config: SubgraphConfig) -> Self {
+        Self::with_config_and_transport_policy(api_key, config, SubgraphTransportPolicy::default())
+    }
+
+    pub fn with_config_and_transport_policy(
+        api_key: impl Into<String>,
+        config: SubgraphConfig,
+        transport_policy: SubgraphTransportPolicy,
+    ) -> Self {
         let api_key = api_key.into();
 
         Self {
-            client: Client::new(),
+            client: build_client(transport_policy.client_policy()),
             prod_config: build_prod_config(&api_key),
             config,
+            transport_policy,
         }
     }
 
@@ -70,6 +111,20 @@ impl SubgraphApi {
 
     pub fn prod_config(&self) -> &SubgraphApiBaseUrls {
         &self.prod_config
+    }
+
+    pub fn transport_policy(&self) -> &SubgraphTransportPolicy {
+        &self.transport_policy
+    }
+
+    pub fn client_policy(&self) -> &HttpClientPolicy {
+        self.transport_policy.client_policy()
+    }
+
+    pub fn with_transport_policy(mut self, transport_policy: SubgraphTransportPolicy) -> Self {
+        self.client = build_client(transport_policy.client_policy());
+        self.transport_policy = transport_policy;
+        self
     }
 
     pub async fn get_totals(&self) -> Result<Total, SubgraphError> {
@@ -164,10 +219,13 @@ impl SubgraphApi {
             operation_name: operation_name.as_deref(),
         };
 
-        let response = self
-            .client
-            .post(&api)
-            .json(&request)
+        let mut request_builder = self.client.post(&api).json(&request);
+
+        if let Some(timeout) = self.client_policy().timeout() {
+            request_builder = request_builder.timeout(timeout);
+        }
+
+        let response = request_builder
             .send()
             .await
             .map_err(|error| SubgraphError::Transport {
@@ -338,4 +396,12 @@ fn format_variables(variables: Option<&Value>) -> String {
     variables
         .map(ToString::to_string)
         .unwrap_or_else(|| "undefined".to_owned())
+}
+
+fn build_client(policy: &HttpClientPolicy) -> Client {
+    let builder = Client::builder().user_agent(policy.user_agent().to_owned());
+
+    builder
+        .build()
+        .expect("validated subgraph client policy must remain buildable")
 }

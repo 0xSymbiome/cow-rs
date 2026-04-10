@@ -55,6 +55,23 @@ flowchart TD
 
 The `HttpTransport`, `GraphTransport`, and `PinningTransport` traits are extension adapter contracts. The orderbook, subgraph, and app-data crates currently own their typed request behavior directly because those surfaces have API-specific retry, header, credential, and decoding rules.
 
+## Transport Policy
+
+Shared transport client settings live in `cow_sdk_core::HttpClientPolicy`. That type covers only settings that mean the same thing across crates:
+
+- request timeout
+- user-agent
+
+Crate-local transport behavior stays local:
+
+| Crate | Shared policy input | Crate-local transport policy |
+| --- | --- | --- |
+| `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` adds retry and rate-limit behavior. Chain/env base URL selection remains in `ApiContext`, and env-specific overrides remain explicit builders on `OrderBookApi`. |
+| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` keeps client settings explicit while `SubgraphConfig` continues to own chain selection, API-key-derived production URLs, and caller overrides. |
+| `cow-sdk-app-data` | none for the fetch adapter trait itself | `IpfsFetchPolicy` owns read-base-URI selection only. Pinning credentials and write endpoints remain in `IpfsConfig` and upload helpers. |
+
+This split keeps shared client behavior reviewable without hiding API-specific semantics behind a false common abstraction.
+
 ## DTO Boundaries
 
 Order-like structures are kept separate when they represent different protocol boundaries:
@@ -98,6 +115,6 @@ The main exception is `cow-sdk-orderbook`, which keeps orderbook HTTP DTOs strin
 
 ## Why This Shape
 
-This layout keeps low-level protocol semantics stable, gives higher-level consumers a clean trading entrypoint, and avoids coupling browser-only behavior to native server and bot use cases. Generated or schema-derived evidence should remain internal or test-only unless a later review explicitly promotes it into public SDK API.
+This layout keeps low-level protocol semantics stable, gives higher-level consumers a clean trading entrypoint, and avoids coupling browser-only behavior to native server and bot use cases. Generated or schema-derived evidence should remain non-public or test-only unless a later review explicitly promotes it into public SDK API.
 
 For a review-oriented walkthrough, see [Review Guide](review-guide.md).

@@ -4,6 +4,7 @@ use std::{
     time::Duration,
 };
 
+use cow_sdk_core::HttpClientPolicy;
 use reqwest::{
     Client,
     header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderValue},
@@ -42,6 +43,8 @@ pub const RETRYABLE_STATUS_CODES: [u16; 7] = [
 pub const DEFAULT_MAX_ATTEMPTS: usize = 10;
 pub const DEFAULT_TOKENS_PER_INTERVAL: u32 = 5;
 pub const DEFAULT_INTERVAL_LABEL: &str = "second";
+pub const DEFAULT_ORDERBOOK_USER_AGENT: &str =
+    concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HttpMethod {
@@ -153,6 +156,46 @@ impl RequestPolicy {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OrderBookTransportPolicy {
+    client: HttpClientPolicy,
+    request: RequestPolicy,
+}
+
+impl Default for OrderBookTransportPolicy {
+    fn default() -> Self {
+        Self {
+            client: HttpClientPolicy::new(DEFAULT_ORDERBOOK_USER_AGENT)
+                .expect("static orderbook user-agent must remain valid"),
+            request: RequestPolicy::default(),
+        }
+    }
+}
+
+impl OrderBookTransportPolicy {
+    pub fn new(client: HttpClientPolicy, request: RequestPolicy) -> Self {
+        Self { client, request }
+    }
+
+    pub fn client_policy(&self) -> &HttpClientPolicy {
+        &self.client
+    }
+
+    pub fn request_policy(&self) -> &RequestPolicy {
+        &self.request
+    }
+
+    pub fn with_client_policy(mut self, client: HttpClientPolicy) -> Self {
+        self.client = client;
+        self
+    }
+
+    pub fn with_request_policy(mut self, request: RequestPolicy) -> Self {
+        self.request = request;
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FetchParams {
     pub path: String,
     pub method: HttpMethod,
@@ -259,6 +302,7 @@ struct RequestExecution<'a> {
     client: &'a Client,
     base_url: &'a str,
     params: &'a FetchParams,
+    timeout: Option<Duration>,
     additional_headers: Option<HeaderMap>,
 }
 
@@ -326,11 +370,36 @@ pub async fn request_json<T>(
 where
     T: DeserializeOwned,
 {
+    request_json_with_timeout(
+        client,
+        base_url,
+        params,
+        policy,
+        rate_limiter,
+        None,
+        additional_headers,
+    )
+    .await
+}
+
+pub async fn request_json_with_timeout<T>(
+    client: &Client,
+    base_url: &str,
+    params: &FetchParams,
+    policy: &RequestPolicy,
+    rate_limiter: &RequestRateLimiter,
+    timeout: Option<Duration>,
+    additional_headers: Option<HeaderMap>,
+) -> Result<T, OrderbookError>
+where
+    T: DeserializeOwned,
+{
     request_with(
         RequestExecution {
             client,
             base_url,
             params,
+            timeout,
             additional_headers,
         },
         policy,
@@ -349,11 +418,33 @@ pub async fn request_text(
     rate_limiter: &RequestRateLimiter,
     additional_headers: Option<HeaderMap>,
 ) -> Result<String, OrderbookError> {
+    request_text_with_timeout(
+        client,
+        base_url,
+        params,
+        policy,
+        rate_limiter,
+        None,
+        additional_headers,
+    )
+    .await
+}
+
+pub async fn request_text_with_timeout(
+    client: &Client,
+    base_url: &str,
+    params: &FetchParams,
+    policy: &RequestPolicy,
+    rate_limiter: &RequestRateLimiter,
+    timeout: Option<Duration>,
+    additional_headers: Option<HeaderMap>,
+) -> Result<String, OrderbookError> {
     request_with(
         RequestExecution {
             client,
             base_url,
             params,
+            timeout,
             additional_headers,
         },
         policy,
@@ -372,11 +463,33 @@ pub async fn request_empty(
     rate_limiter: &RequestRateLimiter,
     additional_headers: Option<HeaderMap>,
 ) -> Result<(), OrderbookError> {
+    request_empty_with_timeout(
+        client,
+        base_url,
+        params,
+        policy,
+        rate_limiter,
+        None,
+        additional_headers,
+    )
+    .await
+}
+
+pub async fn request_empty_with_timeout(
+    client: &Client,
+    base_url: &str,
+    params: &FetchParams,
+    policy: &RequestPolicy,
+    rate_limiter: &RequestRateLimiter,
+    timeout: Option<Duration>,
+    additional_headers: Option<HeaderMap>,
+) -> Result<(), OrderbookError> {
     request_with(
         RequestExecution {
             client,
             base_url,
             params,
+            timeout,
             additional_headers,
         },
         policy,
@@ -437,6 +550,7 @@ where
     let url = format!("{}{}", request.base_url, request.params.path);
     let client = request.client.clone();
     let params = request.params.clone();
+    let timeout = request.timeout;
     let additional_headers = request.additional_headers;
 
     execute_with(
@@ -447,6 +561,7 @@ where
                 client.clone(),
                 url.clone(),
                 params.clone(),
+                timeout,
                 response_kind,
                 additional_headers.clone(),
             )
@@ -460,6 +575,7 @@ async fn send_request(
     client: Client,
     url: String,
     params: FetchParams,
+    timeout: Option<Duration>,
     response_kind: ResponseKind,
     additional_headers: Option<HeaderMap>,
 ) -> Result<ResponseEnvelope, String> {
@@ -473,6 +589,10 @@ async fn send_request(
 
     if let Some(json_body) = params.body {
         request = request.json(&json_body);
+    }
+
+    if let Some(timeout) = timeout {
+        request = request.timeout(timeout);
     }
 
     let response = request

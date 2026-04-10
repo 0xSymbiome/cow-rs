@@ -4,10 +4,12 @@ use std::sync::{
 };
 use std::time::{Duration, Instant};
 
+use cow_sdk_core::HttpClientPolicy;
 use cow_sdk_orderbook::request::{
-    FetchParams, HttpMethod, OrderBookApiError, RateLimitSettings, RequestPolicy,
-    RequestRateLimiter, ResponseBody, ResponseEnvelope, execute_empty_with, execute_json_with,
-    request_empty, request_json, request_text,
+    DEFAULT_ORDERBOOK_USER_AGENT, FetchParams, HttpMethod, OrderBookApiError,
+    OrderBookTransportPolicy, RateLimitSettings, RequestPolicy, RequestRateLimiter, ResponseBody,
+    ResponseEnvelope, execute_empty_with, execute_json_with, request_empty, request_json,
+    request_text,
 };
 use cow_sdk_orderbook::{
     DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_TOKENS_PER_INTERVAL,
@@ -296,4 +298,64 @@ fn typed_api_error_exposes_json_body_and_error_type() {
 
     assert_eq!(error.status, 400);
     assert_eq!(error.error_type(), Some("DuplicateOrder"));
+}
+
+#[test]
+fn transport_policy_wraps_validated_shared_client_policy() {
+    let custom = HttpClientPolicy::new("custom-orderbook-test/1.0.0")
+        .expect("custom user-agent should be valid")
+        .without_timeout();
+    let policy = OrderBookTransportPolicy::default().with_client_policy(custom.clone());
+
+    assert_eq!(policy.client_policy(), &custom);
+    assert_eq!(policy.client_policy().timeout(), None);
+    assert_eq!(
+        OrderBookTransportPolicy::default()
+            .client_policy()
+            .user_agent(),
+        DEFAULT_ORDERBOOK_USER_AGENT
+    );
+}
+
+#[test]
+fn shared_http_client_policy_rejects_invalid_user_agents() {
+    let error = HttpClientPolicy::new("bad\r\nagent").expect_err("CRLF must be rejected");
+    assert_eq!(
+        error.to_string(),
+        "user_agent must be a valid HTTP header value"
+    );
+}
+
+#[tokio::test]
+async fn request_json_surfaces_malformed_success_payloads() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/malformed"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("not-json"))
+        .mount(&server)
+        .await;
+
+    let policy = RequestPolicy {
+        max_attempts: 1,
+        ..RequestPolicy::default()
+    };
+    let limiter = RequestRateLimiter::new(policy.rate_limit);
+
+    let error = request_json::<serde_json::Value>(
+        &Client::new(),
+        &server.uri(),
+        &FetchParams::new("/api/v1/malformed", HttpMethod::Get),
+        &policy,
+        &limiter,
+        None,
+    )
+    .await
+    .expect_err("malformed success payload should fail");
+
+    match error {
+        cow_sdk_orderbook::OrderbookError::Serialization(message) => {
+            assert!(!message.is_empty());
+        }
+        other => panic!("expected serialization error, got {other:?}"),
+    }
 }

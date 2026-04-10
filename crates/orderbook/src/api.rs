@@ -1,3 +1,4 @@
+use cow_sdk_core::HttpClientPolicy;
 use reqwest::{
     Client,
     header::{HeaderMap, HeaderValue},
@@ -7,8 +8,8 @@ use serde_json::json;
 use crate::{
     error::OrderbookError,
     request::{
-        FetchParams, HttpMethod, RequestPolicy, RequestRateLimiter, request_empty, request_json,
-        request_text,
+        FetchParams, HttpMethod, OrderBookTransportPolicy, RequestPolicy, RequestRateLimiter,
+        request_empty_with_timeout, request_json_with_timeout, request_text_with_timeout,
     },
     transform::{transform_order, transform_orders},
     types::{
@@ -26,20 +27,36 @@ const API_KEY_HEADER: &str = "X-API-Key";
 pub struct OrderBookApi {
     client: Client,
     context: ApiContext,
-    request_policy: RequestPolicy,
+    transport_policy: OrderBookTransportPolicy,
     rate_limiter: RequestRateLimiter,
     env_base_url_overrides: EnvBaseUrlOverrides,
 }
 
 impl OrderBookApi {
     pub fn new(context: ApiContext) -> Self {
-        let request_policy = RequestPolicy::default();
+        let transport_policy = OrderBookTransportPolicy::default();
 
         Self {
-            client: Client::new(),
-            rate_limiter: RequestRateLimiter::new(request_policy.rate_limit),
-            request_policy,
+            client: build_client(transport_policy.client_policy()),
+            rate_limiter: RequestRateLimiter::new(transport_policy.request_policy().rate_limit),
+            transport_policy,
             context,
+            env_base_url_overrides: EnvBaseUrlOverrides::default(),
+        }
+    }
+
+    pub fn new_with_transport_policy(
+        context: ApiContext,
+        transport_policy: OrderBookTransportPolicy,
+    ) -> Self {
+        let client = build_client(transport_policy.client_policy());
+        let rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
+
+        Self {
+            client,
+            context,
+            transport_policy,
+            rate_limiter,
             env_base_url_overrides: EnvBaseUrlOverrides::default(),
         }
     }
@@ -47,6 +64,13 @@ impl OrderBookApi {
     pub fn new_with_base_url(context: ApiContext, base_url: impl Into<String>) -> Self {
         let env = context.env;
         Self::new(context).with_env_base_url(env, base_url.into())
+    }
+
+    pub fn with_transport_policy(mut self, transport_policy: OrderBookTransportPolicy) -> Self {
+        self.client = build_client(transport_policy.client_policy());
+        self.rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
+        self.transport_policy = transport_policy;
+        self
     }
 
     pub fn with_env_base_url(mut self, env: CowEnv, base_url: impl Into<String>) -> Self {
@@ -75,8 +99,16 @@ impl OrderBookApi {
         &self.context
     }
 
+    pub fn transport_policy(&self) -> &OrderBookTransportPolicy {
+        &self.transport_policy
+    }
+
+    pub fn client_policy(&self) -> &HttpClientPolicy {
+        self.transport_policy.client_policy()
+    }
+
     pub fn request_policy(&self) -> &RequestPolicy {
-        &self.request_policy
+        self.transport_policy.request_policy()
     }
 
     pub fn get_order_link(&self, order_uid: &OrderUid) -> Result<String, OrderbookError> {
@@ -315,36 +347,39 @@ impl OrderBookApi {
     where
         T: serde::de::DeserializeOwned,
     {
-        request_json(
+        request_json_with_timeout(
             &self.client,
             &self.resolved_base_url(&self.context)?,
             &params,
-            &self.request_policy,
+            self.transport_policy.request_policy(),
             &self.rate_limiter,
+            self.client_policy().timeout(),
             self.additional_headers(),
         )
         .await
     }
 
     async fn fetch_empty(&self, params: FetchParams) -> Result<(), OrderbookError> {
-        request_empty(
+        request_empty_with_timeout(
             &self.client,
             &self.resolved_base_url(&self.context)?,
             &params,
-            &self.request_policy,
+            self.transport_policy.request_policy(),
             &self.rate_limiter,
+            self.client_policy().timeout(),
             self.additional_headers(),
         )
         .await
     }
 
     async fn fetch_text(&self, params: FetchParams) -> Result<String, OrderbookError> {
-        request_text(
+        request_text_with_timeout(
             &self.client,
             &self.resolved_base_url(&self.context)?,
             &params,
-            &self.request_policy,
+            self.transport_policy.request_policy(),
             &self.rate_limiter,
+            self.client_policy().timeout(),
             self.additional_headers(),
         )
         .await
@@ -370,4 +405,12 @@ impl OrderBookApi {
 
 fn normalize_base_url(base_url: String) -> String {
     base_url.trim_end_matches('/').to_owned()
+}
+
+fn build_client(policy: &HttpClientPolicy) -> Client {
+    let builder = Client::builder().user_agent(policy.user_agent().to_owned());
+
+    builder
+        .build()
+        .expect("validated orderbook client policy must remain buildable")
 }

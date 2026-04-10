@@ -1,8 +1,9 @@
-use cow_sdk_core::SupportedChainId;
+use cow_sdk_core::{DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, SupportedChainId};
 use cow_sdk_subgraph::{
-    DailyTotal, HourlyTotal, LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY,
-    LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi, SubgraphApiBaseUrls,
-    SubgraphConfig, SubgraphError, TOTALS_QUERY, Total,
+    DEFAULT_SUBGRAPH_USER_AGENT, DailyTotal, HourlyTotal, LAST_DAYS_VOLUME_QUERY,
+    LAST_HOURS_VOLUME_QUERY, LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi,
+    SubgraphApiBaseUrls, SubgraphConfig, SubgraphError, SubgraphTransportPolicy, TOTALS_QUERY,
+    Total,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -69,6 +70,17 @@ async fn prod_url_map_matches_pinned_supported_and_unsupported_chains() {
             None
         );
     }
+}
+
+#[test]
+fn default_transport_policy_is_explicit_and_reviewable() {
+    let api = SubgraphApi::new("FakeApiKey");
+
+    assert_eq!(api.client_policy().timeout(), Some(DEFAULT_HTTP_TIMEOUT));
+    assert_eq!(
+        api.client_policy().user_agent(),
+        DEFAULT_SUBGRAPH_USER_AGENT
+    );
 }
 
 #[tokio::test]
@@ -305,6 +317,63 @@ async fn run_query_uses_custom_base_url_overrides() {
 }
 
 #[tokio::test]
+async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
+    let server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .and(header("user-agent", "custom-subgraph-client/9.9.9"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": {
+                "totals": [
+                    {
+                        "tokens": "1",
+                        "orders": "2",
+                        "traders": "3",
+                        "settlements": "4"
+                    }
+                ]
+            }
+        })))
+        .mount(&server)
+        .await;
+
+    let base_urls: SubgraphApiBaseUrls = [
+        (SupportedChainId::Mainnet, Some(server.uri())),
+        (SupportedChainId::GnosisChain, None),
+        (SupportedChainId::ArbitrumOne, None),
+        (SupportedChainId::Base, None),
+        (SupportedChainId::Sepolia, None),
+        (SupportedChainId::Polygon, None),
+        (SupportedChainId::Avalanche, None),
+        (SupportedChainId::Bnb, None),
+        (SupportedChainId::Linea, None),
+        (SupportedChainId::Plasma, None),
+        (SupportedChainId::Ink, None),
+    ]
+    .into_iter()
+    .collect();
+    let transport_policy = SubgraphTransportPolicy::default().with_client_policy(
+        HttpClientPolicy::new("custom-subgraph-client/9.9.9")
+            .expect("custom user-agent must be valid")
+            .without_timeout(),
+    );
+    let api = SubgraphApi::with_config_and_transport_policy(
+        "FakeApiKey",
+        SubgraphConfig {
+            chain_id: SupportedChainId::Mainnet,
+            base_urls: Some(base_urls),
+        },
+        transport_policy,
+    );
+
+    let totals = api.get_totals().await.expect("custom policy should work");
+
+    assert_eq!(totals.tokens, "1");
+    assert_eq!(api.client_policy().timeout(), None);
+}
+
+#[tokio::test]
 async fn unsupported_network_rejects_before_transport() {
     let api = SubgraphApi::with_config(
         "FakeApiKey",
@@ -385,6 +454,28 @@ async fn invalid_graphql_query_surfaces_typed_context() {
             assert!(inner_error.contains("invalidQuery"));
         }
         other => panic!("expected QueryFailed error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn malformed_success_response_surfaces_serialization_error() {
+    let server = MockServer::start().await;
+    let api = api_with_override(&server);
+
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("not-json"))
+        .mount(&server)
+        .await;
+
+    let error = api
+        .get_totals()
+        .await
+        .expect_err("invalid json should fail");
+
+    match error {
+        SubgraphError::Serialization { details } => assert!(!details.is_empty()),
+        other => panic!("expected serialization error, got {other:?}"),
     }
 }
 

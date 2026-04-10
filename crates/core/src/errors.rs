@@ -4,6 +4,8 @@ use thiserror::Error;
 pub enum ValidationError {
     #[error("{field} must not be empty")]
     EmptyField { field: &'static str },
+    #[error("{field} must be a valid HTTP header value")]
+    InvalidHttpHeaderValue { field: &'static str },
     #[error("{field} must be 0x-prefixed hexadecimal data")]
     InvalidHexPrefix { field: &'static str },
     #[error("{field} must contain exactly {expected} hex characters")]
