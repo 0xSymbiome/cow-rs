@@ -5,15 +5,15 @@ use wasm_bindgen::prelude::*;
 use cow_sdk::core::wrapped_native_token;
 use cow_sdk::orderbook::AppDataHash;
 use cow_sdk::{
-    Address, ApiContext, ApprovalParameters, CowEnv, DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS,
-    GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT, GetOrdersRequest, GetTradesRequest, MAX_SLIPPAGE_BPS,
-    ORDER_PRIMARY_TYPE, OrderBookApi, OrderQuoteRequest, OrderUid, OrderbookError,
-    PartialTraderParameters, SupportedChainId, TradingSdk, TradingSdkOptions, app_data_hex_to_cid,
-    app_data_hex_to_cid_legacy, approval_transaction, cid_to_app_data_hex, default_slippage_bps,
-    deployment_for_chain, eip1271_signature_payload, generate_order_id, get_app_data_info,
-    get_app_data_schema, is_ethflow_order, order_typed_data, partner_fee_bps,
-    sanitize_protocol_fee_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
-    swap_params_to_limit_order_params, validate_app_data_doc,
+    Address, Amount, ApiContext, ApprovalParameters, CowEnv, DEFAULT_QUOTE_VALIDITY,
+    DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT, GetOrdersRequest,
+    GetTradesRequest, MAX_SLIPPAGE_BPS, ORDER_PRIMARY_TYPE, OrderBookApi, OrderQuoteRequest,
+    OrderUid, OrderbookError, PartialTraderParameters, SupportedChainId, TradingSdk,
+    TradingSdkOptions, app_data_hex_to_cid, app_data_hex_to_cid_legacy, approval_transaction,
+    cid_to_app_data_hex, default_slippage_bps, deployment_for_chain, eip1271_signature_payload,
+    generate_order_id, get_app_data_info, get_app_data_schema, is_ethflow_order,
+    order_typed_data, partner_fee_bps, sanitize_protocol_fee_bps, suggest_slippage_from_fee,
+    suggest_slippage_from_volume, swap_params_to_limit_order_params, validate_app_data_doc,
 };
 use cow_sdk_subgraph::{SubgraphApi, SubgraphConfig};
 
@@ -278,7 +278,8 @@ pub async fn trading_quote_preview_json(
         .await
         .map_err(|error| to_js_error(error.to_string()))?;
     let limit_parameters =
-        swap_params_to_limit_order_params(&results.trade_parameters, &results.quote_response);
+        swap_params_to_limit_order_params(&results.trade_parameters, &results.quote_response)
+            .map_err(|error| to_js_error(error.to_string()))?;
 
     pretty_json(&json!({
         "quoteResults": results,
@@ -600,14 +601,16 @@ fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
         buy_token: Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
             .expect("static example address must remain valid"),
         receiver: sample_owner(),
-        sell_amount: "100000000000000000".to_owned(),
-        buy_amount: "250000000".to_owned(),
+        sell_amount: Amount::new("100000000000000000")
+            .expect("static example sell amount must remain valid"),
+        buy_amount: Amount::new("250000000")
+            .expect("static example buy amount must remain valid"),
         valid_to: 1_900_000_000,
         app_data: cow_sdk::AppDataHex::new(
             "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         )
         .expect("static example app-data hex must remain valid"),
-        fee_amount: "0".to_owned(),
+        fee_amount: Amount::zero(),
         kind: cow_sdk::OrderKind::Sell,
         partially_fillable: false,
         sell_token_balance: cow_sdk::OrderBalance::Erc20,

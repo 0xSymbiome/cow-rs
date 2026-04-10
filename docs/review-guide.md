@@ -49,6 +49,21 @@ Repeated order-like field names are intentional only when they model distinct pr
 
 If a future field-similar type has no distinct wire, ABI, normalized, or user-domain boundary, it should be removed or merged.
 
+## Typed Boundary Review
+
+When reviewing public API changes, use this rule:
+
+- User-domain Rust surfaces should accept and return `Address`, `Amount`, `SignedAmount`, `HexData`, `AppDataHash`, `OrderUid`, and `Hash32` aliases when those values carry protocol meaning.
+- Raw `String` values are acceptable only for explicit orderbook wire DTOs, serialized compatibility models, or named legacy paths with a documented reason.
+- Conversions from typed values into wire strings should happen as close as possible to the transport or ABI encoder boundary.
+
+The public typed boundary is applied across these paths:
+
+- `cow-sdk-core` runtime traits now use typed transaction values, gas limits, call data, and hashes.
+- `cow-sdk-contracts` and `cow-sdk-signing` now terminate on typed order amounts and digests.
+- `cow-sdk-trading` now exposes typed trade amounts, allowance values, approval hashes, on-chain cancellation hashes, and EthFlow existence checks.
+- `cow-sdk-orderbook` intentionally remains string-heavy on HTTP request and response DTOs because that matches the upstream API contract.
+
 ## Package Boundaries
 
 The `cow-sdk-*` package family is intentionally multi-crate:

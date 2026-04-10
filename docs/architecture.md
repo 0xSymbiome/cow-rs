@@ -71,6 +71,23 @@ Order-like structures are kept separate when they represent different protocol b
 
 The conversion from `UnsignedOrder` to the contract ABI order is explicit. Quote-to-submission conversion remains in the orderbook crate because it adds signature, signer, signing-scheme, and quote-id fields required by the orderbook API.
 
+## Typed Public Boundary
+
+Public Rust entry points default to validated domain wrappers instead of ad hoc strings whenever `cow-rs` owns the contract:
+
+| Meaning | Default public type | String-heavy forms allowed only at |
+| --- | --- | --- |
+| Address | `cow_sdk_core::Address` | Serialized JSON and explicit wire DTOs |
+| App-data hash | `cow_sdk_core::AppDataHash` | Serialized JSON and explicit wire DTOs |
+| 32-byte hash, order digest, tx hash, block hash | `cow_sdk_core::Hash32` aliases | Serialized JSON and explicit wire DTOs |
+| Amount, value, gas, execution quantity | `cow_sdk_core::Amount` | Explicit wire DTOs and named compatibility payloads |
+| Signed deltas | `cow_sdk_core::SignedAmount` | Explicit wire DTOs and simulation payloads |
+| Call data and raw byte payloads | `cow_sdk_core::HexData` | Explicit ABI/wire encoding boundaries |
+
+That rule is applied in `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-trading`, and `cow-sdk-browser-wallet`.
+
+The main exception is `cow-sdk-orderbook`, which keeps orderbook HTTP DTOs string-heavy where the upstream API is string-heavy. That is an explicit transport boundary, not the recommended user-domain contract for Rust consumers.
+
 ## Design Rules
 
 - `cow-sdk` adds no hidden business logic.
