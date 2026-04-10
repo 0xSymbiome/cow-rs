@@ -22,7 +22,13 @@ python -m http.server 8081
 ```
 
 ```text
-bunx serve . --listen 8081
+bunx serve --listen 8081 .
 ```
 
 Open `http://localhost:8081`.
+
+When deployed through GitHub Pages, open:
+
+```text
+https://<owner>.github.io/<repo>/browser-wallet-console/
+```

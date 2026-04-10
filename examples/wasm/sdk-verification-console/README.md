@@ -15,9 +15,15 @@ python -m http.server 8080
 ```
 
 ```text
-bunx serve . --listen 8080
+bunx serve --listen 8080 .
 ```
 
 Open [http://localhost:8080](http://localhost:8080).
 
 Do not open `index.html` with `file://`.
+
+When deployed through GitHub Pages, open:
+
+```text
+https://<owner>.github.io/<repo>/sdk-verification-console/
+```

@@ -70,8 +70,8 @@ Orderbook OpenAPI and subgraph query evidence is tied to pinned entries in `pari
 ## CI Configuration
 
 The workflow set is intentionally small: workspace validation, release-readiness
-checks, and WASM checks. Action references in workflow files are pinned to
-immutable SHAs.
+checks, WASM checks, and WASM example Pages deployment. Action references in
+workflow files are pinned to immutable SHAs.
 
 CID handling uses upstream crates for CID and multihash encoding. Legacy content-to-CID generation uses `ipfs-cid`; latest app-data CID conversion wraps an existing Keccak digest with `cid` and `multihash` because the SDK receives the digest as an app-data hash.
 
