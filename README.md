@@ -2,7 +2,7 @@
 
 `cow-rs` is a Rust SDK for CoW Protocol.
 
-As of 2026-04-09, this workspace includes order creation, signing, and submission flows, low-level contract helpers, app-data encoding and CID handling, typed orderbook transport, read-only subgraph queries, WASM builds, and feature-gated browser wallet integration.
+This workspace includes order creation, signing, and submission flows, low-level contract helpers, app-data encoding and CID handling, typed orderbook transport, read-only subgraph queries, WASM builds, and feature-gated browser wallet integration.
 
 ## Workspace
 
@@ -20,6 +20,15 @@ As of 2026-04-09, this workspace includes order creation, signing, and submissio
 
 `cow-sdk` stays intentionally thin. Trading workflows live in `cow-sdk-trading`. Subgraph access stays in `cow-sdk-subgraph`. Browser wallet support is exposed through the optional `browser-wallet` feature and the dedicated `cow-sdk-browser-wallet` crate.
 
+## Facade Surface
+
+`cow-sdk` is the primary facade crate.
+
+- Native and server-side consumers use the default `cow-sdk` surface for core types, contracts, signing, orderbook access, app-data helpers, and trading workflows.
+- WASM consumers can use the same facade surface for pure SDK flows.
+- Browser wallet support is additive and exposed through the `browser-wallet` feature plus the `cow-sdk-browser-wallet` crate.
+- Subgraph access remains a separate `cow-sdk-subgraph` crate and is intentionally not re-exported from `cow-sdk`.
+
 ## Typed Public API
 
 The default Rust contract is now strongly typed where this workspace owns the meaning:
@@ -31,6 +40,13 @@ The default Rust contract is now strongly typed where this workspace owns the me
 - raw calldata and byte payloads use `cow_sdk_core::HexData`
 
 String-heavy values remain in explicit wire DTOs such as `cow-sdk-orderbook` request and response models, because the upstream HTTP API is string-heavy.
+
+## Toolchain Policy
+
+- Public MSRV: Rust `1.94`
+- Contributor toolchain pin: Rust `1.94.1` in [rust-toolchain.toml](rust-toolchain.toml)
+
+The MSRV is the compatibility contract for downstream users. The exact toolchain pin exists to keep local development, CI, and reproducible validation aligned.
 
 ## Docs
 
@@ -52,6 +68,7 @@ String-heavy values remain in explicit wire DTOs such as `cow-sdk-orderbook` req
 cargo test --workspace
 cargo check -p cow-sdk --examples
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
+cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
 ```
 
 ## Examples

@@ -37,9 +37,9 @@ Schema-derived evidence is a test and review aid, not a public API shortcut.
 - Subgraph evidence is tied to `cowprotocol/cow-sdk` subgraph query and API entries in `parity/source-lock.yaml`.
 - Orderbook source-schema review includes `crates/orderbook/openapi.yml`, `crates/shared/src/order_validation.rs`, and `crates/orderbook/src/app_data.rs`.
 - Subgraph source-schema review includes `packages/subgraph/src/api.ts`, `packages/subgraph/src/graphql.ts`, and `packages/subgraph/src/queries.ts`.
-- Generated or schema-derived Rust mirrors, if added later, must live in obvious internal or test-only locations.
-- Public DTOs remain hand-reviewed SDK contracts unless a later review explicitly promotes a generated source into the public API.
+- Generated or schema-derived Rust mirrors must live in obvious internal or test-only locations.
+- Public DTOs remain hand-reviewed SDK contracts.
 
 ## Current Schema-Derived Artifacts
 
-No generated or schema-derived Rust mirrors are part of the public SDK API in this review slice. Current evidence is committed as fixtures, contract tests, and source-lock references.
+No generated or schema-derived Rust mirrors are part of the public SDK API. Current evidence is committed as fixtures, contract tests, and source-lock references.

@@ -13,9 +13,9 @@ Covered in this revision:
 - order signing and cancellation signing payload preparation,
 - trading posting wrapper paths.
 
-Planned for a later revision:
+Additional category:
 
-- generated/schema-derived artifact review.
+- generated/schema-derived artifacts.
 
 ## Classification
 
@@ -100,7 +100,7 @@ Validation evidence:
 
 ## Open Items
 
-Generated or schema-derived artifact review remains open. Any future schema mirror should stay internal or test-only unless a later review explicitly promotes it into public SDK API.
+Generated or schema-derived artifacts are kept internal or test-only and are not part of the public SDK API.
 
 ## Validation
 

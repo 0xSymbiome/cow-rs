@@ -31,7 +31,7 @@ Then inspect the crate tests that cover the surface under review. The most usefu
 | `GraphTransport` | Deferred adapter contract | Kept as an extension seam. The subgraph client currently owns typed GraphQL query execution directly. |
 | `PinningTransport` | Deferred adapter contract | Kept as an extension seam. App-data pinning currently uses app-data-specific request and credential semantics. |
 
-The deferred transport traits should not be read as a claim that every transport crate routes through `cow-sdk-core` today. They are stable adapter contracts for consumers and future adapter work.
+The deferred transport traits are stable extension contracts. Orderbook, subgraph, and app-data keep request execution local because each transport surface has distinct retry, header, credential, and decoding semantics.
 
 ## Transport Policy Review
 
@@ -100,9 +100,24 @@ The `cow-sdk-*` package family is intentionally multi-crate:
 
 This avoids a single crate becoming the owner of unrelated concerns while still giving consumers an ergonomic root package.
 
+## Public Package Policy
+
+Packaging posture is explicit in the manifests:
+
+- public MSRV is Rust `1.94` through `workspace.package.rust-version`
+- contributor execution stays pinned to Rust `1.94.1` in `rust-toolchain.toml`
+- key public crates opt into workspace lint policy through `[lints] workspace = true`
+- docs.rs behavior is declared explicitly for the facade and the primary transport/core crates
+
+For the facade specifically:
+
+- `cow-sdk` docs.rs builds with the `browser-wallet` feature enabled so the optional browser-wallet surface is visible in rendered docs
+- `cow-sdk-subgraph` remains a separate package and is not folded into the facade for documentation convenience
+- the facade remains a re-export layer and does not gain implementation ownership through packaging polish
+
 ## Generated Or Schema-Derived Artifacts
 
-No generated or schema-derived public API is introduced here. If schema mirrors are added later for drift evidence, they should remain non-public or test-only unless a later change explicitly promotes them into the public SDK API.
+Generated or schema-derived artifacts are not part of the public SDK API. Schema mirrors, if present, belong in internal or test-only locations rather than the supported public surface.
 
 Orderbook OpenAPI and subgraph query evidence is tied to pinned entries in `parity/source-lock.yaml`; see [Parity Scope](parity-scope.md).
 

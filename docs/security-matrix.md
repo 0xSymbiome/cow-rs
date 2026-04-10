@@ -44,4 +44,4 @@ Update this matrix in the same change when a crate or example gains material tes
 - Mocked transports should assert request shape and failure behavior where those paths are part of the reviewed surface.
 - WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible.
 - Live quote, orderbook, subgraph, and wallet checks stay manual unless explicitly promoted into a deterministic routed or injected test.
-- Schema-derived evidence is test-only unless a later change explicitly promotes it into public SDK API.
+- Schema-derived evidence stays test-only and outside the public SDK API.

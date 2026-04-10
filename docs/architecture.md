@@ -115,6 +115,6 @@ The main exception is `cow-sdk-orderbook`, which keeps orderbook HTTP DTOs strin
 
 ## Why This Shape
 
-This layout keeps low-level protocol semantics stable, gives higher-level consumers a clean trading entrypoint, and avoids coupling browser-only behavior to native server and bot use cases. Generated or schema-derived evidence should remain non-public or test-only unless a later review explicitly promotes it into public SDK API.
+This layout keeps low-level protocol semantics stable, gives higher-level consumers a clean trading entrypoint, and avoids coupling browser-only behavior to native server and bot use cases. Generated or schema-derived artifacts belong in internal or test-only locations rather than the supported public SDK API.
 
 For a review-oriented walkthrough, see [Review Guide](review-guide.md).
