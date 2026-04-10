@@ -1,6 +1,8 @@
 mod common;
 
-use cow_sdk_core::{AddressPerChain, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, SupportedChainId};
+use cow_sdk_core::{
+    AddressPerChain, Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, SupportedChainId,
+};
 use cow_sdk_trading::{
     GAS_LIMIT_DEFAULT, PostTradeAdditionalParams, TraderParameters, cancel_order_onchain,
     get_eth_flow_transaction, get_pre_sign_transaction, onchain_cancellation_transaction,
@@ -32,8 +34,11 @@ fn presign_transaction_uses_zero_value_margin_and_settlement_override() {
     .expect("pre-sign transaction should build");
 
     assert_eq!(tx.to, Some(address(CUSTOM_SETTLEMENT)));
-    assert_eq!(tx.value.as_deref(), Some("0"));
-    assert_eq!(tx.gas_limit.as_deref(), Some("150000"));
+    assert_eq!(tx.value, Some(Amount::zero()));
+    assert_eq!(
+        tx.gas_limit,
+        Some(Amount::new("150000").expect("test gas literal must be valid"))
+    );
 }
 
 #[tokio::test]
@@ -72,10 +77,13 @@ async fn ethflow_transaction_uses_wrapped_native_value_margin_and_ethflow_overri
         cow_sdk_core::wrapped_native_token(SupportedChainId::Sepolia).address
     );
     assert_eq!(
-        transaction.transaction.value.as_deref(),
-        Some(transaction.order_to_sign.sell_amount.as_str())
+        transaction.transaction.value,
+        Some(transaction.order_to_sign.sell_amount.clone())
     );
-    assert_eq!(transaction.transaction.gas_limit.as_deref(), Some("150000"));
+    assert_eq!(
+        transaction.transaction.gas_limit,
+        Some(Amount::new("150000").expect("test gas literal must be valid"))
+    );
 }
 
 #[test]
@@ -129,7 +137,10 @@ fn onchain_cancellation_uses_fallback_gas_when_estimation_fails() {
     .expect("fallback cancellation should build");
 
     let expected = GAS_LIMIT_DEFAULT.to_string();
-    assert_eq!(tx.gas_limit.as_deref(), Some(expected.as_str()));
+    assert_eq!(
+        tx.gas_limit,
+        Some(Amount::new(expected).expect("fallback gas literal must be valid"))
+    );
 }
 
 #[test]
@@ -139,5 +150,5 @@ fn cancel_order_onchain_sends_transaction_and_returns_hash() {
     let tx_hash = cancel_order_onchain(&signer, SupportedChainId::Sepolia, &regular_order(), None)
         .expect("onchain cancellation should send");
 
-    assert_eq!(tx_hash, crate::common::TX_HASH);
+    assert_eq!(tx_hash.as_str(), crate::common::TX_HASH);
 }

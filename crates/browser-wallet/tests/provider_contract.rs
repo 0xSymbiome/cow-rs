@@ -1,6 +1,6 @@
 use cow_sdk_browser_wallet::{BrowserWallet, MockEip1193Transport};
 use cow_sdk_core::AsyncProvider;
-use cow_sdk_core::{Address, ContractCall, SupportedChainId};
+use cow_sdk_core::{Address, Amount, ContractCall, HexData, SupportedChainId};
 
 #[tokio::test(flavor = "current_thread")]
 async fn mock_provider_satisfies_async_provider_contracts() {
@@ -34,12 +34,12 @@ async fn mock_provider_satisfies_async_provider_contracts() {
         provider
             .call(&cow_sdk_core::TransactionRequest {
                 to: Some(Address::new("0x1111111111111111111111111111111111111111").unwrap()),
-                data: Some("0x1234".to_owned()),
-                value: Some("0".to_owned()),
-                gas_limit: Some("21000".to_owned()),
+                data: Some(HexData::new("0x1234").unwrap()),
+                value: Some(Amount::zero()),
+                gas_limit: Some(Amount::from(21_000u32)),
             })
             .await
             .unwrap(),
-        format!("0x{}2a", "0".repeat(62))
+        HexData::new(format!("0x{}2a", "0".repeat(62))).unwrap()
     );
 }

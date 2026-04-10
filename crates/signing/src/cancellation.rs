@@ -190,6 +190,6 @@ fn cancellation_signing_payload(
         domain,
         fields: cancellation_fields(),
         value_json,
-        digest,
+        digest: digest.as_str().to_owned(),
     })
 }

@@ -1,6 +1,6 @@
 use cow_sdk_core::{
-    Address, AsyncSigner, ProtocolOptions, Signer, SupportedChainId, TransactionRequest,
-    eth_flow_contract_address, settlement_contract_address,
+    Address, Amount, AsyncSigner, HexData, ProtocolOptions, Signer, SupportedChainId,
+    TransactionHash, TransactionRequest, eth_flow_contract_address, settlement_contract_address,
 };
 use cow_sdk_orderbook::Order;
 
@@ -29,8 +29,8 @@ where
     let settlement = resolve_settlement_address(chain_id, options);
     let tx = TransactionRequest {
         to: Some(settlement),
-        data: Some(encode_set_pre_signature(order_uid, true)?),
-        value: Some("0".to_owned()),
+        data: Some(HexData::new(encode_set_pre_signature(order_uid, true)?)?),
+        value: Some(Amount::zero()),
         gas_limit: None,
     };
     let gas = signer
@@ -41,7 +41,7 @@ where
         });
     let gas_limit = match gas {
         Ok(value) => gas_with_margin(&value)?,
-        Err(_) => gas_with_margin(&GAS_LIMIT_DEFAULT.to_string())?,
+        Err(_) => default_gas_limit(),
     };
 
     Ok(TransactionRequest {
@@ -63,8 +63,8 @@ where
     let settlement = resolve_settlement_address(chain_id, options);
     let tx = TransactionRequest {
         to: Some(settlement),
-        data: Some(encode_set_pre_signature(order_uid, true)?),
-        value: Some("0".to_owned()),
+        data: Some(HexData::new(encode_set_pre_signature(order_uid, true)?)?),
+        value: Some(Amount::zero()),
         gas_limit: None,
     };
     let gas = signer
@@ -76,7 +76,7 @@ where
         });
     let gas_limit = match gas {
         Ok(value) => gas_with_margin(&value)?,
-        Err(_) => gas_with_margin(&GAS_LIMIT_DEFAULT.to_string())?,
+        Err(_) => default_gas_limit(),
     };
 
     Ok(TransactionRequest {
@@ -166,12 +166,12 @@ where
     .await?;
     let tx = TransactionRequest {
         to: Some(resolve_eth_flow_address(chain_id, Some(&options))),
-        data: Some(encode_ethflow_create_order(
+        data: Some(HexData::new(encode_ethflow_create_order(
             &order_to_sign,
             adjusted
                 .quote_id
                 .ok_or(TradingError::MissingQuoteId("EthFlow transaction"))?,
-        )?),
+        )?)?),
         value: Some(order_to_sign.sell_amount.clone()),
         gas_limit: None,
     };
@@ -184,7 +184,7 @@ where
         });
     let gas_limit = match gas {
         Ok(value) => gas_with_margin(&value)?,
-        Err(_) => gas_with_margin(&GAS_LIMIT_DEFAULT.to_string())?,
+        Err(_) => default_gas_limit(),
     };
 
     Ok(EthFlowTransaction {
@@ -210,15 +210,15 @@ where
     let mut tx = if order.ethflow_data.is_some() {
         TransactionRequest {
             to: Some(resolve_eth_flow_address(chain_id, options)),
-            data: Some(encode_ethflow_invalidate_order(order)?),
-            value: Some("0".to_owned()),
+            data: Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
+            value: Some(Amount::zero()),
             gas_limit: None,
         }
     } else {
         TransactionRequest {
             to: Some(resolve_settlement_address(chain_id, options)),
-            data: Some(encode_invalidate_order_uid(&order.uid)?),
-            value: Some("0".to_owned()),
+            data: Some(HexData::new(encode_invalidate_order_uid(&order.uid)?)?),
+            value: Some(Amount::zero()),
             gas_limit: None,
         }
     };
@@ -229,8 +229,8 @@ where
             message: error.to_string(),
         });
     tx.gas_limit = Some(match gas {
-        Ok(value) => parse_integer("gas", &value)?.to_string(),
-        Err(_) => GAS_LIMIT_DEFAULT.to_string(),
+        Ok(value) => Amount::new(parse_integer("gas", value.as_str())?.to_string())?,
+        Err(_) => default_gas_limit(),
     });
     Ok(tx)
 }
@@ -248,15 +248,15 @@ where
     let mut tx = if order.ethflow_data.is_some() {
         TransactionRequest {
             to: Some(resolve_eth_flow_address(chain_id, options)),
-            data: Some(encode_ethflow_invalidate_order(order)?),
-            value: Some("0".to_owned()),
+            data: Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
+            value: Some(Amount::zero()),
             gas_limit: None,
         }
     } else {
         TransactionRequest {
             to: Some(resolve_settlement_address(chain_id, options)),
-            data: Some(encode_invalidate_order_uid(&order.uid)?),
-            value: Some("0".to_owned()),
+            data: Some(HexData::new(encode_invalidate_order_uid(&order.uid)?)?),
+            value: Some(Amount::zero()),
             gas_limit: None,
         }
     };
@@ -268,8 +268,8 @@ where
             message: error.to_string(),
         });
     tx.gas_limit = Some(match gas {
-        Ok(value) => parse_integer("gas", &value)?.to_string(),
-        Err(_) => GAS_LIMIT_DEFAULT.to_string(),
+        Ok(value) => Amount::new(parse_integer("gas", value.as_str())?.to_string())?,
+        Err(_) => default_gas_limit(),
     });
     Ok(tx)
 }
@@ -279,7 +279,7 @@ pub fn cancel_order_onchain<S>(
     chain_id: SupportedChainId,
     order: &Order,
     options: Option<&ProtocolOptions>,
-) -> Result<String, TradingError>
+) -> Result<TransactionHash, TradingError>
 where
     S: Signer,
     S::Error: std::fmt::Display,
@@ -299,7 +299,7 @@ pub async fn cancel_order_onchain_async<S>(
     chain_id: SupportedChainId,
     order: &Order,
     options: Option<&ProtocolOptions>,
-) -> Result<String, TradingError>
+) -> Result<TransactionHash, TradingError>
 where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
@@ -366,6 +366,10 @@ fn resolve_eth_flow_address(
         })
 }
 
+fn default_gas_limit() -> Amount {
+    Amount::new(GAS_LIMIT_DEFAULT.to_string()).expect("static gas limit literal must remain valid")
+}
+
 fn encode_set_pre_signature(
     order_uid: &cow_sdk_core::OrderUid,
     enabled: bool,
@@ -419,9 +423,9 @@ fn encode_ethflow_tuple_call(
         &EthFlowTupleData {
             buy_token: &order.buy_token,
             receiver: &order.receiver,
-            sell_amount: &order.sell_amount,
-            buy_amount: &order.buy_amount,
-            fee_amount: &order.fee_amount,
+            sell_amount: order.sell_amount.as_str(),
+            buy_amount: order.buy_amount.as_str(),
+            fee_amount: order.fee_amount.as_str(),
             partially_fillable: order.partially_fillable,
             quote_id,
             app_data: order.app_data.as_str(),

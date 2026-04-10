@@ -1,8 +1,8 @@
 use num_bigint::Sign;
 
 use cow_sdk_core::{
-    Address, AsyncProvider, AsyncSigner, ContractCall, Provider, Signer, SupportedChainId,
-    TransactionRequest, vault_relayer_address,
+    Address, Amount, AsyncProvider, AsyncSigner, ContractCall, Provider, Signer, SupportedChainId,
+    TransactionHash, TransactionRequest, vault_relayer_address,
 };
 
 use crate::slippage::parse_integer;
@@ -18,7 +18,7 @@ pub fn get_cow_protocol_allowance<P>(
     chain_id: SupportedChainId,
     env: cow_sdk_core::CowEnv,
     vault_relayer_override: Option<&Address>,
-) -> Result<String, TradingError>
+) -> Result<Amount, TradingError>
 where
     P: Provider,
     P::Error: std::fmt::Display,
@@ -28,7 +28,7 @@ where
         .unwrap_or_else(|| vault_relayer_address(chain_id, env));
     let args_json = serde_json::to_string(&(owner.as_str(), spender.as_str()))
         .map_err(|error| TradingError::InvalidInput(error.to_string()))?;
-    provider
+    let raw = provider
         .read_contract(&ContractCall {
             address: token_address.clone(),
             method: "allowance".to_owned(),
@@ -38,7 +38,8 @@ where
         .map_err(|error| TradingError::Provider {
             operation: "read_contract",
             message: error.to_string(),
-        })
+        })?;
+    decode_allowance_result(&raw)
 }
 
 pub async fn get_cow_protocol_allowance_async<P>(
@@ -48,7 +49,7 @@ pub async fn get_cow_protocol_allowance_async<P>(
     chain_id: SupportedChainId,
     env: cow_sdk_core::CowEnv,
     vault_relayer_override: Option<&Address>,
-) -> Result<String, TradingError>
+) -> Result<Amount, TradingError>
 where
     P: AsyncProvider,
     P::Error: std::fmt::Display,
@@ -58,7 +59,7 @@ where
         .unwrap_or_else(|| vault_relayer_address(chain_id, env));
     let args_json = serde_json::to_string(&(owner.as_str(), spender.as_str()))
         .map_err(|error| TradingError::InvalidInput(error.to_string()))?;
-    provider
+    let raw = provider
         .read_contract(&ContractCall {
             address: token_address.clone(),
             method: "allowance".to_owned(),
@@ -69,7 +70,8 @@ where
         .map_err(|error| TradingError::Provider {
             operation: "read_contract",
             message: error.to_string(),
-        })
+        })?;
+    decode_allowance_result(&raw)
 }
 
 pub fn approval_transaction(
@@ -83,8 +85,11 @@ pub fn approval_transaction(
         .unwrap_or_else(|| vault_relayer_address(chain_id, env));
     Ok(TransactionRequest {
         to: Some(params.token_address.clone()),
-        data: Some(encode_approve_call(&spender, &params.amount)?),
-        value: Some("0".to_owned()),
+        data: Some(cow_sdk_core::HexData::new(encode_approve_call(
+            &spender,
+            &params.amount,
+        )?)?),
+        value: Some(Amount::zero()),
         gas_limit: None,
     })
 }
@@ -94,7 +99,7 @@ pub fn approve_cow_protocol<S>(
     params: &ApprovalParameters,
     chain_id: SupportedChainId,
     env: cow_sdk_core::CowEnv,
-) -> Result<String, TradingError>
+) -> Result<TransactionHash, TradingError>
 where
     S: Signer,
     S::Error: std::fmt::Display,
@@ -114,7 +119,7 @@ pub async fn approve_cow_protocol_async<S>(
     params: &ApprovalParameters,
     chain_id: SupportedChainId,
     env: cow_sdk_core::CowEnv,
-) -> Result<String, TradingError>
+) -> Result<TransactionHash, TradingError>
 where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
@@ -130,7 +135,7 @@ where
         })
 }
 
-fn encode_approve_call(spender: &Address, amount: &str) -> Result<String, TradingError> {
+fn encode_approve_call(spender: &Address, amount: &Amount) -> Result<String, TradingError> {
     let selector = cow_sdk_contracts::function_magic_value(ERC20_APPROVE_SIGNATURE);
     let mut encoded = Vec::new();
     encoded.extend_from_slice(&decode_hex_field(&selector)?);
@@ -165,22 +170,33 @@ fn encode_address_word(address: &Address) -> Result<[u8; 32], TradingError> {
     Ok(out)
 }
 
-fn encode_uint_word(value: &str) -> Result<[u8; 32], TradingError> {
-    let parsed = parse_integer("uint256", value)?;
+fn encode_uint_word(value: &Amount) -> Result<[u8; 32], TradingError> {
+    let parsed = parse_integer("uint256", value.as_str())?;
     let (sign, bytes) = parsed.to_bytes_be();
     if sign == Sign::Minus {
         return Err(TradingError::InvalidNumeric {
             field: "uint256",
-            value: value.to_owned(),
+            value: value.as_str().to_owned(),
         });
     }
     if bytes.len() > 32 {
         return Err(TradingError::NumericOverflow {
             field: "uint256",
-            value: value.to_owned(),
+            value: value.as_str().to_owned(),
         });
     }
     let mut out = [0u8; 32];
     out[32 - bytes.len()..].copy_from_slice(&bytes);
     Ok(out)
+}
+
+fn decode_allowance_result(raw: &str) -> Result<Amount, TradingError> {
+    match serde_json::from_str::<serde_json::Value>(raw) {
+        Ok(serde_json::Value::String(value)) => Ok(Amount::new(value)?),
+        Ok(serde_json::Value::Number(value)) => Ok(Amount::new(value.to_string())?),
+        Ok(_) => Err(TradingError::InvalidInput(
+            "allowance response must be a string or number".to_owned(),
+        )),
+        Err(_) => Ok(Amount::new(raw.to_owned())?),
+    }
 }

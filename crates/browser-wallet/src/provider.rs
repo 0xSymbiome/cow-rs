@@ -6,8 +6,8 @@ use num_bigint::BigUint;
 use serde_json::{Map, Value, json};
 
 use cow_sdk_core::{
-    Address, AsyncProvider, BlockInfo, ChainId, ContractCall, ContractHandle, TransactionReceipt,
-    TransactionRequest,
+    Address, Amount, AsyncProvider, BlockInfo, ChainId, ContractCall, ContractHandle, HexData,
+    TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
 use crate::{BrowserWalletError, EventLog, WalletEvent, WalletSession, signer::Eip1193Signer};
@@ -155,7 +155,7 @@ impl AsyncProvider for Eip1193Provider {
         self.query_chain_id().await
     }
 
-    async fn get_code(&self, address: &Address) -> Result<Option<String>, Self::Error> {
+    async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
         let value = self
             .request("eth_getCode", Some(json!([address.as_str(), "latest"])))
             .await?;
@@ -163,16 +163,19 @@ impl AsyncProvider for Eip1193Provider {
         if code == "0x" || code == "0x0" {
             Ok(None)
         } else {
-            Ok(Some(code))
+            Ok(Some(HexData::new(code)?))
         }
     }
 
     async fn get_transaction_receipt(
         &self,
-        transaction_hash: &str,
+        transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
         let value = self
-            .request("eth_getTransactionReceipt", Some(json!([transaction_hash])))
+            .request(
+                "eth_getTransactionReceipt",
+                Some(json!([transaction_hash.as_str()])),
+            )
             .await?;
         if value.is_null() {
             return Ok(None);
@@ -187,7 +190,7 @@ impl AsyncProvider for Eip1193Provider {
                 )
             })?;
         Ok(Some(TransactionReceipt {
-            transaction_hash: hash.to_owned(),
+            transaction_hash: TransactionHash::new(hash)?,
         }))
     }
 
@@ -216,17 +219,17 @@ impl AsyncProvider for Eip1193Provider {
         Ok(Eip1193Signer::new(self.clone(), account_hint))
     }
 
-    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<String, Self::Error> {
+    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
         let value = self
             .request(
                 "eth_getStorageAt",
                 Some(json!([address.as_str(), slot, "latest"])),
             )
             .await?;
-        expect_string(&value, "eth_getStorageAt")
+        HexData::new(expect_string(&value, "eth_getStorageAt")?).map_err(Into::into)
     }
 
-    async fn call(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
+    async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         let value = self
             .request(
                 "eth_call",
@@ -236,7 +239,7 @@ impl AsyncProvider for Eip1193Provider {
                 ])),
             )
             .await?;
-        expect_string(&value, "eth_call")
+        HexData::new(expect_string(&value, "eth_call")?).map_err(Into::into)
     }
 
     async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
@@ -286,7 +289,11 @@ impl AsyncProvider for Eip1193Provider {
                 )
             })
             .and_then(|number| parse_chain_id_value(number, "eth_getBlockByNumber"))?;
-        let hash = value.get("hash").and_then(Value::as_str).map(str::to_owned);
+        let hash = value
+            .get("hash")
+            .and_then(Value::as_str)
+            .map(cow_sdk_core::BlockHash::new)
+            .transpose()?;
         Ok(BlockInfo { number, hash })
     }
 
@@ -346,16 +353,10 @@ pub(crate) fn parse_chain_id_value(
 pub(crate) fn parse_quantity_to_decimal(
     value: &Value,
     method: &str,
-) -> Result<String, BrowserWalletError> {
+) -> Result<Amount, BrowserWalletError> {
     match value {
-        Value::String(raw) => {
-            let as_hex = hex_quantity(raw)?;
-            let parsed = BigUint::parse_bytes(as_hex.trim_start_matches("0x").as_bytes(), 16)
-                .ok_or_else(|| {
-                    BrowserWalletError::malformed_response(method, "invalid quantity")
-                })?;
-            Ok(parsed.to_str_radix(10))
-        }
+        Value::String(raw) => Amount::new(raw.clone())
+            .map_err(|error| BrowserWalletError::malformed_response(method, error.to_string())),
         _ => Err(BrowserWalletError::malformed_response(
             method,
             "expected hex quantity string",
@@ -401,13 +402,19 @@ pub(crate) fn transaction_to_rpc(
         object.insert("to".to_owned(), Value::String(to.as_str().to_owned()));
     }
     if let Some(data) = &tx.data {
-        object.insert("data".to_owned(), Value::String(data.clone()));
+        object.insert("data".to_owned(), Value::String(data.as_str().to_owned()));
     }
     if let Some(value) = &tx.value {
-        object.insert("value".to_owned(), Value::String(hex_quantity(value)?));
+        object.insert(
+            "value".to_owned(),
+            Value::String(hex_quantity(value.as_str())?),
+        );
     }
     if let Some(gas_limit) = &tx.gas_limit {
-        object.insert("gas".to_owned(), Value::String(hex_quantity(gas_limit)?));
+        object.insert(
+            "gas".to_owned(),
+            Value::String(hex_quantity(gas_limit.as_str())?),
+        );
     }
     Ok(Value::Object(object))
 }

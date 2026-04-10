@@ -2,7 +2,9 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use cow_sdk_core::{Address, OrderBalance, OrderKind, OrderUid, TypedDataDomain};
+use cow_sdk_core::{
+    Address, Amount, AppDataHash, HexData, OrderBalance, OrderKind, OrderUid, TypedDataDomain,
+};
 
 use crate::{
     ContractsError,
@@ -42,7 +44,7 @@ pub struct TradeFlags {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeExecution {
-    pub executed_amount: String,
+    pub executed_amount: Amount,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -52,7 +54,7 @@ pub struct OrderRefunds {
     pub pre_signatures: Vec<OrderUid>,
 }
 
-pub type Prices = BTreeMap<String, String>;
+pub type Prices = BTreeMap<Address, Amount>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -60,17 +62,17 @@ pub struct Trade {
     pub sell_token_index: usize,
     pub buy_token_index: usize,
     pub receiver: Address,
-    pub sell_amount: String,
-    pub buy_amount: String,
+    pub sell_amount: Amount,
+    pub buy_amount: Amount,
     pub valid_to: u32,
-    pub app_data: cow_sdk_core::AppDataHash,
-    pub fee_amount: String,
+    pub app_data: AppDataHash,
+    pub fee_amount: Amount,
     pub flags: u8,
-    pub executed_amount: String,
+    pub executed_amount: Amount,
     pub signature: String,
 }
 
-pub type EncodedSettlement = (Vec<Address>, Vec<String>, Vec<Trade>, [Vec<Interaction>; 3]);
+pub type EncodedSettlement = (Vec<Address>, Vec<Amount>, Vec<Trade>, [Vec<Interaction>; 3]);
 
 #[derive(Debug, Clone, Default)]
 pub struct TokenRegistry {
@@ -173,17 +175,17 @@ impl SettlementEncoder {
             call_data.extend_from_slice(&abi_encode_bytes_array(&encoded_items));
             interactions.push(Interaction {
                 target: self.domain.verifying_contract.clone(),
-                value: "0".to_owned(),
-                call_data: format!("0x{}", hex::encode(call_data)),
+                value: Amount::zero(),
+                call_data: HexData::new(format!("0x{}", hex::encode(call_data)))?,
             });
         }
         Ok(interactions)
     }
 
-    pub fn clearing_prices(&self, prices: &Prices) -> Result<Vec<String>, ContractsError> {
-        let normalized: BTreeMap<String, String> = prices
+    pub fn clearing_prices(&self, prices: &Prices) -> Result<Vec<Amount>, ContractsError> {
+        let normalized: BTreeMap<String, Amount> = prices
             .iter()
-            .map(|(token, price)| (token.to_ascii_lowercase(), price.clone()))
+            .map(|(token, price)| (token.normalized_key(), price.clone()))
             .collect();
 
         self.tokens
@@ -209,7 +211,7 @@ impl SettlementEncoder {
             Some(execution) => execution,
             None if order.partially_fillable => return Err(ContractsError::MissingExecutedAmount),
             None => TradeExecution {
-                executed_amount: "0".to_owned(),
+                executed_amount: Amount::zero(),
             },
         };
         self.trades.push(encode_trade(

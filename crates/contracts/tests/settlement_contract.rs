@@ -7,7 +7,9 @@ use cow_sdk_contracts::{
     Signature, SigningScheme, TokenRegistry, Trade, TradeExecution, TradeFlags, decode_order,
     decode_order_flags, decode_trade_flags, encode_order_flags, encode_trade_flags,
 };
-use cow_sdk_core::{Address, AppDataHex, OrderBalance, OrderKind, OrderUid, TypedDataDomain};
+use cow_sdk_core::{
+    Address, Amount, AppDataHex, HexData, OrderBalance, OrderKind, OrderUid, TypedDataDomain,
+};
 
 use common::fixture_case;
 
@@ -25,14 +27,14 @@ fn sample_order(kind: OrderKind, partially_fillable: bool) -> Order {
         sell_token: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
         buy_token: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
         receiver: None,
-        sell_amount: "1000000000000000000".to_owned(),
-        buy_amount: "2000000000000000000000".to_owned(),
+        sell_amount: Amount::new("1000000000000000000").unwrap(),
+        buy_amount: Amount::new("2000000000000000000000").unwrap(),
         valid_to: 1_709_990_000,
         app_data: AppDataHex::new(
             "0x0000000000000000000000000000000000000000000000000000000000000000",
         )
         .unwrap(),
-        fee_amount: "5000000000000000".to_owned(),
+        fee_amount: Amount::new("5000000000000000").unwrap(),
         kind,
         partially_fillable,
         sell_token_balance: Some(OrderBalance::Internal),
@@ -118,7 +120,7 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
         &InteractionLike {
             target: Address::new("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(),
             value: None,
-            call_data: Some("0x12345678".to_owned()),
+            call_data: Some(HexData::new("0x12345678").unwrap()),
         },
         InteractionStage::Pre,
     );
@@ -127,25 +129,24 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
             &order,
             &sample_signature(),
             Some(TradeExecution {
-                executed_amount: "1000000000000000000".to_owned(),
+                executed_amount: Amount::new("1000000000000000000").unwrap(),
             }),
         )
         .unwrap();
 
-    let prices =
-        serde_json::from_value::<std::collections::BTreeMap<String, String>>(serde_json::json!({
-            "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "1000000000000000000",
-            "0x6b175474e89094c44da98b954eedeac495271d0f": "500000000000000",
-        }))
-        .unwrap();
+    let prices = serde_json::from_value::<cow_sdk_contracts::Prices>(serde_json::json!({
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "1000000000000000000",
+        "0x6b175474e89094c44da98b954eedeac495271d0f": "500000000000000",
+    }))
+    .unwrap();
 
     let encoded = encoder.encoded_settlement(&prices).unwrap();
     assert_eq!(encoded.0.len(), 2);
     assert_eq!(
         encoded.1,
         vec![
-            "1000000000000000000".to_owned(),
-            "500000000000000".to_owned()
+            Amount::new("1000000000000000000").unwrap(),
+            Amount::new("500000000000000").unwrap()
         ]
     );
     assert_eq!(encoded.2.len(), 1);
@@ -153,7 +154,7 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
     assert_eq!(encoded.3[InteractionStage::Intra as usize].len(), 0);
     assert_eq!(encoded.3[InteractionStage::Post as usize].len(), 0);
 
-    let missing = serde_json::from_value(serde_json::json!({
+    let missing = serde_json::from_value::<cow_sdk_contracts::Prices>(serde_json::json!({
         "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "1000000000000000000"
     }))
     .unwrap();
@@ -163,11 +164,11 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
         InteractionLike {
             target: Address::new("0x1234567890123456789012345678901234567890").unwrap(),
             value: None,
-            call_data: Some("0x87654321".to_owned()),
+            call_data: Some(HexData::new("0x87654321").unwrap()),
         },
         InteractionLike {
             target: Address::new("0xabcdef0123456789abcdef0123456789abcdef01").unwrap(),
-            value: Some("1".to_owned()),
+            value: Some(Amount::new("1").unwrap()),
             call_data: None,
         },
     ]);
@@ -211,11 +212,11 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
     let post = encoder.interactions().unwrap()[InteractionStage::Post as usize].clone();
     assert_eq!(post.len(), 2);
     assert_eq!(post[0].target, domain.verifying_contract);
-    assert!(post[0].call_data.starts_with(&selector(&format!(
+    assert!(post[0].call_data.as_str().starts_with(&selector(&format!(
         "{}(bytes[])",
         fixture["expected"]["methods"][0].as_str().unwrap()
     ))));
-    assert!(post[1].call_data.starts_with(&selector(&format!(
+    assert!(post[1].call_data.as_str().starts_with(&selector(&format!(
         "{}(bytes[])",
         fixture["expected"]["methods"][1].as_str().unwrap()
     ))));
@@ -241,14 +242,14 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
         sell_token_index: 0,
         buy_token_index: 1,
         receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        sell_amount: "10".to_owned(),
-        buy_amount: "20".to_owned(),
+        sell_amount: Amount::new("10").unwrap(),
+        buy_amount: Amount::new("20").unwrap(),
         valid_to: 123,
         app_data: AppDataHex::new(
             "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         )
         .unwrap(),
-        fee_amount: "1".to_owned(),
+        fee_amount: Amount::new("1").unwrap(),
         flags: encode_order_flags(&OrderFlags {
             kind: OrderKind::Sell,
             partially_fillable: false,
@@ -256,7 +257,7 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
             buy_token_balance: OrderBalance::Erc20,
         })
         .unwrap(),
-        executed_amount: "0".to_owned(),
+        executed_amount: Amount::zero(),
         signature: "0x".to_owned(),
     };
     let decoded = decode_order(

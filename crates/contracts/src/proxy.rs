@@ -20,9 +20,10 @@ where
     P::Error: std::fmt::Display,
 {
     decode_storage_address(
-        &provider
+        provider
             .get_storage_at(proxy, IMPLEMENTATION_STORAGE_SLOT)
-            .map_err(|error| ContractsError::Provider(error.to_string()))?,
+            .map_err(|error| ContractsError::Provider(error.to_string()))?
+            .as_str(),
     )
 }
 
@@ -32,9 +33,10 @@ where
     P::Error: std::fmt::Display,
 {
     decode_storage_address(
-        &provider
+        provider
             .get_storage_at(proxy, OWNER_STORAGE_SLOT)
-            .map_err(|error| ContractsError::Provider(error.to_string()))?,
+            .map_err(|error| ContractsError::Provider(error.to_string()))?
+            .as_str(),
     )
 }
 

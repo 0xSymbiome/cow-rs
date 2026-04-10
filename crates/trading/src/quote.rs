@@ -1,7 +1,7 @@
 use serde_json::{Map, Value, json};
 
 use cow_sdk_app_data::{AppDataParams, generate_app_data_doc, get_app_data_info};
-use cow_sdk_core::{AsyncSigner, ProtocolOptions, Signer};
+use cow_sdk_core::{Amount, AsyncSigner, ProtocolOptions, Signer};
 use cow_sdk_orderbook::{OrderQuoteRequest, PriceQuality, QuoteSide, SigningScheme};
 use cow_sdk_signing::order_typed_data;
 
@@ -238,11 +238,11 @@ where
             chain_id: trader.chain_id,
             from: trader.account.clone(),
             is_ethflow,
-            network_costs_amount: Some(quote_response.quote.fee_amount.clone()),
+            network_costs_amount: Some(Amount::new(quote_response.quote.fee_amount.clone())?),
             apply_costs_slippage_and_fees: true,
             protocol_fee_bps: sanitize_protocol_fee_bps(quote_response.protocol_fee_bps.as_deref()),
         },
-        &crate::swap_params_to_limit_order_params(&trade_parameters, &quote_response),
+        &crate::swap_params_to_limit_order_params(&trade_parameters, &quote_response)?,
         &app_data_info.app_data_keccak256,
     )?;
     let order_typed_data = order_typed_data(trader.chain_id, &order_to_sign, Some(&options))?;
@@ -270,8 +270,8 @@ fn build_quote_request(
         .clone()
         .unwrap_or_else(|| trader.account.clone());
     let side = match trade_parameters.kind {
-        cow_sdk_core::OrderKind::Sell => QuoteSide::sell(trade_parameters.amount.clone()),
-        cow_sdk_core::OrderKind::Buy => QuoteSide::buy(trade_parameters.amount.clone()),
+        cow_sdk_core::OrderKind::Sell => QuoteSide::sell(trade_parameters.amount.as_str()),
+        cow_sdk_core::OrderKind::Buy => QuoteSide::buy(trade_parameters.amount.as_str()),
     };
     let mut request = OrderQuoteRequest::new(
         trade_parameters.sell_token.clone(),

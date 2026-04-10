@@ -1,4 +1,4 @@
-use cow_sdk_core::{AsyncSigner, ProtocolOptions, Signer};
+use cow_sdk_core::{Amount, AsyncSigner, ProtocolOptions, Signer};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use cow_sdk_signing::{
     SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order_async,
@@ -99,7 +99,7 @@ where
         &swap_params_to_limit_order_params(
             &quote_results.trade_parameters,
             &quote_results.quote_response,
-        ),
+        )?,
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     );
@@ -113,7 +113,9 @@ where
             signing_scheme: advanced_settings
                 .and_then(|settings| settings.quote_request.as_ref())
                 .and_then(|request| request.signing_scheme),
-            network_costs_amount: Some(quote_results.quote_response.quote.fee_amount.clone()),
+            network_costs_amount: Some(Amount::new(
+                quote_results.quote_response.quote.fee_amount.clone(),
+            )?),
             ..additional
         },
         trader,
@@ -363,12 +365,12 @@ where
         sell_token: order_to_sign.sell_token.clone(),
         buy_token: order_to_sign.buy_token.clone(),
         receiver: Some(order_to_sign.receiver.clone()),
-        sell_amount: order_to_sign.sell_amount.clone(),
-        buy_amount: order_to_sign.buy_amount.clone(),
+        sell_amount: order_to_sign.sell_amount.as_str().to_owned(),
+        buy_amount: order_to_sign.buy_amount.as_str().to_owned(),
         valid_to: order_to_sign.valid_to,
         app_data: Some(app_data.full_app_data.clone()),
         app_data_hash: Some(app_data.app_data_keccak256.clone()),
-        fee_amount: order_to_sign.fee_amount.clone(),
+        fee_amount: order_to_sign.fee_amount.as_str().to_owned(),
         kind: order_to_sign.kind,
         partially_fillable: order_to_sign.partially_fillable,
         sell_token_balance: order_to_sign.sell_token_balance,

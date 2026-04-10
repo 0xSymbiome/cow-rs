@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use cow_sdk_core::{
-    ApiContext, AsyncProvider, AsyncSigner, CowEnv, Provider, Signer, SupportedChainId,
+    Amount, ApiContext, AsyncProvider, AsyncSigner, CowEnv, Provider, Signer, SupportedChainId,
+    TransactionHash,
 };
 use cow_sdk_orderbook::OrderBookApi;
 
@@ -269,7 +270,7 @@ impl TradingSdk {
         &self,
         params: &OrderTraderParameters,
         signer: &S,
-    ) -> Result<String, TradingError>
+    ) -> Result<TransactionHash, TradingError>
     where
         S: Signer,
         S::Error: std::fmt::Display,
@@ -281,7 +282,7 @@ impl TradingSdk {
         &self,
         params: &OrderTraderParameters,
         signer: &S,
-    ) -> Result<String, TradingError>
+    ) -> Result<TransactionHash, TradingError>
     where
         S: AsyncSigner,
         S::Error: std::fmt::Display,
@@ -320,7 +321,7 @@ impl TradingSdk {
         &self,
         provider: &P,
         params: &AllowanceParameters,
-    ) -> Result<String, TradingError>
+    ) -> Result<Amount, TradingError>
     where
         P: Provider,
         P::Error: std::fmt::Display,
@@ -343,7 +344,7 @@ impl TradingSdk {
         &self,
         provider: &P,
         params: &AllowanceParameters,
-    ) -> Result<String, TradingError>
+    ) -> Result<Amount, TradingError>
     where
         P: AsyncProvider,
         P::Error: std::fmt::Display,
@@ -367,7 +368,7 @@ impl TradingSdk {
         &self,
         signer: &S,
         params: &ApprovalParameters,
-    ) -> Result<String, TradingError>
+    ) -> Result<TransactionHash, TradingError>
     where
         S: Signer,
         S::Error: std::fmt::Display,
@@ -383,7 +384,7 @@ impl TradingSdk {
         &self,
         signer: &S,
         params: &ApprovalParameters,
-    ) -> Result<String, TradingError>
+    ) -> Result<TransactionHash, TradingError>
     where
         S: AsyncSigner,
         S::Error: std::fmt::Display,

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use cow_sdk_core::{Address, TypedDataDomain};
+use cow_sdk_core::{Address, Amount, TypedDataDomain};
 
 use crate::{
     ContractsError,
@@ -15,7 +15,7 @@ pub struct Swap {
     pub pool_id: String,
     pub asset_in: Address,
     pub asset_out: Address,
-    pub amount: String,
+    pub amount: Amount,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user_data: Option<String>,
 }
@@ -26,14 +26,14 @@ pub struct BatchSwapStep {
     pub pool_id: String,
     pub asset_in_index: usize,
     pub asset_out_index: usize,
-    pub amount: String,
+    pub amount: Amount,
     pub user_data: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SwapExecution {
-    pub limit_amount: String,
+    pub limit_amount: Amount,
 }
 
 pub type EncodedSwap = (Vec<BatchSwapStep>, Vec<Address>, Trade);

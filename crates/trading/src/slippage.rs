@@ -1,7 +1,7 @@
 use num_bigint::BigInt;
 use serde_json::Value;
 
-use cow_sdk_core::{OrderKind, QuoteAmountsAndCosts, SupportedChainId};
+use cow_sdk_core::{Amount, OrderKind, QuoteAmountsAndCosts, SupportedChainId};
 use cow_sdk_orderbook::{OrderQuoteResponse, PriceQuality, QuoteData};
 
 use crate::{
@@ -39,7 +39,7 @@ pub fn sanitize_protocol_fee_bps(protocol_fee_bps: Option<&str>) -> Option<f64> 
 pub fn suggest_slippage_from_fee(
     fee_amount: &str,
     multiplying_factor_percent: f64,
-) -> Result<String, TradingError> {
+) -> Result<Amount, TradingError> {
     let fee_amount = parse_integer("feeAmount", fee_amount)?;
 
     if fee_amount < BigInt::from(0) {
@@ -49,7 +49,7 @@ pub fn suggest_slippage_from_fee(
     }
 
     let percent = parse_percent_scaled(multiplying_factor_percent, "multiplyingFactorPercent")?;
-    Ok(apply_percentage(&fee_amount, percent).to_string())
+    Amount::new(apply_percentage(&fee_amount, percent).to_string()).map_err(Into::into)
 }
 
 pub fn suggest_slippage_from_volume(
@@ -57,7 +57,7 @@ pub fn suggest_slippage_from_volume(
     sell_amount_before_network_costs: &str,
     sell_amount_after_network_costs: &str,
     slippage_percent: f64,
-) -> Result<String, TradingError> {
+) -> Result<Amount, TradingError> {
     let sell_before = parse_integer(
         "sellAmountBeforeNetworkCosts",
         sell_amount_before_network_costs,
@@ -75,7 +75,7 @@ pub fn suggest_slippage_from_volume(
     }
 
     let percent = parse_percent_scaled(slippage_percent, "slippagePercent")?;
-    Ok(apply_percentage(&sell_amount, percent).to_string())
+    Amount::new(apply_percentage(&sell_amount, percent).to_string()).map_err(Into::into)
 }
 
 pub fn calculate_quote_amounts_and_costs(
@@ -83,7 +83,7 @@ pub fn calculate_quote_amounts_and_costs(
     slippage_percent_bps: u32,
     partner_fee_bps: Option<u32>,
     protocol_fee_bps: Option<f64>,
-) -> Result<QuoteAmountsAndCosts<String>, TradingError> {
+) -> Result<QuoteAmountsAndCosts, TradingError> {
     let is_sell = quote.kind == OrderKind::Sell;
     let sell_amount = parse_integer("sellAmount", &quote.sell_amount)?;
     let buy_amount = parse_integer("buyAmount", &quote.buy_amount)?;
@@ -193,25 +193,27 @@ pub fn calculate_quote_amounts_and_costs(
         is_sell,
         costs: cow_sdk_core::Costs {
             network_fee: cow_sdk_core::NetworkFee {
-                amount_in_sell_currency: network_cost_amount.to_string(),
-                amount_in_buy_currency: network_cost_amount_in_buy_currency.to_string(),
+                amount_in_sell_currency: Amount::new(network_cost_amount.to_string())?,
+                amount_in_buy_currency: Amount::new(
+                    network_cost_amount_in_buy_currency.to_string(),
+                )?,
             },
             partner_fee: cow_sdk_core::FeeComponent {
-                amount: partner_fee_amount.to_string(),
+                amount: Amount::new(partner_fee_amount.to_string())?,
                 bps: partner_fee_bps,
             },
             protocol_fee: cow_sdk_core::FeeComponent {
-                amount: protocol_fee_amount.to_string(),
+                amount: Amount::new(protocol_fee_amount.to_string())?,
                 bps: protocol_fee_bps.unwrap_or(0.0).round() as u32,
             },
         },
-        before_all_fees: before_all_fees.into_strings(),
-        before_network_costs: after_protocol_fees.clone().into_strings(),
-        after_protocol_fees: after_protocol_fees.into_strings(),
-        after_network_costs: after_network_costs.into_strings(),
-        after_partner_fees: after_partner_fees.into_strings(),
-        after_slippage: after_slippage.into_strings(),
-        amounts_to_sign: amounts_to_sign.into_strings(),
+        before_all_fees: before_all_fees.into_amounts()?,
+        before_network_costs: after_protocol_fees.clone().into_amounts()?,
+        after_protocol_fees: after_protocol_fees.into_amounts()?,
+        after_network_costs: after_network_costs.into_amounts()?,
+        after_partner_fees: after_partner_fees.into_amounts()?,
+        after_slippage: after_slippage.into_amounts()?,
+        amounts_to_sign: amounts_to_sign.into_amounts()?,
     })
 }
 
@@ -232,13 +234,13 @@ pub fn suggest_slippage_bps(
         suggest_slippage_from_fee(&quote.quote.fee_amount, SLIPPAGE_FEE_MULTIPLIER_PERCENT)?;
     let volume_amount = suggest_slippage_from_volume(
         amounts.is_sell,
-        &amounts.before_network_costs.sell_amount,
-        &amounts.after_network_costs.sell_amount,
+        amounts.before_network_costs.sell_amount.as_str(),
+        amounts.after_network_costs.sell_amount.as_str(),
         volume_multiplier_percent.unwrap_or(SLIPPAGE_VOLUME_MULTIPLIER_PERCENT),
     )?;
 
-    let total_slippage = parse_integer("totalSlippage", &fee_amount)?
-        + parse_integer("totalSlippage", &volume_amount)?;
+    let total_slippage = parse_integer("totalSlippage", fee_amount.as_str())?
+        + parse_integer("totalSlippage", volume_amount.as_str())?;
     let slippage_percent_scaled = get_slippage_percent_scaled(
         amounts.is_sell,
         &amounts.before_network_costs.sell_amount,
@@ -336,10 +338,10 @@ pub fn partner_fee_bps(partner_fee: Option<&Value>) -> Option<u32> {
     }
 }
 
-pub(crate) fn gas_with_margin(gas: &str) -> Result<String, TradingError> {
-    let gas = parse_integer("gas", gas)?;
+pub(crate) fn gas_with_margin(gas: &Amount) -> Result<Amount, TradingError> {
+    let gas = parse_integer("gas", gas.as_str())?;
     let margin = (&gas * BigInt::from(GAS_MARGIN_PERCENT)) / BigInt::from(100);
-    Ok((gas + margin).to_string())
+    Amount::new((gas + margin).to_string()).map_err(Into::into)
 }
 
 pub(crate) fn parse_integer(field: &'static str, value: &str) -> Result<BigInt, TradingError> {
@@ -419,17 +421,17 @@ fn get_protocol_fee_amount(
 
 fn get_slippage_percent_scaled(
     is_sell: bool,
-    sell_amount_before_network_costs: &str,
-    sell_amount_after_network_costs: &str,
+    sell_amount_before_network_costs: &Amount,
+    sell_amount_after_network_costs: &Amount,
     slippage: &str,
 ) -> Result<BigInt, TradingError> {
     let sell_before = parse_integer(
         "sellAmountBeforeNetworkCosts",
-        sell_amount_before_network_costs,
+        sell_amount_before_network_costs.as_str(),
     )?;
     let sell_after = parse_integer(
         "sellAmountAfterNetworkCosts",
-        sell_amount_after_network_costs,
+        sell_amount_after_network_costs.as_str(),
     )?;
     let slippage = parse_integer("slippage", slippage)?;
     let sell_amount = if is_sell { sell_after } else { sell_before };
@@ -475,10 +477,10 @@ struct AmountsBig {
 }
 
 impl AmountsBig {
-    fn into_strings(self) -> cow_sdk_core::Amounts<String> {
-        cow_sdk_core::Amounts {
-            sell_amount: self.sell_amount.to_string(),
-            buy_amount: self.buy_amount.to_string(),
-        }
+    fn into_amounts(self) -> Result<cow_sdk_core::Amounts<Amount>, TradingError> {
+        Ok(cow_sdk_core::Amounts {
+            sell_amount: Amount::new(self.sell_amount.to_string())?,
+            buy_amount: Amount::new(self.buy_amount.to_string())?,
+        })
     }
 }

@@ -1,9 +1,9 @@
 use num_bigint::BigInt;
 
 use cow_sdk_core::{
-    Address, AppDataHash, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, MAX_VALID_TO_EPOCH, OrderBalance,
-    ProtocolOptions, SupportedChainId, UnsignedOrder, addresses_equal, eth_flow_contract_address,
-    wrapped_native_token,
+    Address, Amount, AppDataHash, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, MAX_VALID_TO_EPOCH,
+    OrderBalance, ProtocolOptions, SupportedChainId, UnsignedOrder, addresses_equal,
+    eth_flow_contract_address, wrapped_native_token,
 };
 use cow_sdk_orderbook::OrderQuoteResponse;
 use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
@@ -24,7 +24,7 @@ pub struct OrderToSignParams {
     pub chain_id: SupportedChainId,
     pub from: Address,
     pub is_ethflow: bool,
-    pub network_costs_amount: Option<String>,
+    pub network_costs_amount: Option<Amount>,
     pub apply_costs_slippage_and_fees: bool,
     pub protocol_fee_bps: Option<f64>,
 }
@@ -57,16 +57,16 @@ pub fn adjust_ethflow_limit_parameters(
 pub fn swap_params_to_limit_order_params(
     trade_parameters: &TradeParameters,
     quote_response: &OrderQuoteResponse,
-) -> LimitTradeParameters {
-    LimitTradeParameters {
+) -> Result<LimitTradeParameters, TradingError> {
+    Ok(LimitTradeParameters {
         kind: trade_parameters.kind,
         owner: trade_parameters.owner.clone(),
         sell_token: trade_parameters.sell_token.clone(),
         sell_token_decimals: trade_parameters.sell_token_decimals,
         buy_token: trade_parameters.buy_token.clone(),
         buy_token_decimals: trade_parameters.buy_token_decimals,
-        sell_amount: quote_response.quote.sell_amount.clone(),
-        buy_amount: quote_response.quote.buy_amount.clone(),
+        sell_amount: Amount::new(quote_response.quote.sell_amount.clone())?,
+        buy_amount: Amount::new(quote_response.quote.buy_amount.clone())?,
         quote_id: quote_response.id,
         env: trade_parameters.env,
         settlement_contract_override: trade_parameters.settlement_contract_override.clone(),
@@ -77,7 +77,7 @@ pub fn swap_params_to_limit_order_params(
         valid_for: trade_parameters.valid_for,
         valid_to: trade_parameters.valid_to,
         partner_fee: trade_parameters.partner_fee.clone(),
-    }
+    })
 }
 
 pub fn get_order_to_sign(
@@ -85,9 +85,7 @@ pub fn get_order_to_sign(
     limit_parameters: &LimitTradeParameters,
     app_data_keccak256: &AppDataHash,
 ) -> Result<UnsignedOrder, TradingError> {
-    let network_costs_amount = params
-        .network_costs_amount
-        .unwrap_or_else(|| "0".to_owned());
+    let network_costs_amount = params.network_costs_amount.unwrap_or_else(Amount::zero);
     let receiver = limit_parameters
         .receiver
         .clone()
@@ -112,11 +110,11 @@ pub fn get_order_to_sign(
             sell_token: limit_parameters.sell_token.clone(),
             buy_token: limit_parameters.buy_token.clone(),
             receiver: Some(receiver.clone()),
-            sell_amount: limit_parameters.sell_amount.clone(),
-            buy_amount: limit_parameters.buy_amount.clone(),
+            sell_amount: limit_parameters.sell_amount.as_str().to_owned(),
+            buy_amount: limit_parameters.buy_amount.as_str().to_owned(),
             valid_to,
             app_data: app_data_keccak256.clone(),
-            fee_amount: network_costs_amount.clone(),
+            fee_amount: network_costs_amount.as_str().to_owned(),
             kind: limit_parameters.kind,
             partially_fillable: limit_parameters.partially_fillable,
             sell_token_balance: OrderBalance::Erc20,
@@ -148,7 +146,7 @@ pub fn get_order_to_sign(
         buy_amount: buy_amount_to_use,
         valid_to,
         app_data: app_data_keccak256.clone(),
-        fee_amount: "0".to_owned(),
+        fee_amount: Amount::zero(),
         kind: limit_parameters.kind,
         partially_fillable: limit_parameters.partially_fillable,
         sell_token_balance: OrderBalance::Erc20,
@@ -196,12 +194,12 @@ pub async fn calculate_unique_order_id(
     }
 }
 
-fn adjust_buy_amount(value: &str) -> Result<String, TradingError> {
-    let amount = parse_integer("buyAmount", value)?;
+fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
+    let amount = parse_integer("buyAmount", value.as_str())?;
     if amount <= BigInt::from(0) {
         return Err(TradingError::InvalidInput(format!(
             "buyAmount must be greater than 0: {amount}"
         )));
     }
-    Ok((amount - BigInt::from(1)).to_string())
+    Amount::new((amount - BigInt::from(1)).to_string()).map_err(Into::into)
 }

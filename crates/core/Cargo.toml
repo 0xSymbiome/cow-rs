@@ -15,6 +15,7 @@ categories = ["api-bindings", "cryptography::cryptocurrencies"]
 
 [dependencies]
 hex.workspace = true
+num-bigint.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 

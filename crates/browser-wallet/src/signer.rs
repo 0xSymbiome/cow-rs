@@ -1,5 +1,6 @@
 use cow_sdk_core::{
-    Address, AsyncSigner, TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
+    Address, Amount, AsyncSigner, TransactionReceipt, TransactionRequest, TypedDataDomain,
+    TypedDataField,
 };
 use serde_json::{Value, json};
 
@@ -131,11 +132,11 @@ impl AsyncSigner for Eip1193Signer {
             )
         })?;
         Ok(TransactionReceipt {
-            transaction_hash: hash.to_owned(),
+            transaction_hash: cow_sdk_core::TransactionHash::new(hash)?,
         })
     }
 
-    async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
+    async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error> {
         let from = self.account().await?;
         let value = self
             .provider

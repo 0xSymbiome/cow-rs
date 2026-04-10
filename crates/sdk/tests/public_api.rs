@@ -1,7 +1,7 @@
 use cow_sdk::{
-    Address, AppDataHex, ORDER_PRIMARY_TYPE, OrderBalance, OrderKind, PartialTraderParameters,
-    SupportedChainId, TradeParameters, TradingSdk, TradingSdkOptions, UnsignedOrder,
-    generate_order_id, order_typed_data,
+    Address, Amount, AppDataHex, ORDER_PRIMARY_TYPE, OrderBalance, OrderKind,
+    PartialTraderParameters, SupportedChainId, TradeParameters, TradingSdk, TradingSdkOptions,
+    UnsignedOrder, generate_order_id, order_typed_data,
 };
 
 #[test]
@@ -17,14 +17,14 @@ fn public_api_reexports_cover_primary_root_surface() {
         sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
         buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
         receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        sell_amount: "100000000000000000".to_owned(),
-        buy_amount: "250000000000000000".to_owned(),
+        sell_amount: Amount::new("100000000000000000").unwrap(),
+        buy_amount: Amount::new("250000000000000000").unwrap(),
         valid_to: 1_700_000_000,
         app_data: AppDataHex::new(
             "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         )
         .unwrap(),
-        fee_amount: "0".to_owned(),
+        fee_amount: Amount::zero(),
         kind: OrderKind::Sell,
         partially_fillable: false,
         sell_token_balance: OrderBalance::Erc20,
@@ -34,7 +34,7 @@ fn public_api_reexports_cover_primary_root_surface() {
     let generated = generate_order_id(SupportedChainId::Sepolia, &order, &owner, None).unwrap();
 
     assert_eq!(typed.primary_type, ORDER_PRIMARY_TYPE);
-    assert_eq!(generated.order_digest.len(), 66);
+    assert_eq!(generated.order_digest.as_str().len(), 66);
     assert_eq!(generated.order_id.as_str().len(), 114);
 
     let _trade = TradeParameters {
@@ -44,7 +44,7 @@ fn public_api_reexports_cover_primary_root_surface() {
         sell_token_decimals: 18,
         buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
         buy_token_decimals: 18,
-        amount: "100000000000000000".to_owned(),
+        amount: Amount::new("100000000000000000").unwrap(),
         env: None,
         settlement_contract_override: None,
         eth_flow_contract_override: None,

@@ -73,7 +73,7 @@ fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
 
     assert_eq!(
         format!("0x{}", hex::encode(&signer.calls.borrow().messages[0])),
-        expected_digest
+        expected_digest.as_str()
     );
 }
 

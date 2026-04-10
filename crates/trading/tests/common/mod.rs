@@ -6,9 +6,9 @@ use async_trait::async_trait;
 use serde_json::json;
 
 use cow_sdk_core::{
-    Address, ApiContext, AppDataHash, BlockInfo, ContractCall, ContractHandle, CowEnv, OrderKind,
-    OrderUid, Provider, Signer, SupportedChainId, TransactionReceipt, TransactionRequest,
-    TypedDataDomain, TypedDataField,
+    Address, Amount, ApiContext, AppDataHash, BlockInfo, ContractCall, ContractHandle, CowEnv,
+    Hash32, HexData, OrderKind, OrderUid, Provider, Signer, SupportedChainId, TransactionReceipt,
+    TransactionRequest, TypedDataDomain, TypedDataField,
 };
 use cow_sdk_orderbook::{
     AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
@@ -106,9 +106,9 @@ pub fn sample_trade_parameters(kind: OrderKind) -> cow_sdk_trading::TradeParamet
         buy_token: address(COW),
         buy_token_decimals: 18,
         amount: if kind == OrderKind::Sell {
-            "100000000000000000".to_owned()
+            Amount::new("100000000000000000").expect("test sell amount literal must be valid")
         } else {
-            "400000000000000000000".to_owned()
+            Amount::new("400000000000000000000").expect("test buy amount literal must be valid")
         },
         env: None,
         settlement_contract_override: None,
@@ -146,8 +146,10 @@ pub fn sample_limit_parameters(kind: OrderKind) -> cow_sdk_trading::LimitTradePa
         sell_token_decimals: 18,
         buy_token: address(COW),
         buy_token_decimals: 18,
-        sell_amount: quote.quote.sell_amount.clone(),
-        buy_amount: quote.quote.buy_amount.clone(),
+        sell_amount: Amount::new(quote.quote.sell_amount.clone())
+            .expect("quote sell amount literal must be valid"),
+        buy_amount: Amount::new(quote.quote.buy_amount.clone())
+            .expect("quote buy amount literal must be valid"),
         quote_id: quote.id,
         env: None,
         settlement_contract_override: None,
@@ -283,16 +285,16 @@ impl OrderbookClient for MockOrderbook {
 #[derive(Clone)]
 pub struct MockSignerState {
     pub sent_transactions: Vec<TransactionRequest>,
-    pub estimated_gas: Result<String, String>,
-    pub tx_hash: String,
+    pub estimated_gas: Result<Amount, String>,
+    pub tx_hash: Hash32,
 }
 
 impl Default for MockSignerState {
     fn default() -> Self {
         Self {
             sent_transactions: Vec::new(),
-            estimated_gas: Ok("125000".to_owned()),
-            tx_hash: TX_HASH.to_owned(),
+            estimated_gas: Ok(Amount::new("125000").expect("test gas literal must be valid")),
+            tx_hash: Hash32::new(TX_HASH).expect("test transaction hash literal must be valid"),
         }
     }
 }
@@ -363,7 +365,7 @@ impl Signer for MockSigner {
         })
     }
 
-    fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+    fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
         self.state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -408,13 +410,13 @@ impl Provider for MockProvider {
         Ok(u64::from(SupportedChainId::Mainnet))
     }
 
-    fn get_code(&self, _address: &Address) -> Result<Option<String>, Self::Error> {
+    fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
         Ok(None)
     }
 
     fn get_transaction_receipt(
         &self,
-        _transaction_hash: &str,
+        _transaction_hash: &Hash32,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
         Ok(None)
     }
@@ -423,12 +425,12 @@ impl Provider for MockProvider {
         Ok(self.signer.clone().unwrap_or_default())
     }
 
-    fn get_storage_at(&self, _address: &Address, _slot: &str) -> Result<String, Self::Error> {
-        Ok(String::new())
+    fn get_storage_at(&self, _address: &Address, _slot: &str) -> Result<HexData, Self::Error> {
+        Ok(HexData::empty())
     }
 
-    fn call(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Ok(String::new())
+    fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
+        Ok(HexData::empty())
     }
 
     fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
@@ -496,7 +498,7 @@ impl EthFlowOrderExistsChecker for MockEthFlowChecker {
     async fn order_exists(
         &self,
         _order_id: &OrderUid,
-        _order_digest: &str,
+        _order_digest: &cow_sdk_core::OrderDigest,
     ) -> Result<bool, TradingError> {
         let mut results = self
             .results

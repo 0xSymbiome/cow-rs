@@ -13,6 +13,10 @@ pub enum ValidationError {
     },
     #[error("{field} contains non-hex characters")]
     InvalidHexCharacters { field: &'static str },
+    #[error("{field} must be a non-negative integer quantity")]
+    InvalidNumeric { field: &'static str },
+    #[error("{field} exceeds uint256 bounds")]
+    NumericOverflow { field: &'static str },
     #[error("unsupported chain id {chain_id}")]
     UnsupportedChain { chain_id: u64 },
 }

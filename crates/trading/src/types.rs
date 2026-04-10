@@ -6,8 +6,9 @@ use serde_json::Value;
 
 use cow_sdk_app_data::{AppDataDoc, AppDataParams};
 use cow_sdk_core::{
-    Address, AddressPerChain, ApiContext, AppDataHash, CowEnv, OrderBalance, OrderKind, OrderUid,
-    QuoteAmountsAndCosts, SupportedChainId, TransactionRequest, UnsignedOrder,
+    Address, AddressPerChain, Amount, ApiContext, AppDataHash, CowEnv, OrderBalance, OrderDigest,
+    OrderKind, OrderUid, QuoteAmountsAndCosts, SupportedChainId, TransactionHash,
+    TransactionRequest, UnsignedOrder,
 };
 use cow_sdk_orderbook::{
     AppDataObject, Order, OrderBookApi, OrderCancellations, OrderCreation, OrderQuoteRequest,
@@ -71,7 +72,7 @@ pub struct TradeParameters {
     pub sell_token_decimals: u8,
     pub buy_token: Address,
     pub buy_token_decimals: u8,
-    pub amount: String,
+    pub amount: Amount,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub env: Option<CowEnv>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -102,8 +103,8 @@ pub struct LimitTradeParameters {
     pub sell_token_decimals: u8,
     pub buy_token: Address,
     pub buy_token_decimals: u8,
-    pub sell_amount: String,
-    pub buy_amount: String,
+    pub sell_amount: Amount,
+    pub buy_amount: Amount,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quote_id: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -136,9 +137,9 @@ pub struct SlippageToleranceRequest {
     pub sell_token: Address,
     pub buy_token: Address,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sell_amount: Option<String>,
+    pub sell_amount: Option<Amount>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub buy_amount: Option<String>,
+    pub buy_amount: Option<Amount>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -153,7 +154,7 @@ pub struct SlippageToleranceResponse {
 pub struct QuoteResults {
     pub trade_parameters: TradeParameters,
     pub suggested_slippage_bps: u32,
-    pub amounts_and_costs: QuoteAmountsAndCosts<String>,
+    pub amounts_and_costs: QuoteAmountsAndCosts,
     pub order_to_sign: UnsignedOrder,
     pub quote_response: OrderQuoteResponse,
     pub app_data_info: TradingAppDataInfo,
@@ -165,7 +166,7 @@ pub struct QuoteResults {
 pub struct OrderPostingResult {
     pub order_id: OrderUid,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tx_hash: Option<String>,
+    pub tx_hash: Option<TransactionHash>,
     pub signing_scheme: SigningScheme,
     pub signature: String,
     pub order_to_sign: UnsignedOrder,
@@ -215,7 +216,7 @@ pub struct QuoteRequestOverride {
 #[derive(Clone, Default)]
 pub struct PostTradeAdditionalParams {
     pub check_eth_flow_order_exists: Option<Arc<dyn EthFlowOrderExistsChecker>>,
-    pub network_costs_amount: Option<String>,
+    pub network_costs_amount: Option<Amount>,
     pub signing_scheme: Option<SigningScheme>,
     pub custom_eip1271_signature: Option<Arc<dyn Eip1271SignatureProvider>>,
     pub apply_costs_slippage_and_fees: Option<bool>,
@@ -267,7 +268,7 @@ pub struct AllowanceParameters {
 #[serde(rename_all = "camelCase")]
 pub struct ApprovalParameters {
     pub token_address: Address,
-    pub amount: String,
+    pub amount: Amount,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub chain_id: Option<SupportedChainId>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -322,7 +323,7 @@ pub trait EthFlowOrderExistsChecker: Send + Sync {
     async fn order_exists(
         &self,
         order_id: &OrderUid,
-        order_digest: &str,
+        order_digest: &OrderDigest,
     ) -> Result<bool, TradingError>;
 }
 

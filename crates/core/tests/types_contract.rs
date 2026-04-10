@@ -1,7 +1,8 @@
 use cow_sdk_core::{
-    Address, Amounts, AppDataHex, Costs, FeeComponent, NetworkFee, ORDER_TYPE_FIELD_NAMES,
-    OrderBalance, OrderKind, OrderModel, OrderUid, QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts,
-    QuoteModel, UnsignedOrder, addresses_equal, token_id,
+    Address, Amount, Amounts, AppDataHex, Costs, FeeComponent, Hash32, HexData, NetworkFee,
+    ORDER_TYPE_FIELD_NAMES, OrderBalance, OrderKind, OrderModel, OrderUid,
+    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteModel, SignedAmount, UnsignedOrder,
+    addresses_equal, token_id,
 };
 
 fn core_fixture() -> serde_json::Value {
@@ -77,14 +78,14 @@ fn canonical_order_and_quote_shapes_are_pinned() {
         sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
         buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
         receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        sell_amount: "100".to_owned(),
-        buy_amount: "200".to_owned(),
+        sell_amount: Amount::new("100").unwrap(),
+        buy_amount: Amount::new("200").unwrap(),
         valid_to: 1_700_000_000,
         app_data: AppDataHex::new(
             "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         )
         .unwrap(),
-        fee_amount: "5".to_owned(),
+        fee_amount: Amount::new("5").unwrap(),
         kind: OrderKind::Sell,
         partially_fillable: true,
         sell_token_balance: OrderBalance::External,
@@ -135,47 +136,68 @@ fn compatibility_models_remain_stable_for_current_workspace_consumers() {
         is_sell: true,
         costs: Costs {
             network_fee: NetworkFee {
-                amount_in_sell_currency: "1".to_owned(),
-                amount_in_buy_currency: "2".to_owned(),
+                amount_in_sell_currency: Amount::new("1").unwrap(),
+                amount_in_buy_currency: Amount::new("2").unwrap(),
             },
             partner_fee: FeeComponent {
-                amount: "3".to_owned(),
+                amount: Amount::new("3").unwrap(),
                 bps: 4,
             },
             protocol_fee: FeeComponent {
-                amount: "5".to_owned(),
+                amount: Amount::new("5").unwrap(),
                 bps: 6,
             },
         },
         before_all_fees: Amounts {
-            sell_amount: "10".to_owned(),
-            buy_amount: "20".to_owned(),
+            sell_amount: Amount::new("10").unwrap(),
+            buy_amount: Amount::new("20").unwrap(),
         },
         before_network_costs: Amounts {
-            sell_amount: "11".to_owned(),
-            buy_amount: "21".to_owned(),
+            sell_amount: Amount::new("11").unwrap(),
+            buy_amount: Amount::new("21").unwrap(),
         },
         after_protocol_fees: Amounts {
-            sell_amount: "12".to_owned(),
-            buy_amount: "22".to_owned(),
+            sell_amount: Amount::new("12").unwrap(),
+            buy_amount: Amount::new("22").unwrap(),
         },
         after_network_costs: Amounts {
-            sell_amount: "13".to_owned(),
-            buy_amount: "23".to_owned(),
+            sell_amount: Amount::new("13").unwrap(),
+            buy_amount: Amount::new("23").unwrap(),
         },
         after_partner_fees: Amounts {
-            sell_amount: "14".to_owned(),
-            buy_amount: "24".to_owned(),
+            sell_amount: Amount::new("14").unwrap(),
+            buy_amount: Amount::new("24").unwrap(),
         },
         after_slippage: Amounts {
-            sell_amount: "15".to_owned(),
-            buy_amount: "25".to_owned(),
+            sell_amount: Amount::new("15").unwrap(),
+            buy_amount: Amount::new("25").unwrap(),
         },
         amounts_to_sign: Amounts {
-            sell_amount: "16".to_owned(),
-            buy_amount: "26".to_owned(),
+            sell_amount: Amount::new("16").unwrap(),
+            buy_amount: Amount::new("26").unwrap(),
         },
     };
     let encoded = serde_json::to_value(amounts).unwrap();
     assert!(encoded.as_object().unwrap().contains_key("amountsToSign"));
+}
+
+#[test]
+fn typed_primitives_normalize_and_fail_closed() {
+    assert_eq!(Amount::new("00042").unwrap().as_str(), "42");
+    assert_eq!(Amount::new("0x2a").unwrap().as_str(), "42");
+    assert!(Amount::new("-1").is_err());
+    assert!(Amount::new("abc").is_err());
+    assert!(Amount::new(format!("0x1{}", "0".repeat(64))).is_err());
+
+    assert_eq!(SignedAmount::new("-0005").unwrap().as_str(), "-5");
+    assert_eq!(SignedAmount::new("0").unwrap().as_str(), "0");
+    assert!(SignedAmount::new("0x5").is_err());
+
+    assert_eq!(HexData::new("0xabc").unwrap().as_str(), "0x0abc");
+    assert_eq!(HexData::empty().as_str(), "0x");
+    assert!(HexData::new("1234").is_err());
+
+    let hash = Hash32::new(format!("0x{}", "ab".repeat(32))).unwrap();
+    assert_eq!(hash.as_str().len(), 66);
+    assert!(Hash32::new("0x1234").is_err());
 }

@@ -2,7 +2,7 @@ mod common;
 
 use std::sync::Arc;
 
-use cow_sdk_core::{AddressPerChain, CowEnv, SupportedChainId};
+use cow_sdk_core::{AddressPerChain, Amount, CowEnv, SupportedChainId};
 use cow_sdk_trading::{
     ApprovalParameters, OrderTraderParameters, PartialTraderParameters, TradingSdk,
     TradingSdkOptions,
@@ -119,14 +119,17 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
             },
         )
         .expect("allowance read should succeed");
-    assert_eq!(allowance, "1000000000000000000");
+    assert_eq!(
+        allowance,
+        Amount::new("1000000000000000000").expect("test allowance literal must be valid")
+    );
 
     let approval_hash = sdk
         .approve_cow_protocol(
             &signer,
             &ApprovalParameters {
                 token_address: address(COW),
-                amount: "1000".to_owned(),
+                amount: Amount::new("1000").expect("test approval amount literal must be valid"),
                 chain_id: Some(SupportedChainId::Mainnet),
                 env: Some(CowEnv::Prod),
                 vault_relayer_address: Some(address(ALT_RECEIVER)),
@@ -140,10 +143,11 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
         .cloned()
         .expect("approval transaction must be sent");
 
-    assert_eq!(approval_hash, crate::common::TX_HASH);
+    assert_eq!(approval_hash.as_str(), crate::common::TX_HASH);
     assert!(
         sent.data
-            .as_deref()
+            .as_ref()
+            .map(|value| value.as_str())
             .unwrap_or_default()
             .to_lowercase()
             .contains(
@@ -185,14 +189,17 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
         )
         .await
         .expect("async allowance read should succeed");
-    assert_eq!(allowance, "1000000000000000000");
+    assert_eq!(
+        allowance,
+        Amount::new("1000000000000000000").expect("test allowance literal must be valid")
+    );
 
     let approval_hash = sdk
         .approve_cow_protocol_async(
             &signer,
             &ApprovalParameters {
                 token_address: address(COW),
-                amount: "1000".to_owned(),
+                amount: Amount::new("1000").expect("test approval amount literal must be valid"),
                 chain_id: Some(SupportedChainId::Mainnet),
                 env: Some(CowEnv::Prod),
                 vault_relayer_address: Some(address(ALT_RECEIVER)),
@@ -200,7 +207,7 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
         )
         .await
         .expect("async approval should succeed");
-    assert_eq!(approval_hash, crate::common::TX_HASH);
+    assert_eq!(approval_hash.as_str(), crate::common::TX_HASH);
 }
 
 #[tokio::test]
@@ -271,7 +278,7 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
         .cloned()
         .expect("cancellation transaction must be sent");
 
-    assert_eq!(tx_hash, crate::common::TX_HASH);
+    assert_eq!(tx_hash.as_str(), crate::common::TX_HASH);
     assert_eq!(sent.to, Some(address(CUSTOM_ETHFLOW)));
 }
 

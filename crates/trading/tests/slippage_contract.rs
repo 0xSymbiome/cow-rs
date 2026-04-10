@@ -7,7 +7,7 @@ use std::sync::{
 
 use async_trait::async_trait;
 
-use cow_sdk_core::{OrderKind, SupportedChainId};
+use cow_sdk_core::{Amount, OrderKind, SupportedChainId};
 use cow_sdk_orderbook::{PriceQuality, QuoteData};
 use cow_sdk_trading::{
     MAX_SLIPPAGE_BPS, QuoteRequestOverride, SlippageSuggestionProvider, SlippageToleranceRequest,
@@ -40,17 +40,17 @@ impl SlippageSuggestionProvider for CountingProvider {
 fn slippage_helpers_follow_upstream_fee_and_volume_examples() {
     assert_eq!(
         suggest_slippage_from_fee("20", 50.0).expect("fee suggestion should work"),
-        "10"
+        Amount::new("10").expect("test amount literal must be valid")
     );
     assert_eq!(
         suggest_slippage_from_volume(true, "20", "15", 50.0)
             .expect("sell-volume suggestion should work"),
-        "8"
+        Amount::new("8").expect("test amount literal must be valid")
     );
     assert_eq!(
         suggest_slippage_from_volume(false, "20", "15", 25.0)
             .expect("buy-volume suggestion should work"),
-        "5"
+        Amount::new("5").expect("test amount literal must be valid")
     );
 
     let error = suggest_slippage_from_fee("-100", 50.0)

@@ -16,8 +16,9 @@ pub use traits::{
     TypedDataDomain, TypedDataField,
 };
 pub use types::{
-    Address, Amounts, AppDataHash, AppDataHex, ChainId, Costs, FeeComponent, NetworkFee,
-    ORDER_TYPE_FIELD_NAMES, Order, OrderBalance, OrderKind, OrderModel, OrderUid,
-    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteModel, QuoteRequest, QuoteResponse,
-    TokenInfo, Trade, TradeModel, UnsignedOrder, addresses_equal, token_id,
+    Address, Amount, Amounts, AppDataHash, AppDataHex, BlockHash, ChainId, Costs, FeeComponent,
+    Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, Order, OrderBalance, OrderDigest,
+    OrderKind, OrderModel, OrderUid, QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteModel,
+    QuoteRequest, QuoteResponse, SignedAmount, TokenInfo, Trade, TradeModel, TransactionHash,
+    UnsignedOrder, addresses_equal, token_id,
 };

@@ -1,7 +1,7 @@
 mod common;
 
 use cow_sdk_contracts::{BatchSwapStep, Order, Signature, Swap, SwapEncoder, encode_swap_step};
-use cow_sdk_core::{Address, AppDataHex, OrderBalance, OrderKind, TypedDataDomain};
+use cow_sdk_core::{Address, Amount, AppDataHex, OrderBalance, OrderKind, TypedDataDomain};
 
 use common::fixture_case;
 
@@ -19,14 +19,14 @@ fn sample_order(kind: OrderKind) -> Order {
         sell_token: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
         buy_token: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
         receiver: None,
-        sell_amount: "1000000000000000000".to_owned(),
-        buy_amount: "2000000000000000000000".to_owned(),
+        sell_amount: Amount::new("1000000000000000000").unwrap(),
+        buy_amount: Amount::new("2000000000000000000000").unwrap(),
         valid_to: 1_709_990_000,
         app_data: AppDataHex::new(
             "0x0000000000000000000000000000000000000000000000000000000000000000",
         )
         .unwrap(),
-        fee_amount: "5000000000000000".to_owned(),
+        fee_amount: Amount::new("5000000000000000").unwrap(),
         kind,
         partially_fillable: false,
         sell_token_balance: Some(OrderBalance::Erc20),
@@ -49,7 +49,7 @@ fn swap_step_encoding_defaults_user_data_and_indexes_tokens() {
         pool_id: format!("0x{}", "11".repeat(32)),
         asset_in: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
         asset_out: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        amount: "42".to_owned(),
+        amount: Amount::new("42").unwrap(),
         user_data: None,
     };
     encoder.encode_swap_step(std::slice::from_ref(&swap));
@@ -60,7 +60,7 @@ fn swap_step_encoding_defaults_user_data_and_indexes_tokens() {
             pool_id: swap.pool_id.clone(),
             asset_in_index: 0,
             asset_out_index: 1,
-            amount: "42".to_owned(),
+            amount: Amount::new("42").unwrap(),
             user_data: fixture["expected"]["user_data"]
                 .as_str()
                 .unwrap()
@@ -80,7 +80,7 @@ fn swap_encoder_uses_contract_default_limit_amounts() {
         .unwrap();
     assert_eq!(
         sell_encoder.trade().unwrap().executed_amount,
-        "2000000000000000000000"
+        Amount::new("2000000000000000000000").unwrap()
     );
 
     let mut buy_encoder = SwapEncoder::new(sample_domain());
@@ -89,7 +89,7 @@ fn swap_encoder_uses_contract_default_limit_amounts() {
         .unwrap();
     assert_eq!(
         buy_encoder.trade().unwrap().executed_amount,
-        "1000000000000000000"
+        Amount::new("1000000000000000000").unwrap()
     );
 
     assert!(SwapEncoder::new(sample_domain()).encoded_swap().is_err());

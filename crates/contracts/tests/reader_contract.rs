@@ -6,7 +6,7 @@ use cow_sdk_contracts::{
     AllowListReader, InteractionStage, SettlementReader, TradeSimulation,
     TradeSimulationBalanceDelta, TradeSimulationResult, TradeSimulator,
 };
-use cow_sdk_core::{Address, OrderBalance, OrderUid};
+use cow_sdk_core::{Address, Amount, HexData, OrderBalance, OrderUid, SignedAmount};
 
 use common::{MockProvider, fixture_case};
 
@@ -91,20 +91,20 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
         settlement_reader
             .filled_amounts_for_orders(&order_uids)
             .unwrap(),
-        vec!["1".to_owned(), "2".to_owned()]
+        vec![Amount::new("1").unwrap(), Amount::new("2").unwrap()]
     );
 
     provider.set_response(
         &serde_json::to_string(&TradeSimulationResult {
-            gas_used: "21000".to_owned(),
-            executed_buy_amount: "1980".to_owned(),
+            gas_used: Amount::new("21000").unwrap(),
+            executed_buy_amount: Amount::new("1980").unwrap(),
             contract_balance: TradeSimulationBalanceDelta {
-                sell_token_delta: "100".to_owned(),
-                buy_token_delta: "-1980".to_owned(),
+                sell_token_delta: SignedAmount::new("100").unwrap(),
+                buy_token_delta: SignedAmount::new("-1980").unwrap(),
             },
             owner_balance: TradeSimulationBalanceDelta {
-                sell_token_delta: "-100".to_owned(),
-                buy_token_delta: "1980".to_owned(),
+                sell_token_delta: SignedAmount::new("-100").unwrap(),
+                buy_token_delta: SignedAmount::new("1980").unwrap(),
             },
         })
         .unwrap(),
@@ -122,8 +122,8 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
         sell_token: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
         buy_token: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
         receiver: None,
-        sell_amount: "100".to_owned(),
-        buy_amount: "200".to_owned(),
+        sell_amount: Amount::new("100").unwrap(),
+        buy_amount: Amount::new("200").unwrap(),
         sell_token_balance: None,
         buy_token_balance: Some(OrderBalance::Internal),
         owner: Address::new("0x7777777777777777777777777777777777777777").unwrap(),
@@ -136,13 +136,13 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
                 vec![cow_sdk_contracts::InteractionLike {
                     target: Address::new("0x8888888888888888888888888888888888888888").unwrap(),
                     value: None,
-                    call_data: Some("0x1234".to_owned()),
+                    call_data: Some(HexData::new("0x1234").unwrap()),
                 }],
             )],
         )
         .unwrap();
-    assert_eq!(result.gas_used, "21000");
-    assert_eq!(result.executed_buy_amount, "1980");
+    assert_eq!(result.gas_used.as_str(), "21000");
+    assert_eq!(result.executed_buy_amount.as_str(), "1980");
 
     let call = provider.calls.borrow().last().cloned().unwrap();
     assert_eq!(call.method, "simulateTrade");

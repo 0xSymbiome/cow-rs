@@ -7,7 +7,8 @@ use cow_sdk_contracts::{
     normalize_buy_token_balance, normalize_order, pack_order_uid_params, uid_for_contract,
 };
 use cow_sdk_core::{
-    Address, AppDataHex, OrderBalance, OrderKind, OrderModel, TypedDataDomain, UnsignedOrder,
+    Address, Amount, AppDataHex, OrderBalance, OrderKind, OrderModel, TypedDataDomain,
+    UnsignedOrder,
 };
 
 use common::fixture_case;
@@ -26,14 +27,14 @@ fn sample_order() -> Order {
         sell_token: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
         buy_token: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
         receiver: None,
-        sell_amount: "1000000000000000000".to_owned(),
-        buy_amount: "2000000000000000000000".to_owned(),
+        sell_amount: Amount::new("1000000000000000000").unwrap(),
+        buy_amount: Amount::new("2000000000000000000000").unwrap(),
         valid_to: 1_709_990_000,
         app_data: AppDataHex::new(
             "0x0000000000000000000000000000000000000000000000000000000000000000",
         )
         .unwrap(),
-        fee_amount: "5000000000000000".to_owned(),
+        fee_amount: Amount::new("5000000000000000").unwrap(),
         kind: OrderKind::Sell,
         partially_fillable: false,
         sell_token_balance: None,
@@ -102,7 +103,7 @@ fn order_hash_and_uid_helpers_are_consistent() {
     let domain = sample_domain();
 
     let order_hash = hash_order(&domain, &order).unwrap();
-    assert_eq!(order_hash.len(), 66);
+    assert_eq!(order_hash.as_str().len(), 66);
     assert_eq!(hash_order(&domain, &order).unwrap(), order_hash);
 
     let owner = Address::new("0x1111111111111111111111111111111111111111").unwrap();
@@ -135,8 +136,8 @@ fn order_hash_and_uid_helpers_are_consistent() {
         },
     )
     .unwrap();
-    assert_eq!(cancellation.len(), 66);
-    assert_eq!(batch.len(), 66);
+    assert_eq!(cancellation.as_str().len(), 66);
+    assert_eq!(batch.as_str().len(), 66);
     assert_ne!(cancellation, batch);
 }
 
@@ -146,14 +147,14 @@ fn unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit(
         sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
         buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
         receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        sell_amount: "1000".to_owned(),
-        buy_amount: "900".to_owned(),
+        sell_amount: Amount::new("1000").unwrap(),
+        buy_amount: Amount::new("900").unwrap(),
         valid_to: 1_700_000_000,
         app_data: AppDataHex::new(
             "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         )
         .unwrap(),
-        fee_amount: "10".to_owned(),
+        fee_amount: Amount::new("10").unwrap(),
         kind: OrderKind::Sell,
         partially_fillable: true,
         sell_token_balance: OrderBalance::External,

@@ -1,7 +1,7 @@
 use cow_sdk::{
-    Address, AppDataHex, ORDER_PRIMARY_TYPE, OrderBalance, OrderKind, PartialTraderParameters,
-    SupportedChainId, TradingSdk, TradingSdkOptions, UnsignedOrder, generate_order_id,
-    order_typed_data,
+    Address, Amount, AppDataHex, ORDER_PRIMARY_TYPE, OrderBalance, OrderKind,
+    PartialTraderParameters, SupportedChainId, TradingSdk, TradingSdkOptions, UnsignedOrder,
+    generate_order_id, order_typed_data,
 };
 
 pub fn smoke_hash_and_uid() -> Result<String, Box<dyn std::error::Error>> {
@@ -14,13 +14,13 @@ pub fn smoke_hash_and_uid() -> Result<String, Box<dyn std::error::Error>> {
         sell_token: Address::new("0x1111111111111111111111111111111111111111")?,
         buy_token: Address::new("0x2222222222222222222222222222222222222222")?,
         receiver: Address::new("0x3333333333333333333333333333333333333333")?,
-        sell_amount: "100000000000000000".to_owned(),
-        buy_amount: "250000000000000000".to_owned(),
+        sell_amount: Amount::new("100000000000000000")?,
+        buy_amount: Amount::new("250000000000000000")?,
         valid_to: 1_700_000_000,
         app_data: AppDataHex::new(
             "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         )?,
-        fee_amount: "0".to_owned(),
+        fee_amount: Amount::zero(),
         kind: OrderKind::Sell,
         partially_fillable: false,
         sell_token_balance: OrderBalance::Erc20,

@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use serde_json::json;
 
-use cow_sdk_core::{EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
+use cow_sdk_core::{Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
 use cow_sdk_trading::{
     LimitOrderAdvancedSettings, LimitTradeParameters, PostTradeAdditionalParams,
     QuoteRequestOverride, SwapAdvancedSettings, build_app_data, post_limit_order,
@@ -58,9 +58,12 @@ async fn swap_posting_matches_pinned_sell_and_buy_adjustment_vectors() {
     );
     assert_eq!(
         sell_result.order_to_sign.sell_amount,
-        sell_order.sell_amount
+        Amount::new(sell_order.sell_amount.clone()).expect("sell order amount must be valid")
     );
-    assert_eq!(sell_result.order_to_sign.buy_amount, sell_order.buy_amount);
+    assert_eq!(
+        sell_result.order_to_sign.buy_amount,
+        Amount::new(sell_order.buy_amount.clone()).expect("buy order amount must be valid")
+    );
 
     let buy_orderbook = MockOrderbook::new(trader.chain_id, buy_quote_response());
     let buy_trade = sample_trade_parameters(OrderKind::Buy);
@@ -82,8 +85,14 @@ async fn swap_posting_matches_pinned_sell_and_buy_adjustment_vectors() {
         buy_order.buy_amount,
         buy_case["expected"]["buy_amount"].as_str().unwrap()
     );
-    assert_eq!(buy_result.order_to_sign.sell_amount, buy_order.sell_amount);
-    assert_eq!(buy_result.order_to_sign.buy_amount, buy_order.buy_amount);
+    assert_eq!(
+        buy_result.order_to_sign.sell_amount,
+        Amount::new(buy_order.sell_amount.clone()).expect("sell order amount must be valid")
+    );
+    assert_eq!(
+        buy_result.order_to_sign.buy_amount,
+        Amount::new(buy_order.buy_amount.clone()).expect("buy order amount must be valid")
+    );
 }
 
 #[tokio::test]
@@ -164,7 +173,7 @@ async fn limit_posting_disables_cost_slippage_adjustments_for_sell_and_buy_order
         .expect("sell limit order must be sent");
 
     assert_eq!(sell_result.order_to_sign.buy_amount, sell_params.buy_amount);
-    assert_eq!(sell_sent.buy_amount, sell_params.buy_amount);
+    assert_eq!(sell_sent.buy_amount, sell_params.buy_amount.as_str());
 
     let buy_orderbook = MockOrderbook::new(trader.chain_id, buy_quote_response());
     let buy_params = sample_limit_parameters(OrderKind::Buy);
@@ -179,7 +188,7 @@ async fn limit_posting_disables_cost_slippage_adjustments_for_sell_and_buy_order
         .expect("buy limit order must be sent");
 
     assert_eq!(buy_result.order_to_sign.sell_amount, buy_params.sell_amount);
-    assert_eq!(buy_sent.sell_amount, buy_params.sell_amount);
+    assert_eq!(buy_sent.sell_amount, buy_params.sell_amount.as_str());
 }
 
 #[tokio::test]
@@ -225,7 +234,10 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
         check_eth_flow_order_exists: Some(Arc::new(MockEthFlowChecker {
             results: collision_results.clone(),
         })),
-        network_costs_amount: Some(sell_quote_response().quote.fee_amount.clone()),
+        network_costs_amount: Some(
+            Amount::new(sell_quote_response().quote.fee_amount.clone())
+                .expect("quote fee amount must be valid"),
+        ),
         custom_eip1271_signature: Some(Arc::new(MockEip1271Provider)),
         ..PostTradeAdditionalParams::default()
     };

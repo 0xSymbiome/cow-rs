@@ -3,8 +3,8 @@
 use std::{cell::RefCell, collections::BTreeMap, fmt, rc::Rc};
 
 use cow_sdk_core::{
-    Address, BlockInfo, ContractCall, ContractHandle, Provider, TransactionReceipt,
-    TransactionRequest,
+    Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
+    TransactionReceipt, TransactionRequest,
 };
 use serde_json::Value;
 
@@ -83,13 +83,13 @@ impl Provider for MockProvider {
         Ok(self.chain_id)
     }
 
-    fn get_code(&self, _address: &Address) -> Result<Option<String>, Self::Error> {
+    fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
         Ok(None)
     }
 
     fn get_transaction_receipt(
         &self,
-        _transaction_hash: &str,
+        _transaction_hash: &Hash32,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
         Ok(None)
     }
@@ -98,17 +98,19 @@ impl Provider for MockProvider {
         Ok(DummySigner)
     }
 
-    fn get_storage_at(&self, address: &Address, slot: &str) -> Result<String, Self::Error> {
-        self.storage
+    fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
+        let value = self
+            .storage
             .borrow()
             .get(&(address.normalized_key(), slot.to_ascii_lowercase()))
             .cloned()
             .ok_or_else(|| {
                 MockProviderError(format!("missing storage for {} at {}", address, slot))
-            })
+            })?;
+        HexData::new(value).map_err(|error| MockProviderError(error.to_string()))
     }
 
-    fn call(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+    fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Err(MockProviderError("call not implemented".to_owned()))
     }
 

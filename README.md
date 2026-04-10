@@ -20,6 +20,18 @@ As of 2026-04-09, this workspace includes order creation, signing, and submissio
 
 `cow-sdk` stays intentionally thin. Trading workflows live in `cow-sdk-trading`. Subgraph access stays in `cow-sdk-subgraph`. Browser wallet support is exposed through the optional `browser-wallet` feature and the dedicated `cow-sdk-browser-wallet` crate.
 
+## Typed Public API
+
+The default Rust contract is now strongly typed where this workspace owns the meaning:
+
+- addresses use `cow_sdk_core::Address`
+- hashes and digests use `cow_sdk_core::Hash32` aliases such as `TransactionHash` and `OrderDigest`
+- token amounts, transaction values, and gas limits use `cow_sdk_core::Amount`
+- signed balance deltas use `cow_sdk_core::SignedAmount`
+- raw calldata and byte payloads use `cow_sdk_core::HexData`
+
+String-heavy values remain in explicit wire DTOs such as `cow-sdk-orderbook` request and response models, because the upstream HTTP API is string-heavy.
+
 ## Docs
 
 - [Strategy](docs/strategy.md)

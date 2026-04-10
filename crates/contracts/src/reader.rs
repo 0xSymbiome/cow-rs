@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use cow_sdk_core::{Address, ContractCall, OrderBalance, Provider};
+use cow_sdk_core::{Address, Amount, ContractCall, OrderBalance, Provider, SignedAmount};
 
 use crate::{
     ContractsError,
@@ -43,8 +43,8 @@ pub struct TradeSimulation {
     pub buy_token: Address,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub receiver: Option<Address>,
-    pub sell_amount: String,
-    pub buy_amount: String,
+    pub sell_amount: Amount,
+    pub buy_amount: Amount,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sell_token_balance: Option<OrderBalance>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -55,15 +55,15 @@ pub struct TradeSimulation {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeSimulationBalanceDelta {
-    pub sell_token_delta: String,
-    pub buy_token_delta: String,
+    pub sell_token_delta: SignedAmount,
+    pub buy_token_delta: SignedAmount,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeSimulationResult {
-    pub gas_used: String,
-    pub executed_buy_amount: String,
+    pub gas_used: Amount,
+    pub executed_buy_amount: Amount,
     pub contract_balance: TradeSimulationBalanceDelta,
     pub owner_balance: TradeSimulationBalanceDelta,
 }
@@ -96,7 +96,7 @@ where
     pub fn filled_amounts_for_orders(
         &self,
         order_uids: &[cow_sdk_core::OrderUid],
-    ) -> Result<Vec<String>, ContractsError> {
+    ) -> Result<Vec<Amount>, ContractsError> {
         let raw = read_storage(
             &self.provider,
             &self.settlement_address,

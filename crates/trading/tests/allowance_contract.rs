@@ -1,6 +1,6 @@
 mod common;
 
-use cow_sdk_core::{CowEnv, SupportedChainId, vault_relayer_address};
+use cow_sdk_core::{Amount, CowEnv, SupportedChainId, vault_relayer_address};
 use cow_sdk_trading::{
     AllowanceParameters, ApprovalParameters, approval_transaction, approve_cow_protocol,
     get_cow_protocol_allowance,
@@ -27,7 +27,10 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
         .clone();
     let expected_spender = vault_relayer_address(SupportedChainId::Sepolia, CowEnv::Prod);
 
-    assert_eq!(result, "1000000000000000000");
+    assert_eq!(
+        result,
+        Amount::new("1000000000000000000").expect("test allowance literal must be valid")
+    );
     let args: (String, String) = serde_json::from_str(
         &state
             .last_contract_call
@@ -42,7 +45,7 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
     let tx = approval_transaction(
         &ApprovalParameters {
             token_address: address(COW),
-            amount: "123456".to_owned(),
+            amount: Amount::new("123456").expect("test approval amount literal must be valid"),
             chain_id: Some(SupportedChainId::Sepolia),
             env: Some(CowEnv::Prod),
             vault_relayer_address: Some(custom.clone()),
@@ -55,7 +58,8 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
     assert_eq!(tx.to, Some(address(COW)));
     assert!(
         tx.data
-            .as_deref()
+            .as_ref()
+            .map(|value| value.as_str())
             .unwrap_or_default()
             .to_lowercase()
             .contains(
@@ -75,7 +79,7 @@ fn approval_submission_returns_transaction_hash() {
         &signer,
         &ApprovalParameters {
             token_address: address(COW),
-            amount: "1000".to_owned(),
+            amount: Amount::new("1000").expect("test approval amount literal must be valid"),
             chain_id: Some(SupportedChainId::Sepolia),
             env: Some(CowEnv::Prod),
             vault_relayer_address: None,
@@ -85,7 +89,7 @@ fn approval_submission_returns_transaction_hash() {
     )
     .expect("approval send should succeed");
 
-    assert_eq!(tx_hash, crate::common::TX_HASH);
+    assert_eq!(tx_hash.as_str(), crate::common::TX_HASH);
 }
 
 #[test]
@@ -93,9 +97,10 @@ fn approval_transaction_accepts_max_uint256_amount() {
     let tx = approval_transaction(
         &ApprovalParameters {
             token_address: address(COW),
-            amount:
-                "115792089237316195423570985008687907853269984665640564039457584007913129639935"
-                    .to_owned(),
+            amount: Amount::new(
+                "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+            )
+            .expect("max uint256 literal must be valid"),
             chain_id: Some(SupportedChainId::Sepolia),
             env: Some(CowEnv::Prod),
             vault_relayer_address: None,
@@ -107,7 +112,8 @@ fn approval_transaction_accepts_max_uint256_amount() {
 
     assert!(
         tx.data
-            .as_deref()
+            .as_ref()
+            .map(|value| value.as_str())
             .unwrap_or_default()
             .ends_with(&"f".repeat(64))
     );
@@ -124,7 +130,7 @@ fn parameter_structs_preserve_call_level_chain_and_override_values() {
     };
     let approval = ApprovalParameters {
         token_address: address(COW),
-        amount: "42".to_owned(),
+        amount: Amount::new("42").expect("test approval amount literal must be valid"),
         chain_id: Some(SupportedChainId::Mainnet),
         env: Some(CowEnv::Staging),
         vault_relayer_address: Some(address(ALT_RECEIVER)),
