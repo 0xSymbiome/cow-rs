@@ -186,7 +186,8 @@ async fn limit_posting_disables_cost_slippage_adjustments_for_sell_and_buy_order
 async fn limit_posting_sync_signer_wrapper_matches_async_suffix_path() {
     let trader = sample_trader_parameters();
     let signer = MockSigner::default();
-    let params = sample_limit_parameters(OrderKind::Sell);
+    let mut params = sample_limit_parameters(OrderKind::Sell);
+    params.valid_to = Some(2_524_608_000);
 
     let wrapper_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let async_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
