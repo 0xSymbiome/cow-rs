@@ -1,10 +1,12 @@
-use cid::Cid;
+use cid::{Cid, Version};
 use multibase::Base;
 use multihash::Multihash;
+use sha2::{Digest as Sha2Digest, Sha256};
 
 use crate::AppDataError;
 
 const LATEST_CID_CODEC: u64 = 0x55;
+const LEGACY_CID_CODEC: u64 = 0x70;
 const KECCAK_256_CODE: u64 = 0x1b;
 const SHA2_256_CODE: u64 = 0x12;
 const APP_DATA_HEX_LENGTH: usize = 32;
@@ -17,18 +19,14 @@ pub enum CidMode {
 
 pub fn app_data_hex_to_cid(app_data_hex: &str) -> Result<String, AppDataError> {
     let digest = parse_app_data_hex(app_data_hex)?;
-    let hash = Multihash::<64>::wrap(KECCAK_256_CODE, &digest)
-        .map_err(|err| AppDataError::Calculation(err.to_string()))?;
-    let cid = Cid::new_v1(LATEST_CID_CODEC, hash);
+    let cid = latest_cid_from_digest(&digest)?;
     cid.to_string_of_base(Base::Base16Lower)
         .map_err(|err| AppDataError::Calculation(err.to_string()))
 }
 
 pub fn app_data_hex_to_cid_legacy(app_data_hex: &str) -> Result<String, AppDataError> {
     let digest = parse_app_data_hex(app_data_hex)?;
-    let hash = Multihash::<64>::wrap(SHA2_256_CODE, &digest)
-        .map_err(|err| AppDataError::Calculation(err.to_string()))?;
-    let cid = Cid::new_v0(hash).map_err(|_| AppDataError::InvalidCid)?;
+    let cid = legacy_cid_from_digest(&digest)?;
     Ok(cid.to_string())
 }
 
@@ -44,11 +42,15 @@ pub fn app_data_hex_to_cid_with_mode(
 
 pub fn cid_to_app_data_hex(cid: &str) -> Result<String, AppDataError> {
     let cid = Cid::try_from(cid).map_err(|_| AppDataError::InvalidCid)?;
+    ensure_supported_cid(&cid)?;
     let digest = cid.hash().digest();
-    if digest.len() != APP_DATA_HEX_LENGTH {
-        return Err(AppDataError::InvalidCid);
-    }
     Ok(format!("0x{}", hex::encode(digest)))
+}
+
+pub(crate) fn app_data_bytes_to_legacy_cid(content: &[u8]) -> Result<String, AppDataError> {
+    let digest = Sha256::digest(content);
+    let cid = legacy_cid_from_digest(digest.as_ref())?;
+    Ok(cid.to_string())
 }
 
 fn parse_app_data_hex(value: &str) -> Result<Vec<u8>, AppDataError> {
@@ -60,4 +62,33 @@ fn parse_app_data_hex(value: &str) -> Result<Vec<u8>, AppDataError> {
         return Err(AppDataError::InvalidAppDataHex);
     }
     Ok(bytes)
+}
+
+fn latest_cid_from_digest(digest: &[u8]) -> Result<Cid, AppDataError> {
+    let hash = Multihash::<64>::wrap(KECCAK_256_CODE, digest)
+        .map_err(|err| AppDataError::Calculation(err.to_string()))?;
+    Ok(Cid::new_v1(LATEST_CID_CODEC, hash))
+}
+
+fn legacy_cid_from_digest(digest: &[u8]) -> Result<Cid, AppDataError> {
+    let hash = Multihash::<64>::wrap(SHA2_256_CODE, digest)
+        .map_err(|err| AppDataError::Calculation(err.to_string()))?;
+    Cid::new_v0(hash).map_err(|_| AppDataError::InvalidCid)
+}
+
+fn ensure_supported_cid(cid: &Cid) -> Result<(), AppDataError> {
+    let digest = cid.hash().digest();
+    if digest.len() != APP_DATA_HEX_LENGTH {
+        return Err(AppDataError::InvalidCid);
+    }
+
+    match cid.version() {
+        Version::V0 if cid.codec() == LEGACY_CID_CODEC && cid.hash().code() == SHA2_256_CODE => {
+            Ok(())
+        }
+        Version::V1 if cid.codec() == LATEST_CID_CODEC && cid.hash().code() == KECCAK_256_CODE => {
+            Ok(())
+        }
+        _ => Err(AppDataError::InvalidCid),
+    }
 }

@@ -2,8 +2,8 @@ use serde_json::Value;
 use sha3::{Digest, Keccak256};
 
 use crate::{
-    AppDataDoc, AppDataError, AppDataInfo, app_data_hex_to_cid, cid_to_app_data_hex,
-    validate_app_data_doc,
+    AppDataDoc, AppDataError, AppDataInfo, app_data_hex_to_cid, cid::app_data_bytes_to_legacy_cid,
+    cid_to_app_data_hex, validate_app_data_doc,
 };
 
 pub trait AppDataSource {
@@ -82,8 +82,7 @@ pub fn get_app_data_info_legacy(source: impl AppDataSource) -> Result<AppDataInf
     let (document, app_data_content) = source.into_document_and_content(false)?;
     ensure_valid_document(&document)?;
 
-    let cid = ipfs_cid::generate_cid_v0(app_data_content.as_bytes())
-        .map_err(|err| AppDataError::Calculation(err.to_string()))?;
+    let cid = app_data_bytes_to_legacy_cid(app_data_content.as_bytes())?;
     let app_data_hex = cid_to_app_data_hex(&cid)?;
 
     Ok(AppDataInfo {
