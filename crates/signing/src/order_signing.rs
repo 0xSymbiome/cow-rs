@@ -33,6 +33,13 @@ pub struct GeneratedOrderId {
     pub order_digest: String,
 }
 
+struct OrderSigningPayload {
+    domain: TypedDataDomain,
+    fields: Vec<TypedDataField>,
+    value_json: String,
+    digest: String,
+}
+
 pub fn sign_order<S>(
     order: &UnsignedOrder,
     chain_id: SupportedChainId,
@@ -70,16 +77,14 @@ where
     S: Signer,
     S::Error: fmt::Display,
 {
-    let domain = get_domain(chain_id, options)?;
-    let value_json = serialize(order)?;
-    let digest = hash_order(&domain, &contracts_order(order))?;
+    let payload = order_signing_payload(order, chain_id, options)?;
     sign_with_scheme(
         signer,
         scheme,
-        &domain,
-        &order_fields(),
-        &value_json,
-        &digest,
+        &payload.domain,
+        &payload.fields,
+        &payload.value_json,
+        &payload.digest,
     )
 }
 
@@ -94,16 +99,14 @@ where
     S: AsyncSigner,
     S::Error: fmt::Display,
 {
-    let domain = get_domain(chain_id, options)?;
-    let value_json = serialize(order)?;
-    let digest = hash_order(&domain, &contracts_order(order))?;
+    let payload = order_signing_payload(order, chain_id, options)?;
     sign_with_scheme_async(
         signer,
         scheme,
-        &domain,
-        &order_fields(),
-        &value_json,
-        &digest,
+        &payload.domain,
+        &payload.fields,
+        &payload.value_json,
+        &payload.digest,
     )
     .await
 }
@@ -247,6 +250,23 @@ where
 
 pub(crate) fn serialize<T: Serialize>(value: &T) -> Result<String, SigningError> {
     serde_json::to_string(value).map_err(|error| SigningError::Serialization(error.to_string()))
+}
+
+fn order_signing_payload(
+    order: &UnsignedOrder,
+    chain_id: SupportedChainId,
+    options: Option<&ProtocolOptions>,
+) -> Result<OrderSigningPayload, SigningError> {
+    let domain = get_domain(chain_id, options)?;
+    let value_json = serialize(order)?;
+    let digest = hash_order(&domain, &contracts_order(order))?;
+
+    Ok(OrderSigningPayload {
+        domain,
+        fields: order_fields(),
+        value_json,
+        digest,
+    })
 }
 
 pub(crate) fn contracts_order(order: &UnsignedOrder) -> ContractsOrder {

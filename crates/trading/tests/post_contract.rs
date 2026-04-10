@@ -8,7 +8,7 @@ use cow_sdk_core::{EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
 use cow_sdk_trading::{
     LimitOrderAdvancedSettings, LimitTradeParameters, PostTradeAdditionalParams,
     QuoteRequestOverride, SwapAdvancedSettings, build_app_data, post_limit_order,
-    post_sell_native_currency_order, post_swap_order,
+    post_limit_order_async, post_sell_native_currency_order, post_swap_order,
 };
 
 use crate::common::{
@@ -180,6 +180,31 @@ async fn limit_posting_disables_cost_slippage_adjustments_for_sell_and_buy_order
 
     assert_eq!(buy_result.order_to_sign.sell_amount, buy_params.sell_amount);
     assert_eq!(buy_sent.sell_amount, buy_params.sell_amount);
+}
+
+#[tokio::test]
+async fn limit_posting_sync_signer_wrapper_matches_async_suffix_path() {
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+    let params = sample_limit_parameters(OrderKind::Sell);
+
+    let wrapper_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let async_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+
+    let wrapper_result = post_limit_order(&params, &trader, &signer, None, &wrapper_orderbook)
+        .await
+        .expect("wrapper limit order should succeed");
+    let async_result = post_limit_order_async(&params, &trader, &signer, None, &async_orderbook)
+        .await
+        .expect("async suffix limit order should succeed");
+
+    assert_eq!(wrapper_result.order_to_sign, async_result.order_to_sign);
+    assert_eq!(wrapper_result.signature, async_result.signature);
+    assert_eq!(wrapper_result.signing_scheme, async_result.signing_scheme);
+    assert_eq!(
+        wrapper_orderbook.state().sent_orders,
+        async_orderbook.state().sent_orders
+    );
 }
 
 #[tokio::test]

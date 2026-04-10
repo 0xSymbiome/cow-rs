@@ -236,6 +236,29 @@ impl ResponseEnvelope {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ResponseKind {
+    Json,
+    Text,
+    Empty,
+}
+
+impl ResponseKind {
+    fn accept_header(self) -> HeaderValue {
+        match self {
+            Self::Text => HeaderValue::from_static("text/plain, application/json"),
+            Self::Json | Self::Empty => HeaderValue::from_static("application/json"),
+        }
+    }
+}
+
+struct RequestExecution<'a> {
+    client: &'a Client,
+    base_url: &'a str,
+    params: &'a FetchParams,
+    additional_headers: Option<HeaderMap>,
+}
+
 #[derive(Debug, Clone)]
 pub struct RequestRateLimiter {
     settings: RateLimitSettings,
@@ -300,62 +323,18 @@ pub async fn request_json<T>(
 where
     T: DeserializeOwned,
 {
-    execute_json_with(policy, rate_limiter, || {
-        let client = client.clone();
-        let url = format!("{base_url}{}", params.path);
-        let query = params.query.clone();
-        let method = params.method;
-        let body = params.body.clone();
-        let additional_headers = additional_headers.clone();
-
-        async move {
-            let mut headers = HeaderMap::new();
-            headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
-            headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-
-            if let Some(extra) = additional_headers {
-                headers.extend(extra);
-            }
-
-            let mut request = client.request(method.into(), url).headers(headers);
-
-            if !query.is_empty() {
-                request = request.query(&query);
-            }
-
-            if let Some(json_body) = body {
-                request = request.json(&json_body);
-            }
-
-            let response = request
-                .send()
-                .await
-                .map_err(|error| format!("request failed: {error}"))?;
-
-            let status = response.status();
-            let status_text = status
-                .canonical_reason()
-                .unwrap_or("Unknown Status")
-                .to_owned();
-            let content_type = response
-                .headers()
-                .get(CONTENT_TYPE)
-                .and_then(|value| value.to_str().ok())
-                .map(ToOwned::to_owned);
-            let body = response
-                .bytes()
-                .await
-                .map_err(|error| format!("response body read failed: {error}"))?
-                .to_vec();
-
-            Ok(ResponseEnvelope {
-                status: status.as_u16(),
-                status_text,
-                content_type,
-                body,
-            })
-        }
-    })
+    request_with(
+        RequestExecution {
+            client,
+            base_url,
+            params,
+            additional_headers,
+        },
+        policy,
+        rate_limiter,
+        ResponseKind::Json,
+        decode_success_body::<T>,
+    )
     .await
 }
 
@@ -367,65 +346,18 @@ pub async fn request_text(
     rate_limiter: &RequestRateLimiter,
     additional_headers: Option<HeaderMap>,
 ) -> Result<String, OrderbookError> {
-    execute_text_with(policy, rate_limiter, || {
-        let client = client.clone();
-        let url = format!("{base_url}{}", params.path);
-        let query = params.query.clone();
-        let method = params.method;
-        let body = params.body.clone();
-        let additional_headers = additional_headers.clone();
-
-        async move {
-            let mut headers = HeaderMap::new();
-            headers.insert(
-                ACCEPT,
-                HeaderValue::from_static("text/plain, application/json"),
-            );
-            headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-
-            if let Some(extra) = additional_headers {
-                headers.extend(extra);
-            }
-
-            let mut request = client.request(method.into(), url).headers(headers);
-
-            if !query.is_empty() {
-                request = request.query(&query);
-            }
-
-            if let Some(json_body) = body {
-                request = request.json(&json_body);
-            }
-
-            let response = request
-                .send()
-                .await
-                .map_err(|error| format!("request failed: {error}"))?;
-
-            let status = response.status();
-            let status_text = status
-                .canonical_reason()
-                .unwrap_or("Unknown Status")
-                .to_owned();
-            let content_type = response
-                .headers()
-                .get(CONTENT_TYPE)
-                .and_then(|value| value.to_str().ok())
-                .map(ToOwned::to_owned);
-            let body = response
-                .bytes()
-                .await
-                .map_err(|error| format!("response body read failed: {error}"))?
-                .to_vec();
-
-            Ok(ResponseEnvelope {
-                status: status.as_u16(),
-                status_text,
-                content_type,
-                body,
-            })
-        }
-    })
+    request_with(
+        RequestExecution {
+            client,
+            base_url,
+            params,
+            additional_headers,
+        },
+        policy,
+        rate_limiter,
+        ResponseKind::Text,
+        decode_text_body,
+    )
     .await
 }
 
@@ -437,168 +369,163 @@ pub async fn request_empty(
     rate_limiter: &RequestRateLimiter,
     additional_headers: Option<HeaderMap>,
 ) -> Result<(), OrderbookError> {
-    execute_empty_with(policy, rate_limiter, || {
-        let client = client.clone();
-        let url = format!("{base_url}{}", params.path);
-        let query = params.query.clone();
-        let method = params.method;
-        let body = params.body.clone();
-        let additional_headers = additional_headers.clone();
-
-        async move {
-            let mut headers = HeaderMap::new();
-            headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
-            headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-
-            if let Some(extra) = additional_headers {
-                headers.extend(extra);
-            }
-
-            let mut request = client.request(method.into(), url).headers(headers);
-
-            if !query.is_empty() {
-                request = request.query(&query);
-            }
-
-            if let Some(json_body) = body {
-                request = request.json(&json_body);
-            }
-
-            let response = request
-                .send()
-                .await
-                .map_err(|error| format!("request failed: {error}"))?;
-
-            let status = response.status();
-            let status_text = status
-                .canonical_reason()
-                .unwrap_or("Unknown Status")
-                .to_owned();
-            let content_type = response
-                .headers()
-                .get(CONTENT_TYPE)
-                .and_then(|value| value.to_str().ok())
-                .map(ToOwned::to_owned);
-            let body = response
-                .bytes()
-                .await
-                .map_err(|error| format!("response body read failed: {error}"))?
-                .to_vec();
-
-            Ok(ResponseEnvelope {
-                status: status.as_u16(),
-                status_text,
-                content_type,
-                body,
-            })
-        }
-    })
+    request_with(
+        RequestExecution {
+            client,
+            base_url,
+            params,
+            additional_headers,
+        },
+        policy,
+        rate_limiter,
+        ResponseKind::Empty,
+        |_| Ok(()),
+    )
     .await
 }
 
 pub async fn execute_json_with<T, F, Fut>(
     policy: &RequestPolicy,
     rate_limiter: &RequestRateLimiter,
-    mut attempt: F,
+    attempt: F,
 ) -> Result<T, OrderbookError>
 where
     T: DeserializeOwned,
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<ResponseEnvelope, String>>,
 {
-    let mut last_transport_error = None;
-
-    for attempt_index in 1..=policy.max_attempts {
-        rate_limiter.acquire().await;
-
-        match attempt().await {
-            Ok(response) if (200..300).contains(&response.status) => {
-                return decode_success_body::<T>(&response);
-            }
-            Ok(response) => {
-                let body = response.decoded_body()?;
-                let error = OrderBookApiError::new(response.status, response.status_text, body);
-                let should_retry =
-                    policy.should_retry_status(error.status) && attempt_index < policy.max_attempts;
-
-                if should_retry {
-                    Delay::new(policy.backoff_delay(attempt_index)).await;
-                    continue;
-                }
-
-                return Err(error.into());
-            }
-            Err(error) => {
-                last_transport_error = Some(error);
-
-                if attempt_index < policy.max_attempts {
-                    Delay::new(policy.backoff_delay(attempt_index)).await;
-                    continue;
-                }
-            }
-        }
-    }
-
-    Err(OrderbookError::Transport(
-        last_transport_error.unwrap_or_else(|| "request attempts exhausted".to_owned()),
-    ))
+    execute_with(policy, rate_limiter, attempt, decode_success_body::<T>).await
 }
 
 pub async fn execute_text_with<F, Fut>(
     policy: &RequestPolicy,
     rate_limiter: &RequestRateLimiter,
-    mut attempt: F,
+    attempt: F,
 ) -> Result<String, OrderbookError>
 where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<ResponseEnvelope, String>>,
 {
-    let mut last_transport_error = None;
-
-    for attempt_index in 1..=policy.max_attempts {
-        rate_limiter.acquire().await;
-
-        match attempt().await {
-            Ok(response) if (200..300).contains(&response.status) => {
-                return decode_text_body(&response);
-            }
-            Ok(response) => {
-                let body = response.decoded_body()?;
-                let error = OrderBookApiError::new(response.status, response.status_text, body);
-                let should_retry =
-                    policy.should_retry_status(error.status) && attempt_index < policy.max_attempts;
-
-                if should_retry {
-                    Delay::new(policy.backoff_delay(attempt_index)).await;
-                    continue;
-                }
-
-                return Err(error.into());
-            }
-            Err(error) => {
-                last_transport_error = Some(error);
-
-                if attempt_index < policy.max_attempts {
-                    Delay::new(policy.backoff_delay(attempt_index)).await;
-                    continue;
-                }
-            }
-        }
-    }
-
-    Err(OrderbookError::Transport(
-        last_transport_error.unwrap_or_else(|| "request attempts exhausted".to_owned()),
-    ))
+    execute_with(policy, rate_limiter, attempt, decode_text_body).await
 }
 
 pub async fn execute_empty_with<F, Fut>(
     policy: &RequestPolicy,
     rate_limiter: &RequestRateLimiter,
-    mut attempt: F,
+    attempt: F,
 ) -> Result<(), OrderbookError>
 where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<ResponseEnvelope, String>>,
+{
+    execute_with(policy, rate_limiter, attempt, |_| Ok(())).await
+}
+
+async fn request_with<T, D>(
+    request: RequestExecution<'_>,
+    policy: &RequestPolicy,
+    rate_limiter: &RequestRateLimiter,
+    response_kind: ResponseKind,
+    decode_success: D,
+) -> Result<T, OrderbookError>
+where
+    D: Fn(&ResponseEnvelope) -> Result<T, OrderbookError>,
+{
+    let url = format!("{}{}", request.base_url, request.params.path);
+    let client = request.client.clone();
+    let params = request.params.clone();
+    let additional_headers = request.additional_headers;
+
+    execute_with(
+        policy,
+        rate_limiter,
+        || {
+            send_request(
+                client.clone(),
+                url.clone(),
+                params.clone(),
+                response_kind,
+                additional_headers.clone(),
+            )
+        },
+        decode_success,
+    )
+    .await
+}
+
+async fn send_request(
+    client: Client,
+    url: String,
+    params: FetchParams,
+    response_kind: ResponseKind,
+    additional_headers: Option<HeaderMap>,
+) -> Result<ResponseEnvelope, String> {
+    let mut request = client
+        .request(params.method.into(), url)
+        .headers(request_headers(response_kind, additional_headers));
+
+    if !params.query.is_empty() {
+        request = request.query(&params.query);
+    }
+
+    if let Some(json_body) = params.body {
+        request = request.json(&json_body);
+    }
+
+    let response = request
+        .send()
+        .await
+        .map_err(|error| format!("request failed: {error}"))?;
+
+    let status = response.status();
+    let status_text = status
+        .canonical_reason()
+        .unwrap_or("Unknown Status")
+        .to_owned();
+    let content_type = response
+        .headers()
+        .get(CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .map(ToOwned::to_owned);
+    let body = response
+        .bytes()
+        .await
+        .map_err(|error| format!("response body read failed: {error}"))?
+        .to_vec();
+
+    Ok(ResponseEnvelope {
+        status: status.as_u16(),
+        status_text,
+        content_type,
+        body,
+    })
+}
+
+fn request_headers(
+    response_kind: ResponseKind,
+    additional_headers: Option<HeaderMap>,
+) -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    headers.insert(ACCEPT, response_kind.accept_header());
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+
+    if let Some(extra) = additional_headers {
+        headers.extend(extra);
+    }
+
+    headers
+}
+
+async fn execute_with<T, F, Fut, D>(
+    policy: &RequestPolicy,
+    rate_limiter: &RequestRateLimiter,
+    mut attempt: F,
+    decode_success: D,
+) -> Result<T, OrderbookError>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<ResponseEnvelope, String>>,
+    D: Fn(&ResponseEnvelope) -> Result<T, OrderbookError>,
 {
     let mut last_transport_error = None;
 
@@ -607,7 +534,7 @@ where
 
         match attempt().await {
             Ok(response) if (200..300).contains(&response.status) => {
-                return Ok(());
+                return decode_success(&response);
             }
             Ok(response) => {
                 let body = response.decoded_body()?;

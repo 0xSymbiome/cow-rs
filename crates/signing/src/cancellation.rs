@@ -9,6 +9,13 @@ use crate::{
     order_signing::{serialize, sign_with_scheme, sign_with_scheme_async},
 };
 
+struct CancellationSigningPayload {
+    domain: cow_sdk_core::TypedDataDomain,
+    fields: Vec<cow_sdk_core::TypedDataField>,
+    value_json: String,
+    digest: String,
+}
+
 pub fn sign_order_cancellation<S>(
     order_uid: &OrderUid,
     chain_id: SupportedChainId,
@@ -133,19 +140,14 @@ where
     S: Signer,
     S::Error: fmt::Display,
 {
-    let domain = get_domain(chain_id, options)?;
-    let cancellations = OrderCancellations {
-        order_uids: order_uids.to_vec(),
-    };
-    let value_json = serialize(&cancellations)?;
-    let digest = cow_sdk_contracts::hash_order_cancellations(&domain, &cancellations)?;
+    let payload = cancellation_signing_payload(order_uids, chain_id, options)?;
     sign_with_scheme(
         signer,
         scheme,
-        &domain,
-        &cancellation_fields(),
-        &value_json,
-        &digest,
+        &payload.domain,
+        &payload.fields,
+        &payload.value_json,
+        &payload.digest,
     )
 }
 
@@ -160,19 +162,34 @@ where
     S: AsyncSigner,
     S::Error: fmt::Display,
 {
+    let payload = cancellation_signing_payload(order_uids, chain_id, options)?;
+    sign_with_scheme_async(
+        signer,
+        scheme,
+        &payload.domain,
+        &payload.fields,
+        &payload.value_json,
+        &payload.digest,
+    )
+    .await
+}
+
+fn cancellation_signing_payload(
+    order_uids: &[OrderUid],
+    chain_id: SupportedChainId,
+    options: Option<&ProtocolOptions>,
+) -> Result<CancellationSigningPayload, SigningError> {
     let domain = get_domain(chain_id, options)?;
     let cancellations = OrderCancellations {
         order_uids: order_uids.to_vec(),
     };
     let value_json = serialize(&cancellations)?;
     let digest = cow_sdk_contracts::hash_order_cancellations(&domain, &cancellations)?;
-    sign_with_scheme_async(
-        signer,
-        scheme,
-        &domain,
-        &cancellation_fields(),
-        &value_json,
-        &digest,
-    )
-    .await
+
+    Ok(CancellationSigningPayload {
+        domain,
+        fields: cancellation_fields(),
+        value_json,
+        digest,
+    })
 }

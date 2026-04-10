@@ -12,6 +12,8 @@ use crate::{
     is_ethflow_order, merge_app_data_doc, swap_params_to_limit_order_params,
 };
 
+// Non-suffixed posting functions are async entry points for synchronous Signer implementors.
+// Keep workflow logic in the AsyncSigner implementations so both public paths stay aligned.
 pub async fn post_swap_order<O, S>(
     trade_parameters: &TradeParameters,
     trader: &TraderParameters,
@@ -101,9 +103,7 @@ where
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     );
-    let additional = advanced_settings
-        .and_then(|settings| settings.additional_params.clone())
-        .unwrap_or_default();
+    let additional = swap_additional_params(advanced_settings);
 
     post_cow_protocol_trade_async(
         orderbook,
@@ -167,9 +167,7 @@ where
     )
     .await?;
 
-    let mut additional = advanced_settings
-        .and_then(|settings| settings.additional_params.clone())
-        .unwrap_or_default();
+    let mut additional = limit_additional_params(advanced_settings);
     if additional.apply_costs_slippage_and_fees.is_none() {
         additional.apply_costs_slippage_and_fees = Some(false);
     }
@@ -436,6 +434,22 @@ fn apply_settings_to_limit_trade_parameters(
     }
 
     params
+}
+
+fn swap_additional_params(
+    advanced_settings: Option<&SwapAdvancedSettings>,
+) -> crate::types::PostTradeAdditionalParams {
+    advanced_settings
+        .and_then(|settings| settings.additional_params.clone())
+        .unwrap_or_default()
+}
+
+fn limit_additional_params(
+    advanced_settings: Option<&LimitOrderAdvancedSettings>,
+) -> crate::types::PostTradeAdditionalParams {
+    advanced_settings
+        .and_then(|settings| settings.additional_params.clone())
+        .unwrap_or_default()
 }
 
 async fn sign_order_for_submission<S>(
