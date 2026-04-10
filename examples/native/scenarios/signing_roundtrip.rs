@@ -8,7 +8,7 @@ use cow_sdk::{
 };
 
 use cow_sdk_examples_native::support::{
-    MockSigner, sample_order_uid, sample_owner, sample_unsigned_order,
+    MockSigner, sample_order_uid, sample_owner, sample_unsigned_order, text_preview,
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             "orderId": generated.order_id.as_str(),
             "signature": signed_order.signature,
             "scheme": format!("{:?}", signed_order.signing_scheme),
-            "eip1271PayloadPrefix": &eip1271_payload[..18]
+            "eip1271PayloadPrefix": text_preview(&eip1271_payload, 18)
         },
         "cancellation": {
             "orderUid": sample_order_uid().as_str(),

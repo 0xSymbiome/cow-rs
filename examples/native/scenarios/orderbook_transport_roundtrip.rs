@@ -13,8 +13,8 @@ use cow_sdk::{
 };
 
 use cow_sdk_examples_native::support::{
-    sample_buy_token, sample_order_uid, sample_owner, sample_quote_response_json,
-    sample_sell_token, sample_signature,
+    orderbook_version_response, sample_buy_token, sample_order_uid, sample_owner,
+    sample_quote_response_json, sample_sell_token, sample_signature,
 };
 
 #[tokio::main]
@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     Mock::given(method("GET"))
         .and(path("/api/v1/version"))
-        .respond_with(ResponseTemplate::new(200).set_body_json("v1.2.3"))
+        .respond_with(orderbook_version_response("v1.2.3"))
         .mount(&server)
         .await;
 

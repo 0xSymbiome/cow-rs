@@ -16,6 +16,7 @@ use cow_sdk::{
     Address, AppDataHex, CowEnv, OrderBalance, OrderKind, OrderUid, SupportedChainId,
     TradeParameters, TraderParameters, UnsignedOrder,
 };
+use wiremock::ResponseTemplate;
 
 pub const WETH: &str = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
 pub const COW: &str = "0x0625aFB445C3B6B7B929342a04A22599fd5dBB59";
@@ -50,6 +51,21 @@ pub fn sample_order_uid() -> OrderUid {
 
 pub fn sample_app_data_hash() -> AppDataHash {
     AppDataHash::new(APP_DATA_HASH).expect("example app-data hash must remain valid")
+}
+
+pub fn text_preview(value: &str, max_chars: usize) -> &str {
+    if max_chars == 0 {
+        return "";
+    }
+
+    value
+        .char_indices()
+        .nth(max_chars)
+        .map_or(value, |(index, _)| &value[..index])
+}
+
+pub fn orderbook_version_response(version: &str) -> ResponseTemplate {
+    ResponseTemplate::new(200).set_body_raw(version.as_bytes(), "text/plain; charset=utf-8")
 }
 
 pub fn sample_unsigned_order() -> UnsignedOrder {
@@ -283,15 +299,21 @@ impl OrderbookClient for MockOrderbook {
 
     async fn get_order(
         &self,
-        _order_uid: &OrderUid,
+        order_uid: &OrderUid,
     ) -> Result<cow_sdk::orderbook::Order, OrderbookError> {
         self.state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .orders
-            .first()
+            .iter()
+            .find(|order| &order.uid == order_uid)
             .cloned()
-            .ok_or_else(|| OrderbookError::InvalidTransform("missing mock order".to_owned()))
+            .ok_or_else(|| {
+                OrderbookError::InvalidTransform(format!(
+                    "missing mock order for requested uid {}",
+                    order_uid.as_str()
+                ))
+            })
     }
 
     async fn upload_app_data(

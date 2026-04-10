@@ -1,0 +1,46 @@
+# Security And Test Matrix
+
+Last reviewed: 2026-04-10
+
+This matrix maps the current `cow-rs` test evidence by crate and review surface. It is a navigation aid for reviewers, not a claim that tests prove the absence of bugs.
+
+Update this matrix in the same change when a crate or example gains material test coverage.
+
+## Core SDK Crates
+
+| Crate | Boundary | Current evidence | Primary command |
+| --- | --- | --- | --- |
+| `cow-sdk-core` | Shared chain config, domain types, and runtime traits | `config_contract.rs`, `types_contract.rs`, `traits_contract.rs` | `cargo test -p cow-sdk-core` |
+| `cow-sdk-contracts` | Contract constants, ABI-shaped order helpers, hashing, settlement/vault/proxy/reader helpers | `order_contract.rs`, `signature_contract.rs`, `deployment_contract.rs`, `settlement_contract.rs`, `vault_contract.rs`, `proxy_contract.rs`, `reader_contract.rs`, `swap_contract.rs`, `interaction_contract.rs` | `cargo test -p cow-sdk-contracts` |
+| `cow-sdk-signing` | EIP-712 order signing, EIP-1271 payloads, cancellation signing, domain separation | `order_signing_contract.rs`, `eip1271_contract.rs`, `cancellation_contract.rs`, `domain_contract.rs` | `cargo test -p cow-sdk-signing` |
+| `cow-sdk-app-data` | App-data schema handling, CID conversion, fetch, and pinning seams | `app_data_info_contract.rs`, `cid_contract.rs`, `schema_contract.rs`, `fetch_contract.rs`, `pinning_contract.rs` | `cargo test -p cow-sdk-app-data` |
+| `cow-sdk-orderbook` | Typed orderbook transport, retry/status behavior, DTO conversion, source-schema evidence | `api_contract.rs`, `request_contract.rs`, `transform_contract.rs`, `types_contract.rs`, `schema_source_contract.rs` | `cargo test -p cow-sdk-orderbook` |
+| `cow-sdk-trading` | Quote, post, allowance, approval, cancellation, slippage, and SDK workflow orchestration | `quote_contract.rs`, `post_contract.rs`, `allowance_contract.rs`, `cancel_contract.rs`, `onchain_contract.rs`, `slippage_contract.rs`, `sdk_contract.rs`, `parity_contract.rs` | `cargo test -p cow-sdk-trading` |
+| `cow-sdk-subgraph` | Read-only GraphQL query construction, typed responses, source-schema evidence | `api_contract.rs`, `query_contract.rs`, `types_contract.rs`, `schema_source_contract.rs` | `cargo test -p cow-sdk-subgraph` |
+| `cow-sdk-browser-wallet` | EIP-1193 browser wallet provider/signer boundaries and mock wallet behavior | `provider_contract.rs`, `wallet_contract.rs` | `cargo test -p cow-sdk-browser-wallet` |
+| `cow-sdk` | Thin facade exports and public package surface | `public_api.rs` | `cargo test -p cow-sdk` |
+
+## Examples And Browser Surfaces
+
+| Surface | Boundary | Current evidence | Primary command |
+| --- | --- | --- | --- |
+| Native examples | Deterministic consumer scenarios for app-data, signing, orderbook, trading, and subgraph behavior | `examples/native/tests/scenario_contract.rs` plus runnable scenario binaries | `cargo test --manifest-path examples/native/Cargo.toml` |
+| Native scenario binaries | Reviewer-readable command output without live order placement | `examples/native/scenarios/*.rs` | `cargo check --manifest-path examples/native/Cargo.toml --examples` |
+| SDK WASM verification console | WASM-compatible SDK proof surface | `examples/wasm/sdk-verification-console` build | `cargo check --target wasm32-unknown-unknown --manifest-path examples/wasm/sdk-verification-console/Cargo.toml` |
+| Browser wallet WASM console | Browser wallet proof surface behind explicit feature/runtime boundaries | `examples/wasm/browser-wallet-console` build | `cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml` |
+
+## Workspace Gates
+
+| Gate | Purpose |
+| --- | --- |
+| `cargo fmt --all --check` | Formatting gate for reviewable diffs |
+| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
+| `cargo test --workspace` | Main workspace test gate |
+| `cargo doc --workspace --no-deps` | Public rustdoc build gate |
+
+## Review Boundaries
+
+- Required tests and examples avoid private keys, seed phrases, live wallet authorization, and live order submission.
+- Mocked transports should assert request shape and failure behavior where those paths are part of the reviewed surface.
+- WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible.
+- Schema-derived evidence is test-only unless a later change explicitly promotes it into public SDK API.

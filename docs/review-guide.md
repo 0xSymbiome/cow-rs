@@ -8,6 +8,7 @@ This guide describes how to review the current Rust SDK boundaries and the evide
 
 Start with:
 
+- [Security And Test Matrix](security-matrix.md)
 - [Architecture](architecture.md)
 - [Parity Matrix](parity-matrix.md)
 - [Parity Sources](parity-sources.md)
