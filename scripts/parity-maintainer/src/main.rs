@@ -166,21 +166,21 @@ const REPO_TEMPLATES: &[RepoTemplate] = &[
         id: "cow-sdk",
         remote: "https://github.com/cowprotocol/cow-sdk.git",
         role: "primary",
-        local_hint: "cow-protocol/cow-sdk",
+        local_hint: "<cow-sdk-checkout>",
         producer_paths: COW_SDK_PATHS,
     },
     RepoTemplate {
         id: "contracts",
         remote: "https://github.com/cowprotocol/contracts.git",
         role: "primary",
-        local_hint: "cow-protocol/contracts",
+        local_hint: "<contracts-checkout>",
         producer_paths: CONTRACTS_PATHS,
     },
     RepoTemplate {
         id: "services",
         remote: "https://github.com/cowprotocol/services.git",
         role: "reference-only",
-        local_hint: "cow-protocol/services",
+        local_hint: "<services-checkout>",
         producer_paths: SERVICES_PATHS,
     },
 ];
@@ -603,7 +603,12 @@ fn repository_entry<'a>(lock: &'a SourceLock, id: &str) -> Result<&'a Repository
 }
 
 fn validate_repository_root(repo: &RepositoryEntry, root: &Path) -> Result<()> {
-    let commit = git_stdout(root, &["rev-parse", "HEAD"])?;
+    let canonical_root = fs::canonicalize(root)
+        .with_context(|| format!("failed to canonicalize {}", root.display()))?;
+    validate_git_toplevel(repo, &canonical_root)?;
+    validate_repository_remote(repo, &canonical_root)?;
+
+    let commit = git_stdout(&canonical_root, &["rev-parse", "HEAD"])?;
     if repo.commit != commit {
         bail!(
             "repository {} commit mismatch: lock={}, actual={}",
@@ -613,12 +618,97 @@ fn validate_repository_root(repo: &RepositoryEntry, root: &Path) -> Result<()> {
         );
     }
     for producer_path in &repo.producer_paths {
-        let path = root.join(producer_path);
+        let path = canonical_root.join(producer_path);
         if !path.exists() {
             bail!("missing producer path {}", path.display());
         }
     }
+    validate_clean_producer_paths(repo, &canonical_root)?;
     Ok(())
+}
+
+fn validate_git_toplevel(repo: &RepositoryEntry, root: &Path) -> Result<()> {
+    let git_root_raw = git_stdout(root, &["rev-parse", "--show-toplevel"])?;
+    let git_root = fs::canonicalize(Path::new(&git_root_raw))
+        .with_context(|| format!("failed to canonicalize git top-level {git_root_raw}"))?;
+
+    if git_root != root {
+        bail!(
+            "repository {} root mismatch: supplied root {} resolves to git top-level {}; supply an independent checkout of {} at the pinned source-lock commit",
+            repo.id,
+            root.display(),
+            git_root.display(),
+            repo.remote
+        );
+    }
+
+    Ok(())
+}
+
+fn validate_repository_remote(repo: &RepositoryEntry, root: &Path) -> Result<()> {
+    let expected = normalize_repository_remote(&repo.remote);
+    let remotes = git_stdout(root, &["remote", "-v"])?;
+    let mut found = Vec::new();
+
+    for line in remotes.lines() {
+        let mut parts = line.split_whitespace();
+        let _name = parts.next();
+        if let Some(url) = parts.next() {
+            found.push(url.to_string());
+        }
+    }
+
+    if found
+        .iter()
+        .any(|remote| normalize_repository_remote(remote) == expected)
+    {
+        return Ok(());
+    }
+
+    let found = if found.is_empty() {
+        "none".to_string()
+    } else {
+        found.join(", ")
+    };
+    bail!(
+        "repository {} remote mismatch: expected {}, found {}",
+        repo.id,
+        repo.remote,
+        found
+    );
+}
+
+fn validate_clean_producer_paths(repo: &RepositoryEntry, root: &Path) -> Result<()> {
+    let mut args: Vec<&str> = vec!["status", "--porcelain", "--"];
+    args.extend(repo.producer_paths.iter().map(String::as_str));
+
+    let status = git_stdout(root, &args)?;
+    if !status.trim().is_empty() {
+        bail!(
+            "repository {} has uncommitted changes in producer paths:\n{}",
+            repo.id,
+            status.trim()
+        );
+    }
+
+    Ok(())
+}
+
+fn normalize_repository_remote(remote: &str) -> String {
+    let mut normalized = remote.trim().trim_end_matches('/').to_ascii_lowercase();
+
+    if let Some(rest) = normalized.strip_prefix("git@github.com:") {
+        normalized = format!("github.com/{rest}");
+    } else if let Some(rest) = normalized.strip_prefix("ssh://git@github.com/") {
+        normalized = format!("github.com/{rest}");
+    } else if let Some(rest) = normalized.strip_prefix("https://github.com/") {
+        normalized = format!("github.com/{rest}");
+    }
+
+    normalized
+        .strip_suffix(".git")
+        .unwrap_or(&normalized)
+        .to_string()
 }
 
 fn validate_schema_bundle_dir(dir: &Path, label: &str) -> Result<usize> {
@@ -1487,12 +1577,8 @@ mod tests {
         Ok(())
     }
 
-    fn init_repo(root: &Path, producer_paths: &[&str]) -> Result<String> {
+    fn write_producer_paths(root: &Path, producer_paths: &[&str]) -> Result<()> {
         fs::create_dir_all(root).with_context(|| format!("failed to create {}", root.display()))?;
-        run_git(root, &["init"])?;
-        run_git(root, &["config", "user.email", "tests@example.com"])?;
-        run_git(root, &["config", "user.name", "Parity Maintainer Tests"])?;
-
         for producer_path in producer_paths {
             let path = root.join(producer_path);
             let parent = path
@@ -1503,10 +1589,34 @@ mod tests {
             fs::write(&path, format!("fixture source for {producer_path}\n"))
                 .with_context(|| format!("failed to write {}", path.display()))?;
         }
+        Ok(())
+    }
+
+    fn init_repo(root: &Path, producer_paths: &[&str], remote: &str) -> Result<String> {
+        write_producer_paths(root, producer_paths)?;
+        run_git(root, &["init"])?;
+        run_git(root, &["config", "user.email", "tests@example.com"])?;
+        run_git(root, &["config", "user.name", "Parity Maintainer Tests"])?;
+        run_git(root, &["remote", "add", "origin", remote])?;
 
         run_git(root, &["add", "."])?;
         run_git(root, &["commit", "-m", "initial fixture sources"])?;
         git_stdout(root, &["rev-parse", "HEAD"])
+    }
+
+    fn repository_entry_for(template: RepoTemplate, commit: &str) -> RepositoryEntry {
+        RepositoryEntry {
+            id: template.id.to_string(),
+            remote: template.remote.to_string(),
+            commit: commit.to_string(),
+            role: template.role.to_string(),
+            optional_local_path: template.local_hint.to_string(),
+            producer_paths: template
+                .producer_paths
+                .iter()
+                .map(|path| (*path).to_string())
+                .collect(),
+        }
     }
 
     fn write_fixture_files(
@@ -1600,9 +1710,11 @@ mod tests {
             let contracts_root = root.join("contracts");
             let services_root = root.join("services");
 
-            let cow_sdk_commit = init_repo(&cow_sdk_root, COW_SDK_PATHS)?;
-            let contracts_commit = init_repo(&contracts_root, CONTRACTS_PATHS)?;
-            let services_commit = init_repo(&services_root, SERVICES_PATHS)?;
+            let cow_sdk_commit = init_repo(&cow_sdk_root, COW_SDK_PATHS, REPO_TEMPLATES[0].remote)?;
+            let contracts_commit =
+                init_repo(&contracts_root, CONTRACTS_PATHS, REPO_TEMPLATES[1].remote)?;
+            let services_commit =
+                init_repo(&services_root, SERVICES_PATHS, REPO_TEMPLATES[2].remote)?;
 
             let repo_commits = BTreeMap::from([
                 ("cow-sdk".to_string(), cow_sdk_commit),
@@ -1654,6 +1766,109 @@ mod tests {
 
         snapshot(&options)?;
         validate(&options)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn validate_with_roots_rejects_path_that_resolves_to_parent_repo() -> Result<()> {
+        let root = unique_temp_dir("parent-repo-resolution");
+        let parent = root.join("cow-rs");
+        let parent_commit = init_repo(
+            &parent,
+            &["README.md"],
+            "https://github.com/example/cow-rs.git",
+        )?;
+        let nested_contracts = parent.join("copied-upstream/contracts");
+        write_producer_paths(&nested_contracts, CONTRACTS_PATHS)?;
+
+        let contracts_repo = repository_entry_for(REPO_TEMPLATES[1], &parent_commit);
+        let error = validate_repository_root(&contracts_repo, &nested_contracts)
+            .expect_err("validate should fail when the supplied root resolves to a parent repo");
+
+        assert!(
+            format!("{error:#}").contains("root mismatch"),
+            "unexpected error: {error:#}"
+        );
+        assert!(
+            format!("{error:#}").contains("supply an independent checkout"),
+            "unexpected error: {error:#}"
+        );
+
+        let _ = fs::remove_dir_all(root);
+        Ok(())
+    }
+
+    #[test]
+    fn validate_with_roots_rejects_wrong_remote() -> Result<()> {
+        let _lock = cwd_lock().lock().expect("cwd lock poisoned");
+        let workspace = TestWorkspace::new("wrong-remote")?;
+        let _guard = CwdGuard::change_to(&workspace.root)?;
+        let options = workspace.cli_options();
+
+        snapshot(&options)?;
+        run_git(
+            &workspace.contracts_root,
+            &[
+                "remote",
+                "set-url",
+                "origin",
+                "https://github.com/example/contracts.git",
+            ],
+        )?;
+
+        let error = validate(&options).expect_err("validate should fail on remote mismatch");
+        assert!(
+            format!("{error:#}").contains("repository contracts remote mismatch"),
+            "unexpected error: {error:#}"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn validate_with_roots_accepts_ssh_github_remote_for_expected_repo() -> Result<()> {
+        let _lock = cwd_lock().lock().expect("cwd lock poisoned");
+        let workspace = TestWorkspace::new("ssh-remote")?;
+        let _guard = CwdGuard::change_to(&workspace.root)?;
+        let options = workspace.cli_options();
+
+        snapshot(&options)?;
+        run_git(
+            &workspace.contracts_root,
+            &[
+                "remote",
+                "set-url",
+                "origin",
+                "git@github.com:cowprotocol/contracts.git",
+            ],
+        )?;
+
+        validate(&options)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn validate_with_roots_rejects_dirty_producer_paths() -> Result<()> {
+        let _lock = cwd_lock().lock().expect("cwd lock poisoned");
+        let workspace = TestWorkspace::new("dirty-producer")?;
+        let _guard = CwdGuard::change_to(&workspace.root)?;
+        let options = workspace.cli_options();
+
+        snapshot(&options)?;
+        fs::write(
+            workspace.contracts_root.join("src/ts/order.ts"),
+            "local uncommitted producer drift\n",
+        )
+        .context("failed to dirty contracts producer path")?;
+
+        let error = validate(&options).expect_err("validate should fail on dirty producer paths");
+        assert!(
+            format!("{error:#}")
+                .contains("repository contracts has uncommitted changes in producer paths"),
+            "unexpected error: {error:#}"
+        );
 
         Ok(())
     }

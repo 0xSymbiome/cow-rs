@@ -4,35 +4,35 @@
 
 ```mermaid
 flowchart TD
-  sdk["cow-sdk"]
-  core["cow-sdk-core"]
-  contracts["cow-sdk-contracts"]
-  signing["cow-sdk-signing"]
-  appdata["cow-sdk-app-data"]
-  orderbook["cow-sdk-orderbook"]
-  trading["cow-sdk-trading"]
-  subgraph["cow-sdk-subgraph"]
-  wallet["cow-sdk-browser-wallet"]
+  sdk["cow-sdk"];
+  core["cow-sdk-core"];
+  contracts["cow-sdk-contracts"];
+  signing["cow-sdk-signing"];
+  appdata["cow-sdk-app-data"];
+  orderbook["cow-sdk-orderbook"];
+  trading["cow-sdk-trading"];
+  subgraph_crate["cow-sdk-subgraph"];
+  wallet["cow-sdk-browser-wallet"];
 
-  sdk --> core
-  sdk --> contracts
-  sdk --> signing
-  sdk --> appdata
-  sdk --> orderbook
-  sdk --> trading
-  sdk -. "feature: browser-wallet" .-> wallet
-  contracts --> core
-  signing --> core
-  signing --> contracts
-  appdata --> core
-  orderbook --> core
-  trading --> core
-  trading --> contracts
-  trading --> signing
-  trading --> appdata
-  trading --> orderbook
-  subgraph --> core
-  wallet --> core
+  sdk --> core;
+  sdk --> contracts;
+  sdk --> signing;
+  sdk --> appdata;
+  sdk --> orderbook;
+  sdk --> trading;
+  sdk -.->|feature: browser-wallet| wallet;
+  contracts --> core;
+  signing --> core;
+  signing --> contracts;
+  appdata --> core;
+  orderbook --> core;
+  trading --> core;
+  trading --> contracts;
+  trading --> signing;
+  trading --> appdata;
+  trading --> orderbook;
+  subgraph_crate --> core;
+  wallet --> core;
 ```
 
 ## Layers

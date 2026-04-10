@@ -7,7 +7,7 @@ repositories:
   remote: https://github.com/cowprotocol/cow-sdk.git
   commit: 17fcfc590be8529dc4fe05b1c472fef1b07b47f4
   role: primary
-  optional_local_path: cow-protocol/cow-sdk
+  optional_local_path: <cow-sdk-checkout>
   producer_paths:
   - packages/common/src/adapters/AbstractSigner.ts
   - packages/common/src/adapters/AbstractProviderAdapter.ts
@@ -127,7 +127,7 @@ repositories:
   remote: https://github.com/cowprotocol/contracts.git
   commit: c94c595a791681cf8ba7495117dcde397b932885
   role: primary
-  optional_local_path: cow-protocol/contracts
+  optional_local_path: <contracts-checkout>
   producer_paths:
   - src/ts/order.ts
   - src/ts/sign.ts
@@ -146,7 +146,7 @@ repositories:
   remote: https://github.com/cowprotocol/services.git
   commit: cfbec985dfe476bf7ef42750435f7d5a12223a85
   role: reference-only
-  optional_local_path: cow-protocol/services
+  optional_local_path: <services-checkout>
   producer_paths:
   - crates/orderbook/openapi.yml
   - crates/shared/src/order_validation.rs

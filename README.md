@@ -25,6 +25,8 @@ As of 2026-04-09, this workspace includes order creation, signing, and submissio
 - [Strategy](docs/strategy.md)
 - [Architecture](docs/architecture.md)
 - [Parity Matrix](docs/parity-matrix.md)
+- [Parity Sources](docs/parity-sources.md)
+- [Examples](docs/examples.md)
 - [Open Questions](docs/open-questions.md)
 - [ADRs](docs/adr/README.md)
 

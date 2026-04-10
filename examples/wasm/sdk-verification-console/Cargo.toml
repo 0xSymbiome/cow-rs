@@ -8,7 +8,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.94.1"
 publish = false
-license = "GPL-3.0"
+license-file = "../../../LICENSE"
 repository = "https://github.com/cowdao-grants/cow-rs"
 description = "WASM consumer-facing capability example for cow-rs"
 
