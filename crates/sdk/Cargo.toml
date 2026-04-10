@@ -13,8 +13,16 @@ homepage = "https://github.com/cowdao-grants/cow-rs"
 keywords = ["cow-protocol", "sdk", "defi", "trading"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 
+[package.metadata.docs.rs]
+features = ["browser-wallet"]
+default-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+
 [lib]
 path = "src/lib.rs"
+
+[lints]
+workspace = true
 
 [features]
 default = []

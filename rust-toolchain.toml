@@ -1,3 +1,5 @@
+# Contributor toolchain pin for reproducible local and CI execution.
+# Public MSRV is declared separately in the workspace Cargo.toml.
 [toolchain]
 channel = "1.94.1"
 components = ["clippy", "rustfmt"]

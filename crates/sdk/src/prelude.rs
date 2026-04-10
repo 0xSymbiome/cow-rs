@@ -7,6 +7,7 @@ pub use cow_sdk_app_data::{
     upload_metadata_doc_to_ipfs_legacy, validate_app_data_doc,
 };
 #[cfg(feature = "browser-wallet")]
+#[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]
 pub use cow_sdk_browser_wallet::{
     BrowserWallet, BrowserWalletError, Eip1193Provider, Eip1193Signer, InjectedWalletInfo,
     MockEip1193Transport, RpcErrorPayload, WalletEvent, WalletSession,

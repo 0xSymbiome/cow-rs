@@ -9,6 +9,13 @@
 //! - app-data helpers
 //! - trading orchestration
 //!
+//! Supported surface split:
+//!
+//! - native and server-side consumers use the default facade
+//! - wasm consumers can use the same default facade for pure SDK flows
+//! - browser wallet integration is additive behind the `browser-wallet` feature
+//! - subgraph access remains in the separate `cow-sdk-subgraph` crate
+//!
 //! Top-level docs stay trading-first, matching the pinned upstream `packages/sdk`
 //! documentation entrypoint.
 //!
@@ -25,6 +32,7 @@
 //! ```compile_fail
 //! use cow_sdk::subgraph;
 //! ```
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod prelude;
 
@@ -32,6 +40,7 @@ pub use prelude::*;
 
 pub use cow_sdk_app_data as app_data;
 #[cfg(feature = "browser-wallet")]
+#[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]
 pub use cow_sdk_browser_wallet as browser_wallet;
 pub use cow_sdk_contracts as contracts;
 pub use cow_sdk_core as core;
