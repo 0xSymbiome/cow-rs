@@ -4,7 +4,6 @@ use std::{
     time::Duration,
 };
 
-use futures_timer::Delay;
 use reqwest::{
     Client,
     header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderValue},
@@ -15,6 +14,10 @@ use thiserror::Error;
 
 use crate::error::OrderbookError;
 
+#[cfg(not(target_arch = "wasm32"))]
+use futures_timer::Delay;
+#[cfg(target_arch = "wasm32")]
+use gloo_timers::future::TimeoutFuture;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 #[cfg(target_arch = "wasm32")]
@@ -305,7 +308,7 @@ impl RequestRateLimiter {
             };
 
             match wait_for {
-                Some(duration) if !duration.is_zero() => Delay::new(duration).await,
+                Some(duration) if !duration.is_zero() => delay_for(duration).await,
                 _ => return,
             }
         }
@@ -543,7 +546,7 @@ where
                     policy.should_retry_status(error.status) && attempt_index < policy.max_attempts;
 
                 if should_retry {
-                    Delay::new(policy.backoff_delay(attempt_index)).await;
+                    delay_for(policy.backoff_delay(attempt_index)).await;
                     continue;
                 }
 
@@ -553,7 +556,7 @@ where
                 last_transport_error = Some(error);
 
                 if attempt_index < policy.max_attempts {
-                    Delay::new(policy.backoff_delay(attempt_index)).await;
+                    delay_for(policy.backoff_delay(attempt_index)).await;
                     continue;
                 }
             }
@@ -563,6 +566,21 @@ where
     Err(OrderbookError::Transport(
         last_transport_error.unwrap_or_else(|| "request attempts exhausted".to_owned()),
     ))
+}
+
+async fn delay_for(duration: Duration) {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        Delay::new(duration).await;
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        let millis = duration.as_millis().min(u128::from(u32::MAX)) as u32;
+        if millis > 0 {
+            TimeoutFuture::new(millis).await;
+        }
+    }
 }
 
 fn decode_success_body<T>(response: &ResponseEnvelope) -> Result<T, OrderbookError>

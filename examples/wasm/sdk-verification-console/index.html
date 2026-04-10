@@ -282,6 +282,7 @@
         <h1>cow-rs browser surface</h1>
         <p class="lead">
           Editable browser console for current `cow-sdk` capability checks on `wasm32-unknown-unknown`.
+          Local checks are deterministic; network-backed controls are manual smoke checks.
         </p>
       </div>
 
@@ -315,6 +316,7 @@
             <button id="btn-capability">Capability Report</button>
             <button id="btn-chains" class="alt">Supported Chains</button>
           </div>
+          <div class="hint">Capability and app-data/order/approval outputs run locally in the browser.</div>
         </div>
         <pre id="runtime-output" class="output">Loading...</pre>
       </section>
@@ -414,6 +416,7 @@
             <button id="btn-trading-quote">Quote Only</button>
             <button id="btn-trading-defaults" class="alt">Defaults</button>
           </div>
+          <div class="warning">Manual use calls the selected CoW orderbook environment.</div>
         </div>
         <pre id="trading-output" class="output">Ready.</pre>
       </article>
@@ -439,9 +442,10 @@
 
       <article class="panel span-8">
         <div class="panel-header">
-          <h3>Orderbook Live</h3>
+          <h3>Orderbook</h3>
         </div>
         <div class="panel-body stack">
+          <div class="warning">Manual use calls the selected CoW orderbook environment.</div>
           <div>
             <label for="quote-request-json">Quote Request JSON</label>
             <textarea id="quote-request-json">{
@@ -491,7 +495,7 @@
           <h3>Subgraph</h3>
         </div>
         <div class="panel-body stack">
-          <div class="warning">Requires a The Graph API key.</div>
+          <div class="warning">Manual live use requires a The Graph API key.</div>
           <div>
             <label for="subgraph-api-key">API Key</label>
             <input id="subgraph-api-key" placeholder="graph key">

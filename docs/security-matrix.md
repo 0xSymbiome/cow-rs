@@ -26,7 +26,7 @@ Update this matrix in the same change when a crate or example gains material tes
 | --- | --- | --- | --- |
 | Native examples | Deterministic consumer scenarios for app-data, signing, orderbook, trading, and subgraph behavior | `examples/native/tests/scenario_contract.rs` plus runnable scenario binaries | `cargo test --manifest-path examples/native/Cargo.toml` |
 | Native scenario binaries | Reviewer-readable command output without live order placement | `examples/native/scenarios/*.rs` | `cargo check --manifest-path examples/native/Cargo.toml --examples` |
-| SDK WASM verification console | WASM-compatible SDK proof surface | `examples/wasm/sdk-verification-console` build | `cargo check --target wasm32-unknown-unknown --manifest-path examples/wasm/sdk-verification-console/Cargo.toml` |
+| SDK WASM verification console | WASM-compatible SDK proof surface with deterministic exports; network-backed quote, orderbook, and subgraph controls remain manual review surfaces | `examples/wasm/sdk-verification-console/tests/deterministic_exports.rs` | `wasm-pack test --headless --chrome` |
 | Browser wallet WASM console | Browser wallet proof surface behind explicit feature/runtime boundaries | `examples/wasm/browser-wallet-console` build | `cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml` |
 
 ## Workspace Gates
@@ -43,4 +43,5 @@ Update this matrix in the same change when a crate or example gains material tes
 - Required tests and examples avoid private keys, seed phrases, live wallet authorization, and live order submission.
 - Mocked transports should assert request shape and failure behavior where those paths are part of the reviewed surface.
 - WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible.
+- Live quote, orderbook, subgraph, and wallet checks stay manual unless explicitly promoted into a deterministic routed or injected test.
 - Schema-derived evidence is test-only unless a later change explicitly promotes it into public SDK API.

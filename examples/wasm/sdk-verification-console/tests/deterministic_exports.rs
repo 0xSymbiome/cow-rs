@@ -1,0 +1,136 @@
+use serde_json::Value;
+use wasm_bindgen::JsValue;
+use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
+
+use cow_sdk_examples_wasm::{
+    app_data_report_json, approval_transaction_preview_json, capability_report_json,
+    cid_from_hex_json, hex_from_cid_json, order_envelope_preview_json, supported_chains_json,
+    trading_defaults_json,
+};
+
+wasm_bindgen_test_configure!(run_in_browser);
+
+const OWNER: &str = "0x4444444444444444444444444444444444444444";
+const MAINNET_WETH: &str = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+const MAINNET_USDC: &str = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+
+#[wasm_bindgen_test]
+fn property_0_exports_are_callable_and_constants_are_present() {
+    let chains = parse_json(supported_chains_json());
+    let mainnet = chains
+        .as_array()
+        .expect("supported chains must be an array")
+        .iter()
+        .find(|chain| chain["chainId"] == 1)
+        .expect("mainnet must be listed");
+    assert_eq!(mainnet["apiPath"], "mainnet");
+    assert_eq!(mainnet["wrappedNative"]["address"], MAINNET_WETH);
+
+    let capability = parse_json(capability_report_json(1, "prod"));
+    assert_eq!(capability["surface"], "cow-sdk");
+    assert_eq!(capability["mode"], "wasm-console");
+    assert_eq!(capability["chainId"], 1);
+    assert_eq!(capability["sdkConstructed"], true);
+    assert_eq!(capability["wrappedNative"]["address"], MAINNET_WETH);
+    assert_eq!(capability["sampleOrder"]["sellToken"], MAINNET_WETH);
+    assert_eq!(capability["sampleOrder"]["buyToken"], MAINNET_USDC);
+    assert!(
+        capability["sampleOrderNotes"]["buyToken"]
+            .as_str()
+            .expect("buy token note must be a string")
+            .contains("Static USDC")
+    );
+    assert!(
+        capability["deployment"]["settlement"]
+            .as_str()
+            .expect("settlement address must be a string")
+            .starts_with("0x")
+    );
+
+    let defaults = parse_json(trading_defaults_json());
+    assert_eq!(defaults["quoteValiditySeconds"], 1800);
+    assert_eq!(defaults["defaultSlippageBps"], 50);
+    assert_eq!(defaults["maxSlippageBps"], 10000);
+}
+
+#[wasm_bindgen_test]
+fn app_data_and_cid_exports_round_trip_deterministically() {
+    let app_data = r#"{
+        "version": "1.14.0",
+        "appCode": "cow-rs/wasm-console",
+        "environment": "browser",
+        "metadata": {
+          "quote": {
+            "slippageBips": 50
+          }
+        }
+      }"#;
+
+    let report = parse_json(app_data_report_json(app_data));
+    assert_eq!(report["valid"], true);
+    let cid = report["cid"].as_str().expect("cid must be a string");
+    let app_data_hex = report["appDataHex"]
+        .as_str()
+        .expect("appDataHex must be a string");
+
+    let from_cid = parse_json(hex_from_cid_json(cid));
+    assert_eq!(from_cid["appDataHex"], app_data_hex);
+
+    let from_hex = parse_json(cid_from_hex_json(app_data_hex));
+    assert_eq!(from_hex["cid"], cid);
+}
+
+#[wasm_bindgen_test]
+fn order_envelope_and_approval_exports_produce_reviewable_json() {
+    let order = r#"{
+        "sellToken": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "buyToken": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "receiver": "0x4444444444444444444444444444444444444444",
+        "sellAmount": "100000000000000000",
+        "buyAmount": "250000000",
+        "validTo": 1900000000,
+        "appData": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "feeAmount": "0",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20"
+      }"#;
+    let envelope = parse_json(order_envelope_preview_json(1, order, OWNER));
+    assert_eq!(envelope["primaryType"], "Order");
+    assert_eq!(envelope["expectedPrimaryType"], "Order");
+    assert_eq!(envelope["domain"]["chainId"], 1);
+    assert!(
+        envelope["orderId"]
+            .as_str()
+            .expect("order id must be a string")
+            .starts_with("0x")
+    );
+
+    let approval = r#"{
+        "tokenAddress": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "amount": "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+      }"#;
+    let approval = parse_json(approval_transaction_preview_json(1, "prod", approval));
+    assert_eq!(approval["chainId"], 1);
+    assert_eq!(approval["gas"]["defaultLimit"], 150000);
+    assert_eq!(approval["transaction"]["to"], MAINNET_WETH);
+}
+
+#[wasm_bindgen_test]
+fn malformed_deterministic_input_fails_visibly() {
+    let error = app_data_report_json("{").expect_err("malformed app-data JSON must fail");
+    let message = error_message(error);
+    assert!(message.contains("invalid appDataDoc JSON"));
+}
+
+fn parse_json(result: Result<String, JsValue>) -> Value {
+    serde_json::from_str(&result.expect("export must return JSON"))
+        .expect("export must return valid JSON")
+}
+
+fn error_message(error: JsValue) -> String {
+    error
+        .as_string()
+        .expect("console errors must be string values")
+}

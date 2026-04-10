@@ -62,7 +62,7 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
     let deployment = deployment_for_chain(u64::from(chain_id))
         .map_err(|error| to_js_error(error.to_string()))?;
     let wrapped_native = wrapped_native_token(chain_id);
-    let order = sample_unsigned_order();
+    let order = sample_unsigned_order(chain_id);
     let generated = generate_order_id(chain_id, &order, &sample_owner(), None)
         .map_err(|error| to_js_error(error.to_string()))?;
 
@@ -85,6 +85,15 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
             "settlement": deployment.settlement.as_str(),
             "vaultRelayer": deployment.vault_relayer.as_str(),
             "ethFlow": deployment.eth_flow.as_str()
+        },
+        "sampleOrder": {
+            "sellToken": order.sell_token.as_str(),
+            "buyToken": order.buy_token.as_str(),
+            "receiver": order.receiver.as_str()
+        },
+        "sampleOrderNotes": {
+            "sellToken": "Selected-chain wrapped native token.",
+            "buyToken": "Static USDC example address used only for deterministic previews."
         },
         "orderId": generated.order_id.as_str()
     }))
@@ -585,10 +594,9 @@ fn sample_owner() -> Address {
         .expect("static example owner must remain valid")
 }
 
-fn sample_unsigned_order() -> cow_sdk::UnsignedOrder {
+fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
     cow_sdk::UnsignedOrder {
-        sell_token: Address::new("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")
-            .expect("static example address must remain valid"),
+        sell_token: wrapped_native_token(chain_id).address,
         buy_token: Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
             .expect("static example address must remain valid"),
         receiver: sample_owner(),

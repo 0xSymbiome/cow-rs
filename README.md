@@ -45,5 +45,5 @@ cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 ## Examples
 
 - `examples/native/` contains native SDK scenarios.
-- `examples/wasm/sdk-verification-console/` contains a deterministic WASM verification console.
+- `examples/wasm/sdk-verification-console/` contains deterministic WASM checks and a browser review surface for SDK verification.
 - `examples/wasm/browser-wallet-console/` contains mock-wallet and injected-wallet browser flows.

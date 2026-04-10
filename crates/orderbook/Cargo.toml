@@ -26,6 +26,7 @@ reqwest = { workspace = true, features = ["json", "query", "rustls"] }
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 reqwest = { workspace = true, features = ["json", "query"] }
 web-time = "1.1.0"
+gloo-timers = { version = "0.4.0", features = ["futures"] }
 
 [dev-dependencies]
 serde_json.workspace = true
