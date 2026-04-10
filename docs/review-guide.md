@@ -11,6 +11,7 @@ Start with:
 - [Architecture](architecture.md)
 - [Parity Matrix](parity-matrix.md)
 - [Parity Sources](parity-sources.md)
+- [Parity Scope](parity-scope.md)
 - [Audits](audit/README.md)
 
 Then inspect the crate tests that cover the surface under review. The most useful entry points are the `*_contract.rs` integration tests in each crate.
@@ -62,11 +63,21 @@ This avoids a single crate becoming the owner of unrelated concerns while still 
 
 ## Generated Or Schema-Derived Artifacts
 
-No generated or schema-derived public API is introduced in this review slice. If schema mirrors are added later for drift evidence, they should remain internal or test-only unless a later review explicitly promotes them into the public SDK API.
+No generated or schema-derived public API is introduced here. If schema mirrors are added later for drift evidence, they should remain internal or test-only unless a later change explicitly promotes them into the public SDK API.
+
+Orderbook OpenAPI and subgraph query evidence is tied to pinned entries in `parity/source-lock.yaml`; see [Parity Scope](parity-scope.md).
+
+## CI Configuration
+
+The workflow set is intentionally small: workspace validation, release-readiness
+checks, and WASM checks. Action references in workflow files are pinned to
+immutable SHAs.
+
+CID handling uses upstream crates for CID and multihash encoding. Legacy content-to-CID generation uses `ipfs-cid`; latest app-data CID conversion wraps an existing Keccak digest with `cid` and `multihash` because the SDK receives the digest as an app-data hash.
 
 ## Validation
 
-Use the normal workspace checks for this review slice:
+Use the normal workspace checks:
 
 ```text
 cargo fmt --all --check

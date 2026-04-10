@@ -5,7 +5,6 @@ use multihash::Multihash;
 use crate::AppDataError;
 
 const LATEST_CID_CODEC: u64 = 0x55;
-const LEGACY_CID_CODEC: u64 = 0x70;
 const KECCAK_256_CODE: u64 = 0x1b;
 const SHA2_256_CODE: u64 = 0x12;
 const APP_DATA_HEX_LENGTH: usize = 32;
@@ -29,7 +28,6 @@ pub fn app_data_hex_to_cid_legacy(app_data_hex: &str) -> Result<String, AppDataE
     let digest = parse_app_data_hex(app_data_hex)?;
     let hash = Multihash::<64>::wrap(SHA2_256_CODE, &digest)
         .map_err(|err| AppDataError::Calculation(err.to_string()))?;
-    let _codec = LEGACY_CID_CODEC;
     let cid = Cid::new_v0(hash).map_err(|_| AppDataError::InvalidCid)?;
     Ok(cid.to_string())
 }

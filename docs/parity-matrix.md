@@ -11,9 +11,9 @@ This matrix maps the main TypeScript surfaces to the current Rust workspace as o
 | App-data | `cow-sdk-app-data` | Implemented | Schema validation, deterministic document generation, CID conversion, fetch and pinning seams | `crates/app-data/tests/schema_contract.rs`, `crates/app-data/tests/cid_contract.rs`, `crates/app-data/tests/pinning_contract.rs` |
 | Orderbook transport | `cow-sdk-orderbook` | Implemented | Typed API transport, request policy, quote/order/trade decoding, total-fee and EthFlow transforms | `crates/orderbook/tests/api_contract.rs`, `crates/orderbook/tests/request_contract.rs`, `crates/orderbook/tests/transform_contract.rs` |
 | Subgraph queries | `cow-sdk-subgraph` | Implemented as a separate crate | Read-only totals, day-volume, hour-volume, and custom query execution | `crates/subgraph/tests/api_contract.rs`, `crates/subgraph/tests/query_contract.rs`, `examples/native/scenarios/subgraph_query_roundtrip.rs` |
-| WASM target | `cow-sdk`, `cow-sdk-app-data`, `cow-sdk-browser-wallet` | Implemented | `wasm32-unknown-unknown` builds for SDK, app-data, and browser wallet surfaces | `.github/workflows/wasm.yml`, `examples/wasm/sdk-verification-console/`, `examples/wasm/browser-wallet-console/` |
+| WASM target | `cow-sdk`, `cow-sdk-app-data`, `cow-sdk-browser-wallet` | Implemented | `wasm32-unknown-unknown` builds for SDK, app-data, and browser wallet surfaces | `examples/wasm/sdk-verification-console/`, `examples/wasm/browser-wallet-console/` |
 | Browser wallet integration | `cow-sdk-browser-wallet`, `cow-sdk` with `browser-wallet` feature | Implemented | Async EIP-1193 provider and signer, wallet session control, mock and injected wallet flows | `crates/browser-wallet/tests/provider_contract.rs`, `crates/browser-wallet/tests/wallet_contract.rs`, `examples/wasm/browser-wallet-console/README.md` |
-| Examples and release posture | Workspace | Implemented | Native showcase examples, WASM consoles, CI, and package dry-run workflow | `examples/native/README.md`, `.github/workflows/ci.yml`, `.github/workflows/release-readiness.yml` |
+| Examples and release posture | Workspace | Implemented | Native showcase examples, WASM consoles, and package dry-run validation | `examples/native/README.md`, `examples/README.md`, `examples/wasm/README.md` |
 
 ## Notes
 
