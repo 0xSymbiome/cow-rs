@@ -124,6 +124,13 @@ fn order_creation_from_quote_keeps_quote_shape_and_quote_id() {
     assert_eq!(order.signing_scheme, SigningScheme::EthSign);
     assert!(order.app_data.is_none());
     assert_eq!(order.app_data_hash, Some(sample_app_data_hash()));
+
+    let quote_value = serde_json::to_value(&quote_response.quote).expect("quote serializes");
+    let order_value = serde_json::to_value(&order).expect("order creation serializes");
+    assert!(quote_value.get("signature").is_none());
+    assert!(quote_value.get("from").is_none());
+    assert_eq!(order_value["signature"], json!(sample_signature()));
+    assert_eq!(order_value["from"], json!(sample_owner().as_str()));
 }
 
 #[test]

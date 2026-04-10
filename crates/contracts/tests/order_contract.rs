@@ -6,7 +6,9 @@ use cow_sdk_contracts::{
     hash_order_cancellation, hash_order_cancellations, hash_order_for_contract,
     normalize_buy_token_balance, normalize_order, pack_order_uid_params, uid_for_contract,
 };
-use cow_sdk_core::{Address, AppDataHex, OrderBalance, OrderKind, OrderModel, TypedDataDomain};
+use cow_sdk_core::{
+    Address, AppDataHex, OrderBalance, OrderKind, OrderModel, TypedDataDomain, UnsignedOrder,
+};
 
 use common::fixture_case;
 
@@ -136,6 +138,50 @@ fn order_hash_and_uid_helpers_are_consistent() {
     assert_eq!(cancellation.len(), 66);
     assert_eq!(batch.len(), 66);
     assert_ne!(cancellation, batch);
+}
+
+#[test]
+fn unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit() {
+    let unsigned = UnsignedOrder {
+        sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+        receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+        sell_amount: "1000".to_owned(),
+        buy_amount: "900".to_owned(),
+        valid_to: 1_700_000_000,
+        app_data: AppDataHex::new(
+            "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        )
+        .unwrap(),
+        fee_amount: "10".to_owned(),
+        kind: OrderKind::Sell,
+        partially_fillable: true,
+        sell_token_balance: OrderBalance::External,
+        buy_token_balance: OrderBalance::External,
+    };
+
+    let contract = Order::from(&unsigned);
+
+    assert_eq!(contract.sell_token, unsigned.sell_token);
+    assert_eq!(contract.buy_token, unsigned.buy_token);
+    assert_eq!(contract.receiver, Some(unsigned.receiver.clone()));
+    assert_eq!(contract.sell_amount, unsigned.sell_amount);
+    assert_eq!(contract.buy_amount, unsigned.buy_amount);
+    assert_eq!(contract.valid_to, unsigned.valid_to);
+    assert_eq!(contract.app_data, unsigned.app_data);
+    assert_eq!(contract.fee_amount, unsigned.fee_amount);
+    assert_eq!(contract.kind, unsigned.kind);
+    assert_eq!(contract.partially_fillable, unsigned.partially_fillable);
+    assert_eq!(
+        contract.sell_token_balance,
+        Some(unsigned.sell_token_balance)
+    );
+    assert_eq!(contract.buy_token_balance, Some(unsigned.buy_token_balance));
+
+    let normalized = contract.normalize().unwrap();
+    assert_eq!(normalized.receiver, unsigned.receiver);
+    assert_eq!(normalized.sell_token_balance, OrderBalance::External);
+    assert_eq!(normalized.buy_token_balance, OrderBalance::Erc20);
 }
 
 #[test]

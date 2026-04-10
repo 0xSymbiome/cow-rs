@@ -271,6 +271,11 @@ impl OrderQuoteRequest {
     }
 }
 
+/// Quote order data returned by the orderbook API.
+///
+/// This is a wire DTO, not the user-domain signing order and not the contract
+/// ABI order. It accepts the orderbook's full-app-data echo shape and resolves
+/// that into the app-data hash used by downstream order creation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuoteData {
@@ -356,6 +361,11 @@ pub struct OrderQuoteResponse {
     pub protocol_fee_bps: Option<String>,
 }
 
+/// Orderbook order submission DTO.
+///
+/// This is kept separate from `QuoteData` because submission adds signature,
+/// signer, signing-scheme, and optional quote-id fields while preserving the
+/// orderbook wire shape expected by `/api/v1/orders`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderCreation {
@@ -438,6 +448,11 @@ pub struct EthflowData {
     pub user_valid_to: u32,
 }
 
+/// Orderbook order response DTO.
+///
+/// This response includes status, owner, uid, execution totals, and EthFlow
+/// metadata that are not part of the user-domain signing order or contract ABI
+/// hashing payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Order {

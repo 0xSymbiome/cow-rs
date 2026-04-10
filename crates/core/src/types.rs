@@ -236,6 +236,11 @@ pub fn token_id(chain_id: ChainId, address: &Address) -> String {
     format!("{chain_id}:{}", address.normalized_key())
 }
 
+/// User-domain order shape prepared for signing and trading workflows.
+///
+/// This is not an orderbook wire DTO or an ABI struct. Contract hashing converts
+/// it into `cow_sdk_contracts::Order`, where receiver and token-balance defaults
+/// are normalized for EIP-712 hashing.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UnsignedOrder {
@@ -266,6 +271,8 @@ impl UnsignedOrder {
     }
 }
 
+/// Optional order envelope used by SDK consumers that need owner or uid context
+/// alongside the user-domain unsigned order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Order {

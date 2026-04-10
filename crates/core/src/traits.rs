@@ -61,6 +61,11 @@ pub struct ContractHandle {
     pub abi_json: String,
 }
 
+/// Synchronous signing boundary for native or test signers.
+///
+/// This is an active SDK contract: signing and trading workflows accept it
+/// directly, and any implementor also gets `AsyncSigner` through the blanket
+/// implementation below.
 pub trait Signer {
     type Provider;
     type Error;
@@ -79,6 +84,11 @@ pub trait Signer {
     fn estimate_gas(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
 }
 
+/// Asynchronous signing boundary for browser wallets and async runtimes.
+///
+/// Browser wallet support implements this trait directly. Synchronous signers
+/// also implement it through the blanket implementation so public trading flows
+/// can keep one async-first internal path.
 #[allow(async_fn_in_trait)]
 pub trait AsyncSigner {
     type Error;
@@ -138,6 +148,10 @@ where
     }
 }
 
+/// Synchronous provider boundary for native contract reads and transactions.
+///
+/// Contracts and trading helpers use this trait for provider-backed reads such
+/// as storage lookups, allowance checks, and contract calls.
 pub trait Provider {
     type Signer;
     type Error;
@@ -163,6 +177,11 @@ pub trait Provider {
     ) -> Result<ContractHandle, Self::Error>;
 }
 
+/// Asynchronous provider boundary for browser wallets and async runtimes.
+///
+/// `cow-sdk-browser-wallet` implements this directly. Synchronous providers get
+/// async compatibility through the blanket implementation when their signer can
+/// satisfy `AsyncSigner`.
 #[allow(async_fn_in_trait)]
 pub trait AsyncProvider {
     type Signer: AsyncSigner<Error = Self::Error>;
@@ -238,6 +257,12 @@ where
     }
 }
 
+/// Extension seam for downstream HTTP adapters.
+///
+/// The current orderbook client owns its typed request policy directly instead
+/// of routing through this trait. Keep this as an adapter contract for consumers
+/// or future internal transport unification, not as a claim that orderbook uses
+/// a generic core HTTP transport today.
 pub trait HttpTransport {
     type Error;
 
@@ -246,6 +271,10 @@ pub trait HttpTransport {
     fn delete(&self, path: &str, body: &str) -> Result<String, Self::Error>;
 }
 
+/// Extension seam for downstream GraphQL adapters.
+///
+/// The current subgraph client owns its typed query execution directly. Keep
+/// this as an adapter contract for consumers or future transport unification.
 pub trait GraphTransport {
     type Error;
 
@@ -257,6 +286,10 @@ pub trait GraphTransport {
     ) -> Result<String, Self::Error>;
 }
 
+/// Extension seam for downstream JSON pinning adapters.
+///
+/// App-data pinning currently uses its own fetch and pinning contracts because
+/// it needs app-data-specific request and credential semantics.
 pub trait PinningTransport {
     type Error;
 

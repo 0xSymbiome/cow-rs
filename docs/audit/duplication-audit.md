@@ -15,8 +15,6 @@ Covered in this revision:
 
 Planned for a later revision:
 
-- DTO boundary rationale across contract ABI, orderbook API, subgraph, and user-domain types,
-- conversion evidence between semantically distinct but field-similar types,
 - generated/schema-derived artifact review.
 
 ## Classification
@@ -27,7 +25,7 @@ Planned for a later revision:
 | Repeated retry/status/rate-limit loops | Addressed | Use one shared executor for JSON, text, and empty responses. |
 | Repeated signing payload preparation | Addressed | Share payload construction between sync and async signing paths. |
 | Trading posting wrapper pairs | Addressed | Keep ergonomic entry points thin and route workflow logic through the async implementation path. |
-| Repeated order-like DTO fields | Open | Keep separate until each ABI, API, normalized, and user-domain boundary is documented and tested. |
+| Repeated order-like DTO fields | Documented | Keep separate where each ABI, API, normalized, or user-domain boundary has a distinct role and conversion evidence. |
 
 ## Addressed Items
 
@@ -84,11 +82,25 @@ Validation evidence:
 
 - `crates/trading/tests/post_contract.rs::limit_posting_sync_signer_wrapper_matches_async_suffix_path`
 
+## DTO Boundary Update
+
+Repeated order-like field sets exist across contract ABI types, orderbook DTOs, normalized order types, and user-domain order types. These are retained only where they model distinct protocol boundaries:
+
+- `cow_sdk_core::UnsignedOrder` is the user-domain signing and trading input.
+- `cow_sdk_contracts::Order` is the contract ABI and EIP-712 payload before normalization.
+- `cow_sdk_contracts::NormalizedOrder` is the canonical hashing payload after defaults and validation.
+- `cow_sdk_orderbook::QuoteData` is the quote response wire DTO.
+- `cow_sdk_orderbook::OrderCreation` is the order submission wire DTO.
+- `cow_sdk_orderbook::Order` is the persisted orderbook response DTO.
+
+Validation evidence:
+
+- `crates/contracts/tests/order_contract.rs::unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit`
+- `crates/orderbook/tests/types_contract.rs::order_creation_from_quote_keeps_quote_shape_and_quote_id`
+
 ## Open Items
 
-Repeated order-like field sets exist across contract ABI types, orderbook DTOs, normalized order types, and user-domain order types. These should not be collapsed solely because the field names overlap.
-
-The next audit revision should document the boundary for each repeated shape and add conversion evidence where useful. If a repeated type has no distinct boundary, behavior, or compatibility purpose, it should be removed or merged.
+Generated or schema-derived artifact review remains open. Any future schema mirror should stay internal or test-only unless a later review explicitly promotes it into public SDK API.
 
 ## Validation
 

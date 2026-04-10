@@ -270,20 +270,7 @@ fn order_signing_payload(
 }
 
 pub(crate) fn contracts_order(order: &UnsignedOrder) -> ContractsOrder {
-    ContractsOrder {
-        sell_token: order.sell_token.clone(),
-        buy_token: order.buy_token.clone(),
-        receiver: Some(order.receiver.clone()),
-        sell_amount: order.sell_amount.clone(),
-        buy_amount: order.buy_amount.clone(),
-        valid_to: order.valid_to,
-        app_data: order.app_data.clone(),
-        fee_amount: order.fee_amount.clone(),
-        kind: order.kind,
-        partially_fillable: order.partially_fillable,
-        sell_token_balance: Some(order.sell_token_balance),
-        buy_token_balance: Some(order.buy_token_balance),
-    }
+    ContractsOrder::from(order)
 }
 
 fn signer_error<E: fmt::Display>(operation: &'static str, error: E) -> SigningError {

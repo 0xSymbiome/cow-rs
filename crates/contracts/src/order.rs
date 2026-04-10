@@ -82,6 +82,11 @@ pub const CANCELLATIONS_TYPE_FIELDS: [OrderTypeField; 1] = [OrderTypeField {
     kind: "bytes[]",
 }];
 
+/// Contract ABI and EIP-712 order payload.
+///
+/// This type intentionally differs from `cow_sdk_core::UnsignedOrder`: receiver
+/// and token-balance fields are optional here because the contract hashing
+/// boundary applies CoW Protocol defaults during normalization.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Order {
@@ -102,6 +107,11 @@ pub struct Order {
     pub buy_token_balance: Option<OrderBalance>,
 }
 
+/// Canonical contract order used for struct hashing.
+///
+/// `normalize_order` creates this type after applying ABI-level defaults and
+/// rejecting invalid receiver state. It is separate from `Order` so hashing code
+/// cannot accidentally skip normalization.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NormalizedOrder {
@@ -136,6 +146,25 @@ pub struct OrderCancellations {
 impl Order {
     pub fn normalize(&self) -> Result<NormalizedOrder, ContractsError> {
         normalize_order(self)
+    }
+}
+
+impl From<&cow_sdk_core::UnsignedOrder> for Order {
+    fn from(order: &cow_sdk_core::UnsignedOrder) -> Self {
+        Self {
+            sell_token: order.sell_token.clone(),
+            buy_token: order.buy_token.clone(),
+            receiver: Some(order.receiver.clone()),
+            sell_amount: order.sell_amount.clone(),
+            buy_amount: order.buy_amount.clone(),
+            valid_to: order.valid_to,
+            app_data: order.app_data.clone(),
+            fee_amount: order.fee_amount.clone(),
+            kind: order.kind,
+            partially_fillable: order.partially_fillable,
+            sell_token_balance: Some(order.sell_token_balance),
+            buy_token_balance: Some(order.buy_token_balance),
+        }
     }
 }
 
