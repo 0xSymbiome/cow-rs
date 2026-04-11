@@ -33,7 +33,7 @@ This matrix maps `cow-rs` test evidence by crate and public validation surface. 
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo doc --workspace --no-deps` | Public rustdoc build gate |
-| `RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --exclude cow-sdk-subgraph --all-features` | Blocking public API rustc lint gate for the hardened crate family |
+| `RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features` | Blocking public API rustc lint gate for the published crate family |
 
 ## Validation Boundaries
 
@@ -43,4 +43,4 @@ This matrix maps `cow-rs` test evidence by crate and public validation surface. 
 - Live quote, orderbook, subgraph, and wallet checks stay manual unless explicitly promoted into a deterministic routed or injected test.
 - Schema-derived evidence stays test-only and outside the public SDK API.
 - `cow-sdk-browser-wallet` tests and mock console mode provide deterministic proof. Injected-provider execution remains environment-sensitive because authorization, chain inventory, and wallet UX are controlled by the browser extension.
-- The hardened public rustc lint gate applies to `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade. `cow-sdk-subgraph` remains a separate package surface.
+- The public rustc lint gate applies to `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.

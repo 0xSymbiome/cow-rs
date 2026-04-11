@@ -247,7 +247,7 @@ Subgraph example review follows the same package boundary:
 
 The repository ships three validation layers:
 
-- `ci.yml` runs formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, hardened-family public API rustc lint enforcement, and advisory reporting on every PR.
+- `ci.yml` runs formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, published-crate public API rustc lint enforcement, and advisory reporting on every PR.
 - `release-readiness.yml` reruns the library checks before parity validation and package dry-runs.
 - `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and example deployment surfaces.
 
@@ -260,7 +260,7 @@ Public-library rustc lints checked in CI include:
 - `unreachable_pub`
 - `unnameable_types`
 
-The blocking public rustc lint gate applies to `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade. `cow-sdk-subgraph` remains a separate package surface.
+The blocking public rustc lint gate applies to the published crate family: `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.
 
 Dependency policy includes:
 
@@ -287,6 +287,6 @@ cargo deny check bans licenses sources --config .github/config/deny.toml
 Use this command when reviewing public-surface documentation and export hygiene:
 
 ```text
-RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --exclude cow-sdk-subgraph --all-features
+RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features
 cargo deny check advisories --config .github/config/deny.toml
 ```

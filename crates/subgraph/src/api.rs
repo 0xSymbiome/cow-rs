@@ -1,4 +1,7 @@
+//! Typed subgraph client configuration and query execution.
+
 use std::collections::BTreeMap;
+use std::fmt;
 
 use cow_sdk_core::{HttpClientPolicy, SupportedChainId};
 use reqwest::Client;
@@ -16,15 +19,30 @@ use crate::{
 
 const SUBGRAPH_BASE_URL: &str = "https://gateway.thegraph.com/api/";
 
+/// Human-readable name for the CoW Protocol subgraph service.
 pub const API_NAME: &str = "CoW Protocol Subgraph";
+/// Default user-agent used by the subgraph client.
 pub const DEFAULT_SUBGRAPH_USER_AGENT: &str =
     concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
+/// Base-URL overrides keyed by chain id.
+///
+/// A `Some(url)` entry enables that chain and routes requests to `url`. A
+/// `None` entry marks the chain as unsupported for the current configuration.
 pub type SubgraphApiBaseUrls = BTreeMap<SupportedChainId, Option<String>>;
 
+/// Static subgraph client configuration.
+///
+/// The default configuration targets mainnet production endpoints derived from
+/// the API key supplied when constructing [`SubgraphApi`].
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubgraphConfig {
+    /// Active chain id used for helper methods and generic queries.
     pub chain_id: SupportedChainId,
+    /// Optional per-chain base URL overrides.
+    ///
+    /// When this is `None`, [`SubgraphApi`] uses its API-key-derived production
+    /// endpoint map.
     pub base_urls: Option<SubgraphApiBaseUrls>,
 }
 
@@ -37,12 +55,16 @@ impl Default for SubgraphConfig {
     }
 }
 
+/// Per-call overrides for [`SubgraphConfig`].
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct SubgraphConfigOverride {
+    /// Optional chain override for a single request.
     pub chain_id: Option<SupportedChainId>,
+    /// Optional base-URL map override for a single request.
     pub base_urls: Option<SubgraphApiBaseUrls>,
 }
 
+/// Shared HTTP client policy for subgraph requests.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubgraphTransportPolicy {
     client: HttpClientPolicy,
@@ -58,20 +80,31 @@ impl Default for SubgraphTransportPolicy {
 }
 
 impl SubgraphTransportPolicy {
+    /// Creates a transport policy from an explicit HTTP client policy.
+    #[must_use]
     pub fn new(client: HttpClientPolicy) -> Self {
         Self { client }
     }
 
+    /// Returns the shared HTTP client policy.
+    #[must_use]
     pub fn client_policy(&self) -> &HttpClientPolicy {
         &self.client
     }
 
+    /// Returns a copy of this transport policy with a new HTTP client policy.
+    #[must_use]
     pub fn with_client_policy(mut self, client: HttpClientPolicy) -> Self {
         self.client = client;
         self
     }
 }
 
+/// Typed client for CoW Protocol subgraph queries.
+///
+/// The client owns API-key-derived production endpoints, optional per-instance
+/// configuration overrides, and a typed raw-query path through
+/// [`SubgraphQueryRequest`].
 #[derive(Clone)]
 pub struct SubgraphApi {
     client: Client,
@@ -80,15 +113,39 @@ pub struct SubgraphApi {
     transport_policy: SubgraphTransportPolicy,
 }
 
+impl fmt::Debug for SubgraphApi {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let supported_prod_chains = self
+            .prod_config
+            .iter()
+            .filter_map(|(chain_id, base_url)| base_url.as_ref().map(|_| chain_id))
+            .collect::<Vec<_>>();
+
+        f.debug_struct("SubgraphApi")
+            .field("config", &self.config)
+            .field("supported_prod_chains", &supported_prod_chains)
+            .field("transport_policy", &self.transport_policy)
+            .finish_non_exhaustive()
+    }
+}
+
 impl SubgraphApi {
+    /// Creates a subgraph client with the default production configuration.
+    ///
+    /// The supplied API key is used only to derive the production endpoint map.
+    #[must_use]
     pub fn new(api_key: impl Into<String>) -> Self {
         Self::with_config(api_key, SubgraphConfig::default())
     }
 
+    /// Creates a subgraph client with explicit static configuration.
+    #[must_use]
     pub fn with_config(api_key: impl Into<String>, config: SubgraphConfig) -> Self {
         Self::with_config_and_transport_policy(api_key, config, SubgraphTransportPolicy::default())
     }
 
+    /// Creates a subgraph client with explicit static configuration and transport policy.
+    #[must_use]
     pub fn with_config_and_transport_policy(
         api_key: impl Into<String>,
         config: SubgraphConfig,
@@ -104,37 +161,69 @@ impl SubgraphApi {
         }
     }
 
+    /// Returns the human-readable API name for this client.
+    #[must_use]
     pub fn api_name(&self) -> &'static str {
         API_NAME
     }
 
+    /// Returns the static configuration stored in this client.
+    #[must_use]
     pub fn config(&self) -> &SubgraphConfig {
         &self.config
     }
 
+    /// Returns the API-key-derived production endpoint map.
+    ///
+    /// Unsupported chains remain present with `None` values so the support
+    /// posture stays explicit.
+    #[must_use]
     pub fn prod_config(&self) -> &SubgraphApiBaseUrls {
         &self.prod_config
     }
 
+    /// Returns the active transport policy.
+    #[must_use]
     pub fn transport_policy(&self) -> &SubgraphTransportPolicy {
         &self.transport_policy
     }
 
+    /// Returns the shared HTTP client policy embedded in the transport policy.
+    #[must_use]
     pub fn client_policy(&self) -> &HttpClientPolicy {
         self.transport_policy.client_policy()
     }
 
+    /// Returns a copy of this client with a different transport policy.
+    ///
+    /// Replacing the transport policy rebuilds the underlying `reqwest`
+    /// client.
+    #[must_use]
     pub fn with_transport_policy(mut self, transport_policy: SubgraphTransportPolicy) -> Self {
         self.client = build_client(transport_policy.client_policy());
         self.transport_policy = transport_policy;
         self
     }
 
+    /// Fetches the first totals row from the canonical totals query.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SubgraphError::NoTotalsFound`] when the response contains no
+    /// totals rows, or any transport, HTTP, GraphQL, serialization, missing
+    /// data, or unsupported-network error surfaced by the underlying query.
     pub async fn get_totals(&self) -> Result<Total, SubgraphError> {
         self.get_totals_with_config(SubgraphConfigOverride::default())
             .await
     }
 
+    /// Fetches the first totals row with per-call configuration overrides.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SubgraphError::NoTotalsFound`] when the response contains no
+    /// totals rows, or any transport, HTTP, GraphQL, serialization, missing
+    /// data, or unsupported-network error surfaced by the underlying query.
     pub async fn get_totals_with_config(
         &self,
         config_override: SubgraphConfigOverride,
@@ -153,6 +242,12 @@ impl SubgraphApi {
             .ok_or(SubgraphError::NoTotalsFound)
     }
 
+    /// Fetches daily volume rows for the last `days` entries.
+    ///
+    /// # Errors
+    ///
+    /// Returns any transport, HTTP, GraphQL, serialization, missing-data, or
+    /// unsupported-network error surfaced by the underlying query.
     pub async fn get_last_days_volume(
         &self,
         days: u32,
@@ -161,6 +256,12 @@ impl SubgraphApi {
             .await
     }
 
+    /// Fetches daily volume rows for the last `days` entries with per-call overrides.
+    ///
+    /// # Errors
+    ///
+    /// Returns any transport, HTTP, GraphQL, serialization, missing-data, or
+    /// unsupported-network error surfaced by the underlying query.
     pub async fn get_last_days_volume_with_config(
         &self,
         days: u32,
@@ -175,6 +276,12 @@ impl SubgraphApi {
         .await
     }
 
+    /// Fetches hourly volume rows for the last `hours` entries.
+    ///
+    /// # Errors
+    ///
+    /// Returns any transport, HTTP, GraphQL, serialization, missing-data, or
+    /// unsupported-network error surfaced by the underlying query.
     pub async fn get_last_hours_volume(
         &self,
         hours: u32,
@@ -183,6 +290,12 @@ impl SubgraphApi {
             .await
     }
 
+    /// Fetches hourly volume rows for the last `hours` entries with per-call overrides.
+    ///
+    /// # Errors
+    ///
+    /// Returns any transport, HTTP, GraphQL, serialization, missing-data, or
+    /// unsupported-network error surfaced by the underlying query.
     pub async fn get_last_hours_volume_with_config(
         &self,
         hours: u32,
@@ -197,6 +310,17 @@ impl SubgraphApi {
         .await
     }
 
+    /// Executes an explicit raw GraphQL request against the configured subgraph endpoint.
+    ///
+    /// Anonymous single-operation documents may omit `operation_name`.
+    /// Multi-operation documents must provide an explicit operation name
+    /// through [`SubgraphQueryRequest`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SubgraphError`] for transport failures, non-success HTTP
+    /// status codes, GraphQL error payloads, response-decoding failures,
+    /// missing `data`, or unsupported networks.
     pub async fn run_query<T, R>(&self, request: R) -> Result<T, SubgraphError>
     where
         T: DeserializeOwned,
@@ -206,6 +330,13 @@ impl SubgraphApi {
             .await
     }
 
+    /// Executes an explicit raw GraphQL request with per-call configuration overrides.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SubgraphError`] for transport failures, non-success HTTP
+    /// status codes, GraphQL error payloads, response-decoding failures,
+    /// missing `data`, or unsupported networks.
     pub async fn run_query_with_config<T, R>(
         &self,
         request: R,

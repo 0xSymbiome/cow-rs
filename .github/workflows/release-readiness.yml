@@ -72,8 +72,8 @@ jobs:
           fi
       - name: Check workspace feature matrix
         run: cargo hack check --workspace --feature-powerset --depth 1
-      - name: Check hardened crate public API lints
-        run: cargo check --workspace --exclude cow-sdk-subgraph --all-features
+      - name: Check published crate public API lints
+        run: cargo check --workspace --all-features
         env:
           RUSTFLAGS: -Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types
 

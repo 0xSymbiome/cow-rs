@@ -1,3 +1,5 @@
+//! Saved GraphQL documents for the canonical subgraph helpers.
+
 /// Canonical subgraph operation sources remain private saved GraphQL documents.
 /// The public API stays at reviewed query constants and DTOs rather than a
 /// generated schema surface.

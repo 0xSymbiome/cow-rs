@@ -138,6 +138,19 @@ fn subgraph_query_request_from_plain_document_keeps_operation_name_absent() {
 }
 
 #[test]
+fn subgraph_query_request_can_clear_variables_without_changing_the_document() {
+    let request = SubgraphQueryRequest::new("query Totals($limit: Int!) { totals { orders } }")
+        .with_variables(json!({ "limit": 5 }))
+        .with_optional_variables(None);
+
+    assert_eq!(
+        request.document(),
+        "query Totals($limit: Int!) { totals { orders } }"
+    );
+    assert_eq!(request.variables(), None);
+}
+
+#[test]
 fn totals_saved_query_document_builds_typed_test_only_request_body() {
     let request_body = Totals::build_query(totals::Variables);
 

@@ -1,9 +1,16 @@
-//! Typed CoW Protocol subgraph query helpers and transport-level error
-//! boundaries.
+//! Typed CoW Protocol subgraph queries.
+//!
+//! `cow-sdk-subgraph` keeps saved query documents, explicit raw-query inputs,
+//! and typed error boundaries in a dedicated crate instead of widening the root
+//! facade with GraphQL transport behavior.
 
+/// Typed subgraph client configuration and query execution.
 pub mod api;
+/// Typed subgraph transport, GraphQL, and decoding errors.
 pub mod error;
+/// Saved query documents exposed as stable helper constants.
 pub mod queries;
+/// Public request and response DTOs for the subgraph surface.
 pub mod types;
 
 pub use api::{

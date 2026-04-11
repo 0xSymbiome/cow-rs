@@ -85,6 +85,17 @@ fn default_transport_policy_is_explicit_and_reviewable() {
     );
 }
 
+#[test]
+fn debug_output_keeps_subgraph_contract_visible_without_printing_prod_urls() {
+    let api = SubgraphApi::new("FakeApiKey");
+    let debug = format!("{api:?}");
+
+    assert!(debug.contains("SubgraphApi"));
+    assert!(debug.contains("supported_prod_chains"));
+    assert!(!debug.contains("FakeApiKey"));
+    assert!(!debug.contains("gateway.thegraph.com"));
+}
+
 #[tokio::test]
 async fn get_totals_posts_totals_operation_and_returns_first_row() {
     let server = MockServer::start().await;
