@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::types::{Address, Amount, BlockHash, ChainId, HexData, TransactionHash};
@@ -16,6 +18,46 @@ pub struct TypedDataField {
     pub name: String,
     #[serde(rename = "type")]
     pub kind: String,
+}
+
+pub type TypedDataTypes = BTreeMap<String, Vec<TypedDataField>>;
+
+/// Generic EIP-712 envelope shape used by typed helpers and signer payloads.
+///
+/// The signer-facing alias uses a canonical JSON string for `message` so
+/// existing `Signer` implementors can keep the legacy `sign_typed_data`
+/// method and still gain additive compatibility through the default
+/// `sign_typed_data_payload` implementation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TypedDataEnvelope<M> {
+    pub domain: TypedDataDomain,
+    pub primary_type: String,
+    pub types: TypedDataTypes,
+    pub message: M,
+}
+
+pub type TypedDataPayload = TypedDataEnvelope<String>;
+
+impl<M> TypedDataEnvelope<M> {
+    pub fn primary_type_fields(&self) -> Option<&[TypedDataField]> {
+        self.types.get(&self.primary_type).map(Vec::as_slice)
+    }
+
+    pub fn with_message<N>(self, message: N) -> TypedDataEnvelope<N> {
+        TypedDataEnvelope {
+            domain: self.domain,
+            primary_type: self.primary_type,
+            types: self.types,
+            message,
+        }
+    }
+}
+
+impl TypedDataPayload {
+    pub fn message_json(&self) -> &str {
+        self.message.as_str()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -74,6 +116,13 @@ pub trait Signer {
     fn get_address(&self) -> Result<Address, Self::Error>;
     fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error>;
     fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
+    fn sign_typed_data_payload(&self, payload: &TypedDataPayload) -> Result<String, Self::Error> {
+        self.sign_typed_data(
+            &payload.domain,
+            payload.primary_type_fields().unwrap_or_default(),
+            payload.message_json(),
+        )
+    }
     fn sign_typed_data(
         &self,
         domain: &TypedDataDomain,
@@ -96,6 +145,17 @@ pub trait AsyncSigner {
     async fn get_address(&self) -> Result<Address, Self::Error>;
     async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error>;
     async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
+    async fn sign_typed_data_payload(
+        &self,
+        payload: &TypedDataPayload,
+    ) -> Result<String, Self::Error> {
+        self.sign_typed_data(
+            &payload.domain,
+            payload.primary_type_fields().unwrap_or_default(),
+            payload.message_json(),
+        )
+        .await
+    }
     async fn sign_typed_data(
         &self,
         domain: &TypedDataDomain,

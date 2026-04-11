@@ -3,7 +3,8 @@ mod common;
 use cow_sdk_contracts::{OrderCancellations, SigningScheme, hash_order_cancellations};
 use cow_sdk_core::SupportedChainId;
 use cow_sdk_signing::{
-    SigningError, get_domain, sign_order_cancellation, sign_order_cancellation_async,
+    ORDER_CANCELLATIONS_PRIMARY_TYPE, SigningError, get_domain,
+    order_cancellations_typed_data_payload, sign_order_cancellation, sign_order_cancellation_async,
     sign_order_cancellation_with_scheme, sign_order_cancellations_async,
     sign_order_cancellations_with_scheme,
 };
@@ -41,6 +42,16 @@ fn single_and_batch_cancellation_signing_are_first_class() {
 fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
     let signer = MockSigner::new();
     let order_uid = sample_order_uid();
+    let payload = order_cancellations_typed_data_payload(
+        std::slice::from_ref(&order_uid),
+        SupportedChainId::Sepolia,
+        None,
+    )
+    .unwrap();
+
+    assert_eq!(payload.primary_type, ORDER_CANCELLATIONS_PRIMARY_TYPE);
+    assert_eq!(payload.types["OrderCancellations"][0].kind, "bytes[]");
+    assert!(payload.message.contains(order_uid.as_str()));
 
     sign_order_cancellation(&order_uid, SupportedChainId::Sepolia, &signer, None).unwrap();
     assert_eq!(signer.calls.borrow().typed_data.len(), 1);

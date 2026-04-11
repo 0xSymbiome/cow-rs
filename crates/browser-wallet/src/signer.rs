@@ -1,6 +1,6 @@
 use cow_sdk_core::{
     Address, Amount, AsyncSigner, TransactionReceipt, TransactionRequest, TypedDataDomain,
-    TypedDataField,
+    TypedDataField, TypedDataPayload, TypedDataTypes,
 };
 use serde_json::{Value, json};
 
@@ -89,14 +89,12 @@ impl AsyncSigner for Eip1193Signer {
         })
     }
 
-    async fn sign_typed_data(
+    async fn sign_typed_data_payload(
         &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
+        payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
         let account = self.account().await?;
-        let typed_data = serde_json::to_string(&typed_data_payload(domain, fields, value_json)?)
+        let typed_data = serde_json::to_string(&typed_data_request(payload)?)
             .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
         let value = self
             .provider
@@ -111,6 +109,16 @@ impl AsyncSigner for Eip1193Signer {
                 "wallet must return a signature string",
             )
         })
+    }
+
+    async fn sign_typed_data(
+        &self,
+        domain: &TypedDataDomain,
+        fields: &[TypedDataField],
+        value_json: &str,
+    ) -> Result<String, Self::Error> {
+        let payload = legacy_typed_data_payload(domain, fields, value_json)?;
+        self.sign_typed_data_payload(&payload).await
     }
 
     async fn send_transaction(
@@ -149,33 +157,45 @@ impl AsyncSigner for Eip1193Signer {
     }
 }
 
-fn typed_data_payload(
-    domain: &TypedDataDomain,
-    fields: &[TypedDataField],
-    value_json: &str,
-) -> Result<Value, BrowserWalletError> {
-    let primary_type = infer_primary_type(fields);
-    let domain = serde_json::to_value(domain)
+fn typed_data_request(payload: &TypedDataPayload) -> Result<Value, BrowserWalletError> {
+    if payload.primary_type_fields().is_none() {
+        return Err(BrowserWalletError::serialization(format!(
+            "typed-data payload must include a definition for primary type `{}`",
+            payload.primary_type
+        )));
+    }
+
+    let domain = serde_json::to_value(&payload.domain)
         .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
-    let fields = serde_json::to_value(fields)
+    let types = serde_json::to_value(&payload.types)
         .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
-    let message = serde_json::from_str::<Value>(value_json)
+    let message = serde_json::from_str::<Value>(payload.message_json())
         .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
 
     Ok(json!({
-        "types": {
-            "EIP712Domain": [
-                { "name": "name", "type": "string" },
-                { "name": "version", "type": "string" },
-                { "name": "chainId", "type": "uint256" },
-                { "name": "verifyingContract", "type": "address" }
-            ],
-            primary_type: fields
-        },
-        "primaryType": primary_type,
+        "types": types,
+        "primaryType": payload.primary_type,
         "domain": domain,
         "message": message,
     }))
+}
+
+fn legacy_typed_data_payload(
+    domain: &TypedDataDomain,
+    fields: &[TypedDataField],
+    value_json: &str,
+) -> Result<TypedDataPayload, BrowserWalletError> {
+    let primary_type = infer_primary_type(fields);
+    let mut types = TypedDataTypes::new();
+    types.insert(primary_type.to_owned(), fields.to_vec());
+    types.insert("EIP712Domain".to_owned(), domain_type_fields());
+
+    Ok(TypedDataPayload {
+        domain: domain.clone(),
+        primary_type: primary_type.to_owned(),
+        types,
+        message: value_json.to_owned(),
+    })
 }
 
 fn infer_primary_type(fields: &[TypedDataField]) -> &'static str {
@@ -186,4 +206,19 @@ fn infer_primary_type(fields: &[TypedDataField]) -> &'static str {
     } else {
         "Message"
     }
+}
+
+fn domain_type_fields() -> Vec<TypedDataField> {
+    [
+        ("name", "string"),
+        ("version", "string"),
+        ("chainId", "uint256"),
+        ("verifyingContract", "address"),
+    ]
+    .into_iter()
+    .map(|(name, kind)| TypedDataField {
+        name: name.to_owned(),
+        kind: kind.to_owned(),
+    })
+    .collect()
 }

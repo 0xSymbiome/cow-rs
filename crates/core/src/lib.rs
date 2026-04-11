@@ -13,7 +13,7 @@ pub use errors::{CoreError, CowRsError, ValidationError};
 pub use traits::{
     AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle, GraphTransport,
     HttpTransport, PinningTransport, Provider, Signer, TransactionReceipt, TransactionRequest,
-    TypedDataDomain, TypedDataField,
+    TypedDataDomain, TypedDataEnvelope, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
 pub use types::{
     Address, Amount, Amounts, AppDataHash, AppDataHex, BlockHash, ChainId, Costs, FeeComponent,

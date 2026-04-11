@@ -6,7 +6,7 @@ use cow_sdk_contracts::{
 };
 use cow_sdk_core::{
     Address, AsyncSigner, OrderBalance, OrderDigest, OrderKind, OrderUid, ProtocolOptions, Signer,
-    SupportedChainId, TypedDataDomain, TypedDataField, UnsignedOrder,
+    SupportedChainId, TypedDataPayload, UnsignedOrder,
 };
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ use sha3::{Digest, Keccak256};
 
 use crate::{
     SigningError,
-    domain::{get_domain, order_fields},
+    domain::{get_domain, order_typed_data_payload},
 };
 
 pub type TypedOrder = UnsignedOrder;
@@ -34,9 +34,7 @@ pub struct GeneratedOrderId {
 }
 
 struct OrderSigningPayload {
-    domain: TypedDataDomain,
-    fields: Vec<TypedDataField>,
-    value_json: String,
+    payload: TypedDataPayload,
     digest: String,
 }
 
@@ -78,14 +76,7 @@ where
     S::Error: fmt::Display,
 {
     let payload = order_signing_payload(order, chain_id, options)?;
-    sign_with_scheme(
-        signer,
-        scheme,
-        &payload.domain,
-        &payload.fields,
-        &payload.value_json,
-        &payload.digest,
-    )
+    sign_with_scheme(signer, scheme, &payload.payload, &payload.digest)
 }
 
 pub async fn sign_order_with_scheme_async<S>(
@@ -100,15 +91,7 @@ where
     S::Error: fmt::Display,
 {
     let payload = order_signing_payload(order, chain_id, options)?;
-    sign_with_scheme_async(
-        signer,
-        scheme,
-        &payload.domain,
-        &payload.fields,
-        &payload.value_json,
-        &payload.digest,
-    )
-    .await
+    sign_with_scheme_async(signer, scheme, &payload.payload, &payload.digest).await
 }
 
 pub fn generate_order_id(
@@ -181,9 +164,7 @@ pub fn eip1271_signature_payload(
 pub(crate) fn sign_with_scheme<S>(
     signer: &S,
     scheme: SigningScheme,
-    domain: &TypedDataDomain,
-    fields: &[TypedDataField],
-    value_json: &str,
+    payload: &TypedDataPayload,
     digest_hex: &str,
 ) -> Result<SigningResult, SigningError>
 where
@@ -196,8 +177,8 @@ where
 
     let signature = match scheme {
         SigningScheme::Eip712 => signer
-            .sign_typed_data(domain, fields, value_json)
-            .map_err(|error| signer_error("sign_typed_data", error))?,
+            .sign_typed_data_payload(payload)
+            .map_err(|error| signer_error("sign_typed_data_payload", error))?,
         SigningScheme::EthSign => {
             let digest = parse_hex(digest_hex, "digest")?;
             signer
@@ -218,9 +199,7 @@ where
 pub(crate) async fn sign_with_scheme_async<S>(
     signer: &S,
     scheme: SigningScheme,
-    domain: &TypedDataDomain,
-    fields: &[TypedDataField],
-    value_json: &str,
+    payload: &TypedDataPayload,
     digest_hex: &str,
 ) -> Result<SigningResult, SigningError>
 where
@@ -233,9 +212,9 @@ where
 
     let signature = match scheme {
         SigningScheme::Eip712 => signer
-            .sign_typed_data(domain, fields, value_json)
+            .sign_typed_data_payload(payload)
             .await
-            .map_err(|error| signer_error("sign_typed_data", error))?,
+            .map_err(|error| signer_error("sign_typed_data_payload", error))?,
         SigningScheme::EthSign => {
             let digest = parse_hex(digest_hex, "digest")?;
             signer
@@ -254,23 +233,16 @@ where
     })
 }
 
-pub(crate) fn serialize<T: Serialize>(value: &T) -> Result<String, SigningError> {
-    serde_json::to_string(value).map_err(|error| SigningError::Serialization(error.to_string()))
-}
-
 fn order_signing_payload(
     order: &UnsignedOrder,
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
 ) -> Result<OrderSigningPayload, SigningError> {
     let domain = get_domain(chain_id, options)?;
-    let value_json = serialize(order)?;
     let digest = hash_order(&domain, &contracts_order(order))?;
 
     Ok(OrderSigningPayload {
-        domain,
-        fields: order_fields(),
-        value_json,
+        payload: order_typed_data_payload(chain_id, order, options)?,
         digest: digest.as_str().to_owned(),
     })
 }

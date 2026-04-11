@@ -1,18 +1,20 @@
 use std::fmt;
 
 use cow_sdk_contracts::{OrderCancellations, SigningScheme};
-use cow_sdk_core::{AsyncSigner, OrderUid, ProtocolOptions, Signer, SupportedChainId};
+use cow_sdk_core::{
+    AsyncSigner, OrderUid, ProtocolOptions, Signer, SupportedChainId, TypedDataPayload,
+};
 
 use crate::{
     SigningError,
-    domain::{cancellation_fields, get_domain},
-    order_signing::{serialize, sign_with_scheme, sign_with_scheme_async},
+    domain::{cancellation_fields, get_domain, serialize_message, typed_data_types},
+    order_signing::{sign_with_scheme, sign_with_scheme_async},
 };
 
+pub const ORDER_CANCELLATIONS_PRIMARY_TYPE: &str = "OrderCancellations";
+
 struct CancellationSigningPayload {
-    domain: cow_sdk_core::TypedDataDomain,
-    fields: Vec<cow_sdk_core::TypedDataField>,
-    value_json: String,
+    payload: TypedDataPayload,
     digest: String,
 }
 
@@ -141,14 +143,7 @@ where
     S::Error: fmt::Display,
 {
     let payload = cancellation_signing_payload(order_uids, chain_id, options)?;
-    sign_with_scheme(
-        signer,
-        scheme,
-        &payload.domain,
-        &payload.fields,
-        &payload.value_json,
-        &payload.digest,
-    )
+    sign_with_scheme(signer, scheme, &payload.payload, &payload.digest)
 }
 
 pub async fn sign_order_cancellations_with_scheme_async<S>(
@@ -163,15 +158,32 @@ where
     S::Error: fmt::Display,
 {
     let payload = cancellation_signing_payload(order_uids, chain_id, options)?;
-    sign_with_scheme_async(
-        signer,
-        scheme,
-        &payload.domain,
-        &payload.fields,
-        &payload.value_json,
-        &payload.digest,
-    )
-    .await
+    sign_with_scheme_async(signer, scheme, &payload.payload, &payload.digest).await
+}
+
+pub fn order_cancellation_typed_data_payload(
+    order_uid: &OrderUid,
+    chain_id: SupportedChainId,
+    options: Option<&ProtocolOptions>,
+) -> Result<TypedDataPayload, SigningError> {
+    order_cancellations_typed_data_payload(std::slice::from_ref(order_uid), chain_id, options)
+}
+
+pub fn order_cancellations_typed_data_payload(
+    order_uids: &[OrderUid],
+    chain_id: SupportedChainId,
+    options: Option<&ProtocolOptions>,
+) -> Result<TypedDataPayload, SigningError> {
+    let cancellations = OrderCancellations {
+        order_uids: order_uids.to_vec(),
+    };
+
+    Ok(TypedDataPayload {
+        domain: get_domain(chain_id, options)?,
+        primary_type: ORDER_CANCELLATIONS_PRIMARY_TYPE.to_owned(),
+        types: typed_data_types(ORDER_CANCELLATIONS_PRIMARY_TYPE, cancellation_fields()),
+        message: serialize_message(&cancellations)?,
+    })
 }
 
 fn cancellation_signing_payload(
@@ -179,17 +191,14 @@ fn cancellation_signing_payload(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
 ) -> Result<CancellationSigningPayload, SigningError> {
-    let domain = get_domain(chain_id, options)?;
+    let payload = order_cancellations_typed_data_payload(order_uids, chain_id, options)?;
     let cancellations = OrderCancellations {
         order_uids: order_uids.to_vec(),
     };
-    let value_json = serialize(&cancellations)?;
-    let digest = cow_sdk_contracts::hash_order_cancellations(&domain, &cancellations)?;
+    let digest = cow_sdk_contracts::hash_order_cancellations(&payload.domain, &cancellations)?;
 
     Ok(CancellationSigningPayload {
-        domain,
-        fields: cancellation_fields(),
-        value_json,
+        payload,
         digest: digest.as_str().to_owned(),
     })
 }

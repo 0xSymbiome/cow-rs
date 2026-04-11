@@ -1,8 +1,8 @@
 # Review Guide
 
-Last reviewed: 2026-04-10
+Last reviewed: 2026-04-11
 
-This guide describes how to review the current Rust SDK boundaries and the evidence that keeps similar-looking code paths explainable.
+This guide describes the Rust SDK boundaries and the evidence that keeps similar-looking code paths explainable.
 
 ## Review Order
 
@@ -32,6 +32,11 @@ Then inspect the crate tests that cover the surface under review. The most usefu
 | `PinningTransport` | Deferred adapter contract | Kept as an extension seam. App-data pinning currently uses app-data-specific request and credential semantics. |
 
 The deferred transport traits are stable extension contracts. Orderbook, subgraph, and app-data keep request execution local because each transport surface has distinct retry, header, credential, and decoding semantics.
+
+Typed-data review now has two layers on purpose:
+
+- `cow_sdk_core::TypedDataPayload` is the signer-facing EIP-712 contract. It carries the explicit primary type, the full type map, and canonical message JSON for runtime adapters such as `cow-sdk-browser-wallet`.
+- `cow_sdk_signing::OrderTypedData` remains the order-facing convenience envelope returned by signing and trading helpers. That keeps typed order UX for consumers without forcing signer implementations to recover structure from field-name heuristics.
 
 ## Transport Policy Review
 
@@ -70,11 +75,11 @@ Repeated order-like field names are intentional only when they model distinct pr
 | `cow_sdk_orderbook::OrderCreation` | Order submission wire DTO for `/api/v1/orders`. | `crates/orderbook/tests/types_contract.rs` covers quote-to-submission conversion, signature, signer, and quote-id additions. |
 | `cow_sdk_orderbook::Order` | Orderbook order response DTO with status, owner, uid, execution totals, and EthFlow metadata. | Kept separate from signing and contract hashing types because it models persisted API state. |
 
-If a future field-similar type has no distinct wire, ABI, normalized, or user-domain boundary, it should be removed or merged.
+A field-similar type without a distinct wire, ABI, normalized, or user-domain boundary should be removed or merged.
 
 ## Typed Boundary Review
 
-When reviewing public API changes, use this rule:
+Use this rule when evaluating the public API:
 
 - User-domain Rust surfaces should accept and return `Address`, `Amount`, `SignedAmount`, `HexData`, `AppDataHash`, `OrderUid`, and `Hash32` aliases when those values carry protocol meaning.
 - Raw `String` values are acceptable only for explicit orderbook wire DTOs, serialized compatibility models, or named legacy paths with a documented reason.

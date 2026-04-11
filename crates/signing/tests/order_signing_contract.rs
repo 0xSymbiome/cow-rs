@@ -4,8 +4,8 @@ use cow_sdk_contracts::{Order as ContractsOrder, OrderUidParams, SigningScheme, 
 use cow_sdk_core::{Address, SupportedChainId};
 use cow_sdk_signing::{
     GeneratedOrderId, ORDER_PRIMARY_TYPE, SigningError, generate_order_id, get_domain,
-    order_typed_data, sign_order, sign_order_async, sign_order_with_scheme,
-    sign_order_with_scheme_async,
+    order_typed_data, order_typed_data_payload, sign_order, sign_order_async,
+    sign_order_with_scheme, sign_order_with_scheme_async,
 };
 
 use common::{MockSigner, fixture_case, sample_order};
@@ -14,10 +14,14 @@ use common::{MockSigner, fixture_case, sample_order};
 fn order_typed_data_matches_fixture_contract_and_consumer_shape() {
     let order = sample_order();
     let typed = order_typed_data(SupportedChainId::Mainnet, &order, None).unwrap();
+    let payload = order_typed_data_payload(SupportedChainId::Mainnet, &order, None).unwrap();
     let fields_case = fixture_case("signing-eip712-order-fields");
     let typed_data_case = fixture_case("signing-typed-data-envelope");
 
     assert_eq!(typed.primary_type, ORDER_PRIMARY_TYPE);
+    assert_eq!(payload.primary_type, ORDER_PRIMARY_TYPE);
+    assert_eq!(payload.types, typed.types);
+    assert_eq!(payload.message, serde_json::to_string(&order).unwrap());
     assert_eq!(
         typed.types["Order"]
             .iter()

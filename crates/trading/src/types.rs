@@ -158,6 +158,8 @@ pub struct QuoteResults {
     pub order_to_sign: UnsignedOrder,
     pub quote_response: OrderQuoteResponse,
     pub app_data_info: TradingAppDataInfo,
+    /// Typed order-facing envelope kept for consumers while signers use the
+    /// lower-level `TypedDataPayload` seam internally.
     pub order_typed_data: OrderTypedData,
 }
 

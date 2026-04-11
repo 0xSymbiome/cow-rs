@@ -1,25 +1,15 @@
-use std::collections::BTreeMap;
-
 use cow_sdk_contracts::{CANCELLATIONS_TYPE_FIELDS, ORDER_TYPE_FIELDS};
 use cow_sdk_core::{
-    Address, CowEnv, ProtocolOptions, SupportedChainId, TypedDataDomain, TypedDataField,
-    UnsignedOrder, settlement_contract_address,
+    Address, CowEnv, ProtocolOptions, SupportedChainId, TypedDataDomain, TypedDataEnvelope,
+    TypedDataField, TypedDataPayload, TypedDataTypes, UnsignedOrder, settlement_contract_address,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sha3::{Digest, Keccak256};
 
 use crate::SigningError;
 
 pub const ORDER_PRIMARY_TYPE: &str = "Order";
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OrderTypedData {
-    pub domain: TypedDataDomain,
-    pub primary_type: String,
-    pub types: BTreeMap<String, Vec<TypedDataField>>,
-    pub message: UnsignedOrder,
-}
+pub type OrderTypedData = TypedDataEnvelope<UnsignedOrder>;
 
 pub fn get_domain(
     chain_id: SupportedChainId,
@@ -67,15 +57,19 @@ pub fn order_typed_data(
     order: &UnsignedOrder,
     options: Option<&ProtocolOptions>,
 ) -> Result<OrderTypedData, SigningError> {
-    let mut types = BTreeMap::new();
-    types.insert(ORDER_PRIMARY_TYPE.to_owned(), order_fields());
-    types.insert("EIP712Domain".to_owned(), domain_fields());
+    Ok(order_typed_data_payload(chain_id, order, options)?.with_message(order.clone()))
+}
 
-    Ok(OrderTypedData {
+pub fn order_typed_data_payload(
+    chain_id: SupportedChainId,
+    order: &UnsignedOrder,
+    options: Option<&ProtocolOptions>,
+) -> Result<TypedDataPayload, SigningError> {
+    Ok(TypedDataPayload {
         domain: get_domain(chain_id, options)?,
         primary_type: ORDER_PRIMARY_TYPE.to_owned(),
-        types,
-        message: order.clone(),
+        types: typed_data_types(ORDER_PRIMARY_TYPE, order_fields()),
+        message: serialize_message(order)?,
     })
 }
 
@@ -112,6 +106,17 @@ pub fn domain_fields() -> Vec<TypedDataField> {
         kind: kind.to_owned(),
     })
     .collect()
+}
+
+pub(crate) fn typed_data_types(primary_type: &str, fields: Vec<TypedDataField>) -> TypedDataTypes {
+    let mut types = TypedDataTypes::new();
+    types.insert(primary_type.to_owned(), fields);
+    types.insert("EIP712Domain".to_owned(), domain_fields());
+    types
+}
+
+pub(crate) fn serialize_message<T: Serialize>(value: &T) -> Result<String, SigningError> {
+    serde_json::to_string(value).map_err(|error| SigningError::Serialization(error.to_string()))
 }
 
 fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {

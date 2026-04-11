@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use cow_sdk_core::CowEnv;
 use cow_sdk_orderbook::OrderKind;
+use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{
     QuoteRequestOverride, QuoterParameters, SwapAdvancedSettings, TradeParameters, get_quote_only,
     get_quote_results,
@@ -53,6 +54,9 @@ async fn quote_app_data_and_request_shape_follow_pinned_contract() {
         app_data["metadata"]["quote"]["slippageBips"],
         serde_json::json!(76)
     );
+    assert_eq!(result.order_typed_data.primary_type, ORDER_PRIMARY_TYPE);
+    assert!(result.order_typed_data.primary_type_fields().is_some());
+    assert!(result.order_typed_data.types.contains_key("EIP712Domain"));
     assert_eq!(
         request.price_quality,
         cow_sdk_orderbook::PriceQuality::Optimal

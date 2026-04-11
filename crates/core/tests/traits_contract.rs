@@ -1,7 +1,8 @@
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle,
     GraphTransport, Hash32, HexData, HttpTransport, PinningTransport, Provider, Signer,
-    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
+    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField, TypedDataPayload,
+    TypedDataTypes,
 };
 
 #[derive(Clone)]
@@ -226,6 +227,34 @@ fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
         Signer::sign_typed_data(&active_signer, &domain, &[field], "{\"kind\":\"sell\"}").unwrap(),
         "Gnosis Protocol:1:15"
     );
+    let mut types = TypedDataTypes::new();
+    types.insert(
+        "Order".to_owned(),
+        vec![TypedDataField {
+            name: "sellToken".to_owned(),
+            kind: "address".to_owned(),
+        }],
+    );
+    types.insert(
+        "EIP712Domain".to_owned(),
+        vec![TypedDataField {
+            name: "name".to_owned(),
+            kind: "string".to_owned(),
+        }],
+    );
+    assert_eq!(
+        Signer::sign_typed_data_payload(
+            &active_signer,
+            &TypedDataPayload {
+                domain: domain.clone(),
+                primary_type: "Order".to_owned(),
+                types,
+                message: "{\"kind\":\"sell\"}".to_owned(),
+            },
+        )
+        .unwrap(),
+        "Gnosis Protocol:1:15"
+    );
     assert_eq!(
         Signer::estimate_gas(&active_signer, &tx).unwrap(),
         Amount::from(21_000u32)
@@ -359,6 +388,34 @@ async fn sync_runtime_contracts_gain_async_compatibility_through_blanket_impls()
     assert_eq!(
         AsyncSigner::estimate_gas(&async_signer, &tx).await.unwrap(),
         Amount::from(21_000u32)
+    );
+    let mut types = TypedDataTypes::new();
+    types.insert(
+        "CustomAction".to_owned(),
+        vec![TypedDataField {
+            name: "actor".to_owned(),
+            kind: "address".to_owned(),
+        }],
+    );
+    assert_eq!(
+        AsyncSigner::sign_typed_data_payload(
+            &async_signer,
+            &TypedDataPayload {
+                domain: TypedDataDomain {
+                    name: "Gnosis Protocol".to_owned(),
+                    version: "v2".to_owned(),
+                    chain_id: 1,
+                    verifying_contract: Address::new("0x3333333333333333333333333333333333333333")
+                        .unwrap(),
+                },
+                primary_type: "CustomAction".to_owned(),
+                types,
+                message: "{\"actor\":\"0x9999999999999999999999999999999999999999\"}".to_owned(),
+            },
+        )
+        .await
+        .unwrap(),
+        "Gnosis Protocol:1:54"
     );
     assert_eq!(
         AsyncSigner::send_transaction(&async_signer, &tx)
