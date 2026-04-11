@@ -23,12 +23,13 @@ fn subgraph_schema_sources_are_pinned_and_test_only() {
 
     assert!(parity_scope.contains("Subgraph"));
     assert!(parity_scope.contains("packages/subgraph/src/queries.ts"));
-    assert!(parity_scope.contains("internal or test-only"));
+    assert!(parity_scope.contains("non-public"));
+    assert!(parity_scope.contains("test-only"));
     assert!(parity_scope.contains("crates/subgraph/src/query_documents"));
     assert!(parity_scope.contains("crates/subgraph/tests/schema_evidence"));
 
     assert!(architecture.contains("saved GraphQL documents"));
-    assert!(architecture.contains("test-only schema evidence"));
+    assert!(architecture.contains("test-only schema fixtures"));
 
     assert!(review_guide.contains("saved query documents"));
     assert!(review_guide.contains("test-only schema"));

@@ -1,7 +1,5 @@
 # Review Guide
 
-Last reviewed: 2026-04-11
-
 This guide describes the Rust SDK boundaries and the evidence that keeps similar-looking code paths explainable.
 
 ## Review Order
@@ -146,11 +144,11 @@ For the facade specifically:
 
 ## Generated Or Schema-Derived Artifacts
 
-Generated or schema-derived artifacts are not part of the public SDK API. Schema mirrors, if present, belong in internal or test-only locations rather than the supported public surface.
+Generated or schema-derived artifacts are not part of the public SDK API. Schema mirrors, if present, belong in non-public or test-only locations rather than the supported public surface.
 
 Orderbook OpenAPI and subgraph query evidence is tied to pinned entries in `parity/source-lock.yaml`; see [Parity Scope](parity-scope.md).
 
-For subgraph specifically, saved query documents live under `crates/subgraph/src/query_documents/`, while test-only schema and generated proof belongs under `crates/subgraph/tests/schema_evidence/`.
+For subgraph specifically, saved query documents live under `crates/subgraph/src/query_documents/`, while test-only schema and generated evidence belongs under `crates/subgraph/tests/schema_evidence/`.
 
 For subgraph custom queries specifically, review the explicit request contract before transport details:
 
@@ -158,6 +156,12 @@ For subgraph custom queries specifically, review the explicit request contract b
 - Anonymous single-operation documents are allowed without `operation_name`.
 - Multi-operation documents require caller-supplied `operation_name`; the SDK does not infer it from the query string.
 - `SubgraphError` keeps failure classes separate: transport, HTTP status, GraphQL payload, serialization, missing data, unsupported network, and the helper-specific empty-totals case.
+
+Subgraph example review follows the same package boundary:
+
+- native subgraph scenarios import `cow-sdk-subgraph` directly rather than relying on the root facade
+- custom-query examples use `SubgraphQueryRequest` explicitly
+- live examples require explicit environment configuration and remain opt-in
 
 ## CI Configuration
 

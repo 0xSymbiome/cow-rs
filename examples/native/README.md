@@ -21,7 +21,11 @@ Standalone Rust examples using `cow-sdk`.
 - `trading_sdk_simulation`
   - mocked trading flow
 - `subgraph_query_roundtrip`
-  - mocked subgraph flow
+  - mocked canonical subgraph helper flow through `cow-sdk-subgraph`
+- `subgraph_custom_query_roundtrip`
+  - mocked custom-query flow using explicit `SubgraphQueryRequest`
+- `subgraph_live_query`
+  - opt-in live subgraph query; requires explicit environment configuration
 
 ## Commands
 
@@ -39,6 +43,13 @@ cargo run --manifest-path examples/native/Cargo.toml --example order_lifecycle_s
 cargo run --manifest-path examples/native/Cargo.toml --example orderbook_transport_roundtrip
 cargo run --manifest-path examples/native/Cargo.toml --example trading_sdk_simulation
 cargo run --manifest-path examples/native/Cargo.toml --example subgraph_query_roundtrip
+cargo run --manifest-path examples/native/Cargo.toml --example subgraph_custom_query_roundtrip
+cargo run --manifest-path examples/native/Cargo.toml --example subgraph_live_query
 ```
 
-`subgraph_query_roundtrip` uses `cow-sdk-subgraph`.
+The subgraph scenarios use `cow-sdk-subgraph` directly instead of the root facade.
+
+Before running `subgraph_live_query`, set:
+
+- `THE_GRAPH_API_KEY`
+- optionally `COW_SUBGRAPH_CHAIN_ID` to one of the supported chain ids in the current subgraph URL map; the default is mainnet

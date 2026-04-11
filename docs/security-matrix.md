@@ -1,14 +1,10 @@
 # Security And Test Matrix
 
-Last reviewed: 2026-04-10
-
-This matrix maps the current `cow-rs` test evidence by crate and review surface. It is a navigation aid for reviewers, not a claim that tests prove the absence of bugs.
-
-Update this matrix in the same change when a crate or example gains material test coverage.
+This matrix maps `cow-rs` test evidence by crate and review surface. It is a navigation aid for reviewers, not a claim that tests prove the absence of bugs.
 
 ## Core SDK Crates
 
-| Crate | Boundary | Current evidence | Primary command |
+| Crate | Boundary | Evidence | Primary command |
 | --- | --- | --- | --- |
 | `cow-sdk-core` | Shared chain config, domain types, and runtime traits | `config_contract.rs`, `types_contract.rs`, `traits_contract.rs` | `cargo test -p cow-sdk-core` |
 | `cow-sdk-contracts` | Contract constants, ABI-shaped order helpers, hashing, settlement/vault/proxy/reader helpers | `order_contract.rs`, `signature_contract.rs`, `deployment_contract.rs`, `settlement_contract.rs`, `vault_contract.rs`, `proxy_contract.rs`, `reader_contract.rs`, `swap_contract.rs`, `interaction_contract.rs` | `cargo test -p cow-sdk-contracts` |
@@ -22,18 +18,18 @@ Update this matrix in the same change when a crate or example gains material tes
 
 ## Examples And Browser Surfaces
 
-| Surface | Boundary | Current evidence | Primary command |
+| Surface | Boundary | Evidence | Primary command |
 | --- | --- | --- | --- |
 | Native examples | Deterministic consumer scenarios for app-data, signing, orderbook, trading, and subgraph behavior | `examples/native/tests/scenario_contract.rs` plus runnable scenario binaries | `cargo test --manifest-path examples/native/Cargo.toml` |
 | Native scenario binaries | Reviewer-readable command output without live order placement | `examples/native/scenarios/*.rs` | `cargo check --manifest-path examples/native/Cargo.toml --examples` |
-| SDK WASM verification console | WASM-compatible SDK proof surface with deterministic exports; network-backed quote, orderbook, and subgraph controls remain manual review surfaces | `examples/wasm/sdk-verification-console/tests/deterministic_exports.rs` | `wasm-pack test --headless --chrome` |
-| Browser wallet WASM console | Browser wallet proof surface behind explicit feature/runtime boundaries | `examples/wasm/browser-wallet-console` build | `cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml` |
+| SDK WASM verification console | WASM-compatible SDK verification surface with deterministic exports; network-backed quote, orderbook, and subgraph controls stay manual verification surfaces | `examples/wasm/sdk-verification-console/tests/deterministic_exports.rs` | `wasm-pack test --headless --chrome` |
+| Browser wallet WASM console | Browser wallet verification surface behind explicit feature/runtime boundaries | `examples/wasm/browser-wallet-console` build | `cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml` |
 
 ## Workspace Gates
 
 | Gate | Purpose |
 | --- | --- |
-| `cargo fmt --all --check` | Formatting gate for reviewable diffs |
+| `cargo fmt --all --check` | Formatting gate for consistent public diffs |
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo doc --workspace --no-deps` | Public rustdoc build gate |

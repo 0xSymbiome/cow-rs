@@ -81,6 +81,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
         "surface": "cow-sdk-subgraph",
         "mode": "simulated-transport",
+        "queryContract": {
+            "documentType": "canonical-helper",
+            "operations": ["Totals", "LastDaysVolume", "LastHoursVolume"]
+        },
         "apiName": api.api_name(),
         "totals": {
             "tokens": totals.tokens,

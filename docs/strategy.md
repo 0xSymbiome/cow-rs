@@ -2,7 +2,7 @@
 
 ## Goal
 
-Ship a Rust SDK for CoW Protocol that is useful to Rust-native builders on day one, aligned with the established TypeScript surfaces, and maintainable after the first milestone.
+Ship a Rust SDK for CoW Protocol that is useful to Rust-native builders, aligned with the established TypeScript surfaces, and maintainable as a long-lived crate family.
 
 ## Approach
 
@@ -18,11 +18,11 @@ Ship a Rust SDK for CoW Protocol that is useful to Rust-native builders on day o
 - Pin upstream producer commits in `parity/source-lock.yaml`.
 - Capture each surface as a committed fixture contract in `parity/fixtures/*.json`.
 - Keep normal builds and tests independent from upstream checkouts.
-- Use `scripts/parity-maintainer` only for deliberate refresh and validation against the pinned sources.
+- Use `scripts/parity-maintainer` only for explicit refresh and validation against the pinned sources.
 
 ## What This Optimizes For
 
-- Reviewable boundaries between hashing, signing, transport, and orchestration
+- Clear boundaries between hashing, signing, transport, and orchestration
 - Reusable leaf crates for bots, services, and browser applications
 - A trading-first public entrypoint without hiding lower-level building blocks
 - A publishable crate family rather than a single oversized package

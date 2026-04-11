@@ -29,6 +29,8 @@ This workspace includes order creation, signing, and submission flows, low-level
 - Browser wallet support is additive and exposed through the `browser-wallet` feature plus the `cow-sdk-browser-wallet` crate.
 - Subgraph access uses the separate `cow-sdk-subgraph` crate and is intentionally not re-exported from `cow-sdk`.
 
+Native subgraph examples live under `examples/native/` and use `cow-sdk-subgraph` directly. The custom-query example uses the explicit `SubgraphQueryRequest` contract, and the live example is opt-in through explicit environment configuration.
+
 ## Trading SDK Configuration
 
 `TradingSdk` uses instance-scoped builder and options configuration.
@@ -56,7 +58,7 @@ String-heavy values live in explicit wire DTOs such as `cow-sdk-orderbook` reque
 - Public MSRV: Rust `1.94`
 - Contributor toolchain pin: Rust `1.94.1` in [rust-toolchain.toml](rust-toolchain.toml)
 
-The MSRV is the compatibility contract for downstream users. The exact toolchain pin exists to keep local development, CI, and reproducible validation aligned.
+The MSRV is the compatibility contract for downstream users. The exact toolchain pin exists to keep local execution, CI, and reproducible validation aligned.
 
 ## Docs
 
@@ -69,7 +71,6 @@ The MSRV is the compatibility contract for downstream users. The exact toolchain
 - [Parity Scope](docs/parity-scope.md)
 - [Audits](docs/audit/README.md)
 - [Examples](docs/examples.md)
-- [Open Questions](docs/open-questions.md)
 - [ADRs](docs/adr/README.md)
 
 ## Validation
@@ -84,5 +85,6 @@ cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.pa
 ## Examples
 
 - `examples/native/` contains native SDK scenarios.
+- `examples/native/scenarios/subgraph_query_roundtrip.rs`, `subgraph_custom_query_roundtrip.rs`, and `subgraph_live_query.rs` cover canonical helper, custom-query, and opt-in live subgraph usage through `cow-sdk-subgraph`.
 - `examples/wasm/sdk-verification-console/` contains deterministic WASM checks and a browser review surface for SDK verification.
 - `examples/wasm/browser-wallet-console/` contains mock-wallet and injected-wallet browser flows.

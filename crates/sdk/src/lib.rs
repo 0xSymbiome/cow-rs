@@ -16,8 +16,7 @@
 //! - browser wallet integration is additive behind the `browser-wallet` feature
 //! - subgraph access lives in the separate `cow-sdk-subgraph` crate
 //!
-//! Top-level docs are trading-first, matching the pinned upstream `packages/sdk`
-//! documentation entrypoint.
+//! Top-level docs are trading-first and keep the facade aligned with its package role.
 //!
 //! `cow-sdk-subgraph` is a separate crate surface and is not re-exported from
 //! this root package.

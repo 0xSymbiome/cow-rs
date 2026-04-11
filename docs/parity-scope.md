@@ -1,7 +1,5 @@
 # Parity Scope
 
-Last reviewed: 2026-04-10
-
 This document defines the review scope for parity evidence in `cow-rs`. The source lock is the portable authority for upstream producer commits and paths.
 
 ## Source Lock
@@ -39,10 +37,10 @@ Schema-derived evidence is a test and review aid, not a public API shortcut.
 - Subgraph source-schema review includes `packages/subgraph/src/api.ts`, `packages/subgraph/src/graphql.ts`, and `packages/subgraph/src/queries.ts`.
 - Canonical subgraph query documents live in `crates/subgraph/src/query_documents/`.
 - Test-only subgraph schema and codegen evidence lives in `crates/subgraph/tests/schema_evidence/`.
-- Generated or schema-derived Rust mirrors must live in obvious internal or test-only locations.
+- Generated or schema-derived Rust mirrors must live in obvious non-public or test-only locations.
 - Public DTOs remain hand-reviewed SDK contracts.
 
-## Current Schema-Derived Artifacts
+## Schema-Derived Artifacts
 
 No generated or schema-derived Rust mirrors are part of the public SDK API.
 

@@ -18,5 +18,6 @@ fn orderbook_schema_sources_are_pinned_and_test_only() {
 
     assert!(parity_scope.contains("Orderbook"));
     assert!(parity_scope.contains("crates/orderbook/openapi.yml"));
-    assert!(parity_scope.contains("internal or test-only"));
+    assert!(parity_scope.contains("non-public"));
+    assert!(parity_scope.contains("test-only"));
 }

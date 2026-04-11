@@ -54,3 +54,11 @@ path = "scenarios/trading_sdk_simulation.rs"
 [[example]]
 name = "subgraph_query_roundtrip"
 path = "scenarios/subgraph_query_roundtrip.rs"
+
+[[example]]
+name = "subgraph_custom_query_roundtrip"
+path = "scenarios/subgraph_custom_query_roundtrip.rs"
+
+[[example]]
+name = "subgraph_live_query"
+path = "scenarios/subgraph_live_query.rs"

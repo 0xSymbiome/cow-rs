@@ -9,7 +9,7 @@ must not require local checkouts of:
 - `cowprotocol/contracts`
 - `cowprotocol/services`
 
-Those upstream repositories are used only during intentional parity refresh or
+Those upstream repositories are used only during explicit parity refresh or
 source-root validation work. They must not be committed into this repository.
 
 The committed parity contract lives in:
@@ -31,7 +31,7 @@ cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --sou
 ```
 
 This checks that the source lock, fixture contracts, embedded fixture commits, and
-vendored app-data schema bundle are internally consistent.
+vendored app-data schema bundle are consistent with one another.
 
 Upstream-root validation is stricter and is only meaningful when the supplied
 paths are independent git checkouts or worktrees of the pinned producer
@@ -55,7 +55,7 @@ independent upstream checkout or worktree.
 
 ## Pinned Revision Set
 
-Current pinned SHA set in `parity/source-lock.yaml`:
+Pinned SHA set in `parity/source-lock.yaml`:
 
 - `cow-sdk`: `17fcfc590be8529dc4fe05b1c472fef1b07b47f4`
 - `contracts`: `c94c595a791681cf8ba7495117dcde397b932885`
@@ -103,7 +103,7 @@ Subgraph evidence is tied to pinned upstream producer sources, including:
 - `cow-sdk:packages/subgraph/src/graphql.ts`
 - `cow-sdk:packages/subgraph/src/queries.ts`
 
-Generated or schema-derived mirrors must be clearly located and kept internal or
+Generated or schema-derived mirrors must be clearly located and kept non-public or
 test-only unless a dedicated public API change promotes them into the SDK.
 
 ## Provenance Rule
@@ -127,7 +127,7 @@ Refresh the source lock from explicit upstream roots:
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot --output parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
 ```
 
-These commands are intentionally local-root driven. They do not fetch floating
+These commands are explicitly local-root driven. They do not fetch floating
 remote revisions during normal repository workflows.
 
 ## Maintenance Rules

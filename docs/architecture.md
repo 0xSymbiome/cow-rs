@@ -75,10 +75,10 @@ Crate-local transport behavior is crate-local:
 | Crate | Shared policy input | Crate-local transport policy |
 | --- | --- | --- |
 | `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` adds retry and rate-limit behavior. Chain/env base URL selection lives in `ApiContext`, and env-specific overrides are explicit builders on `OrderBookApi`. Each `OrderBookApi` instance owns its own request client and async-safe shared limiter state, and clones of that instance share the same limiter budget. |
-| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` keeps client settings explicit while `SubgraphConfig` owns chain selection, API-key-derived production URLs, and caller overrides. `SubgraphQueryRequest` is the generic GraphQL request contract and carries the document, optional variables, and optional operation name explicitly. `SubgraphError` distinguishes transport, HTTP status, GraphQL payload, serialization, missing-data, unsupported-network, and empty-totals cases. Canonical operations are backed by private saved GraphQL documents, and schema/codegen proof stays in test-only schema evidence. |
+| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` keeps client settings explicit while `SubgraphConfig` owns chain selection, API-key-derived production URLs, and caller overrides. `SubgraphQueryRequest` is the generic GraphQL request contract and carries the document, optional variables, and optional operation name explicitly. `SubgraphError` distinguishes transport, HTTP status, GraphQL payload, serialization, missing-data, unsupported-network, and empty-totals cases. Canonical operations are backed by private saved GraphQL documents, and schema/codegen evidence stays in test-only schema fixtures. |
 | `cow-sdk-app-data` | none for the fetch adapter trait itself | `IpfsFetchPolicy` owns read-base-URI selection only. Pinning credentials and write endpoints live in `IpfsConfig` and upload helpers. |
 
-This split keeps shared client behavior reviewable without hiding API-specific semantics behind a false common abstraction.
+This split keeps shared client behavior explicit without hiding API-specific semantics behind a false common abstraction.
 
 For orderbook request execution specifically:
 
@@ -140,6 +140,6 @@ The main exception is `cow-sdk-orderbook`, which keeps orderbook HTTP DTOs strin
 
 ## Why This Shape
 
-This layout keeps low-level protocol semantics stable, gives higher-level consumers a clean trading entrypoint, and avoids coupling browser-only behavior to native server and bot use cases. Generated or schema-derived artifacts belong in internal or test-only locations rather than the supported public SDK API.
+This layout keeps low-level protocol semantics stable, gives higher-level consumers a clean trading entrypoint, and avoids coupling browser-only behavior to native server and bot use cases. Generated or schema-derived artifacts belong in non-public or test-only locations rather than the supported public SDK API.
 
-For a review-oriented walkthrough, see [Review Guide](review-guide.md).
+For package boundaries and validation guidance, see [Review Guide](review-guide.md).

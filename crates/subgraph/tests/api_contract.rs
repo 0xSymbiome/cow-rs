@@ -300,6 +300,55 @@ async fn run_query_supports_explicit_operation_name_for_multi_operation_document
 }
 
 #[tokio::test]
+async fn multi_operation_document_without_operation_name_surfaces_typed_graphql_context() {
+    let server = MockServer::start().await;
+    let api = api_with_override(&server);
+    let document = "query TokensByVolume {\n  tokens(first: 1) {\n    symbol\n  }\n}\n\nquery TotalsForAudit {\n  totals {\n    orders\n  }\n}";
+
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "errors": [
+                {
+                    "message": "Must provide operation name if query contains multiple operations."
+                }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let error = api
+        .run_query::<Value, _>(document)
+        .await
+        .expect_err("multi-operation documents without operationName must fail explicitly");
+    let request = only_request(&server).await;
+
+    assert_graphql_request(&request, document, None, None);
+    match error {
+        SubgraphError::GraphQl { context, errors } => {
+            assert_eq!(
+                *context,
+                SubgraphRequestErrorContext {
+                    api: server.uri(),
+                    document: document.to_owned(),
+                    operation_name: None,
+                    variables: None,
+                }
+            );
+            assert_eq!(
+                errors,
+                vec![SubgraphGraphQlError {
+                    message: "Must provide operation name if query contains multiple operations."
+                        .to_owned(),
+                    locations: vec![],
+                }]
+            );
+        }
+        other => panic!("expected GraphQl error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
 async fn run_query_accepts_anonymous_documents_without_operation_name() {
     let server = MockServer::start().await;
     let api = api_with_override(&server);
@@ -328,6 +377,63 @@ async fn run_query_accepts_anonymous_documents_without_operation_name() {
     assert_graphql_request(&request, query, None, None);
     assert_eq!(response.totals.len(), 1);
     assert_eq!(response.totals[0].orders, "365210");
+}
+
+#[tokio::test]
+async fn run_query_with_config_honors_chain_override_for_generic_queries() {
+    let server = MockServer::start().await;
+    let base_urls: SubgraphApiBaseUrls = [
+        (SupportedChainId::Mainnet, None),
+        (SupportedChainId::GnosisChain, Some(server.uri())),
+        (SupportedChainId::ArbitrumOne, None),
+        (SupportedChainId::Base, None),
+        (SupportedChainId::Sepolia, None),
+        (SupportedChainId::Polygon, None),
+        (SupportedChainId::Avalanche, None),
+        (SupportedChainId::Bnb, None),
+        (SupportedChainId::Linea, None),
+        (SupportedChainId::Plasma, None),
+        (SupportedChainId::Ink, None),
+    ]
+    .into_iter()
+    .collect();
+    let api = SubgraphApi::with_config(
+        "FakeApiKey",
+        SubgraphConfig {
+            chain_id: SupportedChainId::Mainnet,
+            base_urls: Some(base_urls),
+        },
+    );
+    let query = "query TotalsForAudit { totals { orders } }";
+
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": {
+                "totals": [
+                    {
+                        "orders": "365210"
+                    }
+                ]
+            }
+        })))
+        .mount(&server)
+        .await;
+
+    let response: Value = api
+        .run_query_with_config(
+            SubgraphQueryRequest::new(query).with_operation_name("TotalsForAudit"),
+            cow_sdk_subgraph::SubgraphConfigOverride {
+                chain_id: Some(SupportedChainId::GnosisChain),
+                base_urls: None,
+            },
+        )
+        .await
+        .expect("chain override should drive generic-query transport resolution");
+    let request = only_request(&server).await;
+
+    assert_graphql_request(&request, query, Some("TotalsForAudit"), None);
+    assert_eq!(response["totals"][0]["orders"], "365210");
 }
 
 #[tokio::test]
@@ -530,6 +636,64 @@ async fn invalid_graphql_query_surfaces_typed_context() {
                 vec![SubgraphGraphQlError {
                     message: "Type `Query` has no field `invalidQuery`".to_owned(),
                     locations: vec![SubgraphGraphQlErrorLocation { line: 2, column: 9 }],
+                }]
+            );
+        }
+        other => panic!("expected GraphQl error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn graphql_error_preserves_variables_in_typed_context() {
+    let server = MockServer::start().await;
+    let api = api_with_override(&server);
+    let query =
+        "query TokensByVolume($limit: Int!) {\n  tokens(first: $limit) {\n    symbol\n  }\n}";
+    let request = SubgraphQueryRequest::new(query)
+        .with_variables(json!({ "limit": 5 }))
+        .with_operation_name("TokensByVolume");
+
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "errors": [
+                {
+                    "message": "Field `tokens` is unavailable for the requested arguments."
+                }
+            ]
+        })))
+        .mount(&server)
+        .await;
+
+    let error = api
+        .run_query::<Value, _>(request)
+        .await
+        .expect_err("GraphQL failures should preserve request variables");
+    let captured_request = only_request(&server).await;
+
+    assert_graphql_request(
+        &captured_request,
+        query,
+        Some("TokensByVolume"),
+        Some(json!({ "limit": 5 })),
+    );
+    match error {
+        SubgraphError::GraphQl { context, errors } => {
+            assert_eq!(
+                *context,
+                SubgraphRequestErrorContext {
+                    api: server.uri(),
+                    document: query.to_owned(),
+                    operation_name: Some("TokensByVolume".to_owned()),
+                    variables: Some(json!({ "limit": 5 })),
+                }
+            );
+            assert_eq!(
+                errors,
+                vec![SubgraphGraphQlError {
+                    message: "Field `tokens` is unavailable for the requested arguments."
+                        .to_owned(),
+                    locations: vec![],
                 }]
             );
         }
