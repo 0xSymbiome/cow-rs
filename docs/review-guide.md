@@ -127,6 +127,22 @@ The `cow-sdk-*` package family is intentionally multi-crate:
 
 This avoids a single crate becoming the owner of unrelated concerns while giving consumers an ergonomic root package.
 
+## Browser Wallet Discovery Review
+
+Use the browser-wallet discovery surface in this order:
+
+- `BrowserWallet::discover()` and `BrowserWallet::discover_with()` are the reviewed injected-wallet discovery entrypoints. They use a bounded async wait contract and return explicit discovery metadata plus discovered wallet candidates.
+- `InjectedWalletDiscovery::single_wallet()` is valid only when discovery produced exactly one reviewed candidate. It fails with a typed error when explicit selection is required.
+- `InjectedWalletDiscovery::wallet_at()` is the explicit selection path when more than one reviewed candidate is present.
+- `BrowserWallet::detect()` is a compatibility helper for direct `window.ethereum` lookup. It is not the primary reviewed discovery contract.
+
+Review these points on browser-wallet changes:
+
+- modern injected discovery must be able to represent more than one candidate
+- the wait contract must stay bounded and visible
+- legacy direct-provider fallback must remain explicit
+- example and product docs must not imply silent provider auto-selection when discovery is ambiguous
+
 ## Public Package Policy
 
 Packaging posture is explicit in the manifests:

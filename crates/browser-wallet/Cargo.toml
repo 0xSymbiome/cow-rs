@@ -29,7 +29,7 @@ js-sys = "0.3.82"
 serde-wasm-bindgen = "0.6.5"
 wasm-bindgen = "0.2.117"
 wasm-bindgen-futures = "0.4.55"
-web-sys = { version = "0.3.82", features = ["Window"] }
+web-sys = { version = "0.3.82", features = ["CustomEvent", "Event", "EventTarget", "Window"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }

@@ -287,6 +287,10 @@
               <label for="message">Message</label>
               <input id="message" value="cow-rs browser wallet check">
             </div>
+            <div>
+              <label for="wallet-selection">Wallet Index</label>
+              <input id="wallet-selection" value="0">
+            </div>
           </div>
         </div>
       </div>
@@ -356,7 +360,7 @@
         <div class="panel-body">
           <p class="hint">
             Live wallet path for connect, sign, quote, submit, and cancel through the root `cow-sdk` surface.
-            Reset Session clears local state only.
+            Detection reports reviewed candidates explicitly, and the wallet index selects which injected wallet to use when more than one is present.
           </p>
           <div class="button-row">
             <button id="detect-wallet">Detect</button>
@@ -384,6 +388,7 @@
     const envInput = document.getElementById("env");
     const appCodeInput = document.getElementById("app-code");
     const messageInput = document.getElementById("message");
+    const walletSelectionInput = document.getElementById("wallet-selection");
     const tradeInput = document.getElementById("trade-json");
     const orderInput = document.getElementById("order-json");
     const approvalInput = document.getElementById("approval-json");
@@ -415,6 +420,7 @@
     const env = () => envInput.value;
     const appCode = () => appCodeInput.value.trim();
     const message = () => messageInput.value;
+    const walletSelectionIndex = () => Number.parseInt(walletSelectionInput.value, 10);
 
     async function refreshSamples() {
       tradeInput.value = consoleState.sample_trade_json(chainId());
@@ -480,7 +486,9 @@
 
     document.getElementById("connect-wallet").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () => consoleState.injected_connect_json());
+      run(injectedOutput, button, () =>
+        consoleState.injected_connect_selected_json(walletSelectionIndex())
+      );
     });
 
     document.getElementById("reset-wallet").addEventListener("click", (event) => {

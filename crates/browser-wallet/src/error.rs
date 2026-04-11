@@ -16,6 +16,14 @@ pub struct RpcErrorPayload {
 pub enum BrowserWalletError {
     #[error("wallet provider is unavailable")]
     WalletUnavailable,
+    #[error(
+        "wallet discovery requires explicit provider selection because {candidates} injected wallets were found"
+    )]
+    DiscoverySelectionRequired { candidates: usize },
+    #[error(
+        "wallet discovery selection index {index} is out of range for {candidates} injected wallets"
+    )]
+    DiscoverySelectionOutOfRange { index: usize, candidates: usize },
     #[error("wallet request `{method}` was rejected by the user ({code}): {message}")]
     UserRejectedRequest {
         method: String,
@@ -118,6 +126,14 @@ impl BrowserWalletError {
         Self::Serialization {
             message: message.into(),
         }
+    }
+
+    pub(crate) fn discovery_selection_required(candidates: usize) -> Self {
+        Self::DiscoverySelectionRequired { candidates }
+    }
+
+    pub(crate) fn discovery_selection_out_of_range(index: usize, candidates: usize) -> Self {
+        Self::DiscoverySelectionOutOfRange { index, candidates }
     }
 
     #[cfg(target_arch = "wasm32")]

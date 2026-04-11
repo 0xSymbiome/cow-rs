@@ -1,4 +1,6 @@
-use cow_sdk_browser_wallet::{BrowserWallet, MockEip1193Transport, WalletEvent};
+use cow_sdk_browser_wallet::{
+    BrowserWallet, InjectedWalletDetectionOptions, MockEip1193Transport, WalletEvent,
+};
 use cow_sdk_core::AsyncSigner;
 use cow_sdk_core::{
     SupportedChainId, TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
@@ -162,4 +164,16 @@ async fn explicit_typed_data_payloads_preserve_custom_primary_types_and_nested_t
         typed_data["message"]["config"]["salt"],
         serde_json::json!("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
     );
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn injected_discovery_keeps_bounded_timeout_contract_off_wasm() {
+    let discovery = BrowserWallet::discover_with(InjectedWalletDetectionOptions::new(750))
+        .await
+        .unwrap();
+
+    assert!(discovery.is_empty());
+    assert_eq!(discovery.timeout_ms(), 750);
+    assert!(!discovery.used_legacy_fallback());
+    assert_eq!(discovery.wallets(), Vec::new());
 }

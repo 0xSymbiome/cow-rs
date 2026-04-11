@@ -10,7 +10,7 @@ use cow_sdk::core::{AppDataHash, wrapped_native_token};
 use cow_sdk::orderbook::AppDataObject;
 use cow_sdk::trading::OrderbookClient;
 use cow_sdk::{
-    Address, ApiContext, ApprovalParameters, AsyncSigner, CowEnv, OrderBookApi,
+    Address, Amount, ApiContext, ApprovalParameters, AsyncSigner, CowEnv, OrderBookApi,
     OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderTraderParameters,
     OrderUid, PartialTraderParameters, SupportedChainId, TradeParameters, TradingSdk,
     TradingSdkOptions, approval_transaction, generate_order_id, sign_order_async,
@@ -134,9 +134,7 @@ impl BrowserWalletConsole {
                 env: Some(env),
                 ..Default::default()
             },
-            TradingSdkOptions {
-                order_book_api: Some(mock_orderbook.clone()),
-            },
+            TradingSdkOptions::new().with_orderbook_client(mock_orderbook.clone()),
         );
         let signer = self.mock_wallet.signer();
         let posting = sdk
@@ -167,22 +165,48 @@ impl BrowserWalletConsole {
         }))
     }
 
-    pub fn injected_detection_json(&self) -> Result<String, JsValue> {
-        let wallet = BrowserWallet::detect().map_err(js_string_error)?;
+    pub async fn injected_detection_json(&self) -> Result<String, JsValue> {
+        let discovery = BrowserWallet::discover().await.map_err(js_string_error)?;
         pretty_json(&json!({
-            "available": wallet.is_some(),
-            "walletInfo": wallet.as_ref().and_then(BrowserWallet::injected_info),
+            "available": !discovery.is_empty(),
+            "wallets": discovery.wallets(),
+            "walletCount": discovery.len(),
+            "timeoutMs": discovery.timeout_ms(),
+            "usedLegacyFallback": discovery.used_legacy_fallback(),
+            "requiresExplicitSelection": discovery.requires_explicit_selection(),
         }))
     }
 
     pub async fn injected_connect_json(&self) -> Result<String, JsValue> {
-        let wallet = BrowserWallet::detect()
+        let wallet = BrowserWallet::discover()
+            .await
+            .map_err(js_string_error)?
+            .single_wallet()
             .map_err(js_string_error)?
             .ok_or_else(|| to_js_error("no injected wallet detected"))?;
         let session = wallet.connect().await.map_err(js_string_error)?;
         *self.injected_wallet.lock().unwrap() = Some(wallet.clone());
         pretty_json(&json!({
             "mode": "injected",
+            "session": session,
+            "walletInfo": wallet.injected_info(),
+            "events": wallet.take_events(),
+        }))
+    }
+
+    pub async fn injected_connect_selected_json(
+        &self,
+        selection_index: u32,
+    ) -> Result<String, JsValue> {
+        let discovery = BrowserWallet::discover().await.map_err(js_string_error)?;
+        let wallet = discovery
+            .wallet_at(selection_index as usize)
+            .map_err(js_string_error)?;
+        let session = wallet.connect().await.map_err(js_string_error)?;
+        *self.injected_wallet.lock().unwrap() = Some(wallet.clone());
+        pretty_json(&json!({
+            "mode": "injected",
+            "selectionIndex": selection_index,
             "session": session,
             "walletInfo": wallet.injected_info(),
             "events": wallet.take_events(),
@@ -477,14 +501,12 @@ fn live_sdk(chain_id: SupportedChainId, env: CowEnv, app_code: &str) -> TradingS
             env: Some(env),
             ..Default::default()
         },
-        TradingSdkOptions {
-            order_book_api: Some(Arc::new(OrderBookApi::new(ApiContext {
+        TradingSdkOptions::new().with_orderbook_client(Arc::new(OrderBookApi::new(ApiContext {
                 chain_id,
                 env,
                 base_urls: None,
                 api_key: None,
             }))),
-        },
     )
 }
 
@@ -543,7 +565,7 @@ fn sample_trade_parameters(chain_id: SupportedChainId) -> TradeParameters {
         sell_token_decimals: 18,
         buy_token: sample_buy_token(),
         buy_token_decimals: 18,
-        amount: "10000000000000000".to_owned(),
+        amount: Amount::new("10000000000000000").unwrap(),
         env: Some(CowEnv::Prod),
         settlement_contract_override: None,
         eth_flow_contract_override: None,
@@ -561,14 +583,14 @@ fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
         sell_token: wrapped_native_token(chain_id).address,
         buy_token: sample_buy_token(),
         receiver: sample_owner(),
-        sell_amount: "10000000000000000".to_owned(),
-        buy_amount: "2500000000000000000".to_owned(),
+        sell_amount: Amount::new("10000000000000000").unwrap(),
+        buy_amount: Amount::new("2500000000000000000").unwrap(),
         valid_to: 1_900_000_000,
         app_data: cow_sdk::AppDataHex::new(
             "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         )
         .unwrap(),
-        fee_amount: "0".to_owned(),
+        fee_amount: Amount::new("0").unwrap(),
         kind: cow_sdk::OrderKind::Sell,
         partially_fillable: false,
         sell_token_balance: cow_sdk::OrderBalance::Erc20,
@@ -579,7 +601,7 @@ fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
 fn sample_approval_parameters(chain_id: SupportedChainId) -> ApprovalParameters {
     ApprovalParameters {
         token_address: wrapped_native_token(chain_id).address,
-        amount: "100000000000000000".to_owned(),
+        amount: Amount::new("100000000000000000").unwrap(),
         chain_id: Some(chain_id),
         env: Some(CowEnv::Prod),
         vault_relayer_address: None,

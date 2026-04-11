@@ -1,17 +1,18 @@
 #[cfg(target_arch = "wasm32")]
 use async_trait::async_trait;
 #[cfg(target_arch = "wasm32")]
-use js_sys::{Function, Promise, Reflect};
+use js_sys::{Function, Object, Promise, Reflect};
 #[cfg(target_arch = "wasm32")]
 use serde_json::Value;
 #[cfg(target_arch = "wasm32")]
-use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen::{JsCast, JsValue, closure::Closure};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::JsFuture;
 
 #[cfg(target_arch = "wasm32")]
 use crate::{
-    BrowserWalletError, Eip1193Transport, InjectedWalletInfo, RpcErrorPayload,
+    BrowserWalletError, Eip1193Transport, InjectedWalletDetectionOptions,
+    InjectedWalletDiscoverySource, InjectedWalletInfo, RpcErrorPayload,
     provider::parse_chain_id_value,
 };
 
@@ -23,24 +24,109 @@ pub struct InjectedProviderTransport {
 }
 
 #[cfg(target_arch = "wasm32")]
+#[derive(Clone)]
+pub(crate) struct DiscoveredInjectedWallet {
+    pub(crate) transport: InjectedProviderTransport,
+    pub(crate) info: InjectedWalletInfo,
+}
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) struct InjectedWalletDiscoveryResult {
+    pub(crate) used_legacy_fallback: bool,
+    pub(crate) wallets: Vec<DiscoveredInjectedWallet>,
+}
+
+#[cfg(target_arch = "wasm32")]
 impl InjectedProviderTransport {
-    pub fn detect() -> Result<Option<Self>, BrowserWalletError> {
-        let window = web_sys::window()
-            .ok_or_else(|| BrowserWalletError::js("browser window is unavailable"))?;
+    pub(crate) fn detect_legacy() -> Result<Option<Self>, BrowserWalletError> {
+        let window = browser_window()?;
         let provider = Reflect::get(window.as_ref(), &JsValue::from_str("ethereum"))
             .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))?;
         if provider.is_null() || provider.is_undefined() {
             return Ok(None);
         }
-        Ok(Some(Self {
-            info: detect_wallet_info(&provider),
-            provider,
-        }))
+        Ok(Some(Self::from_provider(
+            provider.clone(),
+            detect_wallet_info(
+                &provider,
+                InjectedWalletDiscoverySource::LegacyWindowEthereum,
+                None,
+            ),
+        )))
+    }
+
+    fn from_provider(provider: JsValue, info: InjectedWalletInfo) -> Self {
+        Self { provider, info }
+    }
+
+    fn provider(&self) -> &JsValue {
+        &self.provider
     }
 
     pub fn info(&self) -> InjectedWalletInfo {
         self.info.clone()
     }
+}
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) async fn discover_injected_wallets(
+    options: InjectedWalletDetectionOptions,
+) -> Result<InjectedWalletDiscoveryResult, BrowserWalletError> {
+    let window = browser_window()?;
+    let wallets = std::rc::Rc::new(std::cell::RefCell::new(
+        Vec::<DiscoveredInjectedWallet>::new(),
+    ));
+    let listener_wallets = wallets.clone();
+
+    let listener = Closure::<dyn FnMut(web_sys::Event)>::new(move |event: web_sys::Event| {
+        capture_announcement(&listener_wallets, event);
+    });
+
+    window
+        .add_event_listener_with_callback(
+            "eip6963:announceProvider",
+            listener.as_ref().unchecked_ref(),
+        )
+        .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))?;
+
+    let dispatch_result = request_eip6963_providers(&window);
+    let wait_result = if options.timeout_ms() == 0 {
+        Ok(())
+    } else {
+        wait_for_detection_timeout(options.timeout_ms()).await
+    };
+    let remove_result = window.remove_event_listener_with_callback(
+        "eip6963:announceProvider",
+        listener.as_ref().unchecked_ref(),
+    );
+    drop(listener);
+
+    dispatch_result?;
+    wait_result?;
+    remove_result.map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))?;
+
+    let announced = wallets.borrow().clone();
+    if !announced.is_empty() {
+        return Ok(InjectedWalletDiscoveryResult {
+            used_legacy_fallback: false,
+            wallets: announced,
+        });
+    }
+
+    let Some(transport) = InjectedProviderTransport::detect_legacy()? else {
+        return Ok(InjectedWalletDiscoveryResult {
+            used_legacy_fallback: false,
+            wallets: Vec::new(),
+        });
+    };
+
+    Ok(InjectedWalletDiscoveryResult {
+        used_legacy_fallback: true,
+        wallets: vec![DiscoveredInjectedWallet {
+            info: transport.info(),
+            transport,
+        }],
+    })
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -96,11 +182,90 @@ impl Eip1193Transport for InjectedProviderTransport {
 }
 
 #[cfg(target_arch = "wasm32")]
-fn detect_wallet_info(provider: &JsValue) -> InjectedWalletInfo {
+fn capture_announcement(
+    wallets: &std::rc::Rc<std::cell::RefCell<Vec<DiscoveredInjectedWallet>>>,
+    event: web_sys::Event,
+) {
+    let Ok(custom_event) = event.dyn_into::<web_sys::CustomEvent>() else {
+        return;
+    };
+    let detail = custom_event.detail();
+    if detail.is_null() || detail.is_undefined() {
+        return;
+    }
+
+    let Ok(provider) = Reflect::get(&detail, &JsValue::from_str("provider")) else {
+        return;
+    };
+    if provider.is_null() || provider.is_undefined() {
+        return;
+    }
+
+    let info_value = Reflect::get(&detail, &JsValue::from_str("info")).ok();
+    let info = detect_wallet_info(
+        &provider,
+        InjectedWalletDiscoverySource::Eip6963,
+        info_value.as_ref(),
+    );
+    let transport = InjectedProviderTransport::from_provider(provider.clone(), info.clone());
+
+    let mut wallets = wallets.borrow_mut();
+    if wallets
+        .iter()
+        .any(|candidate| same_wallet(candidate, &info, &provider))
+    {
+        return;
+    }
+    wallets.push(DiscoveredInjectedWallet { transport, info });
+}
+
+#[cfg(target_arch = "wasm32")]
+fn same_wallet(
+    existing: &DiscoveredInjectedWallet,
+    incoming_info: &InjectedWalletInfo,
+    incoming_provider: &JsValue,
+) -> bool {
+    match (
+        existing.info.provider_uuid.as_ref(),
+        incoming_info.provider_uuid.as_ref(),
+    ) {
+        (Some(existing_uuid), Some(incoming_uuid)) if existing_uuid == incoming_uuid => true,
+        _ => Object::is(existing.transport.provider(), incoming_provider),
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn detect_wallet_info(
+    provider: &JsValue,
+    discovery_source: InjectedWalletDiscoverySource,
+    announced_info: Option<&JsValue>,
+) -> InjectedWalletInfo {
     let is_meta_mask = get_flag(provider, "isMetaMask");
     let is_coinbase_wallet = get_flag(provider, "isCoinbaseWallet");
     let is_rabby = get_flag(provider, "isRabby");
-    let provider_label = if is_rabby {
+    let provider_label = announced_info
+        .and_then(|info| get_string(info, "name"))
+        .unwrap_or_else(|| provider_label_from_flags(is_meta_mask, is_coinbase_wallet, is_rabby));
+
+    InjectedWalletInfo {
+        provider_label,
+        discovery_source,
+        provider_uuid: announced_info.and_then(|info| get_string(info, "uuid")),
+        provider_rdns: announced_info.and_then(|info| get_string(info, "rdns")),
+        provider_icon: announced_info.and_then(|info| get_string(info, "icon")),
+        is_meta_mask,
+        is_coinbase_wallet,
+        is_rabby,
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn provider_label_from_flags(
+    is_meta_mask: bool,
+    is_coinbase_wallet: bool,
+    is_rabby: bool,
+) -> String {
+    if is_rabby {
         "Rabby".to_owned()
     } else if is_coinbase_wallet {
         "Coinbase Wallet".to_owned()
@@ -108,13 +273,6 @@ fn detect_wallet_info(provider: &JsValue) -> InjectedWalletInfo {
         "MetaMask".to_owned()
     } else {
         "Injected Wallet".to_owned()
-    };
-
-    InjectedWalletInfo {
-        provider_label,
-        is_meta_mask,
-        is_coinbase_wallet,
-        is_rabby,
     }
 }
 
@@ -124,6 +282,49 @@ fn get_flag(provider: &JsValue, flag: &str) -> bool {
         .ok()
         .and_then(|value| value.as_bool())
         .unwrap_or(false)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn get_string(value: &JsValue, field: &str) -> Option<String> {
+    Reflect::get(value, &JsValue::from_str(field))
+        .ok()
+        .and_then(|value| value.as_string())
+        .filter(|value| !value.trim().is_empty())
+}
+
+#[cfg(target_arch = "wasm32")]
+fn request_eip6963_providers(window: &web_sys::Window) -> Result<(), BrowserWalletError> {
+    let event = web_sys::CustomEvent::new("eip6963:requestProvider")
+        .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))?;
+    window
+        .dispatch_event(&event)
+        .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))?;
+    Ok(())
+}
+
+#[cfg(target_arch = "wasm32")]
+async fn wait_for_detection_timeout(timeout_ms: u32) -> Result<(), BrowserWalletError> {
+    let window = browser_window()?;
+    let promise = Promise::new(&mut move |resolve, reject| {
+        let callback = Closure::once_into_js(move || {
+            let _ = resolve.call0(&JsValue::UNDEFINED);
+        });
+        if let Err(error) = window.set_timeout_with_callback_and_timeout_and_arguments_0(
+            callback.unchecked_ref(),
+            timeout_ms as i32,
+        ) {
+            let _ = reject.call1(&JsValue::UNDEFINED, &error);
+        }
+    });
+    JsFuture::from(promise)
+        .await
+        .map(|_| ())
+        .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))
+}
+
+#[cfg(target_arch = "wasm32")]
+fn browser_window() -> Result<web_sys::Window, BrowserWalletError> {
+    web_sys::window().ok_or_else(|| BrowserWalletError::js("browser window is unavailable"))
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -167,7 +368,7 @@ pub struct InjectedProviderTransport;
 
 #[cfg(not(target_arch = "wasm32"))]
 impl InjectedProviderTransport {
-    pub fn detect() -> Result<Option<Self>, crate::BrowserWalletError> {
+    pub(crate) fn detect_legacy() -> Result<Option<Self>, crate::BrowserWalletError> {
         Ok(None)
     }
 
