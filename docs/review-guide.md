@@ -202,8 +202,8 @@ Packaging posture is explicit in the manifests:
 
 - public MSRV is Rust `1.94` through `workspace.package.rust-version`
 - contributor execution is pinned to Rust `1.94.1` in `rust-toolchain.toml`
-- key public crates opt into workspace lint policy through `[lints] workspace = true`
-- docs.rs behavior is declared explicitly for the facade and the primary transport/core crates
+- every published crate opts into workspace lint policy through `[lints] workspace = true`
+- docs.rs behavior is declared explicitly across the published crate family
 
 For the facade specifically:
 
@@ -235,9 +235,25 @@ Subgraph example review follows the same package boundary:
 
 ## CI Configuration
 
-The workflow set is intentionally small: workspace validation, release-readiness
-checks, WASM checks, and WASM example Pages deployment. Action references in
-workflow files are pinned to immutable SHAs.
+The repository ships three reviewer-facing validation layers:
+
+- `ci.yml` runs formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, public API lint reporting, and advisory reporting on every PR.
+- `release-readiness.yml` reruns the reviewer-grade library checks before parity validation and package dry-runs.
+- `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and example deployment surfaces.
+
+Action references in workflow files are pinned to immutable SHAs.
+
+Public-library rustc lints checked in CI include:
+
+- `missing_docs`
+- `missing_debug_implementations`
+- `unreachable_pub`
+- `unnameable_types`
+
+Dependency policy includes:
+
+- bans, licenses, and source policy checks
+- RustSec advisory reporting
 
 CID handling uses upstream crates for CID and multihash encoding. Legacy content-to-CID generation uses `ipfs-cid`; latest app-data CID conversion wraps an existing Keccak digest with `cid` and `multihash` because the SDK receives the digest as an app-data hash.
 
@@ -247,7 +263,18 @@ Use the normal workspace checks:
 
 ```text
 cargo fmt --all --check
-cargo test --workspace
 cargo clippy --workspace --all-targets --all-features -- -D warnings
-cargo doc --workspace --no-deps
+cargo test --workspace
+cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
+cargo doc --workspace --all-features --no-deps
+cargo hack check --workspace --feature-powerset --depth 1
+typos --config .github/config/typos.toml
+cargo deny check bans licenses sources --config .github/config/deny.toml
+```
+
+Use this command when reviewing public-surface documentation and export hygiene:
+
+```text
+RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features
+cargo deny check advisories --config .github/config/deny.toml
 ```

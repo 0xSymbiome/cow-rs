@@ -1,3 +1,6 @@
+//! Shared CoW Protocol core types, validation helpers, configuration, and
+//! runtime-neutral traits used across the `cow-sdk` crate family.
+
 pub mod config;
 pub mod errors;
 pub mod traits;

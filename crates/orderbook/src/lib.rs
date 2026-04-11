@@ -1,3 +1,6 @@
+//! Typed CoW Protocol orderbook transport models, request policy, and response
+//! transforms.
+
 pub mod api;
 pub mod error;
 pub mod request;

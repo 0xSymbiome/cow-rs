@@ -68,6 +68,12 @@ String-heavy values live in explicit wire DTOs such as `cow-sdk-orderbook` reque
 
 The MSRV is the compatibility contract for downstream users. The exact toolchain pin exists to keep local execution, CI, and reproducible validation aligned.
 
+## Quality Gates
+
+The main CI lane enforces formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, and a depth-1 feature matrix for the published crate family.
+
+CI also reports a public API audit with `missing_docs`, `missing_debug_implementations`, `unreachable_pub`, and `unnameable_types`, plus a separate RustSec advisory report.
+
 ## Docs
 
 - [Strategy](docs/strategy.md)
@@ -84,10 +90,22 @@ The MSRV is the compatibility contract for downstream users. The exact toolchain
 ## Validation
 
 ```text
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
+cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
+cargo doc --workspace --all-features --no-deps
+cargo hack check --workspace --feature-powerset --depth 1
+typos --config .github/config/typos.toml
+cargo deny check bans licenses sources --config .github/config/deny.toml
 cargo check -p cow-sdk --examples
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
+```
+
+```text
+RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features
+cargo deny check advisories --config .github/config/deny.toml
 ```
 
 ## Examples

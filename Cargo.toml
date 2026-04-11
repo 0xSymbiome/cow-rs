@@ -25,6 +25,7 @@ unsafe_code = "deny"
 unused_must_use = "deny"
 
 [workspace.lints.rustdoc]
+all = "warn"
 broken_intra_doc_links = "deny"
 
 [workspace.dependencies]

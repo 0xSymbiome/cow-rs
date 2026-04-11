@@ -1,3 +1,6 @@
+//! Typed CoW Protocol subgraph query helpers and transport-level error
+//! boundaries.
+
 pub mod api;
 pub mod error;
 pub mod queries;

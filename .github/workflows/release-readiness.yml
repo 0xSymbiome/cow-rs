@@ -3,28 +3,103 @@ name: release-readiness
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
 concurrency:
   group: release-readiness-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  verify:
+  quality-gate:
     runs-on: ubuntu-latest
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-      # Source ref: actions/setup-python@v5
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
-          python-version: "3.x"
+          components: clippy, rustfmt
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: nextest
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: cargo-hack
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: cargo-deny
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: typos-cli
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Check formatting
+        run: cargo fmt --all --check
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Run workspace tests
+        run: cargo test --workspace
+      - name: Run workspace nextest suite
+        run: cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
+      - name: Build workspace documentation
+        run: cargo doc --workspace --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+      - name: Check repository spelling
+        run: typos --config .github/config/typos.toml
+      - name: Check dependency policy
+        run: cargo deny check bans licenses sources --config .github/config/deny.toml
+      - name: Run advisory report
+        id: advisories
+        continue-on-error: true
+        run: cargo deny check advisories --config .github/config/deny.toml
+      - name: Summarize advisory report
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          if [ "${{ steps.advisories.outcome }}" = "success" ]; then
+            echo "Advisory report passed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Advisory report reported dependency advisories or advisory-database issues." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Check workspace feature matrix
+        run: cargo hack check --workspace --feature-powerset --depth 1
+      - name: Run public API lint report
+        id: public_api_lints
+        continue-on-error: true
+        run: cargo check --workspace --all-features
+        env:
+          RUSTFLAGS: -Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types
+      - name: Summarize public API lint report
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          if [ "${{ steps.public_api_lints.outcome }}" = "success" ]; then
+            echo "Public API lint report passed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Public API lint report reported issues in the current workspace surface." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
+  verify:
+    runs-on: ubuntu-latest
+    needs: quality-gate
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Validate parity fixtures and source lock
         run: cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
-
       - name: Dry-run package family
         run: |
           cargo package -p cow-sdk-core --allow-dirty

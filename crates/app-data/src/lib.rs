@@ -1,3 +1,6 @@
+//! CoW Protocol app-data generation, schema validation, CID conversion, and
+//! IPFS transport seams.
+
 pub mod cid;
 pub mod errors;
 pub mod fetch;

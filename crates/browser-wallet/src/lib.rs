@@ -1,3 +1,6 @@
+//! Browser wallet integration for WASM consumers using typed EIP-1193 provider,
+//! signer, discovery, and session contracts.
+
 pub mod error;
 pub mod events;
 pub mod js;

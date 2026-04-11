@@ -1,3 +1,6 @@
+//! High-level CoW Protocol trading workflows for quoting, signing, posting,
+//! allowance management, and on-chain order actions.
+
 pub mod allowance;
 pub mod cancel;
 pub mod error;

@@ -1,3 +1,6 @@
+//! Low-level CoW Protocol contract helpers for hashing, settlement encoding,
+//! signature verification, and deployment metadata.
+
 pub mod deploy;
 pub mod errors;
 pub mod interaction;
