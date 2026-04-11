@@ -31,6 +31,14 @@ This workspace includes order creation, signing, and submission flows, low-level
 
 Native subgraph examples live under `examples/native/` and use `cow-sdk-subgraph` directly. The custom-query example uses the explicit `SubgraphQueryRequest` contract, and the live example is opt-in through explicit environment configuration.
 
+## Browser Wallet Support
+
+Browser wallet integration is a supported leaf capability for browser runtimes. It is not part of the default root-facade contract.
+
+- Deterministic proof mode uses the mock wallet and crate tests to validate browser-wallet request shape, signing, approvals, and trading orchestration without an extension dependency.
+- Injected-provider mode uses explicit EIP-1193 browser wallet flows on supported chains and requires user authorization plus wallet support for the requested methods.
+- Broader browser-extension behavior remains environment-sensitive. Authorization persistence, chain inventory, discovery timing, vendor-specific prompts, and non-standard wallet behavior are controlled by the extension and browser runtime rather than normalized by `cow-sdk`.
+
 ## Trading SDK Configuration
 
 `TradingSdk` uses instance-scoped builder and options configuration.
@@ -87,4 +95,4 @@ cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.pa
 - `examples/native/` contains native SDK scenarios.
 - `examples/native/scenarios/subgraph_query_roundtrip.rs`, `subgraph_custom_query_roundtrip.rs`, and `subgraph_live_query.rs` cover canonical helper, custom-query, and opt-in live subgraph usage through `cow-sdk-subgraph`.
 - `examples/wasm/sdk-verification-console/` contains deterministic WASM checks and a browser review surface for SDK verification.
-- `examples/wasm/browser-wallet-console/` contains mock-wallet and injected-wallet browser flows.
+- `examples/wasm/browser-wallet-console/` contains deterministic mock-wallet proof mode and explicit injected-provider browser flows.

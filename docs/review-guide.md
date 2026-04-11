@@ -161,6 +161,14 @@ Browser-wallet chain management is reviewed through the typed crate-local contra
 - Wallet-specific method growth stays leaf-owned and typed. The public contract does not include a generic raw wallet-RPC passthrough.
 - Promotion beyond `cow-sdk-browser-wallet` requires another stable non-browser consumer and a materially larger typed wallet-method surface.
 
+Browser-wallet support posture stays explicit across the public surface:
+
+- The default `cow-sdk` facade does not assume browser-wallet access. Browser-wallet support is exposed only through the `browser-wallet` feature and the `cow-sdk-browser-wallet` crate.
+- Deterministic proof comes from mock-wallet contract tests and the mock mode in the browser-wallet console.
+- Injected-provider support covers the typed EIP-1193 flows exercised by `cow-sdk-browser-wallet` on supported chains with explicit user authorization.
+- Broader extension variability remains outside the SDK contract. Reviewers should not treat extension-specific prompts, authorization persistence, chain inventory, or non-standard vendor behavior as normalized SDK guarantees.
+- Public docs and examples should keep the root facade narrower than the leaf crate and avoid language that implies universal browser-wallet compatibility.
+
 ## Public Package Policy
 
 Packaging posture is explicit in the manifests:
@@ -175,6 +183,7 @@ For the facade specifically:
 - `cow-sdk` docs.rs builds with the `browser-wallet` feature enabled so the optional browser-wallet surface is visible in rendered docs
 - `cow-sdk-subgraph` is a separate package and is not folded into the facade for documentation convenience
 - the facade is a re-export layer and does not gain implementation ownership through packaging polish
+- feature-gated browser-wallet re-export does not widen the default-facade support contract
 
 ## Generated Or Schema-Derived Artifacts
 

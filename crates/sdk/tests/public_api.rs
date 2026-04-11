@@ -94,7 +94,15 @@ fn crate_docs_and_manifest_keep_the_facade_trading_first() {
     let manifest = include_str!("../Cargo.toml");
 
     assert!(lib_rs.contains("Top-level docs are trading-first"));
+    assert!(
+        lib_rs.contains(
+            "Optional browser-runtime support does not change the default facade identity."
+        )
+    );
+    assert!(lib_rs.contains("the full browser-runtime contract stays in `cow-sdk-browser-wallet`"));
     assert!(lib_rs.contains("is a separate crate surface"));
+    assert!(manifest.contains("default = []"));
+    assert!(manifest.contains("browser-wallet = [\"dep:cow-sdk-browser-wallet\"]"));
     assert!(manifest.contains("cow-sdk-trading"));
     assert!(!manifest.contains("cow-sdk-subgraph"));
 }

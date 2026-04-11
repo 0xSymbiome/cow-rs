@@ -141,6 +141,16 @@ The main exception is `cow-sdk-orderbook`, which keeps orderbook HTTP DTOs strin
 - The root facade remains narrower than `cow-sdk-browser-wallet`. Feature-gated re-export does not make every leaf-owned wallet method part of the default SDK identity.
 - Pure transform crates do not perform network I/O.
 
+## Browser Wallet Support Contract
+
+Browser wallet support is a supported browser-runtime surface with explicit boundaries:
+
+- Deterministic proof mode lives in the mock wallet and crate-level contract tests. That path is the automated proof for request shape, typed session updates, typed-data transport, chain management, and trading integration.
+- Injected-provider mode is the supported live browser path. It uses explicit EIP-1193 methods, bounded wallet discovery, typed session state, and typed chain-management helpers on supported chains.
+- Broader extension behavior remains environment-sensitive. Wallet authorization UX, extension availability, chain inventory, discovery timing, and vendor-specific method support are controlled by the injected provider and browser runtime.
+
+The root `cow-sdk` crate keeps browser-wallet support behind the `browser-wallet` feature for ergonomic re-export only. The full browser-runtime contract remains leaf-owned in `cow-sdk-browser-wallet`.
+
 ## Why This Shape
 
 This layout keeps low-level protocol semantics stable, gives higher-level consumers a clean trading entrypoint, and avoids coupling browser-only behavior to native server and bot use cases. Generated or schema-derived artifacts belong in non-public or test-only locations rather than the supported public SDK API.

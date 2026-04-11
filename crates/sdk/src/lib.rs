@@ -14,9 +14,11 @@
 //! - native and server-side consumers use the default facade
 //! - wasm consumers can use the same default facade for pure SDK flows
 //! - browser wallet integration is additive behind the `browser-wallet` feature
+//! - the full browser-runtime contract stays in `cow-sdk-browser-wallet`
 //! - subgraph access lives in the separate `cow-sdk-subgraph` crate
 //!
 //! Top-level docs are trading-first and keep the facade aligned with its package role.
+//! Optional browser-runtime support does not change the default facade identity.
 //!
 //! `cow-sdk-subgraph` is a separate crate surface and is not re-exported from
 //! this root package.
