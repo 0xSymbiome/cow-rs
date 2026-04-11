@@ -1,0 +1,6 @@
+query LastDaysVolume($days: Int!) {
+  dailyTotals(orderBy: timestamp, orderDirection: desc, first: $days) {
+    timestamp
+    volumeUsd
+  }
+}

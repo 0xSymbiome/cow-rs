@@ -1,5 +1,10 @@
-pub const TOTALS_QUERY: &str = "query Totals {\n  totals {\n    tokens\n    orders\n    traders\n    settlements\n    volumeUsd\n    volumeEth\n    feesUsd\n    feesEth\n  }\n}";
+/// Canonical subgraph operation sources remain private saved GraphQL documents.
+/// The public API stays at reviewed query constants and DTOs rather than a
+/// generated schema surface.
+pub const TOTALS_QUERY: &str = include_str!("query_documents/totals.graphql");
 
-pub const LAST_DAYS_VOLUME_QUERY: &str = "query LastDaysVolume($days: Int!) {\n  dailyTotals(orderBy: timestamp, orderDirection: desc, first: $days) {\n    timestamp\n    volumeUsd\n  }\n}";
+/// Canonical subgraph operation sources remain private saved GraphQL documents.
+pub const LAST_DAYS_VOLUME_QUERY: &str = include_str!("query_documents/last_days_volume.graphql");
 
-pub const LAST_HOURS_VOLUME_QUERY: &str = "query LastHoursVolume($hours: Int!) {\n  hourlyTotals(orderBy: timestamp, orderDirection: desc, first: $hours) {\n    timestamp\n    volumeUsd\n  }\n}";
+/// Canonical subgraph operation sources remain private saved GraphQL documents.
+pub const LAST_HOURS_VOLUME_QUERY: &str = include_str!("query_documents/last_hours_volume.graphql");

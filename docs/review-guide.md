@@ -150,6 +150,8 @@ Generated or schema-derived artifacts are not part of the public SDK API. Schema
 
 Orderbook OpenAPI and subgraph query evidence is tied to pinned entries in `parity/source-lock.yaml`; see [Parity Scope](parity-scope.md).
 
+For subgraph specifically, saved query documents live under `crates/subgraph/src/query_documents/`, while test-only schema and generated proof belongs under `crates/subgraph/tests/schema_evidence/`.
+
 For subgraph custom queries specifically, review the explicit request contract before transport details:
 
 - `SubgraphQueryRequest` carries `document`, optional `variables`, and optional `operation_name`.
