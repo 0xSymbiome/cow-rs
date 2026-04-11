@@ -58,7 +58,7 @@ Use this split when evaluating changes:
 | Surface | Shared input | Crate-local behavior that must be explicit |
 | --- | --- | --- |
 | `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` retry and rate-limit behavior; `ApiContext` chain/env/base URLs; explicit env override builders; optional `X-API-Key` header handling; instance-scoped async-safe limiter sharing across clones of the same client. |
-| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` client wiring; `SubgraphConfig` chain and base URL selection; API-key-derived production endpoints; `SubgraphQueryRequest` for explicit document, variables, and operation-name input on generic queries. |
+| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` client wiring; `SubgraphConfig` chain and base URL selection; API-key-derived production endpoints; `SubgraphQueryRequest` for explicit document, variables, and operation-name input on generic queries; `SubgraphError` for typed transport, HTTP, GraphQL, serialization, missing-data, unsupported-network, and empty-totals failures. |
 | `cow-sdk-app-data` | `IpfsFetchPolicy` read base URI | `IpfsConfig` write URI and pinning credentials; upload semantics are separate from fetch. |
 
 Default client policy is explicit and test-covered:
@@ -155,6 +155,7 @@ For subgraph custom queries specifically, review the explicit request contract b
 - `SubgraphQueryRequest` carries `document`, optional `variables`, and optional `operation_name`.
 - Anonymous single-operation documents are allowed without `operation_name`.
 - Multi-operation documents require caller-supplied `operation_name`; the SDK does not infer it from the query string.
+- `SubgraphError` keeps failure classes separate: transport, HTTP status, GraphQL payload, serialization, missing data, unsupported network, and the helper-specific empty-totals case.
 
 ## CI Configuration
 

@@ -1,4 +1,7 @@
-use cow_sdk_subgraph::{LastDaysVolumeResponse, LastHoursVolumeResponse, TotalsResponse};
+use cow_sdk_subgraph::{
+    LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphGraphQlError,
+    SubgraphGraphQlErrorLocation, TotalsResponse,
+};
 use serde_json::json;
 
 #[test]
@@ -75,4 +78,37 @@ fn last_hours_volume_response_accepts_string_backed_scalars() {
         Some("190.9404913756501392195019404899438")
     );
     assert_eq!(response.hourly_totals[1].timestamp, 1_651_183_200);
+}
+
+#[test]
+fn graphql_error_payload_preserves_message_and_locations() {
+    let error: SubgraphGraphQlError = serde_json::from_value(json!({
+        "message": "Type `Query` has no field `invalidQuery`",
+        "locations": [
+            {
+                "line": 2,
+                "column": 9
+            }
+        ]
+    }))
+    .unwrap();
+
+    assert_eq!(
+        error,
+        SubgraphGraphQlError {
+            message: "Type `Query` has no field `invalidQuery`".to_owned(),
+            locations: vec![SubgraphGraphQlErrorLocation { line: 2, column: 9 }],
+        }
+    );
+}
+
+#[test]
+fn graphql_error_payload_allows_missing_locations() {
+    let error: SubgraphGraphQlError = serde_json::from_value(json!({
+        "message": "Something went wrong"
+    }))
+    .unwrap();
+
+    assert_eq!(error.message, "Something went wrong");
+    assert!(error.locations.is_empty());
 }

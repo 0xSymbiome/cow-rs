@@ -2,11 +2,13 @@ use cow_sdk_core::{DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, SupportedChainId};
 use cow_sdk_subgraph::{
     DEFAULT_SUBGRAPH_USER_AGENT, DailyTotal, HourlyTotal, LAST_DAYS_VOLUME_QUERY,
     LAST_HOURS_VOLUME_QUERY, LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi,
-    SubgraphApiBaseUrls, SubgraphConfig, SubgraphError, SubgraphQueryRequest,
+    SubgraphApiBaseUrls, SubgraphConfig, SubgraphError, SubgraphGraphQlError,
+    SubgraphGraphQlErrorLocation, SubgraphQueryRequest, SubgraphRequestErrorContext,
     SubgraphTransportPolicy, TOTALS_QUERY, Total,
 };
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
+use std::net::TcpListener;
 use wiremock::{
     Mock, MockServer, Request, ResponseTemplate,
     matchers::{header, method, path},
@@ -513,18 +515,25 @@ async fn invalid_graphql_query_surfaces_typed_context() {
 
     assert_graphql_request(&request, query, Some("InvalidQuery"), None);
     match error {
-        SubgraphError::QueryFailed {
-            query: failed_query,
-            variables,
-            api,
-            inner_error,
-        } => {
-            assert_eq!(failed_query, query);
-            assert_eq!(variables, "undefined");
-            assert_eq!(api, server.uri());
-            assert!(inner_error.contains("invalidQuery"));
+        SubgraphError::GraphQl { context, errors } => {
+            assert_eq!(
+                *context,
+                SubgraphRequestErrorContext {
+                    api: server.uri(),
+                    document: query.to_owned(),
+                    operation_name: Some("InvalidQuery".to_owned()),
+                    variables: None,
+                }
+            );
+            assert_eq!(
+                errors,
+                vec![SubgraphGraphQlError {
+                    message: "Type `Query` has no field `invalidQuery`".to_owned(),
+                    locations: vec![SubgraphGraphQlErrorLocation { line: 2, column: 9 }],
+                }]
+            );
         }
-        other => panic!("expected QueryFailed error, got {other:?}"),
+        other => panic!("expected GraphQl error, got {other:?}"),
     }
 }
 
@@ -545,8 +554,161 @@ async fn malformed_success_response_surfaces_serialization_error() {
         .expect_err("invalid json should fail");
 
     match error {
-        SubgraphError::Serialization { details } => assert!(!details.is_empty()),
+        SubgraphError::Serialization {
+            context,
+            body,
+            details,
+        } => {
+            assert_eq!(
+                *context,
+                SubgraphRequestErrorContext {
+                    api: server.uri(),
+                    document: TOTALS_QUERY.to_owned(),
+                    operation_name: Some("Totals".to_owned()),
+                    variables: None,
+                }
+            );
+            assert_eq!(body, "not-json");
+            assert!(!details.is_empty());
+        }
         other => panic!("expected serialization error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn non_success_status_surfaces_http_status_error() {
+    let server = MockServer::start().await;
+    let api = api_with_override(&server);
+    let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
+
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .respond_with(ResponseTemplate::new(500).set_body_string("upstream exploded"))
+        .mount(&server)
+        .await;
+
+    let error = api
+        .run_query::<Value, _>(
+            SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"),
+        )
+        .await
+        .expect_err("http failure should surface typed status context");
+
+    match error {
+        SubgraphError::HttpStatus {
+            context,
+            status,
+            body,
+        } => {
+            assert_eq!(
+                *context,
+                SubgraphRequestErrorContext {
+                    api: server.uri(),
+                    document: query.to_owned(),
+                    operation_name: Some("TokensByVolume".to_owned()),
+                    variables: None,
+                }
+            );
+            assert_eq!(status, 500);
+            assert_eq!(body, "upstream exploded");
+        }
+        other => panic!("expected HttpStatus error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn missing_data_surfaces_typed_missing_data_error_for_generic_queries() {
+    let server = MockServer::start().await;
+    let api = api_with_override(&server);
+    let query = "query TokensByVolume($limit: Int!) { tokens(first: $limit) { symbol } }";
+    let request = SubgraphQueryRequest::new(query)
+        .with_variables(json!({ "limit": 5 }))
+        .with_operation_name("TokensByVolume");
+
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "data": null })))
+        .mount(&server)
+        .await;
+
+    let error = api
+        .run_query::<Value, _>(request)
+        .await
+        .expect_err("missing data should fail with typed context");
+
+    match error {
+        SubgraphError::MissingData { context } => {
+            assert_eq!(
+                *context,
+                SubgraphRequestErrorContext {
+                    api: server.uri(),
+                    document: query.to_owned(),
+                    operation_name: Some("TokensByVolume".to_owned()),
+                    variables: Some(json!({ "limit": 5 })),
+                }
+            );
+        }
+        other => panic!("expected MissingData error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn transport_failures_surface_typed_context() {
+    let listener = TcpListener::bind("127.0.0.1:0").expect("ephemeral port must be available");
+    let endpoint = format!(
+        "http://127.0.0.1:{}",
+        listener
+            .local_addr()
+            .expect("bound listener must expose a local address")
+            .port()
+    );
+    drop(listener);
+
+    let base_urls: SubgraphApiBaseUrls = [
+        (SupportedChainId::Mainnet, Some(endpoint.clone())),
+        (SupportedChainId::GnosisChain, None),
+        (SupportedChainId::ArbitrumOne, None),
+        (SupportedChainId::Base, None),
+        (SupportedChainId::Sepolia, None),
+        (SupportedChainId::Polygon, None),
+        (SupportedChainId::Avalanche, None),
+        (SupportedChainId::Bnb, None),
+        (SupportedChainId::Linea, None),
+        (SupportedChainId::Plasma, None),
+        (SupportedChainId::Ink, None),
+    ]
+    .into_iter()
+    .collect();
+    let api = SubgraphApi::with_config(
+        "FakeApiKey",
+        SubgraphConfig {
+            chain_id: SupportedChainId::Mainnet,
+            base_urls: Some(base_urls),
+        },
+    );
+    let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
+
+    let error = api
+        .run_query::<Value, _>(
+            SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"),
+        )
+        .await
+        .expect_err("connection failure should surface typed transport context");
+
+    match error {
+        SubgraphError::Transport { context, details } => {
+            assert_eq!(
+                *context,
+                SubgraphRequestErrorContext {
+                    api: endpoint,
+                    document: query.to_owned(),
+                    operation_name: Some("TokensByVolume".to_owned()),
+                    variables: None,
+                }
+            );
+            assert!(!details.is_empty());
+        }
+        other => panic!("expected Transport error, got {other:?}"),
     }
 }
 

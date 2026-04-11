@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 
 use crate::{
-    error::SubgraphError,
+    error::{SubgraphError, SubgraphGraphQlError, SubgraphRequestErrorContext},
     queries::{LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY, TOTALS_QUERY},
     types::{
         LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphQueryRequest, Total,
@@ -233,45 +233,28 @@ impl SubgraphApi {
         let response = request_builder
             .send()
             .await
-            .map_err(|error| SubgraphError::Transport {
-                details: error.to_string(),
-            })?;
+            .map_err(|error| transport_error(&api, &request, error.to_string()))?;
 
         let status = response.status();
         let body = response
             .text()
             .await
-            .map_err(|error| SubgraphError::Transport {
-                details: error.to_string(),
-            })?;
+            .map_err(|error| transport_error(&api, &request, error.to_string()))?;
 
         if !status.is_success() {
-            return Err(SubgraphError::Transport {
-                details: format!("http status {status}: {body}"),
-            });
+            return Err(http_status_error(&api, &request, status.as_u16(), body));
         }
 
-        let response: GraphQlResponse<T> =
-            serde_json::from_str(&body).map_err(|error| SubgraphError::Serialization {
-                details: error.to_string(),
-            })?;
+        let response: GraphQlResponse<T> = serde_json::from_str(&body)
+            .map_err(|error| serialization_error(&api, &request, &body, error.to_string()))?;
 
         if !response.errors.is_empty() {
-            return Err(SubgraphError::QueryFailed {
-                query: request.document().to_owned(),
-                variables: format_variables(request.variables()),
-                api,
-                inner_error: serde_json::to_string(&response.errors)
-                    .unwrap_or_else(|error| format!("failed to serialize GraphQL errors: {error}")),
-            });
+            return Err(graphql_error(&api, &request, response.errors));
         }
 
-        response.data.ok_or_else(|| SubgraphError::QueryFailed {
-            query: request.document().to_owned(),
-            variables: format_variables(request.variables()),
-            api,
-            inner_error: "response missing data".to_owned(),
-        })
+        response
+            .data
+            .ok_or_else(|| missing_data_error(&api, &request))
     }
 
     fn config_with_override(&self, config_override: &SubgraphConfigOverride) -> SubgraphConfig {
@@ -312,20 +295,7 @@ struct GraphQlRequest<'a> {
 struct GraphQlResponse<T> {
     data: Option<T>,
     #[serde(default)]
-    errors: Vec<GraphQlError>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-struct GraphQlError {
-    message: String,
-    #[serde(default)]
-    locations: Vec<GraphQlErrorLocation>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-struct GraphQlErrorLocation {
-    line: u32,
-    column: u32,
+    errors: Vec<SubgraphGraphQlError>,
 }
 
 fn build_prod_config(api_key: &str) -> SubgraphApiBaseUrls {
@@ -370,10 +340,63 @@ fn build_prod_config(api_key: &str) -> SubgraphApiBaseUrls {
     ])
 }
 
-fn format_variables(variables: Option<&Value>) -> String {
-    variables
-        .map(ToString::to_string)
-        .unwrap_or_else(|| "undefined".to_owned())
+fn transport_error(api: &str, request: &SubgraphQueryRequest, details: String) -> SubgraphError {
+    SubgraphError::Transport {
+        context: Box::new(request_error_context(api, request)),
+        details,
+    }
+}
+
+fn http_status_error(
+    api: &str,
+    request: &SubgraphQueryRequest,
+    status: u16,
+    body: String,
+) -> SubgraphError {
+    SubgraphError::HttpStatus {
+        context: Box::new(request_error_context(api, request)),
+        status,
+        body,
+    }
+}
+
+fn serialization_error(
+    api: &str,
+    request: &SubgraphQueryRequest,
+    body: &str,
+    details: String,
+) -> SubgraphError {
+    SubgraphError::Serialization {
+        context: Box::new(request_error_context(api, request)),
+        body: body.to_owned(),
+        details,
+    }
+}
+
+fn graphql_error(
+    api: &str,
+    request: &SubgraphQueryRequest,
+    errors: Vec<SubgraphGraphQlError>,
+) -> SubgraphError {
+    SubgraphError::GraphQl {
+        context: Box::new(request_error_context(api, request)),
+        errors,
+    }
+}
+
+fn missing_data_error(api: &str, request: &SubgraphQueryRequest) -> SubgraphError {
+    SubgraphError::MissingData {
+        context: Box::new(request_error_context(api, request)),
+    }
+}
+
+fn request_error_context(api: &str, request: &SubgraphQueryRequest) -> SubgraphRequestErrorContext {
+    SubgraphRequestErrorContext {
+        api: api.to_owned(),
+        document: request.document().to_owned(),
+        operation_name: request.operation_name().map(str::to_owned),
+        variables: request.variables().cloned(),
+    }
 }
 
 fn build_client(policy: &HttpClientPolicy) -> Client {

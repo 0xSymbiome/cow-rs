@@ -75,7 +75,7 @@ Crate-local transport behavior is crate-local:
 | Crate | Shared policy input | Crate-local transport policy |
 | --- | --- | --- |
 | `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` adds retry and rate-limit behavior. Chain/env base URL selection lives in `ApiContext`, and env-specific overrides are explicit builders on `OrderBookApi`. Each `OrderBookApi` instance owns its own request client and async-safe shared limiter state, and clones of that instance share the same limiter budget. |
-| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` keeps client settings explicit while `SubgraphConfig` owns chain selection, API-key-derived production URLs, and caller overrides. `SubgraphQueryRequest` is the generic GraphQL request contract and carries the document, optional variables, and optional operation name explicitly. |
+| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` keeps client settings explicit while `SubgraphConfig` owns chain selection, API-key-derived production URLs, and caller overrides. `SubgraphQueryRequest` is the generic GraphQL request contract and carries the document, optional variables, and optional operation name explicitly. `SubgraphError` distinguishes transport, HTTP status, GraphQL payload, serialization, missing-data, unsupported-network, and empty-totals cases. |
 | `cow-sdk-app-data` | none for the fetch adapter trait itself | `IpfsFetchPolicy` owns read-base-URI selection only. Pinning credentials and write endpoints live in `IpfsConfig` and upload helpers. |
 
 This split keeps shared client behavior reviewable without hiding API-specific semantics behind a false common abstraction.
