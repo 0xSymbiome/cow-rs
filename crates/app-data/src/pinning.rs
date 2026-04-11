@@ -8,6 +8,10 @@ use crate::{
 /// Upload transport seam for JSON pinning backends.
 pub trait IpfsUploadTransport {
     /// Sends a JSON body plus headers to the supplied URI.
+    ///
+    /// # Errors
+    ///
+    /// Returns the transport-specific error when the upload request fails.
     fn post_json(
         &self,
         uri: &str,

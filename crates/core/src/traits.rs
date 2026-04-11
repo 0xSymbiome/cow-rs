@@ -155,12 +155,28 @@ pub trait Signer {
     /// Attaches a provider or provider-like runtime to the signer.
     fn connect(&mut self, provider: Self::Provider);
     /// Returns the signer address.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when address resolution fails.
     fn get_address(&self) -> Result<Address, Self::Error>;
     /// Signs arbitrary bytes according to the backend's message-signing rules.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when signing fails.
     fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error>;
     /// Signs a transaction payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when signing fails.
     fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
     /// Signs an explicit typed-data payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from [`Signer::sign_typed_data`].
     fn sign_typed_data_payload(&self, payload: &TypedDataPayload) -> Result<String, Self::Error> {
         self.sign_typed_data(
             &payload.domain,
@@ -169,6 +185,10 @@ pub trait Signer {
         )
     }
     /// Signs typed-data components using the compatibility field-based contract.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when signing fails.
     fn sign_typed_data(
         &self,
         domain: &TypedDataDomain,
@@ -176,8 +196,16 @@ pub trait Signer {
         value_json: &str,
     ) -> Result<String, Self::Error>;
     /// Sends a transaction and returns a minimal receipt contract.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when submission fails.
     fn send_transaction(&self, tx: &TransactionRequest) -> Result<TransactionReceipt, Self::Error>;
     /// Estimates gas for a transaction request.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when estimation fails.
     fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error>;
 }
 
@@ -192,12 +220,28 @@ pub trait AsyncSigner {
     type Error;
 
     /// Returns the signer address.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when address resolution fails.
     async fn get_address(&self) -> Result<Address, Self::Error>;
     /// Signs arbitrary bytes according to the backend's message-signing rules.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when signing fails.
     async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error>;
     /// Signs a transaction payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when signing fails.
     async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
     /// Signs an explicit typed-data payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from [`AsyncSigner::sign_typed_data`].
     async fn sign_typed_data_payload(
         &self,
         payload: &TypedDataPayload,
@@ -210,6 +254,10 @@ pub trait AsyncSigner {
         .await
     }
     /// Signs typed-data components using the compatibility field-based contract.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when signing fails.
     async fn sign_typed_data(
         &self,
         domain: &TypedDataDomain,
@@ -217,11 +265,19 @@ pub trait AsyncSigner {
         value_json: &str,
     ) -> Result<String, Self::Error>;
     /// Sends a transaction and returns a minimal receipt contract.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when submission fails.
     async fn send_transaction(
         &self,
         tx: &TransactionRequest,
     ) -> Result<TransactionReceipt, Self::Error>;
     /// Estimates gas for a transaction request.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when estimation fails.
     async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error>;
 }
 
@@ -277,29 +333,65 @@ pub trait Provider {
     /// Returns the currently attached signer, if one exists.
     fn signer_or_null(&self) -> Option<&Self::Signer>;
     /// Returns the current chain id.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the chain id cannot be loaded.
     fn get_chain_id(&self) -> Result<ChainId, Self::Error>;
     /// Returns deployed bytecode for an address, if present.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the backend lookup fails.
     fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error>;
     /// Returns the receipt for a transaction hash, if known.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the backend lookup fails.
     fn get_transaction_receipt(
         &self,
         transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error>;
     /// Creates a signer from an implementation-defined hint.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when signer creation fails.
     fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error>;
     /// Reads a storage slot from a contract address.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the storage lookup fails.
     fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error>;
     /// Executes a read-only call.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the call fails.
     fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error>;
     /// Executes a typed contract read request.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the contract read fails.
     fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error>;
     /// Returns block information for a backend-specific block tag.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the block lookup fails.
     fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error>;
     /// Replaces the attached signer.
     fn set_signer(&mut self, signer: Self::Signer);
     /// Replaces the provider runtime using an implementation-defined hint.
     fn set_provider(&mut self, provider_hint: String);
     /// Returns a typed contract handle for an address and ABI.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when contract creation fails.
     fn get_contract(
         &self,
         address: &Address,
@@ -320,25 +412,61 @@ pub trait AsyncProvider {
     type Error;
 
     /// Returns the current chain id.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the chain id cannot be loaded.
     async fn get_chain_id(&self) -> Result<ChainId, Self::Error>;
     /// Returns deployed bytecode for an address, if present.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the backend lookup fails.
     async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error>;
     /// Returns the receipt for a transaction hash, if known.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the backend lookup fails.
     async fn get_transaction_receipt(
         &self,
         transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error>;
     /// Creates a signer from an implementation-defined hint.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when signer creation fails.
     async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error>;
     /// Reads a storage slot from a contract address.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the storage lookup fails.
     async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error>;
     /// Executes a read-only call.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the call fails.
     async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error>;
     /// Executes a typed contract read request.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the contract read fails.
     async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error>;
     /// Returns block information for a backend-specific block tag.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the block lookup fails.
     async fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error>;
     /// Returns a typed contract handle for an address and ABI.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when contract creation fails.
     async fn get_contract(
         &self,
         address: &Address,
@@ -409,10 +537,22 @@ pub trait HttpTransport {
     type Error;
 
     /// Performs an HTTP `GET`.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined transport error when the request fails.
     fn get(&self, path: &str) -> Result<String, Self::Error>;
     /// Performs an HTTP `POST`.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined transport error when the request fails.
     fn post(&self, path: &str, body: &str) -> Result<String, Self::Error>;
     /// Performs an HTTP `DELETE`.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined transport error when the request fails.
     fn delete(&self, path: &str, body: &str) -> Result<String, Self::Error>;
 }
 
@@ -425,6 +565,10 @@ pub trait GraphTransport {
     type Error;
 
     /// Executes a GraphQL request against the supplied endpoint.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined transport error when the request fails.
     fn execute(
         &self,
         endpoint: &str,
@@ -442,5 +586,9 @@ pub trait PinningTransport {
     type Error;
 
     /// Pins a JSON payload and returns an implementation-defined identifier.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined transport error when pinning fails.
     fn pin_json(&self, payload: &str) -> Result<String, Self::Error>;
 }

@@ -8,6 +8,10 @@ use crate::{
 /// Read transport seam for fetching app-data JSON from IPFS.
 pub trait IpfsFetchTransport {
     /// Performs a GET request against `uri`.
+    ///
+    /// # Errors
+    ///
+    /// Returns the transport-specific error when the read request fails.
     fn get(&self, uri: &str) -> Result<String, AppDataError>;
 }
 

@@ -93,6 +93,7 @@ impl EventLog {
     }
 
     /// Drains and returns all currently buffered events.
+    #[must_use]
     pub fn take(&self) -> Vec<WalletEvent> {
         self.0.borrow_mut().drain(..).collect()
     }

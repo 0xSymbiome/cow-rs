@@ -28,6 +28,12 @@ unused_must_use = "deny"
 all = "warn"
 broken_intra_doc_links = "deny"
 
+[workspace.lints.clippy]
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+must_use_candidate = "warn"
+unreadable_literal = "warn"
+
 [workspace.dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"

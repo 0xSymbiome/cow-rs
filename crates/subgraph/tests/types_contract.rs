@@ -39,8 +39,8 @@ fn last_days_volume_response_accepts_string_backed_scalars() {
                 "volumeUsd": "32085.1639220805155999650325844739"
             },
             {
-                "timestamp": 1651017600,
-                "volumeUsd": 34693.62007717298
+                "timestamp": 1_651_017_600,
+                "volumeUsd": 34_693.620_077_172_98
             }
         ]
     }))
@@ -64,8 +64,8 @@ fn last_hours_volume_response_accepts_string_backed_scalars() {
                 "volumeUsd": "190.9404913756501392195019404899438"
             },
             {
-                "timestamp": 1651183200,
-                "volumeUsd": 529.9946238000562
+                "timestamp": 1_651_183_200,
+                "volumeUsd": 529.994_623_800_056_2
             }
         ]
     }))

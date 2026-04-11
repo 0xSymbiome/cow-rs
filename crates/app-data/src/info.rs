@@ -11,6 +11,11 @@ pub trait AppDataSource {
     /// Converts the source into a parsed document plus the serialized content string.
     ///
     /// When `deterministic` is true, implementations should use canonical key ordering.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the source cannot be parsed or serialized into a valid app-data
+    /// document.
     fn into_document_and_content(
         self,
         deterministic: bool,

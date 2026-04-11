@@ -58,7 +58,7 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
         .expect("quote request must be captured");
 
     assert_eq!(request.from, address(OWNER));
-    assert_eq!(result.quote_response.id, Some(575401));
+    assert_eq!(result.quote_response.id, Some(575_401));
 }
 
 #[tokio::test]

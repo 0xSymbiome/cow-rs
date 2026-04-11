@@ -2,8 +2,8 @@ use num_bigint::BigInt;
 
 use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, MAX_VALID_TO_EPOCH,
-    OrderBalance, ProtocolOptions, SupportedChainId, UnsignedOrder, addresses_equal,
-    eth_flow_contract_address, wrapped_native_token,
+    OrderBalance, ProtocolOptions, SupportedChainId, UnsignedOrder, eth_flow_contract_address,
+    wrapped_native_token,
 };
 use cow_sdk_orderbook::OrderQuoteResponse;
 use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
@@ -26,7 +26,7 @@ pub struct OrderToSignParams {
     pub chain_id: SupportedChainId,
     /// Effective owner.
     pub from: Address,
-    /// Whether the flow is building an EthFlow order.
+    /// Whether the flow is building an `EthFlow` order.
     pub is_ethflow: bool,
     /// Optional network cost amount folded into amount calculations.
     pub network_costs_amount: Option<Amount>,
@@ -39,13 +39,12 @@ pub struct OrderToSignParams {
 /// Returns `true` when `sell_token` is the protocol native-asset sentinel address.
 #[must_use]
 pub fn is_ethflow_order(sell_token: &Address) -> bool {
-    addresses_equal(
-        sell_token,
-        &Address::new(EVM_NATIVE_CURRENCY_ADDRESS).expect("native token literal remains valid"),
-    )
+    sell_token
+        .as_str()
+        .eq_ignore_ascii_case(EVM_NATIVE_CURRENCY_ADDRESS)
 }
 
-/// Rewrites a swap trade to use the wrapped-native token for EthFlow quoting.
+/// Rewrites a swap trade to use the wrapped-native token for `EthFlow` quoting.
 #[must_use]
 pub fn adjust_ethflow_trade_parameters(
     chain_id: SupportedChainId,
@@ -56,7 +55,7 @@ pub fn adjust_ethflow_trade_parameters(
     adjusted
 }
 
-/// Rewrites a limit-order request to use the wrapped-native token for EthFlow posting.
+/// Rewrites a limit-order request to use the wrapped-native token for `EthFlow` posting.
 #[must_use]
 pub fn adjust_ethflow_limit_parameters(
     chain_id: SupportedChainId,
@@ -108,7 +107,8 @@ pub fn swap_params_to_limit_order_params(
 ///
 /// # Errors
 ///
-/// Returns [`TradingError`] when amount calculation or typed value conversion fails.
+/// Returns [`TradingError`] when amount calculation, local time resolution, or typed value
+/// conversion fails.
 pub fn get_order_to_sign(
     params: OrderToSignParams,
     limit_parameters: &LimitTradeParameters,
@@ -119,14 +119,22 @@ pub fn get_order_to_sign(
         .receiver
         .clone()
         .unwrap_or_else(|| params.from.clone());
-    let valid_to = limit_parameters.valid_to.unwrap_or_else(|| {
-        let valid_for = limit_parameters.valid_for.unwrap_or(DEFAULT_QUOTE_VALIDITY);
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("unix epoch remains earlier than current time")
-            .as_secs();
-        (now + u64::from(valid_for)) as u32
-    });
+    let valid_to = match limit_parameters.valid_to {
+        Some(valid_to) => valid_to,
+        None => {
+            let valid_for = limit_parameters.valid_for.unwrap_or(DEFAULT_QUOTE_VALIDITY);
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_err(|error| {
+                    TradingError::InvalidInput(format!(
+                        "system time must not be earlier than the unix epoch: {error}"
+                    ))
+                })?
+                .as_secs();
+            now.saturating_add(u64::from(valid_for))
+                .min(u64::from(MAX_VALID_TO_EPOCH)) as u32
+        }
+    };
 
     let slippage_bps = limit_parameters
         .slippage_bps
@@ -183,9 +191,9 @@ pub fn get_order_to_sign(
     })
 }
 
-/// Generates a unique EthFlow order id, retrying by decrementing buy amount.
+/// Generates a unique `EthFlow` order id, retrying by decrementing buy amount.
 ///
-/// The helper normalizes the order for EthFlow id generation by fixing
+/// The helper normalizes the order for `EthFlow` id generation by fixing
 /// `valid_to` to `MAX_VALID_TO_EPOCH` and replacing the sell token with the
 /// wrapped-native token for `chain_id`.
 ///

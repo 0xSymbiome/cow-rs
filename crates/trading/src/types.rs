@@ -32,7 +32,7 @@ pub struct TraderParameters {
     /// Optional settlement contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub settlement_contract_override: Option<AddressPerChain>,
-    /// Optional EthFlow contract overrides keyed by chain id.
+    /// Optional `EthFlow` contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub eth_flow_contract_override: Option<AddressPerChain>,
 }
@@ -56,7 +56,7 @@ pub struct PartialTraderParameters {
     /// Optional settlement contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub settlement_contract_override: Option<AddressPerChain>,
-    /// Optional EthFlow contract overrides keyed by chain id.
+    /// Optional `EthFlow` contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub eth_flow_contract_override: Option<AddressPerChain>,
 }
@@ -77,7 +77,7 @@ pub struct QuoterParameters {
     /// Optional settlement contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub settlement_contract_override: Option<AddressPerChain>,
-    /// Optional EthFlow contract overrides keyed by chain id.
+    /// Optional `EthFlow` contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub eth_flow_contract_override: Option<AddressPerChain>,
 }
@@ -107,7 +107,7 @@ pub struct TradeParameters {
     /// Optional settlement contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub settlement_contract_override: Option<AddressPerChain>,
-    /// Optional EthFlow contract overrides keyed by chain id.
+    /// Optional `EthFlow` contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub eth_flow_contract_override: Option<AddressPerChain>,
     /// Whether partial fills are allowed.
@@ -151,7 +151,7 @@ pub struct LimitTradeParameters {
     pub sell_amount: Amount,
     /// Buy amount before transformations.
     pub buy_amount: Amount,
-    /// Optional quote id required by some flows such as EthFlow posting.
+    /// Optional quote id required by some flows such as `EthFlow` posting.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quote_id: Option<i64>,
     /// Optional environment override for endpoint and contract resolution.
@@ -160,7 +160,7 @@ pub struct LimitTradeParameters {
     /// Optional settlement contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub settlement_contract_override: Option<AddressPerChain>,
-    /// Optional EthFlow contract overrides keyed by chain id.
+    /// Optional `EthFlow` contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub eth_flow_contract_override: Option<AddressPerChain>,
     /// Whether partial fills are allowed.
@@ -316,7 +316,7 @@ pub struct QuoteRequestOverride {
 /// Optional knobs applied after quoting and before final submission.
 #[derive(Clone, Default)]
 pub struct PostTradeAdditionalParams {
-    /// Optional existence checker used by EthFlow unique-order-id generation.
+    /// Optional existence checker used by `EthFlow` unique-order-id generation.
     pub check_eth_flow_order_exists: Option<Arc<dyn EthFlowOrderExistsChecker>>,
     /// Optional network cost amount folded into amount calculations.
     pub network_costs_amount: Option<Amount>,
@@ -419,7 +419,7 @@ pub struct OrderTraderParameters {
     /// Optional settlement contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub settlement_contract_override: Option<AddressPerChain>,
-    /// Optional EthFlow contract overrides keyed by chain id.
+    /// Optional `EthFlow` contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub eth_flow_contract_override: Option<AddressPerChain>,
 }
@@ -636,9 +636,9 @@ pub trait SlippageSuggestionProvider: Send + Sync {
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-/// External existence checker used during EthFlow unique-order-id generation.
+/// External existence checker used during `EthFlow` unique-order-id generation.
 pub trait EthFlowOrderExistsChecker: Send + Sync {
-    /// Returns `true` when the generated EthFlow order id already exists.
+    /// Returns `true` when the generated `EthFlow` order id already exists.
     ///
     /// # Errors
     ///

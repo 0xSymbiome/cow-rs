@@ -212,6 +212,7 @@ Packaging posture is explicit in the manifests:
 - public MSRV is Rust `1.94` through `workspace.package.rust-version`
 - contributor execution is pinned to Rust `1.94.1` in `rust-toolchain.toml`
 - every published crate opts into workspace lint policy through `[lints] workspace = true`
+- workspace Clippy policy explicitly covers `missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`, and `unreadable_literal`
 - docs.rs behavior is declared explicitly across the published crate family
 
 For the facade specifically:
@@ -261,6 +262,13 @@ Public-library rustc lints checked in CI include:
 - `unnameable_types`
 
 The blocking public rustc lint gate applies to the published crate family: `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.
+
+Workspace Clippy policy checked in CI includes:
+
+- `missing_errors_doc`
+- `missing_panics_doc`
+- `must_use_candidate`
+- `unreadable_literal`
 
 Dependency policy includes:
 

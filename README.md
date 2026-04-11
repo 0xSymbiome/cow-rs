@@ -88,6 +88,8 @@ The MSRV is the compatibility contract for downstream users. The exact toolchain
 
 The main CI lane enforces formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, and a depth-1 feature matrix for the published crate family.
 
+The workspace manifest also defines focused Clippy policy for documented failure contracts, discard-prone helper returns, and readable large literals through `missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`, and `unreadable_literal`.
+
 CI also enforces public API rustc lints with `missing_docs`, `missing_debug_implementations`, `unreachable_pub`, and `unnameable_types` across the published crate family: `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade. RustSec advisories continue to run as a separate report.
 
 ## Docs

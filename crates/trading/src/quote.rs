@@ -38,17 +38,13 @@ where
 {
     let mut effective_trade_parameters =
         apply_advanced_settings_to_trade_parameters(trade_parameters, advanced_settings);
-    effective_trade_parameters.owner = Some(
-        effective_trade_parameters
-            .owner
-            .clone()
-            .unwrap_or_else(|| trader.account.clone()),
-    );
-    let mut effective_trader = trader.clone();
-    effective_trader.account = effective_trade_parameters
+    let account = effective_trade_parameters
         .owner
         .clone()
-        .expect("effective quote-only owner must be set");
+        .unwrap_or_else(|| trader.account.clone());
+    effective_trade_parameters.owner = Some(account.clone());
+    let mut effective_trader = trader.clone();
+    effective_trader.account = account;
 
     get_quote_internal(
         &effective_trade_parameters,

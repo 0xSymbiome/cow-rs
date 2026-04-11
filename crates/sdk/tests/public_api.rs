@@ -69,7 +69,7 @@ fn module_reexports_cover_expected_leaf_crates() {
     let schema =
         cow_sdk::app_data::get_app_data_schema(cow_sdk::app_data::SchemaVersion::latest().as_str())
             .unwrap();
-    let deployment = cow_sdk::contracts::deployment_for_chain(11155111).unwrap();
+    let deployment = cow_sdk::contracts::deployment_for_chain(11_155_111).unwrap();
     let api = cow_sdk::orderbook::OrderBookApi::new(cow_sdk::core::ApiContext::default());
     let _sdk = cow_sdk::trading::TradingSdk::new(
         cow_sdk::trading::PartialTraderParameters::default(),

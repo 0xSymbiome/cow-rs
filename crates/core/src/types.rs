@@ -65,6 +65,7 @@ impl Address {
     }
 
     /// Returns the original address string.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -137,6 +138,7 @@ impl HexData {
     }
 
     /// Returns the original hex string.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -201,6 +203,7 @@ impl AppDataHash {
     }
 
     /// Returns the original hash string.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -262,6 +265,7 @@ impl Hash32 {
     }
 
     /// Returns the original hash string.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -308,7 +312,7 @@ pub type BlockHash = Hash32;
 /// Order digest alias.
 pub type OrderDigest = Hash32;
 
-/// Validated CoW order UID string.
+/// Validated `CoW` order UID string.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct OrderUid(String);
@@ -327,6 +331,7 @@ impl OrderUid {
     }
 
     /// Returns the original order UID string.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -392,6 +397,7 @@ impl Amount {
     }
 
     /// Returns the canonical decimal string.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -479,6 +485,7 @@ impl SignedAmount {
     }
 
     /// Returns the canonical decimal string.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -534,7 +541,7 @@ pub enum OrderKind {
     Sell,
 }
 
-/// Token-balance source selection used by CoW orders.
+/// Token-balance source selection used by `CoW` orders.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum OrderBalance {
@@ -750,7 +757,7 @@ pub struct QuoteResponse {
     /// Optional quote identifier from the upstream API.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quote_id: Option<String>,
-    /// Optional staged amounts-and-costs breakdown.
+    /// Optional stepwise amounts-and-costs breakdown.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub amounts_and_costs: Option<QuoteAmountsAndCosts>,
 }
@@ -812,7 +819,7 @@ pub struct Costs<T> {
     pub protocol_fee: FeeComponent<T>,
 }
 
-/// Staged quote amounts and cost components across the quote lifecycle.
+/// Stepwise quote amounts and cost components across the quote lifecycle.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuoteAmountsAndCosts<T = Amount> {

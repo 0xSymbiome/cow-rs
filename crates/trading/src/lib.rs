@@ -1,4 +1,4 @@
-//! High-level CoW Protocol trading workflows for quoting, signing, posting,
+//! High-level `CoW` Protocol trading workflows for quoting, signing, posting,
 //! allowance management, and on-chain order actions.
 
 /// Allowance reads, approval transactions, and approval submission helpers.
@@ -9,7 +9,7 @@ pub mod cancel;
 pub mod error;
 /// On-chain order actions and transaction builders.
 pub mod onchain;
-/// Order-construction helpers and EthFlow adjustments.
+/// Order-construction helpers and `EthFlow` adjustments.
 pub mod order;
 /// Quote-to-post orchestration helpers.
 pub mod post;

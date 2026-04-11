@@ -124,7 +124,7 @@ pub fn sample_order() -> UnsignedOrder {
         "receiver": "0xa6ddbd0de6b310819b49f680f65871bee85f517e",
         "sellAmount": "500000000000000",
         "buyAmount": "23000020000",
-        "validTo": 5000222,
+        "validTo": 5_000_222,
         "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
         "feeAmount": "2300000",
         "kind": "sell",

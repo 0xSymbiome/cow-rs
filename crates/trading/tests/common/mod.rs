@@ -60,7 +60,7 @@ pub fn sell_quote_response() -> OrderQuoteResponse {
             "receiver": OWNER,
             "sellAmount": "98646335338956442",
             "buyAmount": "30000000000000000000",
-            "validTo": 1737464594u32,
+            "validTo": 1_737_464_594_u32,
             "appData": APP_DATA_HASH,
             "feeAmount": "1353664661043558",
             "kind": "sell",
@@ -70,7 +70,7 @@ pub fn sell_quote_response() -> OrderQuoteResponse {
         },
         "from": OWNER,
         "expiration": "2025-01-21T12:55:14.799709609Z",
-        "id": 575401,
+        "id": 575_401,
         "verified": true
     }))
     .expect("sell quote fixture must deserialize")
@@ -84,7 +84,7 @@ pub fn buy_quote_response() -> OrderQuoteResponse {
             "receiver": OWNER,
             "sellAmount": "1005456782512030400",
             "buyAmount": "400000000000000000000",
-            "validTo": 1737468944u32,
+            "validTo": 1_737_468_944_u32,
             "appData": APP_DATA_HASH,
             "feeAmount": "1112955650440102",
             "kind": "buy",
@@ -94,7 +94,7 @@ pub fn buy_quote_response() -> OrderQuoteResponse {
         },
         "from": OWNER,
         "expiration": "2025-01-21T14:07:44.176194885Z",
-        "id": 575498,
+        "id": 575_498,
         "verified": true
     }))
     .expect("buy quote fixture must deserialize")
@@ -616,7 +616,7 @@ pub fn regular_order() -> Order {
         "receiver": OWNER,
         "sellAmount": "1000000000000000000",
         "buyAmount": "500000000000000000",
-        "validTo": 1234567890u32,
+        "validTo": 1_234_567_890_u32,
         "appData": APP_DATA_HASH,
         "feeAmount": "10000000000000000",
         "kind": "sell",

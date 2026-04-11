@@ -104,6 +104,7 @@ impl Eip1193Provider {
     }
 
     /// Clears the cached wallet session state while preserving the wallet label.
+    #[must_use]
     pub fn reset_session(&self) -> WalletSession {
         let wallet_label = self.session.borrow().wallet_label.clone();
         self.update_session(|session| {

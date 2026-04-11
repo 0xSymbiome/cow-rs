@@ -8,9 +8,9 @@ use crate::{
     types::{Address, ChainId, TokenInfo},
 };
 
-/// All supported CoW API environments.
+/// All supported `CoW` API environments.
 pub const ENVS_LIST: [CowEnv; 2] = [CowEnv::Prod, CowEnv::Staging];
-/// Sentinel address used by CoW Protocol to represent the native chain asset.
+/// Sentinel address used by `CoW` Protocol to represent the native chain asset.
 pub const EVM_NATIVE_CURRENCY_ADDRESS: &str = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 /// Default timeout applied to HTTP-backed SDK clients.
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(10);
@@ -29,7 +29,7 @@ const ETH_FLOW_ADDRESS: &str = "0xba3cb449bd2b4adddbc894d8697f5170800eadec";
 const ETH_FLOW_ADDRESS_STAGING: &str = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC";
 const TOKEN_LIST_IMAGES_PATH: &str = "https://files.cow.fi/token-lists/images";
 
-/// Supported CoW Protocol chain ids with explicit API configuration.
+/// Supported `CoW` Protocol chain ids with explicit API configuration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[repr(u64)]
 pub enum SupportedChainId {
@@ -39,7 +39,7 @@ pub enum SupportedChainId {
     Bnb = 56,
     /// Gnosis Chain.
     GnosisChain = 100,
-    /// Polygon PoS.
+    /// Polygon `PoS`.
     Polygon = 137,
     /// Base.
     Base = 8453,
@@ -54,7 +54,7 @@ pub enum SupportedChainId {
     /// Linea.
     Linea = 59144,
     /// Ethereum Sepolia.
-    Sepolia = 11155111,
+    Sepolia = 11_155_111,
 }
 
 impl SupportedChainId {
@@ -73,7 +73,7 @@ impl SupportedChainId {
         Self::Sepolia,
     ];
 
-    /// Returns the path segment used by CoW API base URLs for this chain.
+    /// Returns the path segment used by `CoW` API base URLs for this chain.
     #[must_use]
     pub fn api_path(self) -> &'static str {
         match self {
@@ -107,7 +107,7 @@ impl TryFrom<ChainId> for SupportedChainId {
             43114 => Ok(Self::Avalanche),
             57073 => Ok(Self::Ink),
             59144 => Ok(Self::Linea),
-            11155111 => Ok(Self::Sepolia),
+            11_155_111 => Ok(Self::Sepolia),
             chain_id => Err(ValidationError::UnsupportedChain { chain_id }),
         }
     }
@@ -115,7 +115,7 @@ impl TryFrom<ChainId> for SupportedChainId {
 
 impl From<SupportedChainId> for ChainId {
     fn from(value: SupportedChainId) -> Self {
-        value as ChainId
+        value as Self
     }
 }
 
@@ -138,7 +138,7 @@ impl<'de> Deserialize<'de> for SupportedChainId {
     }
 }
 
-/// Supported CoW deployment environments.
+/// Supported `CoW` deployment environments.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum CowEnv {
@@ -229,11 +229,13 @@ impl HttpClientPolicy {
     }
 
     /// Returns the configured timeout, if one is enabled.
+    #[must_use]
     pub fn timeout(&self) -> Option<Duration> {
         self.timeout
     }
 
     /// Returns the configured user-agent header value.
+    #[must_use]
     pub fn user_agent(&self) -> &str {
         &self.user_agent
     }
@@ -250,7 +252,7 @@ pub struct ProtocolOptions {
     /// Settlement contract overrides keyed by numeric chain id.
     pub settlement_contract_override: Option<AddressPerChain>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    /// EthFlow contract overrides keyed by numeric chain id.
+    /// `EthFlow` contract overrides keyed by numeric chain id.
     pub eth_flow_contract_override: Option<AddressPerChain>,
 }
 
@@ -305,7 +307,7 @@ impl ApiContext {
     }
 }
 
-/// Returns the default CoW API base URLs for every supported chain.
+/// Returns the default `CoW` API base URLs for every supported chain.
 #[must_use]
 pub fn default_api_base_urls(env: CowEnv, partner_api: bool) -> ApiBaseUrls {
     SupportedChainId::ALL
@@ -340,7 +342,7 @@ pub fn vault_relayer_address(_chain_id: SupportedChainId, env: CowEnv) -> Addres
     }
 }
 
-/// Returns the EthFlow contract address for the requested environment.
+/// Returns the `EthFlow` contract address for the requested environment.
 #[must_use]
 pub fn eth_flow_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
     match env {

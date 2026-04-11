@@ -480,11 +480,13 @@ impl BrowserWallet {
     }
 
     /// Clears cached session state while preserving the wallet label.
+    #[must_use]
     pub fn reset_session(&self) -> WalletSession {
         self.provider.reset_session()
     }
 
     /// Drains and returns the buffered wallet event log.
+    #[must_use]
     pub fn take_events(&self) -> Vec<crate::WalletEvent> {
         self.provider.events().take()
     }
@@ -642,6 +644,10 @@ impl BrowserWallet {
     /// Discovers injected wallets with the default bounded timeout.
     ///
     /// On non-WASM targets, discovery is a no-op and returns an empty result set.
+    ///
+    /// # Errors
+    ///
+    /// This helper does not return an error on non-WASM targets.
     pub async fn discover() -> Result<InjectedWalletDiscovery, BrowserWalletError> {
         Self::discover_with(InjectedWalletDetectionOptions::default()).await
     }
@@ -678,6 +684,10 @@ impl BrowserWallet {
     /// Discovers injected wallets with explicit options.
     ///
     /// On non-WASM targets, discovery is a no-op and returns an empty result set.
+    ///
+    /// # Errors
+    ///
+    /// This helper does not return an error on non-WASM targets.
     pub async fn discover_with(
         options: InjectedWalletDetectionOptions,
     ) -> Result<InjectedWalletDiscovery, BrowserWalletError> {
@@ -708,6 +718,10 @@ impl BrowserWallet {
     /// Detects the legacy `window.ethereum` provider directly.
     ///
     /// On non-WASM targets, this always returns `Ok(None)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the runtime transport probe fails unexpectedly.
     pub fn detect() -> Result<Option<Self>, BrowserWalletError> {
         let _ = crate::js::InjectedProviderTransport::detect_legacy()?;
         Ok(None)

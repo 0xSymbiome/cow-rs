@@ -120,7 +120,7 @@ pub fn sample_quote_response_json() -> Value {
             "receiver": sample_owner().as_str(),
             "sellAmount": "1000",
             "buyAmount": "900",
-            "validTo": 1700000000,
+            "validTo": 1_700_000_000,
             "appData": sample_app_data_hash().as_str(),
             "feeAmount": "10",
             "kind": "sell",
