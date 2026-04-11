@@ -66,6 +66,9 @@ Default client policy is explicit and test-covered:
 - native and wasm clients use a 10-second default timeout unless the caller disables it
 - each transport crate sets its own crate-specific default user-agent
 - base URL overrides are separate from shared client settings
+- orderbook base URL precedence is: explicit `with_env_base_url()` override, then `ApiContext` explicit base URLs or partner resolution, then the default env-and-chain map
+- `with_context_override()` updates chain, env, explicit base URLs, and API key on the cloned orderbook client without mutating unrelated instances
+- `with_transport_policy()` rebuilds the reqwest client and creates a fresh instance-scoped limiter for that clone lineage
 - orderbook rate-limit waits happen before each attempt, retry backoff happens after retryable failures, and cancelling a waiting request does not poison the shared limiter state
 
 ## Trading SDK Precedence Review

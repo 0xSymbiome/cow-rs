@@ -23,7 +23,11 @@ use crate::{
 
 const API_KEY_HEADER: &str = "X-API-Key";
 
-#[derive(Clone)]
+/// Typed CoW Protocol orderbook client.
+///
+/// The client keeps transport policy, rate-limiter state, and endpoint
+/// resolution instance-scoped. Clones of the same client share one limiter.
+#[derive(Debug, Clone)]
 pub struct OrderBookApi {
     client: Client,
     context: ApiContext,
@@ -33,6 +37,8 @@ pub struct OrderBookApi {
 }
 
 impl OrderBookApi {
+    /// Creates a client with the default transport policy for `context`.
+    #[must_use]
     pub fn new(context: ApiContext) -> Self {
         let transport_policy = OrderBookTransportPolicy::default();
         let (client, rate_limiter) = build_request_runtime(&transport_policy);
@@ -46,6 +52,11 @@ impl OrderBookApi {
         }
     }
 
+    /// Creates a client with an explicit transport policy.
+    ///
+    /// The policy rebuilds both the underlying HTTP client and the
+    /// instance-scoped request limiter.
+    #[must_use]
     pub fn new_with_transport_policy(
         context: ApiContext,
         transport_policy: OrderBookTransportPolicy,
@@ -61,11 +72,20 @@ impl OrderBookApi {
         }
     }
 
+    /// Creates a client with an explicit base URL override for the current environment.
+    ///
+    /// This override takes precedence over URLs resolved from [`ApiContext`].
+    #[must_use]
     pub fn new_with_base_url(context: ApiContext, base_url: impl Into<String>) -> Self {
         let env = context.env;
         Self::new(context).with_env_base_url(env, base_url.into())
     }
 
+    /// Returns a copy of this client with a new transport policy.
+    ///
+    /// Replacing the transport policy rebuilds the underlying HTTP client and
+    /// creates a new instance-scoped rate limiter.
+    #[must_use]
     pub fn with_transport_policy(mut self, transport_policy: OrderBookTransportPolicy) -> Self {
         let (client, rate_limiter) = build_request_runtime(&transport_policy);
         self.client = client;
@@ -74,12 +94,23 @@ impl OrderBookApi {
         self
     }
 
+    /// Returns a copy of this client with an explicit base URL for `env`.
+    ///
+    /// These per-environment overrides take precedence over URLs resolved from
+    /// [`ApiContext::resolved_base_url`].
+    #[must_use]
     pub fn with_env_base_url(mut self, env: CowEnv, base_url: impl Into<String>) -> Self {
         self.env_base_url_overrides
             .set(env, normalize_base_url(base_url.into()));
         self
     }
 
+    /// Returns a copy of this client with context fields overridden.
+    ///
+    /// This updates chain id, environment, base URLs, and API key in one step.
+    /// Per-environment overrides configured with [`Self::with_env_base_url`]
+    /// still take precedence for base URL selection.
+    #[must_use]
     pub fn with_context_override(mut self, context_override: ApiContextOverride) -> Self {
         if let Some(chain_id) = context_override.chain_id {
             self.context.chain_id = chain_id;
@@ -96,22 +127,35 @@ impl OrderBookApi {
         self
     }
 
+    /// Returns the effective API context stored in this client.
+    #[must_use]
     pub fn context(&self) -> &ApiContext {
         &self.context
     }
 
+    /// Returns the active transport policy for this client instance.
+    #[must_use]
     pub fn transport_policy(&self) -> &OrderBookTransportPolicy {
         &self.transport_policy
     }
 
+    /// Returns the shared HTTP client policy embedded in the transport policy.
+    #[must_use]
     pub fn client_policy(&self) -> &HttpClientPolicy {
         self.transport_policy.client_policy()
     }
 
+    /// Returns the orderbook request policy embedded in the transport policy.
+    #[must_use]
     pub fn request_policy(&self) -> &RequestPolicy {
         self.transport_policy.request_policy()
     }
 
+    /// Returns the canonical order details link for `order_uid`.
+    ///
+    /// # Errors
+    ///
+    /// Returns any base-URL resolution error from [`ApiContext::resolved_base_url`].
     pub fn get_order_link(&self, order_uid: &OrderUid) -> Result<String, OrderbookError> {
         Ok(format!(
             "{}/api/v1/orders/{}",
@@ -120,11 +164,24 @@ impl OrderBookApi {
         ))
     }
 
+    /// Fetches the orderbook service version string.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when request execution fails or the response
+    /// body cannot be decoded as plain text.
     pub async fn get_version(&self) -> Result<String, OrderbookError> {
         self.fetch_text(FetchParams::new("/api/v1/version", HttpMethod::Get))
             .await
     }
 
+    /// Fetches a quote for the provided request payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::InvalidQuoteRequest`] when the quote side is
+    /// not well-formed, or any transport/API/serialization error returned by
+    /// the orderbook request helpers.
     pub async fn get_quote(
         &self,
         request: &OrderQuoteRequest,
@@ -145,6 +202,12 @@ impl OrderBookApi {
         .await
     }
 
+    /// Submits a signed order to the orderbook.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] if the request cannot be serialized, the API
+    /// rejects the order, or request execution fails.
     pub async fn send_order(&self, request: &OrderCreation) -> Result<OrderUid, OrderbookError> {
         self.fetch_json(
             FetchParams::new("/api/v1/orders", HttpMethod::Post).with_body(
@@ -155,6 +218,12 @@ impl OrderBookApi {
         .await
     }
 
+    /// Submits a signed order-cancellation payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] if the request cannot be serialized, the API
+    /// rejects the cancellation, or request execution fails.
     pub async fn send_signed_order_cancellations(
         &self,
         request: &OrderCancellations,
@@ -168,6 +237,12 @@ impl OrderBookApi {
         .await
     }
 
+    /// Fetches and normalizes a single order by UID.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] if request execution fails or the response
+    /// cannot be transformed into the crate's stable order DTO.
     pub async fn get_order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
         let order: Order = self
             .fetch_json(FetchParams::new(
@@ -179,28 +254,41 @@ impl OrderBookApi {
         transform_order(order)
     }
 
+    /// Fetches an order by UID, retrying once against the other environment on a `404`.
+    ///
+    /// The active environment in [`ApiContext`] is queried first. Only a typed
+    /// API `404` triggers fallback to the other known environment.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from the primary or fallback order lookup.
     pub async fn get_order_multi_env(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
         match self.get_order(order_uid).await {
             Ok(order) => Ok(order),
             Err(OrderbookError::Api(error)) if error.status == 404 => {
                 let current_env = self.context.env;
-                let fallback_env = ENVS_LIST
-                    .into_iter()
-                    .find(|env| *env != current_env)
-                    .expect("ENVS_LIST must contain at least one alternative environment");
-
-                self.clone()
-                    .with_context_override(ApiContextOverride {
-                        env: Some(fallback_env),
-                        ..ApiContextOverride::default()
-                    })
-                    .get_order(order_uid)
-                    .await
+                if let Some(fallback_env) = ENVS_LIST.into_iter().find(|env| *env != current_env) {
+                    self.clone()
+                        .with_context_override(ApiContextOverride {
+                            env: Some(fallback_env),
+                            ..ApiContextOverride::default()
+                        })
+                        .get_order(order_uid)
+                        .await
+                } else {
+                    Err(OrderbookError::Api(error))
+                }
             }
             Err(error) => Err(error),
         }
     }
 
+    /// Fetches and normalizes orders for a specific owner.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] if request execution fails or any order in
+    /// the response cannot be normalized.
     pub async fn get_orders(
         &self,
         request: &GetOrdersRequest,
@@ -219,6 +307,12 @@ impl OrderBookApi {
         transform_orders(orders)
     }
 
+    /// Fetches and normalizes orders associated with a settlement transaction.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] if request execution fails or any order in
+    /// the response cannot be normalized.
     pub async fn get_tx_orders(&self, tx_hash: &str) -> Result<Vec<Order>, OrderbookError> {
         let orders: Vec<Order> = self
             .fetch_json(FetchParams::new(
@@ -230,6 +324,13 @@ impl OrderBookApi {
         transform_orders(orders)
     }
 
+    /// Fetches trades filtered by owner or order UID.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::InvalidTradesQuery`] when both or neither
+    /// filters are set, or any transport/API/serialization error from the
+    /// request helpers.
     pub async fn get_trades(
         &self,
         request: &GetTradesRequest,
@@ -258,6 +359,11 @@ impl OrderBookApi {
         .await
     }
 
+    /// Fetches the current competition status for an order.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when request execution or response decoding fails.
     pub async fn get_order_competition_status(
         &self,
         order_uid: &OrderUid,
@@ -269,6 +375,11 @@ impl OrderBookApi {
         .await
     }
 
+    /// Fetches the token price quoted in the chain's native asset.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when request execution or response decoding fails.
     pub async fn get_native_price(
         &self,
         token: &crate::types::Address,
@@ -280,6 +391,11 @@ impl OrderBookApi {
         .await
     }
 
+    /// Fetches the recorded total surplus for a user.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when request execution or response decoding fails.
     pub async fn get_total_surplus(
         &self,
         owner: &crate::types::Address,
@@ -291,6 +407,11 @@ impl OrderBookApi {
         .await
     }
 
+    /// Fetches full app-data JSON for the provided app-data hash.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when request execution or response decoding fails.
     pub async fn get_app_data(
         &self,
         app_data_hash: &AppDataHash,
@@ -302,6 +423,12 @@ impl OrderBookApi {
         .await
     }
 
+    /// Uploads full app-data JSON for the provided app-data hash.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] if the request body cannot be encoded, the
+    /// API rejects the upload, or request execution fails.
     pub async fn upload_app_data(
         &self,
         app_data_hash: &AppDataHash,
@@ -317,6 +444,11 @@ impl OrderBookApi {
         .await
     }
 
+    /// Fetches solver-competition data by auction id.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when request execution or response decoding fails.
     pub async fn get_solver_competition_by_auction_id(
         &self,
         auction_id: i64,
@@ -328,6 +460,11 @@ impl OrderBookApi {
         .await
     }
 
+    /// Fetches solver-competition data by settlement transaction hash.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when request execution or response decoding fails.
     pub async fn get_solver_competition_by_tx_hash(
         &self,
         tx_hash: &str,
@@ -339,6 +476,11 @@ impl OrderBookApi {
         .await
     }
 
+    /// Fetches the current auction snapshot from the orderbook.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when request execution or response decoding fails.
     pub async fn get_auction(&self) -> Result<Auction, OrderbookError> {
         self.fetch_json(FetchParams::new("/api/v1/auction", HttpMethod::Get))
             .await

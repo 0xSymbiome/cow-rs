@@ -41,6 +41,17 @@ async fn request_policy_defaults_match_fixture_contract() {
     assert!(!policy.should_retry_status(400));
 }
 
+#[test]
+fn request_policy_backoff_is_exponential_and_caps_growth() {
+    let policy = RequestPolicy::default();
+
+    assert_eq!(policy.backoff_delay(1), Duration::from_millis(50));
+    assert_eq!(policy.backoff_delay(2), Duration::from_millis(100));
+    assert_eq!(policy.backoff_delay(3), Duration::from_millis(200));
+    assert_eq!(policy.backoff_delay(7), Duration::from_millis(3200));
+    assert_eq!(policy.backoff_delay(8), Duration::from_millis(3200));
+}
+
 #[tokio::test]
 async fn execute_json_with_retries_transient_statuses_until_success() {
     let policy = RequestPolicy::default();

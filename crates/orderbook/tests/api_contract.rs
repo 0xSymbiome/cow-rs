@@ -44,7 +44,7 @@ async fn version_endpoint_matches_transport_contract() {
 }
 
 #[test]
-fn default_transport_policy_is_explicit_and_reviewable() {
+fn default_transport_policy_is_explicit_and_stable() {
     let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod));
     let policy = api.transport_policy();
 
@@ -54,6 +54,62 @@ fn default_transport_policy_is_explicit_and_reviewable() {
         DEFAULT_ORDERBOOK_USER_AGENT
     );
     assert_eq!(policy.request_policy().max_attempts, DEFAULT_MAX_ATTEMPTS);
+}
+
+#[tokio::test]
+async fn context_override_applies_base_urls_and_api_key_to_requests() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/version"))
+        .and(wiremock::matchers::header("x-api-key", "partner-key"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("v1.2.3"))
+        .mount(&server)
+        .await;
+
+    let base_urls = std::collections::BTreeMap::from([(
+        u64::from(SupportedChainId::GnosisChain),
+        format!("{}/", server.uri()),
+    )]);
+
+    let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
+        .with_context_override(ApiContextOverride {
+            base_urls: Some(base_urls),
+            api_key: Some("partner-key".to_owned()),
+            ..ApiContextOverride::default()
+        });
+
+    let version = api
+        .get_version()
+        .await
+        .expect("context override request should succeed");
+
+    assert_eq!(version, "v1.2.3");
+    assert_eq!(api.context().api_key.as_deref(), Some("partner-key"));
+}
+
+#[test]
+fn explicit_env_base_url_override_precedes_context_base_urls() {
+    let uid = sample_order_uid();
+    let context_base_urls = std::collections::BTreeMap::from([(
+        u64::from(SupportedChainId::GnosisChain),
+        "https://context.example/xdai/".to_owned(),
+    )]);
+
+    let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
+        .with_context_override(ApiContextOverride {
+            base_urls: Some(context_base_urls),
+            ..ApiContextOverride::default()
+        })
+        .with_env_base_url(CowEnv::Prod, "https://override.example/xdai/");
+
+    assert_eq!(
+        api.get_order_link(&uid)
+            .expect("explicit env override should win"),
+        format!(
+            "https://override.example/xdai/api/v1/orders/{}",
+            uid.as_str()
+        )
+    );
 }
 
 #[tokio::test]

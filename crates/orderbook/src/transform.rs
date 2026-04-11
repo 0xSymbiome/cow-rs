@@ -5,6 +5,15 @@ use crate::{
     types::{Order, OrderUid},
 };
 
+/// Normalizes an orderbook order response into the crate's stable DTO contract.
+///
+/// This updates EthFlow orders so the user-visible owner, validity, and native
+/// token address match the effective order semantics exposed by the orderbook.
+///
+/// # Errors
+///
+/// Returns [`OrderbookError::InvalidTransform`] when fee fields cannot be
+/// normalized as unsigned decimal strings.
 pub fn transform_order(mut order: Order) -> Result<Order, OrderbookError> {
     order.total_fee = calculate_total_fee(
         order.executed_fee_amount.as_deref(),
@@ -22,10 +31,24 @@ pub fn transform_order(mut order: Order) -> Result<Order, OrderbookError> {
     Ok(order)
 }
 
+/// Applies [`transform_order`] to every order in the provided response list.
+///
+/// # Errors
+///
+/// Returns the first error produced while normalizing an individual order.
 pub fn transform_orders(orders: Vec<Order>) -> Result<Vec<Order>, OrderbookError> {
     orders.into_iter().map(transform_order).collect()
 }
 
+/// Adds the two orderbook fee components into the exposed `total_fee` value.
+///
+/// Missing components are treated as zero because the orderbook can expose
+/// either or both fee fields depending on endpoint and order class.
+///
+/// # Errors
+///
+/// Returns [`OrderbookError::InvalidTransform`] when either input is not an
+/// unsigned decimal string.
 pub fn calculate_total_fee(
     executed_fee_amount: Option<&str>,
     executed_fee: Option<&str>,
@@ -36,6 +59,8 @@ pub fn calculate_total_fee(
     )
 }
 
+/// Returns the order UID as a string slice for transport-layer interpolation.
+#[must_use]
 pub fn ensure_order_uid(uid: &OrderUid) -> &str {
     uid.as_str()
 }

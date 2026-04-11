@@ -1,10 +1,15 @@
 //! Typed CoW Protocol orderbook transport models, request policy, and response
 //! transforms.
 
+/// High-level orderbook client with chain/env-aware endpoint resolution.
 pub mod api;
+/// Typed orderbook client errors.
 pub mod error;
+/// Request execution policy, retry rules, and low-level transport helpers.
 pub mod request;
+/// Orderbook response normalization helpers.
 pub mod transform;
+/// Public wire DTOs and builder-style request models for the orderbook API.
 pub mod types;
 
 pub use api::OrderBookApi;
@@ -27,4 +32,5 @@ pub use types::{
     SupportedChainId, TotalSurplus, Trade,
 };
 
+/// Backwards-compatible alias for the orderbook API client.
 pub type OrderbookClient = OrderBookApi;
