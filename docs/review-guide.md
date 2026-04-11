@@ -67,6 +67,23 @@ Default client policy is explicit and test-covered:
 - each transport crate sets its own crate-specific default user-agent
 - base URL overrides are separate from shared client settings
 
+## Trading SDK Precedence Review
+
+Review `TradingSdk` with this order in mind:
+
+1. injected orderbook client context for orderbook-bound chain and env
+2. advanced quote or post settings for overlapping trade fields
+3. call-level parameters
+4. SDK trader defaults
+5. signer address as the final owner fallback
+
+Key review points:
+
+- `TradingSdk::builder()` and `TradingSdkOptions` keep policy instance-scoped rather than mutation-driven.
+- Injected orderbook clients do not act as a silent suggestion. They define the active orderbook context, and conflicts surface as typed errors.
+- Advanced quote and post settings must align with the effective trade parameters used for request construction, app-data generation, signing payloads, and submission payloads.
+- Orderbook-bound flows and non-orderbook flows must apply the same call-level-over-default precedence for env and protocol address overrides.
+
 ## DTO Boundaries
 
 Repeated order-like field names are intentional only when they model distinct protocol contracts:

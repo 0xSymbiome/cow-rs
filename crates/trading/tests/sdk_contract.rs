@@ -28,9 +28,7 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
             settlement_contract_override: None,
             eth_flow_contract_override: None,
         },
-        TradingSdkOptions {
-            order_book_api: Some(orderbook.clone()),
-        },
+        TradingSdkOptions::new().with_orderbook_client(orderbook.clone()),
     );
     let mut trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
     trade.owner = Some(address(OWNER));
@@ -48,6 +46,75 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
 
     assert_eq!(request.from, address(OWNER));
     assert_eq!(result.quote_response.id, Some(575401));
+}
+
+#[tokio::test]
+async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can_supply_chain_and_env()
+ {
+    let orderbook = Arc::new(MockOrderbook::new_with_env(
+        SupportedChainId::Sepolia,
+        CowEnv::Staging,
+        sell_quote_response(),
+    ));
+    let error = TradingSdk::builder()
+        .with_chain_id(SupportedChainId::Mainnet)
+        .with_app_code("0x007")
+        .with_orderbook_client(orderbook.clone())
+        .build()
+        .err()
+        .expect("mismatched injected orderbook chain must fail validation");
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::InjectedOrderbookContextConflict {
+            field: "chainId",
+            ..
+        }
+    ));
+
+    let sdk = TradingSdk::builder()
+        .with_app_code("0x007")
+        .with_orderbook_client(orderbook)
+        .build()
+        .expect("builder should accept injected client when defaults do not conflict");
+    let mut trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
+    trade.env = Some(CowEnv::Staging);
+
+    let result = sdk
+        .get_quote_only(trade, None)
+        .await
+        .expect("injected client context should supply chain and env");
+
+    assert_eq!(result.trade_parameters.env, Some(CowEnv::Staging));
+    assert_eq!(
+        result.order_typed_data.domain.verifying_contract,
+        cow_sdk_core::settlement_contract_address(SupportedChainId::Sepolia, CowEnv::Staging)
+    );
+}
+
+#[tokio::test]
+async fn sdk_orderbook_bound_calls_reject_env_conflicts_with_injected_client_context() {
+    let orderbook = Arc::new(MockOrderbook::new_with_env(
+        SupportedChainId::Sepolia,
+        CowEnv::Prod,
+        sell_quote_response(),
+    ));
+    let sdk = TradingSdk::builder()
+        .with_app_code("0x007")
+        .with_orderbook_client(orderbook)
+        .build()
+        .expect("builder should accept compatible config");
+    let mut trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
+    trade.env = Some(CowEnv::Staging);
+
+    let error = sdk
+        .get_quote_only(trade, None)
+        .await
+        .expect_err("conflicting env must fail before quoting");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::InjectedOrderbookContextConflict { field: "env", .. }
+    ));
 }
 
 #[tokio::test]
@@ -212,8 +279,9 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
 
 #[tokio::test]
 async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and_ethflow() {
-    let orderbook = Arc::new(MockOrderbook::new(
+    let orderbook = Arc::new(MockOrderbook::new_with_env(
         SupportedChainId::Sepolia,
+        CowEnv::Staging,
         sell_quote_response(),
     ));
     orderbook.push_order(ethflow_order());
@@ -233,9 +301,7 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
                 address("0xcccccccccccccccccccccccccccccccccccccccc"),
             )])),
         },
-        TradingSdkOptions {
-            order_book_api: Some(orderbook.clone()),
-        },
+        TradingSdkOptions::new().with_orderbook_client(orderbook.clone()),
     );
 
     let pre_sign_tx = sdk
@@ -305,9 +371,7 @@ async fn sdk_onchain_cancel_order_routes_regular_orders_through_settlement_when_
                 address(CUSTOM_ETHFLOW),
             )])),
         },
-        TradingSdkOptions {
-            order_book_api: Some(orderbook),
-        },
+        TradingSdkOptions::new().with_orderbook_client(orderbook),
     );
 
     sdk.on_chain_cancel_order(

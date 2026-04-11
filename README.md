@@ -18,7 +18,7 @@ This workspace includes order creation, signing, and submission flows, low-level
 | `cow-sdk-subgraph` | Read-only subgraph query helpers |
 | `cow-sdk-browser-wallet` | Async EIP-1193 browser wallet integration for WASM consumers |
 
-`cow-sdk` stays intentionally thin. Trading workflows live in `cow-sdk-trading`. Subgraph access stays in `cow-sdk-subgraph`. Browser wallet support is exposed through the optional `browser-wallet` feature and the dedicated `cow-sdk-browser-wallet` crate.
+`cow-sdk` is intentionally thin. Trading workflows live in `cow-sdk-trading`. Subgraph access lives in `cow-sdk-subgraph`. Browser wallet support is exposed through the optional `browser-wallet` feature and the dedicated `cow-sdk-browser-wallet` crate.
 
 ## Facade Surface
 
@@ -27,11 +27,21 @@ This workspace includes order creation, signing, and submission flows, low-level
 - Native and server-side consumers use the default `cow-sdk` surface for core types, contracts, signing, orderbook access, app-data helpers, and trading workflows.
 - WASM consumers can use the same facade surface for pure SDK flows.
 - Browser wallet support is additive and exposed through the `browser-wallet` feature plus the `cow-sdk-browser-wallet` crate.
-- Subgraph access remains a separate `cow-sdk-subgraph` crate and is intentionally not re-exported from `cow-sdk`.
+- Subgraph access uses the separate `cow-sdk-subgraph` crate and is intentionally not re-exported from `cow-sdk`.
+
+## Trading SDK Configuration
+
+`TradingSdk` uses instance-scoped builder and options configuration.
+
+- `TradingSdk::builder()` configures trader defaults and optional injected orderbook clients.
+- Injected orderbook clients are authoritative for orderbook-bound chain and env selection. Conflicting SDK defaults or call-level requests fail explicitly.
+- Advanced quote and post settings override overlapping call-level trade fields.
+- Call-level params override SDK defaults for owner, env, and protocol address overrides.
+- Signer address resolution is only an owner fallback for signer-backed quote and post flows.
 
 ## Typed Public API
 
-The default Rust contract is now strongly typed where this workspace owns the meaning:
+The default Rust contract is strongly typed where this workspace owns the meaning:
 
 - addresses use `cow_sdk_core::Address`
 - hashes and digests use `cow_sdk_core::Hash32` aliases such as `TransactionHash` and `OrderDigest`
@@ -39,7 +49,7 @@ The default Rust contract is now strongly typed where this workspace owns the me
 - signed balance deltas use `cow_sdk_core::SignedAmount`
 - raw calldata and byte payloads use `cow_sdk_core::HexData`
 
-String-heavy values remain in explicit wire DTOs such as `cow-sdk-orderbook` request and response models, because the upstream HTTP API is string-heavy.
+String-heavy values live in explicit wire DTOs such as `cow-sdk-orderbook` request and response models, because the upstream HTTP API is string-heavy.
 
 ## Toolchain Policy
 

@@ -11,8 +11,8 @@ use cow_sdk::{
     OrderUid, OrderbookError, PartialTraderParameters, SupportedChainId, TradingSdk,
     TradingSdkOptions, app_data_hex_to_cid, app_data_hex_to_cid_legacy, approval_transaction,
     cid_to_app_data_hex, default_slippage_bps, deployment_for_chain, eip1271_signature_payload,
-    generate_order_id, get_app_data_info, get_app_data_schema, is_ethflow_order,
-    order_typed_data, partner_fee_bps, sanitize_protocol_fee_bps, suggest_slippage_from_fee,
+    generate_order_id, get_app_data_info, get_app_data_schema, is_ethflow_order, order_typed_data,
+    partner_fee_bps, sanitize_protocol_fee_bps, suggest_slippage_from_fee,
     suggest_slippage_from_volume, swap_params_to_limit_order_params, validate_app_data_doc,
 };
 use cow_sdk_subgraph::{SubgraphApi, SubgraphConfig};
@@ -75,7 +75,7 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
         "apiBaseUrl": api_context
             .resolved_base_url()
             .map_err(|error| to_js_error(error.to_string()))?,
-        "sdkConstructed": sdk.trader_params.chain_id == Some(chain_id),
+        "sdkConstructed": sdk.trader_defaults().chain_id == Some(chain_id),
         "wrappedNative": {
             "address": wrapped_native.address.as_str(),
             "symbol": wrapped_native.symbol,
@@ -603,8 +603,7 @@ fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
         receiver: sample_owner(),
         sell_amount: Amount::new("100000000000000000")
             .expect("static example sell amount must remain valid"),
-        buy_amount: Amount::new("250000000")
-            .expect("static example buy amount must remain valid"),
+        buy_amount: Amount::new("250000000").expect("static example buy amount must remain valid"),
         valid_to: 1_900_000_000,
         app_data: cow_sdk::AppDataHex::new(
             "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

@@ -30,7 +30,7 @@ where
     S::Error: std::fmt::Display,
 {
     let options = ProtocolOptions {
-        env: params.env.or(trader.env),
+        env: params.env.or(trader.env).or(Some(orderbook.context().env)),
         settlement_contract_override: params
             .settlement_contract_override
             .clone()

@@ -35,7 +35,7 @@ pub use post::{
 pub use quote::{
     build_app_data, get_quote_only, get_quote_results, get_quote_results_async, merge_app_data_doc,
 };
-pub use sdk::TradingSdk;
+pub use sdk::{TradingSdk, TradingSdkBuilder};
 pub use slippage::{
     DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT,
     MAX_SLIPPAGE_BPS, calculate_quote_amounts_and_costs, default_slippage_bps, partner_fee_bps,

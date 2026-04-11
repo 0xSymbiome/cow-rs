@@ -29,6 +29,14 @@ pub enum TradingError {
     MissingQuoteId(&'static str),
     #[error("owner address is required for quote-only flows")]
     MissingOwner,
+    #[error(
+        "injected orderbook client fixes {field} to `{configured}`, but `{requested}` was requested"
+    )]
+    InjectedOrderbookContextConflict {
+        field: &'static str,
+        requested: String,
+        configured: String,
+    },
     #[error("signer error during {operation}: {message}")]
     Signer {
         operation: &'static str,

@@ -5,6 +5,10 @@ use cow_sdk_core::{Amount, AsyncSigner, ProtocolOptions, Signer};
 use cow_sdk_orderbook::{OrderQuoteRequest, PriceQuality, QuoteSide, SigningScheme};
 use cow_sdk_signing::order_typed_data;
 
+use crate::types::{
+    QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
+    apply_quote_request_parameter_overrides,
+};
 use crate::{
     DEFAULT_QUOTE_VALIDITY, OrderbookClient, QuoteRequestOverride, QuoteResults, QuoterParameters,
     SwapAdvancedSettings, TradeParameters, TraderParameters, TradingAppDataInfo, TradingError,
@@ -22,7 +26,27 @@ pub async fn get_quote_only<O>(
 where
     O: OrderbookClient + ?Sized,
 {
-    get_quote_internal(trade_parameters, trader, advanced_settings, orderbook).await
+    let mut effective_trade_parameters =
+        apply_advanced_settings_to_trade_parameters(trade_parameters, advanced_settings);
+    effective_trade_parameters.owner = Some(
+        effective_trade_parameters
+            .owner
+            .clone()
+            .unwrap_or_else(|| trader.account.clone()),
+    );
+    let mut effective_trader = trader.clone();
+    effective_trader.account = effective_trade_parameters
+        .owner
+        .clone()
+        .expect("effective quote-only owner must be set");
+
+    get_quote_internal(
+        &effective_trade_parameters,
+        &effective_trader,
+        advanced_settings,
+        orderbook,
+    )
+    .await
 }
 
 pub async fn get_quote_results<O, S>(
@@ -59,7 +83,9 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
 {
-    let account = match trade_parameters.owner.clone() {
+    let mut effective_trade_parameters =
+        apply_advanced_settings_to_trade_parameters(trade_parameters, advanced_settings);
+    let account = match effective_trade_parameters.owner.clone() {
         Some(owner) => owner,
         None => signer
             .get_address()
@@ -69,6 +95,7 @@ where
                 message: error.to_string(),
             })?,
     };
+    effective_trade_parameters.owner = Some(account.clone());
     let quoter = QuoterParameters {
         chain_id: trader.chain_id,
         app_code: trader.app_code.clone(),
@@ -78,7 +105,13 @@ where
         eth_flow_contract_override: trader.eth_flow_contract_override.clone(),
     };
 
-    get_quote_internal(trade_parameters, &quoter, advanced_settings, orderbook).await
+    get_quote_internal(
+        &effective_trade_parameters,
+        &quoter,
+        advanced_settings,
+        orderbook,
+    )
+    .await
 }
 
 pub async fn build_app_data(
@@ -158,11 +191,18 @@ where
         return Err(TradingError::QuoteValidityConflict);
     }
 
-    let is_ethflow = is_ethflow_order(&trade_parameters.sell_token);
+    let mut effective_trade_parameters = trade_parameters.clone();
+    let resolved_env = effective_trade_parameters
+        .env
+        .or(trader.env)
+        .unwrap_or(orderbook.context().env);
+    effective_trade_parameters.env = Some(resolved_env);
+
+    let is_ethflow = is_ethflow_order(&effective_trade_parameters.sell_token);
     let trade_parameters_for_quote = if is_ethflow {
-        adjust_ethflow_trade_parameters(trader.chain_id, trade_parameters)
+        adjust_ethflow_trade_parameters(trader.chain_id, &effective_trade_parameters)
     } else {
-        trade_parameters.clone()
+        effective_trade_parameters.clone()
     };
     let default_slippage = default_slippage_bps(trader.chain_id, is_ethflow);
     let initial_slippage = trade_parameters.slippage_bps.unwrap_or(default_slippage);
@@ -170,7 +210,7 @@ where
         &trader.app_code,
         initial_slippage,
         "market",
-        trade_parameters.partner_fee.as_ref(),
+        effective_trade_parameters.partner_fee.as_ref(),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     )
     .await?;
@@ -195,24 +235,25 @@ where
     .slippage_bps
     .unwrap_or(default_slippage);
 
-    let (trade_parameters, app_data_info) =
-        if trade_parameters.slippage_bps.is_none() && suggested_slippage != initial_slippage {
-            let mut updated = trade_parameters.clone();
-            updated.slippage_bps = Some(suggested_slippage);
-            let app_data = build_app_data(
-                &trader.app_code,
-                suggested_slippage,
-                "market",
-                trade_parameters.partner_fee.as_ref(),
-                advanced_settings.and_then(|settings| settings.app_data.as_ref()),
-            )
-            .await?;
-            (updated, app_data)
-        } else {
-            let mut updated = trade_parameters.clone();
-            updated.slippage_bps = Some(initial_slippage);
-            (updated, initial_app_data)
-        };
+    let (trade_parameters, app_data_info) = if effective_trade_parameters.slippage_bps.is_none()
+        && suggested_slippage != initial_slippage
+    {
+        let mut updated = effective_trade_parameters.clone();
+        updated.slippage_bps = Some(suggested_slippage);
+        let app_data = build_app_data(
+            &trader.app_code,
+            suggested_slippage,
+            "market",
+            effective_trade_parameters.partner_fee.as_ref(),
+            advanced_settings.and_then(|settings| settings.app_data.as_ref()),
+        )
+        .await?;
+        (updated, app_data)
+    } else {
+        let mut updated = effective_trade_parameters.clone();
+        updated.slippage_bps = Some(initial_slippage);
+        (updated, initial_app_data)
+    };
 
     let amounts_and_costs = calculate_quote_amounts_and_costs(
         &quote_response.quote,
@@ -223,7 +264,7 @@ where
         sanitize_protocol_fee_bps(quote_response.protocol_fee_bps.as_deref()),
     )?;
     let options = ProtocolOptions {
-        env: trade_parameters.env.or(trader.env),
+        env: Some(resolved_env),
         settlement_contract_override: trade_parameters
             .settlement_contract_override
             .clone()
@@ -256,6 +297,33 @@ where
         app_data_info,
         order_typed_data,
     })
+}
+
+pub(crate) fn apply_advanced_settings_to_trade_parameters(
+    trade_parameters: &TradeParameters,
+    advanced_settings: Option<&SwapAdvancedSettings>,
+) -> TradeParameters {
+    let mut trade_parameters = trade_parameters.clone();
+
+    apply_app_data_parameter_overrides(
+        &mut trade_parameters.slippage_bps,
+        &mut trade_parameters.partner_fee,
+        advanced_settings.and_then(|settings| settings.app_data.as_ref()),
+    );
+    apply_quote_request_parameter_overrides(
+        QuoteRequestParameterTargets {
+            owner: &mut trade_parameters.owner,
+            sell_token: &mut trade_parameters.sell_token,
+            buy_token: &mut trade_parameters.buy_token,
+            receiver: &mut trade_parameters.receiver,
+            valid_for: &mut trade_parameters.valid_for,
+            valid_to: &mut trade_parameters.valid_to,
+            partially_fillable: &mut trade_parameters.partially_fillable,
+        },
+        advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
+    );
+
+    trade_parameters
 }
 
 fn build_quote_request(

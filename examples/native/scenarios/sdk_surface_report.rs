@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
         "surface": "cow-sdk",
         "mode": "deterministic",
-        "sdkConstructed": sdk.trader_params.chain_id.is_none(),
+        "sdkConstructed": sdk.trader_defaults().chain_id.is_none(),
         "chainId": u64::from(chain_id),
         "deployment": {
             "settlement": deployment.settlement.as_str(),

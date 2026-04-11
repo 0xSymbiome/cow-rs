@@ -1,6 +1,6 @@
 //! Thin facade crate for the primary CoW Protocol Rust SDK surface.
 //!
-//! The root package stays intentionally narrow:
+//! The root package is intentionally narrow:
 //!
 //! - shared core and config types
 //! - signing helpers
@@ -14,19 +14,22 @@
 //! - native and server-side consumers use the default facade
 //! - wasm consumers can use the same default facade for pure SDK flows
 //! - browser wallet integration is additive behind the `browser-wallet` feature
-//! - subgraph access remains in the separate `cow-sdk-subgraph` crate
+//! - subgraph access lives in the separate `cow-sdk-subgraph` crate
 //!
-//! Top-level docs stay trading-first, matching the pinned upstream `packages/sdk`
+//! Top-level docs are trading-first, matching the pinned upstream `packages/sdk`
 //! documentation entrypoint.
 //!
-//! `cow-sdk-subgraph` remains a separate crate surface and is not re-exported from
+//! `cow-sdk-subgraph` is a separate crate surface and is not re-exported from
 //! this root package.
 //!
 //! ```rust
-//! use cow_sdk::{Address, PartialTraderParameters, TradingSdk, TradingSdkOptions};
+//! use cow_sdk::{Address, PartialTraderParameters, TradingSdk};
 //!
 //! let _address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
-//! let _sdk = TradingSdk::new(PartialTraderParameters::default(), TradingSdkOptions::default());
+//! let _sdk = TradingSdk::builder()
+//!     .with_trader_defaults(PartialTraderParameters::default())
+//!     .build()
+//!     .unwrap();
 //! ```
 //!
 //! ```compile_fail

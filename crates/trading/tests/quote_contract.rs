@@ -231,7 +231,7 @@ async fn quote_request_override_can_change_receiver_and_price_quality() {
         ..SwapAdvancedSettings::default()
     };
 
-    let _ = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+    let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
         .expect("quote with override should succeed");
     let request = orderbook
@@ -243,4 +243,91 @@ async fn quote_request_override_can_change_receiver_and_price_quality() {
 
     assert_eq!(request.receiver, Some(address(crate::common::ALT_RECEIVER)));
     assert_eq!(request.price_quality, cow_sdk_orderbook::PriceQuality::Fast);
+    assert_eq!(
+        result.trade_parameters.receiver,
+        Some(address(crate::common::ALT_RECEIVER))
+    );
+    assert_eq!(
+        result.order_to_sign.receiver,
+        address(crate::common::ALT_RECEIVER)
+    );
+}
+
+#[tokio::test]
+async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_precedence() {
+    let orderbook = MockOrderbook::new(
+        cow_sdk_core::SupportedChainId::Sepolia,
+        sell_quote_response(),
+    );
+    let signer = MockSigner::default();
+    let trader = cow_sdk_trading::TraderParameters {
+        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
+        app_code: "0x007".to_owned(),
+        env: Some(CowEnv::Prod),
+        settlement_contract_override: None,
+        eth_flow_contract_override: None,
+    };
+    let mut trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
+    trade.owner = None;
+    trade.slippage_bps = None;
+    let advanced = SwapAdvancedSettings {
+        quote_request: Some(QuoteRequestOverride {
+            from: Some(address(crate::common::ALT_RECEIVER)),
+            receiver: Some(address(crate::common::ALT_RECEIVER)),
+            valid_to: Some(5_600_000),
+            partially_fillable: Some(true),
+            ..QuoteRequestOverride::default()
+        }),
+        app_data: Some(cow_sdk_app_data::AppDataParams {
+            app_code: None,
+            environment: None,
+            metadata: serde_json::from_value(serde_json::json!({
+                "quote": {
+                    "slippageBips": 77
+                },
+                "partnerFee": {
+                    "volumeBps": 42,
+                    "recipient": crate::common::ALT_RECEIVER
+                }
+            }))
+            .expect("advanced app-data metadata must deserialize"),
+        }),
+        ..SwapAdvancedSettings::default()
+    };
+
+    let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect("quote with advanced precedence should succeed");
+    let request = orderbook
+        .state()
+        .quote_requests
+        .last()
+        .cloned()
+        .expect("quote request must be recorded");
+    let app_data: serde_json::Value = serde_json::from_str(&result.app_data_info.full_app_data)
+        .expect("advanced app data must remain valid json");
+
+    assert_eq!(
+        result.trade_parameters.owner,
+        Some(address(crate::common::ALT_RECEIVER))
+    );
+    assert_eq!(request.from, address(crate::common::ALT_RECEIVER));
+    assert_eq!(
+        result.trade_parameters.receiver,
+        Some(address(crate::common::ALT_RECEIVER))
+    );
+    assert_eq!(
+        result.order_to_sign.receiver,
+        address(crate::common::ALT_RECEIVER)
+    );
+    assert_eq!(result.trade_parameters.valid_to, Some(5_600_000));
+    assert_eq!(request.valid_to, Some(5_600_000));
+    assert_eq!(result.order_to_sign.valid_to, 5_600_000);
+    assert_eq!(result.trade_parameters.slippage_bps, Some(77));
+    assert!(result.trade_parameters.partially_fillable);
+    assert!(result.order_to_sign.partially_fillable);
+    assert_eq!(
+        app_data["metadata"]["partnerFee"]["volumeBps"],
+        serde_json::json!(42)
+    );
 }

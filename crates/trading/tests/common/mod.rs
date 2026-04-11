@@ -185,10 +185,18 @@ pub struct MockOrderbookState {
 
 impl MockOrderbook {
     pub fn new(chain_id: SupportedChainId, quote_response: OrderQuoteResponse) -> Self {
+        Self::new_with_env(chain_id, CowEnv::Prod, quote_response)
+    }
+
+    pub fn new_with_env(
+        chain_id: SupportedChainId,
+        env: CowEnv,
+        quote_response: OrderQuoteResponse,
+    ) -> Self {
         Self {
             context: ApiContext {
                 chain_id,
-                env: CowEnv::Prod,
+                env,
                 base_urls: None,
                 api_key: None,
             },
@@ -290,6 +298,7 @@ pub struct MockSignerState {
     pub sent_transactions: Vec<TransactionRequest>,
     pub estimated_gas: Result<Amount, String>,
     pub tx_hash: Hash32,
+    pub last_typed_data_domain: Option<TypedDataDomain>,
 }
 
 impl Default for MockSignerState {
@@ -298,6 +307,7 @@ impl Default for MockSignerState {
             sent_transactions: Vec::new(),
             estimated_gas: Ok(Amount::new("125000").expect("test gas literal must be valid")),
             tx_hash: Hash32::new(TX_HASH).expect("test transaction hash literal must be valid"),
+            last_typed_data_domain: None,
         }
     }
 }
@@ -350,10 +360,14 @@ impl Signer for MockSigner {
 
     fn sign_typed_data(
         &self,
-        _domain: &TypedDataDomain,
+        domain: &TypedDataDomain,
         _fields: &[TypedDataField],
         _value_json: &str,
     ) -> Result<String, Self::Error> {
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .last_typed_data_domain = Some(domain.clone());
         Ok(TYPED_SIGNATURE.to_owned())
     }
 

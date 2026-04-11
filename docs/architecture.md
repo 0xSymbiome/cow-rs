@@ -80,6 +80,16 @@ Crate-local transport behavior is crate-local:
 
 This split keeps shared client behavior reviewable without hiding API-specific semantics behind a false common abstraction.
 
+## Trading SDK Configuration
+
+`TradingSdk` uses instance-scoped builder and options composition.
+
+- `TradingSdk::builder()` configures trader defaults and optional injected orderbook clients.
+- Injected orderbook clients are authoritative for orderbook-bound chain and env selection. Conflicting defaults or call-level requests fail explicitly.
+- Advanced quote and post settings override overlapping call-level trade fields such as owner, receiver, validity, slippage metadata, partner-fee metadata, and partial-fill flags.
+- Call-level params override SDK defaults for owner, env, settlement overrides, and EthFlow overrides.
+- Signer address resolution is an owner fallback only when no advanced override, call-level value, or SDK default provides one.
+
 ## DTO Boundaries
 
 Order-like structures are kept separate when they represent different protocol boundaries:

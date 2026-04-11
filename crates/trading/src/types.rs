@@ -288,7 +288,89 @@ pub struct ApprovalParameters {
 
 #[derive(Clone, Default)]
 pub struct TradingSdkOptions {
-    pub order_book_api: Option<Arc<dyn OrderbookClient>>,
+    order_book_api: Option<Arc<dyn OrderbookClient>>,
+}
+
+impl TradingSdkOptions {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_orderbook_client(mut self, orderbook_client: Arc<dyn OrderbookClient>) -> Self {
+        self.order_book_api = Some(orderbook_client);
+        self
+    }
+
+    pub fn orderbook_client(&self) -> Option<Arc<dyn OrderbookClient>> {
+        self.order_book_api.clone()
+    }
+}
+
+pub(crate) fn apply_app_data_parameter_overrides(
+    slippage_bps: &mut Option<u32>,
+    partner_fee: &mut Option<Value>,
+    app_data_override: Option<&AppDataParams>,
+) {
+    let Some(app_data_override) = app_data_override else {
+        return;
+    };
+
+    if let Some(slippage) = app_data_override
+        .metadata
+        .get("quote")
+        .and_then(|quote| quote.get("slippageBips"))
+        .and_then(|value| value.as_u64())
+        .and_then(|value| u32::try_from(value).ok())
+    {
+        *slippage_bps = Some(slippage);
+    }
+
+    if let Some(partner_fee_override) = app_data_override.metadata.get("partnerFee").cloned() {
+        *partner_fee = Some(partner_fee_override);
+    }
+}
+
+pub(crate) struct QuoteRequestParameterTargets<'a> {
+    pub owner: &'a mut Option<Address>,
+    pub sell_token: &'a mut Address,
+    pub buy_token: &'a mut Address,
+    pub receiver: &'a mut Option<Address>,
+    pub valid_for: &'a mut Option<u32>,
+    pub valid_to: &'a mut Option<u32>,
+    pub partially_fillable: &'a mut bool,
+}
+
+pub(crate) fn apply_quote_request_parameter_overrides(
+    targets: QuoteRequestParameterTargets<'_>,
+    request_override: Option<&QuoteRequestOverride>,
+) {
+    let Some(request_override) = request_override else {
+        return;
+    };
+
+    if let Some(sell_token_override) = &request_override.sell_token {
+        *targets.sell_token = sell_token_override.clone();
+    }
+    if let Some(buy_token_override) = &request_override.buy_token {
+        *targets.buy_token = buy_token_override.clone();
+    }
+    if let Some(receiver_override) = &request_override.receiver {
+        *targets.receiver = Some(receiver_override.clone());
+    }
+    if let Some(from_override) = &request_override.from {
+        *targets.owner = Some(from_override.clone());
+    }
+    if let Some(valid_for_override) = request_override.valid_for {
+        *targets.valid_for = Some(valid_for_override);
+        *targets.valid_to = None;
+    }
+    if let Some(valid_to_override) = request_override.valid_to {
+        *targets.valid_to = Some(valid_to_override);
+        *targets.valid_for = None;
+    }
+    if let Some(partially_fillable_override) = request_override.partially_fillable {
+        *targets.partially_fillable = partially_fillable_override;
+    }
 }
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]

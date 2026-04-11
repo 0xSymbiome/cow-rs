@@ -293,6 +293,33 @@ async fn limit_posting_accepts_custom_eip1271_signatures_without_local_re_signin
 }
 
 #[tokio::test]
+async fn limit_posting_uses_trader_env_when_call_level_env_is_absent() {
+    let mut trader = sample_trader_parameters();
+    trader.env = Some(cow_sdk_core::CowEnv::Staging);
+    let orderbook = MockOrderbook::new_with_env(
+        trader.chain_id,
+        cow_sdk_core::CowEnv::Prod,
+        sell_quote_response(),
+    );
+    let signer = MockSigner::default();
+    let mut params = sample_limit_parameters(OrderKind::Sell);
+    params.env = None;
+
+    let _ = post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect("limit posting should use trader env when call-level env is absent");
+
+    let typed_domain = signer
+        .state()
+        .last_typed_data_domain
+        .expect("typed-data domain must be recorded");
+    assert_eq!(
+        typed_domain.verifying_contract,
+        cow_sdk_core::settlement_contract_address(trader.chain_id, cow_sdk_core::CowEnv::Staging)
+    );
+}
+
+#[tokio::test]
 async fn async_order_level_eip1271_verification_is_explicit_and_reuses_contract_helpers() {
     let trader = sample_trader_parameters();
     let params = sample_limit_parameters(OrderKind::Sell);

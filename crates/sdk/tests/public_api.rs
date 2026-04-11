@@ -1,7 +1,7 @@
 use cow_sdk::{
     Address, Amount, AppDataHex, ORDER_PRIMARY_TYPE, OrderBalance, OrderKind,
-    PartialTraderParameters, SupportedChainId, TradeParameters, TradingSdk, TradingSdkOptions,
-    UnsignedOrder, generate_order_id, order_typed_data,
+    PartialTraderParameters, SupportedChainId, TradeParameters, TradingSdk, TradingSdkBuilder,
+    TradingSdkOptions, UnsignedOrder, generate_order_id, order_typed_data,
 };
 
 #[test]
@@ -10,6 +10,8 @@ fn public_api_reexports_cover_primary_root_surface() {
         PartialTraderParameters::default(),
         TradingSdkOptions::default(),
     );
+    let _builder =
+        TradingSdkBuilder::new().with_trader_defaults(PartialTraderParameters::default());
     assert_eq!(ORDER_PRIMARY_TYPE, "Order");
 
     let owner = Address::new("0x4444444444444444444444444444444444444444").unwrap();
@@ -91,8 +93,8 @@ fn crate_docs_and_manifest_keep_the_facade_trading_first() {
     let lib_rs = include_str!("../src/lib.rs");
     let manifest = include_str!("../Cargo.toml");
 
-    assert!(lib_rs.contains("Top-level docs stay trading-first"));
-    assert!(lib_rs.contains("remains a separate crate surface"));
+    assert!(lib_rs.contains("Top-level docs are trading-first"));
+    assert!(lib_rs.contains("is a separate crate surface"));
     assert!(manifest.contains("cow-sdk-trading"));
     assert!(!manifest.contains("cow-sdk-subgraph"));
 }

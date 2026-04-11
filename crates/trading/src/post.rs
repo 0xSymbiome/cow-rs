@@ -5,6 +5,10 @@ use cow_sdk_signing::{
     sign_order_with_scheme_async,
 };
 
+use crate::types::{
+    QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
+    apply_quote_request_parameter_overrides,
+};
 use crate::{
     LimitOrderAdvancedSettings, LimitTradeParameters, OrderPostingResult, OrderbookClient,
     QuoteResults, SwapAdvancedSettings, TradeParameters, TraderParameters, TradingAppDataInfo,
@@ -95,7 +99,7 @@ where
         }
         None => quote_results.app_data_info.clone(),
     };
-    let params = apply_settings_to_limit_trade_parameters(
+    let mut params = apply_settings_to_limit_trade_parameters(
         &swap_params_to_limit_order_params(
             &quote_results.trade_parameters,
             &quote_results.quote_response,
@@ -103,6 +107,7 @@ where
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     );
+    params.env = Some(params.env.or(trader.env).unwrap_or(orderbook.context().env));
     let additional = swap_additional_params(advanced_settings);
 
     post_cow_protocol_trade_async(
@@ -156,6 +161,7 @@ where
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     );
+    params.env = Some(params.env.or(trader.env).unwrap_or(orderbook.context().env));
     if params.slippage_bps.is_none() {
         params.slippage_bps = Some(0);
     }
@@ -222,9 +228,11 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
 {
+    let mut params = params.clone();
+    params.env = Some(params.env.or(trader.env).unwrap_or(orderbook.context().env));
     let tx = crate::get_eth_flow_transaction_async(
         &app_data.app_data_keccak256,
-        params,
+        &params,
         orderbook.context().chain_id,
         additional_params,
         trader,
@@ -289,12 +297,14 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
 {
+    let mut params = params.clone();
+    params.env = Some(params.env.or(trader.env).unwrap_or(orderbook.context().env));
     let is_ethflow = is_ethflow_order(&params.sell_token);
     if is_ethflow {
         if params.quote_id.is_none() {
             return Err(TradingError::MissingQuoteId("EthFlow order posting"));
         }
-        let adjusted = adjust_ethflow_limit_parameters(orderbook.context().chain_id, params);
+        let adjusted = adjust_ethflow_limit_parameters(orderbook.context().chain_id, &params);
         return post_sell_native_currency_order_async(
             orderbook,
             app_data,
@@ -318,7 +328,7 @@ where
             })?,
     };
     let options = ProtocolOptions {
-        env: params.env.or(trader.env),
+        env: params.env,
         settlement_contract_override: params
             .settlement_contract_override
             .clone()
@@ -339,7 +349,7 @@ where
                 .unwrap_or(true),
             protocol_fee_bps: None,
         },
-        params,
+        &params,
         &app_data.app_data_keccak256,
     )?;
 
@@ -398,42 +408,23 @@ fn apply_settings_to_limit_trade_parameters(
 ) -> LimitTradeParameters {
     let mut params = params.clone();
 
-    if let Some(app_data_override) = app_data_override {
-        if let Some(slippage) = app_data_override
-            .metadata
-            .get("quote")
-            .and_then(|quote| quote.get("slippageBips"))
-            .and_then(|value| value.as_u64())
-            .and_then(|value| u32::try_from(value).ok())
-        {
-            params.slippage_bps = Some(slippage);
-        }
-        if let Some(partner_fee) = app_data_override.metadata.get("partnerFee").cloned() {
-            params.partner_fee = Some(partner_fee);
-        }
-    }
-
-    if let Some(quote_request) = quote_request {
-        if let Some(receiver) = &quote_request.receiver {
-            params.receiver = Some(receiver.clone());
-        }
-        if let Some(valid_to) = quote_request.valid_to {
-            params.valid_to = Some(valid_to);
-        }
-        if let Some(sell_token) = &quote_request.sell_token {
-            params.sell_token = sell_token.clone();
-        }
-        if let Some(buy_token) = &quote_request.buy_token {
-            params.buy_token = buy_token.clone();
-        }
-        if let Some(from) = &quote_request.from {
-            params.owner = Some(from.clone());
-        }
-    }
-
-    if params.env.is_none() {
-        params.env = Some(cow_sdk_core::CowEnv::Prod);
-    }
+    apply_app_data_parameter_overrides(
+        &mut params.slippage_bps,
+        &mut params.partner_fee,
+        app_data_override,
+    );
+    apply_quote_request_parameter_overrides(
+        QuoteRequestParameterTargets {
+            owner: &mut params.owner,
+            sell_token: &mut params.sell_token,
+            buy_token: &mut params.buy_token,
+            receiver: &mut params.receiver,
+            valid_for: &mut params.valid_for,
+            valid_to: &mut params.valid_to,
+            partially_fillable: &mut params.partially_fillable,
+        },
+        quote_request,
+    );
 
     params
 }

@@ -4,8 +4,8 @@ use async_trait::async_trait;
 use serde_json::json;
 
 use cow_sdk::core::{
-    BlockInfo, ContractCall, ContractHandle, Provider, Signer, TransactionReceipt,
-    TransactionRequest, TypedDataDomain, TypedDataField,
+    Amount, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider, Signer,
+    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
 };
 use cow_sdk::orderbook::{
     ApiContext, AppDataHash, AppDataObject, Order, OrderCancellations, OrderCreation,
@@ -73,14 +73,16 @@ pub fn sample_unsigned_order() -> UnsignedOrder {
         sell_token: sample_sell_token(),
         buy_token: sample_buy_token(),
         receiver: address(ALT_RECEIVER),
-        sell_amount: "100000000000000000".to_owned(),
-        buy_amount: "250000000000000000".to_owned(),
+        sell_amount: Amount::new("100000000000000000")
+            .expect("example sell amount must remain valid"),
+        buy_amount: Amount::new("250000000000000000")
+            .expect("example buy amount must remain valid"),
         valid_to: 1_700_000_000,
         app_data: AppDataHex::new(
             "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         )
         .expect("example app-data hex must remain valid"),
-        fee_amount: "0".to_owned(),
+        fee_amount: Amount::zero(),
         kind: OrderKind::Sell,
         partially_fillable: false,
         sell_token_balance: OrderBalance::Erc20,
@@ -96,7 +98,7 @@ pub fn sample_trade_parameters() -> TradeParameters {
         sell_token_decimals: 18,
         buy_token: sample_buy_token(),
         buy_token_decimals: 18,
-        amount: "100000000000000000".to_owned(),
+        amount: Amount::new("100000000000000000").expect("example trade amount must remain valid"),
         env: None,
         settlement_contract_override: None,
         eth_flow_contract_override: None,
@@ -119,8 +121,10 @@ pub fn sample_limit_parameters() -> cow_sdk::LimitTradeParameters {
         sell_token_decimals: 18,
         buy_token: sample_buy_token(),
         buy_token_decimals: 18,
-        sell_amount: quote.quote.sell_amount,
-        buy_amount: quote.quote.buy_amount,
+        sell_amount: Amount::new(quote.quote.sell_amount)
+            .expect("example quote sell amount must remain valid"),
+        buy_amount: Amount::new(quote.quote.buy_amount)
+            .expect("example quote buy amount must remain valid"),
         quote_id: quote.id,
         env: None,
         settlement_contract_override: None,
@@ -341,16 +345,16 @@ pub struct MockSigner {
 #[derive(Clone)]
 pub struct MockSignerState {
     pub sent_transactions: Vec<TransactionRequest>,
-    pub estimated_gas: Result<String, String>,
-    pub tx_hash: String,
+    pub estimated_gas: Result<Amount, String>,
+    pub tx_hash: Hash32,
 }
 
 impl Default for MockSignerState {
     fn default() -> Self {
         Self {
             sent_transactions: Vec::new(),
-            estimated_gas: Ok("125000".to_owned()),
-            tx_hash: TX_HASH.to_owned(),
+            estimated_gas: Ok(Amount::new("125000").expect("example gas amount must remain valid")),
+            tx_hash: Hash32::new(TX_HASH).expect("example tx hash must remain valid"),
         }
     }
 }
@@ -415,7 +419,7 @@ impl Signer for MockSigner {
         })
     }
 
-    fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+    fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
         self.state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -475,13 +479,13 @@ impl Provider for MockProvider {
         Ok(SupportedChainId::Sepolia.into())
     }
 
-    fn get_code(&self, _address: &Address) -> Result<Option<String>, Self::Error> {
+    fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
         Ok(None)
     }
 
     fn get_transaction_receipt(
         &self,
-        _transaction_hash: &str,
+        _transaction_hash: &Hash32,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
         Ok(None)
     }
@@ -490,12 +494,12 @@ impl Provider for MockProvider {
         Ok(self.signer.clone().unwrap_or_default())
     }
 
-    fn get_storage_at(&self, _address: &Address, _slot: &str) -> Result<String, Self::Error> {
-        Ok(String::new())
+    fn get_storage_at(&self, _address: &Address, _slot: &str) -> Result<HexData, Self::Error> {
+        Ok(HexData::empty())
     }
 
-    fn call(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Ok(String::new())
+    fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
+        Ok(HexData::empty())
     }
 
     fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
