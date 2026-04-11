@@ -53,6 +53,7 @@ flowchart TD
 - `Signer` and `Provider` cover sync native/test integration seams.
 - `AsyncSigner` and `AsyncProvider` cover async and browser-wallet paths, with blanket implementations for compatible sync types.
 - `TypedDataPayload` carries the explicit EIP-712 signer contract: domain, primary type, full type map, and canonical message JSON. Order-facing helpers in `cow-sdk-signing` are typed convenience wrappers over that lower-level payload.
+- `cow-sdk-signing` owns explicit CoW order and order-cancellation payload construction. `cow-sdk-browser-wallet` transports those payloads to the provider and keeps the older field-list signing seam as a bounded compatibility path for the same CoW shapes only.
 
 The `HttpTransport`, `GraphTransport`, and `PinningTransport` traits are extension adapter contracts. The orderbook, subgraph, and app-data crates own their typed request behavior directly because those surfaces have API-specific retry, header, credential, and decoding rules.
 

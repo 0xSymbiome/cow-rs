@@ -35,6 +35,8 @@ Typed-data review has two layers on purpose:
 
 - `cow_sdk_core::TypedDataPayload` is the signer-facing EIP-712 contract. It carries the explicit primary type, the full type map, and canonical message JSON for runtime adapters such as `cow-sdk-browser-wallet`.
 - `cow_sdk_signing::OrderTypedData` is the order-facing convenience envelope returned by signing and trading helpers. That keeps typed order UX for consumers without forcing signer implementations to recover structure from field-name heuristics.
+- `cow_sdk_signing::order_typed_data_payload` and `order_cancellations_typed_data_payload` are the reviewed CoW payload builders. They are the preferred inputs for browser-wallet EIP-712 signing.
+- `cow_sdk_browser_wallet::Eip1193Signer::sign_typed_data` remains a compatibility seam for the narrow CoW order and order-cancellation field sets only. Other primary types must use `sign_typed_data_payload`.
 
 Smart-account verification follows the same explicit-seam rule:
 

@@ -1,3 +1,11 @@
+//! Explicit CoW Protocol signing helpers.
+//!
+//! The durable typed-data boundary is `cow_sdk_core::TypedDataPayload`.
+//! This crate owns explicit payload construction for CoW order and order
+//! cancellation signing so runtime adapters such as `cow-sdk-browser-wallet`
+//! can transport typed-data payloads without reconstructing structure from
+//! field-name heuristics.
+
 pub mod cancellation;
 pub mod domain;
 pub mod errors;

@@ -42,6 +42,16 @@ impl Eip1193Signer {
             )
         })
     }
+
+    pub async fn sign_typed_data_compatibility(
+        &self,
+        domain: &TypedDataDomain,
+        fields: &[TypedDataField],
+        value_json: &str,
+    ) -> Result<String, BrowserWalletError> {
+        let payload = compatibility_typed_data_payload(domain, fields, value_json)?;
+        self.sign_typed_data_payload(&payload).await
+    }
 }
 
 #[allow(async_fn_in_trait)]
@@ -117,8 +127,8 @@ impl AsyncSigner for Eip1193Signer {
         fields: &[TypedDataField],
         value_json: &str,
     ) -> Result<String, Self::Error> {
-        let payload = legacy_typed_data_payload(domain, fields, value_json)?;
-        self.sign_typed_data_payload(&payload).await
+        self.sign_typed_data_compatibility(domain, fields, value_json)
+            .await
     }
 
     async fn send_transaction(
@@ -180,12 +190,12 @@ fn typed_data_request(payload: &TypedDataPayload) -> Result<Value, BrowserWallet
     }))
 }
 
-fn legacy_typed_data_payload(
+fn compatibility_typed_data_payload(
     domain: &TypedDataDomain,
     fields: &[TypedDataField],
     value_json: &str,
 ) -> Result<TypedDataPayload, BrowserWalletError> {
-    let primary_type = infer_primary_type(fields);
+    let primary_type = compatibility_primary_type(fields)?;
     let mut types = TypedDataTypes::new();
     types.insert(primary_type.to_owned(), fields.to_vec());
     types.insert("EIP712Domain".to_owned(), domain_type_fields());
@@ -198,14 +208,43 @@ fn legacy_typed_data_payload(
     })
 }
 
-fn infer_primary_type(fields: &[TypedDataField]) -> &'static str {
-    if fields.iter().any(|field| field.name == "orderUids") {
-        "OrderCancellations"
-    } else if fields.iter().any(|field| field.name == "sellToken") {
-        "Order"
+fn compatibility_primary_type(
+    fields: &[TypedDataField],
+) -> Result<&'static str, BrowserWalletError> {
+    if matches_fields(fields, ORDER_COMPATIBILITY_FIELDS) {
+        Ok("Order")
+    } else if matches_fields(fields, ORDER_CANCELLATIONS_COMPATIBILITY_FIELDS) {
+        Ok("OrderCancellations")
     } else {
-        "Message"
+        Err(BrowserWalletError::serialization(
+            "legacy sign_typed_data compatibility supports only CoW order and order cancellation payloads; use sign_typed_data_payload for explicit primary types",
+        ))
     }
+}
+
+const ORDER_COMPATIBILITY_FIELDS: &[(&str, &str)] = &[
+    ("sellToken", "address"),
+    ("buyToken", "address"),
+    ("receiver", "address"),
+    ("sellAmount", "uint256"),
+    ("buyAmount", "uint256"),
+    ("validTo", "uint32"),
+    ("appData", "bytes32"),
+    ("feeAmount", "uint256"),
+    ("kind", "string"),
+    ("partiallyFillable", "bool"),
+    ("sellTokenBalance", "string"),
+    ("buyTokenBalance", "string"),
+];
+
+const ORDER_CANCELLATIONS_COMPATIBILITY_FIELDS: &[(&str, &str)] = &[("orderUids", "bytes[]")];
+
+fn matches_fields(fields: &[TypedDataField], expected: &[(&str, &str)]) -> bool {
+    fields.len() == expected.len()
+        && fields
+            .iter()
+            .zip(expected.iter())
+            .all(|(field, (name, kind))| field.name == *name && field.kind == *kind)
 }
 
 fn domain_type_fields() -> Vec<TypedDataField> {
