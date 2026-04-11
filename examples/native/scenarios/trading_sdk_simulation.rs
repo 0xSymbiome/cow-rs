@@ -2,7 +2,7 @@ use std::{error::Error, sync::Arc};
 
 use serde_json::json;
 
-use cow_sdk::core::Provider;
+use cow_sdk::core::{Amount, Provider};
 use cow_sdk::{
     AllowanceParameters, ApprovalParameters, OrderTraderParameters, PartialTraderParameters,
     SupportedChainId, TradingSdk, TradingSdkOptions,
@@ -29,9 +29,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             settlement_contract_override: None,
             eth_flow_contract_override: None,
         },
-        TradingSdkOptions {
-            order_book_api: Some(Arc::new(orderbook.clone())),
-        },
+        TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     );
 
     let quote = sdk
@@ -54,7 +52,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         &signer,
         &ApprovalParameters {
             token_address: sample_sell_token(),
-            amount: "1000000000000000000".to_owned(),
+            amount: Amount::new("1000000000000000000")
+                .expect("example approval amount must remain valid"),
             chain_id: None,
             env: None,
             vault_relayer_address: None,

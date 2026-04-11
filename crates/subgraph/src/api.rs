@@ -8,7 +8,10 @@ use serde_json::{Value, json};
 use crate::{
     error::SubgraphError,
     queries::{LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY, TOTALS_QUERY},
-    types::{LastDaysVolumeResponse, LastHoursVolumeResponse, Total, TotalsResponse},
+    types::{
+        LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphQueryRequest, Total,
+        TotalsResponse,
+    },
 };
 
 const SUBGRAPH_BASE_URL: &str = "https://gateway.thegraph.com/api/";
@@ -137,7 +140,10 @@ impl SubgraphApi {
         config_override: SubgraphConfigOverride,
     ) -> Result<Total, SubgraphError> {
         let response: TotalsResponse = self
-            .run_query_with_config(TOTALS_QUERY, None, config_override)
+            .run_query_with_config(
+                SubgraphQueryRequest::new(TOTALS_QUERY).with_operation_name("Totals"),
+                config_override,
+            )
             .await?;
 
         response
@@ -161,8 +167,9 @@ impl SubgraphApi {
         config_override: SubgraphConfigOverride,
     ) -> Result<LastDaysVolumeResponse, SubgraphError> {
         self.run_query_with_config(
-            LAST_DAYS_VOLUME_QUERY,
-            Some(json!({ "days": days })),
+            SubgraphQueryRequest::new(LAST_DAYS_VOLUME_QUERY)
+                .with_variables(json!({ "days": days }))
+                .with_operation_name("LastDaysVolume"),
             config_override,
         )
         .await
@@ -182,44 +189,42 @@ impl SubgraphApi {
         config_override: SubgraphConfigOverride,
     ) -> Result<LastHoursVolumeResponse, SubgraphError> {
         self.run_query_with_config(
-            LAST_HOURS_VOLUME_QUERY,
-            Some(json!({ "hours": hours })),
+            SubgraphQueryRequest::new(LAST_HOURS_VOLUME_QUERY)
+                .with_variables(json!({ "hours": hours }))
+                .with_operation_name("LastHoursVolume"),
             config_override,
         )
         .await
     }
 
-    pub async fn run_query<T>(
-        &self,
-        query: &str,
-        variables: Option<Value>,
-    ) -> Result<T, SubgraphError>
+    pub async fn run_query<T, R>(&self, request: R) -> Result<T, SubgraphError>
     where
         T: DeserializeOwned,
+        R: Into<SubgraphQueryRequest>,
     {
-        self.run_query_with_config(query, variables, SubgraphConfigOverride::default())
+        self.run_query_with_config(request, SubgraphConfigOverride::default())
             .await
     }
 
-    pub async fn run_query_with_config<T>(
+    pub async fn run_query_with_config<T, R>(
         &self,
-        query: &str,
-        variables: Option<Value>,
+        request: R,
         config_override: SubgraphConfigOverride,
     ) -> Result<T, SubgraphError>
     where
         T: DeserializeOwned,
+        R: Into<SubgraphQueryRequest>,
     {
+        let request = request.into();
         let resolved_config = self.config_with_override(&config_override);
         let api = self.base_url_for(&resolved_config)?;
-        let operation_name = extract_operation_name(query);
-        let request = GraphQlRequest {
-            query,
-            variables: variables.as_ref(),
-            operation_name: operation_name.as_deref(),
+        let graphql_request = GraphQlRequest {
+            query: request.document(),
+            variables: request.variables(),
+            operation_name: request.operation_name(),
         };
 
-        let mut request_builder = self.client.post(&api).json(&request);
+        let mut request_builder = self.client.post(&api).json(&graphql_request);
 
         if let Some(timeout) = self.client_policy().timeout() {
             request_builder = request_builder.timeout(timeout);
@@ -253,8 +258,8 @@ impl SubgraphApi {
 
         if !response.errors.is_empty() {
             return Err(SubgraphError::QueryFailed {
-                query: query.to_owned(),
-                variables: format_variables(variables.as_ref()),
+                query: request.document().to_owned(),
+                variables: format_variables(request.variables()),
                 api,
                 inner_error: serde_json::to_string(&response.errors)
                     .unwrap_or_else(|error| format!("failed to serialize GraphQL errors: {error}")),
@@ -262,8 +267,8 @@ impl SubgraphApi {
         }
 
         response.data.ok_or_else(|| SubgraphError::QueryFailed {
-            query: query.to_owned(),
-            variables: format_variables(variables.as_ref()),
+            query: request.document().to_owned(),
+            variables: format_variables(request.variables()),
             api,
             inner_error: "response missing data".to_owned(),
         })
@@ -363,33 +368,6 @@ fn build_prod_config(api_key: &str) -> SubgraphApiBaseUrls {
         (SupportedChainId::Plasma, None),
         (SupportedChainId::Ink, None),
     ])
-}
-
-fn extract_operation_name(query: &str) -> Option<String> {
-    let trimmed = query.trim_start();
-
-    for prefix in ["query", "mutation", "subscription"] {
-        if let Some(rest) = trimmed.strip_prefix(prefix) {
-            let rest = rest.trim_start();
-
-            if rest.starts_with('{') {
-                return None;
-            }
-
-            let operation_name: String = rest
-                .chars()
-                .take_while(|character| character.is_ascii_alphanumeric() || *character == '_')
-                .collect();
-
-            if operation_name.is_empty() {
-                return None;
-            }
-
-            return Some(operation_name);
-        }
-    }
-
-    None
 }
 
 fn format_variables(variables: Option<&Value>) -> String {

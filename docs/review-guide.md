@@ -58,7 +58,7 @@ Use this split when evaluating changes:
 | Surface | Shared input | Crate-local behavior that must be explicit |
 | --- | --- | --- |
 | `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` retry and rate-limit behavior; `ApiContext` chain/env/base URLs; explicit env override builders; optional `X-API-Key` header handling; instance-scoped async-safe limiter sharing across clones of the same client. |
-| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` client wiring; `SubgraphConfig` chain and base URL selection; API-key-derived production endpoints. |
+| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` client wiring; `SubgraphConfig` chain and base URL selection; API-key-derived production endpoints; `SubgraphQueryRequest` for explicit document, variables, and operation-name input on generic queries. |
 | `cow-sdk-app-data` | `IpfsFetchPolicy` read base URI | `IpfsConfig` write URI and pinning credentials; upload semantics are separate from fetch. |
 
 Default client policy is explicit and test-covered:
@@ -149,6 +149,12 @@ For the facade specifically:
 Generated or schema-derived artifacts are not part of the public SDK API. Schema mirrors, if present, belong in internal or test-only locations rather than the supported public surface.
 
 Orderbook OpenAPI and subgraph query evidence is tied to pinned entries in `parity/source-lock.yaml`; see [Parity Scope](parity-scope.md).
+
+For subgraph custom queries specifically, review the explicit request contract before transport details:
+
+- `SubgraphQueryRequest` carries `document`, optional `variables`, and optional `operation_name`.
+- Anonymous single-operation documents are allowed without `operation_name`.
+- Multi-operation documents require caller-supplied `operation_name`; the SDK does not infer it from the query string.
 
 ## CI Configuration
 

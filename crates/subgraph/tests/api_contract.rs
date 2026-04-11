@@ -2,11 +2,11 @@ use cow_sdk_core::{DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, SupportedChainId};
 use cow_sdk_subgraph::{
     DEFAULT_SUBGRAPH_USER_AGENT, DailyTotal, HourlyTotal, LAST_DAYS_VOLUME_QUERY,
     LAST_HOURS_VOLUME_QUERY, LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi,
-    SubgraphApiBaseUrls, SubgraphConfig, SubgraphError, SubgraphTransportPolicy, TOTALS_QUERY,
-    Total,
+    SubgraphApiBaseUrls, SubgraphConfig, SubgraphError, SubgraphQueryRequest,
+    SubgraphTransportPolicy, TOTALS_QUERY, Total,
 };
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 use wiremock::{
     Mock, MockServer, Request, ResponseTemplate,
     matchers::{header, method, path},
@@ -113,7 +113,7 @@ async fn get_totals_posts_totals_operation_and_returns_first_row() {
     let totals = api.get_totals().await.unwrap();
     let request = only_request(&server).await;
 
-    assert_graphql_request(&request, TOTALS_QUERY, "Totals", None);
+    assert_graphql_request(&request, TOTALS_QUERY, Some("Totals"), None);
     assert_eq!(
         totals,
         Total {
@@ -159,7 +159,7 @@ async fn get_last_days_volume_posts_variableized_query() {
     assert_graphql_request(
         &request,
         LAST_DAYS_VOLUME_QUERY,
-        "LastDaysVolume",
+        Some("LastDaysVolume"),
         Some(json!({ "days": 7 })),
     );
     assert_eq!(
@@ -209,7 +209,7 @@ async fn get_last_hours_volume_posts_variableized_query() {
     assert_graphql_request(
         &request,
         LAST_HOURS_VOLUME_QUERY,
-        "LastHoursVolume",
+        Some("LastHoursVolume"),
         Some(json!({ "hours": 24 })),
     );
     assert_eq!(
@@ -230,10 +230,13 @@ async fn get_last_hours_volume_posts_variableized_query() {
 }
 
 #[tokio::test]
-async fn run_query_supports_custom_queries() {
+async fn run_query_supports_variableized_custom_queries() {
     let server = MockServer::start().await;
     let api = api_with_override(&server);
-    let query = "query TokensByVolume {\n  tokens(first: 5, orderBy: totalVolumeUsd, orderDirection: desc) {\n    address\n    symbol\n    totalVolumeUsd\n    priceUsd\n  }\n}";
+    let query = "query TokensByVolume($limit: Int!) {\n  tokens(first: $limit, orderBy: totalVolumeUsd, orderDirection: desc) {\n    address\n    symbol\n    totalVolumeUsd\n    priceUsd\n  }\n}";
+    let request = SubgraphQueryRequest::new(query)
+        .with_variables(json!({ "limit": 5 }))
+        .with_operation_name("TokensByVolume");
 
     Mock::given(method("POST"))
         .and(path("/"))
@@ -252,12 +255,77 @@ async fn run_query_supports_custom_queries() {
         .mount(&server)
         .await;
 
-    let response: TokensByVolumeResponse = api.run_query(query, None).await.unwrap();
+    let response: TokensByVolumeResponse = api.run_query(request).await.unwrap();
     let request = only_request(&server).await;
 
-    assert_graphql_request(&request, query, "TokensByVolume", None);
+    assert_graphql_request(
+        &request,
+        query,
+        Some("TokensByVolume"),
+        Some(json!({ "limit": 5 })),
+    );
     assert_eq!(response.tokens.len(), 1);
     assert_eq!(response.tokens[0].symbol, "WXDAI");
+}
+
+#[tokio::test]
+async fn run_query_supports_explicit_operation_name_for_multi_operation_documents() {
+    let server = MockServer::start().await;
+    let api = api_with_override(&server);
+    let document = "query TokensByVolume {\n  tokens(first: 1) {\n    symbol\n  }\n}\n\nquery TotalsForAudit {\n  totals {\n    orders\n  }\n}";
+    let request = SubgraphQueryRequest::new(document).with_operation_name("TokensByVolume");
+
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": {
+                "tokens": [
+                    {
+                        "symbol": "WXDAI"
+                    }
+                ]
+            }
+        })))
+        .mount(&server)
+        .await;
+
+    let response: TokensByVolumeResponse = api.run_query(request).await.unwrap();
+    let request = only_request(&server).await;
+
+    assert_graphql_request(&request, document, Some("TokensByVolume"), None);
+    assert_eq!(response.tokens.len(), 1);
+    assert_eq!(response.tokens[0].symbol, "WXDAI");
+}
+
+#[tokio::test]
+async fn run_query_accepts_anonymous_documents_without_operation_name() {
+    let server = MockServer::start().await;
+    let api = api_with_override(&server);
+    let query = "{\n  totals {\n    tokens\n    orders\n    traders\n    settlements\n  }\n}";
+
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": {
+                "totals": [
+                    {
+                        "tokens": "192",
+                        "orders": "365210",
+                        "traders": "50731",
+                        "settlements": "160092"
+                    }
+                ]
+            }
+        })))
+        .mount(&server)
+        .await;
+
+    let response: cow_sdk_subgraph::TotalsResponse = api.run_query(query).await.unwrap();
+    let request = only_request(&server).await;
+
+    assert_graphql_request(&request, query, None, None);
+    assert_eq!(response.totals.len(), 1);
+    assert_eq!(response.totals[0].orders, "365210");
 }
 
 #[tokio::test]
@@ -313,7 +381,7 @@ async fn run_query_uses_custom_base_url_overrides() {
     let _ = api.get_totals().await.unwrap();
     let request = only_request(&server).await;
 
-    assert_graphql_request(&request, TOTALS_QUERY, "Totals", None);
+    assert_graphql_request(&request, TOTALS_QUERY, Some("Totals"), None);
 }
 
 #[tokio::test]
@@ -437,10 +505,13 @@ async fn invalid_graphql_query_surfaces_typed_context() {
         .mount(&server)
         .await;
 
-    let error = api.run_query::<Value>(query, None).await.unwrap_err();
+    let error = api
+        .run_query::<Value, _>(SubgraphQueryRequest::new(query).with_operation_name("InvalidQuery"))
+        .await
+        .unwrap_err();
     let request = only_request(&server).await;
 
-    assert_graphql_request(&request, query, "InvalidQuery", None);
+    assert_graphql_request(&request, query, Some("InvalidQuery"), None);
     match error {
         SubgraphError::QueryFailed {
             query: failed_query,
@@ -514,23 +585,25 @@ async fn only_request(server: &MockServer) -> Request {
 fn assert_graphql_request(
     request: &Request,
     query: &str,
-    operation_name: &str,
+    operation_name: Option<&str>,
     variables: Option<Value>,
 ) {
     let body: Value = serde_json::from_slice(&request.body).unwrap();
-    let expected = match variables {
-        Some(variables) => json!({
-            "query": query,
-            "variables": variables,
-            "operationName": operation_name
-        }),
-        None => json!({
-            "query": query,
-            "operationName": operation_name
-        }),
-    };
+    let mut expected = Map::new();
+    expected.insert("query".to_owned(), Value::String(query.to_owned()));
 
-    assert_eq!(body, expected);
+    if let Some(variables) = variables {
+        expected.insert("variables".to_owned(), variables);
+    }
+
+    if let Some(operation_name) = operation_name {
+        expected.insert(
+            "operationName".to_owned(),
+            Value::String(operation_name.to_owned()),
+        );
+    }
+
+    assert_eq!(body, Value::Object(expected));
 }
 
 #[derive(Debug, Deserialize)]

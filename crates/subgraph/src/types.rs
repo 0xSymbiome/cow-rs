@@ -1,4 +1,63 @@
 use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SubgraphQueryRequest {
+    pub document: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub variables: Option<Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub operation_name: Option<String>,
+}
+
+impl SubgraphQueryRequest {
+    pub fn new(document: impl Into<String>) -> Self {
+        Self {
+            document: document.into(),
+            variables: None,
+            operation_name: None,
+        }
+    }
+
+    pub fn document(&self) -> &str {
+        &self.document
+    }
+
+    pub fn variables(&self) -> Option<&Value> {
+        self.variables.as_ref()
+    }
+
+    pub fn operation_name(&self) -> Option<&str> {
+        self.operation_name.as_deref()
+    }
+
+    pub fn with_variables(mut self, variables: Value) -> Self {
+        self.variables = Some(variables);
+        self
+    }
+
+    pub fn with_optional_variables(mut self, variables: Option<Value>) -> Self {
+        self.variables = variables;
+        self
+    }
+
+    pub fn with_operation_name(mut self, operation_name: impl Into<String>) -> Self {
+        self.operation_name = Some(operation_name.into());
+        self
+    }
+}
+
+impl From<&str> for SubgraphQueryRequest {
+    fn from(document: &str) -> Self {
+        Self::new(document)
+    }
+}
+
+impl From<String> for SubgraphQueryRequest {
+    fn from(document: String) -> Self {
+        Self::new(document)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

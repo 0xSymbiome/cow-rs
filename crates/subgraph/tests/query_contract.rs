@@ -1,4 +1,7 @@
-use cow_sdk_subgraph::{LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY, TOTALS_QUERY};
+use cow_sdk_subgraph::{
+    LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY, SubgraphQueryRequest, TOTALS_QUERY,
+};
+use serde_json::json;
 
 #[test]
 fn parity_fixture_surface_and_cases_are_present() {
@@ -70,4 +73,29 @@ fn last_hours_query_matches_required_operation_and_variable_contract() {
     assert!(LAST_HOURS_VOLUME_QUERY.contains("first: $hours"));
     assert!(LAST_HOURS_VOLUME_QUERY.contains("timestamp"));
     assert!(LAST_HOURS_VOLUME_QUERY.contains("volumeUsd"));
+}
+
+#[test]
+fn subgraph_query_request_keeps_document_variables_and_operation_name_explicit() {
+    let request = SubgraphQueryRequest::new(
+        "query TokensByVolume($limit: Int!) { tokens(first: $limit) { symbol } }",
+    )
+    .with_variables(json!({ "limit": 5 }))
+    .with_operation_name("TokensByVolume");
+
+    assert_eq!(
+        request.document(),
+        "query TokensByVolume($limit: Int!) { tokens(first: $limit) { symbol } }"
+    );
+    assert_eq!(request.variables(), Some(&json!({ "limit": 5 })));
+    assert_eq!(request.operation_name(), Some("TokensByVolume"));
+}
+
+#[test]
+fn subgraph_query_request_from_plain_document_keeps_operation_name_absent() {
+    let request = SubgraphQueryRequest::from("{ totals { orders } }");
+
+    assert_eq!(request.document(), "{ totals { orders } }");
+    assert_eq!(request.variables(), None);
+    assert_eq!(request.operation_name(), None);
 }

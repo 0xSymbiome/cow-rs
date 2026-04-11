@@ -21,9 +21,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             settlement_contract_override: None,
             eth_flow_contract_override: None,
         },
-        TradingSdkOptions {
-            order_book_api: Some(Arc::new(orderbook.clone())),
-        },
+        TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     );
 
     let posted = sdk
