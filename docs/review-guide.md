@@ -209,11 +209,13 @@ Browser-wallet support posture stays explicit across the public surface:
 
 Packaging posture is explicit in the manifests:
 
-- public MSRV is Rust `1.94` through `workspace.package.rust-version`
+- public MSRV is Rust `1.94.0` through `workspace.package.rust-version`
 - contributor execution is pinned to Rust `1.94.1` in `rust-toolchain.toml`
 - every published crate opts into workspace lint policy through `[lints] workspace = true`
 - workspace Clippy policy explicitly covers `missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`, and `unreadable_literal`
 - docs.rs behavior is declared explicitly across the published crate family
+- the compatibility floor is exercised directly in CI with `cargo check --workspace --all-features` and `cargo test --workspace` on Rust `1.94.0`
+- browser-target validation stays in dedicated WASM workflows instead of redefining the native compatibility floor for unrelated crates
 
 For the facade specifically:
 
@@ -248,8 +250,9 @@ Subgraph example review follows the same package boundary:
 
 The repository ships three validation layers:
 
-- `ci.yml` runs formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, published-crate public API rustc lint enforcement, and advisory reporting on every PR.
-- `release-readiness.yml` reruns the library checks before parity validation and package dry-runs.
+- `ci.yml` runs formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, published-crate public API rustc lint enforcement, and advisory reporting on the pinned `1.94.1` contributor toolchain for every PR.
+- `ci.yml` also runs a separate compatibility-floor job on Rust `1.94.0` with `cargo check --workspace --all-features` and `cargo test --workspace`.
+- `release-readiness.yml` reruns the pinned library checks and the compatibility-floor job before parity validation and package dry-runs.
 - `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and example deployment surfaces.
 
 Action references in workflow files are pinned to immutable SHAs.
@@ -285,6 +288,8 @@ Use the normal workspace checks:
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
+cargo +1.94.0 check --workspace --all-features
+cargo +1.94.0 test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
 cargo doc --workspace --all-features --no-deps
 cargo hack check --workspace --feature-powerset --depth 1
