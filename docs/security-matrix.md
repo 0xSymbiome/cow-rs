@@ -1,6 +1,6 @@
 # Security And Test Matrix
 
-This matrix maps `cow-rs` test evidence by crate and review surface. It is a navigation aid for reviewers, not a claim that tests prove the absence of bugs.
+This matrix maps `cow-rs` test evidence by crate and public validation surface. It is a navigation aid, not a claim that tests prove the absence of bugs.
 
 ## Core SDK Crates
 
@@ -21,7 +21,7 @@ This matrix maps `cow-rs` test evidence by crate and review surface. It is a nav
 | Surface | Boundary | Evidence | Primary command |
 | --- | --- | --- | --- |
 | Native examples | Deterministic consumer scenarios for app-data, signing, orderbook, quote-only, limit-order, native-sell / EthFlow, pre-sign, off-chain cancellation, on-chain cancellation, and subgraph behavior | `examples/native/tests/scenario_contract.rs` plus runnable scenario binaries including `ethflow_transaction_simulation.rs` and `onchain_order_actions_simulation.rs` | `cargo test --manifest-path examples/native/Cargo.toml` |
-| Native scenario binaries | Reviewer-readable command output for the complete native trading workflow surface without live order placement | `examples/native/scenarios/*.rs` | `cargo check --manifest-path examples/native/Cargo.toml --examples` |
+| Native scenario binaries | Readable command output for the complete native trading workflow surface without live order placement | `examples/native/scenarios/*.rs` | `cargo check --manifest-path examples/native/Cargo.toml --examples` |
 | SDK WASM verification console | WASM-compatible SDK verification surface with deterministic exports; network-backed quote, orderbook, and subgraph controls stay manual verification surfaces | `examples/wasm/sdk-verification-console/tests/deterministic_exports.rs` | `wasm-pack test --headless --chrome` |
 | Browser wallet WASM console | Browser wallet verification shell that separates deterministic mock mode from injected-provider inspection | `examples/wasm/browser-wallet-console` build | `cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml` |
 
@@ -33,8 +33,9 @@ This matrix maps `cow-rs` test evidence by crate and review surface. It is a nav
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo doc --workspace --no-deps` | Public rustdoc build gate |
+| `RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --exclude cow-sdk-subgraph --all-features` | Blocking public API rustc lint gate for the hardened crate family |
 
-## Review Boundaries
+## Validation Boundaries
 
 - Required tests and examples avoid private keys, seed phrases, live wallet authorization, and live order submission.
 - Mocked transports should assert request shape and failure behavior where those paths are part of the reviewed surface.
@@ -42,3 +43,4 @@ This matrix maps `cow-rs` test evidence by crate and review surface. It is a nav
 - Live quote, orderbook, subgraph, and wallet checks stay manual unless explicitly promoted into a deterministic routed or injected test.
 - Schema-derived evidence stays test-only and outside the public SDK API.
 - `cow-sdk-browser-wallet` tests and mock console mode provide deterministic proof. Injected-provider execution remains environment-sensitive because authorization, chain inventory, and wallet UX are controlled by the browser extension.
+- The hardened public rustc lint gate applies to `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade. `cow-sdk-subgraph` remains a separate package surface.

@@ -72,21 +72,10 @@ jobs:
           fi
       - name: Check workspace feature matrix
         run: cargo hack check --workspace --feature-powerset --depth 1
-      - name: Run public API lint report
-        id: public_api_lints
-        continue-on-error: true
-        run: cargo check --workspace --all-features
+      - name: Check hardened crate public API lints
+        run: cargo check --workspace --exclude cow-sdk-subgraph --all-features
         env:
           RUSTFLAGS: -Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types
-      - name: Summarize public API lint report
-        if: ${{ always() }}
-        shell: bash
-        run: |
-          if [ "${{ steps.public_api_lints.outcome }}" = "success" ]; then
-            echo "Public API lint report passed." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "Public API lint report reported issues in the current workspace surface." >> "$GITHUB_STEP_SUMMARY"
-          fi
 
   verify:
     runs-on: ubuntu-latest
