@@ -143,6 +143,13 @@ Review these points on browser-wallet changes:
 - legacy direct-provider fallback must remain explicit
 - example and product docs must not imply silent provider auto-selection when discovery is ambiguous
 
+Browser-wallet session synchronization follows the same explicit contract:
+
+- `WalletSession` is kept in sync from provider-emitted `accountsChanged`, `chainChanged`, `connect`, and `disconnect` signals for reviewed wallet transports.
+- The public surface remains typed Rust state and events through `WalletSession` and `WalletEvent`; raw JS payloads stay local to `cow-sdk-browser-wallet`.
+- Listener ownership follows cloned `BrowserWallet` and `Eip1193Provider` values. Cleanup happens when the last owning Rust value is dropped, without process-global event buses or singleton state.
+- `refresh_session()` remains an explicit resynchronization helper, not the primary reviewed path for externally initiated account or chain changes.
+
 ## Public Package Policy
 
 Packaging posture is explicit in the manifests:

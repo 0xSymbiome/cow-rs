@@ -11,8 +11,11 @@ use wasm_bindgen_futures::JsFuture;
 
 #[cfg(target_arch = "wasm32")]
 use crate::{
-    BrowserWalletError, Eip1193Transport, InjectedWalletDetectionOptions,
-    InjectedWalletDiscoverySource, InjectedWalletInfo, RpcErrorPayload,
+    BrowserWalletError, Eip1193Transport, EventLog, InjectedWalletDetectionOptions,
+    InjectedWalletDiscoverySource, InjectedWalletInfo, RpcErrorPayload, WalletSession,
+    events::{
+        WalletProviderEvent, WalletRuntimeBinding, WalletRuntimeBindingHandle, apply_provider_event,
+    },
     provider::parse_chain_id_value,
 };
 
@@ -35,6 +38,37 @@ pub(crate) struct InjectedWalletDiscoveryResult {
     pub(crate) used_legacy_fallback: bool,
     pub(crate) wallets: Vec<DiscoveredInjectedWallet>,
 }
+
+#[cfg(target_arch = "wasm32")]
+struct ProviderListenerRegistration {
+    event_name: &'static str,
+    callback: Closure<dyn FnMut(JsValue)>,
+}
+
+#[cfg(target_arch = "wasm32")]
+struct InjectedProviderSessionBinding {
+    provider: JsValue,
+    registrations: Vec<ProviderListenerRegistration>,
+}
+
+#[cfg(target_arch = "wasm32")]
+impl Drop for InjectedProviderSessionBinding {
+    fn drop(&mut self) {
+        let Ok(remove_listener) = provider_function(&self.provider, "removeListener") else {
+            return;
+        };
+        for registration in &self.registrations {
+            let _ = remove_listener.call2(
+                &self.provider,
+                &JsValue::from_str(registration.event_name),
+                registration.callback.as_ref().unchecked_ref(),
+            );
+        }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl WalletRuntimeBinding for InjectedProviderSessionBinding {}
 
 #[cfg(target_arch = "wasm32")]
 impl InjectedProviderTransport {
@@ -136,6 +170,20 @@ impl Eip1193Transport for InjectedProviderTransport {
         &self.info.provider_label
     }
 
+    fn attach_session_sync(
+        &self,
+        session: std::rc::Rc<std::cell::RefCell<WalletSession>>,
+        events: EventLog,
+    ) -> Option<WalletRuntimeBindingHandle> {
+        let on = provider_function(&self.provider, "on").ok()?;
+        let registrations =
+            register_session_listeners(&self.provider, &on, session, events).ok()?;
+        Some(std::rc::Rc::new(InjectedProviderSessionBinding {
+            provider: self.provider.clone(),
+            registrations,
+        }))
+    }
+
     async fn request(
         &self,
         method: &str,
@@ -155,11 +203,7 @@ impl Eip1193Transport for InjectedProviderTransport {
                 .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))?;
         }
 
-        let request = Reflect::get(&self.provider, &JsValue::from_str("request"))
-            .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))?;
-        let request = request.dyn_into::<Function>().map_err(|_| {
-            BrowserWalletError::js("wallet provider does not expose a callable `request`")
-        })?;
+        let request = provider_function(&self.provider, "request")?;
         let requested_chain = params
             .as_ref()
             .and_then(|value| value.as_array())
@@ -235,6 +279,137 @@ fn same_wallet(
 }
 
 #[cfg(target_arch = "wasm32")]
+fn register_session_listeners(
+    provider: &JsValue,
+    on: &Function,
+    session: std::rc::Rc<std::cell::RefCell<WalletSession>>,
+    events: EventLog,
+) -> Result<Vec<ProviderListenerRegistration>, BrowserWalletError> {
+    let mut registrations = Vec::new();
+
+    let accounts_session = session.clone();
+    let accounts_events = events.clone();
+    let accounts_callback = Closure::<dyn FnMut(JsValue)>::new(move |payload: JsValue| {
+        if let Some(event) = parse_accounts_changed_event(payload) {
+            apply_provider_event(&accounts_session, &accounts_events, event);
+        }
+    });
+    register_listener(provider, on, "accountsChanged", &accounts_callback)?;
+    registrations.push(ProviderListenerRegistration {
+        event_name: "accountsChanged",
+        callback: accounts_callback,
+    });
+
+    let chain_session = session.clone();
+    let chain_events = events.clone();
+    let chain_callback = Closure::<dyn FnMut(JsValue)>::new(move |payload: JsValue| {
+        if let Some(event) = parse_chain_changed_event(payload) {
+            apply_provider_event(&chain_session, &chain_events, event);
+        }
+    });
+    register_listener(provider, on, "chainChanged", &chain_callback)?;
+    registrations.push(ProviderListenerRegistration {
+        event_name: "chainChanged",
+        callback: chain_callback,
+    });
+
+    let connect_session = session.clone();
+    let connect_events = events.clone();
+    let connect_callback = Closure::<dyn FnMut(JsValue)>::new(move |payload: JsValue| {
+        apply_provider_event(
+            &connect_session,
+            &connect_events,
+            WalletProviderEvent::Connected {
+                chain_id: parse_connect_chain_id(payload),
+            },
+        );
+    });
+    register_listener(provider, on, "connect", &connect_callback)?;
+    registrations.push(ProviderListenerRegistration {
+        event_name: "connect",
+        callback: connect_callback,
+    });
+
+    let disconnect_callback = Closure::<dyn FnMut(JsValue)>::new(move |payload: JsValue| {
+        apply_provider_event(
+            &session,
+            &events,
+            WalletProviderEvent::Disconnected {
+                message: parse_disconnect_message(payload),
+            },
+        );
+    });
+    register_listener(provider, on, "disconnect", &disconnect_callback)?;
+    registrations.push(ProviderListenerRegistration {
+        event_name: "disconnect",
+        callback: disconnect_callback,
+    });
+
+    Ok(registrations)
+}
+
+#[cfg(target_arch = "wasm32")]
+fn register_listener(
+    provider: &JsValue,
+    on: &Function,
+    event_name: &'static str,
+    callback: &Closure<dyn FnMut(JsValue)>,
+) -> Result<(), BrowserWalletError> {
+    on.call2(
+        provider,
+        &JsValue::from_str(event_name),
+        callback.as_ref().unchecked_ref(),
+    )
+    .map(|_| ())
+    .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))
+}
+
+#[cfg(target_arch = "wasm32")]
+fn parse_accounts_changed_event(payload: JsValue) -> Option<WalletProviderEvent> {
+    let value: Value = serde_wasm_bindgen::from_value(payload).ok()?;
+    let items = value.as_array()?;
+    let mut accounts = Vec::with_capacity(items.len());
+    for item in items {
+        let raw = item.as_str()?;
+        accounts.push(cow_sdk_core::Address::new(raw).ok()?);
+    }
+    Some(WalletProviderEvent::AccountsChanged { accounts })
+}
+
+#[cfg(target_arch = "wasm32")]
+fn parse_chain_changed_event(payload: JsValue) -> Option<WalletProviderEvent> {
+    let value: Value = serde_wasm_bindgen::from_value(payload).ok()?;
+    let chain_id = parse_chain_id_value(&value, "chainChanged").ok()?;
+    Some(WalletProviderEvent::ChainChanged { chain_id })
+}
+
+#[cfg(target_arch = "wasm32")]
+fn parse_connect_chain_id(payload: JsValue) -> Option<u64> {
+    let value: Value = serde_wasm_bindgen::from_value(payload).ok()?;
+    match &value {
+        Value::Object(fields) => fields
+            .get("chainId")
+            .and_then(|chain_id| parse_chain_id_value(chain_id, "connect").ok()),
+        _ => parse_chain_id_value(&value, "connect").ok(),
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn parse_disconnect_message(payload: JsValue) -> Option<String> {
+    let value: Value = serde_wasm_bindgen::from_value(payload).ok()?;
+    match value {
+        Value::String(message) if !message.trim().is_empty() => Some(message),
+        Value::Object(fields) => fields
+            .get("message")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|message| !message.is_empty())
+            .map(str::to_owned),
+        _ => None,
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
 fn detect_wallet_info(
     provider: &JsValue,
     discovery_source: InjectedWalletDiscoverySource,
@@ -300,6 +475,17 @@ fn request_eip6963_providers(window: &web_sys::Window) -> Result<(), BrowserWall
         .dispatch_event(&event)
         .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))?;
     Ok(())
+}
+
+#[cfg(target_arch = "wasm32")]
+fn provider_function(provider: &JsValue, name: &str) -> Result<Function, BrowserWalletError> {
+    let value = Reflect::get(provider, &JsValue::from_str(name))
+        .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))?;
+    value.dyn_into::<Function>().map_err(|_| {
+        BrowserWalletError::js(format!(
+            "wallet provider does not expose a callable `{name}`"
+        ))
+    })
 }
 
 #[cfg(target_arch = "wasm32")]

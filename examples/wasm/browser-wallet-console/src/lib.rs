@@ -213,6 +213,16 @@ impl BrowserWalletConsole {
         }))
     }
 
+    pub fn injected_status_json(&self) -> Result<String, JsValue> {
+        let wallet = self.injected_wallet()?;
+        pretty_json(&json!({
+            "mode": "injected",
+            "session": wallet.session(),
+            "walletInfo": wallet.injected_info(),
+            "events": wallet.events(),
+        }))
+    }
+
     pub fn injected_reset_session_json(&self) -> Result<String, JsValue> {
         let wallet = self.injected_wallet()?;
         let session = wallet.reset_session();

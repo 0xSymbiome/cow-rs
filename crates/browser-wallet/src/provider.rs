@@ -10,7 +10,11 @@ use cow_sdk_core::{
     TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
-use crate::{BrowserWalletError, EventLog, WalletEvent, WalletSession, signer::Eip1193Signer};
+use crate::{
+    BrowserWalletError, EventLog, WalletEvent, WalletSession,
+    events::{WalletRuntimeBindingHandle, update_wallet_session},
+    signer::Eip1193Signer,
+};
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait(?Send))]
@@ -21,6 +25,14 @@ pub trait Eip1193Transport {
         method: &str,
         params: Option<Value>,
     ) -> Result<Value, BrowserWalletError>;
+
+    fn attach_session_sync(
+        &self,
+        _session: Rc<RefCell<WalletSession>>,
+        _events: EventLog,
+    ) -> Option<WalletRuntimeBindingHandle> {
+        None
+    }
 }
 
 #[derive(Clone)]
@@ -28,6 +40,7 @@ pub struct Eip1193Provider {
     transport: Rc<dyn Eip1193Transport>,
     session: Rc<RefCell<WalletSession>>,
     events: EventLog,
+    _runtime_binding: Option<WalletRuntimeBindingHandle>,
 }
 
 impl Eip1193Provider {
@@ -36,10 +49,12 @@ impl Eip1193Provider {
         session: Rc<RefCell<WalletSession>>,
         events: EventLog,
     ) -> Self {
+        let runtime_binding = transport.attach_session_sync(session.clone(), events.clone());
         Self {
             transport,
             session,
             events,
+            _runtime_binding: runtime_binding,
         }
     }
 
@@ -123,26 +138,7 @@ impl Eip1193Provider {
     where
         F: FnOnce(&mut WalletSession),
     {
-        let previous = self.session.borrow().clone();
-        {
-            let mut session = self.session.borrow_mut();
-            updater(&mut session);
-        }
-        let current = self.session.borrow().clone();
-        if previous.chain_id != current.chain_id
-            && let Some(chain_id) = current.chain_id
-        {
-            self.events.push(WalletEvent::ChainChanged { chain_id });
-        }
-        if previous.accounts != current.accounts {
-            self.events.push(WalletEvent::AccountsChanged {
-                accounts: current.accounts.clone(),
-            });
-        }
-        if previous != current {
-            self.events
-                .push(WalletEvent::SessionUpdated { previous, current });
-        }
+        update_wallet_session(&self.session, &self.events, None, updater);
     }
 }
 

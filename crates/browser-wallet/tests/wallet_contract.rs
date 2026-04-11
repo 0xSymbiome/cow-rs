@@ -177,3 +177,64 @@ async fn injected_discovery_keeps_bounded_timeout_contract_off_wasm() {
     assert!(!discovery.used_legacy_fallback());
     assert_eq!(discovery.wallets(), Vec::new());
 }
+
+#[tokio::test(flavor = "current_thread")]
+async fn transport_events_keep_wallet_session_synchronized() {
+    let transport = MockEip1193Transport::sepolia();
+    let wallet = BrowserWallet::from_transport(transport.clone());
+    let alternate =
+        cow_sdk_core::Address::new("0x5555555555555555555555555555555555555555").unwrap();
+
+    transport.emit_connected(Some(u64::from(SupportedChainId::Sepolia)));
+    transport.emit_accounts_changed(vec![alternate.clone()]);
+    transport.emit_chain_changed(u64::from(SupportedChainId::Mainnet));
+
+    let session = wallet.session();
+    assert!(session.connected);
+    assert_eq!(session.selected_account, Some(alternate.clone()));
+    assert_eq!(session.accounts, vec![alternate.clone()]);
+    assert_eq!(session.chain_id, Some(u64::from(SupportedChainId::Mainnet)));
+
+    transport.emit_disconnected(Some("provider disconnected".to_owned()));
+
+    let session = wallet.session();
+    assert!(!session.connected);
+    assert!(session.accounts.is_empty());
+    assert!(session.selected_account.is_none());
+    assert_eq!(session.chain_id, None);
+
+    let events = wallet.take_events();
+    assert!(events.iter().any(
+        |event| matches!(event, WalletEvent::Connected { chain_id } if *chain_id == Some(u64::from(SupportedChainId::Sepolia)))
+    ));
+    assert!(events.iter().any(
+        |event| matches!(event, WalletEvent::AccountsChanged { accounts } if accounts == &vec![alternate.clone()])
+    ));
+    assert!(events.iter().any(
+        |event| matches!(event, WalletEvent::ChainChanged { chain_id } if *chain_id == u64::from(SupportedChainId::Mainnet))
+    ));
+    assert!(events.iter().any(
+        |event| matches!(event, WalletEvent::Disconnected { message } if message.as_deref() == Some("provider disconnected"))
+    ));
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn listener_lifetime_follows_wallet_and_provider_values() {
+    let transport = MockEip1193Transport::sepolia();
+    assert_eq!(transport.listener_count(), 0);
+
+    let wallet = BrowserWallet::from_transport(transport.clone());
+    assert_eq!(transport.listener_count(), 1);
+
+    let provider = wallet.provider();
+    let wallet_clone = wallet.clone();
+
+    drop(wallet);
+    assert_eq!(transport.listener_count(), 1);
+
+    drop(provider);
+    assert_eq!(transport.listener_count(), 1);
+
+    drop(wallet_clone);
+    assert_eq!(transport.listener_count(), 0);
+}

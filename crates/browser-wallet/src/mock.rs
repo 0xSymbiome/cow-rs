@@ -7,7 +7,10 @@ use serde_json::{Value, json};
 use cow_sdk_core::{Address, ChainId, SupportedChainId};
 
 use crate::{
-    BrowserWalletError, Eip1193Transport, RpcErrorPayload,
+    BrowserWalletError, Eip1193Transport, EventLog, RpcErrorPayload, WalletSession,
+    events::{
+        WalletProviderEvent, WalletRuntimeBinding, WalletRuntimeBindingHandle, apply_provider_event,
+    },
     provider::{hex_quantity, parse_chain_id_value},
 };
 
@@ -19,7 +22,6 @@ pub struct MockRequestRecord {
     pub params: Option<Value>,
 }
 
-#[derive(Debug, Clone)]
 struct MockState {
     connected: bool,
     chain_id: ChainId,
@@ -37,6 +39,8 @@ struct MockState {
     storage_by_key: BTreeMap<String, String>,
     receipt_by_hash: BTreeMap<String, Value>,
     method_errors: BTreeMap<String, BrowserWalletError>,
+    next_listener_id: usize,
+    session_listeners: BTreeMap<usize, Rc<dyn Fn(WalletProviderEvent)>>,
 }
 
 impl Default for MockState {
@@ -61,6 +65,8 @@ impl Default for MockState {
             storage_by_key: BTreeMap::new(),
             receipt_by_hash: BTreeMap::new(),
             method_errors: BTreeMap::new(),
+            next_listener_id: 0,
+            session_listeners: BTreeMap::new(),
         }
     }
 }
@@ -138,16 +144,102 @@ impl MockEip1193Transport {
         self.state.borrow().request_log.clone()
     }
 
+    pub fn emit_accounts_changed(&self, accounts: Vec<Address>) {
+        {
+            let mut state = self.state.borrow_mut();
+            state.connected = !accounts.is_empty();
+            state.accounts = accounts.clone();
+        }
+        self.emit_provider_event(WalletProviderEvent::AccountsChanged { accounts });
+    }
+
+    pub fn emit_chain_changed(&self, chain_id: ChainId) {
+        self.state.borrow_mut().chain_id = chain_id;
+        self.emit_provider_event(WalletProviderEvent::ChainChanged { chain_id });
+    }
+
+    pub fn emit_connected(&self, chain_id: Option<ChainId>) {
+        {
+            let mut state = self.state.borrow_mut();
+            state.connected = true;
+            if let Some(chain_id) = chain_id {
+                state.chain_id = chain_id;
+            }
+        }
+        self.emit_provider_event(WalletProviderEvent::Connected { chain_id });
+    }
+
+    pub fn emit_disconnected(&self, message: Option<String>) {
+        self.state.borrow_mut().connected = false;
+        self.emit_provider_event(WalletProviderEvent::Disconnected { message });
+    }
+
+    pub fn listener_count(&self) -> usize {
+        self.state.borrow().session_listeners.len()
+    }
+
+    fn emit_provider_event(&self, event: WalletProviderEvent) {
+        let listeners = self
+            .state
+            .borrow()
+            .session_listeners
+            .values()
+            .cloned()
+            .collect::<Vec<_>>();
+        for listener in listeners {
+            listener(event.clone());
+        }
+    }
+
+    fn register_session_listener(&self, listener: Rc<dyn Fn(WalletProviderEvent)>) -> usize {
+        let mut state = self.state.borrow_mut();
+        let listener_id = state.next_listener_id;
+        state.next_listener_id += 1;
+        state.session_listeners.insert(listener_id, listener);
+        listener_id
+    }
+
     fn rpc_error(method: &str, payload: RpcErrorPayload) -> BrowserWalletError {
         BrowserWalletError::from_rpc(method, payload, None)
     }
 }
+
+struct MockSessionBinding {
+    state: Rc<RefCell<MockState>>,
+    listener_id: usize,
+}
+
+impl Drop for MockSessionBinding {
+    fn drop(&mut self) {
+        self.state
+            .borrow_mut()
+            .session_listeners
+            .remove(&self.listener_id);
+    }
+}
+
+impl WalletRuntimeBinding for MockSessionBinding {}
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait(?Send))]
 impl Eip1193Transport for MockEip1193Transport {
     fn label(&self) -> &str {
         &self.label
+    }
+
+    fn attach_session_sync(
+        &self,
+        session: Rc<RefCell<WalletSession>>,
+        events: EventLog,
+    ) -> Option<WalletRuntimeBindingHandle> {
+        let listener = Rc::new(move |provider_event: WalletProviderEvent| {
+            apply_provider_event(&session, &events, provider_event);
+        });
+        let listener_id = self.register_session_listener(listener);
+        Some(Rc::new(MockSessionBinding {
+            state: self.state.clone(),
+            listener_id,
+        }))
     }
 
     async fn request(

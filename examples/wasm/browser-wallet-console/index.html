@@ -365,6 +365,7 @@
           <div class="button-row">
             <button id="detect-wallet">Detect</button>
             <button id="connect-wallet" class="alt">Connect</button>
+            <button id="wallet-status">Wallet Status</button>
             <button id="reset-wallet">Reset Session</button>
             <button id="refresh-wallet">Refresh</button>
             <button id="switch-wallet" class="alt">Switch Chain</button>
@@ -489,6 +490,11 @@
       run(injectedOutput, button, () =>
         consoleState.injected_connect_selected_json(walletSelectionIndex())
       );
+    });
+
+    document.getElementById("wallet-status").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () => consoleState.injected_status_json());
     });
 
     document.getElementById("reset-wallet").addEventListener("click", (event) => {
