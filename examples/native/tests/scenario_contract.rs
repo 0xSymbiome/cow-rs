@@ -76,3 +76,69 @@ async fn mock_order_lookup_is_uid_keyed() {
         other => panic!("expected InvalidTransform for unknown mock order uid, got {other:?}"),
     }
 }
+
+#[test]
+fn subgraph_examples_are_declared_and_documented() {
+    let manifest = include_str!("../Cargo.toml");
+    let readme = include_str!("../README.md");
+
+    for example_name in [
+        "subgraph_query_roundtrip",
+        "subgraph_custom_query_roundtrip",
+        "subgraph_live_query",
+    ] {
+        assert!(
+            manifest.contains(example_name),
+            "missing example declaration for {example_name}"
+        );
+        assert!(
+            readme.contains(example_name),
+            "missing example README entry for {example_name}"
+        );
+    }
+
+    assert!(readme.contains("`cow-sdk-subgraph`"));
+    assert!(readme.contains("root facade"));
+    assert!(readme.contains("THE_GRAPH_API_KEY"));
+}
+
+#[test]
+fn mandatory_trading_examples_are_declared_and_documented() {
+    let manifest = include_str!("../Cargo.toml");
+    let native_readme = include_str!("../README.md");
+    let examples_readme = include_str!("../../README.md");
+
+    for example_name in [
+        "ethflow_transaction_simulation",
+        "onchain_order_actions_simulation",
+    ] {
+        assert!(
+            manifest.contains(example_name),
+            "missing example declaration for {example_name}"
+        );
+        assert!(
+            native_readme.contains(example_name),
+            "missing native README entry for {example_name}"
+        );
+        assert!(
+            examples_readme.contains(example_name),
+            "missing examples index entry for {example_name}"
+        );
+    }
+
+    assert!(native_readme.contains("native-sell / EthFlow"));
+    assert!(native_readme.contains("pre-sign"));
+    assert!(native_readme.contains("on-chain cancellation"));
+}
+
+#[test]
+fn mandatory_trading_examples_reference_reviewed_sdk_surfaces() {
+    let ethflow = include_str!("../scenarios/ethflow_transaction_simulation.rs");
+    let onchain = include_str!("../scenarios/onchain_order_actions_simulation.rs");
+
+    assert!(ethflow.contains("get_eth_flow_transaction"));
+    assert!(ethflow.contains("post_sell_native_currency_order"));
+    assert!(onchain.contains("get_pre_sign_transaction"));
+    assert!(onchain.contains("on_chain_cancel_order"));
+    assert!(onchain.contains("onchain_cancellation_transaction"));
+}

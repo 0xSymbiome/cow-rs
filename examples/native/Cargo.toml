@@ -52,6 +52,14 @@ name = "trading_sdk_simulation"
 path = "scenarios/trading_sdk_simulation.rs"
 
 [[example]]
+name = "ethflow_transaction_simulation"
+path = "scenarios/ethflow_transaction_simulation.rs"
+
+[[example]]
+name = "onchain_order_actions_simulation"
+path = "scenarios/onchain_order_actions_simulation.rs"
+
+[[example]]
 name = "subgraph_query_roundtrip"
 path = "scenarios/subgraph_query_roundtrip.rs"
 

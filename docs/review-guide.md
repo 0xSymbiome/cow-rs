@@ -85,6 +85,20 @@ Key review points:
 - Advanced quote and post settings must align with the effective trade parameters used for request construction, app-data generation, signing payloads, and submission payloads.
 - Orderbook-bound flows and non-orderbook flows must apply the same call-level-over-default precedence for env and protocol address overrides.
 
+## Native Trading Example Coverage
+
+The native example gallery exposes the full mandatory trading workflow surface
+through focused deterministic scenarios.
+
+- `examples/native/scenarios/quote_only_simulation.rs` covers quote construction without order submission.
+- `examples/native/scenarios/limit_order_simulation.rs` covers signed limit-order submission.
+- `examples/native/scenarios/order_lifecycle_simulation.rs` covers order lookup and off-chain cancellation.
+- `examples/native/scenarios/ethflow_transaction_simulation.rs` covers native-sell / EthFlow transaction construction and simulated submission.
+- `examples/native/scenarios/onchain_order_actions_simulation.rs` covers pre-sign transaction generation plus regular-order and EthFlow on-chain cancellation routing.
+
+These scenarios are transport-mocked and runnable without browser runtimes,
+wallet extensions, or live order placement.
+
 ## On-Chain Helper Encoding
 
 The on-chain transaction builders in `cow-sdk-trading` treat tuple amount, quote-id,
