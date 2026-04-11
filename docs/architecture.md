@@ -74,11 +74,17 @@ Crate-local transport behavior is crate-local:
 
 | Crate | Shared policy input | Crate-local transport policy |
 | --- | --- | --- |
-| `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` adds retry and rate-limit behavior. Chain/env base URL selection lives in `ApiContext`, and env-specific overrides are explicit builders on `OrderBookApi`. |
+| `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` adds retry and rate-limit behavior. Chain/env base URL selection lives in `ApiContext`, and env-specific overrides are explicit builders on `OrderBookApi`. Each `OrderBookApi` instance owns its own request client and async-safe shared limiter state, and clones of that instance share the same limiter budget. |
 | `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` keeps client settings explicit while `SubgraphConfig` owns chain selection, API-key-derived production URLs, and caller overrides. |
 | `cow-sdk-app-data` | none for the fetch adapter trait itself | `IpfsFetchPolicy` owns read-base-URI selection only. Pinning credentials and write endpoints live in `IpfsConfig` and upload helpers. |
 
 This split keeps shared client behavior reviewable without hiding API-specific semantics behind a false common abstraction.
+
+For orderbook request execution specifically:
+
+- rate-limit waiting happens before each request attempt
+- retry backoff happens only after retryable API responses or transport failures
+- cancelling a waiting orderbook request releases no shared lock and leaves the limiter reusable for later calls
 
 ## Trading SDK Configuration
 

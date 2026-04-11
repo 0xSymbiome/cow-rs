@@ -20,6 +20,7 @@ use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
 };
 use serde_json::json;
+use tokio::time::{sleep, timeout};
 use wiremock::{
     Mock, MockServer, Request, ResponseTemplate,
     matchers::{header, method, path},
@@ -283,6 +284,109 @@ async fn rate_limiter_spaces_requests_after_token_budget_is_consumed() {
         started.elapsed() >= Duration::from_millis(20),
         "second request should be delayed by the shared limiter"
     );
+}
+
+#[tokio::test]
+async fn concurrent_attempts_share_limiter_state_across_clones() {
+    let interval = Duration::from_millis(60);
+    let policy = RequestPolicy {
+        max_attempts: 1,
+        rate_limit: RateLimitSettings {
+            tokens_per_interval: 1,
+            interval,
+            interval_label: "test",
+        },
+    };
+    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let arrivals = Arc::new(Mutex::new(Vec::new()));
+
+    let spawn_attempt =
+        |policy: RequestPolicy, limiter: RequestRateLimiter, arrivals: Arc<Mutex<Vec<Instant>>>| {
+            tokio::spawn(async move {
+                execute_empty_with(&policy, &limiter, || {
+                    let arrivals = arrivals.clone();
+                    async move {
+                        arrivals
+                            .lock()
+                            .unwrap_or_else(|poisoned| poisoned.into_inner())
+                            .push(Instant::now());
+                        Ok(ResponseEnvelope::empty(204))
+                    }
+                })
+                .await
+            })
+        };
+
+    let first = spawn_attempt(policy.clone(), limiter.clone(), arrivals.clone());
+    let second = spawn_attempt(policy.clone(), limiter.clone(), arrivals.clone());
+
+    first
+        .await
+        .expect("first task should join cleanly")
+        .expect("first attempt should succeed");
+    second
+        .await
+        .expect("second task should join cleanly")
+        .expect("second attempt should succeed");
+
+    let arrivals = arrivals
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .clone();
+    assert_eq!(arrivals.len(), 2);
+    assert!(
+        arrivals[1].duration_since(arrivals[0]) >= interval / 2,
+        "shared limiter should delay concurrent attempts behind the consumed token"
+    );
+}
+
+#[tokio::test]
+async fn cancelling_waiting_attempt_keeps_limiter_reusable() {
+    let interval = Duration::from_millis(60);
+    let policy = RequestPolicy {
+        max_attempts: 1,
+        rate_limit: RateLimitSettings {
+            tokens_per_interval: 1,
+            interval,
+            interval_label: "test",
+        },
+    };
+    let limiter = RequestRateLimiter::new(policy.rate_limit);
+
+    execute_empty_with(&policy, &limiter, || async {
+        Ok(ResponseEnvelope::empty(204))
+    })
+    .await
+    .expect("first token should be available immediately");
+
+    let waiting_policy = policy.clone();
+    let waiting_limiter = limiter.clone();
+    let waiting = tokio::spawn(async move {
+        execute_empty_with(&waiting_policy, &waiting_limiter, || async {
+            Ok(ResponseEnvelope::empty(204))
+        })
+        .await
+    });
+
+    sleep(Duration::from_millis(5)).await;
+    waiting.abort();
+
+    let aborted = waiting
+        .await
+        .expect_err("aborted waiter should surface cancellation");
+    assert!(aborted.is_cancelled());
+
+    sleep(interval + Duration::from_millis(5)).await;
+
+    timeout(
+        Duration::from_millis(200),
+        execute_empty_with(&policy, &limiter, || async {
+            Ok(ResponseEnvelope::empty(204))
+        }),
+    )
+    .await
+    .expect("reused limiter should not hang after waiter cancellation")
+    .expect("reused limiter should grant the next token");
 }
 
 #[test]

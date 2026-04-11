@@ -35,10 +35,11 @@ pub struct OrderBookApi {
 impl OrderBookApi {
     pub fn new(context: ApiContext) -> Self {
         let transport_policy = OrderBookTransportPolicy::default();
+        let (client, rate_limiter) = build_request_runtime(&transport_policy);
 
         Self {
-            client: build_client(transport_policy.client_policy()),
-            rate_limiter: RequestRateLimiter::new(transport_policy.request_policy().rate_limit),
+            client,
+            rate_limiter,
             transport_policy,
             context,
             env_base_url_overrides: EnvBaseUrlOverrides::default(),
@@ -49,8 +50,7 @@ impl OrderBookApi {
         context: ApiContext,
         transport_policy: OrderBookTransportPolicy,
     ) -> Self {
-        let client = build_client(transport_policy.client_policy());
-        let rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
+        let (client, rate_limiter) = build_request_runtime(&transport_policy);
 
         Self {
             client,
@@ -67,8 +67,9 @@ impl OrderBookApi {
     }
 
     pub fn with_transport_policy(mut self, transport_policy: OrderBookTransportPolicy) -> Self {
-        self.client = build_client(transport_policy.client_policy());
-        self.rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
+        let (client, rate_limiter) = build_request_runtime(&transport_policy);
+        self.client = client;
+        self.rate_limiter = rate_limiter;
         self.transport_policy = transport_policy;
         self
     }
@@ -413,4 +414,13 @@ fn build_client(policy: &HttpClientPolicy) -> Client {
     builder
         .build()
         .expect("validated orderbook client policy must remain buildable")
+}
+
+fn build_request_runtime(
+    transport_policy: &OrderBookTransportPolicy,
+) -> (Client, RequestRateLimiter) {
+    (
+        build_client(transport_policy.client_policy()),
+        RequestRateLimiter::new(transport_policy.request_policy().rate_limit),
+    )
 }

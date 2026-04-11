@@ -1,9 +1,6 @@
-use std::{
-    future::Future,
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::{future::Future, sync::Arc, time::Duration};
 
+use async_lock::Mutex;
 use cow_sdk_core::HttpClientPolicy;
 use reqwest::{
     Client,
@@ -332,10 +329,7 @@ impl RequestRateLimiter {
     async fn acquire(&self) {
         loop {
             let wait_for = {
-                let mut state = self
-                    .state
-                    .lock()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                let mut state = self.state.lock().await;
                 let elapsed = state.window_started_at.elapsed();
 
                 if elapsed >= self.settings.interval {

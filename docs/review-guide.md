@@ -57,7 +57,7 @@ Use this split when evaluating changes:
 
 | Surface | Shared input | Crate-local behavior that must be explicit |
 | --- | --- | --- |
-| `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` retry and rate-limit behavior; `ApiContext` chain/env/base URLs; explicit env override builders; optional `X-API-Key` header handling. |
+| `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` retry and rate-limit behavior; `ApiContext` chain/env/base URLs; explicit env override builders; optional `X-API-Key` header handling; instance-scoped async-safe limiter sharing across clones of the same client. |
 | `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` client wiring; `SubgraphConfig` chain and base URL selection; API-key-derived production endpoints. |
 | `cow-sdk-app-data` | `IpfsFetchPolicy` read base URI | `IpfsConfig` write URI and pinning credentials; upload semantics are separate from fetch. |
 
@@ -66,6 +66,7 @@ Default client policy is explicit and test-covered:
 - native and wasm clients use a 10-second default timeout unless the caller disables it
 - each transport crate sets its own crate-specific default user-agent
 - base URL overrides are separate from shared client settings
+- orderbook rate-limit waits happen before each attempt, retry backoff happens after retryable failures, and cancelling a waiting request does not poison the shared limiter state
 
 ## Trading SDK Precedence Review
 

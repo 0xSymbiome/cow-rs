@@ -1,5 +1,8 @@
 mod common;
 
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+
 use cow_sdk_core::{DEFAULT_HTTP_TIMEOUT, HttpClientPolicy};
 use cow_sdk_orderbook::{
     ApiContextOverride, AppDataObject, CowEnv, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
@@ -90,6 +93,64 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
     assert_eq!(version, "v9.9.9");
     assert_eq!(api.client_policy().timeout(), None);
     assert_eq!(api.request_policy().max_attempts, 1);
+}
+
+#[tokio::test]
+async fn cloned_clients_share_the_same_instance_scoped_rate_limiter() {
+    let server = MockServer::start().await;
+    let arrivals = Arc::new(Mutex::new(Vec::new()));
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/version"))
+        .respond_with({
+            let arrivals = arrivals.clone();
+            move |_request: &wiremock::Request| {
+                arrivals
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner())
+                    .push(Instant::now());
+                ResponseTemplate::new(200).set_body_string("v1.2.3")
+            }
+        })
+        .expect(2)
+        .mount(&server)
+        .await;
+
+    let transport_policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy {
+        max_attempts: 1,
+        rate_limit: cow_sdk_orderbook::request::RateLimitSettings {
+            tokens_per_interval: 1,
+            interval: Duration::from_millis(60),
+            interval_label: "test",
+        },
+    });
+    let api = OrderBookApi::new_with_transport_policy(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        transport_policy,
+    )
+    .with_env_base_url(CowEnv::Prod, server.uri());
+
+    let sibling = api.clone();
+    let (first, second) = tokio::join!(api.get_version(), sibling.get_version());
+
+    assert_eq!(
+        first.expect("first version request should succeed"),
+        "v1.2.3"
+    );
+    assert_eq!(
+        second.expect("second version request should succeed"),
+        "v1.2.3"
+    );
+
+    let arrivals = arrivals
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .clone();
+    assert_eq!(arrivals.len(), 2);
+    assert!(
+        arrivals[1].duration_since(arrivals[0]) >= Duration::from_millis(30),
+        "cloned clients should share one limiter instance"
+    );
 }
 
 #[test]
