@@ -28,6 +28,7 @@ This workspace includes order creation, signing, and submission flows, low-level
 - WASM consumers can use the same facade surface for pure SDK flows.
 - Browser wallet support is additive and exposed through the `browser-wallet` feature plus the `cow-sdk-browser-wallet` crate.
 - Subgraph access uses the separate `cow-sdk-subgraph` crate and is intentionally not re-exported from `cow-sdk`.
+- The facade is a curated re-export layer. Package-specific implementation behavior stays in the leaf crates that own it.
 
 Native subgraph examples live under `examples/native/` and use `cow-sdk-subgraph` directly. The custom-query example uses the explicit `SubgraphQueryRequest` contract, and the live example is opt-in through explicit environment configuration.
 
@@ -48,6 +49,18 @@ Browser wallet integration is a supported leaf capability for browser runtimes. 
 - Advanced quote and post settings override overlapping call-level trade fields.
 - Call-level params override SDK defaults for owner, env, and protocol address overrides.
 - Signer address resolution is only an owner fallback for signer-backed quote and post flows.
+- Quote-only flows resolve owner from the effective trade parameters first and otherwise use the supplied quoter account.
+- Limit-order submission uses `0` basis points when slippage is omitted.
+- Trading slippage and fee helpers use integer math with explicit rounding, truncation, and clamping rules.
+
+## Orderbook Transport Contract
+
+`cow-sdk-orderbook` keeps transport policy local to the crate instead of hiding it behind a generic shared HTTP abstraction.
+
+- `OrderBookTransportPolicy` owns retry and rate-limit behavior, while `cow_sdk_core::HttpClientPolicy` owns timeout and user-agent only.
+- `OrderBookApi::with_context_override()` updates chain, env, base URL maps, and API key on a cloned client.
+- `OrderBookApi::with_env_base_url()` is the highest-precedence base-URL override for a specific environment.
+- Clones of the same `OrderBookApi` share one limiter instance. Replacing the transport policy creates a new client/runtime pair for that clone lineage.
 
 ## Typed Public API
 

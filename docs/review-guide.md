@@ -87,6 +87,9 @@ Key review points:
 - Injected orderbook clients do not act as a silent suggestion. They define the active orderbook context, and conflicts surface as typed errors.
 - Advanced quote and post settings must align with the effective trade parameters used for request construction, app-data generation, signing payloads, and submission payloads.
 - Orderbook-bound flows and non-orderbook flows must apply the same call-level-over-default precedence for env and protocol address overrides.
+- Quote-only flows resolve owner from the effective trade parameters first and otherwise use the explicit quoter account. Signer-backed quote and post flows use the signer address only as the final owner fallback.
+- Limit-order posting uses `0` basis points when slippage is omitted, so app-data, signing payloads, and submission payloads stay aligned.
+- Slippage and fee helpers use integer math on the wire values. Public docs should keep rounding, truncation, and clamping behavior explicit when those values are surfaced to callers.
 
 ## Native Trading Example Coverage
 
@@ -214,6 +217,7 @@ For the facade specifically:
 - `cow-sdk-subgraph` is a separate package and is not folded into the facade for documentation convenience
 - the facade is a re-export layer and does not gain implementation ownership through packaging polish
 - feature-gated browser-wallet re-export does not widen the default-facade support contract
+- `cow-sdk::prelude` is a curated convenience import. Behavioral contracts still belong to the leaf crates that define the underlying types and workflows.
 
 ## Generated Or Schema-Derived Artifacts
 

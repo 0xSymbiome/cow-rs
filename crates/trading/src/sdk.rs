@@ -16,13 +16,15 @@ use crate::{
     post_swap_order_async, protocol_options_for_order,
 };
 
-#[derive(Clone, Default)]
+/// High-level trading facade that stores trader defaults plus optional injected services.
+#[derive(Debug, Clone, Default)]
 pub struct TradingSdk {
     trader_defaults: PartialTraderParameters,
     options: TradingSdkOptions,
 }
 
-#[derive(Clone, Default)]
+/// Builder for [`TradingSdk`].
+#[derive(Debug, Clone, Default)]
 pub struct TradingSdkBuilder {
     trader_defaults: PartialTraderParameters,
     options: TradingSdkOptions,
@@ -36,35 +38,49 @@ struct ResolvedOrderbookBinding {
 }
 
 impl TradingSdkBuilder {
+    /// Creates a new builder with empty defaults.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Returns a copy of this builder with trader defaults replaced.
+    #[must_use]
     pub fn with_trader_defaults(mut self, trader_defaults: PartialTraderParameters) -> Self {
         self.trader_defaults = trader_defaults;
         self
     }
 
+    /// Returns a copy of this builder with a default chain id.
+    #[must_use]
     pub fn with_chain_id(mut self, chain_id: SupportedChainId) -> Self {
         self.trader_defaults.chain_id = Some(chain_id);
         self
     }
 
+    /// Returns a copy of this builder with a default app code.
+    #[must_use]
     pub fn with_app_code(mut self, app_code: impl Into<String>) -> Self {
         self.trader_defaults.app_code = Some(app_code.into());
         self
     }
 
+    /// Returns a copy of this builder with a default owner.
+    #[must_use]
     pub fn with_owner(mut self, owner: Address) -> Self {
         self.trader_defaults.owner = Some(owner);
         self
     }
 
+    /// Returns a copy of this builder with a default environment.
+    #[must_use]
     pub fn with_env(mut self, env: CowEnv) -> Self {
         self.trader_defaults.env = Some(env);
         self
     }
 
+    /// Returns a copy of this builder with settlement contract overrides.
+    #[must_use]
     pub fn with_settlement_contract_override(
         mut self,
         settlement_contract_override: cow_sdk_core::AddressPerChain,
@@ -73,6 +89,8 @@ impl TradingSdkBuilder {
         self
     }
 
+    /// Returns a copy of this builder with EthFlow contract overrides.
+    #[must_use]
     pub fn with_eth_flow_contract_override(
         mut self,
         eth_flow_contract_override: cow_sdk_core::AddressPerChain,
@@ -81,16 +99,30 @@ impl TradingSdkBuilder {
         self
     }
 
+    /// Returns a copy of this builder with explicit SDK options.
+    #[must_use]
     pub fn with_options(mut self, options: TradingSdkOptions) -> Self {
         self.options = options;
         self
     }
 
+    /// Returns a copy of this builder with an injected orderbook client.
+    ///
+    /// The injected client fixes the effective orderbook chain and environment
+    /// for orderbook-bound flows.
+    #[must_use]
     pub fn with_orderbook_client(mut self, orderbook_client: Arc<dyn OrderbookClient>) -> Self {
         self.options = self.options.with_orderbook_client(orderbook_client);
         self
     }
 
+    /// Builds a [`TradingSdk`] and validates any injected orderbook binding.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
+    /// builder's default chain or environment conflicts with an injected
+    /// orderbook client.
     pub fn build(self) -> Result<TradingSdk, TradingError> {
         if let Some(orderbook_client) = self.options.orderbook_client() {
             validate_injected_orderbook_context(
@@ -108,10 +140,14 @@ impl TradingSdkBuilder {
 }
 
 impl TradingSdk {
+    /// Returns a new [`TradingSdkBuilder`].
+    #[must_use]
     pub fn builder() -> TradingSdkBuilder {
         TradingSdkBuilder::new()
     }
 
+    /// Creates an SDK directly from defaults and options.
+    #[must_use]
     pub fn new(trader_defaults: PartialTraderParameters, options: TradingSdkOptions) -> Self {
         Self {
             trader_defaults,
@@ -119,14 +155,26 @@ impl TradingSdk {
         }
     }
 
+    /// Returns the stored trader defaults.
+    #[must_use]
     pub fn trader_defaults(&self) -> &PartialTraderParameters {
         &self.trader_defaults
     }
 
+    /// Returns the stored SDK options.
+    #[must_use]
     pub fn options(&self) -> &TradingSdkOptions {
         &self.options
     }
 
+    /// Fetches quote-only results using SDK defaults plus optional advanced settings.
+    ///
+    /// Owner precedence is: quote override `from`, call-level `owner`, SDK default `owner`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when required defaults are missing, the quote
+    /// request is invalid, or downstream quote construction fails.
     pub async fn get_quote_only(
         &self,
         mut params: TradeParameters,
@@ -145,6 +193,11 @@ impl TradingSdk {
         .await
     }
 
+    /// Fetches quote results for a sync signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from [`Self::get_quote_results_async`].
     pub async fn get_quote_results<S>(
         &self,
         params: TradeParameters,
@@ -159,6 +212,14 @@ impl TradingSdk {
             .await
     }
 
+    /// Fetches quote results for an async signer.
+    ///
+    /// Owner precedence is: call-level `owner`, SDK default `owner`, signer address.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when required defaults are missing, signer
+    /// address resolution fails, or downstream quote construction fails.
     pub async fn get_quote_results_async<S>(
         &self,
         mut params: TradeParameters,
@@ -182,6 +243,11 @@ impl TradingSdk {
         .await
     }
 
+    /// Quotes and posts a swap order using a sync signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from [`Self::post_swap_order_async`].
     pub async fn post_swap_order<S>(
         &self,
         params: TradeParameters,
@@ -196,6 +262,12 @@ impl TradingSdk {
             .await
     }
 
+    /// Quotes and posts a swap order using an async signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when quoting, signing, app-data upload, or
+    /// order submission fails.
     pub async fn post_swap_order_async<S>(
         &self,
         mut params: TradeParameters,
@@ -219,6 +291,11 @@ impl TradingSdk {
         .await
     }
 
+    /// Posts a limit order using a sync signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from [`Self::post_limit_order_async`].
     pub async fn post_limit_order<S>(
         &self,
         params: LimitTradeParameters,
@@ -233,6 +310,12 @@ impl TradingSdk {
             .await
     }
 
+    /// Posts a limit order using an async signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when required defaults are missing, app-data
+    /// generation fails, or downstream signing/submission fails.
     pub async fn post_limit_order_async<S>(
         &self,
         mut params: LimitTradeParameters,
@@ -256,6 +339,12 @@ impl TradingSdk {
         .await
     }
 
+    /// Builds the pre-sign transaction for an order using a sync signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or gas
+    /// estimation / transaction construction fails.
     pub fn get_pre_sign_transaction<S>(
         &self,
         params: &OrderTraderParameters,
@@ -275,6 +364,12 @@ impl TradingSdk {
         get_pre_sign_transaction(signer, chain_id, &params.order_uid, Some(&options))
     }
 
+    /// Builds the pre-sign transaction for an order using an async signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or gas
+    /// estimation / transaction construction fails.
     pub async fn get_pre_sign_transaction_async<S>(
         &self,
         params: &OrderTraderParameters,
@@ -294,6 +389,12 @@ impl TradingSdk {
         get_pre_sign_transaction_async(signer, chain_id, &params.order_uid, Some(&options)).await
     }
 
+    /// Fetches an order from the active orderbook binding.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when chain resolution fails or the orderbook
+    /// request fails.
     pub async fn get_order(
         &self,
         params: &OrderTraderParameters,
@@ -307,6 +408,11 @@ impl TradingSdk {
             .map_err(Into::into)
     }
 
+    /// Signs and submits an off-chain cancellation using a sync signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from [`Self::off_chain_cancel_order_async`].
     pub async fn off_chain_cancel_order<S>(
         &self,
         params: &OrderTraderParameters,
@@ -319,6 +425,12 @@ impl TradingSdk {
         self.off_chain_cancel_order_async(params, signer).await
     }
 
+    /// Signs and submits an off-chain cancellation using an async signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when orderbook context resolution, signing, or
+    /// orderbook submission fails.
     pub async fn off_chain_cancel_order_async<S>(
         &self,
         params: &OrderTraderParameters,
@@ -344,6 +456,11 @@ impl TradingSdk {
         .await
     }
 
+    /// Cancels an order on-chain using a sync signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from [`Self::on_chain_cancel_order_async`].
     pub async fn on_chain_cancel_order<S>(
         &self,
         params: &OrderTraderParameters,
@@ -356,6 +473,12 @@ impl TradingSdk {
         self.on_chain_cancel_order_async(params, signer).await
     }
 
+    /// Cancels an order on-chain using an async signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when order lookup, transaction construction, or
+    /// transaction submission fails.
     pub async fn on_chain_cancel_order_async<S>(
         &self,
         params: &OrderTraderParameters,
@@ -390,6 +513,12 @@ impl TradingSdk {
         cancel_order_onchain_async(signer, orderbook.chain_id, &order, Some(&options)).await
     }
 
+    /// Reads the CoW Protocol allowance using a sync provider.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or provider
+    /// reads fail.
     pub fn get_cow_protocol_allowance<P>(
         &self,
         provider: &P,
@@ -413,6 +542,12 @@ impl TradingSdk {
         )
     }
 
+    /// Reads the CoW Protocol allowance using an async provider.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or provider
+    /// reads fail.
     pub async fn get_cow_protocol_allowance_async<P>(
         &self,
         provider: &P,
@@ -437,6 +572,12 @@ impl TradingSdk {
         .await
     }
 
+    /// Sends an approval transaction using a sync signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or
+    /// transaction submission fails.
     pub fn approve_cow_protocol<S>(
         &self,
         signer: &S,
@@ -453,6 +594,12 @@ impl TradingSdk {
         crate::approve_cow_protocol(signer, params, chain_id, env)
     }
 
+    /// Sends an approval transaction using an async signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or
+    /// transaction submission fails.
     pub async fn approve_cow_protocol_async<S>(
         &self,
         signer: &S,

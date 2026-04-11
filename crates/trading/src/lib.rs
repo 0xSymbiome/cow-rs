@@ -1,15 +1,25 @@
 //! High-level CoW Protocol trading workflows for quoting, signing, posting,
 //! allowance management, and on-chain order actions.
 
+/// Allowance reads, approval transactions, and approval submission helpers.
 pub mod allowance;
+/// Off-chain cancellation helpers.
 pub mod cancel;
+/// Trading crate error types.
 pub mod error;
+/// On-chain order actions and transaction builders.
 pub mod onchain;
+/// Order-construction helpers and EthFlow adjustments.
 pub mod order;
+/// Quote-to-post orchestration helpers.
 pub mod post;
+/// Quote construction, app-data generation, and quote-request precedence helpers.
 pub mod quote;
+/// High-level `TradingSdk` facade and builder.
 pub mod sdk;
+/// Slippage and fee calculation helpers.
 pub mod slippage;
+/// Shared trading DTOs, trait seams, and settings types.
 pub mod types;
 
 pub use allowance::{

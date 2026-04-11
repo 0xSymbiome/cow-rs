@@ -9,10 +9,15 @@ use crate::{
     TradingError,
 };
 
+/// Default quote validity, in seconds, when no explicit validity window is supplied.
 pub const DEFAULT_QUOTE_VALIDITY: u32 = 60 * 30;
+/// Default slippage suggestion, in basis points, for flows that do not require a higher floor.
 pub const DEFAULT_SLIPPAGE_BPS: u32 = 50;
+/// Maximum supported slippage, in basis points.
 pub const MAX_SLIPPAGE_BPS: u32 = 10_000;
+/// Extra gas margin, in percent, added to derived on-chain transaction estimates.
 pub const GAS_MARGIN_PERCENT: u32 = 20;
+/// Fallback gas limit used when no explicit verification gas limit is available.
 pub const GAS_LIMIT_DEFAULT: u32 = 150_000;
 
 const PROTOCOL_FEE_BPS_SCALE: i64 = 100_000;
@@ -22,10 +27,17 @@ const SLIPPAGE_FEE_MULTIPLIER_PERCENT: f64 = 50.0;
 const SLIPPAGE_VOLUME_MULTIPLIER_PERCENT: f64 = 0.5;
 const PROTOCOL_FEE_BPS_MIN: f64 = 0.0001;
 
+/// Returns the default slippage floor for the given chain and trade style.
+#[must_use]
 pub fn default_slippage_bps(_chain_id: SupportedChainId, _is_ethflow: bool) -> u32 {
     DEFAULT_SLIPPAGE_BPS
 }
 
+/// Parses protocol-fee basis points into a finite floating-point value.
+///
+/// Values that are malformed, non-finite, or smaller than the minimum supported precision are
+/// ignored and return `None`.
+#[must_use]
 pub fn sanitize_protocol_fee_bps(protocol_fee_bps: Option<&str>) -> Option<f64> {
     let parsed = protocol_fee_bps.and_then(|value| value.parse::<f64>().ok())?;
 
@@ -36,6 +48,15 @@ pub fn sanitize_protocol_fee_bps(protocol_fee_bps: Option<&str>) -> Option<f64> 
     Some(parsed)
 }
 
+/// Suggests a slippage amount from a quote fee amount and multiplier percentage.
+///
+/// Percentage inputs are rounded to six decimal places before they are converted into integer
+/// math, and the resulting amount is rounded to the nearest integer unit.
+///
+/// # Errors
+///
+/// Returns an error when the fee amount is malformed, negative, or the multiplier is negative or
+/// non-finite.
 pub fn suggest_slippage_from_fee(
     fee_amount: &str,
     multiplying_factor_percent: f64,
@@ -52,6 +73,16 @@ pub fn suggest_slippage_from_fee(
     Amount::new(apply_percentage(&fee_amount, percent).to_string()).map_err(Into::into)
 }
 
+/// Suggests a slippage amount from the quoted sell volume after network-cost adjustment.
+///
+/// Sell orders use the post-network-cost sell amount, while buy orders use the pre-network-cost
+/// sell amount. Percentage inputs are rounded to six decimal places before integer math is
+/// applied, and the resulting amount is rounded to the nearest integer unit.
+///
+/// # Errors
+///
+/// Returns an error when the referenced amounts are malformed, when the selected sell amount is
+/// zero or negative, or when the percentage is negative or non-finite.
 pub fn suggest_slippage_from_volume(
     is_sell: bool,
     sell_amount_before_network_costs: &str,
@@ -78,6 +109,19 @@ pub fn suggest_slippage_from_volume(
     Amount::new(apply_percentage(&sell_amount, percent).to_string()).map_err(Into::into)
 }
 
+/// Derives the signed and intermediate quote amounts after protocol, network, partner, and
+/// slippage adjustments.
+///
+/// This function keeps the upstream quote strings as integer math. Partner-fee and protocol-fee
+/// adjustments use integer division, so fractional remainder is truncated toward zero. Slippage
+/// amounts are derived in basis points and also truncate toward zero before the final typed
+/// amounts are materialized.
+///
+/// # Errors
+///
+/// Returns an error when quote numeric fields are malformed, when the quoted sell amount is zero
+/// or negative, when protocol-fee math overflows the supported typed amount surface, or when any
+/// derived typed amount cannot be represented as a `cow_sdk_core::Amount`.
 pub fn calculate_quote_amounts_and_costs(
     quote: &QuoteData,
     slippage_percent_bps: u32,
@@ -217,6 +261,16 @@ pub fn calculate_quote_amounts_and_costs(
     })
 }
 
+/// Suggests a slippage tolerance in basis points for a quote response.
+///
+/// The result combines fee-based and volume-based suggestions, rounds the derived scaled percent
+/// to the nearest basis point, and clamps the final value into the supported range. EthFlow flows
+/// also apply the default slippage as a lower bound.
+///
+/// # Errors
+///
+/// Returns an error when quote amounts, fee inputs, or the derived slippage values are malformed
+/// or overflow the supported typed amount surface.
 pub fn suggest_slippage_bps(
     quote: &OrderQuoteResponse,
     trade_parameters: &TradeParameters,
@@ -257,6 +311,17 @@ pub fn suggest_slippage_bps(
     Ok(slippage_bps.clamp(lower_cap, MAX_SLIPPAGE_BPS))
 }
 
+/// Resolves the effective slippage suggestion for a quote flow.
+///
+/// When no custom slippage suggester is configured, or when quote pricing uses
+/// [`PriceQuality::Fast`], the built-in suggestion is returned directly. Custom suggesters may
+/// influence the volume multiplier, but failures fall back to the built-in suggestion instead of
+/// changing the quoting outcome.
+///
+/// # Errors
+///
+/// Returns an error when the built-in slippage calculation cannot be completed because quote or
+/// fee inputs are malformed.
 pub async fn resolve_slippage_suggestion(
     chain_id: SupportedChainId,
     trade_parameters: &TradeParameters,
@@ -327,6 +392,11 @@ pub async fn resolve_slippage_suggestion(
     }
 }
 
+/// Extracts the first supported partner-fee basis-point value from the order metadata payload.
+///
+/// Objects are read from the `volumeBps` field. Arrays are scanned depth-first until a supported
+/// unsigned 32-bit value is found.
+#[must_use]
 pub fn partner_fee_bps(partner_fee: Option<&Value>) -> Option<u32> {
     match partner_fee {
         Some(Value::Object(map)) => map

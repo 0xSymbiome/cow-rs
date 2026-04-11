@@ -4,6 +4,11 @@ use cow_sdk_signing::{SigningScheme as SigningSchemeContract, sign_order_cancell
 
 use crate::{OrderTraderParameters, OrderbookClient, TraderParameters, TradingError};
 
+/// Signs and submits an off-chain cancellation using a sync signer.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when signing or orderbook submission fails.
 pub async fn off_chain_cancel_order<O, S>(
     orderbook: &O,
     params: &OrderTraderParameters,
@@ -18,6 +23,15 @@ where
     off_chain_cancel_order_async(orderbook, params, trader, signer).await
 }
 
+/// Signs and submits an off-chain cancellation using an async signer.
+///
+/// The effective protocol options follow call-level precedence first and fall
+/// back to trader defaults, then to the injected orderbook environment.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when signing fails, unsupported local signing
+/// schemes are produced, or the orderbook rejects the cancellation.
 pub async fn off_chain_cancel_order_async<O, S>(
     orderbook: &O,
     params: &OrderTraderParameters,

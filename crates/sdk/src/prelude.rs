@@ -1,3 +1,8 @@
+//! Curated re-exports for consumers that want the primary `cow-sdk` surface from one import.
+//!
+//! The facade remains a re-export layer. Package-specific implementation details stay in the
+//! leaf crates that own them.
+
 pub use cow_sdk_app_data::{
     AppDataDoc, AppDataError, AppDataInfo, AppDataParams, CidMode, IpfsConfig, IpfsFetchTransport,
     IpfsUploadResult, IpfsUploadTransport, SchemaVersion, ValidationResult, app_data_hex_to_cid,

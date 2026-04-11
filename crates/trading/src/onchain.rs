@@ -11,12 +11,25 @@ use crate::{
     calculate_unique_order_id, get_order_to_sign,
 };
 
+/// EthFlow transaction bundle returned by native-sell helper flows.
+#[derive(Debug, Clone)]
 pub struct EthFlowTransaction {
+    /// Final unique order id.
     pub order_id: cow_sdk_core::OrderUid,
+    /// Transaction request to submit.
     pub transaction: TransactionRequest,
+    /// Unsigned order payload used to derive `order_id` and the transaction body.
     pub order_to_sign: cow_sdk_core::UnsignedOrder,
 }
 
+/// Builds a pre-sign transaction using a sync signer.
+///
+/// When gas estimation fails, the helper falls back to the documented default
+/// gas limit instead of failing closed.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when ABI encoding or gas-margin conversion fails.
 pub fn get_pre_sign_transaction<S>(
     signer: &S,
     chain_id: SupportedChainId,
@@ -51,6 +64,14 @@ where
     })
 }
 
+/// Builds a pre-sign transaction using an async signer.
+///
+/// When gas estimation fails, the helper falls back to the documented default
+/// gas limit instead of failing closed.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when ABI encoding or gas-margin conversion fails.
 pub async fn get_pre_sign_transaction_async<S>(
     signer: &S,
     chain_id: SupportedChainId,
@@ -86,6 +107,11 @@ where
     })
 }
 
+/// Builds an EthFlow order-creation transaction using a sync signer.
+///
+/// # Errors
+///
+/// Returns any error from [`get_eth_flow_transaction_async`].
 pub async fn get_eth_flow_transaction<S>(
     app_data_keccak256: &cow_sdk_core::AppDataHash,
     params: &crate::LimitTradeParameters,
@@ -109,6 +135,16 @@ where
     .await
 }
 
+/// Builds an EthFlow order-creation transaction using an async signer.
+///
+/// EthFlow order ids are generated against the wrapped-native sell token and
+/// `MAX_VALID_TO_EPOCH`, then retried by decrementing buy amount until the
+/// optional uniqueness checker reports a free id.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when signer address resolution, transaction
+/// encoding, unique-order-id generation, or gas-margin conversion fails.
 pub async fn get_eth_flow_transaction_async<S>(
     app_data_keccak256: &cow_sdk_core::AppDataHash,
     params: &crate::LimitTradeParameters,
@@ -198,6 +234,15 @@ where
     })
 }
 
+/// Builds an on-chain cancellation transaction using a sync signer.
+///
+/// Regular orders call the settlement contract. EthFlow orders call the
+/// EthFlow contract. When gas estimation fails, the helper falls back to the
+/// documented default gas limit.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when ABI encoding or gas conversion fails.
 pub fn onchain_cancellation_transaction<S>(
     signer: &S,
     chain_id: SupportedChainId,
@@ -236,6 +281,15 @@ where
     Ok(tx)
 }
 
+/// Builds an on-chain cancellation transaction using an async signer.
+///
+/// Regular orders call the settlement contract. EthFlow orders call the
+/// EthFlow contract. When gas estimation fails, the helper falls back to the
+/// documented default gas limit.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when ABI encoding or gas conversion fails.
 pub async fn onchain_cancellation_transaction_async<S>(
     signer: &S,
     chain_id: SupportedChainId,
@@ -275,6 +329,11 @@ where
     Ok(tx)
 }
 
+/// Cancels an order on-chain using a sync signer.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when transaction construction or submission fails.
 pub fn cancel_order_onchain<S>(
     signer: &S,
     chain_id: SupportedChainId,
@@ -295,6 +354,11 @@ where
     Ok(receipt.transaction_hash)
 }
 
+/// Cancels an order on-chain using an async signer.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when transaction construction or submission fails.
 pub async fn cancel_order_onchain_async<S>(
     signer: &S,
     chain_id: SupportedChainId,
@@ -316,6 +380,11 @@ where
     Ok(receipt.transaction_hash)
 }
 
+/// Resolves protocol options for an order-level workflow.
+///
+/// Call-level order params take precedence over trader defaults for environment
+/// and contract overrides.
+#[must_use]
 pub fn protocol_options_for_order(
     params: &OrderTraderParameters,
     trader: &TraderParameters,

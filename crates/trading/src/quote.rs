@@ -17,6 +17,16 @@ use crate::{
     sanitize_protocol_fee_bps,
 };
 
+/// Builds a quote and signing payload without requiring a signer.
+///
+/// This path is intended for quote-only workflows. The effective owner is resolved from
+/// `trade_parameters.owner` first and otherwise falls back to `trader.account`. Advanced settings
+/// override overlapping trade fields before the request is assembled.
+///
+/// # Errors
+///
+/// Returns an error when quote validity inputs conflict, when app-data generation fails, when the
+/// orderbook quote request fails, or when the derived signing payload cannot be constructed.
 pub async fn get_quote_only<O>(
     trade_parameters: &TradeParameters,
     trader: &QuoterParameters,
@@ -49,6 +59,16 @@ where
     .await
 }
 
+/// Builds quote results using a synchronous signer for owner resolution.
+///
+/// `trade_parameters.owner` takes precedence. When it is absent, the signer address becomes the
+/// effective owner. Advanced settings override overlapping trade fields before quote construction.
+///
+/// # Errors
+///
+/// Returns an error when signer address resolution fails, when quote validity inputs conflict,
+/// when app-data generation fails, when the orderbook quote request fails, or when the derived
+/// signing payload cannot be constructed.
 pub async fn get_quote_results<O, S>(
     trade_parameters: &TradeParameters,
     trader: &TraderParameters,
@@ -71,6 +91,16 @@ where
     .await
 }
 
+/// Builds quote results using an asynchronous signer for owner resolution.
+///
+/// `trade_parameters.owner` takes precedence. When it is absent, the signer address becomes the
+/// effective owner. Advanced settings override overlapping trade fields before quote construction.
+///
+/// # Errors
+///
+/// Returns an error when signer address resolution fails, when quote validity inputs conflict,
+/// when app-data generation fails, when the orderbook quote request fails, or when the derived
+/// signing payload cannot be constructed.
 pub async fn get_quote_results_async<O, S>(
     trade_parameters: &TradeParameters,
     trader: &TraderParameters,
@@ -114,6 +144,15 @@ where
     .await
 }
 
+/// Builds the trading app-data document and its derived hash.
+///
+/// The generated base document always includes quote slippage metadata and order class metadata.
+/// `advanced_params` then overrides `appCode`, `environment`, and metadata keys using a deep merge.
+///
+/// # Errors
+///
+/// Returns an error when the merged app-data document cannot be normalized into a valid app-data
+/// payload or hash.
 pub async fn build_app_data(
     app_code: &str,
     slippage_bps: u32,
@@ -150,6 +189,15 @@ pub async fn build_app_data(
     })
 }
 
+/// Applies an app-data override onto an existing full app-data document.
+///
+/// Top-level `appCode` and `environment` fields are replaced when present in the override. The
+/// nested `metadata` object is merged recursively, with override values taking precedence.
+///
+/// # Errors
+///
+/// Returns an error when the merged document cannot be normalized into a valid app-data payload
+/// or hash.
 pub fn merge_app_data_doc(
     base_doc: &Value,
     app_data_override: &AppDataParams,

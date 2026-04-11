@@ -11,6 +11,13 @@ use crate::{ApprovalParameters, TradingError};
 const ERC20_ALLOWANCE_ABI_JSON: &str = r#"[{"type":"function","name":"allowance","inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#;
 const ERC20_APPROVE_SIGNATURE: &str = "approve(address,uint256)";
 
+/// Reads the CoW Protocol vault-relayer allowance using a sync provider.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when the contract call cannot be encoded, the
+/// provider read fails, or the returned allowance cannot be decoded into an
+/// [`Amount`].
 pub fn get_cow_protocol_allowance<P>(
     provider: &P,
     token_address: &Address,
@@ -42,6 +49,13 @@ where
     decode_allowance_result(&raw)
 }
 
+/// Reads the CoW Protocol vault-relayer allowance using an async provider.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when the contract call cannot be encoded, the
+/// provider read fails, or the returned allowance cannot be decoded into an
+/// [`Amount`].
 pub async fn get_cow_protocol_allowance_async<P>(
     provider: &P,
     token_address: &Address,
@@ -74,6 +88,15 @@ where
     decode_allowance_result(&raw)
 }
 
+/// Builds the ERC-20 approval transaction for the CoW Protocol vault relayer.
+///
+/// The approval amount must fit inside the ABI `uint256` range; negative values
+/// and values wider than 32 bytes are rejected.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when ABI encoding fails or `amount` is outside the
+/// supported `uint256` range.
 pub fn approval_transaction(
     params: &ApprovalParameters,
     chain_id: SupportedChainId,
@@ -94,6 +117,11 @@ pub fn approval_transaction(
     })
 }
 
+/// Sends the approval transaction using a sync signer.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when transaction construction or submission fails.
 pub fn approve_cow_protocol<S>(
     signer: &S,
     params: &ApprovalParameters,
@@ -114,6 +142,11 @@ where
         })
 }
 
+/// Sends the approval transaction using an async signer.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when transaction construction or submission fails.
 pub async fn approve_cow_protocol_async<S>(
     signer: &S,
     params: &ApprovalParameters,

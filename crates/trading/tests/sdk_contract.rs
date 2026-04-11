@@ -74,8 +74,7 @@ async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can
         .with_app_code("0x007")
         .with_orderbook_client(orderbook.clone())
         .build()
-        .err()
-        .expect("mismatched injected orderbook chain must fail validation");
+        .expect_err("mismatched injected orderbook chain must fail validation");
     assert!(matches!(
         error,
         cow_sdk_trading::TradingError::InjectedOrderbookContextConflict {

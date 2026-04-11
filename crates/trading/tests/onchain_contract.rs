@@ -159,8 +159,7 @@ async fn ethflow_transaction_rejects_negative_quote_id_at_the_abi_boundary() {
         &signer,
     )
     .await
-    .err()
-    .expect("negative quote ids must be rejected before ABI encoding");
+    .expect_err("negative quote ids must be rejected before ABI encoding");
 
     assert!(matches!(
         error,

@@ -18,6 +18,14 @@ use crate::{
 
 // Non-suffixed posting functions are async entry points for synchronous Signer implementors.
 // Keep workflow logic in the AsyncSigner implementations so both public paths stay aligned.
+/// Quotes, signs, and submits a swap order using a synchronous signer.
+///
+/// Advanced settings override overlapping trade and app-data fields before submission.
+///
+/// # Errors
+///
+/// Returns an error when quoting fails, when app-data generation or merging fails, when signing
+/// fails, or when the orderbook rejects the order submission.
 pub async fn post_swap_order<O, S>(
     trade_parameters: &TradeParameters,
     trader: &TraderParameters,
@@ -40,6 +48,14 @@ where
     .await
 }
 
+/// Quotes, signs, and submits a swap order using an asynchronous signer.
+///
+/// Advanced settings override overlapping trade and app-data fields before submission.
+///
+/// # Errors
+///
+/// Returns an error when quoting fails, when app-data generation or merging fails, when signing
+/// fails, or when the orderbook rejects the order submission.
 pub async fn post_swap_order_async<O, S>(
     trade_parameters: &TradeParameters,
     trader: &TraderParameters,
@@ -65,6 +81,16 @@ where
         .await
 }
 
+/// Signs and submits a swap order from previously computed quote results using a synchronous
+/// signer.
+///
+/// When advanced app-data settings are provided, they are merged on top of the quote-derived
+/// document before submission.
+///
+/// # Errors
+///
+/// Returns an error when the quoted trade cannot be converted into a postable order, when app-data
+/// merging fails, when signing fails, or when the orderbook rejects the order submission.
 pub async fn post_swap_order_from_quote<O, S>(
     quote_results: &QuoteResults,
     trader: &TraderParameters,
@@ -81,6 +107,17 @@ where
         .await
 }
 
+/// Signs and submits a swap order from previously computed quote results using an asynchronous
+/// signer.
+///
+/// When advanced app-data settings are provided, they are merged on top of the quote-derived
+/// document before submission. Orderbook-bound environment selection resolves in this order:
+/// effective trade parameters, trader defaults, then the injected orderbook context.
+///
+/// # Errors
+///
+/// Returns an error when the quoted trade cannot be converted into a postable order, when app-data
+/// merging fails, when signing fails, or when the orderbook rejects the order submission.
 pub async fn post_swap_order_from_quote_async<O, S>(
     quote_results: &QuoteResults,
     trader: &TraderParameters,
@@ -129,6 +166,14 @@ where
     .await
 }
 
+/// Signs and submits a limit order using a synchronous signer.
+///
+/// Advanced settings override overlapping quote-request and app-data fields before submission.
+///
+/// # Errors
+///
+/// Returns an error when app-data generation fails, when signing fails, or when the orderbook
+/// rejects the order submission.
 pub async fn post_limit_order<O, S>(
     params: &LimitTradeParameters,
     trader: &TraderParameters,
@@ -144,6 +189,16 @@ where
     post_limit_order_async(params, trader, signer, advanced_settings, orderbook).await
 }
 
+/// Signs and submits a limit order using an asynchronous signer.
+///
+/// Advanced settings override overlapping quote-request and app-data fields before submission.
+/// When no slippage is supplied, limit-order posting uses `0` basis points in app-data and order
+/// construction.
+///
+/// # Errors
+///
+/// Returns an error when app-data generation fails, when signing fails, or when the orderbook
+/// rejects the order submission.
 pub async fn post_limit_order_async<O, S>(
     params: &LimitTradeParameters,
     trader: &TraderParameters,
@@ -191,6 +246,15 @@ where
     .await
 }
 
+/// Submits an EthFlow-style native-currency sell order using a synchronous signer.
+///
+/// This path uploads the supplied app-data, sends the prepared transaction through the signer, and
+/// returns the resulting transaction hash.
+///
+/// # Errors
+///
+/// Returns an error when transaction preparation fails, when app-data upload fails, or when the
+/// signer cannot send the transaction.
 pub async fn post_sell_native_currency_order<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
@@ -215,6 +279,15 @@ where
     .await
 }
 
+/// Submits an EthFlow-style native-currency sell order using an asynchronous signer.
+///
+/// This path uploads the supplied app-data, sends the prepared transaction through the signer, and
+/// returns the resulting transaction hash.
+///
+/// # Errors
+///
+/// Returns an error when transaction preparation fails, when app-data upload fails, or when the
+/// signer cannot send the transaction.
 pub async fn post_sell_native_currency_order_async<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
@@ -260,6 +333,15 @@ where
     })
 }
 
+/// Signs and submits a CoW Protocol order using a synchronous signer.
+///
+/// EthFlow sell orders are routed to the native-currency transaction path. Other orders are signed
+/// and submitted through the orderbook.
+///
+/// # Errors
+///
+/// Returns an error when EthFlow routing prerequisites are missing, when signing fails, when
+/// app-data upload fails, or when the orderbook rejects the order submission.
 pub async fn post_cow_protocol_trade<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
@@ -284,6 +366,18 @@ where
     .await
 }
 
+/// Signs and submits a CoW Protocol order using an asynchronous signer.
+///
+/// Environment and protocol-address overrides resolve in this order: call-level parameters, trader
+/// defaults, then the injected orderbook context for `env`. EthFlow sell orders require a quote
+/// identifier and are routed to the native-currency transaction path. Other orders are uploaded to
+/// the orderbook after signing with the requested or default signing scheme.
+///
+/// # Errors
+///
+/// Returns an error when owner resolution fails, when EthFlow routing prerequisites are missing,
+/// when order construction or signing fails, when app-data upload fails, or when the orderbook
+/// rejects the order submission.
 pub async fn post_cow_protocol_trade_async<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
@@ -493,6 +587,12 @@ where
     }
 }
 
+/// Builds an EIP-1271 verification request for a CoW order digest.
+///
+/// # Errors
+///
+/// Returns an error when the signing domain cannot be resolved or when the order digest cannot be
+/// derived for the verification request.
 pub fn eip1271_order_verification_request(
     order_to_sign: &cow_sdk_core::UnsignedOrder,
     chain_id: cow_sdk_core::SupportedChainId,
@@ -510,6 +610,12 @@ pub fn eip1271_order_verification_request(
     })
 }
 
+/// Verifies an EIP-1271 order signature with a synchronous provider.
+///
+/// # Errors
+///
+/// Returns an error when the verification request cannot be derived or when the provider reports
+/// missing code, malformed responses, or an invalid EIP-1271 magic value.
 pub fn verify_eip1271_order_signature<P>(
     provider: &P,
     order_to_sign: &cow_sdk_core::UnsignedOrder,
@@ -527,6 +633,12 @@ where
     Ok(())
 }
 
+/// Verifies an EIP-1271 order signature with an asynchronous provider.
+///
+/// # Errors
+///
+/// Returns an error when the verification request cannot be derived or when the provider reports
+/// missing code, malformed responses, or an invalid EIP-1271 magic value.
 pub async fn verify_eip1271_order_signature_async<P>(
     provider: &P,
     order_to_sign: &cow_sdk_core::UnsignedOrder,

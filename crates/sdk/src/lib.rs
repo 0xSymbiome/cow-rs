@@ -38,6 +38,7 @@
 //! ```
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+/// Curated re-exports for the default `cow-sdk` facade.
 pub mod prelude;
 
 pub use prelude::*;
@@ -54,21 +55,29 @@ pub use cow_sdk_trading as trading;
 
 use thiserror::Error;
 
+/// Aggregate error type for the root facade crate.
 #[derive(Debug, Error)]
 pub enum SdkError {
+    /// Shared types, validation, or configuration error.
     #[error("types error: {0}")]
     Types(#[from] cow_sdk_core::CowRsError),
+    /// Signing or typed-data error.
     #[error("signing error: {0}")]
     Signing(#[from] cow_sdk_signing::SigningError),
+    /// App-data generation, validation, or CID error.
     #[error("app-data error: {0}")]
     AppData(#[from] cow_sdk_app_data::AppDataError),
+    /// Contract encoding, hashing, or provider interaction error.
     #[error("contracts error: {0}")]
     Contracts(#[from] cow_sdk_contracts::ContractsError),
+    /// Orderbook transport, decoding, or request error.
     #[error("orderbook error: {0}")]
     Orderbook(#[from] cow_sdk_orderbook::OrderbookError),
+    /// Trading workflow, quoting, or submission error.
     #[error("trading error: {0}")]
     Trading(#[from] cow_sdk_trading::TradingError),
     #[cfg(feature = "browser-wallet")]
+    /// Browser-wallet transport or session error.
     #[error("browser wallet error: {0}")]
     BrowserWallet(#[from] cow_sdk_browser_wallet::BrowserWalletError),
 }

@@ -19,16 +19,25 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[cfg(target_arch = "wasm32")]
 use web_time::{SystemTime, UNIX_EPOCH};
 
+/// Inputs that control how an unsigned order is derived for signing or posting.
 #[derive(Debug, Clone)]
 pub struct OrderToSignParams {
+    /// Active chain id.
     pub chain_id: SupportedChainId,
+    /// Effective owner.
     pub from: Address,
+    /// Whether the flow is building an EthFlow order.
     pub is_ethflow: bool,
+    /// Optional network cost amount folded into amount calculations.
     pub network_costs_amount: Option<Amount>,
+    /// Whether costs, slippage, and fees should be applied to the final order payload.
     pub apply_costs_slippage_and_fees: bool,
+    /// Optional protocol-fee value used during amount calculation.
     pub protocol_fee_bps: Option<f64>,
 }
 
+/// Returns `true` when `sell_token` is the protocol native-asset sentinel address.
+#[must_use]
 pub fn is_ethflow_order(sell_token: &Address) -> bool {
     addresses_equal(
         sell_token,
@@ -36,6 +45,8 @@ pub fn is_ethflow_order(sell_token: &Address) -> bool {
     )
 }
 
+/// Rewrites a swap trade to use the wrapped-native token for EthFlow quoting.
+#[must_use]
 pub fn adjust_ethflow_trade_parameters(
     chain_id: SupportedChainId,
     trade_parameters: &TradeParameters,
@@ -45,6 +56,8 @@ pub fn adjust_ethflow_trade_parameters(
     adjusted
 }
 
+/// Rewrites a limit-order request to use the wrapped-native token for EthFlow posting.
+#[must_use]
 pub fn adjust_ethflow_limit_parameters(
     chain_id: SupportedChainId,
     limit_parameters: &LimitTradeParameters,
@@ -54,6 +67,12 @@ pub fn adjust_ethflow_limit_parameters(
     adjusted
 }
 
+/// Converts swap-style trade params plus a quote response into limit-order params.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when quoted string amounts cannot be converted into
+/// typed [`Amount`] values.
 pub fn swap_params_to_limit_order_params(
     trade_parameters: &TradeParameters,
     quote_response: &OrderQuoteResponse,
@@ -80,6 +99,16 @@ pub fn swap_params_to_limit_order_params(
     })
 }
 
+/// Builds the unsigned order payload used for signing or on-chain helpers.
+///
+/// Relative validity uses `DEFAULT_QUOTE_VALIDITY` when neither `valid_for` nor
+/// `valid_to` is provided. When `apply_costs_slippage_and_fees` is enabled, the
+/// helper recomputes amounts from the public fee/slippage contract before
+/// building the final order.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when amount calculation or typed value conversion fails.
 pub fn get_order_to_sign(
     params: OrderToSignParams,
     limit_parameters: &LimitTradeParameters,
@@ -154,6 +183,16 @@ pub fn get_order_to_sign(
     })
 }
 
+/// Generates a unique EthFlow order id, retrying by decrementing buy amount.
+///
+/// The helper normalizes the order for EthFlow id generation by fixing
+/// `valid_to` to `MAX_VALID_TO_EPOCH` and replacing the sell token with the
+/// wrapped-native token for `chain_id`.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when id generation fails, the optional checker
+/// fails, or the buy amount can no longer be decremented safely.
 pub async fn calculate_unique_order_id(
     chain_id: SupportedChainId,
     order: &UnsignedOrder,
