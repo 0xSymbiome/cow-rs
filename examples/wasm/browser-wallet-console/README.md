@@ -9,7 +9,7 @@ This example keeps browser-wallet support tiers separate:
 
 The injected-provider path requires explicit user authorization and depends on the browser extension for wallet prompts, chain availability, and provider-specific behavior. The mock path is the deterministic contract proof.
 
-`Reset Session` clears console session state while keeping the selected wallet available for status and refresh actions. `Forget Wallet` clears the selected wallet from the console. Wallet authorization stays managed by the extension.
+`Detect` caches reviewed injected-wallet candidates. `Connect / Reconnect` uses that cached selection or the retained selected wallet. `Rescan` performs a fresh reviewed discovery round. `Reset Session` clears console session state while keeping the selected wallet available for status and refresh actions. `Forget Wallet` clears the selected wallet from the console. Wallet authorization stays managed by the extension.
 
 Build:
 

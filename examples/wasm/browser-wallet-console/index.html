@@ -359,14 +359,17 @@
         </div>
         <div class="panel-body">
           <p class="hint">
-            Live wallet path for connect, sign, quote, submit, and cancel through the root `cow-sdk` surface.
-            Detection reports reviewed candidates explicitly, and the wallet index selects which injected wallet to use when more than one is present.
+          Live wallet path for connect, sign, quote, submit, and cancel through the root `cow-sdk` surface.
+          <code>Detect</code> caches reviewed wallet candidates, <code>Connect / Reconnect</code> uses the cached selection or the retained wallet handle,
+          <code>Rescan</code> refreshes the candidate set explicitly, <code>Reset Session</code> keeps the selected wallet, and <code>Forget Wallet</code> clears it from the console.
           </p>
           <div class="button-row">
             <button id="detect-wallet">Detect</button>
-            <button id="connect-wallet" class="alt">Connect</button>
+            <button id="rescan-wallet" class="alt">Rescan</button>
+            <button id="connect-wallet" class="alt">Connect / Reconnect</button>
             <button id="wallet-status">Wallet Status</button>
             <button id="reset-wallet">Reset Session</button>
+            <button id="forget-wallet" class="alt">Forget Wallet</button>
             <button id="refresh-wallet">Refresh</button>
             <button id="switch-wallet" class="alt">Switch Chain</button>
             <button id="sign-message">Sign Message</button>
@@ -485,6 +488,11 @@
       run(injectedOutput, button, () => consoleState.injected_detection_json());
     });
 
+    document.getElementById("rescan-wallet").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () => consoleState.injected_rescan_json());
+    });
+
     document.getElementById("connect-wallet").addEventListener("click", (event) => {
       const button = event.currentTarget;
       run(injectedOutput, button, () =>
@@ -500,6 +508,11 @@
     document.getElementById("reset-wallet").addEventListener("click", (event) => {
       const button = event.currentTarget;
       run(injectedOutput, button, () => consoleState.injected_reset_session_json());
+    });
+
+    document.getElementById("forget-wallet").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      run(injectedOutput, button, () => consoleState.injected_forget_wallet_json());
     });
 
     document.getElementById("refresh-wallet").addEventListener("click", (event) => {
