@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+};
 
 use async_trait::async_trait;
 use serde_json::json;
@@ -378,6 +381,10 @@ impl Signer for MockSigner {
 pub struct MockProviderState {
     pub last_contract_call: Option<ContractCall>,
     pub allowance: String,
+    pub contract_responses: BTreeMap<String, String>,
+    pub code_by_address: BTreeMap<String, HexData>,
+    pub read_contract_error: Option<String>,
+    pub get_code_error: Option<String>,
 }
 
 #[derive(Clone)]
@@ -392,9 +399,55 @@ impl Default for MockProvider {
             signer: None,
             state: Arc::new(Mutex::new(MockProviderState {
                 allowance: "1000000000000000000".to_owned(),
+                contract_responses: BTreeMap::new(),
+                code_by_address: BTreeMap::new(),
+                read_contract_error: None,
+                get_code_error: None,
                 ..MockProviderState::default()
             })),
         }
+    }
+}
+
+impl MockProvider {
+    pub fn state(&self) -> MockProviderState {
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone()
+    }
+
+    pub fn set_code(&self, address: &Address, code: &str) {
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .code_by_address
+            .insert(
+                address.normalized_key(),
+                HexData::new(code).expect("mock code must be valid hex"),
+            );
+    }
+
+    pub fn set_contract_response(&self, method: &str, response: &str) {
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .contract_responses
+            .insert(method.to_owned(), response.to_owned());
+    }
+
+    pub fn set_read_contract_error(&self, message: Option<&str>) {
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .read_contract_error = message.map(str::to_owned);
+    }
+
+    pub fn set_get_code_error(&self, message: Option<&str>) {
+        self.state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .get_code_error = message.map(str::to_owned);
     }
 }
 
@@ -410,8 +463,18 @@ impl Provider for MockProvider {
         Ok(u64::from(SupportedChainId::Mainnet))
     }
 
-    fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
-        Ok(None)
+    fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if let Some(message) = state.get_code_error.clone() {
+            return Err(message);
+        }
+        Ok(state
+            .code_by_address
+            .get(&address.normalized_key())
+            .cloned())
     }
 
     fn get_transaction_receipt(
@@ -434,16 +497,23 @@ impl Provider for MockProvider {
     }
 
     fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
-        self.state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .last_contract_call = Some(request.clone());
-        Ok(self
+        let mut state = self
             .state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .allowance
-            .clone())
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        state.last_contract_call = Some(request.clone());
+        if let Some(message) = state.read_contract_error.clone() {
+            return Err(message);
+        }
+        if request.method == "allowance" {
+            Ok(state.allowance.clone())
+        } else {
+            state
+                .contract_responses
+                .get(&request.method)
+                .cloned()
+                .ok_or_else(|| format!("missing mock contract response for {}", request.method))
+        }
     }
 
     fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {

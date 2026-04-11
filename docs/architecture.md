@@ -40,7 +40,7 @@ flowchart TD
 | Layer | Crates | Responsibility |
 | --- | --- | --- |
 | Foundation | `cow-sdk-core` | Shared domain types, chain/env config, validation, active signer/provider contracts, and deferred transport adapter contracts |
-| Protocol primitives | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` | Deterministic transforms for hashes, signatures, order ids, metadata, and CID behavior |
+| Protocol primitives | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` | Deterministic transforms for hashes, signatures, order ids, smart-account verification, metadata, and CID behavior |
 | Transport | `cow-sdk-orderbook`, `cow-sdk-subgraph` | Typed HTTP and GraphQL access with explicit error boundaries |
 | Workflow | `cow-sdk-trading` | Quote-to-order, submission, cancellation, allowance, approval, and slippage flows |
 | Runtime adapter | `cow-sdk-browser-wallet` | Async EIP-1193 integration for browser wallets |
@@ -52,9 +52,16 @@ flowchart TD
 
 - `Signer` and `Provider` cover sync native/test integration seams.
 - `AsyncSigner` and `AsyncProvider` cover async and browser-wallet paths, with blanket implementations for compatible sync types.
-- `TypedDataPayload` carries the explicit EIP-712 signer contract: domain, primary type, full type map, and canonical message JSON. Order-facing helpers in `cow-sdk-signing` remain typed convenience wrappers over that lower-level payload.
+- `TypedDataPayload` carries the explicit EIP-712 signer contract: domain, primary type, full type map, and canonical message JSON. Order-facing helpers in `cow-sdk-signing` are typed convenience wrappers over that lower-level payload.
 
-The `HttpTransport`, `GraphTransport`, and `PinningTransport` traits are extension adapter contracts. The orderbook, subgraph, and app-data crates currently own their typed request behavior directly because those surfaces have API-specific retry, header, credential, and decoding rules.
+The `HttpTransport`, `GraphTransport`, and `PinningTransport` traits are extension adapter contracts. The orderbook, subgraph, and app-data crates own their typed request behavior directly because those surfaces have API-specific retry, header, credential, and decoding rules.
+
+Smart-account signature verification follows the same boundary rule:
+
+- `cow-sdk-contracts` owns the low-level EIP-1271 verification seam over explicit `Provider` and `AsyncProvider` inputs.
+- `cow-sdk-signing` re-exports that seam for signing-adjacent consumers.
+- `cow-sdk-trading` adds an order-level wrapper that computes the order digest and then calls the explicit verification helper.
+- Verification is opt-in. Posting flows do not silently require providers when callers only need payload generation or submission.
 
 ## Transport Policy
 
@@ -63,13 +70,13 @@ Shared transport client settings live in `cow_sdk_core::HttpClientPolicy`. That 
 - request timeout
 - user-agent
 
-Crate-local transport behavior stays local:
+Crate-local transport behavior is crate-local:
 
 | Crate | Shared policy input | Crate-local transport policy |
 | --- | --- | --- |
-| `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` adds retry and rate-limit behavior. Chain/env base URL selection remains in `ApiContext`, and env-specific overrides remain explicit builders on `OrderBookApi`. |
-| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` keeps client settings explicit while `SubgraphConfig` continues to own chain selection, API-key-derived production URLs, and caller overrides. |
-| `cow-sdk-app-data` | none for the fetch adapter trait itself | `IpfsFetchPolicy` owns read-base-URI selection only. Pinning credentials and write endpoints remain in `IpfsConfig` and upload helpers. |
+| `cow-sdk-orderbook` | `HttpClientPolicy` | `OrderBookTransportPolicy` adds retry and rate-limit behavior. Chain/env base URL selection lives in `ApiContext`, and env-specific overrides are explicit builders on `OrderBookApi`. |
+| `cow-sdk-subgraph` | `HttpClientPolicy` | `SubgraphTransportPolicy` keeps client settings explicit while `SubgraphConfig` owns chain selection, API-key-derived production URLs, and caller overrides. |
+| `cow-sdk-app-data` | none for the fetch adapter trait itself | `IpfsFetchPolicy` owns read-base-URI selection only. Pinning credentials and write endpoints live in `IpfsConfig` and upload helpers. |
 
 This split keeps shared client behavior reviewable without hiding API-specific semantics behind a false common abstraction.
 
@@ -87,7 +94,7 @@ Order-like structures are kept separate when they represent different protocol b
 | `cow_sdk_orderbook::OrderCreation` | Order submission wire DTO |
 | `cow_sdk_orderbook::Order` | Orderbook order response DTO with persisted API state |
 
-The conversion from `UnsignedOrder` to the contract ABI order is explicit. Quote-to-submission conversion remains in the orderbook crate because it adds signature, signer, signing-scheme, and quote-id fields required by the orderbook API.
+The conversion from `UnsignedOrder` to the contract ABI order is explicit. Quote-to-submission conversion lives in the orderbook crate because it adds signature, signer, signing-scheme, and quote-id fields required by the orderbook API.
 
 ## Typed Public Boundary
 
@@ -110,7 +117,7 @@ The main exception is `cow-sdk-orderbook`, which keeps orderbook HTTP DTOs strin
 
 - `cow-sdk` adds no hidden business logic.
 - `cow-sdk-trading` owns user-facing orchestration.
-- `cow-sdk-subgraph` stays read-only and separate from the trading facade.
+- `cow-sdk-subgraph` is read-only and separate from the trading facade.
 - Browser wallet support is feature-gated and async.
 - Pure transform crates do not perform network I/O.
 

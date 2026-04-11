@@ -1,4 +1,4 @@
-use cow_sdk_core::{Amount, AsyncSigner, ProtocolOptions, Signer};
+use cow_sdk_core::{Amount, AsyncProvider, AsyncSigner, ProtocolOptions, Provider, Signer};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use cow_sdk_signing::{
     SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order_async,
@@ -500,6 +500,57 @@ where
             ))
         }
     }
+}
+
+pub fn eip1271_order_verification_request(
+    order_to_sign: &cow_sdk_core::UnsignedOrder,
+    chain_id: cow_sdk_core::SupportedChainId,
+    verification: &crate::types::Eip1271VerificationParameters,
+    options: Option<&ProtocolOptions>,
+) -> Result<cow_sdk_contracts::Eip1271VerificationRequest, TradingError> {
+    let domain = cow_sdk_signing::get_domain(chain_id, options)?;
+    let digest =
+        cow_sdk_contracts::hash_order(&domain, &cow_sdk_contracts::Order::from(order_to_sign))?;
+
+    Ok(cow_sdk_contracts::Eip1271VerificationRequest {
+        verifier: verification.verifier.clone(),
+        digest,
+        signature: verification.signature.clone(),
+    })
+}
+
+pub fn verify_eip1271_order_signature<P>(
+    provider: &P,
+    order_to_sign: &cow_sdk_core::UnsignedOrder,
+    chain_id: cow_sdk_core::SupportedChainId,
+    verification: &crate::types::Eip1271VerificationParameters,
+    options: Option<&ProtocolOptions>,
+) -> Result<(), TradingError>
+where
+    P: Provider,
+    P::Error: std::fmt::Display,
+{
+    let request =
+        eip1271_order_verification_request(order_to_sign, chain_id, verification, options)?;
+    cow_sdk_contracts::verify_eip1271_signature(provider, &request)?;
+    Ok(())
+}
+
+pub async fn verify_eip1271_order_signature_async<P>(
+    provider: &P,
+    order_to_sign: &cow_sdk_core::UnsignedOrder,
+    chain_id: cow_sdk_core::SupportedChainId,
+    verification: &crate::types::Eip1271VerificationParameters,
+    options: Option<&ProtocolOptions>,
+) -> Result<(), TradingError>
+where
+    P: AsyncProvider,
+    P::Error: std::fmt::Display,
+{
+    let request =
+        eip1271_order_verification_request(order_to_sign, chain_id, verification, options)?;
+    cow_sdk_contracts::verify_eip1271_signature_async(provider, &request).await?;
+    Ok(())
 }
 
 fn map_contract_scheme(scheme: SigningSchemeContract) -> SigningScheme {

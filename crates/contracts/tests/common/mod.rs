@@ -40,6 +40,9 @@ pub struct MockProvider {
     pub storage: Rc<RefCell<BTreeMap<(String, String), String>>>,
     pub calls: Rc<RefCell<Vec<ContractCall>>>,
     pub response: Rc<RefCell<String>>,
+    pub response_error: Rc<RefCell<Option<String>>>,
+    pub code: Rc<RefCell<Option<HexData>>>,
+    pub code_error: Rc<RefCell<Option<String>>>,
     pub chain_id: u64,
 }
 
@@ -55,6 +58,9 @@ impl MockProvider {
             storage: Rc::new(RefCell::new(BTreeMap::new())),
             calls: Rc::new(RefCell::new(Vec::new())),
             response: Rc::new(RefCell::new("null".to_owned())),
+            response_error: Rc::new(RefCell::new(None)),
+            code: Rc::new(RefCell::new(None)),
+            code_error: Rc::new(RefCell::new(None)),
             chain_id: 1,
         }
     }
@@ -68,6 +74,18 @@ impl MockProvider {
 
     pub fn set_response(&self, value: &str) {
         *self.response.borrow_mut() = value.to_owned();
+    }
+
+    pub fn set_response_error(&self, value: Option<&str>) {
+        *self.response_error.borrow_mut() = value.map(str::to_owned);
+    }
+
+    pub fn set_code(&self, value: Option<&str>) {
+        *self.code.borrow_mut() = value.map(|value| HexData::new(value).unwrap());
+    }
+
+    pub fn set_code_error(&self, value: Option<&str>) {
+        *self.code_error.borrow_mut() = value.map(str::to_owned);
     }
 }
 
@@ -84,7 +102,10 @@ impl Provider for MockProvider {
     }
 
     fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
-        Ok(None)
+        if let Some(message) = self.code_error.borrow().clone() {
+            return Err(MockProviderError(message));
+        }
+        Ok(self.code.borrow().clone())
     }
 
     fn get_transaction_receipt(
@@ -116,6 +137,9 @@ impl Provider for MockProvider {
 
     fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
         self.calls.borrow_mut().push(request.clone());
+        if let Some(message) = self.response_error.borrow().clone() {
+            return Err(MockProviderError(message));
+        }
         Ok(self.response.borrow().clone())
     }
 

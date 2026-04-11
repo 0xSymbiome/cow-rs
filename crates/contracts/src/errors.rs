@@ -1,4 +1,4 @@
-use cow_sdk_core::CoreError;
+use cow_sdk_core::{Address, CoreError};
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -19,6 +19,17 @@ pub enum ContractsError {
     UnsupportedSigningScheme(u8),
     #[error("invalid EIP-1271 signature payload")]
     InvalidEip1271SignatureData,
+    #[error("EIP-1271 verifier {verifier} does not expose contract code")]
+    UnsupportedEip1271Verifier { verifier: Address },
+    #[error("provider error during EIP-1271 {operation}: {message}")]
+    Eip1271Provider {
+        operation: &'static str,
+        message: String,
+    },
+    #[error("malformed EIP-1271 response: {response}")]
+    MalformedEip1271Response { response: String },
+    #[error("unexpected EIP-1271 magic value: expected {expected}, got {actual}")]
+    Eip1271MagicValueMismatch { expected: String, actual: String },
     #[error("missing clearing price for token {0}")]
     MissingClearingPrice(String),
     #[error("missing executed amount for partially fillable trade")]

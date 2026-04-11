@@ -11,6 +11,9 @@ pub use cancellation::{
     sign_order_cancellations_with_scheme_async,
 };
 pub use cow_sdk_contracts::SigningScheme;
+pub use cow_sdk_contracts::{
+    Eip1271VerificationRequest, verify_eip1271_signature, verify_eip1271_signature_async,
+};
 pub use domain::{
     ORDER_PRIMARY_TYPE, OrderTypedData, cancellation_fields, domain_fields, domain_separator,
     domain_separator_for, get_domain, order_fields, order_typed_data, order_typed_data_payload,

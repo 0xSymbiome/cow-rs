@@ -1,13 +1,14 @@
 mod common;
 
 use cow_sdk_contracts::{
-    EIP1271_MAGICVALUE, Eip1271SignatureData, Signature, SigningScheme,
-    decode_eip1271_signature_data, decode_signing_scheme, encode_eip1271_signature_data,
-    encode_signing_scheme, function_magic_value, normalized_ecdsa_signature,
+    ContractsError, EIP1271_MAGICVALUE, Eip1271SignatureData, Eip1271VerificationRequest,
+    Signature, SigningScheme, decode_eip1271_signature_data, decode_signing_scheme,
+    encode_eip1271_signature_data, encode_signing_scheme, function_magic_value,
+    normalized_ecdsa_signature, verify_eip1271_signature,
 };
-use cow_sdk_core::Address;
+use cow_sdk_core::{Address, Hash32, HexData};
 
-use common::fixture_case;
+use common::{MockProvider, fixture_case};
 
 #[test]
 fn signing_scheme_and_magic_value_match_fixture_contract() {
@@ -99,4 +100,113 @@ fn signature_helpers_preserve_public_contract_surface() {
     assert!(SigningScheme::Eip712.is_ecdsa());
     assert!(SigningScheme::EthSign.is_ecdsa());
     assert!(!SigningScheme::Eip1271.is_ecdsa());
+}
+
+#[test]
+fn eip1271_verification_reads_contract_code_and_magic_value() {
+    let provider = MockProvider::new();
+    let verifier = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
+    provider.set_code(Some("0x6001600055"));
+    provider.set_response("\"0x1626ba7e\"");
+
+    verify_eip1271_signature(
+        &provider,
+        &Eip1271VerificationRequest {
+            verifier: verifier.clone(),
+            digest: Hash32::new(format!("0x{}", "11".repeat(32))).unwrap(),
+            signature: HexData::new("0x1234").unwrap(),
+        },
+    )
+    .unwrap();
+
+    let call = provider.calls.borrow().last().cloned().unwrap();
+    assert_eq!(call.address, verifier);
+    assert_eq!(call.method, "isValidSignature");
+    assert!(call.abi_json.contains("\"bytes4\""));
+    let args: Vec<String> = serde_json::from_str(&call.args_json).unwrap();
+    assert_eq!(args[0], format!("0x{}", "11".repeat(32)));
+    assert_eq!(args[1], "0x1234");
+}
+
+#[test]
+fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
+    let provider = MockProvider::new();
+    let verifier = Address::new("0x1111111111111111111111111111111111111111").unwrap();
+
+    let missing = verify_eip1271_signature(
+        &provider,
+        &Eip1271VerificationRequest {
+            verifier: verifier.clone(),
+            digest: Hash32::new(format!("0x{}", "22".repeat(32))).unwrap(),
+            signature: HexData::new("0x").unwrap(),
+        },
+    )
+    .unwrap_err();
+    assert_eq!(
+        missing,
+        ContractsError::UnsupportedEip1271Verifier {
+            verifier: verifier.clone()
+        }
+    );
+
+    provider.set_code(Some("0x6001600055"));
+    provider.set_response_error(Some("rpc unavailable"));
+    let transport = verify_eip1271_signature(
+        &provider,
+        &Eip1271VerificationRequest {
+            verifier,
+            digest: Hash32::new(format!("0x{}", "33".repeat(32))).unwrap(),
+            signature: HexData::new("0x1234").unwrap(),
+        },
+    )
+    .unwrap_err();
+    assert_eq!(
+        transport,
+        ContractsError::Eip1271Provider {
+            operation: "read_contract",
+            message: "rpc unavailable".to_owned()
+        }
+    );
+}
+
+#[test]
+fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
+    let provider = MockProvider::new();
+    let verifier = Address::new("0x2222222222222222222222222222222222222222").unwrap();
+    provider.set_code(Some("0x6001600055"));
+
+    provider.set_response("{\"unexpected\":true}");
+    let malformed = verify_eip1271_signature(
+        &provider,
+        &Eip1271VerificationRequest {
+            verifier: verifier.clone(),
+            digest: Hash32::new(format!("0x{}", "44".repeat(32))).unwrap(),
+            signature: HexData::new("0x1234").unwrap(),
+        },
+    )
+    .unwrap_err();
+    assert_eq!(
+        malformed,
+        ContractsError::MalformedEip1271Response {
+            response: "{\"unexpected\":true}".to_owned()
+        }
+    );
+
+    provider.set_response("\"0xffffffff\"");
+    let mismatch = verify_eip1271_signature(
+        &provider,
+        &Eip1271VerificationRequest {
+            verifier,
+            digest: Hash32::new(format!("0x{}", "55".repeat(32))).unwrap(),
+            signature: HexData::new("0x1234").unwrap(),
+        },
+    )
+    .unwrap_err();
+    assert_eq!(
+        mismatch,
+        ContractsError::Eip1271MagicValueMismatch {
+            expected: EIP1271_MAGICVALUE.to_owned(),
+            actual: "0xffffffff".to_owned()
+        }
+    );
 }

@@ -6,8 +6,8 @@ use serde_json::Value;
 
 use cow_sdk_app_data::{AppDataDoc, AppDataParams};
 use cow_sdk_core::{
-    Address, AddressPerChain, Amount, ApiContext, AppDataHash, CowEnv, OrderBalance, OrderDigest,
-    OrderKind, OrderUid, QuoteAmountsAndCosts, SupportedChainId, TransactionHash,
+    Address, AddressPerChain, Amount, ApiContext, AppDataHash, CowEnv, HexData, OrderBalance,
+    OrderDigest, OrderKind, OrderUid, QuoteAmountsAndCosts, SupportedChainId, TransactionHash,
     TransactionRequest, UnsignedOrder,
 };
 use cow_sdk_orderbook::{
@@ -222,6 +222,13 @@ pub struct PostTradeAdditionalParams {
     pub signing_scheme: Option<SigningScheme>,
     pub custom_eip1271_signature: Option<Arc<dyn Eip1271SignatureProvider>>,
     pub apply_costs_slippage_and_fees: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Eip1271VerificationParameters {
+    pub verifier: Address,
+    pub signature: HexData,
 }
 
 #[derive(Clone, Default)]
