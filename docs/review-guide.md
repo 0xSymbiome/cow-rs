@@ -150,6 +150,15 @@ Browser-wallet session synchronization follows the same explicit contract:
 - Listener ownership follows cloned `BrowserWallet` and `Eip1193Provider` values. Cleanup happens when the last owning Rust value is dropped, without process-global event buses or singleton state.
 - `refresh_session()` remains an explicit resynchronization helper, not the primary reviewed path for externally initiated account or chain changes.
 
+Browser-wallet chain management is reviewed through the typed crate-local contract:
+
+- `WalletChainParameters` and `WalletNativeCurrency` are the add-chain request surface. Browser-wallet callers provide explicit chain metadata and RPC URLs instead of assembling raw `wallet_addEthereumChain` payloads at call sites.
+- `BrowserWallet::switch_chain()` remains the typed switch helper for reviewed supported chains.
+- `BrowserWallet::add_chain()` and `BrowserWallet::switch_or_add_chain()` keep add-chain and switch-or-add behavior visible through `WalletChainChange` and `WalletChainChangeKind`.
+- Invalid chain configuration fails locally with `BrowserWalletError::InvalidChainConfiguration`. Wallet-side rejection, unsupported methods, and chain-not-added outcomes remain distinct typed errors.
+- Wallet-specific method growth stays leaf-owned and typed. The public contract does not include a generic raw wallet-RPC passthrough.
+- Promotion beyond `cow-sdk-browser-wallet` requires another stable non-browser consumer and a materially larger typed wallet-method surface.
+
 ## Public Package Policy
 
 Packaging posture is explicit in the manifests:

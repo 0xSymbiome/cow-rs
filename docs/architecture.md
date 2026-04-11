@@ -43,7 +43,7 @@ flowchart TD
 | Protocol primitives | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` | Deterministic transforms for hashes, signatures, order ids, smart-account verification, metadata, and CID behavior |
 | Transport | `cow-sdk-orderbook`, `cow-sdk-subgraph` | Typed HTTP and GraphQL access with explicit error boundaries |
 | Workflow | `cow-sdk-trading` | Quote-to-order, submission, cancellation, allowance, approval, and slippage flows |
-| Runtime adapter | `cow-sdk-browser-wallet` | Async EIP-1193 integration for browser wallets |
+| Runtime adapter | `cow-sdk-browser-wallet` | Async EIP-1193 integration and typed browser-wallet methods for reviewed wallet-specific behavior |
 | Facade | `cow-sdk` | Thin re-export layer for the primary public surface |
 
 ## Runtime Traits
@@ -136,6 +136,8 @@ The main exception is `cow-sdk-orderbook`, which keeps orderbook HTTP DTOs strin
 - `cow-sdk-subgraph` is read-only and separate from the trading facade.
 - `cow-sdk-subgraph` generic queries use an explicit `SubgraphQueryRequest` contract instead of inferred operation metadata.
 - Browser wallet support is feature-gated and async.
+- Browser-wallet-specific method growth stays leaf-owned and typed. Chain management and similar wallet namespace helpers do not expand into a generic raw wallet-RPC passthrough.
+- The root facade remains narrower than `cow-sdk-browser-wallet`. Feature-gated re-export does not make every leaf-owned wallet method part of the default SDK identity.
 - Pure transform crates do not perform network I/O.
 
 ## Why This Shape

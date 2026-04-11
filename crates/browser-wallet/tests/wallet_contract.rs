@@ -1,5 +1,6 @@
 use cow_sdk_browser_wallet::{
-    BrowserWallet, InjectedWalletDetectionOptions, MockEip1193Transport, WalletEvent,
+    BrowserWallet, BrowserWalletError, InjectedWalletDetectionOptions, MockEip1193Transport,
+    WalletChainChangeKind, WalletChainParameters, WalletEvent, WalletNativeCurrency,
 };
 use cow_sdk_core::AsyncSigner;
 use cow_sdk_core::{
@@ -237,4 +238,119 @@ async fn listener_lifetime_follows_wallet_and_provider_values() {
 
     drop(wallet_clone);
     assert_eq!(transport.listener_count(), 0);
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn add_chain_uses_typed_chain_parameters_and_keeps_request_shape_explicit() {
+    let transport = MockEip1193Transport::sepolia();
+    let wallet = BrowserWallet::from_transport(transport.clone());
+    wallet.connect().await.unwrap();
+
+    let chain = WalletChainParameters::for_supported_chain(SupportedChainId::Base)
+        .try_with_rpc_url("https://base.example.invalid/rpc")
+        .unwrap()
+        .try_with_block_explorer_url("https://base.example.invalid/explorer")
+        .unwrap();
+
+    let result = wallet.add_chain(&chain).await.unwrap();
+    assert_eq!(result.kind, WalletChainChangeKind::Added);
+    assert_eq!(result.requested_chain_id, SupportedChainId::Base);
+    assert_eq!(
+        result.session.chain_id,
+        Some(u64::from(SupportedChainId::Sepolia))
+    );
+
+    let add_chain_request = transport
+        .request_log()
+        .into_iter()
+        .find(|record| record.method == "wallet_addEthereumChain")
+        .unwrap();
+    let payload = add_chain_request.params.unwrap();
+    let request = payload.as_array().unwrap().first().unwrap();
+
+    assert_eq!(request["chainName"], serde_json::json!("Base"));
+    assert_eq!(request["chainId"], serde_json::json!("0x2105"));
+    assert_eq!(
+        request["nativeCurrency"]["symbol"],
+        serde_json::json!("ETH")
+    );
+    assert_eq!(
+        request["rpcUrls"][0],
+        serde_json::json!("https://base.example.invalid/rpc")
+    );
+    assert_eq!(
+        request["blockExplorerUrls"][0],
+        serde_json::json!("https://base.example.invalid/explorer")
+    );
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn switch_or_add_chain_adds_then_switches_when_chain_is_not_present() {
+    let transport = MockEip1193Transport::sepolia();
+    transport.set_added_chains(vec![SupportedChainId::Sepolia]);
+    let wallet = BrowserWallet::from_transport(transport.clone());
+    wallet.connect().await.unwrap();
+
+    let chain = WalletChainParameters::for_supported_chain(SupportedChainId::Base)
+        .try_with_rpc_url("https://base.example.invalid/rpc")
+        .unwrap();
+
+    let result = wallet.switch_or_add_chain(&chain).await.unwrap();
+
+    assert_eq!(result.kind, WalletChainChangeKind::AddedThenSwitched);
+    assert_eq!(result.requested_chain_id, SupportedChainId::Base);
+    assert_eq!(
+        result.session.chain_id,
+        Some(u64::from(SupportedChainId::Base))
+    );
+
+    let request_log = transport.request_log();
+    let methods = request_log
+        .iter()
+        .map(|record| record.method.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        methods,
+        vec![
+            "eth_requestAccounts",
+            "eth_chainId",
+            "wallet_switchEthereumChain",
+            "wallet_addEthereumChain",
+            "wallet_switchEthereumChain",
+            "eth_accounts",
+            "eth_chainId",
+        ]
+    );
+}
+
+#[test]
+fn chain_configuration_validation_rejects_invalid_inputs_before_rpc() {
+    let invalid = WalletChainParameters::for_supported_chain(SupportedChainId::Base);
+    assert_eq!(
+        invalid.validate().unwrap_err(),
+        BrowserWalletError::InvalidChainConfiguration {
+            chain_id: u64::from(SupportedChainId::Base),
+            message: "wallet add-chain requires at least one RPC URL".to_owned(),
+        }
+    );
+
+    let invalid_url = WalletChainParameters::for_supported_chain(SupportedChainId::Base)
+        .try_with_rpc_url("wss://base.example.invalid/rpc")
+        .unwrap_err();
+    assert_eq!(
+        invalid_url,
+        BrowserWalletError::InvalidChainConfiguration {
+            chain_id: u64::from(SupportedChainId::Base),
+            message: "RPC URL must use an http or https URL".to_owned(),
+        }
+    );
+
+    let invalid_currency = WalletNativeCurrency::new("", "ETH", 18).unwrap_err();
+    assert_eq!(
+        invalid_currency,
+        BrowserWalletError::InvalidChainConfiguration {
+            chain_id: 0,
+            message: "native currency name must not be empty".to_owned(),
+        }
+    );
 }

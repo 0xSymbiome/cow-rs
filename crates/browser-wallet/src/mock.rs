@@ -1,4 +1,8 @@
-use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::{BTreeMap, BTreeSet},
+    rc::Rc,
+};
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -39,6 +43,7 @@ struct MockState {
     storage_by_key: BTreeMap<String, String>,
     receipt_by_hash: BTreeMap<String, Value>,
     method_errors: BTreeMap<String, BrowserWalletError>,
+    added_chains: BTreeSet<ChainId>,
     next_listener_id: usize,
     session_listeners: BTreeMap<usize, Rc<dyn Fn(WalletProviderEvent)>>,
 }
@@ -65,6 +70,10 @@ impl Default for MockState {
             storage_by_key: BTreeMap::new(),
             receipt_by_hash: BTreeMap::new(),
             method_errors: BTreeMap::new(),
+            added_chains: SupportedChainId::ALL
+                .into_iter()
+                .map(u64::from)
+                .collect::<BTreeSet<_>>(),
             next_listener_id: 0,
             session_listeners: BTreeMap::new(),
         }
@@ -102,6 +111,11 @@ impl MockEip1193Transport {
 
     pub fn set_chain_id(&self, chain_id: SupportedChainId) {
         self.state.borrow_mut().chain_id = u64::from(chain_id);
+    }
+
+    pub fn set_added_chains(&self, chains: Vec<SupportedChainId>) {
+        self.state.borrow_mut().added_chains =
+            chains.into_iter().map(u64::from).collect::<BTreeSet<_>>();
     }
 
     pub fn set_accounts(&self, accounts: Vec<Address>) {
@@ -293,7 +307,33 @@ impl Eip1193Transport for MockEip1193Transport {
                             "mock switch request must include a `chainId` field",
                         )
                     })?;
-                state.chain_id = parse_chain_id_value(&requested, method)?;
+                let requested_chain = parse_chain_id_value(&requested, method)?;
+                if !state.added_chains.contains(&requested_chain) {
+                    return Err(BrowserWalletError::ChainNotAdded {
+                        chain_id: requested_chain,
+                        method: method.to_owned(),
+                        code: 4902,
+                        message: format!("mock wallet does not know chain {requested_chain}"),
+                    });
+                }
+                state.chain_id = requested_chain;
+                Ok(Value::Null)
+            }
+            "wallet_addEthereumChain" => {
+                let requested = params
+                    .as_ref()
+                    .and_then(Value::as_array)
+                    .and_then(|items| items.first())
+                    .and_then(|item| item.get("chainId"))
+                    .cloned()
+                    .ok_or_else(|| {
+                        BrowserWalletError::malformed_response(
+                            method,
+                            "mock add-chain request must include a `chainId` field",
+                        )
+                    })?;
+                let requested_chain = parse_chain_id_value(&requested, method)?;
+                state.added_chains.insert(requested_chain);
                 Ok(Value::Null)
             }
             "personal_sign" => Ok(Value::String(state.message_signature.clone())),

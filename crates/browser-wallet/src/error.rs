@@ -55,6 +55,8 @@ pub enum BrowserWalletError {
         code: i32,
         message: String,
     },
+    #[error("wallet chain configuration for chain {chain_id} is invalid: {message}")]
+    InvalidChainConfiguration { chain_id: ChainId, message: String },
     #[error("wallet method `{method}` is unsupported: {message}")]
     UnsupportedRpcMethod { method: String, message: String },
     #[error("wallet response for `{method}` is malformed: {message}")]
@@ -134,6 +136,16 @@ impl BrowserWalletError {
 
     pub(crate) fn discovery_selection_out_of_range(index: usize, candidates: usize) -> Self {
         Self::DiscoverySelectionOutOfRange { index, candidates }
+    }
+
+    pub(crate) fn invalid_chain_configuration(
+        chain_id: ChainId,
+        message: impl Into<String>,
+    ) -> Self {
+        Self::InvalidChainConfiguration {
+            chain_id,
+            message: message.into(),
+        }
     }
 
     #[cfg(target_arch = "wasm32")]

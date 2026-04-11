@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{Value, json};
 
 use cow_sdk_core::{Address, ChainId, SupportedChainId};
 
@@ -57,6 +57,181 @@ pub struct InjectedWalletInfo {
     pub is_meta_mask: bool,
     pub is_coinbase_wallet: bool,
     pub is_rabby: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WalletNativeCurrency {
+    pub name: String,
+    pub symbol: String,
+    pub decimals: u8,
+}
+
+impl WalletNativeCurrency {
+    pub fn new(
+        name: impl Into<String>,
+        symbol: impl Into<String>,
+        decimals: u8,
+    ) -> Result<Self, BrowserWalletError> {
+        Ok(Self {
+            name: validate_wallet_text(name.into(), "native currency name", None)?,
+            symbol: validate_wallet_text(symbol.into(), "native currency symbol", None)?,
+            decimals,
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WalletChainParameters {
+    pub chain_id: SupportedChainId,
+    pub chain_name: String,
+    pub native_currency: WalletNativeCurrency,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub rpc_urls: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub block_explorer_urls: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub icon_urls: Vec<String>,
+}
+
+impl WalletChainParameters {
+    pub fn new(
+        chain_id: SupportedChainId,
+        chain_name: impl Into<String>,
+        native_currency: WalletNativeCurrency,
+    ) -> Result<Self, BrowserWalletError> {
+        Ok(Self {
+            chain_id,
+            chain_name: validate_wallet_text(
+                chain_name.into(),
+                "chain name",
+                Some(u64::from(chain_id)),
+            )?,
+            native_currency,
+            rpc_urls: Vec::new(),
+            block_explorer_urls: Vec::new(),
+            icon_urls: Vec::new(),
+        })
+    }
+
+    pub fn for_supported_chain(chain_id: SupportedChainId) -> Self {
+        let (chain_name, native_currency) = known_chain_metadata(chain_id);
+        Self {
+            chain_id,
+            chain_name: chain_name.to_owned(),
+            native_currency,
+            rpc_urls: Vec::new(),
+            block_explorer_urls: Vec::new(),
+            icon_urls: Vec::new(),
+        }
+    }
+
+    pub fn try_with_rpc_url(
+        mut self,
+        rpc_url: impl Into<String>,
+    ) -> Result<Self, BrowserWalletError> {
+        self.rpc_urls.push(validate_wallet_url(
+            rpc_url.into(),
+            "RPC URL",
+            u64::from(self.chain_id),
+        )?);
+        Ok(self)
+    }
+
+    pub fn try_with_block_explorer_url(
+        mut self,
+        block_explorer_url: impl Into<String>,
+    ) -> Result<Self, BrowserWalletError> {
+        self.block_explorer_urls.push(validate_wallet_url(
+            block_explorer_url.into(),
+            "block explorer URL",
+            u64::from(self.chain_id),
+        )?);
+        Ok(self)
+    }
+
+    pub fn try_with_icon_url(
+        mut self,
+        icon_url: impl Into<String>,
+    ) -> Result<Self, BrowserWalletError> {
+        self.icon_urls.push(validate_wallet_url(
+            icon_url.into(),
+            "icon URL",
+            u64::from(self.chain_id),
+        )?);
+        Ok(self)
+    }
+
+    pub fn validate(&self) -> Result<(), BrowserWalletError> {
+        let chain_id = u64::from(self.chain_id);
+        let _ = validate_wallet_text(self.chain_name.clone(), "chain name", Some(chain_id))?;
+        let _ = validate_wallet_text(
+            self.native_currency.name.clone(),
+            "native currency name",
+            Some(chain_id),
+        )?;
+        let _ = validate_wallet_text(
+            self.native_currency.symbol.clone(),
+            "native currency symbol",
+            Some(chain_id),
+        )?;
+        if self.rpc_urls.is_empty() {
+            return Err(BrowserWalletError::invalid_chain_configuration(
+                chain_id,
+                "wallet add-chain requires at least one RPC URL",
+            ));
+        }
+        for url in &self.rpc_urls {
+            let _ = validate_wallet_url(url.clone(), "RPC URL", chain_id)?;
+        }
+        for url in &self.block_explorer_urls {
+            let _ = validate_wallet_url(url.clone(), "block explorer URL", chain_id)?;
+        }
+        for url in &self.icon_urls {
+            let _ = validate_wallet_url(url.clone(), "icon URL", chain_id)?;
+        }
+        Ok(())
+    }
+
+    fn rpc_payload(&self) -> Result<Value, BrowserWalletError> {
+        self.validate()?;
+        let mut payload = json!({
+            "chainId": hex_quantity(&u64::from(self.chain_id).to_string())?,
+            "chainName": self.chain_name,
+            "nativeCurrency": {
+                "name": self.native_currency.name,
+                "symbol": self.native_currency.symbol,
+                "decimals": self.native_currency.decimals,
+            },
+            "rpcUrls": self.rpc_urls,
+        });
+        if !self.block_explorer_urls.is_empty() {
+            payload["blockExplorerUrls"] = serde_json::to_value(&self.block_explorer_urls)
+                .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
+        }
+        if !self.icon_urls.is_empty() {
+            payload["iconUrls"] = serde_json::to_value(&self.icon_urls)
+                .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
+        }
+        Ok(payload)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum WalletChainChangeKind {
+    Added,
+    Switched,
+    AddedThenSwitched,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WalletChainChange {
+    pub requested_chain_id: SupportedChainId,
+    pub kind: WalletChainChangeKind,
+    pub session: WalletSession,
 }
 
 #[derive(Clone)]
@@ -204,13 +379,76 @@ impl BrowserWallet {
         &self,
         chain_id: SupportedChainId,
     ) -> Result<WalletSession, BrowserWalletError> {
+        self.switch_chain_request(chain_id).await?;
+        self.refresh_session().await
+    }
+
+    pub async fn add_chain(
+        &self,
+        parameters: &WalletChainParameters,
+    ) -> Result<WalletChainChange, BrowserWalletError> {
+        self.add_chain_request(parameters).await?;
+        let session = self.refresh_session().await?;
+        Ok(WalletChainChange {
+            requested_chain_id: parameters.chain_id,
+            kind: WalletChainChangeKind::Added,
+            session,
+        })
+    }
+
+    pub async fn switch_or_add_chain(
+        &self,
+        parameters: &WalletChainParameters,
+    ) -> Result<WalletChainChange, BrowserWalletError> {
+        match self.switch_chain_request(parameters.chain_id).await {
+            Ok(()) => {
+                let session = self.refresh_session().await?;
+                Ok(WalletChainChange {
+                    requested_chain_id: parameters.chain_id,
+                    kind: WalletChainChangeKind::Switched,
+                    session,
+                })
+            }
+            Err(BrowserWalletError::ChainNotAdded { chain_id, .. })
+                if chain_id == u64::from(parameters.chain_id) =>
+            {
+                self.add_chain_request(parameters).await?;
+                self.switch_chain_request(parameters.chain_id).await?;
+                let session = self.refresh_session().await?;
+                Ok(WalletChainChange {
+                    requested_chain_id: parameters.chain_id,
+                    kind: WalletChainChangeKind::AddedThenSwitched,
+                    session,
+                })
+            }
+            Err(error) => Err(error),
+        }
+    }
+
+    async fn switch_chain_request(
+        &self,
+        chain_id: SupportedChainId,
+    ) -> Result<(), BrowserWalletError> {
         self.provider
             .request(
                 "wallet_switchEthereumChain",
                 Some(json!([{ "chainId": hex_quantity(&u64::from(chain_id).to_string())? }])),
             )
-            .await?;
-        self.refresh_session().await
+            .await
+            .map(|_| ())
+    }
+
+    async fn add_chain_request(
+        &self,
+        parameters: &WalletChainParameters,
+    ) -> Result<(), BrowserWalletError> {
+        self.provider
+            .request(
+                "wallet_addEthereumChain",
+                Some(json!([parameters.rpc_payload()?])),
+            )
+            .await
+            .map(|_| ())
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -283,6 +521,136 @@ impl BrowserWallet {
             provider,
             injected_info,
         }
+    }
+}
+
+fn validate_wallet_text(
+    value: String,
+    label: &str,
+    chain_id: Option<ChainId>,
+) -> Result<String, BrowserWalletError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(BrowserWalletError::invalid_chain_configuration(
+            chain_id.unwrap_or_default(),
+            format!("{label} must not be empty"),
+        ));
+    }
+    Ok(trimmed.to_owned())
+}
+
+fn validate_wallet_url(
+    value: String,
+    label: &str,
+    chain_id: ChainId,
+) -> Result<String, BrowserWalletError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(BrowserWalletError::invalid_chain_configuration(
+            chain_id,
+            format!("{label} must not be empty"),
+        ));
+    }
+    let lower = trimmed.to_ascii_lowercase();
+    if !(lower.starts_with("https://") || lower.starts_with("http://")) {
+        return Err(BrowserWalletError::invalid_chain_configuration(
+            chain_id,
+            format!("{label} must use an http or https URL"),
+        ));
+    }
+    Ok(trimmed.to_owned())
+}
+
+fn known_chain_metadata(chain_id: SupportedChainId) -> (&'static str, WalletNativeCurrency) {
+    match chain_id {
+        SupportedChainId::Mainnet => (
+            "Ethereum Mainnet",
+            WalletNativeCurrency {
+                name: "Ether".to_owned(),
+                symbol: "ETH".to_owned(),
+                decimals: 18,
+            },
+        ),
+        SupportedChainId::Bnb => (
+            "BNB Smart Chain",
+            WalletNativeCurrency {
+                name: "BNB".to_owned(),
+                symbol: "BNB".to_owned(),
+                decimals: 18,
+            },
+        ),
+        SupportedChainId::GnosisChain => (
+            "Gnosis Chain",
+            WalletNativeCurrency {
+                name: "xDAI".to_owned(),
+                symbol: "xDAI".to_owned(),
+                decimals: 18,
+            },
+        ),
+        SupportedChainId::Polygon => (
+            "Polygon",
+            WalletNativeCurrency {
+                name: "POL".to_owned(),
+                symbol: "POL".to_owned(),
+                decimals: 18,
+            },
+        ),
+        SupportedChainId::Base => (
+            "Base",
+            WalletNativeCurrency {
+                name: "Ether".to_owned(),
+                symbol: "ETH".to_owned(),
+                decimals: 18,
+            },
+        ),
+        SupportedChainId::Plasma => (
+            "Plasma",
+            WalletNativeCurrency {
+                name: "Plasma".to_owned(),
+                symbol: "XPL".to_owned(),
+                decimals: 18,
+            },
+        ),
+        SupportedChainId::ArbitrumOne => (
+            "Arbitrum One",
+            WalletNativeCurrency {
+                name: "Ether".to_owned(),
+                symbol: "ETH".to_owned(),
+                decimals: 18,
+            },
+        ),
+        SupportedChainId::Avalanche => (
+            "Avalanche C-Chain",
+            WalletNativeCurrency {
+                name: "Avalanche".to_owned(),
+                symbol: "AVAX".to_owned(),
+                decimals: 18,
+            },
+        ),
+        SupportedChainId::Ink => (
+            "Ink",
+            WalletNativeCurrency {
+                name: "Ether".to_owned(),
+                symbol: "ETH".to_owned(),
+                decimals: 18,
+            },
+        ),
+        SupportedChainId::Linea => (
+            "Linea",
+            WalletNativeCurrency {
+                name: "Ether".to_owned(),
+                symbol: "ETH".to_owned(),
+                decimals: 18,
+            },
+        ),
+        SupportedChainId::Sepolia => (
+            "Sepolia",
+            WalletNativeCurrency {
+                name: "Ether".to_owned(),
+                symbol: "ETH".to_owned(),
+                decimals: 18,
+            },
+        ),
     }
 }
 
