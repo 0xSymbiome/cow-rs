@@ -79,18 +79,29 @@ String-heavy values live in explicit wire DTOs such as `cow-sdk-orderbook` reque
 
 ## Toolchain Policy
 
-- Public MSRV: Rust `1.94`
+- Public MSRV: Rust `1.94.0`
 - Contributor toolchain pin: Rust `1.94.1` in [rust-toolchain.toml](rust-toolchain.toml)
 
-The MSRV is the compatibility contract for downstream users. The exact toolchain pin exists to keep local execution, CI, and reproducible validation aligned.
+The public compatibility floor is exercised directly with `cargo check --workspace --all-features` and `cargo test --workspace` on Rust `1.94.0`.
+
+Primary CI and release validation use the pinned `1.94.1` contributor toolchain for formatting, Clippy, docs, examples, feature-matrix checks, and package verification. WASM and browser-wallet target validation stay in the dedicated WASM workflows so native compatibility checks do not inherit browser-specific assumptions.
 
 ## Quality Gates
 
-The main CI lane enforces formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, and a depth-1 feature matrix for the published crate family.
+The primary native CI lane runs on the pinned `1.94.1` contributor toolchain and enforces formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, and a depth-1 feature matrix for the published crate family.
+
+A separate compatibility-floor lane runs `cargo check --workspace --all-features` and `cargo test --workspace` on Rust `1.94.0`.
 
 The workspace manifest also defines focused Clippy policy for documented failure contracts, discard-prone helper returns, and readable large literals through `missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`, and `unreadable_literal`.
 
-CI also enforces public API rustc lints with `missing_docs`, `missing_debug_implementations`, `unreachable_pub`, and `unnameable_types` across the published crate family: `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade. RustSec advisories continue to run as a separate report.
+CI also enforces public API rustc lints with `missing_docs`, `missing_debug_implementations`, `unreachable_pub`, and `unnameable_types` across the published crate family: `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.
+
+Dependency policy is split by purpose:
+
+- `cargo-deny` enforces bans, licenses, sources, and the approved duplicate-version tolerances documented in `.github/config/deny.toml`
+- `cargo-audit` enforces RustSec advisories without depending on the current `cargo-deny` advisory-db parser path
+- `RUSTSEC-2026-0097` is temporarily ignored because the remaining hit is inherited from the `ethabi` stack used by `cow-sdk-browser-wallet`
+- the approved duplicate tolerances are limited to the browser-wallet `ethabi` subtree, the test-only subgraph `graphql_client` subtree, and the platform-specific verifier subtree under `rustls-platform-verifier`
 
 ## Docs
 
@@ -111,11 +122,14 @@ CI also enforces public API rustc lints with `missing_docs`, `missing_debug_impl
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
+cargo +1.94.0 check --workspace --all-features
+cargo +1.94.0 test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
 cargo doc --workspace --all-features --no-deps
 cargo hack check --workspace --feature-powerset --depth 1
 typos --config .github/config/typos.toml
 cargo deny check bans licenses sources --config .github/config/deny.toml
+cargo audit --deny warnings --ignore RUSTSEC-2026-0097
 cargo check -p cow-sdk --examples
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
@@ -123,7 +137,6 @@ cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.pa
 
 ```text
 RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features
-cargo deny check advisories --config .github/config/deny.toml
 ```
 
 ## Examples

@@ -275,8 +275,10 @@ Workspace Clippy policy checked in CI includes:
 
 Dependency policy includes:
 
-- bans, licenses, and source policy checks
-- RustSec advisory reporting
+- `cargo-deny` bans, licenses, and source policy checks
+- approved duplicate-version tolerances for the `ethabi` browser-wallet path, the test-only `graphql_client` schema/codegen path, and the platform-specific verifier subtree under `rustls-platform-verifier`
+- RustSec advisory enforcement through `cargo-audit`
+- a temporary `RUSTSEC-2026-0097` exception while `cow-sdk-browser-wallet` still depends on `ethabi`
 
 CID handling uses upstream crates for CID and multihash encoding. Legacy content-to-CID generation uses `ipfs-cid`; latest app-data CID conversion wraps an existing Keccak digest with `cid` and `multihash` because the SDK receives the digest as an app-data hash.
 
@@ -295,11 +297,11 @@ cargo doc --workspace --all-features --no-deps
 cargo hack check --workspace --feature-powerset --depth 1
 typos --config .github/config/typos.toml
 cargo deny check bans licenses sources --config .github/config/deny.toml
+cargo audit --deny warnings --ignore RUSTSEC-2026-0097
 ```
 
 Use this command when reviewing public-surface documentation and export hygiene:
 
 ```text
 RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features
-cargo deny check advisories --config .github/config/deny.toml
 ```
