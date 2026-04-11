@@ -10,25 +10,41 @@ use crate::{
     primitives::{encode_address, keccak256},
 };
 
+/// Deterministic deployment salt used by CoW deployments.
 pub const SALT: &str = "0x4d61747472657373657320696e204265726c696e210000000000000000000000";
+/// Deployer contract address used for deterministic deployment derivation.
 pub const DEPLOYER_CONTRACT: &str = "0x4e59b44847b379578588920ca78fbf26c0b4956c";
 
+/// Supported named CoW deployment artifacts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ContractName {
+    /// Authenticator contract.
     Authenticator,
+    /// Settlement contract.
     Settlement,
+    /// Trade-simulation helper contract.
     TradeSimulator,
 }
 
+/// Core CoW deployment addresses for a supported chain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractAddresses {
+    /// Settlement contract address.
     pub settlement: Address,
+    /// Vault relayer address.
     pub vault_relayer: Address,
+    /// EthFlow contract address.
     pub eth_flow: Address,
 }
 
+/// Computes a deterministic deployment address from bytecode and constructor arguments.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] when bytecode or constructor arguments are not
+/// valid hex, or when address validation fails during `CREATE2` derivation.
 pub fn deterministic_deployment_address(
     bytecode: &str,
     deployment_arguments: &[String],
@@ -53,6 +69,12 @@ pub fn deterministic_deployment_address(
     Address::new(format!("0x{}", hex::encode(&hash[12..]))).map_err(Into::into)
 }
 
+/// Returns the canonical production deployment addresses for a supported chain.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::UnsupportedChain`] when `chain_id` is not part of
+/// the supported CoW deployment set.
 pub fn deployment_for_chain(chain_id: u64) -> Result<ContractAddresses, ContractsError> {
     let chain = SupportedChainId::try_from(chain_id)
         .map_err(|_| ContractsError::UnsupportedChain(chain_id))?;
@@ -63,6 +85,12 @@ pub fn deployment_for_chain(chain_id: u64) -> Result<ContractAddresses, Contract
     })
 }
 
+/// Returns the keccak256 hash of the deployment init code.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] when bytecode or constructor arguments are not
+/// valid hex, or when deployer address validation fails.
 pub fn deployment_address_hash_input(
     bytecode: &str,
     deployment_arguments: &[String],

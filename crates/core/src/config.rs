@@ -8,9 +8,13 @@ use crate::{
     types::{Address, ChainId, TokenInfo},
 };
 
+/// All supported CoW API environments.
 pub const ENVS_LIST: [CowEnv; 2] = [CowEnv::Prod, CowEnv::Staging];
+/// Sentinel address used by CoW Protocol to represent the native chain asset.
 pub const EVM_NATIVE_CURRENCY_ADDRESS: &str = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+/// Default timeout applied to HTTP-backed SDK clients.
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(10);
+/// Maximum valid-to timestamp accepted by the protocol `uint32` field.
 pub const MAX_VALID_TO_EPOCH: u32 = 4_294_967_295;
 
 const PROD_BASE_URL: &str = "https://api.cow.fi";
@@ -25,23 +29,36 @@ const ETH_FLOW_ADDRESS: &str = "0xba3cb449bd2b4adddbc894d8697f5170800eadec";
 const ETH_FLOW_ADDRESS_STAGING: &str = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC";
 const TOKEN_LIST_IMAGES_PATH: &str = "https://files.cow.fi/token-lists/images";
 
+/// Supported CoW Protocol chain ids with explicit API configuration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[repr(u64)]
 pub enum SupportedChainId {
+    /// Ethereum mainnet.
     Mainnet = 1,
+    /// BNB Smart Chain.
     Bnb = 56,
+    /// Gnosis Chain.
     GnosisChain = 100,
+    /// Polygon PoS.
     Polygon = 137,
+    /// Base.
     Base = 8453,
+    /// Plasma.
     Plasma = 9745,
+    /// Arbitrum One.
     ArbitrumOne = 42161,
+    /// Avalanche C-Chain.
     Avalanche = 43114,
+    /// Ink.
     Ink = 57073,
+    /// Linea.
     Linea = 59144,
+    /// Ethereum Sepolia.
     Sepolia = 11155111,
 }
 
 impl SupportedChainId {
+    /// Complete list of supported chain ids in deterministic iteration order.
     pub const ALL: [Self; 11] = [
         Self::Mainnet,
         Self::Bnb,
@@ -56,6 +73,8 @@ impl SupportedChainId {
         Self::Sepolia,
     ];
 
+    /// Returns the path segment used by CoW API base URLs for this chain.
+    #[must_use]
     pub fn api_path(self) -> &'static str {
         match self {
             Self::Mainnet => "mainnet",
@@ -119,14 +138,19 @@ impl<'de> Deserialize<'de> for SupportedChainId {
     }
 }
 
+/// Supported CoW deployment environments.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum CowEnv {
+    /// Production endpoints and deployments.
     Prod,
+    /// Staging endpoints and deployments.
     Staging,
 }
 
 impl CowEnv {
+    /// Returns the stable lowercase environment identifier.
+    #[must_use]
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Prod => "prod",
@@ -135,9 +159,12 @@ impl CowEnv {
     }
 }
 
+/// Mapping from numeric chain id to API base URL.
 pub type ApiBaseUrls = BTreeMap<ChainId, String>;
+/// Mapping from numeric chain id to deployment address override.
 pub type AddressPerChain = BTreeMap<ChainId, Address>;
 
+/// Shared HTTP client policy used by transport-owning crates.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpClientPolicy {
     timeout: Option<Duration>,
@@ -145,10 +172,22 @@ pub struct HttpClientPolicy {
 }
 
 impl HttpClientPolicy {
+    /// Creates a policy with the default timeout and a validated user agent.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if the user agent is empty or cannot be
+    /// encoded as an HTTP header value.
     pub fn new(user_agent: impl Into<String>) -> Result<Self, ValidationError> {
         Self::with_timeout_and_user_agent(DEFAULT_HTTP_TIMEOUT, user_agent)
     }
 
+    /// Creates a policy with an explicit timeout and validated user agent.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if the user agent is empty or cannot be
+    /// encoded as an HTTP header value.
     pub fn with_timeout_and_user_agent(
         timeout: Duration,
         user_agent: impl Into<String>,
@@ -161,16 +200,26 @@ impl HttpClientPolicy {
         })
     }
 
+    /// Returns a copy of this policy with timeouts disabled.
+    #[must_use]
     pub fn without_timeout(mut self) -> Self {
         self.timeout = None;
         self
     }
 
+    /// Returns a copy of this policy with the supplied timeout.
+    #[must_use]
     pub fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
         self
     }
 
+    /// Returns a copy of this policy with a newly validated user agent.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError`] if the user agent is empty or cannot be
+    /// encoded as an HTTP header value.
     pub fn try_with_user_agent(
         mut self,
         user_agent: impl Into<String>,
@@ -179,34 +228,45 @@ impl HttpClientPolicy {
         Ok(self)
     }
 
+    /// Returns the configured timeout, if one is enabled.
     pub fn timeout(&self) -> Option<Duration> {
         self.timeout
     }
 
+    /// Returns the configured user-agent header value.
     pub fn user_agent(&self) -> &str {
         &self.user_agent
     }
 }
 
+/// Protocol-wide address and environment overrides.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProtocolOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Explicit deployment environment override.
     pub env: Option<CowEnv>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Settlement contract overrides keyed by numeric chain id.
     pub settlement_contract_override: Option<AddressPerChain>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// EthFlow contract overrides keyed by numeric chain id.
     pub eth_flow_contract_override: Option<AddressPerChain>,
 }
 
+/// API routing context used by transport-owning crates.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiContext {
+    /// Target chain id for endpoint resolution.
     pub chain_id: SupportedChainId,
+    /// Target environment for endpoint resolution.
     pub env: CowEnv,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Optional explicit base URLs keyed by numeric chain id.
     pub base_urls: Option<ApiBaseUrls>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Optional partner API key that switches resolution to partner endpoints.
     pub api_key: Option<String>,
 }
 
@@ -222,6 +282,12 @@ impl Default for ApiContext {
 }
 
 impl ApiContext {
+    /// Resolves the effective base URL for the current chain and environment.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError::MissingBaseUrl`] when the chain id has no configured
+    /// URL in either the explicit override map or the default map.
     pub fn resolved_base_url(&self) -> Result<String, CoreError> {
         let chain_id: ChainId = self.chain_id.into();
         let partner_api = self.api_key.is_some();
@@ -239,6 +305,8 @@ impl ApiContext {
     }
 }
 
+/// Returns the default CoW API base URLs for every supported chain.
+#[must_use]
 pub fn default_api_base_urls(env: CowEnv, partner_api: bool) -> ApiBaseUrls {
     SupportedChainId::ALL
         .into_iter()
@@ -254,6 +322,8 @@ pub fn default_api_base_urls(env: CowEnv, partner_api: bool) -> ApiBaseUrls {
         .collect()
 }
 
+/// Returns the settlement contract address for the requested environment.
+#[must_use]
 pub fn settlement_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
     match env {
         CowEnv::Prod => address_literal(SETTLEMENT_CONTRACT_ADDRESS),
@@ -261,6 +331,8 @@ pub fn settlement_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> 
     }
 }
 
+/// Returns the Balancer vault relayer address for the requested environment.
+#[must_use]
 pub fn vault_relayer_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
     match env {
         CowEnv::Prod => address_literal(VAULT_RELAYER_ADDRESS),
@@ -268,6 +340,8 @@ pub fn vault_relayer_address(_chain_id: SupportedChainId, env: CowEnv) -> Addres
     }
 }
 
+/// Returns the EthFlow contract address for the requested environment.
+#[must_use]
 pub fn eth_flow_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
     match env {
         CowEnv::Prod => address_literal(ETH_FLOW_ADDRESS),
@@ -275,6 +349,8 @@ pub fn eth_flow_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> Ad
     }
 }
 
+/// Returns wrapped-native token metadata for a supported chain.
+#[must_use]
 pub fn wrapped_native_token(chain_id: SupportedChainId) -> TokenInfo {
     let (address, decimals, name, symbol) = match chain_id {
         SupportedChainId::Mainnet => (

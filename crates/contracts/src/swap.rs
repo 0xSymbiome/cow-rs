@@ -9,37 +9,54 @@ use crate::{
     signature::Signature,
 };
 
+/// Single Balancer batch-swap step input.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Swap {
+    /// Pool identifier.
     pub pool_id: String,
+    /// Input asset address.
     pub asset_in: Address,
+    /// Output asset address.
     pub asset_out: Address,
+    /// Swap amount.
     pub amount: Amount,
+    /// Optional user data encoded as hex.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user_data: Option<String>,
 }
 
+/// Encoded Balancer batch-swap step.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BatchSwapStep {
+    /// Pool identifier.
     pub pool_id: String,
+    /// Token registry index for the input asset.
     pub asset_in_index: usize,
+    /// Token registry index for the output asset.
     pub asset_out_index: usize,
+    /// Swap amount.
     pub amount: Amount,
+    /// Encoded user data.
     pub user_data: String,
 }
 
+/// Optional trade-execution override for swap encoding.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SwapExecution {
+    /// Limit amount that should be used as the executed amount.
     pub limit_amount: Amount,
 }
 
+/// Fully encoded swap output.
 pub type EncodedSwap = (Vec<BatchSwapStep>, Vec<Address>, Trade);
 
+/// Stateful helper for building encoded swap payloads.
 #[derive(Debug, Clone)]
 pub struct SwapEncoder {
+    /// Typed-data domain used for the encoded trade.
     pub domain: TypedDataDomain,
     tokens: TokenRegistry,
     swaps: Vec<BatchSwapStep>,
@@ -47,6 +64,8 @@ pub struct SwapEncoder {
 }
 
 impl SwapEncoder {
+    /// Creates a new swap encoder.
+    #[must_use]
     pub fn new(domain: TypedDataDomain) -> Self {
         Self {
             domain,
@@ -56,18 +75,28 @@ impl SwapEncoder {
         }
     }
 
+    /// Returns the encoded token registry in index order.
+    #[must_use]
     pub fn tokens(&self) -> Vec<Address> {
         self.tokens.addresses()
     }
 
+    /// Returns the encoded swap steps.
+    #[must_use]
     pub fn swaps(&self) -> Vec<BatchSwapStep> {
         self.swaps.clone()
     }
 
+    /// Returns the encoded trade.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError::MissingTrade`] if no trade has been encoded yet.
     pub fn trade(&self) -> Result<Trade, ContractsError> {
         self.trade.clone().ok_or(ContractsError::MissingTrade)
     }
 
+    /// Encodes swap steps and appends them to the current encoder state.
     pub fn encode_swap_step(&mut self, swaps: &[Swap]) {
         self.swaps.extend(
             swaps
@@ -76,6 +105,11 @@ impl SwapEncoder {
         );
     }
 
+    /// Encodes the trade associated with the swap sequence.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError`] when order normalization or trade encoding fails.
     pub fn encode_trade(
         &mut self,
         order: &Order,
@@ -100,11 +134,18 @@ impl SwapEncoder {
         Ok(())
     }
 
+    /// Returns the fully encoded swap output.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError::MissingTrade`] if no trade has been encoded yet.
     pub fn encoded_swap(&self) -> Result<EncodedSwap, ContractsError> {
         Ok((self.swaps(), self.tokens(), self.trade()?))
     }
 }
 
+/// Encodes a single swap step using the shared token registry.
+#[must_use]
 pub fn encode_swap_step(tokens: &mut TokenRegistry, swap: &Swap) -> BatchSwapStep {
     BatchSwapStep {
         pool_id: swap.pool_id.clone(),

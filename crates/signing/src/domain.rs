@@ -8,9 +8,16 @@ use sha3::{Digest, Keccak256};
 
 use crate::SigningError;
 
+/// Primary type name for CoW order typed-data payloads.
 pub const ORDER_PRIMARY_TYPE: &str = "Order";
+/// Typed-data envelope alias for explicit CoW order signing.
 pub type OrderTypedData = TypedDataEnvelope<UnsignedOrder>;
 
+/// Builds the CoW typed-data domain for a chain and optional protocol overrides.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if any override address is invalid through lower-level contracts.
 pub fn get_domain(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
@@ -31,6 +38,11 @@ pub fn get_domain(
     })
 }
 
+/// Computes the domain separator for a chain and optional protocol overrides.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if domain construction or address encoding fails.
 pub fn domain_separator(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
@@ -39,6 +51,11 @@ pub fn domain_separator(
     domain_separator_for(&domain)
 }
 
+/// Computes the domain separator for an explicit typed-data domain.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if the verifying-contract address cannot be encoded.
 pub fn domain_separator_for(domain: &TypedDataDomain) -> Result<String, SigningError> {
     let mut encoded = Vec::with_capacity(32 * 5);
     encoded.extend_from_slice(&keccak256(
@@ -52,6 +69,11 @@ pub fn domain_separator_for(domain: &TypedDataDomain) -> Result<String, SigningE
     Ok(format!("0x{}", hex::encode(keccak256(encoded))))
 }
 
+/// Builds the typed-data envelope with the fully typed order message body.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if domain construction or message serialization fails.
 pub fn order_typed_data(
     chain_id: SupportedChainId,
     order: &UnsignedOrder,
@@ -60,6 +82,11 @@ pub fn order_typed_data(
     Ok(order_typed_data_payload(chain_id, order, options)?.with_message(order.clone()))
 }
 
+/// Builds the signer-facing typed-data payload with a JSON message body.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if domain construction or message serialization fails.
 pub fn order_typed_data_payload(
     chain_id: SupportedChainId,
     order: &UnsignedOrder,
@@ -73,6 +100,8 @@ pub fn order_typed_data_payload(
     })
 }
 
+/// Returns CoW order fields as core typed-data field descriptors.
+#[must_use]
 pub fn order_fields() -> Vec<TypedDataField> {
     ORDER_TYPE_FIELDS
         .iter()
@@ -83,6 +112,8 @@ pub fn order_fields() -> Vec<TypedDataField> {
         .collect()
 }
 
+/// Returns order-cancellation fields as core typed-data field descriptors.
+#[must_use]
 pub fn cancellation_fields() -> Vec<TypedDataField> {
     CANCELLATIONS_TYPE_FIELDS
         .iter()
@@ -93,6 +124,8 @@ pub fn cancellation_fields() -> Vec<TypedDataField> {
         .collect()
 }
 
+/// Returns the canonical `EIP712Domain` field list.
+#[must_use]
 pub fn domain_fields() -> Vec<TypedDataField> {
     [
         ("name", "string"),

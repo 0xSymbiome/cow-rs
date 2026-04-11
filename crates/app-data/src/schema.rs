@@ -12,6 +12,8 @@ static ROOT_SCHEMAS: OnceLock<BTreeMap<String, Value>> = OnceLock::new();
 
 const SCHEMA_BASE_URI: &str = "https://cowswap.exchange/schemas/app-data/";
 
+/// Builds a canonical app-data document from typed parameters.
+#[must_use]
 pub fn generate_app_data_doc(params: AppDataParams) -> AppDataDoc {
     let mut doc = serde_json::Map::new();
     doc.insert(
@@ -29,6 +31,13 @@ pub fn generate_app_data_doc(params: AppDataParams) -> AppDataDoc {
     Value::Object(doc)
 }
 
+/// Returns the bundled app-data schema for `version`.
+///
+/// # Errors
+///
+/// Returns [`AppDataError::InvalidSchemaVersion`] when `version` is not
+/// `<major>.<minor>.<patch>`, or [`AppDataError::UnknownSchemaVersion`] when
+/// the version is valid but no bundled schema exists for it.
 pub fn get_app_data_schema(version: &str) -> Result<AppDataDoc, AppDataError> {
     validate_schema_version(version)?;
     root_schemas()
@@ -37,6 +46,8 @@ pub fn get_app_data_schema(version: &str) -> Result<AppDataDoc, AppDataError> {
         .ok_or_else(|| AppDataError::UnknownSchemaVersion(version.to_string()))
 }
 
+/// Validates an app-data document against the bundled JSON schema set.
+#[must_use]
 pub fn validate_app_data_doc(app_data_doc: &AppDataDoc) -> ValidationResult {
     match validate_app_data_doc_inner(app_data_doc) {
         Ok(()) => ValidationResult {
@@ -50,6 +61,12 @@ pub fn validate_app_data_doc(app_data_doc: &AppDataDoc) -> ValidationResult {
     }
 }
 
+/// Extracts the schema version string from an app-data document.
+///
+/// # Errors
+///
+/// Returns [`AppDataError::MissingSchemaVersion`] when the document does not
+/// contain a string-valued `version` field.
 pub fn extract_schema_version(app_data_doc: &AppDataDoc) -> Result<&str, AppDataError> {
     app_data_doc
         .get("version")

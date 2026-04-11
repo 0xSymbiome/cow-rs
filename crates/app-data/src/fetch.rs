@@ -5,10 +5,13 @@ use crate::{
     app_data_hex_to_cid_legacy,
 };
 
+/// Read transport seam for fetching app-data JSON from IPFS.
 pub trait IpfsFetchTransport {
+    /// Performs a GET request against `uri`.
     fn get(&self, uri: &str) -> Result<String, AppDataError>;
 }
 
+/// Fetch policy for IPFS reads.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IpfsFetchPolicy {
     read_base_uri: String,
@@ -23,12 +26,24 @@ impl Default for IpfsFetchPolicy {
 }
 
 impl IpfsFetchPolicy {
+    /// Creates a fetch policy with an explicit read base URI.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AppDataError::Transport`] if the URI is empty after trimming.
     pub fn new(read_base_uri: impl Into<String>) -> Result<Self, AppDataError> {
         Ok(Self {
             read_base_uri: normalize_read_base_uri(read_base_uri.into())?,
         })
     }
 
+    /// Creates a fetch policy from [`IpfsConfig`].
+    ///
+    /// `read_uri` takes precedence over the legacy `uri` field.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AppDataError::Transport`] if the resolved URI is empty after trimming.
     pub fn from_config(config: &IpfsConfig) -> Result<Self, AppDataError> {
         let read_base_uri = config
             .read_uri
@@ -39,10 +54,17 @@ impl IpfsFetchPolicy {
         Self::new(read_base_uri)
     }
 
+    /// Returns the normalized IPFS read base URI.
+    #[must_use]
     pub fn read_base_uri(&self) -> &str {
         &self.read_base_uri
     }
 
+    /// Returns a copy of this policy with a new read base URI.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AppDataError::Transport`] if the URI is empty after trimming.
     pub fn with_read_base_uri(
         mut self,
         read_base_uri: impl Into<String>,
@@ -52,6 +74,12 @@ impl IpfsFetchPolicy {
     }
 }
 
+/// Fetches an app-data document by CID using an optional base URI override.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if the policy is invalid, the transport fails, or
+/// the fetched payload is not valid JSON.
 pub fn fetch_doc_from_cid(
     cid: &str,
     transport: &impl IpfsFetchTransport,
@@ -60,6 +88,11 @@ pub fn fetch_doc_from_cid(
     fetch_doc_from_cid_with_policy(cid, transport, &policy_from_optional_uri(ipfs_uri)?)
 }
 
+/// Fetches an app-data document by CID using an explicit fetch policy.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if the transport fails or the fetched payload is not valid JSON.
 pub fn fetch_doc_from_cid_with_policy(
     cid: &str,
     transport: &impl IpfsFetchTransport,
@@ -69,6 +102,12 @@ pub fn fetch_doc_from_cid_with_policy(
     serde_json::from_str::<Value>(&raw).map_err(|err| AppDataError::Json(err.to_string()))
 }
 
+/// Fetches an app-data document using the latest CID derivation mode.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if CID derivation, policy creation, transport execution,
+/// or JSON decoding fails.
 pub fn fetch_doc_from_app_data_hex(
     app_data_hex: &str,
     transport: &impl IpfsFetchTransport,
@@ -81,6 +120,11 @@ pub fn fetch_doc_from_app_data_hex(
     )
 }
 
+/// Fetches an app-data document using the latest CID derivation mode and an explicit policy.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if CID derivation, transport execution, or JSON decoding fails.
 pub fn fetch_doc_from_app_data_hex_with_policy(
     app_data_hex: &str,
     transport: &impl IpfsFetchTransport,
@@ -89,6 +133,12 @@ pub fn fetch_doc_from_app_data_hex_with_policy(
     fetch_doc_from_app_data_hex_inner(app_data_hex_to_cid, app_data_hex, transport, policy)
 }
 
+/// Fetches an app-data document using the legacy CID derivation mode.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if CID derivation, policy creation, transport execution,
+/// or JSON decoding fails.
 pub fn fetch_doc_from_app_data_hex_legacy(
     app_data_hex: &str,
     transport: &impl IpfsFetchTransport,
@@ -101,6 +151,11 @@ pub fn fetch_doc_from_app_data_hex_legacy(
     )
 }
 
+/// Fetches an app-data document using the legacy CID derivation mode and an explicit policy.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if CID derivation, transport execution, or JSON decoding fails.
 pub fn fetch_doc_from_app_data_hex_legacy_with_policy(
     app_data_hex: &str,
     transport: &impl IpfsFetchTransport,

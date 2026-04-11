@@ -5,7 +5,9 @@ use crate::{
     TransportResponse, cid_to_app_data_hex, stringify_deterministic,
 };
 
+/// Upload transport seam for JSON pinning backends.
 pub trait IpfsUploadTransport {
+    /// Sends a JSON body plus headers to the supplied URI.
     fn post_json(
         &self,
         uri: &str,
@@ -14,6 +16,12 @@ pub trait IpfsUploadTransport {
     ) -> Result<TransportResponse, AppDataError>;
 }
 
+/// Uploads an app-data document using the legacy Pinata flow.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if credentials are missing, the transport fails, or
+/// the response does not contain a valid `IpfsHash`.
 pub fn upload_metadata_doc_to_ipfs_legacy(
     app_data_doc: &AppDataDoc,
     transport: &impl IpfsUploadTransport,
@@ -31,6 +39,12 @@ pub fn upload_metadata_doc_to_ipfs_legacy(
     })
 }
 
+/// Pins a JSON document through the Pinata `pinJSONToIPFS` API.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if credentials are missing, request serialization fails,
+/// the transport fails, or the response reports an upload error.
 pub fn pin_json_in_pinata_ipfs(
     file: &AppDataDoc,
     transport: &impl IpfsUploadTransport,

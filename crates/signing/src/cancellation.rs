@@ -11,6 +11,7 @@ use crate::{
     order_signing::{sign_with_scheme, sign_with_scheme_async},
 };
 
+/// Primary type name for CoW order-cancellation payloads.
 pub const ORDER_CANCELLATIONS_PRIMARY_TYPE: &str = "OrderCancellations";
 
 struct CancellationSigningPayload {
@@ -18,6 +19,11 @@ struct CancellationSigningPayload {
     digest: String,
 }
 
+/// Signs a single order cancellation using `Eip712`.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub fn sign_order_cancellation<S>(
     order_uid: &OrderUid,
     chain_id: SupportedChainId,
@@ -31,6 +37,11 @@ where
     sign_order_cancellation_with_scheme(order_uid, chain_id, signer, SigningScheme::Eip712, options)
 }
 
+/// Signs a single order cancellation asynchronously using `Eip712`.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub async fn sign_order_cancellation_async<S>(
     order_uid: &OrderUid,
     chain_id: SupportedChainId,
@@ -51,6 +62,11 @@ where
     .await
 }
 
+/// Signs a single order cancellation using an explicit local signing scheme.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub fn sign_order_cancellation_with_scheme<S>(
     order_uid: &OrderUid,
     chain_id: SupportedChainId,
@@ -71,6 +87,11 @@ where
     )
 }
 
+/// Signs a single order cancellation asynchronously using an explicit local scheme.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub async fn sign_order_cancellation_with_scheme_async<S>(
     order_uid: &OrderUid,
     chain_id: SupportedChainId,
@@ -92,6 +113,11 @@ where
     .await
 }
 
+/// Signs a batch order cancellation using `Eip712`.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub fn sign_order_cancellations<S>(
     order_uids: &[OrderUid],
     chain_id: SupportedChainId,
@@ -111,6 +137,11 @@ where
     )
 }
 
+/// Signs a batch order cancellation asynchronously using `Eip712`.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub async fn sign_order_cancellations_async<S>(
     order_uids: &[OrderUid],
     chain_id: SupportedChainId,
@@ -131,6 +162,11 @@ where
     .await
 }
 
+/// Signs a batch order cancellation using an explicit local signing scheme.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub fn sign_order_cancellations_with_scheme<S>(
     order_uids: &[OrderUid],
     chain_id: SupportedChainId,
@@ -146,6 +182,11 @@ where
     sign_with_scheme(signer, scheme, &payload.payload, &payload.digest)
 }
 
+/// Signs a batch order cancellation asynchronously using an explicit local scheme.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub async fn sign_order_cancellations_with_scheme_async<S>(
     order_uids: &[OrderUid],
     chain_id: SupportedChainId,
@@ -161,6 +202,11 @@ where
     sign_with_scheme_async(signer, scheme, &payload.payload, &payload.digest).await
 }
 
+/// Builds the signer-facing payload for a single order cancellation.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if domain construction or message serialization fails.
 pub fn order_cancellation_typed_data_payload(
     order_uid: &OrderUid,
     chain_id: SupportedChainId,
@@ -169,6 +215,11 @@ pub fn order_cancellation_typed_data_payload(
     order_cancellations_typed_data_payload(std::slice::from_ref(order_uid), chain_id, options)
 }
 
+/// Builds the signer-facing payload for a batch order cancellation.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if domain construction or message serialization fails.
 pub fn order_cancellations_typed_data_payload(
     order_uids: &[OrderUid],
     chain_id: SupportedChainId,

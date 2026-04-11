@@ -10,70 +10,105 @@ use crate::{
     ContractsError,
     interaction::{Interaction, InteractionLike, normalize_interaction},
     order::{NormalizedOrder, Order, OrderUidParams, extract_order_uid_params, normalize_order},
-    primitives::{abi_encode_bytes_array, function_selector, normalize_hex_payload},
+    primitives::{abi_encode_bytes_array, function_selector, normalize_hex_payload, zero_address},
     signature::{Signature, SigningScheme, decode_signing_scheme, encode_eip1271_signature_data},
 };
 
+/// Settlement interaction stage.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum InteractionStage {
+    /// Interactions executed before trades.
     Pre = 0,
+    /// Interactions executed between trade processing steps.
     Intra = 1,
+    /// Interactions executed after trades.
     Post = 2,
 }
 
+/// Compact order-flag inputs.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderFlags {
+    /// Order side.
     pub kind: OrderKind,
+    /// Whether the order is partially fillable.
     pub partially_fillable: bool,
+    /// Sell-token balance source.
     pub sell_token_balance: OrderBalance,
+    /// Buy-token balance source.
     pub buy_token_balance: OrderBalance,
 }
 
+/// Compact trade-flag inputs.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeFlags {
+    /// Order side.
     pub kind: OrderKind,
+    /// Whether the order is partially fillable.
     pub partially_fillable: bool,
+    /// Sell-token balance source.
     pub sell_token_balance: OrderBalance,
+    /// Buy-token balance source.
     pub buy_token_balance: OrderBalance,
+    /// Signing scheme used for the signature.
     pub signing_scheme: SigningScheme,
 }
 
+/// Trade execution override used while encoding settlements.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeExecution {
+    /// Executed amount recorded in the encoded trade.
     pub executed_amount: Amount,
 }
 
+/// Order-refund payload used for settlement post-interactions.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderRefunds {
+    /// Filled-amount storage entries to clear.
     pub filled_amounts: Vec<OrderUid>,
+    /// Pre-signature storage entries to clear.
     pub pre_signatures: Vec<OrderUid>,
 }
 
+/// Clearing prices keyed by token address.
 pub type Prices = BTreeMap<Address, Amount>;
 
+/// Encoded settlement trade payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Trade {
+    /// Sell token index in the token registry.
     pub sell_token_index: usize,
+    /// Buy token index in the token registry.
     pub buy_token_index: usize,
+    /// Receiver address.
     pub receiver: Address,
+    /// Sell amount.
     pub sell_amount: Amount,
+    /// Buy amount.
     pub buy_amount: Amount,
+    /// Expiration timestamp.
     pub valid_to: u32,
+    /// App-data hash.
     pub app_data: AppDataHash,
+    /// Fee amount.
     pub fee_amount: Amount,
+    /// Encoded trade flags.
     pub flags: u8,
+    /// Executed amount.
     pub executed_amount: Amount,
+    /// Encoded signature payload.
     pub signature: String,
 }
 
+/// Fully encoded settlement payload.
 pub type EncodedSettlement = (Vec<Address>, Vec<Amount>, Vec<Trade>, [Vec<Interaction>; 3]);
 
+/// Registry that assigns stable indexes to token addresses.
 #[derive(Debug, Clone, Default)]
 pub struct TokenRegistry {
     tokens: Vec<Address>,
@@ -81,14 +116,19 @@ pub struct TokenRegistry {
 }
 
 impl TokenRegistry {
+    /// Creates an empty token registry.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Returns registered token addresses in index order.
+    #[must_use]
     pub fn addresses(&self) -> Vec<Address> {
         self.tokens.clone()
     }
 
+    /// Returns the stable index for `token`, inserting it if needed.
     pub fn index(&mut self, token: &Address) -> usize {
         let key = token.normalized_key();
         if let Some(index) = self.token_map.get(&key) {
@@ -101,8 +141,10 @@ impl TokenRegistry {
     }
 }
 
+/// Stateful settlement encoder.
 #[derive(Debug, Clone)]
 pub struct SettlementEncoder {
+    /// Typed-data domain used for the settlement.
     pub domain: TypedDataDomain,
     tokens: TokenRegistry,
     trades: Vec<Trade>,
@@ -111,6 +153,8 @@ pub struct SettlementEncoder {
 }
 
 impl SettlementEncoder {
+    /// Creates a new settlement encoder.
+    #[must_use]
     pub fn new(domain: TypedDataDomain) -> Self {
         Self {
             domain,
@@ -124,14 +168,24 @@ impl SettlementEncoder {
         }
     }
 
+    /// Returns the encoded token registry in index order.
+    #[must_use]
     pub fn tokens(&self) -> Vec<Address> {
         self.tokens.addresses()
     }
 
+    /// Returns the encoded trades.
+    #[must_use]
     pub fn trades(&self) -> Vec<Trade> {
         self.trades.clone()
     }
 
+    /// Returns the encoded interactions grouped by stage.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError`] if post-stage order-refund interactions cannot
+    /// be encoded.
     pub fn interactions(&self) -> Result<[Vec<Interaction>; 3], ContractsError> {
         Ok([
             self.interactions[InteractionStage::Pre as usize].clone(),
@@ -144,6 +198,11 @@ impl SettlementEncoder {
         ])
     }
 
+    /// Returns the encoded post-interactions used to clear refund storage.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError`] if a stored order UID cannot be decoded.
     pub fn encoded_order_refunds(&self) -> Result<Vec<Interaction>, ContractsError> {
         let mut interactions = Vec::new();
         for (method, order_uids) in [
@@ -182,6 +241,12 @@ impl SettlementEncoder {
         Ok(interactions)
     }
 
+    /// Returns clearing prices aligned to the encoder's token registry.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError::MissingClearingPrice`] if any registered token
+    /// is absent from `prices`.
     pub fn clearing_prices(&self, prices: &Prices) -> Result<Vec<Amount>, ContractsError> {
         let normalized: BTreeMap<String, Amount> = prices
             .iter()
@@ -200,6 +265,12 @@ impl SettlementEncoder {
             .collect()
     }
 
+    /// Encodes and appends a trade.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError`] if order normalization fails, if execution is
+    /// missing for a partially fillable order, or if trade encoding fails.
     pub fn encode_trade(
         &mut self,
         order: &Order,
@@ -223,10 +294,16 @@ impl SettlementEncoder {
         Ok(())
     }
 
+    /// Encodes and appends an interaction in the requested stage.
     pub fn encode_interaction(&mut self, interaction: &InteractionLike, stage: InteractionStage) {
         self.interactions[stage as usize].push(normalize_interaction(interaction));
     }
 
+    /// Appends order-refund storage-clearing requests.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError`] if any supplied UID cannot be decoded.
     pub fn encode_order_refunds(&mut self, refunds: &OrderRefunds) -> Result<(), ContractsError> {
         for uid in refunds
             .filled_amounts
@@ -249,6 +326,11 @@ impl SettlementEncoder {
         Ok(())
     }
 
+    /// Returns the fully encoded settlement tuple.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError`] if clearing prices or interactions cannot be encoded.
     pub fn encoded_settlement(&self, prices: &Prices) -> Result<EncodedSettlement, ContractsError> {
         Ok((
             self.tokens(),
@@ -258,13 +340,14 @@ impl SettlementEncoder {
         ))
     }
 
+    /// Returns an interaction-only settlement setup payload.
+    #[must_use]
     pub fn encoded_setup(interactions: &[InteractionLike]) -> EncodedSettlement {
         let mut encoder = Self::new(TypedDataDomain {
             name: "unused".to_owned(),
             version: "unused".to_owned(),
             chain_id: 0,
-            verifying_contract: Address::new(crate::primitives::ZERO_ADDRESS)
-                .expect("static zero address remains valid"),
+            verifying_contract: zero_address(),
         });
         for interaction in interactions {
             encoder.encode_interaction(interaction, InteractionStage::Intra);
@@ -273,11 +356,21 @@ impl SettlementEncoder {
             encoder.tokens(),
             Vec::new(),
             encoder.trades(),
-            encoder.interactions().unwrap(),
+            [
+                encoder.interactions[InteractionStage::Pre as usize].clone(),
+                encoder.interactions[InteractionStage::Intra as usize].clone(),
+                encoder.interactions[InteractionStage::Post as usize].clone(),
+            ],
         )
     }
 }
 
+/// Encodes order flags into the compact settlement bitfield.
+///
+/// # Errors
+///
+/// This function currently uses a total flag mapping and does not return an error,
+/// but it retains a fallible signature for API consistency with adjacent codecs.
 pub fn encode_order_flags(flags: &OrderFlags) -> Result<u8, ContractsError> {
     let kind = match flags.kind {
         OrderKind::Sell => 0,
@@ -296,6 +389,11 @@ pub fn encode_order_flags(flags: &OrderFlags) -> Result<u8, ContractsError> {
     Ok(kind | partial | sell | buy)
 }
 
+/// Decodes compact order flags from the settlement bitfield.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::InvalidFlags`] if unsupported bits are set.
 pub fn decode_order_flags(encoded: u8) -> Result<OrderFlags, ContractsError> {
     if encoded & 0b1000_0000 != 0 {
         return Err(ContractsError::InvalidFlags(encoded));
@@ -327,6 +425,11 @@ pub fn decode_order_flags(encoded: u8) -> Result<OrderFlags, ContractsError> {
     })
 }
 
+/// Encodes trade flags into the compact settlement bitfield.
+///
+/// # Errors
+///
+/// Returns any error from [`encode_order_flags`].
 pub fn encode_trade_flags(flags: &TradeFlags) -> Result<u8, ContractsError> {
     Ok(encode_order_flags(&OrderFlags {
         kind: flags.kind,
@@ -336,6 +439,11 @@ pub fn encode_trade_flags(flags: &TradeFlags) -> Result<u8, ContractsError> {
     })? | (flags.signing_scheme.as_u8() << 5))
 }
 
+/// Decodes trade flags from the compact settlement bitfield.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if the order flags or signing scheme are invalid.
 pub fn decode_trade_flags(encoded: u8) -> Result<TradeFlags, ContractsError> {
     let order = decode_order_flags(encoded)?;
     let signing_scheme = decode_signing_scheme((encoded >> 5) & 0b11)?;
@@ -348,6 +456,11 @@ pub fn decode_trade_flags(encoded: u8) -> Result<TradeFlags, ContractsError> {
     })
 }
 
+/// Encodes a signature into the settlement wire representation.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if signature normalization or EIP-1271 encoding fails.
 pub fn encode_signature_data(signature: &Signature) -> Result<String, ContractsError> {
     match signature {
         Signature::Ecdsa { data, .. } => normalize_hex_payload(data, "signature"),
@@ -356,6 +469,11 @@ pub fn encode_signature_data(signature: &Signature) -> Result<String, ContractsE
     }
 }
 
+/// Encodes a normalized order, signature, and execution into a settlement trade.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if flags or signature encoding fails.
 pub fn encode_trade(
     tokens: &mut TokenRegistry,
     order: &NormalizedOrder,
@@ -383,6 +501,12 @@ pub fn encode_trade(
     })
 }
 
+/// Decodes an encoded trade back into the contract-order representation.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if token indexes are out of range or trade flags
+/// cannot be decoded.
 pub fn decode_order(trade: &Trade, tokens: &[Address]) -> Result<Order, ContractsError> {
     if trade.sell_token_index >= tokens.len() || trade.buy_token_index >= tokens.len() {
         return Err(ContractsError::Decode("Invalid trade".to_owned()));

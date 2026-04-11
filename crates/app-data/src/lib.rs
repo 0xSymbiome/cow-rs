@@ -1,12 +1,19 @@
 //! CoW Protocol app-data generation, schema validation, CID conversion, and
 //! IPFS transport seams.
 
+/// CID conversion helpers for app-data hashes and documents.
 pub mod cid;
+/// App-data crate error types.
 pub mod errors;
+/// IPFS fetch policies and read transport seams.
 pub mod fetch;
+/// Deterministic app-data rendering and digest helpers.
 pub mod info;
+/// IPFS pinning transport seams and upload helpers.
 pub mod pinning;
+/// Schema generation and validation helpers.
 pub mod schema;
+/// Shared app-data types, constants, and configuration structs.
 pub mod types;
 
 pub use cid::{

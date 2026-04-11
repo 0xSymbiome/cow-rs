@@ -9,62 +9,97 @@ use crate::{
     settlement::InteractionStage,
 };
 
+/// Read-only helper for allow-list queries.
 #[derive(Debug, Clone)]
 pub struct AllowListReader<P> {
+    /// Allow-list base contract address.
     pub allow_list_address: Address,
+    /// JSON ABI for the allow-list base contract.
     pub allow_list_abi_json: String,
+    /// Reader contract address.
     pub reader_address: Address,
+    /// JSON ABI for the reader contract.
     pub reader_abi_json: String,
+    /// Provider used to execute reads.
     pub provider: P,
 }
 
+/// Read-only helper for settlement storage queries.
 #[derive(Debug, Clone)]
 pub struct SettlementReader<P> {
+    /// Settlement base contract address.
     pub settlement_address: Address,
+    /// JSON ABI for the settlement base contract.
     pub settlement_abi_json: String,
+    /// Reader contract address.
     pub reader_address: Address,
+    /// JSON ABI for the reader contract.
     pub reader_abi_json: String,
+    /// Provider used to execute reads.
     pub provider: P,
 }
 
+/// Read-only helper for trade simulation.
 #[derive(Debug, Clone)]
 pub struct TradeSimulator<P> {
+    /// Settlement base contract address.
     pub settlement_address: Address,
+    /// JSON ABI for the settlement base contract.
     pub settlement_abi_json: String,
+    /// Simulator contract address.
     pub simulator_address: Address,
+    /// JSON ABI for the simulator contract.
     pub simulator_abi_json: String,
+    /// Provider used to execute reads.
     pub provider: P,
 }
 
+/// Input shape for settlement trade simulation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeSimulation {
+    /// Sell token address.
     pub sell_token: Address,
+    /// Buy token address.
     pub buy_token: Address,
+    /// Optional receiver address. Missing values normalize to the zero address.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub receiver: Option<Address>,
+    /// Sell amount.
     pub sell_amount: Amount,
+    /// Buy amount.
     pub buy_amount: Amount,
+    /// Optional sell-token balance source.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sell_token_balance: Option<OrderBalance>,
+    /// Optional buy-token balance source.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub buy_token_balance: Option<OrderBalance>,
+    /// Trade owner address.
     pub owner: Address,
 }
 
+/// Token-balance delta pair returned by simulation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeSimulationBalanceDelta {
+    /// Delta for the sell token.
     pub sell_token_delta: SignedAmount,
+    /// Delta for the buy token.
     pub buy_token_delta: SignedAmount,
 }
 
+/// Result contract returned by trade simulation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeSimulationResult {
+    /// Gas used by the simulated trade.
     pub gas_used: Amount,
+    /// Executed buy amount.
     pub executed_buy_amount: Amount,
+    /// Contract-side balance deltas.
     pub contract_balance: TradeSimulationBalanceDelta,
+    /// Owner-side balance deltas.
     pub owner_balance: TradeSimulationBalanceDelta,
 }
 
@@ -73,6 +108,12 @@ where
     P: Provider,
     P::Error: std::fmt::Display,
 {
+    /// Returns whether the supplied solver addresses are allow-listed.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError`] if request serialization, provider execution,
+    /// or result decoding fails.
     pub fn are_solvers(&self, solvers: &[Address]) -> Result<bool, ContractsError> {
         let raw = read_storage(
             &self.provider,
@@ -93,6 +134,12 @@ where
     P: Provider,
     P::Error: std::fmt::Display,
 {
+    /// Returns filled amounts for the supplied order UIDs.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError`] if request serialization, provider execution,
+    /// or result decoding fails.
     pub fn filled_amounts_for_orders(
         &self,
         order_uids: &[cow_sdk_core::OrderUid],
@@ -116,6 +163,11 @@ where
     P: Provider,
     P::Error: std::fmt::Display,
 {
+    /// Simulates a trade plus any staged interactions.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError`] if provider execution or response decoding fails.
     pub fn simulate_trade(
         &self,
         trade: &TradeSimulation,

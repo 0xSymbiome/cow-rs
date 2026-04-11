@@ -17,19 +17,26 @@ use crate::{
     domain::{get_domain, order_typed_data_payload},
 };
 
+/// Backward-compatible alias for the typed order input.
 pub type TypedOrder = UnsignedOrder;
 
+/// Result of a local signing operation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SigningResult {
+    /// Encoded signature string.
     pub signature: String,
+    /// Signing scheme used to create `signature`.
     pub signing_scheme: SigningScheme,
 }
 
+/// Generated compact order identifier plus underlying digest.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneratedOrderId {
+    /// Compact order UID.
     pub order_id: OrderUid,
+    /// Underlying order digest.
     pub order_digest: OrderDigest,
 }
 
@@ -38,6 +45,11 @@ struct OrderSigningPayload {
     digest: String,
 }
 
+/// Signs an order using `Eip712`.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub fn sign_order<S>(
     order: &UnsignedOrder,
     chain_id: SupportedChainId,
@@ -51,6 +63,11 @@ where
     sign_order_with_scheme(order, chain_id, signer, SigningScheme::Eip712, options)
 }
 
+/// Signs an order asynchronously using `Eip712`.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub async fn sign_order_async<S>(
     order: &UnsignedOrder,
     chain_id: SupportedChainId,
@@ -64,6 +81,11 @@ where
     sign_order_with_scheme_async(order, chain_id, signer, SigningScheme::Eip712, options).await
 }
 
+/// Signs an order using an explicit local signing scheme.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub fn sign_order_with_scheme<S>(
     order: &UnsignedOrder,
     chain_id: SupportedChainId,
@@ -79,6 +101,11 @@ where
     sign_with_scheme(signer, scheme, &payload.payload, &payload.digest)
 }
 
+/// Signs an order asynchronously using an explicit local signing scheme.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub async fn sign_order_with_scheme_async<S>(
     order: &UnsignedOrder,
     chain_id: SupportedChainId,
@@ -94,6 +121,11 @@ where
     sign_with_scheme_async(signer, scheme, &payload.payload, &payload.digest).await
 }
 
+/// Generates the compact order UID for an order and owner.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if domain construction, hashing, or UID packing fails.
 pub fn generate_order_id(
     chain_id: SupportedChainId,
     order: &UnsignedOrder,
@@ -114,6 +146,11 @@ pub fn generate_order_id(
     })
 }
 
+/// Encodes the CoW EIP-1271 verifier payload for an existing ECDSA signature.
+///
+/// # Errors
+///
+/// Returns [`SigningError`] if order normalization or ABI-style encoding fails.
 pub fn eip1271_signature_payload(
     order: &UnsignedOrder,
     ecdsa_signature: &str,

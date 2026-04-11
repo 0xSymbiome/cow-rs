@@ -7,28 +7,43 @@ use crate::{
     primitives::{encode_address, encode_fixed_bytes, function_selector, keccak256_hex},
 };
 
+/// Vault methods that require explicit relayer authorization.
 pub const VAULT_INTERFACE: [&str; 2] = [
     "function manageUserBalance((uint8, address, uint256, address, address)[])",
     "function batchSwap(uint8, (bytes32, uint256, uint256, uint256, bytes)[], address[], (address, bool, address, bool), int256[], uint256)",
 ];
 
+/// Derived vault role metadata for a specific method selector.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequiredVaultRole {
+    /// Human-readable method name.
     pub method: String,
+    /// Method selector as a hex string.
     pub selector: String,
+    /// Derived role hash.
     pub role: String,
 }
 
+/// Prepared `grantRole` call for a vault relayer authorization flow.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GrantRoleCall {
+    /// Authorizer contract address.
     pub authorizer_address: Address,
+    /// JSON ABI for the authorizer contract.
     pub authorizer_abi_json: String,
+    /// Method name to invoke.
     pub method: String,
+    /// JSON-encoded arguments for the method call.
     pub args_json: String,
 }
 
+/// Returns the required vault role hashes for the supported vault methods.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if address encoding fails while deriving the role hash.
 pub fn required_vault_roles(
     vault_address: &Address,
 ) -> Result<Vec<RequiredVaultRole>, ContractsError> {
@@ -52,6 +67,11 @@ pub fn required_vault_roles(
         .collect()
 }
 
+/// Builds `grantRole` calls for every required vault role.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if role derivation or JSON argument serialization fails.
 pub fn required_vault_role_calls(
     authorizer_address: &Address,
     authorizer_abi_json: &str,
@@ -72,6 +92,12 @@ pub fn required_vault_role_calls(
         .collect()
 }
 
+/// Executes all required vault role grants through the supplied callback.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if role-call construction fails or if `contract_call`
+/// returns an error for any required role.
 pub fn grant_required_roles<F, E>(
     authorizer_address: &Address,
     authorizer_abi_json: &str,

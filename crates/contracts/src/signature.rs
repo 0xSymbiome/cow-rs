@@ -9,23 +9,33 @@ use crate::{
     primitives::{function_selector, normalize_hex_payload, parse_hex, parse_hex_exact},
 };
 
+/// EIP-1271 success magic value.
 pub const EIP1271_MAGICVALUE: &str = "0x1626ba7e";
 const EIP1271_IS_VALID_SIGNATURE_ABI_JSON: &str = r#"[{"type":"function","name":"isValidSignature","inputs":[{"name":"hash","type":"bytes32"},{"name":"signature","type":"bytes"}],"outputs":[{"name":"","type":"bytes4"}],"stateMutability":"view"}]"#;
 
+/// Supported CoW signing schemes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum SigningScheme {
+    /// EIP-712 typed-data signature.
     Eip712 = 0,
+    /// `eth_sign` style message signature.
     EthSign = 1,
+    /// EIP-1271 smart-account signature.
     Eip1271 = 2,
+    /// Pre-sign on-chain approval.
     PreSign = 3,
 }
 
 impl SigningScheme {
+    /// Returns the compact numeric encoding for the signing scheme.
+    #[must_use]
     pub fn as_u8(self) -> u8 {
         self as u8
     }
 
+    /// Returns whether the scheme produces an ECDSA signature locally.
+    #[must_use]
     pub fn is_ecdsa(self) -> bool {
         matches!(self, Self::Eip712 | Self::EthSign)
     }
@@ -45,30 +55,54 @@ impl TryFrom<u8> for SigningScheme {
     }
 }
 
+/// Decoded EIP-1271 verifier payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Eip1271SignatureData {
+    /// Verifier contract address.
     pub verifier: Address,
+    /// Encoded signature payload as hex.
     pub signature: String,
 }
 
+/// Input contract for EIP-1271 verification helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Eip1271VerificationRequest {
+    /// Verifier contract address.
     pub verifier: Address,
+    /// Digest being validated.
     pub digest: Hash32,
+    /// Signature bytes.
     pub signature: HexData,
 }
 
+/// CoW signature union.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Signature {
-    Ecdsa { scheme: SigningScheme, data: String },
-    Eip1271 { data: Eip1271SignatureData },
-    PreSign { owner: Address },
+    /// Locally produced ECDSA signature plus scheme discriminator.
+    Ecdsa {
+        /// ECDSA signing scheme used to create `data`.
+        scheme: SigningScheme,
+        /// Signature bytes as a hex string.
+        data: String,
+    },
+    /// EIP-1271 smart-account signature payload.
+    Eip1271 {
+        /// Verifier contract payload.
+        data: Eip1271SignatureData,
+    },
+    /// Pre-sign owner address.
+    PreSign {
+        /// Owner address that pre-signed the order on-chain.
+        owner: Address,
+    },
 }
 
 impl Signature {
+    /// Returns the signing scheme represented by this signature.
+    #[must_use]
     pub fn scheme(&self) -> SigningScheme {
         match self {
             Signature::Ecdsa { scheme, .. } => *scheme,
@@ -78,6 +112,11 @@ impl Signature {
     }
 }
 
+/// Encodes an EIP-1271 verifier payload as the CoW compact wire format.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if the verifier or signature is not valid hex.
 pub fn encode_eip1271_signature_data(
     data: &Eip1271SignatureData,
 ) -> Result<String, ContractsError> {
@@ -87,6 +126,13 @@ pub fn encode_eip1271_signature_data(
     Ok(format!("0x{}", hex::encode(payload)))
 }
 
+/// Decodes a compact EIP-1271 verifier payload.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::InvalidEip1271SignatureData`] when the payload is
+/// shorter than the verifier address, or another [`ContractsError`] when hex or
+/// address validation fails.
 pub fn decode_eip1271_signature_data(
     signature: &str,
 ) -> Result<Eip1271SignatureData, ContractsError> {
@@ -102,23 +148,44 @@ pub fn decode_eip1271_signature_data(
     })
 }
 
+/// Encodes a signing scheme into the compact trade-flag representation.
+#[must_use]
 pub fn encode_signing_scheme(scheme: SigningScheme) -> u8 {
     scheme.as_u8()
 }
 
+/// Decodes a signing scheme from the compact trade-flag representation.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::UnsupportedSigningScheme`] for unknown values.
 pub fn decode_signing_scheme(flags: u8) -> Result<SigningScheme, ContractsError> {
     SigningScheme::try_from(flags)
 }
 
+/// Normalizes an ECDSA signature into canonical hex form.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if the signature is not valid hex.
 pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> {
     normalize_hex_payload(data, "signature")
 }
 
+/// Returns the 4-byte function selector for a Solidity signature.
+#[must_use]
 pub fn function_magic_value(signature: &str) -> String {
     let selector = function_selector(signature);
     format!("0x{}", hex::encode(selector))
 }
 
+/// Verifies an EIP-1271 signature using a synchronous provider.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if the verifier has no code, the provider call
+/// fails, or the verifier response is malformed or does not match the expected
+/// magic value.
 pub fn verify_eip1271_signature<P>(
     provider: &P,
     request: &Eip1271VerificationRequest,
@@ -147,6 +214,13 @@ where
     ensure_magic_value(&raw)
 }
 
+/// Verifies an EIP-1271 signature using an asynchronous provider.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if the verifier has no code, the provider call
+/// fails, or the verifier response is malformed or does not match the expected
+/// magic value.
 pub async fn verify_eip1271_signature_async<P>(
     provider: &P,
     request: &Eip1271VerificationRequest,

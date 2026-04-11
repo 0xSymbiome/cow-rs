@@ -6,7 +6,11 @@ use crate::{
     cid_to_app_data_hex, validate_app_data_doc,
 };
 
+/// Source abstraction for app-data generation helpers.
 pub trait AppDataSource {
+    /// Converts the source into a parsed document plus the serialized content string.
+    ///
+    /// When `deterministic` is true, implementations should use canonical key ordering.
     fn into_document_and_content(
         self,
         deterministic: bool,
@@ -63,6 +67,12 @@ impl AppDataSource for String {
     }
 }
 
+/// Returns CID, canonical content, and hex digest for the latest app-data path.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if the source cannot be parsed, validation fails, or
+/// CID conversion fails.
 pub fn get_app_data_info(source: impl AppDataSource) -> Result<AppDataInfo, AppDataError> {
     let (document, app_data_content) = source.into_document_and_content(true)?;
     ensure_valid_document(&document)?;
@@ -78,6 +88,12 @@ pub fn get_app_data_info(source: impl AppDataSource) -> Result<AppDataInfo, AppD
     })
 }
 
+/// Returns CID, content, and hex digest for the legacy app-data path.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if the source cannot be parsed, validation fails, or
+/// legacy CID conversion fails.
 pub fn get_app_data_info_legacy(source: impl AppDataSource) -> Result<AppDataInfo, AppDataError> {
     let (document, app_data_content) = source.into_document_and_content(false)?;
     ensure_valid_document(&document)?;
@@ -92,6 +108,11 @@ pub fn get_app_data_info_legacy(source: impl AppDataSource) -> Result<AppDataInf
     })
 }
 
+/// Serializes an app-data document with deterministic object-key ordering.
+///
+/// # Errors
+///
+/// Returns [`AppDataError::Json`] if any string escaping step fails.
 pub fn stringify_deterministic(value: &AppDataDoc) -> Result<String, AppDataError> {
     let mut rendered = String::new();
     write_canonical_json(value, &mut rendered)?;
@@ -151,18 +172,38 @@ fn write_canonical_json(value: &Value, out: &mut String) -> Result<(), AppDataEr
     Ok(())
 }
 
+/// Returns only the app-data hex digest for the latest path.
+///
+/// # Errors
+///
+/// Returns any error from [`get_app_data_info`].
 pub fn get_app_data_info_hex(source: impl AppDataSource) -> Result<String, AppDataError> {
     Ok(get_app_data_info(source)?.app_data_hex)
 }
 
+/// Returns only the CID for the latest path.
+///
+/// # Errors
+///
+/// Returns any error from [`get_app_data_info`].
 pub fn get_app_data_cid(source: impl AppDataSource) -> Result<String, AppDataError> {
     Ok(get_app_data_info(source)?.cid)
 }
 
+/// Returns only the serialized app-data content for the latest path.
+///
+/// # Errors
+///
+/// Returns any error from [`get_app_data_info`].
 pub fn get_app_data_content(source: impl AppDataSource) -> Result<String, AppDataError> {
     Ok(get_app_data_info(source)?.app_data_content)
 }
 
+/// Extracts the app-data hex digest from a supported CID.
+///
+/// # Errors
+///
+/// Returns [`AppDataError::InvalidCid`] if the CID is malformed or unsupported.
 pub fn digest_from_cid(cid: &str) -> Result<String, AppDataError> {
     cid_to_app_data_hex(cid)
 }

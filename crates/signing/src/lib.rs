@@ -6,9 +6,13 @@
 //! can transport typed-data payloads without reconstructing structure from
 //! field-name heuristics.
 
+/// Order-cancellation signing helpers.
 pub mod cancellation;
+/// Typed-data domain and payload construction helpers.
 pub mod domain;
+/// Signing crate error types.
 pub mod errors;
+/// Order signing and order-id generation helpers.
 pub mod order_signing;
 
 pub use cancellation::{

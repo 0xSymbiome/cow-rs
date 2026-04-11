@@ -1,15 +1,25 @@
 //! Low-level CoW Protocol contract helpers for hashing, settlement encoding,
 //! signature verification, and deployment metadata.
 
+/// Deterministic deployment metadata and address derivation helpers.
 pub mod deploy;
+/// Contract crate error types.
 pub mod errors;
+/// Typed interaction models and normalization helpers.
 pub mod interaction;
+/// Order hashing, UID packing, and normalization helpers.
 pub mod order;
+/// Proxy inspection helpers for EIP-173 style ownership proxies.
 pub mod proxy;
+/// Reader helpers for allow-list, settlement, and trade-simulation contracts.
 pub mod reader;
+/// Settlement encoding helpers and flag codecs.
 pub mod settlement;
+/// Signature codecs and EIP-1271 verification helpers.
 pub mod signature;
+/// Batch-swap encoding helpers.
 pub mod swap;
+/// Vault authorization role helpers.
 pub mod vault;
 
 mod primitives;

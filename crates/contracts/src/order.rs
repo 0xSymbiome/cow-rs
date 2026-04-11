@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, AppDataHex, Hash32, OrderBalance, OrderDigest, OrderKind,
-    OrderModel, OrderUid, SupportedChainId, TypedDataDomain, settlement_contract_address,
+    Address, Amount, AppDataHash, Hash32, OrderBalance, OrderDigest, OrderKind, OrderModel,
+    OrderUid, SupportedChainId, TypedDataDomain, settlement_contract_address,
 };
 
 use crate::{
@@ -14,18 +14,25 @@ use crate::{
     },
 };
 
+/// Sentinel address used by the protocol to represent native ETH buys.
 pub const BUY_ETH_ADDRESS: &str = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+/// EIP-712 order type hash used for struct hashing.
 pub const ORDER_TYPE_HASH: &str =
     "0xd5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489";
+/// Encoded order UID length in bytes.
 pub const ORDER_UID_LENGTH: usize = ORDER_UID_LENGTH_BYTES;
 
+/// EIP-712 field descriptor used for CoW order-type metadata.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OrderTypeField {
+    /// Field name.
     pub name: &'static str,
+    /// Solidity field type.
     #[serde(rename = "type")]
     pub kind: &'static str,
 }
 
+/// Canonical order type fields in struct-hash order.
 pub const ORDER_TYPE_FIELDS: [OrderTypeField; 12] = [
     OrderTypeField {
         name: "sellToken",
@@ -77,6 +84,7 @@ pub const ORDER_TYPE_FIELDS: [OrderTypeField; 12] = [
     },
 ];
 
+/// Canonical EIP-712 field descriptor for order-cancellation payloads.
 pub const CANCELLATIONS_TYPE_FIELDS: [OrderTypeField; 1] = [OrderTypeField {
     name: "orderUids",
     kind: "bytes[]",
@@ -90,19 +98,31 @@ pub const CANCELLATIONS_TYPE_FIELDS: [OrderTypeField; 1] = [OrderTypeField {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Order {
+    /// Sell token address.
     pub sell_token: Address,
+    /// Buy token address.
     pub buy_token: Address,
+    /// Optional receiver. Missing values normalize to `address(0)`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub receiver: Option<Address>,
+    /// Sell amount.
     pub sell_amount: Amount,
+    /// Buy amount.
     pub buy_amount: Amount,
+    /// Expiration timestamp.
     pub valid_to: u32,
+    /// App-data hash.
     pub app_data: AppDataHash,
+    /// Fee amount.
     pub fee_amount: Amount,
+    /// Order side.
     pub kind: OrderKind,
+    /// Whether the order is partially fillable.
     pub partially_fillable: bool,
+    /// Optional sell-token balance source.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sell_token_balance: Option<OrderBalance>,
+    /// Optional buy-token balance source.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub buy_token_balance: Option<OrderBalance>,
 }
@@ -110,40 +130,64 @@ pub struct Order {
 /// Canonical contract order used for struct hashing.
 ///
 /// `normalize_order` creates this type after applying ABI-level defaults and
-/// rejecting invalid receiver state. It is separate from `Order` so hashing code
+/// rejecting invalid receiver state. It is separate from [`Order`] so hashing code
 /// cannot accidentally skip normalization.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NormalizedOrder {
+    /// Sell token address.
     pub sell_token: Address,
+    /// Buy token address.
     pub buy_token: Address,
+    /// Normalized receiver address.
     pub receiver: Address,
+    /// Sell amount.
     pub sell_amount: Amount,
+    /// Buy amount.
     pub buy_amount: Amount,
+    /// Expiration timestamp.
     pub valid_to: u32,
+    /// App-data hash.
     pub app_data: AppDataHash,
+    /// Fee amount.
     pub fee_amount: Amount,
+    /// Order side.
     pub kind: OrderKind,
+    /// Whether the order is partially fillable.
     pub partially_fillable: bool,
+    /// Normalized sell-token balance source.
     pub sell_token_balance: OrderBalance,
+    /// Normalized buy-token balance source.
     pub buy_token_balance: OrderBalance,
 }
 
+/// Structured order UID components.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderUidParams {
+    /// Order digest.
     pub order_digest: OrderDigest,
+    /// Order owner address.
     pub owner: Address,
+    /// Order expiration timestamp.
     pub valid_to: u32,
 }
 
+/// EIP-712 message body for order cancellations.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderCancellations {
+    /// Order UIDs being cancelled.
     pub order_uids: Vec<OrderUid>,
 }
 
 impl Order {
+    /// Returns the normalized contract order used for hashing and encoding.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError::ZeroReceiver`] when the receiver is explicitly
+    /// set to the zero address.
     pub fn normalize(&self) -> Result<NormalizedOrder, ContractsError> {
         normalize_order(self)
     }
@@ -168,10 +212,18 @@ impl From<&cow_sdk_core::UnsignedOrder> for Order {
     }
 }
 
+/// Normalizes the buy-token balance to the protocol-supported value set.
+#[must_use]
 pub fn normalize_buy_token_balance(balance: Option<OrderBalance>) -> OrderBalance {
     balance.unwrap_or_default().normalize_for_buy()
 }
 
+/// Normalizes an order into its canonical contract hashing form.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::ZeroReceiver`] when the receiver is explicitly set
+/// to the zero address.
 pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError> {
     if matches!(
         order
@@ -200,11 +252,21 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
     })
 }
 
+/// Computes the EIP-712 digest for an order.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if normalization or struct hashing fails.
 pub fn hash_order(domain: &TypedDataDomain, order: &Order) -> Result<OrderDigest, ContractsError> {
     let digest = typed_data_digest(domain, order_struct_hash(&normalize_order(order)?)?)?;
     OrderDigest::new(format!("0x{}", hex::encode(digest))).map_err(Into::into)
 }
 
+/// Computes the EIP-712 digest for a single order cancellation.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if UID decoding or typed-data hashing fails.
 pub fn hash_order_cancellation(
     domain: &TypedDataDomain,
     order_uid: &OrderUid,
@@ -217,6 +279,11 @@ pub fn hash_order_cancellation(
     )
 }
 
+/// Computes the EIP-712 digest for a batch order cancellation payload.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if UID decoding or typed-data hashing fails.
 pub fn hash_order_cancellations(
     domain: &TypedDataDomain,
     cancellations: &OrderCancellations,
@@ -236,6 +303,11 @@ pub fn hash_order_cancellations(
     Hash32::new(format!("0x{}", hex::encode(digest))).map_err(Into::into)
 }
 
+/// Computes the encoded order UID for an order and owner.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if order hashing or UID packing fails.
 pub fn compute_order_uid(
     domain: &TypedDataDomain,
     order: &Order,
@@ -248,6 +320,12 @@ pub fn compute_order_uid(
     })
 }
 
+/// Packs structured order UID components into the compact UID string.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if the digest or owner cannot be decoded into the
+/// fixed byte lengths required by the UID format.
 pub fn pack_order_uid_params(params: &OrderUidParams) -> Result<OrderUid, ContractsError> {
     let digest = parse_hex32(params.order_digest.as_str(), "orderDigest")?;
     let owner = parse_hex_exact(params.owner.as_str(), "owner", 20)?;
@@ -258,6 +336,11 @@ pub fn pack_order_uid_params(params: &OrderUidParams) -> Result<OrderUid, Contra
     OrderUid::new(format!("0x{}", hex::encode(out))).map_err(Into::into)
 }
 
+/// Extracts structured order UID components from a compact UID string.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if the UID cannot be decoded into the expected format.
 pub fn extract_order_uid_params(order_uid: &OrderUid) -> Result<OrderUidParams, ContractsError> {
     let bytes = parse_hex_exact(order_uid.as_str(), "orderUid", ORDER_UID_LENGTH)?;
     if bytes.len() != ORDER_UID_LENGTH {
@@ -268,7 +351,13 @@ pub fn extract_order_uid_params(order_uid: &OrderUid) -> Result<OrderUidParams, 
 
     let order_digest = OrderDigest::new(format!("0x{}", hex::encode(&bytes[..32])))?;
     let owner = Address::new(format!("0x{}", hex::encode(&bytes[32..52])))?;
-    let valid_to = u32::from_be_bytes(bytes[52..56].try_into().expect("valid uid length"));
+    let valid_to_bytes: [u8; 4] =
+        bytes[52..56]
+            .try_into()
+            .map_err(|_| ContractsError::InvalidOrderUidLength {
+                actual: bytes.len(),
+            })?;
+    let valid_to = u32::from_be_bytes(valid_to_bytes);
 
     Ok(OrderUidParams {
         order_digest,
@@ -277,6 +366,11 @@ pub fn extract_order_uid_params(order_uid: &OrderUid) -> Result<OrderUidParams, 
     })
 }
 
+/// Computes the low-level order digest for the compatibility [`OrderModel`] shape.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if the chain is unsupported or if order hashing fails.
 pub fn hash_order_for_contract(
     order: &OrderModel,
     chain_id: u64,
@@ -294,6 +388,11 @@ pub fn hash_order_for_contract(
     parse_hex32(digest.as_str(), "orderDigest")
 }
 
+/// Computes the compact order UID for the compatibility [`OrderModel`] shape.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if order hashing or UID packing fails.
 pub fn uid_for_contract(
     order: &OrderModel,
     chain_id: u64,
@@ -316,7 +415,7 @@ fn compatibility_order(order: &OrderModel) -> Order {
         sell_amount: Amount::zero(),
         buy_amount: Amount::zero(),
         valid_to: 0,
-        app_data: AppDataHex::new(order.app_data_hex.as_str()).expect("app data stays valid"),
+        app_data: order.app_data_hex.clone(),
         fee_amount: Amount::zero(),
         kind: order.kind,
         partially_fillable: false,

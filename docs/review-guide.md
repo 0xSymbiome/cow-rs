@@ -35,7 +35,7 @@ Typed-data review has two layers on purpose:
 
 - `cow_sdk_core::TypedDataPayload` is the signer-facing EIP-712 contract. It carries the explicit primary type, the full type map, and canonical message JSON for runtime adapters such as `cow-sdk-browser-wallet`.
 - `cow_sdk_signing::OrderTypedData` is the order-facing convenience envelope returned by signing and trading helpers. That keeps typed order UX for consumers without forcing signer implementations to recover structure from field-name heuristics.
-- `cow_sdk_signing::order_typed_data_payload` and `order_cancellations_typed_data_payload` are the reviewed CoW payload builders. They are the preferred inputs for browser-wallet EIP-712 signing.
+- `cow_sdk_signing::order_typed_data_payload` and `order_cancellations_typed_data_payload` are the supported CoW payload builders. They are the preferred inputs for browser-wallet EIP-712 signing.
 - `cow_sdk_browser_wallet::Eip1193Signer::sign_typed_data` remains a compatibility seam for the narrow CoW order and order-cancellation field sets only. Other primary types must use `sign_typed_data_payload`.
 
 Smart-account verification follows the same explicit-seam rule:
@@ -158,10 +158,10 @@ This avoids a single crate becoming the owner of unrelated concerns while giving
 
 Use the browser-wallet discovery surface in this order:
 
-- `BrowserWallet::discover()` and `BrowserWallet::discover_with()` are the reviewed injected-wallet discovery entrypoints. They use a bounded async wait contract and return explicit discovery metadata plus discovered wallet candidates.
-- `InjectedWalletDiscovery::single_wallet()` is valid only when discovery produced exactly one reviewed candidate. It fails with a typed error when explicit selection is required.
-- `InjectedWalletDiscovery::wallet_at()` is the explicit selection path when more than one reviewed candidate is present.
-- `BrowserWallet::detect()` is a compatibility helper for direct `window.ethereum` lookup. It is not the primary reviewed discovery contract.
+- `BrowserWallet::discover()` and `BrowserWallet::discover_with()` are the injected-wallet discovery entrypoints. They use a bounded async wait contract and return explicit discovery metadata plus discovered wallet candidates.
+- `InjectedWalletDiscovery::single_wallet()` is valid only when discovery produced exactly one candidate. It fails with a typed error when explicit selection is required.
+- `InjectedWalletDiscovery::wallet_at()` is the explicit selection path when more than one candidate is present.
+- `BrowserWallet::detect()` is a compatibility helper for direct `window.ethereum` lookup. It is not the primary discovery contract.
 
 Review these points on browser-wallet changes:
 
@@ -172,15 +172,15 @@ Review these points on browser-wallet changes:
 
 Browser-wallet session synchronization follows the same explicit contract:
 
-- `WalletSession` is kept in sync from provider-emitted `accountsChanged`, `chainChanged`, `connect`, and `disconnect` signals for reviewed wallet transports.
+- `WalletSession` is kept in sync from provider-emitted `accountsChanged`, `chainChanged`, `connect`, and `disconnect` signals for supported wallet transports.
 - The public surface remains typed Rust state and events through `WalletSession` and `WalletEvent`; raw JS payloads stay local to `cow-sdk-browser-wallet`.
 - Listener ownership follows cloned `BrowserWallet` and `Eip1193Provider` values. Cleanup happens when the last owning Rust value is dropped, without process-global event buses or singleton state.
-- `refresh_session()` remains an explicit resynchronization helper, not the primary reviewed path for externally initiated account or chain changes.
+- `refresh_session()` remains an explicit resynchronization helper, not the primary path for externally initiated account or chain changes.
 
-Browser-wallet chain management is reviewed through the typed crate-local contract:
+Browser-wallet chain management uses the typed crate-local contract:
 
 - `WalletChainParameters` and `WalletNativeCurrency` are the add-chain request surface. Browser-wallet callers provide explicit chain metadata and RPC URLs instead of assembling raw `wallet_addEthereumChain` payloads at call sites.
-- `BrowserWallet::switch_chain()` remains the typed switch helper for reviewed supported chains.
+- `BrowserWallet::switch_chain()` remains the typed switch helper for supported chains.
 - `BrowserWallet::add_chain()` and `BrowserWallet::switch_or_add_chain()` keep add-chain and switch-or-add behavior visible through `WalletChainChange` and `WalletChainChangeKind`.
 - Invalid chain configuration fails locally with `BrowserWalletError::InvalidChainConfiguration`. Wallet-side rejection, unsupported methods, and chain-not-added outcomes remain distinct typed errors.
 - Wallet-specific method growth stays leaf-owned and typed. The public contract does not include a generic raw wallet-RPC passthrough.
@@ -191,9 +191,9 @@ Browser-wallet support posture stays explicit across the public surface:
 - The default `cow-sdk` facade does not assume browser-wallet access. Browser-wallet support is exposed only through the `browser-wallet` feature and the `cow-sdk-browser-wallet` crate.
 - Deterministic proof comes from mock-wallet contract tests and the mock mode in the browser-wallet console.
 - In the browser-wallet console, `Reset Session` clears console session state without dropping the selected wallet handle or confirmed provider choice, while `Forget Wallet` clears both explicitly.
-- In the browser-wallet console, `Detect` caches reviewed wallet candidates, `Confirm Wallet` records the provider choice when more than one candidate is present, `Connect / Reconnect` uses the confirmed provider or retained selected wallet handle, and `Rescan` refreshes the reviewed candidate set while revalidating or clearing the confirmed choice.
+- In the browser-wallet console, `Detect` caches discovered wallet candidates, `Confirm Wallet` records the provider choice when more than one candidate is present, `Connect / Reconnect` uses the confirmed provider or retained selected wallet handle, and `Rescan` refreshes the candidate set while revalidating or clearing the confirmed choice.
 - Injected-provider support covers the typed EIP-1193 flows exercised by `cow-sdk-browser-wallet` on supported chains with explicit user authorization.
-- Broader extension variability remains outside the SDK contract. Reviewers should not treat extension-specific prompts, authorization persistence, chain inventory, or non-standard vendor behavior as normalized SDK guarantees.
+- Broader extension variability remains outside the SDK contract. Extension-specific prompts, authorization persistence, chain inventory, and non-standard vendor behavior are not normalized SDK guarantees.
 - Public docs and examples should keep the root facade narrower than the leaf crate and avoid language that implies universal browser-wallet compatibility.
 
 ## Public Package Policy
@@ -235,10 +235,10 @@ Subgraph example review follows the same package boundary:
 
 ## CI Configuration
 
-The repository ships three reviewer-facing validation layers:
+The repository ships three validation layers:
 
 - `ci.yml` runs formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, public API lint reporting, and advisory reporting on every PR.
-- `release-readiness.yml` reruns the reviewer-grade library checks before parity validation and package dry-runs.
+- `release-readiness.yml` reruns the library checks before parity validation and package dry-runs.
 - `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and example deployment surfaces.
 
 Action references in workflow files are pinned to immutable SHAs.

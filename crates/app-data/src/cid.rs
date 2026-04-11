@@ -11,12 +11,20 @@ const KECCAK_256_CODE: u64 = 0x1b;
 const SHA2_256_CODE: u64 = 0x12;
 const APP_DATA_HEX_LENGTH: usize = 32;
 
+/// Supported CID derivation modes for app-data documents.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CidMode {
+    /// CIDv1 over the existing keccak256 app-data digest.
     Latest,
+    /// Legacy CIDv0 over the JSON document bytes.
     Legacy,
 }
 
+/// Converts an app-data hex digest into the latest supported CID representation.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if the digest is not valid 32-byte hex or if CID conversion fails.
 pub fn app_data_hex_to_cid(app_data_hex: &str) -> Result<String, AppDataError> {
     let digest = parse_app_data_hex(app_data_hex)?;
     let cid = latest_cid_from_digest(&digest)?;
@@ -24,12 +32,22 @@ pub fn app_data_hex_to_cid(app_data_hex: &str) -> Result<String, AppDataError> {
         .map_err(|err| AppDataError::Calculation(err.to_string()))
 }
 
+/// Converts an app-data hex digest into the legacy CIDv0 representation.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] if the digest is not valid 32-byte hex or if CID conversion fails.
 pub fn app_data_hex_to_cid_legacy(app_data_hex: &str) -> Result<String, AppDataError> {
     let digest = parse_app_data_hex(app_data_hex)?;
     let cid = legacy_cid_from_digest(&digest)?;
     Ok(cid.to_string())
 }
 
+/// Converts an app-data hex digest using the requested CID mode.
+///
+/// # Errors
+///
+/// Returns any error from the selected conversion mode.
 pub fn app_data_hex_to_cid_with_mode(
     app_data_hex: &str,
     mode: CidMode,
@@ -40,6 +58,12 @@ pub fn app_data_hex_to_cid_with_mode(
     }
 }
 
+/// Converts a supported CID back into the app-data hex digest.
+///
+/// # Errors
+///
+/// Returns [`AppDataError::InvalidCid`] if the CID is malformed or uses an
+/// unsupported codec or hash function.
 pub fn cid_to_app_data_hex(cid: &str) -> Result<String, AppDataError> {
     let cid = Cid::try_from(cid).map_err(|_| AppDataError::InvalidCid)?;
     ensure_supported_cid(&cid)?;
