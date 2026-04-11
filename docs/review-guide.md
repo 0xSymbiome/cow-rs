@@ -165,6 +165,7 @@ Browser-wallet support posture stays explicit across the public surface:
 
 - The default `cow-sdk` facade does not assume browser-wallet access. Browser-wallet support is exposed only through the `browser-wallet` feature and the `cow-sdk-browser-wallet` crate.
 - Deterministic proof comes from mock-wallet contract tests and the mock mode in the browser-wallet console.
+- In the browser-wallet console, `Reset Session` clears console session state without dropping the selected wallet handle, while `Forget Wallet` clears the selected wallet explicitly.
 - Injected-provider support covers the typed EIP-1193 flows exercised by `cow-sdk-browser-wallet` on supported chains with explicit user authorization.
 - Broader extension variability remains outside the SDK contract. Reviewers should not treat extension-specific prompts, authorization persistence, chain inventory, or non-standard vendor behavior as normalized SDK guarantees.
 - Public docs and examples should keep the root facade narrower than the leaf crate and avoid language that implies universal browser-wallet compatibility.

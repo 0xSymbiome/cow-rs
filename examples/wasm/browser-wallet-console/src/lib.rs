@@ -227,13 +227,31 @@ impl BrowserWalletConsole {
         let wallet = self.injected_wallet()?;
         let session = wallet.reset_session();
         let events = wallet.take_events();
-        *self.injected_wallet.lock().unwrap() = None;
         *self.last_live_order_uid.lock().unwrap() = None;
         pretty_json(&json!({
             "mode": "injected",
             "session": session,
-            "note": "local session cleared; extension authorization remains managed by the wallet",
+            "walletInfo": wallet.injected_info(),
+            "walletSelectionRetained": true,
+            "note": "console session state cleared; selected wallet retained; wallet authorization remains managed by the extension",
             "events": events,
+        }))
+    }
+
+    pub fn injected_forget_wallet_json(&self) -> Result<String, JsValue> {
+        let forgotten_wallet = self.injected_wallet.lock().unwrap().take();
+        let forgotten_wallet_info = forgotten_wallet
+            .as_ref()
+            .and_then(BrowserWallet::injected_info);
+        let forgotten_session = forgotten_wallet.as_ref().map(BrowserWallet::session);
+        let cleared_order_uid = self.last_live_order_uid.lock().unwrap().take();
+        pretty_json(&json!({
+            "mode": "injected",
+            "walletSelectionCleared": forgotten_wallet.is_some(),
+            "forgottenSession": forgotten_session,
+            "forgottenWalletInfo": forgotten_wallet_info,
+            "lastLiveOrderUidCleared": cleared_order_uid.is_some(),
+            "note": "selected wallet cleared from the console; wallet authorization remains managed by the extension",
         }))
     }
 
@@ -684,5 +702,21 @@ impl BrowserWalletConsole {
             .unwrap()
             .clone()
             .ok_or_else(|| to_js_error("connect an injected wallet first"))
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[doc(hidden)]
+impl BrowserWalletConsole {
+    pub fn testing_set_injected_wallet(&self, wallet: BrowserWallet) {
+        *self.injected_wallet.lock().unwrap() = Some(wallet);
+    }
+
+    pub fn testing_set_last_live_order_uid(&self, order_uid: Option<String>) {
+        *self.last_live_order_uid.lock().unwrap() = order_uid;
+    }
+
+    pub fn testing_has_injected_wallet(&self) -> bool {
+        self.injected_wallet.lock().unwrap().is_some()
     }
 }
