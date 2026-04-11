@@ -1,4 +1,10 @@
-use std::{cell::RefCell, rc::Rc};
+//! Browser-wallet discovery, session, and typed chain-management entrypoints.
+//!
+//! This module keeps injected-wallet behavior explicit. Discovery is bounded, multi-wallet
+//! selection is visible, and typed add-chain or switch-chain helpers do not imply universal wallet
+//! support across browser extensions.
+
+use std::{cell::RefCell, fmt, rc::Rc};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -10,27 +16,37 @@ use crate::{
     provider::{Eip1193Provider as ProviderImpl, hex_quantity},
 };
 
+/// Source used to discover one injected wallet candidate.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum InjectedWalletDiscoverySource {
+    /// Candidate discovered through the EIP-6963 provider-announcement flow.
     Eip6963,
     #[default]
+    /// Candidate discovered through direct `window.ethereum` lookup.
     LegacyWindowEthereum,
 }
 
+/// Options that bound injected-wallet discovery behavior.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InjectedWalletDetectionOptions {
+    /// Maximum wait time, in milliseconds, for EIP-6963 announcements.
     pub timeout_ms: u32,
 }
 
 impl InjectedWalletDetectionOptions {
+    /// Default bounded wait time, in milliseconds, for injected-wallet discovery.
     pub const DEFAULT_TIMEOUT_MS: u32 = 500;
 
+    /// Creates a new injected-wallet discovery configuration.
+    #[must_use]
     pub fn new(timeout_ms: u32) -> Self {
         Self { timeout_ms }
     }
 
+    /// Returns the configured discovery timeout in milliseconds.
+    #[must_use]
     pub fn timeout_ms(self) -> u32 {
         self.timeout_ms
     }
@@ -42,32 +58,50 @@ impl Default for InjectedWalletDetectionOptions {
     }
 }
 
+/// Metadata describing one discovered injected wallet candidate.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InjectedWalletInfo {
+    /// Human-readable provider label.
     pub provider_label: String,
     #[serde(default)]
+    /// Discovery source used for this provider.
     pub discovery_source: InjectedWalletDiscoverySource,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Provider UUID reported by EIP-6963, when present.
     pub provider_uuid: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Provider reverse-DNS identifier, when present.
     pub provider_rdns: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Provider icon URL or data URI, when present.
     pub provider_icon: Option<String>,
+    /// Whether the provider advertises MetaMask compatibility flags.
     pub is_meta_mask: bool,
+    /// Whether the provider advertises Coinbase Wallet compatibility flags.
     pub is_coinbase_wallet: bool,
+    /// Whether the provider advertises Rabby compatibility flags.
     pub is_rabby: bool,
 }
 
+/// Native-currency metadata for typed add-chain requests.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletNativeCurrency {
+    /// Native currency name.
     pub name: String,
+    /// Native currency symbol.
     pub symbol: String,
+    /// Native currency decimals.
     pub decimals: u8,
 }
 
 impl WalletNativeCurrency {
+    /// Creates validated native-currency metadata for `wallet_addEthereumChain`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the name or symbol is empty after trimming.
     pub fn new(
         name: impl Into<String>,
         symbol: impl Into<String>,
@@ -81,21 +115,33 @@ impl WalletNativeCurrency {
     }
 }
 
+/// Typed chain parameters for `wallet_addEthereumChain`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletChainParameters {
+    /// Target supported chain id.
     pub chain_id: SupportedChainId,
+    /// Human-readable chain name.
     pub chain_name: String,
+    /// Native-currency metadata for the chain.
     pub native_currency: WalletNativeCurrency,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    /// RPC URLs supplied to the wallet.
     pub rpc_urls: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    /// Block explorer URLs supplied to the wallet.
     pub block_explorer_urls: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    /// Icon URLs supplied to the wallet.
     pub icon_urls: Vec<String>,
 }
 
 impl WalletChainParameters {
+    /// Creates validated chain parameters with no RPC or explorer URLs yet attached.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the supplied chain name is empty after trimming.
     pub fn new(
         chain_id: SupportedChainId,
         chain_name: impl Into<String>,
@@ -115,6 +161,8 @@ impl WalletChainParameters {
         })
     }
 
+    /// Returns the built-in metadata for one supported chain.
+    #[must_use]
     pub fn for_supported_chain(chain_id: SupportedChainId) -> Self {
         let (chain_name, native_currency) = known_chain_metadata(chain_id);
         Self {
@@ -127,6 +175,11 @@ impl WalletChainParameters {
         }
     }
 
+    /// Adds one validated RPC URL to the chain parameters.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the URL is empty or does not use `http` or `https`.
     pub fn try_with_rpc_url(
         mut self,
         rpc_url: impl Into<String>,
@@ -139,6 +192,11 @@ impl WalletChainParameters {
         Ok(self)
     }
 
+    /// Adds one validated block-explorer URL to the chain parameters.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the URL is empty or does not use `http` or `https`.
     pub fn try_with_block_explorer_url(
         mut self,
         block_explorer_url: impl Into<String>,
@@ -151,6 +209,11 @@ impl WalletChainParameters {
         Ok(self)
     }
 
+    /// Adds one validated icon URL to the chain parameters.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the URL is empty or does not use `http` or `https`.
     pub fn try_with_icon_url(
         mut self,
         icon_url: impl Into<String>,
@@ -163,6 +226,11 @@ impl WalletChainParameters {
         Ok(self)
     }
 
+    /// Validates the typed chain parameters before any wallet request is attempted.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when required fields are empty or when no RPC URL is configured.
     pub fn validate(&self) -> Result<(), BrowserWalletError> {
         let chain_id = u64::from(self.chain_id);
         let _ = validate_wallet_text(self.chain_name.clone(), "chain name", Some(chain_id))?;
@@ -218,19 +286,27 @@ impl WalletChainParameters {
     }
 }
 
+/// Result kind returned by typed chain-management helpers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum WalletChainChangeKind {
+    /// The chain was added successfully.
     Added,
+    /// The wallet switched directly to an already-known chain.
     Switched,
+    /// The chain was added first and then switched to.
     AddedThenSwitched,
 }
 
+/// Result returned by typed add-chain and switch-chain helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletChainChange {
+    /// Chain id requested by the helper.
     pub requested_chain_id: SupportedChainId,
+    /// Chain-management path taken by the helper.
     pub kind: WalletChainChangeKind,
+    /// Session snapshot after the helper completed.
     pub session: WalletSession,
 }
 
@@ -240,6 +316,7 @@ struct DiscoveredInjectedWallet {
     info: InjectedWalletInfo,
 }
 
+/// Result of one injected-wallet discovery attempt.
 #[derive(Clone)]
 pub struct InjectedWalletDiscovery {
     timeout_ms: u32,
@@ -247,7 +324,26 @@ pub struct InjectedWalletDiscovery {
     wallets: Vec<DiscoveredInjectedWallet>,
 }
 
+impl fmt::Debug for InjectedWalletDiscovery {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("InjectedWalletDiscovery")
+            .field("timeout_ms", &self.timeout_ms)
+            .field("used_legacy_fallback", &self.used_legacy_fallback)
+            .field(
+                "wallets",
+                &self
+                    .wallets
+                    .iter()
+                    .map(|wallet| wallet.info.clone())
+                    .collect::<Vec<_>>(),
+            )
+            .finish()
+    }
+}
+
 impl InjectedWalletDiscovery {
+    /// Returns the discovered wallet metadata in discovery order.
+    #[must_use]
     pub fn wallets(&self) -> Vec<InjectedWalletInfo> {
         self.wallets
             .iter()
@@ -255,26 +351,41 @@ impl InjectedWalletDiscovery {
             .collect()
     }
 
+    /// Returns the number of discovered wallet candidates.
+    #[must_use]
     pub fn len(&self) -> usize {
         self.wallets.len()
     }
 
+    /// Returns `true` when discovery produced no wallet candidates.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.wallets.is_empty()
     }
 
+    /// Returns the bounded discovery wait time, in milliseconds.
+    #[must_use]
     pub fn timeout_ms(&self) -> u32 {
         self.timeout_ms
     }
 
+    /// Returns `true` when discovery fell back to direct `window.ethereum` lookup.
+    #[must_use]
     pub fn used_legacy_fallback(&self) -> bool {
         self.used_legacy_fallback
     }
 
+    /// Returns `true` when explicit wallet selection is required before use.
+    #[must_use]
     pub fn requires_explicit_selection(&self) -> bool {
         self.wallets.len() > 1
     }
 
+    /// Returns the wallet at one discovery index.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when `index` is outside the available discovery range.
     pub fn wallet_at(&self, index: usize) -> Result<BrowserWallet, BrowserWalletError> {
         let wallet = self.wallets.get(index).ok_or_else(|| {
             BrowserWalletError::discovery_selection_out_of_range(index, self.wallets.len())
@@ -285,6 +396,12 @@ impl InjectedWalletDiscovery {
         ))
     }
 
+    /// Returns the only discovered wallet when exactly one candidate exists.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when more than one candidate was discovered and explicit selection is
+    /// required.
     pub fn single_wallet(&self) -> Result<Option<BrowserWallet>, BrowserWalletError> {
         match self.wallets.len() {
             0 => Ok(None),
@@ -309,13 +426,16 @@ impl InjectedWalletDiscovery {
     }
 }
 
-#[derive(Clone)]
+/// Typed browser-wallet handle that owns session state, events, and provider/signer helpers.
+#[derive(Debug, Clone)]
 pub struct BrowserWallet {
     provider: Eip1193Provider,
     injected_info: Option<InjectedWalletInfo>,
 }
 
 impl BrowserWallet {
+    /// Creates a browser-wallet handle from one typed EIP-1193 transport.
+    #[must_use]
     pub fn from_transport<T>(transport: T) -> Self
     where
         T: Eip1193Transport + 'static,
@@ -323,58 +443,99 @@ impl BrowserWallet {
         Self::from_parts(Rc::new(transport), None)
     }
 
+    /// Returns injected-wallet metadata when this wallet originated from discovery or detection.
+    #[must_use]
     pub fn injected_info(&self) -> Option<InjectedWalletInfo> {
         self.injected_info.clone()
     }
 
+    /// Returns the typed provider associated with this wallet.
+    #[must_use]
     pub fn provider(&self) -> Eip1193Provider {
         self.provider.clone()
     }
 
+    /// Returns a typed signer bound to this wallet.
+    #[must_use]
     pub fn signer(&self) -> Eip1193Signer {
         Eip1193Signer::new(self.provider.clone(), None)
     }
 
+    /// Returns the current normalized wallet session snapshot.
+    #[must_use]
     pub fn session(&self) -> WalletSession {
         self.provider.session()
     }
 
+    /// Returns the currently selected account, when one is available.
+    #[must_use]
     pub fn account(&self) -> Option<Address> {
         self.session().selected_account
     }
 
+    /// Returns the currently known chain id, when one is available.
+    #[must_use]
     pub fn chain_id(&self) -> Option<ChainId> {
         self.session().chain_id
     }
 
+    /// Clears cached session state while preserving the wallet label.
     pub fn reset_session(&self) -> WalletSession {
         self.provider.reset_session()
     }
 
+    /// Drains and returns the buffered wallet event log.
     pub fn take_events(&self) -> Vec<crate::WalletEvent> {
         self.provider.events().take()
     }
 
+    /// Returns a cloned snapshot of the buffered wallet event log.
+    #[must_use]
     pub fn events(&self) -> Vec<crate::WalletEvent> {
         self.provider.events().snapshot()
     }
 
+    /// Requests accounts and chain id, then returns the updated session.
+    ///
+    /// This path may trigger wallet authorization prompts.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the wallet rejects account or chain requests or returns malformed
+    /// responses.
     pub async fn connect(&self) -> Result<WalletSession, BrowserWalletError> {
         self.provider.query_accounts(true).await?;
         self.provider.query_chain_id().await?;
         Ok(self.session())
     }
 
+    /// Requests accounts interactively and returns the normalized account list.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the wallet rejects the request or returns malformed accounts.
     pub async fn request_accounts(&self) -> Result<Vec<Address>, BrowserWalletError> {
         self.provider.query_accounts(true).await
     }
 
+    /// Refreshes the cached wallet session from passive account and chain queries.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the wallet rejects `eth_accounts` or `eth_chainId`, or when either
+    /// response is malformed.
     pub async fn refresh_session(&self) -> Result<WalletSession, BrowserWalletError> {
         let _ = self.provider.query_accounts(false).await?;
         let _ = self.provider.query_chain_id().await?;
         Ok(self.session())
     }
 
+    /// Switches to a supported chain and returns the refreshed session snapshot.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the wallet rejects the switch request, does not support the method,
+    /// or reports that the chain has not been added.
     pub async fn switch_chain(
         &self,
         chain_id: SupportedChainId,
@@ -383,6 +544,12 @@ impl BrowserWallet {
         self.refresh_session().await
     }
 
+    /// Adds one typed chain configuration through `wallet_addEthereumChain`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the chain parameters are invalid, when the wallet rejects the add
+    /// request, or when the refreshed session cannot be loaded afterwards.
     pub async fn add_chain(
         &self,
         parameters: &WalletChainParameters,
@@ -396,6 +563,13 @@ impl BrowserWallet {
         })
     }
 
+    /// Switches to a chain, or adds it first when the wallet reports it is not present.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the switch request fails for reasons other than chain absence, when
+    /// the typed add-chain request is invalid, when the wallet rejects either request, or when the
+    /// refreshed session cannot be loaded afterwards.
     pub async fn switch_or_add_chain(
         &self,
         parameters: &WalletChainParameters,
@@ -452,16 +626,35 @@ impl BrowserWallet {
     }
 
     #[cfg(target_arch = "wasm32")]
+    /// Discovers injected wallets with the default bounded timeout.
+    ///
+    /// On `wasm32`, this uses EIP-6963 discovery first and falls back to direct
+    /// `window.ethereum` lookup when needed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the browser runtime cannot perform discovery.
     pub async fn discover() -> Result<InjectedWalletDiscovery, BrowserWalletError> {
         Self::discover_with(InjectedWalletDetectionOptions::default()).await
     }
 
     #[cfg(not(target_arch = "wasm32"))]
+    /// Discovers injected wallets with the default bounded timeout.
+    ///
+    /// On non-WASM targets, discovery is a no-op and returns an empty result set.
     pub async fn discover() -> Result<InjectedWalletDiscovery, BrowserWalletError> {
         Self::discover_with(InjectedWalletDetectionOptions::default()).await
     }
 
     #[cfg(target_arch = "wasm32")]
+    /// Discovers injected wallets with explicit options.
+    ///
+    /// The result preserves discovery metadata and indicates whether direct `window.ethereum`
+    /// fallback was used.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the browser runtime cannot perform discovery.
     pub async fn discover_with(
         options: InjectedWalletDetectionOptions,
     ) -> Result<InjectedWalletDiscovery, BrowserWalletError> {
@@ -482,6 +675,9 @@ impl BrowserWallet {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
+    /// Discovers injected wallets with explicit options.
+    ///
+    /// On non-WASM targets, discovery is a no-op and returns an empty result set.
     pub async fn discover_with(
         options: InjectedWalletDetectionOptions,
     ) -> Result<InjectedWalletDiscovery, BrowserWalletError> {
@@ -493,6 +689,13 @@ impl BrowserWallet {
     }
 
     #[cfg(target_arch = "wasm32")]
+    /// Detects the legacy `window.ethereum` provider directly.
+    ///
+    /// This is a compatibility helper and is not the preferred multi-wallet discovery contract.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the browser runtime cannot read the provider binding.
     pub fn detect() -> Result<Option<Self>, BrowserWalletError> {
         let Some(transport) = crate::js::InjectedProviderTransport::detect_legacy()? else {
             return Ok(None);
@@ -502,6 +705,9 @@ impl BrowserWallet {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
+    /// Detects the legacy `window.ethereum` provider directly.
+    ///
+    /// On non-WASM targets, this always returns `Ok(None)`.
     pub fn detect() -> Result<Option<Self>, BrowserWalletError> {
         let _ = crate::js::InjectedProviderTransport::detect_legacy()?;
         Ok(None)

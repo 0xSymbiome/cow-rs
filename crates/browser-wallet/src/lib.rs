@@ -1,12 +1,36 @@
 //! Browser wallet integration for WASM consumers using typed EIP-1193 provider,
 //! signer, discovery, and session contracts.
+//!
+//! This crate is the browser-runtime leaf of the SDK package family.
+//!
+//! It exposes three support layers:
+//!
+//! - deterministic proof mode through [`MockEip1193Transport`] for tests and review flows
+//! - typed browser-wallet runtime flows through [`BrowserWallet`], [`Eip1193Provider`], and
+//!   [`Eip1193Signer`]
+//! - environment-sensitive injected-wallet discovery for `wasm32` consumers
+//!
+//! The public contract stays typed and Rust-native. Raw JavaScript payloads remain local to the
+//! crate, and this package does not add a generic wallet-RPC passthrough beyond the typed EIP-1193
+//! transport seam it owns.
+//!
+//! Injected-wallet behavior remains environment-sensitive. Authorization prompts, provider
+//! inventory, extension timing, and vendor-specific support are controlled by the browser runtime
+//! and wallet extension rather than normalized into universal SDK guarantees.
 
+/// Browser-wallet error and RPC failure types.
 pub mod error;
+/// Session state, event-log types, and provider-driven session synchronization.
 pub mod events;
+/// Browser-runtime discovery and injected-provider transport bindings.
 pub mod js;
+/// Deterministic mock transport used for tests, examples, and proof-oriented verification.
 pub mod mock;
+/// Typed EIP-1193 provider transport and `AsyncProvider` bridge.
 pub mod provider;
+/// Typed EIP-1193 signer and typed-data signing helpers.
 pub mod signer;
+/// Browser-wallet discovery, session, and typed chain-management entrypoints.
 pub mod wallet;
 
 pub use error::{BrowserWalletError, RpcErrorPayload};

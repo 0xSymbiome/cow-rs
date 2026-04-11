@@ -1,4 +1,10 @@
-use std::{cell::RefCell, io::Cursor, rc::Rc};
+//! Typed EIP-1193 provider bridge and `AsyncProvider` implementation.
+//!
+//! This module keeps browser-wallet request execution typed and local to the leaf crate. It does
+//! not expose a generic raw wallet-RPC passthrough beyond the transport seam used by the typed
+//! provider and signer adapters.
+
+use std::{cell::RefCell, fmt, io::Cursor, rc::Rc};
 
 use async_trait::async_trait;
 use ethabi::{Contract, Param, ParamType, Token, ethereum_types::U256};
@@ -18,14 +24,26 @@ use crate::{
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait(?Send))]
+/// Transport seam for typed EIP-1193 browser-wallet requests.
+///
+/// Implementors are responsible for method dispatch, request serialization, and optional session
+/// listener attachment. The public SDK surface remains typed at the provider and signer layers.
 pub trait Eip1193Transport {
+    /// Returns the human-readable wallet label for session and event reporting.
     fn label(&self) -> &str;
+    /// Executes one wallet request and returns the decoded JSON result.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`BrowserWalletError`] when the wallet rejects the request, reports an RPC error, or
+    /// returns data that cannot be represented as JSON.
     async fn request(
         &self,
         method: &str,
         params: Option<Value>,
     ) -> Result<Value, BrowserWalletError>;
 
+    /// Optionally attaches runtime-native session listeners for provider-emitted events.
     fn attach_session_sync(
         &self,
         _session: Rc<RefCell<WalletSession>>,
@@ -35,12 +53,23 @@ pub trait Eip1193Transport {
     }
 }
 
+/// Typed browser-wallet provider that implements [`cow_sdk_core::AsyncProvider`].
 #[derive(Clone)]
 pub struct Eip1193Provider {
     transport: Rc<dyn Eip1193Transport>,
     session: Rc<RefCell<WalletSession>>,
     events: EventLog,
     _runtime_binding: Option<WalletRuntimeBindingHandle>,
+}
+
+impl fmt::Debug for Eip1193Provider {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let session = self.session.borrow().clone();
+        f.debug_struct("Eip1193Provider")
+            .field("wallet_label", &session.wallet_label)
+            .field("session", &session)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Eip1193Provider {
@@ -58,6 +87,8 @@ impl Eip1193Provider {
         }
     }
 
+    /// Returns the current normalized wallet session snapshot.
+    #[must_use]
     pub fn session(&self) -> WalletSession {
         self.session.borrow().clone()
     }
@@ -66,10 +97,13 @@ impl Eip1193Provider {
         self.events.clone()
     }
 
+    /// Returns the currently selected wallet account, when available.
+    #[must_use]
     pub fn selected_account(&self) -> Option<Address> {
         self.session.borrow().selected_account.clone()
     }
 
+    /// Clears the cached wallet session state while preserving the wallet label.
     pub fn reset_session(&self) -> WalletSession {
         let wallet_label = self.session.borrow().wallet_label.clone();
         self.update_session(|session| {
@@ -81,6 +115,15 @@ impl Eip1193Provider {
         self.session()
     }
 
+    /// Queries wallet accounts and updates the cached session state.
+    ///
+    /// When `interactive` is `true`, this uses `eth_requestAccounts` and may trigger a wallet
+    /// authorization prompt. When it is `false`, this uses `eth_accounts` and performs a passive
+    /// account lookup only.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the wallet rejects the request or returns a malformed account list.
     pub async fn query_accounts(
         &self,
         interactive: bool,
@@ -100,6 +143,11 @@ impl Eip1193Provider {
         Ok(accounts)
     }
 
+    /// Queries the connected chain id and updates the cached session state.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the wallet rejects `eth_chainId` or returns a malformed chain id.
     pub async fn query_chain_id(&self) -> Result<ChainId, BrowserWalletError> {
         let value = self.request("eth_chainId", None).await?;
         let chain_id = parse_chain_id_value(&value, "eth_chainId")?;

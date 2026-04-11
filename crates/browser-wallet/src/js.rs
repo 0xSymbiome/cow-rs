@@ -1,3 +1,8 @@
+//! Browser-only injected-provider discovery and runtime bindings.
+//!
+//! The JavaScript details in this module remain crate-local implementation support for the typed
+//! browser-wallet APIs. They do not widen the public SDK into a generic raw wallet bridge.
+
 #[cfg(target_arch = "wasm32")]
 use async_trait::async_trait;
 #[cfg(target_arch = "wasm32")]
@@ -20,7 +25,8 @@ use crate::{
 };
 
 #[cfg(target_arch = "wasm32")]
-#[derive(Clone)]
+/// Injected `window.ethereum` transport backed by one browser provider object.
+#[derive(Debug, Clone)]
 pub struct InjectedProviderTransport {
     provider: JsValue,
     info: InjectedWalletInfo,
@@ -97,6 +103,8 @@ impl InjectedProviderTransport {
         &self.provider
     }
 
+    /// Returns discovery metadata for the injected provider.
+    #[must_use]
     pub fn info(&self) -> InjectedWalletInfo {
         self.info.clone()
     }
@@ -549,7 +557,8 @@ fn js_value_to_string(value: &JsValue) -> String {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-#[derive(Clone)]
+/// Non-WASM placeholder for the injected-provider transport type.
+#[derive(Debug, Clone)]
 pub struct InjectedProviderTransport;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -558,6 +567,8 @@ impl InjectedProviderTransport {
         Ok(None)
     }
 
+    /// Returns default injected-wallet metadata on non-WASM targets.
+    #[must_use]
     pub fn info(&self) -> crate::InjectedWalletInfo {
         crate::InjectedWalletInfo::default()
     }

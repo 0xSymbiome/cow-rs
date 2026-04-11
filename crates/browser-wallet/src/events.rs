@@ -1,66 +1,98 @@
+//! Typed wallet session and event-log state.
+
 use std::{cell::RefCell, rc::Rc};
 
 use cow_sdk_core::{Address, ChainId};
 use serde::{Deserialize, Serialize};
 
+/// Current wallet session state tracked by the browser-wallet integration.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletSession {
+    /// Whether the wallet is currently connected.
     pub connected: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Last known connected chain id.
     pub chain_id: Option<ChainId>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    /// Accounts currently exposed by the wallet.
     pub accounts: Vec<Address>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// Currently selected account, when one is available.
     pub selected_account: Option<Address>,
+    /// Human-readable wallet label used by the session and event stream.
     pub wallet_label: String,
 }
 
+/// Typed wallet events emitted by provider requests and provider-driven session updates.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum WalletEvent {
+    /// A wallet request has started.
     RequestStarted {
+        /// RPC method being requested.
         method: String,
     },
+    /// A wallet request completed successfully.
     RequestSucceeded {
+        /// RPC method that succeeded.
         method: String,
     },
+    /// A wallet request failed.
     RequestFailed {
+        /// RPC method that failed.
         method: String,
+        /// Rendered failure message.
         message: String,
     },
+    /// The provider reported a connect event.
     Connected {
         #[serde(skip_serializing_if = "Option::is_none")]
+        /// Chain id supplied by the provider, when present.
         chain_id: Option<ChainId>,
     },
+    /// The provider reported a disconnect event.
     Disconnected {
         #[serde(skip_serializing_if = "Option::is_none")]
+        /// Provider-supplied disconnect message, when present.
         message: Option<String>,
     },
+    /// The provider reported an account list change.
     AccountsChanged {
+        /// Updated wallet account list.
         accounts: Vec<Address>,
     },
+    /// The provider reported a chain change.
     ChainChanged {
+        /// Updated connected chain id.
         chain_id: ChainId,
     },
+    /// The normalized wallet session changed.
     SessionUpdated {
+        /// Previous wallet session snapshot.
         previous: WalletSession,
+        /// Current wallet session snapshot.
         current: WalletSession,
     },
 }
 
-#[derive(Clone, Default)]
+/// In-memory event log for deterministic session and request observation.
+#[derive(Debug, Clone, Default)]
 pub struct EventLog(Rc<RefCell<Vec<WalletEvent>>>);
 
 impl EventLog {
+    /// Appends one event to the log.
     pub fn push(&self, event: WalletEvent) {
         self.0.borrow_mut().push(event);
     }
 
+    /// Returns a cloned snapshot of all currently buffered events.
+    #[must_use]
     pub fn snapshot(&self) -> Vec<WalletEvent> {
         self.0.borrow().clone()
     }
 
+    /// Drains and returns all currently buffered events.
     pub fn take(&self) -> Vec<WalletEvent> {
         self.0.borrow_mut().drain(..).collect()
     }

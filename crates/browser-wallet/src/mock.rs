@@ -1,3 +1,5 @@
+//! Deterministic mock EIP-1193 transport used by tests, examples, and proof-oriented reviews.
+
 use std::{
     cell::RefCell,
     collections::{BTreeMap, BTreeSet},
@@ -18,11 +20,14 @@ use crate::{
     provider::{hex_quantity, parse_chain_id_value},
 };
 
+/// Recorded mock wallet request.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MockRequestRecord {
+    /// Requested RPC method.
     pub method: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    /// JSON parameters supplied to the request, when present.
     pub params: Option<Value>,
 }
 
@@ -80,10 +85,25 @@ impl Default for MockState {
     }
 }
 
+/// Deterministic EIP-1193 transport for tests and non-browser proof flows.
 #[derive(Clone)]
 pub struct MockEip1193Transport {
     label: String,
     state: Rc<RefCell<MockState>>,
+}
+
+impl std::fmt::Debug for MockEip1193Transport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let state = self.state.borrow();
+        f.debug_struct("MockEip1193Transport")
+            .field("label", &self.label)
+            .field("connected", &state.connected)
+            .field("chain_id", &state.chain_id)
+            .field("accounts", &state.accounts)
+            .field("request_log_len", &state.request_log.len())
+            .field("listener_count", &state.session_listeners.len())
+            .finish()
+    }
 }
 
 impl Default for MockEip1193Transport {
@@ -93,6 +113,8 @@ impl Default for MockEip1193Transport {
 }
 
 impl MockEip1193Transport {
+    /// Creates a mock wallet configured for Sepolia with deterministic responses.
+    #[must_use]
     pub fn sepolia() -> Self {
         Self {
             label: "Mock Wallet".to_owned(),
@@ -100,32 +122,40 @@ impl MockEip1193Transport {
         }
     }
 
+    /// Replaces the human-readable wallet label used by session state and diagnostics.
+    #[must_use]
     pub fn with_label(mut self, label: impl Into<String>) -> Self {
         self.label = label.into();
         self
     }
 
+    /// Sets whether the mock wallet reports itself as connected.
     pub fn set_connected(&self, connected: bool) {
         self.state.borrow_mut().connected = connected;
     }
 
+    /// Sets the active chain id returned by the mock wallet.
     pub fn set_chain_id(&self, chain_id: SupportedChainId) {
         self.state.borrow_mut().chain_id = u64::from(chain_id);
     }
 
+    /// Replaces the set of chains that `wallet_switchEthereumChain` can switch to directly.
     pub fn set_added_chains(&self, chains: Vec<SupportedChainId>) {
         self.state.borrow_mut().added_chains =
             chains.into_iter().map(u64::from).collect::<BTreeSet<_>>();
     }
 
+    /// Sets the wallet accounts returned by account queries.
     pub fn set_accounts(&self, accounts: Vec<Address>) {
         self.state.borrow_mut().accounts = accounts;
     }
 
+    /// Sets the fallback result returned by `eth_call`.
     pub fn set_default_call_result(&self, result: impl Into<String>) {
         self.state.borrow_mut().default_call_result = result.into();
     }
 
+    /// Configures bytecode returned by `eth_getCode` for one address.
     pub fn set_code(&self, address: &Address, code_hex: impl Into<String>) {
         self.state
             .borrow_mut()
@@ -133,6 +163,7 @@ impl MockEip1193Transport {
             .insert(address.normalized_key(), code_hex.into());
     }
 
+    /// Configures storage returned by `eth_getStorageAt` for one address and slot.
     pub fn set_storage(&self, address: &Address, slot: &str, value_hex: impl Into<String>) {
         self.state.borrow_mut().storage_by_key.insert(
             format!("{}:{}", address.normalized_key(), slot.to_ascii_lowercase()),
@@ -140,6 +171,7 @@ impl MockEip1193Transport {
         );
     }
 
+    /// Configures a receipt returned by `eth_getTransactionReceipt`.
     pub fn set_receipt(&self, transaction_hash: &str, receipt: Value) {
         self.state
             .borrow_mut()
@@ -147,6 +179,7 @@ impl MockEip1193Transport {
             .insert(transaction_hash.to_ascii_lowercase(), receipt);
     }
 
+    /// Configures one method to fail with the supplied browser-wallet error.
     pub fn fail_method(&self, method: &str, error: BrowserWalletError) {
         self.state
             .borrow_mut()
@@ -154,10 +187,13 @@ impl MockEip1193Transport {
             .insert(method.to_owned(), error);
     }
 
+    /// Returns the recorded request log in call order.
+    #[must_use]
     pub fn request_log(&self) -> Vec<MockRequestRecord> {
         self.state.borrow().request_log.clone()
     }
 
+    /// Emits an `accountsChanged` provider event and updates the mock session state.
     pub fn emit_accounts_changed(&self, accounts: Vec<Address>) {
         {
             let mut state = self.state.borrow_mut();
@@ -167,11 +203,13 @@ impl MockEip1193Transport {
         self.emit_provider_event(WalletProviderEvent::AccountsChanged { accounts });
     }
 
+    /// Emits a `chainChanged` provider event and updates the mock session state.
     pub fn emit_chain_changed(&self, chain_id: ChainId) {
         self.state.borrow_mut().chain_id = chain_id;
         self.emit_provider_event(WalletProviderEvent::ChainChanged { chain_id });
     }
 
+    /// Emits a `connect` provider event and updates the mock session state.
     pub fn emit_connected(&self, chain_id: Option<ChainId>) {
         {
             let mut state = self.state.borrow_mut();
@@ -183,11 +221,14 @@ impl MockEip1193Transport {
         self.emit_provider_event(WalletProviderEvent::Connected { chain_id });
     }
 
+    /// Emits a `disconnect` provider event and marks the mock wallet as disconnected.
     pub fn emit_disconnected(&self, message: Option<String>) {
         self.state.borrow_mut().connected = false;
         self.emit_provider_event(WalletProviderEvent::Disconnected { message });
     }
 
+    /// Returns the number of active session listeners currently attached to the mock transport.
+    #[must_use]
     pub fn listener_count(&self) -> usize {
         self.state.borrow().session_listeners.len()
     }

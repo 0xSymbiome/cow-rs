@@ -38,6 +38,9 @@ Browser wallet integration is a supported leaf capability for browser runtimes. 
 
 - Deterministic proof mode uses the mock wallet and crate tests to validate browser-wallet request shape, signing, approvals, and trading orchestration without an extension dependency.
 - Injected-provider mode uses explicit EIP-1193 browser wallet flows on supported chains and requires user authorization plus wallet support for the requested methods.
+- Injected discovery is explicit and bounded. Multi-wallet discovery requires caller selection instead of silently picking one provider.
+- Typed chain management uses `WalletChainParameters` and `WalletNativeCurrency` for add-chain requests rather than exposing a generic raw wallet-RPC passthrough.
+- Non-WASM targets keep the browser-wallet types available for deterministic tests and docs, but injected discovery resolves to an empty result set and direct detection resolves to `None`.
 - Broader browser-extension behavior remains environment-sensitive. Authorization persistence, chain inventory, discovery timing, vendor-specific prompts, and non-standard wallet behavior are controlled by the extension and browser runtime rather than normalized by `cow-sdk`.
 
 ## Trading SDK Configuration

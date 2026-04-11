@@ -196,9 +196,12 @@ Browser-wallet support posture stays explicit across the public surface:
 
 - The default `cow-sdk` facade does not assume browser-wallet access. Browser-wallet support is exposed only through the `browser-wallet` feature and the `cow-sdk-browser-wallet` crate.
 - Deterministic proof comes from mock-wallet contract tests and the mock mode in the browser-wallet console.
+- `MockEip1193Transport` is the deterministic proof seam. It is part of the public leaf-crate contract for tests and review surfaces, not a hidden helper.
 - In the browser-wallet console, `Reset Session` clears console session state without dropping the selected wallet handle or confirmed provider choice, while `Forget Wallet` clears both explicitly.
 - In the browser-wallet console, `Detect` caches discovered wallet candidates, `Confirm Wallet` records the provider choice when more than one candidate is present, `Connect / Reconnect` uses the confirmed provider or retained selected wallet handle, and `Rescan` refreshes the candidate set while revalidating or clearing the confirmed choice.
 - Injected-provider support covers the typed EIP-1193 flows exercised by `cow-sdk-browser-wallet` on supported chains with explicit user authorization.
+- Off-WASM discovery is intentionally a typed no-op. `discover()` and `discover_with()` return an empty result set, and `detect()` returns `None`, instead of implying browser-provider availability outside a browser runtime.
+- Public Result-returning wallet APIs should keep failure modes explicit: user rejection, disconnected provider, wrong chain, chain-not-added, malformed response, unsupported method, invalid typed chain configuration, and environment-sensitive unavailability are distinct error classes.
 - Broader extension variability remains outside the SDK contract. Extension-specific prompts, authorization persistence, chain inventory, and non-standard vendor behavior are not normalized SDK guarantees.
 - Public docs and examples should keep the root facade narrower than the leaf crate and avoid language that implies universal browser-wallet compatibility.
 

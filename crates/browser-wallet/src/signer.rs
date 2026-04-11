@@ -1,3 +1,5 @@
+//! Typed EIP-1193 signer implementation for browser wallets.
+
 use cow_sdk_core::{
     Address, Amount, AsyncSigner, TransactionReceipt, TransactionRequest, TypedDataDomain,
     TypedDataField, TypedDataPayload, TypedDataTypes,
@@ -9,7 +11,8 @@ use crate::{
     provider::{Eip1193Provider, parse_quantity_to_decimal, transaction_to_rpc},
 };
 
-#[derive(Clone)]
+/// Browser-wallet signer that implements [`cow_sdk_core::AsyncSigner`].
+#[derive(Debug, Clone)]
 pub struct Eip1193Signer {
     provider: Eip1193Provider,
     account_hint: Option<Address>,
@@ -23,6 +26,8 @@ impl Eip1193Signer {
         }
     }
 
+    /// Returns the provider associated with this signer.
+    #[must_use]
     pub fn provider(&self) -> &Eip1193Provider {
         &self.provider
     }
@@ -43,6 +48,18 @@ impl Eip1193Signer {
         })
     }
 
+    /// Signs typed data through the legacy compatibility bridge.
+    ///
+    /// This helper is intentionally narrow. It supports only the CoW order and order-cancellation
+    /// field layouts that legacy browser-wallet integrations expect. For other primary types, use
+    /// [`cow_sdk_core::AsyncSigner::sign_typed_data_payload`] with an explicit
+    /// [`TypedDataPayload`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the field layout does not match a supported compatibility payload,
+    /// when account resolution fails, when request serialization fails, or when the wallet rejects
+    /// the signing request.
     pub async fn sign_typed_data_compatibility(
         &self,
         domain: &TypedDataDomain,
