@@ -3,6 +3,7 @@ use cow_sdk_core::{
     TransactionHash, TransactionRequest, eth_flow_contract_address, settlement_contract_address,
 };
 use cow_sdk_orderbook::Order;
+use num_bigint::Sign;
 
 use crate::slippage::{gas_with_margin, parse_integer};
 use crate::{
@@ -534,7 +535,12 @@ fn encode_address_word(address: &Address) -> Result<[u8; 32], TradingError> {
 
 fn encode_uint_word(value: &str) -> Result<[u8; 32], TradingError> {
     let parsed = parse_integer("uint256", value)?;
-    let bytes = parsed.to_signed_bytes_be();
+    let (sign, bytes) = parsed.to_bytes_be();
+    if sign == Sign::Minus {
+        return Err(TradingError::InvalidInput(format!(
+            "uint256 must be non-negative: {value}"
+        )));
+    }
     if bytes.len() > 32 {
         return Err(TradingError::NumericOverflow {
             field: "uint256",

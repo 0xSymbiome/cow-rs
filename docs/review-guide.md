@@ -85,6 +85,17 @@ Key review points:
 - Advanced quote and post settings must align with the effective trade parameters used for request construction, app-data generation, signing payloads, and submission payloads.
 - Orderbook-bound flows and non-orderbook flows must apply the same call-level-over-default precedence for env and protocol address overrides.
 
+## On-Chain Helper Encoding
+
+The on-chain transaction builders in `cow-sdk-trading` treat tuple amount, quote-id,
+and validity fields as ABI `uint256` values.
+
+Review these points:
+
+- EthFlow transaction generation and EthFlow on-chain cancellation encode `uint256` fields as unsigned 32-byte ABI words across the full `uint256` range.
+- Negative numeric inputs are rejected before call data is produced.
+- High-range coverage is exercised in the public trading integration tests so ABI behavior is verified at the transaction-builder boundary, not only in a private helper.
+
 ## DTO Boundaries
 
 Repeated order-like field names are intentional only when they model distinct protocol contracts:

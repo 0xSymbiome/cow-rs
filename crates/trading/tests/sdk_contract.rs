@@ -7,11 +7,24 @@ use cow_sdk_trading::{
     ApprovalParameters, OrderTraderParameters, PartialTraderParameters, TradingSdk,
     TradingSdkOptions,
 };
+use num_bigint::BigUint;
 
 use crate::common::{
     ALT_RECEIVER, COW, CUSTOM_ETHFLOW, CUSTOM_SETTLEMENT, MockOrderbook, MockProvider, MockSigner,
     OWNER, address, ethflow_order, order_uid, sample_trade_parameters, sell_quote_response,
 };
+
+fn calldata_word(data: &str, index: usize) -> String {
+    let stripped = data
+        .strip_prefix("0x")
+        .expect("encoded call data must include 0x prefix");
+    let start = 8 + (index * 64);
+    stripped[start..start + 64].to_owned()
+}
+
+fn uint256_word(value: &BigUint) -> String {
+    format!("{value:064x}")
+}
 
 #[tokio::test]
 async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
@@ -394,4 +407,68 @@ async fn sdk_onchain_cancel_order_routes_regular_orders_through_settlement_when_
         .cloned()
         .expect("regular cancellation transaction must be sent");
     assert_eq!(sent.to, Some(address(CUSTOM_SETTLEMENT)));
+}
+
+#[tokio::test]
+async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_orders() {
+    let orderbook = Arc::new(MockOrderbook::new(
+        SupportedChainId::Sepolia,
+        sell_quote_response(),
+    ));
+    let high_sell: BigUint = BigUint::from(1u8) << 255u32;
+    let high_buy = &high_sell + BigUint::from(1u8);
+    let max_uint256: BigUint = (BigUint::from(1u8) << 256u32) - BigUint::from(1u8);
+    let mut order = ethflow_order();
+    order.sell_amount = high_sell.to_str_radix(10);
+    order.buy_amount = high_buy.to_str_radix(10);
+    order.fee_amount = max_uint256.to_str_radix(10);
+    orderbook.push_order(order);
+
+    let signer = MockSigner::default();
+    let sdk = TradingSdk::new(
+        PartialTraderParameters {
+            chain_id: Some(SupportedChainId::Sepolia),
+            app_code: Some("0x007".to_owned()),
+            owner: None,
+            env: Some(CowEnv::Prod),
+            settlement_contract_override: Some(AddressPerChain::from([(
+                u64::from(SupportedChainId::Sepolia),
+                address(CUSTOM_SETTLEMENT),
+            )])),
+            eth_flow_contract_override: Some(AddressPerChain::from([(
+                u64::from(SupportedChainId::Sepolia),
+                address(CUSTOM_ETHFLOW),
+            )])),
+        },
+        TradingSdkOptions::new().with_orderbook_client(orderbook),
+    );
+
+    sdk.on_chain_cancel_order(
+        &OrderTraderParameters {
+            order_uid: order_uid(),
+            chain_id: Some(SupportedChainId::Sepolia),
+            env: Some(CowEnv::Prod),
+            settlement_contract_override: None,
+            eth_flow_contract_override: None,
+        },
+        &signer,
+    )
+    .await
+    .expect("ethflow cancellation should encode large uint256 values");
+
+    let sent = signer
+        .state()
+        .sent_transactions
+        .last()
+        .cloned()
+        .expect("ethflow cancellation transaction must be sent");
+    let data = sent
+        .data
+        .as_ref()
+        .expect("ethflow cancellation transaction must include call data");
+
+    assert_eq!(sent.to, Some(address(CUSTOM_ETHFLOW)));
+    assert_eq!(calldata_word(data.as_str(), 2), uint256_word(&high_sell));
+    assert_eq!(calldata_word(data.as_str(), 3), uint256_word(&high_buy));
+    assert_eq!(calldata_word(data.as_str(), 4), uint256_word(&max_uint256));
 }
