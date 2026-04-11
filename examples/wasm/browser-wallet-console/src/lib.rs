@@ -31,6 +31,7 @@ pub struct BrowserWalletConsole {
     mock_wallet: BrowserWallet,
     injected_wallet: Mutex<Option<SelectedInjectedWallet>>,
     injected_discovery: Mutex<CachedInjectedWalletDiscovery>,
+    confirmed_injected_selection: Mutex<Option<ConfirmedInjectedWalletSelection>>,
     last_live_order_uid: Mutex<Option<String>>,
 }
 
@@ -46,6 +47,13 @@ struct CachedInjectedWalletDiscovery {
     timeout_ms: u32,
     used_window_ethereum_fallback: bool,
     wallets: Vec<CachedInjectedWallet>,
+}
+
+#[derive(Clone)]
+struct ConfirmedInjectedWalletSelection {
+    wallet_info: Option<InjectedWalletInfo>,
+    selection_index: usize,
+    discovery_generation: u64,
 }
 
 #[derive(Clone)]
@@ -72,9 +80,15 @@ struct InjectedWalletDetectionReport {
     timeout_ms: u32,
     used_window_ethereum_fallback: bool,
     requires_explicit_selection: bool,
+    connect_ready: bool,
     selected_wallet_present: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     selected_index: Option<u32>,
+    confirmed_selection_present: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    confirmed_selection_index: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    confirmed_wallet_info: Option<InjectedWalletInfo>,
 }
 
 #[derive(Serialize)]
@@ -101,6 +115,7 @@ impl BrowserWalletConsole {
             mock_wallet,
             injected_wallet: Mutex::new(None),
             injected_discovery: Mutex::new(CachedInjectedWalletDiscovery::default()),
+            confirmed_injected_selection: Mutex::new(None),
             last_live_order_uid: Mutex::new(None),
         }
     }
@@ -248,6 +263,13 @@ impl BrowserWalletConsole {
         pretty_json(&report)
     }
 
+    pub fn injected_confirm_selection_json(&self, selection_index: u32) -> Result<String, JsValue> {
+        let report = self
+            .confirm_injected_selection(selection_index as usize)
+            .map_err(js_string_error)?;
+        pretty_json(&report)
+    }
+
     pub async fn injected_connect_selected_json(
         &self,
         selection_index: u32,
@@ -261,17 +283,24 @@ impl BrowserWalletConsole {
 
     pub fn injected_status_json(&self) -> Result<String, JsValue> {
         let selected = self.injected_wallet()?;
+        let confirmed = self.confirmed_injected_selection();
         pretty_json(&json!({
             "mode": "injected",
             "session": selected.wallet.session(),
             "walletInfo": selected.info,
             "selectionIndex": selected.selection_index.map(|index| index as u32),
+            "confirmedSelectionPresent": confirmed.is_some(),
+            "confirmedSelectionIndex": confirmed
+                .as_ref()
+                .map(|selection| selection.selection_index as u32),
+            "confirmedWalletInfo": confirmed.and_then(|selection| selection.wallet_info),
             "events": selected.wallet.events(),
         }))
     }
 
     pub fn injected_reset_session_json(&self) -> Result<String, JsValue> {
         let selected = self.injected_wallet()?;
+        let confirmed = self.confirmed_injected_selection();
         let session = selected.wallet.reset_session();
         let events = selected.wallet.take_events();
         *self.last_live_order_uid.lock().unwrap() = None;
@@ -281,13 +310,19 @@ impl BrowserWalletConsole {
             "walletInfo": selected.info,
             "selectionIndex": selected.selection_index.map(|index| index as u32),
             "walletSelectionRetained": true,
-            "note": "console session state cleared; selected wallet retained; wallet authorization remains managed by the extension",
+            "confirmedSelectionRetained": confirmed.is_some(),
+            "confirmedSelectionIndex": confirmed
+                .as_ref()
+                .map(|selection| selection.selection_index as u32),
+            "confirmedWalletInfo": confirmed.and_then(|selection| selection.wallet_info),
+            "note": "console session state cleared; selected wallet and confirmed provider remain available; wallet authorization remains managed by the extension",
             "events": events,
         }))
     }
 
     pub fn injected_forget_wallet_json(&self) -> Result<String, JsValue> {
         let forgotten_wallet = self.injected_wallet.lock().unwrap().take();
+        let forgotten_confirmation = self.confirmed_injected_selection.lock().unwrap().take();
         let forgotten_wallet_info = forgotten_wallet
             .as_ref()
             .and_then(|wallet| wallet.info.clone());
@@ -302,8 +337,14 @@ impl BrowserWalletConsole {
             "forgottenSession": forgotten_session,
             "forgottenWalletInfo": forgotten_wallet_info,
             "forgottenSelectionIndex": forgotten_selection_index,
+            "confirmedSelectionCleared": forgotten_confirmation.is_some(),
+            "forgottenConfirmedSelectionIndex": forgotten_confirmation
+                .as_ref()
+                .map(|selection| selection.selection_index as u32),
+            "forgottenConfirmedWalletInfo": forgotten_confirmation
+                .and_then(|selection| selection.wallet_info),
             "lastLiveOrderUidCleared": cleared_order_uid.is_some(),
-            "note": "selected wallet cleared from the console; wallet authorization remains managed by the extension",
+            "note": "selected wallet and confirmed provider cleared from the console; wallet authorization remains managed by the extension",
         }))
     }
 
@@ -777,7 +818,11 @@ impl BrowserWalletConsole {
         if !force_rescan {
             let cached = self.injected_discovery.lock().unwrap().clone();
             if !cached.is_empty() {
-                return Ok(cached.report(self.selected_injected_wallet().as_ref()));
+                let confirmed = self.revalidate_confirmed_injected_selection(&cached);
+                return Ok(cached.report(
+                    self.selected_injected_wallet().as_ref(),
+                    confirmed.as_ref(),
+                ));
             }
         }
 
@@ -785,7 +830,11 @@ impl BrowserWalletConsole {
         let next_generation = self.injected_discovery.lock().unwrap().generation + 1;
         let cached =
             CachedInjectedWalletDiscovery::from_discovery(discovery, next_generation)?;
-        let report = cached.report(self.selected_injected_wallet().as_ref());
+        let confirmed = self.revalidate_confirmed_injected_selection(&cached);
+        let report = cached.report(
+            self.selected_injected_wallet().as_ref(),
+            confirmed.as_ref(),
+        );
         *self.injected_discovery.lock().unwrap() = cached;
         Ok(report)
     }
@@ -796,43 +845,52 @@ impl BrowserWalletConsole {
     ) -> Result<InjectedWalletConnectionReport, String> {
         let cached = self.injected_discovery.lock().unwrap().clone();
         let selected = self.selected_injected_wallet();
+        let confirmed = self.confirmed_injected_selection();
 
         let (mut selected_wallet, connection_source) = match requested_index {
             Some(index) => {
+                let confirmed_selection = if cached.is_empty() {
+                    None
+                } else {
+                    let confirmed_selection = cached.confirmed_selection_at(index)?;
+                    *self.confirmed_injected_selection.lock().unwrap() =
+                        Some(confirmed_selection.clone());
+                    Some(confirmed_selection)
+                };
+
                 if let Some(current) = selected.clone()
-                    && current.selection_index == Some(index)
-                    && (cached.is_empty()
-                        || current.discovery_generation == Some(cached.generation))
+                    && (current.selection_index == Some(index)
+                        || confirmed_selection
+                            .as_ref()
+                            .is_some_and(|selection| selection.matches_selected_wallet(&current)))
                 {
                     (current, InjectedConnectSource::SelectedWallet)
                 } else if cached.is_empty() {
-                    (
-                        selected.ok_or_else(|| {
-                            "detect injected wallets before connecting".to_owned()
-                        })?,
-                        InjectedConnectSource::SelectedWallet,
-                    )
+                    return Err("detect injected wallets before connecting".to_owned());
                 } else {
                     (cached.wallet_at(index)?, InjectedConnectSource::CachedDetection)
                 }
             }
             None => {
-                if let Some(current) = selected.clone() {
-                    if cached.is_empty() || current.discovery_generation == Some(cached.generation) {
+                if let Some(selection) = confirmed {
+                    if let Some(current) = selected.clone()
+                        && selection.matches_selected_wallet(&current)
+                    {
                         (current, InjectedConnectSource::SelectedWallet)
-                    } else if let Some(index) = current.selection_index {
-                        (
-                            cached.wallet_at(index)?,
-                            InjectedConnectSource::CachedDetection,
-                        )
+                    } else if cached.is_empty() {
+                        return Err("detect injected wallets before connecting".to_owned());
                     } else {
                         (
-                            cached.single_wallet()?.ok_or_else(|| {
-                                "detect injected wallets before connecting".to_owned()
-                            })?,
+                            cached.wallet_at(selection.selection_index)?,
                             InjectedConnectSource::CachedDetection,
                         )
                     }
+                } else if let Some(current) = selected.clone() {
+                    (current, InjectedConnectSource::SelectedWallet)
+                } else if cached.is_empty() {
+                    return Err("detect injected wallets before connecting".to_owned());
+                } else if cached.requires_explicit_selection() {
+                    return Err("confirm a detected wallet before connecting".to_owned());
                 } else {
                     (
                         cached.single_wallet()?.ok_or_else(|| {
@@ -854,6 +912,14 @@ impl BrowserWalletConsole {
             .info
             .clone()
             .or_else(|| selected_wallet.wallet.injected_info());
+
+        if !cached.is_empty()
+            && let Some(index) = selected_wallet.selection_index
+            && let Ok(confirmed_selection) = cached.confirmed_selection_at(index)
+        {
+            *self.confirmed_injected_selection.lock().unwrap() = Some(confirmed_selection);
+        }
+
         *self.injected_wallet.lock().unwrap() = Some(selected_wallet.clone());
 
         Ok(InjectedWalletConnectionReport {
@@ -864,6 +930,38 @@ impl BrowserWalletConsole {
             connection_source,
             events,
         })
+    }
+
+    fn confirm_injected_selection(
+        &self,
+        selection_index: usize,
+    ) -> Result<InjectedWalletDetectionReport, String> {
+        let cached = self.injected_discovery.lock().unwrap().clone();
+        if cached.is_empty() {
+            return Err("detect injected wallets before confirming a wallet".to_owned());
+        }
+
+        let confirmed = cached.confirmed_selection_at(selection_index)?;
+        *self.confirmed_injected_selection.lock().unwrap() = Some(confirmed.clone());
+        Ok(cached.report(
+            self.selected_injected_wallet().as_ref(),
+            Some(&confirmed),
+        ))
+    }
+
+    fn revalidate_confirmed_injected_selection(
+        &self,
+        cached: &CachedInjectedWalletDiscovery,
+    ) -> Option<ConfirmedInjectedWalletSelection> {
+        let revalidated = self
+            .confirmed_injected_selection()
+            .and_then(|selection| selection.revalidated(cached));
+        *self.confirmed_injected_selection.lock().unwrap() = revalidated.clone();
+        revalidated
+    }
+
+    fn confirmed_injected_selection(&self) -> Option<ConfirmedInjectedWalletSelection> {
+        self.confirmed_injected_selection.lock().unwrap().clone()
     }
 
     fn selected_injected_wallet(&self) -> Option<SelectedInjectedWallet> {
@@ -889,6 +987,7 @@ impl BrowserWalletConsole {
             selection_index: None,
             discovery_generation: None,
         });
+        *self.confirmed_injected_selection.lock().unwrap() = None;
     }
 
     pub fn testing_set_last_live_order_uid(&self, order_uid: Option<String>) {
@@ -907,6 +1006,27 @@ impl BrowserWalletConsole {
             .and_then(|wallet| wallet.selection_index)
     }
 
+    pub fn testing_confirmed_wallet_index(&self) -> Option<usize> {
+        self.confirmed_injected_selection
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|selection| selection.selection_index)
+    }
+
+    pub fn testing_confirm_injected_selection_json(
+        &self,
+        selection_index: usize,
+    ) -> Result<String, String> {
+        let report = self.confirm_injected_selection(selection_index)?;
+        serde_json::to_string_pretty(&report).map_err(|error| error.to_string())
+    }
+
+    pub async fn testing_injected_connect_json(&self) -> Result<String, String> {
+        let report = self.connect_injected_wallet(None).await?;
+        serde_json::to_string_pretty(&report).map_err(|error| error.to_string())
+    }
+
     pub fn testing_set_cached_injected_wallets(
         &self,
         wallets: Vec<(BrowserWallet, Option<InjectedWalletInfo>)>,
@@ -914,7 +1034,7 @@ impl BrowserWalletConsole {
         used_window_ethereum_fallback: bool,
     ) {
         let generation = self.injected_discovery.lock().unwrap().generation + 1;
-        *self.injected_discovery.lock().unwrap() = CachedInjectedWalletDiscovery {
+        let cached = CachedInjectedWalletDiscovery {
             generation,
             timeout_ms,
             used_window_ethereum_fallback,
@@ -923,6 +1043,8 @@ impl BrowserWalletConsole {
                 .map(|(wallet, info)| CachedInjectedWallet { wallet, info })
                 .collect(),
         };
+        *self.injected_discovery.lock().unwrap() = cached.clone();
+        let _ = self.revalidate_confirmed_injected_selection(&cached);
     }
 
     pub fn testing_cached_wallet_count(&self) -> usize {
@@ -930,15 +1052,49 @@ impl BrowserWalletConsole {
     }
 
     pub fn testing_cached_detection_json(&self) -> String {
-        serde_json::to_string_pretty(
-            &self
-                .injected_discovery
-                .lock()
-                .unwrap()
-                .clone()
-                .report(self.selected_injected_wallet().as_ref()),
-        )
+        let cached = self.injected_discovery.lock().unwrap().clone();
+        let confirmed = self.revalidate_confirmed_injected_selection(&cached);
+        serde_json::to_string_pretty(&cached.report(
+            self.selected_injected_wallet().as_ref(),
+            confirmed.as_ref(),
+        ))
         .expect("cached detection snapshot must remain serializable")
+    }
+}
+
+impl ConfirmedInjectedWalletSelection {
+    fn matches_selected_wallet(&self, selected: &SelectedInjectedWallet) -> bool {
+        if selected.selection_index == Some(self.selection_index)
+            && selected.discovery_generation == Some(self.discovery_generation)
+        {
+            return true;
+        }
+
+        injected_wallet_identity_matches(self.wallet_info.as_ref(), selected.info.as_ref())
+    }
+
+    fn revalidated(self, cached: &CachedInjectedWalletDiscovery) -> Option<Self> {
+        if self.discovery_generation == cached.generation && self.selection_index < cached.wallets.len()
+        {
+            return Some(Self {
+                wallet_info: cached.wallets[self.selection_index].info.clone(),
+                selection_index: self.selection_index,
+                discovery_generation: cached.generation,
+            });
+        }
+
+        cached
+            .wallets
+            .iter()
+            .enumerate()
+            .find(|(_, wallet)| {
+                injected_wallet_identity_matches(self.wallet_info.as_ref(), wallet.info.as_ref())
+            })
+            .map(|(selection_index, wallet)| Self {
+                wallet_info: wallet.info.clone(),
+                selection_index,
+                discovery_generation: cached.generation,
+            })
     }
 }
 
@@ -968,7 +1124,15 @@ impl CachedInjectedWalletDiscovery {
         self.wallets.is_empty()
     }
 
-    fn report(&self, selected: Option<&SelectedInjectedWallet>) -> InjectedWalletDetectionReport {
+    fn requires_explicit_selection(&self) -> bool {
+        self.wallets.len() > 1
+    }
+
+    fn report(
+        &self,
+        selected: Option<&SelectedInjectedWallet>,
+        confirmed: Option<&ConfirmedInjectedWalletSelection>,
+    ) -> InjectedWalletDetectionReport {
         InjectedWalletDetectionReport {
             available: !self.wallets.is_empty(),
             wallets: self
@@ -979,9 +1143,13 @@ impl CachedInjectedWalletDiscovery {
             wallet_count: self.wallets.len(),
             timeout_ms: self.timeout_ms,
             used_window_ethereum_fallback: self.used_window_ethereum_fallback,
-            requires_explicit_selection: self.wallets.len() > 1,
+            requires_explicit_selection: self.requires_explicit_selection(),
+            connect_ready: selected.is_some() || !self.requires_explicit_selection() || confirmed.is_some(),
             selected_wallet_present: selected.is_some(),
             selected_index: selected.and_then(|wallet| wallet.selection_index.map(|index| index as u32)),
+            confirmed_selection_present: confirmed.is_some(),
+            confirmed_selection_index: confirmed.map(|selection| selection.selection_index as u32),
+            confirmed_wallet_info: confirmed.and_then(|selection| selection.wallet_info.clone()),
         }
     }
 
@@ -1001,6 +1169,25 @@ impl CachedInjectedWalletDiscovery {
         })
     }
 
+    fn confirmed_selection_at(
+        &self,
+        index: usize,
+    ) -> Result<ConfirmedInjectedWalletSelection, String> {
+        let wallet = self.wallets.get(index).ok_or_else(|| {
+            BrowserWalletError::DiscoverySelectionOutOfRange {
+                index,
+                candidates: self.wallets.len(),
+            }
+            .to_string()
+        })?;
+
+        Ok(ConfirmedInjectedWalletSelection {
+            wallet_info: wallet.info.clone(),
+            selection_index: index,
+            discovery_generation: self.generation,
+        })
+    }
+
     fn single_wallet(&self) -> Result<Option<SelectedInjectedWallet>, String> {
         match self.wallets.len() {
             0 => Ok(None),
@@ -1009,5 +1196,31 @@ impl CachedInjectedWalletDiscovery {
                 BrowserWalletError::DiscoverySelectionRequired { candidates }.to_string(),
             ),
         }
+    }
+}
+
+fn injected_wallet_identity_matches(
+    left: Option<&InjectedWalletInfo>,
+    right: Option<&InjectedWalletInfo>,
+) -> bool {
+    match (left, right) {
+        (Some(left), Some(right)) => {
+            if let (Some(left_uuid), Some(right_uuid)) =
+                (left.provider_uuid.as_deref(), right.provider_uuid.as_deref())
+            {
+                return left_uuid == right_uuid;
+            }
+
+            if let (Some(left_rdns), Some(right_rdns)) =
+                (left.provider_rdns.as_deref(), right.provider_rdns.as_deref())
+            {
+                return left_rdns == right_rdns
+                    && left.provider_label == right.provider_label
+                    && left.discovery_source == right.discovery_source;
+            }
+
+            left == right
+        }
+        _ => false,
     }
 }
