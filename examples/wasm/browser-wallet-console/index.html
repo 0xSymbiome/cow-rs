@@ -305,7 +305,7 @@
           <label for="trade-json">Trade Parameters</label>
           <textarea id="trade-json"></textarea>
           <div class="button-row" style="margin-top: 0.75rem;">
-            <button class="alt" id="refresh-samples">Reload Samples</button>
+            <button type="button" class="alt" id="refresh-samples">Reload Samples</button>
           </div>
         </div>
       </div>
@@ -343,14 +343,14 @@
             Deterministic browser proof using the public `cow-sdk` browser-wallet surface and a local mock orderbook.
           </p>
           <div class="button-row">
-            <button id="mock-status">Status</button>
-            <button id="mock-connect" class="alt">Connect</button>
-            <button id="mock-sign-message">Sign Message</button>
-            <button id="mock-approval" class="alt">Approval Flow</button>
-            <button id="mock-trading">Trade And Cancel</button>
+            <button type="button" id="mock-status">Status</button>
+            <button type="button" id="mock-connect" class="alt">Connect</button>
+            <button type="button" id="mock-sign-message">Sign Message</button>
+            <button type="button" id="mock-approval" class="alt">Approval Flow</button>
+            <button type="button" id="mock-trading">Trade And Cancel</button>
           </div>
         </div>
-        <pre class="output" id="mock-output">Loading...</pre>
+        <pre class="output" id="mock-output" aria-live="polite" data-state="loading">Loading...</pre>
       </div>
 
       <div class="panel span-6">
@@ -365,23 +365,23 @@
           <code>Reset Session</code> keeps the selected wallet, and <code>Forget Wallet</code> clears both the selected wallet and the confirmed provider from the console.
           </p>
           <div class="button-row">
-            <button id="detect-wallet">Detect</button>
-            <button id="rescan-wallet" class="alt">Rescan</button>
-            <button id="confirm-wallet">Confirm Wallet</button>
-            <button id="connect-wallet" class="alt">Connect / Reconnect</button>
-            <button id="wallet-status">Wallet Status</button>
-            <button id="reset-wallet">Reset Session</button>
-            <button id="forget-wallet" class="alt">Forget Wallet</button>
-            <button id="refresh-wallet">Refresh</button>
-            <button id="switch-wallet" class="alt">Switch Chain</button>
-            <button id="sign-message">Sign Message</button>
-            <button id="sign-order" class="alt">Sign Order</button>
-            <button id="live-quote">Live Quote</button>
-            <button id="submit-order" class="alt">Submit Order</button>
-            <button id="cancel-order">Cancel Order</button>
+            <button type="button" id="detect-wallet">Detect</button>
+            <button type="button" id="rescan-wallet" class="alt">Rescan</button>
+            <button type="button" id="confirm-wallet">Confirm Wallet</button>
+            <button type="button" id="connect-wallet" class="alt">Connect / Reconnect</button>
+            <button type="button" id="wallet-status">Wallet Status</button>
+            <button type="button" id="reset-wallet">Reset Session</button>
+            <button type="button" id="forget-wallet" class="alt">Forget Wallet</button>
+            <button type="button" id="refresh-wallet">Refresh</button>
+            <button type="button" id="switch-wallet" class="alt">Switch Chain</button>
+            <button type="button" id="sign-message">Sign Message</button>
+            <button type="button" id="sign-order" class="alt">Sign Order</button>
+            <button type="button" id="live-quote">Live Quote</button>
+            <button type="button" id="submit-order" class="alt">Submit Order</button>
+            <button type="button" id="cancel-order">Cancel Order</button>
           </div>
         </div>
-        <pre class="output" id="injected-output">Loading...</pre>
+        <pre class="output" id="injected-output" aria-live="polite" data-state="loading">Loading...</pre>
       </div>
     </section>
   </main>
@@ -403,6 +403,8 @@
     if (window.location.protocol === "file:") {
       warningEl.style.display = "block";
       warningEl.textContent = "Serve this folder over HTTP. Browsers block WASM module loading from file:// origins.";
+      mockOutput.dataset.state = "error";
+      injectedOutput.dataset.state = "error";
       mockOutput.textContent = "HTTP transport required.";
       injectedOutput.textContent = "HTTP transport required.";
       throw new Error("HTTP transport required");
@@ -415,6 +417,8 @@
     } catch (error) {
       warningEl.style.display = "block";
       warningEl.textContent = `Unable to load the browser-wallet console bundle: ${error}`;
+      mockOutput.dataset.state = "error";
+      injectedOutput.dataset.state = "error";
       mockOutput.textContent = String(error);
       injectedOutput.textContent = String(error);
       throw error;
@@ -445,20 +449,21 @@
     }
 
     async function run(target, button, action) {
-      const previous = target.textContent;
       button.disabled = true;
+      target.dataset.state = "running";
       target.textContent = "Running...";
       try {
         const result = await action();
+        target.dataset.state = "success";
         target.textContent = result;
         const liveUid = consoleState.last_live_order_uid();
         orderUidInput.value = liveUid ?? "";
       } catch (error) {
+        target.dataset.state = "error";
         target.textContent = String(error);
       } finally {
         button.disabled = false;
       }
-      return previous;
     }
 
     document.getElementById("refresh-samples").addEventListener("click", async (event) => {
@@ -582,7 +587,9 @@
     });
 
     await refreshSamples();
+    mockOutput.dataset.state = "success";
     mockOutput.textContent = consoleState.mock_status_json();
+    injectedOutput.dataset.state = "success";
     injectedOutput.textContent = await consoleState.injected_detection_json();
   </script>
 </body>

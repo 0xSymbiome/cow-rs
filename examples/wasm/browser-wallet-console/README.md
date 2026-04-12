@@ -11,6 +11,8 @@ The injected-provider path requires explicit user authorization and depends on t
 
 `Detect` caches reviewed injected-wallet candidates. When more than one reviewed candidate is present, `Confirm Wallet` records the provider the console is allowed to use. `Connect / Reconnect` uses that confirmed provider or the retained selected wallet handle. `Rescan` performs a fresh reviewed discovery round and either revalidates or clears the confirmed provider choice. `Reset Session` clears console session state while keeping the selected wallet and confirmed provider available for status and refresh actions. `Forget Wallet` clears both from the console. Wallet authorization stays managed by the extension.
 
+The page keeps `Mock Wallet` and `Injected Wallet` output panes separate and renders each action result as JSON so browser inspection and deterministic validation exercise the same visible surface.
+
 Build:
 
 ```text
