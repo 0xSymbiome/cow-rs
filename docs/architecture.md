@@ -43,7 +43,7 @@ flowchart TD
 | Protocol primitives | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` | Deterministic transforms for hashes, signatures, order ids, smart-account verification, metadata, and CID behavior |
 | Transport | `cow-sdk-orderbook`, `cow-sdk-subgraph` | Typed HTTP and GraphQL access with explicit error boundaries |
 | Workflow | `cow-sdk-trading` | Quote-to-order, submission, cancellation, allowance, approval, and slippage flows |
-| Runtime adapter | `cow-sdk-browser-wallet` | Async EIP-1193 integration and typed browser-wallet methods for reviewed wallet-specific behavior |
+| Runtime adapter | `cow-sdk-browser-wallet` | Async EIP-1193 integration and typed browser-wallet methods for supported wallet-specific behavior |
 | Facade | `cow-sdk` | Thin re-export layer for the primary public surface |
 
 ## Runtime Traits
@@ -155,4 +155,4 @@ The root `cow-sdk` crate keeps browser-wallet support behind the `browser-wallet
 
 This layout keeps low-level protocol semantics stable, gives higher-level consumers a clean trading entrypoint, and avoids coupling browser-only behavior to native server and bot use cases. Generated or schema-derived artifacts belong in non-public or test-only locations rather than the supported public SDK API.
 
-For package boundaries and validation guidance, see [Review Guide](review-guide.md).
+For package boundaries and validation guidance, see [Verification Guide](verification-guide.md).

@@ -4,6 +4,8 @@
 
 This workspace includes order creation, signing, and submission flows, low-level contract helpers, app-data encoding and CID handling, typed orderbook transport, read-only subgraph queries, WASM builds, and feature-gated browser wallet integration.
 
+Scope-to-proof mapping lives in [Validation Scope](docs/validation-scope.md). Release, publication, and provenance checks live in [Release Checklist](docs/release-checklist.md).
+
 ## Workspace
 
 | Crate | Role |
@@ -108,7 +110,7 @@ Crate-isolation maintenance runs separately in `crate-checks.yml` on a schedule 
 
 The workspace manifest also defines focused Clippy policy for documented failure contracts, discard-prone helper returns, and readable large literals through `missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`, and `unreadable_literal`.
 
-Duplicate-version maintenance is reviewed through `cargo-deny` plus `cargo tree -d --workspace`, where every accepted subtree stays explicit in `.github/config/deny.toml`. The maintenance-depth Clippy sweep keeps `clippy::multiple_crate_versions` out of that command so duplicate-version review stays anchored to the curated dependency policy instead of the coarse global lint.
+Duplicate-version maintenance is tracked through `cargo-deny` plus `cargo tree -d --workspace`, where every accepted subtree stays explicit in `.github/config/deny.toml`. The maintenance-depth Clippy sweep keeps `clippy::multiple_crate_versions` out of that command so duplicate-version policy stays anchored to the curated dependency policy instead of the coarse global lint.
 
 CI also enforces public API rustc lints with `missing_docs`, `missing_debug_implementations`, `unreachable_pub`, and `unnameable_types` across the published crate family: `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.
 
@@ -128,10 +130,12 @@ Dependency policy is split by purpose:
 
 ## Docs
 
+- [Validation Scope](docs/validation-scope.md)
+- [Release Checklist](docs/release-checklist.md)
 - [Strategy](docs/strategy.md)
 - [Architecture](docs/architecture.md)
-- [Review Guide](docs/review-guide.md)
-- [Security And Test Matrix](docs/security-matrix.md)
+- [Verification Guide](docs/verification-guide.md)
+- [Security And Validation Matrix](docs/security-matrix.md)
 - [Parity Matrix](docs/parity-matrix.md)
 - [Parity Sources](docs/parity-sources.md)
 - [Parity Scope](docs/parity-scope.md)
@@ -140,6 +144,8 @@ Dependency policy is split by purpose:
 - [ADRs](docs/adr/README.md)
 
 ## Validation
+
+Use [Release Checklist](docs/release-checklist.md) for the maintained release sequence and [Validation Scope](docs/validation-scope.md) for surface-to-proof mapping. The commands below are the current top-level repository contract.
 
 ```text
 cargo fmt --all --check
@@ -184,5 +190,5 @@ cargo tree -d --workspace
 
 - `examples/native/` contains native SDK scenarios.
 - `examples/native/scenarios/subgraph_query_roundtrip.rs`, `subgraph_custom_query_roundtrip.rs`, and `subgraph_live_query.rs` cover canonical helper, custom-query, and opt-in live subgraph usage through `cow-sdk-subgraph`.
-- `examples/wasm/sdk-verification-console/` contains deterministic WASM checks and a browser review surface for SDK verification.
+- `examples/wasm/sdk-verification-console/` contains deterministic WASM checks and a browser inspection surface for SDK verification.
 - `examples/wasm/browser-wallet-console/` contains deterministic mock-wallet proof mode and explicit injected-provider browser flows.

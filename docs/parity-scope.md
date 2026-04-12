@@ -12,7 +12,7 @@ Pinned sources live in `parity/source-lock.yaml`.
 | `cowprotocol/contracts` | Primary | Contract hashing, order UID packing, signatures, settlement encoding, vault/proxy/reader helpers, and ABI-level behavior. |
 | `cowprotocol/services` | Reference-only | Orderbook OpenAPI, order validation behavior, and app-data service behavior where the TypeScript SDK delegates to service contracts. |
 
-Local upstream checkout paths are optional reviewer inputs. They must be independent git checkouts or worktrees at the pinned commits when used for live parity validation.
+Local upstream checkout paths are optional validation inputs. They must be independent git checkouts or worktrees at the pinned commits when used for live parity validation.
 
 ## Surface Boundaries
 
@@ -38,7 +38,7 @@ Schema-derived evidence is a test and review aid, not a public API shortcut.
 - Canonical subgraph query documents live in `crates/subgraph/src/query_documents/`.
 - Test-only subgraph schema and codegen evidence lives in `crates/subgraph/tests/schema_evidence/`.
 - Generated or schema-derived Rust mirrors must live in obvious non-public or test-only locations.
-- Public DTOs remain hand-reviewed SDK contracts.
+- Public DTOs remain maintained SDK contracts.
 
 ## Schema-Derived Artifacts
 

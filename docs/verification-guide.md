@@ -1,19 +1,21 @@
-# Review Guide
+# Verification Guide
 
 This guide describes the Rust SDK boundaries and the evidence that keeps similar-looking code paths explainable.
 
-## Review Order
+## Start Here
 
-Start with:
+Begin with:
 
-- [Security And Test Matrix](security-matrix.md)
+- [Validation Scope](validation-scope.md)
+- [Release Checklist](release-checklist.md)
+- [Security And Validation Matrix](security-matrix.md)
 - [Architecture](architecture.md)
 - [Parity Matrix](parity-matrix.md)
 - [Parity Sources](parity-sources.md)
 - [Parity Scope](parity-scope.md)
 - [Audits](audit/README.md)
 
-Then inspect the crate tests that cover the surface under review. The most useful entry points are the `*_contract.rs` integration tests in each crate.
+Then inspect the crate tests that cover the surface in question. The most useful entry points are the `*_contract.rs` integration tests in each crate.
 
 ## Runtime Traits
 
@@ -31,7 +33,7 @@ Then inspect the crate tests that cover the surface under review. The most usefu
 
 The deferred transport traits are stable extension contracts. Orderbook, subgraph, and app-data keep request execution local because each transport surface has distinct retry, header, credential, and decoding semantics.
 
-Typed-data review has two layers on purpose:
+Typed-data verification has two layers on purpose:
 
 - `cow_sdk_core::TypedDataPayload` is the signer-facing EIP-712 contract. It carries the explicit primary type, the full type map, and canonical message JSON for runtime adapters such as `cow-sdk-browser-wallet`.
 - `cow_sdk_signing::OrderTypedData` is the order-facing convenience envelope returned by signing and trading helpers. That keeps typed order UX for consumers without forcing signer implementations to recover structure from field-name heuristics.
@@ -44,9 +46,9 @@ Smart-account verification follows the same explicit-seam rule:
 - `cow_sdk_trading::post::verify_eip1271_order_signature` and `verify_eip1271_order_signature_async` are order-level helpers. They compute the CoW order digest explicitly and then call the contracts helper.
 - Submission paths keep EIP-1271 verification opt-in so custom-signature generation and pure payload construction do not inherit hidden provider requirements.
 
-## Transport Policy Review
+## Transport Policy
 
-Review transport configuration in two passes:
+Evaluate transport configuration in two passes:
 
 1. Shared client settings:
    `cow_sdk_core::HttpClientPolicy` owns timeout and user-agent only.
@@ -71,9 +73,9 @@ Default client policy is explicit and test-covered:
 - `with_transport_policy()` rebuilds the reqwest client and creates a fresh instance-scoped limiter for that clone lineage
 - orderbook rate-limit waits happen before each attempt, retry backoff happens after retryable failures, and cancelling a waiting request does not poison the shared limiter state
 
-## Trading SDK Precedence Review
+## Trading SDK Precedence
 
-Review `TradingSdk` with this order in mind:
+Evaluate `TradingSdk` with this order in mind:
 
 1. injected orderbook client context for orderbook-bound chain and env
 2. advanced quote or post settings for overlapping trade fields
@@ -81,7 +83,7 @@ Review `TradingSdk` with this order in mind:
 4. SDK trader defaults
 5. signer address as the final owner fallback
 
-Key review points:
+Key points:
 
 - `TradingSdk::builder()` and `TradingSdkOptions` keep policy instance-scoped rather than mutation-driven.
 - Injected orderbook clients do not act as a silent suggestion. They define the active orderbook context, and conflicts surface as typed errors.
@@ -110,7 +112,7 @@ wallet extensions, or live order placement.
 The on-chain transaction builders in `cow-sdk-trading` treat tuple amount, quote-id,
 and validity fields as ABI `uint256` values.
 
-Review these points:
+Confirm these points:
 
 - EthFlow transaction generation and EthFlow on-chain cancellation encode `uint256` fields as unsigned 32-byte ABI words across the full `uint256` range.
 - Negative numeric inputs are rejected before call data is produced.
@@ -132,7 +134,7 @@ Repeated order-like field names are intentional only when they model distinct pr
 
 A field-similar type without a distinct wire, ABI, normalized, or user-domain boundary should be removed or merged.
 
-## Typed Boundary Review
+## Typed Boundary Policy
 
 Use this rule when evaluating the public API:
 
@@ -160,7 +162,7 @@ The `cow-sdk-*` package family is intentionally multi-crate:
 
 This avoids a single crate becoming the owner of unrelated concerns while giving consumers an ergonomic root package.
 
-## Browser Wallet Discovery Review
+## Browser Wallet Discovery
 
 Use the browser-wallet discovery surface in this order:
 
@@ -169,7 +171,7 @@ Use the browser-wallet discovery surface in this order:
 - `InjectedWalletDiscovery::wallet_at()` is the explicit selection path when more than one candidate is present.
 - `BrowserWallet::detect()` is a compatibility helper for direct `window.ethereum` lookup. It is not the primary discovery contract.
 
-Review these points on browser-wallet changes:
+Confirm these points on browser-wallet changes:
 
 - modern injected discovery must be able to represent more than one candidate
 - the wait contract must stay bounded and visible
@@ -196,7 +198,7 @@ Browser-wallet support posture stays explicit across the public surface:
 
 - The default `cow-sdk` facade does not assume browser-wallet access. Browser-wallet support is exposed only through the `browser-wallet` feature and the `cow-sdk-browser-wallet` crate.
 - Deterministic proof comes from mock-wallet contract tests and the mock mode in the browser-wallet console.
-- `MockEip1193Transport` is the deterministic proof seam. It is part of the public leaf-crate contract for tests and review surfaces, not a hidden helper.
+- `MockEip1193Transport` is the deterministic proof seam. It is part of the public leaf-crate contract for tests and public verification surfaces, not a hidden helper.
 - In the browser-wallet console, `Reset Session` clears console session state without dropping the selected wallet handle or confirmed provider choice, while `Forget Wallet` clears both explicitly.
 - In the browser-wallet console, `Detect` caches discovered wallet candidates, `Confirm Wallet` records the provider choice when more than one candidate is present, `Connect / Reconnect` uses the confirmed provider or retained selected wallet handle, and `Rescan` refreshes the candidate set while revalidating or clearing the confirmed choice.
 - Injected-provider support covers the typed EIP-1193 flows exercised by `cow-sdk-browser-wallet` on supported chains with explicit user authorization.
@@ -236,14 +238,14 @@ Orderbook OpenAPI and subgraph query evidence is tied to pinned entries in `pari
 
 For subgraph specifically, saved query documents live under `crates/subgraph/src/query_documents/`, while test-only schema and generated evidence belongs under `crates/subgraph/tests/schema_evidence/`.
 
-For subgraph custom queries specifically, review the explicit request contract before transport details:
+For subgraph custom queries specifically, inspect the explicit request contract before transport details:
 
 - `SubgraphQueryRequest` carries `document`, optional `variables`, and optional `operation_name`.
 - Anonymous single-operation documents are allowed without `operation_name`.
 - Multi-operation documents require caller-supplied `operation_name`; the SDK does not infer it from the query string.
 - `SubgraphError` keeps failure classes separate: transport, HTTP status, GraphQL payload, serialization, missing data, unsupported network, and the helper-specific empty-totals case.
 
-Subgraph example review follows the same package boundary:
+Subgraph examples follow the same package boundary:
 
 - native subgraph scenarios import `cow-sdk-subgraph` directly rather than relying on the root facade
 - custom-query examples use `SubgraphQueryRequest` explicitly
@@ -283,10 +285,10 @@ Workspace Clippy policy checked in CI includes:
 - `must_use_candidate`
 - `unreadable_literal`
 
-Maintenance-depth Clippy review uses:
+Maintenance-depth Clippy uses:
 
 - `cargo clippy --workspace --all-targets --all-features --message-format short -- -W clippy::pedantic -W clippy::cargo -A clippy::multiple_crate_versions`
-- duplicate-version review is kept authoritative in `.github/config/deny.toml` together with `cargo tree -d --workspace`, rather than in the coarse global `clippy::multiple_crate_versions` signal
+- duplicate-version policy remains authoritative in `.github/config/deny.toml` together with `cargo tree -d --workspace`, rather than in the coarse global `clippy::multiple_crate_versions` signal
 
 Dependency policy includes:
 
@@ -303,7 +305,7 @@ CID handling uses upstream crates for CID and multihash encoding. Legacy content
 
 ## Validation
 
-Use the normal workspace checks:
+Use [Release Checklist](release-checklist.md) for the maintained release sequence. The commands below are the current high-signal shortcuts from this guide:
 
 ```text
 cargo fmt --all --check
@@ -336,13 +338,13 @@ cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upst
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
 ```
 
-Use this command when reviewing public-surface documentation and export hygiene:
+Use this command when checking public-surface documentation and export hygiene:
 
 ```text
 RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features
 ```
 
-Use this command when reviewing dependency freshness without mutating the lockfile:
+Use this command when checking dependency freshness without mutating the lockfile:
 
 ```text
 cargo update --dry-run --color never

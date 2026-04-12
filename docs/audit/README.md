@@ -1,6 +1,6 @@
 # Audits
 
-This directory contains focused engineering audits for `cow-rs`. Each audit records the reviewed surface, current status, follow-up boundaries, and validation evidence.
+This directory contains focused engineering audits for `cow-rs`. Each audit records the documented surface, current status, follow-up boundaries, and validation evidence.
 
 ## Available Audits
 
@@ -13,7 +13,7 @@ This directory contains focused engineering audits for `cow-rs`. Each audit reco
 
 Audits should stay scoped and evidence-based:
 
-- document the specific surface being reviewed,
+- document the specific surface being assessed,
 - distinguish addressed items from open follow-up work,
 - avoid mixing unrelated quality gates into one audit,
-- record only reviewer-relevant validation commands.
+- record only surface-relevant validation commands.
