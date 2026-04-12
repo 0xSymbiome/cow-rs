@@ -84,11 +84,11 @@ String-heavy values live in explicit wire DTOs such as `cow-sdk-orderbook` reque
 
 The public compatibility floor is exercised directly with `cargo check --workspace --all-features` and `cargo test --workspace` on Rust `1.94.0`.
 
-Primary CI and release validation use the pinned `1.94.1` contributor toolchain for formatting, Clippy, docs, examples, feature-matrix checks, and repo-local publication verification. Release-readiness adds a separate pinned-upstream provenance lane. WASM and browser-wallet target validation stay in the dedicated WASM workflows so native compatibility checks do not inherit browser-specific assumptions.
+Primary CI and release validation use the pinned `1.94.1` contributor toolchain for formatting, Clippy, library and integration tests, an explicit workspace doctest lane, docs, feature-matrix checks, and repo-local publication verification. CI also checks the SDK and native example surfaces. Release-readiness adds a separate pinned-upstream provenance lane. WASM and browser-wallet target validation stay in the dedicated WASM workflows so native compatibility checks do not inherit browser-specific assumptions.
 
 ## Quality Gates
 
-The primary native CI lane runs on the pinned `1.94.1` contributor toolchain and enforces formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, and a depth-1 feature matrix for the published crate family.
+The primary native CI lane runs on the pinned `1.94.1` contributor toolchain and enforces formatting, baseline Clippy, workspace library and integration tests, a dedicated workspace doctest lane, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, and a depth-1 feature matrix for the published crate family.
 
 A separate compatibility-floor lane runs `cargo check --workspace --all-features` and `cargo test --workspace` on Rust `1.94.0`.
 
@@ -127,6 +127,7 @@ Dependency policy is split by purpose:
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
+cargo test --workspace --doc
 cargo +1.94.0 check --workspace --all-features
 cargo +1.94.0 test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml

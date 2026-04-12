@@ -52,8 +52,8 @@ jobs:
         run: cargo fmt --all --check
       - name: Run clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-      - name: Run workspace tests
-        run: cargo test --workspace
+      - name: Run workspace library and integration tests
+        run: cargo test --workspace --lib --tests
       - name: Run workspace nextest suite
         run: cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
       - name: Build workspace documentation
@@ -72,6 +72,20 @@ jobs:
         run: cargo check --workspace --all-features
         env:
           RUSTFLAGS: -Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types
+
+  doctest:
+    runs-on: ubuntu-latest
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Run workspace doctests
+        run: cargo test --workspace --doc
 
   compatibility-floor:
     runs-on: ubuntu-latest
@@ -93,6 +107,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - quality-gate
+      - doctest
       - compatibility-floor
     steps:
       # Source ref: actions/checkout@v4

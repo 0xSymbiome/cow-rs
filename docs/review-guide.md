@@ -252,9 +252,9 @@ Subgraph example review follows the same package boundary:
 
 The repository ships three validation layers:
 
-- `ci.yml` runs formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, published-crate public API rustc lint enforcement, advisory reporting, repo-local parity/source-lock validation, and published package-family dry-runs on the pinned `1.94.1` contributor toolchain for every PR.
+- `ci.yml` runs formatting, baseline Clippy, workspace library and integration tests, a dedicated workspace doctest lane, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, published-crate public API rustc lint enforcement, advisory reporting, repo-local parity/source-lock validation, and published package-family dry-runs on the pinned `1.94.1` contributor toolchain for every PR.
 - `ci.yml` also runs a separate compatibility-floor job on Rust `1.94.0` with `cargo check --workspace --all-features` and `cargo test --workspace`.
-- `release-readiness.yml` reruns the pinned library checks and the compatibility-floor job, then executes the repo-local publication contract and a separate pinned-upstream provenance lane that provisions independent checkouts from `parity/source-lock.yaml` before explicit-root validation.
+- `release-readiness.yml` reruns the pinned library checks, the dedicated workspace doctest lane, and the compatibility-floor job, then executes the repo-local publication contract and a separate pinned-upstream provenance lane that provisions independent checkouts from `parity/source-lock.yaml` before explicit-root validation.
 - `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and example deployment surfaces.
 
 Action references in workflow files are pinned to immutable SHAs.
@@ -292,6 +292,7 @@ Use the normal workspace checks:
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
+cargo test --workspace --doc
 cargo +1.94.0 check --workspace --all-features
 cargo +1.94.0 test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml

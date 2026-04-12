@@ -66,12 +66,26 @@ jobs:
           toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
-      - name: Run workspace tests
-        run: cargo test --workspace
+      - name: Run workspace library and integration tests
+        run: cargo test --workspace --lib --tests
       - name: Check sdk examples
         run: cargo check -p cow-sdk --examples
       - name: Check native showcase examples
         run: cargo check --manifest-path examples/native/Cargo.toml --examples
+
+  doctest:
+    runs-on: ubuntu-latest
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Run workspace doctests
+        run: cargo test --workspace --doc
 
   msrv:
     runs-on: ubuntu-latest
@@ -189,6 +203,18 @@ jobs:
 
   publication:
     runs-on: ubuntu-latest
+    needs:
+      - fmt
+      - clippy
+      - test
+      - doctest
+      - msrv
+      - nextest
+      - docs
+      - typos
+      - deny
+      - feature-matrix
+      - public-api-lints
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
