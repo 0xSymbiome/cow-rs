@@ -283,6 +283,9 @@ Dependency policy includes:
 - approved duplicate-version tolerances for the `ethabi` browser-wallet path, the test-only `graphql_client` schema/codegen path, and the platform-specific verifier subtree under `rustls-platform-verifier`
 - RustSec advisory enforcement through `cargo-audit`
 - a temporary `RUSTSEC-2026-0097` exception while `cow-sdk-browser-wallet` still depends on `ethabi`
+- a separate read-only dependency freshness report built from `cargo update --dry-run` plus `cargo tree -d --workspace`
+- weekly freshness automation lives on the scheduled `release-readiness.yml` path, while `ci.yml` exposes the same report through manual dispatch only
+- the freshness report is assembled directly in workflow steps instead of adding a repo-side maintenance script language for one narrow CI concern
 
 CID handling uses upstream crates for CID and multihash encoding. Legacy content-to-CID generation uses `ipfs-cid`; latest app-data CID conversion wraps an existing Keccak digest with `cid` and `multihash` because the SDK receives the digest as an app-data hash.
 
@@ -317,4 +320,11 @@ Use this command when reviewing public-surface documentation and export hygiene:
 
 ```text
 RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features
+```
+
+Use this command when reviewing dependency freshness without mutating the lockfile:
+
+```text
+cargo update --dry-run --color never
+cargo tree -d --workspace
 ```

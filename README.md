@@ -111,6 +111,8 @@ Dependency policy is split by purpose:
 - `cargo-audit` enforces RustSec advisories without depending on the current `cargo-deny` advisory-db parser path
 - `RUSTSEC-2026-0097` is temporarily ignored because the remaining hit is inherited from the `ethabi` stack used by `cow-sdk-browser-wallet`
 - the approved duplicate tolerances are limited to the browser-wallet `ethabi` subtree, the test-only subgraph `graphql_client` subtree, and the platform-specific verifier subtree under `rustls-platform-verifier`
+- dependency freshness reporting is separate and read-only: `release-readiness.yml` runs it weekly and on manual dispatch, while `ci.yml` exposes the same report on manual dispatch only
+- the freshness report is built directly in the workflow from `cargo update --dry-run` plus `cargo tree -d --workspace`, so it surfaces lockfile movement opportunities without rewriting `Cargo.lock` or introducing a repo-side maintenance script language
 
 ## Docs
 
@@ -153,6 +155,11 @@ RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wun
 ```text
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
+```
+
+```text
+cargo update --dry-run --color never
+cargo tree -d --workspace
 ```
 
 ## Examples
