@@ -102,6 +102,8 @@ Documentation quality also has a dedicated `docs-quality.yml` workflow. It keeps
 
 The routine PR-blocking workflow also publishes a final `ci-success` status that aggregates the required native quality, compatibility, and publication jobs. Workflow jobs use explicit timeout budgets, and checkout steps in the native validation workflows disable credential persistence.
 
+Crate-isolation maintenance runs separately in `crate-checks.yml` on a schedule and manual dispatch. It uses `cargo hack check --workspace --each-feature --no-dev-deps` to catch crate-level dependency and feature assumptions that workspace unification can hide, without turning that maintenance-depth check into a routine PR requirement.
+
 The workspace manifest also defines focused Clippy policy for documented failure contracts, discard-prone helper returns, and readable large literals through `missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`, and `unreadable_literal`.
 
 CI also enforces public API rustc lints with `missing_docs`, `missing_debug_implementations`, `unreachable_pub`, and `unnameable_types` across the published crate family: `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.
