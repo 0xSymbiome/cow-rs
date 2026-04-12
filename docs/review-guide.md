@@ -261,10 +261,10 @@ The repository ships three validation layers:
 - `docs-quality.yml` keeps workspace doctests explicit, adds `cargo test --all-features --workspace --doc`, and runs a nightly docs.rs-style rustdoc build with `DOCS_RS=1` plus nightly rustdoc presentation flags.
 - `crate-checks.yml` is a scheduled and manual maintenance lane that runs `cargo hack check --workspace --each-feature --no-dev-deps` to catch crate-isolation regressions that routine workspace-wide checks can miss.
 - `release-readiness.yml` reruns the pinned library checks, the dedicated workspace doctest lane, the compatibility-floor job, and the light Windows stable job, then executes the repo-local publication contract and a separate pinned-upstream provenance lane that provisions independent checkouts from `parity/source-lock.yaml` before explicit-root validation.
-- `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and example deployment surfaces.
+- `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and WASM example deployment surfaces while staying separate from the native PR-blocking contract.
 
 Action references in workflow files are pinned to immutable SHAs.
-Routine native validation workflows use explicit `timeout-minutes` budgets and disable credential persistence on checkout.
+Routine native validation workflows and the dedicated WASM workflows use explicit `timeout-minutes` budgets and disable credential persistence on checkout. Elevated Pages permissions stay scoped to the deployment job that needs them.
 The crate-isolation lane is maintenance-depth evidence only; it is intentionally separate from the routine PR-blocking contract and does not mutate repository state.
 
 Public-library rustc lints checked in CI include:

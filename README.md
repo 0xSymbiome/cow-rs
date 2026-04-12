@@ -100,7 +100,9 @@ Security analysis runs in a dedicated `codeql.yml` workflow that scans both Rust
 
 Documentation quality also has a dedicated `docs-quality.yml` workflow. It keeps the stable docs build in the primary CI lane, adds all-feature doctests, and runs a nightly docs.rs-style rustdoc build with `docsrs` cfg plus nightly-only rustdoc presentation flags.
 
-The routine PR-blocking workflow also publishes a final `ci-success` status that aggregates the required native quality, compatibility, and publication jobs. Workflow jobs use explicit timeout budgets, and checkout steps in the native validation workflows disable credential persistence.
+The routine PR-blocking workflow also publishes a final `ci-success` status that aggregates the required native quality, compatibility, and publication jobs. Workflow jobs use explicit timeout budgets, and checkout steps in both the native validation workflows and the dedicated WASM workflows disable credential persistence.
+
+The dedicated `wasm.yml` and `wasm-pages.yml` workflows stay separate from the native PR-blocking lane while applying the same explicit permissions and least-privilege checkout posture.
 
 Crate-isolation maintenance runs separately in `crate-checks.yml` on a schedule and manual dispatch. It uses `cargo hack check --workspace --each-feature --no-dev-deps` to catch crate-level dependency and feature assumptions that workspace unification can hide, without turning that maintenance-depth check into a routine PR requirement.
 

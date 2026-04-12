@@ -55,7 +55,7 @@ This matrix maps `cow-rs` test evidence by crate and public validation surface. 
 - The nightly docs-quality lane stays documentation-only. It exercises docs.rs-style rustdoc flags and all-feature doctests without widening validation into browser-extension, live-network, or host-sensitive behavior.
 - The Windows stable lane stays intentionally narrow and does not absorb browser-target, WASM, or publication-only validation.
 - CodeQL complements dependency policy by scanning Rust and GitHub Actions semantics; it does not replace `cargo-deny` or `cargo-audit`.
-- Routine native validation workflows disable checkout credential persistence and use explicit timeout budgets per job.
+- Routine native validation workflows and the dedicated WASM workflows disable checkout credential persistence and use explicit timeout budgets per job. `wasm-pages.yml` scopes elevated Pages permissions to the deployment job.
 - Mocked transports should assert request shape and failure behavior where those paths are part of the reviewed surface.
 - WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible.
 - Live quote, orderbook, subgraph, and wallet checks stay manual unless explicitly promoted into a deterministic routed or injected test.
