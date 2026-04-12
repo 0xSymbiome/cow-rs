@@ -197,10 +197,12 @@ Browser-wallet chain management uses the typed crate-local contract:
 Browser-wallet support posture stays explicit across the public surface:
 
 - The default `cow-sdk` facade does not assume browser-wallet access. Browser-wallet support is exposed only through the `browser-wallet` feature and the `cow-sdk-browser-wallet` crate.
-- Deterministic proof comes from mock-wallet contract tests and the mock mode in the browser-wallet console.
+- Deterministic proof comes from browser-wallet contract tests, the mock mode in the browser-wallet console, and the committed `browser-wallet-e2e.yml` automation lane for deterministic injected-provider console flows.
 - `MockEip1193Transport` is the deterministic proof seam. It is part of the public leaf-crate contract for tests and public verification surfaces, not a hidden helper.
 - In the browser-wallet console, `Reset Session` clears console session state without dropping the selected wallet handle or confirmed provider choice, while `Forget Wallet` clears both explicitly.
 - In the browser-wallet console, `Detect` caches discovered wallet candidates, `Confirm Wallet` records the provider choice when more than one candidate is present, `Connect / Reconnect` uses the confirmed provider or retained selected wallet handle, and `Rescan` refreshes the candidate set while revalidating or clearing the confirmed choice.
+- In the browser-wallet console, the injected-wallet pane also exposes stable DOM markers for discovered wallets, selection state, session state, signing, quote, submit, cancel, and explicit error surfaces so browser automation and human inspection read the same contract.
+- The committed browser automation uses local EIP-6963 fixtures and route-mocked orderbook requests instead of a live wallet extension, public RPC endpoint, or external website.
 - Injected-provider support covers the typed EIP-1193 flows exercised by `cow-sdk-browser-wallet` on supported chains with explicit user authorization.
 - Off-WASM discovery is intentionally a typed no-op. `discover()` and `discover_with()` return an empty result set, and `detect()` returns `None`, instead of implying browser-provider availability outside a browser runtime.
 - Public Result-returning wallet APIs should keep failure modes explicit: user rejection, disconnected provider, wrong chain, chain-not-added, malformed response, unsupported method, invalid typed chain configuration, and environment-sensitive unavailability are distinct error classes.

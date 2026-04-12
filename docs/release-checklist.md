@@ -110,14 +110,23 @@ bun run --cwd e2e/sdk-verification playwright install chromium
 bun run --cwd e2e/sdk-verification test
 ```
 
+Run the deterministic browser-wallet console checks:
+
+```text
+cargo test -p cow-sdk-browser-wallet
+bun install --cwd e2e/browser-wallet
+bun run --cwd e2e/browser-wallet playwright install chromium
+bun run --cwd e2e/browser-wallet test
+```
+
 Browser-wallet validation is intentionally split:
 
-- deterministic proof comes from `cargo test -p cow-sdk-browser-wallet`, mock-wallet console mode, and the browser-wallet console WASM build
-- injected-provider connect, sign, quote, submit, and cancel flows remain environment-sensitive because they depend on browser extensions, authorization state, and wallet-specific behavior
+- deterministic proof comes from `cargo test -p cow-sdk-browser-wallet`, mock-wallet console mode, the browser-wallet console WASM build, and the committed browser-wallet console automation using local EIP-6963 fixtures plus route-mocked orderbook requests
+- live extension-backed connect, sign, quote, submit, and cancel checks remain optional because authorization persistence, vendor prompts, chain inventory, and wallet-specific behavior are controlled by the installed extension rather than normalized by the SDK
 
 ## Manual Confirmation Before Publish
 
 - Serve the WASM examples over HTTP and confirm that the built artifacts load correctly.
-- If `examples/wasm/browser-wallet-console/` changed, run an injected-wallet spot check on a supported chain and confirm the mock-wallet path still behaves as documented.
+- If `examples/wasm/browser-wallet-console/` changed, run an extension-backed spot check on a supported chain and confirm the deterministic fixture path and mock-wallet path still behave as documented.
 - If GitHub Pages content changed, inspect the deployed `sdk-verification-console/` and `browser-wallet-console/` pages after `wasm-pages.yml` completes.
 - If parity inputs changed, confirm that the pinned SHAs in `parity/source-lock.yaml` still match the intended upstream revisions and that fixture provenance remains aligned.

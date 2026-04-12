@@ -1,10 +1,17 @@
-# Security And Test Matrix
+# Security And Validation Matrix
 
-This matrix maps `cow-rs` test evidence by crate and public validation surface. It is a navigation aid, not a claim that tests prove the absence of bugs.
+This matrix maps `cow-rs` validation evidence by crate, example surface, and workflow lane. It is a navigation aid, not a claim that tests prove the absence of bugs.
+
+Canonical references:
+
+- [Validation Scope](validation-scope.md)
+- [Release Checklist](release-checklist.md)
+- [Verification Guide](verification-guide.md)
+- [Parity Matrix](parity-matrix.md)
 
 ## Core SDK Crates
 
-| Crate | Boundary | Evidence | Primary command |
+| Crate | Boundary | Deterministic evidence | Primary command |
 | --- | --- | --- | --- |
 | `cow-sdk-core` | Shared chain config, domain types, and runtime traits | `config_contract.rs`, `types_contract.rs`, `traits_contract.rs` | `cargo test -p cow-sdk-core` |
 | `cow-sdk-contracts` | Contract constants, ABI-shaped order helpers, hashing, settlement/vault/proxy/reader helpers | `order_contract.rs`, `signature_contract.rs`, `deployment_contract.rs`, `settlement_contract.rs`, `vault_contract.rs`, `proxy_contract.rs`, `reader_contract.rs`, `swap_contract.rs`, `interaction_contract.rs` | `cargo test -p cow-sdk-contracts` |
@@ -16,14 +23,14 @@ This matrix maps `cow-rs` test evidence by crate and public validation surface. 
 | `cow-sdk-browser-wallet` | EIP-1193 browser wallet provider/signer boundaries, deterministic mock proof, typed session updates, typed chain management, and typed-data transport | `provider_contract.rs`, `wallet_contract.rs` | `cargo test -p cow-sdk-browser-wallet` |
 | `cow-sdk` | Thin facade exports and public package surface | `public_api.rs` | `cargo test -p cow-sdk` |
 
-## Examples And Browser Surfaces
+## Examples And Runtime Surfaces
 
-| Surface | Boundary | Evidence | Primary command |
-| --- | --- | --- | --- |
-| Native examples | Deterministic consumer scenarios for app-data, signing, orderbook, quote-only, limit-order, native-sell / EthFlow, pre-sign, off-chain cancellation, on-chain cancellation, and subgraph behavior | `examples/native/tests/scenario_contract.rs` plus runnable scenario binaries including `ethflow_transaction_simulation.rs` and `onchain_order_actions_simulation.rs` | `cargo test --manifest-path examples/native/Cargo.toml` |
-| Native scenario binaries | Readable command output for the complete native trading workflow surface without live order placement | `examples/native/scenarios/*.rs` | `cargo check --manifest-path examples/native/Cargo.toml --examples` |
-| SDK WASM verification console | WASM-compatible SDK verification surface with deterministic exports; network-backed quote, orderbook, and subgraph controls stay manual verification surfaces | `examples/wasm/sdk-verification-console/tests/deterministic_exports.rs` | `wasm-pack test --headless --chrome` |
-| Browser wallet WASM console | Browser wallet verification shell that separates deterministic mock mode from injected-provider inspection | `examples/wasm/browser-wallet-console` build | `cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml` |
+| Surface | Boundary | Deterministic evidence | Environment-sensitive or manual boundary | Primary command |
+| --- | --- | --- | --- | --- |
+| Native examples | Deterministic consumer scenarios for app-data, signing, orderbook, quote-only, limit-order, native-sell / EthFlow, pre-sign, off-chain cancellation, on-chain cancellation, and subgraph behavior | `examples/native/tests/scenario_contract.rs` plus runnable scenario binaries including `ethflow_transaction_simulation.rs` and `onchain_order_actions_simulation.rs` | `subgraph_live_query` remains opt-in because it depends on external configuration. | `cargo test --manifest-path examples/native/Cargo.toml` |
+| Native scenario binaries | Readable command output for the complete native trading workflow surface without live order placement | `examples/native/scenarios/*.rs` | None beyond the explicit opt-in live subgraph scenario. | `cargo check --manifest-path examples/native/Cargo.toml --examples` |
+| SDK WASM verification console | WASM-compatible SDK verification surface with deterministic exports | `examples/wasm/sdk-verification-console/tests/deterministic_exports.rs`, `wasm-pack test --headless --chrome`, `sdk-verification-e2e.yml` | Quote, orderbook, and subgraph actions remain manual when pointed at live endpoints. | `wasm-pack test --headless --chrome` |
+| Browser wallet WASM console | Browser wallet verification shell that separates deterministic mock mode from injected-provider execution | `cargo test -p cow-sdk-browser-wallet`, mock-wallet console mode, the browser-wallet console WASM build, and `browser-wallet-e2e.yml` with local EIP-6963 fixtures plus route-mocked orderbook requests | Live extension-backed connect, sign, quote, submit, and cancel remain environment-sensitive because they depend on the installed wallet, authorization state, and vendor-specific behavior. | `bun run --cwd e2e/browser-wallet test` |
 
 ## Workspace Gates
 
@@ -56,9 +63,10 @@ This matrix maps `cow-rs` test evidence by crate and public validation surface. 
 - The Windows stable lane stays intentionally narrow and does not absorb browser-target, WASM, or publication-only validation.
 - CodeQL complements dependency policy by scanning Rust and GitHub Actions semantics; it does not replace `cargo-deny` or `cargo-audit`.
 - Routine native validation workflows and the dedicated WASM workflows disable checkout credential persistence and use explicit timeout budgets per job. `wasm-pages.yml` scopes elevated Pages permissions to the deployment job.
-- Mocked transports should assert request shape and failure behavior where those paths are part of the reviewed surface.
+- Mocked transports should assert request shape and failure behavior where those paths are part of the validated surface.
 - WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible.
 - Live quote, orderbook, subgraph, and wallet checks stay manual unless explicitly promoted into a deterministic routed or injected test.
 - Schema-derived evidence stays test-only and outside the public SDK API.
-- `cow-sdk-browser-wallet` tests and mock console mode provide deterministic proof. Injected-provider execution remains environment-sensitive because authorization, chain inventory, and wallet UX are controlled by the browser extension.
+- `cow-sdk-browser-wallet` tests, mock console mode, and the committed browser-wallet console automation provide deterministic proof without a live extension, public RPC endpoint, or external website.
+- Extension-backed injected-provider execution remains environment-sensitive because authorization, chain inventory, wallet UX, and vendor-specific behavior are controlled by the installed extension.
 - The public rustc lint gate applies to `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.

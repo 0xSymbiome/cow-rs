@@ -228,6 +228,49 @@
       overflow: auto;
     }
 
+    .state-grid {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      padding: 0 1.1rem 1rem;
+    }
+
+    .state-card {
+      border: 1px solid rgba(24, 33, 38, 0.08);
+      border-radius: 1rem;
+      background: rgba(255, 253, 250, 0.9);
+      padding: 0.75rem 0.85rem;
+      min-height: 5.25rem;
+    }
+
+    .state-card dt {
+      margin: 0 0 0.35rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .state-card dd {
+      margin: 0;
+      font-family: "Iosevka Etoile", "IBM Plex Mono", monospace;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .contract-state {
+      margin: 0;
+      padding: 0 1.1rem 1rem;
+      color: var(--muted);
+      font-family: "Iosevka Etoile", "IBM Plex Mono", monospace;
+      font-size: 0.72rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
     @media (max-width: 1024px) {
       .hero {
         grid-template-columns: 1fr;
@@ -242,6 +285,10 @@
       }
 
       .field-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .state-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -381,6 +428,93 @@
             <button type="button" id="cancel-order">Cancel Order</button>
           </div>
         </div>
+        <dl class="state-grid" aria-label="Injected wallet contract state">
+          <div class="state-card">
+            <dt>Last Action</dt>
+            <dd id="injected-last-action" data-testid="injected-last-action">bootstrap</dd>
+          </div>
+          <div class="state-card">
+            <dt>Action Status</dt>
+            <dd id="injected-last-status" data-testid="injected-last-status">idle</dd>
+          </div>
+          <div class="state-card">
+            <dt>Error Surface</dt>
+            <dd id="injected-error-text" data-testid="injected-error-text">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Discovered Wallets</dt>
+            <dd id="injected-wallet-count" data-testid="injected-wallet-count">0</dd>
+          </div>
+          <div class="state-card">
+            <dt>Wallet Labels</dt>
+            <dd id="injected-wallet-labels" data-testid="injected-wallet-labels">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Selection Required</dt>
+            <dd id="injected-requires-selection" data-testid="injected-requires-selection">false</dd>
+          </div>
+          <div class="state-card">
+            <dt>Confirmed Wallet</dt>
+            <dd id="injected-confirmed-wallet" data-testid="injected-confirmed-wallet">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Confirmed Index</dt>
+            <dd id="injected-confirmed-index" data-testid="injected-confirmed-index">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Selected Wallet</dt>
+            <dd id="injected-selected-wallet" data-testid="injected-selected-wallet">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Selected Index</dt>
+            <dd id="injected-selected-index" data-testid="injected-selected-index">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Session Connected</dt>
+            <dd id="injected-session-connected" data-testid="injected-session-connected">false</dd>
+          </div>
+          <div class="state-card">
+            <dt>Session Account</dt>
+            <dd id="injected-session-account" data-testid="injected-session-account">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Session Chain</dt>
+            <dd id="injected-session-chain" data-testid="injected-session-chain">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Connection Source</dt>
+            <dd id="injected-connection-source" data-testid="injected-connection-source">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Reset Retained</dt>
+            <dd id="injected-reset-retained" data-testid="injected-reset-retained">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Selection Cleared</dt>
+            <dd id="injected-selection-cleared" data-testid="injected-selection-cleared">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Signature Status</dt>
+            <dd id="injected-signature-status" data-testid="injected-signature-status">idle</dd>
+          </div>
+          <div class="state-card">
+            <dt>Quote Status</dt>
+            <dd id="injected-quote-status" data-testid="injected-quote-status">idle</dd>
+          </div>
+          <div class="state-card">
+            <dt>Quote Id</dt>
+            <dd id="injected-quote-id" data-testid="injected-quote-id">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Order Uid</dt>
+            <dd id="injected-order-uid" data-testid="injected-order-uid">none</dd>
+          </div>
+          <div class="state-card">
+            <dt>Cancel Status</dt>
+            <dd id="injected-cancel-status" data-testid="injected-cancel-status">idle</dd>
+          </div>
+        </dl>
+        <pre class="contract-state" id="injected-contract-state" data-testid="injected-contract-state" aria-live="polite"></pre>
         <pre class="output" id="injected-output" aria-live="polite" data-state="loading">Loading...</pre>
       </div>
     </section>
@@ -399,6 +533,31 @@
     const orderInput = document.getElementById("order-json");
     const approvalInput = document.getElementById("approval-json");
     const orderUidInput = document.getElementById("order-uid");
+    const injectedContractFields = {
+      lastAction: document.getElementById("injected-last-action"),
+      lastStatus: document.getElementById("injected-last-status"),
+      errorText: document.getElementById("injected-error-text"),
+      walletCount: document.getElementById("injected-wallet-count"),
+      walletLabels: document.getElementById("injected-wallet-labels"),
+      requiresSelection: document.getElementById("injected-requires-selection"),
+      confirmedWallet: document.getElementById("injected-confirmed-wallet"),
+      confirmedIndex: document.getElementById("injected-confirmed-index"),
+      selectedWallet: document.getElementById("injected-selected-wallet"),
+      selectedIndex: document.getElementById("injected-selected-index"),
+      sessionConnected: document.getElementById("injected-session-connected"),
+      sessionAccount: document.getElementById("injected-session-account"),
+      sessionChain: document.getElementById("injected-session-chain"),
+      connectionSource: document.getElementById("injected-connection-source"),
+      resetRetained: document.getElementById("injected-reset-retained"),
+      selectionCleared: document.getElementById("injected-selection-cleared"),
+      signatureStatus: document.getElementById("injected-signature-status"),
+      quoteStatus: document.getElementById("injected-quote-status"),
+      quoteId: document.getElementById("injected-quote-id"),
+      orderUid: document.getElementById("injected-order-uid"),
+      cancelStatus: document.getElementById("injected-cancel-status"),
+      contractState: document.getElementById("injected-contract-state"),
+    };
+    let injectedContractState = defaultInjectedContractState();
 
     if (window.location.protocol === "file:") {
       warningEl.style.display = "block";
@@ -407,6 +566,7 @@
       injectedOutput.dataset.state = "error";
       mockOutput.textContent = "HTTP transport required.";
       injectedOutput.textContent = "HTTP transport required.";
+      applyInjectedContractError("bootstrap", "HTTP transport required.");
       throw new Error("HTTP transport required");
     }
 
@@ -421,6 +581,7 @@
       injectedOutput.dataset.state = "error";
       mockOutput.textContent = String(error);
       injectedOutput.textContent = String(error);
+      applyInjectedContractError("bootstrap", String(error));
       throw error;
     }
 
@@ -430,6 +591,212 @@
     const env = () => envInput.value;
     const appCode = () => appCodeInput.value.trim();
     const message = () => messageInput.value;
+
+    function defaultInjectedContractState() {
+      return {
+        lastAction: "bootstrap",
+        lastStatus: "idle",
+        errorText: "none",
+        walletCount: 0,
+        walletLabels: [],
+        requiresSelection: false,
+        confirmedWallet: null,
+        confirmedIndex: null,
+        selectedWallet: null,
+        selectedIndex: null,
+        sessionConnected: false,
+        sessionAccount: null,
+        sessionChain: null,
+        connectionSource: null,
+        resetRetained: null,
+        selectionCleared: null,
+        signatureStatus: "idle",
+        quoteStatus: "idle",
+        quoteId: null,
+        orderUid: null,
+        cancelStatus: "idle",
+      };
+    }
+
+    function renderInjectedContractState() {
+      injectedContractFields.lastAction.textContent = injectedContractState.lastAction;
+      injectedContractFields.lastStatus.textContent = injectedContractState.lastStatus;
+      injectedContractFields.errorText.textContent = displayValue(injectedContractState.errorText);
+      injectedContractFields.walletCount.textContent = String(injectedContractState.walletCount);
+      injectedContractFields.walletLabels.textContent = arrayValue(injectedContractState.walletLabels);
+      injectedContractFields.requiresSelection.textContent = String(injectedContractState.requiresSelection);
+      injectedContractFields.confirmedWallet.textContent = displayValue(injectedContractState.confirmedWallet);
+      injectedContractFields.confirmedIndex.textContent = displayValue(injectedContractState.confirmedIndex);
+      injectedContractFields.selectedWallet.textContent = displayValue(injectedContractState.selectedWallet);
+      injectedContractFields.selectedIndex.textContent = displayValue(injectedContractState.selectedIndex);
+      injectedContractFields.sessionConnected.textContent = String(injectedContractState.sessionConnected);
+      injectedContractFields.sessionAccount.textContent = displayValue(injectedContractState.sessionAccount);
+      injectedContractFields.sessionChain.textContent = displayValue(injectedContractState.sessionChain);
+      injectedContractFields.connectionSource.textContent = displayValue(injectedContractState.connectionSource);
+      injectedContractFields.resetRetained.textContent = displayValue(injectedContractState.resetRetained);
+      injectedContractFields.selectionCleared.textContent = displayValue(injectedContractState.selectionCleared);
+      injectedContractFields.signatureStatus.textContent = injectedContractState.signatureStatus;
+      injectedContractFields.quoteStatus.textContent = injectedContractState.quoteStatus;
+      injectedContractFields.quoteId.textContent = displayValue(injectedContractState.quoteId);
+      injectedContractFields.orderUid.textContent = displayValue(injectedContractState.orderUid);
+      injectedContractFields.cancelStatus.textContent = injectedContractState.cancelStatus;
+      injectedContractFields.contractState.textContent = JSON.stringify(injectedContractState, null, 2);
+    }
+
+    function displayValue(value) {
+      if (value === null || value === undefined || value === "") {
+        return "none";
+      }
+      if (typeof value === "boolean") {
+        return String(value);
+      }
+      return String(value);
+    }
+
+    function arrayValue(values) {
+      return Array.isArray(values) && values.length > 0 ? values.join(", ") : "none";
+    }
+
+    function readWalletLabel(payload, index, fallback) {
+      if (payload?.walletInfo?.providerLabel) {
+        return payload.walletInfo.providerLabel;
+      }
+      if (Array.isArray(payload?.wallets) && Number.isInteger(index)) {
+        return payload.wallets[index]?.providerLabel ?? fallback ?? null;
+      }
+      return fallback ?? null;
+    }
+
+    function applySession(payload) {
+      if (!payload?.session) {
+        return;
+      }
+      injectedContractState.sessionConnected = Boolean(payload.session.connected);
+      injectedContractState.sessionAccount = payload.session.selectedAccount ?? null;
+      injectedContractState.sessionChain = payload.session.chainId ?? null;
+    }
+
+    function applySelection(payload) {
+      if (payload?.confirmedSelectionPresent === true || payload?.confirmedSelectionIndex !== undefined) {
+        injectedContractState.confirmedIndex = payload.confirmedSelectionIndex ?? null;
+        injectedContractState.confirmedWallet =
+          payload.confirmedWalletInfo?.providerLabel ??
+          readWalletLabel(payload, payload.confirmedSelectionIndex, injectedContractState.confirmedWallet);
+      } else if (payload?.confirmedSelectionPresent === false) {
+        injectedContractState.confirmedIndex = null;
+        injectedContractState.confirmedWallet = null;
+      }
+
+      if (payload?.selectedWalletPresent === true || payload?.selectionIndex !== undefined) {
+        injectedContractState.selectedIndex = payload.selectionIndex ?? payload.selectedIndex ?? null;
+        injectedContractState.selectedWallet = readWalletLabel(
+          payload,
+          injectedContractState.selectedIndex,
+          injectedContractState.selectedWallet
+        );
+      } else if (payload?.selectedWalletPresent === false) {
+        injectedContractState.selectedIndex = null;
+        injectedContractState.selectedWallet = null;
+      }
+    }
+
+    function applyDetection(payload) {
+      if (payload?.walletCount !== undefined) {
+        injectedContractState.walletCount = Number(payload.walletCount) || 0;
+      }
+      if (Array.isArray(payload?.wallets)) {
+        injectedContractState.walletLabels = payload.wallets
+          .map((wallet) => wallet?.providerLabel)
+          .filter((label) => typeof label === "string" && label.length > 0);
+      }
+      if (payload?.requiresExplicitSelection !== undefined) {
+        injectedContractState.requiresSelection = Boolean(payload.requiresExplicitSelection);
+      }
+      applySelection(payload);
+    }
+
+    function applyInjectedContractResult(actionName, resultText) {
+      let payload;
+      try {
+        payload = JSON.parse(resultText);
+      } catch (error) {
+        applyInjectedContractError(
+          actionName,
+          `console result was not valid JSON: ${String(error)}`
+        );
+        return;
+      }
+
+      injectedContractState.lastAction = actionName;
+      injectedContractState.lastStatus = "success";
+      injectedContractState.errorText = "none";
+      injectedContractState.resetRetained = null;
+      injectedContractState.selectionCleared = null;
+
+      applyDetection(payload);
+      applySelection(payload);
+      applySession(payload);
+
+      if (payload?.walletInfo?.providerLabel) {
+        injectedContractState.selectedWallet = payload.walletInfo.providerLabel;
+      }
+      if (payload?.connectionSource) {
+        injectedContractState.connectionSource = payload.connectionSource;
+      }
+      if (payload?.walletSelectionRetained !== undefined) {
+        injectedContractState.resetRetained = Boolean(payload.walletSelectionRetained);
+      }
+      if (payload?.walletSelectionCleared !== undefined) {
+        injectedContractState.selectionCleared = Boolean(payload.walletSelectionCleared);
+        if (payload.walletSelectionCleared) {
+          injectedContractState.confirmedWallet = null;
+          injectedContractState.confirmedIndex = null;
+          injectedContractState.selectedWallet = null;
+          injectedContractState.selectedIndex = null;
+          injectedContractState.sessionConnected = false;
+          injectedContractState.sessionAccount = null;
+          injectedContractState.sessionChain = null;
+          injectedContractState.connectionSource = null;
+          injectedContractState.orderUid = null;
+          injectedContractState.quoteId = null;
+          injectedContractState.quoteStatus = "idle";
+          injectedContractState.cancelStatus = "idle";
+        }
+      }
+
+      if (payload?.signature || payload?.signing) {
+        injectedContractState.signatureStatus = "present";
+      }
+      if (payload?.quote?.quoteResponse) {
+        injectedContractState.quoteStatus = payload.quote.quoteResponse.verified ? "verified" : "unverified";
+        injectedContractState.quoteId = payload.quote.quoteResponse.id ?? null;
+      }
+      if (payload?.posting?.orderId) {
+        injectedContractState.orderUid = payload.posting.orderId;
+      }
+      if (payload?.cancelled !== undefined) {
+        injectedContractState.cancelStatus = payload.cancelled ? "accepted" : "rejected";
+      }
+
+      renderInjectedContractState();
+    }
+
+    function applyInjectedContractError(actionName, error) {
+      injectedContractState.lastAction = actionName;
+      injectedContractState.lastStatus = "error";
+      injectedContractState.errorText = String(error ?? "unknown error");
+      if (actionName === "sign-order" || actionName === "sign-message") {
+        injectedContractState.signatureStatus = "error";
+      }
+      if (actionName === "live-quote") {
+        injectedContractState.quoteStatus = "error";
+        injectedContractState.quoteId = null;
+      }
+      if (actionName === "cancel-order") {
+        injectedContractState.cancelStatus = "error";
+      }
+      renderInjectedContractState();
+    }
     const walletSelectionIndex = () => {
       const raw = walletSelectionInput.value.trim();
       if (!raw) {
@@ -448,7 +815,7 @@
       approvalInput.value = consoleState.sample_approval_json(chainId());
     }
 
-    async function run(target, button, action) {
+    async function run(target, button, actionName, action) {
       button.disabled = true;
       target.dataset.state = "running";
       target.textContent = "Running...";
@@ -458,9 +825,15 @@
         target.textContent = result;
         const liveUid = consoleState.last_live_order_uid();
         orderUidInput.value = liveUid ?? "";
+        if (target === injectedOutput) {
+          applyInjectedContractResult(actionName, result);
+        }
       } catch (error) {
         target.dataset.state = "error";
         target.textContent = String(error);
+        if (target === injectedOutput) {
+          applyInjectedContractError(actionName, String(error));
+        }
       } finally {
         button.disabled = false;
       }
@@ -473,110 +846,110 @@
 
     document.getElementById("mock-status").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(mockOutput, button, () => consoleState.mock_status_json());
+      run(mockOutput, button, "mock-status", () => consoleState.mock_status_json());
     });
 
     document.getElementById("mock-connect").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(mockOutput, button, () => consoleState.mock_connect_json());
+      run(mockOutput, button, "mock-connect", () => consoleState.mock_connect_json());
     });
 
     document.getElementById("mock-sign-message").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(mockOutput, button, () => consoleState.mock_sign_message_json(message()));
+      run(mockOutput, button, "mock-sign-message", () => consoleState.mock_sign_message_json(message()));
     });
 
     document.getElementById("mock-approval").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(mockOutput, button, () =>
+      run(mockOutput, button, "mock-approval", () =>
         consoleState.mock_approval_flow_json(chainId(), env(), approvalInput.value)
       );
     });
 
     document.getElementById("mock-trading").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(mockOutput, button, () =>
+      run(mockOutput, button, "mock-trading", () =>
         consoleState.mock_trading_flow_json(chainId(), env(), appCode(), tradeInput.value)
       );
     });
 
     document.getElementById("detect-wallet").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () => consoleState.injected_detection_json());
+      run(injectedOutput, button, "detect-wallet", () => consoleState.injected_detection_json());
     });
 
     document.getElementById("rescan-wallet").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () => consoleState.injected_rescan_json());
+      run(injectedOutput, button, "rescan-wallet", () => consoleState.injected_rescan_json());
     });
 
     document.getElementById("confirm-wallet").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () =>
+      run(injectedOutput, button, "confirm-wallet", () =>
         consoleState.injected_confirm_selection_json(walletSelectionIndex())
       );
     });
 
     document.getElementById("connect-wallet").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () => consoleState.injected_connect_json());
+      run(injectedOutput, button, "connect-wallet", () => consoleState.injected_connect_json());
     });
 
     document.getElementById("wallet-status").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () => consoleState.injected_status_json());
+      run(injectedOutput, button, "wallet-status", () => consoleState.injected_status_json());
     });
 
     document.getElementById("reset-wallet").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () => consoleState.injected_reset_session_json());
+      run(injectedOutput, button, "reset-wallet", () => consoleState.injected_reset_session_json());
     });
 
     document.getElementById("forget-wallet").addEventListener("click", (event) => {
       const button = event.currentTarget;
       walletSelectionInput.value = "";
-      run(injectedOutput, button, () => consoleState.injected_forget_wallet_json());
+      run(injectedOutput, button, "forget-wallet", () => consoleState.injected_forget_wallet_json());
     });
 
     document.getElementById("refresh-wallet").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () => consoleState.injected_refresh_json());
+      run(injectedOutput, button, "refresh-wallet", () => consoleState.injected_refresh_json());
     });
 
     document.getElementById("switch-wallet").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () => consoleState.injected_switch_chain_json(chainId()));
+      run(injectedOutput, button, "switch-wallet", () => consoleState.injected_switch_chain_json(chainId()));
     });
 
     document.getElementById("sign-message").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () => consoleState.injected_sign_message_json(message()));
+      run(injectedOutput, button, "sign-message", () => consoleState.injected_sign_message_json(message()));
     });
 
     document.getElementById("sign-order").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () =>
+      run(injectedOutput, button, "sign-order", () =>
         consoleState.injected_sign_order_json(chainId(), orderInput.value)
       );
     });
 
     document.getElementById("live-quote").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () =>
+      run(injectedOutput, button, "live-quote", () =>
         consoleState.injected_quote_json(chainId(), env(), appCode(), tradeInput.value)
       );
     });
 
     document.getElementById("submit-order").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () =>
+      run(injectedOutput, button, "submit-order", () =>
         consoleState.injected_submit_order_json(chainId(), env(), appCode(), tradeInput.value)
       );
     });
 
     document.getElementById("cancel-order").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      run(injectedOutput, button, () =>
+      run(injectedOutput, button, "cancel-order", () =>
         consoleState.injected_cancel_order_json(
           chainId(),
           env(),
@@ -587,10 +960,13 @@
     });
 
     await refreshSamples();
+    renderInjectedContractState();
     mockOutput.dataset.state = "success";
     mockOutput.textContent = consoleState.mock_status_json();
     injectedOutput.dataset.state = "success";
-    injectedOutput.textContent = await consoleState.injected_detection_json();
+    const detection = await consoleState.injected_detection_json();
+    injectedOutput.textContent = detection;
+    applyInjectedContractResult("bootstrap", detection);
   </script>
 </body>
 </html>
