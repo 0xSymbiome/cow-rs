@@ -23,7 +23,7 @@ use crate::{
 
 const API_KEY_HEADER: &str = "X-API-Key";
 
-/// Typed CoW Protocol orderbook client.
+/// Typed `CoW` Protocol orderbook client.
 ///
 /// The client keeps transport policy, rate-limiter state, and endpoint
 /// resolution instance-scoped. Clones of the same client share one limiter.
@@ -100,8 +100,9 @@ impl OrderBookApi {
     /// [`ApiContext::resolved_base_url`].
     #[must_use]
     pub fn with_env_base_url(mut self, env: CowEnv, base_url: impl Into<String>) -> Self {
+        let base_url = base_url.into();
         self.env_base_url_overrides
-            .set(env, normalize_base_url(base_url.into()));
+            .set(env, normalize_base_url(&base_url));
         self
     }
 
@@ -533,7 +534,8 @@ impl OrderBookApi {
             return Ok(override_url.to_owned());
         }
 
-        Ok(normalize_base_url(context.resolved_base_url()?))
+        let resolved = context.resolved_base_url()?;
+        Ok(normalize_base_url(&resolved))
     }
 
     fn additional_headers(&self) -> Option<HeaderMap> {
@@ -546,7 +548,7 @@ impl OrderBookApi {
     }
 }
 
-fn normalize_base_url(base_url: String) -> String {
+fn normalize_base_url(base_url: &str) -> String {
     base_url.trim_end_matches('/').to_owned()
 }
 

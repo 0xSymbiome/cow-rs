@@ -109,6 +109,11 @@ pub fn swap_params_to_limit_order_params(
 ///
 /// Returns [`TradingError`] when amount calculation, local time resolution, or typed value
 /// conversion fails.
+///
+/// # Panics
+///
+/// Panics only if the internally clamped validity timestamp no longer fits into `u32`.
+/// The implementation clamps it to the supported `u32` range before conversion.
 pub fn get_order_to_sign(
     params: OrderToSignParams,
     limit_parameters: &LimitTradeParameters,
@@ -119,21 +124,23 @@ pub fn get_order_to_sign(
         .receiver
         .clone()
         .unwrap_or_else(|| params.from.clone());
-    let valid_to = match limit_parameters.valid_to {
-        Some(valid_to) => valid_to,
-        None => {
-            let valid_for = limit_parameters.valid_for.unwrap_or(DEFAULT_QUOTE_VALIDITY);
-            let now = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map_err(|error| {
-                    TradingError::InvalidInput(format!(
-                        "system time must not be earlier than the unix epoch: {error}"
-                    ))
-                })?
-                .as_secs();
-            now.saturating_add(u64::from(valid_for))
-                .min(u64::from(MAX_VALID_TO_EPOCH)) as u32
-        }
+    let valid_to = if let Some(valid_to) = limit_parameters.valid_to {
+        valid_to
+    } else {
+        let valid_for = limit_parameters.valid_for.unwrap_or(DEFAULT_QUOTE_VALIDITY);
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|error| {
+                TradingError::InvalidInput(format!(
+                    "system time must not be earlier than the unix epoch: {error}"
+                ))
+            })?
+            .as_secs();
+        let clamped_valid_to = now
+            .saturating_add(u64::from(valid_for))
+            .min(u64::from(MAX_VALID_TO_EPOCH));
+        u32::try_from(clamped_valid_to)
+            .expect("validity timestamp is clamped to the supported `u32` range")
     };
 
     let slippage_bps = limit_parameters

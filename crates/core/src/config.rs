@@ -373,7 +373,7 @@ pub fn wrapped_native_token(chain_id: SupportedChainId) -> TokenInfo {
             "Wrapped Ether",
             "WETH",
         ),
-        SupportedChainId::Base => (
+        SupportedChainId::Base | SupportedChainId::Ink => (
             "0x4200000000000000000000000000000000000006",
             18,
             "Wrapped Ether",
@@ -411,12 +411,6 @@ pub fn wrapped_native_token(chain_id: SupportedChainId) -> TokenInfo {
         ),
         SupportedChainId::Linea => (
             "0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f",
-            18,
-            "Wrapped Ether",
-            "WETH",
-        ),
-        SupportedChainId::Ink => (
-            "0x4200000000000000000000000000000000000006",
             18,
             "Wrapped Ether",
             "WETH",

@@ -7,7 +7,7 @@ use crate::{
 
 /// Normalizes an orderbook order response into the crate's stable DTO contract.
 ///
-/// This updates EthFlow orders so the user-visible owner, validity, and native
+/// This updates `EthFlow` orders so the user-visible owner, validity, and native
 /// token address match the effective order semantics exposed by the orderbook.
 ///
 /// # Errors
@@ -75,8 +75,8 @@ fn add_decimal_strings(left: &str, right: &str) -> Result<String, OrderbookError
     let mut right_iter = right.as_bytes().iter().rev();
 
     loop {
-        let left_digit = left_iter.next().map(|byte| (byte - b'0') as u32);
-        let right_digit = right_iter.next().map(|byte| (byte - b'0') as u32);
+        let left_digit = left_iter.next().map(|byte| u32::from(byte - b'0'));
+        let right_digit = right_iter.next().map(|byte| u32::from(byte - b'0'));
 
         if left_digit.is_none() && right_digit.is_none() && carry == 0 {
             break;

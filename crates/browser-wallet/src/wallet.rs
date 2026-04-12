@@ -76,7 +76,7 @@ pub struct InjectedWalletInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Provider icon URL or data URI, when present.
     pub provider_icon: Option<String>,
-    /// Whether the provider advertises MetaMask compatibility flags.
+    /// Whether the provider advertises `MetaMask` compatibility flags.
     pub is_meta_mask: bool,
     /// Whether the provider advertises Coinbase Wallet compatibility flags.
     pub is_coinbase_wallet: bool,
@@ -107,9 +107,11 @@ impl WalletNativeCurrency {
         symbol: impl Into<String>,
         decimals: u8,
     ) -> Result<Self, BrowserWalletError> {
+        let name = name.into();
+        let symbol = symbol.into();
         Ok(Self {
-            name: validate_wallet_text(name.into(), "native currency name", None)?,
-            symbol: validate_wallet_text(symbol.into(), "native currency symbol", None)?,
+            name: validate_wallet_text(&name, "native currency name", None)?,
+            symbol: validate_wallet_text(&symbol, "native currency symbol", None)?,
             decimals,
         })
     }
@@ -147,13 +149,10 @@ impl WalletChainParameters {
         chain_name: impl Into<String>,
         native_currency: WalletNativeCurrency,
     ) -> Result<Self, BrowserWalletError> {
+        let chain_name = chain_name.into();
         Ok(Self {
             chain_id,
-            chain_name: validate_wallet_text(
-                chain_name.into(),
-                "chain name",
-                Some(u64::from(chain_id)),
-            )?,
+            chain_name: validate_wallet_text(&chain_name, "chain name", Some(u64::from(chain_id)))?,
             native_currency,
             rpc_urls: Vec::new(),
             block_explorer_urls: Vec::new(),
@@ -184,8 +183,9 @@ impl WalletChainParameters {
         mut self,
         rpc_url: impl Into<String>,
     ) -> Result<Self, BrowserWalletError> {
+        let rpc_url = rpc_url.into();
         self.rpc_urls.push(validate_wallet_url(
-            rpc_url.into(),
+            &rpc_url,
             "RPC URL",
             u64::from(self.chain_id),
         )?);
@@ -201,8 +201,9 @@ impl WalletChainParameters {
         mut self,
         block_explorer_url: impl Into<String>,
     ) -> Result<Self, BrowserWalletError> {
+        let block_explorer_url = block_explorer_url.into();
         self.block_explorer_urls.push(validate_wallet_url(
-            block_explorer_url.into(),
+            &block_explorer_url,
             "block explorer URL",
             u64::from(self.chain_id),
         )?);
@@ -218,8 +219,9 @@ impl WalletChainParameters {
         mut self,
         icon_url: impl Into<String>,
     ) -> Result<Self, BrowserWalletError> {
+        let icon_url = icon_url.into();
         self.icon_urls.push(validate_wallet_url(
-            icon_url.into(),
+            &icon_url,
             "icon URL",
             u64::from(self.chain_id),
         )?);
@@ -233,14 +235,14 @@ impl WalletChainParameters {
     /// Returns an error when required fields are empty or when no RPC URL is configured.
     pub fn validate(&self) -> Result<(), BrowserWalletError> {
         let chain_id = u64::from(self.chain_id);
-        let _ = validate_wallet_text(self.chain_name.clone(), "chain name", Some(chain_id))?;
+        let _ = validate_wallet_text(&self.chain_name, "chain name", Some(chain_id))?;
         let _ = validate_wallet_text(
-            self.native_currency.name.clone(),
+            &self.native_currency.name,
             "native currency name",
             Some(chain_id),
         )?;
         let _ = validate_wallet_text(
-            self.native_currency.symbol.clone(),
+            &self.native_currency.symbol,
             "native currency symbol",
             Some(chain_id),
         )?;
@@ -251,13 +253,13 @@ impl WalletChainParameters {
             ));
         }
         for url in &self.rpc_urls {
-            let _ = validate_wallet_url(url.clone(), "RPC URL", chain_id)?;
+            let _ = validate_wallet_url(url, "RPC URL", chain_id)?;
         }
         for url in &self.block_explorer_urls {
-            let _ = validate_wallet_url(url.clone(), "block explorer URL", chain_id)?;
+            let _ = validate_wallet_url(url, "block explorer URL", chain_id)?;
         }
         for url in &self.icon_urls {
-            let _ = validate_wallet_url(url.clone(), "icon URL", chain_id)?;
+            let _ = validate_wallet_url(url, "icon URL", chain_id)?;
         }
         Ok(())
     }
@@ -691,6 +693,7 @@ impl BrowserWallet {
     pub async fn discover_with(
         options: InjectedWalletDetectionOptions,
     ) -> Result<InjectedWalletDiscovery, BrowserWalletError> {
+        std::future::ready(()).await;
         Ok(InjectedWalletDiscovery::from_detected_wallets(
             options,
             false,
@@ -723,7 +726,7 @@ impl BrowserWallet {
     ///
     /// Returns an error when the runtime transport probe fails unexpectedly.
     pub fn detect() -> Result<Option<Self>, BrowserWalletError> {
-        let _ = crate::js::InjectedProviderTransport::detect_legacy()?;
+        let _ = crate::js::InjectedProviderTransport::detect_legacy();
         Ok(None)
     }
 
@@ -745,7 +748,7 @@ impl BrowserWallet {
 }
 
 fn validate_wallet_text(
-    value: String,
+    value: &str,
     label: &str,
     chain_id: Option<ChainId>,
 ) -> Result<String, BrowserWalletError> {
@@ -760,7 +763,7 @@ fn validate_wallet_text(
 }
 
 fn validate_wallet_url(
-    value: String,
+    value: &str,
     label: &str,
     chain_id: ChainId,
 ) -> Result<String, BrowserWalletError> {

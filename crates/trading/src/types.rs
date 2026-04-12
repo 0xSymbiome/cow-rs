@@ -512,7 +512,7 @@ pub(crate) fn apply_app_data_parameter_overrides(
         .metadata
         .get("quote")
         .and_then(|quote| quote.get("slippageBips"))
-        .and_then(|value| value.as_u64())
+        .and_then(Value::as_u64)
         .and_then(|value| u32::try_from(value).ok())
     {
         *slippage_bps = Some(slippage);
@@ -534,7 +534,7 @@ pub(crate) struct QuoteRequestParameterTargets<'a> {
 }
 
 pub(crate) fn apply_quote_request_parameter_overrides(
-    targets: QuoteRequestParameterTargets<'_>,
+    targets: &mut QuoteRequestParameterTargets<'_>,
     request_override: Option<&QuoteRequestOverride>,
 ) {
     let Some(request_override) = request_override else {

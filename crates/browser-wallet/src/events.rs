@@ -155,7 +155,7 @@ pub(crate) fn apply_provider_event(
         WalletProviderEvent::AccountsChanged { accounts } => {
             update_wallet_session(session, events, None, |session| {
                 session.connected = !accounts.is_empty();
-                session.accounts = accounts.clone();
+                session.accounts.clone_from(&accounts);
                 session.selected_account = accounts.first().cloned();
             });
         }

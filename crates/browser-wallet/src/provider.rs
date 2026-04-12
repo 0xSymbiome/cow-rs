@@ -138,7 +138,7 @@ impl Eip1193Provider {
         let accounts = parse_address_array(&value, method)?;
         self.update_session(|session| {
             session.connected = !accounts.is_empty();
-            session.accounts = accounts.clone();
+            session.accounts.clone_from(&accounts);
             session.selected_account = accounts.first().cloned();
         });
         Ok(accounts)

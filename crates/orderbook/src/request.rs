@@ -113,8 +113,7 @@ impl OrderBookApiError {
                 .get("description")
                 .or_else(|| map.get("error"))
                 .and_then(Value::as_str)
-                .map(ToOwned::to_owned)
-                .unwrap_or_else(|| status_text.clone()),
+                .map_or_else(|| status_text.clone(), ToOwned::to_owned),
             ResponseBody::Json(Value::String(text)) => text.clone(),
             ResponseBody::Text(text) if !text.is_empty() => text.clone(),
             _ => status_text.clone(),
@@ -185,9 +184,15 @@ impl RequestPolicy {
     }
 
     /// Returns the exponential backoff delay for `attempt_index`.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the internally clamped retry exponent no longer fits into `u32`.
+    /// The implementation clamps it to a `u32`-safe range before conversion.
     #[must_use]
     pub fn backoff_delay(&self, attempt_index: usize) -> Duration {
-        let exponent = attempt_index.saturating_sub(1).min(6) as u32;
+        let exponent = u32::try_from(attempt_index.saturating_sub(1).min(6))
+            .expect("backoff exponent is clamped to a `u32`-safe range");
         Duration::from_millis(50 * (1u64 << exponent))
     }
 }
@@ -304,12 +309,12 @@ impl ResponseEnvelope {
     /// Panics only if serializing an in-memory [`Value`] into a `Vec<u8>`
     /// unexpectedly fails.
     #[must_use]
-    pub fn json(status: u16, value: Value) -> Self {
+    pub fn json(status: u16, value: &Value) -> Self {
         Self {
             status,
             status_text: canonical_status_text(status),
             content_type: Some("application/json".to_owned()),
-            body: serde_json::to_vec(&value).expect("test JSON serialization must succeed"),
+            body: serde_json::to_vec(value).expect("test JSON serialization must succeed"),
         }
     }
 
@@ -806,7 +811,6 @@ where
 
                 if attempt_index < policy.max_attempts {
                     delay_for(policy.backoff_delay(attempt_index)).await;
-                    continue;
                 }
             }
         }
@@ -825,7 +829,8 @@ async fn delay_for(duration: Duration) {
 
     #[cfg(target_arch = "wasm32")]
     {
-        let millis = duration.as_millis().min(u128::from(u32::MAX)) as u32;
+        let millis = u32::try_from(duration.as_millis().min(u128::from(u32::MAX)))
+            .expect("millisecond delay is clamped to `u32::MAX`");
         if millis > 0 {
             TimeoutFuture::new(millis).await;
         }

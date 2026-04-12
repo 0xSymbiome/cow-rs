@@ -36,8 +36,9 @@ impl IpfsFetchPolicy {
     ///
     /// Returns [`AppDataError::Transport`] if the URI is empty after trimming.
     pub fn new(read_base_uri: impl Into<String>) -> Result<Self, AppDataError> {
+        let read_base_uri = read_base_uri.into();
         Ok(Self {
-            read_base_uri: normalize_read_base_uri(read_base_uri.into())?,
+            read_base_uri: normalize_read_base_uri(&read_base_uri)?,
         })
     }
 
@@ -73,7 +74,8 @@ impl IpfsFetchPolicy {
         mut self,
         read_base_uri: impl Into<String>,
     ) -> Result<Self, AppDataError> {
-        self.read_base_uri = normalize_read_base_uri(read_base_uri.into())?;
+        let read_base_uri = read_base_uri.into();
+        self.read_base_uri = normalize_read_base_uri(&read_base_uri)?;
         Ok(self)
     }
 }
@@ -189,7 +191,7 @@ fn policy_from_optional_uri(ipfs_uri: Option<&str>) -> Result<IpfsFetchPolicy, A
     }
 }
 
-fn normalize_read_base_uri(read_base_uri: String) -> Result<String, AppDataError> {
+fn normalize_read_base_uri(read_base_uri: &str) -> Result<String, AppDataError> {
     let normalized = read_base_uri.trim().trim_end_matches('/').to_owned();
 
     if normalized.is_empty() {

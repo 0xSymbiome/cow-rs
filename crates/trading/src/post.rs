@@ -246,7 +246,7 @@ where
     .await
 }
 
-/// Submits an EthFlow-style native-currency sell order using a synchronous signer.
+/// Submits an `EthFlow`-style native-currency sell order using a synchronous signer.
 ///
 /// This path uploads the supplied app-data, sends the prepared transaction through the signer, and
 /// returns the resulting transaction hash.
@@ -279,7 +279,7 @@ where
     .await
 }
 
-/// Submits an EthFlow-style native-currency sell order using an asynchronous signer.
+/// Submits an `EthFlow`-style native-currency sell order using an asynchronous signer.
 ///
 /// This path uploads the supplied app-data, sends the prepared transaction through the signer, and
 /// returns the resulting transaction hash.
@@ -333,14 +333,14 @@ where
     })
 }
 
-/// Signs and submits a CoW Protocol order using a synchronous signer.
+/// Signs and submits a `CoW` Protocol order using a synchronous signer.
 ///
-/// EthFlow sell orders are routed to the native-currency transaction path. Other orders are signed
+/// `EthFlow` sell orders are routed to the native-currency transaction path. Other orders are signed
 /// and submitted through the orderbook.
 ///
 /// # Errors
 ///
-/// Returns an error when EthFlow routing prerequisites are missing, when signing fails, when
+/// Returns an error when `EthFlow` routing prerequisites are missing, when signing fails, when
 /// app-data upload fails, or when the orderbook rejects the order submission.
 pub async fn post_cow_protocol_trade<O, S>(
     orderbook: &O,
@@ -366,16 +366,16 @@ where
     .await
 }
 
-/// Signs and submits a CoW Protocol order using an asynchronous signer.
+/// Signs and submits a `CoW` Protocol order using an asynchronous signer.
 ///
 /// Environment and protocol-address overrides resolve in this order: call-level parameters, trader
-/// defaults, then the injected orderbook context for `env`. EthFlow sell orders require a quote
+/// defaults, then the injected orderbook context for `env`. `EthFlow` sell orders require a quote
 /// identifier and are routed to the native-currency transaction path. Other orders are uploaded to
 /// the orderbook after signing with the requested or default signing scheme.
 ///
 /// # Errors
 ///
-/// Returns an error when owner resolution fails, when EthFlow routing prerequisites are missing,
+/// Returns an error when owner resolution fails, when `EthFlow` routing prerequisites are missing,
 /// when order construction or signing fails, when app-data upload fails, or when the orderbook
 /// rejects the order submission.
 pub async fn post_cow_protocol_trade_async<O, S>(
@@ -508,7 +508,7 @@ fn apply_settings_to_limit_trade_parameters(
         app_data_override,
     );
     apply_quote_request_parameter_overrides(
-        QuoteRequestParameterTargets {
+        &mut QuoteRequestParameterTargets {
             owner: &mut params.owner,
             sell_token: &mut params.sell_token,
             buy_token: &mut params.buy_token,
@@ -587,7 +587,7 @@ where
     }
 }
 
-/// Builds an EIP-1271 verification request for a CoW order digest.
+/// Builds an EIP-1271 verification request for a `CoW` order digest.
 ///
 /// # Errors
 ///

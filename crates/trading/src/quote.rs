@@ -307,38 +307,72 @@ where
         partner_fee_bps(trade_parameters.partner_fee.as_ref()),
         sanitize_protocol_fee_bps(quote_response.protocol_fee_bps.as_deref()),
     )?;
+    build_quote_results(QuoteResultInputs {
+        trader,
+        trade_parameters,
+        quote_response,
+        app_data_info,
+        suggested_slippage,
+        amounts_and_costs,
+        is_ethflow,
+        resolved_env,
+    })
+}
+
+struct QuoteResultInputs<'a> {
+    trader: &'a QuoterParameters,
+    trade_parameters: TradeParameters,
+    quote_response: cow_sdk_orderbook::OrderQuoteResponse,
+    app_data_info: TradingAppDataInfo,
+    suggested_slippage: u32,
+    amounts_and_costs: cow_sdk_core::QuoteAmountsAndCosts,
+    is_ethflow: bool,
+    resolved_env: cow_sdk_orderbook::CowEnv,
+}
+
+fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, TradingError> {
     let options = ProtocolOptions {
-        env: Some(resolved_env),
-        settlement_contract_override: trade_parameters
+        env: Some(inputs.resolved_env),
+        settlement_contract_override: inputs
+            .trade_parameters
             .settlement_contract_override
             .clone()
-            .or_else(|| trader.settlement_contract_override.clone()),
-        eth_flow_contract_override: trade_parameters
+            .or_else(|| inputs.trader.settlement_contract_override.clone()),
+        eth_flow_contract_override: inputs
+            .trade_parameters
             .eth_flow_contract_override
             .clone()
-            .or_else(|| trader.eth_flow_contract_override.clone()),
+            .or_else(|| inputs.trader.eth_flow_contract_override.clone()),
     };
     let order_to_sign = get_order_to_sign(
         crate::order::OrderToSignParams {
-            chain_id: trader.chain_id,
-            from: trader.account.clone(),
-            is_ethflow,
-            network_costs_amount: Some(Amount::new(quote_response.quote.fee_amount.clone())?),
+            chain_id: inputs.trader.chain_id,
+            from: inputs.trader.account.clone(),
+            is_ethflow: inputs.is_ethflow,
+            network_costs_amount: Some(Amount::new(
+                inputs.quote_response.quote.fee_amount.clone(),
+            )?),
             apply_costs_slippage_and_fees: true,
-            protocol_fee_bps: sanitize_protocol_fee_bps(quote_response.protocol_fee_bps.as_deref()),
+            protocol_fee_bps: sanitize_protocol_fee_bps(
+                inputs.quote_response.protocol_fee_bps.as_deref(),
+            ),
         },
-        &crate::swap_params_to_limit_order_params(&trade_parameters, &quote_response)?,
-        &app_data_info.app_data_keccak256,
+        &crate::swap_params_to_limit_order_params(
+            &inputs.trade_parameters,
+            &inputs.quote_response,
+        )?,
+        &inputs.app_data_info.app_data_keccak256,
     )?;
-    let order_typed_data = order_typed_data(trader.chain_id, &order_to_sign, Some(&options))?;
+    let order_typed_data =
+        order_typed_data(inputs.trader.chain_id, &order_to_sign, Some(&options))?;
 
     Ok(QuoteResults {
-        trade_parameters,
-        suggested_slippage_bps: suggested_slippage,
-        amounts_and_costs,
+        trade_parameters: inputs.trade_parameters,
+        suggested_slippage_bps: inputs.suggested_slippage,
+        amounts_and_costs: inputs.amounts_and_costs,
         order_to_sign,
-        quote_response,
-        app_data_info,
+        quote_response: inputs.quote_response,
+        app_data_info: inputs.app_data_info,
         order_typed_data,
     })
 }
@@ -355,7 +389,7 @@ pub(crate) fn apply_advanced_settings_to_trade_parameters(
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     );
     apply_quote_request_parameter_overrides(
-        QuoteRequestParameterTargets {
+        &mut QuoteRequestParameterTargets {
             owner: &mut trade_parameters.owner,
             sell_token: &mut trade_parameters.sell_token,
             buy_token: &mut trade_parameters.buy_token,

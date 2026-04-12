@@ -85,6 +85,134 @@ impl Default for MockState {
     }
 }
 
+impl MockState {
+    fn accounts_response(&self) -> Value {
+        if self.connected {
+            json!(
+                self.accounts
+                    .iter()
+                    .map(Address::as_str)
+                    .collect::<Vec<_>>()
+            )
+        } else {
+            json!([])
+        }
+    }
+
+    fn request_accounts(&mut self) -> Value {
+        self.connected = true;
+        self.accounts_response()
+    }
+
+    fn chain_id_response(&self) -> Result<Value, BrowserWalletError> {
+        Ok(Value::String(hex_quantity(&self.chain_id.to_string())?))
+    }
+
+    fn switch_chain(
+        &mut self,
+        method: &str,
+        params: Option<&Value>,
+    ) -> Result<Value, BrowserWalletError> {
+        let requested_chain = requested_chain_id(
+            method,
+            params,
+            "mock switch request must include a `chainId` field",
+        )?;
+        if !self.added_chains.contains(&requested_chain) {
+            return Err(BrowserWalletError::ChainNotAdded {
+                chain_id: requested_chain,
+                method: method.to_owned(),
+                code: 4902,
+                message: format!("mock wallet does not know chain {requested_chain}"),
+            });
+        }
+        self.chain_id = requested_chain;
+        Ok(Value::Null)
+    }
+
+    fn add_chain(
+        &mut self,
+        method: &str,
+        params: Option<&Value>,
+    ) -> Result<Value, BrowserWalletError> {
+        self.added_chains.insert(requested_chain_id(
+            method,
+            params,
+            "mock add-chain request must include a `chainId` field",
+        )?);
+        Ok(Value::Null)
+    }
+
+    fn code_response(
+        &self,
+        method: &str,
+        params: Option<&Value>,
+    ) -> Result<Value, BrowserWalletError> {
+        let address = first_param_str(method, params, "mock code request must include an address")?;
+        Ok(Value::String(
+            self.code_by_address
+                .get(&address.to_ascii_lowercase())
+                .cloned()
+                .unwrap_or_else(|| "0x".to_owned()),
+        ))
+    }
+
+    fn storage_response(
+        &self,
+        method: &str,
+        params: Option<&Value>,
+    ) -> Result<Value, BrowserWalletError> {
+        let values = params.and_then(Value::as_array).ok_or_else(|| {
+            BrowserWalletError::malformed_response(
+                method,
+                "mock storage request must include address and slot",
+            )
+        })?;
+        let address = values
+            .first()
+            .and_then(Value::as_str)
+            .ok_or_else(|| BrowserWalletError::malformed_response(method, "missing address"))?;
+        let slot = values
+            .get(1)
+            .and_then(Value::as_str)
+            .ok_or_else(|| BrowserWalletError::malformed_response(method, "missing slot"))?;
+        Ok(Value::String(
+            self.storage_by_key
+                .get(&format!(
+                    "{}:{}",
+                    address.to_ascii_lowercase(),
+                    slot.to_ascii_lowercase()
+                ))
+                .cloned()
+                .unwrap_or_else(|| "0x0".to_owned()),
+        ))
+    }
+
+    fn receipt_response(
+        &self,
+        method: &str,
+        params: Option<&Value>,
+    ) -> Result<Value, BrowserWalletError> {
+        let hash = first_param_str(
+            method,
+            params,
+            "mock receipt request must include a transaction hash",
+        )?;
+        Ok(self
+            .receipt_by_hash
+            .get(&hash.to_ascii_lowercase())
+            .cloned()
+            .unwrap_or(Value::Null))
+    }
+
+    fn block_response(&self) -> Result<Value, BrowserWalletError> {
+        Ok(json!({
+            "number": hex_quantity(&self.block_number.to_string())?,
+            "hash": self.block_hash,
+        }))
+    }
+}
+
 /// Deterministic EIP-1193 transport for tests and non-browser proof flows.
 #[derive(Clone)]
 pub struct MockEip1193Transport {
@@ -198,15 +326,15 @@ impl MockEip1193Transport {
         {
             let mut state = self.state.borrow_mut();
             state.connected = !accounts.is_empty();
-            state.accounts = accounts.clone();
+            state.accounts.clone_from(&accounts);
         }
-        self.emit_provider_event(WalletProviderEvent::AccountsChanged { accounts });
+        self.emit_provider_event(&WalletProviderEvent::AccountsChanged { accounts });
     }
 
     /// Emits a `chainChanged` provider event and updates the mock session state.
     pub fn emit_chain_changed(&self, chain_id: ChainId) {
         self.state.borrow_mut().chain_id = chain_id;
-        self.emit_provider_event(WalletProviderEvent::ChainChanged { chain_id });
+        self.emit_provider_event(&WalletProviderEvent::ChainChanged { chain_id });
     }
 
     /// Emits a `connect` provider event and updates the mock session state.
@@ -218,13 +346,13 @@ impl MockEip1193Transport {
                 state.chain_id = chain_id;
             }
         }
-        self.emit_provider_event(WalletProviderEvent::Connected { chain_id });
+        self.emit_provider_event(&WalletProviderEvent::Connected { chain_id });
     }
 
     /// Emits a `disconnect` provider event and marks the mock wallet as disconnected.
     pub fn emit_disconnected(&self, message: Option<String>) {
         self.state.borrow_mut().connected = false;
-        self.emit_provider_event(WalletProviderEvent::Disconnected { message });
+        self.emit_provider_event(&WalletProviderEvent::Disconnected { message });
     }
 
     /// Returns the number of active session listeners currently attached to the mock transport.
@@ -233,7 +361,7 @@ impl MockEip1193Transport {
         self.state.borrow().session_listeners.len()
     }
 
-    fn emit_provider_event(&self, event: WalletProviderEvent) {
+    fn emit_provider_event(&self, event: &WalletProviderEvent) {
         let listeners = self
             .state
             .borrow()
@@ -257,6 +385,32 @@ impl MockEip1193Transport {
     fn rpc_error(method: &str, payload: RpcErrorPayload) -> BrowserWalletError {
         BrowserWalletError::from_rpc(method, payload, None)
     }
+}
+
+fn first_param_str<'a>(
+    method: &str,
+    params: Option<&'a Value>,
+    missing_message: &'static str,
+) -> Result<&'a str, BrowserWalletError> {
+    params
+        .and_then(Value::as_array)
+        .and_then(|items| items.first())
+        .and_then(Value::as_str)
+        .ok_or_else(|| BrowserWalletError::malformed_response(method, missing_message))
+}
+
+fn requested_chain_id(
+    method: &str,
+    params: Option<&Value>,
+    missing_message: &'static str,
+) -> Result<ChainId, BrowserWalletError> {
+    let requested = params
+        .and_then(Value::as_array)
+        .and_then(|items| items.first())
+        .and_then(|item| item.get("chainId"))
+        .cloned()
+        .ok_or_else(|| BrowserWalletError::malformed_response(method, missing_message))?;
+    parse_chain_id_value(&requested, method)
 }
 
 struct MockSessionBinding {
@@ -313,143 +467,21 @@ impl Eip1193Transport for MockEip1193Transport {
         }
 
         match method {
-            "eth_accounts" => Ok(if state.connected {
-                json!(
-                    state
-                        .accounts
-                        .iter()
-                        .map(Address::as_str)
-                        .collect::<Vec<_>>()
-                )
-            } else {
-                json!([])
-            }),
-            "eth_requestAccounts" => {
-                state.connected = true;
-                Ok(json!(
-                    state
-                        .accounts
-                        .iter()
-                        .map(Address::as_str)
-                        .collect::<Vec<_>>()
-                ))
-            }
-            "eth_chainId" => Ok(Value::String(hex_quantity(&state.chain_id.to_string())?)),
-            "wallet_switchEthereumChain" => {
-                let requested = params
-                    .as_ref()
-                    .and_then(Value::as_array)
-                    .and_then(|items| items.first())
-                    .and_then(|item| item.get("chainId"))
-                    .cloned()
-                    .ok_or_else(|| {
-                        BrowserWalletError::malformed_response(
-                            method,
-                            "mock switch request must include a `chainId` field",
-                        )
-                    })?;
-                let requested_chain = parse_chain_id_value(&requested, method)?;
-                if !state.added_chains.contains(&requested_chain) {
-                    return Err(BrowserWalletError::ChainNotAdded {
-                        chain_id: requested_chain,
-                        method: method.to_owned(),
-                        code: 4902,
-                        message: format!("mock wallet does not know chain {requested_chain}"),
-                    });
-                }
-                state.chain_id = requested_chain;
-                Ok(Value::Null)
-            }
-            "wallet_addEthereumChain" => {
-                let requested = params
-                    .as_ref()
-                    .and_then(Value::as_array)
-                    .and_then(|items| items.first())
-                    .and_then(|item| item.get("chainId"))
-                    .cloned()
-                    .ok_or_else(|| {
-                        BrowserWalletError::malformed_response(
-                            method,
-                            "mock add-chain request must include a `chainId` field",
-                        )
-                    })?;
-                let requested_chain = parse_chain_id_value(&requested, method)?;
-                state.added_chains.insert(requested_chain);
-                Ok(Value::Null)
-            }
+            "eth_accounts" => Ok(state.accounts_response()),
+            "eth_requestAccounts" => Ok(state.request_accounts()),
+            "eth_chainId" => state.chain_id_response(),
+            "wallet_switchEthereumChain" => state.switch_chain(method, params.as_ref()),
+            "wallet_addEthereumChain" => state.add_chain(method, params.as_ref()),
             "personal_sign" => Ok(Value::String(state.message_signature.clone())),
             "eth_signTypedData_v4" => Ok(Value::String(state.typed_data_signature.clone())),
             "eth_signTransaction" => Ok(Value::String(state.signed_transaction.clone())),
             "eth_sendTransaction" => Ok(Value::String(state.transaction_hash.clone())),
             "eth_estimateGas" => Ok(Value::String(hex_quantity(&state.gas_estimate)?)),
-            "eth_getCode" => {
-                let address = params
-                    .as_ref()
-                    .and_then(Value::as_array)
-                    .and_then(|items| items.first())
-                    .and_then(Value::as_str)
-                    .ok_or_else(|| {
-                        BrowserWalletError::malformed_response(
-                            method,
-                            "mock code request must include an address",
-                        )
-                    })?;
-                Ok(Value::String(
-                    state
-                        .code_by_address
-                        .get(&address.to_ascii_lowercase())
-                        .cloned()
-                        .unwrap_or_else(|| "0x".to_owned()),
-                ))
-            }
-            "eth_getStorageAt" => {
-                let values = params.as_ref().and_then(Value::as_array).ok_or_else(|| {
-                    BrowserWalletError::malformed_response(
-                        method,
-                        "mock storage request must include address and slot",
-                    )
-                })?;
-                let address = values.first().and_then(Value::as_str).ok_or_else(|| {
-                    BrowserWalletError::malformed_response(method, "missing address")
-                })?;
-                let slot = values.get(1).and_then(Value::as_str).ok_or_else(|| {
-                    BrowserWalletError::malformed_response(method, "missing slot")
-                })?;
-                Ok(Value::String(
-                    state
-                        .storage_by_key
-                        .get(&format!(
-                            "{}:{}",
-                            address.to_ascii_lowercase(),
-                            slot.to_ascii_lowercase()
-                        ))
-                        .cloned()
-                        .unwrap_or_else(|| "0x0".to_owned()),
-                ))
-            }
+            "eth_getCode" => state.code_response(method, params.as_ref()),
+            "eth_getStorageAt" => state.storage_response(method, params.as_ref()),
             "eth_call" => Ok(Value::String(state.default_call_result.clone())),
-            "eth_getTransactionReceipt" => {
-                let hash = params
-                    .as_ref()
-                    .and_then(Value::as_array)
-                    .and_then(|items| items.first())
-                    .and_then(Value::as_str)
-                    .ok_or_else(|| {
-                        BrowserWalletError::malformed_response(
-                            method,
-                            "mock receipt request must include a transaction hash",
-                        )
-                    })?;
-                Ok(state
-                    .receipt_by_hash
-                    .get(&hash.to_ascii_lowercase())
-                    .cloned()
-                    .unwrap_or(Value::Null))
-            }
-            "eth_getBlockByNumber" => Ok(json!({
-                "number": hex_quantity(&state.block_number.to_string())?,
-                "hash": state.block_hash,
-            })),
+            "eth_getTransactionReceipt" => state.receipt_response(method, params.as_ref()),
+            "eth_getBlockByNumber" => state.block_response(),
             "web3_clientVersion" => Ok(Value::String(format!("{} / deterministic", self.label))),
             _ => Err(Self::rpc_error(
                 method,

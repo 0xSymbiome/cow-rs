@@ -103,9 +103,9 @@ fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataE
 fn render_validation_error(error: &jsonschema::ValidationError<'_>) -> String {
     let path = error.instance_path().to_string();
     if path.is_empty() {
-        format!("data {}", error)
+        format!("data {error}")
     } else {
-        format!("data{} {}", path, error)
+        format!("data{path} {error}")
     }
 }
 

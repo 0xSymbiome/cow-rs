@@ -141,130 +141,36 @@ pub fn calculate_quote_amounts_and_costs(
 
     let network_cost_amount_in_buy_currency = (&buy_amount * &network_cost_amount) / &sell_amount;
     let protocol_fee_amount = get_protocol_fee_amount(quote, protocol_fee_bps.unwrap_or(0.0))?;
-
-    let before_all_fees = if is_sell {
-        AmountsBig {
-            sell_amount: &sell_amount + &network_cost_amount,
-            buy_amount: &buy_amount + &network_cost_amount_in_buy_currency + &protocol_fee_amount,
-        }
-    } else {
-        AmountsBig {
-            sell_amount: &sell_amount - &protocol_fee_amount,
-            buy_amount: buy_amount.clone(),
-        }
-    };
-
-    let after_protocol_fees = if is_sell {
-        AmountsBig {
-            sell_amount: before_all_fees.sell_amount.clone(),
-            buy_amount: &before_all_fees.buy_amount - &protocol_fee_amount,
-        }
-    } else {
-        AmountsBig {
-            sell_amount: sell_amount.clone(),
-            buy_amount: before_all_fees.buy_amount.clone(),
-        }
-    };
-
-    let after_network_costs = if is_sell {
-        AmountsBig {
-            sell_amount: sell_amount.clone(),
-            buy_amount: buy_amount.clone(),
-        }
-    } else {
-        AmountsBig {
-            sell_amount: &sell_amount + &network_cost_amount,
-            buy_amount: after_protocol_fees.buy_amount.clone(),
-        }
-    };
-
     let partner_fee_bps = partner_fee_bps.unwrap_or(0);
-    let surplus_amount_for_partner_fee = if is_sell {
-        before_all_fees.buy_amount.clone()
-    } else {
-        before_all_fees.sell_amount.clone()
-    };
-    let partner_fee_amount = if partner_fee_bps > 0 {
-        (&surplus_amount_for_partner_fee * BigInt::from(partner_fee_bps))
-            / BigInt::from(ONE_HUNDRED_BPS)
-    } else {
-        BigInt::from(0)
-    };
-
-    let after_partner_fees = if is_sell {
-        AmountsBig {
-            sell_amount: after_network_costs.sell_amount.clone(),
-            buy_amount: &after_network_costs.buy_amount - &partner_fee_amount,
-        }
-    } else {
-        AmountsBig {
-            sell_amount: &after_network_costs.sell_amount + &partner_fee_amount,
-            buy_amount: after_network_costs.buy_amount.clone(),
-        }
-    };
-
-    let slippage_amount = |amount: &BigInt| {
-        (amount * BigInt::from(slippage_percent_bps)) / BigInt::from(ONE_HUNDRED_BPS)
-    };
-
-    let after_slippage = if is_sell {
-        AmountsBig {
-            sell_amount: after_partner_fees.sell_amount.clone(),
-            buy_amount: &after_partner_fees.buy_amount
-                - slippage_amount(&after_partner_fees.buy_amount),
-        }
-    } else {
-        AmountsBig {
-            sell_amount: &after_partner_fees.sell_amount
-                + slippage_amount(&after_partner_fees.sell_amount),
-            buy_amount: after_partner_fees.buy_amount.clone(),
-        }
-    };
-
-    let amounts_to_sign = if is_sell {
-        AmountsBig {
-            sell_amount: before_all_fees.sell_amount.clone(),
-            buy_amount: after_slippage.buy_amount.clone(),
-        }
-    } else {
-        AmountsBig {
-            sell_amount: after_slippage.sell_amount.clone(),
-            buy_amount: before_all_fees.buy_amount.clone(),
-        }
-    };
-
-    Ok(QuoteAmountsAndCosts {
+    let stage_inputs = QuoteStageInputs {
         is_sell,
-        costs: cow_sdk_core::Costs {
-            network_fee: cow_sdk_core::NetworkFee {
-                amount_in_sell_currency: Amount::new(network_cost_amount.to_string())?,
-                amount_in_buy_currency: Amount::new(
-                    network_cost_amount_in_buy_currency.to_string(),
-                )?,
-            },
-            partner_fee: cow_sdk_core::FeeComponent {
-                amount: Amount::new(partner_fee_amount.to_string())?,
-                bps: partner_fee_bps,
-            },
-            protocol_fee: cow_sdk_core::FeeComponent {
-                amount: Amount::new(protocol_fee_amount.to_string())?,
-                bps: protocol_fee_bps.unwrap_or(0.0).round() as u32,
-            },
+        sell_amount: &sell_amount,
+        buy_amount: &buy_amount,
+        network_cost_amount: &network_cost_amount,
+        network_cost_amount_in_buy_currency: &network_cost_amount_in_buy_currency,
+        protocol_fee_amount: &protocol_fee_amount,
+        partner_fee_bps,
+        slippage_percent_bps,
+    };
+    let (stages, partner_fee_amount) = build_quote_amount_stages(&stage_inputs);
+
+    stages.into_quote_amounts_and_costs(
+        is_sell,
+        QuoteFeeBreakdown {
+            network_cost_amount,
+            network_cost_amount_in_buy_currency,
+            partner_fee_amount,
+            partner_fee_bps,
+            protocol_fee_amount,
+            protocol_fee_bps: protocol_fee_bps.unwrap_or(0.0),
         },
-        before_all_fees: before_all_fees.into_amounts()?,
-        before_network_costs: after_protocol_fees.clone().into_amounts()?,
-        after_protocol_fees: after_protocol_fees.into_amounts()?,
-        after_network_costs: after_network_costs.into_amounts()?,
-        after_partner_fees: after_partner_fees.into_amounts()?,
-        after_slippage: after_slippage.into_amounts()?,
-        amounts_to_sign: amounts_to_sign.into_amounts()?,
-    })
+    )
 }
 
 /// Suggests a slippage tolerance in basis points for a quote response.
 ///
 /// The result combines fee-based and volume-based suggestions, rounds the derived scaled percent
-/// to the nearest basis point, and clamps the final value into the supported range. EthFlow flows
+/// to the nearest basis point, and clamps the final value into the supported range. `EthFlow` flows
 /// also apply the default slippage as a lower bound.
 ///
 /// # Errors
@@ -546,6 +452,182 @@ struct AmountsBig {
     buy_amount: BigInt,
 }
 
+struct QuoteFeeBreakdown {
+    network_cost_amount: BigInt,
+    network_cost_amount_in_buy_currency: BigInt,
+    partner_fee_amount: BigInt,
+    partner_fee_bps: u32,
+    protocol_fee_amount: BigInt,
+    protocol_fee_bps: f64,
+}
+
+struct QuoteAmountStages {
+    before_all_fees: AmountsBig,
+    after_protocol_fees: AmountsBig,
+    after_network_costs: AmountsBig,
+    after_partner_fees: AmountsBig,
+    after_slippage: AmountsBig,
+    amounts_to_sign: AmountsBig,
+}
+
+impl QuoteFeeBreakdown {
+    fn into_costs(self) -> Result<cow_sdk_core::Costs<Amount>, TradingError> {
+        Ok(cow_sdk_core::Costs {
+            network_fee: cow_sdk_core::NetworkFee {
+                amount_in_sell_currency: Amount::new(self.network_cost_amount.to_string())?,
+                amount_in_buy_currency: Amount::new(
+                    self.network_cost_amount_in_buy_currency.to_string(),
+                )?,
+            },
+            partner_fee: cow_sdk_core::FeeComponent {
+                amount: Amount::new(self.partner_fee_amount.to_string())?,
+                bps: self.partner_fee_bps,
+            },
+            protocol_fee: cow_sdk_core::FeeComponent {
+                amount: Amount::new(self.protocol_fee_amount.to_string())?,
+                bps: rounded_nonnegative_f64_to_u32(self.protocol_fee_bps, "protocolFeeBps")?,
+            },
+        })
+    }
+}
+
+impl QuoteAmountStages {
+    fn into_quote_amounts_and_costs(
+        self,
+        is_sell: bool,
+        fee_breakdown: QuoteFeeBreakdown,
+    ) -> Result<QuoteAmountsAndCosts, TradingError> {
+        Ok(QuoteAmountsAndCosts {
+            is_sell,
+            costs: fee_breakdown.into_costs()?,
+            before_all_fees: self.before_all_fees.into_amounts()?,
+            before_network_costs: self.after_protocol_fees.clone().into_amounts()?,
+            after_protocol_fees: self.after_protocol_fees.into_amounts()?,
+            after_network_costs: self.after_network_costs.into_amounts()?,
+            after_partner_fees: self.after_partner_fees.into_amounts()?,
+            after_slippage: self.after_slippage.into_amounts()?,
+            amounts_to_sign: self.amounts_to_sign.into_amounts()?,
+        })
+    }
+}
+
+struct QuoteStageInputs<'a> {
+    is_sell: bool,
+    sell_amount: &'a BigInt,
+    buy_amount: &'a BigInt,
+    network_cost_amount: &'a BigInt,
+    network_cost_amount_in_buy_currency: &'a BigInt,
+    protocol_fee_amount: &'a BigInt,
+    partner_fee_bps: u32,
+    slippage_percent_bps: u32,
+}
+
+fn build_quote_amount_stages(inputs: &QuoteStageInputs<'_>) -> (QuoteAmountStages, BigInt) {
+    let before_all_fees = if inputs.is_sell {
+        AmountsBig {
+            sell_amount: inputs.sell_amount + inputs.network_cost_amount,
+            buy_amount: inputs.buy_amount
+                + inputs.network_cost_amount_in_buy_currency
+                + inputs.protocol_fee_amount,
+        }
+    } else {
+        AmountsBig {
+            sell_amount: inputs.sell_amount - inputs.protocol_fee_amount,
+            buy_amount: inputs.buy_amount.clone(),
+        }
+    };
+
+    let after_protocol_fees = if inputs.is_sell {
+        AmountsBig {
+            sell_amount: before_all_fees.sell_amount.clone(),
+            buy_amount: &before_all_fees.buy_amount - inputs.protocol_fee_amount,
+        }
+    } else {
+        AmountsBig {
+            sell_amount: inputs.sell_amount.clone(),
+            buy_amount: before_all_fees.buy_amount.clone(),
+        }
+    };
+
+    let after_network_costs = if inputs.is_sell {
+        AmountsBig {
+            sell_amount: inputs.sell_amount.clone(),
+            buy_amount: inputs.buy_amount.clone(),
+        }
+    } else {
+        AmountsBig {
+            sell_amount: inputs.sell_amount + inputs.network_cost_amount,
+            buy_amount: after_protocol_fees.buy_amount.clone(),
+        }
+    };
+
+    let surplus_amount_for_partner_fee = if inputs.is_sell {
+        before_all_fees.buy_amount.clone()
+    } else {
+        before_all_fees.sell_amount.clone()
+    };
+    let partner_fee_amount = if inputs.partner_fee_bps > 0 {
+        (&surplus_amount_for_partner_fee * BigInt::from(inputs.partner_fee_bps))
+            / BigInt::from(ONE_HUNDRED_BPS)
+    } else {
+        BigInt::from(0)
+    };
+
+    let slippage_amount = |amount: &BigInt| {
+        (amount * BigInt::from(inputs.slippage_percent_bps)) / BigInt::from(ONE_HUNDRED_BPS)
+    };
+
+    let after_partner_fees = if inputs.is_sell {
+        AmountsBig {
+            sell_amount: after_network_costs.sell_amount.clone(),
+            buy_amount: &after_network_costs.buy_amount - &partner_fee_amount,
+        }
+    } else {
+        AmountsBig {
+            sell_amount: &after_network_costs.sell_amount + &partner_fee_amount,
+            buy_amount: after_network_costs.buy_amount.clone(),
+        }
+    };
+
+    let after_slippage = if inputs.is_sell {
+        AmountsBig {
+            sell_amount: after_partner_fees.sell_amount.clone(),
+            buy_amount: &after_partner_fees.buy_amount
+                - slippage_amount(&after_partner_fees.buy_amount),
+        }
+    } else {
+        AmountsBig {
+            sell_amount: &after_partner_fees.sell_amount
+                + slippage_amount(&after_partner_fees.sell_amount),
+            buy_amount: after_partner_fees.buy_amount.clone(),
+        }
+    };
+
+    let amounts_to_sign = if inputs.is_sell {
+        AmountsBig {
+            sell_amount: before_all_fees.sell_amount.clone(),
+            buy_amount: after_slippage.buy_amount.clone(),
+        }
+    } else {
+        AmountsBig {
+            sell_amount: after_slippage.sell_amount.clone(),
+            buy_amount: before_all_fees.buy_amount.clone(),
+        }
+    };
+
+    (
+        QuoteAmountStages {
+            before_all_fees,
+            after_protocol_fees,
+            after_network_costs,
+            after_partner_fees,
+            after_slippage,
+            amounts_to_sign,
+        },
+        partner_fee_amount,
+    )
+}
+
 impl AmountsBig {
     fn into_amounts(self) -> Result<cow_sdk_core::Amounts<Amount>, TradingError> {
         Ok(cow_sdk_core::Amounts {
@@ -553,4 +635,24 @@ impl AmountsBig {
             buy_amount: Amount::new(self.buy_amount.to_string())?,
         })
     }
+}
+
+fn rounded_nonnegative_f64_to_u32(value: f64, field: &'static str) -> Result<u32, TradingError> {
+    let rounded = value.round();
+    if !rounded.is_finite() || rounded < 0.0 || rounded > f64::from(u32::MAX) {
+        return Err(TradingError::NumericOverflow {
+            field,
+            value: rounded.to_string(),
+        });
+    }
+    if rounded == 0.0 {
+        return Ok(0);
+    }
+
+    format!("{rounded:.0}")
+        .parse::<u32>()
+        .map_err(|_| TradingError::NumericOverflow {
+            field,
+            value: rounded.to_string(),
+        })
 }

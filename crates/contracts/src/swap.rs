@@ -117,12 +117,13 @@ impl SwapEncoder {
         swap_execution: Option<SwapExecution>,
     ) -> Result<(), ContractsError> {
         let order = crate::order::normalize_order(order)?;
-        let limit_amount = swap_execution
-            .map(|execution| execution.limit_amount)
-            .unwrap_or_else(|| match order.kind {
+        let limit_amount = swap_execution.map_or_else(
+            || match order.kind {
                 cow_sdk_core::OrderKind::Sell => order.buy_amount.clone(),
                 cow_sdk_core::OrderKind::Buy => order.sell_amount.clone(),
-            });
+            },
+            |execution| execution.limit_amount,
+        );
         self.trade = Some(encode_trade(
             &mut self.tokens,
             &order,

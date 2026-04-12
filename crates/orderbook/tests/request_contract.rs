@@ -67,13 +67,13 @@ async fn execute_json_with_retries_transient_statuses_until_success() {
                 if current < 2 {
                     Ok(ResponseEnvelope::json(
                         INTERNAL_SERVER_ERROR,
-                        json!({
+                        &json!({
                             "errorType": "InternalServerError",
                             "description": "retry me"
                         }),
                     ))
                 } else {
-                    Ok(ResponseEnvelope::json(200, json!({ "ok": true })))
+                    Ok(ResponseEnvelope::json(200, &json!({ "ok": true })))
                 }
             }
         }
@@ -151,7 +151,7 @@ async fn execute_json_with_stops_on_non_retryable_api_error_and_preserves_body()
                 attempts.fetch_add(1, Ordering::SeqCst);
                 Ok(ResponseEnvelope::json(
                     400,
-                    json!({
+                    &json!({
                         "errorType": "DuplicateOrder",
                         "description": "order already exists"
                     }),

@@ -563,8 +563,8 @@ pub struct InjectedProviderTransport;
 
 #[cfg(not(target_arch = "wasm32"))]
 impl InjectedProviderTransport {
-    pub(crate) fn detect_legacy() -> Result<Option<Self>, crate::BrowserWalletError> {
-        Ok(None)
+    pub(crate) fn detect_legacy() -> Option<Self> {
+        None
     }
 
     /// Returns default injected-wallet metadata on non-WASM targets.
