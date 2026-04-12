@@ -3,7 +3,7 @@ fn subgraph_schema_sources_are_pinned_and_test_only() {
     let source_lock = include_str!("../../../parity/source-lock.yaml");
     let parity_scope = include_str!("../../../docs/parity-scope.md");
     let architecture = include_str!("../../../docs/architecture.md");
-    let review_guide = include_str!("../../../docs/review-guide.md");
+    let verification_guide = include_str!("../../../docs/verification-guide.md");
     let lib_rs = include_str!("../src/lib.rs");
     let totals_document = include_str!("../src/query_documents/totals.graphql");
     let last_days_document = include_str!("../src/query_documents/last_days_volume.graphql");
@@ -31,8 +31,8 @@ fn subgraph_schema_sources_are_pinned_and_test_only() {
     assert!(architecture.contains("saved GraphQL documents"));
     assert!(architecture.contains("test-only schema fixtures"));
 
-    assert!(review_guide.contains("saved query documents"));
-    assert!(review_guide.contains("test-only schema"));
+    assert!(verification_guide.contains("saved query documents"));
+    assert!(verification_guide.contains("test-only schema"));
 
     assert!(lib_rs.contains("pub mod queries;"));
     assert!(!lib_rs.contains("query_documents"));

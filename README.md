@@ -5,6 +5,7 @@
 This workspace includes order creation, signing, and submission flows, low-level contract helpers, app-data encoding and CID handling, typed orderbook transport, read-only subgraph queries, WASM builds, and feature-gated browser wallet integration.
 
 Scope-to-proof mapping lives in [Validation Scope](docs/validation-scope.md). Release, publication, and provenance checks live in [Release Checklist](docs/release-checklist.md).
+The canonical invariant map lives in [Properties Registry](PROPERTIES.md).
 
 ## Workspace
 
@@ -132,6 +133,7 @@ Dependency policy is split by purpose:
 
 - [Validation Scope](docs/validation-scope.md)
 - [Release Checklist](docs/release-checklist.md)
+- [Properties Registry](PROPERTIES.md)
 - [Strategy](docs/strategy.md)
 - [Architecture](docs/architecture.md)
 - [Verification Guide](docs/verification-guide.md)

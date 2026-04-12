@@ -8,6 +8,7 @@ Begin with:
 
 - [Validation Scope](validation-scope.md)
 - [Release Checklist](release-checklist.md)
+- [Properties Registry](../PROPERTIES.md)
 - [Security And Validation Matrix](security-matrix.md)
 - [Architecture](architecture.md)
 - [Parity Matrix](parity-matrix.md)
@@ -16,6 +17,18 @@ Begin with:
 - [Audits](audit/README.md)
 
 Then inspect the crate tests that cover the surface in question. The most useful entry points are the `*_contract.rs` integration tests in each crate.
+
+## Properties Registry
+
+The root [Properties Registry](../PROPERTIES.md) is the canonical index of workspace invariants and state contracts.
+
+Use it to answer three questions quickly:
+
+- which crate owns the behavior
+- whether the property currently has executable coverage
+- where the current evidence lives
+
+The registry records the property. It does not centralize execution. Contract tests, property tests, state-machine tests, and browser automation stay with the crate or browser surface that owns the behavior.
 
 ## Runtime Traits
 

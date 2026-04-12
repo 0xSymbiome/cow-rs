@@ -6,8 +6,19 @@ Canonical references:
 
 - [Validation Scope](validation-scope.md)
 - [Release Checklist](release-checklist.md)
+- [Properties Registry](../PROPERTIES.md)
 - [Verification Guide](verification-guide.md)
 - [Parity Matrix](parity-matrix.md)
+
+## Properties Registry
+
+The root [Properties Registry](../PROPERTIES.md) is the canonical map of workspace invariants and state contracts.
+
+Use it with this matrix:
+
+- the registry records the invariant, its owner, and whether executable coverage exists
+- this matrix records the concrete crate tests, browser automation, and workflow lanes that provide the current evidence
+- executable ownership stays crate-local and browser-surface-local rather than moving into one shared harness
 
 ## Core SDK Crates
 
