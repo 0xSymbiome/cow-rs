@@ -96,6 +96,8 @@ A separate compatibility-floor lane runs `cargo check --workspace --all-features
 
 A separate Windows stable lane runs `cargo check --workspace --all-features` and `cargo test --workspace --lib --tests` on `windows-latest` so the declared native host surface is exercised outside the Linux-only publication and provenance lanes.
 
+Security analysis runs in a dedicated `codeql.yml` workflow that scans both Rust and GitHub Actions on pull requests, pushes to `main` and `develop`, and a weekly schedule. It complements the dependency-policy lane instead of replacing `cargo-deny` or `cargo-audit`.
+
 The workspace manifest also defines focused Clippy policy for documented failure contracts, discard-prone helper returns, and readable large literals through `missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`, and `unreadable_literal`.
 
 CI also enforces public API rustc lints with `missing_docs`, `missing_debug_implementations`, `unreachable_pub`, and `unnameable_types` across the published crate family: `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.

@@ -1,0 +1,11 @@
+name: cow-rs-codeql
+
+queries:
+  - uses: security-and-quality
+
+paths:
+  - .github
+  - crates
+  - examples
+  - parity
+  - scripts

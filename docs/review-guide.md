@@ -256,6 +256,7 @@ The repository ships three validation layers:
 - `ci.yml` runs formatting, baseline Clippy, workspace library and integration tests, a dedicated workspace doctest lane, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, published-crate public API rustc lint enforcement, advisory reporting, repo-local parity/source-lock validation, and published package-family dry-runs on the pinned `1.94.1` contributor toolchain for every PR.
 - `ci.yml` also runs a separate compatibility-floor job on Rust `1.94.0` with `cargo check --workspace --all-features` and `cargo test --workspace`.
 - `ci.yml` also runs a light Windows stable job with `cargo check --workspace --all-features` and `cargo test --workspace --lib --tests` on `windows-latest`.
+- `codeql.yml` runs dedicated CodeQL analysis for Rust and GitHub Actions on pull requests, pushes to `main` and `develop`, and a weekly schedule.
 - `release-readiness.yml` reruns the pinned library checks, the dedicated workspace doctest lane, the compatibility-floor job, and the light Windows stable job, then executes the repo-local publication contract and a separate pinned-upstream provenance lane that provisions independent checkouts from `parity/source-lock.yaml` before explicit-root validation.
 - `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and example deployment surfaces.
 
@@ -282,6 +283,7 @@ Dependency policy includes:
 - `cargo-deny` bans, licenses, and source policy checks
 - approved duplicate-version tolerances for the `ethabi` browser-wallet path, the test-only `graphql_client` schema/codegen path, and the platform-specific verifier subtree under `rustls-platform-verifier`
 - RustSec advisory enforcement through `cargo-audit`
+- CodeQL semantic security analysis for Rust and GitHub Actions in a dedicated workflow
 - a temporary `RUSTSEC-2026-0097` exception while `cow-sdk-browser-wallet` still depends on `ethabi`
 - a separate read-only dependency freshness report built from `cargo update --dry-run` plus `cargo tree -d --workspace`
 - weekly freshness automation lives on the scheduled `release-readiness.yml` path, while `ci.yml` exposes the same report through manual dispatch only
