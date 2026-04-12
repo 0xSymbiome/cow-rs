@@ -86,11 +86,15 @@ The public compatibility floor is exercised directly with `cargo check --workspa
 
 Primary CI and release validation use the pinned `1.94.1` contributor toolchain for formatting, Clippy, library and integration tests, an explicit workspace doctest lane, docs, feature-matrix checks, and repo-local publication verification. CI also checks the SDK and native example surfaces. Release-readiness adds a separate pinned-upstream provenance lane. WASM and browser-wallet target validation stay in the dedicated WASM workflows so native compatibility checks do not inherit browser-specific assumptions.
 
+A separate Windows stable lane runs `cargo check --workspace --all-features` and `cargo test --workspace --lib --tests` on `windows-latest`. It is intentionally limited to native workspace compatibility; browser-target and publication-specific validation stay on their dedicated lanes.
+
 ## Quality Gates
 
 The primary native CI lane runs on the pinned `1.94.1` contributor toolchain and enforces formatting, baseline Clippy, workspace library and integration tests, a dedicated workspace doctest lane, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, and a depth-1 feature matrix for the published crate family.
 
 A separate compatibility-floor lane runs `cargo check --workspace --all-features` and `cargo test --workspace` on Rust `1.94.0`.
+
+A separate Windows stable lane runs `cargo check --workspace --all-features` and `cargo test --workspace --lib --tests` on `windows-latest` so the declared native host surface is exercised outside the Linux-only publication and provenance lanes.
 
 The workspace manifest also defines focused Clippy policy for documented failure contracts, discard-prone helper returns, and readable large literals through `missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`, and `unreadable_literal`.
 

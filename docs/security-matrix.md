@@ -33,6 +33,7 @@ This matrix maps `cow-rs` test evidence by crate and public validation surface. 
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo test --workspace --doc` | Explicit doctest gate for rustdoc examples |
+| Windows stable lane (`windows-latest`) | Light native host compatibility gate with `cargo check --workspace --all-features` and `cargo test --workspace --lib --tests` |
 | `cargo doc --workspace --all-features --no-deps` | Public rustdoc build gate |
 | `RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features` | Blocking public API rustc lint gate for the published crate family |
 | `cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml` | Repo-local parity fixture and source-lock gate for committed publication evidence |
@@ -47,6 +48,7 @@ This matrix maps `cow-rs` test evidence by crate and public validation surface. 
 
 - Required tests and examples avoid private keys, seed phrases, live wallet authorization, and live order submission.
 - Doctests stay deterministic and are limited to local examples that do not require live-network or host-specific behavior.
+- The Windows stable lane stays intentionally narrow and does not absorb browser-target, WASM, or publication-only validation.
 - Mocked transports should assert request shape and failure behavior where those paths are part of the reviewed surface.
 - WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible.
 - Live quote, orderbook, subgraph, and wallet checks stay manual unless explicitly promoted into a deterministic routed or injected test.
