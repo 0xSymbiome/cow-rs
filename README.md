@@ -84,7 +84,7 @@ String-heavy values live in explicit wire DTOs such as `cow-sdk-orderbook` reque
 
 The public compatibility floor is exercised directly with `cargo check --workspace --all-features` and `cargo test --workspace` on Rust `1.94.0`.
 
-Primary CI and release validation use the pinned `1.94.1` contributor toolchain for formatting, Clippy, docs, examples, feature-matrix checks, and package verification. WASM and browser-wallet target validation stay in the dedicated WASM workflows so native compatibility checks do not inherit browser-specific assumptions.
+Primary CI and release validation use the pinned `1.94.1` contributor toolchain for formatting, Clippy, docs, examples, feature-matrix checks, and repo-local publication verification. Release-readiness adds a separate pinned-upstream provenance lane. WASM and browser-wallet target validation stay in the dedicated WASM workflows so native compatibility checks do not inherit browser-specific assumptions.
 
 ## Quality Gates
 
@@ -95,6 +95,11 @@ A separate compatibility-floor lane runs `cargo check --workspace --all-features
 The workspace manifest also defines focused Clippy policy for documented failure contracts, discard-prone helper returns, and readable large literals through `missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`, and `unreadable_literal`.
 
 CI also enforces public API rustc lints with `missing_docs`, `missing_debug_implementations`, `unreachable_pub`, and `unnameable_types` across the published crate family: `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.
+
+Publication verification is split deliberately:
+
+- `ci.yml` runs repo-local source-lock validation and the full published package-family dry-run from the current workspace.
+- `release-readiness.yml` reruns that repo-local publication contract and then provisions pinned independent upstream clones from `parity/source-lock.yaml` before running the stricter explicit-root provenance check.
 
 Dependency policy is split by purpose:
 
@@ -130,6 +135,7 @@ cargo hack check --workspace --feature-powerset --depth 1
 typos --config .github/config/typos.toml
 cargo deny check bans licenses sources --config .github/config/deny.toml
 cargo audit --deny warnings --ignore RUSTSEC-2026-0097
+cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
 cargo check -p cow-sdk --examples
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
@@ -137,6 +143,11 @@ cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.pa
 
 ```text
 RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features
+```
+
+```text
+cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
+cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
 ```
 
 ## Examples

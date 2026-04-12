@@ -89,7 +89,7 @@ jobs:
       - name: Run workspace tests on compatibility floor
         run: cargo test --workspace
 
-  verify:
+  publication:
     runs-on: ubuntu-latest
     needs:
       - quality-gate
@@ -116,3 +116,25 @@ jobs:
           cargo package -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'"
           cargo package -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
           cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
+
+  provenance:
+    runs-on: ubuntu-latest
+    needs:
+      - publication
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Provision pinned upstream parity sources
+        run: |
+          PARITY_UPSTREAM_ROOT="$RUNNER_TEMP/parity-upstreams"
+          cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams --source-lock parity/source-lock.yaml --output-root "$PARITY_UPSTREAM_ROOT"
+      - name: Validate pinned upstream provenance
+        run: |
+          PARITY_UPSTREAM_ROOT="$RUNNER_TEMP/parity-upstreams"
+          cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root "$PARITY_UPSTREAM_ROOT/cow-sdk" --contracts-root "$PARITY_UPSTREAM_ROOT/contracts" --services-root "$PARITY_UPSTREAM_ROOT/services"

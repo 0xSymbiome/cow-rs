@@ -34,6 +34,13 @@ This matrix maps `cow-rs` test evidence by crate and public validation surface. 
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo doc --workspace --no-deps` | Public rustdoc build gate |
 | `RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features` | Blocking public API rustc lint gate for the published crate family |
+| `cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml` | Repo-local parity fixture and source-lock gate for committed publication evidence |
+
+## Publication Gates
+
+- `ci.yml` runs the repo-local publication contract: `parity/source-lock.yaml` validation plus the full published package-family dry-run from the current workspace.
+- `release-readiness.yml` reruns that repo-local contract and then provisions pinned independent upstream clones from `parity/source-lock.yaml` before explicit-root provenance validation.
+- Same-checkout copies are not treated as provenance evidence for upstream parity sources.
 
 ## Validation Boundaries
 

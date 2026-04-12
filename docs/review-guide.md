@@ -216,6 +216,8 @@ Packaging posture is explicit in the manifests:
 - docs.rs behavior is declared explicitly across the published crate family
 - the compatibility floor is exercised directly in CI with `cargo check --workspace --all-features` and `cargo test --workspace` on Rust `1.94.0`
 - browser-target validation stays in dedicated WASM workflows instead of redefining the native compatibility floor for unrelated crates
+- repo-local publication validation uses `parity/source-lock.yaml` validation plus the full published package-family dry-run from the current workspace
+- provenance-sensitive parity validation uses pinned independent upstream checkouts and does not treat same-checkout copies as proof of upstream source state
 
 For the facade specifically:
 
@@ -250,9 +252,9 @@ Subgraph example review follows the same package boundary:
 
 The repository ships three validation layers:
 
-- `ci.yml` runs formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, published-crate public API rustc lint enforcement, and advisory reporting on the pinned `1.94.1` contributor toolchain for every PR.
+- `ci.yml` runs formatting, baseline Clippy, workspace tests, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, published-crate public API rustc lint enforcement, advisory reporting, repo-local parity/source-lock validation, and published package-family dry-runs on the pinned `1.94.1` contributor toolchain for every PR.
 - `ci.yml` also runs a separate compatibility-floor job on Rust `1.94.0` with `cargo check --workspace --all-features` and `cargo test --workspace`.
-- `release-readiness.yml` reruns the pinned library checks and the compatibility-floor job before parity validation and package dry-runs.
+- `release-readiness.yml` reruns the pinned library checks and the compatibility-floor job, then executes the repo-local publication contract and a separate pinned-upstream provenance lane that provisions independent checkouts from `parity/source-lock.yaml` before explicit-root validation.
 - `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and example deployment surfaces.
 
 Action references in workflow files are pinned to immutable SHAs.
@@ -298,6 +300,14 @@ cargo hack check --workspace --feature-powerset --depth 1
 typos --config .github/config/typos.toml
 cargo deny check bans licenses sources --config .github/config/deny.toml
 cargo audit --deny warnings --ignore RUSTSEC-2026-0097
+cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
+```
+
+Use these commands when checking the provenance-sensitive parity lane:
+
+```text
+cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
+cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
 ```
 
 Use this command when reviewing public-surface documentation and export hygiene:

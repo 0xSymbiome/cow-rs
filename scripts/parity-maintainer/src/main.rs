@@ -226,12 +226,15 @@ struct FixtureSourceRef {
 #[derive(Debug, Serialize, Deserialize)]
 struct ValidationEntry {
     standalone_repo_contract: Vec<String>,
+    repo_local_publication_contract: Vec<String>,
+    pinned_upstream_provenance_contract: Vec<String>,
     maintainer_refresh_contract: Vec<String>,
 }
 
 struct CliOptions {
     source_lock: PathBuf,
     output: PathBuf,
+    output_root: Option<PathBuf>,
     cow_sdk_root: Option<PathBuf>,
     contracts_root: Option<PathBuf>,
     services_root: Option<PathBuf>,
@@ -249,6 +252,7 @@ fn main() -> Result<()> {
     match command.as_str() {
         "snapshot" => snapshot(&options),
         "validate" => validate(&options),
+        "provision-upstreams" => provision_upstreams(&options),
         "vendor-app-data-schemas" => vendor_app_data_schemas(&options),
         _ => {
             print_usage();
@@ -259,13 +263,14 @@ fn main() -> Result<()> {
 
 fn print_usage() {
     eprintln!(
-        "usage:\n  cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot --cow-sdk-root <path> --contracts-root <path> --services-root <path> [--output parity/source-lock.yaml]\n  cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate [--source-lock parity/source-lock.yaml] [--cow-sdk-root <path>] [--contracts-root <path>] [--services-root <path>]\n  cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-app-data-schemas [--source-lock parity/source-lock.yaml] --cow-sdk-root <real-cow-sdk-clone>"
+        "usage:\n  cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot --cow-sdk-root <path> --contracts-root <path> --services-root <path> [--output parity/source-lock.yaml]\n  cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate [--source-lock parity/source-lock.yaml] [--cow-sdk-root <path>] [--contracts-root <path>] [--services-root <path>]\n  cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams [--source-lock parity/source-lock.yaml] --output-root <path>\n  cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-app-data-schemas [--source-lock parity/source-lock.yaml] --cow-sdk-root <real-cow-sdk-clone>"
     );
 }
 
 fn parse_options(args: Vec<String>) -> Result<CliOptions> {
     let mut source_lock = PathBuf::from(DEFAULT_SOURCE_LOCK);
     let mut output = PathBuf::from(DEFAULT_SOURCE_LOCK);
+    let mut output_root = None;
     let mut cow_sdk_root = None;
     let mut contracts_root = None;
     let mut services_root = None;
@@ -280,6 +285,7 @@ fn parse_options(args: Vec<String>) -> Result<CliOptions> {
         match key {
             "--source-lock" => source_lock = PathBuf::from(value),
             "--output" => output = PathBuf::from(value),
+            "--output-root" => output_root = Some(PathBuf::from(value)),
             "--cow-sdk-root" => cow_sdk_root = Some(PathBuf::from(value)),
             "--contracts-root" => contracts_root = Some(PathBuf::from(value)),
             "--services-root" => services_root = Some(PathBuf::from(value)),
@@ -292,6 +298,7 @@ fn parse_options(args: Vec<String>) -> Result<CliOptions> {
     Ok(CliOptions {
         source_lock,
         output,
+        output_root,
         cow_sdk_root,
         contracts_root,
         services_root,
@@ -312,7 +319,7 @@ fn snapshot(options: &CliOptions) -> Result<()> {
 
     let source_lock = SourceLock {
         meta: LockMeta {
-            schema_version: 2,
+            schema_version: 3,
             generated_at_utc: GENERATED_AT_UTC.to_string(),
             purpose: "pinned upstream source contract for committed parity fixtures".to_string(),
         },
@@ -323,8 +330,23 @@ fn snapshot(options: &CliOptions) -> Result<()> {
                 "cargo build --workspace".to_string(),
                 "cargo test --workspace".to_string(),
             ],
+            repo_local_publication_contract: vec![
+                "cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml".to_string(),
+                "cargo package -p cow-sdk-core --allow-dirty".to_string(),
+                "cargo package -p cow-sdk-contracts --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
+                "cargo package -p cow-sdk-app-data --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
+                "cargo package -p cow-sdk-orderbook --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
+                "cargo package -p cow-sdk-signing --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\"".to_string(),
+                "cargo package -p cow-sdk-subgraph --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
+                "cargo package -p cow-sdk-trading --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\"".to_string(),
+                "cargo package -p cow-sdk-browser-wallet --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
+                "cargo package -p cow-sdk --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-trading.path='crates/trading'\" --config \"patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'\"".to_string(),
+            ],
+            pinned_upstream_provenance_contract: vec![
+                "cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>".to_string(),
+                "cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services".to_string(),
+            ],
             maintainer_refresh_contract: vec![
-                "cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root <path> --contracts-root <path> --services-root <path>".to_string(),
                 "cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot --output parity/source-lock.yaml --cow-sdk-root <path> --contracts-root <path> --services-root <path>".to_string(),
                 "cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-app-data-schemas --source-lock parity/source-lock.yaml --cow-sdk-root <path>".to_string(),
             ],
@@ -340,6 +362,37 @@ fn snapshot(options: &CliOptions) -> Result<()> {
         .with_context(|| format!("failed to write {}", options.output.display()))?;
 
     println!("wrote {}", options.output.display());
+    Ok(())
+}
+
+fn provision_upstreams(options: &CliOptions) -> Result<()> {
+    let lock = load_source_lock(&options.source_lock)?;
+    if lock.meta.schema_version != 3 {
+        bail!("expected source-lock schema_version 3");
+    }
+
+    let output_root = options
+        .output_root
+        .as_deref()
+        .context("provision-upstreams requires --output-root")?;
+
+    if output_root.exists() {
+        fs::remove_dir_all(output_root)
+            .with_context(|| format!("failed to clear {}", output_root.display()))?;
+    }
+    fs::create_dir_all(output_root)
+        .with_context(|| format!("failed to create {}", output_root.display()))?;
+
+    for repo in &lock.repositories {
+        let checkout_root = output_root.join(&repo.id);
+        provision_repository_checkout(repo, &checkout_root)?;
+    }
+
+    println!(
+        "provisioned {} pinned upstream repositories under {}",
+        lock.repositories.len(),
+        output_root.display()
+    );
     Ok(())
 }
 
@@ -388,8 +441,8 @@ fn vendor_app_data_schemas(options: &CliOptions) -> Result<()> {
 fn validate(options: &CliOptions) -> Result<()> {
     let lock = load_source_lock(&options.source_lock)?;
 
-    if lock.meta.schema_version != 2 {
-        bail!("expected source-lock schema_version 2");
+    if lock.meta.schema_version != 3 {
+        bail!("expected source-lock schema_version 3");
     }
 
     let expected_templates: BTreeMap<&str, RepoTemplate> = REPO_TEMPLATES
@@ -904,6 +957,68 @@ fn build_repository_entry(template: RepoTemplate, root: &Path) -> Result<Reposit
             .map(|path| (*path).to_string())
             .collect(),
     })
+}
+
+fn provision_repository_checkout(repo: &RepositoryEntry, checkout_root: &Path) -> Result<()> {
+    if checkout_root.exists() {
+        fs::remove_dir_all(checkout_root)
+            .with_context(|| format!("failed to clear {}", checkout_root.display()))?;
+    }
+
+    let parent = checkout_root
+        .parent()
+        .with_context(|| format!("missing parent for {}", checkout_root.display()))?;
+    fs::create_dir_all(parent).with_context(|| format!("failed to create {}", parent.display()))?;
+
+    let checkout_name = checkout_root
+        .file_name()
+        .and_then(|name| name.to_str())
+        .with_context(|| format!("invalid checkout path {}", checkout_root.display()))?;
+    run_git_command(
+        parent,
+        &[
+            "clone",
+            "--filter=blob:none",
+            "--no-checkout",
+            repo.remote.as_str(),
+            checkout_name,
+        ],
+    )?;
+
+    if let Err(error) = run_git_command(
+        checkout_root,
+        &["fetch", "--depth", "1", "origin", repo.commit.as_str()],
+    ) {
+        eprintln!(
+            "shallow fetch failed for {} at {}: {error:#}; retrying with a full commit fetch",
+            repo.id,
+            repo.commit
+        );
+        run_git_command(checkout_root, &["fetch", "origin", repo.commit.as_str()])?;
+    }
+
+    run_git_command(
+        checkout_root,
+        &["checkout", "--detach", repo.commit.as_str()],
+    )?;
+    validate_repository_root(repo, checkout_root)?;
+    Ok(())
+}
+
+fn run_git_command(root: &Path, args: &[&str]) -> Result<()> {
+    let output = Command::new("git")
+        .current_dir(root)
+        .args(args)
+        .output()
+        .with_context(|| format!("failed to run git in {}", root.display()))?;
+    if !output.status.success() {
+        bail!(
+            "git command failed in {}: {}",
+            root.display(),
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+    Ok(())
 }
 
 fn git_stdout(root: &Path, args: &[&str]) -> Result<String> {
@@ -1736,6 +1851,7 @@ mod tests {
             CliOptions {
                 source_lock: self.root.join("parity/source-lock.yaml"),
                 output: self.root.join("parity/source-lock.yaml"),
+                output_root: None,
                 cow_sdk_root: Some(self.cow_sdk_root.clone()),
                 contracts_root: Some(self.contracts_root.clone()),
                 services_root: Some(self.services_root.clone()),
@@ -2016,6 +2132,7 @@ mod tests {
         let standalone = CliOptions {
             source_lock: options.source_lock.clone(),
             output: options.output.clone(),
+            output_root: None,
             cow_sdk_root: None,
             contracts_root: None,
             services_root: None,
@@ -2052,6 +2169,7 @@ mod tests {
         let standalone = CliOptions {
             source_lock: options.source_lock.clone(),
             output: options.output.clone(),
+            output_root: None,
             cow_sdk_root: None,
             contracts_root: None,
             services_root: None,
