@@ -256,12 +256,14 @@ The repository ships three validation layers:
 - `ci.yml` runs formatting, baseline Clippy, workspace library and integration tests, a dedicated workspace doctest lane, `nextest`, docs builds with rustdoc warnings denied, typo checks, dependency-policy checks for bans, licenses, and sources, feature-matrix validation, published-crate public API rustc lint enforcement, advisory reporting, repo-local parity/source-lock validation, and published package-family dry-runs on the pinned `1.94.1` contributor toolchain for every PR.
 - `ci.yml` also runs a separate compatibility-floor job on Rust `1.94.0` with `cargo check --workspace --all-features` and `cargo test --workspace`.
 - `ci.yml` also runs a light Windows stable job with `cargo check --workspace --all-features` and `cargo test --workspace --lib --tests` on `windows-latest`.
+- `ci.yml` publishes a final `ci-success` aggregate status for branch protection after the required routine native jobs complete.
 - `codeql.yml` runs dedicated CodeQL analysis for Rust and GitHub Actions on pull requests, pushes to `main` and `develop`, and a weekly schedule.
 - `docs-quality.yml` keeps workspace doctests explicit, adds `cargo test --all-features --workspace --doc`, and runs a nightly docs.rs-style rustdoc build with `DOCS_RS=1` plus nightly rustdoc presentation flags.
 - `release-readiness.yml` reruns the pinned library checks, the dedicated workspace doctest lane, the compatibility-floor job, and the light Windows stable job, then executes the repo-local publication contract and a separate pinned-upstream provenance lane that provisions independent checkouts from `parity/source-lock.yaml` before explicit-root validation.
 - `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and example deployment surfaces.
 
 Action references in workflow files are pinned to immutable SHAs.
+Routine native validation workflows use explicit `timeout-minutes` budgets and disable credential persistence on checkout.
 
 Public-library rustc lints checked in CI include:
 

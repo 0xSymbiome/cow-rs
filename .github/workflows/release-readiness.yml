@@ -27,9 +27,12 @@ jobs:
   dependency-freshness:
     if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_dependency_freshness) }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -72,9 +75,12 @@ jobs:
   quality-gate:
     if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -130,9 +136,12 @@ jobs:
   doctest:
     if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -145,9 +154,12 @@ jobs:
   compatibility-floor:
     if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -162,9 +174,12 @@ jobs:
   windows-stable:
     if: ${{ github.event_name != 'schedule' }}
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -179,6 +194,7 @@ jobs:
   publication:
     if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     needs:
       - quality-gate
       - doctest
@@ -187,6 +203,8 @@ jobs:
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
@@ -210,11 +228,14 @@ jobs:
   provenance:
     if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     needs:
       - publication
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
