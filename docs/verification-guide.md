@@ -16,7 +16,7 @@ Begin with:
 - [Parity Scope](parity-scope.md)
 - [Audits](audit/README.md)
 
-Then inspect the crate tests that cover the surface in question. The most useful entry points are the `*_contract.rs` integration tests in each crate together with the crate-local `property_contract.rs` suites where invariants have generated coverage.
+Then inspect the crate tests that cover the surface in question. The most useful entry points are the `*_contract.rs` integration tests in each crate together with the crate-local `property_contract.rs` and `state_machine_contract.rs` suites where invariants and explicit state transitions have dedicated generated coverage.
 
 ## Properties Registry
 

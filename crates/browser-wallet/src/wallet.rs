@@ -977,4 +977,46 @@ mod tests {
             InjectedWalletDiscoverySource::LegacyWindowEthereum
         );
     }
+
+    #[test]
+    fn discovery_cardinality_state_machine_never_auto_selects_a_provider() {
+        let empty = discovery_with(&[], 250, false);
+        assert!(!empty.requires_explicit_selection());
+        assert!(empty.single_wallet().unwrap().is_none());
+
+        let single = discovery_with(
+            &[("MetaMask", InjectedWalletDiscoverySource::Eip6963)],
+            250,
+            false,
+        );
+        assert!(!single.requires_explicit_selection());
+        let single_wallet = single
+            .single_wallet()
+            .unwrap()
+            .expect("one candidate should be returned explicitly");
+        assert_eq!(single_wallet.session().wallet_label, "MetaMask");
+
+        let many = discovery_with(
+            &[
+                ("MetaMask", InjectedWalletDiscoverySource::Eip6963),
+                ("Rabby", InjectedWalletDiscoverySource::Eip6963),
+            ],
+            250,
+            false,
+        );
+        assert!(many.requires_explicit_selection());
+        assert_eq!(
+            many.single_wallet().unwrap_err(),
+            BrowserWalletError::DiscoverySelectionRequired { candidates: 2 }
+        );
+        assert_eq!(many.wallet_at(0).unwrap().session().wallet_label, "MetaMask");
+        assert_eq!(many.wallet_at(1).unwrap().session().wallet_label, "Rabby");
+        assert_eq!(
+            many.wallet_at(2).unwrap_err(),
+            BrowserWalletError::DiscoverySelectionOutOfRange {
+                index: 2,
+                candidates: 2,
+            }
+        );
+    }
 }
