@@ -33,8 +33,10 @@ This matrix maps `cow-rs` test evidence by crate and public validation surface. 
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo test --workspace --doc` | Explicit doctest gate for rustdoc examples |
+| `cargo test --all-features --workspace --doc` | All-feature doctest gate for the public docs contract |
 | Windows stable lane (`windows-latest`) | Light native host compatibility gate with `cargo check --workspace --all-features` and `cargo test --workspace --lib --tests` |
 | `cargo doc --workspace --all-features --no-deps` | Public rustdoc build gate |
+| `docs-quality.yml` | Nightly docs.rs-style rustdoc lane with `DOCS_RS=1`, `--cfg docsrs`, and nightly rustdoc presentation flags |
 | `RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features` | Blocking public API rustc lint gate for the published crate family |
 | `codeql.yml` | Dedicated semantic security-analysis gate for Rust and GitHub Actions |
 | `cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml` | Repo-local parity fixture and source-lock gate for committed publication evidence |
@@ -49,6 +51,7 @@ This matrix maps `cow-rs` test evidence by crate and public validation surface. 
 
 - Required tests and examples avoid private keys, seed phrases, live wallet authorization, and live order submission.
 - Doctests stay deterministic and are limited to local examples that do not require live-network or host-specific behavior.
+- The nightly docs-quality lane stays documentation-only. It exercises docs.rs-style rustdoc flags and all-feature doctests without widening validation into browser-extension, live-network, or host-sensitive behavior.
 - The Windows stable lane stays intentionally narrow and does not absorb browser-target, WASM, or publication-only validation.
 - CodeQL complements dependency policy by scanning Rust and GitHub Actions semantics; it does not replace `cargo-deny` or `cargo-audit`.
 - Mocked transports should assert request shape and failure behavior where those paths are part of the reviewed surface.

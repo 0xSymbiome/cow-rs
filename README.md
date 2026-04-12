@@ -98,6 +98,8 @@ A separate Windows stable lane runs `cargo check --workspace --all-features` and
 
 Security analysis runs in a dedicated `codeql.yml` workflow that scans both Rust and GitHub Actions on pull requests, pushes to `main` and `develop`, and a weekly schedule. It complements the dependency-policy lane instead of replacing `cargo-deny` or `cargo-audit`.
 
+Documentation quality also has a dedicated `docs-quality.yml` workflow. It keeps the stable docs build in the primary CI lane, adds all-feature doctests, and runs a nightly docs.rs-style rustdoc build with `docsrs` cfg plus nightly-only rustdoc presentation flags.
+
 The workspace manifest also defines focused Clippy policy for documented failure contracts, discard-prone helper returns, and readable large literals through `missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`, and `unreadable_literal`.
 
 CI also enforces public API rustc lints with `missing_docs`, `missing_debug_implementations`, `unreachable_pub`, and `unnameable_types` across the published crate family: `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.
@@ -136,6 +138,7 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
 cargo test --workspace --doc
+cargo test --all-features --workspace --doc
 cargo +1.94.0 check --workspace --all-features
 cargo +1.94.0 test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
@@ -148,6 +151,10 @@ cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --sou
 cargo check -p cow-sdk --examples
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
+```
+
+```text
+DOCS_RS=1 RUSTDOCFLAGS="--cfg docsrs -D warnings -Zunstable-options --generate-link-to-definition --show-type-layout --enable-index-page" cargo +nightly doc --workspace --all-features --no-deps
 ```
 
 ```text

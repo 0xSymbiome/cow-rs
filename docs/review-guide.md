@@ -257,6 +257,7 @@ The repository ships three validation layers:
 - `ci.yml` also runs a separate compatibility-floor job on Rust `1.94.0` with `cargo check --workspace --all-features` and `cargo test --workspace`.
 - `ci.yml` also runs a light Windows stable job with `cargo check --workspace --all-features` and `cargo test --workspace --lib --tests` on `windows-latest`.
 - `codeql.yml` runs dedicated CodeQL analysis for Rust and GitHub Actions on pull requests, pushes to `main` and `develop`, and a weekly schedule.
+- `docs-quality.yml` keeps workspace doctests explicit, adds `cargo test --all-features --workspace --doc`, and runs a nightly docs.rs-style rustdoc build with `DOCS_RS=1` plus nightly rustdoc presentation flags.
 - `release-readiness.yml` reruns the pinned library checks, the dedicated workspace doctest lane, the compatibility-floor job, and the light Windows stable job, then executes the repo-local publication contract and a separate pinned-upstream provenance lane that provisions independent checkouts from `parity/source-lock.yaml` before explicit-root validation.
 - `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and example deployment surfaces.
 
@@ -300,6 +301,7 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
 cargo test --workspace --doc
+cargo test --all-features --workspace --doc
 cargo +1.94.0 check --workspace --all-features
 cargo +1.94.0 test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
@@ -309,6 +311,12 @@ typos --config .github/config/typos.toml
 cargo deny check bans licenses sources --config .github/config/deny.toml
 cargo audit --deny warnings --ignore RUSTSEC-2026-0097
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
+```
+
+Use this command when checking the docs.rs-style nightly docs lane:
+
+```text
+DOCS_RS=1 RUSTDOCFLAGS="--cfg docsrs -D warnings -Zunstable-options --generate-link-to-definition --show-type-layout --enable-index-page" cargo +nightly doc --workspace --all-features --no-deps
 ```
 
 Use these commands when checking the provenance-sensitive parity lane:
