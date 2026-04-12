@@ -6,6 +6,7 @@ yanked = "warn"
 multiple-versions = "warn"
 wildcards = "deny"
 highlight = "all"
+# Duplicate-version maintenance is curated here with explicit subtree scope and reasons.
 skip-tree = [
   { name = "ethabi", version = "=18.0.0", reason = "Browser-wallet ABI decoding still depends on the rust-ethereum stack, which currently carries the 0.10 crypto split and rand 0.8 through ethereum-types." },
   { name = "graphql_client", version = "=0.16.0", reason = "Subgraph schema/codegen evidence is test-only and still depends on the graphql-parser/thiserror 1.x stack." },

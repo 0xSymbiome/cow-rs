@@ -112,7 +112,8 @@ fn order_hash_and_uid_helpers_are_consistent() {
     let uid_case = fixture_case("contracts-order-uid-length");
     assert_eq!(
         uid.as_str().trim_start_matches("0x").len(),
-        uid_case["expected"]["hex_chars"].as_u64().unwrap() as usize
+        usize::try_from(uid_case["expected"]["hex_chars"].as_u64().unwrap())
+            .expect("fixture uid length must fit in usize")
     );
 
     let extracted = extract_order_uid_params(&uid).unwrap();

@@ -201,7 +201,7 @@ async fn request_text_and_empty_share_the_request_builder_and_success_path() {
                 {
                     observed_accepts
                         .lock()
-                        .unwrap_or_else(|poisoned| poisoned.into_inner())
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
                         .push(value.to_owned());
                 }
                 ResponseTemplate::new(200).set_body_string("v1.2.3")
@@ -222,7 +222,7 @@ async fn request_text_and_empty_share_the_request_builder_and_success_path() {
                 {
                     observed_accepts
                         .lock()
-                        .unwrap_or_else(|poisoned| poisoned.into_inner())
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
                         .push(value.to_owned());
                 }
                 ResponseTemplate::new(204)
@@ -259,7 +259,7 @@ async fn request_text_and_empty_share_the_request_builder_and_success_path() {
     assert_eq!(version, "v1.2.3");
     let observed = observed_accepts
         .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .clone();
     assert!(observed.contains(&"text/plain, application/json".to_owned()));
     assert!(observed.contains(&"application/json".to_owned()));
@@ -319,7 +319,7 @@ async fn concurrent_attempts_share_limiter_state_across_clones() {
                     async move {
                         arrivals
                             .lock()
-                            .unwrap_or_else(|poisoned| poisoned.into_inner())
+                            .unwrap_or_else(std::sync::PoisonError::into_inner)
                             .push(Instant::now());
                         Ok(ResponseEnvelope::empty(204))
                     }
@@ -342,7 +342,7 @@ async fn concurrent_attempts_share_limiter_state_across_clones() {
 
     let arrivals = arrivals
         .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .clone();
     assert_eq!(arrivals.len(), 2);
     assert!(

@@ -226,7 +226,7 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
     assert!(
         sent.data
             .as_ref()
-            .map(|value| value.as_str())
+            .map(cow_sdk_core::HexData::as_str)
             .unwrap_or_default()
             .to_lowercase()
             .contains(

@@ -163,7 +163,7 @@ async fn cloned_clients_share_the_same_instance_scoped_rate_limiter() {
             move |_request: &wiremock::Request| {
                 arrivals
                     .lock()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner())
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
                     .push(Instant::now());
                 ResponseTemplate::new(200).set_body_string("v1.2.3")
             }
@@ -200,7 +200,7 @@ async fn cloned_clients_share_the_same_instance_scoped_rate_limiter() {
 
     let arrivals = arrivals
         .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .clone();
     assert_eq!(arrivals.len(), 2);
     assert!(
@@ -532,7 +532,7 @@ async fn native_price_surplus_solver_competition_and_auction_routes_are_covered(
         .await
         .expect("auction request should succeed");
 
-    assert_eq!(native_price.price, 0.0004);
+    assert!((native_price.price - 0.0004).abs() < 1.0e-12);
     assert_eq!(surplus.total_surplus, "100000000");
     assert_eq!(by_auction.auction_id, Some(7));
     assert_eq!(by_tx.auction_id, Some(8));

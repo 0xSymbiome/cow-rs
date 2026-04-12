@@ -206,7 +206,7 @@ fn onchain_cancellation_uses_fallback_gas_when_estimation_fails() {
     signer
         .state
         .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .estimated_gas = Err("estimation failed".to_owned());
 
     let tx = onchain_cancellation_transaction(

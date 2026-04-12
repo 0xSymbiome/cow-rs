@@ -180,53 +180,39 @@ impl PinningTransport for MockPinning {
     }
 }
 
-#[test]
-fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
-    let signer = MockSigner {
+fn sample_signer() -> MockSigner {
+    MockSigner {
         address: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
         provider_hint: None,
-    };
-    let mut provider = MockProvider {
-        signer: Some(signer.clone()),
+    }
+}
+
+fn sample_provider(signer: MockSigner) -> MockProvider {
+    MockProvider {
+        signer: Some(signer),
         provider_hint: "initial".to_owned(),
-    };
+    }
+}
 
-    let mut active_signer = Provider::create_signer(&provider, "local").unwrap();
-    active_signer.connect("rpc://local".to_owned());
-    assert_eq!(
-        Signer::get_address(&active_signer).unwrap().as_str(),
-        "0x1111111111111111111111111111111111111111"
-    );
-    assert_eq!(
-        Signer::sign_message(&active_signer, b"cow").unwrap(),
-        "signed-message:3"
-    );
-
-    let tx = TransactionRequest {
+fn sample_transaction() -> TransactionRequest {
+    TransactionRequest {
         to: Some(Address::new("0x2222222222222222222222222222222222222222").unwrap()),
         data: Some(HexData::new("0x01020304").unwrap()),
         value: Some(Amount::zero()),
         gas_limit: Some(Amount::from(21_000u32)),
-    };
-    assert_eq!(
-        Signer::sign_transaction(&active_signer, &tx).unwrap(),
-        "signed-transaction:true"
-    );
+    }
+}
 
-    let domain = TypedDataDomain {
+fn sample_typed_data_domain() -> TypedDataDomain {
+    TypedDataDomain {
         name: "Gnosis Protocol".to_owned(),
         version: "v2".to_owned(),
         chain_id: 1,
         verifying_contract: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-    };
-    let field = TypedDataField {
-        name: "sellToken".to_owned(),
-        kind: "address".to_owned(),
-    };
-    assert_eq!(
-        Signer::sign_typed_data(&active_signer, &domain, &[field], "{\"kind\":\"sell\"}").unwrap(),
-        "Gnosis Protocol:1:15"
-    );
+    }
+}
+
+fn sample_typed_data_payload(domain: TypedDataDomain) -> TypedDataPayload {
     let mut types = TypedDataTypes::new();
     types.insert(
         "Order".to_owned(),
@@ -242,34 +228,72 @@ fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
             kind: "string".to_owned(),
         }],
     );
+
+    TypedDataPayload {
+        domain,
+        primary_type: "Order".to_owned(),
+        types,
+        message: "{\"kind\":\"sell\"}".to_owned(),
+    }
+}
+
+fn assert_signer_contracts(
+    active_signer: &mut MockSigner,
+    tx: &TransactionRequest,
+    domain: &TypedDataDomain,
+) {
+    active_signer.connect("rpc://local".to_owned());
     assert_eq!(
-        Signer::sign_typed_data_payload(
-            &active_signer,
-            &TypedDataPayload {
-                domain: domain.clone(),
-                primary_type: "Order".to_owned(),
-                types,
-                message: "{\"kind\":\"sell\"}".to_owned(),
-            },
+        Signer::get_address(active_signer).unwrap().as_str(),
+        "0x1111111111111111111111111111111111111111"
+    );
+    assert_eq!(
+        Signer::sign_message(active_signer, b"cow").unwrap(),
+        "signed-message:3"
+    );
+    assert_eq!(
+        Signer::sign_transaction(active_signer, tx).unwrap(),
+        "signed-transaction:true"
+    );
+    assert_eq!(
+        Signer::sign_typed_data(
+            active_signer,
+            domain,
+            &[TypedDataField {
+                name: "sellToken".to_owned(),
+                kind: "address".to_owned(),
+            }],
+            "{\"kind\":\"sell\"}"
         )
         .unwrap(),
         "Gnosis Protocol:1:15"
     );
     assert_eq!(
-        Signer::estimate_gas(&active_signer, &tx).unwrap(),
+        Signer::sign_typed_data_payload(active_signer, &sample_typed_data_payload(domain.clone()))
+            .unwrap(),
+        "Gnosis Protocol:1:15"
+    );
+    assert_eq!(
+        Signer::estimate_gas(active_signer, tx).unwrap(),
         Amount::from(21_000u32)
     );
     assert_eq!(
-        Signer::send_transaction(&active_signer, &tx)
+        Signer::send_transaction(active_signer, tx)
             .unwrap()
             .transaction_hash,
         Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap()
     );
+}
 
-    assert_eq!(Provider::get_chain_id(&provider).unwrap(), 1);
+fn assert_provider_contracts(
+    provider: &mut MockProvider,
+    signer: MockSigner,
+    tx: &TransactionRequest,
+) {
+    assert_eq!(Provider::get_chain_id(provider).unwrap(), 1);
     assert_eq!(
         Provider::get_code(
-            &provider,
+            provider,
             &Address::new("0x4444444444444444444444444444444444444444").unwrap(),
         )
         .unwrap()
@@ -278,7 +302,7 @@ fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
     );
     let receipt_hash = Hash32::new(format!("0x{}", "be".repeat(32))).unwrap();
     assert_eq!(
-        Provider::get_transaction_receipt(&provider, &receipt_hash)
+        Provider::get_transaction_receipt(provider, &receipt_hash)
             .unwrap()
             .unwrap()
             .transaction_hash,
@@ -286,7 +310,7 @@ fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
     );
     assert_eq!(
         Provider::get_storage_at(
-            &provider,
+            provider,
             &Address::new("0x5555555555555555555555555555555555555555").unwrap(),
             "0",
         )
@@ -294,12 +318,12 @@ fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
         HexData::new("0x0000").unwrap()
     );
     assert_eq!(
-        Provider::call(&provider, &tx).unwrap(),
+        Provider::call(provider, tx).unwrap(),
         HexData::new("0x63616c6c").unwrap()
     );
     assert_eq!(
         Provider::read_contract(
-            &provider,
+            provider,
             &ContractCall {
                 address: Address::new("0x6666666666666666666666666666666666666666").unwrap(),
                 method: "balanceOf".to_owned(),
@@ -310,13 +334,13 @@ fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
         .unwrap(),
         "read:balanceOf"
     );
-    assert_eq!(Provider::get_block(&provider, "latest").unwrap().number, 1);
+    assert_eq!(Provider::get_block(provider, "latest").unwrap().number, 1);
     provider.set_provider("rpc://updated".to_owned());
     provider.set_signer(signer);
     assert_eq!(provider.provider_hint, "rpc://updated");
     assert_eq!(
         Provider::get_contract(
-            &provider,
+            provider,
             &Address::new("0x7777777777777777777777777777777777777777").unwrap(),
             "[{\"type\":\"function\"}]",
         )
@@ -324,6 +348,18 @@ fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
         .abi_json,
         "[{\"type\":\"function\"}]"
     );
+}
+
+#[test]
+fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
+    let signer = sample_signer();
+    let mut provider = sample_provider(signer.clone());
+    let tx = sample_transaction();
+    let domain = sample_typed_data_domain();
+    let mut active_signer = Provider::create_signer(&provider, "local").unwrap();
+
+    assert_signer_contracts(&mut active_signer, &tx, &domain);
+    assert_provider_contracts(&mut provider, signer, &tx);
 }
 
 #[test]

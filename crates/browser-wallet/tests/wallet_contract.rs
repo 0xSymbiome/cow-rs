@@ -7,6 +7,154 @@ use cow_sdk_core::{
     SupportedChainId, TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
 
+fn supported_domain(chain_id: SupportedChainId) -> TypedDataDomain {
+    TypedDataDomain {
+        name: "Gnosis Protocol".to_owned(),
+        version: "v2".to_owned(),
+        chain_id: u64::from(chain_id),
+        verifying_contract: cow_sdk_core::Address::new(
+            "0x9008D19f58AAbD9eD0D60971565AA8510560ab41",
+        )
+        .unwrap(),
+    }
+}
+
+fn order_typed_fields() -> Vec<TypedDataField> {
+    vec![
+        TypedDataField {
+            name: "sellToken".to_owned(),
+            kind: "address".to_owned(),
+        },
+        TypedDataField {
+            name: "buyToken".to_owned(),
+            kind: "address".to_owned(),
+        },
+        TypedDataField {
+            name: "receiver".to_owned(),
+            kind: "address".to_owned(),
+        },
+        TypedDataField {
+            name: "sellAmount".to_owned(),
+            kind: "uint256".to_owned(),
+        },
+        TypedDataField {
+            name: "buyAmount".to_owned(),
+            kind: "uint256".to_owned(),
+        },
+        TypedDataField {
+            name: "validTo".to_owned(),
+            kind: "uint32".to_owned(),
+        },
+        TypedDataField {
+            name: "appData".to_owned(),
+            kind: "bytes32".to_owned(),
+        },
+        TypedDataField {
+            name: "feeAmount".to_owned(),
+            kind: "uint256".to_owned(),
+        },
+        TypedDataField {
+            name: "kind".to_owned(),
+            kind: "string".to_owned(),
+        },
+        TypedDataField {
+            name: "partiallyFillable".to_owned(),
+            kind: "bool".to_owned(),
+        },
+        TypedDataField {
+            name: "sellTokenBalance".to_owned(),
+            kind: "string".to_owned(),
+        },
+        TypedDataField {
+            name: "buyTokenBalance".to_owned(),
+            kind: "string".to_owned(),
+        },
+    ]
+}
+
+fn eip712_domain_fields() -> Vec<TypedDataField> {
+    vec![
+        TypedDataField {
+            name: "name".to_owned(),
+            kind: "string".to_owned(),
+        },
+        TypedDataField {
+            name: "version".to_owned(),
+            kind: "string".to_owned(),
+        },
+        TypedDataField {
+            name: "chainId".to_owned(),
+            kind: "uint256".to_owned(),
+        },
+        TypedDataField {
+            name: "verifyingContract".to_owned(),
+            kind: "address".to_owned(),
+        },
+    ]
+}
+
+fn legacy_order_message() -> &'static str {
+    r#"{"sellToken":"0x1111111111111111111111111111111111111111","buyToken":"0x2222222222222222222222222222222222222222","receiver":"0x3333333333333333333333333333333333333333","sellAmount":"1","buyAmount":"2","validTo":1,"appData":"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","feeAmount":"0","kind":"sell","partiallyFillable":false,"sellTokenBalance":"erc20","buyTokenBalance":"erc20"}"#
+}
+
+fn legacy_cancellation_fields() -> Vec<TypedDataField> {
+    vec![TypedDataField {
+        name: "orderUids".to_owned(),
+        kind: "bytes[]".to_owned(),
+    }]
+}
+
+fn legacy_cancellation_message() -> &'static str {
+    r#"{"orderUids":["0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]}"#
+}
+
+fn order_payload(chain_id: SupportedChainId) -> TypedDataPayload {
+    let mut order_types = TypedDataTypes::new();
+    order_types.insert("Order".to_owned(), order_typed_fields());
+    order_types.insert("EIP712Domain".to_owned(), eip712_domain_fields());
+
+    TypedDataPayload {
+        domain: supported_domain(chain_id),
+        primary_type: "Order".to_owned(),
+        types: order_types,
+        message: legacy_order_message().to_owned(),
+    }
+}
+
+fn smart_hook_payload(chain_id: SupportedChainId) -> TypedDataPayload {
+    let mut types = TypedDataTypes::new();
+    types.insert(
+        "SmartHookAction".to_owned(),
+        vec![
+            TypedDataField {
+                name: "actor".to_owned(),
+                kind: "address".to_owned(),
+            },
+            TypedDataField {
+                name: "config".to_owned(),
+                kind: "HookConfig".to_owned(),
+            },
+        ],
+    );
+    types.insert(
+        "HookConfig".to_owned(),
+        vec![TypedDataField {
+            name: "salt".to_owned(),
+            kind: "bytes32".to_owned(),
+        }],
+    );
+    types.insert("EIP712Domain".to_owned(), eip712_domain_fields());
+
+    TypedDataPayload {
+        domain: supported_domain(chain_id),
+        primary_type: "SmartHookAction".to_owned(),
+        types,
+        message:
+            r#"{"actor":"0x1111111111111111111111111111111111111111","config":{"salt":"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}"#
+                .to_owned(),
+    }
+}
+
 #[tokio::test(flavor = "current_thread")]
 async fn mock_wallet_connects_switches_chain_and_signs() {
     let transport = MockEip1193Transport::sepolia();
@@ -22,99 +170,9 @@ async fn mock_wallet_connects_switches_chain_and_signs() {
         signer.sign_message(b"cow-rs").await.unwrap(),
         format!("0x{}1b", "11".repeat(64))
     );
-    let mut order_types = TypedDataTypes::new();
-    order_types.insert(
-        "Order".to_owned(),
-        vec![
-            TypedDataField {
-                name: "sellToken".to_owned(),
-                kind: "address".to_owned(),
-            },
-            TypedDataField {
-                name: "buyToken".to_owned(),
-                kind: "address".to_owned(),
-            },
-            TypedDataField {
-                name: "receiver".to_owned(),
-                kind: "address".to_owned(),
-            },
-            TypedDataField {
-                name: "sellAmount".to_owned(),
-                kind: "uint256".to_owned(),
-            },
-            TypedDataField {
-                name: "buyAmount".to_owned(),
-                kind: "uint256".to_owned(),
-            },
-            TypedDataField {
-                name: "validTo".to_owned(),
-                kind: "uint32".to_owned(),
-            },
-            TypedDataField {
-                name: "appData".to_owned(),
-                kind: "bytes32".to_owned(),
-            },
-            TypedDataField {
-                name: "feeAmount".to_owned(),
-                kind: "uint256".to_owned(),
-            },
-            TypedDataField {
-                name: "kind".to_owned(),
-                kind: "string".to_owned(),
-            },
-            TypedDataField {
-                name: "partiallyFillable".to_owned(),
-                kind: "bool".to_owned(),
-            },
-            TypedDataField {
-                name: "sellTokenBalance".to_owned(),
-                kind: "string".to_owned(),
-            },
-            TypedDataField {
-                name: "buyTokenBalance".to_owned(),
-                kind: "string".to_owned(),
-            },
-        ],
-    );
-    order_types.insert(
-        "EIP712Domain".to_owned(),
-        vec![
-            TypedDataField {
-                name: "name".to_owned(),
-                kind: "string".to_owned(),
-            },
-            TypedDataField {
-                name: "version".to_owned(),
-                kind: "string".to_owned(),
-            },
-            TypedDataField {
-                name: "chainId".to_owned(),
-                kind: "uint256".to_owned(),
-            },
-            TypedDataField {
-                name: "verifyingContract".to_owned(),
-                kind: "address".to_owned(),
-            },
-        ],
-    );
     assert_eq!(
         signer
-            .sign_typed_data_payload(&TypedDataPayload {
-                domain: TypedDataDomain {
-                    name: "Gnosis Protocol".to_owned(),
-                    version: "v2".to_owned(),
-                    chain_id: u64::from(SupportedChainId::Sepolia),
-                    verifying_contract: cow_sdk_core::Address::new(
-                        "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
-                    )
-                    .unwrap(),
-                },
-                primary_type: "Order".to_owned(),
-                types: order_types,
-                message:
-                    r#"{"sellToken":"0x1111111111111111111111111111111111111111","buyToken":"0x2222222222222222222222222222222222222222","receiver":"0x3333333333333333333333333333333333333333","sellAmount":"1","buyAmount":"2","validTo":1,"appData":"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","feeAmount":"0","kind":"sell","partiallyFillable":false,"sellTokenBalance":"erc20","buyTokenBalance":"erc20"}"#
-                        .to_owned(),
-            })
+            .sign_typed_data_payload(&order_payload(SupportedChainId::Sepolia))
             .await
             .unwrap(),
         format!("0x{}1c", "22".repeat(64))
@@ -149,67 +207,10 @@ async fn explicit_typed_data_payloads_preserve_custom_primary_types_and_nested_t
 
     wallet.connect().await.unwrap();
     let signer = wallet.signer();
-    let mut types = TypedDataTypes::new();
-    types.insert(
-        "SmartHookAction".to_owned(),
-        vec![
-            TypedDataField {
-                name: "actor".to_owned(),
-                kind: "address".to_owned(),
-            },
-            TypedDataField {
-                name: "config".to_owned(),
-                kind: "HookConfig".to_owned(),
-            },
-        ],
-    );
-    types.insert(
-        "HookConfig".to_owned(),
-        vec![TypedDataField {
-            name: "salt".to_owned(),
-            kind: "bytes32".to_owned(),
-        }],
-    );
-    types.insert(
-        "EIP712Domain".to_owned(),
-        vec![
-            TypedDataField {
-                name: "name".to_owned(),
-                kind: "string".to_owned(),
-            },
-            TypedDataField {
-                name: "version".to_owned(),
-                kind: "string".to_owned(),
-            },
-            TypedDataField {
-                name: "chainId".to_owned(),
-                kind: "uint256".to_owned(),
-            },
-            TypedDataField {
-                name: "verifyingContract".to_owned(),
-                kind: "address".to_owned(),
-            },
-        ],
-    );
 
     assert_eq!(
         signer
-            .sign_typed_data_payload(&TypedDataPayload {
-                domain: TypedDataDomain {
-                    name: "Gnosis Protocol".to_owned(),
-                    version: "v2".to_owned(),
-                    chain_id: u64::from(SupportedChainId::Sepolia),
-                    verifying_contract: cow_sdk_core::Address::new(
-                        "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
-                    )
-                    .unwrap(),
-                },
-                primary_type: "SmartHookAction".to_owned(),
-                types,
-                message:
-                    r#"{"actor":"0x1111111111111111111111111111111111111111","config":{"salt":"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}"#
-                        .to_owned(),
-            })
+            .sign_typed_data_payload(&smart_hook_payload(SupportedChainId::Sepolia))
             .await
             .unwrap(),
         format!("0x{}1c", "22".repeat(64))
@@ -248,83 +249,17 @@ async fn legacy_typed_data_compatibility_is_limited_to_order_and_cancellation_sh
     let wallet = BrowserWallet::from_transport(transport.clone());
     wallet.connect().await.unwrap();
     let signer = wallet.signer();
-    let domain = TypedDataDomain {
-        name: "Gnosis Protocol".to_owned(),
-        version: "v2".to_owned(),
-        chain_id: u64::from(SupportedChainId::Sepolia),
-        verifying_contract: cow_sdk_core::Address::new(
-            "0x9008D19f58AAbD9eD0D60971565AA8510560ab41",
-        )
-        .unwrap(),
-    };
+    let domain = supported_domain(SupportedChainId::Sepolia);
+    let order_fields = order_typed_fields();
+    let cancellation_fields = legacy_cancellation_fields();
 
     signer
-        .sign_typed_data(
-            &domain,
-            &[
-                TypedDataField {
-                    name: "sellToken".to_owned(),
-                    kind: "address".to_owned(),
-                },
-                TypedDataField {
-                    name: "buyToken".to_owned(),
-                    kind: "address".to_owned(),
-                },
-                TypedDataField {
-                    name: "receiver".to_owned(),
-                    kind: "address".to_owned(),
-                },
-                TypedDataField {
-                    name: "sellAmount".to_owned(),
-                    kind: "uint256".to_owned(),
-                },
-                TypedDataField {
-                    name: "buyAmount".to_owned(),
-                    kind: "uint256".to_owned(),
-                },
-                TypedDataField {
-                    name: "validTo".to_owned(),
-                    kind: "uint32".to_owned(),
-                },
-                TypedDataField {
-                    name: "appData".to_owned(),
-                    kind: "bytes32".to_owned(),
-                },
-                TypedDataField {
-                    name: "feeAmount".to_owned(),
-                    kind: "uint256".to_owned(),
-                },
-                TypedDataField {
-                    name: "kind".to_owned(),
-                    kind: "string".to_owned(),
-                },
-                TypedDataField {
-                    name: "partiallyFillable".to_owned(),
-                    kind: "bool".to_owned(),
-                },
-                TypedDataField {
-                    name: "sellTokenBalance".to_owned(),
-                    kind: "string".to_owned(),
-                },
-                TypedDataField {
-                    name: "buyTokenBalance".to_owned(),
-                    kind: "string".to_owned(),
-                },
-            ],
-            r#"{"sellToken":"0x1111111111111111111111111111111111111111","buyToken":"0x2222222222222222222222222222222222222222","receiver":"0x3333333333333333333333333333333333333333","sellAmount":"1","buyAmount":"2","validTo":1,"appData":"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","feeAmount":"0","kind":"sell","partiallyFillable":false,"sellTokenBalance":"erc20","buyTokenBalance":"erc20"}"#,
-        )
+        .sign_typed_data(&domain, &order_fields, legacy_order_message())
         .await
         .unwrap();
 
     signer
-        .sign_typed_data(
-            &domain,
-            &[TypedDataField {
-                name: "orderUids".to_owned(),
-                kind: "bytes[]".to_owned(),
-            }],
-            r#"{"orderUids":["0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]}"#,
-        )
+        .sign_typed_data(&domain, &cancellation_fields, legacy_cancellation_message())
         .await
         .unwrap();
 

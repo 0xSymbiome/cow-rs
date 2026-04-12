@@ -211,14 +211,14 @@ impl MockOrderbook {
     pub fn state(&self) -> MockOrderbookState {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .clone()
     }
 
     pub fn push_order(&self, order: Order) {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .orders
             .push(order);
     }
@@ -237,7 +237,7 @@ impl OrderbookClient for MockOrderbook {
     ) -> Result<OrderQuoteResponse, OrderbookError> {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .quote_requests
             .push(request.clone());
         Ok(self.quote_response.clone())
@@ -247,7 +247,7 @@ impl OrderbookClient for MockOrderbook {
         let mut state = self
             .state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.sent_orders.push(request.clone());
         Ok(state
             .order_id
@@ -261,7 +261,7 @@ impl OrderbookClient for MockOrderbook {
     ) -> Result<(), OrderbookError> {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .cancellations
             .push(request.clone());
         Ok(())
@@ -270,7 +270,7 @@ impl OrderbookClient for MockOrderbook {
     async fn get_order(&self, _order_uid: &OrderUid) -> Result<Order, OrderbookError> {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .orders
             .first()
             .cloned()
@@ -284,7 +284,7 @@ impl OrderbookClient for MockOrderbook {
     ) -> Result<AppDataObject, OrderbookError> {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .uploads
             .push((app_data_hash.clone(), full_app_data.to_owned()));
         Ok(AppDataObject {
@@ -335,7 +335,7 @@ impl MockSigner {
     pub fn state(&self) -> MockSignerState {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .clone()
     }
 }
@@ -366,7 +366,7 @@ impl Signer for MockSigner {
     ) -> Result<String, Self::Error> {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .last_typed_data_domain = Some(domain.clone());
         Ok(TYPED_SIGNATURE.to_owned())
     }
@@ -375,7 +375,7 @@ impl Signer for MockSigner {
         let mut state = self
             .state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.sent_transactions.push(tx.clone());
         Ok(TransactionReceipt {
             transaction_hash: state.tx_hash.clone(),
@@ -385,7 +385,7 @@ impl Signer for MockSigner {
     fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .estimated_gas
             .clone()
     }
@@ -427,14 +427,14 @@ impl MockProvider {
     pub fn state(&self) -> MockProviderState {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .clone()
     }
 
     pub fn set_code(&self, address: &Address, code: &str) {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .code_by_address
             .insert(
                 address.normalized_key(),
@@ -445,7 +445,7 @@ impl MockProvider {
     pub fn set_contract_response(&self, method: &str, response: &str) {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .contract_responses
             .insert(method.to_owned(), response.to_owned());
     }
@@ -453,14 +453,14 @@ impl MockProvider {
     pub fn set_read_contract_error(&self, message: Option<&str>) {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .read_contract_error = message.map(str::to_owned);
     }
 
     pub fn set_get_code_error(&self, message: Option<&str>) {
         self.state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get_code_error = message.map(str::to_owned);
     }
 }
@@ -481,7 +481,7 @@ impl Provider for MockProvider {
         let state = self
             .state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(message) = state.get_code_error.clone() {
             return Err(message);
         }
@@ -514,7 +514,7 @@ impl Provider for MockProvider {
         let mut state = self
             .state
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.last_contract_call = Some(request.clone());
         if let Some(message) = state.read_contract_error.clone() {
             return Err(message);
@@ -587,7 +587,7 @@ impl EthFlowOrderExistsChecker for MockEthFlowChecker {
         let mut results = self
             .results
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         Ok(if results.is_empty() {
             false
         } else {

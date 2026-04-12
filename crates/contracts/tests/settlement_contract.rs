@@ -13,6 +13,10 @@ use cow_sdk_core::{
 
 use common::fixture_case;
 
+fn expected_u8(value: &serde_json::Value) -> u8 {
+    u8::try_from(value.as_u64().unwrap()).expect("fixture flag value must fit in u8")
+}
+
 fn sample_domain() -> TypedDataDomain {
     TypedDataDomain {
         name: "Gnosis Protocol".to_owned(),
@@ -64,7 +68,7 @@ fn settlement_flag_encoding_matches_fixture_values() {
             buy_token_balance: OrderBalance::Erc20,
         })
         .unwrap(),
-        default_flags["expected"]["encoded_flags"].as_u64().unwrap() as u8
+        expected_u8(&default_flags["expected"]["encoded_flags"])
     );
 
     let buy_partial_internal = fixture_case("contracts-order-flags-buy-partial-internal");
@@ -77,9 +81,7 @@ fn settlement_flag_encoding_matches_fixture_values() {
     .unwrap();
     assert_eq!(
         encoded_buy_partial,
-        buy_partial_internal["expected"]["encoded_flags"]
-            .as_u64()
-            .unwrap() as u8
+        expected_u8(&buy_partial_internal["expected"]["encoded_flags"])
     );
 
     let presign = fixture_case("contracts-trade-flags-presign");
@@ -93,7 +95,7 @@ fn settlement_flag_encoding_matches_fixture_values() {
     .unwrap();
     assert_eq!(
         encoded_trade,
-        presign["expected"]["encoded_flags"].as_u64().unwrap() as u8
+        expected_u8(&presign["expected"]["encoded_flags"])
     );
 
     let decoded_order = decode_order_flags(encoded_buy_partial).unwrap();
@@ -140,19 +142,19 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
     }))
     .unwrap();
 
-    let encoded = encoder.encoded_settlement(&prices).unwrap();
-    assert_eq!(encoded.0.len(), 2);
+    let settlement = encoder.encoded_settlement(&prices).unwrap();
+    assert_eq!(settlement.0.len(), 2);
     assert_eq!(
-        encoded.1,
+        settlement.1,
         vec![
             Amount::new("1000000000000000000").unwrap(),
             Amount::new("500000000000000").unwrap()
         ]
     );
-    assert_eq!(encoded.2.len(), 1);
-    assert_eq!(encoded.3[InteractionStage::Pre as usize].len(), 1);
-    assert_eq!(encoded.3[InteractionStage::Intra as usize].len(), 0);
-    assert_eq!(encoded.3[InteractionStage::Post as usize].len(), 0);
+    assert_eq!(settlement.2.len(), 1);
+    assert_eq!(settlement.3[InteractionStage::Pre as usize].len(), 1);
+    assert_eq!(settlement.3[InteractionStage::Intra as usize].len(), 0);
+    assert_eq!(settlement.3[InteractionStage::Post as usize].len(), 0);
 
     let missing = serde_json::from_value::<cow_sdk_contracts::Prices>(serde_json::json!({
         "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "1000000000000000000"

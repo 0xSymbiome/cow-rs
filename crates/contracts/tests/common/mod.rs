@@ -73,7 +73,8 @@ impl MockProvider {
     }
 
     pub fn set_response(&self, value: &str) {
-        *self.response.borrow_mut() = value.to_owned();
+        let mut response = self.response.borrow_mut();
+        value.clone_into(&mut response);
     }
 
     pub fn set_response_error(&self, value: Option<&str>) {
@@ -125,9 +126,7 @@ impl Provider for MockProvider {
             .borrow()
             .get(&(address.normalized_key(), slot.to_ascii_lowercase()))
             .cloned()
-            .ok_or_else(|| {
-                MockProviderError(format!("missing storage for {} at {}", address, slot))
-            })?;
+            .ok_or_else(|| MockProviderError(format!("missing storage for {address} at {slot}")))?;
         HexData::new(value).map_err(|error| MockProviderError(error.to_string()))
     }
 

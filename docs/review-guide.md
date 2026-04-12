@@ -283,6 +283,11 @@ Workspace Clippy policy checked in CI includes:
 - `must_use_candidate`
 - `unreadable_literal`
 
+Maintenance-depth Clippy review uses:
+
+- `cargo clippy --workspace --all-targets --all-features --message-format short -- -W clippy::pedantic -W clippy::cargo -A clippy::multiple_crate_versions`
+- duplicate-version review is kept authoritative in `.github/config/deny.toml` together with `cargo tree -d --workspace`, rather than in the coarse global `clippy::multiple_crate_versions` signal
+
 Dependency policy includes:
 
 - `cargo-deny` bans, licenses, and source policy checks
@@ -303,6 +308,7 @@ Use the normal workspace checks:
 ```text
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo clippy --workspace --all-targets --all-features --message-format short -- -W clippy::pedantic -W clippy::cargo -A clippy::multiple_crate_versions
 cargo test --workspace
 cargo test --workspace --doc
 cargo test --all-features --workspace --doc

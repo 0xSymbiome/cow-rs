@@ -106,6 +106,8 @@ Crate-isolation maintenance runs separately in `crate-checks.yml` on a schedule 
 
 The workspace manifest also defines focused Clippy policy for documented failure contracts, discard-prone helper returns, and readable large literals through `missing_errors_doc`, `missing_panics_doc`, `must_use_candidate`, and `unreadable_literal`.
 
+Duplicate-version maintenance is reviewed through `cargo-deny` plus `cargo tree -d --workspace`, where every accepted subtree stays explicit in `.github/config/deny.toml`. The maintenance-depth Clippy sweep keeps `clippy::multiple_crate_versions` out of that command so duplicate-version review stays anchored to the curated dependency policy instead of the coarse global lint.
+
 CI also enforces public API rustc lints with `missing_docs`, `missing_debug_implementations`, `unreachable_pub`, and `unnameable_types` across the published crate family: `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.
 
 Publication verification is split deliberately:
@@ -140,6 +142,7 @@ Dependency policy is split by purpose:
 ```text
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo clippy --workspace --all-targets --all-features --message-format short -- -W clippy::pedantic -W clippy::cargo -A clippy::multiple_crate_versions
 cargo test --workspace
 cargo test --workspace --doc
 cargo test --all-features --workspace --doc

@@ -23,7 +23,7 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
     let state = provider
         .state
         .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .clone();
     let expected_spender = vault_relayer_address(SupportedChainId::Sepolia, CowEnv::Prod);
 
@@ -59,7 +59,7 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
     assert!(
         tx.data
             .as_ref()
-            .map(|value| value.as_str())
+            .map(cow_sdk_core::HexData::as_str)
             .unwrap_or_default()
             .to_lowercase()
             .contains(
@@ -113,7 +113,7 @@ fn approval_transaction_accepts_max_uint256_amount() {
     assert!(
         tx.data
             .as_ref()
-            .map(|value| value.as_str())
+            .map(cow_sdk_core::HexData::as_str)
             .unwrap_or_default()
             .ends_with(&"f".repeat(64))
     );

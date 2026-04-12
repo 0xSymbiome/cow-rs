@@ -53,9 +53,9 @@ fn swap_step_encoding_defaults_user_data_and_indexes_tokens() {
         user_data: None,
     };
     encoder.encode_swap_step(std::slice::from_ref(&swap));
-    let encoded = encoder.swaps();
+    let encoded_steps = encoder.swaps();
     assert_eq!(
-        encoded,
+        encoded_steps,
         vec![BatchSwapStep {
             pool_id: swap.pool_id.clone(),
             asset_in_index: 0,

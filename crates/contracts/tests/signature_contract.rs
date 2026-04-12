@@ -10,25 +10,29 @@ use cow_sdk_core::{Address, Hash32, HexData};
 
 use common::{MockProvider, fixture_case};
 
+fn expected_u8(value: &serde_json::Value) -> u8 {
+    u8::try_from(value.as_u64().unwrap()).expect("fixture discriminant must fit in u8")
+}
+
 #[test]
 fn signing_scheme_and_magic_value_match_fixture_contract() {
     let schemes = fixture_case("contracts-signing-scheme-discriminants");
     let expected = &schemes["expected"];
     assert_eq!(
         encode_signing_scheme(SigningScheme::Eip712),
-        expected["EIP712"].as_u64().unwrap() as u8
+        expected_u8(&expected["EIP712"])
     );
     assert_eq!(
         encode_signing_scheme(SigningScheme::EthSign),
-        expected["ETHSIGN"].as_u64().unwrap() as u8
+        expected_u8(&expected["ETHSIGN"])
     );
     assert_eq!(
         encode_signing_scheme(SigningScheme::Eip1271),
-        expected["EIP1271"].as_u64().unwrap() as u8
+        expected_u8(&expected["EIP1271"])
     );
     assert_eq!(
         encode_signing_scheme(SigningScheme::PreSign),
-        expected["PRESIGN"].as_u64().unwrap() as u8
+        expected_u8(&expected["PRESIGN"])
     );
 
     assert_eq!(decode_signing_scheme(0).unwrap(), SigningScheme::Eip712);

@@ -257,7 +257,7 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
     let signer_state = signer.state();
     let remaining = collision_results
         .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .clone();
 
     assert_eq!(state.uploads.len(), 1);
