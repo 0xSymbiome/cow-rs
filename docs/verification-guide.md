@@ -279,6 +279,7 @@ The repository ships three validation layers:
 - `crate-checks.yml` is a scheduled and manual maintenance lane that runs `cargo hack check --workspace --each-feature --no-dev-deps` to catch crate-isolation regressions that routine workspace-wide checks can miss.
 - `release-readiness.yml` reruns the pinned library checks, the dedicated workspace doctest lane, the compatibility-floor job, and the light Windows stable job, then executes the repo-local publication contract and a separate pinned-upstream provenance lane that provisions independent checkouts from `parity/source-lock.yaml` before explicit-root validation.
 - `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and WASM example deployment surfaces while staying separate from the native PR-blocking contract.
+- `test-depth.yml` is the non-blocking depth-reporting lane. Its scheduled coverage job runs `cargo +nightly llvm-cov` across workspace tests and doctests, excludes test sources, example shells, browser automation, and generated subgraph evidence from interpretation, and publishes summary plus LCOV artifacts. Its manual mutation job runs `cargo mutants` against `cow-sdk-contracts`, `cow-sdk-signing`, and `cow-sdk-app-data`, preserves the full report as an artifact, and records surviving mutants explicitly for follow-up work.
 
 Action references in workflow files are pinned to immutable SHAs.
 Routine native validation workflows and the dedicated WASM workflows use explicit `timeout-minutes` budgets and disable credential persistence on checkout. Elevated Pages permissions stay scoped to the deployment job that needs them.
@@ -364,4 +365,12 @@ Use this command when checking dependency freshness without mutating the lockfil
 ```text
 cargo update --dry-run --color never
 cargo tree -d --workspace
+```
+
+Use these commands when checking the depth-reporting lane locally:
+
+```text
+cargo +nightly llvm-cov --workspace --all-features --doctests --json --summary-only --output-path target/coverage-summary.json --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/"
+cargo +nightly llvm-cov report --lcov --output-path target/coverage-lcov.info --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/"
+cargo mutants -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-app-data --output target/mutants-report
 ```

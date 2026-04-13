@@ -45,6 +45,35 @@ Workflow expectations:
 - `crate-checks.yml` is the maintenance-depth lane for crate isolation and `--each-feature` assumptions.
 - `codeql.yml` remains the dedicated semantic security-analysis workflow for Rust and GitHub Actions.
 
+## Depth Reporting
+
+`test-depth.yml` is the maintained depth-reporting lane. It publishes read-only coverage and mutation reports for follow-up work; it does not replace the release gates above and it does not introduce threshold-based branch protection.
+
+Coverage uses an explicit nightly toolchain because doctest coverage is still an unstable rustdoc path:
+
+```text
+cargo +nightly llvm-cov --workspace --all-features --doctests --json --summary-only --output-path target/coverage-summary.json --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/"
+cargo +nightly llvm-cov report --lcov --output-path target/coverage-lcov.info --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/"
+```
+
+Interpretation rules:
+
+- the report covers deterministic crate tests and doctests only
+- test sources, example shells, browser automation, and generated subgraph query or schema evidence are excluded from the reported file set
+- the workflow publishes summaries and artifacts; it does not define minimum percentage gates
+
+Mutation stays manual in the first cut and is intentionally targeted to the core deterministic crates:
+
+```text
+cargo mutants -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-app-data --output target/mutants-report
+```
+
+Interpretation rules:
+
+- surviving mutants are explicit follow-up work items, not a branch-protection threshold
+- the full `mutants.out/` report is preserved as an artifact so surviving and unviable cases can be inspected directly
+- browser flows, WASM example packaging, and other environment-sensitive surfaces stay outside the first mutation lane
+
 ## Repo-Local Parity And Publication Proof
 
 This repository keeps repo-local publication proof separate from provenance-sensitive parity proof.

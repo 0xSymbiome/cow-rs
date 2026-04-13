@@ -1,0 +1,239 @@
+name: test-depth
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_mutation:
+        description: Include the targeted mutation report
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    - cron: '15 4 * * 4'
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_COVERAGE_TOOLCHAIN: nightly
+  RUST_CI_TOOLCHAIN: 1.94.1
+  COVERAGE_IGNORE_REGEX: '(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/'
+
+concurrency:
+  group: test-depth-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_COVERAGE_TOOLCHAIN }}
+          components: llvm-tools-preview
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: cargo-llvm-cov
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Capture coverage depth report
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/coverage
+          cargo llvm-cov --workspace --all-features --doctests \
+            --json --summary-only \
+            --output-path artifacts/coverage/coverage-summary.json \
+            --ignore-filename-regex "${COVERAGE_IGNORE_REGEX}"
+          cargo llvm-cov report --lcov \
+            --output-path artifacts/coverage/coverage-lcov.info \
+            --ignore-filename-regex "${COVERAGE_IGNORE_REGEX}"
+      - name: Publish coverage summary
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          repo = Path.cwd().resolve()
+          report_path = repo / "artifacts" / "coverage" / "coverage-summary.json"
+          report = json.loads(report_path.read_text())
+          data = report["data"][0]
+          totals = data["totals"]
+          files = []
+          for entry in data["files"]:
+              filename = Path(entry["filename"])
+              try:
+                  display_name = filename.resolve().relative_to(repo).as_posix()
+              except Exception:
+                  display_name = entry["filename"]
+              lines = entry["summary"]["lines"]
+              uncovered = lines["count"] - lines["covered"]
+              files.append((uncovered, lines["percent"], display_name))
+          files.sort(key=lambda item: (-item[0], item[2]))
+          top_files = files[:10]
+
+          def line(metric: str, label: str) -> str:
+              section = totals[metric]
+              return (
+                  f"- {label}: {section['percent']:.2f}% "
+                  f"({section['covered']}/{section['count']})"
+              )
+
+          lines = [
+              "# Coverage Depth Report",
+              "",
+              "- Mode: scheduled or manual coverage summary",
+              "- Toolchain: nightly, because doctest coverage remains an unstable rustdoc path",
+              "- Policy boundary: this lane reports deterministic crate-test and doctest coverage only; it does not set branch-protection thresholds.",
+              "- Interpretation boundary: example shells, browser e2e, test sources, and generated subgraph query or schema evidence are excluded from the reported file set.",
+              "",
+              "## Totals",
+              "",
+              line("lines", "Lines"),
+              line("functions", "Functions"),
+              line("regions", "Regions"),
+              "",
+              "## Highest Uncovered Line Counts",
+              "",
+              "| File | Uncovered lines | Line coverage |",
+              "| --- | ---: | ---: |",
+          ]
+          for uncovered, percent, name in top_files:
+              lines.append(f"| `{name}` | {uncovered} | {percent:.2f}% |")
+          summary_path = repo / "artifacts" / "coverage" / "summary.md"
+          summary_path.write_text("\n".join(lines) + "\n")
+          PY
+          cat artifacts/coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload coverage artifacts
+        if: always()
+        # Source ref: actions/upload-artifact@v5.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        with:
+          name: test-depth-coverage
+          path: artifacts/coverage
+          if-no-files-found: error
+
+  mutation:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_mutation }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: cargo-mutants
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Run targeted mutation report
+        id: mutation_run
+        shell: bash
+        run: |
+          set +e
+          mkdir -p artifacts/mutation
+          cargo mutants -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-app-data \
+            --annotations none \
+            --no-times \
+            --output artifacts/mutation > artifacts/mutation/console.log 2>&1
+          status=$?
+          echo "exit_code=${status}" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Ensure mutation report is present
+        shell: bash
+        run: |
+          test -f artifacts/mutation/mutants.out/outcomes.json
+      - name: Publish mutation summary
+        shell: bash
+        env:
+          MUTATION_EXIT_CODE: ${{ steps.mutation_run.outputs.exit_code }}
+        run: |
+          python - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+          import os
+
+          repo = Path.cwd().resolve()
+          report_dir = repo / "artifacts" / "mutation" / "mutants.out"
+          outcomes = json.loads((report_dir / "outcomes.json").read_text())["outcomes"]
+          baseline = next(item for item in outcomes if item["scenario"] == "Baseline")
+          counts = Counter(item["summary"] for item in outcomes if item["scenario"] != "Baseline")
+          missed_preview = []
+          missed_path = report_dir / "missed.txt"
+          if missed_path.exists():
+              missed_preview = missed_path.read_text().splitlines()[:25]
+
+          label_map = {
+              "CaughtMutant": "Caught mutants",
+              "MissedMutant": "Surviving mutants",
+              "Unviable": "Unviable mutants",
+              "Timeout": "Timed out mutants",
+          }
+
+          lines = [
+              "# Mutation Depth Report",
+              "",
+              "- Mode: manual targeted mutation run",
+              "- Scope: `cow-sdk-contracts`, `cow-sdk-signing`, and `cow-sdk-app-data` only",
+              "- Policy boundary: this lane records mutation outcomes as follow-up signals; it does not join the routine branch-protection contract.",
+              f"- Cargo-mutants exit code: `{os.environ.get('MUTATION_EXIT_CODE', 'unknown')}`",
+              "",
+              "## Baseline",
+              "",
+              f"- Baseline result: {baseline['summary']}",
+          ]
+          if baseline.get("phase_results"):
+              build = next((item for item in baseline["phase_results"] if item["phase"] == "Build"), None)
+              test = next((item for item in baseline["phase_results"] if item["phase"] == "Test"), None)
+              if build:
+                  lines.append(f"- Baseline build time: {build['duration']:.1f}s")
+              if test:
+                  lines.append(f"- Baseline test time: {test['duration']:.1f}s")
+          lines.extend([
+              "",
+              "## Outcome Counts",
+              "",
+          ])
+          for key in ("CaughtMutant", "MissedMutant", "Unviable", "Timeout"):
+              if counts.get(key):
+                  lines.append(f"- {label_map[key]}: {counts[key]}")
+          lines.extend([
+              "",
+              "## First Surviving Mutants",
+              "",
+          ])
+          if missed_preview:
+              lines.append("```text")
+              lines.extend(missed_preview)
+              lines.append("```")
+          else:
+              lines.append("- No surviving mutants were reported in this run.")
+
+          summary_path = repo / "artifacts" / "mutation" / "summary.md"
+          summary_path.write_text("\n".join(lines) + "\n")
+          PY
+          cat artifacts/mutation/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload mutation artifacts
+        if: always()
+        # Source ref: actions/upload-artifact@v5.0.0
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        with:
+          name: test-depth-mutation
+          path: artifacts/mutation
+          if-no-files-found: error
