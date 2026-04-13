@@ -30,6 +30,8 @@ Use it to answer three questions quickly:
 
 The registry records the property. It does not centralize execution. Contract tests, property tests, state-machine tests, and browser automation stay with the crate or browser surface that owns the behavior.
 
+For the deterministic core trio, the property suites cover the helper families directly: compact flag and signature codecs in `cow-sdk-contracts`, typed-data and EIP-1271 payload envelopes in `cow-sdk-signing`, and canonical JSON plus schema helpers in `cow-sdk-app-data`.
+
 ## Runtime Traits
 
 `cow-sdk-core` defines runtime-neutral traits so higher crates can share signer and provider contracts without depending on a single async runtime, wallet implementation, or HTTP client.

@@ -1,10 +1,12 @@
 mod common;
 
 use cow_sdk_app_data::{
-    AppDataError, CidMode, IpfsConfig, IpfsFetchPolicy, IpfsUploadTransport, TransportResponse,
-    app_data_hex_to_cid, app_data_hex_to_cid_legacy, app_data_hex_to_cid_with_mode,
-    cid_to_app_data_hex, get_app_data_schema, upload_metadata_doc_to_ipfs_legacy,
+    AppDataError, CidMode, IpfsConfig, IpfsFetchPolicy, IpfsUploadTransport, SchemaVersion,
+    TransportResponse, app_data_hex_to_cid, app_data_hex_to_cid_legacy,
+    app_data_hex_to_cid_with_mode, cid_to_app_data_hex, get_app_data_info, get_app_data_schema,
+    stringify_deterministic, upload_metadata_doc_to_ipfs_legacy,
 };
+use serde_json::{Map, Number, Value};
 
 use common::app_data_doc;
 
@@ -37,6 +39,14 @@ impl CaseRng {
             *byte = self.next_u64() as u8;
         }
         bytes
+    }
+
+    fn next_u32(&mut self) -> u32 {
+        self.next_u64() as u32
+    }
+
+    fn next_bool(&mut self) -> bool {
+        self.next_u64() & 1 == 1
     }
 }
 
@@ -74,6 +84,123 @@ fn invalid_schema_version(seed: u64) -> String {
     }
 }
 
+fn generated_schema_version(rng: &mut CaseRng) -> String {
+    format!(
+        "{}.{}.{}",
+        rng.next_u32() % 1_000,
+        rng.next_u32() % 1_000,
+        rng.next_u32() % 1_000
+    )
+}
+
+fn generated_json_value(rng: &mut CaseRng, depth: usize) -> Value {
+    if depth == 0 {
+        return match rng.next_u64() % 5 {
+            0 => Value::Null,
+            1 => Value::Bool(rng.next_bool()),
+            2 => Value::Number(Number::from(rng.next_u32() % 10_000)),
+            3 => Value::String(format!("value-{}", rng.next_u32())),
+            _ => Value::String(format!("0x{}", hex::encode(rng.fill::<4>()))),
+        };
+    }
+
+    match rng.next_u64() % 4 {
+        0 => generated_json_value(rng, 0),
+        1 => {
+            let len = (rng.next_u64() % 4) as usize;
+            Value::Array(
+                (0..len)
+                    .map(|_| generated_json_value(rng, depth.saturating_sub(1)))
+                    .collect(),
+            )
+        }
+        _ => {
+            let len = 1 + (rng.next_u64() % 4) as usize;
+            let mut object = Map::new();
+            for index in 0..len {
+                object.insert(
+                    format!("key-{}-{}", index, rng.next_u32()),
+                    generated_json_value(rng, depth.saturating_sub(1)),
+                );
+            }
+            Value::Object(object)
+        }
+    }
+}
+
+fn manual_canonical_json(value: &Value) -> String {
+    match value {
+        Value::Null => "null".to_owned(),
+        Value::Bool(boolean) => boolean.to_string(),
+        Value::Number(number) => number.to_string(),
+        Value::String(string) => serde_json::to_string(string).unwrap(),
+        Value::Array(array) => format!(
+            "[{}]",
+            array
+                .iter()
+                .map(manual_canonical_json)
+                .collect::<Vec<_>>()
+                .join(",")
+        ),
+        Value::Object(object) => {
+            let mut entries = object.iter().collect::<Vec<_>>();
+            entries.sort_by(|left, right| left.0.cmp(right.0));
+            format!(
+                "{{{}}}",
+                entries
+                    .into_iter()
+                    .map(|(key, item)| {
+                        format!(
+                            "{}:{}",
+                            serde_json::to_string(key).unwrap(),
+                            manual_canonical_json(item)
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        }
+    }
+}
+
+fn generated_valid_document(rng: &mut CaseRng) -> Value {
+    let mut document = Map::new();
+    if rng.next_bool() {
+        document.insert("metadata".to_owned(), Value::Object(Map::new()));
+        document.insert("version".to_owned(), Value::String("0.7.0".to_owned()));
+        document.insert("appCode".to_owned(), Value::String("CoW Swap".to_owned()));
+    } else {
+        document.insert("appCode".to_owned(), Value::String("CoW Swap".to_owned()));
+        document.insert("version".to_owned(), Value::String("0.7.0".to_owned()));
+        document.insert("metadata".to_owned(), Value::Object(Map::new()));
+    }
+
+    if rng.next_bool() {
+        document.insert(
+            "environment".to_owned(),
+            Value::String(format!("env-{}", rng.next_u32() % 16)),
+        );
+    }
+
+    Value::Object(document)
+}
+
+fn reordered_document(value: &Value) -> Value {
+    match value {
+        Value::Object(object) => {
+            let mut entries = object.iter().collect::<Vec<_>>();
+            entries.reverse();
+            let mut reordered = Map::new();
+            for (key, item) in entries {
+                reordered.insert(key.clone(), reordered_document(item));
+            }
+            Value::Object(reordered)
+        }
+        Value::Array(array) => Value::Array(array.iter().map(reordered_document).collect()),
+        other => other.clone(),
+    }
+}
+
 #[test]
 fn cid_roundtrips_hold_for_latest_and_legacy_modes() {
     for seed in 0..CASE_COUNT {
@@ -83,8 +210,16 @@ fn cid_roundtrips_hold_for_latest_and_legacy_modes() {
         let latest = app_data_hex_to_cid(&app_data_hex).unwrap();
         let legacy = app_data_hex_to_cid_legacy(&app_data_hex).unwrap();
 
-        assert_eq!(cid_to_app_data_hex(&latest).unwrap(), app_data_hex, "seed {seed}");
-        assert_eq!(cid_to_app_data_hex(&legacy).unwrap(), app_data_hex, "seed {seed}");
+        assert_eq!(
+            cid_to_app_data_hex(&latest).unwrap(),
+            app_data_hex,
+            "seed {seed}"
+        );
+        assert_eq!(
+            cid_to_app_data_hex(&legacy).unwrap(),
+            app_data_hex,
+            "seed {seed}"
+        );
         assert_eq!(
             app_data_hex_to_cid_with_mode(&app_data_hex, CidMode::Latest).unwrap(),
             latest,
@@ -171,6 +306,59 @@ fn upload_helpers_require_non_empty_credentials_before_transport() {
             upload_metadata_doc_to_ipfs_legacy(&app_data_doc(), &PanicUploadTransport, &config)
                 .unwrap_err(),
             AppDataError::MissingIpfsCredentials,
+            "seed {seed}"
+        );
+    }
+}
+
+#[test]
+fn deterministic_stringify_is_stable_for_generated_nested_documents() {
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed ^ 0xA770_0006);
+        let document = generated_json_value(&mut rng, 2);
+        let rendered = stringify_deterministic(&document).unwrap();
+
+        assert_eq!(rendered, manual_canonical_json(&document), "seed {seed}");
+        assert_eq!(
+            serde_json::from_str::<Value>(&rendered).unwrap(),
+            document,
+            "seed {seed}"
+        );
+        assert_eq!(
+            stringify_deterministic(&serde_json::from_str::<Value>(&rendered).unwrap()).unwrap(),
+            rendered,
+            "seed {seed}"
+        );
+    }
+}
+
+#[test]
+fn schema_versions_roundtrip_for_generated_triplets() {
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed ^ 0xA770_0007);
+        let version = generated_schema_version(&mut rng);
+        let schema = SchemaVersion::new(version.clone()).unwrap();
+
+        assert_eq!(schema.as_str(), version, "seed {seed}");
+        assert_eq!(schema.to_string(), version, "seed {seed}");
+        assert_eq!(
+            version.parse::<SchemaVersion>().unwrap(),
+            schema,
+            "seed {seed}"
+        );
+    }
+}
+
+#[test]
+fn document_sources_canonicalize_equivalent_top_level_permutations() {
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed ^ 0xA770_0008);
+        let document = generated_valid_document(&mut rng);
+        let reordered = reordered_document(&document);
+
+        assert_eq!(
+            get_app_data_info(document).unwrap(),
+            get_app_data_info(reordered).unwrap(),
             "seed {seed}"
         );
     }

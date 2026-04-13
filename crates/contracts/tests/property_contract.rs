@@ -1,6 +1,8 @@
 use cow_sdk_contracts::{
-    Eip1271SignatureData, Order, Signature, SigningScheme, TokenRegistry, TradeExecution,
-    decode_order, decode_trade_flags, encode_trade, hash_order, normalize_order,
+    Eip1271SignatureData, Order, OrderFlags, Signature, SigningScheme, TokenRegistry,
+    TradeExecution, TradeFlags, decode_eip1271_signature_data, decode_order, decode_order_flags,
+    decode_trade_flags, encode_eip1271_signature_data, encode_order_flags, encode_trade,
+    encode_trade_flags, hash_order, normalize_order, normalized_ecdsa_signature,
 };
 use cow_sdk_core::{Address, Amount, AppDataHex, OrderBalance, OrderKind, TypedDataDomain};
 
@@ -65,6 +67,26 @@ impl CaseRng {
 
     fn signature_data(&mut self) -> String {
         format!("0x{}", hex::encode(self.fill::<65>()))
+    }
+
+    fn bytes(&mut self, len: usize) -> Vec<u8> {
+        (0..len).map(|_| self.next_u64() as u8).collect()
+    }
+
+    fn mixed_case_hex_payload(&mut self, len: usize) -> String {
+        let encoded = hex::encode(self.bytes(len));
+        let mixed = encoded
+            .chars()
+            .enumerate()
+            .map(|(index, ch)| {
+                if index % 2 == 0 {
+                    ch.to_ascii_uppercase()
+                } else {
+                    ch
+                }
+            })
+            .collect::<String>();
+        format!("0x{mixed}")
     }
 }
 
@@ -147,6 +169,29 @@ fn signature_for_scheme(rng: &mut CaseRng, scheme: SigningScheme) -> Signature {
     }
 }
 
+fn generated_sell_balance(rng: &mut CaseRng) -> OrderBalance {
+    match rng.next_u64() % 3 {
+        0 => OrderBalance::Erc20,
+        1 => OrderBalance::External,
+        _ => OrderBalance::Internal,
+    }
+}
+
+fn generated_buy_balance(rng: &mut CaseRng) -> OrderBalance {
+    match rng.next_u64() % 3 {
+        0 => OrderBalance::Erc20,
+        1 => OrderBalance::External,
+        _ => OrderBalance::Internal,
+    }
+}
+
+fn canonical_buy_balance(balance: OrderBalance) -> OrderBalance {
+    match balance {
+        OrderBalance::Internal => OrderBalance::Internal,
+        OrderBalance::Erc20 | OrderBalance::External => OrderBalance::Erc20,
+    }
+}
+
 #[test]
 fn order_hashing_is_deterministic_for_equivalent_normalized_inputs() {
     for seed in 0..CASE_COUNT {
@@ -190,25 +235,117 @@ fn encoded_trades_preserve_the_normalized_order_boundary() {
 
         assert_eq!(decoded_flags.kind, normalized.kind, "seed {seed}");
         assert_eq!(
-            decoded_flags.partially_fillable,
-            normalized.partially_fillable,
+            decoded_flags.partially_fillable, normalized.partially_fillable,
             "seed {seed}"
         );
         assert_eq!(
-            decoded_flags.sell_token_balance,
-            normalized.sell_token_balance,
+            decoded_flags.sell_token_balance, normalized.sell_token_balance,
             "seed {seed}"
         );
         assert_eq!(
-            decoded_flags.buy_token_balance,
-            normalized.buy_token_balance,
+            decoded_flags.buy_token_balance, normalized.buy_token_balance,
             "seed {seed}"
         );
-        assert_eq!(trade.executed_amount, execution.executed_amount, "seed {seed}");
+        assert_eq!(
+            trade.executed_amount, execution.executed_amount,
+            "seed {seed}"
+        );
         assert_eq!(
             normalize_order(&decoded_order).unwrap(),
             normalized,
             "seed {seed}"
         );
+    }
+}
+
+#[test]
+fn compact_flag_codecs_roundtrip_across_generated_variants() {
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed ^ 0xC011_AA03);
+        let order_flags = OrderFlags {
+            kind: if rng.next_bool() {
+                OrderKind::Sell
+            } else {
+                OrderKind::Buy
+            },
+            partially_fillable: rng.next_bool(),
+            sell_token_balance: generated_sell_balance(&mut rng),
+            buy_token_balance: generated_buy_balance(&mut rng),
+        };
+
+        let encoded_order = encode_order_flags(&order_flags).unwrap();
+        let decoded_order = decode_order_flags(encoded_order).unwrap();
+        assert_eq!(
+            decoded_order,
+            OrderFlags {
+                buy_token_balance: canonical_buy_balance(order_flags.buy_token_balance),
+                ..order_flags.clone()
+            },
+            "seed {seed}"
+        );
+        assert_eq!(
+            encode_order_flags(&decoded_order).unwrap(),
+            encoded_order,
+            "seed {seed}"
+        );
+
+        let trade_flags = TradeFlags {
+            kind: order_flags.kind,
+            partially_fillable: order_flags.partially_fillable,
+            sell_token_balance: order_flags.sell_token_balance,
+            buy_token_balance: order_flags.buy_token_balance,
+            signing_scheme: match rng.next_u64() % 4 {
+                0 => SigningScheme::Eip712,
+                1 => SigningScheme::EthSign,
+                2 => SigningScheme::Eip1271,
+                _ => SigningScheme::PreSign,
+            },
+        };
+
+        let encoded_trade = encode_trade_flags(&trade_flags).unwrap();
+        let decoded_trade = decode_trade_flags(encoded_trade).unwrap();
+        assert_eq!(encoded_trade & 0b1000_0000, 0, "seed {seed}");
+        assert_eq!(
+            decoded_trade,
+            TradeFlags {
+                buy_token_balance: canonical_buy_balance(trade_flags.buy_token_balance),
+                ..trade_flags.clone()
+            },
+            "seed {seed}"
+        );
+        assert_eq!(
+            encode_trade_flags(&decoded_trade).unwrap(),
+            encoded_trade,
+            "seed {seed}"
+        );
+    }
+}
+
+#[test]
+fn signature_codecs_preserve_verifier_and_payload_bytes() {
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed ^ 0xC011_AA04);
+        let byte_len = (rng.next_u64() % 97) as usize;
+        let signature = rng.mixed_case_hex_payload(byte_len);
+        let verifier = rng.non_zero_address();
+
+        let normalized = normalized_ecdsa_signature(&signature).unwrap();
+        assert_eq!(normalized, normalized.to_ascii_lowercase(), "seed {seed}");
+        assert_eq!(
+            hex::decode(normalized.trim_start_matches("0x")).unwrap(),
+            hex::decode(signature.trim_start_matches("0x")).unwrap(),
+            "seed {seed}"
+        );
+
+        let encoded = encode_eip1271_signature_data(&Eip1271SignatureData {
+            verifier: verifier.clone(),
+            signature: signature.clone(),
+        })
+        .unwrap();
+        let decoded = decode_eip1271_signature_data(&encoded).unwrap();
+
+        assert_eq!(decoded.verifier, verifier, "seed {seed}");
+        assert_eq!(decoded.signature, normalized, "seed {seed}");
+        assert_eq!(encoded.len(), 2 + ((20 + byte_len) * 2), "seed {seed}");
     }
 }

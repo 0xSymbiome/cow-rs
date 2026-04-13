@@ -1,13 +1,17 @@
+use std::collections::BTreeMap;
+
 mod common;
 
 use cow_sdk_contracts::{OrderCancellations, SigningScheme, hash_order, hash_order_cancellations};
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, OrderBalance, OrderKind, OrderUid, SupportedChainId,
-    TypedDataDomain, UnsignedOrder,
+    Address, Amount, AppDataHex, CowEnv, OrderBalance, OrderKind, OrderUid, ProtocolOptions,
+    SupportedChainId, TypedDataDomain, UnsignedOrder,
 };
 use cow_sdk_signing::{
-    domain_separator_for, generate_order_id, get_domain, order_cancellations_typed_data_payload,
-    order_typed_data_payload, sign_order_cancellations_with_scheme, sign_order_with_scheme,
+    ORDER_PRIMARY_TYPE, domain_fields, domain_separator_for, eip1271_signature_payload,
+    generate_order_id, get_domain, order_cancellations_typed_data_payload, order_fields,
+    order_typed_data, order_typed_data_payload, sign_order_cancellations_with_scheme,
+    sign_order_with_scheme,
 };
 
 use common::MockSigner;
@@ -78,6 +82,10 @@ impl CaseRng {
     fn order_uid(&mut self) -> OrderUid {
         OrderUid::new(format!("0x{}", hex::encode(self.fill::<56>()))).unwrap()
     }
+
+    fn bytes(&mut self, len: usize) -> Vec<u8> {
+        (0..len).map(|_| self.next_u64() as u8).collect()
+    }
 }
 
 fn generated_domain(rng: &mut CaseRng) -> TypedDataDomain {
@@ -101,8 +109,7 @@ fn different_domain(mut domain: TypedDataDomain, seed: u64) -> TypedDataDomain {
             if bytes.iter().all(|byte| *byte == 0) {
                 bytes[19] = 1;
             }
-            domain.verifying_contract =
-                Address::new(format!("0x{}", hex::encode(bytes))).unwrap();
+            domain.verifying_contract = Address::new(format!("0x{}", hex::encode(bytes))).unwrap();
         }
     }
     domain
@@ -142,6 +149,52 @@ fn generated_cancellations(rng: &mut CaseRng) -> Vec<OrderUid> {
     (0..len).map(|_| rng.order_uid()).collect()
 }
 
+fn protocol_options_for_chain(
+    rng: &mut CaseRng,
+    chain: SupportedChainId,
+) -> Option<ProtocolOptions> {
+    let env = if rng.next_bool() {
+        Some(if rng.next_bool() {
+            CowEnv::Prod
+        } else {
+            CowEnv::Staging
+        })
+    } else {
+        None
+    };
+
+    let settlement_contract_override = if rng.next_bool() {
+        let mut overrides = BTreeMap::new();
+        overrides.insert(u64::from(chain), rng.non_zero_address());
+        Some(overrides)
+    } else {
+        None
+    };
+
+    if env.is_none() && settlement_contract_override.is_none() {
+        None
+    } else {
+        Some(ProtocolOptions {
+            env,
+            settlement_contract_override,
+            eth_flow_contract_override: None,
+        })
+    }
+}
+
+fn decode_u256_word(word: &[u8]) -> usize {
+    let bytes: [u8; 8] = word[24..32].try_into().unwrap();
+    u64::from_be_bytes(bytes) as usize
+}
+
+fn padded_len(len: usize) -> usize {
+    if len == 0 {
+        0
+    } else {
+        ((len - 1) / 32 + 1) * 32
+    }
+}
+
 #[test]
 fn domain_separators_change_only_when_the_typed_data_domain_changes() {
     for seed in 0..CASE_COUNT {
@@ -149,7 +202,8 @@ fn domain_separators_change_only_when_the_typed_data_domain_changes() {
         let domain = generated_domain(&mut rng);
         let separator = domain_separator_for(&domain).unwrap();
         let same_separator = domain_separator_for(&domain).unwrap();
-        let changed_separator = domain_separator_for(&different_domain(domain.clone(), seed)).unwrap();
+        let changed_separator =
+            domain_separator_for(&different_domain(domain.clone(), seed)).unwrap();
 
         assert_eq!(separator, same_separator, "seed {seed}");
         assert_ne!(separator, changed_separator, "seed {seed}");
@@ -168,9 +222,11 @@ fn order_payloads_and_generated_ids_are_deterministic_and_scheme_explicit() {
         let repeated_payload = order_typed_data_payload(chain, &order, None).unwrap();
         let generated = generate_order_id(chain, &order, &owner, None).unwrap();
         let repeated_generated = generate_order_id(chain, &order, &owner, None).unwrap();
-        let expected_digest =
-            hash_order(&get_domain(chain, None).unwrap(), &cow_sdk_contracts::Order::from(&order))
-                .unwrap();
+        let expected_digest = hash_order(
+            &get_domain(chain, None).unwrap(),
+            &cow_sdk_contracts::Order::from(&order),
+        )
+        .unwrap();
 
         let typed_signer = MockSigner::new();
         let typed_result =
@@ -187,8 +243,16 @@ fn order_payloads_and_generated_ids_are_deterministic_and_scheme_explicit() {
         assert_eq!(payload, repeated_payload, "seed {seed}");
         assert_eq!(generated, repeated_generated, "seed {seed}");
         assert_eq!(generated.order_digest, expected_digest, "seed {seed}");
-        assert_eq!(typed_result.signing_scheme, SigningScheme::Eip712, "seed {seed}");
-        assert_eq!(message_result.signing_scheme, SigningScheme::EthSign, "seed {seed}");
+        assert_eq!(
+            typed_result.signing_scheme,
+            SigningScheme::Eip712,
+            "seed {seed}"
+        );
+        assert_eq!(
+            message_result.signing_scheme,
+            SigningScheme::EthSign,
+            "seed {seed}"
+        );
         assert_eq!(typed_calls.typed_data.len(), 1, "seed {seed}");
         assert!(typed_calls.messages.is_empty(), "seed {seed}");
         assert_eq!(message_calls.messages.len(), 1, "seed {seed}");
@@ -242,8 +306,16 @@ fn cancellation_payloads_are_deterministic_and_preserve_scheme_boundaries() {
         let message_calls = message_signer.calls.borrow().clone();
 
         assert_eq!(payload, repeated_payload, "seed {seed}");
-        assert_eq!(typed_result.signing_scheme, SigningScheme::Eip712, "seed {seed}");
-        assert_eq!(message_result.signing_scheme, SigningScheme::EthSign, "seed {seed}");
+        assert_eq!(
+            typed_result.signing_scheme,
+            SigningScheme::Eip712,
+            "seed {seed}"
+        );
+        assert_eq!(
+            message_result.signing_scheme,
+            SigningScheme::EthSign,
+            "seed {seed}"
+        );
         assert_eq!(typed_calls.typed_data.len(), 1, "seed {seed}");
         assert!(typed_calls.messages.is_empty(), "seed {seed}");
         assert_eq!(message_calls.messages.len(), 1, "seed {seed}");
@@ -251,6 +323,103 @@ fn cancellation_payloads_are_deterministic_and_preserve_scheme_boundaries() {
         assert_eq!(
             format!("0x{}", hex::encode(&message_calls.messages[0])),
             expected_digest.as_str(),
+            "seed {seed}"
+        );
+    }
+}
+
+#[test]
+fn typed_order_payloads_preserve_fields_message_and_override_contracts() {
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed ^ 0x51A0_0004);
+        let chain = rng.supported_chain();
+        let order = generated_order(&mut rng);
+        let options = protocol_options_for_chain(&mut rng, chain);
+        let expected_domain = get_domain(chain, options.as_ref()).unwrap();
+
+        let payload = order_typed_data_payload(chain, &order, options.as_ref()).unwrap();
+        let repeated_payload = order_typed_data_payload(chain, &order, options.as_ref()).unwrap();
+        let typed = order_typed_data(chain, &order, options.as_ref()).unwrap();
+
+        assert_eq!(payload, repeated_payload, "seed {seed}");
+        assert_eq!(payload.primary_type, ORDER_PRIMARY_TYPE, "seed {seed}");
+        assert_eq!(typed.primary_type, ORDER_PRIMARY_TYPE, "seed {seed}");
+        assert_eq!(payload.domain, expected_domain, "seed {seed}");
+        assert_eq!(typed.domain, expected_domain, "seed {seed}");
+        assert_eq!(typed.types, payload.types, "seed {seed}");
+        assert_eq!(
+            payload.types.get(ORDER_PRIMARY_TYPE).unwrap(),
+            &order_fields(),
+            "seed {seed}"
+        );
+        assert_eq!(
+            payload.types.get("EIP712Domain").unwrap(),
+            &domain_fields(),
+            "seed {seed}"
+        );
+        assert_eq!(
+            payload.message,
+            serde_json::to_string(&order).unwrap(),
+            "seed {seed}"
+        );
+        assert_eq!(typed.message, order, "seed {seed}");
+
+        if let Some(overrides) = options
+            .as_ref()
+            .and_then(|options| options.settlement_contract_override.as_ref())
+        {
+            assert_eq!(
+                payload.domain.verifying_contract,
+                overrides.get(&u64::from(chain)).unwrap().clone(),
+                "seed {seed}"
+            );
+        }
+    }
+}
+
+#[test]
+fn eip1271_payloads_preserve_dynamic_tail_boundaries_across_generated_signatures() {
+    const SIGNATURE_LENGTHS: [usize; 8] = [0, 1, 31, 32, 33, 64, 65, 96];
+
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed ^ 0x51A0_0005);
+        let order = generated_order(&mut rng);
+        let signature_len = SIGNATURE_LENGTHS[(rng.next_u64() as usize) % SIGNATURE_LENGTHS.len()];
+        let signature_bytes = rng.bytes(signature_len);
+        let signature = format!("0x{}", hex::encode(&signature_bytes));
+        let payload = eip1271_signature_payload(&order, &signature).unwrap();
+        let encoded = hex::decode(payload.trim_start_matches("0x")).unwrap();
+
+        let offset_word_start = 32 * 12;
+        let length_word_start = 32 * 13;
+        let data_start = 32 * 14;
+        let expected_padding = padded_len(signature_bytes.len());
+
+        assert_eq!(
+            &encoded[32 * 6..32 * 7],
+            &hex::decode(order.app_data.as_str().trim_start_matches("0x")).unwrap(),
+            "seed {seed}"
+        );
+        assert_eq!(
+            decode_u256_word(&encoded[offset_word_start..offset_word_start + 32]),
+            32 * 13,
+            "seed {seed}"
+        );
+        assert_eq!(
+            decode_u256_word(&encoded[length_word_start..length_word_start + 32]),
+            signature_bytes.len(),
+            "seed {seed}"
+        );
+        assert_eq!(encoded.len(), data_start + expected_padding, "seed {seed}");
+        assert_eq!(
+            &encoded[data_start..data_start + signature_bytes.len()],
+            &hex::decode(signature.trim_start_matches("0x")).unwrap(),
+            "seed {seed}"
+        );
+        assert!(
+            encoded[data_start + signature_bytes.len()..data_start + expected_padding]
+                .iter()
+                .all(|byte| *byte == 0),
             "seed {seed}"
         );
     }
