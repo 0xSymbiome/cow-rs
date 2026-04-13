@@ -1,0 +1,8 @@
+[workspace]
+members = ["browser-wallet-console", "sdk-verification-console"]
+resolver = "2"
+
+[workspace.dependencies]
+wasm-bindgen = "0.2.117"
+wasm-bindgen-futures = "0.4.55"
+wasm-bindgen-test = "0.3.68"

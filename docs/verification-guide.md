@@ -281,6 +281,11 @@ Packaging posture is explicit in the manifests:
 For the facade specifically:
 
 - `cow-sdk` docs.rs builds with the `browser-wallet` feature enabled so the optional browser-wallet surface is visible in rendered docs
+- `wasm-bindgen`, `wasm-bindgen-futures`, `js-sys`, `serde-wasm-bindgen`, and `web-sys` are version-locked through the root workspace dependency policy for the published browser-facing crate surface
+- `wasm-bindgen-test` stays in the same maintained dependency family for direct browser proof lanes
+- the standalone WASM examples under `examples/wasm/` inherit the same maintained browser dependency family from their shared example workspace instead of carrying per-example version skew
+- `web-sys` feature enablement stays leaf-owned in `cow-sdk-browser-wallet` and is limited to `CustomEvent`, `Event`, `EventTarget`, and `Window`
+- the facade keeps the optional `cow-sdk-browser-wallet` dependency default-feature-free and exposes it only through the explicit `browser-wallet` feature
 - `cow-sdk-subgraph` is a separate package and is not folded into the facade for documentation convenience
 - the facade is a re-export layer and does not gain implementation ownership through packaging polish
 - feature-gated browser-wallet re-export does not widen the default-facade support contract
