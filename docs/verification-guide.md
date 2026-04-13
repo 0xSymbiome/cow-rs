@@ -214,6 +214,9 @@ Browser-wallet session synchronization follows the same explicit contract:
 
 - `WalletSession` is kept in sync from provider-emitted `accountsChanged`, `chainChanged`, `connect`, and `disconnect` signals for supported wallet transports.
 - The public surface remains typed Rust state and events through `WalletSession` and `WalletEvent`; raw JS payloads stay local to `cow-sdk-browser-wallet`.
+- Stable EIP-1193 browser entry points such as `request`, `on`, and `removeListener` stay private typed imports inside the leaf crate rather than broad string-based dynamic access.
+- Promise-returning request paths are awaited directly only after the provider method has already returned a Promise-shaped value.
+- Dynamic reflection remains limited to compatibility detection, EIP-6963 announcement payloads, wallet metadata and compatibility flags, and provider-specific error payload fields that are not stable enough for typed imports.
 - Listener ownership follows cloned `BrowserWallet` and `Eip1193Provider` values. Cleanup happens when the last owning Rust value is dropped, without process-global event buses or singleton state.
 - `refresh_session()` remains an explicit resynchronization helper, not the primary path for externally initiated account or chain changes.
 

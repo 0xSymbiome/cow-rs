@@ -2,7 +2,7 @@
 //!
 //! This module keeps injected-wallet behavior explicit. Discovery is bounded, multi-wallet
 //! selection is visible, and typed add-chain or switch-chain helpers do not imply universal wallet
-//! support across browser extensions.
+//! support across browser extensions or broaden the crate into a raw JS bridge.
 
 use std::{cell::RefCell, fmt, rc::Rc};
 
@@ -1009,7 +1009,10 @@ mod tests {
             many.single_wallet().unwrap_err(),
             BrowserWalletError::DiscoverySelectionRequired { candidates: 2 }
         );
-        assert_eq!(many.wallet_at(0).unwrap().session().wallet_label, "MetaMask");
+        assert_eq!(
+            many.wallet_at(0).unwrap().session().wallet_label,
+            "MetaMask"
+        );
         assert_eq!(many.wallet_at(1).unwrap().session().wallet_label, "Rabby");
         assert_eq!(
             many.wallet_at(2).unwrap_err(),

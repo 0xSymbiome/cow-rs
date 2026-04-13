@@ -147,6 +147,7 @@ Browser wallet support is a supported browser-runtime surface with explicit boun
 
 - Deterministic proof mode lives in the mock wallet and crate-level contract tests. That path is the automated proof for request shape, typed session updates, typed-data transport, chain management, and trading integration.
 - Injected-provider mode is the supported live browser path. It uses explicit EIP-1193 methods, bounded wallet discovery, typed session state, and typed chain-management helpers on supported chains.
+- The leaf crate binds stable EIP-1193 entry points such as `request`, `on`, and `removeListener` through private typed imports. Direct Promise awaiting happens only after the provider method has already returned a Promise, while dynamic reflection stays limited to discovery payloads, compatibility probes, vendor metadata, and provider-specific error objects.
 - Broader extension behavior remains environment-sensitive. Wallet authorization UX, extension availability, chain inventory, discovery timing, and vendor-specific method support are controlled by the injected provider and browser runtime.
 
 The root `cow-sdk` crate keeps browser-wallet support behind the `browser-wallet` feature for ergonomic re-export only. The full browser-runtime contract remains leaf-owned in `cow-sdk-browser-wallet`.

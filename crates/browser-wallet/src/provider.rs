@@ -27,7 +27,8 @@ use crate::{
 /// Transport seam for typed EIP-1193 browser-wallet requests.
 ///
 /// Implementors are responsible for method dispatch, request serialization, and optional session
-/// listener attachment. The public SDK surface remains typed at the provider and signer layers.
+/// listener attachment. The public SDK surface remains typed at the provider and signer layers,
+/// while browser-runtime interop details stay private to the leaf crate.
 pub trait Eip1193Transport {
     /// Returns the human-readable wallet label for session and event reporting.
     fn label(&self) -> &str;

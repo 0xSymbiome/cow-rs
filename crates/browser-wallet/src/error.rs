@@ -1,4 +1,7 @@
 //! Browser-wallet error types and RPC error normalization.
+//!
+//! Browser runtime failures are normalized before they cross the public Rust boundary so callers
+//! receive typed wallet and transport errors rather than raw JS values.
 
 use cow_sdk_core::{ChainId, CoreError};
 use serde::{Deserialize, Serialize};
