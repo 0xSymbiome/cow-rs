@@ -69,23 +69,27 @@ fn add_decimal_strings(left: &str, right: &str) -> Result<String, OrderbookError
     validate_decimal(left)?;
     validate_decimal(right)?;
 
+    let left_bytes = left.as_bytes();
+    let right_bytes = right.as_bytes();
+    let max_digits = left_bytes.len().max(right_bytes.len());
     let mut carry = 0u32;
-    let mut digits = Vec::new();
-    let mut left_iter = left.as_bytes().iter().rev();
-    let mut right_iter = right.as_bytes().iter().rev();
+    let mut digits = Vec::with_capacity(max_digits + 1);
 
-    loop {
-        let left_digit = left_iter.next().map(|byte| u32::from(byte - b'0'));
-        let right_digit = right_iter.next().map(|byte| u32::from(byte - b'0'));
-
-        if left_digit.is_none() && right_digit.is_none() && carry == 0 {
-            break;
-        }
-
-        let sum = left_digit.unwrap_or(0) + right_digit.unwrap_or(0) + carry;
+    for index in 0..max_digits {
+        let left_digit = left_bytes
+            .get(left_bytes.len().wrapping_sub(index + 1))
+            .map(|byte| u32::from(byte - b'0'))
+            .unwrap_or(0);
+        let right_digit = right_bytes
+            .get(right_bytes.len().wrapping_sub(index + 1))
+            .map(|byte| u32::from(byte - b'0'))
+            .unwrap_or(0);
+        let sum = left_digit + right_digit + carry;
         carry = sum / 10;
         digits.push(char::from(b'0' + (sum % 10) as u8));
     }
+
+    digits.push(char::from(b'0' + carry as u8));
 
     digits.reverse();
     let value: String = digits.into_iter().collect();

@@ -19,6 +19,22 @@ fn total_fee_transform_defaults_missing_executed_fee_to_zero() {
 }
 
 #[test]
+fn total_fee_transform_handles_carry_chains_and_trims_leading_zeroes() {
+    let total_fee =
+        calculate_total_fee(Some("000099"), Some("000901")).expect("decimal carry must work");
+
+    assert_eq!(total_fee, "1000");
+}
+
+#[test]
+fn total_fee_transform_preserves_final_carry_beyond_the_longest_input() {
+    let total_fee =
+        calculate_total_fee(Some("999"), Some("1")).expect("final carry must remain explicit");
+
+    assert_eq!(total_fee, "1000");
+}
+
+#[test]
 fn total_fee_transform_rejects_invalid_decimal_input() {
     let error =
         calculate_total_fee(Some("11"), Some("nope")).expect_err("invalid decimal should fail");

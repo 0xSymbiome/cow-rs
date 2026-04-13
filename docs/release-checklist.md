@@ -62,15 +62,20 @@ Interpretation rules:
 - test sources, example shells, browser automation, and generated subgraph query or schema evidence are excluded from the reported file set
 - the workflow publishes summaries and artifacts; it does not define minimum percentage gates
 
-Mutation stays manual in the first cut and is intentionally targeted to the core deterministic crates:
+Mutation stays manual in the first cut and is intentionally targeted to narrow deterministic helper families:
 
 ```text
 cargo mutants -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-app-data --output target/mutants-report
 ```
 
+```text
+cargo mutants -p cow-sdk-orderbook -p cow-sdk-trading --file crates/orderbook/src/request.rs --file crates/orderbook/src/transform.rs --file crates/trading/src/order.rs --file crates/trading/src/slippage.rs --annotations none --no-times --re "decoded_body|execute_with|calculate_total_fee|add_decimal_strings|sanitize_protocol_fee_bps|partner_fee_bps|calculate_unique_order_id|adjust_buy_amount" --output target/mutants-report-orderbook-trading
+```
+
 Interpretation rules:
 
 - surviving mutants are explicit follow-up work items, not a branch-protection threshold
+- orderbook and trading mutation runs stay scoped to explicit decode, transform, slippage, and order-id helper families so transport and orchestration results remain interpretable
 - the full `mutants.out/` report is preserved as an artifact so surviving and unviable cases can be inspected directly
 - browser flows, WASM example packaging, and other environment-sensitive surfaces stay outside the first mutation lane
 

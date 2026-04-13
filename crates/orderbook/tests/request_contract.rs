@@ -474,3 +474,158 @@ async fn request_json_surfaces_malformed_success_payloads() {
         other => panic!("expected serialization error, got {other:?}"),
     }
 }
+
+#[tokio::test]
+async fn retryable_api_error_does_not_retry_past_the_final_attempt() {
+    let policy = RequestPolicy {
+        max_attempts: 1,
+        ..RequestPolicy::default()
+    };
+    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let attempts = Arc::new(AtomicUsize::new(0));
+
+    let error = execute_json_with::<serde_json::Value, _, _>(&policy, &limiter, {
+        let attempts = attempts.clone();
+        move || {
+            let attempts = attempts.clone();
+            async move {
+                attempts.fetch_add(1, Ordering::SeqCst);
+                Ok(ResponseEnvelope::json(
+                    INTERNAL_SERVER_ERROR,
+                    &json!({
+                        "errorType": "InternalServerError",
+                        "description": "last attempt must surface the API error"
+                    }),
+                ))
+            }
+        }
+    })
+    .await
+    .expect_err("the last retryable status must remain an API error");
+
+    assert_eq!(attempts.load(Ordering::SeqCst), 1);
+    match error {
+        cow_sdk_orderbook::OrderbookError::Api(api_error) => {
+            assert_eq!(api_error.status, INTERNAL_SERVER_ERROR);
+            assert_eq!(
+                api_error.error_type(),
+                Some("InternalServerError"),
+                "the final retryable status must not degrade into a transport error"
+            );
+        }
+        other => panic!("expected API error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn transport_errors_delay_between_retryable_attempts() {
+    let policy = RequestPolicy {
+        max_attempts: 2,
+        ..RequestPolicy::default()
+    };
+    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let attempts = Arc::new(AtomicUsize::new(0));
+    let attempt_times = Arc::new(Mutex::new(Vec::new()));
+
+    let error = execute_empty_with(&policy, &limiter, {
+        let attempts = attempts.clone();
+        let attempt_times = attempt_times.clone();
+        move || {
+            let attempts = attempts.clone();
+            let attempt_times = attempt_times.clone();
+            async move {
+                attempts.fetch_add(1, Ordering::SeqCst);
+                attempt_times
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .push(Instant::now());
+                Err("temporary network outage".to_owned())
+            }
+        }
+    })
+    .await
+    .expect_err("transport failures should still surface after retry");
+
+    assert_eq!(attempts.load(Ordering::SeqCst), 2);
+    let attempt_times = attempt_times
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .clone();
+    assert_eq!(attempt_times.len(), 2);
+    assert!(
+        attempt_times[1].duration_since(attempt_times[0]) >= Duration::from_millis(40),
+        "retryable transport failures must delay before the next attempt, not only after the final failure"
+    );
+    assert!(matches!(
+        error,
+        cow_sdk_orderbook::OrderbookError::Transport(message)
+            if message == "temporary network outage"
+    ));
+}
+
+#[tokio::test]
+async fn final_transport_error_returns_without_sleeping_again() {
+    let policy = RequestPolicy {
+        max_attempts: 1,
+        ..RequestPolicy::default()
+    };
+    let limiter = RequestRateLimiter::new(policy.rate_limit);
+
+    timeout(
+        Duration::from_millis(35),
+        execute_empty_with(&policy, &limiter, || async {
+            Err("single-attempt transport failure".to_owned())
+        }),
+    )
+    .await
+    .expect("terminal transport failures must not sleep after the last attempt")
+    .expect_err("the single transport failure should still surface");
+}
+
+#[tokio::test]
+async fn api_errors_keep_empty_bodies_empty_even_outside_204_successes() {
+    let policy = RequestPolicy {
+        max_attempts: 1,
+        ..RequestPolicy::default()
+    };
+    let limiter = RequestRateLimiter::new(policy.rate_limit);
+
+    let error = execute_json_with::<serde_json::Value, _, _>(&policy, &limiter, || async {
+        Ok(ResponseEnvelope::empty(INTERNAL_SERVER_ERROR))
+    })
+    .await
+    .expect_err("empty error bodies must remain typed as empty");
+
+    match error {
+        cow_sdk_orderbook::OrderbookError::Api(api_error) => {
+            assert_eq!(api_error.status, INTERNAL_SERVER_ERROR);
+            assert_eq!(api_error.body, ResponseBody::Empty);
+        }
+        other => panic!("expected API error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn api_errors_keep_plain_text_payloads_out_of_the_json_decoder() {
+    let policy = RequestPolicy {
+        max_attempts: 1,
+        ..RequestPolicy::default()
+    };
+    let limiter = RequestRateLimiter::new(policy.rate_limit);
+
+    let error = execute_json_with::<serde_json::Value, _, _>(&policy, &limiter, || async {
+        Ok(ResponseEnvelope::text(400, "plain-text upstream failure"))
+    })
+    .await
+    .expect_err("plain-text API errors must not be treated as malformed JSON");
+
+    match error {
+        cow_sdk_orderbook::OrderbookError::Api(api_error) => {
+            assert_eq!(
+                api_error.body,
+                ResponseBody::Text("plain-text upstream failure".to_owned())
+            );
+        }
+        other => panic!("expected API error, got {other:?}"),
+    }
+}

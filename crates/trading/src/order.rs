@@ -225,26 +225,28 @@ pub async fn calculate_unique_order_id(
         });
     let mut current = order.clone();
 
+    let Some(checker) = checker else {
+        let mut order_for_id = current;
+        order_for_id.valid_to = MAX_VALID_TO_EPOCH;
+        order_for_id.sell_token = wrapped_native_token(chain_id).address;
+        return generate_order_id(chain_id, &order_for_id, &owner, options).map_err(Into::into);
+    };
+
     loop {
         let mut order_for_id = current.clone();
         order_for_id.valid_to = MAX_VALID_TO_EPOCH;
         order_for_id.sell_token = wrapped_native_token(chain_id).address;
 
         let generated = generate_order_id(chain_id, &order_for_id, &owner, options)?;
-        let exists = match checker {
-            Some(checker) => {
-                checker
-                    .order_exists(&generated.order_id, &generated.order_digest)
-                    .await?
-            }
-            None => false,
-        };
-
-        if !exists {
-            return Ok(generated);
+        if checker
+            .order_exists(&generated.order_id, &generated.order_digest)
+            .await?
+        {
+            current.buy_amount = adjust_buy_amount(&current.buy_amount)?;
+            continue;
         }
 
-        current.buy_amount = adjust_buy_amount(&current.buy_amount)?;
+        return Ok(generated);
     }
 }
 

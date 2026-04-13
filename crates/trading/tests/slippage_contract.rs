@@ -11,9 +11,11 @@ use cow_sdk_core::{Amount, OrderKind, SupportedChainId};
 use cow_sdk_orderbook::{PriceQuality, QuoteData};
 use cow_sdk_trading::{
     MAX_SLIPPAGE_BPS, QuoteRequestOverride, SlippageSuggestionProvider, SlippageToleranceRequest,
-    SlippageToleranceResponse, SwapAdvancedSettings, resolve_slippage_suggestion,
-    suggest_slippage_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
+    SlippageToleranceResponse, SwapAdvancedSettings, partner_fee_bps, resolve_slippage_suggestion,
+    sanitize_protocol_fee_bps, suggest_slippage_bps, suggest_slippage_from_fee,
+    suggest_slippage_from_volume,
 };
+use serde_json::json;
 
 use crate::common::{COW, OWNER, WETH, address, sample_trade_parameters, sell_quote_response};
 
@@ -115,6 +117,44 @@ fn slippage_bps_clamps_to_expected_bounds() {
             .expect("max clamp should work"),
         MAX_SLIPPAGE_BPS
     );
+}
+
+#[test]
+fn protocol_fee_sanitization_accepts_only_finite_supported_values() {
+    assert_eq!(sanitize_protocol_fee_bps(None), None);
+    assert_eq!(sanitize_protocol_fee_bps(Some("not-a-number")), None);
+    assert_eq!(sanitize_protocol_fee_bps(Some("0")), None);
+    assert_eq!(sanitize_protocol_fee_bps(Some("0.00001")), None);
+    assert_eq!(sanitize_protocol_fee_bps(Some("0.0001")), Some(0.0001));
+    assert_eq!(sanitize_protocol_fee_bps(Some("-1")), None);
+    assert_eq!(sanitize_protocol_fee_bps(Some("inf")), None);
+    assert_eq!(sanitize_protocol_fee_bps(Some("1.25")), Some(1.25));
+}
+
+#[test]
+fn partner_fee_extraction_prefers_supported_object_and_array_shapes() {
+    assert_eq!(
+        partner_fee_bps(Some(&json!({
+            "volumeBps": 42,
+            "recipient": crate::common::ALT_RECEIVER
+        }))),
+        Some(42)
+    );
+    assert_eq!(
+        partner_fee_bps(Some(&json!([
+            {"unexpected": true},
+            [{"volumeBps": 9}],
+            {"volumeBps": 55}
+        ]))),
+        Some(9)
+    );
+    assert_eq!(
+        partner_fee_bps(Some(&json!({
+            "volumeBps": u64::from(u32::MAX) + 1
+        }))),
+        None
+    );
+    assert_eq!(partner_fee_bps(Some(&json!([{"missing": true}, []]))), None);
 }
 
 #[tokio::test]

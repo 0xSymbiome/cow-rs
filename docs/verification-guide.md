@@ -32,7 +32,9 @@ The registry records the property. It does not centralize execution. Contract te
 
 For the deterministic core trio, the property suites cover the helper families directly: compact flag and signature codecs in `cow-sdk-contracts`, typed-data and EIP-1271 payload envelopes in `cow-sdk-signing`, and canonical JSON plus schema helpers in `cow-sdk-app-data`.
 
-For the orchestration trio, the generated suites keep the transport seams explicit: `cow-sdk-orderbook` exercises quote-request `appData` and pagination shape, `cow-sdk-trading` exercises quote-request override precedence together with quote-to-order preservation, and `cow-sdk-subgraph` exercises nested variable transport plus equivalent string-or-number scalar decoding.
+For the orchestration trio, the generated suites keep the transport seams explicit: `cow-sdk-orderbook` exercises quote-request `appData`, retry or decode boundaries, and pagination shape, `cow-sdk-trading` exercises quote-request override precedence together with quote-to-order preservation, slippage helper boundaries, and order-id collision semantics, and `cow-sdk-subgraph` exercises nested variable transport plus equivalent string-or-number scalar decoding.
+
+When a change touches deterministic orderbook or trading helpers directly, use the maintained helper-family mutation scope rather than a whole-crate mutation sweep. The public depth lane keeps that scope focused on request decoding, retry termination, fee normalization, partner-fee extraction, and order-id collision decrement semantics so the results stay interpretable.
 
 ## Runtime Traits
 
