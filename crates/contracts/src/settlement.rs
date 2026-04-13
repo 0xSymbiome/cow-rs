@@ -376,7 +376,7 @@ pub fn encode_order_flags(flags: &OrderFlags) -> Result<u8, ContractsError> {
         OrderKind::Sell => 0,
         OrderKind::Buy => 1,
     };
-    let partial = u8::from(flags.partially_fillable) << 1;
+    let partial = if flags.partially_fillable { 0b10 } else { 0 };
     let sell = match flags.sell_token_balance {
         OrderBalance::Erc20 => 0,
         OrderBalance::External => 0b10 << 2,
@@ -386,7 +386,7 @@ pub fn encode_order_flags(flags: &OrderFlags) -> Result<u8, ContractsError> {
         OrderBalance::Erc20 | OrderBalance::External => 0,
         OrderBalance::Internal => 0b1 << 4,
     };
-    Ok(kind | partial | sell | buy)
+    Ok([kind, partial, sell, buy].into_iter().sum())
 }
 
 /// Decodes compact order flags from the settlement bitfield.
@@ -431,12 +431,16 @@ pub fn decode_order_flags(encoded: u8) -> Result<OrderFlags, ContractsError> {
 ///
 /// Returns any error from [`encode_order_flags`].
 pub fn encode_trade_flags(flags: &TradeFlags) -> Result<u8, ContractsError> {
-    Ok(encode_order_flags(&OrderFlags {
+    let order_flags = encode_order_flags(&OrderFlags {
         kind: flags.kind,
         partially_fillable: flags.partially_fillable,
         sell_token_balance: flags.sell_token_balance,
         buy_token_balance: flags.buy_token_balance,
-    })? | (flags.signing_scheme.as_u8() << 5))
+    })?;
+    let signing_scheme = flags.signing_scheme.as_u8() << 5;
+    Ok(order_flags
+        .checked_add(signing_scheme)
+        .expect("signing-scheme flags occupy a disjoint high-bit range"))
 }
 
 /// Decodes trade flags from the compact settlement bitfield.

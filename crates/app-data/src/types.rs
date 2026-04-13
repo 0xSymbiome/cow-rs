@@ -77,12 +77,6 @@ impl SchemaVersion {
     }
 }
 
-impl Default for SchemaVersion {
-    fn default() -> Self {
-        Self::latest()
-    }
-}
-
 impl fmt::Display for SchemaVersion {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
@@ -202,7 +196,6 @@ mod tests {
         let latest = SchemaVersion::latest();
 
         assert_eq!(latest.as_str(), LATEST_APP_DATA_VERSION);
-        assert_eq!(SchemaVersion::default(), latest);
         assert_eq!(latest.to_string(), LATEST_APP_DATA_VERSION);
         assert_eq!(
             LATEST_APP_DATA_VERSION.parse::<SchemaVersion>().unwrap(),

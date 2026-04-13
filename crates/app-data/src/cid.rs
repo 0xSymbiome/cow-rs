@@ -6,7 +6,6 @@ use sha2::{Digest as Sha2Digest, Sha256};
 use crate::AppDataError;
 
 const LATEST_CID_CODEC: u64 = 0x55;
-const LEGACY_CID_CODEC: u64 = 0x70;
 const KECCAK_256_CODE: u64 = 0x1b;
 const SHA2_256_CODE: u64 = 0x12;
 const APP_DATA_HEX_LENGTH: usize = 32;
@@ -107,9 +106,9 @@ fn ensure_supported_cid(cid: &Cid) -> Result<(), AppDataError> {
     }
 
     match cid.version() {
-        Version::V0 if cid.codec() == LEGACY_CID_CODEC && cid.hash().code() == SHA2_256_CODE => {
-            Ok(())
-        }
+        // Parsed `CIDv0` values are already constructor-bounded to the legacy
+        // dag-pb + sha2-256 contract by the `cid` crate.
+        Version::V0 => Ok(()),
         Version::V1 if cid.codec() == LATEST_CID_CODEC && cid.hash().code() == KECCAK_256_CODE => {
             Ok(())
         }
@@ -128,24 +127,33 @@ mod tests {
             Multihash::<64>::wrap(KECCAK_256_CODE, &[0x11; APP_DATA_HEX_LENGTH]).unwrap(),
         );
         let wrong_latest_codec = Cid::new_v1(
-            LEGACY_CID_CODEC,
+            0x70,
             Multihash::<64>::wrap(KECCAK_256_CODE, &[0x22; APP_DATA_HEX_LENGTH]).unwrap(),
         );
         let wrong_latest_hash = Cid::new_v1(
             LATEST_CID_CODEC,
             Multihash::<64>::wrap(SHA2_256_CODE, &[0x33; APP_DATA_HEX_LENGTH]).unwrap(),
         );
-        let legacy = Cid::new(
-            Version::V0,
-            LEGACY_CID_CODEC,
-            Multihash::<64>::wrap(SHA2_256_CODE, &[0x44; APP_DATA_HEX_LENGTH]).unwrap(),
-        )
-        .unwrap();
+        let legacy =
+            Cid::new_v0(Multihash::<64>::wrap(SHA2_256_CODE, &[0x44; APP_DATA_HEX_LENGTH]).unwrap())
+                .unwrap();
 
         assert_eq!(ensure_supported_cid(&latest), Ok(()));
         assert_eq!(ensure_supported_cid(&legacy), Ok(()));
         assert_eq!(ensure_supported_cid(&wrong_latest_codec), Err(AppDataError::InvalidCid));
         assert_eq!(ensure_supported_cid(&wrong_latest_hash), Err(AppDataError::InvalidCid));
+    }
+
+    #[test]
+    fn legacy_cid_constructor_is_already_bounded_to_the_supported_contract() {
+        let legacy =
+            Cid::new_v0(Multihash::<64>::wrap(SHA2_256_CODE, &[0x77; APP_DATA_HEX_LENGTH]).unwrap())
+                .unwrap();
+
+        assert_eq!(legacy.version(), Version::V0);
+        assert_eq!(legacy.codec(), 0x70);
+        assert_eq!(legacy.hash().code(), SHA2_256_CODE);
+        assert_eq!(ensure_supported_cid(&legacy), Ok(()));
     }
 
     #[test]
