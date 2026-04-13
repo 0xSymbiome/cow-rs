@@ -1,3 +1,5 @@
+#![cfg(not(target_arch = "wasm32"))]
+
 use cow_sdk_browser_wallet::{BrowserWallet, MockEip1193Transport};
 use cow_sdk_core::AsyncProvider;
 use cow_sdk_core::{Address, Amount, ContractCall, HexData, SupportedChainId};

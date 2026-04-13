@@ -219,6 +219,7 @@ Browser-wallet session synchronization follows the same explicit contract:
 - Dynamic reflection remains limited to compatibility detection, EIP-6963 announcement payloads, wallet metadata and compatibility flags, and provider-specific error payload fields that are not stable enough for typed imports.
 - Listener ownership follows cloned `BrowserWallet` and `Eip1193Provider` values. Cleanup happens when the last owning Rust value is dropped, without process-global event buses or singleton state.
 - `refresh_session()` remains an explicit resynchronization helper, not the primary path for externally initiated account or chain changes.
+- Direct browser-targeted proof for this seam lives in `crates/browser-wallet/tests/wasm_bridge_contract.rs` and runs through `wasm-pack test --headless --chrome` with repository-owned fixtures.
 
 Browser-wallet chain management uses the typed crate-local contract:
 
@@ -232,12 +233,14 @@ Browser-wallet chain management uses the typed crate-local contract:
 Browser-wallet support posture stays explicit across the public surface:
 
 - The default `cow-sdk` facade does not assume browser-wallet access. Browser-wallet support is exposed only through the `browser-wallet` feature and the `cow-sdk-browser-wallet` crate.
-- Deterministic proof comes from browser-wallet contract tests, the mock mode in the browser-wallet console, and the committed `browser-wallet-e2e.yml` automation lane for deterministic injected-provider console flows.
+- Deterministic proof comes from browser-wallet contract tests, direct `wasm-bindgen-test` bridge coverage in `crates/browser-wallet/tests/wasm_bridge_contract.rs`, the mock mode in the browser-wallet console, and the committed `browser-wallet-e2e.yml` automation lane for deterministic injected-provider console flows.
 - `MockEip1193Transport` is the deterministic proof seam. It is part of the public leaf-crate contract for tests and public verification surfaces, not a hidden helper.
 - In the browser-wallet console, `Reset Session` clears console session state without dropping the selected wallet handle or confirmed provider choice, while `Forget Wallet` clears both explicitly.
 - In the browser-wallet console, `Detect` caches discovered wallet candidates, `Confirm Wallet` records the provider choice when more than one candidate is present, `Connect / Reconnect` uses the confirmed provider or retained selected wallet handle, and `Rescan` refreshes the candidate set while revalidating or clearing the confirmed choice.
 - In the browser-wallet console, the injected-wallet pane also exposes stable DOM markers for discovered wallets, selection state, session state, signing, quote, submit, cancel, and explicit error surfaces so browser automation and human inspection read the same contract.
 - The committed browser automation uses local EIP-6963 fixtures and route-mocked orderbook requests instead of a live wallet extension, public RPC endpoint, or external website.
+- `wasm.yml` proves the owned browser bridge directly with `wasm-pack test --headless --chrome` in `crates/browser-wallet` and deterministic export checks in `examples/wasm/sdk-verification-console`.
+- `browser-wallet-e2e.yml` layers broader console automation on top of that direct bridge proof while staying fully repository-owned and fixture-backed.
 - Injected-provider support covers the typed EIP-1193 flows exercised by `cow-sdk-browser-wallet` on supported chains with explicit user authorization.
 - Off-WASM discovery is intentionally a typed no-op. `discover()` and `discover_with()` return an empty result set, and `detect()` returns `None`, instead of implying browser-provider availability outside a browser runtime.
 - Public Result-returning wallet APIs should keep failure modes explicit: user rejection, disconnected provider, wrong chain, chain-not-added, malformed response, unsupported method, invalid typed chain configuration, and environment-sensitive unavailability are distinct error classes.
@@ -324,7 +327,9 @@ The repository ships three validation layers:
 - `docs-quality.yml` keeps workspace doctests explicit, adds `cargo test --all-features --workspace --doc`, and runs a nightly docs.rs-style rustdoc build with `DOCS_RS=1` plus nightly rustdoc presentation flags.
 - `crate-checks.yml` is a scheduled and manual maintenance lane that runs `cargo hack check --workspace --each-feature --no-dev-deps` to catch crate-isolation regressions that routine workspace-wide checks can miss.
 - `release-readiness.yml` reruns the pinned library checks, the dedicated workspace doctest lane, the compatibility-floor job, and the light Windows stable job, then executes the repo-local publication contract and a separate pinned-upstream provenance lane that provisions independent checkouts from `parity/source-lock.yaml` before explicit-root validation.
-- `wasm.yml` and `wasm-pages.yml` cover the WASM compatibility and WASM example deployment surfaces while staying separate from the native PR-blocking contract.
+- `wasm.yml` covers the WASM compatibility surface, direct browser-wallet bridge proof through `wasm-pack test --headless --chrome`, deterministic SDK verification console export checks, and the WASM example build steps while staying separate from the native PR-blocking contract.
+- `browser-wallet-e2e.yml` combines native browser-wallet tests, the direct bridge proof lane, and fixture-backed browser automation for the browser-wallet console.
+- `wasm-pages.yml` covers the WASM example deployment surface.
 - `test-depth.yml` is the non-blocking depth-reporting lane. Its scheduled coverage job runs `cargo +nightly llvm-cov` across workspace tests and doctests, excludes test sources, example shells, browser automation, and generated subgraph evidence from interpretation, and publishes summary, LCOV, and a reusable coverage-trend snapshot. Its manual mutation job runs `cargo mutants` against the deterministic core trio plus maintained helper-family scopes for orderbook or trading and subgraph or browser-wallet changes, preserves the full report as an artifact, and records surviving-mutant movement through scope-specific trend snapshots for follow-up work.
 
 Action references in workflow files are pinned to immutable SHAs.
@@ -380,6 +385,9 @@ cargo +1.94.0 check --workspace --all-features
 cargo +1.94.0 test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
 cargo doc --workspace --all-features --no-deps
+cd crates/browser-wallet && wasm-pack test --headless --chrome
+cd examples/wasm/sdk-verification-console && wasm-pack test --headless --chrome
+bun run --cwd e2e/browser-wallet test
 cargo hack check --workspace --feature-powerset --depth 1
 typos --config .github/config/typos.toml
 cargo deny check bans licenses sources --config .github/config/deny.toml

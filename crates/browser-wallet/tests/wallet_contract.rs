@@ -1,3 +1,5 @@
+#![cfg(not(target_arch = "wasm32"))]
+
 use cow_sdk_browser_wallet::{
     BrowserWallet, BrowserWalletError, InjectedWalletDetectionOptions, MockEip1193Transport,
     WalletChainChangeKind, WalletChainParameters, WalletEvent, WalletNativeCurrency,

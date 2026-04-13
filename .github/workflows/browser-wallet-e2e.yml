@@ -46,6 +46,10 @@ jobs:
       - name: Test browser-wallet crate
         run: cargo test -p cow-sdk-browser-wallet
 
+      - name: Test browser-wallet direct bridge in headless Chrome
+        working-directory: crates/browser-wallet
+        run: wasm-pack test --headless --chrome
+
       - name: Build SDK for wasm with browser wallet
         run: cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 

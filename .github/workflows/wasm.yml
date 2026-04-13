@@ -48,6 +48,12 @@ jobs:
         run: cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.14.0 --locked
+      - name: Test browser-wallet direct bridge in headless Chrome
+        working-directory: crates/browser-wallet
+        run: wasm-pack test --headless --chrome
+      - name: Test sdk verification console exports in headless Chrome
+        working-directory: examples/wasm/sdk-verification-console
+        run: wasm-pack test --headless --chrome
       - name: Build sdk verification console web package
         working-directory: examples/wasm/sdk-verification-console
         run: wasm-pack build --target web

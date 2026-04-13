@@ -1,3 +1,5 @@
+#![cfg(not(target_arch = "wasm32"))]
+
 use cow_sdk_browser_wallet::{BrowserWallet, MockEip1193Transport, WalletEvent};
 use cow_sdk_core::{Address, SupportedChainId};
 
@@ -27,8 +29,14 @@ async fn wallet_session_state_machine_keeps_reset_and_refresh_boundaries_explici
         .expect("connect should populate the deterministic session");
     assert!(connected.connected);
     assert_eq!(connected.accounts.len(), 1);
-    assert_eq!(connected.selected_account, connected.accounts.first().cloned());
-    assert_eq!(connected.chain_id, Some(u64::from(SupportedChainId::Sepolia)));
+    assert_eq!(
+        connected.selected_account,
+        connected.accounts.first().cloned()
+    );
+    assert_eq!(
+        connected.chain_id,
+        Some(u64::from(SupportedChainId::Sepolia))
+    );
 
     let reset = wallet.reset_session();
     assert!(!reset.connected);
@@ -43,16 +51,21 @@ async fn wallet_session_state_machine_keeps_reset_and_refresh_boundaries_explici
         .expect("refresh should restore session state from the transport");
     assert!(restored.connected);
     assert_eq!(restored.accounts.len(), 1);
-    assert_eq!(restored.selected_account, restored.accounts.first().cloned());
-    assert_eq!(restored.chain_id, Some(u64::from(SupportedChainId::Sepolia)));
+    assert_eq!(
+        restored.selected_account,
+        restored.accounts.first().cloned()
+    );
+    assert_eq!(
+        restored.chain_id,
+        Some(u64::from(SupportedChainId::Sepolia))
+    );
 }
 
 #[tokio::test(flavor = "current_thread")]
 async fn wallet_event_state_machine_tracks_disconnect_and_explicit_reconnect() {
     let transport = MockEip1193Transport::sepolia();
     let wallet = BrowserWallet::from_transport(transport.clone());
-    let alternate =
-        Address::new("0x5555555555555555555555555555555555555555").unwrap();
+    let alternate = Address::new("0x5555555555555555555555555555555555555555").unwrap();
 
     wallet
         .connect()
@@ -81,7 +94,10 @@ async fn wallet_event_state_machine_tracks_disconnect_and_explicit_reconnect() {
         .expect("explicit reconnect should restore transport-owned state");
     assert!(reconnected.connected);
     assert_eq!(reconnected.selected_account, Some(alternate));
-    assert_eq!(reconnected.chain_id, Some(u64::from(SupportedChainId::Mainnet)));
+    assert_eq!(
+        reconnected.chain_id,
+        Some(u64::from(SupportedChainId::Mainnet))
+    );
 
     let events = wallet.take_events();
     assert!(events.iter().any(

@@ -27,9 +27,9 @@ This document maps the maintained `cow-rs` surface to the committed validation p
 | App-data parity | `cow-sdk-app-data`, `cow-sdk-trading` | CID conversion, schema handling, fetch, pinning seams, and fail-closed encoding tests. | Live IPFS or pinning services remain optional integration checks. | [Parity Matrix](parity-matrix.md), [Security And Validation Matrix](security-matrix.md) |
 | Subgraph support | `cow-sdk-subgraph` | Typed query construction, decode, and error-boundary tests plus deterministic native scenarios. | The opt-in live subgraph example depends on external endpoint configuration and remains manual. | [Parity Matrix](parity-matrix.md), [Verification Guide](verification-guide.md), [Examples](examples.md) |
 | Blockchain fetch and decode | `cow-sdk-orderbook` | Mocked orderbook transport, request-shape, and response-conversion tests. | Live orderbook behavior depends on remote endpoints and is not part of the routine blocking lane. | [Parity Matrix](parity-matrix.md), [Security And Validation Matrix](security-matrix.md) |
-| WASM target | `cow-sdk`, `cow-sdk-app-data`, WASM examples | WASM target builds, deterministic SDK verification console checks, committed browser automation for the SDK verification console, and committed browser automation for the browser-wallet console. | Browser-hosted rendering and deployment inspection remain environment-sensitive; GitHub Pages inspection is manual. | [Release Checklist](release-checklist.md), [Examples](examples.md) |
+| WASM target | `cow-sdk`, `cow-sdk-app-data`, WASM examples | WASM target builds, direct `wasm-bindgen-test` proof for `cow-sdk-browser-wallet`, deterministic SDK verification console exports through `wasm-pack test --headless --chrome`, and committed browser automation for the two WASM consoles. | Browser-hosted rendering and deployment inspection remain environment-sensitive; GitHub Pages inspection is manual. | [Release Checklist](release-checklist.md), [Examples](examples.md) |
 | Quality and publishability | whole workspace | Formatting, linting, tests, doctests, docs, feature-matrix checks, dependency policy, source-lock validation, and package dry runs. | Crates.io publication and independent upstream-root parity validation are separate operational steps. | [Release Checklist](release-checklist.md), [Security And Validation Matrix](security-matrix.md) |
-| Browser wallet integration | `cow-sdk-browser-wallet`, `cow-sdk`, browser-wallet console | Browser-wallet crate tests, deterministic mock-wallet flows, WASM builds, console mock mode, and committed browser automation for injected-provider flows using local EIP-6963 fixtures plus route-mocked orderbook requests. | Live extension-backed authorization persistence, wallet UX, chain inventory, and vendor-specific behavior remain environment-sensitive. | [Verification Guide](verification-guide.md), [Security And Validation Matrix](security-matrix.md), [Release Checklist](release-checklist.md) |
+| Browser wallet integration | `cow-sdk-browser-wallet`, `cow-sdk`, browser-wallet console | Native crate tests, direct `wasm-bindgen-test` bridge proof, deterministic mock-wallet flows, WASM builds, console mock mode, and committed browser automation for injected-provider flows using local EIP-6963 fixtures plus route-mocked orderbook requests. | Live extension-backed authorization persistence, wallet UX, chain inventory, and vendor-specific behavior remain environment-sensitive. | [Verification Guide](verification-guide.md), [Security And Validation Matrix](security-matrix.md), [Release Checklist](release-checklist.md) |
 
 ## Primary Commands
 
@@ -41,6 +41,9 @@ cargo test --workspace --doc
 cargo test --all-features --workspace --doc
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
 cargo doc --workspace --all-features --no-deps
+cd crates/browser-wallet && wasm-pack test --headless --chrome
+cd examples/wasm/sdk-verification-console && wasm-pack test --headless --chrome
+bun run --cwd e2e/browser-wallet test
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
 ```
 
@@ -48,8 +51,10 @@ cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --sou
 
 - Repo-local source-lock validation proves that the committed fixtures, vendored schemas, and pinned producer metadata are coherent from this repository checkout.
 - Provenance-sensitive parity proof is separate and requires independent upstream checkouts at the pinned commits in `parity/source-lock.yaml`.
-- `sdk-verification-console` and `browser-wallet-console` both have committed deterministic browser automation.
+- `cow-sdk-browser-wallet` has a direct browser-targeted proof lane through `wasm-pack test --headless --chrome`; it exercises the owned `wasm-bindgen` bridge with repository fixtures instead of a live extension.
+- `sdk-verification-console` and `browser-wallet-console` both have committed deterministic browser automation, and the SDK verification console also has deterministic `wasm-pack test --headless --chrome` export checks.
 - The browser-wallet console automation uses local EIP-6963 fixtures and route-mocked orderbook requests instead of live wallet extensions, public RPC endpoints, or external websites.
+- The direct browser-wallet bridge lane and the broader browser-wallet console automation prove different boundaries on purpose: the former exercises the owned crate seam directly, while the latter verifies the example shell and browser interactions around that seam.
 - Live quote, orderbook, and subgraph interactions remain optional manual checks because they depend on external services or credentials.
 - Live extension-backed browser-wallet checks remain optional because authorization persistence, vendor prompts, and wallet-specific behavior depend on the installed extension rather than the SDK contract.
 - GitHub Pages deployment inspection is useful for release verification, but it is not part of the routine blocking contract.
