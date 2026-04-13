@@ -222,3 +222,97 @@ impl BrowserWalletError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn known_rpc_error_codes_map_to_explicit_browser_wallet_variants() {
+        let cases = [
+            (
+                4001,
+                None,
+                BrowserWalletError::UserRejectedRequest {
+                    method: "eth_requestAccounts".to_owned(),
+                    code: 4001,
+                    message: "code-4001".to_owned(),
+                },
+            ),
+            (
+                4900,
+                None,
+                BrowserWalletError::Disconnected {
+                    method: "eth_requestAccounts".to_owned(),
+                    code: 4900,
+                    message: "code-4900".to_owned(),
+                },
+            ),
+            (
+                4901,
+                None,
+                BrowserWalletError::WrongChain {
+                    method: "eth_requestAccounts".to_owned(),
+                    code: 4901,
+                    message: "code-4901".to_owned(),
+                },
+            ),
+            (
+                4902,
+                Some(u64::from(cow_sdk_core::SupportedChainId::Base)),
+                BrowserWalletError::ChainNotAdded {
+                    chain_id: u64::from(cow_sdk_core::SupportedChainId::Base),
+                    method: "eth_requestAccounts".to_owned(),
+                    code: 4902,
+                    message: "code-4902".to_owned(),
+                },
+            ),
+            (
+                -32601,
+                None,
+                BrowserWalletError::UnsupportedRpcMethod {
+                    method: "eth_requestAccounts".to_owned(),
+                    message: "code--32601".to_owned(),
+                },
+            ),
+        ];
+
+        for (code, requested_chain, expected) in cases {
+            let error = BrowserWalletError::from_rpc(
+                "eth_requestAccounts",
+                RpcErrorPayload {
+                    code,
+                    message: format!("code-{code}"),
+                    data: None,
+                },
+                requested_chain,
+            );
+
+            assert_eq!(error, expected);
+        }
+    }
+
+    #[test]
+    fn unknown_rpc_codes_preserve_the_raw_rpc_payload_shape() {
+        let error = BrowserWalletError::from_rpc(
+            "wallet_switchEthereumChain",
+            RpcErrorPayload {
+                code: -32_000,
+                message: "generic rpc error".to_owned(),
+                data: Some(json!({ "detail": "kept" })),
+            },
+            Some(u64::from(cow_sdk_core::SupportedChainId::Mainnet)),
+        );
+
+        assert_eq!(
+            error,
+            BrowserWalletError::Rpc {
+                method: "wallet_switchEthereumChain".to_owned(),
+                code: -32_000,
+                message: "generic rpc error".to_owned(),
+                data: Some(json!({ "detail": "kept" })),
+            }
+        );
+    }
+}

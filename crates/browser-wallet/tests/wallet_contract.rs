@@ -491,6 +491,51 @@ async fn switch_or_add_chain_adds_then_switches_when_chain_is_not_present() {
     );
 }
 
+#[tokio::test(flavor = "current_thread")]
+async fn switch_or_add_chain_does_not_add_when_chain_not_added_targets_a_different_chain() {
+    let transport = MockEip1193Transport::sepolia();
+    let wallet = BrowserWallet::from_transport(transport.clone());
+    wallet.connect().await.unwrap();
+    transport.fail_method(
+        "wallet_switchEthereumChain",
+        BrowserWalletError::ChainNotAdded {
+            chain_id: u64::from(SupportedChainId::Mainnet),
+            method: "wallet_switchEthereumChain".to_owned(),
+            code: 4902,
+            message: "mock wallet does not know chain 1".to_owned(),
+        },
+    );
+
+    let chain = WalletChainParameters::for_supported_chain(SupportedChainId::Base)
+        .try_with_rpc_url("https://base.example.invalid/rpc")
+        .unwrap();
+
+    let error = wallet.switch_or_add_chain(&chain).await.unwrap_err();
+    assert_eq!(
+        error,
+        BrowserWalletError::ChainNotAdded {
+            chain_id: u64::from(SupportedChainId::Mainnet),
+            method: "wallet_switchEthereumChain".to_owned(),
+            code: 4902,
+            message: "mock wallet does not know chain 1".to_owned(),
+        }
+    );
+
+    let methods = transport
+        .request_log()
+        .into_iter()
+        .map(|record| record.method)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        methods,
+        vec![
+            "eth_requestAccounts".to_owned(),
+            "eth_chainId".to_owned(),
+            "wallet_switchEthereumChain".to_owned(),
+        ]
+    );
+}
+
 #[test]
 fn chain_configuration_validation_rejects_invalid_inputs_before_rpc() {
     let invalid = WalletChainParameters::for_supported_chain(SupportedChainId::Base);

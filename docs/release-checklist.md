@@ -72,12 +72,17 @@ cargo mutants -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-app-data --outp
 cargo mutants -p cow-sdk-orderbook -p cow-sdk-trading --file crates/orderbook/src/request.rs --file crates/orderbook/src/transform.rs --file crates/trading/src/order.rs --file crates/trading/src/slippage.rs --annotations none --no-times --re "decoded_body|execute_with|calculate_total_fee|add_decimal_strings|sanitize_protocol_fee_bps|partner_fee_bps|calculate_unique_order_id|adjust_buy_amount" --output target/mutants-report-orderbook-trading
 ```
 
+```text
+cargo mutants -p cow-sdk-subgraph -p cow-sdk-browser-wallet --file crates/subgraph/src/api.rs --file crates/subgraph/src/types.rs --file crates/browser-wallet/src/wallet.rs --file crates/browser-wallet/src/provider.rs --file crates/browser-wallet/src/error.rs --annotations none --no-times --re "run_query_with_config|config_with_override|base_url_for|deserialize_string_or_number|deserialize_optional_string_or_number|deserialize_u64_from_string_or_number|value_to_string|single_wallet|wallet_at|requires_explicit_selection|refresh_session|switch_or_add_chain|switch_chain_request|add_chain_request|validate_wallet_text|validate_wallet_url|query_accounts|query_chain_id|reset_session|parse_chain_id_value|parse_quantity_to_decimal|parse_address_array|transaction_to_rpc|from_rpc" --output target/mutants-report-subgraph-browser-wallet
+```
+
 Interpretation rules:
 
 - surviving mutants are explicit follow-up work items, not a branch-protection threshold
 - orderbook and trading mutation runs stay scoped to explicit decode, transform, slippage, and order-id helper families so transport and orchestration results remain interpretable
+- subgraph and browser-wallet mutation runs stay scoped to explicit query execution, scalar decoding, discovery selection, RPC classification, session refresh, and typed provider request-shaping helpers
 - the full `mutants.out/` report is preserved as an artifact so surviving and unviable cases can be inspected directly
-- browser flows, WASM example packaging, and other environment-sensitive surfaces stay outside the first mutation lane
+- live extension flows, WASM example packaging, and other environment-sensitive surfaces stay outside the helper-family mutation lanes
 
 ## Repo-Local Parity And Publication Proof
 

@@ -690,3 +690,63 @@ pub(crate) fn decode_hex(value: &str, method: &str) -> Result<Vec<u8>, BrowserWa
     hex::decode(stripped)
         .map_err(|error| BrowserWalletError::malformed_response(method, error.to_string()))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn quantity_parser_preserves_non_zero_string_values() {
+        assert_eq!(
+            parse_quantity_to_decimal(&json!("42"), "eth_estimateGas").unwrap(),
+            Amount::new("42").unwrap()
+        );
+    }
+
+    #[test]
+    fn quantity_parser_rejects_non_string_values() {
+        assert_eq!(
+            parse_quantity_to_decimal(&json!(42), "eth_estimateGas").unwrap_err(),
+            BrowserWalletError::MalformedResponse {
+                method: "eth_estimateGas".to_owned(),
+                message: "expected hex quantity string".to_owned(),
+            }
+        );
+    }
+
+    #[test]
+    fn rpc_transaction_shape_keeps_present_fields_explicit_and_hex_encoded() {
+        let from = Address::new("0x4444444444444444444444444444444444444444").unwrap();
+        let to = Address::new("0x1111111111111111111111111111111111111111").unwrap();
+        let tx = TransactionRequest {
+            to: Some(to.clone()),
+            data: Some(HexData::new("0x1234").unwrap()),
+            value: Some(Amount::new("21").unwrap()),
+            gas_limit: Some(Amount::new("21000").unwrap()),
+        };
+
+        assert_eq!(
+            transaction_to_rpc(&tx, Some(&from)).unwrap(),
+            json!({
+                "from": from.as_str(),
+                "to": to.as_str(),
+                "data": "0x1234",
+                "value": "0x15",
+                "gas": "0x5208",
+            })
+        );
+    }
+
+    #[test]
+    fn rpc_transaction_shape_omits_absent_optional_fields() {
+        let from = Address::new("0x4444444444444444444444444444444444444444").unwrap();
+
+        assert_eq!(
+            transaction_to_rpc(&TransactionRequest::default(), Some(&from)).unwrap(),
+            json!({
+                "from": from.as_str(),
+            })
+        );
+    }
+}
