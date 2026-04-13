@@ -19,6 +19,7 @@ Use it with this matrix:
 - the registry records the invariant, its owner, and whether executable coverage exists
 - this matrix records the concrete crate tests, browser automation, and workflow lanes that provide the current evidence
 - executable ownership stays crate-local and browser-surface-local rather than moving into one shared harness
+- named search-profile tests stay crate-local and deterministic for helper families such as ABI payload layout, app-data canonicalization or schema parsing, and explicit subgraph request or scalar decoding
 
 ## Core SDK Crates
 
@@ -78,6 +79,7 @@ Use it with this matrix:
 - WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible.
 - Live quote, orderbook, subgraph, and wallet checks stay manual unless explicitly promoted into a deterministic routed or injected test.
 - Schema-derived evidence stays test-only and outside the public SDK API.
+- Higher-iteration search-profile tests remain limited to narrow deterministic helper families whose inputs are large enough to justify the extra exploration and whose failures stay readable in ordinary crate test output.
 - `cow-sdk-browser-wallet` tests, mock console mode, and the committed browser-wallet console automation provide deterministic proof without a live extension, public RPC endpoint, or external website.
 - Extension-backed injected-provider execution remains environment-sensitive because authorization, chain inventory, wallet UX, and vendor-specific behavior are controlled by the installed extension.
 - The public rustc lint gate applies to `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.

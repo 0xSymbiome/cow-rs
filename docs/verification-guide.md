@@ -34,6 +34,17 @@ For the deterministic core trio, the property suites cover the helper families d
 
 For the orchestration trio, the generated suites keep the transport seams explicit: `cow-sdk-orderbook` exercises quote-request `appData`, retry or decode boundaries, and pagination shape, `cow-sdk-trading` exercises quote-request override precedence together with quote-to-order preservation, slippage helper boundaries, and order-id collision semantics, and `cow-sdk-subgraph` exercises nested variable transport plus equivalent string-or-number scalar decoding.
 
+The helper families with the largest deterministic input spaces also carry
+named higher-iteration search-profile tests inside the same crate-local
+`property_contract.rs` suites. These tests stay routine, deterministic, and
+directly rerunnable:
+
+- `cargo test -p cow-sdk-contracts abi_layout_narrow_search_profile -- --nocapture`
+- `cargo test -p cow-sdk-app-data canonicalization_narrow_search_profile -- --nocapture`
+- `cargo test -p cow-sdk-app-data schema_parsing_narrow_search_profile -- --nocapture`
+- `cargo test -p cow-sdk-subgraph raw_request_narrow_search_profile -- --nocapture`
+- `cargo test -p cow-sdk-subgraph scalar_decode_narrow_search_profile -- --nocapture`
+
 When a change touches deterministic orderbook or trading helpers directly, use the maintained helper-family mutation scope rather than a whole-crate mutation sweep. The public depth lane keeps that scope focused on request decoding, retry termination, fee normalization, partner-fee extraction, and order-id collision decrement semantics so the results stay interpretable.
 
 When a change touches deterministic subgraph or browser-wallet helpers directly, use the dedicated helper-family mutation scope rather than a broad crate sweep. That scope stays limited to query execution and scalar-decoding helpers in `cow-sdk-subgraph`, plus discovery selection, RPC error classification, session refresh, and typed provider request-shaping helpers in `cow-sdk-browser-wallet`, so the results stay deterministic and do not imply live extension coverage.

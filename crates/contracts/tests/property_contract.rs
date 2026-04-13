@@ -7,6 +7,7 @@ use cow_sdk_contracts::{
 use cow_sdk_core::{Address, Amount, AppDataHex, OrderBalance, OrderKind, TypedDataDomain};
 
 const CASE_COUNT: u64 = 128;
+const SEARCH_CASE_COUNT: u64 = 512;
 
 #[derive(Clone)]
 struct CaseRng {
@@ -192,6 +193,19 @@ fn canonical_buy_balance(balance: OrderBalance) -> OrderBalance {
     }
 }
 
+fn search_signature_len(case: u64, rng: &mut CaseRng) -> usize {
+    const BOUNDARY_LENGTHS: [usize; 18] = [
+        0, 1, 2, 15, 16, 31, 32, 33, 47, 48, 63, 64, 65, 95, 96, 97, 127, 128,
+    ];
+
+    match case % 4 {
+        0 => BOUNDARY_LENGTHS[((case / 4) as usize) % BOUNDARY_LENGTHS.len()],
+        1 => 1 + (rng.next_u64() % 96) as usize,
+        2 => 64 + (rng.next_u64() % 193) as usize,
+        _ => (rng.next_u64() % 321) as usize,
+    }
+}
+
 #[test]
 fn order_hashing_is_deterministic_for_equivalent_normalized_inputs() {
     for seed in 0..CASE_COUNT {
@@ -347,5 +361,47 @@ fn signature_codecs_preserve_verifier_and_payload_bytes() {
         assert_eq!(decoded.verifier, verifier, "seed {seed}");
         assert_eq!(decoded.signature, normalized, "seed {seed}");
         assert_eq!(encoded.len(), 2 + ((20 + byte_len) * 2), "seed {seed}");
+    }
+}
+
+#[test]
+fn abi_layout_narrow_search_profile_preserves_eip1271_payload_boundaries() {
+    for case in 0..SEARCH_CASE_COUNT {
+        let mut rng = CaseRng::new(case ^ 0xC011_AA05);
+        let byte_len = search_signature_len(case, &mut rng);
+        let signature = rng.mixed_case_hex_payload(byte_len);
+        let verifier = rng.non_zero_address();
+        let encoded = encode_eip1271_signature_data(&Eip1271SignatureData {
+            verifier: verifier.clone(),
+            signature: signature.clone(),
+        })
+        .unwrap();
+        let decoded = decode_eip1271_signature_data(&encoded).unwrap();
+        let encoded_bytes = hex::decode(encoded.trim_start_matches("0x")).unwrap();
+        let verifier_bytes = hex::decode(verifier.as_str().trim_start_matches("0x")).unwrap();
+        let signature_bytes = hex::decode(signature.trim_start_matches("0x")).unwrap();
+
+        assert_eq!(encoded_bytes.len(), 20 + byte_len, "case {case}");
+        assert_eq!(
+            &encoded_bytes[..20],
+            verifier_bytes.as_slice(),
+            "case {case}"
+        );
+        assert_eq!(
+            &encoded_bytes[20..],
+            signature_bytes.as_slice(),
+            "case {case}"
+        );
+        assert_eq!(decoded.verifier, verifier, "case {case}");
+        assert_eq!(
+            decoded.signature,
+            normalized_ecdsa_signature(&signature).unwrap(),
+            "case {case}"
+        );
+        assert_eq!(
+            hex::decode(decoded.signature.trim_start_matches("0x")).unwrap(),
+            signature_bytes,
+            "case {case}"
+        );
     }
 }

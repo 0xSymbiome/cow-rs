@@ -11,6 +11,7 @@ use serde_json::{Map, Number, Value};
 use common::app_data_doc;
 
 const CASE_COUNT: u64 = 128;
+const SEARCH_CASE_COUNT: u64 = 512;
 
 #[derive(Clone)]
 struct CaseRng {
@@ -201,6 +202,105 @@ fn reordered_document(value: &Value) -> Value {
     }
 }
 
+fn generated_search_profile_json_value(rng: &mut CaseRng, depth: usize) -> Value {
+    if depth == 0 {
+        return match rng.next_u64() % 6 {
+            0 => Value::Null,
+            1 => Value::Bool(rng.next_bool()),
+            2 => Value::Number(Number::from(rng.next_u32())),
+            3 => Value::String(format!("search-{}", rng.next_u32())),
+            4 => Value::String(format!("0x{}", hex::encode(rng.fill::<8>()))),
+            _ => Value::String("boundary".repeat(1 + (rng.next_u32() % 3) as usize)),
+        };
+    }
+
+    match rng.next_u64() % 5 {
+        0 => generated_search_profile_json_value(rng, 0),
+        1 | 2 => {
+            let len = 1 + (rng.next_u64() % 6) as usize;
+            Value::Array(
+                (0..len)
+                    .map(|_| generated_search_profile_json_value(rng, depth.saturating_sub(1)))
+                    .collect(),
+            )
+        }
+        _ => {
+            let len = 1 + (rng.next_u64() % 6) as usize;
+            let mut object = Map::new();
+            for index in 0..len {
+                object.insert(
+                    format!("search-key-{}-{}", index, rng.next_u32()),
+                    generated_search_profile_json_value(rng, depth.saturating_sub(1)),
+                );
+            }
+            Value::Object(object)
+        }
+    }
+}
+
+fn generated_search_profile_schema_version(case: u64, rng: &mut CaseRng) -> String {
+    match case % 4 {
+        0 => format!("0.0.{}", case % 1_000),
+        1 => format!("{}.0.0", 1 + (rng.next_u32() % 1_000_000)),
+        2 => format!(
+            "{}.{}.{}",
+            rng.next_u32() % 1_000,
+            rng.next_u32() % 10_000,
+            rng.next_u32() % 10_000
+        ),
+        _ => format!(
+            "{}.{}.{}",
+            10_000 + (case % 10_000),
+            rng.next_u32() % 100,
+            rng.next_u32() % 100
+        ),
+    }
+}
+
+fn invalid_search_profile_schema_version(case: u64, rng: &mut CaseRng) -> String {
+    match case % 8 {
+        0 => format!("{}.{}", rng.next_u32() % 100, rng.next_u32() % 100),
+        1 => format!(
+            "{}.{}.{}.{}",
+            rng.next_u32() % 100,
+            rng.next_u32() % 100,
+            rng.next_u32() % 100,
+            rng.next_u32() % 100
+        ),
+        2 => format!(
+            "v{}.{}.{}",
+            rng.next_u32() % 100,
+            rng.next_u32() % 100,
+            rng.next_u32() % 100
+        ),
+        3 => format!(
+            "{}.{}.-{}",
+            rng.next_u32() % 100,
+            rng.next_u32() % 100,
+            1 + (rng.next_u32() % 100)
+        ),
+        4 => format!(
+            " {}.{}.{}",
+            rng.next_u32() % 100,
+            rng.next_u32() % 100,
+            rng.next_u32() % 100
+        ),
+        5 => format!(
+            "{}.{}.{} ",
+            rng.next_u32() % 100,
+            rng.next_u32() % 100,
+            rng.next_u32() % 100
+        ),
+        6 => format!(
+            "{}.{}.{}x",
+            rng.next_u32() % 100,
+            rng.next_u32() % 100,
+            rng.next_u32() % 100
+        ),
+        _ => format!("alpha.{}.{}", rng.next_u32() % 100, rng.next_u32() % 100),
+    }
+}
+
 #[test]
 fn cid_roundtrips_hold_for_latest_and_legacy_modes() {
     for seed in 0..CASE_COUNT {
@@ -360,6 +460,54 @@ fn document_sources_canonicalize_equivalent_top_level_permutations() {
             get_app_data_info(document).unwrap(),
             get_app_data_info(reordered).unwrap(),
             "seed {seed}"
+        );
+    }
+}
+
+#[test]
+fn canonicalization_narrow_search_profile_preserves_equivalent_nested_documents() {
+    for case in 0..SEARCH_CASE_COUNT {
+        let mut rng = CaseRng::new(case ^ 0xA770_0101);
+        let document = generated_search_profile_json_value(&mut rng, 3);
+        let reordered = reordered_document(&document);
+        let rendered = stringify_deterministic(&document).unwrap();
+
+        assert_eq!(rendered, manual_canonical_json(&document), "case {case}");
+        assert_eq!(
+            rendered,
+            stringify_deterministic(&reordered).unwrap(),
+            "case {case}"
+        );
+        assert_eq!(
+            serde_json::from_str::<Value>(&rendered).unwrap(),
+            document,
+            "case {case}"
+        );
+    }
+}
+
+#[test]
+fn schema_parsing_narrow_search_profile_roundtrips_valid_triplets_and_rejects_invalid_forms() {
+    for case in 0..SEARCH_CASE_COUNT {
+        let mut rng = CaseRng::new(case ^ 0xA770_0102);
+        let valid = generated_search_profile_schema_version(case, &mut rng);
+        let parsed = SchemaVersion::new(valid.clone()).unwrap();
+        let invalid = invalid_search_profile_schema_version(case, &mut rng);
+
+        assert_eq!(parsed.as_str(), valid, "case {case}");
+        assert_eq!(parsed.to_string(), valid, "case {case}");
+        assert_eq!(
+            valid.parse::<SchemaVersion>().unwrap(),
+            parsed,
+            "case {case}"
+        );
+        assert!(
+            SchemaVersion::new(invalid.clone()).is_err(),
+            "case {case}: {invalid}"
+        );
+        assert!(
+            invalid.parse::<SchemaVersion>().is_err(),
+            "case {case}: {invalid}"
         );
     }
 }
