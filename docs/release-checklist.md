@@ -47,20 +47,21 @@ Workflow expectations:
 
 ## Depth Reporting
 
-`test-depth.yml` is the maintained depth-reporting lane. It publishes read-only coverage and mutation reports for follow-up work; it does not replace the release gates above and it does not introduce threshold-based branch protection.
+`test-depth.yml` is the maintained depth-reporting lane. It publishes read-only coverage and mutation reports plus small trend snapshots for follow-up work; it does not replace the release gates above and it does not introduce threshold-based branch protection.
 
 Coverage uses an explicit nightly toolchain because doctest coverage is still an unstable rustdoc path:
 
 ```text
 cargo +nightly llvm-cov --workspace --all-features --doctests --json --summary-only --output-path target/coverage-summary.json --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/"
-cargo +nightly llvm-cov report --lcov --output-path target/coverage-lcov.info --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/"
+cargo +nightly llvm-cov --workspace --all-features --doctests --lcov --output-path target/coverage-lcov.info --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/"
 ```
 
 Interpretation rules:
 
 - the report covers deterministic crate tests and doctests only
 - test sources, example shells, browser automation, and generated subgraph query or schema evidence are excluded from the reported file set
-- the workflow publishes summaries and artifacts; it does not define minimum percentage gates
+- the workflow compares the current report to the latest stored coverage snapshot when one is available and highlights cluster movement plus new or worsened uncovered-file signals
+- the workflow publishes summaries, full artifacts, and a small reusable trend snapshot; it does not define minimum percentage gates
 
 Mutation stays manual in the first cut and is intentionally targeted to narrow deterministic helper families:
 
@@ -81,8 +82,10 @@ Interpretation rules:
 - surviving mutants are explicit follow-up work items, not a branch-protection threshold
 - orderbook and trading mutation runs stay scoped to explicit decode, transform, slippage, and order-id helper families so transport and orchestration results remain interpretable
 - subgraph and browser-wallet mutation runs stay scoped to explicit query execution, scalar decoding, discovery selection, RPC classification, session refresh, and typed provider request-shaping helpers
+- the workflow compares each manual mutation scope to the latest stored snapshot for that same scope when one is available so new surviving-mutant movement stays visible over time
 - the full `mutants.out/` report is preserved as an artifact so surviving and unviable cases can be inspected directly
 - live extension flows, WASM example packaging, and other environment-sensitive surfaces stay outside the helper-family mutation lanes
+- the retained trend helpers that build and fetch these snapshots live under `scripts/validation-depth/`
 
 ## Repo-Local Parity And Publication Proof
 
