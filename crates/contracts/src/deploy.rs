@@ -10,12 +10,12 @@ use crate::{
     primitives::{encode_address, keccak256},
 };
 
-/// Deterministic deployment salt used by CoW deployments.
+/// Deterministic deployment salt used by `CoW` deployments.
 pub const SALT: &str = "0x4d61747472657373657320696e204265726c696e210000000000000000000000";
 /// Deployer contract address used for deterministic deployment derivation.
 pub const DEPLOYER_CONTRACT: &str = "0x4e59b44847b379578588920ca78fbf26c0b4956c";
 
-/// Supported named CoW deployment artifacts.
+/// Supported named `CoW` deployment artifacts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ContractName {
@@ -27,7 +27,7 @@ pub enum ContractName {
     TradeSimulator,
 }
 
-/// Core CoW deployment addresses for a supported chain.
+/// Core `CoW` deployment addresses for a supported chain.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractAddresses {
@@ -35,7 +35,7 @@ pub struct ContractAddresses {
     pub settlement: Address,
     /// Vault relayer address.
     pub vault_relayer: Address,
-    /// EthFlow contract address.
+    /// `EthFlow` contract address.
     pub eth_flow: Address,
 }
 
@@ -74,7 +74,7 @@ pub fn deterministic_deployment_address(
 /// # Errors
 ///
 /// Returns [`ContractsError::UnsupportedChain`] when `chain_id` is not part of
-/// the supported CoW deployment set.
+/// the supported `CoW` deployment set.
 pub fn deployment_for_chain(chain_id: u64) -> Result<ContractAddresses, ContractsError> {
     let chain = SupportedChainId::try_from(chain_id)
         .map_err(|_| ContractsError::UnsupportedChain(chain_id))?;
@@ -101,4 +101,48 @@ pub fn deployment_address_hash_input(
         init_code.extend_from_slice(&crate::primitives::parse_hex(arg, "deploymentArgument")?);
     }
     Ok(keccak256(init_code))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_init_code_parts() -> (&'static str, Vec<String>) {
+        ("0x6001600055", vec!["0x1234".to_owned(), "0xabcd".to_owned()])
+    }
+
+    #[test]
+    fn deployment_hash_input_matches_the_keccak_of_bytecode_and_arguments() {
+        let (bytecode, deployment_arguments) = sample_init_code_parts();
+        let mut init_code = hex::decode(bytecode.trim_start_matches("0x")).unwrap();
+        init_code.extend_from_slice(&hex::decode("1234").unwrap());
+        init_code.extend_from_slice(&hex::decode("abcd").unwrap());
+
+        assert_eq!(
+            deployment_address_hash_input(bytecode, &deployment_arguments).unwrap(),
+            keccak256(init_code)
+        );
+    }
+
+    #[test]
+    fn deterministic_deployment_address_matches_the_create2_formula() {
+        let (bytecode, deployment_arguments) = sample_init_code_parts();
+        let hash = deployment_address_hash_input(bytecode, &deployment_arguments).unwrap();
+        let deployer = hex::decode(DEPLOYER_CONTRACT.trim_start_matches("0x")).unwrap();
+        let salt = hex::decode(SALT.trim_start_matches("0x")).unwrap();
+
+        let mut payload = Vec::with_capacity(85);
+        payload.push(0xff);
+        payload.extend_from_slice(&deployer);
+        payload.extend_from_slice(&salt);
+        payload.extend_from_slice(&hash);
+        let expected = keccak256(payload);
+
+        assert_eq!(
+            deterministic_deployment_address(bytecode, &deployment_arguments)
+                .unwrap()
+                .as_str(),
+            format!("0x{}", hex::encode(&expected[12..]))
+        );
+    }
 }

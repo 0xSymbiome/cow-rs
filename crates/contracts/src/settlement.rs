@@ -527,3 +527,175 @@ pub fn decode_order(trade: &Trade, tokens: &[Address]) -> Result<Order, Contract
         buy_token_balance: Some(flags.buy_token_balance),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_order(partially_fillable: bool) -> Order {
+        Order {
+            sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+            receiver: Some(Address::new("0x3333333333333333333333333333333333333333").unwrap()),
+            sell_amount: Amount::new("10").unwrap(),
+            buy_amount: Amount::new("20").unwrap(),
+            valid_to: 123,
+            app_data: AppDataHash::new(
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            )
+            .unwrap(),
+            fee_amount: Amount::new("1").unwrap(),
+            kind: OrderKind::Buy,
+            partially_fillable,
+            sell_token_balance: Some(OrderBalance::Internal),
+            buy_token_balance: Some(OrderBalance::External),
+        }
+    }
+
+    fn sample_signature() -> Signature {
+        Signature::PreSign {
+            owner: Address::new("0x4444444444444444444444444444444444444444").unwrap(),
+        }
+    }
+
+    fn manual_order_flags(flags: &OrderFlags) -> u8 {
+        let kind = match flags.kind {
+            OrderKind::Sell => 0,
+            OrderKind::Buy => 1,
+        };
+        let partial = u8::from(flags.partially_fillable) << 1;
+        let sell = match flags.sell_token_balance {
+            OrderBalance::Erc20 => 0,
+            OrderBalance::External => 0b10 << 2,
+            OrderBalance::Internal => 0b11 << 2,
+        };
+        let buy = match flags.buy_token_balance {
+            OrderBalance::Erc20 | OrderBalance::External => 0,
+            OrderBalance::Internal => 0b1 << 4,
+        };
+        kind | partial | sell | buy
+    }
+
+    #[test]
+    fn flag_codecs_match_the_manual_bit_layout_for_all_supported_combinations() {
+        for kind in [OrderKind::Sell, OrderKind::Buy] {
+            for partially_fillable in [false, true] {
+                for sell_token_balance in [
+                    OrderBalance::Erc20,
+                    OrderBalance::External,
+                    OrderBalance::Internal,
+                ] {
+                    for buy_token_balance in [OrderBalance::Erc20, OrderBalance::Internal] {
+                        let order_flags = OrderFlags {
+                            kind,
+                            partially_fillable,
+                            sell_token_balance,
+                            buy_token_balance,
+                        };
+                        let encoded = encode_order_flags(&order_flags).unwrap();
+
+                        assert_eq!(encoded, manual_order_flags(&order_flags));
+                        assert_eq!(decode_order_flags(encoded).unwrap(), order_flags);
+
+                        for signing_scheme in [
+                            SigningScheme::Eip712,
+                            SigningScheme::EthSign,
+                            SigningScheme::Eip1271,
+                            SigningScheme::PreSign,
+                        ] {
+                            let trade_flags = TradeFlags {
+                                kind,
+                                partially_fillable,
+                                sell_token_balance,
+                                buy_token_balance,
+                                signing_scheme,
+                            };
+                            let encoded_trade = encode_trade_flags(&trade_flags).unwrap();
+                            assert_eq!(
+                                encoded_trade,
+                                manual_order_flags(&order_flags) | (signing_scheme.as_u8() << 5)
+                            );
+                            assert_eq!(decode_trade_flags(encoded_trade).unwrap(), trade_flags);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn fill_or_kill_orders_default_the_executed_amount_to_zero() {
+        let domain = TypedDataDomain {
+            name: "Gnosis Protocol".to_owned(),
+            version: "v2".to_owned(),
+            chain_id: 1,
+            verifying_contract: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
+                .unwrap(),
+        };
+        let mut encoder = SettlementEncoder::new(domain);
+
+        encoder
+            .encode_trade(&sample_order(false), &sample_signature(), None)
+            .unwrap();
+
+        assert_eq!(encoder.trades()[0].executed_amount, Amount::zero());
+    }
+
+    #[test]
+    fn decode_order_rejects_each_invalid_index_independently() {
+        let trade = Trade {
+            sell_token_index: 0,
+            buy_token_index: 1,
+            receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+            sell_amount: Amount::new("10").unwrap(),
+            buy_amount: Amount::new("20").unwrap(),
+            valid_to: 123,
+            app_data: AppDataHash::new(
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            )
+            .unwrap(),
+            fee_amount: Amount::new("1").unwrap(),
+            flags: 0,
+            executed_amount: Amount::zero(),
+            signature: "0x".to_owned(),
+        };
+        let tokens = vec![
+            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+        ];
+
+        let mut sell_invalid = trade.clone();
+        sell_invalid.sell_token_index = 2;
+        assert!(decode_order(&sell_invalid, &tokens).is_err());
+
+        let mut buy_invalid = trade;
+        buy_invalid.buy_token_index = 2;
+        assert!(decode_order(&buy_invalid, &tokens).is_err());
+    }
+
+    #[test]
+    fn signature_encoding_preserves_each_supported_signature_variant() {
+        let ecdsa = Signature::Ecdsa {
+            scheme: SigningScheme::Eip712,
+            data: "0xABCD".to_owned(),
+        };
+        let eip1271 = Signature::Eip1271 {
+            data: crate::signature::Eip1271SignatureData {
+                verifier: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
+                    .unwrap(),
+                signature: "0x1234".to_owned(),
+            },
+        };
+        let presign = sample_signature();
+
+        assert_eq!(encode_signature_data(&ecdsa).unwrap(), "0xabcd");
+        assert_eq!(
+            encode_signature_data(&eip1271).unwrap(),
+            "0x9008d19f58aabd9ed0d60971565aa8510560ab411234"
+        );
+        assert_eq!(
+            encode_signature_data(&presign).unwrap(),
+            "0x4444444444444444444444444444444444444444"
+        );
+    }
+}

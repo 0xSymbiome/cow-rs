@@ -221,3 +221,150 @@ pub(crate) fn encode_u256_usize(value: usize) -> [u8; 32] {
     out[24..].copy_from_slice(&(value as u64).to_be_bytes());
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sha3::{Digest, Keccak256};
+
+    fn u256_word_from_u64(value: u64) -> [u8; 32] {
+        let mut out = [0u8; 32];
+        out[24..].copy_from_slice(&value.to_be_bytes());
+        out
+    }
+
+    fn address_word(address: &Address) -> [u8; 32] {
+        let mut out = [0u8; 32];
+        let decoded = hex::decode(address.as_str().trim_start_matches("0x")).unwrap();
+        out[12..].copy_from_slice(&decoded);
+        out
+    }
+
+    #[test]
+    fn hex_parsers_and_scalar_encoders_preserve_exact_abi_words() {
+        let address = Address::new("0x1234567890abcdef1234567890abcdef12345678").unwrap();
+        let app_data =
+            AppDataHash::new("0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd")
+                .unwrap();
+
+        assert_eq!(
+            parse_address_bytes(&address).unwrap(),
+            {
+                let mut expected = [0u8; 20];
+                expected.copy_from_slice(
+                    &hex::decode("1234567890abcdef1234567890abcdef12345678").unwrap(),
+                );
+                expected
+            }
+        );
+        assert_eq!(
+            parse_bytes32_hash(&app_data).unwrap(),
+            {
+                let mut expected = [0u8; 32];
+                expected.copy_from_slice(
+                    &hex::decode("abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd")
+                        .unwrap(),
+                );
+                expected
+            }
+        );
+        assert_eq!(
+            parse_hex32(
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "value"
+            )
+            .unwrap(),
+            [0xaa; 32]
+        );
+        assert_eq!(encode_address(&address).unwrap(), address_word(&address));
+        assert_eq!(encode_u32(0x0102_0304), {
+            let mut out = [0u8; 32];
+            out[28..].copy_from_slice(&0x0102_0304u32.to_be_bytes());
+            out
+        });
+        assert_eq!(
+            encode_u256_str("amount", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+                .unwrap(),
+            [0xff; 32]
+        );
+        assert!(encode_u256_str(
+            "amount",
+            "0x01ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        )
+        .is_err());
+        assert_eq!(encode_bool(false), [0u8; 32]);
+        assert_eq!(encode_bool(true)[31], 1);
+        assert_eq!(order_kind_name(OrderKind::Buy), "buy");
+        assert_eq!(order_kind_name(OrderKind::Sell), "sell");
+        assert_eq!(chain_id_bytes(1).unwrap(), u256_word_from_u64(1));
+        assert_eq!(
+            normalize_hex_payload("0xABcd", "payload").unwrap(),
+            "0xabcd"
+        );
+        assert_eq!(encode_fixed_bytes([0xaa, 0xbb, 0xcc])[..3], [0xaa, 0xbb, 0xcc]);
+        let expected_string_hash: [u8; 32] = Keccak256::digest("hello".as_bytes()).into();
+        assert_eq!(
+            encode_string_hash("hello"),
+            expected_string_hash
+        );
+    }
+
+    #[test]
+    fn domain_separator_and_typed_data_digest_match_manual_eip712_encoding() {
+        let domain = TypedDataDomain {
+            name: "Gnosis Protocol".to_owned(),
+            version: "v2".to_owned(),
+            chain_id: 1,
+            verifying_contract: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
+                .unwrap(),
+        };
+        let struct_hash = [0x55; 32];
+
+        let mut encoded = Vec::new();
+        encoded.extend_from_slice(&Keccak256::digest(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                .as_bytes(),
+        ));
+        encoded.extend_from_slice(&Keccak256::digest(domain.name.as_bytes()));
+        encoded.extend_from_slice(&Keccak256::digest(domain.version.as_bytes()));
+        encoded.extend_from_slice(&u256_word_from_u64(domain.chain_id));
+        encoded.extend_from_slice(&address_word(&domain.verifying_contract));
+        let expected_separator: [u8; 32] = Keccak256::digest(&encoded).into();
+
+        let mut digest_payload = Vec::with_capacity(66);
+        digest_payload.extend_from_slice(&[0x19, 0x01]);
+        digest_payload.extend_from_slice(&expected_separator);
+        digest_payload.extend_from_slice(&struct_hash);
+        let expected_digest: [u8; 32] = Keccak256::digest(&digest_payload).into();
+
+        assert_eq!(domain_separator(&domain).unwrap(), expected_separator);
+        assert_eq!(typed_data_digest(&domain, struct_hash).unwrap(), expected_digest);
+    }
+
+    #[test]
+    fn bytes_array_encoding_matches_manual_abi_layout_and_padding() {
+        let items = vec![vec![0x01, 0x02], vec![0xaa, 0xbb, 0xcc]];
+        let mut expected = Vec::new();
+        expected.extend_from_slice(&u256_word_from_u64(32));
+        expected.extend_from_slice(&u256_word_from_u64(2));
+        expected.extend_from_slice(&u256_word_from_u64(64));
+        expected.extend_from_slice(&u256_word_from_u64(128));
+        expected.extend_from_slice(&u256_word_from_u64(2));
+        expected.extend_from_slice(&[0x01, 0x02]);
+        expected.extend(std::iter::repeat_n(0u8, 30));
+        expected.extend_from_slice(&u256_word_from_u64(3));
+        expected.extend_from_slice(&[0xaa, 0xbb, 0xcc]);
+        expected.extend(std::iter::repeat_n(0u8, 29));
+
+        let mut empty_expected = Vec::new();
+        empty_expected.extend_from_slice(&u256_word_from_u64(32));
+        empty_expected.extend_from_slice(&u256_word_from_u64(0));
+
+        assert_eq!(abi_encode_bytes_array(&items), expected);
+        assert_eq!(abi_encode_bytes_array(&[]), empty_expected);
+        assert_eq!(padded_len(0), 0);
+        assert_eq!(padded_len(1), 32);
+        assert_eq!(padded_len(32), 32);
+        assert_eq!(padded_len(33), 64);
+    }
+}

@@ -104,6 +104,16 @@ fn fetch_policy_can_be_derived_without_leaking_pinning_credentials() {
 }
 
 #[test]
+fn fetch_policy_with_read_base_uri_replaces_the_existing_policy_value() {
+    let policy = IpfsFetchPolicy::new("https://first.example.test/ipfs")
+        .unwrap()
+        .with_read_base_uri("https://second.example.test/ipfs/")
+        .unwrap();
+
+    assert_eq!(policy.read_base_uri(), "https://second.example.test/ipfs");
+}
+
+#[test]
 fn fetch_helpers_accept_typed_policy_and_custom_read_base_uri() {
     let policy =
         IpfsFetchPolicy::new("https://ipfs.example.test/ipfs").expect("policy should be valid");

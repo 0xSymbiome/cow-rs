@@ -14,9 +14,9 @@ const APP_DATA_HEX_LENGTH: usize = 32;
 /// Supported CID derivation modes for app-data documents.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CidMode {
-    /// CIDv1 over the existing keccak256 app-data digest.
+    /// `CIDv1` over the existing keccak256 app-data digest.
     Latest,
-    /// Legacy CIDv0 over the JSON document bytes.
+    /// Legacy `CIDv0` over the JSON document bytes.
     Legacy,
 }
 
@@ -32,7 +32,7 @@ pub fn app_data_hex_to_cid(app_data_hex: &str) -> Result<String, AppDataError> {
         .map_err(|err| AppDataError::Calculation(err.to_string()))
 }
 
-/// Converts an app-data hex digest into the legacy CIDv0 representation.
+/// Converts an app-data hex digest into the legacy `CIDv0` representation.
 ///
 /// # Errors
 ///
@@ -114,5 +114,47 @@ fn ensure_supported_cid(cid: &Cid) -> Result<(), AppDataError> {
             Ok(())
         }
         _ => Err(AppDataError::InvalidCid),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ensure_supported_cid_accepts_only_the_documented_codec_and_hash_pairs() {
+        let latest = Cid::new_v1(
+            LATEST_CID_CODEC,
+            Multihash::<64>::wrap(KECCAK_256_CODE, &[0x11; APP_DATA_HEX_LENGTH]).unwrap(),
+        );
+        let wrong_latest_codec = Cid::new_v1(
+            LEGACY_CID_CODEC,
+            Multihash::<64>::wrap(KECCAK_256_CODE, &[0x22; APP_DATA_HEX_LENGTH]).unwrap(),
+        );
+        let wrong_latest_hash = Cid::new_v1(
+            LATEST_CID_CODEC,
+            Multihash::<64>::wrap(SHA2_256_CODE, &[0x33; APP_DATA_HEX_LENGTH]).unwrap(),
+        );
+        let legacy = Cid::new(
+            Version::V0,
+            LEGACY_CID_CODEC,
+            Multihash::<64>::wrap(SHA2_256_CODE, &[0x44; APP_DATA_HEX_LENGTH]).unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(ensure_supported_cid(&latest), Ok(()));
+        assert_eq!(ensure_supported_cid(&legacy), Ok(()));
+        assert_eq!(ensure_supported_cid(&wrong_latest_codec), Err(AppDataError::InvalidCid));
+        assert_eq!(ensure_supported_cid(&wrong_latest_hash), Err(AppDataError::InvalidCid));
+    }
+
+    #[test]
+    fn ensure_supported_cid_rejects_non_32_byte_digests() {
+        let short_latest = Cid::new_v1(
+            LATEST_CID_CODEC,
+            Multihash::<64>::wrap(KECCAK_256_CODE, &[0x11; APP_DATA_HEX_LENGTH - 1]).unwrap(),
+        );
+
+        assert_eq!(ensure_supported_cid(&short_latest), Err(AppDataError::InvalidCid));
     }
 }

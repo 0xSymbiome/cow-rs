@@ -192,3 +192,51 @@ fn is_semver(version: &str) -> bool {
 fn is_non_empty_digits(value: &str) -> bool {
     !value.is_empty() && value.chars().all(|ch| ch.is_ascii_digit())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn schema_version_latest_default_display_and_parse_stay_aligned() {
+        let latest = SchemaVersion::latest();
+
+        assert_eq!(latest.as_str(), LATEST_APP_DATA_VERSION);
+        assert_eq!(SchemaVersion::default(), latest);
+        assert_eq!(latest.to_string(), LATEST_APP_DATA_VERSION);
+        assert_eq!(
+            LATEST_APP_DATA_VERSION.parse::<SchemaVersion>().unwrap(),
+            latest
+        );
+    }
+
+    #[test]
+    fn schema_version_validation_accepts_triplets_and_rejects_non_semver_inputs() {
+        for valid in ["0.1.0", "1.14.0", "999.0.42"] {
+            assert!(is_semver(valid), "{valid}");
+            assert_eq!(SchemaVersion::new(valid).unwrap().as_str(), valid);
+        }
+
+        for invalid in ["1.0", "1.0.0.1", "v1.0.0", "1.two.3", "", "1..3"] {
+            assert!(!is_semver(invalid), "{invalid}");
+            assert_eq!(
+                SchemaVersion::new(invalid).unwrap_err(),
+                AppDataError::InvalidSchemaVersion(invalid.to_owned())
+            );
+        }
+
+        assert!(is_non_empty_digits("123456"));
+        assert!(!is_non_empty_digits(""));
+        assert!(!is_non_empty_digits("12a45"));
+    }
+
+    #[test]
+    fn schema_version_from_str_fails_closed_for_invalid_inputs() {
+        for invalid in ["1.0", "1.0.0.1", "v1.0.0", "1.two.3", "", "1..3"] {
+            assert_eq!(
+                invalid.parse::<SchemaVersion>().unwrap_err(),
+                AppDataError::InvalidSchemaVersion(invalid.to_owned())
+            );
+        }
+    }
+}

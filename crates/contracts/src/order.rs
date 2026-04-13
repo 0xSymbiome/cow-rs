@@ -22,7 +22,7 @@ pub const ORDER_TYPE_HASH: &str =
 /// Encoded order UID length in bytes.
 pub const ORDER_UID_LENGTH: usize = ORDER_UID_LENGTH_BYTES;
 
-/// EIP-712 field descriptor used for CoW order-type metadata.
+/// EIP-712 field descriptor used for `CoW` order-type metadata.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OrderTypeField {
     /// Field name.
@@ -94,7 +94,7 @@ pub const CANCELLATIONS_TYPE_FIELDS: [OrderTypeField; 1] = [OrderTypeField {
 ///
 /// This type intentionally differs from `cow_sdk_core::UnsignedOrder`: receiver
 /// and token-balance fields are optional here because the contract hashing
-/// boundary applies CoW Protocol defaults during normalization.
+/// boundary applies `CoW` Protocol defaults during normalization.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Order {
@@ -443,3 +443,164 @@ fn order_struct_hash(order: &NormalizedOrder) -> Result<[u8; 32], ContractsError
 }
 
 const ZERO_ADDRESS_LOWER: &str = "0x0000000000000000000000000000000000000000";
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use num_bigint::BigUint;
+    use sha3::{Digest, Keccak256};
+
+    fn sample_domain() -> TypedDataDomain {
+        TypedDataDomain {
+            name: "Gnosis Protocol".to_owned(),
+            version: "v2".to_owned(),
+            chain_id: 1,
+            verifying_contract: settlement_contract_address(
+                SupportedChainId::Mainnet,
+                cow_sdk_core::CowEnv::Prod,
+            ),
+        }
+    }
+
+    fn sample_order() -> Order {
+        Order {
+            sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+            receiver: None,
+            sell_amount: Amount::new("1000").unwrap(),
+            buy_amount: Amount::new("900").unwrap(),
+            valid_to: 1_700_000_000,
+            app_data: AppDataHash::new(
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            )
+            .unwrap(),
+            fee_amount: Amount::new("10").unwrap(),
+            kind: OrderKind::Sell,
+            partially_fillable: true,
+            sell_token_balance: Some(OrderBalance::External),
+            buy_token_balance: Some(OrderBalance::External),
+        }
+    }
+
+    fn encode_address_word(address: &Address) -> [u8; 32] {
+        let mut out = [0u8; 32];
+        let decoded = hex::decode(address.as_str().trim_start_matches("0x")).unwrap();
+        out[12..].copy_from_slice(&decoded);
+        out
+    }
+
+    fn encode_u256_word(value: &str) -> [u8; 32] {
+        let parsed = if let Some(stripped) = value.strip_prefix("0x") {
+            BigUint::parse_bytes(stripped.as_bytes(), 16)
+        } else {
+            BigUint::parse_bytes(value.as_bytes(), 10)
+        }
+        .unwrap();
+        let bytes = parsed.to_bytes_be();
+        let mut out = [0u8; 32];
+        out[32 - bytes.len()..].copy_from_slice(&bytes);
+        out
+    }
+
+    fn encode_u32_word(value: u32) -> [u8; 32] {
+        let mut out = [0u8; 32];
+        out[28..].copy_from_slice(&value.to_be_bytes());
+        out
+    }
+
+    fn keccak_word(value: &str) -> [u8; 32] {
+        Keccak256::digest(value.as_bytes()).into()
+    }
+
+    fn manual_domain_separator(domain: &TypedDataDomain) -> [u8; 32] {
+        let mut encoded = Vec::new();
+        encoded.extend_from_slice(&Keccak256::digest(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                .as_bytes(),
+        ));
+        encoded.extend_from_slice(&keccak_word(&domain.name));
+        encoded.extend_from_slice(&keccak_word(&domain.version));
+        encoded.extend_from_slice(&encode_u256_word(&domain.chain_id.to_string()));
+        encoded.extend_from_slice(&encode_address_word(&domain.verifying_contract));
+        Keccak256::digest(&encoded).into()
+    }
+
+    fn manual_struct_hash(order: &NormalizedOrder) -> [u8; 32] {
+        let mut encoded = Vec::new();
+        encoded.extend_from_slice(&hex::decode(ORDER_TYPE_HASH.trim_start_matches("0x")).unwrap());
+        encoded.extend_from_slice(&encode_address_word(&order.sell_token));
+        encoded.extend_from_slice(&encode_address_word(&order.buy_token));
+        encoded.extend_from_slice(&encode_address_word(&order.receiver));
+        encoded.extend_from_slice(&encode_u256_word(order.sell_amount.as_str()));
+        encoded.extend_from_slice(&encode_u256_word(order.buy_amount.as_str()));
+        encoded.extend_from_slice(&encode_u32_word(order.valid_to));
+        encoded.extend_from_slice(
+            &hex::decode(order.app_data.as_str().trim_start_matches("0x")).unwrap(),
+        );
+        encoded.extend_from_slice(&encode_u256_word(order.fee_amount.as_str()));
+        encoded.extend_from_slice(&keccak_word("sell"));
+        encoded.extend_from_slice(&{
+            let mut out = [0u8; 32];
+            out[31] = 1;
+            out
+        });
+        encoded.extend_from_slice(&keccak_word("external"));
+        encoded.extend_from_slice(&keccak_word("erc20"));
+        Keccak256::digest(&encoded).into()
+    }
+
+    #[test]
+    fn normalize_buy_token_balance_defaults_to_erc20_and_preserves_internal() {
+        assert_eq!(normalize_buy_token_balance(None), OrderBalance::Erc20);
+        assert_eq!(
+            normalize_buy_token_balance(Some(OrderBalance::External)),
+            OrderBalance::Erc20
+        );
+        assert_eq!(
+            normalize_buy_token_balance(Some(OrderBalance::Internal)),
+            OrderBalance::Internal
+        );
+    }
+
+    #[test]
+    fn order_hash_and_struct_hash_match_manual_eip712_encoding() {
+        let domain = sample_domain();
+        let order = sample_order();
+        let normalized = normalize_order(&order).unwrap();
+        let expected_struct_hash = manual_struct_hash(&normalized);
+
+        let mut digest_payload = Vec::with_capacity(66);
+        digest_payload.extend_from_slice(&[0x19, 0x01]);
+        digest_payload.extend_from_slice(&manual_domain_separator(&domain));
+        digest_payload.extend_from_slice(&expected_struct_hash);
+        let expected_digest = Keccak256::digest(&digest_payload);
+
+        assert_eq!(order_struct_hash(&normalized).unwrap(), expected_struct_hash);
+        assert_eq!(
+            hash_order(&domain, &order).unwrap().as_str(),
+            format!("0x{}", hex::encode(expected_digest))
+        );
+    }
+
+    #[test]
+    fn compatibility_hash_for_contract_uses_the_current_domain_and_model_shape() {
+        let order = OrderModel {
+            kind: OrderKind::Sell,
+            sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+            receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+            owner: Address::new("0x4444444444444444444444444444444444444444").unwrap(),
+            app_data_hex: AppDataHash::new(
+                "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            )
+            .unwrap(),
+        };
+        let domain = sample_domain();
+        let expected = hash_order(&domain, &compatibility_order(&order)).unwrap();
+
+        assert_eq!(
+            hash_order_for_contract(&order, 1).unwrap(),
+            parse_hex32(expected.as_str(), "orderDigest").unwrap()
+        );
+    }
+}

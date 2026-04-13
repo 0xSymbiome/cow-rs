@@ -212,3 +212,67 @@ pub fn get_app_data_content(source: impl AppDataSource) -> Result<String, AppDat
 pub fn digest_from_cid(cid: &str) -> Result<String, AppDataError> {
     cid_to_app_data_hex(cid)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::{Value, json};
+
+    #[test]
+    fn stringify_deterministic_orders_keys_without_corrupting_arrays() {
+        let document = json!({
+            "version": "0.7.0",
+            "metadata": {
+                "nested": {
+                    "b": 2,
+                    "a": 1
+                },
+                "array": [3, 2, 1]
+            },
+            "appCode": "CoW Swap"
+        });
+
+        assert_eq!(
+            stringify_deterministic(&document).unwrap(),
+            r#"{"appCode":"CoW Swap","metadata":{"array":[3,2,1],"nested":{"a":1,"b":2}},"version":"0.7.0"}"#
+        );
+    }
+
+    #[test]
+    fn string_sources_preserve_the_original_content_and_document_shape() {
+        let raw = r#"{"metadata":{"b":2,"a":1},"version":"0.7.0","appCode":"CoW Swap"}"#;
+        let expected = serde_json::from_str::<Value>(raw).unwrap();
+
+        let (borrowed_document, borrowed_content) =
+            <&str as AppDataSource>::into_document_and_content(raw, false).unwrap();
+        assert_eq!(borrowed_document, expected);
+        assert_eq!(borrowed_content, raw);
+
+        let owned = raw.to_owned();
+        let (owned_document, owned_content) =
+            owned.clone().into_document_and_content(false).unwrap();
+        assert_eq!(owned_document, expected);
+        assert_eq!(owned_content, owned);
+    }
+
+    #[test]
+    fn accessors_match_the_primary_app_data_info_result() {
+        let document = json!({
+            "appCode": "CoW Swap",
+            "metadata": {
+                "quote": {
+                    "version": "0.2.0",
+                    "slippageBips": "5"
+                }
+            },
+            "version": "0.7.0"
+        });
+
+        let info = get_app_data_info(&document).unwrap();
+
+        assert_eq!(get_app_data_info_hex(&document).unwrap(), info.app_data_hex);
+        assert_eq!(get_app_data_cid(&document).unwrap(), info.cid);
+        assert_eq!(get_app_data_content(&document).unwrap(), info.app_data_content);
+        assert_eq!(digest_from_cid(&info.cid).unwrap(), info.app_data_hex);
+    }
+}

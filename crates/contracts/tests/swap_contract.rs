@@ -94,3 +94,30 @@ fn swap_encoder_uses_contract_default_limit_amounts() {
 
     assert!(SwapEncoder::new(sample_domain()).encoded_swap().is_err());
 }
+
+#[test]
+fn swap_encoder_tokens_preserve_unique_registry_order() {
+    let mut encoder = SwapEncoder::new(sample_domain());
+    let weth = Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap();
+    let dai = Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap();
+    let usdc = Address::new("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48").unwrap();
+
+    encoder.encode_swap_step(&[
+        Swap {
+            pool_id: format!("0x{}", "11".repeat(32)),
+            asset_in: weth.clone(),
+            asset_out: dai.clone(),
+            amount: Amount::new("1").unwrap(),
+            user_data: None,
+        },
+        Swap {
+            pool_id: format!("0x{}", "22".repeat(32)),
+            asset_in: dai.clone(),
+            asset_out: usdc.clone(),
+            amount: Amount::new("2").unwrap(),
+            user_data: Some("0x1234".to_owned()),
+        },
+    ]);
+
+    assert_eq!(encoder.tokens(), vec![weth, dai, usdc]);
+}

@@ -1,12 +1,14 @@
 mod common;
 
 use cow_sdk_contracts::{Order as ContractsOrder, OrderUidParams, SigningScheme, hash_order};
-use cow_sdk_core::{Address, SupportedChainId};
+use cow_sdk_core::{Address, Amount, SupportedChainId};
 use cow_sdk_signing::{
-    GeneratedOrderId, ORDER_PRIMARY_TYPE, SigningError, generate_order_id, get_domain,
-    order_typed_data, order_typed_data_payload, sign_order, sign_order_async,
+    GeneratedOrderId, ORDER_PRIMARY_TYPE, SigningError, eip1271_signature_payload,
+    generate_order_id, get_domain, order_typed_data, order_typed_data_payload, sign_order, sign_order_async,
     sign_order_with_scheme, sign_order_with_scheme_async,
 };
+use num_bigint::BigUint;
+use sha3::{Digest, Keccak256};
 
 use common::{MockSigner, fixture_case, sample_order};
 
@@ -152,6 +154,66 @@ fn generate_order_id_reuses_contract_hashing_and_uid_packing() {
     );
 }
 
+#[test]
+fn eip1271_signature_payload_matches_the_manual_contract_encoding() {
+    let mut order = sample_order();
+    order.sell_amount = Amount::new(format!("0x{}", "ff".repeat(32))).unwrap();
+    order.buy_amount = Amount::new("0x01").unwrap();
+    order.fee_amount = Amount::new("0x02").unwrap();
+    order.app_data = cow_sdk_core::AppDataHex::new(format!("0x{}", "11".repeat(32))).unwrap();
+
+    let signature = format!("0x{}1b", "aa".repeat(64));
+    let payload = eip1271_signature_payload(&order, &signature).unwrap();
+    let signature_bytes = hex::decode(signature.trim_start_matches("0x")).unwrap();
+
+    let mut expected = Vec::with_capacity(32 * 15 + padded_len_manual(signature_bytes.len()));
+    expected.extend_from_slice(&encode_address_word(order.sell_token.as_str()));
+    expected.extend_from_slice(&encode_address_word(order.buy_token.as_str()));
+    expected.extend_from_slice(&encode_address_word(order.receiver.as_str()));
+    expected.extend_from_slice(&encode_u256_word(order.sell_amount.as_str()));
+    expected.extend_from_slice(&encode_u256_word(order.buy_amount.as_str()));
+    expected.extend_from_slice(&encode_u32_word(order.valid_to));
+    expected.extend_from_slice(&encode_bytes32_word(order.app_data.as_str()));
+    expected.extend_from_slice(&encode_u256_word(order.fee_amount.as_str()));
+    expected.extend_from_slice(&keccak_word("sell"));
+    expected.extend_from_slice(&encode_bool_word(order.partially_fillable));
+    expected.extend_from_slice(&keccak_word("erc20"));
+    expected.extend_from_slice(&keccak_word("erc20"));
+    expected.extend_from_slice(&encode_usize_word(32 * 13));
+    expected.extend_from_slice(&encode_usize_word(signature_bytes.len()));
+    expected.extend_from_slice(&signature_bytes);
+    expected.extend(std::iter::repeat_n(
+        0u8,
+        padded_len_manual(signature_bytes.len()) - signature_bytes.len(),
+    ));
+
+    assert_eq!(payload, format!("0x{}", hex::encode(expected)));
+}
+
+#[test]
+fn eip1271_signature_payload_keeps_full_bytes32_app_data_and_exact_word_padding() {
+    let mut order = sample_order();
+    order.app_data = cow_sdk_core::AppDataHex::new(format!("0x{}", "ab".repeat(32))).unwrap();
+
+    let signature = format!("0x{}", "cd".repeat(32));
+    let payload = eip1271_signature_payload(&order, &signature).unwrap();
+    let encoded = hex::decode(payload.trim_start_matches("0x")).unwrap();
+    assert_eq!(encoded.len(), 32 * 15);
+
+    let app_data_word_offset = 32 * 6;
+    assert_eq!(
+        &encoded[app_data_word_offset..app_data_word_offset + 32],
+        &parse_hex_word(order.app_data.as_str(), 32)
+    );
+
+    let dynamic_length_offset = 32 * 13;
+    assert_eq!(
+        &encoded[dynamic_length_offset..dynamic_length_offset + 32],
+        &encode_usize_word(32)
+    );
+    assert_eq!(&encoded[dynamic_length_offset + 32..dynamic_length_offset + 64], &[0xcd; 32]);
+}
+
 fn contracts_order(order: &cow_sdk_core::UnsignedOrder) -> ContractsOrder {
     ContractsOrder {
         sell_token: order.sell_token.clone(),
@@ -166,5 +228,71 @@ fn contracts_order(order: &cow_sdk_core::UnsignedOrder) -> ContractsOrder {
         partially_fillable: order.partially_fillable,
         sell_token_balance: Some(order.sell_token_balance),
         buy_token_balance: Some(order.buy_token_balance),
+    }
+}
+
+fn parse_hex_word(value: &str, expected_len: usize) -> Vec<u8> {
+    let bytes = hex::decode(value.trim_start_matches("0x")).unwrap();
+    assert_eq!(bytes.len(), expected_len);
+    bytes
+}
+
+fn encode_address_word(value: &str) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    out[12..].copy_from_slice(&parse_hex_word(value, 20));
+    out
+}
+
+fn encode_bytes32_word(value: &str) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&parse_hex_word(value, 32));
+    out
+}
+
+fn encode_u32_word(value: u32) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    out[28..].copy_from_slice(&value.to_be_bytes());
+    out
+}
+
+fn encode_u256_word(value: &str) -> [u8; 32] {
+    let parsed = if let Some(stripped) = value.strip_prefix("0x") {
+        BigUint::parse_bytes(stripped.as_bytes(), 16)
+    } else {
+        BigUint::parse_bytes(value.as_bytes(), 10)
+    }
+    .unwrap();
+    let bytes = parsed.to_bytes_be();
+    assert!(bytes.len() <= 32);
+
+    let mut out = [0u8; 32];
+    out[32 - bytes.len()..].copy_from_slice(&bytes);
+    out
+}
+
+fn encode_usize_word(value: usize) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    out[24..].copy_from_slice(&(value as u64).to_be_bytes());
+    out
+}
+
+fn encode_bool_word(value: bool) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    out[31] = u8::from(value);
+    out
+}
+
+fn keccak_word(value: &str) -> [u8; 32] {
+    let digest = Keccak256::digest(value.as_bytes());
+    let mut out = [0u8; 32];
+    out.copy_from_slice(&digest);
+    out
+}
+
+fn padded_len_manual(len: usize) -> usize {
+    if len == 0 {
+        0
+    } else {
+        ((len - 1) / 32 + 1) * 32
     }
 }
