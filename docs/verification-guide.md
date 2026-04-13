@@ -230,6 +230,25 @@ Browser-wallet support posture stays explicit across the public surface:
 - Broader extension variability remains outside the SDK contract. Extension-specific prompts, authorization persistence, chain inventory, and non-standard vendor behavior are not normalized SDK guarantees.
 - Public docs and examples should keep the root facade narrower than the leaf crate and avoid language that implies universal browser-wallet compatibility.
 
+## Optional Smoke Confirmation
+
+The repository also ships an operator-facing smoke kit for environment-sensitive confirmation that stays outside the deterministic validation contract.
+
+Use `cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- <subcommand>` when a change needs one of these optional checks:
+
+- live orderbook reachability through the native SDK example
+- live subgraph reachability through the native SDK example
+- local browser-wallet console readiness before extension-backed injected-wallet actions
+- deployed SDK verification and browser-wallet page inspection after a Pages publish
+
+This smoke kit is intentionally separate from CI and branch protection. It exists to make optional live confirmation easy to run without confusing unavailable hosts, missing API keys, local HTTP servers, or undeployed pages with deterministic regressions.
+
+The browser-wallet smoke surface stays explicit:
+
+- the smoke runner checks that the served page is reachable and still exposes the stable injected-wallet markers used by both automation and human inspection
+- extension-backed connect, chain, and signing actions remain manual because user authorization and wallet prompts belong to the installed extension
+- page reachability and marker presence can fail independently from live wallet authorization, which keeps the operator signal interpretable
+
 ## Public Package Policy
 
 Packaging posture is explicit in the manifests:

@@ -23,11 +23,6 @@ wasm-pack build --target web
 
 Serve this directory over HTTP, for example:
 
-```text
-python -m http.server 8081
-```
-
-```text
 bunx serve --listen 8081 .
 ```
 
@@ -37,4 +32,18 @@ When deployed through GitHub Pages, open:
 
 ```text
 https://<owner>.github.io/<repo>/browser-wallet-console/
+```
+
+Optional injected-wallet confirmation stays explicit and opt-in. After serving the page locally, use the smoke runner to confirm that the console is reachable and still exposes the expected stable injected-wallet markers before performing extension-backed actions:
+
+```text
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- browser-wallet-live --url http://127.0.0.1:8081
+```
+
+That check does not automate the extension flow. It verifies page readiness and then hands off to manual `Detect`, `Confirm Wallet`, `Connect / Reconnect`, `Status`, and signing actions in the injected-wallet pane.
+
+For deployed page inspection after a Pages publish, use:
+
+```text
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-pages --browser-wallet-url https://<owner>.github.io/<repo>/browser-wallet-console/ --sdk-verification-url https://<owner>.github.io/<repo>/sdk-verification-console/
 ```

@@ -163,6 +163,34 @@ Browser-wallet validation is intentionally split:
 - deterministic proof comes from `cargo test -p cow-sdk-browser-wallet`, mock-wallet console mode, the browser-wallet console WASM build, and the committed browser-wallet console automation using local EIP-6963 fixtures plus route-mocked orderbook requests
 - live extension-backed connect, sign, quote, submit, and cancel checks remain optional because authorization persistence, vendor prompts, chain inventory, and wallet-specific behavior are controlled by the installed extension rather than normalized by the SDK
 
+## Optional Validation Smoke
+
+Use the smoke kit when a change needs live service confirmation, live extension-backed wallet confirmation, or deployed-page inspection in addition to the deterministic proof surfaces above.
+
+The smoke kit is intentionally opt-in:
+
+- it is not part of routine CI
+- it does not join branch protection
+- it distinguishes unavailable services and missing local prerequisites from actual regressions
+
+Commands:
+
+```text
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- orderbook-live
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- subgraph-live
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- browser-wallet-live --url http://127.0.0.1:8081
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-pages --sdk-verification-url https://<owner>.github.io/<repo>/sdk-verification-console/ --browser-wallet-url https://<owner>.github.io/<repo>/browser-wallet-console/
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
+```
+
+Interpretation rules:
+
+- exit code `0` means every selected smoke surface passed
+- exit code `2` means at least one selected surface was unavailable because a local host, deployed page, credential, or remote service was not reachable
+- exit code `1` means the selected surface responded but broke an expected contract such as payload shape, page markers, or live example behavior
+- the browser-wallet live check confirms local page readiness and stable markers before operator-driven injected-wallet actions; it does not claim extension automation
+- the full environment and URL contract lives in `scripts/validation-smoke/README.md`
+
 ## Manual Confirmation Before Publish
 
 - Serve the WASM examples over HTTP and confirm that the built artifacts load correctly.
