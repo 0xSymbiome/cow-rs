@@ -254,6 +254,38 @@ async fn quote_request_override_can_change_receiver_and_price_quality() {
 }
 
 #[tokio::test]
+async fn quote_request_keeps_trade_partial_fill_flag_without_direct_override() {
+    let orderbook = MockOrderbook::new(
+        cow_sdk_core::SupportedChainId::Sepolia,
+        sell_quote_response(),
+    );
+    let signer = MockSigner::default();
+    let trader = cow_sdk_trading::TraderParameters {
+        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
+        app_code: "0x007".to_owned(),
+        env: None,
+        settlement_contract_override: None,
+        eth_flow_contract_override: None,
+    };
+    let mut trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
+    trade.partially_fillable = true;
+
+    let result = get_quote_results(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect("quote with trade-level partial-fill flag should succeed");
+    let request = orderbook
+        .state()
+        .quote_requests
+        .last()
+        .cloned()
+        .expect("quote request recorded");
+
+    assert!(request.partially_fillable);
+    assert!(result.trade_parameters.partially_fillable);
+    assert!(result.order_to_sign.partially_fillable);
+}
+
+#[tokio::test]
 async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_precedence() {
     let orderbook = MockOrderbook::new(
         cow_sdk_core::SupportedChainId::Sepolia,

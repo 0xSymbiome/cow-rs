@@ -1,12 +1,13 @@
 mod common;
 
 use cow_sdk_orderbook::{
-    GetTradesRequest, Order, OrderBalance, OrderQuoteRequest, OrderQuoteResponse, PriceQuality,
-    QuoteSide, SigningScheme, transform_order,
+    GetOrdersRequest, GetTradesRequest, Order, OrderBalance, OrderQuoteRequest, OrderQuoteResponse,
+    PriceQuality, QuoteSide, SigningScheme, transform_order,
 };
 
 use crate::common::{
-    sample_buy_token, sample_order_json, sample_order_uid, sample_owner, sample_quote_response_json,
+    sample_app_data_hash, sample_buy_token, sample_order_json, sample_order_uid, sample_owner,
+    sample_quote_response_json,
 };
 
 const CASE_COUNT: u64 = 128;
@@ -76,6 +77,14 @@ fn generated_balance(rng: &mut CaseRng) -> OrderBalance {
     }
 }
 
+fn generated_inline_app_data(seed: u64, rng: &mut CaseRng) -> String {
+    format!(
+        "{{\"appCode\":\"cow-rs/orderbook-property\",\"metadata\":{{\"seed\":{},\"nonce\":{}}}}}",
+        seed,
+        rng.next_u32() % 10_000
+    )
+}
+
 #[test]
 fn quote_request_shape_roundtrips_without_side_coercion() {
     for seed in 0..CASE_COUNT {
@@ -86,16 +95,12 @@ fn quote_request_shape_roundtrips_without_side_coercion() {
         } else {
             QuoteSide::buy(generated_decimal(&mut rng))
         };
-        let mut request = OrderQuoteRequest::new(
-            sample_owner(),
-            sample_buy_token(),
-            sample_owner(),
-            side,
-        )
-        .with_price_quality(generated_price_quality(&mut rng))
-        .with_signing_scheme(generated_signing_scheme(&mut rng))
-        .with_sell_token_balance(generated_balance(&mut rng))
-        .with_buy_token_balance(generated_balance(&mut rng));
+        let mut request =
+            OrderQuoteRequest::new(sample_owner(), sample_buy_token(), sample_owner(), side)
+                .with_price_quality(generated_price_quality(&mut rng))
+                .with_signing_scheme(generated_signing_scheme(&mut rng))
+                .with_sell_token_balance(generated_balance(&mut rng))
+                .with_buy_token_balance(generated_balance(&mut rng));
 
         if rng.next_bool() {
             request = request.with_receiver(sample_buy_token());
@@ -161,6 +166,73 @@ fn quote_request_shape_roundtrips_without_side_coercion() {
         let roundtrip: OrderQuoteRequest =
             serde_json::from_value(value).expect("request roundtrip must remain stable");
         assert_eq!(roundtrip, request);
+    }
+}
+
+#[test]
+fn quote_request_app_data_and_pagination_shape_roundtrip_without_normalization() {
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed + 2_001);
+        let mut request = OrderQuoteRequest::new(
+            sample_owner(),
+            sample_buy_token(),
+            sample_owner(),
+            if rng.next_bool() {
+                QuoteSide::sell(generated_decimal(&mut rng))
+            } else {
+                QuoteSide::buy(generated_decimal(&mut rng))
+            },
+        );
+
+        let inline_app_data = rng
+            .next_bool()
+            .then(|| generated_inline_app_data(seed, &mut rng));
+        let app_data_hash = rng.next_bool().then(sample_app_data_hash);
+        if let Some(app_data) = inline_app_data.clone() {
+            request = request.with_app_data(app_data);
+        }
+        if let Some(hash) = app_data_hash.clone() {
+            request = request.with_app_data_hash(hash);
+        }
+
+        let value = serde_json::to_value(&request).expect("request serialization must succeed");
+        let roundtrip: OrderQuoteRequest =
+            serde_json::from_value(value.clone()).expect("request roundtrip must remain stable");
+
+        assert_eq!(roundtrip, request);
+        assert_eq!(
+            value.get("appData").and_then(serde_json::Value::as_str),
+            Some(
+                inline_app_data.as_deref().unwrap_or(
+                    "0x0000000000000000000000000000000000000000000000000000000000000000"
+                )
+            ),
+            "inline app-data must remain explicit through serialization"
+        );
+        assert_eq!(
+            value.get("appDataHash").is_some(),
+            app_data_hash.is_some(),
+            "appDataHash presence must not be synthesized or dropped"
+        );
+
+        let owner_request = if rng.next_bool() {
+            GetOrdersRequest::new(sample_owner())
+        } else {
+            GetOrdersRequest {
+                owner: sample_owner(),
+                offset: rng.next_u32(),
+                limit: 1 + (rng.next_u32() % 5_000),
+            }
+        };
+        let owner_value =
+            serde_json::to_value(&owner_request).expect("orders request must serialize");
+        let owner_roundtrip: GetOrdersRequest =
+            serde_json::from_value(owner_value).expect("orders request must deserialize");
+
+        assert_eq!(owner_roundtrip, owner_request);
+        if owner_request.offset == 0 && owner_request.limit == 1_000 {
+            assert_eq!(owner_request, GetOrdersRequest::new(sample_owner()));
+        }
     }
 }
 

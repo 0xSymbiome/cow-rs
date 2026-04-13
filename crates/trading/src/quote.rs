@@ -430,6 +430,10 @@ fn build_quote_request(
     .with_app_data_hash(app_data_info.app_data_keccak256.clone())
     .with_price_quality(PriceQuality::Optimal);
 
+    if trade_parameters.partially_fillable {
+        request = request.with_partially_fillable();
+    }
+
     if let Some(valid_to) = trade_parameters.valid_to {
         request = request.with_valid_to(valid_to);
     } else {
