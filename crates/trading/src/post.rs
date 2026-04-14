@@ -7,7 +7,8 @@ use cow_sdk_signing::{
 
 use crate::types::{
     QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
-    apply_quote_request_parameter_overrides,
+    apply_quote_request_parameter_overrides, validate_orderbook_context,
+    validate_orderbook_env_context,
 };
 use crate::{
     LimitOrderAdvancedSettings, LimitTradeParameters, OrderPostingResult, OrderbookClient,
@@ -111,8 +112,8 @@ where
 /// signer.
 ///
 /// When advanced app-data settings are provided, they are merged on top of the quote-derived
-/// document before submission. Orderbook-bound environment selection resolves in this order:
-/// effective trade parameters, trader defaults, then the injected orderbook context.
+/// document before submission. Any explicit chain or environment must agree with the injected
+/// orderbook client, which remains the canonical runtime authority for signing and submission.
 ///
 /// # Errors
 ///
@@ -136,7 +137,7 @@ where
         }
         None => quote_results.app_data_info.clone(),
     };
-    let mut params = apply_settings_to_limit_trade_parameters(
+    let params = apply_settings_to_limit_trade_parameters(
         &swap_params_to_limit_order_params(
             &quote_results.trade_parameters,
             &quote_results.quote_response,
@@ -144,7 +145,6 @@ where
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     );
-    params.env = Some(params.env.or(trader.env).unwrap_or(orderbook.context().env));
     let additional = swap_additional_params(advanced_settings);
 
     post_cow_protocol_trade_async(
@@ -216,7 +216,6 @@ where
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     );
-    params.env = Some(params.env.or(trader.env).unwrap_or(orderbook.context().env));
     if params.slippage_bps.is_none() {
         params.slippage_bps = Some(0);
     }
@@ -301,12 +300,18 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
 {
+    validate_orderbook_context(orderbook, Some(trader.chain_id), trader.env)?;
+    validate_orderbook_env_context(orderbook, params.env)?;
+
+    let orderbook_context = orderbook.context();
+    let canonical_chain_id = orderbook_context.chain_id;
+    let canonical_env = orderbook_context.env;
     let mut params = params.clone();
-    params.env = Some(params.env.or(trader.env).unwrap_or(orderbook.context().env));
+    params.env = Some(canonical_env);
     let tx = crate::get_eth_flow_transaction_async(
         &app_data.app_data_keccak256,
         &params,
-        orderbook.context().chain_id,
+        canonical_chain_id,
         additional_params,
         trader,
         signer,
@@ -368,10 +373,11 @@ where
 
 /// Signs and submits a `CoW` Protocol order using an asynchronous signer.
 ///
-/// Environment and protocol-address overrides resolve in this order: call-level parameters, trader
-/// defaults, then the injected orderbook context for `env`. `EthFlow` sell orders require a quote
-/// identifier and are routed to the native-currency transaction path. Other orders are uploaded to
-/// the orderbook after signing with the requested or default signing scheme.
+/// Any explicit chain or environment must agree with the injected orderbook client, which is then
+/// used as the canonical runtime authority for order construction, signing, and submission.
+/// `EthFlow` sell orders require a quote identifier and are routed to the native-currency
+/// transaction path. Other orders are uploaded to the orderbook after signing with the requested
+/// or default signing scheme.
 ///
 /// # Errors
 ///
@@ -391,14 +397,20 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
 {
+    validate_orderbook_context(orderbook, Some(trader.chain_id), trader.env)?;
+    validate_orderbook_env_context(orderbook, params.env)?;
+
+    let orderbook_context = orderbook.context();
+    let canonical_chain_id = orderbook_context.chain_id;
+    let canonical_env = orderbook_context.env;
     let mut params = params.clone();
-    params.env = Some(params.env.or(trader.env).unwrap_or(orderbook.context().env));
+    params.env = Some(canonical_env);
     let is_ethflow = is_ethflow_order(&params.sell_token);
     if is_ethflow {
         if params.quote_id.is_none() {
             return Err(TradingError::MissingQuoteId("EthFlow order posting"));
         }
-        let adjusted = adjust_ethflow_limit_parameters(orderbook.context().chain_id, &params);
+        let adjusted = adjust_ethflow_limit_parameters(canonical_chain_id, &params);
         return post_sell_native_currency_order_async(
             orderbook,
             app_data,
@@ -410,7 +422,7 @@ where
         .await;
     }
 
-    let chain_id = orderbook.context().chain_id;
+    let chain_id = canonical_chain_id;
     let from = match params.owner.clone() {
         Some(owner) => owner,
         None => signer

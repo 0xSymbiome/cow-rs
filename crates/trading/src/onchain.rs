@@ -11,7 +11,7 @@ use crate::{
     calculate_unique_order_id, get_order_to_sign,
 };
 
-/// EthFlow transaction bundle returned by native-sell helper flows.
+/// `EthFlow` transaction bundle returned by native-sell helper flows.
 #[derive(Debug, Clone)]
 pub struct EthFlowTransaction {
     /// Final unique order id.
@@ -107,7 +107,7 @@ where
     })
 }
 
-/// Builds an EthFlow order-creation transaction using a sync signer.
+/// Builds an `EthFlow` order-creation transaction using a sync signer.
 ///
 /// # Errors
 ///
@@ -135,9 +135,9 @@ where
     .await
 }
 
-/// Builds an EthFlow order-creation transaction using an async signer.
+/// Builds an `EthFlow` order-creation transaction using an async signer.
 ///
-/// EthFlow order ids are generated against the wrapped-native sell token and
+/// `EthFlow` order ids are generated against the wrapped-native sell token and
 /// `MAX_VALID_TO_EPOCH`, then retried by decrementing buy amount until the
 /// optional uniqueness checker reports a free id.
 ///
@@ -236,8 +236,8 @@ where
 
 /// Builds an on-chain cancellation transaction using a sync signer.
 ///
-/// Regular orders call the settlement contract. EthFlow orders call the
-/// EthFlow contract. When gas estimation fails, the helper falls back to the
+/// Regular orders call the settlement contract. `EthFlow` orders call the
+/// `EthFlow` contract. When gas estimation fails, the helper falls back to the
 /// documented default gas limit.
 ///
 /// # Errors
@@ -283,8 +283,8 @@ where
 
 /// Builds an on-chain cancellation transaction using an async signer.
 ///
-/// Regular orders call the settlement contract. EthFlow orders call the
-/// EthFlow contract. When gas estimation fails, the helper falls back to the
+/// Regular orders call the settlement contract. `EthFlow` orders call the
+/// `EthFlow` contract. When gas estimation fails, the helper falls back to the
 /// documented default gas limit.
 ///
 /// # Errors

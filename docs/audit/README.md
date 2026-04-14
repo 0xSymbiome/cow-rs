@@ -20,3 +20,4 @@ runbooks.
 | --- | --- | --- |
 | [Duplication Audit](duplication.md) | Mechanical duplication in request execution, signing payload preparation, and trading posting wrappers | Current |
 | [CID Dependency Audit](cid-dependency.md) | App-data CID dependency selection, compatibility boundaries, and fail-closed encoding behavior | Current |
+| [Trading Orderbook Context Audit](trading-orderbook-context.md) | Canonical chain and environment authority for orderbook-bound trading helpers | Current |

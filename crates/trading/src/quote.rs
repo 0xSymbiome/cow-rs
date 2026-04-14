@@ -7,7 +7,8 @@ use cow_sdk_signing::order_typed_data;
 
 use crate::types::{
     QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
-    apply_quote_request_parameter_overrides,
+    apply_quote_request_parameter_overrides, validate_orderbook_context,
+    validate_orderbook_env_context,
 };
 use crate::{
     DEFAULT_QUOTE_VALIDITY, OrderbookClient, QuoteRequestOverride, QuoteResults, QuoterParameters,
@@ -235,23 +236,28 @@ where
         return Err(TradingError::QuoteValidityConflict);
     }
 
+    validate_orderbook_context(orderbook, Some(trader.chain_id), trader.env)?;
+    validate_orderbook_env_context(orderbook, trade_parameters.env)?;
+
+    let orderbook_context = orderbook.context();
+    let canonical_chain_id = orderbook_context.chain_id;
+    let canonical_env = orderbook_context.env;
     let mut effective_trade_parameters = trade_parameters.clone();
-    let resolved_env = effective_trade_parameters
-        .env
-        .or(trader.env)
-        .unwrap_or(orderbook.context().env);
-    effective_trade_parameters.env = Some(resolved_env);
+    effective_trade_parameters.env = Some(canonical_env);
+    let mut effective_trader = trader.clone();
+    effective_trader.chain_id = canonical_chain_id;
+    effective_trader.env = Some(canonical_env);
 
     let is_ethflow = is_ethflow_order(&effective_trade_parameters.sell_token);
     let trade_parameters_for_quote = if is_ethflow {
-        adjust_ethflow_trade_parameters(trader.chain_id, &effective_trade_parameters)
+        adjust_ethflow_trade_parameters(canonical_chain_id, &effective_trade_parameters)
     } else {
         effective_trade_parameters.clone()
     };
-    let default_slippage = default_slippage_bps(trader.chain_id, is_ethflow);
+    let default_slippage = default_slippage_bps(canonical_chain_id, is_ethflow);
     let initial_slippage = trade_parameters.slippage_bps.unwrap_or(default_slippage);
     let initial_app_data = build_app_data(
-        &trader.app_code,
+        &effective_trader.app_code,
         initial_slippage,
         "market",
         effective_trade_parameters.partner_fee.as_ref(),
@@ -261,16 +267,16 @@ where
 
     let request = build_quote_request(
         &trade_parameters_for_quote,
-        trader,
+        &effective_trader,
         is_ethflow,
         &initial_app_data,
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
     )?;
     let quote_response = orderbook.get_quote(&request).await?;
     let suggested_slippage = resolve_slippage_suggestion(
-        trader.chain_id,
+        canonical_chain_id,
         &trade_parameters_for_quote,
-        trader,
+        &effective_trader,
         &quote_response,
         is_ethflow,
         advanced_settings,
@@ -285,7 +291,7 @@ where
         let mut updated = effective_trade_parameters.clone();
         updated.slippage_bps = Some(suggested_slippage);
         let app_data = build_app_data(
-            &trader.app_code,
+            &effective_trader.app_code,
             suggested_slippage,
             "market",
             effective_trade_parameters.partner_fee.as_ref(),
@@ -303,19 +309,19 @@ where
         &quote_response.quote,
         trade_parameters
             .slippage_bps
-            .unwrap_or_else(|| default_slippage_bps(trader.chain_id, is_ethflow)),
+            .unwrap_or_else(|| default_slippage_bps(canonical_chain_id, is_ethflow)),
         partner_fee_bps(trade_parameters.partner_fee.as_ref()),
         sanitize_protocol_fee_bps(quote_response.protocol_fee_bps.as_deref()),
     )?;
     build_quote_results(QuoteResultInputs {
-        trader,
+        trader: &effective_trader,
         trade_parameters,
         quote_response,
         app_data_info,
         suggested_slippage,
         amounts_and_costs,
         is_ethflow,
-        resolved_env,
+        resolved_env: canonical_env,
     })
 }
 

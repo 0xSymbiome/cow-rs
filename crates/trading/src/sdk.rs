@@ -13,7 +13,7 @@ use crate::{
     TradingSdkOptions, cancel_order_onchain_async, get_cow_protocol_allowance,
     get_cow_protocol_allowance_async, get_pre_sign_transaction, get_pre_sign_transaction_async,
     get_quote_only, get_quote_results_async, off_chain_cancel_order_async, post_limit_order_async,
-    post_swap_order_async, protocol_options_for_order,
+    post_swap_order_async, protocol_options_for_order, types::validate_orderbook_context,
 };
 
 /// High-level trading facade that stores trader defaults plus optional injected services.
@@ -89,7 +89,7 @@ impl TradingSdkBuilder {
         self
     }
 
-    /// Returns a copy of this builder with EthFlow contract overrides.
+    /// Returns a copy of this builder with `EthFlow` contract overrides.
     #[must_use]
     pub fn with_eth_flow_contract_override(
         mut self,
@@ -125,7 +125,7 @@ impl TradingSdkBuilder {
     /// orderbook client.
     pub fn build(self) -> Result<TradingSdk, TradingError> {
         if let Some(orderbook_client) = self.options.orderbook_client() {
-            validate_injected_orderbook_context(
+            validate_orderbook_context(
                 orderbook_client.as_ref(),
                 self.trader_defaults.chain_id,
                 self.trader_defaults.env,
@@ -513,7 +513,7 @@ impl TradingSdk {
         cancel_order_onchain_async(signer, orderbook.chain_id, &order, Some(&options)).await
     }
 
-    /// Reads the CoW Protocol allowance using a sync provider.
+    /// Reads the `CoW` Protocol allowance using a sync provider.
     ///
     /// # Errors
     ///
@@ -542,7 +542,7 @@ impl TradingSdk {
         )
     }
 
-    /// Reads the CoW Protocol allowance using an async provider.
+    /// Reads the `CoW` Protocol allowance using an async provider.
     ///
     /// # Errors
     ///
@@ -744,11 +744,7 @@ impl TradingSdk {
         missing_chain_error: TradingError,
     ) -> Result<ResolvedOrderbookBinding, TradingError> {
         if let Some(orderbook_client) = self.options.orderbook_client() {
-            validate_injected_orderbook_context(
-                orderbook_client.as_ref(),
-                requested_chain,
-                requested_env,
-            )?;
+            validate_orderbook_context(orderbook_client.as_ref(), requested_chain, requested_env)?;
             let context = orderbook_client.context().clone();
 
             return Ok(ResolvedOrderbookBinding {
@@ -772,34 +768,4 @@ impl TradingSdk {
             env,
         })
     }
-}
-
-fn validate_injected_orderbook_context(
-    orderbook_client: &dyn OrderbookClient,
-    requested_chain: Option<SupportedChainId>,
-    requested_env: Option<CowEnv>,
-) -> Result<(), TradingError> {
-    let context = orderbook_client.context();
-
-    if let Some(chain_id) = requested_chain
-        && chain_id != context.chain_id
-    {
-        return Err(TradingError::InjectedOrderbookContextConflict {
-            field: "chainId",
-            requested: u64::from(chain_id).to_string(),
-            configured: u64::from(context.chain_id).to_string(),
-        });
-    }
-
-    if let Some(env) = requested_env
-        && env != context.env
-    {
-        return Err(TradingError::InjectedOrderbookContextConflict {
-            field: "env",
-            requested: env.as_str().to_owned(),
-            configured: context.env.as_str().to_owned(),
-        });
-    }
-
-    Ok(())
 }

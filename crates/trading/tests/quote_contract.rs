@@ -286,6 +286,36 @@ async fn quote_request_keeps_trade_partial_fill_flag_without_direct_override() {
 }
 
 #[tokio::test]
+async fn quote_helpers_reject_injected_orderbook_chain_conflicts() {
+    let orderbook = MockOrderbook::new(
+        cow_sdk_core::SupportedChainId::Sepolia,
+        sell_quote_response(),
+    );
+    let quoter = QuoterParameters {
+        chain_id: cow_sdk_core::SupportedChainId::Mainnet,
+        app_code: "0x007".to_owned(),
+        account: address(OWNER),
+        env: Some(CowEnv::Prod),
+        settlement_contract_override: None,
+        eth_flow_contract_override: None,
+    };
+    let trade = sample_trade_parameters(OrderKind::Sell);
+
+    let error = get_quote_only(&trade, &quoter, None, &orderbook)
+        .await
+        .expect_err("mismatched quoter chain must fail before quoting");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::InjectedOrderbookContextConflict {
+            field: "chainId",
+            ..
+        }
+    ));
+    assert!(orderbook.state().quote_requests.is_empty());
+}
+
+#[tokio::test]
 async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_precedence() {
     let orderbook = MockOrderbook::new(
         cow_sdk_core::SupportedChainId::Sepolia,

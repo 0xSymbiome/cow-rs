@@ -499,6 +499,62 @@ impl TradingSdkOptions {
     }
 }
 
+pub(crate) fn validate_orderbook_chain_context<O>(
+    orderbook_client: &O,
+    requested_chain: Option<SupportedChainId>,
+) -> Result<(), TradingError>
+where
+    O: OrderbookClient + ?Sized,
+{
+    let context = orderbook_client.context();
+
+    if let Some(chain_id) = requested_chain
+        && chain_id != context.chain_id
+    {
+        return Err(TradingError::InjectedOrderbookContextConflict {
+            field: "chainId",
+            requested: u64::from(chain_id).to_string(),
+            configured: u64::from(context.chain_id).to_string(),
+        });
+    }
+
+    Ok(())
+}
+
+pub(crate) fn validate_orderbook_env_context<O>(
+    orderbook_client: &O,
+    requested_env: Option<CowEnv>,
+) -> Result<(), TradingError>
+where
+    O: OrderbookClient + ?Sized,
+{
+    let context = orderbook_client.context();
+
+    if let Some(env) = requested_env
+        && env != context.env
+    {
+        return Err(TradingError::InjectedOrderbookContextConflict {
+            field: "env",
+            requested: env.as_str().to_owned(),
+            configured: context.env.as_str().to_owned(),
+        });
+    }
+
+    Ok(())
+}
+
+pub(crate) fn validate_orderbook_context<O>(
+    orderbook_client: &O,
+    requested_chain: Option<SupportedChainId>,
+    requested_env: Option<CowEnv>,
+) -> Result<(), TradingError>
+where
+    O: OrderbookClient + ?Sized,
+{
+    validate_orderbook_chain_context(orderbook_client, requested_chain)?;
+    validate_orderbook_env_context(orderbook_client, requested_env)
+}
+
 pub(crate) fn apply_app_data_parameter_overrides(
     slippage_bps: &mut Option<u32>,
     partner_fee: &mut Option<Value>,

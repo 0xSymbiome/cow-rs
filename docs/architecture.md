@@ -80,7 +80,10 @@ that own those behaviors.
 
 `cow-sdk-trading` owns quote-to-order orchestration. It composes lower-level
 crates instead of spreading user-facing workflow logic across signing,
-transport, and contract crates.
+transport, and contract crates. When callers inject an orderbook client into
+orderbook-bound trading helpers, that client becomes the canonical chain and
+environment authority; conflicting explicit values are rejected instead of
+being silently mixed through precedence fallbacks.
 
 ### Browser-Runtime Support
 

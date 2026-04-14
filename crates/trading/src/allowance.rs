@@ -11,7 +11,7 @@ use crate::{ApprovalParameters, TradingError};
 const ERC20_ALLOWANCE_ABI_JSON: &str = r#"[{"type":"function","name":"allowance","inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#;
 const ERC20_APPROVE_SIGNATURE: &str = "approve(address,uint256)";
 
-/// Reads the CoW Protocol vault-relayer allowance using a sync provider.
+/// Reads the `CoW` Protocol vault-relayer allowance using a sync provider.
 ///
 /// # Errors
 ///
@@ -49,7 +49,7 @@ where
     decode_allowance_result(&raw)
 }
 
-/// Reads the CoW Protocol vault-relayer allowance using an async provider.
+/// Reads the `CoW` Protocol vault-relayer allowance using an async provider.
 ///
 /// # Errors
 ///
@@ -88,7 +88,7 @@ where
     decode_allowance_result(&raw)
 }
 
-/// Builds the ERC-20 approval transaction for the CoW Protocol vault relayer.
+/// Builds the ERC-20 approval transaction for the `CoW` Protocol vault relayer.
 ///
 /// The approval amount must fit inside the ABI `uint256` range; negative values
 /// and values wider than 32 bytes are rejected.

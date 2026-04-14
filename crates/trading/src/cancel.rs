@@ -2,6 +2,7 @@ use cow_sdk_core::{AsyncSigner, ProtocolOptions, Signer};
 use cow_sdk_orderbook::{EcdsaSigningScheme, OrderCancellations};
 use cow_sdk_signing::{SigningScheme as SigningSchemeContract, sign_order_cancellations_async};
 
+use crate::types::{validate_orderbook_chain_context, validate_orderbook_env_context};
 use crate::{OrderTraderParameters, OrderbookClient, TraderParameters, TradingError};
 
 /// Signs and submits an off-chain cancellation using a sync signer.
@@ -25,8 +26,9 @@ where
 
 /// Signs and submits an off-chain cancellation using an async signer.
 ///
-/// The effective protocol options follow call-level precedence first and fall
-/// back to trader defaults, then to the injected orderbook environment.
+/// Any explicit chain or environment must agree with the injected orderbook
+/// client, which remains the canonical runtime authority for signing and
+/// submission.
 ///
 /// # Errors
 ///
@@ -43,8 +45,16 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
 {
+    validate_orderbook_chain_context(orderbook, Some(trader.chain_id))?;
+    validate_orderbook_chain_context(orderbook, params.chain_id)?;
+    validate_orderbook_env_context(orderbook, trader.env)?;
+    validate_orderbook_env_context(orderbook, params.env)?;
+
+    let orderbook_context = orderbook.context();
+    let canonical_chain_id = orderbook_context.chain_id;
+    let canonical_env = orderbook_context.env;
     let options = ProtocolOptions {
-        env: params.env.or(trader.env).or(Some(orderbook.context().env)),
+        env: Some(canonical_env),
         settlement_contract_override: params
             .settlement_contract_override
             .clone()
@@ -56,7 +66,7 @@ where
     };
     let signing = sign_order_cancellations_async(
         std::slice::from_ref(&params.order_uid),
-        trader.chain_id,
+        canonical_chain_id,
         signer,
         Some(&options),
     )
