@@ -67,6 +67,8 @@ Use deeper evidence only when the change warrants it:
 - search-profile tests for larger deterministic helper families
 - targeted mutation scopes for deterministic transport or helper seams
 - provenance-sensitive parity validation when fixture provenance changes
+- saved query documents and test-only schema evidence when a schema-backed
+  subgraph boundary changes
 - optional smoke checks when browser pages or live services must be confirmed
 
 The canonical command set lives in [Release Checklist](release-checklist.md).
