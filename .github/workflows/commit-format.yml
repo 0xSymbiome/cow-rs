@@ -23,72 +23,36 @@ jobs:
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
 
-      # Source ref: actions/setup-python@v5
-      - uses: actions/setup-python@42375524a9d38cf44e4300fc706dbd8e213cb0b2
-        with:
-          python-version: "3.11"
-
       - name: Fetch base commit
         run: git fetch --no-tags origin ${{ github.event.pull_request.base.ref }}
 
       - name: Validate commit messages
         shell: bash
         run: |
-          python - <<'PY'
-          import re
-          import subprocess
-          import sys
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          failures=0
 
-          base = "${{ github.event.pull_request.base.sha }}"
-          head = "${{ github.event.pull_request.head.sha }}"
-          subject_re = re.compile(
-              r"^(build|chore|ci|docs|feat|fix|perf|quality|refactor|revert|style|test)"
-              r"(?:\([a-z0-9][a-z0-9-]*\))?!?: [a-z0-9].*[^.\s]$"
-          )
+          mapfile -t shas < <(git rev-list --reverse "${base}..${head}")
 
-          def git(*args: str) -> str:
-              result = subprocess.run(
-                  ["git", *args],
-                  check=True,
-                  text=True,
-                  capture_output=True,
-              )
-              return result.stdout
+          for sha in "${shas[@]}"; do
+            parents="$(git rev-list --parents -n 1 "$sha")"
+            if [ "$(printf '%s\n' "$parents" | awk '{ print NF }')" -gt 2 ]; then
+              continue
+            fi
 
-          failures = []
-          shas = [line.strip() for line in git("rev-list", "--reverse", f"{base}..{head}").splitlines() if line.strip()]
+            message_file="$(mktemp)"
+            git show -s --format=%B "$sha" >"$message_file"
 
-          for sha in shas:
-              parents = git("rev-list", "--parents", "-n", "1", sha).strip().split()
-              if len(parents) > 2:
-                  continue
+            if ! ./.githooks/commit-msg "$message_file"; then
+              echo "::error::invalid commit message in ${sha:0:12}"
+              failures=1
+            fi
 
-              subject = git("show", "-s", "--format=%s", sha).strip()
-              body = git("show", "-s", "--format=%b", sha)
-              errors = []
+            rm -f "$message_file"
+          done
 
-              if not subject_re.match(subject):
-                  errors.append("subject must match '<type>(<scope>): <imperative summary>' in lowercase conventional-commit style")
-
-              body_lines = [line.rstrip() for line in body.splitlines() if line.strip()]
-              if not body_lines:
-                  errors.append("body must contain at least one bullet line")
-              elif any(not line.startswith("- ") for line in body_lines):
-                  errors.append("every non-empty body line must start with '- '")
-
-              if errors:
-                  failures.append((sha, subject, errors))
-
-          if not failures:
-              print("Commit format OK")
-              sys.exit(0)
-
-          print("Commit format validation failed:", file=sys.stderr)
-          for sha, subject, errors in failures:
-              print(file=sys.stderr)
-              print(f"{sha[:12]} {subject}", file=sys.stderr)
-              for error in errors:
-                  print(f"  - {error}", file=sys.stderr)
-
-          sys.exit(1)
-          PY
+          if [ "$failures" -ne 0 ]; then
+            exit 1
+          fi

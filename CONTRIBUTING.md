@@ -46,7 +46,13 @@ Enable it locally:
 git config commit.template .github/commit-template.md
 ```
 
+Enable the repository-owned local hook:
+
+```text
+git config core.hooksPath .githooks
+```
+
 Commit subjects use the conventional form
 `type(scope): imperative summary`. Body lines stay as flat outcome-focused
-bullets beginning with `- `. Pull requests are checked by
-`.github/workflows/commit-format.yml`.
+bullets beginning with `- `. The local `commit-msg` hook and
+`.github/workflows/commit-format.yml` enforce the same rule.
