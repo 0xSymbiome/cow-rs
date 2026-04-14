@@ -80,7 +80,7 @@ impl CaseRng {
             .chars()
             .enumerate()
             .map(|(index, ch)| {
-                if index % 2 == 0 {
+                if index.is_multiple_of(2) {
                     ch.to_ascii_uppercase()
                 } else {
                     ch

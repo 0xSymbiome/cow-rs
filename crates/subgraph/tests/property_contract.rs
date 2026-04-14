@@ -4,6 +4,7 @@ use cow_sdk_subgraph::{
 use serde_json::{Map, Value, json};
 
 const CASE_COUNT: u64 = 128;
+const SEARCH_CASE_COUNT: u64 = 512;
 
 #[derive(Clone)]
 struct CaseRng {
@@ -81,6 +82,65 @@ fn generated_numeric_string(rng: &mut CaseRng) -> String {
 
 fn generated_optional_numeric_string(rng: &mut CaseRng) -> Option<String> {
     rng.next_bool().then(|| generated_numeric_string(rng))
+}
+
+fn generated_search_profile_variables(rng: &mut CaseRng, depth: usize) -> Value {
+    if depth == 0 {
+        return match rng.next_u64() % 5 {
+            0 => json!(1 + (rng.next_u32() % 10_000)),
+            1 => json!(rng.next_bool()),
+            2 => json!(format!("value-{}", rng.next_u32())),
+            3 => json!(format!("0x{:040x}", rng.next_u64())),
+            _ => Value::Null,
+        };
+    }
+
+    match rng.next_u64() % 4 {
+        0 => generated_search_profile_variables(rng, 0),
+        1 => {
+            let len = 1 + (rng.next_u64() % 4) as usize;
+            Value::Array(
+                (0..len)
+                    .map(|_| generated_search_profile_variables(rng, depth.saturating_sub(1)))
+                    .collect(),
+            )
+        }
+        _ => {
+            let len = 1 + (rng.next_u64() % 4) as usize;
+            let mut object = Map::new();
+            for index in 0..len {
+                object.insert(
+                    format!("node-{}-{}", index, rng.next_u32()),
+                    generated_search_profile_variables(rng, depth.saturating_sub(1)),
+                );
+            }
+            Value::Object(object)
+        }
+    }
+}
+
+fn generated_search_profile_document(case: u64) -> (String, Option<String>) {
+    if case.is_multiple_of(2) {
+        (
+            format!(
+                "query TotalsPrimary{case}($input: TotalsInput!, $cursor: CursorInput) {{ totals(input: $input, cursor: $cursor) {{ orders }} }} query TotalsSecondary{case}($owner: ID!) {{ orders(where: {{ owner: $owner }}) {{ uid }} }}"
+            ),
+            Some(format!("TotalsSecondary{case}")),
+        )
+    } else {
+        (
+            "query($input: TotalsInput!, $cursor: CursorInput) { totals(input: $input, cursor: $cursor) { orders } }".to_owned(),
+            None,
+        )
+    }
+}
+
+fn numeric_or_string_value(case: u64, value: &str) -> Value {
+    if case.is_multiple_of(2) {
+        json!(value)
+    } else {
+        json!(value.parse::<u64>().unwrap())
+    }
 }
 
 #[test]
@@ -294,5 +354,99 @@ fn malformed_subgraph_scalars_fail_closed_during_response_decoding() {
                 assert!(!error.to_string().is_empty());
             }
         }
+    }
+}
+
+#[test]
+fn raw_request_narrow_search_profile_preserves_explicit_documents_and_nested_variables() {
+    for case in 0..SEARCH_CASE_COUNT {
+        let mut rng = CaseRng::new(case + 15_001);
+        let (document, operation_name) = generated_search_profile_document(case);
+        let variables = Value::Object(Map::from_iter([
+            (
+                "input".to_owned(),
+                generated_search_profile_variables(&mut rng, 3),
+            ),
+            (
+                "cursor".to_owned(),
+                generated_search_profile_variables(&mut rng, 2),
+            ),
+        ]));
+        let mut request =
+            SubgraphQueryRequest::new(document.clone()).with_variables(variables.clone());
+        if let Some(operation_name) = operation_name.clone() {
+            request = request.with_operation_name(operation_name);
+        }
+
+        let value = serde_json::to_value(&request).expect("request serialization must succeed");
+        let roundtrip: SubgraphQueryRequest =
+            serde_json::from_value(value.clone()).expect("request roundtrip must remain stable");
+
+        assert_eq!(value["document"], json!(document), "case {case}");
+        assert_eq!(value["variables"], variables, "case {case}");
+        match operation_name {
+            Some(name) => assert_eq!(value["operation_name"], json!(name), "case {case}"),
+            None => assert!(value.get("operation_name").is_none(), "case {case}"),
+        }
+        assert_eq!(roundtrip, request, "case {case}");
+    }
+}
+
+#[test]
+fn scalar_decode_narrow_search_profile_covers_boundary_numeric_forms() {
+    for case in 0..SEARCH_CASE_COUNT {
+        let mut rng = CaseRng::new(case + 27_001);
+        let tokens = generated_numeric_string(&mut rng);
+        let orders = generated_numeric_string(&mut rng);
+        let traders = generated_numeric_string(&mut rng);
+        let settlements = generated_numeric_string(&mut rng);
+        let day_timestamp = if case.is_multiple_of(2) {
+            u64::MAX
+        } else {
+            1_651_000_000u64 + (rng.next_u64() % 50_000)
+        };
+        let hour_timestamp = if case.is_multiple_of(3) {
+            0
+        } else {
+            1_651_100_000u64 + (rng.next_u64() % 50_000)
+        };
+
+        let totals: TotalsResponse = serde_json::from_value(json!({
+            "totals": [{
+                "tokens": numeric_or_string_value(case, &tokens),
+                "orders": numeric_or_string_value(case + 1, &orders),
+                "traders": numeric_or_string_value(case + 2, &traders),
+                "settlements": numeric_or_string_value(case + 3, &settlements),
+                "volumeUsd": numeric_or_string_value(case + 4, &generated_numeric_string(&mut rng)),
+                "volumeEth": numeric_or_string_value(case + 5, &generated_numeric_string(&mut rng)),
+                "feesUsd": numeric_or_string_value(case + 6, &generated_numeric_string(&mut rng)),
+                "feesEth": numeric_or_string_value(case + 7, &generated_numeric_string(&mut rng)),
+            }]
+        }))
+        .expect("mixed numeric forms must deserialize");
+        let days: LastDaysVolumeResponse = serde_json::from_value(json!({
+            "dailyTotals": [{
+                "timestamp": numeric_or_string_value(case + 8, &day_timestamp.to_string()),
+                "volumeUsd": numeric_or_string_value(case + 9, &generated_numeric_string(&mut rng)),
+            }]
+        }))
+        .expect("daily volume boundary forms must deserialize");
+        let hours: LastHoursVolumeResponse = serde_json::from_value(json!({
+            "hourlyTotals": [{
+                "timestamp": numeric_or_string_value(case + 10, &hour_timestamp.to_string()),
+                "volumeUsd": numeric_or_string_value(case + 11, &generated_numeric_string(&mut rng)),
+            }]
+        }))
+        .expect("hourly volume boundary forms must deserialize");
+
+        assert_eq!(totals.totals[0].tokens, tokens, "case {case}");
+        assert_eq!(totals.totals[0].orders, orders, "case {case}");
+        assert_eq!(totals.totals[0].traders, traders, "case {case}");
+        assert_eq!(totals.totals[0].settlements, settlements, "case {case}");
+        assert_eq!(days.daily_totals[0].timestamp, day_timestamp, "case {case}");
+        assert_eq!(
+            hours.hourly_totals[0].timestamp, hour_timestamp,
+            "case {case}"
+        );
     }
 }

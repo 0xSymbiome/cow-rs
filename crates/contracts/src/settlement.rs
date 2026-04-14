@@ -438,9 +438,7 @@ pub fn encode_trade_flags(flags: &TradeFlags) -> Result<u8, ContractsError> {
         buy_token_balance: flags.buy_token_balance,
     })?;
     let signing_scheme = flags.signing_scheme.as_u8() << 5;
-    Ok(order_flags
-        .checked_add(signing_scheme)
-        .expect("signing-scheme flags occupy a disjoint high-bit range"))
+    Ok(order_flags | signing_scheme)
 }
 
 /// Decodes trade flags from the compact settlement bitfield.
@@ -633,8 +631,7 @@ mod tests {
             name: "Gnosis Protocol".to_owned(),
             version: "v2".to_owned(),
             chain_id: 1,
-            verifying_contract: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
-                .unwrap(),
+            verifying_contract: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
         };
         let mut encoder = SettlementEncoder::new(domain);
 
@@ -685,8 +682,7 @@ mod tests {
         };
         let eip1271 = Signature::Eip1271 {
             data: crate::signature::Eip1271SignatureData {
-                verifier: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
-                    .unwrap(),
+                verifier: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
                 signature: "0x1234".to_owned(),
             },
         };
