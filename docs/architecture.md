@@ -95,8 +95,8 @@ contract remains owned by `cow-sdk-browser-wallet`.
 - `cow-sdk-subgraph` remains a separate read-only crate.
 - Browser-wallet method growth stays leaf-owned and typed.
 - Orderbook wire DTOs remain string-heavy only at the explicit HTTP boundary.
-- Generated or schema-derived artifacts stay non-public or test-only unless a
-  future public API change promotes them deliberately.
+- Saved GraphQL documents and test-only schema fixtures stay non-public unless
+  a future public API change promotes them deliberately.
 
 ## Related Docs
 

@@ -36,8 +36,10 @@ commits.
 
 Schema-derived evidence is a review aid, not a public API shortcut.
 
-- orderbook schema evidence is tied to `cowprotocol/services`
-- subgraph evidence is tied to `cowprotocol/cow-sdk`
+- orderbook schema evidence is tied to `cowprotocol/services`, including
+  `crates/orderbook/openapi.yml`
+- subgraph evidence is tied to `cowprotocol/cow-sdk`, including
+  `packages/subgraph/src/queries.ts`
 - canonical subgraph query documents live in
   `crates/subgraph/src/query_documents/`
 - test-only subgraph schema and codegen evidence lives in
