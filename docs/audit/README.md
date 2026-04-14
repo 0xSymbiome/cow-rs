@@ -1,19 +1,22 @@
 # Audits
 
-This directory contains focused engineering audits for `cow-rs`. Each audit records the documented surface, current status, follow-up boundaries, and validation evidence.
+This directory contains focused public engineering audits for `cow-rs`.
 
-## Available Audits
+## Audit Contract
+
+Each audit should record:
+
+- the surface being assessed
+- the current decision or finding
+- the evidence that supports that decision
+- any remaining boundary that stays intentionally out of scope
+
+Audits stay narrow. They are not a substitute for guides, ADRs, or release
+runbooks.
+
+## Index
 
 | Audit | Scope | Status |
 | --- | --- | --- |
-| [Duplication Audit](duplication-audit.md) | Mechanical duplication in request execution, signing payload preparation, and trading posting wrappers | Current |
-| [CID Dependency Audit](cid-dependency-audit.md) | App-data CID dependency selection, compatibility boundaries, and fail-closed encoding behavior | Current |
-
-## Update Policy
-
-Audits should stay scoped and evidence-based:
-
-- document the specific surface being assessed,
-- distinguish addressed items from open follow-up work,
-- avoid mixing unrelated quality gates into one audit,
-- record only surface-relevant validation commands.
+| [Duplication Audit](duplication.md) | Mechanical duplication in request execution, signing payload preparation, and trading posting wrappers | Current |
+| [CID Dependency Audit](cid-dependency.md) | App-data CID dependency selection, compatibility boundaries, and fail-closed encoding behavior | Current |

@@ -1,15 +1,115 @@
 # ADRs
 
-This folder records the architectural decisions that explain the current `cow-rs` workspace.
+This folder records the long-lived architectural decisions that define the
+public and runtime shape of `cow-rs`.
 
 ## Index
 
-- [0000 Template](0000-template.md)
-- [0001 Multi-Crate SDK Family With Thin Facade](0001-multi-crate-sdk-family-with-thin-facade.md)
-- [0002 Dedicated Trading Orchestration Crate](0002-dedicated-trading-orchestration-crate.md)
-- [0003 Separate Read-Only Subgraph Crate](0003-separate-read-only-subgraph-crate.md)
-- [0004 Feature-Gated Browser Wallet Sidecar](0004-feature-gated-browser-wallet-sidecar.md)
+| ADR | Status | Decision |
+| --- | --- | --- |
+| [0000](0000-template.md) | Template | Canonical ADR structure and writing contract. |
+| [0001](0001-multi-crate-sdk-family-with-thin-facade.md) | Accepted | Keep a multi-crate workspace, an SDK-named crate family, and a thin root facade. |
+| [0002](0002-dedicated-trading-orchestration-crate.md) | Accepted | Keep quote-to-order workflows in `cow-sdk-trading`. |
+| [0003](0003-separate-read-only-subgraph-crate.md) | Accepted | Keep subgraph access in a separate read-only crate. |
+| [0004](0004-feature-gated-browser-wallet-sidecar.md) | Accepted | Keep browser wallet support in a feature-gated sidecar crate. |
+| [0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md) | Accepted | Keep runtime contracts boundary-specific and public Rust types strongly typed. |
+| [0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md) | Accepted | Keep policy contracts explicit, review-visible, and instance-scoped. |
+| [0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md) | Accepted | Keep browser wallet support explicit, bounded, and aligned to the current browser-runtime seam. |
+| [0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md) | Accepted | Grow new capability surfaces through additive leaf crates and owned sidecars. |
 
-## Usage
+## When To Write An ADR
 
-Add an ADR when a decision changes crate boundaries, runtime behavior, public API shape, or security posture. Keep it short and focused on the actual decision.
+- Use an ADR for a long-lived, cross-cutting rule that affects package
+  topology, public API shape, runtime behavior, support posture, security
+  boundaries, or semver expectations.
+- Use an ADR when a decision changes what later implementation, verification,
+  review, or release work must preserve.
+- Do not use an ADR for delivery sequencing, operational history, verification
+  workflow mechanics, or one-off implementation detail.
+
+## Lifecycle Fit
+
+- ADRs are design-history records. They explain the durable rule that later
+  implementation, testing, review, and documentation must keep true.
+- ADRs should justify lasting complexity, not retell the delivery timeline.
+- Keep authoring and delivery detail out of the main body unless it changes the
+  long-lived design itself.
+
+## Title Contract
+
+- Titles state the chosen rule, not just the topic area.
+- Prefer names that answer "what was decided?" without opening the file.
+- If the title cannot be written as one concrete rule, the ADR probably holds
+  more than one decision family.
+
+## Format Contract
+
+- Lead with the decision so a reader understands the rule before the history.
+- Keep one decision family per ADR.
+- Keep the rationale short and focused on why the rule exists.
+- Make the durable invariants explicit for public surface, runtime or support
+  posture, and validation expectations.
+- Keep alternatives short and concrete.
+- Put supporting material in `Links` instead of burying it in long prose.
+- If a reader cannot answer "what was decided, why, and what must remain true"
+  in under a minute, the ADR is too long.
+
+## Anchor Contract
+
+- Use the same section headings in every ADR:
+  `Decision`, `Why`, `Must Remain True`, `Alternatives Rejected`, `Links`.
+- Do not rename accepted ADR files casually.
+- Do not rename section headings once other docs deep-link to them.
+- If a structural migration is ever unavoidable, do it repository-wide in one
+  controlled pass.
+
+## Metadata Contract
+
+- `Status`, `Date`, and `Authors` are required.
+- `Authors` use Markdown links. Example:
+  `[0xSymbiotic](https://github.com/0xSymbiotic)`.
+- `Tags`, `Related`, `Supersedes`, and `Superseded by` are optional. Omit them
+  when empty.
+- Allowed statuses are `Proposed`, `Accepted`, `Rejected`, and `Superseded`.
+- Use four-digit numbering and kebab-case filenames.
+
+## Status Semantics
+
+- `Proposed`: under discussion and not yet binding.
+- `Accepted`: active architectural record that later work must respect.
+- `Rejected`: considered seriously and explicitly not chosen.
+- `Superseded`: previously accepted, now replaced by a later ADR.
+
+## History Contract
+
+- Accepted ADRs are append-only records.
+- If the decision changes materially, write a new ADR and link the old and new
+  records.
+- Do not rewrite old ADRs to make history look cleaner.
+- Small corrections are fine when they do not change the recorded decision.
+
+## Writing Rules
+
+- Prefer short paragraphs and flat bullets.
+- Use concrete crate names, features, and runtime surfaces.
+- Avoid repository-internal process jargon in the main body.
+- State what must remain true, not just what was convenient at the time.
+- Keep support claims and compatibility language bounded and precise.
+- Target roughly `200` to `400` words. If an ADR wants more, split the
+  decision or link supporting docs.
+
+## Author Checklist
+
+- Does the title state the rule rather than the topic?
+- Does `Decision` stand on its own without background?
+- Does `Why` explain necessity rather than retell implementation history?
+- Does `Must Remain True` capture the future constraints other docs must keep?
+- Are links limited to durable supporting material?
+
+## Review Checklist
+
+- Could a new contributor understand the rule in under a minute?
+- Would the ADR still make sense if issue, PR, and chat history vanished?
+- Does it avoid overclaiming support, compatibility, or behavior?
+- Is this truly one decision family?
+- Would a later contradictory change clearly require a new ADR?

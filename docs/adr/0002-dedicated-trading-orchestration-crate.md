@@ -1,35 +1,40 @@
 # ADR 0002: Dedicated Trading Orchestration Crate
 
-**Status:** Accepted  
-**Date:** 2026-04-09  
-**Author:** 0xSymbiotic  
+- Status: Accepted
+- Date: 2026-04-09
+- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
+- Tags: trading, orchestration, package-boundary
+- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
 
-## 1. Context and Problem Statement
+## Decision
 
-Quote-to-order workflows span orderbook transport, contract helpers, signing, app-data, and approvals. That logic needs a stable home.
+Place user-facing quote-to-order workflows in `cow-sdk-trading`.
 
-## 2. Alternatives Considered
+## Why
 
-- Put orchestration into `cow-sdk-orderbook`
-- Put orchestration into the root `cow-sdk` facade
-- Create a dedicated `cow-sdk-trading` crate
+Quote, sign, submit, cancel, allowance, approval, and slippage handling span
+orderbook transport, signing, contracts, and app-data. That workflow needs one
+stable home that is not the transport layer and not the root facade.
 
-## 3. Decision
+## Must Remain True
 
-Place all user-facing trading workflows in `cow-sdk-trading`.
+- Public surface: quote-to-order workflows live in `cow-sdk-trading` instead of
+  being split across transport crates or hidden in `cow-sdk`.
+- Runtime and support: high-level async trading flows can evolve without
+  changing transport, hashing, or signing crate boundaries.
+- Validation and review: precedence, approval, cancellation, and slippage behavior can be
+  tested and documented at one workflow boundary.
+- Cost: `cow-sdk-trading` becomes the main integration surface and must stay
+  disciplined about scope.
 
-## 4. Rationale
+## Alternatives Rejected
 
-This keeps the orderbook crate focused on typed transport, keeps the root facade thin, and gives higher-level consumers a single workflow layer for quote, sign, submit, cancel, and approval flows.
+- Put orchestration in `cow-sdk-orderbook`: mixes transport concerns with
+  workflow policy and precedence.
+- Put orchestration in `cow-sdk`: makes the facade own business logic instead
+  of exposing owned leaf crates.
 
-## 5. Protocol and Runtime Implications
+## Links
 
-- **Determinism:** Pure order construction, slippage logic, and app-data merge rules stay testable and explicit.
-- **Security:** Approval and cancellation flows remain visible and chain-aware rather than hidden behind convenience wrappers.
-- **Runtime:** Async wallet-backed flows can be added without changing transport or hashing crates.
-- **Dependencies:** `cow-sdk-trading` depends on stable leaf crates instead of duplicating their behavior.
-
-## 6. Consequences
-
-- **Positive:** One clear home for high-level workflows and SDK ergonomics.
-- **Negative:** The trading crate becomes the main integration point and must be disciplined about not absorbing unrelated low-level logic.
+- [Architecture](../architecture.md)
+- [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)

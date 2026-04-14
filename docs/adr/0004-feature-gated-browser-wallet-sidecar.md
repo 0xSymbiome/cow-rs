@@ -1,35 +1,43 @@
 # ADR 0004: Feature-Gated Browser Wallet Sidecar
 
-**Status:** Accepted  
-**Date:** 2026-04-09  
-**Author:** 0xSymbiotic  
+- Status: Accepted
+- Date: 2026-04-09
+- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
+- Tags: browser-wallet, wasm, feature-gating
+- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
 
-## 1. Context and Problem Statement
+## Decision
 
-WASM support is required, and browser wallets use async, injected EIP-1193 providers that do not fit a native-first runtime model.
+Implement browser wallet support in `cow-sdk-browser-wallet` and expose it from
+`cow-sdk` only behind the `browser-wallet` feature.
 
-## 2. Alternatives Considered
+## Why
 
-- Treat browser support as raw private-key handling inside examples
-- Add browser globals and wallet shims directly to the root SDK
-- Build a dedicated `cow-sdk-browser-wallet` sidecar on top of shared async traits
+Browser wallets use injected, async EIP-1193 providers and a WASM runtime model
+that does not fit the native-first default SDK surface. The browser path needs
+its own dependency and runtime boundary.
 
-## 3. Decision
+## Must Remain True
 
-Implement browser wallet support in `cow-sdk-browser-wallet` and expose it from `cow-sdk` only behind the `browser-wallet` feature.
+- Public surface: browser wallet support is explicit and feature-scoped instead
+  of being part of the default `cow-sdk` contract.
+- Runtime and support: browser-only dependencies and async provider behavior
+  stay isolated in `cow-sdk-browser-wallet`, which keeps native defaults lean
+  and support claims bounded.
+- Validation and review: browser-targeted proof can stay separate from native validation
+  and from environment-sensitive wallet confirmation.
+- Cost: browser consumers need an explicit feature or a direct dependency on
+  the sidecar crate.
 
-## 4. Rationale
+## Alternatives Rejected
 
-This keeps browser-only dependencies out of default builds, avoids hidden global runtime state, and gives mock and injected wallets the same typed async integration surface.
+- Treat browser support as raw private-key handling inside examples: unsafe and
+  not representative of browser wallet workflows.
+- Add browser globals and wallet shims directly to `cow-sdk`: widens the root
+  facade and leaks browser-only dependencies into default builds.
 
-## 5. Protocol and Runtime Implications
+## Links
 
-- **Determinism:** Signing payload construction remains owned by pure signing code; the browser layer only provides runtime integration.
-- **Security:** Wallet connection and request flows stay explicit instead of being triggered implicitly.
-- **Runtime:** The browser layer is WASM-focused and async by design, while native consumers keep the default surface lean.
-- **Dependencies:** `wasm-bindgen`, `web-sys`, and related browser dependencies stay out of core crates.
-
-## 6. Consequences
-
-- **Positive:** Cleaner runtime separation, better browser ergonomics, and a credible web application story.
-- **Negative:** Browser users need an explicit feature or direct dependency on the sidecar crate.
+- [Architecture](../architecture.md)
+- [Verification Guide](../verification-guide.md)
+- [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)

@@ -1,25 +1,15 @@
-# Security And Validation Matrix
+# Verification Matrix
 
-This matrix maps `cow-rs` validation evidence by crate, example surface, and workflow lane. It is a navigation aid, not a claim that tests prove the absence of bugs.
+This matrix maps current evidence by crate, example surface, and workflow lane.
+It is a navigation aid, not a claim that tests prove the absence of bugs.
 
-Canonical references:
+Use it with:
 
 - [Validation Scope](validation-scope.md)
 - [Release Checklist](release-checklist.md)
 - [Properties Registry](../PROPERTIES.md)
 - [Verification Guide](verification-guide.md)
 - [Parity Matrix](parity-matrix.md)
-
-## Properties Registry
-
-The root [Properties Registry](../PROPERTIES.md) is the canonical map of workspace invariants and state contracts.
-
-Use it with this matrix:
-
-- the registry records the invariant, its owner, and whether executable coverage exists
-- this matrix records the concrete crate tests, browser automation, and workflow lanes that provide the current evidence
-- executable ownership stays crate-local and browser-surface-local rather than moving into one shared harness
-- named search-profile tests stay crate-local and deterministic for helper families such as ABI payload layout, app-data canonicalization or schema parsing, and explicit subgraph request or scalar decoding
 
 ## Core SDK Crates
 
@@ -28,12 +18,12 @@ Use it with this matrix:
 | `cow-sdk-core` | Shared chain config, domain types, and runtime traits | `config_contract.rs`, `types_contract.rs`, `traits_contract.rs` | `cargo test -p cow-sdk-core` |
 | `cow-sdk-contracts` | Contract constants, ABI-shaped order helpers, hashing, compact flag/signature codecs, and settlement/vault/proxy/reader helpers | `property_contract.rs`, `order_contract.rs`, `signature_contract.rs`, `deployment_contract.rs`, `settlement_contract.rs`, `vault_contract.rs`, `proxy_contract.rs`, `reader_contract.rs`, `swap_contract.rs`, `interaction_contract.rs` | `cargo test -p cow-sdk-contracts` |
 | `cow-sdk-signing` | EIP-712 order signing, typed-data payload construction, generated ids, EIP-1271 payloads, cancellation signing, and domain separation | `property_contract.rs`, `order_signing_contract.rs`, `eip1271_contract.rs`, `cancellation_contract.rs`, `domain_contract.rs` | `cargo test -p cow-sdk-signing` |
-| `cow-sdk-app-data` | Canonical JSON rendering, app-data schema handling, CID conversion, fail-closed CID/app-data encoding, fetch, and pinning seams | `property_contract.rs`, `app_data_info_contract.rs`, `cid_contract.rs`, `schema_contract.rs`, `fetch_contract.rs`, `pinning_contract.rs`, `docs/audit/cid-dependency-audit.md` | `cargo test -p cow-sdk-app-data` |
+| `cow-sdk-app-data` | Canonical JSON rendering, app-data schema handling, CID conversion, fail-closed CID/app-data encoding, fetch, and pinning seams | `property_contract.rs`, `app_data_info_contract.rs`, `cid_contract.rs`, `schema_contract.rs`, `fetch_contract.rs`, `pinning_contract.rs`, `docs/audit/cid-dependency.md` | `cargo test -p cow-sdk-app-data` |
 | `cow-sdk-orderbook` | Typed orderbook transport, retry/status behavior, DTO conversion, quote-request `appData` and pagination fidelity, malformed-payload failure boundaries, source-schema evidence | `property_contract.rs`, `api_contract.rs`, `request_contract.rs`, `transform_contract.rs`, `types_contract.rs`, `schema_source_contract.rs` | `cargo test -p cow-sdk-orderbook` |
 | `cow-sdk-trading` | Quote, post, allowance, approval, cancellation, slippage monotonicity, calldata boundary preservation, quote-request override precedence, and quote-to-order orchestration | `property_contract.rs`, `quote_contract.rs`, `post_contract.rs`, `allowance_contract.rs`, `cancel_contract.rs`, `onchain_contract.rs`, `slippage_contract.rs`, `sdk_contract.rs`, `parity_contract.rs` | `cargo test -p cow-sdk-trading` |
 | `cow-sdk-subgraph` | Read-only GraphQL query construction, nested request-variable fidelity, typed responses, equivalent string-or-number scalar decoding, malformed-scalar failure boundaries, source-schema evidence | `property_contract.rs`, `api_contract.rs`, `query_contract.rs`, `types_contract.rs`, `schema_source_contract.rs` | `cargo test -p cow-sdk-subgraph` |
 | `cow-sdk-browser-wallet` | EIP-1193 browser wallet provider/signer boundaries, direct browser-bridge proof, deterministic mock proof, explicit session-state transitions, typed chain management, and typed-data transport | `state_machine_contract.rs`, `provider_contract.rs`, `wallet_contract.rs`, `wasm_bridge_contract.rs`, `wasm-pack test --headless --chrome` | `cargo test -p cow-sdk-browser-wallet` and `cd crates/browser-wallet && wasm-pack test --headless --chrome` |
-| `cow-sdk` | Thin facade exports and public package surface | `public_api.rs` | `cargo test -p cow-sdk` |
+| `cow-sdk` | Thin facade exports and public crate surface | `public_api.rs` | `cargo test -p cow-sdk` |
 
 ## Examples And Runtime Surfaces
 

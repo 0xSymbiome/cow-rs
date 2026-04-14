@@ -1,8 +1,9 @@
 # Release Checklist
 
-Use this checklist before tagging or publishing a release that changes the public `cow-rs` surface.
+Use this checklist before tagging or publishing a release that changes the
+public `cow-rs` surface.
 
-## Native Quality Gates
+## 1. Native Quality Gates
 
 ```text
 cargo fmt --all --check
@@ -15,7 +16,7 @@ cargo deny check bans licenses sources --config .github/config/deny.toml
 cargo audit --deny warnings --ignore RUSTSEC-2026-0097
 ```
 
-## Documentation And Public API Gates
+## 2. Documentation And Public API Gates
 
 ```text
 cargo test --workspace --doc
@@ -24,13 +25,13 @@ cargo doc --workspace --all-features --no-deps
 RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features
 ```
 
-`docs-quality.yml` extends the same contract with a nightly docs.rs-style lane:
+Nightly docs.rs-style lane:
 
 ```text
 DOCS_RS=1 RUSTDOCFLAGS="--cfg docsrs -D warnings -Zunstable-options --generate-link-to-definition --show-type-layout --enable-index-page" cargo +nightly doc --workspace --all-features --no-deps
 ```
 
-## Compatibility And Host Coverage
+## 3. Compatibility And Host Coverage
 
 ```text
 cargo +1.94.0 check --workspace --all-features
@@ -38,60 +39,37 @@ cargo +1.94.0 test --workspace
 cargo hack check --workspace --feature-powerset --depth 1
 ```
 
-Workflow expectations:
+Expected workflow coverage:
 
-- `ci.yml` includes the compatibility-floor lane and the routine native validation contract.
-- `ci.yml` also runs a light Windows stable lane with `cargo check --workspace --all-features` and `cargo test --workspace --lib --tests`.
-- `crate-checks.yml` is the maintenance-depth lane for crate isolation and `--each-feature` assumptions.
-- `codeql.yml` remains the dedicated semantic security-analysis workflow for Rust and GitHub Actions.
+- `ci.yml` for routine native validation and the compatibility floor
+- Windows stable lane for light native host coverage
+- `crate-checks.yml` for maintenance-depth crate isolation
+- `codeql.yml` for semantic security analysis
 
-## Depth Reporting
+## 4. Depth Reporting
 
-`test-depth.yml` is the maintained depth-reporting lane. It publishes read-only coverage and mutation reports plus small trend snapshots for follow-up work; it does not replace the release gates above and it does not introduce threshold-based branch protection.
+`test-depth.yml` is the maintained depth-reporting lane. It publishes coverage
+and mutation reports for follow-up work without defining threshold-based branch
+protection.
 
-Coverage uses an explicit nightly toolchain because doctest coverage is still an unstable rustdoc path:
+Coverage:
 
 ```text
 cargo +nightly llvm-cov --workspace --all-features --doctests --json --summary-only --output-path target/coverage-summary.json --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/"
 cargo +nightly llvm-cov --workspace --all-features --doctests --lcov --output-path target/coverage-lcov.info --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/"
 ```
 
-Interpretation rules:
-
-- the report covers deterministic crate tests and doctests only
-- test sources, example shells, browser automation, and generated subgraph query or schema evidence are excluded from the reported file set
-- the workflow compares the current report to the latest stored coverage snapshot when one is available and highlights cluster movement plus new or worsened uncovered-file signals
-- the workflow publishes summaries, full artifacts, and a small reusable trend snapshot; it does not define minimum percentage gates
-
-Mutation stays manual in the first cut and is intentionally targeted to narrow deterministic helper families:
+Mutation:
 
 ```text
 cargo mutants -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-app-data --output target/mutants-report
-```
-
-```text
 cargo mutants -p cow-sdk-orderbook -p cow-sdk-trading --file crates/orderbook/src/request.rs --file crates/orderbook/src/transform.rs --file crates/trading/src/order.rs --file crates/trading/src/slippage.rs --annotations none --no-times --re "decoded_body|execute_with|calculate_total_fee|add_decimal_strings|sanitize_protocol_fee_bps|partner_fee_bps|calculate_unique_order_id|adjust_buy_amount" --output target/mutants-report-orderbook-trading
-```
-
-```text
 cargo mutants -p cow-sdk-subgraph -p cow-sdk-browser-wallet --file crates/subgraph/src/api.rs --file crates/subgraph/src/types.rs --file crates/browser-wallet/src/wallet.rs --file crates/browser-wallet/src/provider.rs --file crates/browser-wallet/src/error.rs --annotations none --no-times --re "run_query_with_config|config_with_override|base_url_for|deserialize_string_or_number|deserialize_optional_string_or_number|deserialize_u64_from_string_or_number|value_to_string|single_wallet|wallet_at|requires_explicit_selection|refresh_session|switch_or_add_chain|switch_chain_request|add_chain_request|validate_wallet_text|validate_wallet_url|query_accounts|query_chain_id|reset_session|parse_chain_id_value|parse_quantity_to_decimal|parse_address_array|transaction_to_rpc|from_rpc" --output target/mutants-report-subgraph-browser-wallet
 ```
 
-Interpretation rules:
+## 5. Repo-Local Parity And Publication Proof
 
-- surviving mutants are explicit follow-up work items, not a branch-protection threshold
-- orderbook and trading mutation runs stay scoped to explicit decode, transform, slippage, and order-id helper families so transport and orchestration results remain interpretable
-- subgraph and browser-wallet mutation runs stay scoped to explicit query execution, scalar decoding, discovery selection, RPC classification, session refresh, and typed provider request-shaping helpers
-- the workflow compares each manual mutation scope to the latest stored snapshot for that same scope when one is available so new surviving-mutant movement stays visible over time
-- the full `mutants.out/` report is preserved as an artifact so surviving and unviable cases can be inspected directly
-- live extension flows, WASM example packaging, and other environment-sensitive surfaces stay outside the helper-family mutation lanes
-- the retained trend helpers that build and fetch these snapshots live under `scripts/validation-depth/`
-
-## Repo-Local Parity And Publication Proof
-
-This repository keeps repo-local publication proof separate from provenance-sensitive parity proof.
-
-First, validate the committed parity contract from the current checkout:
+Validate the committed parity contract from the current checkout:
 
 ```text
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
@@ -111,11 +89,10 @@ cargo package -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.
 cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
 ```
 
-`ci.yml` covers the repo-local contract on routine changes. `release-readiness.yml` reruns it in the expanded release path.
+## 6. Provenance-Sensitive Parity Proof
 
-## Provenance-Sensitive Parity Proof
-
-Use this lane when the release needs explicit proof against pinned upstream repositories rather than only the committed fixture contract.
+Use this lane when the release needs explicit proof against pinned upstream
+repositories instead of only the committed fixture contract.
 
 ```text
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
@@ -124,13 +101,13 @@ cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --sou
 
 Rules:
 
-- The supplied roots must be independent git checkouts or worktrees at the pinned commits.
-- Same-checkout directory copies are not valid provenance evidence.
-- `release-readiness.yml` owns the routine provenance-sensitive automation path.
+- supplied roots must be independent git checkouts or worktrees
+- same-checkout directory copies are not valid provenance evidence
+- `release-readiness.yml` owns the routine automated provenance-sensitive lane
 
-## WASM And Browser Surfaces
+## 7. WASM And Browser Surfaces
 
-Build the WASM surfaces explicitly:
+Build the WASM surfaces:
 
 ```text
 cargo build --target wasm32-unknown-unknown -p cow-sdk
@@ -139,7 +116,7 @@ cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
 cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
 ```
 
-Run the deterministic SDK verification console checks:
+Deterministic SDK verification console checks:
 
 ```text
 cd examples/wasm/sdk-verification-console
@@ -152,7 +129,7 @@ bun run --cwd e2e/sdk-verification playwright install chromium
 bun run --cwd e2e/sdk-verification test
 ```
 
-Run the deterministic browser-wallet console checks:
+Deterministic browser-wallet console checks:
 
 ```text
 cargo test -p cow-sdk-browser-wallet
@@ -161,22 +138,11 @@ bun run --cwd e2e/browser-wallet playwright install chromium
 bun run --cwd e2e/browser-wallet test
 ```
 
-Browser-wallet validation is intentionally split:
+## 8. Optional Validation Smoke
 
-- deterministic proof comes from `cargo test -p cow-sdk-browser-wallet`, mock-wallet console mode, the browser-wallet console WASM build, and the committed browser-wallet console automation using local EIP-6963 fixtures plus route-mocked orderbook requests
-- live extension-backed connect, sign, quote, submit, and cancel checks remain optional because authorization persistence, vendor prompts, chain inventory, and wallet-specific behavior are controlled by the installed extension rather than normalized by the SDK
-
-## Optional Validation Smoke
-
-Use the smoke kit when a change needs live service confirmation, live extension-backed wallet confirmation, or deployed-page inspection in addition to the deterministic proof surfaces above.
-
-The smoke kit is intentionally opt-in:
-
-- it is not part of routine CI
-- it does not join branch protection
-- it distinguishes unavailable services and missing local prerequisites from actual regressions
-
-Commands:
+Use the smoke kit when a change needs live service confirmation, live
+extension-backed wallet confirmation, or deployed-page inspection in addition
+to the deterministic proof surfaces above.
 
 ```text
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- orderbook-live
@@ -186,17 +152,12 @@ cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-pages --sd
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
 ```
 
-Interpretation rules:
+## 9. Manual Confirmation Before Publish
 
-- exit code `0` means every selected smoke surface passed
-- exit code `2` means at least one selected surface was unavailable because a local host, deployed page, credential, or remote service was not reachable
-- exit code `1` means the selected surface responded but broke an expected contract such as payload shape, page markers, or live example behavior
-- the browser-wallet live check confirms local page readiness and stable markers before operator-driven injected-wallet actions; it does not claim extension automation
-- the full environment and URL contract lives in `scripts/validation-smoke/README.md`
-
-## Manual Confirmation Before Publish
-
-- Serve the WASM examples over HTTP and confirm that the built artifacts load correctly.
-- If `examples/wasm/browser-wallet-console/` changed, run an extension-backed spot check on a supported chain and confirm the deterministic fixture path and mock-wallet path still behave as documented.
-- If GitHub Pages content changed, inspect the deployed `sdk-verification-console/` and `browser-wallet-console/` pages after `wasm-pages.yml` completes.
-- If parity inputs changed, confirm that the pinned SHAs in `parity/source-lock.yaml` still match the intended upstream revisions and that fixture provenance remains aligned.
+- serve the WASM examples over HTTP and confirm that the built artifacts load
+- if the browser-wallet console changed, run an extension-backed spot check on
+  a supported chain
+- if GitHub Pages content changed, inspect the deployed console pages after the
+  Pages workflow completes
+- if parity inputs changed, confirm that the pinned SHAs and fixture provenance
+  still align

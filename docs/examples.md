@@ -1,23 +1,39 @@
 # Examples
 
-The examples demonstrate supported usage patterns for `cow-rs`.
+The examples are organized by user goal rather than by crate internals.
 
-## Native
+## Native Rust
 
-`examples/native/scenarios/` covers deterministic and mocked Rust flows for app-data, signing, orderbook, trading, subgraph, and facade usage.
+Use the native examples when you want deterministic, transport-mocked flows for
+the main SDK surfaces.
 
-Subgraph usage is covered through three dedicated native scenarios:
+| Goal | Example surface |
+| --- | --- |
+| Learn the facade shape | `sdk_surface_report` |
+| Work with app-data and signing | `app_data_roundtrip`, `signing_roundtrip` |
+| Quote, build, and simulate trading flows | `quote_only_simulation`, `limit_order_simulation`, `trading_sdk_simulation` |
+| Inspect order lifecycle and on-chain actions | `order_lifecycle_simulation`, `ethflow_transaction_simulation`, `onchain_order_actions_simulation` |
+| Inspect typed orderbook transport | `orderbook_transport_roundtrip` |
+| Work with read-only subgraph access | `subgraph_query_roundtrip`, `subgraph_custom_query_roundtrip` |
+| Run an opt-in live service check | `orderbook_live_probe`, `subgraph_live_query` |
 
-- `subgraph_query_roundtrip.rs` for canonical helper usage
-- `subgraph_custom_query_roundtrip.rs` for explicit custom GraphQL requests
-- `subgraph_live_query.rs` for opt-in live execution with explicit environment configuration
+See [Native examples](../examples/native/README.md) for commands and
+environment notes.
 
 ## WASM
 
-`examples/wasm/sdk-verification-console/` covers deterministic SDK verification and browser-facing inspection.
+Use the WASM examples when you need browser-facing verification surfaces.
 
-`examples/wasm/browser-wallet-console/` covers mock-wallet and injected-wallet browser flows through the public SDK.
+| Surface | Purpose |
+| --- | --- |
+| [`sdk-verification-console`](../examples/wasm/sdk-verification-console/README.md) | Deterministic SDK verification and browser inspection for WASM-compatible surfaces |
+| [`browser-wallet-console`](../examples/wasm/browser-wallet-console/README.md) | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
 
-## Usage
+## Choosing A Starting Point
 
-Use the example README files for exact commands and environment requirements.
+- Start with native examples for trading, signing, app-data, and transport
+  workflows.
+- Use `cow-sdk-subgraph` examples when you need read-only subgraph access.
+- Use the SDK verification console when you need browser-hosted WASM proof.
+- Use the browser wallet console when you need explicit wallet authorization
+  flows in the browser.

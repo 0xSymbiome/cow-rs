@@ -1,10 +1,25 @@
 # Examples
 
-`examples/native/` contains standalone Rust examples using `cow-sdk`.
+The repository includes native and WASM example galleries for the public
+`cow-rs` surface.
 
-`examples/wasm/` contains standalone WASM examples using `cow-sdk`.
+## Native
 
-`subgraph` examples use `cow-sdk-subgraph`.
+`examples/native/` contains deterministic command-line scenarios for:
 
-- Native: `examples/native/README.md`
-- WASM: `examples/wasm/README.md`
+- app-data generation
+- signing and cancellation payloads
+- orderbook transport
+- quote, limit-order, and lifecycle workflows
+- native-sell / EthFlow transaction construction
+- pre-sign and on-chain cancellation flows
+- read-only subgraph access
+
+See [Native examples](native/README.md) for the full scenario list.
+
+## WASM
+
+`examples/wasm/` contains browser-facing verification surfaces for the SDK
+facade and browser-wallet support.
+
+See [WASM examples](wasm/README.md) for the WASM example index.

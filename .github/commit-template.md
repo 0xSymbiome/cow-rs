@@ -1,15 +1,12 @@
-# Subject: area: imperative summary
+# <type>(<scope>): <imperative summary>
 #
-# Why:
-# - what problem or gap this change addresses
+# - <primary outcome>
+# - <supporting implementation change>
+# - <documentation, validation, or contract impact>
+# - <boundary, operating, or rollout note>
 #
-# What:
-# - key change 1
-# - key change 2
-#
-# Validation:
-# - command or check
-#
-# Refs:
-# - issue, doc, or n/a
-
+# Rules:
+# - use lowercase conventional-commit style in the subject
+# - keep the subject imperative and specific
+# - keep each body line as one flat bullet starting with "- "
+# - keep bullets outcome-focused rather than narrating the work

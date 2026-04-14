@@ -1,22 +1,25 @@
 # Properties Registry
 
-This registry records the canonical properties and state contracts for the `cow-rs` workspace.
+This registry is the canonical public index of invariants and state contracts
+for `cow-rs`.
 
-It is the authoritative index for invariant ownership:
+Use it with:
 
-- executable coverage stays with the crate or browser surface that owns the behavior
-- this registry records what must remain true, where it belongs, and where current evidence lives
-- the registry does not introduce a shared cross-workspace harness
+- [Verification Guide](docs/verification-guide.md) for how the evidence is
+  interpreted
+- [Verification Matrix](docs/verification-matrix.md) for the crate and
+  workflow lanes that exercise each surface
+
+Executable coverage stays with the crate or browser surface that owns the
+behavior. This registry records what must remain true, who owns it, and where
+the current evidence lives.
 
 `Covered` uses these values:
 
-- `Yes`: dedicated executable coverage exists in the owning crate tests or committed browser automation
-- `Partial`: deterministic coverage exists, but the property is not yet exercised by a dedicated property or state-machine suite
+- `Yes`: dedicated executable coverage exists
+- `Partial`: deterministic coverage exists, but not through a dedicated
+  property or state-machine suite
 - `No`: the property is registered, but no executable coverage is attached yet
-
-Some helper families also carry named search-profile tests inside the crate-local
-property suites. These are higher-iteration deterministic checks on explicit
-helper families, not a separate workspace-wide toolchain.
 
 | Id | Crate | Property | Type | Covered | Evidence |
 | --- | --- | --- | --- | --- | --- |

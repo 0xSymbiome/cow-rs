@@ -1,39 +1,42 @@
 # Validation Scope
 
-This document maps the maintained `cow-rs` surface to the committed validation proof in the repository. It identifies the authoritative repository documents, the primary executable checks, and the boundaries that remain dependent on browser runtimes, external services, or explicit manual confirmation.
+This document maps the maintained `cow-rs` surface to the proof that is
+committed in the repository.
 
 ## Validation Classes
 
 | Class | Meaning | Typical examples |
 | --- | --- | --- |
-| Deterministic proof | Committed tests, fixtures, builds, and workflow lanes that run from the repository without requiring live wallets or floating upstream state. | Crate contract tests, doctests, `cargo doc`, source-lock validation, package dry runs, mock-wallet flows. |
-| Environment-sensitive proof | Checks whose behavior depends on the host OS, browser runtime, injected wallet, or external service configuration. | Windows compatibility, browser-hosted WASM execution, injected-provider browser-wallet flows, live subgraph access. |
-| Manual confirmation | Optional live checks that are useful before release, but are not part of the routine blocking contract. | GitHub Pages inspection, live orderbook or subgraph smoke checks, injected-wallet end-to-end checks. |
+| Deterministic proof | Repository-owned tests, fixtures, builds, and workflow lanes that do not require floating external state. | Crate contract tests, doctests, package dry runs, source-lock validation, mock-wallet flows. |
+| Environment-sensitive proof | Checks that depend on host OS, browser runtime, injected wallet, or external endpoint configuration. | Windows compatibility, browser-hosted WASM execution, injected-provider wallet flows. |
+| Manual confirmation | Optional live checks that are useful before release but are not part of the routine blocking contract. | GitHub Pages inspection, live orderbook or subgraph smoke checks, extension-backed wallet checks. |
 
 ## Canonical References
 
-- [Release Checklist](release-checklist.md) for release, publication, parity, and workflow steps.
-- [Verification Guide](verification-guide.md) for package boundaries, runtime seams, and validation entry points.
-- [Security And Validation Matrix](security-matrix.md) for the crate-by-crate and workflow-by-workflow test inventory.
-- [Parity Matrix](parity-matrix.md) for pinned upstream producers, fixtures, and crate ownership.
-- [Parity Sources](parity-sources.md) and [Parity Scope](parity-scope.md) for source-lock provenance and upstream-root rules.
+- [Verification Guide](verification-guide.md)
+- [Release Checklist](release-checklist.md)
+- [Verification Matrix](verification-matrix.md)
+- [Parity Matrix](parity-matrix.md)
+- [Parity Sources](parity-sources.md)
+- [Parity Scope](parity-scope.md)
 
 ## Surface Map
 
-| Surface | Packages | Deterministic proof | Environment-sensitive or manual boundary | Canonical references |
-| --- | --- | --- | --- | --- |
-| Order creation, signing, and submission | `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk` | Crate contract tests for signing, request/response conversion, trading post flows, and facade exports. | Optional live API calls remain outside the blocking repository contract. | [Parity Matrix](parity-matrix.md), [Security And Validation Matrix](security-matrix.md), [Release Checklist](release-checklist.md) |
-| Contracts parity | `cow-sdk-contracts`, `cow-sdk-signing` | Contract helper, hashing, settlement, vault, reader, proxy, and EIP-1271 tests. | Live chain-backed spot checks are optional and separate from the committed fixture contract. | [Parity Matrix](parity-matrix.md), [Parity Sources](parity-sources.md) |
-| App-data parity | `cow-sdk-app-data`, `cow-sdk-trading` | CID conversion, schema handling, fetch, pinning seams, and fail-closed encoding tests. | Live IPFS or pinning services remain optional integration checks. | [Parity Matrix](parity-matrix.md), [Security And Validation Matrix](security-matrix.md) |
-| Subgraph support | `cow-sdk-subgraph` | Typed query construction, decode, and error-boundary tests plus deterministic native scenarios. | The opt-in live subgraph example depends on external endpoint configuration and remains manual. | [Parity Matrix](parity-matrix.md), [Verification Guide](verification-guide.md), [Examples](examples.md) |
-| Blockchain fetch and decode | `cow-sdk-orderbook` | Mocked orderbook transport, request-shape, and response-conversion tests. | Live orderbook behavior depends on remote endpoints and is not part of the routine blocking lane. | [Parity Matrix](parity-matrix.md), [Security And Validation Matrix](security-matrix.md) |
-| WASM target | `cow-sdk`, `cow-sdk-app-data`, WASM examples | WASM target builds, direct `wasm-bindgen-test` proof for `cow-sdk-browser-wallet`, deterministic SDK verification console exports through `wasm-pack test --headless --chrome`, and committed browser automation for the two WASM consoles. | Browser-hosted rendering and deployment inspection remain environment-sensitive; GitHub Pages inspection is manual. | [Release Checklist](release-checklist.md), [Examples](examples.md) |
-| Quality and publishability | whole workspace | Formatting, linting, tests, doctests, docs, feature-matrix checks, dependency policy, source-lock validation, and package dry runs. | Crates.io publication and independent upstream-root parity validation are separate operational steps. | [Release Checklist](release-checklist.md), [Security And Validation Matrix](security-matrix.md) |
-| Browser wallet integration | `cow-sdk-browser-wallet`, `cow-sdk`, browser-wallet console | Native crate tests, direct `wasm-bindgen-test` bridge proof, deterministic mock-wallet flows, WASM builds, console mock mode, and committed browser automation for injected-provider flows using local EIP-6963 fixtures plus route-mocked orderbook requests. | Live extension-backed authorization persistence, wallet UX, chain inventory, and vendor-specific behavior remain environment-sensitive. | [Verification Guide](verification-guide.md), [Security And Validation Matrix](security-matrix.md), [Release Checklist](release-checklist.md) |
+| Surface | Crates | Deterministic proof | Environment-sensitive or manual boundary |
+| --- | --- | --- | --- |
+| Order creation, signing, and submission | `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk` | Crate contract tests for signing, DTO conversion, post flows, and facade exports | Optional live API calls remain outside the routine blocking contract |
+| Contracts parity | `cow-sdk-contracts`, `cow-sdk-signing` | Hashing, settlement, signature, reader, and EIP-1271 tests | Live chain-backed spot checks are optional |
+| App-data parity | `cow-sdk-app-data`, `cow-sdk-trading` | CID conversion, schema handling, fetch, pinning seams, and fail-closed encoding tests | Live IPFS or pinning services remain optional integration checks |
+| Subgraph support | `cow-sdk-subgraph` | Typed query construction, decode, and deterministic native scenarios | Live subgraph access depends on external endpoint configuration |
+| Orderbook transport | `cow-sdk-orderbook` | Mocked request-shape, retry, decode, and conversion tests | Live orderbook behavior depends on remote endpoints |
+| WASM target | `cow-sdk`, `cow-sdk-app-data`, WASM examples | WASM target builds, direct browser-bridge proof, deterministic verification-console checks, and committed browser automation | Browser-hosted rendering and deployment inspection remain environment-sensitive |
+| Browser wallet integration | `cow-sdk-browser-wallet`, `cow-sdk`, browser-wallet console | Native crate tests, direct `wasm-bindgen-test` bridge proof, deterministic mock-wallet flows, console builds, and committed fixture-backed browser automation | Live extension-backed authorization, prompts, and vendor behavior remain environment-sensitive |
+| Quality and publishability | whole workspace | Formatting, linting, tests, doctests, docs, source-lock validation, and package dry runs | Crates.io publication and independent-root provenance checks are separate operational steps |
 
-## Primary Commands
+## High-Signal Commands
 
-Use the release checklist for the full command set. The highest-signal repository-level commands are:
+Use [Release Checklist](release-checklist.md) for the full command set. The
+highest-signal repository-level checks are:
 
 ```text
 cargo test --workspace
@@ -49,12 +52,11 @@ cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --sou
 
 ## Explicit Boundaries
 
-- Repo-local source-lock validation proves that the committed fixtures, vendored schemas, and pinned producer metadata are coherent from this repository checkout.
-- Provenance-sensitive parity proof is separate and requires independent upstream checkouts at the pinned commits in `parity/source-lock.yaml`.
-- `cow-sdk-browser-wallet` has a direct browser-targeted proof lane through `wasm-pack test --headless --chrome`; it exercises the owned `wasm-bindgen` bridge with repository fixtures instead of a live extension.
-- `sdk-verification-console` and `browser-wallet-console` both have committed deterministic browser automation, and the SDK verification console also has deterministic `wasm-pack test --headless --chrome` export checks.
-- The browser-wallet console automation uses local EIP-6963 fixtures and route-mocked orderbook requests instead of live wallet extensions, public RPC endpoints, or external websites.
-- The direct browser-wallet bridge lane and the broader browser-wallet console automation prove different boundaries on purpose: the former exercises the owned crate seam directly, while the latter verifies the example shell and browser interactions around that seam.
-- Live quote, orderbook, and subgraph interactions remain optional manual checks because they depend on external services or credentials.
-- Live extension-backed browser-wallet checks remain optional because authorization persistence, vendor prompts, and wallet-specific behavior depend on the installed extension rather than the SDK contract.
-- GitHub Pages deployment inspection is useful for release verification, but it is not part of the routine blocking contract.
+- Repo-local source-lock validation proves the committed parity contract from
+  this repository checkout.
+- Provenance-sensitive parity proof is separate and requires independent
+  upstream checkouts at the pinned commits.
+- Direct browser-wallet bridge proof and broader console automation cover
+  different seams on purpose.
+- Live orderbook, subgraph, and extension-backed wallet checks remain optional
+  because they depend on external services or runtime state.

@@ -1,0 +1,87 @@
+# Duplication Audit
+
+Status: Current  
+Last reviewed: 2026-04-10
+
+## Scope
+
+This audit covers:
+
+- orderbook request construction and execution
+- retry, status mapping, headers, rate-limit handling, and JSON/text/empty
+  responses
+- order signing and cancellation signing payload preparation
+- trading posting wrapper paths
+- generated or schema-derived artifacts as a separate category
+
+## Decision Summary
+
+| Category | Decision |
+| --- | --- |
+| Repeated HTTP request construction | Use one shared orderbook request path |
+| Repeated retry, status, and rate-limit loops | Use one shared executor for JSON, text, and empty responses |
+| Repeated signing payload preparation | Share payload construction between sync and async signing paths |
+| Trading posting wrapper pairs | Keep ergonomic entry points thin and route workflow logic through the async implementation path |
+| Repeated order-like DTO fields | Keep them only where ABI, API, normalized, or user-domain boundaries differ |
+
+## Current Contract
+
+Orderbook request execution is shared through internal helpers in
+`crates/orderbook/src/request.rs`, including:
+
+- `request_with`
+- `send_request`
+- `request_headers`
+- `execute_with`
+
+Signing keeps separate sync and async entry points while sharing payload
+construction through:
+
+- `crates/signing/src/order_signing.rs::order_signing_payload`
+- `crates/signing/src/cancellation.rs::cancellation_signing_payload`
+
+Trading posting keeps ergonomic public entry points while routing workflow
+logic through async implementation paths. Shared advanced-parameter extraction
+lives in:
+
+- `crates/trading/src/post.rs::swap_additional_params`
+- `crates/trading/src/post.rs::limit_additional_params`
+
+Order-like DTO duplication is retained only where the boundary is materially
+different:
+
+- `cow_sdk_core::UnsignedOrder`
+- `cow_sdk_contracts::Order`
+- `cow_sdk_contracts::NormalizedOrder`
+- `cow_sdk_orderbook::QuoteData`
+- `cow_sdk_orderbook::OrderCreation`
+- `cow_sdk_orderbook::Order`
+
+Generated or schema-derived artifacts remain internal or test-only and are not
+part of the public SDK API.
+
+## Evidence
+
+Relevant contract coverage:
+
+- `crates/orderbook/tests/request_contract.rs::request_json_retries_429_and_preserves_headers_on_each_attempt`
+- `crates/orderbook/tests/request_contract.rs::request_text_and_empty_share_the_request_builder_and_success_path`
+- `crates/orderbook/tests/request_contract.rs::rate_limiter_spaces_requests_after_token_budget_is_consumed`
+- `crates/signing/tests/order_signing_contract.rs::async_sign_order_paths_match_sync_signing_behavior`
+- `crates/signing/tests/cancellation_contract.rs::async_cancellation_signing_paths_match_sync_variants`
+- `crates/trading/tests/post_contract.rs::limit_posting_sync_signer_wrapper_matches_async_suffix_path`
+- `crates/contracts/tests/order_contract.rs::unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit`
+- `crates/orderbook/tests/types_contract.rs::order_creation_from_quote_keeps_quote_shape_and_quote_id`
+
+Validation commands:
+
+```text
+cargo fmt --all --check
+cargo test -p cow-sdk-orderbook
+cargo test -p cow-sdk-signing
+cargo test -p cow-sdk-trading
+cargo test --workspace
+cargo clippy -p cow-sdk-orderbook --all-targets --all-features -- -D warnings
+cargo clippy -p cow-sdk-signing --all-targets --all-features -- -D warnings
+cargo clippy -p cow-sdk-trading --all-targets --all-features -- -D warnings
+```

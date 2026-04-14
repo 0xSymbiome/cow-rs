@@ -1,35 +1,44 @@
-# ADR 0000: [Title]
+# ADR 0000: [Decision Statement]
 
-**Status:** Proposed | Accepted | Rejected | Superseded by ADR-XXXX  
-**Date:** YYYY-MM-DD  
-**Author:** [Name/Handle]  
+- Status: Proposed
+- Date: YYYY-MM-DD
+- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
+- Tags: [tag-1], [tag-2]
+- Related: [ADR-0001](0001-multi-crate-sdk-family-with-thin-facade.md)
+- Supersedes: ADR-XXXX
+- Superseded by: ADR-XXXX
 
-## 1. Context and Problem Statement
+> Remove optional metadata lines that do not apply.
+>
+> Keep the section headings exactly as written so deep links and symlinked
+> references remain stable.
+>
+> The title should state the chosen rule, not just the topic.
 
-[Describe the technical context and the problem being solved.]
+## Decision
 
-## 2. Alternatives Considered
+[State the rule in one short paragraph or in 1 to 3 bullets. No background.]
 
-- [Alternative 1]
-- [Alternative 2]
-- [Alternative 3]
+## Why
 
-## 3. Decision
+[Explain only why this rule is necessary.]
 
-[State the chosen direction.]
+## Must Remain True
 
-## 4. Rationale
+- Public surface: [What changes for crate boundaries, APIs, features, or
+  semver-visible behavior.]
+- Runtime and support: [What changes for runtime model, dependencies, or
+  support posture.]
+- Validation and review: [What later tests, review, documentation, or proof lanes must
+  preserve.]
+- Cost: [Main tradeoff or maintenance cost.]
 
-[Explain why this option was chosen over the alternatives.]
+## Alternatives Rejected
 
-## 5. Protocol and Runtime Implications
+- [Plausible option]: [Why it was not chosen.]
+- [Plausible option]: [Why it was not chosen.]
 
-- **Determinism:** [Does this change hashes, signatures, serialization, or other protocol outputs?]
-- **Security:** [Does this change trust boundaries, wallet handling, or error handling?]
-- **Runtime:** [Does this change native, async, or WASM behavior?]
-- **Dependencies:** [Does this add a significant dependency or public API commitment?]
+## Links
 
-## 6. Consequences
-
-- **Positive:** [Expected benefits]
-- **Negative:** [Tradeoffs or costs]
+- [Supporting doc or source file](../architecture.md)
+- [Related ADR](0001-multi-crate-sdk-family-with-thin-facade.md)

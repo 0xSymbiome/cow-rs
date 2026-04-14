@@ -1,11 +1,13 @@
 # WASM Examples
 
-Standalone WASM examples using `cow-sdk`.
+Standalone WASM examples for `cow-rs`.
 
-- `sdk-verification-console/`
-  - browser verification console for deterministic SDK capabilities plus manual quote/orderbook/subgraph checks
-- `browser-wallet-console/`
-  - wallet-backed browser console for connect, sign, quote, submit, and cancel flows
+## Surfaces
+
+| Example | Purpose |
+| --- | --- |
+| `sdk-verification-console/` | Deterministic SDK verification and browser inspection for WASM-compatible surfaces |
+| `browser-wallet-console/` | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
 
 ## Local Use
 
@@ -26,13 +28,7 @@ bunx serve . --listen 8081
 Open the served HTTP URL. Browsers do not load the generated WASM modules from
 `file://` origins.
 
-Python can also be used when preferred:
-
-```text
-python -m http.server 8080
-```
-
-## WASM Validation
+## Validation
 
 SDK verification console:
 
@@ -41,13 +37,13 @@ cd examples/wasm/sdk-verification-console
 wasm-pack test --headless --chrome
 ```
 
-Quote, orderbook, and subgraph actions remain manual smoke checks.
+Browser-wallet console:
+
+```text
+bun run --cwd e2e/browser-wallet test
+```
 
 ## GitHub Pages
-
-The `wasm-example-pages` workflow builds both examples, assembles a static Pages
-artifact, and deploys it from generated output. Generated `pkg/`, `target/`, and
-`dist/` directories are not committed.
 
 Published paths:
 
