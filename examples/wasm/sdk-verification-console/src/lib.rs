@@ -57,7 +57,8 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
             ..Default::default()
         },
         TradingSdkOptions::default(),
-    );
+    )
+    .map_err(js_string_error)?;
     let api_context = api_context(chain_id, env);
     let deployment = deployment_for_chain(u64::from(chain_id))
         .map_err(|error| to_js_error(error.to_string()))?;
@@ -272,7 +273,8 @@ pub async fn trading_quote_preview_json(
             ..Default::default()
         },
         TradingSdkOptions::default(),
-    );
+    )
+    .map_err(js_string_error)?;
     let results = sdk
         .get_quote_only(params, None)
         .await

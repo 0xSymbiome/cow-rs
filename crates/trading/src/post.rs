@@ -428,16 +428,43 @@ where
     }
 
     let chain_id = canonical_chain_id;
-    let from = match params.owner.clone() {
-        Some(owner) => owner,
-        None => signer
-            .get_address()
-            .await
-            .map_err(|error| TradingError::Signer {
-                operation: "get_address",
-                message: error.to_string(),
-            })?,
+    let requested_scheme = additional_params
+        .signing_scheme
+        .unwrap_or(SigningScheme::Eip712);
+    let signer_address = if params.owner.is_none()
+        || matches!(
+            requested_scheme,
+            SigningScheme::Eip712 | SigningScheme::EthSign
+        ) {
+        Some(
+            signer
+                .get_address()
+                .await
+                .map_err(|error| TradingError::Signer {
+                    operation: "get_address",
+                    message: error.to_string(),
+                })?,
+        )
+    } else {
+        None
     };
+    let from = params
+        .owner
+        .clone()
+        .or_else(|| signer_address.clone())
+        .ok_or(TradingError::MissingSubmissionOwner)?;
+    if matches!(
+        requested_scheme,
+        SigningScheme::Eip712 | SigningScheme::EthSign
+    ) && let Some(signer_address) = signer_address.as_ref()
+        && signer_address != &from
+    {
+        return Err(TradingError::RecoverableSignatureOwnerMismatch {
+            scheme: requested_scheme,
+            owner: from.as_str().to_owned(),
+            signer: signer_address.as_str().to_owned(),
+        });
+    }
     let options = ProtocolOptions {
         env: params.env,
         settlement_contract_override: params
@@ -468,9 +495,6 @@ where
         .upload_app_data(&app_data.app_data_keccak256, &app_data.full_app_data)
         .await?;
 
-    let requested_scheme = additional_params
-        .signing_scheme
-        .unwrap_or(SigningScheme::Eip712);
     let (signature, signing_scheme) = sign_order_for_submission(
         &order_to_sign,
         chain_id,
@@ -533,6 +557,8 @@ fn apply_settings_to_limit_trade_parameters(
             valid_for: &mut params.valid_for,
             valid_to: &mut params.valid_to,
             partially_fillable: &mut params.partially_fillable,
+            sell_token_balance: &mut params.sell_token_balance,
+            buy_token_balance: &mut params.buy_token_balance,
         },
         quote_request,
     );

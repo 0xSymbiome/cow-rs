@@ -18,6 +18,10 @@ use cow_sdk_signing::OrderTypedData;
 
 use crate::TradingError;
 
+fn default_order_balance() -> OrderBalance {
+    OrderBalance::Erc20
+}
+
 /// Fully resolved trader configuration used by order-posting and on-chain flows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -113,6 +117,12 @@ pub struct TradeParameters {
     /// Whether partial fills are allowed.
     #[serde(default)]
     pub partially_fillable: bool,
+    /// Sell-token balance source preserved through quote and post flows.
+    #[serde(default = "default_order_balance")]
+    pub sell_token_balance: OrderBalance,
+    /// Buy-token balance destination preserved through quote and post flows.
+    #[serde(default = "default_order_balance")]
+    pub buy_token_balance: OrderBalance,
     /// Optional explicit slippage tolerance in basis points.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub slippage_bps: Option<u32>,
@@ -166,6 +176,12 @@ pub struct LimitTradeParameters {
     /// Whether partial fills are allowed.
     #[serde(default)]
     pub partially_fillable: bool,
+    /// Sell-token balance source preserved through final order construction.
+    #[serde(default = "default_order_balance")]
+    pub sell_token_balance: OrderBalance,
+    /// Buy-token balance destination preserved through final order construction.
+    #[serde(default = "default_order_balance")]
+    pub buy_token_balance: OrderBalance,
     /// Optional explicit slippage tolerance in basis points.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub slippage_bps: Option<u32>,
@@ -647,6 +663,8 @@ pub(crate) struct QuoteRequestParameterTargets<'a> {
     pub valid_for: &'a mut Option<u32>,
     pub valid_to: &'a mut Option<u32>,
     pub partially_fillable: &'a mut bool,
+    pub sell_token_balance: &'a mut OrderBalance,
+    pub buy_token_balance: &'a mut OrderBalance,
 }
 
 pub(crate) fn apply_quote_request_parameter_overrides(
@@ -679,6 +697,12 @@ pub(crate) fn apply_quote_request_parameter_overrides(
     }
     if let Some(partially_fillable_override) = request_override.partially_fillable {
         *targets.partially_fillable = partially_fillable_override;
+    }
+    if let Some(sell_token_balance_override) = request_override.sell_token_balance {
+        *targets.sell_token_balance = sell_token_balance_override;
+    }
+    if let Some(buy_token_balance_override) = request_override.buy_token_balance {
+        *targets.buy_token_balance = buy_token_balance_override;
     }
 }
 

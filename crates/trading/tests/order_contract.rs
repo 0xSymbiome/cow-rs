@@ -8,10 +8,12 @@ use cow_sdk_core::{
     UnsignedOrder, eth_flow_contract_address, wrapped_native_token,
 };
 use cow_sdk_signing::generate_order_id;
-use cow_sdk_trading::{TradingError, calculate_unique_order_id};
+use cow_sdk_trading::{
+    OrderToSignParams, TradingError, calculate_unique_order_id, get_order_to_sign,
+};
 use tokio::time::timeout;
 
-use crate::common::{MockEthFlowChecker, address, app_data_hash};
+use crate::common::{MockEthFlowChecker, OWNER, address, app_data_hash, sample_limit_parameters};
 
 fn sample_ethflow_order(buy_amount: &str) -> UnsignedOrder {
     UnsignedOrder {
@@ -124,4 +126,28 @@ async fn unique_order_id_rejects_zero_buy_amount_when_a_collision_requires_a_ret
         error,
         TradingError::InvalidInput(message) if message == "buyAmount must be greater than 0: 0"
     ));
+}
+
+#[test]
+fn get_order_to_sign_preserves_non_default_balance_semantics() {
+    let mut params = sample_limit_parameters(cow_sdk_core::OrderKind::Sell);
+    params.sell_token_balance = OrderBalance::External;
+    params.buy_token_balance = OrderBalance::Internal;
+
+    let order = get_order_to_sign(
+        OrderToSignParams {
+            chain_id: SupportedChainId::Sepolia,
+            from: address(OWNER),
+            is_ethflow: false,
+            network_costs_amount: None,
+            apply_costs_slippage_and_fees: false,
+            protocol_fee_bps: None,
+        },
+        &params,
+        &app_data_hash(),
+    )
+    .expect("order construction should preserve configured balances");
+
+    assert_eq!(order.sell_token_balance, OrderBalance::External);
+    assert_eq!(order.buy_token_balance, OrderBalance::Internal);
 }

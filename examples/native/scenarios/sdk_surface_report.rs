@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let sdk = TradingSdk::new(
         PartialTraderParameters::default(),
         TradingSdkOptions::default(),
-    );
+    )?;
     let app_data_doc = generate_app_data_doc(AppDataParams {
         app_code: Some("cow-rs/native-capability-report".to_owned()),
         environment: Some("review".to_owned()),

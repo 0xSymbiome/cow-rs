@@ -2,7 +2,7 @@ mod common;
 
 use std::sync::Arc;
 
-use cow_sdk_core::CowEnv;
+use cow_sdk_core::{CowEnv, OrderBalance};
 use cow_sdk_orderbook::OrderKind;
 use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{
@@ -250,6 +250,68 @@ async fn quote_request_override_can_change_receiver_and_price_quality() {
     assert_eq!(
         result.order_to_sign.receiver,
         address(crate::common::ALT_RECEIVER)
+    );
+}
+
+#[tokio::test]
+async fn quote_results_preserve_non_default_balance_semantics_from_quote_and_override_request() {
+    let mut quote_response = sell_quote_response();
+    quote_response.quote.sell_token_balance = OrderBalance::External;
+    quote_response.quote.buy_token_balance = OrderBalance::Internal;
+    let orderbook = MockOrderbook::new(cow_sdk_core::SupportedChainId::Sepolia, quote_response);
+    let signer = MockSigner::default();
+    let trader = cow_sdk_trading::TraderParameters {
+        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
+        app_code: "0x007".to_owned(),
+        env: None,
+        settlement_contract_override: None,
+        eth_flow_contract_override: None,
+    };
+    let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
+    let advanced = SwapAdvancedSettings {
+        quote_request: Some(QuoteRequestOverride {
+            sell_token_balance: Some(OrderBalance::External),
+            buy_token_balance: Some(OrderBalance::Internal),
+            ..QuoteRequestOverride::default()
+        }),
+        ..SwapAdvancedSettings::default()
+    };
+
+    let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect("quote with balance overrides should succeed");
+    let request = orderbook
+        .state()
+        .quote_requests
+        .last()
+        .cloned()
+        .expect("quote request recorded");
+
+    assert_eq!(request.sell_token_balance, OrderBalance::External);
+    assert_eq!(request.buy_token_balance, OrderBalance::Internal);
+    assert_eq!(
+        result.trade_parameters.sell_token_balance,
+        OrderBalance::External
+    );
+    assert_eq!(
+        result.trade_parameters.buy_token_balance,
+        OrderBalance::Internal
+    );
+    assert_eq!(
+        result.quote_response.quote.sell_token_balance,
+        OrderBalance::External
+    );
+    assert_eq!(
+        result.quote_response.quote.buy_token_balance,
+        OrderBalance::Internal
+    );
+    assert_eq!(
+        result.order_to_sign.sell_token_balance,
+        OrderBalance::External
+    );
+    assert_eq!(
+        result.order_to_sign.buy_token_balance,
+        OrderBalance::Internal
     );
 }
 

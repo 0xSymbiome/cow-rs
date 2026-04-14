@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use serde_json::json;
 
-use cow_sdk_core::{Amount, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderKind};
+use cow_sdk_core::{Amount, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderBalance, OrderKind};
 use cow_sdk_trading::{
     LimitOrderAdvancedSettings, LimitTradeParameters, PostTradeAdditionalParams,
     QuoteRequestOverride, SwapAdvancedSettings, build_app_data, get_quote_results,
@@ -112,6 +112,7 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
         quote_request: Some(QuoteRequestOverride {
             receiver: Some(address(ALT_RECEIVER)),
             valid_to: Some(5_600_000),
+            signing_scheme: Some(cow_sdk_orderbook::SigningScheme::Eip1271),
             ..QuoteRequestOverride::default()
         }),
         app_data: Some(cow_sdk_app_data::AppDataParams {
@@ -154,6 +155,46 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
         uploaded_json["metadata"]["partnerFee"]["volumeBps"],
         serde_json::json!(50)
     );
+}
+
+#[tokio::test]
+async fn swap_posting_preserves_non_default_balance_semantics_from_quote_to_submission() {
+    let trader = sample_trader_parameters();
+    let mut quote_response = sell_quote_response();
+    quote_response.quote.sell_token_balance = OrderBalance::External;
+    quote_response.quote.buy_token_balance = OrderBalance::Internal;
+    let orderbook = MockOrderbook::new(trader.chain_id, quote_response);
+    let signer = MockSigner::default();
+    let trade = sample_trade_parameters(OrderKind::Sell);
+    let advanced = SwapAdvancedSettings {
+        quote_request: Some(QuoteRequestOverride {
+            sell_token_balance: Some(OrderBalance::External),
+            buy_token_balance: Some(OrderBalance::Internal),
+            ..QuoteRequestOverride::default()
+        }),
+        ..SwapAdvancedSettings::default()
+    };
+
+    let result = post_swap_order(&trade, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect("swap posting with non-default balances should succeed");
+    let sent_order = orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("order must be recorded");
+
+    assert_eq!(
+        result.order_to_sign.sell_token_balance,
+        OrderBalance::External
+    );
+    assert_eq!(
+        result.order_to_sign.buy_token_balance,
+        OrderBalance::Internal
+    );
+    assert_eq!(sent_order.sell_token_balance, OrderBalance::External);
+    assert_eq!(sent_order.buy_token_balance, OrderBalance::Internal);
 }
 
 #[tokio::test]
@@ -291,6 +332,29 @@ async fn limit_posting_accepts_custom_eip1271_signatures_without_local_re_signin
         cow_sdk_orderbook::SigningScheme::Eip1271
     );
     assert_eq!(result.signature, "0x7e57c0de");
+}
+
+#[tokio::test]
+async fn recoverable_limit_posting_rejects_owner_signer_mismatch_before_upload_or_submission() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::new(address(ALT_RECEIVER));
+    let params = sample_limit_parameters(OrderKind::Sell);
+
+    let error = post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("recoverable signing must reject explicit owner and signer mismatches");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::RecoverableSignatureOwnerMismatch {
+            scheme: cow_sdk_orderbook::SigningScheme::Eip712,
+            ..
+        }
+    ));
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert!(signer.state().last_typed_data_domain.is_none());
 }
 
 #[tokio::test]

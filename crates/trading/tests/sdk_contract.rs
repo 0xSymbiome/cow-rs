@@ -42,7 +42,8 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
             eth_flow_contract_override: None,
         },
         TradingSdkOptions::new().with_orderbook_client(orderbook.clone()),
-    );
+    )
+    .expect("sdk construction should succeed");
     let mut trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
     trade.owner = Some(address(OWNER));
 
@@ -103,6 +104,36 @@ async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can
     );
 }
 
+#[test]
+fn sdk_new_validates_injected_orderbook_context_with_the_same_contract_as_the_builder() {
+    let orderbook = Arc::new(MockOrderbook::new_with_env(
+        SupportedChainId::Sepolia,
+        CowEnv::Prod,
+        sell_quote_response(),
+    ));
+
+    let error = TradingSdk::new(
+        PartialTraderParameters {
+            chain_id: Some(SupportedChainId::Mainnet),
+            app_code: Some("0x007".to_owned()),
+            owner: None,
+            env: Some(CowEnv::Prod),
+            settlement_contract_override: None,
+            eth_flow_contract_override: None,
+        },
+        TradingSdkOptions::new().with_orderbook_client(orderbook),
+    )
+    .expect_err("direct constructor must reject injected orderbook conflicts");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::InjectedOrderbookContextConflict {
+            field: "chainId",
+            ..
+        }
+    ));
+}
+
 #[tokio::test]
 async fn sdk_orderbook_bound_calls_reject_env_conflicts_with_injected_client_context() {
     let orderbook = Arc::new(MockOrderbook::new_with_env(
@@ -143,7 +174,8 @@ async fn sdk_quote_only_reports_missing_chainid_and_appcode_explicitly() {
             eth_flow_contract_override: None,
         },
         TradingSdkOptions::default(),
-    );
+    )
+    .expect("sdk construction without injected orderbook should succeed");
     let chain_error = missing_chain
         .get_quote_only(trade.clone(), None)
         .await
@@ -161,7 +193,8 @@ async fn sdk_quote_only_reports_missing_chainid_and_appcode_explicitly() {
             eth_flow_contract_override: None,
         },
         TradingSdkOptions::default(),
-    );
+    )
+    .expect("sdk construction without injected orderbook should succeed");
     let app_error = missing_app
         .get_quote_only(trade, None)
         .await
@@ -184,7 +217,8 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
             eth_flow_contract_override: None,
         },
         TradingSdkOptions::default(),
-    );
+    )
+    .expect("sdk construction should succeed");
 
     let allowance = sdk
         .get_cow_protocol_allowance(
@@ -253,7 +287,8 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
             eth_flow_contract_override: None,
         },
         TradingSdkOptions::default(),
-    );
+    )
+    .expect("sdk construction should succeed");
 
     let allowance = sdk
         .get_cow_protocol_allowance_async(
@@ -303,7 +338,7 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
             chain_id: Some(SupportedChainId::Sepolia),
             app_code: Some("0x007".to_owned()),
             owner: None,
-            env: Some(CowEnv::Prod),
+            env: Some(CowEnv::Staging),
             settlement_contract_override: Some(AddressPerChain::from([(
                 u64::from(SupportedChainId::Sepolia),
                 address("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
@@ -314,7 +349,8 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
             )])),
         },
         TradingSdkOptions::new().with_orderbook_client(orderbook.clone()),
-    );
+    )
+    .expect("sdk construction should succeed");
 
     let pre_sign_tx = sdk
         .get_pre_sign_transaction(
@@ -384,7 +420,8 @@ async fn sdk_onchain_cancel_order_routes_regular_orders_through_settlement_when_
             )])),
         },
         TradingSdkOptions::new().with_orderbook_client(orderbook),
-    );
+    )
+    .expect("sdk construction should succeed");
 
     sdk.on_chain_cancel_order(
         &OrderTraderParameters {
@@ -440,7 +477,8 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
             )])),
         },
         TradingSdkOptions::new().with_orderbook_client(orderbook),
-    );
+    )
+    .expect("sdk construction should succeed");
 
     sdk.on_chain_cancel_order(
         &OrderTraderParameters {

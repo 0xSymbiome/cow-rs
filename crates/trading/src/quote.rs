@@ -406,6 +406,8 @@ pub(crate) fn apply_advanced_settings_to_trade_parameters(
             valid_for: &mut trade_parameters.valid_for,
             valid_to: &mut trade_parameters.valid_to,
             partially_fillable: &mut trade_parameters.partially_fillable,
+            sell_token_balance: &mut trade_parameters.sell_token_balance,
+            buy_token_balance: &mut trade_parameters.buy_token_balance,
         },
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
     );
@@ -442,6 +444,8 @@ fn build_quote_request(
     if trade_parameters.partially_fillable {
         request = request.with_partially_fillable();
     }
+    request.sell_token_balance = trade_parameters.sell_token_balance;
+    request.buy_token_balance = trade_parameters.buy_token_balance;
 
     if let Some(valid_to) = trade_parameters.valid_to {
         request = request.with_valid_to(valid_to);

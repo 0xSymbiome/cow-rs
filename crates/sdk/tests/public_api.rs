@@ -9,7 +9,8 @@ fn public_api_reexports_cover_primary_root_surface() {
     let _sdk = TradingSdk::new(
         PartialTraderParameters::default(),
         TradingSdkOptions::default(),
-    );
+    )
+    .expect("default trading sdk construction should succeed");
     let _builder =
         TradingSdkBuilder::new().with_trader_defaults(PartialTraderParameters::default());
     assert_eq!(ORDER_PRIMARY_TYPE, "Order");
@@ -51,6 +52,8 @@ fn public_api_reexports_cover_primary_root_surface() {
         settlement_contract_override: None,
         eth_flow_contract_override: None,
         partially_fillable: false,
+        sell_token_balance: OrderBalance::Erc20,
+        buy_token_balance: OrderBalance::Erc20,
         slippage_bps: Some(50),
         receiver: None,
         valid_for: None,
@@ -74,7 +77,8 @@ fn module_reexports_cover_expected_leaf_crates() {
     let _sdk = cow_sdk::trading::TradingSdk::new(
         cow_sdk::trading::PartialTraderParameters::default(),
         cow_sdk::trading::TradingSdkOptions::default(),
-    );
+    )
+    .expect("default facade trading sdk construction should succeed");
 
     assert!(validation.success);
     assert!(schema.is_object());

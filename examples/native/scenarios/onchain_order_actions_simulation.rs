@@ -37,6 +37,7 @@ fn trading_sdk(orderbook: MockOrderbook) -> TradingSdk {
         },
         TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook)),
     )
+    .expect("example trading sdk construction should succeed")
 }
 
 #[tokio::main]

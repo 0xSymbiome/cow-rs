@@ -1,0 +1,77 @@
+# Trading Order Construction Integrity Audit
+
+Status: Current  
+Last reviewed: 2026-04-14
+
+## Scope
+
+This audit covers:
+
+- order construction and submission helpers in `cow-sdk-trading`
+- quote-derived order assembly and direct posting flows
+- `TradingSdk` construction paths that accept injected orderbook context
+- local signature validation before orderbook submission
+
+It does not cover browser-wallet session management, approval flows, or
+unrelated leaf-crate transport policy.
+
+## Findings Summary
+
+| Area | Reviewed contract | Result |
+| --- | --- | --- |
+| Order construction balance semantics | Preserve reviewed `sellTokenBalance` and `buyTokenBalance` values end to end | Conforms |
+| `TradingSdk` injected-orderbook constructors | Builder and direct constructors enforce one fail-fast authority contract | Conforms |
+| Recoverable signature posting | Reject explicit owner or signer mismatch before submission | Conforms |
+
+## Findings
+
+### Balance semantics
+
+`cow-sdk-trading` preserves reviewed `sellTokenBalance` and
+`buyTokenBalance` semantics across quote overrides, quote-derived order
+assembly, direct order construction, signing payload generation, and final
+submission. Non-default balance selections remain part of the signed order
+contract rather than being normalized during helper composition.
+
+### Constructor parity
+
+Builder-created and directly constructed `TradingSdk` instances now share the
+same injected-orderbook validation boundary. If explicit trader or quoter
+defaults conflict with the injected orderbook context, SDK construction fails
+before the surface is exposed.
+
+### Recoverable signature boundary
+
+Posting flows for recoverable signature schemes reject explicit owner or signer
+mismatch before app-data upload, signing, or orderbook submission. `PreSign`
+and `Eip1271` remain separate non-recoverable contracts.
+
+## Evidence
+
+Primary implementation points:
+
+- `crates/trading/src/error.rs`
+- `crates/trading/src/order.rs`
+- `crates/trading/src/post.rs`
+- `crates/trading/src/quote.rs`
+- `crates/trading/src/sdk.rs`
+- `crates/trading/src/types.rs`
+
+Primary regression coverage:
+
+- `crates/trading/tests/order_contract.rs`
+- `crates/trading/tests/post_contract.rs`
+- `crates/trading/tests/quote_contract.rs`
+- `crates/trading/tests/sdk_contract.rs`
+
+Validation surface:
+
+```text
+cargo fmt --all --check
+cargo test -p cow-sdk-trading
+cargo test --workspace --all-features
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+python tools/validate_trace_links.py --root .
+python tools/validate_task_packs.py --root .
+python tools/generate_drift_report.py --root . --output ./.spec-graph/drift-report.md
+```

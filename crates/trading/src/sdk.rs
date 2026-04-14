@@ -147,12 +147,19 @@ impl TradingSdk {
     }
 
     /// Creates an SDK directly from defaults and options.
-    #[must_use]
-    pub fn new(trader_defaults: PartialTraderParameters, options: TradingSdkOptions) -> Self {
-        Self {
-            trader_defaults,
-            options,
-        }
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
+    /// supplied defaults conflict with an injected orderbook client.
+    pub fn new(
+        trader_defaults: PartialTraderParameters,
+        options: TradingSdkOptions,
+    ) -> Result<Self, TradingError> {
+        TradingSdkBuilder::new()
+            .with_trader_defaults(trader_defaults)
+            .with_options(options)
+            .build()
     }
 
     /// Returns the stored trader defaults.

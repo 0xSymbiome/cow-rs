@@ -6,5 +6,6 @@ fn main() {
     let _ = cow_sdk::TradingSdk::new(
         cow_sdk::PartialTraderParameters::default(),
         cow_sdk::TradingSdkOptions::default(),
-    );
+    )
+    .expect("default trading sdk construction should succeed");
 }

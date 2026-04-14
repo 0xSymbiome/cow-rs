@@ -40,6 +40,9 @@ pub enum TradingError {
     /// Quote-only flows require an explicit owner from settings or call-level input.
     #[error("owner address is required for quote-only flows")]
     MissingOwner,
+    /// Order submission requires an explicit owner or a signer address that can supply one.
+    #[error("owner address is required for order submission")]
+    MissingSubmissionOwner,
     /// Injected orderbook context conflicts with requested chain or environment.
     #[error(
         "injected orderbook client fixes {field} to `{configured}`, but `{requested}` was requested"
@@ -66,6 +69,18 @@ pub enum TradingError {
         quoted: String,
         /// Value used by the submission flow.
         submitted: String,
+    },
+    /// Recoverable local signing requires the submission owner to match the signer address.
+    #[error(
+        "recoverable signing scheme `{scheme:?}` requires owner `{owner}` to match signer `{signer}`"
+    )]
+    RecoverableSignatureOwnerMismatch {
+        /// Recoverable signing scheme selected for submission.
+        scheme: cow_sdk_orderbook::SigningScheme,
+        /// Explicit owner used in the order payload.
+        owner: String,
+        /// Address resolved from the signing backend.
+        signer: String,
     },
     /// Signer operation failed.
     #[error("signer error during {operation}: {message}")]

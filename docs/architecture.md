@@ -86,7 +86,12 @@ environment authority; conflicting explicit values are rejected instead of
 being silently mixed through precedence fallbacks. When quote results are
 reused for posting, the originating orderbook runtime binding remains part of
 that contract, so quote-derived submission is rejected if the caller switches
-to a different orderbook endpoint, chain, or environment.
+to a different orderbook endpoint, chain, or environment. Reviewed
+`sellTokenBalance` and `buyTokenBalance` semantics remain part of the same
+workflow contract through quote, order, sign, and post seams. Builder-created
+and directly constructed `TradingSdk` instances share the same injected-
+orderbook validation boundary, and recoverable-signature posting rejects
+explicit owner or signer mismatch before submission.
 
 For browser-wallet-backed trading flows, chain coherence remains leaf-owned by
 `cow-sdk-browser-wallet`. When the workflow already has an explicit chain

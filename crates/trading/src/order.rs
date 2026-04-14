@@ -2,7 +2,7 @@ use num_bigint::BigInt;
 
 use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, MAX_VALID_TO_EPOCH,
-    OrderBalance, ProtocolOptions, SupportedChainId, UnsignedOrder, eth_flow_contract_address,
+    ProtocolOptions, SupportedChainId, UnsignedOrder, eth_flow_contract_address,
     wrapped_native_token,
 };
 use cow_sdk_orderbook::OrderQuoteResponse;
@@ -90,6 +90,8 @@ pub fn swap_params_to_limit_order_params(
         settlement_contract_override: trade_parameters.settlement_contract_override.clone(),
         eth_flow_contract_override: trade_parameters.eth_flow_contract_override.clone(),
         partially_fillable: trade_parameters.partially_fillable,
+        sell_token_balance: quote_response.quote.sell_token_balance,
+        buy_token_balance: quote_response.quote.buy_token_balance,
         slippage_bps: trade_parameters.slippage_bps,
         receiver: trade_parameters.receiver.clone(),
         valid_for: trade_parameters.valid_for,
@@ -161,8 +163,8 @@ pub fn get_order_to_sign(
             fee_amount: network_costs_amount.as_str().to_owned(),
             kind: limit_parameters.kind,
             partially_fillable: limit_parameters.partially_fillable,
-            sell_token_balance: OrderBalance::Erc20,
-            buy_token_balance: OrderBalance::Erc20,
+            sell_token_balance: limit_parameters.sell_token_balance,
+            buy_token_balance: limit_parameters.buy_token_balance,
         };
         let amounts = calculate_quote_amounts_and_costs(
             &quote,
@@ -193,8 +195,8 @@ pub fn get_order_to_sign(
         fee_amount: Amount::zero(),
         kind: limit_parameters.kind,
         partially_fillable: limit_parameters.partially_fillable,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
+        sell_token_balance: limit_parameters.sell_token_balance,
+        buy_token_balance: limit_parameters.buy_token_balance,
     })
 }
 

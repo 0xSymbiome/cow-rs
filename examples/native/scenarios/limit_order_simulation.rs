@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             eth_flow_contract_override: None,
         },
         TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
-    );
+    )?;
 
     let posted = sdk
         .post_limit_order(sample_limit_parameters(), &signer, None)

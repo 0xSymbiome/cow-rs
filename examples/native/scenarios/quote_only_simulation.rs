@@ -21,7 +21,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             eth_flow_contract_override: None,
         },
         TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
-    );
+    )?;
 
     let quote = sdk.get_quote_only(sample_trade_parameters(), None).await?;
     let request = orderbook

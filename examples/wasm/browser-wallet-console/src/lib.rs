@@ -212,7 +212,8 @@ impl BrowserWalletConsole {
                 ..Default::default()
             },
             TradingSdkOptions::new().with_orderbook_client(mock_orderbook.clone()),
-        );
+        )
+        .map_err(js_string_error)?;
         let signer = self.mock_wallet.signer();
         let posting = sdk
             .post_swap_order_async(trade, &signer, None)
@@ -667,6 +668,7 @@ fn live_sdk(chain_id: SupportedChainId, env: CowEnv, app_code: &str) -> TradingS
                 api_key: None,
             }))),
     )
+    .expect("browser wallet console sdk construction should succeed")
 }
 
 fn mock_quote_response(request: &OrderQuoteRequest) -> OrderQuoteResponse {
@@ -729,6 +731,8 @@ fn sample_trade_parameters(chain_id: SupportedChainId) -> TradeParameters {
         settlement_contract_override: None,
         eth_flow_contract_override: None,
         partially_fillable: false,
+        sell_token_balance: cow_sdk::OrderBalance::Erc20,
+        buy_token_balance: cow_sdk::OrderBalance::Erc20,
         slippage_bps: Some(50),
         receiver: None,
         valid_for: Some(1800),

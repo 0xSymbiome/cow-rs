@@ -8,7 +8,7 @@ pub fn smoke_hash_and_uid() -> Result<String, Box<dyn std::error::Error>> {
     let _sdk = TradingSdk::new(
         PartialTraderParameters::default(),
         TradingSdkOptions::default(),
-    );
+    )?;
     let owner = Address::new("0x4444444444444444444444444444444444444444")?;
     let order = UnsignedOrder {
         sell_token: Address::new("0x1111111111111111111111111111111111111111")?,

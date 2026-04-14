@@ -45,6 +45,10 @@ the transport crates that define those behaviors.
 
 `cow-sdk-trading` owns quote-to-order orchestration. Review trading changes at
 the workflow layer first, then inspect the lower-level crates it composes.
+That surface is responsible for preserving reviewed balance semantics across
+quote-derived and direct order construction, enforcing one injected-orderbook
+validation contract across all `TradingSdk` constructors, and rejecting
+recoverable-signature owner or signer mismatch before submission.
 
 ### Browser-Runtime Support
 

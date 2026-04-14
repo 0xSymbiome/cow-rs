@@ -7,12 +7,12 @@ This directory contains focused public engineering audits for `cow-rs`.
 Each audit should record:
 
 - the surface being assessed
-- the current decision or finding
+- the current result or finding
 - the evidence that supports that decision
 - any remaining boundary that stays intentionally out of scope
 
-Audits stay narrow. They are not a substitute for guides, ADRs, or release
-runbooks.
+Audits stay narrow and evidence-based. They are not a substitute for guides,
+ADRs, release runbooks, or implementation planning.
 
 ## Index
 
@@ -23,3 +23,4 @@ runbooks.
 | [Browser Wallet Chain Coherence Audit](browser-wallet-chain-coherence.md) | Chain-bound signers and typed chain-management helpers keep live wallet workflow chains aligned with the active session | Current |
 | [Trading Orderbook Context Audit](trading-orderbook-context.md) | Canonical chain and environment authority for orderbook-bound trading helpers | Current |
 | [Trading Quote Orderbook Binding Audit](trading-quote-orderbook-binding.md) | Quote-derived posting remains bound to the originating orderbook runtime | Current |
+| [Trading Order Construction Integrity Audit](trading-order-construction-integrity.md) | Balance semantics, constructor parity, and local signature validation at the trading order-construction boundary | Current |
