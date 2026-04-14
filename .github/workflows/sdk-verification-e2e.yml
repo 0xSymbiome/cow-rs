@@ -1,0 +1,76 @@
+name: sdk-verification-e2e
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+      - feat/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-verification-e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          targets: wasm32-unknown-unknown
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      # Source ref: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      # Source ref: browser-actions/setup-chrome@v2
+      - id: setup-chrome
+        uses: browser-actions/setup-chrome@0e0d4d8f26f09af32ad610babb8d68f98b92cfab
+        with:
+          chrome-version: stable
+          install-chromedriver: true
+          install-dependencies: true
+
+      - name: Install wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.14.0 --locked
+
+      - name: Check SDK verification console for wasm
+        run: cargo check --target wasm32-unknown-unknown --manifest-path examples/wasm/sdk-verification-console/Cargo.toml
+
+      - name: Build SDK verification console web package
+        working-directory: examples/wasm/sdk-verification-console
+        run: wasm-pack build --target web
+
+      - name: Configure Chrome for wasm-bindgen tests
+        working-directory: examples/wasm/sdk-verification-console
+        run: |
+          printf '{"goog:chromeOptions":{"binary":"%s","args":["--headless=new","--disable-gpu","--no-sandbox"]}}\n' '${{ steps.setup-chrome.outputs.chrome-path }}' > webdriver.json
+
+      - name: Run SDK verification wasm-bindgen tests
+        working-directory: examples/wasm/sdk-verification-console
+        run: wasm-pack test --headless --chrome --chromedriver "${{ steps.setup-chrome.outputs.chromedriver-path }}"
+
+      - name: Install SDK verification e2e dependencies
+        run: bun install --cwd e2e/sdk-verification --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: bun run --cwd e2e/sdk-verification playwright install chromium
+
+      - name: Run SDK verification browser e2e
+        run: bun run --cwd e2e/sdk-verification test
