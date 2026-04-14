@@ -586,20 +586,20 @@ pub struct OrderCancellations {
     pub signing_scheme: EcdsaSigningScheme,
 }
 
-/// EthFlow-specific orderbook metadata.
+/// `EthFlow`-specific orderbook metadata.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EthflowData {
     /// Transaction hash for the refund path, when present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub refund_tx_hash: Option<String>,
-    /// User-facing validity timestamp for the EthFlow order.
+    /// User-facing validity timestamp for the `EthFlow` order.
     pub user_valid_to: u32,
 }
 
 /// Orderbook order response DTO.
 ///
-/// This response includes status, owner, uid, execution totals, and EthFlow
+/// This response includes status, owner, uid, execution totals, and `EthFlow`
 /// metadata that are not part of the user-domain signing order or contract ABI
 /// hashing payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -681,10 +681,10 @@ pub struct Order {
     /// Full fee amount, when returned by the endpoint.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub full_fee_amount: Option<String>,
-    /// On-chain user for EthFlow-style orders.
+    /// On-chain user for `EthFlow`-style orders.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub onchain_user: Option<Address>,
-    /// EthFlow-specific metadata.
+    /// `EthFlow`-specific metadata.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ethflow_data: Option<EthflowData>,
     /// Total fee normalized by the SDK transform layer.

@@ -47,7 +47,7 @@ pub enum ValidationError {
         /// Identifies the invalid field.
         field: &'static str,
     },
-    /// A chain id was not part of the supported CoW Protocol network set.
+    /// A chain id was not part of the supported `CoW` Protocol network set.
     #[error("unsupported chain id {chain_id}")]
     UnsupportedChain {
         /// Unsupported numeric chain id supplied by the caller.

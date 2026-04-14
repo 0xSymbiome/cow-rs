@@ -146,7 +146,7 @@ pub fn generate_order_id(
     })
 }
 
-/// Encodes the CoW EIP-1271 verifier payload for an existing ECDSA signature.
+/// Encodes the `CoW` EIP-1271 verifier payload for an existing ECDSA signature.
 ///
 /// # Errors
 ///

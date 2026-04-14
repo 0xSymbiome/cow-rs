@@ -1,4 +1,4 @@
-//! CoW Protocol app-data generation, schema validation, CID conversion, and
+//! `CoW` Protocol app-data generation, schema validation, CID conversion, and
 //! IPFS transport seams.
 
 /// CID conversion helpers for app-data hashes and documents.

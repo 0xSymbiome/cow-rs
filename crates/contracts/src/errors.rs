@@ -1,13 +1,13 @@
 use cow_sdk_core::{Address, CoreError};
 use thiserror::Error;
 
-/// Errors returned by low-level CoW contract helpers.
+/// Errors returned by low-level `CoW` contract helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum ContractsError {
     /// Core validation failed for an input value.
     #[error("core validation error: {0}")]
     Core(#[from] CoreError),
-    /// A chain id is outside the supported CoW deployment set.
+    /// A chain id is outside the supported `CoW` deployment set.
     #[error("unsupported chain id: {0}")]
     UnsupportedChain(u64),
     /// An order UID had the wrong encoded byte length.

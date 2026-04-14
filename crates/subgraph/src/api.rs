@@ -19,7 +19,7 @@ use crate::{
 
 const SUBGRAPH_BASE_URL: &str = "https://gateway.thegraph.com/api/";
 
-/// Human-readable name for the CoW Protocol subgraph service.
+/// Human-readable name for the `CoW` Protocol subgraph service.
 pub const API_NAME: &str = "CoW Protocol Subgraph";
 /// Default user-agent used by the subgraph client.
 pub const DEFAULT_SUBGRAPH_USER_AGENT: &str =
@@ -100,7 +100,7 @@ impl SubgraphTransportPolicy {
     }
 }
 
-/// Typed client for CoW Protocol subgraph queries.
+/// Typed client for `CoW` Protocol subgraph queries.
 ///
 /// The client owns API-key-derived production endpoints, optional per-instance
 /// configuration overrides, and a typed raw-query path through

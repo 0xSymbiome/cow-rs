@@ -13,7 +13,7 @@ use crate::{
 pub const EIP1271_MAGICVALUE: &str = "0x1626ba7e";
 const EIP1271_IS_VALID_SIGNATURE_ABI_JSON: &str = r#"[{"type":"function","name":"isValidSignature","inputs":[{"name":"hash","type":"bytes32"},{"name":"signature","type":"bytes"}],"outputs":[{"name":"","type":"bytes4"}],"stateMutability":"view"}]"#;
 
-/// Supported CoW signing schemes.
+/// Supported `CoW` signing schemes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum SigningScheme {
@@ -77,7 +77,7 @@ pub struct Eip1271VerificationRequest {
     pub signature: HexData,
 }
 
-/// CoW signature union.
+/// `CoW` signature union.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Signature {
@@ -112,7 +112,7 @@ impl Signature {
     }
 }
 
-/// Encodes an EIP-1271 verifier payload as the CoW compact wire format.
+/// Encodes an EIP-1271 verifier payload as the `CoW` compact wire format.
 ///
 /// # Errors
 ///

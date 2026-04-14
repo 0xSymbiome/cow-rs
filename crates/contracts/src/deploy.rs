@@ -108,7 +108,10 @@ mod tests {
     use super::*;
 
     fn sample_init_code_parts() -> (&'static str, Vec<String>) {
-        ("0x6001600055", vec!["0x1234".to_owned(), "0xabcd".to_owned()])
+        (
+            "0x6001600055",
+            vec!["0x1234".to_owned(), "0xabcd".to_owned()],
+        )
     }
 
     #[test]

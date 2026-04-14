@@ -11,7 +11,7 @@ use crate::{
     order_signing::{sign_with_scheme, sign_with_scheme_async},
 };
 
-/// Primary type name for CoW order-cancellation payloads.
+/// Primary type name for `CoW` order-cancellation payloads.
 pub const ORDER_CANCELLATIONS_PRIMARY_TYPE: &str = "OrderCancellations";
 
 struct CancellationSigningPayload {

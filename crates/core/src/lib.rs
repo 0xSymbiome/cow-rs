@@ -1,4 +1,4 @@
-//! Shared CoW Protocol core types, validation helpers, configuration, and
+//! Shared `CoW` Protocol core types, validation helpers, configuration, and
 //! runtime-neutral traits used across the `cow-sdk` crate family.
 
 /// Environment, address-book, and HTTP client policy types shared across crates.

@@ -1,4 +1,4 @@
-//! Low-level CoW Protocol contract helpers for hashing, settlement encoding,
+//! Low-level `CoW` Protocol contract helpers for hashing, settlement encoding,
 //! signature verification, and deployment metadata.
 
 /// Deterministic deployment metadata and address derivation helpers.

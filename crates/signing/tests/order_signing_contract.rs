@@ -4,8 +4,8 @@ use cow_sdk_contracts::{Order as ContractsOrder, OrderUidParams, SigningScheme, 
 use cow_sdk_core::{Address, Amount, SupportedChainId};
 use cow_sdk_signing::{
     GeneratedOrderId, ORDER_PRIMARY_TYPE, SigningError, eip1271_signature_payload,
-    generate_order_id, get_domain, order_typed_data, order_typed_data_payload, sign_order, sign_order_async,
-    sign_order_with_scheme, sign_order_with_scheme_async,
+    generate_order_id, get_domain, order_typed_data, order_typed_data_payload, sign_order,
+    sign_order_async, sign_order_with_scheme, sign_order_with_scheme_async,
 };
 use num_bigint::BigUint;
 use sha3::{Digest, Keccak256};
@@ -211,7 +211,10 @@ fn eip1271_signature_payload_keeps_full_bytes32_app_data_and_exact_word_padding(
         &encoded[dynamic_length_offset..dynamic_length_offset + 32],
         &encode_usize_word(32)
     );
-    assert_eq!(&encoded[dynamic_length_offset + 32..dynamic_length_offset + 64], &[0xcd; 32]);
+    assert_eq!(
+        &encoded[dynamic_length_offset + 32..dynamic_length_offset + 64],
+        &[0xcd; 32]
+    );
 }
 
 fn contracts_order(order: &cow_sdk_core::UnsignedOrder) -> ContractsOrder {

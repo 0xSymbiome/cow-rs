@@ -134,21 +134,29 @@ mod tests {
             LATEST_CID_CODEC,
             Multihash::<64>::wrap(SHA2_256_CODE, &[0x33; APP_DATA_HEX_LENGTH]).unwrap(),
         );
-        let legacy =
-            Cid::new_v0(Multihash::<64>::wrap(SHA2_256_CODE, &[0x44; APP_DATA_HEX_LENGTH]).unwrap())
-                .unwrap();
+        let legacy = Cid::new_v0(
+            Multihash::<64>::wrap(SHA2_256_CODE, &[0x44; APP_DATA_HEX_LENGTH]).unwrap(),
+        )
+        .unwrap();
 
         assert_eq!(ensure_supported_cid(&latest), Ok(()));
         assert_eq!(ensure_supported_cid(&legacy), Ok(()));
-        assert_eq!(ensure_supported_cid(&wrong_latest_codec), Err(AppDataError::InvalidCid));
-        assert_eq!(ensure_supported_cid(&wrong_latest_hash), Err(AppDataError::InvalidCid));
+        assert_eq!(
+            ensure_supported_cid(&wrong_latest_codec),
+            Err(AppDataError::InvalidCid)
+        );
+        assert_eq!(
+            ensure_supported_cid(&wrong_latest_hash),
+            Err(AppDataError::InvalidCid)
+        );
     }
 
     #[test]
     fn legacy_cid_constructor_is_already_bounded_to_the_supported_contract() {
-        let legacy =
-            Cid::new_v0(Multihash::<64>::wrap(SHA2_256_CODE, &[0x77; APP_DATA_HEX_LENGTH]).unwrap())
-                .unwrap();
+        let legacy = Cid::new_v0(
+            Multihash::<64>::wrap(SHA2_256_CODE, &[0x77; APP_DATA_HEX_LENGTH]).unwrap(),
+        )
+        .unwrap();
 
         assert_eq!(legacy.version(), Version::V0);
         assert_eq!(legacy.codec(), 0x70);
@@ -163,6 +171,9 @@ mod tests {
             Multihash::<64>::wrap(KECCAK_256_CODE, &[0x11; APP_DATA_HEX_LENGTH - 1]).unwrap(),
         );
 
-        assert_eq!(ensure_supported_cid(&short_latest), Err(AppDataError::InvalidCid));
+        assert_eq!(
+            ensure_supported_cid(&short_latest),
+            Err(AppDataError::InvalidCid)
+        );
     }
 }

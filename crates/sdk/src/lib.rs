@@ -1,4 +1,4 @@
-//! Thin facade crate for the primary CoW Protocol Rust SDK surface.
+//! Thin facade crate for the primary `CoW` Protocol Rust SDK surface.
 //!
 //! The root package is intentionally narrow:
 //!

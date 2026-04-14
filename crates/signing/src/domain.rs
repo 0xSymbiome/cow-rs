@@ -8,12 +8,12 @@ use sha3::{Digest, Keccak256};
 
 use crate::SigningError;
 
-/// Primary type name for CoW order typed-data payloads.
+/// Primary type name for `CoW` order typed-data payloads.
 pub const ORDER_PRIMARY_TYPE: &str = "Order";
-/// Typed-data envelope alias for explicit CoW order signing.
+/// Typed-data envelope alias for explicit `CoW` order signing.
 pub type OrderTypedData = TypedDataEnvelope<UnsignedOrder>;
 
-/// Builds the CoW typed-data domain for a chain and optional protocol overrides.
+/// Builds the `CoW` typed-data domain for a chain and optional protocol overrides.
 ///
 /// # Errors
 ///
@@ -100,7 +100,7 @@ pub fn order_typed_data_payload(
     })
 }
 
-/// Returns CoW order fields as core typed-data field descriptors.
+/// Returns `CoW` order fields as core typed-data field descriptors.
 #[must_use]
 pub fn order_fields() -> Vec<TypedDataField> {
     ORDER_TYPE_FIELDS

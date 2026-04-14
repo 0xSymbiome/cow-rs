@@ -1,4 +1,4 @@
-//! Typed CoW Protocol subgraph queries.
+//! Typed `CoW` Protocol subgraph queries.
 //!
 //! `cow-sdk-subgraph` keeps saved query documents, explicit raw-query inputs,
 //! and typed error boundaries in a dedicated crate instead of widening the root

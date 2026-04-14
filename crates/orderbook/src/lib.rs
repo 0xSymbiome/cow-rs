@@ -1,4 +1,4 @@
-//! Typed CoW Protocol orderbook transport models, request policy, and response
+//! Typed `CoW` Protocol orderbook transport models, request policy, and response
 //! transforms.
 
 /// High-level orderbook client with chain/env-aware endpoint resolution.

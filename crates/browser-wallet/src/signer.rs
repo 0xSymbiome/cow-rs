@@ -50,7 +50,7 @@ impl Eip1193Signer {
 
     /// Signs typed data through the legacy compatibility bridge.
     ///
-    /// This helper is intentionally narrow. It supports only the CoW order and order-cancellation
+    /// This helper is intentionally narrow. It supports only the `CoW` order and order-cancellation
     /// field layouts that legacy browser-wallet integrations expect. For other primary types, use
     /// [`cow_sdk_core::AsyncSigner::sign_typed_data_payload`] with an explicit
     /// [`TypedDataPayload`].

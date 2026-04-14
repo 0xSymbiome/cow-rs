@@ -247,27 +247,20 @@ mod tests {
             AppDataHash::new("0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd")
                 .unwrap();
 
-        assert_eq!(
-            parse_address_bytes(&address).unwrap(),
-            {
-                let mut expected = [0u8; 20];
-                expected.copy_from_slice(
-                    &hex::decode("1234567890abcdef1234567890abcdef12345678").unwrap(),
-                );
-                expected
-            }
-        );
-        assert_eq!(
-            parse_bytes32_hash(&app_data).unwrap(),
-            {
-                let mut expected = [0u8; 32];
-                expected.copy_from_slice(
-                    &hex::decode("abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd")
-                        .unwrap(),
-                );
-                expected
-            }
-        );
+        assert_eq!(parse_address_bytes(&address).unwrap(), {
+            let mut expected = [0u8; 20];
+            expected
+                .copy_from_slice(&hex::decode("1234567890abcdef1234567890abcdef12345678").unwrap());
+            expected
+        });
+        assert_eq!(parse_bytes32_hash(&app_data).unwrap(), {
+            let mut expected = [0u8; 32];
+            expected.copy_from_slice(
+                &hex::decode("abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd")
+                    .unwrap(),
+            );
+            expected
+        });
         assert_eq!(
             parse_hex32(
                 "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -283,15 +276,20 @@ mod tests {
             out
         });
         assert_eq!(
-            encode_u256_str("amount", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
-                .unwrap(),
+            encode_u256_str(
+                "amount",
+                "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+            )
+            .unwrap(),
             [0xff; 32]
         );
-        assert!(encode_u256_str(
-            "amount",
-            "0x01ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-        )
-        .is_err());
+        assert!(
+            encode_u256_str(
+                "amount",
+                "0x01ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+            )
+            .is_err()
+        );
         assert_eq!(encode_bool(false), [0u8; 32]);
         assert_eq!(encode_bool(true)[31], 1);
         assert_eq!(order_kind_name(OrderKind::Buy), "buy");
@@ -301,12 +299,12 @@ mod tests {
             normalize_hex_payload("0xABcd", "payload").unwrap(),
             "0xabcd"
         );
-        assert_eq!(encode_fixed_bytes([0xaa, 0xbb, 0xcc])[..3], [0xaa, 0xbb, 0xcc]);
-        let expected_string_hash: [u8; 32] = Keccak256::digest("hello".as_bytes()).into();
         assert_eq!(
-            encode_string_hash("hello"),
-            expected_string_hash
+            encode_fixed_bytes([0xaa, 0xbb, 0xcc])[..3],
+            [0xaa, 0xbb, 0xcc]
         );
+        let expected_string_hash: [u8; 32] = Keccak256::digest("hello".as_bytes()).into();
+        assert_eq!(encode_string_hash("hello"), expected_string_hash);
     }
 
     #[test]
@@ -315,8 +313,7 @@ mod tests {
             name: "Gnosis Protocol".to_owned(),
             version: "v2".to_owned(),
             chain_id: 1,
-            verifying_contract: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
-                .unwrap(),
+            verifying_contract: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
         };
         let struct_hash = [0x55; 32];
 
@@ -338,7 +335,10 @@ mod tests {
         let expected_digest: [u8; 32] = Keccak256::digest(&digest_payload).into();
 
         assert_eq!(domain_separator(&domain).unwrap(), expected_separator);
-        assert_eq!(typed_data_digest(&domain, struct_hash).unwrap(), expected_digest);
+        assert_eq!(
+            typed_data_digest(&domain, struct_hash).unwrap(),
+            expected_digest
+        );
     }
 
     #[test]

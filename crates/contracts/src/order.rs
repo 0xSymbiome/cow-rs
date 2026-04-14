@@ -575,7 +575,10 @@ mod tests {
         digest_payload.extend_from_slice(&expected_struct_hash);
         let expected_digest = Keccak256::digest(&digest_payload);
 
-        assert_eq!(order_struct_hash(&normalized).unwrap(), expected_struct_hash);
+        assert_eq!(
+            order_struct_hash(&normalized).unwrap(),
+            expected_struct_hash
+        );
         assert_eq!(
             hash_order(&domain, &order).unwrap().as_str(),
             format!("0x{}", hex::encode(expected_digest))
