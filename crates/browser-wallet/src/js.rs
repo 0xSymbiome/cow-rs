@@ -8,6 +8,8 @@ use async_trait::async_trait;
 #[cfg(target_arch = "wasm32")]
 use js_sys::{Function, Object, Promise, Reflect};
 #[cfg(target_arch = "wasm32")]
+use serde::Serialize;
+#[cfg(target_arch = "wasm32")]
 use serde_json::Value;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::{JsCast, JsValue, closure::Closure, prelude::wasm_bindgen};
@@ -225,7 +227,8 @@ impl Eip1193Transport for InjectedProviderTransport {
         )
         .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))?;
         if let Some(params) = &params {
-            let params = serde_wasm_bindgen::to_value(params)
+            let params = params
+                .serialize(&serde_wasm_bindgen::Serializer::json_compatible())
                 .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
             Reflect::set(&payload, &JsValue::from_str("params"), &params)
                 .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))?;

@@ -147,8 +147,12 @@ test("multi-wallet selection, reset, reconnect, and forget remain explicit", asy
   expect(state.sessionConnected).toBe(true);
   expect(state.selectedWallet).toBe("Rabby");
 
+  await expect(page.locator("#forget-wallet")).toHaveText("Clear Console Wallet");
   await page.locator("#forget-wallet").click();
   await expectInjectedState(page, "forget-wallet", "success");
+  await expect(page.locator("#injected-output")).toContainText(
+    "wallet authorization remains managed by the extension",
+  );
 
   state = await contractState(page);
   expect(state.selectionCleared).toBe(true);

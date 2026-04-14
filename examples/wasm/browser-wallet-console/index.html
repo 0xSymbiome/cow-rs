@@ -322,8 +322,8 @@
             <div>
               <label for="env">Env</label>
               <select id="env">
+                <option value="staging" selected>staging</option>
                 <option value="prod">prod</option>
-                <option value="staging">staging</option>
               </select>
             </div>
             <div>
@@ -339,6 +339,10 @@
               <input id="wallet-selection" placeholder="Required only when Detect reports multiple wallets">
             </div>
           </div>
+          <p class="hint" style="margin: 0.75rem 0 0;">
+            Static browser-live orderbook actions are enabled on this page only for <code>staging</code>.
+            Production requires a proxy-enabled deployment instead of the default static serving path.
+          </p>
         </div>
       </div>
     </section>
@@ -407,9 +411,10 @@
         <div class="panel-body">
           <p class="hint">
           Live wallet path for connect, sign, quote, submit, and cancel through the root `cow-sdk` surface.
-          <code>Detect</code> caches reviewed wallet candidates, <code>Confirm Wallet</code> records the provider to use when more than one candidate is present,
-          <code>Connect / Reconnect</code> uses the confirmed provider or the retained wallet handle, <code>Rescan</code> refreshes the candidate set while revalidating the confirmed choice,
-          <code>Reset Session</code> keeps the selected wallet, and <code>Forget Wallet</code> clears both the selected wallet and the confirmed provider from the console.
+          <code>Detect</code> caches reviewed wallet candidates, <code>Confirm Wallet</code> is only required when more than one candidate is present,
+          <code>Connect / Reconnect</code> uses the confirmed provider or the retained wallet handle, <code>Switch Chain</code> must align the wallet session with the selected console chain before live actions,
+          <code>Reset Session</code> keeps the selected wallet, and <code>Clear Console Wallet</code> clears retained console state without revoking extension authorization.
+          Static browser-live orderbook actions are enabled here only on <code>staging</code>; production requires a proxy-enabled deployment.
           </p>
           <div class="button-row">
             <button type="button" id="detect-wallet">Detect</button>
@@ -418,7 +423,7 @@
             <button type="button" id="connect-wallet" class="alt">Connect / Reconnect</button>
             <button type="button" id="wallet-status">Wallet Status</button>
             <button type="button" id="reset-wallet">Reset Session</button>
-            <button type="button" id="forget-wallet" class="alt">Forget Wallet</button>
+            <button type="button" id="forget-wallet" class="alt">Clear Console Wallet</button>
             <button type="button" id="refresh-wallet">Refresh</button>
             <button type="button" id="switch-wallet" class="alt">Switch Chain</button>
             <button type="button" id="sign-message">Sign Message</button>
@@ -428,6 +433,7 @@
             <button type="button" id="cancel-order">Cancel Order</button>
           </div>
         </div>
+        <p class="warning" id="injected-live-gate" data-testid="injected-live-gate">Detect a wallet to begin.</p>
         <dl class="state-grid" aria-label="Injected wallet contract state">
           <div class="state-card">
             <dt>Last Action</dt>
@@ -533,6 +539,16 @@
     const orderInput = document.getElementById("order-json");
     const approvalInput = document.getElementById("approval-json");
     const orderUidInput = document.getElementById("order-uid");
+    const injectedLiveGate = document.getElementById("injected-live-gate");
+    const injectedActionButtons = {
+      confirmWallet: document.getElementById("confirm-wallet"),
+      connectWallet: document.getElementById("connect-wallet"),
+      switchWallet: document.getElementById("switch-wallet"),
+      signOrder: document.getElementById("sign-order"),
+      liveQuote: document.getElementById("live-quote"),
+      submitOrder: document.getElementById("submit-order"),
+      cancelOrder: document.getElementById("cancel-order"),
+    };
     const injectedContractFields = {
       lastAction: document.getElementById("injected-last-action"),
       lastStatus: document.getElementById("injected-last-status"),
@@ -591,6 +607,8 @@
     const env = () => envInput.value;
     const appCode = () => appCodeInput.value.trim();
     const message = () => messageInput.value;
+    const STATIC_PROD_LIVE_ACTION_MESSAGE =
+      "Static browser-live orderbook actions are enabled only for staging on this page. Switch to staging or use a same-origin proxy-enabled deployment for prod.";
 
     function defaultInjectedContractState() {
       return {
@@ -641,6 +659,7 @@
       injectedContractFields.orderUid.textContent = displayValue(injectedContractState.orderUid);
       injectedContractFields.cancelStatus.textContent = injectedContractState.cancelStatus;
       injectedContractFields.contractState.textContent = JSON.stringify(injectedContractState, null, 2);
+      syncInjectedActionAvailability();
     }
 
     function displayValue(value) {
@@ -655,6 +674,104 @@
 
     function arrayValue(values) {
       return Array.isArray(values) && values.length > 0 ? values.join(", ") : "none";
+    }
+
+    function hasAutoConfirmedSingleWallet() {
+      return injectedContractState.walletCount === 1 && injectedContractState.requiresSelection === false;
+    }
+
+    function hasConfirmedWalletSelection() {
+      return injectedContractState.confirmedIndex !== null || hasAutoConfirmedSingleWallet();
+    }
+
+    function sessionChainId() {
+      return typeof injectedContractState.sessionChain === "number"
+        ? injectedContractState.sessionChain
+        : null;
+    }
+
+    function signOrderBlockReason() {
+      if (injectedContractState.walletCount === 0) {
+        return "Detect a wallet to begin.";
+      }
+      if (injectedContractState.requiresSelection && !hasConfirmedWalletSelection()) {
+        return "Confirm the reviewed wallet before connecting.";
+      }
+      if (!injectedContractState.sessionConnected) {
+        return "Connect the wallet before order signing or live orderbook actions.";
+      }
+      const connectedChainId = sessionChainId();
+      if (connectedChainId === null) {
+        return "Refresh or switch the wallet so the connected session exposes a chain id.";
+      }
+      if (connectedChainId !== chainId()) {
+        return `Wallet session chain ${connectedChainId} does not match selected console chain ${chainId()}. Use Switch Chain before live actions.`;
+      }
+      return "";
+    }
+
+    function networkActionBlockReason() {
+      const signBlockReason = signOrderBlockReason();
+      if (signBlockReason.length > 0) {
+        return signBlockReason;
+      }
+      if (env() === "prod") {
+        return STATIC_PROD_LIVE_ACTION_MESSAGE;
+      }
+      return "";
+    }
+
+    function setInjectedButtonState(button, enabled, blockedMessage) {
+      button.disabled = !enabled;
+      button.title = enabled ? "" : blockedMessage;
+    }
+
+    function syncInjectedActionAvailability() {
+      const detectedWallets = injectedContractState.walletCount;
+      const requiresSelection = injectedContractState.requiresSelection;
+      const hasConfirmedSelection = hasConfirmedWalletSelection();
+      const signOrderBlock = signOrderBlockReason();
+      const signOrderReady = signOrderBlock.length === 0;
+      const networkBlockReason = networkActionBlockReason();
+      const networkReady = networkBlockReason.length === 0;
+      const hasOrderUid = orderUidInput.value.trim().length > 0;
+
+      setInjectedButtonState(
+        injectedActionButtons.confirmWallet,
+        requiresSelection,
+        detectedWallets === 0
+          ? "Detect wallets before confirming a provider."
+          : "A single detected wallet is confirmed automatically.",
+      );
+      setInjectedButtonState(
+        injectedActionButtons.connectWallet,
+        detectedWallets > 0 && (!requiresSelection || hasConfirmedSelection),
+        detectedWallets === 0
+          ? "Detect a wallet before connecting."
+          : "Confirm the reviewed wallet before connecting.",
+      );
+      setInjectedButtonState(
+        injectedActionButtons.switchWallet,
+        injectedContractState.sessionConnected,
+        "Connect the wallet before switching chains.",
+      );
+      setInjectedButtonState(injectedActionButtons.signOrder, signOrderReady, signOrderBlock);
+      setInjectedButtonState(injectedActionButtons.liveQuote, networkReady, networkBlockReason);
+      setInjectedButtonState(injectedActionButtons.submitOrder, networkReady, networkBlockReason);
+      setInjectedButtonState(
+        injectedActionButtons.cancelOrder,
+        networkReady && hasOrderUid,
+        networkReady
+          ? "Submit an order or enter an order UID before cancelling."
+          : networkBlockReason,
+      );
+
+      injectedLiveGate.textContent =
+        networkBlockReason.length > 0
+          ? networkBlockReason
+          : hasOrderUid
+            ? "Live orderbook actions are ready."
+            : "Live orderbook actions are ready. Submit an order or enter an order UID to enable cancellation.";
     }
 
     function readWalletLabel(payload, index, fallback) {
@@ -800,6 +917,9 @@
     const walletSelectionIndex = () => {
       const raw = walletSelectionInput.value.trim();
       if (!raw) {
+        if (hasAutoConfirmedSingleWallet()) {
+          return 0;
+        }
         throw new Error("Enter a detected wallet index, then click Confirm Wallet.");
       }
       const parsed = Number.parseInt(raw, 10);
@@ -818,7 +938,15 @@
     async function run(target, button, actionName, action) {
       button.disabled = true;
       target.dataset.state = "running";
-      target.textContent = "Running...";
+      target.textContent =
+        actionName === "connect-wallet" ||
+        actionName === "switch-wallet" ||
+        actionName === "sign-message" ||
+        actionName === "sign-order" ||
+        actionName === "submit-order" ||
+        actionName === "cancel-order"
+          ? "Waiting for wallet..."
+          : "Running...";
       try {
         const result = await action();
         target.dataset.state = "success";
@@ -836,6 +964,9 @@
         }
       } finally {
         button.disabled = false;
+        if (target === injectedOutput) {
+          syncInjectedActionAvailability();
+        }
       }
     }
 
@@ -958,6 +1089,10 @@
         )
       );
     });
+
+    chainInput.addEventListener("change", syncInjectedActionAvailability);
+    envInput.addEventListener("change", syncInjectedActionAvailability);
+    orderUidInput.addEventListener("input", syncInjectedActionAvailability);
 
     await refreshSamples();
     renderInjectedContractState();

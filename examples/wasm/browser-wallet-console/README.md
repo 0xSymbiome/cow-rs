@@ -13,10 +13,23 @@ The injected-provider path requires explicit user authorization and depends on
 the browser extension for prompts, chain availability, and provider-specific
 behavior. The mock path is the deterministic contract proof.
 
+When exactly one injected wallet is detected, the console auto-confirms that
+provider instead of requiring a redundant manual confirmation step. Live quote,
+order signing, submission, and cancellation stay gated until the connected
+wallet session reports the same chain as the selected console chain.
+
+`Clear Console Wallet` only clears console-retained wallet selection and
+session state. Extension authorization remains managed by the wallet UI.
+
+Static browser-live smoke checks default to `staging`. Production browser-live
+orderbook calls are disabled on the shipped static page and require a
+proxy-enabled deployment instead of the default local or Pages-style serving
+path.
+
 The repository also includes deterministic browser automation for the
 injected-wallet pane. That automation uses local EIP-6963 provider fixtures,
-route-mocked CoW API responses, and stable DOM markers instead of a live wallet
-extension or public endpoint.
+route-mocked CoW API responses, chain-switch coverage, and stable DOM markers
+instead of a live wallet extension or public endpoint.
 
 ## Build
 

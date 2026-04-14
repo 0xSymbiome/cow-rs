@@ -2,7 +2,7 @@ import type { Page, Route } from "@playwright/test";
 
 export type JsonRecord = Record<string, unknown>;
 
-export const API_BASE_URL = "https://api.cow.fi/sepolia";
+export const API_BASE_URL = "https://barn.api.cow.fi/sepolia";
 export const ORDERBOOK_VERSION_URL = `${API_BASE_URL}/api/v1/version`;
 export const ORDERBOOK_QUOTE_URL = `${API_BASE_URL}/api/v1/quote`;
 export const ORDERBOOK_ORDERS_URL = `${API_BASE_URL}/api/v1/orders`;

@@ -6,7 +6,8 @@ use cow_sdk_browser_wallet::{
 };
 use cow_sdk_core::AsyncSigner;
 use cow_sdk_core::{
-    SupportedChainId, TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
+    SupportedChainId, TransactionRequest, TypedDataDomain, TypedDataField, TypedDataPayload,
+    TypedDataTypes,
 };
 
 fn supported_domain(chain_id: SupportedChainId) -> TypedDataDomain {
@@ -490,6 +491,104 @@ async fn switch_or_add_chain_adds_then_switches_when_chain_is_not_present() {
             "eth_accounts",
             "eth_chainId",
         ]
+    );
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn signer_for_chain_rejects_wallet_session_mismatches_before_returning_signer() {
+    let transport = MockEip1193Transport::sepolia();
+    transport.set_chain_id(SupportedChainId::Mainnet);
+    let wallet = BrowserWallet::from_transport(transport);
+    wallet.connect().await.unwrap();
+
+    let error = wallet
+        .signer_for_chain(SupportedChainId::Sepolia)
+        .await
+        .unwrap_err();
+
+    assert_eq!(
+        error,
+        BrowserWalletError::SessionChainMismatch {
+            expected_chain_id: u64::from(SupportedChainId::Sepolia),
+            session_chain_id: u64::from(SupportedChainId::Mainnet),
+        }
+    );
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn chain_bound_signer_rejects_chain_drift_before_address_and_transaction_calls() {
+    let transport = MockEip1193Transport::sepolia();
+    let wallet = BrowserWallet::from_transport(transport.clone());
+
+    wallet.connect().await.unwrap();
+    let signer = wallet
+        .signer_for_chain(SupportedChainId::Sepolia)
+        .await
+        .unwrap();
+    transport.emit_chain_changed(u64::from(SupportedChainId::Mainnet));
+
+    let address_error = signer.get_address().await.unwrap_err();
+    assert_eq!(
+        address_error,
+        BrowserWalletError::SessionChainMismatch {
+            expected_chain_id: u64::from(SupportedChainId::Sepolia),
+            session_chain_id: u64::from(SupportedChainId::Mainnet),
+        }
+    );
+
+    let transaction_error = signer
+        .send_transaction(&TransactionRequest {
+            to: Some(
+                cow_sdk_core::Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            ),
+            ..Default::default()
+        })
+        .await
+        .unwrap_err();
+    assert_eq!(
+        transaction_error,
+        BrowserWalletError::SessionChainMismatch {
+            expected_chain_id: u64::from(SupportedChainId::Sepolia),
+            session_chain_id: u64::from(SupportedChainId::Mainnet),
+        }
+    );
+
+    assert!(
+        transport
+            .request_log()
+            .into_iter()
+            .all(|record| record.method != "eth_sendTransaction")
+    );
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn chain_bound_signer_rejects_typed_data_payloads_for_a_different_chain() {
+    let transport = MockEip1193Transport::sepolia();
+    let wallet = BrowserWallet::from_transport(transport.clone());
+
+    wallet.connect().await.unwrap();
+    let signer = wallet
+        .signer_for_chain(SupportedChainId::Sepolia)
+        .await
+        .unwrap();
+
+    let error = signer
+        .sign_typed_data_payload(&order_payload(SupportedChainId::Mainnet))
+        .await
+        .unwrap_err();
+
+    assert_eq!(
+        error,
+        BrowserWalletError::TypedDataChainMismatch {
+            expected_chain_id: u64::from(SupportedChainId::Sepolia),
+            typed_data_chain_id: u64::from(SupportedChainId::Mainnet),
+        }
+    );
+    assert!(
+        transport
+            .request_log()
+            .into_iter()
+            .all(|record| record.method != "eth_signTypedData_v4")
     );
 }
 

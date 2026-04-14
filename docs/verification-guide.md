@@ -50,8 +50,12 @@ the workflow layer first, then inspect the lower-level crates it composes.
 
 Browser wallet support is explicit, bounded, and feature-gated. Deterministic
 proof comes from crate tests, direct browser-bridge coverage, mock-wallet
-flows, and fixture-backed browser automation. Live extension behavior remains
-environment-sensitive.
+flows, and fixture-backed browser automation. When a browser workflow already
+owns a chain authority, `BrowserWallet::signer_for_chain` keeps address,
+signature, gas, and transaction operations bound to that chain. Live extension
+behavior remains environment-sensitive, and the shipped static browser consoles
+keep production live orderbook calls explicitly gated behind a proxy-enabled
+deployment requirement.
 
 ### Published Crate Policy
 

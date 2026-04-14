@@ -404,9 +404,13 @@ impl BrowserWalletConsole {
         order_json: &str,
     ) -> Result<String, JsValue> {
         let selected = self.injected_wallet()?;
-        let chain_id = parse_chain_id(chain_id)?;
+        let chain_id = self.live_chain_id_for_selected_wallet(&selected, chain_id)?;
         let order = parse_order(order_json)?;
-        let signer = selected.wallet.signer();
+        let signer = selected
+            .wallet
+            .signer_for_chain(chain_id)
+            .await
+            .map_err(js_string_error)?;
         let owner = signer.get_address().await.map_err(js_string_error)?;
         let signing = sign_order_async(&order, chain_id, &signer, None)
             .await
@@ -433,11 +437,15 @@ impl BrowserWalletConsole {
         trade_json: &str,
     ) -> Result<String, JsValue> {
         let selected = self.injected_wallet()?;
-        let chain_id = parse_chain_id(chain_id)?;
+        let chain_id = self.live_chain_id_for_selected_wallet(&selected, chain_id)?;
         let env = parse_env(env)?;
         let trade = parse_trade_parameters(trade_json)?;
         let sdk = live_sdk(chain_id, env, app_code.trim());
-        let signer = selected.wallet.signer();
+        let signer = selected
+            .wallet
+            .signer_for_chain(chain_id)
+            .await
+            .map_err(js_string_error)?;
         let quote = sdk
             .get_quote_results_async(trade, &signer, None)
             .await
@@ -460,11 +468,15 @@ impl BrowserWalletConsole {
         trade_json: &str,
     ) -> Result<String, JsValue> {
         let selected = self.injected_wallet()?;
-        let chain_id = parse_chain_id(chain_id)?;
+        let chain_id = self.live_chain_id_for_selected_wallet(&selected, chain_id)?;
         let env = parse_env(env)?;
         let trade = parse_trade_parameters(trade_json)?;
         let sdk = live_sdk(chain_id, env, app_code.trim());
-        let signer = selected.wallet.signer();
+        let signer = selected
+            .wallet
+            .signer_for_chain(chain_id)
+            .await
+            .map_err(js_string_error)?;
         let posting = sdk
             .post_swap_order_async(trade, &signer, None)
             .await
@@ -488,11 +500,15 @@ impl BrowserWalletConsole {
         order_uid: &str,
     ) -> Result<String, JsValue> {
         let selected = self.injected_wallet()?;
-        let chain_id = parse_chain_id(chain_id)?;
+        let chain_id = self.live_chain_id_for_selected_wallet(&selected, chain_id)?;
         let env = parse_env(env)?;
         let order_uid = parse_order_uid(order_uid)?;
         let sdk = live_sdk(chain_id, env, app_code.trim());
-        let signer = selected.wallet.signer();
+        let signer = selected
+            .wallet
+            .signer_for_chain(chain_id)
+            .await
+            .map_err(js_string_error)?;
         let cancelled = sdk
             .off_chain_cancel_order_async(
                 &OrderTraderParameters {
@@ -709,7 +725,7 @@ fn sample_trade_parameters(chain_id: SupportedChainId) -> TradeParameters {
         buy_token: sample_buy_token(),
         buy_token_decimals: 18,
         amount: Amount::new("10000000000000000").unwrap(),
-        env: Some(CowEnv::Prod),
+        env: None,
         settlement_contract_override: None,
         eth_flow_contract_override: None,
         partially_fillable: false,
@@ -746,7 +762,7 @@ fn sample_approval_parameters(chain_id: SupportedChainId) -> ApprovalParameters 
         token_address: wrapped_native_token(chain_id).address,
         amount: Amount::new("100000000000000000").unwrap(),
         chain_id: Some(chain_id),
-        env: Some(CowEnv::Prod),
+        env: None,
         vault_relayer_address: None,
     }
 }
@@ -955,7 +971,12 @@ impl BrowserWalletConsole {
     ) -> Option<ConfirmedInjectedWalletSelection> {
         let revalidated = self
             .confirmed_injected_selection()
-            .and_then(|selection| selection.revalidated(cached));
+            .and_then(|selection| selection.revalidated(cached))
+            .or_else(|| {
+                (!cached.requires_explicit_selection() && cached.wallets.len() == 1)
+                    .then(|| cached.confirmed_selection_at(0).ok())
+                    .flatten()
+            });
         *self.confirmed_injected_selection.lock().unwrap() = revalidated.clone();
         revalidated
     }
@@ -974,6 +995,33 @@ impl BrowserWalletConsole {
             .unwrap()
             .clone()
             .ok_or_else(|| to_js_error("connect an injected wallet first"))
+    }
+
+    fn live_chain_id_for_selected_wallet(
+        &self,
+        selected: &SelectedInjectedWallet,
+        chain_id: u32,
+    ) -> Result<SupportedChainId, JsValue> {
+        let chain_id = parse_chain_id(chain_id)?;
+        let session = selected.wallet.session();
+        if !session.connected {
+            return Err(to_js_error("connect the injected wallet before live quote, signing, submission, or cancellation"));
+        }
+
+        let requested_chain_id = u64::from(chain_id);
+        let session_chain_id = session.chain_id.ok_or_else(|| {
+            to_js_error(
+                "connected wallet session does not expose a chain id; use Switch Chain or Refresh before live actions",
+            )
+        })?;
+
+        if session_chain_id != requested_chain_id {
+            return Err(to_js_error(&format!(
+                "connected wallet chain {session_chain_id} does not match the selected console chain {requested_chain_id}; use Switch Chain before live quote, signing, submission, or cancellation"
+            )));
+        }
+
+        Ok(chain_id)
     }
 }
 

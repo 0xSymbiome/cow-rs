@@ -1,7 +1,7 @@
 import type { Route } from "@playwright/test";
 
-export const ORDERBOOK_VERSION_URL = "https://api.cow.fi/mainnet/api/v1/version";
-export const ORDERBOOK_QUOTE_URL = "https://api.cow.fi/mainnet/api/v1/quote";
+export const ORDERBOOK_VERSION_URL = "https://barn.api.cow.fi/mainnet/api/v1/version";
+export const ORDERBOOK_QUOTE_URL = "https://barn.api.cow.fi/mainnet/api/v1/quote";
 export const SUBGRAPH_URL_GLOB = "https://gateway.thegraph.com/api/mock-key/subgraphs/id/**";
 
 export const OWNER = "0x4444444444444444444444444444444444444444";

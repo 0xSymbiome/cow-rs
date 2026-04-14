@@ -449,15 +449,20 @@ pub async fn orderbook_app_data_json(
 }
 
 #[wasm_bindgen]
-pub async fn orderbook_auction_json(chain_id: u32, env: &str) -> Result<String, JsValue> {
+pub async fn orderbook_latest_competition_json(chain_id: u32, env: &str) -> Result<String, JsValue> {
     let chain_id = parse_chain_id(chain_id)?;
     let env = parse_env(env)?;
-    let auction = orderbook_api(chain_id, env)
-        .get_auction()
+    let competition = orderbook_api(chain_id, env)
+        .get_latest_solver_competition()
         .await
         .map_err(orderbook_js_error)?;
 
-    pretty_json(&auction)
+    pretty_json(&competition)
+}
+
+#[wasm_bindgen]
+pub async fn orderbook_auction_json(chain_id: u32, env: &str) -> Result<String, JsValue> {
+    orderbook_latest_competition_json(chain_id, env).await
 }
 
 #[wasm_bindgen]

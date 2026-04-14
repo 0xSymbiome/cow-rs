@@ -457,10 +457,34 @@ impl BrowserWallet {
         self.provider.clone()
     }
 
-    /// Returns a typed signer bound to this wallet.
+    /// Returns a typed signer bound to this wallet without fixing an expected
+    /// chain.
+    ///
+    /// Use [`Self::signer_for_chain`] when the workflow already owns an
+    /// explicit chain authority and live browser-wallet actions must fail fast
+    /// if the wallet session drifts onto a different chain.
     #[must_use]
     pub fn signer(&self) -> Eip1193Signer {
         Eip1193Signer::new(self.provider.clone(), None)
+    }
+
+    /// Returns a typed signer bound to one expected chain.
+    ///
+    /// The wallet session chain is validated before the signer is returned, and
+    /// the signer revalidates that same chain before address, signature, gas,
+    /// and transaction operations.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the wallet rejects `eth_chainId`, reports a
+    /// malformed chain id, or is currently connected to a different chain than
+    /// `chain_id`.
+    pub async fn signer_for_chain(
+        &self,
+        chain_id: SupportedChainId,
+    ) -> Result<Eip1193Signer, BrowserWalletError> {
+        let _ = self.ensure_chain(chain_id).await?;
+        Ok(Eip1193Signer::new(self.provider.clone(), None).with_expected_chain(chain_id))
     }
 
     /// Returns the current normalized wallet session snapshot.
@@ -531,6 +555,28 @@ impl BrowserWallet {
     pub async fn refresh_session(&self) -> Result<WalletSession, BrowserWalletError> {
         let _ = self.provider.query_accounts(false).await?;
         let _ = self.provider.query_chain_id().await?;
+        Ok(self.session())
+    }
+
+    /// Ensures the wallet currently reports one expected chain id.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the wallet rejects `eth_chainId`, reports a
+    /// malformed chain id, or is connected to a different chain than
+    /// `chain_id`.
+    pub async fn ensure_chain(
+        &self,
+        chain_id: SupportedChainId,
+    ) -> Result<WalletSession, BrowserWalletError> {
+        let session_chain_id = self.provider.query_chain_id().await?;
+        let expected_chain_id = u64::from(chain_id);
+        if session_chain_id != expected_chain_id {
+            return Err(BrowserWalletError::SessionChainMismatch {
+                expected_chain_id,
+                session_chain_id,
+            });
+        }
         Ok(self.session())
     }
 

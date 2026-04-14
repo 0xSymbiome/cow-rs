@@ -88,11 +88,19 @@ reused for posting, the originating orderbook runtime binding remains part of
 that contract, so quote-derived submission is rejected if the caller switches
 to a different orderbook endpoint, chain, or environment.
 
+For browser-wallet-backed trading flows, chain coherence remains leaf-owned by
+`cow-sdk-browser-wallet`. When the workflow already has an explicit chain
+authority, `BrowserWallet::signer_for_chain` binds that expectation to the
+wallet session so quote, address, signature, gas, and transaction operations
+fail fast if the active wallet chain drifts.
+
 ### Browser-Runtime Support
 
 Browser wallet support is a leaf capability, not a hidden default. The root
 facade exposes it through an explicit feature, while the full browser-runtime
-contract remains owned by `cow-sdk-browser-wallet`.
+contract remains owned by `cow-sdk-browser-wallet`. Chain-bound browser-wallet
+signers keep live wallet flows aligned with the selected workflow chain without
+widening `cow-sdk-trading` into a browser-specific crate.
 
 ## Public Boundary Rules
 

@@ -89,12 +89,7 @@ export async function installInjectedWalletFixtures(
           case "eth_signTypedData_v4":
             return signatureFor(this.label, "typed");
           case "wallet_switchEthereumChain": {
-            const nextChainId =
-              typeof request.params?.[0] === "object" &&
-              request.params[0] !== null &&
-              typeof (request.params[0] as { chainId?: unknown }).chainId === "string"
-                ? String((request.params[0] as { chainId: string }).chainId)
-                : null;
+            const nextChainId = requestedChainId(request.params);
             if (!nextChainId) {
               throw createWalletError(-32602, "wallet_switchEthereumChain requires a chainId");
             }
@@ -103,12 +98,7 @@ export async function installInjectedWalletFixtures(
             return null;
           }
           case "wallet_addEthereumChain": {
-            const nextChainId =
-              typeof request.params?.[0] === "object" &&
-              request.params[0] !== null &&
-              typeof (request.params[0] as { chainId?: unknown }).chainId === "string"
-                ? String((request.params[0] as { chainId: string }).chainId)
-                : null;
+            const nextChainId = requestedChainId(request.params);
             if (!nextChainId) {
               throw createWalletError(-32602, "wallet_addEthereumChain requires a chainId");
             }
@@ -144,6 +134,41 @@ export async function installInjectedWalletFixtures(
         return (charCode % 16).toString(16);
       }).join("");
       return `0x${hex}`;
+    }
+
+    function requestedChainId(params: unknown): string | null {
+      const normalize = (value: unknown): string | null => {
+        if (typeof value === "string") {
+          return value;
+        }
+        if (typeof value === "bigint" && value >= 0n) {
+          return `0x${value.toString(16)}`;
+        }
+        if (typeof value === "number" && Number.isInteger(value) && value >= 0) {
+          return `0x${value.toString(16)}`;
+        }
+        if (typeof value === "object" && value !== null) {
+          const record = value as Record<string, unknown>;
+          if ("chainId" in record && record.chainId !== null && record.chainId !== undefined) {
+            if (typeof record.chainId === "number" && Number.isInteger(record.chainId) && record.chainId >= 0) {
+              return `0x${record.chainId.toString(16)}`;
+            }
+            if (typeof record.chainId === "bigint" && record.chainId >= 0n) {
+              return `0x${record.chainId.toString(16)}`;
+            }
+            return String(record.chainId);
+          }
+        }
+        return null;
+      };
+
+      if (Array.isArray(params)) {
+        return normalize(params[0]);
+      }
+      if (typeof params === "object" && params !== null && "0" in (params as Record<string, unknown>)) {
+        return normalize((params as Record<string, unknown>)[0]);
+      }
+      return normalize(params);
     }
 
     const announcedProviders = config.wallets.map((wallet) => {

@@ -1,8 +1,8 @@
 //! Typed EIP-1193 signer implementation for browser wallets.
 
 use cow_sdk_core::{
-    Address, Amount, AsyncSigner, TransactionReceipt, TransactionRequest, TypedDataDomain,
-    TypedDataField, TypedDataPayload, TypedDataTypes,
+    Address, Amount, AsyncSigner, SupportedChainId, TransactionReceipt, TransactionRequest,
+    TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
 use serde_json::{Value, json};
 
@@ -16,6 +16,7 @@ use crate::{
 pub struct Eip1193Signer {
     provider: Eip1193Provider,
     account_hint: Option<Address>,
+    expected_chain_id: Option<SupportedChainId>,
 }
 
 impl Eip1193Signer {
@@ -23,6 +24,7 @@ impl Eip1193Signer {
         Self {
             provider,
             account_hint,
+            expected_chain_id: None,
         }
     }
 
@@ -32,7 +34,56 @@ impl Eip1193Signer {
         &self.provider
     }
 
+    /// Returns a copy of this signer bound to one expected chain id.
+    ///
+    /// Chain-bound signers revalidate the wallet session chain before address,
+    /// signature, gas, and transaction operations.
+    #[must_use]
+    pub fn with_expected_chain(mut self, chain_id: SupportedChainId) -> Self {
+        self.expected_chain_id = Some(chain_id);
+        self
+    }
+
+    /// Returns the expected chain id fixed on this signer, when one is set.
+    #[must_use]
+    pub fn expected_chain_id(&self) -> Option<SupportedChainId> {
+        self.expected_chain_id
+    }
+
+    async fn ensure_expected_chain(&self) -> Result<(), BrowserWalletError> {
+        let Some(expected_chain_id) = self.expected_chain_id else {
+            return Ok(());
+        };
+        let session_chain_id = self.provider.query_chain_id().await?;
+        let expected_chain_id = u64::from(expected_chain_id);
+        if session_chain_id != expected_chain_id {
+            return Err(BrowserWalletError::SessionChainMismatch {
+                expected_chain_id,
+                session_chain_id,
+            });
+        }
+        Ok(())
+    }
+
+    fn validate_typed_data_chain(
+        &self,
+        payload: &TypedDataPayload,
+    ) -> Result<(), BrowserWalletError> {
+        let Some(expected_chain_id) = self.expected_chain_id else {
+            return Ok(());
+        };
+        let expected_chain_id = u64::from(expected_chain_id);
+        if payload.domain.chain_id != expected_chain_id {
+            return Err(BrowserWalletError::TypedDataChainMismatch {
+                expected_chain_id,
+                typed_data_chain_id: payload.domain.chain_id,
+            });
+        }
+        Ok(())
+    }
+
     async fn account(&self) -> Result<Address, BrowserWalletError> {
+        self.ensure_expected_chain().await?;
         if let Some(address) = &self.account_hint {
             return Ok(address.clone());
         }
@@ -120,6 +171,7 @@ impl AsyncSigner for Eip1193Signer {
         &self,
         payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
+        self.validate_typed_data_chain(payload)?;
         let account = self.account().await?;
         let typed_data = serde_json::to_string(&typed_data_request(payload)?)
             .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;

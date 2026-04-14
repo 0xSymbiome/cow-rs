@@ -37,3 +37,6 @@ Use the WASM examples when you need browser-facing verification surfaces.
 - Use the SDK verification console when you need browser-hosted WASM proof.
 - Use the browser wallet console when you need explicit wallet authorization
   flows in the browser.
+- The browser-facing consoles enable static browser-live CoW orderbook actions
+  on `staging`; production requires a proxy-enabled deployment instead of the
+  shipped static page.

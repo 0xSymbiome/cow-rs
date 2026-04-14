@@ -101,6 +101,26 @@ pub enum BrowserWalletError {
         /// Validation failure description.
         message: String,
     },
+    /// The wallet session chain does not match the expected workflow chain.
+    #[error(
+        "wallet session chain {session_chain_id} does not match expected chain {expected_chain_id}"
+    )]
+    SessionChainMismatch {
+        /// Chain id required by the current workflow.
+        expected_chain_id: ChainId,
+        /// Chain id currently reported by the wallet session.
+        session_chain_id: ChainId,
+    },
+    /// The typed-data payload chain does not match the expected workflow chain.
+    #[error(
+        "typed-data domain chain {typed_data_chain_id} does not match expected chain {expected_chain_id}"
+    )]
+    TypedDataChainMismatch {
+        /// Chain id required by the current workflow.
+        expected_chain_id: ChainId,
+        /// Chain id encoded in the typed-data payload.
+        typed_data_chain_id: ChainId,
+    },
     /// The wallet does not support the requested RPC method.
     #[error("wallet method `{method}` is unsupported: {message}")]
     UnsupportedRpcMethod {

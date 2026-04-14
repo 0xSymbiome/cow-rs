@@ -299,8 +299,8 @@
             <div>
               <label for="env">Environment</label>
               <select id="env">
+                <option value="staging" selected>staging</option>
                 <option value="prod">prod</option>
-                <option value="staging">staging</option>
               </select>
             </div>
             <div>
@@ -316,7 +316,13 @@
             <button id="btn-capability">Capability Report</button>
             <button id="btn-chains" class="alt">Supported Chains</button>
           </div>
-          <div class="hint">Capability and app-data/order/approval outputs run locally in the browser.</div>
+          <div class="hint">
+            Capability and app-data/order/approval outputs run locally in the browser. Static browser-live smoke checks default to
+            <code>staging</code>; production browser-live orderbook calls require a proxy-enabled deployment instead of this static page.
+          </div>
+          <div class="warning" id="browser-live-gate" data-testid="browser-live-gate">
+            Static browser-live CoW orderbook actions are enabled for staging.
+          </div>
         </div>
         <pre id="runtime-output" class="output">Loading...</pre>
       </section>
@@ -385,7 +391,7 @@
           </div>
           <div>
             <label for="eip1271-signature">ECDSA Signature for EIP-1271 Payload</label>
-            <input id="eip1271-signature" placeholder="0x...">
+            <input id="eip1271-signature" value="0x1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111">
           </div>
           <div class="button-row">
             <button id="btn-order-envelope">Build Envelope</button>
@@ -416,7 +422,7 @@
             <button id="btn-trading-quote">Quote Only</button>
             <button id="btn-trading-defaults" class="alt">Defaults</button>
           </div>
-          <div class="warning">Manual use calls the selected CoW orderbook environment.</div>
+          <div class="warning">Manual browser-origin calls use the selected CoW orderbook environment. Static-page smoke checks default to staging.</div>
         </div>
         <pre id="trading-output" class="output">Ready.</pre>
       </article>
@@ -445,7 +451,7 @@
           <h3>Orderbook</h3>
         </div>
         <div class="panel-body stack">
-          <div class="warning">Manual use calls the selected CoW orderbook environment.</div>
+          <div class="warning">Manual browser-origin calls use the selected CoW orderbook environment. Static-page smoke checks default to staging.</div>
           <div>
             <label for="quote-request-json">Quote Request JSON</label>
             <textarea id="quote-request-json">{
@@ -471,13 +477,13 @@
             </div>
             <div>
               <label for="lookup-appdata-hex">App Data Hex</label>
-              <input id="lookup-appdata-hex" value="0x6caf30d0b35e6523444e6a6eb9c5562ba5480cdab16e00cb46963f1dc6cda0e1">
+              <input id="lookup-appdata-hex" placeholder="Seeded from latest competition or fetched order">
             </div>
           </div>
           <div class="button-row">
             <button id="btn-ob-version">Version</button>
             <button id="btn-ob-quote">Quote</button>
-            <button id="btn-ob-auction" class="alt">Auction</button>
+            <button id="btn-ob-auction" class="alt">Latest Competition</button>
             <button id="btn-ob-order" class="alt">Order</button>
             <button id="btn-ob-owner-orders" class="alt">Owner Orders</button>
             <button id="btn-ob-owner-trades" class="alt">Owner Trades</button>
@@ -543,6 +549,12 @@
       }
     };
 
+    const ORDER_UID_PATTERN = /^0x[a-fA-F0-9]{112}$/;
+    const APP_DATA_HEX_PATTERN = /^0x[a-fA-F0-9]{64}$/;
+    const SIGNATURE_PATTERN = /^0x[a-fA-F0-9]{130}$/;
+    const STATIC_PROD_BROWSER_LIVE_MESSAGE =
+      "Production browser-live CoW orderbook calls are disabled on this static page. Switch to staging or use a same-origin proxy-enabled deployment for prod.";
+
     const syncAppDataInputs = (payload) => {
       if (!payload || typeof payload !== "object") {
         return;
@@ -553,6 +565,121 @@
       if (typeof payload.cid === "string") {
         $("appdata-cid").value = payload.cid;
       }
+    };
+
+    const syncOrderbookLookupInputs = (payload) => {
+      if (!payload || typeof payload !== "object") {
+        return;
+      }
+      if (typeof payload.uid === "string") {
+        $("lookup-order-uid").value = payload.uid;
+      }
+      if (typeof payload.owner === "string") {
+        $("lookup-owner").value = payload.owner;
+      }
+      if (typeof payload.appData === "string") {
+        $("lookup-appdata-hex").value = payload.appData;
+      }
+    };
+
+    const firstCompetitionOrderUid = (payload) => {
+      if (!payload || typeof payload !== "object") {
+        return null;
+      }
+      const orders = payload.auction?.orders;
+      if (!Array.isArray(orders)) {
+        return null;
+      }
+      const uid = orders.find((value) => typeof value === "string");
+      return typeof uid === "string" ? uid : null;
+    };
+
+    const setButtonAvailability = (buttonId, enabled, blockedMessage) => {
+      const button = $(buttonId);
+      button.disabled = !enabled;
+      button.title = enabled ? "" : blockedMessage;
+    };
+
+    const browserLiveBlockReason = () =>
+      runtime().env === "prod" ? STATIC_PROD_BROWSER_LIVE_MESSAGE : "";
+
+    const syncActionAvailability = () => {
+      const orderUid = $("lookup-order-uid").value.trim();
+      const appDataHex = $("lookup-appdata-hex").value.trim();
+      const signature = $("eip1271-signature").value.trim();
+      const browserLiveReason = browserLiveBlockReason();
+      const browserLiveReady = browserLiveReason.length === 0;
+
+      setButtonAvailability(
+        "btn-eip1271",
+        SIGNATURE_PATTERN.test(signature),
+        "Enter a 65-byte 0x-prefixed signature before building an EIP-1271 payload.",
+      );
+      setButtonAvailability(
+        "btn-trading-quote",
+        browserLiveReady,
+        browserLiveReason,
+      );
+      setButtonAvailability(
+        "btn-ob-version",
+        browserLiveReady,
+        browserLiveReason,
+      );
+      setButtonAvailability(
+        "btn-ob-quote",
+        browserLiveReady,
+        browserLiveReason,
+      );
+      setButtonAvailability(
+        "btn-ob-auction",
+        browserLiveReady,
+        browserLiveReason,
+      );
+      setButtonAvailability(
+        "btn-ob-order",
+        browserLiveReady && ORDER_UID_PATTERN.test(orderUid),
+        browserLiveReady
+          ? "Load Latest Competition or enter a valid order UID before requesting a live order."
+          : browserLiveReason,
+      );
+      setButtonAvailability(
+        "btn-ob-owner-orders",
+        browserLiveReady,
+        browserLiveReason,
+      );
+      setButtonAvailability(
+        "btn-ob-owner-trades",
+        browserLiveReady,
+        browserLiveReason,
+      );
+      setButtonAvailability(
+        "btn-ob-order-trades",
+        browserLiveReady && ORDER_UID_PATTERN.test(orderUid),
+        browserLiveReady
+          ? "Load Latest Competition or enter a valid order UID before requesting order trades."
+          : browserLiveReason,
+      );
+      setButtonAvailability(
+        "btn-ob-native-price",
+        browserLiveReady,
+        browserLiveReason,
+      );
+      setButtonAvailability(
+        "btn-ob-surplus",
+        browserLiveReady,
+        browserLiveReason,
+      );
+      setButtonAvailability(
+        "btn-ob-appdata",
+        browserLiveReady && APP_DATA_HEX_PATTERN.test(appDataHex),
+        browserLiveReady
+          ? "Fetch a live order or enter a valid app-data hash before requesting full app data."
+          : browserLiveReason,
+      );
+      $("browser-live-gate").textContent =
+        browserLiveReason.length > 0
+          ? browserLiveReason
+          : "Static browser-live CoW orderbook actions are enabled for staging.";
     };
 
     const runtime = () => ({
@@ -576,6 +703,7 @@
           render(outputId, formatError(error));
         } finally {
           button.disabled = false;
+          syncActionAvailability();
           button.textContent = original;
         }
       });
@@ -693,16 +821,35 @@
             $("quote-request-json").value
           )
         );
-        withTask("btn-ob-auction", "orderbook-output", () =>
-          wasm.orderbook_auction_json(runtime().chainId, runtime().env)
-        );
-        withTask("btn-ob-order", "orderbook-output", () =>
-          wasm.orderbook_order_json(
+        withTask("btn-ob-auction", "orderbook-output", async () => {
+          const result = await wasm.orderbook_latest_competition_json(runtime().chainId, runtime().env);
+          const payload = tryParseJson(result);
+          const orderUid = firstCompetitionOrderUid(payload);
+          if (orderUid) {
+            $("lookup-order-uid").value = orderUid;
+            try {
+              const orderResult = await wasm.orderbook_order_json(
+                runtime().chainId,
+                runtime().env,
+                orderUid
+              );
+              syncOrderbookLookupInputs(tryParseJson(orderResult));
+            } catch {
+              $("lookup-appdata-hex").value = "";
+            }
+          }
+          syncActionAvailability();
+          return result;
+        });
+        withTask("btn-ob-order", "orderbook-output", async () => {
+          const result = await wasm.orderbook_order_json(
             runtime().chainId,
             runtime().env,
             $("lookup-order-uid").value.trim()
-          )
-        );
+          );
+          syncOrderbookLookupInputs(tryParseJson(result));
+          return result;
+        });
         withTask("btn-ob-owner-orders", "orderbook-output", () =>
           wasm.orderbook_orders_by_owner_json(
             runtime().chainId,
@@ -745,6 +892,12 @@
             $("lookup-appdata-hex").value.trim()
           )
         );
+
+        $("eip1271-signature").addEventListener("input", syncActionAvailability);
+        $("lookup-order-uid").addEventListener("input", syncActionAvailability);
+        $("lookup-appdata-hex").addEventListener("input", syncActionAvailability);
+        $("env").addEventListener("change", syncActionAvailability);
+        syncActionAvailability();
 
         withTask("btn-subgraph-totals", "subgraph-output", () =>
           wasm.subgraph_totals_json(runtime().chainId, runtime().subgraphApiKey)
