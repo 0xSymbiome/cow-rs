@@ -35,6 +35,7 @@ struct MockState {
     connected: bool,
     chain_id: ChainId,
     accounts: Vec<Address>,
+    switch_applies_requested_chain: bool,
     request_log: Vec<MockRequestRecord>,
     message_signature: String,
     typed_data_signature: String,
@@ -62,6 +63,7 @@ impl Default for MockState {
                 Address::new("0x4444444444444444444444444444444444444444")
                     .expect("static mock address must remain valid"),
             ],
+            switch_applies_requested_chain: true,
             request_log: Vec::new(),
             message_signature: format!("0x{}1b", "11".repeat(64)),
             typed_data_signature: format!("0x{}1c", "22".repeat(64)),
@@ -126,7 +128,9 @@ impl MockState {
                 message: format!("mock wallet does not know chain {requested_chain}"),
             });
         }
-        self.chain_id = requested_chain;
+        if self.switch_applies_requested_chain {
+            self.chain_id = requested_chain;
+        }
         Ok(Value::Null)
     }
 
@@ -271,6 +275,15 @@ impl MockEip1193Transport {
     pub fn set_added_chains(&self, chains: Vec<SupportedChainId>) {
         self.state.borrow_mut().added_chains =
             chains.into_iter().map(u64::from).collect::<BTreeSet<_>>();
+    }
+
+    /// Controls whether a successful switch request updates the active chain.
+    ///
+    /// This is useful for proving that higher-level helpers verify the
+    /// refreshed session chain instead of treating RPC acknowledgement alone as
+    /// authoritative.
+    pub fn set_switch_chain_updates_active_chain(&self, updates_chain: bool) {
+        self.state.borrow_mut().switch_applies_requested_chain = updates_chain;
     }
 
     /// Sets the wallet accounts returned by account queries.

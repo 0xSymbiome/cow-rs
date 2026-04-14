@@ -582,6 +582,9 @@ impl BrowserWallet {
 
     /// Switches to a supported chain and returns the refreshed session snapshot.
     ///
+    /// The returned session must report the requested chain after the switch
+    /// request completes.
+    ///
     /// # Errors
     ///
     /// Returns an error when the wallet rejects the switch request, does not support the method,
@@ -591,7 +594,7 @@ impl BrowserWallet {
         chain_id: SupportedChainId,
     ) -> Result<WalletSession, BrowserWalletError> {
         self.switch_chain_request(chain_id).await?;
-        self.refresh_session().await
+        self.refresh_session_and_ensure_chain(chain_id).await
     }
 
     /// Adds one typed chain configuration through `wallet_addEthereumChain`.
@@ -615,6 +618,9 @@ impl BrowserWallet {
 
     /// Switches to a chain, or adds it first when the wallet reports it is not present.
     ///
+    /// Successful switch results are returned only after the refreshed session
+    /// reports the requested chain.
+    ///
     /// # Errors
     ///
     /// Returns an error when the switch request fails for reasons other than chain absence, when
@@ -626,7 +632,9 @@ impl BrowserWallet {
     ) -> Result<WalletChainChange, BrowserWalletError> {
         match self.switch_chain_request(parameters.chain_id).await {
             Ok(()) => {
-                let session = self.refresh_session().await?;
+                let session = self
+                    .refresh_session_and_ensure_chain(parameters.chain_id)
+                    .await?;
                 Ok(WalletChainChange {
                     requested_chain_id: parameters.chain_id,
                     kind: WalletChainChangeKind::Switched,
@@ -638,7 +646,9 @@ impl BrowserWallet {
             {
                 self.add_chain_request(parameters).await?;
                 self.switch_chain_request(parameters.chain_id).await?;
-                let session = self.refresh_session().await?;
+                let session = self
+                    .refresh_session_and_ensure_chain(parameters.chain_id)
+                    .await?;
                 Ok(WalletChainChange {
                     requested_chain_id: parameters.chain_id,
                     kind: WalletChainChangeKind::AddedThenSwitched,
@@ -647,6 +657,14 @@ impl BrowserWallet {
             }
             Err(error) => Err(error),
         }
+    }
+
+    async fn refresh_session_and_ensure_chain(
+        &self,
+        chain_id: SupportedChainId,
+    ) -> Result<WalletSession, BrowserWalletError> {
+        let _ = self.refresh_session().await?;
+        self.ensure_chain(chain_id).await
     }
 
     async fn switch_chain_request(

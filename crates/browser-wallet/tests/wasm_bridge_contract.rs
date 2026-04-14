@@ -111,7 +111,9 @@ export function bw_create_provider(config) {
               message: `fixture wallet does not know chain ${requested}`,
             });
           }
-          state.chainId = requested;
+          if (!settings.switchKeepsChain) {
+            state.chainId = requested;
+          }
           return Promise.resolve(null);
         }
         case "wallet_addEthereumChain": {
@@ -557,6 +559,51 @@ async fn rejected_chain_switch_requests_map_to_typed_browser_wallet_errors() {
             .and_then(Value::as_array)
             .map(Vec::len),
         Some(1)
+    );
+}
+
+#[wasm_bindgen_test(async)]
+async fn successful_switch_requests_fail_when_the_refreshed_session_stays_on_a_different_chain() {
+    let fixture = LegacyProviderFixture::install(json!({
+        "accounts": [ACCOUNT],
+        "chainId": "0xaa36a7",
+        "addedChains": ["0xaa36a7", "0x1"],
+        "switchKeepsChain": true,
+    }));
+
+    let wallet = BrowserWallet::detect()
+        .expect("legacy provider detection should succeed")
+        .expect("legacy provider should be present");
+    wallet.connect().await.expect("connect should succeed");
+
+    let error = wallet
+        .switch_chain(SupportedChainId::Mainnet)
+        .await
+        .expect_err("stale session chain should fail after a successful switch request");
+
+    assert_eq!(
+        error,
+        BrowserWalletError::SessionChainMismatch {
+            expected_chain_id: u64::from(SupportedChainId::Mainnet),
+            session_chain_id: u64::from(SupportedChainId::Sepolia),
+        }
+    );
+
+    let request_log = fixture.request_log();
+    let methods = request_log
+        .into_iter()
+        .map(|record| record.method)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        methods,
+        vec![
+            "eth_requestAccounts".to_owned(),
+            "eth_chainId".to_owned(),
+            "wallet_switchEthereumChain".to_owned(),
+            "eth_accounts".to_owned(),
+            "eth_chainId".to_owned(),
+            "eth_chainId".to_owned(),
+        ]
     );
 }
 

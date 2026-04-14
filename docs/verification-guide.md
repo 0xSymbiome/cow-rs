@@ -52,10 +52,12 @@ Browser wallet support is explicit, bounded, and feature-gated. Deterministic
 proof comes from crate tests, direct browser-bridge coverage, mock-wallet
 flows, and fixture-backed browser automation. When a browser workflow already
 owns a chain authority, `BrowserWallet::signer_for_chain` keeps address,
-signature, gas, and transaction operations bound to that chain. Live extension
-behavior remains environment-sensitive, and the shipped static browser consoles
-keep production live orderbook calls explicitly gated behind a proxy-enabled
-deployment requirement.
+signature, gas, and transaction operations bound to that chain. Typed
+chain-management helpers such as `switch_chain` and `switch_or_add_chain`
+return success only after the refreshed wallet session confirms the requested
+chain. Live extension behavior remains environment-sensitive, and the shipped
+static browser consoles keep production live orderbook calls explicitly gated
+behind a proxy-enabled deployment requirement.
 
 ### Published Crate Policy
 

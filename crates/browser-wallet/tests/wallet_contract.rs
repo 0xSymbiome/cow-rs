@@ -204,6 +204,45 @@ async fn mock_wallet_connects_switches_chain_and_signs() {
 }
 
 #[tokio::test(flavor = "current_thread")]
+async fn switch_chain_rejects_success_when_the_refreshed_session_stays_on_a_different_chain() {
+    let transport = MockEip1193Transport::sepolia();
+    let wallet = BrowserWallet::from_transport(transport.clone());
+
+    wallet.connect().await.unwrap();
+    transport.set_switch_chain_updates_active_chain(false);
+
+    let error = wallet
+        .switch_chain(SupportedChainId::Mainnet)
+        .await
+        .unwrap_err();
+
+    assert_eq!(
+        error,
+        BrowserWalletError::SessionChainMismatch {
+            expected_chain_id: u64::from(SupportedChainId::Mainnet),
+            session_chain_id: u64::from(SupportedChainId::Sepolia),
+        }
+    );
+
+    let methods = transport
+        .request_log()
+        .into_iter()
+        .map(|record| record.method)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        methods,
+        vec![
+            "eth_requestAccounts".to_owned(),
+            "eth_chainId".to_owned(),
+            "wallet_switchEthereumChain".to_owned(),
+            "eth_accounts".to_owned(),
+            "eth_chainId".to_owned(),
+            "eth_chainId".to_owned(),
+        ]
+    );
+}
+
+#[tokio::test(flavor = "current_thread")]
 async fn explicit_typed_data_payloads_preserve_custom_primary_types_and_nested_types() {
     let transport = MockEip1193Transport::sepolia();
     let wallet = BrowserWallet::from_transport(transport.clone());
@@ -490,6 +529,50 @@ async fn switch_or_add_chain_adds_then_switches_when_chain_is_not_present() {
             "wallet_switchEthereumChain",
             "eth_accounts",
             "eth_chainId",
+            "eth_chainId",
+        ]
+    );
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn switch_or_add_chain_rejects_success_when_the_refreshed_session_stays_on_a_different_chain()
+{
+    let transport = MockEip1193Transport::sepolia();
+    transport.set_added_chains(vec![SupportedChainId::Sepolia]);
+    transport.set_switch_chain_updates_active_chain(false);
+    let wallet = BrowserWallet::from_transport(transport.clone());
+    wallet.connect().await.unwrap();
+
+    let chain = WalletChainParameters::for_supported_chain(SupportedChainId::Base)
+        .try_with_rpc_url("https://base.example.invalid/rpc")
+        .unwrap();
+
+    let error = wallet.switch_or_add_chain(&chain).await.unwrap_err();
+
+    assert_eq!(
+        error,
+        BrowserWalletError::SessionChainMismatch {
+            expected_chain_id: u64::from(SupportedChainId::Base),
+            session_chain_id: u64::from(SupportedChainId::Sepolia),
+        }
+    );
+
+    let methods = transport
+        .request_log()
+        .into_iter()
+        .map(|record| record.method)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        methods,
+        vec![
+            "eth_requestAccounts".to_owned(),
+            "eth_chainId".to_owned(),
+            "wallet_switchEthereumChain".to_owned(),
+            "wallet_addEthereumChain".to_owned(),
+            "wallet_switchEthereumChain".to_owned(),
+            "eth_accounts".to_owned(),
+            "eth_chainId".to_owned(),
+            "eth_chainId".to_owned(),
         ]
     );
 }

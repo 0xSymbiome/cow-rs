@@ -22,7 +22,7 @@ Use it with:
 | `cow-sdk-orderbook` | Typed orderbook transport, retry/status behavior, DTO conversion, quote-request `appData` and pagination fidelity, malformed-payload failure boundaries, source-schema evidence | `property_contract.rs`, `api_contract.rs`, `request_contract.rs`, `transform_contract.rs`, `types_contract.rs`, `schema_source_contract.rs` | `cargo test -p cow-sdk-orderbook` |
 | `cow-sdk-trading` | Quote, post, allowance, approval, cancellation, slippage monotonicity, calldata boundary preservation, quote-request override precedence, and quote-to-order orchestration | `property_contract.rs`, `quote_contract.rs`, `post_contract.rs`, `allowance_contract.rs`, `cancel_contract.rs`, `onchain_contract.rs`, `slippage_contract.rs`, `sdk_contract.rs`, `parity_contract.rs` | `cargo test -p cow-sdk-trading` |
 | `cow-sdk-subgraph` | Read-only GraphQL query construction, nested request-variable fidelity, typed responses, equivalent string-or-number scalar decoding, malformed-scalar failure boundaries, source-schema evidence | `property_contract.rs`, `api_contract.rs`, `query_contract.rs`, `types_contract.rs`, `schema_source_contract.rs` | `cargo test -p cow-sdk-subgraph` |
-| `cow-sdk-browser-wallet` | EIP-1193 browser wallet provider/signer boundaries, direct browser-bridge proof, deterministic mock proof, explicit session-state transitions, typed chain management, and typed-data transport | `state_machine_contract.rs`, `provider_contract.rs`, `wallet_contract.rs`, `wasm_bridge_contract.rs`, `wasm-pack test --headless --chrome` | `cargo test -p cow-sdk-browser-wallet` and `cd crates/browser-wallet && wasm-pack test --headless --chrome` |
+| `cow-sdk-browser-wallet` | EIP-1193 browser wallet provider/signer boundaries, direct browser-bridge proof, deterministic mock proof, explicit session-state transitions, typed chain-management postconditions, and typed-data transport | `state_machine_contract.rs`, `provider_contract.rs`, `wallet_contract.rs`, `wasm_bridge_contract.rs`, `wasm-pack test --headless --chrome` | `cargo test -p cow-sdk-browser-wallet` and `cd crates/browser-wallet && wasm-pack test --headless --chrome` |
 | `cow-sdk` | Thin facade exports and public crate surface | `public_api.rs` | `cargo test -p cow-sdk` |
 
 ## Examples And Runtime Surfaces
@@ -68,6 +68,7 @@ Use it with:
 - Mocked transports should assert request shape and failure behavior where those paths are part of the validated surface.
 - WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible.
 - Direct `wasm-bindgen-test` coverage in `cow-sdk-browser-wallet` proves the owned browser bridge separately from the broader browser-wallet console automation lane.
+- `cow-sdk-browser-wallet` chain-switch proofs verify refreshed session state after successful switch acknowledgements instead of trusting wallet RPC success alone.
 - Live quote, orderbook, subgraph, and wallet checks stay manual unless explicitly promoted into a deterministic routed or injected test.
 - Schema-derived evidence stays test-only and outside the public SDK API.
 - Higher-iteration search-profile tests remain limited to narrow deterministic helper families whose inputs are large enough to justify the extra exploration and whose failures stay readable in ordinary crate test output.

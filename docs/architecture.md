@@ -94,13 +94,20 @@ authority, `BrowserWallet::signer_for_chain` binds that expectation to the
 wallet session so quote, address, signature, gas, and transaction operations
 fail fast if the active wallet chain drifts.
 
+Typed browser-wallet chain-management follows the same rule. Successful
+`switch_chain` and `switch_or_add_chain` results are returned only after the
+refreshed wallet session confirms the requested chain, so switch helpers do
+not treat wallet RPC acknowledgement as sufficient authority on its own.
+
 ### Browser-Runtime Support
 
 Browser wallet support is a leaf capability, not a hidden default. The root
 facade exposes it through an explicit feature, while the full browser-runtime
 contract remains owned by `cow-sdk-browser-wallet`. Chain-bound browser-wallet
 signers keep live wallet flows aligned with the selected workflow chain without
-widening `cow-sdk-trading` into a browser-specific crate.
+widening `cow-sdk-trading` into a browser-specific crate, and typed
+chain-management helpers confirm refreshed session state before they report
+switch success.
 
 ## Public Boundary Rules
 

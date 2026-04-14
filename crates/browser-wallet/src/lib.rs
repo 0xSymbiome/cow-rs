@@ -13,6 +13,8 @@
 //! The public contract stays typed and Rust-native. Raw JavaScript payloads remain local to the
 //! crate, and this package does not add a generic wallet-RPC passthrough beyond the typed EIP-1193
 //! transport seam it owns.
+//! Typed chain-management helpers confirm the refreshed wallet session chain before they report
+//! switch success.
 //!
 //! Injected-wallet behavior remains environment-sensitive. Authorization prompts, provider
 //! inventory, extension timing, and vendor-specific support are controlled by the browser runtime
