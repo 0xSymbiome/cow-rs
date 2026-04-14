@@ -8,7 +8,7 @@ use cow_sdk_signing::{
 use crate::types::{
     QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
     apply_quote_request_parameter_overrides, validate_orderbook_context,
-    validate_orderbook_env_context,
+    validate_orderbook_env_context, validate_quote_orderbook_binding,
 };
 use crate::{
     LimitOrderAdvancedSettings, LimitTradeParameters, OrderPostingResult, OrderbookClient,
@@ -86,7 +86,8 @@ where
 /// signer.
 ///
 /// When advanced app-data settings are provided, they are merged on top of the quote-derived
-/// document before submission.
+/// document before submission. The submission orderbook must match the runtime
+/// binding captured by the quote flow.
 ///
 /// # Errors
 ///
@@ -112,8 +113,10 @@ where
 /// signer.
 ///
 /// When advanced app-data settings are provided, they are merged on top of the quote-derived
-/// document before submission. Any explicit chain or environment must agree with the injected
-/// orderbook client, which remains the canonical runtime authority for signing and submission.
+/// document before submission. The submission orderbook must match the runtime
+/// binding captured by the quote flow, and any explicit chain or environment
+/// must agree with the injected orderbook client, which remains the canonical
+/// runtime authority for signing and submission.
 ///
 /// # Errors
 ///
@@ -131,6 +134,8 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
 {
+    validate_quote_orderbook_binding(orderbook, quote_results.orderbook_binding.as_ref())?;
+
     let app_data_info = match advanced_settings.and_then(|settings| settings.app_data.as_ref()) {
         Some(app_data_override) => {
             merge_app_data_doc(&quote_results.app_data_info.doc, app_data_override)?

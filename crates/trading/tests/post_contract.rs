@@ -7,8 +7,9 @@ use serde_json::json;
 use cow_sdk_core::{Amount, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderKind};
 use cow_sdk_trading::{
     LimitOrderAdvancedSettings, LimitTradeParameters, PostTradeAdditionalParams,
-    QuoteRequestOverride, SwapAdvancedSettings, build_app_data, post_limit_order,
-    post_limit_order_async, post_sell_native_currency_order, post_swap_order,
+    QuoteRequestOverride, SwapAdvancedSettings, build_app_data, get_quote_results,
+    post_limit_order, post_limit_order_async, post_sell_native_currency_order, post_swap_order,
+    post_swap_order_from_quote,
 };
 
 use crate::common::{
@@ -315,6 +316,66 @@ async fn limit_posting_rejects_trader_env_conflicts_with_orderbook_context() {
     ));
     assert!(signer.state().last_typed_data_domain.is_none());
     assert!(orderbook.state().sent_orders.is_empty());
+}
+
+#[tokio::test]
+async fn post_from_quote_reuses_matching_orderbook_binding_and_submits_order() {
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+    let orderbook = MockOrderbook::new_with_base_url(
+        trader.chain_id,
+        cow_sdk_core::CowEnv::Prod,
+        "https://quotes.cow.test",
+        sell_quote_response(),
+    );
+    let trade = sample_trade_parameters(OrderKind::Sell);
+
+    let quote_results = get_quote_results(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect("quote flow should succeed");
+    let result = post_swap_order_from_quote(&quote_results, &trader, &signer, None, &orderbook)
+        .await
+        .expect("post-from-quote should succeed when the orderbook binding matches");
+
+    assert_eq!(result.order_id, crate::common::order_uid());
+    assert_eq!(orderbook.state().sent_orders.len(), 1);
+}
+
+#[tokio::test]
+async fn post_from_quote_rejects_orderbook_binding_mismatch_before_signing_or_submission() {
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+    let quoting_orderbook = MockOrderbook::new_with_base_url(
+        trader.chain_id,
+        cow_sdk_core::CowEnv::Prod,
+        "https://quotes.cow.test",
+        sell_quote_response(),
+    );
+    let posting_orderbook = MockOrderbook::new_with_base_url(
+        trader.chain_id,
+        cow_sdk_core::CowEnv::Prod,
+        "https://submit.cow.test",
+        sell_quote_response(),
+    );
+    let trade = sample_trade_parameters(OrderKind::Sell);
+
+    let quote_results = get_quote_results(&trade, &trader, &signer, None, &quoting_orderbook)
+        .await
+        .expect("quote flow should succeed");
+    let error =
+        post_swap_order_from_quote(&quote_results, &trader, &signer, None, &posting_orderbook)
+            .await
+            .expect_err("mismatched orderbook binding must fail before signing or submission");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::QuoteOrderbookBindingConflict {
+            field: "baseUrl",
+            ..
+        }
+    ));
+    assert!(signer.state().last_typed_data_domain.is_none());
+    assert!(posting_orderbook.state().sent_orders.is_empty());
 }
 
 #[tokio::test]

@@ -316,6 +316,39 @@ async fn quote_helpers_reject_injected_orderbook_chain_conflicts() {
 }
 
 #[tokio::test]
+async fn quote_results_capture_originating_orderbook_runtime_binding() {
+    let orderbook = MockOrderbook::new_with_base_url(
+        cow_sdk_core::SupportedChainId::Sepolia,
+        CowEnv::Prod,
+        "https://quotes.cow.test",
+        sell_quote_response(),
+    );
+    let signer = MockSigner::default();
+    let trader = cow_sdk_trading::TraderParameters {
+        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
+        app_code: "0x007".to_owned(),
+        env: Some(CowEnv::Prod),
+        settlement_contract_override: None,
+        eth_flow_contract_override: None,
+    };
+    let trade = sample_trade_parameters(OrderKind::Sell);
+
+    let result = get_quote_results(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect("quote with explicit base url should succeed");
+    let binding = result
+        .orderbook_binding
+        .expect("quote results must retain the originating orderbook binding");
+
+    assert_eq!(binding.chain_id, cow_sdk_core::SupportedChainId::Sepolia);
+    assert_eq!(binding.env, CowEnv::Prod);
+    assert_eq!(
+        binding.resolved_base_url.as_deref(),
+        Some("https://quotes.cow.test")
+    );
+}
+
+#[tokio::test]
 async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_precedence() {
     let orderbook = MockOrderbook::new(
         cow_sdk_core::SupportedChainId::Sepolia,

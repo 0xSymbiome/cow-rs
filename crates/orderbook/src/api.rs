@@ -140,6 +140,15 @@ impl OrderBookApi {
         &self.transport_policy
     }
 
+    /// Returns the effective base URL used by this client instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns any base-URL resolution error from [`ApiContext::resolved_base_url`].
+    pub fn effective_base_url(&self) -> Result<String, OrderbookError> {
+        self.resolved_base_url(&self.context)
+    }
+
     /// Returns the shared HTTP client policy embedded in the transport policy.
     #[must_use]
     pub fn client_policy(&self) -> &HttpClientPolicy {
@@ -160,7 +169,7 @@ impl OrderBookApi {
     pub fn get_order_link(&self, order_uid: &OrderUid) -> Result<String, OrderbookError> {
         Ok(format!(
             "{}/api/v1/orders/{}",
-            self.resolved_base_url(&self.context)?,
+            self.effective_base_url()?,
             order_uid.as_str()
         ))
     }
@@ -472,6 +481,21 @@ impl OrderBookApi {
     ) -> Result<SolverCompetitionResponse, OrderbookError> {
         self.fetch_json(FetchParams::new(
             format!("/api/v1/solver_competition/by_tx_hash/{tx_hash}"),
+            HttpMethod::Get,
+        ))
+        .await
+    }
+
+    /// Fetches the latest solver-competition snapshot from the orderbook.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when request execution or response decoding fails.
+    pub async fn get_latest_solver_competition(
+        &self,
+    ) -> Result<SolverCompetitionResponse, OrderbookError> {
+        self.fetch_json(FetchParams::new(
+            "/api/v1/solver_competition/latest",
             HttpMethod::Get,
         ))
         .await

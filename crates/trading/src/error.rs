@@ -52,6 +52,21 @@ pub enum TradingError {
         /// Value fixed by the injected orderbook client.
         configured: String,
     },
+    /// Quote-derived posting requires the original orderbook runtime binding.
+    #[error(
+        "quote results are missing the originating orderbook runtime binding; requote before posting"
+    )]
+    MissingQuoteOrderbookBinding,
+    /// Quote-derived posting changed runtime authority between quote and submission.
+    #[error("quote results fix {field} to `{quoted}`, but submission uses `{submitted}`")]
+    QuoteOrderbookBindingConflict {
+        /// Conflicting field name.
+        field: &'static str,
+        /// Value captured by the quote flow.
+        quoted: String,
+        /// Value used by the submission flow.
+        submitted: String,
+    },
     /// Signer operation failed.
     #[error("signer error during {operation}: {message}")]
     Signer {

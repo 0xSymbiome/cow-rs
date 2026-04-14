@@ -231,9 +231,28 @@ pub struct QuoteResults {
     pub quote_response: OrderQuoteResponse,
     /// App-data document, serialized payload, and digest used by the quote flow.
     pub app_data_info: TradingAppDataInfo,
+    /// Originating orderbook runtime binding captured by the quote flow.
+    ///
+    /// Quote-derived posting requires this binding to match the submission-time
+    /// orderbook runtime.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub orderbook_binding: Option<OrderbookRuntimeBinding>,
     /// Typed order-facing envelope kept for consumers while signers use the
     /// lower-level `TypedDataPayload` seam internally.
     pub order_typed_data: OrderTypedData,
+}
+
+/// Runtime binding captured from an orderbook client for quote-derived workflows.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderbookRuntimeBinding {
+    /// Chain id fixed by the orderbook client.
+    pub chain_id: SupportedChainId,
+    /// Environment fixed by the orderbook client.
+    pub env: CowEnv,
+    /// Resolved base URL used by the orderbook client when it is available.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resolved_base_url: Option<String>,
 }
 
 /// Result returned after submitting a trade or transaction-producing flow.
@@ -555,6 +574,47 @@ where
     validate_orderbook_env_context(orderbook_client, requested_env)
 }
 
+pub(crate) fn validate_quote_orderbook_binding<O>(
+    orderbook_client: &O,
+    quoted_binding: Option<&OrderbookRuntimeBinding>,
+) -> Result<(), TradingError>
+where
+    O: OrderbookClient + ?Sized,
+{
+    let Some(quoted_binding) = quoted_binding else {
+        return Err(TradingError::MissingQuoteOrderbookBinding);
+    };
+    let submission_binding = orderbook_client.runtime_binding();
+
+    if quoted_binding.chain_id != submission_binding.chain_id {
+        return Err(TradingError::QuoteOrderbookBindingConflict {
+            field: "chainId",
+            quoted: u64::from(quoted_binding.chain_id).to_string(),
+            submitted: u64::from(submission_binding.chain_id).to_string(),
+        });
+    }
+    if quoted_binding.env != submission_binding.env {
+        return Err(TradingError::QuoteOrderbookBindingConflict {
+            field: "env",
+            quoted: quoted_binding.env.as_str().to_owned(),
+            submitted: submission_binding.env.as_str().to_owned(),
+        });
+    }
+    if let (Some(quoted_base_url), Some(submission_base_url)) = (
+        quoted_binding.resolved_base_url.as_ref(),
+        submission_binding.resolved_base_url.as_ref(),
+    ) && quoted_base_url != submission_base_url
+    {
+        return Err(TradingError::QuoteOrderbookBindingConflict {
+            field: "baseUrl",
+            quoted: quoted_base_url.clone(),
+            submitted: submission_base_url.clone(),
+        });
+    }
+
+    Ok(())
+}
+
 pub(crate) fn apply_app_data_parameter_overrides(
     slippage_bps: &mut Option<u32>,
     partner_fee: &mut Option<Value>,
@@ -628,6 +688,19 @@ pub(crate) fn apply_quote_request_parameter_overrides(
 pub trait OrderbookClient: Send + Sync {
     /// Returns the effective orderbook API context.
     fn context(&self) -> &ApiContext;
+
+    /// Returns the runtime binding used by this orderbook client.
+    ///
+    /// Implementations that apply additional endpoint overrides should override
+    /// this method so quote-derived posting can validate the originating
+    /// runtime authority precisely.
+    fn runtime_binding(&self) -> OrderbookRuntimeBinding {
+        OrderbookRuntimeBinding {
+            chain_id: self.context().chain_id,
+            env: self.context().env,
+            resolved_base_url: self.context().resolved_base_url().ok(),
+        }
+    }
 
     /// Requests a quote from the orderbook.
     ///
@@ -723,6 +796,14 @@ pub trait Eip1271SignatureProvider: Send + Sync {
 impl OrderbookClient for OrderBookApi {
     fn context(&self) -> &ApiContext {
         self.context()
+    }
+
+    fn runtime_binding(&self) -> OrderbookRuntimeBinding {
+        OrderbookRuntimeBinding {
+            chain_id: self.context().chain_id,
+            env: self.context().env,
+            resolved_base_url: self.effective_base_url().ok(),
+        }
     }
 
     async fn get_quote(

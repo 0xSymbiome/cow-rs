@@ -58,9 +58,9 @@ pub use slippage::{
 pub use types::{
     AllowanceParameters, ApprovalParameters, Eip1271SignatureProvider, EthFlowOrderExistsChecker,
     LimitOrderAdvancedSettings, LimitTradeParameters, LimitTradeParametersFromQuote,
-    OrderPostingResult, OrderTraderParameters, OrderbookClient, PartialTraderParameters,
-    PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults, QuoterParameters,
-    SlippageSuggestionProvider, SlippageToleranceRequest, SlippageToleranceResponse,
-    SwapAdvancedSettings, TradeParameters, TraderParameters, TradingAppDataInfo, TradingSdkOptions,
-    TradingTransactionParams,
+    OrderPostingResult, OrderTraderParameters, OrderbookClient, OrderbookRuntimeBinding,
+    PartialTraderParameters, PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults,
+    QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
+    SlippageToleranceResponse, SwapAdvancedSettings, TradeParameters, TraderParameters,
+    TradingAppDataInfo, TradingSdkOptions, TradingTransactionParams,
 };

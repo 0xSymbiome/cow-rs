@@ -9,9 +9,9 @@ use async_trait::async_trait;
 use serde_json::json;
 
 use cow_sdk_core::{
-    Address, Amount, ApiContext, AppDataHash, BlockInfo, ContractCall, ContractHandle, CowEnv,
-    Hash32, HexData, OrderKind, OrderUid, Provider, Signer, SupportedChainId, TransactionReceipt,
-    TransactionRequest, TypedDataDomain, TypedDataField,
+    Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, BlockInfo, ContractCall, ContractHandle,
+    CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer, SupportedChainId,
+    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
 };
 use cow_sdk_orderbook::{
     AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
@@ -206,6 +206,19 @@ impl MockOrderbook {
                 ..MockOrderbookState::default()
             })),
         }
+    }
+
+    pub fn new_with_base_url(
+        chain_id: SupportedChainId,
+        env: CowEnv,
+        base_url: &str,
+        quote_response: OrderQuoteResponse,
+    ) -> Self {
+        let mut orderbook = Self::new_with_env(chain_id, env, quote_response);
+        let mut base_urls = ApiBaseUrls::new();
+        base_urls.insert(chain_id.into(), base_url.trim_end_matches('/').to_owned());
+        orderbook.context.base_urls = Some(base_urls);
+        orderbook
     }
 
     pub fn state(&self) -> MockOrderbookState {

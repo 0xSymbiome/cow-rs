@@ -83,7 +83,10 @@ crates instead of spreading user-facing workflow logic across signing,
 transport, and contract crates. When callers inject an orderbook client into
 orderbook-bound trading helpers, that client becomes the canonical chain and
 environment authority; conflicting explicit values are rejected instead of
-being silently mixed through precedence fallbacks.
+being silently mixed through precedence fallbacks. When quote results are
+reused for posting, the originating orderbook runtime binding remains part of
+that contract, so quote-derived submission is rejected if the caller switches
+to a different orderbook endpoint, chain, or environment.
 
 ### Browser-Runtime Support
 

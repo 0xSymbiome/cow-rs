@@ -6,7 +6,7 @@ use cow_sdk_orderbook::{OrderQuoteRequest, PriceQuality, QuoteSide, SigningSchem
 use cow_sdk_signing::order_typed_data;
 
 use crate::types::{
-    QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
+    OrderbookRuntimeBinding, QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
     apply_quote_request_parameter_overrides, validate_orderbook_context,
     validate_orderbook_env_context,
 };
@@ -318,6 +318,7 @@ where
         trade_parameters,
         quote_response,
         app_data_info,
+        orderbook_binding: orderbook.runtime_binding(),
         suggested_slippage,
         amounts_and_costs,
         is_ethflow,
@@ -330,6 +331,7 @@ struct QuoteResultInputs<'a> {
     trade_parameters: TradeParameters,
     quote_response: cow_sdk_orderbook::OrderQuoteResponse,
     app_data_info: TradingAppDataInfo,
+    orderbook_binding: OrderbookRuntimeBinding,
     suggested_slippage: u32,
     amounts_and_costs: cow_sdk_core::QuoteAmountsAndCosts,
     is_ethflow: bool,
@@ -379,6 +381,7 @@ fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, Tr
         order_to_sign,
         quote_response: inputs.quote_response,
         app_data_info: inputs.app_data_info,
+        orderbook_binding: Some(inputs.orderbook_binding),
         order_typed_data,
     })
 }
