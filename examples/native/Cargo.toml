@@ -48,6 +48,10 @@ name = "orderbook_transport_roundtrip"
 path = "scenarios/orderbook_transport_roundtrip.rs"
 
 [[example]]
+name = "orderbook_live_probe"
+path = "scenarios/orderbook_live_probe.rs"
+
+[[example]]
 name = "trading_sdk_simulation"
 path = "scenarios/trading_sdk_simulation.rs"
 
