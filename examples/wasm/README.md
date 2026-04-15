@@ -2,12 +2,21 @@
 
 Standalone WASM examples for `cow-rs`.
 
+If you are new to `cow-rs`, start with
+[Getting Started](../../docs/getting-started.md) first. Come to the WASM
+surfaces after the deterministic native onboarding flow is clear or when you
+specifically need browser-hosted verification.
+
 ## Surfaces
 
 | Example | Purpose |
 | --- | --- |
 | `sdk-verification-console/` | Deterministic SDK verification and browser inspection for WASM-compatible surfaces |
 | `browser-wallet-console/` | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
+
+`cow-sdk` remains the default facade for pure SDK flows. Browser-wallet support
+is additive behind the `browser-wallet` feature and is intentionally separated
+from the deterministic native onboarding path.
 
 ## Local Use
 

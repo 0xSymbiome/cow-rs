@@ -8,18 +8,23 @@ and browser-compatible WASM workflows.
 
 ## Start Here
 
-Install the main facade crate:
+The canonical first-touch path is [Getting Started](docs/getting-started.md).
+
+The stable published install surface is:
 
 ```text
 cargo add cow-sdk
 ```
 
-Minimal facade setup:
+The first crates.io release is not live yet. Until publication, use the
+getting-started guide and the maintained native scenarios in this repository to
+evaluate the same facade and trading flow end to end.
+
+Ready-state facade setup:
 
 ```rust
-use cow_sdk::{Address, SupportedChainId, TradingSdk};
+use cow_sdk::{SupportedChainId, TradingSdk};
 
-let _owner = Address::new("0x1111111111111111111111111111111111111111").unwrap();
 let _sdk = TradingSdk::builder()
     .with_chain_id(SupportedChainId::Sepolia)
     .with_app_code("cow-rs/readme")
@@ -52,10 +57,14 @@ let _sdk = TradingSdk::builder()
 
 ### For SDK Consumers
 
+- [Getting Started](docs/getting-started.md)
 - [Documentation Index](docs/README.md)
 - [Principles](docs/principles.md)
 - [Architecture](docs/architecture.md)
 - [Examples](docs/examples.md)
+
+Start with [Getting Started](docs/getting-started.md) for the shortest path
+from the facade crate to deterministic signed-order output.
 
 ### For Verification And Review
 
@@ -73,6 +82,7 @@ parity, audit, and ADR map.
 
 ## Examples
 
+- [Getting Started](docs/getting-started.md)
 - [Native examples](examples/native/README.md)
 - [SDK verification console](examples/wasm/sdk-verification-console/README.md)
 - [Browser wallet console](examples/wasm/browser-wallet-console/README.md)

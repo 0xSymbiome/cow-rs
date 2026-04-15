@@ -2,6 +2,10 @@
 
 The examples are organized by user goal rather than by crate internals.
 
+If you are new to `cow-rs`, start with [Getting Started](getting-started.md)
+first. This page is the branch point after the deterministic onboarding flow,
+not a second landing page.
+
 ## Native Rust
 
 Use the native examples when you want deterministic, transport-mocked flows for
@@ -31,7 +35,9 @@ Use the WASM examples when you need browser-facing verification surfaces.
 
 ## Choosing A Starting Point
 
-- Start with native examples for trading, signing, app-data, and transport
+- Start with [Getting Started](getting-started.md) for the shortest path from
+  the facade crate to deterministic signed-order output.
+- Continue with native examples for trading, signing, app-data, and transport
   workflows.
 - Use `cow-sdk-subgraph` examples when you need read-only subgraph access.
 - Use the SDK verification console when you need browser-hosted WASM proof.

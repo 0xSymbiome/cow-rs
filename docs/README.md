@@ -5,12 +5,14 @@ and design history for `cow-rs`.
 
 ## For SDK Consumers
 
+- [Getting Started](getting-started.md)
 - [Principles](principles.md)
 - [Architecture](architecture.md)
 - [Examples](examples.md)
 
-Use these pages to choose a crate, understand the public boundaries, and find
-the supported example paths.
+Start with [Getting Started](getting-started.md) for the canonical onboarding
+path. Then use the other consumer pages to choose crates, understand public
+boundaries, and branch into the maintained example families.
 
 ## For Verification And Review
 

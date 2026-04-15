@@ -3,6 +3,20 @@
 These examples demonstrate the public Rust SDK surface without requiring
 browser runtimes or live order placement.
 
+If you are starting from scratch, begin with
+[Getting Started](../../docs/getting-started.md). This page is the native
+scenario catalog that extends that canonical onboarding path.
+
+## Recommended First Sequence
+
+Use this order when you want the shortest deterministic path:
+
+1. `signing_roundtrip`
+2. `limit_order_simulation`
+3. `trading_sdk_simulation`
+
+After that, branch by goal through the full scenario table below.
+
 ## Scenarios
 
 | Scenario | Purpose |
@@ -50,6 +64,9 @@ cargo run --manifest-path examples/native/Cargo.toml --example subgraph_query_ro
 cargo run --manifest-path examples/native/Cargo.toml --example subgraph_custom_query_roundtrip
 cargo run --manifest-path examples/native/Cargo.toml --example subgraph_live_query
 ```
+
+The live probes are opt-in follow-ons. They extend the deterministic onboarding
+path; they do not replace it.
 
 ## Optional Environment Variables
 
