@@ -103,8 +103,24 @@ cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.pa
 Use this lane when the release needs explicit proof against pinned upstream
 repositories instead of only the committed fixture contract.
 
+Quick setup:
+
+```text
+git clone https://github.com/cowprotocol/cow-sdk.git <path>/cow-sdk
+git clone https://github.com/cowprotocol/contracts.git <path>/contracts
+git clone https://github.com/cowprotocol/services.git <path>/services
+```
+
+If you prefer the parity maintainer to create the sibling checkouts from the
+pinned source lock, run:
+
 ```text
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
+```
+
+Then validate against those independent roots:
+
+```text
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
 ```
 

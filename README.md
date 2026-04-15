@@ -53,6 +53,16 @@ let _sdk = TradingSdk::builder()
 - Public claims are backed by repository-visible tests, fixtures, and release
   documentation.
 
+## Trust And Maintenance
+
+| Signal | Current state |
+| --- | --- |
+| Verification and release posture | [Verification Guide](docs/verification-guide.md) and [Release Checklist](docs/release-checklist.md) define the maintained proof and publication contract. |
+| Change history | [CHANGELOG.md](CHANGELOG.md) tracks the current unreleased public contract and future release notes. |
+| Security disclosure | [SECURITY.md](SECURITY.md) defines the private repository reporting path and protocol-level escalation route. |
+| Publication state | The first crates.io and docs.rs publication is not live yet; [Getting Started](docs/getting-started.md) and [Release Checklist](docs/release-checklist.md) describe the current repo-local contract truthfully. |
+| Compatibility and license | Public MSRV is Rust `1.94.0`; the current workspace license is `GPL-3.0-only`. |
+
 ## Documentation Paths
 
 ### For SDK Consumers
@@ -87,11 +97,8 @@ parity, audit, and ADR map.
 - [SDK verification console](examples/wasm/sdk-verification-console/README.md)
 - [Browser wallet console](examples/wasm/browser-wallet-console/README.md)
 
-## Compatibility And Release
+## Compatibility
 
 - Public MSRV: Rust `1.94.0`
 - Contributor toolchain pin: Rust `1.94.1`
-- Native, WASM, publication, and provenance checks are defined in
-  [Release Checklist](docs/release-checklist.md)
-- Surface-to-proof mapping lives in
-  [Validation Scope](docs/validation-scope.md)
+- Surface-to-proof mapping lives in [Validation Scope](docs/validation-scope.md)

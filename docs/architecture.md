@@ -61,6 +61,38 @@ flowchart TD
 | Runtime adapter | `cow-sdk-browser-wallet` | Browser-wallet session, signing, and chain-management support |
 | Facade | `cow-sdk` | Curated public entrypoint |
 
+## Facade And Adapter FAQ
+
+### Why `cow-sdk-subgraph` is not part of the default facade
+
+`cow-sdk` stays narrow on purpose. The default facade is the trading-first SDK
+entrypoint, while `cow-sdk-subgraph` remains an explicit read-only analytics
+crate. Keeping subgraph access separate avoids widening the default dependency
+graph for consumers that only need order creation, signing, quoting, and
+submission. This matches [ADR 0001](adr/0001-multi-crate-sdk-family-with-thin-facade.md)
+and [ADR 0003](adr/0003-separate-read-only-subgraph-crate.md): the facade
+optimizes for the main transactional path, and analytics stay opt-in.
+
+### Provider And Signer Adapter Seams
+
+Native runtime integrations plug in through the stable traits owned by
+`cow-sdk-core`:
+
+```rust
+use cow_sdk_core::{AsyncProvider, AsyncSigner, Provider, Signer};
+```
+
+For most native integrations, implement `Provider` and `Signer` on the adapter
+type that owns your RPC or signer backend. The blanket implementations then let
+that same adapter satisfy the async-first surfaces through `AsyncProvider` and
+`AsyncSigner` when the signer supports the async contract. Browser-wallet
+support is the shipped async runtime adapter today, so `cow-sdk-browser-wallet`
+implements the async side directly without widening the native facade.
+
+The stable public contract is the trait seam itself. Native signer and RPC
+integrations remain additive leaf crates so the workspace does not freeze one
+provider ecosystem into `core`, `trading`, or the default `cow-sdk` facade.
+
 ## Cross-Cutting Contracts
 
 ### Runtime Traits

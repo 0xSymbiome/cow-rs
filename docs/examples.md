@@ -33,6 +33,19 @@ Use the WASM examples when you need browser-facing verification surfaces.
 | [`sdk-verification-console`](../examples/wasm/sdk-verification-console/README.md) | Deterministic SDK verification and browser inspection for WASM-compatible surfaces |
 | [`browser-wallet-console`](../examples/wasm/browser-wallet-console/README.md) | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
 
+## Integration Notes
+
+- The default `cow-sdk` facade stays trading-first. If you need read-only
+  analytics or custom GraphQL access, add `cow-sdk-subgraph` directly instead
+  of expecting it from the facade.
+- The native examples intentionally stay provider-agnostic. They use
+  deterministic mocks or explicit transport surfaces rather than coupling the
+  examples to one provider-specific adapter.
+- Native runtime integrations plug into
+  `cow-sdk-core::{Signer, AsyncSigner, Provider, AsyncProvider}`. That keeps
+  provider-specific choices outside the default facade while preserving one
+  stable seam for downstream adapters.
+
 ## Choosing A Starting Point
 
 - Start with [Getting Started](getting-started.md) for the shortest path from

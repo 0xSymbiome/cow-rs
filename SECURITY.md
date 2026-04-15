@@ -1,0 +1,58 @@
+# Security Policy
+
+## Scope
+
+This policy covers security issues in the `cow-rs` repository, including:
+
+- the Rust crates in this repository
+- the repository-owned examples
+- repository-owned verification and release workflows
+- documentation mistakes that could materially mislead safe integration or
+  release use
+
+It does not cover:
+
+- general feature requests
+- non-security documentation typos
+- local support questions about custom integrations
+
+Use public issues or pull requests for non-sensitive bugs and improvement
+requests.
+
+## Supported Versions
+
+| Version | Supported |
+| --- | --- |
+| Unreleased repository state | Yes |
+
+Once the first tagged release is published, this table will expand to show
+which release lines receive security fixes.
+
+## Reporting A Vulnerability
+
+Do not open a public GitHub issue for an exploitable vulnerability.
+
+Use the private GitHub advisory flow for this repository:
+
+- [Privately report a vulnerability](https://github.com/cowdao-grants/cow-rs/security/advisories/new)
+
+If the issue can affect deployed CoW Protocol contracts, settlement flows,
+protocol infrastructure, or user funds beyond this repository, also follow the
+CoW Protocol bug bounty program:
+
+- [CoW Protocol bug bounty on Immunefi](https://immunefi.com/bug-bounty/cowprotocol/information/)
+
+Include as much of the following as you can:
+
+- affected crate, workflow, or documentation surface
+- affected version or commit range
+- impact summary and threat model
+- reproduction steps or proof of concept
+- suggested mitigation if you already have one
+
+## Disclosure Expectations
+
+- Keep the report private until maintainers confirm a fix or mitigation path.
+- Avoid publishing proof-of-concept details before coordinated disclosure.
+- Use the normal changelog and release notes to announce fixes after the
+  mitigation is ready for public consumption.
