@@ -1,7 +1,12 @@
 # Partner API Routing Audit
 
 Status: Current  
-Last reviewed: 2026-04-15
+Last reviewed: 2026-04-15  
+Owning surface: `cow-sdk-core` route selection and `cow-sdk-orderbook` partner header assembly  
+Refresh trigger: Changes to `ApiContext` partner-route selection, API-key validation, `X-API-Key` header construction, or partner endpoint family activation  
+Related docs:
+- [Verification Guide](../verification-guide.md)
+- [Verification Matrix](../verification-matrix.md)
 
 ## Scope
 
@@ -14,7 +19,7 @@ This audit covers:
 It does not cover unrelated transport retry policy, subgraph gateway routing,
 or broader credential-redaction questions already covered elsewhere.
 
-## Findings Summary
+## Outcome Summary
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
@@ -22,23 +27,23 @@ or broader credential-redaction questions already covered elsewhere.
 | Header assembly | `X-API-Key` request headers are built from locally validated input instead of silently dropping invalid values | Conforms |
 | Failure mode | Invalid partner API keys fail locally before route resolution or request transport proceeds | Conforms |
 
-## Findings
+## Current Contract
 
-### Partner route selection
+### Partner Route Selection
 
-`ApiContext` now validates the configured partner API key before deciding
-whether partner endpoint families are active. This prevents partner routing
-from being selected on the basis of an unusable value.
+`ApiContext` validates the configured partner API key before deciding whether
+partner endpoint families are active. This prevents partner routing from being
+selected on the basis of an unusable value.
 
-### Header assembly
+### Header Assembly
 
-`cow-sdk-orderbook` now derives the `X-API-Key` header from the same validated
-input used by route selection. The client therefore no longer has a state where
-it targets partner infrastructure while silently omitting the required header.
+`cow-sdk-orderbook` derives the `X-API-Key` header from the same validated
+input used by route selection. The client no longer has a state where it
+targets partner infrastructure while silently omitting the required header.
 
-### Failure mode
+### Failure Mode
 
-Invalid partner API keys now fail as a local validation error before request
+Invalid partner API keys fail as a local validation error before request
 transport begins. This keeps the problem at the configuration boundary instead
 of converting it into a remote authorization failure with ambiguous cause.
 

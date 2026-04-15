@@ -1,7 +1,13 @@
 # Browser Wallet Chain Coherence Audit
 
 Status: Current  
-Last reviewed: 2026-04-14
+Last reviewed: 2026-04-15  
+Owning surface: `cow-sdk-browser-wallet` chain-bound signer and typed chain-management contract  
+Refresh trigger: Changes to `BrowserWallet::signer_for_chain`, typed-data chain validation, chain-switch helpers, or shipped browser-wallet proof surfaces  
+Related docs:
+- [Architecture](../architecture.md)
+- [Verification Guide](../verification-guide.md)
+- [Verification Matrix](../verification-matrix.md)
 
 ## Scope
 
@@ -18,25 +24,31 @@ This audit covers:
 It does not cover injected-wallet discovery, multi-wallet selection, or
 environment-sensitive extension prompts beyond the chain-coherence boundary.
 
-## Decision Summary
+## Outcome Summary
 
-| Area | Decision |
-| --- | --- |
-| Signer construction | Expose `BrowserWallet::signer_for_chain` for workflows that already know the target chain |
-| Runtime validation | Revalidate the wallet session chain before address, signature, gas, and transaction operations |
-| Chain management | Treat switch RPC acknowledgement as provisional and return success only after the refreshed session reports the requested chain |
-| Typed-data signing | Reject payloads whose domain chain does not match the expected workflow chain |
-| Example behavior | Keep UI gating as a user-facing affordance, not as the only protection layer |
+| Area | Reviewed contract | Result |
+| --- | --- | --- |
+| Signer construction | `BrowserWallet::signer_for_chain` binds wallet-backed workflows to one reviewed target chain | Conforms |
+| Runtime validation | Address, signature, gas, and transaction operations revalidate the active session chain before they proceed | Conforms |
+| Chain management | Typed switch helpers treat wallet RPC acknowledgement as provisional until the refreshed session confirms the requested chain | Conforms |
+| Typed-data signing | Typed-data payloads fail when the domain chain does not match the expected workflow chain | Conforms |
+| Example behavior | Console gating remains a user-facing affordance, not the only protection layer | Conforms |
 
 ## Current Contract
+
+### Chain-Bound Signer Construction
 
 `BrowserWallet::signer_for_chain` validates the current wallet session chain
 before it returns a signer.
 
+### Runtime Revalidation
+
 The returned `Eip1193Signer` stores that expected chain and revalidates it
-before address resolution, message or typed-data signing, gas estimation, and
-transaction submission. `sign_typed_data_payload` also rejects payloads whose
-typed-data domain chain does not match the expected chain.
+before address resolution, message signing, typed-data signing, gas
+estimation, and transaction submission. `sign_typed_data_payload` also rejects
+payloads whose typed-data domain chain does not match the expected chain.
+
+### Typed Chain Management
 
 `BrowserWallet::switch_chain` and `BrowserWallet::switch_or_add_chain` apply
 the same authority rule to typed chain-management. A resolved
@@ -44,13 +56,15 @@ the same authority rule to typed chain-management. A resolved
 These helpers return success only after the refreshed wallet session confirms
 that the requested chain is now active.
 
+### Example Behavior Boundary
+
 This keeps browser-wallet-backed quote, signing, and submission flows aligned
 with one reviewed chain authority without widening `cow-sdk-trading` into a
 browser-specific crate or relying on example-only guards.
 
 ## Evidence
 
-Relevant source files:
+Primary implementation points:
 
 - `crates/browser-wallet/src/lib.rs`
 - `crates/browser-wallet/src/mock.rs`
@@ -59,7 +73,7 @@ Relevant source files:
 - `crates/browser-wallet/src/wallet.rs`
 - `examples/wasm/browser-wallet-console/src/lib.rs`
 
-Relevant contract coverage:
+Primary regression coverage:
 
 - `crates/browser-wallet/tests/wallet_contract.rs::signer_for_chain_rejects_wallet_session_mismatches_before_returning_signer`
 - `crates/browser-wallet/tests/wallet_contract.rs::chain_bound_signer_rejects_chain_drift_before_address_and_transaction_calls`
@@ -69,7 +83,7 @@ Relevant contract coverage:
 - `crates/browser-wallet/tests/wasm_bridge_contract.rs::successful_switch_requests_fail_when_the_refreshed_session_stays_on_a_different_chain`
 - `e2e/browser-wallet/tests/injected-chain-coherence.spec.ts`
 
-Validation commands:
+Validation surface:
 
 ```text
 cargo fmt --all --check

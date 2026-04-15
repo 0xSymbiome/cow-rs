@@ -1,7 +1,13 @@
 # Trading Order Construction Integrity Audit
 
 Status: Current  
-Last reviewed: 2026-04-14
+Last reviewed: 2026-04-15  
+Owning surface: `cow-sdk-trading` order assembly, injected-orderbook constructor parity, and recoverable-signature posting boundary  
+Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` construction with injected orderbooks, or recoverable-signature posting validation  
+Related docs:
+- [Architecture](../architecture.md)
+- [Verification Guide](../verification-guide.md)
+- [Verification Matrix](../verification-matrix.md)
 
 ## Scope
 
@@ -15,7 +21,7 @@ This audit covers:
 It does not cover browser-wallet session management, approval flows, or
 unrelated leaf-crate transport policy.
 
-## Findings Summary
+## Outcome Summary
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
@@ -23,9 +29,9 @@ unrelated leaf-crate transport policy.
 | `TradingSdk` injected-orderbook constructors | Builder and direct constructors enforce one fail-fast authority contract | Conforms |
 | Recoverable signature posting | Reject explicit owner or signer mismatch before submission | Conforms |
 
-## Findings
+## Current Contract
 
-### Balance semantics
+### Balance Semantics
 
 `cow-sdk-trading` preserves reviewed `sellTokenBalance` and
 `buyTokenBalance` semantics across quote overrides, quote-derived order
@@ -33,14 +39,14 @@ assembly, direct order construction, signing payload generation, and final
 submission. Non-default balance selections remain part of the signed order
 contract rather than being normalized during helper composition.
 
-### Constructor parity
+### Constructor Parity
 
-Builder-created and directly constructed `TradingSdk` instances now share the
-same injected-orderbook validation boundary. If explicit trader or quoter
-defaults conflict with the injected orderbook context, SDK construction fails
-before the surface is exposed.
+Builder-created and directly constructed `TradingSdk` instances share the same
+injected-orderbook validation boundary. If explicit trader or quoter defaults
+conflict with the injected orderbook context, SDK construction fails before
+the surface is exposed.
 
-### Recoverable signature boundary
+### Recoverable Signature Boundary
 
 Posting flows for recoverable signature schemes reject explicit owner or signer
 mismatch before app-data upload, signing, or orderbook submission. `PreSign`

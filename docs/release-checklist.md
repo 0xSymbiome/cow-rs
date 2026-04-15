@@ -13,8 +13,13 @@ cargo test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
 typos --config .github/config/typos.toml
 cargo deny check bans licenses sources --config .github/config/deny.toml
-cargo audit --deny warnings --ignore RUSTSEC-2026-0097
+cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097
 ```
+
+`cargo audit` is the blocking RustSec gate for published advisories. It keeps
+vulnerabilities, unsound advisories, and unmaintained advisories blocking while
+leaving yanked-only published-upstream cases reviewable through public audit
+evidence until a published replacement exists.
 
 ## 2. Documentation And Public API Gates
 
@@ -30,6 +35,10 @@ Nightly docs.rs-style lane:
 ```text
 DOCS_RS=1 RUSTDOCFLAGS="--cfg docsrs -D warnings -Zunstable-options --generate-link-to-definition --show-type-layout --enable-index-page" cargo +nightly doc --workspace --all-features --no-deps
 ```
+
+If the release diff materially touches a surface covered by `docs/audit/`,
+confirm that the affected audit is still `Current`. If the reviewed surface
+changed, refresh or supersede the audit in the same change set before tagging.
 
 ## 3. Compatibility And Host Coverage
 

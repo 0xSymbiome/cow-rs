@@ -1,7 +1,13 @@
 # Credential Surface Contract Hygiene Audit
 
 Status: Current  
-Last reviewed: 2026-04-15
+Last reviewed: 2026-04-15  
+Owning surface: Cross-cutting credential redaction and typed partner-fee public boundary across core, app-data, orderbook, subgraph, and trading  
+Refresh trigger: Changes to public credential-bearing configs, subgraph route identity or request-failure context, or typed partner-fee request boundaries  
+Related docs:
+- [Architecture](../architecture.md)
+- [Verification Guide](../verification-guide.md)
+- [Verification Matrix](../verification-matrix.md)
 
 ## Scope
 
@@ -16,7 +22,7 @@ It does not cover browser-wallet session management, unrelated transport-policy
 questions, or future capability crates that are still outside the active SDK
 surface.
 
-## Findings Summary
+## Outcome Summary
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
@@ -24,29 +30,30 @@ surface.
 | Credential-bearing config diagnostics | Redact secret material in default `Debug` and serialized forms while preserving explicit inputs | Conforms |
 | Trading partner-fee policy | Keep user-facing partner-fee inputs typed until explicit app-data translation | Conforms |
 
-## Findings
+## Current Contract
 
-### Subgraph route identity
+### Subgraph Route Identity
 
 `cow-sdk-subgraph` keeps the Graph API key private to request routing. The
-stable production route map is now redacted, and typed request failures expose
-only non-secret route identity. Custom override routes remain explicit, but the
+stable production route map is redacted, and typed request failures expose only
+non-secret route identity. Custom override routes remain explicit, but the
 public failure context is sanitized to a public origin or a generic override
 marker instead of echoing a credential-bearing URL.
 
-### Credential-bearing config diagnostics
+### Credential-Bearing Config Diagnostics
 
-`ApiContext`, `ApiContextOverride`, and `IpfsConfig` continue to accept explicit
-credential input, but their default `Debug` and serialized forms now redact
-secret material. This keeps routine diagnostics and generic serialization from
-turning partner API keys or Pinata credentials into ordinary log output.
+`ApiContext`, `ApiContextOverride`, and `IpfsConfig` continue to accept
+explicit credential input, but their default `Debug` and serialized forms now
+redact secret material. This keeps routine diagnostics and generic
+serialization from turning partner API keys or Pinata credentials into
+ordinary log output.
 
-### Typed partner-fee boundary
+### Typed Partner-Fee Boundary
 
-`cow-sdk-trading` now accepts typed partner-fee policy values on its public
-request types. Raw JSON remains confined to explicit app-data metadata
-translation boundaries, and invalid raw metadata is rejected before quote or
-posting transport proceeds.
+`cow-sdk-trading` accepts typed partner-fee policy values on its public request
+types. Raw JSON remains confined to explicit app-data metadata translation
+boundaries, and invalid raw metadata is rejected before quote or posting
+transport proceeds.
 
 ## Evidence
 

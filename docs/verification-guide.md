@@ -14,7 +14,7 @@ Use this guide to understand how `cow-rs` justifies its public behavior.
 - workflow lanes: repository-wide quality, compatibility, documentation, and
   publication gates
 - parity fixtures and source locks: provenance and upstream traceability
-- audits and ADRs: focused review records and durable design history
+- audits and ADRs: current-state review records and durable design history
 
 ## Where To Start
 
@@ -26,6 +26,9 @@ Use this guide to understand how `cow-rs` justifies its public behavior.
 | Release, publication, and provenance | [Release Checklist](release-checklist.md) | [Parity Matrix](parity-matrix.md), [Parity Sources](parity-sources.md) |
 | Focused engineering review | [Audits](audit/README.md) | surface-local tests and source files |
 | Example behavior | [Examples](examples.md) | example README files and scenario code |
+
+When a change materially moves a named audited surface, the corresponding audit
+should remain `Current` in the same change set.
 
 ## Boundary Checks
 
@@ -76,7 +79,13 @@ behind a proxy-enabled deployment requirement.
 MSRV, docs.rs posture, public rustc lints, dependency policy, publication dry
 runs, and provenance-sensitive parity checks are part of the published
 crate-family contract. Review publication-policy changes through the release
-docs rather than as local implementation details.
+docs rather than as local implementation details. Dependency policy is split
+deliberately: `cargo deny` owns bans, licenses, and source policy, while
+`cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097`
+blocks RustSec vulnerabilities plus unsound and unmaintained advisories.
+Yanked crates remain reviewed warnings only when the latest published upstream
+release still provides no clean replacement, and that state must stay recorded
+in public audit evidence.
 
 ## Going Deeper
 

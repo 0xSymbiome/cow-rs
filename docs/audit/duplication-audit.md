@@ -1,38 +1,46 @@
 # Duplication Audit
 
 Status: Current  
-Last reviewed: 2026-04-10
+Last reviewed: 2026-04-15  
+Owning surface: Orderbook, signing, and trading reviewability boundary for shared request and signing logic  
+Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, or any new public duplication that materially affects correctness or reviewability  
+Related docs:
+- [Architecture](../architecture.md)
+- [Verification Guide](../verification-guide.md)
 
 ## Scope
 
 This audit covers:
 
 - orderbook request construction and execution
-- retry, status mapping, headers, rate-limit handling, and JSON/text/empty
-  responses
+- retry, status mapping, headers, rate-limit handling, and JSON, text, or
+  empty responses
 - order signing and cancellation signing payload preparation
 - trading posting wrapper paths
 - generated or schema-derived artifacts as a separate category
 
-## Decision Summary
+It does not cover style-only duplication, generic cleanup notes, or unrelated
+internal refactors that do not affect correctness or reviewability.
 
-| Category | Decision |
-| --- | --- |
-| Repeated HTTP request construction | Use one shared orderbook request path |
-| Repeated retry, status, and rate-limit loops | Use one shared executor for JSON, text, and empty responses |
-| Repeated signing payload preparation | Share payload construction between sync and async signing paths |
-| Trading posting wrapper pairs | Keep ergonomic entry points thin and route workflow logic through the async implementation path |
-| Repeated order-like DTO fields | Keep them only where ABI, API, normalized, or user-domain boundaries differ |
+## Outcome Summary
+
+| Area | Reviewed contract | Result |
+| --- | --- | --- |
+| Repeated HTTP request construction | Use one shared orderbook request path | Conforms |
+| Repeated retry, status, and rate-limit loops | Use one shared executor for JSON, text, and empty responses | Conforms |
+| Repeated signing payload preparation | Share payload construction between sync and async signing paths | Conforms |
+| Trading posting wrapper pairs | Keep ergonomic entry points thin and route workflow logic through the async implementation path | Conforms |
+| Repeated order-like DTO fields | Retain duplication only where ABI, API, normalized, or user-domain boundaries differ materially | Conforms |
 
 ## Current Contract
 
-Orderbook request execution is shared through internal helpers in
-`crates/orderbook/src/request.rs`, including:
+### Orderbook Request Execution
 
-- `request_with`
-- `send_request`
-- `request_headers`
-- `execute_with`
+Orderbook request execution is shared through internal helpers in
+`crates/orderbook/src/request.rs`, including `request_with`, `send_request`,
+`request_headers`, and `execute_with`.
+
+### Signing Payload Preparation
 
 Signing keeps separate sync and async entry points while sharing payload
 construction through:
@@ -40,12 +48,16 @@ construction through:
 - `crates/signing/src/order_signing.rs::order_signing_payload`
 - `crates/signing/src/cancellation.rs::cancellation_signing_payload`
 
-Trading posting keeps ergonomic public entry points while routing workflow
-logic through async implementation paths. Shared advanced-parameter extraction
-lives in:
+### Thin Trading Posting Wrappers
+
+Trading keeps ergonomic public entry points while routing workflow logic
+through async implementation paths. Shared advanced-parameter extraction lives
+in:
 
 - `crates/trading/src/post.rs::swap_additional_params`
 - `crates/trading/src/post.rs::limit_additional_params`
+
+### Order-Like DTO Boundary
 
 Order-like DTO duplication is retained only where the boundary is materially
 different:
@@ -62,7 +74,7 @@ part of the public SDK API.
 
 ## Evidence
 
-Relevant contract coverage:
+Primary regression coverage:
 
 - `crates/orderbook/tests/request_contract.rs::request_json_retries_429_and_preserves_headers_on_each_attempt`
 - `crates/orderbook/tests/request_contract.rs::request_text_and_empty_share_the_request_builder_and_success_path`
@@ -73,7 +85,7 @@ Relevant contract coverage:
 - `crates/contracts/tests/order_contract.rs::unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit`
 - `crates/orderbook/tests/types_contract.rs::order_creation_from_quote_keeps_quote_shape_and_quote_id`
 
-Validation commands:
+Validation surface:
 
 ```text
 cargo fmt --all --check
