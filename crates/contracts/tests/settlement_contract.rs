@@ -113,6 +113,38 @@ fn settlement_flag_encoding_matches_fixture_values() {
 }
 
 #[test]
+fn trade_flag_encoding_keeps_order_and_signing_bits_partitioned() {
+    let order_flags = OrderFlags {
+        kind: OrderKind::Buy,
+        partially_fillable: true,
+        sell_token_balance: OrderBalance::Internal,
+        buy_token_balance: OrderBalance::Internal,
+    };
+    let encoded_order = encode_order_flags(&order_flags).unwrap();
+    assert_eq!(encoded_order & 0b1110_0000, 0);
+
+    for signing_scheme in [
+        SigningScheme::Eip712,
+        SigningScheme::EthSign,
+        SigningScheme::Eip1271,
+        SigningScheme::PreSign,
+    ] {
+        let encoded_trade = encode_trade_flags(&TradeFlags {
+            kind: order_flags.kind,
+            partially_fillable: order_flags.partially_fillable,
+            sell_token_balance: order_flags.sell_token_balance,
+            buy_token_balance: order_flags.buy_token_balance,
+            signing_scheme,
+        })
+        .unwrap();
+
+        assert_eq!(encoded_trade & 0b1_1111, encoded_order);
+        assert_eq!((encoded_trade >> 5) & 0b11, signing_scheme.as_u8());
+        assert_eq!(encoded_trade, encoded_order + (signing_scheme.as_u8() << 5));
+    }
+}
+
+#[test]
 fn settlement_encoder_tracks_tokens_prices_and_interactions() {
     let domain = sample_domain();
     let order = sample_order(OrderKind::Sell, false);

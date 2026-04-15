@@ -15,6 +15,9 @@ The repository includes native and WASM example galleries for the public
 - pre-sign and on-chain cancellation flows
 - read-only subgraph access
 
+The native gallery includes dedicated scenarios for
+`ethflow_transaction_simulation` and `onchain_order_actions_simulation`.
+
 See [Native examples](native/README.md) for the full scenario list.
 
 ## WASM

@@ -438,7 +438,8 @@ pub fn encode_trade_flags(flags: &TradeFlags) -> Result<u8, ContractsError> {
         buy_token_balance: flags.buy_token_balance,
     })?;
     let signing_scheme = flags.signing_scheme.as_u8() << 5;
-    Ok(order_flags | signing_scheme)
+    // Keep trade encoding aligned with the order codec: each field owns a disjoint bit range.
+    Ok(order_flags + signing_scheme)
 }
 
 /// Decodes trade flags from the compact settlement bitfield.
