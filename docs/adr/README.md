@@ -35,6 +35,17 @@ public and runtime shape of `cow-rs`.
 - Keep authoring and delivery detail out of the main body unless it changes the
   long-lived design itself.
 
+## Audit Link Contract
+
+- Add a standing audit to an accepted ADR when that audit is the clearest
+  current-state proof for one of the ADR's invariants.
+- Prefer the ADR `Links` section for standing audits so the main body stays
+  focused on the durable rule rather than the current review snapshot.
+- Keep the top `Related` metadata focused on directly coupled ADRs or other
+  navigation links that belong beside the decision header.
+- When an accepted ADR points to a standing audit as current-state proof, the
+  audit should reciprocate in `Related docs`.
+
 ## Title Contract
 
 - Titles state the chosen rule, not just the topic area.

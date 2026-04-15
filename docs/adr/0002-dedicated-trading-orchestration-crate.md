@@ -38,3 +38,7 @@ stable home that is not the transport layer and not the root facade.
 
 - [Architecture](../architecture.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
+- [Trading Order Construction Integrity Audit](../audit/trading-order-construction-integrity-audit.md)
+- [Trading Orderbook Context Audit](../audit/trading-orderbook-context-audit.md)
+- [Trading Quote Orderbook Binding Audit](../audit/trading-quote-orderbook-binding-audit.md)
+- [Trading SDK Runtime Prerequisites Audit](../audit/trading-sdk-runtime-prerequisites-audit.md)

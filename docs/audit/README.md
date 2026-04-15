@@ -13,9 +13,10 @@ Each public audit should record:
 - the explicit out-of-scope boundary
 - the refresh trigger that would invalidate the current record
 
-Public audits are promoted outputs from private analysis once the reviewed
-surface and supporting evidence are stable. This lane is not for exploratory
-notes, changelog fragments, ADR replacement, or generic cleanup diaries.
+Public audits are self-sufficient current-state review records for named
+surfaces once the reviewed contract and supporting evidence are stable enough
+to publish clearly. This lane is not for exploratory notes, changelog
+fragments, ADR replacement, or generic cleanup diaries.
 
 ## Artifact Types
 
@@ -84,4 +85,4 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, and typed user policy | Current | 2026-04-15 |
-| [Duplication Audit](duplication-audit.md) | Standing audit | Orderbook, signing, and trading reviewability boundary | Shared request execution, signing payload preparation, and thin posting wrappers | Current | 2026-04-15 |
+| [Shared Logic Reviewability Audit](shared-logic-reviewability-audit.md) | Standing audit | Orderbook, signing, and trading shared-logic reviewability boundary | Shared request execution, signing payload preparation, thin posting wrappers, and justified DTO separation | Current | 2026-04-15 |

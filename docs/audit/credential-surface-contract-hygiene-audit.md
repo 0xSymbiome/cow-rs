@@ -5,6 +5,8 @@ Last reviewed: 2026-04-15
 Owning surface: Cross-cutting credential redaction and typed partner-fee public boundary across core, app-data, orderbook, subgraph, and trading  
 Refresh trigger: Changes to public credential-bearing configs, subgraph route identity or request-failure context, or typed partner-fee request boundaries  
 Related docs:
+- [ADR 0005](../adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
+- [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)

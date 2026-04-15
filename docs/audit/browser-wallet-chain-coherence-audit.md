@@ -5,6 +5,8 @@ Last reviewed: 2026-04-15
 Owning surface: `cow-sdk-browser-wallet` chain-bound signer and typed chain-management contract  
 Refresh trigger: Changes to `BrowserWallet::signer_for_chain`, typed-data chain validation, chain-switch helpers, or shipped browser-wallet proof surfaces  
 Related docs:
+- [ADR 0004](../adr/0004-feature-gated-browser-wallet-sidecar.md)
+- [ADR 0007](../adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)

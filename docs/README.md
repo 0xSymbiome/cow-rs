@@ -31,6 +31,9 @@ the supported example paths.
 - [Audits](audit/README.md)
 - [ADRs](adr/README.md)
 
+Audits are current-state review records for named trust-significant surfaces.
+ADRs capture durable design decisions and their rationale.
+
 ## For Contributors
 
 - [Contributing](../CONTRIBUTING.md)

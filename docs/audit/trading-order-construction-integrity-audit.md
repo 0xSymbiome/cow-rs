@@ -5,6 +5,7 @@ Last reviewed: 2026-04-15
 Owning surface: `cow-sdk-trading` order assembly, injected-orderbook constructor parity, and recoverable-signature posting boundary  
 Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` construction with injected orderbooks, or recoverable-signature posting validation  
 Related docs:
+- [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)

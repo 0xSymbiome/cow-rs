@@ -5,6 +5,7 @@ Last reviewed: 2026-04-15
 Owning surface: `cow-sdk-trading` quote-origin runtime binding for quote-derived posting  
 Refresh trigger: Changes to `QuoteResults` binding capture, `post_swap_order_from_quote*` submission validation, or serialization and reuse semantics for quote-derived posting state  
 Related docs:
+- [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)

@@ -1,10 +1,11 @@
-# Duplication Audit
+# Shared Logic Reviewability Audit
 
 Status: Current  
 Last reviewed: 2026-04-15  
-Owning surface: Orderbook, signing, and trading reviewability boundary for shared request and signing logic  
-Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, or any new public duplication that materially affects correctness or reviewability  
+Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary  
+Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, or boundary-specific order DTO separation that materially affect correctness or reviewability  
 Related docs:
+- [ADR 0005](../adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 
@@ -19,18 +20,18 @@ This audit covers:
 - trading posting wrapper paths
 - generated or schema-derived artifacts as a separate category
 
-It does not cover style-only duplication, generic cleanup notes, or unrelated
+It does not cover style-only cleanup notes, generic refactor wishlists, or unrelated
 internal refactors that do not affect correctness or reviewability.
 
 ## Outcome Summary
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Repeated HTTP request construction | Use one shared orderbook request path | Conforms |
-| Repeated retry, status, and rate-limit loops | Use one shared executor for JSON, text, and empty responses | Conforms |
-| Repeated signing payload preparation | Share payload construction between sync and async signing paths | Conforms |
-| Trading posting wrapper pairs | Keep ergonomic entry points thin and route workflow logic through the async implementation path | Conforms |
-| Repeated order-like DTO fields | Retain duplication only where ABI, API, normalized, or user-domain boundaries differ materially | Conforms |
+| Shared HTTP request construction | Use one shared orderbook request path | Conforms |
+| Shared retry, status, and rate-limit execution | Use one shared executor for JSON, text, and empty responses | Conforms |
+| Shared signing payload preparation | Share payload construction between sync and async signing paths | Conforms |
+| Thin trading posting wrappers | Keep ergonomic entry points thin and route workflow logic through the async implementation path | Conforms |
+| Boundary-specific order DTO separation | Retain distinct DTOs only where ABI, API, normalized, or user-domain boundaries differ materially | Conforms |
 
 ## Current Contract
 
@@ -57,9 +58,9 @@ in:
 - `crates/trading/src/post.rs::swap_additional_params`
 - `crates/trading/src/post.rs::limit_additional_params`
 
-### Order-Like DTO Boundary
+### Boundary-Specific Order DTO Separation
 
-Order-like DTO duplication is retained only where the boundary is materially
+Order-like DTO separation is retained only where the boundary is materially
 different:
 
 - `cow_sdk_core::UnsignedOrder`

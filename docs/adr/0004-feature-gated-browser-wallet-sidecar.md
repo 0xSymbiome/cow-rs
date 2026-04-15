@@ -41,3 +41,4 @@ its own dependency and runtime boundary.
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
+- [Browser Wallet Chain Coherence Audit](../audit/browser-wallet-chain-coherence-audit.md)

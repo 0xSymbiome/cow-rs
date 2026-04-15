@@ -5,6 +5,7 @@ Last reviewed: 2026-04-15
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces  
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, or the current published CID warning status  
 Related docs:
+- [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [CID Dependency Audit](cid-dependency-audit.md)
 - [Release Checklist](../release-checklist.md)
 - [Verification Guide](../verification-guide.md)
