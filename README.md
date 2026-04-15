@@ -10,15 +10,17 @@ and browser-compatible WASM workflows.
 
 The canonical first-touch path is [Getting Started](docs/getting-started.md).
 
-The stable published install surface is:
+The functional published install surface will be:
 
 ```text
 cargo add cow-sdk
 ```
 
-The first crates.io release is not live yet. Until publication, use the
-getting-started guide and the maintained native scenarios in this repository to
-evaluate the same facade and trading flow end to end.
+Reserved-placeholder `0.0.1-reserved.0` entries are already live on crates.io
+for the published crate family. They reserve package identity and are not the
+functional SDK release. Until `0.1.0` is live, use the getting-started guide
+and the maintained native scenarios in this repository to evaluate the same
+facade and trading flow end to end.
 
 Ready-state facade setup:
 
@@ -60,7 +62,7 @@ let _sdk = TradingSdk::builder()
 | Verification and release posture | [Verification Guide](docs/verification-guide.md) and [Release Checklist](docs/release-checklist.md) define the maintained proof and publication contract. |
 | Change history | [CHANGELOG.md](CHANGELOG.md) tracks the current unreleased public contract and future release notes. |
 | Security disclosure | [SECURITY.md](SECURITY.md) defines the private repository reporting path and protocol-level escalation route. |
-| Publication state | The first crates.io and docs.rs publication is not live yet; [Getting Started](docs/getting-started.md) and [Release Checklist](docs/release-checklist.md) describe the current repo-local contract truthfully. |
+| Publication state | Reserved-placeholder `0.0.1-reserved.0` crates.io and docs.rs entries are live for the published crate family, but the functional `0.1.0` release is still pending; [Getting Started](docs/getting-started.md) and [Release Checklist](docs/release-checklist.md) describe the current repo-local and release-ready contract truthfully. |
 | Compatibility and license | Public MSRV is Rust `1.94.0`; the current workspace license is `GPL-3.0-only`. |
 
 ## Documentation Paths

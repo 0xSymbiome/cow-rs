@@ -3,10 +3,13 @@
 All notable changes to `cow-rs` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-Semantic versioning begins with the first published crate release.
+Semantic versioning begins with the first functional crate release.
 
-Until that first publication is live, this file tracks the current unreleased
-public contract of the repository.
+Reserved-placeholder `0.0.1-reserved.0` name-reservation publishes are
+excluded from this version history.
+
+Until that first functional publication is live, this file tracks the current
+unreleased public contract of the repository.
 
 ## [Unreleased]
 
@@ -38,4 +41,5 @@ public contract of the repository.
 
 ### Notes
 
-- `0.1.0` will be recorded here when the first crates.io publication is live.
+- `0.1.0` will be recorded here when the first functional crates.io release is
+  live.

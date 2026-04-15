@@ -78,6 +78,11 @@ cargo mutants -p cow-sdk-subgraph -p cow-sdk-browser-wallet --file crates/subgra
 
 ## 5. Repo-Local Parity And Publication Proof
 
+Reserved-placeholder `0.0.1-reserved.0` crates.io and docs.rs entries may
+already be live for published crate names. Treat those publishes as
+name-reservation perimeter only; they do not satisfy the functional release
+contract described in this checklist.
+
 Validate the committed parity contract from the current checkout:
 
 ```text

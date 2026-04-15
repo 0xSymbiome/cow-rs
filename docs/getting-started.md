@@ -11,15 +11,16 @@ canonical first-touch path:
 
 ## Install Surface
 
-The stable published install surface is:
+The functional published install surface will be:
 
 ```text
 cargo add cow-sdk
 ```
 
-The first crates.io release is not live yet. Until publication, evaluate the
-same surface from a local checkout or run the maintained example crate in this
-repository.
+Reserved-placeholder `0.0.1-reserved.0` entries are already live on crates.io
+for the published crate family. They reserve package identity and are not the
+functional SDK release. Until `0.1.0` is live, evaluate the same surface from
+a local checkout or run the maintained example crate in this repository.
 
 Repo-local dependency shape:
 
@@ -141,7 +142,8 @@ When you move beyond it, the boundary changes:
 - real orderbook usage depends on service availability and your runtime config
 - wallet-backed signing depends on the signer or wallet you supply
 - browser-wallet flows depend on a supported browser runtime and wallet session
-- published install commands depend on the first crates.io release being live
+- functional published install commands depend on the first non-placeholder
+  crates.io release being live
 
 Use [Architecture](architecture.md) for crate boundaries and
 [Release Checklist](release-checklist.md) when you need the full validation and
