@@ -8,12 +8,13 @@ use cow_sdk::{
     Address, Amount, ApiContext, ApprovalParameters, CowEnv, DEFAULT_QUOTE_VALIDITY,
     DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT, GetOrdersRequest,
     GetTradesRequest, MAX_SLIPPAGE_BPS, ORDER_PRIMARY_TYPE, OrderBookApi, OrderQuoteRequest,
-    OrderUid, OrderbookError, PartialTraderParameters, SupportedChainId, TradingSdk,
-    TradingSdkOptions, app_data_hex_to_cid, app_data_hex_to_cid_legacy, approval_transaction,
-    cid_to_app_data_hex, default_slippage_bps, deployment_for_chain, eip1271_signature_payload,
-    generate_order_id, get_app_data_info, get_app_data_schema, is_ethflow_order, order_typed_data,
-    partner_fee_bps, sanitize_protocol_fee_bps, suggest_slippage_from_fee,
-    suggest_slippage_from_volume, swap_params_to_limit_order_params, validate_app_data_doc,
+    OrderUid, OrderbookError, PartnerFee, PartnerFeePolicy, PartialTraderParameters,
+    SupportedChainId, TradingSdk, TradingSdkOptions, app_data_hex_to_cid,
+    app_data_hex_to_cid_legacy, approval_transaction, cid_to_app_data_hex,
+    default_slippage_bps, deployment_for_chain, eip1271_signature_payload, generate_order_id,
+    get_app_data_info, get_app_data_schema, is_ethflow_order, order_typed_data, partner_fee_bps,
+    sanitize_protocol_fee_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
+    swap_params_to_limit_order_params, validate_app_data_doc,
 };
 use cow_sdk_subgraph::{SubgraphApi, SubgraphConfig};
 
@@ -225,9 +226,7 @@ pub fn approval_transaction_preview_json(
 
 #[wasm_bindgen]
 pub fn trading_defaults_json() -> Result<String, JsValue> {
-    let partner_fee = json!({
-        "volumeBps": 42
-    });
+    let partner_fee = PartnerFee::from(PartnerFeePolicy::volume(42, sample_owner()));
 
     pretty_json(&json!({
         "quoteValiditySeconds": DEFAULT_QUOTE_VALIDITY,
