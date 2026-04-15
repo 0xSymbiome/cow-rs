@@ -1,0 +1,19 @@
+[package]
+name = "cow-sdk-cow-shed"
+version = "0.0.1-reserved.0"
+edition = "2024"
+rust-version = "1.94.0"
+license = "GPL-3.0-only"
+description = "Reserved placeholder for cow-sdk-cow-shed, the CoW Shed smart-account proxy integration for the CoW Protocol Rust SDK."
+repository = "https://github.com/0xSymbiome/cow-rs"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+documentation = "https://docs.rs/cow-sdk-cow-shed"
+readme = "README.md"
+keywords = ["cow-protocol", "cow-shed", "hooks", "eip1271"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lib]
+path = "src/lib.rs"

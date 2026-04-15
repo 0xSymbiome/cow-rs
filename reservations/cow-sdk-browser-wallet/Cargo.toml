@@ -1,0 +1,19 @@
+[package]
+name = "cow-sdk-browser-wallet"
+version = "0.0.1-reserved.0"
+edition = "2024"
+rust-version = "1.94.0"
+license = "GPL-3.0-only"
+description = "Reserved placeholder for cow-sdk-browser-wallet, the EIP-1193 browser wallet adapter for the CoW Protocol Rust SDK under WebAssembly."
+repository = "https://github.com/0xSymbiome/cow-rs"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+documentation = "https://docs.rs/cow-sdk-browser-wallet"
+readme = "README.md"
+keywords = ["cow-protocol", "wallet", "wasm", "eip1193"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lib]
+path = "src/lib.rs"

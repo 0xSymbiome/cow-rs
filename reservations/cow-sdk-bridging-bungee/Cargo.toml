@@ -1,0 +1,19 @@
+[package]
+name = "cow-sdk-bridging-bungee"
+version = "0.0.1-reserved.0"
+edition = "2024"
+rust-version = "1.94.0"
+license = "GPL-3.0-only"
+description = "Reserved placeholder for cow-sdk-bridging-bungee, the Bungee (Socket) bridge provider for the CoW Protocol Rust SDK."
+repository = "https://github.com/0xSymbiome/cow-rs"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+documentation = "https://docs.rs/cow-sdk-bridging-bungee"
+readme = "README.md"
+keywords = ["cow-protocol", "bridging", "bungee", "cross-chain"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lib]
+path = "src/lib.rs"

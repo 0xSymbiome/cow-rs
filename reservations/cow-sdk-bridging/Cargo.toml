@@ -1,0 +1,19 @@
+[package]
+name = "cow-sdk-bridging"
+version = "0.0.1-reserved.0"
+edition = "2024"
+rust-version = "1.94.0"
+license = "GPL-3.0-only"
+description = "Reserved placeholder for cow-sdk-bridging, the bridging domain and orchestration core for the CoW Protocol Rust SDK."
+repository = "https://github.com/0xSymbiome/cow-rs"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+documentation = "https://docs.rs/cow-sdk-bridging"
+readme = "README.md"
+keywords = ["cow-protocol", "bridging", "cross-chain", "defi"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lib]
+path = "src/lib.rs"
