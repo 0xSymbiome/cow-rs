@@ -3,12 +3,11 @@ mod common;
 use cow_sdk_core::{Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId};
 use cow_sdk_orderbook::PriceQuality;
 use cow_sdk_trading::{
-    MAX_SLIPPAGE_BPS, PostTradeAdditionalParams, QuoteRequestOverride, QuoterParameters,
-    SwapAdvancedSettings, get_eth_flow_transaction, get_quote_results, suggest_slippage_bps,
-    swap_params_to_limit_order_params,
+    MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy, PostTradeAdditionalParams,
+    QuoteRequestOverride, QuoterParameters, SwapAdvancedSettings, get_eth_flow_transaction,
+    get_quote_results, suggest_slippage_bps, swap_params_to_limit_order_params,
 };
 use num_bigint::BigUint;
-use serde_json::{Value, json};
 
 use crate::common::{
     ALT_RECEIVER, CUSTOM_SETTLEMENT, MockOrderbook, MockSigner, OWNER, address, app_data_hash,
@@ -108,13 +107,9 @@ fn generated_validity(rng: &mut CaseRng) -> (Option<u32>, Option<u32>) {
     }
 }
 
-fn generated_partner_fee(rng: &mut CaseRng) -> Option<Value> {
-    rng.next_bool().then(|| {
-        json!({
-            "volumeBps": 1 + (rng.next_u32() % 100),
-            "recipient": ALT_RECEIVER,
-        })
-    })
+fn generated_partner_fee(rng: &mut CaseRng) -> Option<PartnerFee> {
+    rng.next_bool()
+        .then(|| PartnerFeePolicy::volume(1 + (rng.next_u32() % 100), address(ALT_RECEIVER)).into())
 }
 
 fn generated_optional_override_validity(rng: &mut CaseRng) -> (Option<u32>, Option<u32>) {

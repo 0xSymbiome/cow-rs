@@ -1,7 +1,8 @@
 use cow_sdk::{
     Address, Amount, AppDataHex, ORDER_PRIMARY_TYPE, OrderBalance, OrderKind,
-    PartialTraderParameters, SupportedChainId, TradeParameters, TradingSdk, TradingSdkBuilder,
-    TradingSdkOptions, UnsignedOrder, generate_order_id, order_typed_data,
+    PartialTraderParameters, PartnerFee, PartnerFeePolicy, SupportedChainId, TradeParameters,
+    TradingSdk, TradingSdkBuilder, TradingSdkOptions, UnsignedOrder, generate_order_id,
+    order_typed_data,
 };
 
 #[test]
@@ -35,6 +36,7 @@ fn public_api_reexports_cover_primary_root_surface() {
     };
     let typed = order_typed_data(SupportedChainId::Sepolia, &order, None).unwrap();
     let generated = generate_order_id(SupportedChainId::Sepolia, &order, &owner, None).unwrap();
+    let partner_fee = PartnerFee::from(PartnerFeePolicy::volume(50, owner.clone()));
 
     assert_eq!(typed.primary_type, ORDER_PRIMARY_TYPE);
     assert_eq!(generated.order_digest.as_str().len(), 66);
@@ -58,7 +60,7 @@ fn public_api_reexports_cover_primary_root_surface() {
         receiver: None,
         valid_for: None,
         valid_to: None,
-        partner_fee: None,
+        partner_fee: Some(partner_fee),
     };
 }
 

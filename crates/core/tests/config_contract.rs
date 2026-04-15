@@ -107,6 +107,25 @@ fn protocol_options_and_base_url_resolution_are_chain_aware() {
 }
 
 #[test]
+fn api_context_debug_and_serialize_redact_partner_api_keys() {
+    let context = ApiContext {
+        chain_id: SupportedChainId::Base,
+        env: CowEnv::Prod,
+        base_urls: None,
+        api_key: Some("partner-key".to_owned()),
+    };
+
+    let debug = format!("{context:?}");
+    let json = serde_json::to_value(&context).expect("api context serializes");
+
+    assert!(debug.contains("ApiContext"));
+    assert!(debug.contains("<redacted>"));
+    assert!(!debug.contains("partner-key"));
+    assert_eq!(json["apiKey"], serde_json::json!("<redacted>"));
+    assert_eq!(json["chainId"], serde_json::json!(8453));
+}
+
+#[test]
 fn wrapped_and_protocol_addresses_match_pinned_upstream_values() {
     let mainnet_wrapped = wrapped_native_token(SupportedChainId::Mainnet);
     assert_eq!(

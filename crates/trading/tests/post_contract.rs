@@ -6,7 +6,7 @@ use serde_json::json;
 
 use cow_sdk_core::{Amount, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderBalance, OrderKind};
 use cow_sdk_trading::{
-    LimitOrderAdvancedSettings, LimitTradeParameters, PostTradeAdditionalParams,
+    LimitOrderAdvancedSettings, LimitTradeParameters, PartnerFeePolicy, PostTradeAdditionalParams,
     QuoteRequestOverride, SwapAdvancedSettings, build_app_data, get_quote_results,
     post_limit_order, post_limit_order_async, post_sell_native_currency_order, post_swap_order,
     post_swap_order_from_quote,
@@ -103,10 +103,7 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
     let signer = MockSigner::new(address(ALT_RECEIVER));
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.owner = Some(address(OWNER));
-    trade.partner_fee = Some(json!({
-        "volumeBps": 50,
-        "recipient": ALT_RECEIVER
-    }));
+    trade.partner_fee = Some(PartnerFeePolicy::volume(50, address(ALT_RECEIVER)).into());
 
     let advanced = SwapAdvancedSettings {
         quote_request: Some(QuoteRequestOverride {

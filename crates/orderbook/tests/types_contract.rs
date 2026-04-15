@@ -68,6 +68,15 @@ fn quote_request_supports_buy_side_and_context_overrides() {
     assert_eq!(override_context.env, Some(CowEnv::Staging));
     assert_eq!(override_context.chain_id, Some(SupportedChainId::Mainnet));
     assert_eq!(override_context.api_key.as_deref(), Some("partner-key"));
+
+    let debug = format!("{override_context:?}");
+    assert!(debug.contains("ApiContextOverride"));
+    assert!(debug.contains("<redacted>"));
+    assert!(!debug.contains("partner-key"));
+
+    let override_value =
+        serde_json::to_value(&override_context).expect("context override must serialize");
+    assert_eq!(override_value["apiKey"], json!("<redacted>"));
 }
 
 #[test]

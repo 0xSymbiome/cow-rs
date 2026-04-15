@@ -18,6 +18,8 @@ use crate::{
 };
 
 const SUBGRAPH_BASE_URL: &str = "https://gateway.thegraph.com/api/";
+const REDACTED_API_KEY_SEGMENT: &str = "<redacted>";
+const CUSTOM_OVERRIDE_ROUTE_IDENTITY: &str = "<custom override>";
 
 /// Human-readable name for the `CoW` Protocol subgraph service.
 pub const API_NAME: &str = "CoW Protocol Subgraph";
@@ -33,17 +35,27 @@ pub type SubgraphApiBaseUrls = BTreeMap<SupportedChainId, Option<String>>;
 
 /// Static subgraph client configuration.
 ///
-/// The default configuration targets mainnet production endpoints derived from
-/// the API key supplied when constructing [`SubgraphApi`].
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// The default configuration targets mainnet production routes derived from the
+/// API key supplied when constructing [`SubgraphApi`].
+#[derive(Clone, PartialEq, Eq)]
 pub struct SubgraphConfig {
     /// Active chain id used for helper methods and generic queries.
     pub chain_id: SupportedChainId,
     /// Optional per-chain base URL overrides.
     ///
     /// When this is `None`, [`SubgraphApi`] uses its API-key-derived production
-    /// endpoint map.
+    /// routing map internally and exposes only redacted route identity through
+    /// its stable public metadata.
     pub base_urls: Option<SubgraphApiBaseUrls>,
+}
+
+impl fmt::Debug for SubgraphConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SubgraphConfig")
+            .field("chain_id", &self.chain_id)
+            .field("base_urls", &sanitized_base_urls(self.base_urls.as_ref()))
+            .finish()
+    }
 }
 
 impl Default for SubgraphConfig {
@@ -56,12 +68,21 @@ impl Default for SubgraphConfig {
 }
 
 /// Per-call overrides for [`SubgraphConfig`].
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct SubgraphConfigOverride {
     /// Optional chain override for a single request.
     pub chain_id: Option<SupportedChainId>,
     /// Optional base-URL map override for a single request.
     pub base_urls: Option<SubgraphApiBaseUrls>,
+}
+
+impl fmt::Debug for SubgraphConfigOverride {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SubgraphConfigOverride")
+            .field("chain_id", &self.chain_id)
+            .field("base_urls", &sanitized_base_urls(self.base_urls.as_ref()))
+            .finish()
+    }
 }
 
 /// Shared HTTP client policy for subgraph requests.
@@ -102,13 +123,15 @@ impl SubgraphTransportPolicy {
 
 /// Typed client for `CoW` Protocol subgraph queries.
 ///
-/// The client owns API-key-derived production endpoints, optional per-instance
+/// The client owns API-key-derived production routing, optional per-instance
 /// configuration overrides, and a typed raw-query path through
-/// [`SubgraphQueryRequest`].
+/// [`SubgraphQueryRequest`]. Public metadata exposes only redacted production
+/// route identity or sanitized override identity.
 #[derive(Clone)]
 pub struct SubgraphApi {
     client: Client,
     config: SubgraphConfig,
+    api_key: String,
     prod_config: SubgraphApiBaseUrls,
     transport_policy: SubgraphTransportPolicy,
 }
@@ -132,7 +155,8 @@ impl fmt::Debug for SubgraphApi {
 impl SubgraphApi {
     /// Creates a subgraph client with the default production configuration.
     ///
-    /// The supplied API key is used only to derive the production endpoint map.
+    /// The supplied API key is used only to route production requests; stable
+    /// public metadata keeps the key redacted.
     #[must_use]
     pub fn new(api_key: impl Into<String>) -> Self {
         Self::with_config(api_key, SubgraphConfig::default())
@@ -155,7 +179,8 @@ impl SubgraphApi {
 
         Self {
             client: build_client(transport_policy.client_policy()),
-            prod_config: build_prod_config(&api_key),
+            api_key,
+            prod_config: build_prod_config(),
             config,
             transport_policy,
         }
@@ -173,10 +198,11 @@ impl SubgraphApi {
         &self.config
     }
 
-    /// Returns the API-key-derived production endpoint map.
+    /// Returns the redacted production route-identity map.
     ///
     /// Unsupported chains remain present with `None` values so the support
-    /// posture stays explicit.
+    /// posture stays explicit, while the Graph API key remains private to the
+    /// request-routing path.
     #[must_use]
     pub fn prod_config(&self) -> &SubgraphApiBaseUrls {
         &self.prod_config
@@ -349,6 +375,7 @@ impl SubgraphApi {
         let request = request.into();
         let resolved_config = self.config_with_override(&config_override);
         let api = self.base_url_for(&resolved_config)?;
+        let public_api = self.public_base_url_for(&resolved_config)?;
         let graphql_request = GraphQlRequest {
             query: request.document(),
             variables: request.variables(),
@@ -361,31 +388,57 @@ impl SubgraphApi {
             request_builder = request_builder.timeout(timeout);
         }
 
-        let response = request_builder
-            .send()
-            .await
-            .map_err(|error| transport_error(&api, &request, error.to_string()))?;
+        let response = request_builder.send().await.map_err(|error| {
+            transport_error(
+                &public_api,
+                resolved_config.chain_id,
+                &request,
+                error.to_string(),
+            )
+        })?;
 
         let status = response.status();
-        let body = response
-            .text()
-            .await
-            .map_err(|error| transport_error(&api, &request, error.to_string()))?;
+        let body = response.text().await.map_err(|error| {
+            transport_error(
+                &public_api,
+                resolved_config.chain_id,
+                &request,
+                error.to_string(),
+            )
+        })?;
 
         if !status.is_success() {
-            return Err(http_status_error(&api, &request, status.as_u16(), body));
+            return Err(http_status_error(
+                &public_api,
+                resolved_config.chain_id,
+                &request,
+                status.as_u16(),
+                body,
+            ));
         }
 
-        let response: GraphQlResponse<T> = serde_json::from_str(&body)
-            .map_err(|error| serialization_error(&api, &request, &body, error.to_string()))?;
+        let response: GraphQlResponse<T> = serde_json::from_str(&body).map_err(|error| {
+            serialization_error(
+                &public_api,
+                resolved_config.chain_id,
+                &request,
+                &body,
+                error.to_string(),
+            )
+        })?;
 
         if !response.errors.is_empty() {
-            return Err(graphql_error(&api, &request, response.errors));
+            return Err(graphql_error(
+                &public_api,
+                resolved_config.chain_id,
+                &request,
+                response.errors,
+            ));
         }
 
         response
             .data
-            .ok_or_else(|| missing_data_error(&api, &request))
+            .ok_or_else(|| missing_data_error(&public_api, resolved_config.chain_id, &request))
     }
 
     fn config_with_override(&self, config_override: &SubgraphConfigOverride) -> SubgraphConfig {
@@ -403,12 +456,40 @@ impl SubgraphApi {
     }
 
     fn base_url_for(&self, config: &SubgraphConfig) -> Result<String, SubgraphError> {
-        let base_urls = config.base_urls.as_ref().unwrap_or(&self.prod_config);
-        base_urls.get(&config.chain_id).cloned().flatten().ok_or(
-            SubgraphError::UnsupportedNetwork {
+        if let Some(base_urls) = &config.base_urls {
+            return base_urls.get(&config.chain_id).cloned().flatten().ok_or(
+                SubgraphError::UnsupportedNetwork {
+                    chain_id: config.chain_id as u64,
+                },
+            );
+        }
+
+        prod_subgraph_id(config.chain_id)
+            .map(|subgraph_id| build_prod_gateway_url(&self.api_key, subgraph_id))
+            .ok_or(SubgraphError::UnsupportedNetwork {
                 chain_id: config.chain_id as u64,
-            },
-        )
+            })
+    }
+
+    fn public_base_url_for(&self, config: &SubgraphConfig) -> Result<String, SubgraphError> {
+        if let Some(base_urls) = &config.base_urls {
+            return base_urls
+                .get(&config.chain_id)
+                .cloned()
+                .flatten()
+                .map(|base_url| sanitize_public_base_url(&base_url))
+                .ok_or(SubgraphError::UnsupportedNetwork {
+                    chain_id: config.chain_id as u64,
+                });
+        }
+
+        self.prod_config
+            .get(&config.chain_id)
+            .cloned()
+            .flatten()
+            .ok_or(SubgraphError::UnsupportedNetwork {
+                chain_id: config.chain_id as u64,
+            })
     }
 }
 
@@ -429,37 +510,41 @@ struct GraphQlResponse<T> {
     errors: Vec<SubgraphGraphQlError>,
 }
 
-fn build_prod_config(api_key: &str) -> SubgraphApiBaseUrls {
-    let base_url = format!("{SUBGRAPH_BASE_URL}{api_key}/subgraphs/id");
+fn build_prod_config() -> SubgraphApiBaseUrls {
     BTreeMap::from([
         (
             SupportedChainId::Mainnet,
-            Some(format!(
-                "{base_url}/8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD"
+            Some(build_prod_gateway_url(
+                REDACTED_API_KEY_SEGMENT,
+                "8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD",
             )),
         ),
         (
             SupportedChainId::GnosisChain,
-            Some(format!(
-                "{base_url}/HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq"
+            Some(build_prod_gateway_url(
+                REDACTED_API_KEY_SEGMENT,
+                "HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq",
             )),
         ),
         (
             SupportedChainId::ArbitrumOne,
-            Some(format!(
-                "{base_url}/CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc"
+            Some(build_prod_gateway_url(
+                REDACTED_API_KEY_SEGMENT,
+                "CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc",
             )),
         ),
         (
             SupportedChainId::Base,
-            Some(format!(
-                "{base_url}/EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg"
+            Some(build_prod_gateway_url(
+                REDACTED_API_KEY_SEGMENT,
+                "EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg",
             )),
         ),
         (
             SupportedChainId::Sepolia,
-            Some(format!(
-                "{base_url}/31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y"
+            Some(build_prod_gateway_url(
+                REDACTED_API_KEY_SEGMENT,
+                "31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y",
             )),
         ),
         (SupportedChainId::Polygon, None),
@@ -471,21 +556,47 @@ fn build_prod_config(api_key: &str) -> SubgraphApiBaseUrls {
     ])
 }
 
-fn transport_error(api: &str, request: &SubgraphQueryRequest, details: String) -> SubgraphError {
+fn prod_subgraph_id(chain_id: SupportedChainId) -> Option<&'static str> {
+    match chain_id {
+        SupportedChainId::Mainnet => Some("8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD"),
+        SupportedChainId::GnosisChain => Some("HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq"),
+        SupportedChainId::ArbitrumOne => Some("CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc"),
+        SupportedChainId::Base => Some("EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg"),
+        SupportedChainId::Sepolia => Some("31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y"),
+        SupportedChainId::Polygon
+        | SupportedChainId::Avalanche
+        | SupportedChainId::Bnb
+        | SupportedChainId::Linea
+        | SupportedChainId::Plasma
+        | SupportedChainId::Ink => None,
+    }
+}
+
+fn build_prod_gateway_url(api_key: &str, subgraph_id: &str) -> String {
+    format!("{SUBGRAPH_BASE_URL}{api_key}/subgraphs/id/{subgraph_id}")
+}
+
+fn transport_error(
+    api: &str,
+    chain_id: SupportedChainId,
+    request: &SubgraphQueryRequest,
+    details: String,
+) -> SubgraphError {
     SubgraphError::Transport {
-        context: Box::new(request_error_context(api, request)),
+        context: Box::new(request_error_context(api, chain_id, request)),
         details,
     }
 }
 
 fn http_status_error(
     api: &str,
+    chain_id: SupportedChainId,
     request: &SubgraphQueryRequest,
     status: u16,
     body: String,
 ) -> SubgraphError {
     SubgraphError::HttpStatus {
-        context: Box::new(request_error_context(api, request)),
+        context: Box::new(request_error_context(api, chain_id, request)),
         status,
         body,
     }
@@ -493,12 +604,13 @@ fn http_status_error(
 
 fn serialization_error(
     api: &str,
+    chain_id: SupportedChainId,
     request: &SubgraphQueryRequest,
     body: &str,
     details: String,
 ) -> SubgraphError {
     SubgraphError::Serialization {
-        context: Box::new(request_error_context(api, request)),
+        context: Box::new(request_error_context(api, chain_id, request)),
         body: body.to_owned(),
         details,
     }
@@ -506,28 +618,63 @@ fn serialization_error(
 
 fn graphql_error(
     api: &str,
+    chain_id: SupportedChainId,
     request: &SubgraphQueryRequest,
     errors: Vec<SubgraphGraphQlError>,
 ) -> SubgraphError {
     SubgraphError::GraphQl {
-        context: Box::new(request_error_context(api, request)),
+        context: Box::new(request_error_context(api, chain_id, request)),
         errors,
     }
 }
 
-fn missing_data_error(api: &str, request: &SubgraphQueryRequest) -> SubgraphError {
+fn missing_data_error(
+    api: &str,
+    chain_id: SupportedChainId,
+    request: &SubgraphQueryRequest,
+) -> SubgraphError {
     SubgraphError::MissingData {
-        context: Box::new(request_error_context(api, request)),
+        context: Box::new(request_error_context(api, chain_id, request)),
     }
 }
 
-fn request_error_context(api: &str, request: &SubgraphQueryRequest) -> SubgraphRequestErrorContext {
+fn request_error_context(
+    api: &str,
+    chain_id: SupportedChainId,
+    request: &SubgraphQueryRequest,
+) -> SubgraphRequestErrorContext {
     SubgraphRequestErrorContext {
+        chain_id: u64::from(chain_id),
         api: api.to_owned(),
         document: request.document().to_owned(),
         operation_name: request.operation_name().map(str::to_owned),
         variables: request.variables().cloned(),
     }
+}
+
+fn sanitize_public_base_url(base_url: &str) -> String {
+    match reqwest::Url::parse(base_url) {
+        Ok(url) => {
+            let origin = url.origin().ascii_serialization();
+            if origin == "null" {
+                CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned()
+            } else {
+                origin.trim_end_matches('/').to_owned()
+            }
+        }
+        Err(_) => CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned(),
+    }
+}
+
+fn sanitized_base_urls(base_urls: Option<&SubgraphApiBaseUrls>) -> Option<SubgraphApiBaseUrls> {
+    base_urls.map(|base_urls| {
+        base_urls
+            .iter()
+            .map(|(chain_id, base_url)| {
+                (*chain_id, base_url.as_deref().map(sanitize_public_base_url))
+            })
+            .collect()
+    })
 }
 
 fn build_client(policy: &HttpClientPolicy) -> Client {

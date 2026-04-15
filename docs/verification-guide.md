@@ -33,13 +33,18 @@ Use this guide to understand how `cow-rs` justifies its public behavior.
 
 `cow-sdk-core` owns the shared runtime seams. Sync and async signer/provider
 contracts stay explicit, and typed-data payloads remain structured rather than
-being reconstructed from field-name heuristics.
+being reconstructed from field-name heuristics. Review configuration changes at
+the owning crate boundary as well: default diagnostics and serialized forms for
+credential-bearing config must keep secrets redacted while leaving explicit
+inputs and override seams intact.
 
 ### Transport Ownership
 
 Shared HTTP client policy is intentionally narrow. Retry behavior, rate limits,
 GraphQL request shape, API-key handling, and pinning semantics remain owned by
-the transport crates that define those behaviors.
+the transport crates that define those behaviors. For `cow-sdk-subgraph`, that
+includes keeping stable route identity and typed request failures free of raw
+Graph API credentials.
 
 ### Workflow Ownership
 
@@ -48,7 +53,9 @@ the workflow layer first, then inspect the lower-level crates it composes.
 That surface is responsible for preserving reviewed balance semantics across
 quote-derived and direct order construction, enforcing one injected-orderbook
 validation contract across all `TradingSdk` constructors, and rejecting
-recoverable-signature owner or signer mismatch before submission.
+recoverable-signature owner or signer mismatch before submission. User-facing
+partner-fee policy also remains typed here until the explicit app-data metadata
+translation boundary.
 
 ### Browser-Runtime Support
 

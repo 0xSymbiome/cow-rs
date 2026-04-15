@@ -5,10 +5,11 @@
 
 pub use cow_sdk_app_data::{
     AppDataDoc, AppDataError, AppDataInfo, AppDataParams, CidMode, IpfsConfig, IpfsFetchTransport,
-    IpfsUploadResult, IpfsUploadTransport, SchemaVersion, ValidationResult, app_data_hex_to_cid,
-    app_data_hex_to_cid_legacy, app_data_hex_to_cid_with_mode, cid_to_app_data_hex,
-    fetch_doc_from_app_data_hex, fetch_doc_from_app_data_hex_legacy, fetch_doc_from_cid,
-    generate_app_data_doc, get_app_data_info, get_app_data_info_legacy, get_app_data_schema,
+    IpfsUploadResult, IpfsUploadTransport, PartnerFee, PartnerFeePolicy, SchemaVersion,
+    ValidationResult, app_data_hex_to_cid, app_data_hex_to_cid_legacy,
+    app_data_hex_to_cid_with_mode, cid_to_app_data_hex, fetch_doc_from_app_data_hex,
+    fetch_doc_from_app_data_hex_legacy, fetch_doc_from_cid, generate_app_data_doc,
+    get_app_data_info, get_app_data_info_legacy, get_app_data_schema,
     upload_metadata_doc_to_ipfs_legacy, validate_app_data_doc,
 };
 #[cfg(feature = "browser-wallet")]

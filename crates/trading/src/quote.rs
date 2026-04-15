@@ -1,6 +1,6 @@
 use serde_json::{Map, Value, json};
 
-use cow_sdk_app_data::{AppDataParams, generate_app_data_doc, get_app_data_info};
+use cow_sdk_app_data::{AppDataParams, PartnerFee, generate_app_data_doc, get_app_data_info};
 use cow_sdk_core::{Amount, AsyncSigner, ProtocolOptions, Signer};
 use cow_sdk_orderbook::{OrderQuoteRequest, PriceQuality, QuoteSide, SigningScheme};
 use cow_sdk_signing::order_typed_data;
@@ -38,7 +38,7 @@ where
     O: OrderbookClient + ?Sized,
 {
     let mut effective_trade_parameters =
-        apply_advanced_settings_to_trade_parameters(trade_parameters, advanced_settings);
+        apply_advanced_settings_to_trade_parameters(trade_parameters, advanced_settings)?;
     let account = effective_trade_parameters
         .owner
         .clone()
@@ -111,7 +111,7 @@ where
     S::Error: std::fmt::Display,
 {
     let mut effective_trade_parameters =
-        apply_advanced_settings_to_trade_parameters(trade_parameters, advanced_settings);
+        apply_advanced_settings_to_trade_parameters(trade_parameters, advanced_settings)?;
     let account = match effective_trade_parameters.owner.clone() {
         Some(owner) => owner,
         None => signer
@@ -154,7 +154,7 @@ pub async fn build_app_data(
     app_code: &str,
     slippage_bps: u32,
     order_class: &str,
-    partner_fee: Option<&Value>,
+    partner_fee: Option<&PartnerFee>,
     advanced_params: Option<&AppDataParams>,
 ) -> Result<TradingAppDataInfo, TradingError> {
     let mut metadata = Map::new();
@@ -164,7 +164,7 @@ pub async fn build_app_data(
         json!({ "orderClass": order_class }),
     );
     if let Some(partner_fee) = partner_fee {
-        metadata.insert("partnerFee".to_owned(), partner_fee.clone());
+        metadata.insert("partnerFee".to_owned(), partner_fee.to_value());
     }
 
     let mut params = AppDataParams {
@@ -389,14 +389,14 @@ fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, Tr
 pub(crate) fn apply_advanced_settings_to_trade_parameters(
     trade_parameters: &TradeParameters,
     advanced_settings: Option<&SwapAdvancedSettings>,
-) -> TradeParameters {
+) -> Result<TradeParameters, TradingError> {
     let mut trade_parameters = trade_parameters.clone();
 
     apply_app_data_parameter_overrides(
         &mut trade_parameters.slippage_bps,
         &mut trade_parameters.partner_fee,
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
-    );
+    )?;
     apply_quote_request_parameter_overrides(
         &mut QuoteRequestParameterTargets {
             owner: &mut trade_parameters.owner,
@@ -412,7 +412,7 @@ pub(crate) fn apply_advanced_settings_to_trade_parameters(
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
     );
 
-    trade_parameters
+    Ok(trade_parameters)
 }
 
 fn build_quote_request(

@@ -1,6 +1,8 @@
 //! High-level `CoW` Protocol trading workflows for quoting, signing, posting,
 //! allowance management, and on-chain order actions.
 
+pub use cow_sdk_app_data::{PartnerFee, PartnerFeePolicy};
+
 /// Allowance reads, approval transactions, and approval submission helpers.
 pub mod allowance;
 /// Off-chain cancellation helpers.

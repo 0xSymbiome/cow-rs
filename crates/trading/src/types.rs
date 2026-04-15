@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use cow_sdk_app_data::{AppDataDoc, AppDataParams};
+use cow_sdk_app_data::{AppDataDoc, AppDataParams, PartnerFee};
 use cow_sdk_core::{
     Address, AddressPerChain, Amount, ApiContext, AppDataHash, CowEnv, HexData, OrderBalance,
     OrderDigest, OrderKind, OrderUid, QuoteAmountsAndCosts, SupportedChainId, TransactionHash,
@@ -137,7 +137,7 @@ pub struct TradeParameters {
     pub valid_to: Option<u32>,
     /// Optional partner-fee metadata merged into app-data and fee calculations.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub partner_fee: Option<Value>,
+    pub partner_fee: Option<PartnerFee>,
 }
 
 /// Limit-order request accepted by posting and signing helpers.
@@ -196,7 +196,7 @@ pub struct LimitTradeParameters {
     pub valid_to: Option<u32>,
     /// Optional partner-fee metadata merged into app-data and fee calculations.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub partner_fee: Option<Value>,
+    pub partner_fee: Option<PartnerFee>,
 }
 
 /// Compatibility alias for limit-order params derived from a quote.
@@ -633,11 +633,11 @@ where
 
 pub(crate) fn apply_app_data_parameter_overrides(
     slippage_bps: &mut Option<u32>,
-    partner_fee: &mut Option<Value>,
+    partner_fee: &mut Option<PartnerFee>,
     app_data_override: Option<&AppDataParams>,
-) {
+) -> Result<(), TradingError> {
     let Some(app_data_override) = app_data_override else {
-        return;
+        return Ok(());
     };
 
     if let Some(slippage) = app_data_override
@@ -650,9 +650,17 @@ pub(crate) fn apply_app_data_parameter_overrides(
         *slippage_bps = Some(slippage);
     }
 
-    if let Some(partner_fee_override) = app_data_override.metadata.get("partnerFee").cloned() {
-        *partner_fee = Some(partner_fee_override);
+    if let Some(partner_fee_override) = app_data_override.metadata.get("partnerFee") {
+        *partner_fee = Some(
+            PartnerFee::from_value(partner_fee_override.clone()).map_err(|error| {
+                TradingError::InvalidInput(format!(
+                    "appData.metadata.partnerFee must match the partner-fee schema: {error}"
+                ))
+            })?,
+        );
     }
+
+    Ok(())
 }
 
 pub(crate) struct QuoteRequestParameterTargets<'a> {

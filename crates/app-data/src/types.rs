@@ -1,5 +1,7 @@
 use std::{fmt, str::FromStr};
 
+use cow_sdk_core::Address;
+use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
@@ -42,6 +44,8 @@ pub const LATEST_USER_CONSENTS_METADATA_VERSION: &str = "0.1.0";
 pub type AppDataDoc = Value;
 /// Mutable JSON object used for nested `metadata` sections.
 pub type MetadataMap = Map<String, Value>;
+
+const REDACTED_SECRET: &str = "<redacted>";
 
 /// Semantic version for bundled app-data schemas.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -128,8 +132,142 @@ pub struct ValidationResult {
     pub errors: Option<String>,
 }
 
+/// Typed partner-fee metadata accepted by app-data and trading helpers.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PartnerFee {
+    /// Single fee policy object.
+    Single(PartnerFeePolicy),
+    /// Ordered fee policy list.
+    Multiple(Vec<PartnerFeePolicy>),
+}
+
+impl PartnerFee {
+    /// Returns the first supported volume-basis-point fee in this value, if one exists.
+    #[must_use]
+    pub fn volume_bps(&self) -> Option<u32> {
+        match self {
+            Self::Single(policy) => policy.volume_bps(),
+            Self::Multiple(policies) => policies.iter().find_map(PartnerFeePolicy::volume_bps),
+        }
+    }
+
+    /// Serializes this typed partner-fee payload into the app-data metadata shape.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the compile-time partner-fee schema types stop being
+    /// serializable to JSON.
+    #[must_use]
+    pub fn to_value(&self) -> Value {
+        serde_json::to_value(self).expect("partner-fee schema types must remain serializable")
+    }
+
+    /// Parses partner-fee metadata from an app-data metadata value.
+    ///
+    /// # Errors
+    ///
+    /// Returns the underlying serde error when the JSON value does not match
+    /// the supported partner-fee schema shape.
+    pub fn from_value(value: Value) -> Result<Self, serde_json::Error> {
+        serde_json::from_value(value)
+    }
+}
+
+impl From<PartnerFeePolicy> for PartnerFee {
+    fn from(value: PartnerFeePolicy) -> Self {
+        Self::Single(value)
+    }
+}
+
+impl From<Vec<PartnerFeePolicy>> for PartnerFee {
+    fn from(value: Vec<PartnerFeePolicy>) -> Self {
+        Self::Multiple(value)
+    }
+}
+
+/// One typed partner-fee policy object.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum PartnerFeePolicy {
+    /// Fee paid from traded volume.
+    Volume {
+        /// Fee paid in basis points of volume.
+        #[serde(rename = "volumeBps")]
+        volume_bps: u32,
+        /// Recipient of the partner fee.
+        recipient: Address,
+    },
+    /// Fee paid from surplus, capped by volume.
+    Surplus {
+        /// Fee paid in basis points of surplus.
+        #[serde(rename = "surplusBps")]
+        surplus_bps: u32,
+        /// Maximum fee paid in basis points of volume.
+        #[serde(rename = "maxVolumeBps")]
+        max_volume_bps: u32,
+        /// Recipient of the partner fee.
+        recipient: Address,
+    },
+    /// Fee paid from price improvement, capped by volume.
+    PriceImprovement {
+        /// Fee paid in basis points of price improvement.
+        #[serde(rename = "priceImprovementBps")]
+        price_improvement_bps: u32,
+        /// Maximum fee paid in basis points of volume.
+        #[serde(rename = "maxVolumeBps")]
+        max_volume_bps: u32,
+        /// Recipient of the partner fee.
+        recipient: Address,
+    },
+}
+
+impl PartnerFeePolicy {
+    /// Creates a volume-based partner-fee policy.
+    #[must_use]
+    pub fn volume(volume_bps: u32, recipient: Address) -> Self {
+        Self::Volume {
+            volume_bps,
+            recipient,
+        }
+    }
+
+    /// Creates a surplus-based partner-fee policy.
+    #[must_use]
+    pub fn surplus(surplus_bps: u32, max_volume_bps: u32, recipient: Address) -> Self {
+        Self::Surplus {
+            surplus_bps,
+            max_volume_bps,
+            recipient,
+        }
+    }
+
+    /// Creates a price-improvement-based partner-fee policy.
+    #[must_use]
+    pub fn price_improvement(
+        price_improvement_bps: u32,
+        max_volume_bps: u32,
+        recipient: Address,
+    ) -> Self {
+        Self::PriceImprovement {
+            price_improvement_bps,
+            max_volume_bps,
+            recipient,
+        }
+    }
+
+    /// Returns the volume-basis-point fee when this policy uses the volume shape.
+    #[must_use]
+    pub fn volume_bps(&self) -> Option<u32> {
+        match self {
+            Self::Volume { volume_bps, .. } => Some(*volume_bps),
+            Self::Surplus { .. } | Self::PriceImprovement { .. } => None,
+        }
+    }
+}
+
 /// IPFS configuration used by fetch and upload helpers.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Clone, PartialEq, Eq, Deserialize, Default)]
 pub struct IpfsConfig {
     /// Legacy shared base URI used when `read_uri` is absent.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -154,6 +292,51 @@ pub struct IpfsConfig {
         skip_serializing_if = "Option::is_none"
     )]
     pub pinata_api_secret: Option<String>,
+}
+
+impl fmt::Debug for IpfsConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IpfsConfig")
+            .field("uri", &self.uri)
+            .field("write_uri", &self.write_uri)
+            .field("read_uri", &self.read_uri)
+            .field(
+                "pinata_api_key",
+                &redacted_secret_option(&self.pinata_api_key),
+            )
+            .field(
+                "pinata_api_secret",
+                &redacted_secret_option(&self.pinata_api_secret),
+            )
+            .finish()
+    }
+}
+
+impl Serialize for IpfsConfig {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("IpfsConfig", 5)?;
+
+        if let Some(uri) = &self.uri {
+            state.serialize_field("uri", uri)?;
+        }
+        if let Some(write_uri) = &self.write_uri {
+            state.serialize_field("writeUri", write_uri)?;
+        }
+        if let Some(read_uri) = &self.read_uri {
+            state.serialize_field("readUri", read_uri)?;
+        }
+        if self.pinata_api_key.is_some() {
+            state.serialize_field("pinataApiKey", REDACTED_SECRET)?;
+        }
+        if self.pinata_api_secret.is_some() {
+            state.serialize_field("pinataApiSecret", REDACTED_SECRET)?;
+        }
+
+        state.end()
+    }
 }
 
 /// Raw HTTP response returned by app-data transport seams.
@@ -185,6 +368,10 @@ fn is_semver(version: &str) -> bool {
 
 fn is_non_empty_digits(value: &str) -> bool {
     !value.is_empty() && value.chars().all(|ch| ch.is_ascii_digit())
+}
+
+fn redacted_secret_option(value: &Option<String>) -> Option<&'static str> {
+    value.as_ref().map(|_| REDACTED_SECRET)
 }
 
 #[cfg(test)]
@@ -231,5 +418,60 @@ mod tests {
                 AppDataError::InvalidSchemaVersion(invalid.to_owned())
             );
         }
+    }
+
+    #[test]
+    fn partner_fee_roundtrips_single_and_array_shapes_and_exposes_first_volume_fee() {
+        let recipient = Address::new("0x1111111111111111111111111111111111111111")
+            .expect("test recipient must be valid");
+        let fee = PartnerFee::from(vec![
+            PartnerFeePolicy::surplus(250, 100, recipient.clone()),
+            PartnerFeePolicy::volume(42, recipient.clone()),
+        ]);
+
+        let value = fee.to_value();
+        let reparsed = PartnerFee::from_value(value.clone()).expect("typed partner fee re-parses");
+
+        assert_eq!(
+            value,
+            serde_json::json!([
+                {
+                    "surplusBps": 250,
+                    "maxVolumeBps": 100,
+                    "recipient": recipient.as_str()
+                },
+                {
+                    "volumeBps": 42,
+                    "recipient": recipient.as_str()
+                }
+            ])
+        );
+        assert_eq!(reparsed, fee);
+        assert_eq!(fee.volume_bps(), Some(42));
+        assert_eq!(
+            PartnerFee::from(PartnerFeePolicy::price_improvement(25, 100, recipient)).volume_bps(),
+            None
+        );
+    }
+
+    #[test]
+    fn ipfs_config_debug_and_serialize_redact_pinata_credentials() {
+        let config = IpfsConfig {
+            uri: Some("https://ipfs.example".to_owned()),
+            write_uri: Some("https://pinata.example".to_owned()),
+            read_uri: Some("https://read.example".to_owned()),
+            pinata_api_key: Some("pinata-key".to_owned()),
+            pinata_api_secret: Some("pinata-secret".to_owned()),
+        };
+
+        let debug = format!("{config:?}");
+        let json = serde_json::to_value(&config).expect("ipfs config serializes");
+
+        assert!(debug.contains("IpfsConfig"));
+        assert!(debug.contains(REDACTED_SECRET));
+        assert!(!debug.contains("pinata-key"));
+        assert!(!debug.contains("pinata-secret"));
+        assert_eq!(json["pinataApiKey"], serde_json::json!(REDACTED_SECRET));
+        assert_eq!(json["pinataApiSecret"], serde_json::json!(REDACTED_SECRET));
     }
 }

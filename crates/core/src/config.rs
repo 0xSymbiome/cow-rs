@@ -1,6 +1,7 @@
-use std::{collections::BTreeMap, time::Duration};
+use std::{collections::BTreeMap, fmt, time::Duration};
 
 use http::HeaderValue;
+use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
@@ -28,6 +29,7 @@ const VAULT_RELAYER_ADDRESS_STAGING: &str = "0xC7242d167563352E2BCA4d71C043fbe54
 const ETH_FLOW_ADDRESS: &str = "0xba3cb449bd2b4adddbc894d8697f5170800eadec";
 const ETH_FLOW_ADDRESS_STAGING: &str = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC";
 const TOKEN_LIST_IMAGES_PATH: &str = "https://files.cow.fi/token-lists/images";
+const REDACTED_SECRET: &str = "<redacted>";
 
 /// Supported `CoW` Protocol chain ids with explicit API configuration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -257,7 +259,7 @@ pub struct ProtocolOptions {
 }
 
 /// API routing context used by transport-owning crates.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiContext {
     /// Target chain id for endpoint resolution.
@@ -270,6 +272,37 @@ pub struct ApiContext {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Optional partner API key that switches resolution to partner endpoints.
     pub api_key: Option<String>,
+}
+
+impl fmt::Debug for ApiContext {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ApiContext")
+            .field("chain_id", &self.chain_id)
+            .field("env", &self.env)
+            .field("base_urls", &self.base_urls)
+            .field("api_key", &redacted_secret_option(&self.api_key))
+            .finish()
+    }
+}
+
+impl Serialize for ApiContext {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("ApiContext", 4)?;
+        state.serialize_field("chainId", &self.chain_id)?;
+        state.serialize_field("env", &self.env)?;
+
+        if let Some(base_urls) = &self.base_urls {
+            state.serialize_field("baseUrls", base_urls)?;
+        }
+        if self.api_key.is_some() {
+            state.serialize_field("apiKey", REDACTED_SECRET)?;
+        }
+
+        state.end()
+    }
 }
 
 impl Default for ApiContext {
@@ -449,4 +482,8 @@ fn validate_user_agent(user_agent: String) -> Result<String, ValidationError> {
     })?;
 
     Ok(user_agent)
+}
+
+fn redacted_secret_option(value: &Option<String>) -> Option<&'static str> {
+    value.as_ref().map(|_| REDACTED_SECRET)
 }

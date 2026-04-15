@@ -26,7 +26,13 @@ pub struct SubgraphGraphQlErrorLocation {
 /// Request metadata captured in typed subgraph errors.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SubgraphRequestErrorContext {
-    /// Fully resolved endpoint URL used for the request.
+    /// Numeric chain id selected for the request.
+    pub chain_id: u64,
+    /// Public route identity used for the request.
+    ///
+    /// Production-derived routes are redacted before they reach this public
+    /// error surface, and explicit overrides are normalized to non-secret route
+    /// identity.
     pub api: String,
     /// Raw GraphQL document submitted to the endpoint.
     pub document: String,

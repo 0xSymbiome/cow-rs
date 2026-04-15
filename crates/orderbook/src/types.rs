@@ -1,3 +1,6 @@
+use std::fmt;
+
+use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError};
 
 pub use cow_sdk_core::{
@@ -6,7 +9,7 @@ pub use cow_sdk_core::{
 };
 
 /// Partial override applied to an [`ApiContext`] when cloning an orderbook client.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Clone, PartialEq, Eq, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiContextOverride {
     /// Replacement chain id for endpoint resolution.
@@ -23,6 +26,41 @@ pub struct ApiContextOverride {
     pub api_key: Option<String>,
 }
 
+impl fmt::Debug for ApiContextOverride {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ApiContextOverride")
+            .field("chain_id", &self.chain_id)
+            .field("env", &self.env)
+            .field("base_urls", &self.base_urls)
+            .field("api_key", &redacted_secret_option(&self.api_key))
+            .finish()
+    }
+}
+
+impl Serialize for ApiContextOverride {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("ApiContextOverride", 4)?;
+
+        if let Some(chain_id) = &self.chain_id {
+            state.serialize_field("chainId", chain_id)?;
+        }
+        if let Some(env) = &self.env {
+            state.serialize_field("env", env)?;
+        }
+        if let Some(base_urls) = &self.base_urls {
+            state.serialize_field("baseUrls", base_urls)?;
+        }
+        if self.api_key.is_some() {
+            state.serialize_field("apiKey", "<redacted>")?;
+        }
+
+        state.end()
+    }
+}
+
 /// Per-environment base URL overrides applied ahead of [`ApiContext`] resolution.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct EnvBaseUrlOverrides {
@@ -30,6 +68,10 @@ pub struct EnvBaseUrlOverrides {
     pub prod: Option<String>,
     /// Explicit staging base URL.
     pub staging: Option<String>,
+}
+
+fn redacted_secret_option(value: &Option<String>) -> Option<&'static str> {
+    value.as_ref().map(|_| "<redacted>")
 }
 
 impl EnvBaseUrlOverrides {

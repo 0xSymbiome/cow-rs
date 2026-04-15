@@ -10,12 +10,11 @@ use async_trait::async_trait;
 use cow_sdk_core::{Amount, OrderKind, SupportedChainId};
 use cow_sdk_orderbook::{PriceQuality, QuoteData};
 use cow_sdk_trading::{
-    MAX_SLIPPAGE_BPS, QuoteRequestOverride, SlippageSuggestionProvider, SlippageToleranceRequest,
-    SlippageToleranceResponse, SwapAdvancedSettings, partner_fee_bps, resolve_slippage_suggestion,
-    sanitize_protocol_fee_bps, suggest_slippage_bps, suggest_slippage_from_fee,
-    suggest_slippage_from_volume,
+    MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy, QuoteRequestOverride,
+    SlippageSuggestionProvider, SlippageToleranceRequest, SlippageToleranceResponse,
+    SwapAdvancedSettings, partner_fee_bps, resolve_slippage_suggestion, sanitize_protocol_fee_bps,
+    suggest_slippage_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
 };
-use serde_json::json;
 
 use crate::common::{COW, OWNER, WETH, address, sample_trade_parameters, sell_quote_response};
 
@@ -134,27 +133,28 @@ fn protocol_fee_sanitization_accepts_only_finite_supported_values() {
 #[test]
 fn partner_fee_extraction_prefers_supported_object_and_array_shapes() {
     assert_eq!(
-        partner_fee_bps(Some(&json!({
-            "volumeBps": 42,
-            "recipient": crate::common::ALT_RECEIVER
-        }))),
+        partner_fee_bps(Some(&PartnerFee::from(PartnerFeePolicy::volume(
+            42,
+            address(crate::common::ALT_RECEIVER),
+        )))),
         Some(42)
     );
     assert_eq!(
-        partner_fee_bps(Some(&json!([
-            {"unexpected": true},
-            [{"volumeBps": 9}],
-            {"volumeBps": 55}
+        partner_fee_bps(Some(&PartnerFee::from(vec![
+            PartnerFeePolicy::price_improvement(12, 100, address(crate::common::ALT_RECEIVER)),
+            PartnerFeePolicy::volume(55, address(crate::common::ALT_RECEIVER)),
         ]))),
-        Some(9)
+        Some(55)
     );
     assert_eq!(
-        partner_fee_bps(Some(&json!({
-            "volumeBps": u64::from(u32::MAX) + 1
-        }))),
+        partner_fee_bps(Some(&PartnerFee::from(PartnerFeePolicy::surplus(
+            250,
+            100,
+            address(crate::common::ALT_RECEIVER),
+        )))),
         None
     );
-    assert_eq!(partner_fee_bps(Some(&json!([{"missing": true}, []]))), None);
+    assert_eq!(partner_fee_bps(None), None);
 }
 
 #[tokio::test]

@@ -24,3 +24,4 @@ ADRs, release runbooks, or implementation planning.
 | [Trading Orderbook Context Audit](trading-orderbook-context.md) | Canonical chain and environment authority for orderbook-bound trading helpers | Current |
 | [Trading Quote Orderbook Binding Audit](trading-quote-orderbook-binding.md) | Quote-derived posting remains bound to the originating orderbook runtime | Current |
 | [Trading Order Construction Integrity Audit](trading-order-construction-integrity.md) | Balance semantics, constructor parity, and local signature validation at the trading order-construction boundary | Current |
+| [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene.md) | Secret-safe route identity, redacted config diagnostics, and typed partner-fee policy at the public contract boundary | Current |

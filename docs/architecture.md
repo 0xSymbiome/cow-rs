@@ -67,14 +67,19 @@ flowchart TD
 
 `cow-sdk-core` owns the signer and provider seams used across the workspace.
 Sync and async contracts stay explicit, and typed-data payloads stay structured
-rather than being reconstructed from ad hoc field lists.
+rather than being reconstructed from ad hoc field lists. Credential-bearing
+config stays explicit as input, but the default diagnostic and serialized
+surfaces owned by `cow-sdk-core`, `cow-sdk-orderbook`, and `cow-sdk-app-data`
+redact secret material instead of treating it as routine log data.
 
 ### Transport Ownership
 
 Shared client policy is intentionally narrow: timeout and user-agent live in
 `cow_sdk_core::HttpClientPolicy`. Retry behavior, rate limits, GraphQL request
 shape, API-key handling, and pinning semantics stay with the transport crates
-that own those behaviors.
+that own those behaviors. For subgraph access, stable production metadata and
+typed request failures expose only redacted or non-secret route identity while
+keeping explicit override support.
 
 ### Workflow Ownership
 
@@ -91,7 +96,9 @@ to a different orderbook endpoint, chain, or environment. Reviewed
 workflow contract through quote, order, sign, and post seams. Builder-created
 and directly constructed `TradingSdk` instances share the same injected-
 orderbook validation boundary, and recoverable-signature posting rejects
-explicit owner or signer mismatch before submission.
+explicit owner or signer mismatch before submission. User-facing partner-fee
+policy remains typed on trading request surfaces and only crosses into raw
+metadata at the explicit app-data translation seam.
 
 For browser-wallet-backed trading flows, chain coherence remains leaf-owned by
 `cow-sdk-browser-wallet`. When the workflow already has an explicit chain
@@ -121,6 +128,8 @@ switch success.
 - `cow-sdk-subgraph` remains a separate read-only crate.
 - Browser-wallet method growth stays leaf-owned and typed.
 - Orderbook wire DTOs remain string-heavy only at the explicit HTTP boundary.
+- Public configs, endpoint discovery, and typed request failures expose only
+  redacted or non-secret route identity.
 - Saved GraphQL documents and test-only schema fixtures stay non-public unless
   a future public API change promotes them deliberately.
 

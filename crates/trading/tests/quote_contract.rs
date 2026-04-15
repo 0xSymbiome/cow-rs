@@ -6,8 +6,8 @@ use cow_sdk_core::{CowEnv, OrderBalance};
 use cow_sdk_orderbook::OrderKind;
 use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{
-    QuoteRequestOverride, QuoterParameters, SwapAdvancedSettings, TradeParameters, get_quote_only,
-    get_quote_results,
+    PartnerFeePolicy, QuoteRequestOverride, QuoterParameters, SwapAdvancedSettings,
+    TradeParameters, get_quote_only, get_quote_results,
 };
 
 use crate::common::{
@@ -481,10 +481,55 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
     assert_eq!(request.valid_to, Some(5_600_000));
     assert_eq!(result.order_to_sign.valid_to, 5_600_000);
     assert_eq!(result.trade_parameters.slippage_bps, Some(77));
+    assert_eq!(
+        result.trade_parameters.partner_fee,
+        Some(PartnerFeePolicy::volume(42, address(crate::common::ALT_RECEIVER)).into())
+    );
     assert!(result.trade_parameters.partially_fillable);
     assert!(result.order_to_sign.partially_fillable);
     assert_eq!(
         app_data["metadata"]["partnerFee"]["volumeBps"],
         serde_json::json!(42)
     );
+}
+
+#[tokio::test]
+async fn quote_results_reject_invalid_partner_fee_metadata_before_quoting() {
+    let orderbook = MockOrderbook::new(
+        cow_sdk_core::SupportedChainId::Sepolia,
+        sell_quote_response(),
+    );
+    let signer = MockSigner::default();
+    let trader = cow_sdk_trading::TraderParameters {
+        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
+        app_code: "0x007".to_owned(),
+        env: Some(CowEnv::Prod),
+        settlement_contract_override: None,
+        eth_flow_contract_override: None,
+    };
+    let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
+    let advanced = SwapAdvancedSettings {
+        app_data: Some(cow_sdk_app_data::AppDataParams {
+            app_code: None,
+            environment: None,
+            metadata: serde_json::from_value(serde_json::json!({
+                "partnerFee": {
+                    "unexpected": true
+                }
+            }))
+            .expect("invalid metadata shape should still deserialize as json"),
+        }),
+        ..SwapAdvancedSettings::default()
+    };
+
+    let error = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect_err("invalid partner-fee metadata must fail before quote transport");
+
+    assert!(
+        error
+            .to_string()
+            .contains("appData.metadata.partnerFee must match the partner-fee schema")
+    );
+    assert!(orderbook.state().quote_requests.is_empty());
 }

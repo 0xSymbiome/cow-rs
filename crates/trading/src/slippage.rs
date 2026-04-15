@@ -1,6 +1,6 @@
 use num_bigint::BigInt;
-use serde_json::Value;
 
+use cow_sdk_app_data::PartnerFee;
 use cow_sdk_core::{Amount, OrderKind, QuoteAmountsAndCosts, SupportedChainId};
 use cow_sdk_orderbook::{OrderQuoteResponse, PriceQuality, QuoteData};
 
@@ -298,20 +298,11 @@ pub async fn resolve_slippage_suggestion(
     }
 }
 
-/// Extracts the first supported partner-fee basis-point value from the order metadata payload.
-///
-/// Objects are read from the `volumeBps` field. Arrays are scanned depth-first until a supported
-/// unsigned 32-bit value is found.
+/// Extracts the first supported volume-based partner-fee basis-point value from the typed
+/// partner-fee payload.
 #[must_use]
-pub fn partner_fee_bps(partner_fee: Option<&Value>) -> Option<u32> {
-    match partner_fee {
-        Some(Value::Object(map)) => map
-            .get("volumeBps")
-            .and_then(Value::as_u64)
-            .and_then(|value| u32::try_from(value).ok()),
-        Some(Value::Array(items)) => items.iter().find_map(|item| partner_fee_bps(Some(item))),
-        _ => None,
-    }
+pub fn partner_fee_bps(partner_fee: Option<&PartnerFee>) -> Option<u32> {
+    partner_fee.and_then(PartnerFee::volume_bps)
 }
 
 pub(crate) fn gas_with_margin(gas: &Amount) -> Result<Amount, TradingError> {

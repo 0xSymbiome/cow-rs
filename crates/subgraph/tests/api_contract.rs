@@ -22,7 +22,7 @@ async fn prod_url_map_matches_pinned_supported_and_unsupported_chains() {
     assert_eq!(
         prod_config.get(&SupportedChainId::Mainnet).and_then(Clone::clone),
         Some(
-            "https://gateway.thegraph.com/api/FakeApiKey/subgraphs/id/8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD"
+            "https://gateway.thegraph.com/api/<redacted>/subgraphs/id/8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD"
                 .to_owned()
         )
     );
@@ -31,7 +31,7 @@ async fn prod_url_map_matches_pinned_supported_and_unsupported_chains() {
             .get(&SupportedChainId::GnosisChain)
             .and_then(Clone::clone),
         Some(
-            "https://gateway.thegraph.com/api/FakeApiKey/subgraphs/id/HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq"
+            "https://gateway.thegraph.com/api/<redacted>/subgraphs/id/HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq"
                 .to_owned()
         )
     );
@@ -40,21 +40,21 @@ async fn prod_url_map_matches_pinned_supported_and_unsupported_chains() {
             .get(&SupportedChainId::ArbitrumOne)
             .and_then(Clone::clone),
         Some(
-            "https://gateway.thegraph.com/api/FakeApiKey/subgraphs/id/CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc"
+            "https://gateway.thegraph.com/api/<redacted>/subgraphs/id/CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc"
                 .to_owned()
         )
     );
     assert_eq!(
         prod_config.get(&SupportedChainId::Base).and_then(Clone::clone),
         Some(
-            "https://gateway.thegraph.com/api/FakeApiKey/subgraphs/id/EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg"
+            "https://gateway.thegraph.com/api/<redacted>/subgraphs/id/EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg"
                 .to_owned()
         )
     );
     assert_eq!(
         prod_config.get(&SupportedChainId::Sepolia).and_then(Clone::clone),
         Some(
-            "https://gateway.thegraph.com/api/FakeApiKey/subgraphs/id/31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y"
+            "https://gateway.thegraph.com/api/<redacted>/subgraphs/id/31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y"
                 .to_owned()
         )
     );
@@ -340,6 +340,7 @@ async fn multi_operation_document_without_operation_name_surfaces_typed_graphql_
             assert_eq!(
                 *context,
                 SubgraphRequestErrorContext {
+                    chain_id: u64::from(SupportedChainId::Mainnet),
                     api: server.uri(),
                     document: document.to_owned(),
                     operation_name: None,
@@ -636,6 +637,7 @@ async fn invalid_graphql_query_surfaces_typed_context() {
             assert_eq!(
                 *context,
                 SubgraphRequestErrorContext {
+                    chain_id: u64::from(SupportedChainId::Mainnet),
                     api: server.uri(),
                     document: query.to_owned(),
                     operation_name: Some("InvalidQuery".to_owned()),
@@ -693,6 +695,7 @@ async fn graphql_error_preserves_variables_in_typed_context() {
             assert_eq!(
                 *context,
                 SubgraphRequestErrorContext {
+                    chain_id: u64::from(SupportedChainId::Mainnet),
                     api: server.uri(),
                     document: query.to_owned(),
                     operation_name: Some("TokensByVolume".to_owned()),
@@ -737,6 +740,7 @@ async fn malformed_success_response_surfaces_serialization_error() {
             assert_eq!(
                 *context,
                 SubgraphRequestErrorContext {
+                    chain_id: u64::from(SupportedChainId::Mainnet),
                     api: server.uri(),
                     document: TOTALS_QUERY.to_owned(),
                     operation_name: Some("Totals".to_owned()),
@@ -778,6 +782,7 @@ async fn non_success_status_surfaces_http_status_error() {
             assert_eq!(
                 *context,
                 SubgraphRequestErrorContext {
+                    chain_id: u64::from(SupportedChainId::Mainnet),
                     api: server.uri(),
                     document: query.to_owned(),
                     operation_name: Some("TokensByVolume".to_owned()),
@@ -816,6 +821,7 @@ async fn missing_data_surfaces_typed_missing_data_error_for_generic_queries() {
             assert_eq!(
                 *context,
                 SubgraphRequestErrorContext {
+                    chain_id: u64::from(SupportedChainId::Mainnet),
                     api: server.uri(),
                     document: query.to_owned(),
                     operation_name: Some("TokensByVolume".to_owned()),
@@ -830,13 +836,14 @@ async fn missing_data_surfaces_typed_missing_data_error_for_generic_queries() {
 #[tokio::test]
 async fn transport_failures_surface_typed_context() {
     let listener = TcpListener::bind("127.0.0.1:0").expect("ephemeral port must be available");
-    let endpoint = format!(
+    let endpoint_origin = format!(
         "http://127.0.0.1:{}",
         listener
             .local_addr()
             .expect("bound listener must expose a local address")
             .port()
     );
+    let endpoint = format!("{endpoint_origin}/private/path?token=secret");
     drop(listener);
 
     let base_urls: SubgraphApiBaseUrls = [
@@ -875,7 +882,8 @@ async fn transport_failures_surface_typed_context() {
             assert_eq!(
                 *context,
                 SubgraphRequestErrorContext {
-                    api: endpoint,
+                    chain_id: u64::from(SupportedChainId::Mainnet),
+                    api: endpoint_origin,
                     document: query.to_owned(),
                     operation_name: Some("TokensByVolume".to_owned()),
                     variables: None,

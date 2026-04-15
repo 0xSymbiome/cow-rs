@@ -149,7 +149,7 @@ where
         )?,
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
-    );
+    )?;
     let additional = swap_additional_params(advanced_settings);
 
     post_cow_protocol_trade_async(
@@ -220,7 +220,7 @@ where
         params,
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
-    );
+    )?;
     if params.slippage_bps.is_none() {
         params.slippage_bps = Some(0);
     }
@@ -540,14 +540,14 @@ fn apply_settings_to_limit_trade_parameters(
     params: &LimitTradeParameters,
     quote_request: Option<&crate::QuoteRequestOverride>,
     app_data_override: Option<&cow_sdk_app_data::AppDataParams>,
-) -> LimitTradeParameters {
+) -> Result<LimitTradeParameters, TradingError> {
     let mut params = params.clone();
 
     apply_app_data_parameter_overrides(
         &mut params.slippage_bps,
         &mut params.partner_fee,
         app_data_override,
-    );
+    )?;
     apply_quote_request_parameter_overrides(
         &mut QuoteRequestParameterTargets {
             owner: &mut params.owner,
@@ -563,7 +563,7 @@ fn apply_settings_to_limit_trade_parameters(
         quote_request,
     );
 
-    params
+    Ok(params)
 }
 
 fn swap_additional_params(
