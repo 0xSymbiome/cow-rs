@@ -5,7 +5,7 @@ use cow_sdk::{
 };
 
 pub fn smoke_hash_and_uid() -> Result<String, Box<dyn std::error::Error>> {
-    let _sdk = TradingSdk::new(
+    let _sdk = TradingSdk::new_partial(
         PartialTraderParameters::default(),
         TradingSdkOptions::default(),
     )?;

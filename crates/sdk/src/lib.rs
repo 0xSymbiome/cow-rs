@@ -24,11 +24,12 @@
 //! this root package.
 //!
 //! ```rust
-//! use cow_sdk::{Address, PartialTraderParameters, TradingSdk};
+//! use cow_sdk::{Address, SupportedChainId, TradingSdk};
 //!
 //! let _address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
 //! let _sdk = TradingSdk::builder()
-//!     .with_trader_defaults(PartialTraderParameters::default())
+//!     .with_chain_id(SupportedChainId::Sepolia)
+//!     .with_app_code("cow-rs/rustdoc")
 //!     .build()
 //!     .unwrap();
 //! ```

@@ -95,10 +95,13 @@ to a different orderbook endpoint, chain, or environment. Reviewed
 `sellTokenBalance` and `buyTokenBalance` semantics remain part of the same
 workflow contract through quote, order, sign, and post seams. Builder-created
 and directly constructed `TradingSdk` instances share the same injected-
-orderbook validation boundary, and recoverable-signature posting rejects
-explicit owner or signer mismatch before submission. User-facing partner-fee
-policy remains typed on trading request surfaces and only crosses into raw
-metadata at the explicit app-data translation seam.
+orderbook validation boundary. Ready-state `TradingSdk` construction now
+requires `appCode` plus explicit or injected chain authority, while explicit
+partial constructors remain available for chain-bound helper flows such as
+allowance, approval, pre-sign, and on-chain cancellation. Recoverable-signature
+posting rejects explicit owner or signer mismatch before submission, and
+user-facing partner-fee policy remains typed on trading request surfaces and
+only crosses into raw metadata at the explicit app-data translation seam.
 
 For browser-wallet-backed trading flows, chain coherence remains leaf-owned by
 `cow-sdk-browser-wallet`. When the workflow already has an explicit chain
@@ -130,8 +133,9 @@ switch success.
 - Orderbook wire DTOs remain string-heavy only at the explicit HTTP boundary.
 - Public configs, endpoint discovery, and typed request failures expose only
   redacted or non-secret route identity.
-- Saved GraphQL documents and test-only schema fixtures stay non-public unless
-  a future public API change promotes them deliberately.
+- Reviewed subgraph query constants may be public when they are deliberately
+  stabilized, but saved GraphQL breadth beyond that reviewed set and test-only
+  schema fixtures stay non-public.
 
 ## Related Docs
 

@@ -62,6 +62,44 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
     assert_eq!(result.quote_response.id, Some(575_401));
 }
 
+#[test]
+fn sdk_ready_construction_requires_chain_authority_and_app_code() {
+    let missing_chain = TradingSdk::builder()
+        .with_app_code("0x007")
+        .build()
+        .expect_err("ready builder must reject missing chain authority");
+    assert!(matches!(
+        missing_chain,
+        cow_sdk_trading::TradingError::MissingTraderParameters(ref fields) if fields == "chainId"
+    ));
+
+    let missing_app = TradingSdk::builder()
+        .with_chain_id(SupportedChainId::Sepolia)
+        .build()
+        .expect_err("ready builder must reject missing appCode");
+    assert!(matches!(
+        missing_app,
+        cow_sdk_trading::TradingError::MissingTraderParameters(ref fields) if fields == "appCode"
+    ));
+
+    let missing_ready_defaults = TradingSdk::new(
+        PartialTraderParameters {
+            chain_id: Some(SupportedChainId::Sepolia),
+            app_code: None,
+            owner: None,
+            env: None,
+            settlement_contract_override: None,
+            eth_flow_contract_override: None,
+        },
+        TradingSdkOptions::default(),
+    )
+    .expect_err("ready constructor must reject missing appCode");
+    assert!(matches!(
+        missing_ready_defaults,
+        cow_sdk_trading::TradingError::MissingTraderParameters(ref fields) if fields == "appCode"
+    ));
+}
+
 #[tokio::test]
 async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can_supply_chain_and_env()
  {
@@ -161,10 +199,10 @@ async fn sdk_orderbook_bound_calls_reject_env_conflicts_with_injected_client_con
 }
 
 #[tokio::test]
-async fn sdk_quote_only_reports_missing_chainid_and_appcode_explicitly() {
+async fn sdk_partial_construction_still_reports_missing_chainid_and_appcode_for_quote_only() {
     let trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
 
-    let missing_chain = TradingSdk::new(
+    let missing_chain = TradingSdk::new_partial(
         PartialTraderParameters {
             chain_id: None,
             app_code: Some("0x007".to_owned()),
@@ -175,7 +213,7 @@ async fn sdk_quote_only_reports_missing_chainid_and_appcode_explicitly() {
         },
         TradingSdkOptions::default(),
     )
-    .expect("sdk construction without injected orderbook should succeed");
+    .expect("partial sdk construction without injected orderbook should succeed");
     let chain_error = missing_chain
         .get_quote_only(trade.clone(), None)
         .await
@@ -183,7 +221,7 @@ async fn sdk_quote_only_reports_missing_chainid_and_appcode_explicitly() {
         .to_string();
     assert!(chain_error.contains("Missing quoter parameters: chainId"));
 
-    let missing_app = TradingSdk::new(
+    let missing_app = TradingSdk::new_partial(
         PartialTraderParameters {
             chain_id: Some(SupportedChainId::Sepolia),
             app_code: None,
@@ -194,7 +232,7 @@ async fn sdk_quote_only_reports_missing_chainid_and_appcode_explicitly() {
         },
         TradingSdkOptions::default(),
     )
-    .expect("sdk construction without injected orderbook should succeed");
+    .expect("partial sdk construction without injected orderbook should succeed");
     let app_error = missing_app
         .get_quote_only(trade, None)
         .await
@@ -207,10 +245,10 @@ async fn sdk_quote_only_reports_missing_chainid_and_appcode_explicitly() {
 fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
     let provider = MockProvider::default();
     let signer = MockSigner::default();
-    let sdk = TradingSdk::new(
+    let sdk = TradingSdk::new_partial(
         PartialTraderParameters {
             chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("0x007".to_owned()),
+            app_code: None,
             owner: None,
             env: Some(CowEnv::Prod),
             settlement_contract_override: None,
@@ -218,7 +256,7 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
         },
         TradingSdkOptions::default(),
     )
-    .expect("sdk construction should succeed");
+    .expect("partial sdk construction should succeed");
 
     let allowance = sdk
         .get_cow_protocol_allowance(
@@ -277,10 +315,10 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
 async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
     let provider = MockProvider::default();
     let signer = MockSigner::default();
-    let sdk = TradingSdk::new(
+    let sdk = TradingSdk::new_partial(
         PartialTraderParameters {
             chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("0x007".to_owned()),
+            app_code: None,
             owner: None,
             env: Some(CowEnv::Prod),
             settlement_contract_override: None,
@@ -288,7 +326,7 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
         },
         TradingSdkOptions::default(),
     )
-    .expect("sdk construction should succeed");
+    .expect("partial sdk construction should succeed");
 
     let allowance = sdk
         .get_cow_protocol_allowance_async(
@@ -333,10 +371,10 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
     ));
     orderbook.push_order(ethflow_order());
     let signer = MockSigner::default();
-    let sdk = TradingSdk::new(
+    let sdk = TradingSdk::new_partial(
         PartialTraderParameters {
             chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("0x007".to_owned()),
+            app_code: None,
             owner: None,
             env: Some(CowEnv::Staging),
             settlement_contract_override: Some(AddressPerChain::from([(
@@ -350,7 +388,7 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
         },
         TradingSdkOptions::new().with_orderbook_client(orderbook.clone()),
     )
-    .expect("sdk construction should succeed");
+    .expect("partial sdk construction should succeed");
 
     let pre_sign_tx = sdk
         .get_pre_sign_transaction(

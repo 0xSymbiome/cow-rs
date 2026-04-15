@@ -317,15 +317,33 @@ impl Default for ApiContext {
 }
 
 impl ApiContext {
+    /// Returns the configured partner API key after local header validation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ValidationError::InvalidHttpHeaderValue`] when the configured
+    /// API key cannot be encoded as an HTTP header value.
+    pub fn validated_api_key(&self) -> Result<Option<&str>, ValidationError> {
+        self.api_key
+            .as_deref()
+            .map(|api_key| {
+                validate_header_value(api_key, "api_key")?;
+                Ok(api_key)
+            })
+            .transpose()
+    }
+
     /// Resolves the effective base URL for the current chain and environment.
     ///
     /// # Errors
     ///
     /// Returns [`CoreError::MissingBaseUrl`] when the chain id has no configured
-    /// URL in either the explicit override map or the default map.
+    /// URL in either the explicit override map or the default map, or
+    /// [`CoreError::Validation`] when the configured partner API key is not a
+    /// valid HTTP header value.
     pub fn resolved_base_url(&self) -> Result<String, CoreError> {
         let chain_id: ChainId = self.chain_id.into();
-        let partner_api = self.api_key.is_some();
+        let partner_api = self.validated_api_key()?.is_some();
         let default_urls = default_api_base_urls(self.env, partner_api);
         let base_urls = self.base_urls.as_ref().unwrap_or(&default_urls);
 
@@ -477,11 +495,14 @@ fn validate_user_agent(user_agent: String) -> Result<String, ValidationError> {
         });
     }
 
-    HeaderValue::from_str(&user_agent).map_err(|_| ValidationError::InvalidHttpHeaderValue {
-        field: "user_agent",
-    })?;
+    validate_header_value(&user_agent, "user_agent")?;
 
     Ok(user_agent)
+}
+
+fn validate_header_value(value: &str, field: &'static str) -> Result<(), ValidationError> {
+    HeaderValue::from_str(value).map_err(|_| ValidationError::InvalidHttpHeaderValue { field })?;
+    Ok(())
 }
 
 fn redacted_secret_option(value: &Option<String>) -> Option<&'static str> {

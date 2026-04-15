@@ -3,7 +3,7 @@ mod common;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use cow_sdk_core::{DEFAULT_HTTP_TIMEOUT, HttpClientPolicy};
+use cow_sdk_core::{CoreError, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError};
 use cow_sdk_orderbook::{
     ApiContextOverride, AppDataObject, CowEnv, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
     EcdsaSigningScheme, GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderBookTransportPolicy,
@@ -85,6 +85,27 @@ async fn context_override_applies_base_urls_and_api_key_to_requests() {
 
     assert_eq!(version, "v1.2.3");
     assert_eq!(api.context().api_key.as_deref(), Some("partner-key"));
+}
+
+#[tokio::test]
+async fn invalid_partner_api_key_fails_before_transport() {
+    let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
+        .with_context_override(ApiContextOverride {
+            api_key: Some("partner\r\nkey".to_owned()),
+            ..ApiContextOverride::default()
+        });
+
+    let error = api
+        .get_version()
+        .await
+        .expect_err("invalid API key must fail before request transport");
+
+    assert!(matches!(
+        error,
+        cow_sdk_orderbook::OrderbookError::Core(CoreError::Validation(
+            ValidationError::InvalidHttpHeaderValue { field: "api_key" }
+        ))
+    ));
 }
 
 #[test]

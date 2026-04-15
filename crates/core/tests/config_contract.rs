@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 
 use cow_sdk_core::{
-    Address, ApiContext, CowEnv, ENVS_LIST, ProtocolOptions, SupportedChainId,
-    default_api_base_urls, eth_flow_contract_address, settlement_contract_address,
+    Address, ApiContext, CoreError, CowEnv, ENVS_LIST, ProtocolOptions, SupportedChainId,
+    ValidationError, default_api_base_urls, eth_flow_contract_address, settlement_contract_address,
     vault_relayer_address, wrapped_native_token,
 };
 
@@ -123,6 +123,25 @@ fn api_context_debug_and_serialize_redact_partner_api_keys() {
     assert!(!debug.contains("partner-key"));
     assert_eq!(json["apiKey"], serde_json::json!("<redacted>"));
     assert_eq!(json["chainId"], serde_json::json!(8453));
+}
+
+#[test]
+fn invalid_partner_api_keys_fail_during_local_route_resolution() {
+    let context = ApiContext {
+        chain_id: SupportedChainId::Base,
+        env: CowEnv::Prod,
+        base_urls: None,
+        api_key: Some("partner\r\nkey".to_owned()),
+    };
+
+    let error = context
+        .resolved_base_url()
+        .expect_err("invalid API key must fail before partner routing is selected");
+
+    assert!(matches!(
+        error,
+        CoreError::Validation(ValidationError::InvalidHttpHeaderValue { field: "api_key" })
+    ));
 }
 
 #[test]

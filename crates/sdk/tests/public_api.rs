@@ -7,13 +7,24 @@ use cow_sdk::{
 
 #[test]
 fn public_api_reexports_cover_primary_root_surface() {
-    let _sdk = TradingSdk::new(
+    let _ready_sdk = TradingSdk::new(
+        PartialTraderParameters {
+            chain_id: Some(SupportedChainId::Sepolia),
+            app_code: Some("cow-rs/public-api".to_owned()),
+            ..Default::default()
+        },
+        TradingSdkOptions::default(),
+    )
+    .expect("ready trading sdk construction should succeed");
+    let _partial_sdk = TradingSdk::new_partial(
         PartialTraderParameters::default(),
         TradingSdkOptions::default(),
     )
-    .expect("default trading sdk construction should succeed");
-    let _builder =
-        TradingSdkBuilder::new().with_trader_defaults(PartialTraderParameters::default());
+    .expect("partial trading sdk construction should succeed");
+    let _builder = TradingSdkBuilder::new()
+        .with_trader_defaults(PartialTraderParameters::default())
+        .build_partial()
+        .expect("partial builder construction should succeed");
     assert_eq!(ORDER_PRIMARY_TYPE, "Order");
 
     let owner = Address::new("0x4444444444444444444444444444444444444444").unwrap();
@@ -76,11 +87,11 @@ fn module_reexports_cover_expected_leaf_crates() {
             .unwrap();
     let deployment = cow_sdk::contracts::deployment_for_chain(11_155_111).unwrap();
     let api = cow_sdk::orderbook::OrderBookApi::new(cow_sdk::core::ApiContext::default());
-    let _sdk = cow_sdk::trading::TradingSdk::new(
+    let _sdk = cow_sdk::trading::TradingSdk::new_partial(
         cow_sdk::trading::PartialTraderParameters::default(),
         cow_sdk::trading::TradingSdkOptions::default(),
     )
-    .expect("default facade trading sdk construction should succeed");
+    .expect("default facade partial trading sdk construction should succeed");
 
     assert!(validation.success);
     assert!(schema.is_object());

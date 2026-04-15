@@ -52,7 +52,8 @@ Graph API credentials.
 the workflow layer first, then inspect the lower-level crates it composes.
 That surface is responsible for preserving reviewed balance semantics across
 quote-derived and direct order construction, enforcing one injected-orderbook
-validation contract across all `TradingSdk` constructors, and rejecting
+validation contract across all `TradingSdk` constructors, separating ready-state
+construction from explicit partial helper setup, and rejecting
 recoverable-signature owner or signer mismatch before submission. User-facing
 partner-fee policy also remains typed here until the explicit app-data metadata
 translation boundary.

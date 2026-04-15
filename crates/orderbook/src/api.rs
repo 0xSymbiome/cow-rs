@@ -522,7 +522,7 @@ impl OrderBookApi {
             self.transport_policy.request_policy(),
             &self.rate_limiter,
             self.client_policy().timeout(),
-            self.additional_headers(),
+            self.additional_headers()?,
         )
         .await
     }
@@ -535,7 +535,7 @@ impl OrderBookApi {
             self.transport_policy.request_policy(),
             &self.rate_limiter,
             self.client_policy().timeout(),
-            self.additional_headers(),
+            self.additional_headers()?,
         )
         .await
     }
@@ -548,7 +548,7 @@ impl OrderBookApi {
             self.transport_policy.request_policy(),
             &self.rate_limiter,
             self.client_policy().timeout(),
-            self.additional_headers(),
+            self.additional_headers()?,
         )
         .await
     }
@@ -562,13 +562,18 @@ impl OrderBookApi {
         Ok(normalize_base_url(&resolved))
     }
 
-    fn additional_headers(&self) -> Option<HeaderMap> {
-        self.context.api_key.as_ref().and_then(|api_key| {
-            let mut headers = HeaderMap::new();
-            let header_value = HeaderValue::from_str(api_key).ok()?;
-            headers.insert(API_KEY_HEADER, header_value);
-            Some(headers)
-        })
+    fn additional_headers(&self) -> Result<Option<HeaderMap>, OrderbookError> {
+        self.context
+            .validated_api_key()
+            .map_err(cow_sdk_core::CoreError::from)?
+            .map(|api_key| {
+                let header_value = HeaderValue::from_str(api_key)
+                    .expect("validated API keys must remain valid header values");
+                let mut headers = HeaderMap::new();
+                headers.insert(API_KEY_HEADER, header_value);
+                headers
+            })
+            .map_or(Ok(None), |headers| Ok(Some(headers)))
     }
 }
 

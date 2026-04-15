@@ -7,8 +7,8 @@ use num_bigint::Sign;
 
 use crate::slippage::{gas_with_margin, parse_integer};
 use crate::{
-    GAS_LIMIT_DEFAULT, OrderTraderParameters, TraderParameters, TradingError,
-    calculate_unique_order_id, get_order_to_sign,
+    GAS_LIMIT_DEFAULT, OrderTraderParameters, PartialTraderParameters, TraderParameters,
+    TradingError, calculate_unique_order_id, get_order_to_sign,
 };
 
 /// `EthFlow` transaction bundle returned by native-sell helper flows.
@@ -388,6 +388,26 @@ where
 pub fn protocol_options_for_order(
     params: &OrderTraderParameters,
     trader: &TraderParameters,
+) -> ProtocolOptions {
+    protocol_options_for_partial_order(
+        params,
+        &PartialTraderParameters {
+            chain_id: Some(trader.chain_id),
+            app_code: Some(trader.app_code.clone()),
+            owner: None,
+            env: trader.env,
+            settlement_contract_override: trader.settlement_contract_override.clone(),
+            eth_flow_contract_override: trader.eth_flow_contract_override.clone(),
+        },
+    )
+}
+
+/// Resolves protocol options for an order-level workflow that only needs
+/// chain-bound protocol context.
+#[must_use]
+pub(crate) fn protocol_options_for_partial_order(
+    params: &OrderTraderParameters,
+    trader: &PartialTraderParameters,
 ) -> ProtocolOptions {
     ProtocolOptions {
         env: params.env.or(trader.env),
