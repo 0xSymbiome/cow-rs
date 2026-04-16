@@ -6,10 +6,26 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - '.github/workflows/docs-quality.yml'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'PROPERTIES.md'
+      - 'README.md'
+      - 'SECURITY.md'
+      - 'docs/**'
   push:
     branches:
       - main
       - develop
+    paths:
+      - '.github/workflows/docs-quality.yml'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+      - 'PROPERTIES.md'
+      - 'README.md'
+      - 'SECURITY.md'
+      - 'docs/**'
   schedule:
     - cron: '15 4 * * 6'
 

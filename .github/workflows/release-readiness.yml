@@ -74,64 +74,9 @@ jobs:
 
   quality-gate:
     if: ${{ github.event_name != 'schedule' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
-          components: clippy, rustfmt
-      # Source ref: taiki-e/install-action@v2
-      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
-        with:
-          tool: nextest
-      # Source ref: taiki-e/install-action@v2
-      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
-        with:
-          tool: cargo-hack
-      # Source ref: taiki-e/install-action@v2
-      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
-        with:
-          tool: cargo-deny
-      # Source ref: taiki-e/install-action@v2
-      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
-        with:
-          tool: cargo-audit
-      # Source ref: taiki-e/install-action@v2
-      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
-        with:
-          tool: typos-cli
-      # Source ref: Swatinem/rust-cache@v2
-      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
-      - name: Check formatting
-        run: cargo fmt --all --check
-      - name: Run clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-      - name: Run workspace library and integration tests
-        run: cargo test --workspace --lib --tests
-      - name: Run workspace nextest suite
-        run: cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
-      - name: Build workspace documentation
-        run: cargo doc --workspace --all-features --no-deps
-        env:
-          RUSTDOCFLAGS: -D warnings
-      - name: Check repository spelling
-        run: typos --config .github/config/typos.toml
-      - name: Check dependency policy
-        run: cargo deny check bans licenses sources --config .github/config/deny.toml
-      - name: Check RustSec advisories
-        run: cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436
-      - name: Check workspace feature matrix
-        run: cargo hack check --workspace --feature-powerset --depth 1
-      - name: Check published crate public API lints
-        run: cargo check --workspace --all-features
-        env:
-          RUSTFLAGS: -Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types
+    uses: ./.github/workflows/_quality-gate.yml
+    with:
+      rust_toolchain: '1.94.1'
 
   doctest:
     if: ${{ github.event_name != 'schedule' }}

@@ -6,11 +6,29 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - '.cargo/**'
+      - '.github/config/**'
+      - '.github/workflows/wasm.yml'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/**'
+      - 'examples/wasm/**'
+      - 'rust-toolchain.toml'
   push:
     branches:
       - main
       - develop
       - feat/**
+    paths:
+      - '.cargo/**'
+      - '.github/config/**'
+      - '.github/workflows/wasm.yml'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/**'
+      - 'examples/wasm/**'
+      - 'rust-toolchain.toml'
 
 permissions:
   contents: read
