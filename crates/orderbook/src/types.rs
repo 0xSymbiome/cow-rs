@@ -211,7 +211,7 @@ impl QuoteSide {
 
     /// Returns `true` when exactly one side amount matches the declared order kind.
     #[must_use]
-    pub fn is_valid(&self) -> bool {
+    pub const fn is_valid(&self) -> bool {
         matches!(
             (
                 &self.kind,
@@ -314,14 +314,14 @@ impl OrderQuoteRequest {
 
     /// Returns a copy of this request with an absolute expiry timestamp.
     #[must_use]
-    pub fn with_valid_to(mut self, valid_to: u32) -> Self {
+    pub const fn with_valid_to(mut self, valid_to: u32) -> Self {
         self.valid_to = Some(valid_to);
         self
     }
 
     /// Returns a copy of this request with a relative validity duration.
     #[must_use]
-    pub fn with_valid_for(mut self, valid_for: u32) -> Self {
+    pub const fn with_valid_for(mut self, valid_for: u32) -> Self {
         self.valid_for = Some(valid_for);
         self
     }
@@ -342,56 +342,56 @@ impl OrderQuoteRequest {
 
     /// Returns a copy of this request with a new quote-quality mode.
     #[must_use]
-    pub fn with_price_quality(mut self, quality: PriceQuality) -> Self {
+    pub const fn with_price_quality(mut self, quality: PriceQuality) -> Self {
         self.price_quality = quality;
         self
     }
 
     /// Returns a copy of this request with a new signing scheme.
     #[must_use]
-    pub fn with_signing_scheme(mut self, scheme: SigningScheme) -> Self {
+    pub const fn with_signing_scheme(mut self, scheme: SigningScheme) -> Self {
         self.signing_scheme = scheme;
         self
     }
 
     /// Returns a copy of this request with a timeout override in milliseconds.
     #[must_use]
-    pub fn with_timeout(mut self, timeout: u64) -> Self {
+    pub const fn with_timeout(mut self, timeout: u64) -> Self {
         self.timeout = Some(timeout);
         self
     }
 
     /// Returns a copy of this request marked as an on-chain order.
     #[must_use]
-    pub fn with_onchain_order(mut self) -> Self {
+    pub const fn with_onchain_order(mut self) -> Self {
         self.onchain_order = true;
         self
     }
 
     /// Returns a copy of this request with an explicit verification gas limit.
     #[must_use]
-    pub fn with_verification_gas_limit(mut self, verification_gas_limit: u64) -> Self {
+    pub const fn with_verification_gas_limit(mut self, verification_gas_limit: u64) -> Self {
         self.verification_gas_limit = Some(verification_gas_limit);
         self
     }
 
     /// Returns a copy of this request marked as partially fillable.
     #[must_use]
-    pub fn with_partially_fillable(mut self) -> Self {
+    pub const fn with_partially_fillable(mut self) -> Self {
         self.partially_fillable = true;
         self
     }
 
     /// Returns a copy of this request with a new sell-token balance source.
     #[must_use]
-    pub fn with_sell_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_sell_token_balance(mut self, balance: OrderBalance) -> Self {
         self.sell_token_balance = balance;
         self
     }
 
     /// Returns a copy of this request with a new buy-token balance destination.
     #[must_use]
-    pub fn with_buy_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_buy_token_balance(mut self, balance: OrderBalance) -> Self {
         self.buy_token_balance = balance;
         self
     }
@@ -410,7 +410,7 @@ impl OrderQuoteRequest {
 
     /// Returns `true` when the quote-side shape is valid for the declared order kind.
     #[must_use]
-    pub fn is_valid(&self) -> bool {
+    pub const fn is_valid(&self) -> bool {
         self.side.is_valid()
     }
 }
@@ -609,7 +609,7 @@ impl OrderCreation {
 
     /// Returns a copy of this submission payload with an attached quote id.
     #[must_use]
-    pub fn with_quote_id(mut self, quote_id: i64) -> Self {
+    pub const fn with_quote_id(mut self, quote_id: i64) -> Self {
         self.quote_id = Some(quote_id);
         self
     }
@@ -755,7 +755,7 @@ const fn default_orders_limit() -> u32 {
 impl GetOrdersRequest {
     /// Creates an order-list request with the upstream default pagination.
     #[must_use]
-    pub fn new(owner: Address) -> Self {
+    pub const fn new(owner: Address) -> Self {
         Self {
             owner,
             offset: 0,
@@ -789,7 +789,7 @@ const fn default_trades_limit() -> u32 {
 impl GetTradesRequest {
     /// Creates a trades request filtered by owner.
     #[must_use]
-    pub fn by_owner(owner: Address) -> Self {
+    pub const fn by_owner(owner: Address) -> Self {
         Self {
             owner: Some(owner),
             order_uid: None,
@@ -800,7 +800,7 @@ impl GetTradesRequest {
 
     /// Creates a trades request filtered by order UID.
     #[must_use]
-    pub fn by_order_uid(order_uid: OrderUid) -> Self {
+    pub const fn by_order_uid(order_uid: OrderUid) -> Self {
         Self {
             owner: None,
             order_uid: Some(order_uid),
@@ -811,7 +811,7 @@ impl GetTradesRequest {
 
     /// Returns `true` when exactly one of `owner` or `order_uid` is set.
     #[must_use]
-    pub fn is_valid(&self) -> bool {
+    pub const fn is_valid(&self) -> bool {
         self.owner.is_some() ^ self.order_uid.is_some()
     }
 }

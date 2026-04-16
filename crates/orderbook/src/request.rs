@@ -221,19 +221,19 @@ impl Default for OrderBookTransportPolicy {
 impl OrderBookTransportPolicy {
     /// Creates a transport policy from explicit shared-client and request policies.
     #[must_use]
-    pub fn new(client: HttpClientPolicy, request: RequestPolicy) -> Self {
+    pub const fn new(client: HttpClientPolicy, request: RequestPolicy) -> Self {
         Self { client, request }
     }
 
     /// Returns the shared HTTP client policy.
     #[must_use]
-    pub fn client_policy(&self) -> &HttpClientPolicy {
+    pub const fn client_policy(&self) -> &HttpClientPolicy {
         &self.client
     }
 
     /// Returns the request retry and limiter policy.
     #[must_use]
-    pub fn request_policy(&self) -> &RequestPolicy {
+    pub const fn request_policy(&self) -> &RequestPolicy {
         &self.request
     }
 
@@ -246,7 +246,7 @@ impl OrderBookTransportPolicy {
 
     /// Returns a copy of this transport policy with a new request policy.
     #[must_use]
-    pub fn with_request_policy(mut self, request: RequestPolicy) -> Self {
+    pub const fn with_request_policy(mut self, request: RequestPolicy) -> Self {
         self.request = request;
         self
     }
@@ -374,7 +374,7 @@ enum ResponseKind {
 }
 
 impl ResponseKind {
-    fn accept_header(self) -> HeaderValue {
+    const fn accept_header(self) -> HeaderValue {
         match self {
             Self::Text => HeaderValue::from_static("text/plain, application/json"),
             Self::Json | Self::Empty => HeaderValue::from_static("application/json"),

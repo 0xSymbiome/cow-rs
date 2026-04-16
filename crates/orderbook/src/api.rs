@@ -130,13 +130,13 @@ impl OrderBookApi {
 
     /// Returns the effective API context stored in this client.
     #[must_use]
-    pub fn context(&self) -> &ApiContext {
+    pub const fn context(&self) -> &ApiContext {
         &self.context
     }
 
     /// Returns the active transport policy for this client instance.
     #[must_use]
-    pub fn transport_policy(&self) -> &OrderBookTransportPolicy {
+    pub const fn transport_policy(&self) -> &OrderBookTransportPolicy {
         &self.transport_policy
     }
 
@@ -151,13 +151,13 @@ impl OrderBookApi {
 
     /// Returns the shared HTTP client policy embedded in the transport policy.
     #[must_use]
-    pub fn client_policy(&self) -> &HttpClientPolicy {
+    pub const fn client_policy(&self) -> &HttpClientPolicy {
         self.transport_policy.client_policy()
     }
 
     /// Returns the orderbook request policy embedded in the transport policy.
     #[must_use]
-    pub fn request_policy(&self) -> &RequestPolicy {
+    pub const fn request_policy(&self) -> &RequestPolicy {
         self.transport_policy.request_policy()
     }
 
