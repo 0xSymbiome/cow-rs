@@ -80,6 +80,10 @@ impl From<HttpMethod> for reqwest::Method {
 }
 
 /// Decoded response body preserved on [`OrderBookApiError`].
+#[allow(
+    clippy::derive_partial_eq_without_eq,
+    reason = "the `Json(serde_json::Value)` variant cannot implement `Eq` because `serde_json::Value` does not implement `Eq`"
+)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum ResponseBody {
     /// JSON payload.
@@ -412,6 +416,10 @@ impl RequestRateLimiter {
         }
     }
 
+    #[allow(
+        clippy::significant_drop_tightening,
+        reason = "the async mutex guard is already scoped to the inner block and is released before awaiting the timer"
+    )]
     async fn acquire(&self) {
         loop {
             let wait_for = {

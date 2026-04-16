@@ -9,6 +9,10 @@ use serde_json::Value;
 use thiserror::Error;
 
 /// Serialized JSON-RPC error payload returned by an EIP-1193 wallet.
+#[allow(
+    clippy::derive_partial_eq_without_eq,
+    reason = "the `data: Option<serde_json::Value>` field cannot participate in `Eq` because `serde_json::Value` does not implement `Eq`"
+)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RpcErrorPayload {

@@ -7,6 +7,10 @@ use serde_json::Value;
 ///
 /// This request shape keeps the document, variables, and optional operation
 /// name visible to callers instead of inferring them from the GraphQL string.
+#[allow(
+    clippy::derive_partial_eq_without_eq,
+    reason = "the `variables: Option<serde_json::Value>` field cannot participate in `Eq` because `serde_json::Value` does not implement `Eq`"
+)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SubgraphQueryRequest {
     /// Raw GraphQL document sent to the subgraph endpoint.

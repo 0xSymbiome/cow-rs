@@ -21,6 +21,10 @@ use crate::{
 };
 
 /// Recorded mock wallet request.
+#[allow(
+    clippy::derive_partial_eq_without_eq,
+    reason = "the `params: Option<serde_json::Value>` field cannot participate in `Eq` because `serde_json::Value` does not implement `Eq`"
+)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MockRequestRecord {

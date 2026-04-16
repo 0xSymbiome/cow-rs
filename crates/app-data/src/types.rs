@@ -96,6 +96,10 @@ impl FromStr for SchemaVersion {
 }
 
 /// Inputs used to build an app-data document.
+#[allow(
+    clippy::derive_partial_eq_without_eq,
+    reason = "the `metadata: MetadataMap` field is a `serde_json::Map<String, serde_json::Value>` alias, and `serde_json::Value` does not implement `Eq`"
+)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct AppDataParams {
     /// Optional application name written to the `appCode` field.

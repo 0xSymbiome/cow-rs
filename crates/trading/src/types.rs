@@ -87,7 +87,7 @@ pub struct QuoterParameters {
 }
 
 /// Swap-style trade request accepted by quote and post helpers.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeParameters {
     /// Order kind.
@@ -141,7 +141,7 @@ pub struct TradeParameters {
 }
 
 /// Limit-order request accepted by posting and signing helpers.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LimitTradeParameters {
     /// Order kind.
@@ -289,6 +289,10 @@ pub struct OrderPostingResult {
 }
 
 /// App-data bundle used by trading quote and post helpers.
+#[allow(
+    clippy::derive_partial_eq_without_eq,
+    reason = "the `doc: AppDataDoc` field is a `serde_json::Value` alias, and `serde_json::Value` does not implement `Eq`"
+)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradingAppDataInfo {
@@ -301,7 +305,7 @@ pub struct TradingAppDataInfo {
 }
 
 /// Optional overrides applied directly to the orderbook quote request.
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuoteRequestOverride {
     /// Replacement sell-token address.

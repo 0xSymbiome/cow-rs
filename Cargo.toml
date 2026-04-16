@@ -45,10 +45,6 @@ future_not_send = "allow"
 # workspace; blanket promotion is avoided so const qualification stays an
 # intentional per-function decision.
 missing_const_for_fn = "allow"
-# `derive_partial_eq_without_eq` wants Eq added to every PartialEq derive;
-# adding Eq is a public trait guarantee evaluated per-type rather than as a
-# blanket uplift, because some public types carry fields that are not Eq.
-derive_partial_eq_without_eq = "allow"
 # `option_if_let_else` recommends `Option::map_or_else` over `if let`/`else`;
 # the `if let` pattern is kept where branching semantics read clearer than
 # the combinator form.
