@@ -2,6 +2,7 @@
 name = "parity-maintainer"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.94.0"
 publish = false
 
 [dependencies]
