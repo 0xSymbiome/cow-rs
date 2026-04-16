@@ -557,7 +557,7 @@ pub enum OrderBalance {
 impl OrderBalance {
     /// Normalizes buy-balance selection to the protocol-supported value set.
     #[must_use]
-    pub fn normalize_for_buy(self) -> Self {
+    pub const fn normalize_for_buy(self) -> Self {
         match self {
             Self::Internal => Self::Internal,
             Self::Erc20 | Self::External => Self::Erc20,
@@ -636,13 +636,13 @@ pub struct UnsignedOrder {
 impl UnsignedOrder {
     /// Returns the normalized buy-token balance that contract hashing uses.
     #[must_use]
-    pub fn normalized_buy_token_balance(&self) -> OrderBalance {
+    pub const fn normalized_buy_token_balance(&self) -> OrderBalance {
         self.buy_token_balance.normalize_for_buy()
     }
 
     /// Returns the canonical EIP-712 field ordering for orders.
     #[must_use]
-    pub fn field_names() -> &'static [&'static str; ORDER_TYPE_FIELD_NAMES.len()] {
+    pub const fn field_names() -> &'static [&'static str; ORDER_TYPE_FIELD_NAMES.len()] {
         &ORDER_TYPE_FIELD_NAMES
     }
 }
@@ -846,7 +846,7 @@ pub struct QuoteAmountsAndCosts<T = Amount> {
 impl<T> QuoteAmountsAndCosts<T> {
     /// Returns the canonical stage ordering for quote amount breakdowns.
     #[must_use]
-    pub fn stage_names() -> &'static [&'static str; QUOTE_AMOUNT_STAGE_NAMES.len()] {
+    pub const fn stage_names() -> &'static [&'static str; QUOTE_AMOUNT_STAGE_NAMES.len()] {
         &QUOTE_AMOUNT_STAGE_NAMES
     }
 }

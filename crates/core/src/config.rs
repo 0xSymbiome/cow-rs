@@ -77,7 +77,7 @@ impl SupportedChainId {
 
     /// Returns the path segment used by `CoW` API base URLs for this chain.
     #[must_use]
-    pub fn api_path(self) -> &'static str {
+    pub const fn api_path(self) -> &'static str {
         match self {
             Self::Mainnet => "mainnet",
             Self::Bnb => "bnb",
@@ -153,7 +153,7 @@ pub enum CowEnv {
 impl CowEnv {
     /// Returns the stable lowercase environment identifier.
     #[must_use]
-    pub fn as_str(self) -> &'static str {
+    pub const fn as_str(self) -> &'static str {
         match self {
             Self::Prod => "prod",
             Self::Staging => "staging",
@@ -204,14 +204,14 @@ impl HttpClientPolicy {
 
     /// Returns a copy of this policy with timeouts disabled.
     #[must_use]
-    pub fn without_timeout(mut self) -> Self {
+    pub const fn without_timeout(mut self) -> Self {
         self.timeout = None;
         self
     }
 
     /// Returns a copy of this policy with the supplied timeout.
     #[must_use]
-    pub fn with_timeout(mut self, timeout: Duration) -> Self {
+    pub const fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
         self
     }
@@ -232,7 +232,7 @@ impl HttpClientPolicy {
 
     /// Returns the configured timeout, if one is enabled.
     #[must_use]
-    pub fn timeout(&self) -> Option<Duration> {
+    pub const fn timeout(&self) -> Option<Duration> {
         self.timeout
     }
 

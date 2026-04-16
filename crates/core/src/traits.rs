@@ -75,7 +75,7 @@ impl<M> TypedDataEnvelope<M> {
 impl TypedDataPayload {
     /// Returns the canonical JSON message body.
     #[must_use]
-    pub fn message_json(&self) -> &str {
+    pub const fn message_json(&self) -> &str {
         self.message.as_str()
     }
 }
