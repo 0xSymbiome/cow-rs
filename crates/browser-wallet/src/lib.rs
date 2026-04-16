@@ -19,6 +19,15 @@
 //! Injected-wallet behavior remains environment-sensitive. Authorization prompts, provider
 //! inventory, extension timing, and vendor-specific support are controlled by the browser runtime
 //! and wallet extension rather than normalized into universal SDK guarantees.
+//!
+//! # Dependency Posture
+//!
+//! The typed EIP-1193 contract-call bridge inside [`provider`] uses the
+//! `alloy-primitives`, `alloy-dyn-abi`, and `alloy-json-abi` family for ABI encoding
+//! and decoding. That dependency choice, including the two proc-macro advisories the alloy
+//! toolchain transits, is tracked publicly in
+//! [docs/audit/browser-wallet-alloy-dependency-audit.md](https://github.com/cowdao-grants/cow-rs/blob/main/docs/audit/browser-wallet-alloy-dependency-audit.md).
+//! No `alloy_*` type appears in any `pub fn` signature across the workspace.
 
 /// Browser-wallet error and RPC failure types.
 pub mod error;

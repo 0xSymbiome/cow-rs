@@ -1,12 +1,13 @@
 # Dependency Gate Audit
 
 Status: Current  
-Last reviewed: 2026-04-15  
+Last reviewed: 2026-04-16  
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces  
-Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, or the current published CID warning status  
+Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, the current published CID warning status, or the alloy proc-macro advisory posture  
 Related docs:
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [CID Dependency Audit](cid-dependency-audit.md)
+- [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
 - [Release Checklist](../release-checklist.md)
 - [Verification Guide](../verification-guide.md)
 
@@ -52,10 +53,22 @@ or a local fork.
 Routine CI and release-readiness apply the same split dependency contract:
 `cargo deny check bans licenses sources --config .github/config/deny.toml` owns
 policy on allowed sources, licenses, and curated duplicate-version tolerances,
-while `cargo audit --deny unsound --deny unmaintained --ignore
-RUSTSEC-2026-0097` blocks RustSec vulnerabilities plus unsound and unmaintained
-advisories. This keeps real supply-chain regressions blocking without treating
-the current published-only CID warning as silent policy drift.
+while `cargo audit --deny unsound --deny unmaintained` blocks RustSec
+vulnerabilities plus unsound and unmaintained advisories. Three identifiers
+are currently tolerated with documented revisit triggers:
+
+- `RUSTSEC-2026-0097` — covered by
+  [CID Dependency Audit](cid-dependency-audit.md)
+- `RUSTSEC-2024-0388` — covered by
+  [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
+- `RUSTSEC-2024-0436` — covered by
+  [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
+
+Each ignore is mirrored in `.github/config/deny.toml` under
+`[advisories].ignore` and in the `cargo audit --ignore ...` arguments in
+`.github/workflows/ci.yml` and `.github/workflows/release-readiness.yml`.
+Every ignore carries a matching revisit comment pointing to its owning
+audit so policy drift stays reviewable in one place.
 
 ## Evidence
 
@@ -73,10 +86,14 @@ Validation surface:
 
 ```text
 cargo deny check bans licenses sources --config .github/config/deny.toml
-cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097
+cargo audit --deny unsound --deny unmaintained \
+  --ignore RUSTSEC-2026-0097 \
+  --ignore RUSTSEC-2024-0388 \
+  --ignore RUSTSEC-2024-0436
 cargo test -p cow-sdk-app-data
 cargo test -p cow-sdk-orderbook
 cargo test -p cow-sdk-subgraph
+cargo test -p cow-sdk-browser-wallet
 cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo check --workspace --all-features --target wasm32-unknown-unknown

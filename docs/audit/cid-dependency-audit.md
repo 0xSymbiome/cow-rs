@@ -1,9 +1,9 @@
 # CID Dependency Audit
 
 Status: Current  
-Last reviewed: 2026-04-15  
+Last reviewed: 2026-04-16  
 Owning surface: `cow-sdk-app-data` CID encoding and published dependency boundary  
-Refresh trigger: Changes to CID dependencies, supported CID encodings, legacy compatibility logic, or the published dependency posture for the app-data stack  
+Refresh trigger: Changes to CID dependencies, supported CID encodings, legacy compatibility logic, or the published dependency posture for the app-data stack, or a new `cid` or `core2` release that moves the reviewed warning state  
 Related docs:
 - [Dependency Gate Audit](dependency-gate-audit.md)
 - [Verification Guide](../verification-guide.md)
@@ -63,6 +63,30 @@ release, but the remaining `core2 0.4.0` reachability still comes from the
 latest published `cid 0.11.1` release. The repository therefore records that
 state as a reviewed warning instead of replacing the published dependency with
 an unreleased override.
+
+### Advisory Posture
+
+RustSec advisory [`RUSTSEC-2026-0097`](https://rustsec.org/advisories/RUSTSEC-2026-0097)
+reaches this workspace only through the published `cid 0.11.1` to `core2 0.4.0`
+chain documented above. The `cargo audit` gate therefore blocks every other
+unsound and unmaintained advisory while explicitly tolerating this single
+identifier through `--ignore RUSTSEC-2026-0097`. The same identifier is
+recorded in `.github/config/deny.toml` under `[advisories].ignore` with a
+matching expiry comment so the policy lives in one reviewable place instead of
+hiding inside a CI command line.
+
+Revisit trigger for this advisory:
+
+- Drop the ignore the first time a published `cid` release no longer reaches
+  `core2 0.4.0` through any transitive path, or the first time `core2`
+  publishes a maintained successor that unblocks the maintained CID path.
+- Calendar floor: re-review the advisory and the upstream state every 90
+  days even if no upstream movement has occurred, and update
+  `Last reviewed` together with the deny.toml comment.
+- If either trigger fires, refresh this audit, remove the `cargo audit
+  --ignore` flag from `.github/workflows/ci.yml` and
+  `.github/workflows/release-readiness.yml`, and remove the matching entry
+  from `.github/config/deny.toml`.
 
 ## Evidence
 

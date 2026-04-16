@@ -22,9 +22,11 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 workspace = true
 
 [dependencies]
+alloy-dyn-abi.workspace = true
+alloy-json-abi.workspace = true
+alloy-primitives.workspace = true
 async-trait = "0.1.89"
 cow-sdk-core = { path = "../core", version = "0.1.0" }
-ethabi = "18.0.0"
 hex.workspace = true
 num-bigint.workspace = true
 serde.workspace = true

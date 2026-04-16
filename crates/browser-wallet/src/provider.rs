@@ -4,10 +4,12 @@
 //! not expose a generic raw wallet-RPC passthrough beyond the transport seam used by the typed
 //! provider and signer adapters.
 
-use std::{cell::RefCell, fmt, io::Cursor, rc::Rc};
+use std::{cell::RefCell, fmt, rc::Rc};
 
+use alloy_dyn_abi::{DynSolType, DynSolValue, FunctionExt, JsonAbiExt};
+use alloy_json_abi::{JsonAbi, Param};
+use alloy_primitives::{Address as AlloyAddress, B256, I256, U256};
 use async_trait::async_trait;
-use ethabi::{Contract, Param, ParamType, Token, ethereum_types::U256};
 use num_bigint::BigUint;
 use serde_json::{Map, Value, json};
 
@@ -289,15 +291,13 @@ impl AsyncProvider for Eip1193Provider {
     }
 
     async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
-        let contract = load_contract(&request.abi_json, request.method.as_str())?;
-        let function = contract
-            .function(request.method.as_str())
-            .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
+        let abi = load_abi(&request.abi_json, request.method.as_str())?;
+        let function = resolve_function(&abi, request.method.as_str())?;
         let args = serde_json::from_str::<Value>(&request.args_json)
             .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
-        let tokens = json_args_to_tokens(&function.inputs, &args, request.method.as_str())?;
+        let values = json_args_to_dyn_values(&function.inputs, &args, request.method.as_str())?;
         let input = function
-            .encode_input(&tokens)
+            .abi_encode_input(&values)
             .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
         let raw = self
             .request(
@@ -311,12 +311,12 @@ impl AsyncProvider for Eip1193Provider {
         let raw = expect_string(&raw, "eth_call")?;
         let bytes = decode_hex(&raw, "eth_call")?;
         let decoded = function
-            .decode_output(&bytes)
+            .abi_decode_output(&bytes)
             .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
         let value = if decoded.len() == 1 {
-            token_to_json(&decoded[0])
+            dyn_value_to_json(&decoded[0])
         } else {
-            Value::Array(decoded.iter().map(token_to_json).collect())
+            Value::Array(decoded.iter().map(dyn_value_to_json).collect())
         };
         serde_json::to_string(&value)
             .map_err(|error| BrowserWalletError::serialization(error.to_string()))
@@ -465,17 +465,44 @@ pub(crate) fn transaction_to_rpc(
     Ok(Value::Object(object))
 }
 
-fn load_contract(abi_json: &str, method: &str) -> Result<Contract, BrowserWalletError> {
-    Contract::load(Cursor::new(abi_json.as_bytes())).map_err(|error| {
+fn load_abi(abi_json: &str, method: &str) -> Result<JsonAbi, BrowserWalletError> {
+    serde_json::from_str::<JsonAbi>(abi_json).map_err(|error| {
         BrowserWalletError::serialization(format!("failed to load ABI for `{method}`: {error}"))
     })
 }
 
-fn json_args_to_tokens(
+fn resolve_function<'abi>(
+    abi: &'abi JsonAbi,
+    method: &str,
+) -> Result<&'abi alloy_json_abi::Function, BrowserWalletError> {
+    let functions = abi.function(method).ok_or_else(|| {
+        BrowserWalletError::serialization(format!("ABI has no function named `{method}`"))
+    })?;
+    if functions.len() > 1 {
+        return Err(BrowserWalletError::serialization(format!(
+            "ABI defines {} overloads for `{method}`; typed browser-wallet bridge requires a unique function name",
+            functions.len()
+        )));
+    }
+    functions.first().ok_or_else(|| {
+        BrowserWalletError::serialization(format!("ABI has no function named `{method}`"))
+    })
+}
+
+fn resolve_param_type(param: &Param, method: &str) -> Result<DynSolType, BrowserWalletError> {
+    DynSolType::parse(&param.selector_type()).map_err(|error| {
+        BrowserWalletError::serialization(format!(
+            "failed to resolve ABI type `{}` for `{method}`: {error}",
+            param.ty
+        ))
+    })
+}
+
+fn json_args_to_dyn_values(
     inputs: &[Param],
     args: &Value,
     method: &str,
-) -> Result<Vec<Token>, BrowserWalletError> {
+) -> Result<Vec<DynSolValue>, BrowserWalletError> {
     match args {
         Value::Array(items) => {
             if items.len() != inputs.len() {
@@ -491,12 +518,16 @@ fn json_args_to_tokens(
             items
                 .iter()
                 .zip(inputs)
-                .map(|(value, param)| json_to_token(&param.kind, value, method))
+                .map(|(value, param)| {
+                    let ty = resolve_param_type(param, method)?;
+                    json_to_dyn_value(&ty, value, method)
+                })
                 .collect()
         }
         Value::Object(map) => {
             if inputs.len() == 1 && inputs[0].name.is_empty() {
-                return Ok(vec![json_to_token(&inputs[0].kind, args, method)?]);
+                let ty = resolve_param_type(&inputs[0], method)?;
+                return Ok(vec![json_to_dyn_value(&ty, args, method)?]);
             }
             inputs
                 .iter()
@@ -507,11 +538,15 @@ fn json_args_to_tokens(
                             format!("missing ABI argument `{}`", param.name),
                         )
                     })?;
-                    json_to_token(&param.kind, value, method)
+                    let ty = resolve_param_type(param, method)?;
+                    json_to_dyn_value(&ty, value, method)
                 })
                 .collect()
         }
-        other if inputs.len() == 1 => Ok(vec![json_to_token(&inputs[0].kind, other, method)?]),
+        other if inputs.len() == 1 => {
+            let ty = resolve_param_type(&inputs[0], method)?;
+            Ok(vec![json_to_dyn_value(&ty, other, method)?])
+        }
         _ => Err(BrowserWalletError::malformed_response(
             method,
             "contract arguments must be a JSON array, object, or single value",
@@ -519,33 +554,33 @@ fn json_args_to_tokens(
     }
 }
 
-fn json_to_token(
-    kind: &ParamType,
+fn json_to_dyn_value(
+    ty: &DynSolType,
     value: &Value,
     method: &str,
-) -> Result<Token, BrowserWalletError> {
-    match kind {
-        ParamType::Address => {
+) -> Result<DynSolValue, BrowserWalletError> {
+    match ty {
+        DynSolType::Address => {
             let address = value.as_str().ok_or_else(|| {
                 BrowserWalletError::malformed_response(method, "address must be a string")
             })?;
             let address = Address::new(address)?;
             let bytes = decode_hex(address.as_str(), method)?;
-            Ok(Token::Address(ethabi::Address::from_slice(&bytes)))
+            Ok(DynSolValue::Address(AlloyAddress::from_slice(&bytes)))
         }
-        ParamType::Uint(_) => Ok(Token::Uint(parse_u256(value, method)?)),
-        ParamType::Int(_) => Ok(Token::Int(parse_u256(value, method)?)),
-        ParamType::Bool => value.as_bool().map(Token::Bool).ok_or_else(|| {
+        DynSolType::Uint(bits) => Ok(DynSolValue::Uint(parse_u256(value, method)?, *bits)),
+        DynSolType::Int(bits) => Ok(DynSolValue::Int(parse_i256(value, method)?, *bits)),
+        DynSolType::Bool => value.as_bool().map(DynSolValue::Bool).ok_or_else(|| {
             BrowserWalletError::malformed_response(method, "bool must be a boolean")
         }),
-        ParamType::String => value
+        DynSolType::String => value
             .as_str()
-            .map(|item| Token::String(item.to_owned()))
+            .map(|item| DynSolValue::String(item.to_owned()))
             .ok_or_else(|| {
                 BrowserWalletError::malformed_response(method, "string must be a string")
             }),
-        ParamType::Bytes => Ok(Token::Bytes(bytes_from_json(value, method)?)),
-        ParamType::FixedBytes(length) => {
+        DynSolType::Bytes => Ok(DynSolValue::Bytes(bytes_from_json(value, method)?)),
+        DynSolType::FixedBytes(length) => {
             let bytes = bytes_from_json(value, method)?;
             if bytes.len() != *length {
                 return Err(BrowserWalletError::malformed_response(
@@ -553,9 +588,11 @@ fn json_to_token(
                     format!("expected {length} fixed bytes, received {}", bytes.len()),
                 ));
             }
-            Ok(Token::FixedBytes(bytes))
+            let mut buffer = [0u8; 32];
+            buffer[..bytes.len()].copy_from_slice(&bytes);
+            Ok(DynSolValue::FixedBytes(B256::from(buffer), *length))
         }
-        ParamType::Array(inner) => {
+        DynSolType::Array(inner) => {
             let items = value.as_array().ok_or_else(|| {
                 BrowserWalletError::malformed_response(
                     method,
@@ -564,11 +601,11 @@ fn json_to_token(
             })?;
             items
                 .iter()
-                .map(|item| json_to_token(inner, item, method))
+                .map(|item| json_to_dyn_value(inner, item, method))
                 .collect::<Result<Vec<_>, _>>()
-                .map(Token::Array)
+                .map(DynSolValue::Array)
         }
-        ParamType::FixedArray(inner, length) => {
+        DynSolType::FixedArray(inner, length) => {
             let items = value.as_array().ok_or_else(|| {
                 BrowserWalletError::malformed_response(
                     method,
@@ -586,11 +623,11 @@ fn json_to_token(
             }
             items
                 .iter()
-                .map(|item| json_to_token(inner, item, method))
+                .map(|item| json_to_dyn_value(inner, item, method))
                 .collect::<Result<Vec<_>, _>>()
-                .map(Token::FixedArray)
+                .map(DynSolValue::FixedArray)
         }
-        ParamType::Tuple(components) => {
+        DynSolType::Tuple(components) => {
             let items = value.as_array().ok_or_else(|| {
                 BrowserWalletError::malformed_response(
                     method,
@@ -610,24 +647,34 @@ fn json_to_token(
             items
                 .iter()
                 .zip(components)
-                .map(|(item, kind)| json_to_token(kind, item, method))
+                .map(|(item, inner)| json_to_dyn_value(inner, item, method))
                 .collect::<Result<Vec<_>, _>>()
-                .map(Token::Tuple)
+                .map(DynSolValue::Tuple)
         }
+        _ => Err(BrowserWalletError::serialization(format!(
+            "unsupported ABI type `{ty:?}` for `{method}`"
+        ))),
     }
 }
 
-fn token_to_json(token: &Token) -> Value {
-    match token {
-        Token::Address(address) => Value::String(format!("0x{}", hex::encode(address.as_bytes()))),
-        Token::FixedBytes(bytes) | Token::Bytes(bytes) => {
-            Value::String(format!("0x{}", hex::encode(bytes)))
+fn dyn_value_to_json(value: &DynSolValue) -> Value {
+    match value {
+        DynSolValue::Address(address) => {
+            Value::String(format!("0x{}", hex::encode(address.as_slice())))
         }
-        Token::Int(value) | Token::Uint(value) => Value::String(value.to_string()),
-        Token::Bool(value) => Value::Bool(*value),
-        Token::String(value) => Value::String(value.clone()),
-        Token::Array(items) | Token::FixedArray(items) | Token::Tuple(items) => {
-            Value::Array(items.iter().map(token_to_json).collect())
+        DynSolValue::FixedBytes(word, size) => {
+            Value::String(format!("0x{}", hex::encode(&word.as_slice()[..*size])))
+        }
+        DynSolValue::Bytes(bytes) => Value::String(format!("0x{}", hex::encode(bytes))),
+        DynSolValue::Int(int, _) => Value::String(int.to_string()),
+        DynSolValue::Uint(uint, _) => Value::String(uint.to_string()),
+        DynSolValue::Bool(flag) => Value::Bool(*flag),
+        DynSolValue::String(text) => Value::String(text.clone()),
+        DynSolValue::Array(items) | DynSolValue::FixedArray(items) | DynSolValue::Tuple(items) => {
+            Value::Array(items.iter().map(dyn_value_to_json).collect())
+        }
+        DynSolValue::Function(function) => {
+            Value::String(format!("0x{}", hex::encode(function.as_slice())))
         }
     }
 }
@@ -681,7 +728,38 @@ fn parse_u256(value: &Value, method: &str) -> Result<U256, BrowserWalletError> {
             format!("integer `{raw}` exceeds uint256 bounds"),
         ));
     }
-    Ok(U256::from_big_endian(&bytes))
+    let mut padded = [0u8; 32];
+    padded[32 - bytes.len()..].copy_from_slice(&bytes);
+    Ok(U256::from_be_bytes(padded))
+}
+
+fn parse_i256(value: &Value, method: &str) -> Result<I256, BrowserWalletError> {
+    let raw = match value {
+        Value::String(raw) => raw.clone(),
+        Value::Number(number) => number.to_string(),
+        _ => {
+            return Err(BrowserWalletError::malformed_response(
+                method,
+                "numeric arguments must be strings or numbers",
+            ));
+        }
+    };
+    if let Some(stripped) = raw.strip_prefix("0x") {
+        let unsigned = U256::from_str_radix(stripped, 16).map_err(|error| {
+            BrowserWalletError::malformed_response(
+                method,
+                format!("invalid hexadecimal signed integer `{raw}`: {error}"),
+            )
+        })?;
+        Ok(I256::from_raw(unsigned))
+    } else {
+        I256::from_dec_str(&raw).map_err(|error| {
+            BrowserWalletError::malformed_response(
+                method,
+                format!("invalid signed integer `{raw}`: {error}"),
+            )
+        })
+    }
 }
 
 pub(crate) fn decode_hex(value: &str, method: &str) -> Result<Vec<u8>, BrowserWalletError> {

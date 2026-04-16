@@ -35,6 +35,9 @@ must_use_candidate = "warn"
 unreadable_literal = "warn"
 
 [workspace.dependencies]
+alloy-dyn-abi = { version = "1.5.7", default-features = false, features = ["std"] }
+alloy-json-abi = { version = "1.5.7", default-features = false, features = ["std", "serde_json"] }
+alloy-primitives = { version = "1.5.7", default-features = false, features = ["std"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 thiserror = "2.0.18"
