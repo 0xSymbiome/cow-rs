@@ -6,7 +6,7 @@ resolver = "2"
 name = "cow-sdk-examples-native"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.94.1"
+rust-version = "1.94.0"
 publish = false
 description = "Native consumer-facing capability scenarios for cow-rs"
 
