@@ -29,6 +29,38 @@ all = "warn"
 broken_intra_doc_links = "deny"
 
 [workspace.lints.clippy]
+# Enable the pedantic and nursery groups as broad warn-level review
+# expectations. Priority = -1 lets any individually-denied lint below still
+# override the group so a specific deny wins over the group warn.
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+# async_trait(?Send) is the deliberate bridge shape for browser-wallet and
+# other wasm-bound async surfaces, so the nursery future-Send check flags
+# every intentional non-Send future by design.
+future_not_send = "allow"
+# The remaining group tolerances below are reviewed interim allows that will
+# be removed as the per-site review of each category lands. Each one carries
+# a one-line rationale explaining the current reviewed state.
+# `missing_const_for_fn` suggestions are evaluated site-by-site across the
+# workspace; blanket promotion is avoided so const qualification stays an
+# intentional per-function decision.
+missing_const_for_fn = "allow"
+# `redundant_pub_crate` reports `pub(crate)` markers inside private modules;
+# those markers are kept as explicit cross-module use documentation and as
+# defensive scoping if the enclosing module is ever promoted to `pub mod`.
+redundant_pub_crate = "allow"
+# `derive_partial_eq_without_eq` wants Eq added to every PartialEq derive;
+# adding Eq is a public trait guarantee evaluated per-type rather than as a
+# blanket uplift, because some public types carry fields that are not Eq.
+derive_partial_eq_without_eq = "allow"
+# `option_if_let_else` recommends `Option::map_or_else` over `if let`/`else`;
+# the `if let` pattern is kept where branching semantics read clearer than
+# the combinator form.
+option_if_let_else = "allow"
+# `ref_option` wants `Option<&T>` in function signatures where the shipped
+# public contract already takes `&Option<T>`; flipping that shape would be
+# a breaking public API change.
+ref_option = "allow"
 missing_errors_doc = "warn"
 missing_panics_doc = "warn"
 must_use_candidate = "warn"

@@ -842,22 +842,22 @@ impl OrderbookClient for OrderBookApi {
         &self,
         request: &OrderQuoteRequest,
     ) -> Result<OrderQuoteResponse, OrderbookError> {
-        OrderBookApi::get_quote(self, request).await
+        Self::get_quote(self, request).await
     }
 
     async fn send_order(&self, request: &OrderCreation) -> Result<OrderUid, OrderbookError> {
-        OrderBookApi::send_order(self, request).await
+        Self::send_order(self, request).await
     }
 
     async fn send_signed_order_cancellations(
         &self,
         request: &OrderCancellations,
     ) -> Result<(), OrderbookError> {
-        OrderBookApi::send_signed_order_cancellations(self, request).await
+        Self::send_signed_order_cancellations(self, request).await
     }
 
     async fn get_order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
-        OrderBookApi::get_order(self, order_uid).await
+        Self::get_order(self, order_uid).await
     }
 
     async fn upload_app_data(
@@ -865,6 +865,6 @@ impl OrderbookClient for OrderBookApi {
         app_data_hash: &AppDataHash,
         full_app_data: &str,
     ) -> Result<AppDataObject, OrderbookError> {
-        OrderBookApi::upload_app_data(self, app_data_hash, full_app_data).await
+        Self::upload_app_data(self, app_data_hash, full_app_data).await
     }
 }

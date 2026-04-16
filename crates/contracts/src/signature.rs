@@ -106,9 +106,9 @@ impl Signature {
     #[must_use]
     pub fn scheme(&self) -> SigningScheme {
         match self {
-            Signature::Ecdsa { scheme, .. } => *scheme,
-            Signature::Eip1271 { .. } => SigningScheme::Eip1271,
-            Signature::PreSign { .. } => SigningScheme::PreSign,
+            Self::Ecdsa { scheme, .. } => *scheme,
+            Self::Eip1271 { .. } => SigningScheme::Eip1271,
+            Self::PreSign { .. } => SigningScheme::PreSign,
         }
     }
 }
