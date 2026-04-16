@@ -24,6 +24,37 @@ It is not a runtime dependency of any published crate.
 - Vendored app-data schemas are committed compatibility assets, not a live dependency on
   `cow-sdk`.
 
+## Methodology
+
+The committed parity fixture system is a structural parity contract, not a
+runtime cross-language harness. `parity/source-lock.yaml` pins the upstream
+repositories and commits that the fixtures were derived from, and the fixture
+files keep those provenance anchors visible through committed `source_refs`
+metadata.
+
+That means the parity layer proves three things:
+
+- structural anchoring to pinned upstream commits recorded in
+  `parity/source-lock.yaml`
+- curated test-case integrity inside the committed fixture corpus
+- source-lock validation through the parity maintainer:
+
+```sh
+cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate \
+  --source-lock parity/source-lock.yaml
+```
+
+When maintainers supply explicit upstream roots to the same `validate`
+command, the proof surface widens to include commit alignment between the
+committed source lock and those independent checkouts.
+
+This layer does not prove automated cross-language value comparison at
+`cargo test` runtime. No TypeScript runtime executes during the Rust test
+suite, and the committed parity fixtures are not a live oracle that reruns the
+upstream SDK on demand. Behavioral cross-verification would require a separate
+cross-language comparison harness beyond the structural parity contract
+documented here.
+
 ## Maintainer workflow
 
 Validate pinned upstream roots:
