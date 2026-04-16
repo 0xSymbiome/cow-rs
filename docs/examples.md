@@ -44,7 +44,8 @@ Use the WASM examples when you need browser-facing verification surfaces.
 - Native runtime integrations plug into
   `cow-sdk-core::{Signer, AsyncSigner, Provider, AsyncProvider}`. That keeps
   provider-specific choices outside the default facade while preserving one
-  stable seam for downstream adapters.
+  stable seam for downstream adapters. See [Integrations](integrations.md) when
+  you are ready to wire a custom runtime.
 
 ## Choosing A Starting Point
 

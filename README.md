@@ -31,10 +31,13 @@ use cow_sdk::{SupportedChainId, TradingSdk};
 
 let _sdk = TradingSdk::builder()
     .with_chain_id(SupportedChainId::Sepolia)
-    .with_app_code("cow-rs/readme")
+    .with_app_code("your-app-code")
     .build()
     .unwrap();
 ```
+
+Use `appCode` as the stable identifier for the application or integration
+surface that originates the order flow.
 
 ## Crate Guide
 

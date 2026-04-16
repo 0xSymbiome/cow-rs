@@ -6,13 +6,15 @@ and design history for `cow-rs`.
 ## For SDK Consumers
 
 - [Getting Started](getting-started.md)
+- [Integrations](integrations.md)
 - [Principles](principles.md)
 - [Architecture](architecture.md)
 - [Examples](examples.md)
 
 Start with [Getting Started](getting-started.md) for the canonical onboarding
 path. Then use the other consumer pages to choose crates, understand public
-boundaries, and branch into the maintained example families.
+boundaries, integrate custom runtimes, and branch into the maintained example
+families.
 
 ## Common Boundary Questions
 
@@ -25,6 +27,7 @@ boundaries, and branch into the maintained example families.
   AsyncSigner, Provider, AsyncProvider}` defines the stable extension contract
   for signer and RPC adapters. Provider-specific integrations remain additive
   leaf crates rather than widening the default facade. See
+  [Integrations](integrations.md) and
   [Architecture](architecture.md#provider-and-signer-adapter-seams).
 
 ## For Verification And Review

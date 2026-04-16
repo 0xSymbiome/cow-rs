@@ -92,6 +92,7 @@ implements the async side directly without widening the native facade.
 The stable public contract is the trait seam itself. Native signer and RPC
 integrations remain additive leaf crates so the workspace does not freeze one
 provider ecosystem into `core`, `trading`, or the default `cow-sdk` facade.
+Use [Integrations](integrations.md) for a worked adapter example.
 
 ## Cross-Cutting Contracts
 
