@@ -7,10 +7,10 @@ repository.workspace = true
 rust-version.workspace = true
 
 description = "Facade crate for CoW Protocol Rust SDK surfaces"
-readme = "../../README.md"
+readme = "README.md"
 documentation = "https://docs.rs/cow-sdk"
 homepage = "https://github.com/cowdao-grants/cow-rs"
-keywords = ["cow-protocol", "sdk", "defi", "trading"]
+keywords = ["cow-protocol", "sdk", "trading", "defi", "ethereum"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 
 [package.metadata.docs.rs]

@@ -7,10 +7,10 @@ repository.workspace = true
 rust-version.workspace = true
 
 description = "Typed CoW Protocol subgraph query primitives"
-readme = "../../README.md"
+readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-subgraph"
 homepage = "https://github.com/cowdao-grants/cow-rs"
-keywords = ["cow-protocol", "subgraph", "graphql", "analytics"]
+keywords = ["cow-protocol", "sdk", "subgraph", "graphql", "analytics"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 
 [package.metadata.docs.rs]

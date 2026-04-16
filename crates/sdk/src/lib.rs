@@ -9,11 +9,13 @@
 //! - app-data helpers
 //! - trading orchestration
 //!
-//! Browser-wallet support is additive behind the `browser-wallet` feature and
-//! the `cow-sdk-browser-wallet` crate.
+//! Top-level docs are trading-first and keep the facade aligned with its package role.
+//! Optional browser-runtime support does not change the default facade identity.
+//! Browser-wallet support is additive behind the `browser-wallet` feature,
+//! and the full browser-runtime contract stays in `cow-sdk-browser-wallet`.
 //!
-//! Read-only subgraph access remains in the separate `cow-sdk-subgraph` crate
-//! and is not re-exported from this root package.
+//! Read-only subgraph access is a separate crate surface that lives in
+//! `cow-sdk-subgraph` and is not re-exported from this root package.
 //!
 //! ```rust
 //! use cow_sdk::{Address, SupportedChainId, TradingSdk};

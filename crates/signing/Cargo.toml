@@ -7,10 +7,10 @@ repository.workspace = true
 rust-version.workspace = true
 
 description = "Deterministic CoW Protocol order hashing, EIP-712 signing, and UID helpers"
-readme = "../../README.md"
+readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-signing"
 homepage = "https://github.com/cowdao-grants/cow-rs"
-keywords = ["cow-protocol", "eip712", "signing", "defi"]
+keywords = ["cow-protocol", "sdk", "eip712", "signing", "defi"]
 categories = ["cryptography", "cryptography::cryptocurrencies"]
 
 [package.metadata.docs.rs]

@@ -7,10 +7,10 @@ repository.workspace = true
 rust-version.workspace = true
 
 description = "CoW Protocol app-data encoding, schema validation, and CID compatibility"
-readme = "../../README.md"
+readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-app-data"
 homepage = "https://github.com/cowdao-grants/cow-rs"
-keywords = ["cow-protocol", "app-data", "cid", "metadata"]
+keywords = ["cow-protocol", "sdk", "app-data", "cid", "metadata"]
 categories = ["encoding", "cryptography::cryptocurrencies"]
 
 [package.metadata.docs.rs]

@@ -7,10 +7,10 @@ repository.workspace = true
 rust-version.workspace = true
 
 description = "Browser wallet integration for the CoW Protocol Rust SDK"
-readme = "../../README.md"
+readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-browser-wallet"
 homepage = "https://github.com/cowdao-grants/cow-rs"
-keywords = ["cow-protocol", "wallet", "wasm", "eip1193"]
+keywords = ["cow-protocol", "sdk", "wallet", "wasm", "eip1193"]
 categories = ["api-bindings", "cryptography::cryptocurrencies", "wasm"]
 
 [package.metadata.docs.rs]
