@@ -21,6 +21,22 @@ the current evidence lives.
   property or state-machine suite
 - `No`: the property is registered, but no executable coverage is attached yet
 
+## Methodology
+
+Rows labeled `Property` use deterministic invariant sweeps, not randomized
+framework-based property testing. The standard `property_contract.rs` suites
+drive a hand-rolled `CaseRng` through a reproducible 128-case boundary set,
+and some named narrow-search profiles extend the same deterministic approach
+with larger curated sweeps.
+
+This proves exhaustive coverage of the curated boundary cases attached to each
+property and keeps failures reproducible from committed seeds and fixtures. It
+does not prove random-exploration discovery of unexpected inputs, shrinking to
+minimal counterexamples, or statistical guarantees over uncurated input space.
+`cow-rs` therefore uses `Property` in the broad invariant-testing sense rather
+than as a claim of `proptest`- or `quickcheck`-style randomized shrinking
+coverage.
+
 | Id | Crate | Property | Type | Covered | Evidence |
 | --- | --- | --- | --- | --- | --- |
 | `PROP-CORE-001` | `cow-sdk-core` | Unsupported chain and environment resolution stays explicit and typed instead of falling back silently. | Contract | Yes | `crates/core/tests/config_contract.rs`, `crates/core/tests/types_contract.rs` |
