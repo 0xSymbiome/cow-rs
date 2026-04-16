@@ -16,6 +16,14 @@ cargo check -p cow-sdk --examples
 cargo check --manifest-path examples/native/Cargo.toml --examples
 ```
 
+The clippy gate runs under the workspace lint posture declared in the root
+`Cargo.toml`, which enables both the `pedantic` and `nursery` groups at warn
+level and treats warnings as errors. Contributors should expect the gate to
+surface pedantic and nursery findings on new code and either resolve them
+inline or, when a fix would require altering the shipped public contract,
+attach an `#[allow(clippy::<lint>)]` at module scope with a one-line
+justification. Broad file-scope silencing is not accepted in review.
+
 ## WASM And Browser Surfaces
 
 Run these checks when a change touches WASM-facing crates or browser-wallet

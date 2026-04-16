@@ -78,17 +78,25 @@ fn add_decimal_strings(left: &str, right: &str) -> Result<String, OrderbookError
     for index in 0..max_digits {
         let left_digit = left_bytes
             .get(left_bytes.len().wrapping_sub(index + 1))
-            .map(|byte| u32::from(byte - b'0'))
-            .unwrap_or(0);
+            .map_or(0, |byte| u32::from(byte - b'0'));
         let right_digit = right_bytes
             .get(right_bytes.len().wrapping_sub(index + 1))
-            .map(|byte| u32::from(byte - b'0'))
-            .unwrap_or(0);
+            .map_or(0, |byte| u32::from(byte - b'0'));
         let sum = left_digit + right_digit + carry;
         carry = sum / 10;
+        // Each digit is in the range 0..=9 because `sum % 10` cannot exceed 9.
+        #[allow(
+            clippy::cast_possible_truncation,
+            reason = "sum % 10 is bounded to 0..=9 which always fits in u8"
+        )]
         digits.push(char::from(b'0' + (sum % 10) as u8));
     }
 
+    // The final carry is bounded by the loop above (max 1 per step over base-10 digits).
+    #[allow(
+        clippy::cast_possible_truncation,
+        reason = "final carry is bounded to 0..=9 over base-10 digit sums"
+    )]
     digits.push(char::from(b'0' + carry as u8));
 
     digits.reverse();

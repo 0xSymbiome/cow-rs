@@ -85,15 +85,16 @@ pub(crate) fn encode_u256_str(
     field: &'static str,
     value: &str,
 ) -> Result<[u8; 32], ContractsError> {
-    let parsed = if let Some(stripped) = value.strip_prefix("0x") {
-        BigUint::parse_bytes(stripped.as_bytes(), 16)
-    } else {
-        BigUint::parse_bytes(value.as_bytes(), 10)
-    }
-    .ok_or_else(|| ContractsError::InvalidNumeric {
-        field,
-        value: value.to_owned(),
-    })?;
+    let parsed = value
+        .strip_prefix("0x")
+        .map_or_else(
+            || BigUint::parse_bytes(value.as_bytes(), 10),
+            |stripped| BigUint::parse_bytes(stripped.as_bytes(), 16),
+        )
+        .ok_or_else(|| ContractsError::InvalidNumeric {
+            field,
+            value: value.to_owned(),
+        })?;
 
     let bytes = parsed.to_bytes_be();
     if bytes.len() > 32 {

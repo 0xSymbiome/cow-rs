@@ -652,6 +652,10 @@ fn request_error_context(
     }
 }
 
+#[allow(
+    clippy::option_if_let_else,
+    reason = "the Ok arm binds an intermediate origin and carries a nested conditional; the combinator form would collapse that multi-statement body into a closure and obscure the two-branch parallel structure"
+)]
 fn sanitize_public_base_url(base_url: &str) -> String {
     match reqwest::Url::parse(base_url) {
         Ok(url) => {
@@ -666,6 +670,10 @@ fn sanitize_public_base_url(base_url: &str) -> String {
     }
 }
 
+#[allow(
+    clippy::single_option_map,
+    reason = "the Option mapping preserves explicit Option<SubgraphApiBaseUrls> semantics for the public sanitization helper"
+)]
 fn sanitized_base_urls(base_urls: Option<&SubgraphApiBaseUrls>) -> Option<SubgraphApiBaseUrls> {
     base_urls.map(|base_urls| {
         base_urls

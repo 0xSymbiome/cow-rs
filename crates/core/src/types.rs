@@ -906,12 +906,13 @@ fn parse_u256_quantity(field: &'static str, value: &str) -> Result<BigUint, Core
         return Err(ValidationError::EmptyField { field }.into());
     }
 
-    let parsed = if let Some(stripped) = value.strip_prefix("0x") {
-        BigUint::parse_bytes(stripped.as_bytes(), 16)
-    } else {
-        BigUint::parse_bytes(value.as_bytes(), 10)
-    }
-    .ok_or(ValidationError::InvalidNumeric { field })?;
+    let parsed = value
+        .strip_prefix("0x")
+        .map_or_else(
+            || BigUint::parse_bytes(value.as_bytes(), 10),
+            |stripped| BigUint::parse_bytes(stripped.as_bytes(), 16),
+        )
+        .ok_or(ValidationError::InvalidNumeric { field })?;
 
     if parsed.bits() > U256_MAX_BITS {
         return Err(ValidationError::NumericOverflow { field }.into());
@@ -926,5 +927,5 @@ fn parse_signed_quantity(field: &'static str, value: &str) -> Result<BigInt, Cor
     }
 
     BigInt::parse_bytes(value.as_bytes(), 10)
-        .ok_or(ValidationError::InvalidNumeric { field }.into())
+        .ok_or_else(|| ValidationError::InvalidNumeric { field }.into())
 }

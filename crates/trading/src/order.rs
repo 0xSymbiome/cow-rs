@@ -148,10 +148,7 @@ pub fn get_order_to_sign(
     let slippage_bps = limit_parameters
         .slippage_bps
         .unwrap_or_else(|| default_slippage_bps(params.chain_id, params.is_ethflow));
-    let mut sell_amount_to_use = limit_parameters.sell_amount.clone();
-    let mut buy_amount_to_use = limit_parameters.buy_amount.clone();
-
-    if params.apply_costs_slippage_and_fees {
+    let (sell_amount_to_use, buy_amount_to_use) = if params.apply_costs_slippage_and_fees {
         let quote = cow_sdk_orderbook::QuoteData {
             sell_token: limit_parameters.sell_token.clone(),
             buy_token: limit_parameters.buy_token.clone(),
@@ -172,17 +169,23 @@ pub fn get_order_to_sign(
             partner_fee_bps(limit_parameters.partner_fee.as_ref()),
             params.protocol_fee_bps,
         )?;
-        sell_amount_to_use = if amounts.is_sell {
+        let sell_amount = if amounts.is_sell {
             amounts.before_all_fees.sell_amount
         } else {
             amounts.after_slippage.sell_amount
         };
-        buy_amount_to_use = if amounts.is_sell {
+        let buy_amount = if amounts.is_sell {
             amounts.after_slippage.buy_amount
         } else {
             amounts.before_all_fees.buy_amount
         };
-    }
+        (sell_amount, buy_amount)
+    } else {
+        (
+            limit_parameters.sell_amount.clone(),
+            limit_parameters.buy_amount.clone(),
+        )
+    };
 
     Ok(UnsignedOrder {
         sell_token: limit_parameters.sell_token.clone(),

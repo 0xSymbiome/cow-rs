@@ -389,6 +389,10 @@ where
 /// Returns an error when owner resolution fails, when `EthFlow` routing prerequisites are missing,
 /// when order construction or signing fails, when app-data upload fails, or when the orderbook
 /// rejects the order submission.
+#[allow(
+    clippy::too_many_lines,
+    reason = "the function linearly sequences one trade-posting orchestration path whose steps must stay co-located to preserve reviewed precedence"
+)]
 pub async fn post_cow_protocol_trade_async<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,

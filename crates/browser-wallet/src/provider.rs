@@ -356,12 +356,13 @@ impl AsyncProvider for Eip1193Provider {
 }
 
 pub(crate) fn hex_quantity(value: &str) -> Result<String, BrowserWalletError> {
-    let parsed = if let Some(stripped) = value.strip_prefix("0x") {
-        BigUint::parse_bytes(stripped.as_bytes(), 16)
-    } else {
-        BigUint::parse_bytes(value.as_bytes(), 10)
-    }
-    .ok_or_else(|| BrowserWalletError::serialization(format!("invalid quantity `{value}`")))?;
+    let parsed = value
+        .strip_prefix("0x")
+        .map_or_else(
+            || BigUint::parse_bytes(value.as_bytes(), 10),
+            |stripped| BigUint::parse_bytes(stripped.as_bytes(), 16),
+        )
+        .ok_or_else(|| BrowserWalletError::serialization(format!("invalid quantity `{value}`")))?;
 
     if parsed == BigUint::default() {
         Ok("0x0".to_owned())
@@ -370,6 +371,10 @@ pub(crate) fn hex_quantity(value: &str) -> Result<String, BrowserWalletError> {
     }
 }
 
+#[allow(
+    clippy::option_if_let_else,
+    reason = "both hex and decimal branches wrap a multi-line map_err closure that constructs the same malformed_response error; the if let/else form keeps the two parse-radix paths visually parallel instead of nesting duplicated error construction inside two map_or_else closures"
+)]
 pub(crate) fn parse_chain_id_value(
     value: &Value,
     method: &str,
@@ -554,6 +559,10 @@ fn json_args_to_dyn_values(
     }
 }
 
+#[allow(
+    clippy::match_wildcard_for_single_variants,
+    reason = "the wildcard stays defensive against future DynSolType variants published by the upstream alloy-dyn-abi crate"
+)]
 fn json_to_dyn_value(
     ty: &DynSolType,
     value: &Value,
@@ -713,14 +722,15 @@ fn parse_u256(value: &Value, method: &str) -> Result<U256, BrowserWalletError> {
             ));
         }
     };
-    let normalized = if let Some(stripped) = raw.strip_prefix("0x") {
-        BigUint::parse_bytes(stripped.as_bytes(), 16)
-    } else {
-        BigUint::parse_bytes(raw.as_bytes(), 10)
-    }
-    .ok_or_else(|| {
-        BrowserWalletError::malformed_response(method, format!("invalid integer `{raw}`"))
-    })?;
+    let normalized = raw
+        .strip_prefix("0x")
+        .map_or_else(
+            || BigUint::parse_bytes(raw.as_bytes(), 10),
+            |stripped| BigUint::parse_bytes(stripped.as_bytes(), 16),
+        )
+        .ok_or_else(|| {
+            BrowserWalletError::malformed_response(method, format!("invalid integer `{raw}`"))
+        })?;
     let bytes = normalized.to_bytes_be();
     if bytes.len() > 32 {
         return Err(BrowserWalletError::malformed_response(

@@ -9,7 +9,7 @@ use cow_sdk_core::{
 use crate::{
     ContractsError,
     interaction::{Interaction, InteractionLike, normalize_interaction},
-    order::{NormalizedOrder, Order, OrderUidParams, extract_order_uid_params, normalize_order},
+    order::{NormalizedOrder, Order, extract_order_uid_params, normalize_order},
     primitives::{abi_encode_bytes_array, function_selector, normalize_hex_payload, zero_address},
     signature::{Signature, SigningScheme, decode_signing_scheme, encode_eip1271_signature_data},
 };
@@ -311,12 +311,7 @@ impl SettlementEncoder {
             .iter()
             .chain(refunds.pre_signatures.iter())
         {
-            let params = extract_order_uid_params(uid)?;
-            let _ = OrderUidParams {
-                order_digest: params.order_digest,
-                owner: params.owner,
-                valid_to: params.valid_to,
-            };
+            let _ = extract_order_uid_params(uid)?;
         }
         self.order_refunds
             .filled_amounts

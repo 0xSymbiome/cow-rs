@@ -285,11 +285,11 @@ where
     .slippage_bps
     .unwrap_or(default_slippage);
 
+    let mut updated_parameters = effective_trade_parameters.clone();
     let (trade_parameters, app_data_info) = if effective_trade_parameters.slippage_bps.is_none()
         && suggested_slippage != initial_slippage
     {
-        let mut updated = effective_trade_parameters.clone();
-        updated.slippage_bps = Some(suggested_slippage);
+        updated_parameters.slippage_bps = Some(suggested_slippage);
         let app_data = build_app_data(
             &effective_trader.app_code,
             suggested_slippage,
@@ -298,11 +298,10 @@ where
             advanced_settings.and_then(|settings| settings.app_data.as_ref()),
         )
         .await?;
-        (updated, app_data)
+        (updated_parameters, app_data)
     } else {
-        let mut updated = effective_trade_parameters.clone();
-        updated.slippage_bps = Some(initial_slippage);
-        (updated, initial_app_data)
+        updated_parameters.slippage_bps = Some(initial_slippage);
+        (updated_parameters, initial_app_data)
     };
 
     let amounts_and_costs = calculate_quote_amounts_and_costs(

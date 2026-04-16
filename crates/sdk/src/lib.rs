@@ -1,4 +1,4 @@
-//! Primary Rust SDK facade for CoW Protocol.
+//! Primary Rust SDK facade for `CoW` Protocol.
 //!
 //! This crate re-exports the main public surface for:
 //!

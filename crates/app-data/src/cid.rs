@@ -105,6 +105,10 @@ fn ensure_supported_cid(cid: &Cid) -> Result<(), AppDataError> {
         return Err(AppDataError::InvalidCid);
     }
 
+    #[allow(
+        clippy::match_wildcard_for_single_variants,
+        reason = "the wildcard stays defensive against future Version variants published by the upstream cid crate"
+    )]
     match cid.version() {
         // Parsed `CIDv0` values are already constructor-bounded to the legacy
         // dag-pb + sha2-256 contract by the `cid` crate.

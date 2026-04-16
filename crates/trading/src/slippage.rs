@@ -311,6 +311,10 @@ pub(crate) fn gas_with_margin(gas: &Amount) -> Result<Amount, TradingError> {
     Amount::new((gas + margin).to_string()).map_err(Into::into)
 }
 
+#[allow(
+    clippy::option_if_let_else,
+    reason = "both branches carry the same multi-field InvalidNumeric error literal; the if let/else form keeps the two parse-radix paths visually parallel instead of nesting duplicated error construction inside two map_or_else closures"
+)]
 pub(crate) fn parse_integer(field: &'static str, value: &str) -> Result<BigInt, TradingError> {
     if let Some(hex_value) = value.strip_prefix("0x") {
         BigInt::parse_bytes(hex_value.as_bytes(), 16).ok_or_else(|| TradingError::InvalidNumeric {

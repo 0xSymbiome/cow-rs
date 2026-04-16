@@ -185,10 +185,7 @@ fn fetch_doc_from_app_data_hex_inner(
 }
 
 fn policy_from_optional_uri(ipfs_uri: Option<&str>) -> Result<IpfsFetchPolicy, AppDataError> {
-    match ipfs_uri {
-        Some(read_base_uri) => IpfsFetchPolicy::new(read_base_uri),
-        None => Ok(IpfsFetchPolicy::default()),
-    }
+    ipfs_uri.map_or_else(|| Ok(IpfsFetchPolicy::default()), IpfsFetchPolicy::new)
 }
 
 fn normalize_read_base_uri(read_base_uri: &str) -> Result<String, AppDataError> {
