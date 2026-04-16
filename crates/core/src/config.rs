@@ -280,7 +280,7 @@ impl fmt::Debug for ApiContext {
             .field("chain_id", &self.chain_id)
             .field("env", &self.env)
             .field("base_urls", &self.base_urls)
-            .field("api_key", &redacted_secret_option(&self.api_key))
+            .field("api_key", &self.api_key.as_ref().map(|_| REDACTED_SECRET))
             .finish()
     }
 }
@@ -503,8 +503,4 @@ fn validate_user_agent(user_agent: String) -> Result<String, ValidationError> {
 fn validate_header_value(value: &str, field: &'static str) -> Result<(), ValidationError> {
     HeaderValue::from_str(value).map_err(|_| ValidationError::InvalidHttpHeaderValue { field })?;
     Ok(())
-}
-
-fn redacted_secret_option(value: &Option<String>) -> Option<&'static str> {
-    value.as_ref().map(|_| REDACTED_SECRET)
 }

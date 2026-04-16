@@ -306,11 +306,11 @@ impl fmt::Debug for IpfsConfig {
             .field("read_uri", &self.read_uri)
             .field(
                 "pinata_api_key",
-                &redacted_secret_option(&self.pinata_api_key),
+                &self.pinata_api_key.as_ref().map(|_| REDACTED_SECRET),
             )
             .field(
                 "pinata_api_secret",
-                &redacted_secret_option(&self.pinata_api_secret),
+                &self.pinata_api_secret.as_ref().map(|_| REDACTED_SECRET),
             )
             .finish()
     }
@@ -372,10 +372,6 @@ fn is_semver(version: &str) -> bool {
 
 fn is_non_empty_digits(value: &str) -> bool {
     !value.is_empty() && value.chars().all(|ch| ch.is_ascii_digit())
-}
-
-fn redacted_secret_option(value: &Option<String>) -> Option<&'static str> {
-    value.as_ref().map(|_| REDACTED_SECRET)
 }
 
 #[cfg(test)]

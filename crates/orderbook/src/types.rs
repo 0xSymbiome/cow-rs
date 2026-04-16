@@ -32,7 +32,7 @@ impl fmt::Debug for ApiContextOverride {
             .field("chain_id", &self.chain_id)
             .field("env", &self.env)
             .field("base_urls", &self.base_urls)
-            .field("api_key", &redacted_secret_option(&self.api_key))
+            .field("api_key", &self.api_key.as_ref().map(|_| "<redacted>"))
             .finish()
     }
 }
@@ -68,10 +68,6 @@ pub struct EnvBaseUrlOverrides {
     pub prod: Option<String>,
     /// Explicit staging base URL.
     pub staging: Option<String>,
-}
-
-fn redacted_secret_option(value: &Option<String>) -> Option<&'static str> {
-    value.as_ref().map(|_| "<redacted>")
 }
 
 impl EnvBaseUrlOverrides {

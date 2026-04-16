@@ -45,10 +45,6 @@ future_not_send = "allow"
 # workspace; blanket promotion is avoided so const qualification stays an
 # intentional per-function decision.
 missing_const_for_fn = "allow"
-# `ref_option` wants `Option<&T>` in function signatures where the shipped
-# public contract already takes `&Option<T>`; flipping that shape would be
-# a breaking public API change.
-ref_option = "allow"
 missing_errors_doc = "warn"
 missing_panics_doc = "warn"
 must_use_candidate = "warn"
