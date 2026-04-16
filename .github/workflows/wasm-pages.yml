@@ -12,8 +12,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: wasm-example-pages-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:

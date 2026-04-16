@@ -16,8 +16,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: browser-wallet-e2e-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   browser-wallet:

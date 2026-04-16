@@ -1,7 +1,7 @@
 # Credential Surface Contract Hygiene Audit
 
 Status: Current  
-Last reviewed: 2026-04-15  
+Last reviewed: 2026-04-16  
 Owning surface: Cross-cutting credential redaction and typed partner-fee public boundary across core, app-data, orderbook, subgraph, and trading  
 Refresh trigger: Changes to public credential-bearing configs, subgraph route identity or request-failure context, or typed partner-fee request boundaries  
 Related docs:
@@ -95,7 +95,4 @@ cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo build --target wasm32-unknown-unknown -p cow-sdk
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
-python tools/validate_trace_links.py --root .
-python tools/validate_task_packs.py --root .
-python tools/generate_drift_report.py --root . --output ./.spec-graph/drift-report.md
 ```

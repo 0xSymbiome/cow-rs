@@ -1,7 +1,7 @@
 # Trading Order Construction Integrity Audit
 
 Status: Current  
-Last reviewed: 2026-04-15  
+Last reviewed: 2026-04-16  
 Owning surface: `cow-sdk-trading` order assembly, injected-orderbook constructor parity, and recoverable-signature posting boundary  
 Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` construction with injected orderbooks, or recoverable-signature posting validation  
 Related docs:
@@ -78,7 +78,4 @@ cargo fmt --all --check
 cargo test -p cow-sdk-trading
 cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
-python tools/validate_trace_links.py --root .
-python tools/validate_task_packs.py --root .
-python tools/generate_drift_report.py --root . --output ./.spec-graph/drift-report.md
 ```

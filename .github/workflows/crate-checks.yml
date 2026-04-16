@@ -12,7 +12,7 @@ env:
   RUST_CI_TOOLCHAIN: 1.94.1
 
 concurrency:
-  group: crate-checks-${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

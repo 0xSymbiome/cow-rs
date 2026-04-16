@@ -32,8 +32,8 @@ env:
   TEST_DEPTH_WORKFLOW_FILE: test-depth.yml
 
 concurrency:
-  group: test-depth-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   coverage:

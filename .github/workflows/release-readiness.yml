@@ -20,7 +20,7 @@ env:
   RUST_MSRV: 1.94.0
 
 concurrency:
-  group: release-readiness-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
