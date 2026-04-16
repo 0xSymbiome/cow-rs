@@ -167,6 +167,7 @@ fn signature_for_scheme(rng: &mut CaseRng, scheme: SigningScheme) -> Signature {
         SigningScheme::PreSign => Signature::PreSign {
             owner: rng.non_zero_address(),
         },
+        _ => panic!("unsupported generated signing scheme: {scheme:?}"),
     }
 }
 

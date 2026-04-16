@@ -612,7 +612,11 @@ where
             let scheme = match scheme {
                 SigningScheme::Eip712 => SigningSchemeContract::Eip712,
                 SigningScheme::EthSign => SigningSchemeContract::EthSign,
-                SigningScheme::Eip1271 | SigningScheme::PreSign => unreachable!(),
+                _ => {
+                    return Err(TradingError::InvalidInput(format!(
+                        "unsupported order signing scheme `{scheme:?}`"
+                    )));
+                }
             };
             let signing_result = sign_order_with_scheme_async(
                 order_to_sign,
@@ -624,9 +628,12 @@ where
             .await?;
             Ok((
                 signing_result.signature,
-                map_contract_scheme(signing_result.signing_scheme),
+                map_contract_scheme(signing_result.signing_scheme)?,
             ))
         }
+        _ => Err(TradingError::InvalidInput(format!(
+            "unsupported order signing scheme `{scheme:?}`"
+        ))),
     }
 }
 
@@ -699,11 +706,12 @@ where
     Ok(())
 }
 
-fn map_contract_scheme(scheme: SigningSchemeContract) -> SigningScheme {
+fn map_contract_scheme(scheme: SigningSchemeContract) -> Result<SigningScheme, TradingError> {
     match scheme {
-        SigningSchemeContract::Eip712 => SigningScheme::Eip712,
-        SigningSchemeContract::EthSign => SigningScheme::EthSign,
-        SigningSchemeContract::Eip1271 => SigningScheme::Eip1271,
-        SigningSchemeContract::PreSign => SigningScheme::PreSign,
+        SigningSchemeContract::Eip712 => Ok(SigningScheme::Eip712),
+        SigningSchemeContract::EthSign => Ok(SigningScheme::EthSign),
+        SigningSchemeContract::Eip1271 => Ok(SigningScheme::Eip1271),
+        SigningSchemeContract::PreSign => Ok(SigningScheme::PreSign),
+        _ => Err(TradingError::UnsupportedLocalSigningScheme { scheme }),
     }
 }

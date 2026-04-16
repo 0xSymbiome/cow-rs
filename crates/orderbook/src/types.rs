@@ -94,6 +94,7 @@ impl EnvBaseUrlOverrides {
 }
 
 /// Quote-quality mode accepted by the orderbook quote endpoint.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum PriceQuality {
@@ -107,6 +108,7 @@ pub enum PriceQuality {
 }
 
 /// Signature scheme encoded in orderbook wire DTOs.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum SigningScheme {
@@ -133,6 +135,7 @@ pub enum EcdsaSigningScheme {
 }
 
 /// Order class surfaced by the orderbook API.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum OrderClass {
@@ -146,6 +149,7 @@ pub enum OrderClass {
 }
 
 /// Order lifecycle status returned by the orderbook API.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub enum OrderStatus {
@@ -922,6 +926,7 @@ pub struct Auction {
 }
 
 /// Competition-status kind returned by `/api/v1/orders/{uid}/status`.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CompetitionOrderStatusKind {

@@ -43,6 +43,7 @@ pub struct SubgraphRequestErrorContext {
 }
 
 /// Typed failure boundary for subgraph helper and raw-query operations.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum SubgraphError {
     /// The selected chain does not have a configured subgraph endpoint.

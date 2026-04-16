@@ -4,6 +4,7 @@ use thiserror::Error;
 use crate::request::OrderBookApiError;
 
 /// Errors returned by the typed orderbook client and transport helpers.
+#[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum OrderbookError {
     /// Error bubbled up from shared core configuration or type validation.

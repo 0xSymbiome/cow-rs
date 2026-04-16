@@ -72,6 +72,9 @@ Browser wallet support also stays additive.
 It is exposed only behind the `browser-wallet` feature and the dedicated
 `cow-sdk-browser-wallet` leaf crate.
 
+Shared validation and configuration failures surface under the canonical
+`CoreError` type from `cow-sdk-core`.
+
 That split matters when you choose where to start:
 
 - use `cow-sdk` for the main trading-first path
@@ -153,6 +156,7 @@ This builder step proves the top-level SDK contract:
 - `appCode` is a required ready-state default and a stable integration
   identifier
 - `Address::new(...)` is the public validated address constructor
+- `CoreError` is the canonical shared validation and configuration error type
 
 This step does **not** yet prove signing, quoting, or transport behavior.
 

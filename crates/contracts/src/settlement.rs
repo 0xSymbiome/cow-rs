@@ -15,6 +15,7 @@ use crate::{
 };
 
 /// Settlement interaction stage.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
 pub enum InteractionStage {

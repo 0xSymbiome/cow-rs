@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 /// Validation failures for typed user input and configuration values.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum ValidationError {
     /// A required string or collection field was empty after validation.
@@ -56,6 +57,7 @@ pub enum ValidationError {
 }
 
 /// Top-level core crate error.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum CoreError {
     /// Validation failed for a typed user input or configuration value.
@@ -80,6 +82,3 @@ pub enum CoreError {
     #[error("transport contract violation: {0}")]
     TransportContract(String),
 }
-
-/// Backward-compatible alias retained for older consumers.
-pub type CowRsError = CoreError;

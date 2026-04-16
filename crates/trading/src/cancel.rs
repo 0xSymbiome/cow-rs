@@ -77,7 +77,7 @@ where
         signing_scheme: match signing.signing_scheme {
             SigningSchemeContract::Eip712 => EcdsaSigningScheme::Eip712,
             SigningSchemeContract::EthSign => EcdsaSigningScheme::EthSign,
-            SigningSchemeContract::Eip1271 | SigningSchemeContract::PreSign => {
+            _ => {
                 return Err(TradingError::UnsupportedLocalSigningScheme {
                     scheme: signing.signing_scheme,
                 });

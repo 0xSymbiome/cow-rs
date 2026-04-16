@@ -222,7 +222,7 @@ where
                 .sign_message(&digest)
                 .map_err(|error| signer_error("sign_message", error))?
         }
-        SigningScheme::Eip1271 | SigningScheme::PreSign => {
+        _ => {
             return Err(SigningError::UnsupportedSignerGeneratedScheme { scheme });
         }
     };
@@ -259,7 +259,7 @@ where
                 .await
                 .map_err(|error| signer_error("sign_message", error))?
         }
-        SigningScheme::Eip1271 | SigningScheme::PreSign => {
+        _ => {
             return Err(SigningError::UnsupportedSignerGeneratedScheme { scheme });
         }
     };

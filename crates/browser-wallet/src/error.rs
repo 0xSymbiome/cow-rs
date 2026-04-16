@@ -22,6 +22,7 @@ pub struct RpcErrorPayload {
 }
 
 /// Errors produced by typed browser-wallet discovery, session, provider, and signer flows.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Error)]
 pub enum BrowserWalletError {
     /// No injected browser wallet provider is available in the current runtime.

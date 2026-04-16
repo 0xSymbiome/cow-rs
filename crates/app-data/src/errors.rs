@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 /// Errors returned by app-data generation, validation, transport, and CID helpers.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum AppDataError {
     /// The supplied app-data hash was not valid `0x`-prefixed 32-byte hex.

@@ -16,7 +16,7 @@ pub use config::{
     SupportedChainId, default_api_base_urls, eth_flow_contract_address,
     settlement_contract_address, vault_relayer_address, wrapped_native_token,
 };
-pub use errors::{CoreError, CowRsError, ValidationError};
+pub use errors::{CoreError, ValidationError};
 pub use traits::{
     AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle, GraphTransport,
     HttpTransport, PinningTransport, Provider, Signer, TransactionReceipt, TransactionRequest,

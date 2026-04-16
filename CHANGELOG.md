@@ -32,6 +32,12 @@ unreleased public contract of the repository.
 - The root landing page and docs hub now expose explicit trust and maintenance
   signals, including the current publication state, security disclosure path,
   and release-readiness references.
+- Public error enums and the documented growth-state enums now use
+  `#[non_exhaustive]` so additive variants remain compatible with the shipped
+  `0.1.0` surface.
+- `CoreError` is now the single canonical shared core error name across the
+  public facade and guides; the unused `CowRsError` alias has been removed as a
+  naming finalization before the first functional release.
 
 ### Security
 

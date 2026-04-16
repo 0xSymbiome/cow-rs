@@ -49,11 +49,12 @@ pub use cow_sdk_trading as trading;
 use thiserror::Error;
 
 /// Aggregate error type for the root facade crate.
+#[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum SdkError {
     /// Shared types, validation, or configuration error.
     #[error("types error: {0}")]
-    Types(#[from] cow_sdk_core::CowRsError),
+    Types(#[from] cow_sdk_core::CoreError),
     /// Signing or typed-data error.
     #[error("signing error: {0}")]
     Signing(#[from] cow_sdk_signing::SigningError),

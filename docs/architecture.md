@@ -129,12 +129,12 @@ to a different orderbook endpoint, chain, or environment. Reviewed
 workflow contract through quote, order, sign, and post seams. Builder-created
 and directly constructed `TradingSdk` instances share the same injected-
 orderbook validation boundary. Ready-state `TradingSdk` construction now
-requires `appCode` plus explicit or injected chain authority, while explicit
-partial constructors remain available for chain-bound helper flows such as
-allowance, approval, pre-sign, and on-chain cancellation. Recoverable-signature
-posting rejects explicit owner or signer mismatch before submission, and
-user-facing partner-fee policy remains typed on trading request surfaces and
-only crosses into raw metadata at the explicit app-data translation seam.
+requires a stable `appCode` plus explicit or injected chain authority, while
+explicit partial constructors remain available for chain-bound helper flows
+such as allowance, approval, pre-sign, and on-chain cancellation. Recoverable-
+signature posting rejects explicit owner or signer mismatch before submission,
+and user-facing partner-fee policy remains typed on trading request surfaces
+and only crosses into raw metadata at the explicit app-data translation seam.
 
 For browser-wallet-backed trading flows, chain coherence remains leaf-owned by
 `cow-sdk-browser-wallet`. When the workflow already has an explicit chain

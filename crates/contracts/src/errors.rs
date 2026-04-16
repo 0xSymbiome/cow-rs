@@ -2,6 +2,7 @@ use cow_sdk_core::{Address, CoreError};
 use thiserror::Error;
 
 /// Errors returned by low-level `CoW` contract helpers.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum ContractsError {
     /// Core validation failed for an input value.

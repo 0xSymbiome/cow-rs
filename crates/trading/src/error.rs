@@ -6,6 +6,7 @@ use cow_sdk_signing::SigningError;
 use thiserror::Error;
 
 /// Errors returned by trading orchestration, quote construction, and submission helpers.
+#[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum TradingError {
     /// Shared core type or configuration error.

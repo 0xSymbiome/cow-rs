@@ -3,6 +3,7 @@ use cow_sdk_core::CoreError;
 use thiserror::Error;
 
 /// Errors returned by explicit signing helpers.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum SigningError {
     /// Core validation failed while building a signing payload.
