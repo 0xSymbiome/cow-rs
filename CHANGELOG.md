@@ -43,3 +43,8 @@ unreleased public contract of the repository.
 
 - `0.1.0` will be recorded here when the first functional crates.io release is
   live.
+
+## [0.1.0] - TBD
+
+Placeholder for the first functional crates.io release of the `cow-rs` crate
+family. This section will be populated when that release is published.

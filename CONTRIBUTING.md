@@ -35,6 +35,44 @@ cd examples/wasm/browser-wallet-console && wasm-pack build --target web
 Update public docs when a change moves a public crate boundary, support claim,
 release contract, or verification story.
 
+## Branch Naming
+
+Use one focused branch per change set.
+
+Branch names follow `<type>/<short-surface-summary>`.
+
+Use the same change-type vocabulary as the commit convention when it fits:
+`feat/`, `fix/`, `docs/`, `refactor/`, `test/`, or `chore/`.
+
+Keep the suffix short, lowercase, and tied to the surface being changed. For
+example: `docs/release-checklist` or `fix/orderbook-timeout`.
+
+## Pull Request Process
+
+Open a pull request after the relevant local checks for the touched surface
+pass.
+
+Keep each pull request scoped to one crate boundary, documentation surface, or
+validation change set.
+
+In the pull request body, summarize the public effect, the validation you ran,
+and any follow-up work that remains out of scope.
+
+Request review from repository maintainers once the branch is ready for
+review. Update the branch in place if review identifies follow-up fixes.
+
+## Merge Policy
+
+Do not merge a pull request until required CI is green and maintainer review
+is complete.
+
+Prefer squash merge for single-topic pull requests so the public history stays
+concise and easy to audit.
+
+If a pull request intentionally preserves multiple independently meaningful
+commits, rebase merge is acceptable. Avoid merge commits unless repository
+maintainers explicitly request them.
+
 ## Commit Template
 
 The repository includes a commit message template at

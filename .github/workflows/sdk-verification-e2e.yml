@@ -70,7 +70,7 @@ jobs:
         run: bun install --cwd e2e/sdk-verification --frozen-lockfile
 
       - name: Install Playwright Chromium
-        run: bun run --cwd e2e/sdk-verification playwright install chromium
+        run: bun run --cwd e2e/sdk-verification playwright install --with-deps chromium
 
       - name: Run SDK verification browser e2e
         run: bun run --cwd e2e/sdk-verification test
