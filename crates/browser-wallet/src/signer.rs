@@ -20,7 +20,7 @@ pub struct Eip1193Signer {
 }
 
 impl Eip1193Signer {
-    pub(crate) fn new(provider: Eip1193Provider, account_hint: Option<Address>) -> Self {
+    pub(crate) const fn new(provider: Eip1193Provider, account_hint: Option<Address>) -> Self {
         Self {
             provider,
             account_hint,
@@ -30,7 +30,7 @@ impl Eip1193Signer {
 
     /// Returns the provider associated with this signer.
     #[must_use]
-    pub fn provider(&self) -> &Eip1193Provider {
+    pub const fn provider(&self) -> &Eip1193Provider {
         &self.provider
     }
 
@@ -39,14 +39,14 @@ impl Eip1193Signer {
     /// Chain-bound signers revalidate the wallet session chain before address,
     /// signature, gas, and transaction operations.
     #[must_use]
-    pub fn with_expected_chain(mut self, chain_id: SupportedChainId) -> Self {
+    pub const fn with_expected_chain(mut self, chain_id: SupportedChainId) -> Self {
         self.expected_chain_id = Some(chain_id);
         self
     }
 
     /// Returns the expected chain id fixed on this signer, when one is set.
     #[must_use]
-    pub fn expected_chain_id(&self) -> Option<SupportedChainId> {
+    pub const fn expected_chain_id(&self) -> Option<SupportedChainId> {
         self.expected_chain_id
     }
 

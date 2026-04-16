@@ -229,7 +229,7 @@ pub enum PartnerFeePolicy {
 impl PartnerFeePolicy {
     /// Creates a volume-based partner-fee policy.
     #[must_use]
-    pub fn volume(volume_bps: u32, recipient: Address) -> Self {
+    pub const fn volume(volume_bps: u32, recipient: Address) -> Self {
         Self::Volume {
             volume_bps,
             recipient,
@@ -238,7 +238,7 @@ impl PartnerFeePolicy {
 
     /// Creates a surplus-based partner-fee policy.
     #[must_use]
-    pub fn surplus(surplus_bps: u32, max_volume_bps: u32, recipient: Address) -> Self {
+    pub const fn surplus(surplus_bps: u32, max_volume_bps: u32, recipient: Address) -> Self {
         Self::Surplus {
             surplus_bps,
             max_volume_bps,
@@ -248,7 +248,7 @@ impl PartnerFeePolicy {
 
     /// Creates a price-improvement-based partner-fee policy.
     #[must_use]
-    pub fn price_improvement(
+    pub const fn price_improvement(
         price_improvement_bps: u32,
         max_volume_bps: u32,
         recipient: Address,
@@ -262,7 +262,7 @@ impl PartnerFeePolicy {
 
     /// Returns the volume-basis-point fee when this policy uses the volume shape.
     #[must_use]
-    pub fn volume_bps(&self) -> Option<u32> {
+    pub const fn volume_bps(&self) -> Option<u32> {
         match self {
             Self::Volume { volume_bps, .. } => Some(*volume_bps),
             Self::Surplus { .. } | Self::PriceImprovement { .. } => None,

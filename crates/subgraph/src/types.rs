@@ -42,7 +42,7 @@ impl SubgraphQueryRequest {
 
     /// Returns the request variables, if present.
     #[must_use]
-    pub fn variables(&self) -> Option<&Value> {
+    pub const fn variables(&self) -> Option<&Value> {
         self.variables.as_ref()
     }
 

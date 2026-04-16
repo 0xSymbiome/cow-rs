@@ -123,14 +123,14 @@ pub(crate) fn chain_id_bytes(chain_id: ChainId) -> Result<[u8; 32], ContractsErr
     encode_u256_str("chainId", &chain_id.to_string())
 }
 
-pub(crate) fn order_kind_name(kind: OrderKind) -> &'static str {
+pub(crate) const fn order_kind_name(kind: OrderKind) -> &'static str {
     match kind {
         OrderKind::Buy => "buy",
         OrderKind::Sell => "sell",
     }
 }
 
-pub(crate) fn balance_name(balance: OrderBalance) -> &'static str {
+pub(crate) const fn balance_name(balance: OrderBalance) -> &'static str {
     match balance {
         OrderBalance::Erc20 => "erc20",
         OrderBalance::External => "external",
@@ -209,7 +209,7 @@ pub(crate) fn abi_encode_bytes_array(items: &[Vec<u8>]) -> Vec<u8> {
     encoded
 }
 
-pub(crate) fn padded_len(len: usize) -> usize {
+pub(crate) const fn padded_len(len: usize) -> usize {
     if len == 0 {
         0
     } else {

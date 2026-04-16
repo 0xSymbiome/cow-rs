@@ -31,13 +31,13 @@ pub enum SigningScheme {
 impl SigningScheme {
     /// Returns the compact numeric encoding for the signing scheme.
     #[must_use]
-    pub fn as_u8(self) -> u8 {
+    pub const fn as_u8(self) -> u8 {
         self as u8
     }
 
     /// Returns whether the scheme produces an ECDSA signature locally.
     #[must_use]
-    pub fn is_ecdsa(self) -> bool {
+    pub const fn is_ecdsa(self) -> bool {
         matches!(self, Self::Eip712 | Self::EthSign)
     }
 }
@@ -104,7 +104,7 @@ pub enum Signature {
 impl Signature {
     /// Returns the signing scheme represented by this signature.
     #[must_use]
-    pub fn scheme(&self) -> SigningScheme {
+    pub const fn scheme(&self) -> SigningScheme {
         match self {
             Self::Ecdsa { scheme, .. } => *scheme,
             Self::Eip1271 { .. } => SigningScheme::Eip1271,
@@ -151,7 +151,7 @@ pub fn decode_eip1271_signature_data(
 
 /// Encodes a signing scheme into the compact trade-flag representation.
 #[must_use]
-pub fn encode_signing_scheme(scheme: SigningScheme) -> u8 {
+pub const fn encode_signing_scheme(scheme: SigningScheme) -> u8 {
     scheme.as_u8()
 }
 

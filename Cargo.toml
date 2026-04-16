@@ -38,13 +38,6 @@ nursery = { level = "warn", priority = -1 }
 # other wasm-bound async surfaces, so the nursery future-Send check flags
 # every intentional non-Send future by design.
 future_not_send = "allow"
-# The remaining group tolerances below are reviewed interim allows that will
-# be removed as the per-site review of each category lands. Each one carries
-# a one-line rationale explaining the current reviewed state.
-# `missing_const_for_fn` suggestions are evaluated site-by-site across the
-# workspace; blanket promotion is avoided so const qualification stays an
-# intentional per-function decision.
-missing_const_for_fn = "allow"
 missing_errors_doc = "warn"
 missing_panics_doc = "warn"
 must_use_candidate = "warn"

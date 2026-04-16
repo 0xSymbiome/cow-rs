@@ -379,7 +379,7 @@ fn encode_usize_u256(value: usize) -> [u8; 32] {
     out
 }
 
-fn padded_len(len: usize) -> usize {
+const fn padded_len(len: usize) -> usize {
     if len == 0 {
         0
     } else {
@@ -394,14 +394,14 @@ fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
     out
 }
 
-fn order_kind_name(kind: OrderKind) -> &'static str {
+const fn order_kind_name(kind: OrderKind) -> &'static str {
     match kind {
         OrderKind::Buy => "buy",
         OrderKind::Sell => "sell",
     }
 }
 
-fn balance_name(balance: OrderBalance) -> &'static str {
+const fn balance_name(balance: OrderBalance) -> &'static str {
     match balance {
         OrderBalance::Erc20 => "erc20",
         OrderBalance::External => "external",

@@ -576,7 +576,7 @@ pub struct InjectedProviderTransport;
 
 #[cfg(not(target_arch = "wasm32"))]
 impl InjectedProviderTransport {
-    pub(crate) fn detect_legacy() -> Option<Self> {
+    pub(crate) const fn detect_legacy() -> Option<Self> {
         None
     }
 

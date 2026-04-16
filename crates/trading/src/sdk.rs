@@ -54,7 +54,7 @@ impl TradingSdkBuilder {
 
     /// Returns a copy of this builder with a default chain id.
     #[must_use]
-    pub fn with_chain_id(mut self, chain_id: SupportedChainId) -> Self {
+    pub const fn with_chain_id(mut self, chain_id: SupportedChainId) -> Self {
         self.trader_defaults.chain_id = Some(chain_id);
         self
     }
@@ -75,7 +75,7 @@ impl TradingSdkBuilder {
 
     /// Returns a copy of this builder with a default environment.
     #[must_use]
-    pub fn with_env(mut self, env: CowEnv) -> Self {
+    pub const fn with_env(mut self, env: CowEnv) -> Self {
         self.trader_defaults.env = Some(env);
         self
     }
@@ -234,13 +234,13 @@ impl TradingSdk {
 
     /// Returns the stored trader defaults.
     #[must_use]
-    pub fn trader_defaults(&self) -> &PartialTraderParameters {
+    pub const fn trader_defaults(&self) -> &PartialTraderParameters {
         &self.trader_defaults
     }
 
     /// Returns the stored SDK options.
     #[must_use]
-    pub fn options(&self) -> &TradingSdkOptions {
+    pub const fn options(&self) -> &TradingSdkOptions {
         &self.options
     }
 

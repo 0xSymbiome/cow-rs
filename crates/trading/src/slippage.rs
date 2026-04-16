@@ -29,7 +29,7 @@ const PROTOCOL_FEE_BPS_MIN: f64 = 0.0001;
 
 /// Returns the default slippage floor for the given chain and trade style.
 #[must_use]
-pub fn default_slippage_bps(_chain_id: SupportedChainId, _is_ethflow: bool) -> u32 {
+pub const fn default_slippage_bps(_chain_id: SupportedChainId, _is_ethflow: bool) -> u32 {
     DEFAULT_SLIPPAGE_BPS
 }
 

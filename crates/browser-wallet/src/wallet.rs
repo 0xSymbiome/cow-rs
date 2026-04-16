@@ -41,13 +41,13 @@ impl InjectedWalletDetectionOptions {
 
     /// Creates a new injected-wallet discovery configuration.
     #[must_use]
-    pub fn new(timeout_ms: u32) -> Self {
+    pub const fn new(timeout_ms: u32) -> Self {
         Self { timeout_ms }
     }
 
     /// Returns the configured discovery timeout in milliseconds.
     #[must_use]
-    pub fn timeout_ms(self) -> u32 {
+    pub const fn timeout_ms(self) -> u32 {
         self.timeout_ms
     }
 }
@@ -355,31 +355,31 @@ impl InjectedWalletDiscovery {
 
     /// Returns the number of discovered wallet candidates.
     #[must_use]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.wallets.len()
     }
 
     /// Returns `true` when discovery produced no wallet candidates.
     #[must_use]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.wallets.is_empty()
     }
 
     /// Returns the bounded discovery wait time, in milliseconds.
     #[must_use]
-    pub fn timeout_ms(&self) -> u32 {
+    pub const fn timeout_ms(&self) -> u32 {
         self.timeout_ms
     }
 
     /// Returns `true` when discovery fell back to direct `window.ethereum` lookup.
     #[must_use]
-    pub fn used_legacy_fallback(&self) -> bool {
+    pub const fn used_legacy_fallback(&self) -> bool {
         self.used_legacy_fallback
     }
 
     /// Returns `true` when explicit wallet selection is required before use.
     #[must_use]
-    pub fn requires_explicit_selection(&self) -> bool {
+    pub const fn requires_explicit_selection(&self) -> bool {
         self.wallets.len() > 1
     }
 
@@ -789,7 +789,7 @@ impl BrowserWallet {
     /// # Errors
     ///
     /// Returns an error when the runtime transport probe fails unexpectedly.
-    pub fn detect() -> Result<Option<Self>, BrowserWalletError> {
+    pub const fn detect() -> Result<Option<Self>, BrowserWalletError> {
         let _ = crate::js::InjectedProviderTransport::detect_legacy();
         Ok(None)
     }

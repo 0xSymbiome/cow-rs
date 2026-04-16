@@ -225,11 +225,11 @@ impl BrowserWalletError {
         }
     }
 
-    pub(crate) fn discovery_selection_required(candidates: usize) -> Self {
+    pub(crate) const fn discovery_selection_required(candidates: usize) -> Self {
         Self::DiscoverySelectionRequired { candidates }
     }
 
-    pub(crate) fn discovery_selection_out_of_range(index: usize, candidates: usize) -> Self {
+    pub(crate) const fn discovery_selection_out_of_range(index: usize, candidates: usize) -> Self {
         Self::DiscoverySelectionOutOfRange { index, candidates }
     }
 

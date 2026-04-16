@@ -710,7 +710,7 @@ where
     Ok(())
 }
 
-fn map_contract_scheme(scheme: SigningSchemeContract) -> Result<SigningScheme, TradingError> {
+const fn map_contract_scheme(scheme: SigningSchemeContract) -> Result<SigningScheme, TradingError> {
     match scheme {
         SigningSchemeContract::Eip712 => Ok(SigningScheme::Eip712),
         SigningSchemeContract::EthSign => Ok(SigningScheme::EthSign),

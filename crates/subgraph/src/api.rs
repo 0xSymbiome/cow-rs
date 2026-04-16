@@ -103,13 +103,13 @@ impl Default for SubgraphTransportPolicy {
 impl SubgraphTransportPolicy {
     /// Creates a transport policy from an explicit HTTP client policy.
     #[must_use]
-    pub fn new(client: HttpClientPolicy) -> Self {
+    pub const fn new(client: HttpClientPolicy) -> Self {
         Self { client }
     }
 
     /// Returns the shared HTTP client policy.
     #[must_use]
-    pub fn client_policy(&self) -> &HttpClientPolicy {
+    pub const fn client_policy(&self) -> &HttpClientPolicy {
         &self.client
     }
 
@@ -188,13 +188,13 @@ impl SubgraphApi {
 
     /// Returns the human-readable API name for this client.
     #[must_use]
-    pub fn api_name(&self) -> &'static str {
+    pub const fn api_name(&self) -> &'static str {
         API_NAME
     }
 
     /// Returns the static configuration stored in this client.
     #[must_use]
-    pub fn config(&self) -> &SubgraphConfig {
+    pub const fn config(&self) -> &SubgraphConfig {
         &self.config
     }
 
@@ -204,19 +204,19 @@ impl SubgraphApi {
     /// posture stays explicit, while the Graph API key remains private to the
     /// request-routing path.
     #[must_use]
-    pub fn prod_config(&self) -> &SubgraphApiBaseUrls {
+    pub const fn prod_config(&self) -> &SubgraphApiBaseUrls {
         &self.prod_config
     }
 
     /// Returns the active transport policy.
     #[must_use]
-    pub fn transport_policy(&self) -> &SubgraphTransportPolicy {
+    pub const fn transport_policy(&self) -> &SubgraphTransportPolicy {
         &self.transport_policy
     }
 
     /// Returns the shared HTTP client policy embedded in the transport policy.
     #[must_use]
-    pub fn client_policy(&self) -> &HttpClientPolicy {
+    pub const fn client_policy(&self) -> &HttpClientPolicy {
         self.transport_policy.client_policy()
     }
 
@@ -556,7 +556,7 @@ fn build_prod_config() -> SubgraphApiBaseUrls {
     ])
 }
 
-fn prod_subgraph_id(chain_id: SupportedChainId) -> Option<&'static str> {
+const fn prod_subgraph_id(chain_id: SupportedChainId) -> Option<&'static str> {
     match chain_id {
         SupportedChainId::Mainnet => Some("8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD"),
         SupportedChainId::GnosisChain => Some("HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq"),

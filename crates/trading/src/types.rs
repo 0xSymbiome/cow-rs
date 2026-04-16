@@ -18,7 +18,7 @@ use cow_sdk_signing::OrderTypedData;
 
 use crate::TradingError;
 
-fn default_order_balance() -> OrderBalance {
+const fn default_order_balance() -> OrderBalance {
     OrderBalance::Erc20
 }
 
