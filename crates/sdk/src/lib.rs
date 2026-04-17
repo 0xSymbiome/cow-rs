@@ -28,8 +28,18 @@
 //!     .unwrap();
 //! ```
 //!
+//! The subgraph module is intentionally not re-exported, so attempting to
+//! reach it through the root facade fails to compile:
+//!
 //! ```compile_fail
 //! use cow_sdk::subgraph;
+//! ```
+//!
+//! The typed `SubgraphApi` entry point is likewise not reachable from the
+//! facade and must be imported from `cow-sdk-subgraph` directly:
+//!
+//! ```compile_fail
+//! use cow_sdk::SubgraphApi;
 //! ```
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
