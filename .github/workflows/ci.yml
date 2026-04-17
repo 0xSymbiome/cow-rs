@@ -115,6 +115,32 @@ jobs:
       - name: Run workspace library and integration tests on Windows stable
         run: cargo test --workspace --lib --tests
 
+  macos-stable:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Check workspace formatting on macOS
+        run: cargo fmt --all --check
+      - name: Check workspace on macOS stable
+        run: cargo check --workspace --all-features
+      - name: Run workspace clippy on macOS
+        run: cargo clippy --workspace --all-features -- -D warnings
+      - name: Run workspace library and integration tests on macOS stable
+        run: cargo test --workspace --lib --tests
+      - name: Run workspace doctests on macOS stable
+        run: cargo test --workspace --doc
+
   dependency-freshness:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_dependency_freshness }}
     runs-on: ubuntu-latest
@@ -171,6 +197,7 @@ jobs:
       - doctest
       - msrv
       - windows-stable
+      - macos-stable
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -206,6 +233,7 @@ jobs:
       - doctest
       - msrv
       - windows-stable
+      - macos-stable
       - publication
     steps:
       # Source ref: re-actors/alls-green@release/v1
