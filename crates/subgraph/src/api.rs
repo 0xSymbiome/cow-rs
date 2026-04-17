@@ -399,6 +399,17 @@ impl SubgraphApi {
     /// Returns [`SubgraphError::Cancelled`] when `token` fires during the
     /// call, or any transport, HTTP, GraphQL, serialization, missing-data, or
     /// unsupported-network error surfaced by the underlying query.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.config().chain_id,
+                endpoint = "subgraph.last_days_volume",
+                method = "POST",
+            ),
+        ),
+    )]
     pub async fn get_last_days_volume_with_cancellation(
         &self,
         days: u32,
@@ -475,6 +486,17 @@ impl SubgraphApi {
     /// Returns [`SubgraphError::Cancelled`] when `token` fires during the
     /// call, or any transport, HTTP, GraphQL, serialization, missing-data, or
     /// unsupported-network error surfaced by the underlying query.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.config().chain_id,
+                endpoint = "subgraph.last_hours_volume",
+                method = "POST",
+            ),
+        ),
+    )]
     pub async fn get_last_hours_volume_with_cancellation(
         &self,
         hours: u32,
@@ -558,6 +580,17 @@ impl SubgraphApi {
     /// call, or [`SubgraphError`] for transport failures, non-success HTTP
     /// status codes, GraphQL error payloads, response-decoding failures,
     /// missing `data`, or unsupported networks.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.config().chain_id,
+                endpoint = "subgraph.run_query",
+                method = "POST",
+            ),
+        ),
+    )]
     pub async fn run_query_with_cancellation<T, R>(
         &self,
         request: R,

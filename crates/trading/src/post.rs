@@ -231,6 +231,17 @@ where
 /// or an error when the quoted trade cannot be converted into a postable
 /// order, when app-data merging fails, when signing fails, or when the
 /// orderbook rejects the order submission.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        skip_all,
+        fields(
+            chain = ?trader.chain_id,
+            env = ?trader.env,
+            endpoint = "trading.post_swap_order_from_quote_async",
+        ),
+    ),
+)]
 pub async fn post_swap_order_from_quote_async_with_cancellation<O, S>(
     quote_results: &QuoteResults,
     trader: &TraderParameters,
@@ -480,6 +491,17 @@ where
 /// Returns [`TradingError::Cancelled`] when `token` fires during the call,
 /// or an error when transaction preparation fails, when app-data upload
 /// fails, or when the signer cannot send the transaction.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        skip_all,
+        fields(
+            chain = ?trader.chain_id,
+            env = ?trader.env,
+            endpoint = "trading.post_sell_native_currency_order_async",
+        ),
+    ),
+)]
 pub async fn post_sell_native_currency_order_async_with_cancellation<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,

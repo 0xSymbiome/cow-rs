@@ -86,6 +86,17 @@ where
 /// # Errors
 ///
 /// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        skip_all,
+        fields(
+            chain = ?chain_id,
+            scheme = ?scheme,
+            endpoint = "signing.order",
+        ),
+    ),
+)]
 pub fn sign_order_with_scheme<S>(
     order: &UnsignedOrder,
     chain_id: SupportedChainId,
@@ -106,6 +117,17 @@ where
 /// # Errors
 ///
 /// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        skip_all,
+        fields(
+            chain = ?chain_id,
+            scheme = ?scheme,
+            endpoint = "signing.order",
+        ),
+    ),
+)]
 pub async fn sign_order_with_scheme_async<S>(
     order: &UnsignedOrder,
     chain_id: SupportedChainId,

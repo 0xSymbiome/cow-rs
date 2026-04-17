@@ -487,7 +487,8 @@ impl TradingSdk {
         tracing::instrument(
             skip_all,
             fields(
-                chain = ?params.env,
+                chain = ?self.trader_defaults.chain_id,
+                env = ?self.trader_defaults.env,
                 endpoint = "trading.quote_only",
             ),
         ),
@@ -545,6 +546,17 @@ impl TradingSdk {
     ///
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or any error from [`Self::get_quote_results_async_with_cancellation`].
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.trader_defaults.chain_id,
+                env = ?self.trader_defaults.env,
+                endpoint = "trading.quote_results",
+            ),
+        ),
+    )]
     pub async fn get_quote_results_with_cancellation<S>(
         &self,
         params: TradeParameters,
@@ -594,6 +606,17 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or [`TradingError`] when required defaults are missing, signer
     /// address resolution fails, or downstream quote construction fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.trader_defaults.chain_id,
+                env = ?self.trader_defaults.env,
+                endpoint = "trading.quote_results_async",
+            ),
+        ),
+    )]
     pub async fn get_quote_results_async_with_cancellation<S>(
         &self,
         mut params: TradeParameters,
@@ -657,6 +680,17 @@ impl TradingSdk {
     ///
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or any error from [`Self::post_swap_order_async_with_cancellation`].
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.trader_defaults.chain_id,
+                env = ?self.trader_defaults.env,
+                endpoint = "trading.post_swap_order",
+            ),
+        ),
+    )]
     pub async fn post_swap_order_with_cancellation<S>(
         &self,
         params: TradeParameters,
@@ -708,6 +742,17 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or [`TradingError`] when quoting, signing, app-data upload, or
     /// order submission fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.trader_defaults.chain_id,
+                env = ?self.trader_defaults.env,
+                endpoint = "trading.post_swap_order_async",
+            ),
+        ),
+    )]
     pub async fn post_swap_order_async_with_cancellation<S>(
         &self,
         mut params: TradeParameters,
@@ -771,6 +816,17 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or any error from
     /// [`Self::post_swap_order_from_quote_async_with_cancellation`].
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.trader_defaults.chain_id,
+                env = ?self.trader_defaults.env,
+                endpoint = "trading.post_swap_order_from_quote",
+            ),
+        ),
+    )]
     pub async fn post_swap_order_from_quote_with_cancellation<S>(
         &self,
         quote_results: &QuoteResults,
@@ -829,6 +885,17 @@ impl TradingSdk {
     /// call, or [`TradingError`] when the stored orderbook binding no longer
     /// matches the SDK's active orderbook, when app-data merging fails, when
     /// signing fails, or when the orderbook rejects the submission.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.trader_defaults.chain_id,
+                env = ?self.trader_defaults.env,
+                endpoint = "trading.post_swap_order_from_quote_async",
+            ),
+        ),
+    )]
     pub async fn post_swap_order_from_quote_async_with_cancellation<S>(
         &self,
         quote_results: &QuoteResults,
@@ -891,6 +958,17 @@ impl TradingSdk {
     ///
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or any error from [`Self::post_limit_order_async_with_cancellation`].
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.trader_defaults.chain_id,
+                env = ?self.trader_defaults.env,
+                endpoint = "trading.post_limit_order",
+            ),
+        ),
+    )]
     pub async fn post_limit_order_with_cancellation<S>(
         &self,
         params: LimitTradeParameters,
@@ -942,6 +1020,17 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or [`TradingError`] when required defaults are missing,
     /// app-data generation fails, or downstream signing/submission fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.trader_defaults.chain_id,
+                env = ?self.trader_defaults.env,
+                endpoint = "trading.post_limit_order_async",
+            ),
+        ),
+    )]
     pub async fn post_limit_order_async_with_cancellation<S>(
         &self,
         mut params: LimitTradeParameters,
@@ -1024,6 +1113,18 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or [`TradingError`] when trader defaults are incomplete or gas
     /// estimation / transaction construction fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.get_pre_sign_transaction_async",
+                order_uid = params.order_uid.as_str(),
+            ),
+        ),
+    )]
     pub async fn get_pre_sign_transaction_async_with_cancellation<S>(
         &self,
         params: &OrderTraderParameters,
@@ -1068,6 +1169,18 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or [`TradingError`] when chain resolution fails or the orderbook
     /// request fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.get_order",
+                order_uid = params.order_uid.as_str(),
+            ),
+        ),
+    )]
     pub async fn get_order_with_cancellation(
         &self,
         params: &OrderTraderParameters,
@@ -1111,6 +1224,18 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or any error from
     /// [`Self::off_chain_cancel_order_async_with_cancellation`].
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.off_chain_cancel_order",
+                order_uid = params.order_uid.as_str(),
+            ),
+        ),
+    )]
     pub async fn off_chain_cancel_order_with_cancellation<S>(
         &self,
         params: &OrderTraderParameters,
@@ -1155,6 +1280,18 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or [`TradingError`] when orderbook context resolution, signing,
     /// or orderbook submission fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.off_chain_cancel_order_async",
+                order_uid = params.order_uid.as_str(),
+            ),
+        ),
+    )]
     pub async fn off_chain_cancel_order_async_with_cancellation<S>(
         &self,
         params: &OrderTraderParameters,
@@ -1217,6 +1354,18 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or any error from
     /// [`Self::on_chain_cancel_order_async_with_cancellation`].
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.on_chain_cancel_order",
+                order_uid = params.order_uid.as_str(),
+            ),
+        ),
+    )]
     pub async fn on_chain_cancel_order_with_cancellation<S>(
         &self,
         params: &OrderTraderParameters,
@@ -1264,6 +1413,18 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or [`TradingError`] when order lookup, transaction construction,
     /// or transaction submission fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.on_chain_cancel_order_async",
+                order_uid = params.order_uid.as_str(),
+            ),
+        ),
+    )]
     pub async fn on_chain_cancel_order_async_with_cancellation<S>(
         &self,
         params: &OrderTraderParameters,
@@ -1357,6 +1518,17 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or [`TradingError`] when trader defaults are incomplete or
     /// provider reads fail.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.get_cow_protocol_allowance_async",
+            ),
+        ),
+    )]
     pub async fn get_cow_protocol_allowance_async_with_cancellation<P>(
         &self,
         provider: &P,
@@ -1444,6 +1616,17 @@ impl TradingSdk {
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or [`TradingError`] when trader defaults are incomplete or
     /// transaction submission fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.approve_cow_protocol_async",
+            ),
+        ),
+    )]
     pub async fn approve_cow_protocol_async_with_cancellation<S>(
         &self,
         signer: &S,

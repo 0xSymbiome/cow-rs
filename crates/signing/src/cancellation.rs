@@ -67,6 +67,17 @@ where
 /// # Errors
 ///
 /// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        skip_all,
+        fields(
+            chain = ?chain_id,
+            scheme = ?scheme,
+            endpoint = "signing.order_cancellation",
+        ),
+    ),
+)]
 pub fn sign_order_cancellation_with_scheme<S>(
     order_uid: &OrderUid,
     chain_id: SupportedChainId,
@@ -92,6 +103,17 @@ where
 /// # Errors
 ///
 /// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        skip_all,
+        fields(
+            chain = ?chain_id,
+            scheme = ?scheme,
+            endpoint = "signing.order_cancellation",
+        ),
+    ),
+)]
 pub async fn sign_order_cancellation_with_scheme_async<S>(
     order_uid: &OrderUid,
     chain_id: SupportedChainId,
@@ -167,6 +189,17 @@ where
 /// # Errors
 ///
 /// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        skip_all,
+        fields(
+            chain = ?chain_id,
+            scheme = ?scheme,
+            endpoint = "signing.order_cancellations",
+        ),
+    ),
+)]
 pub fn sign_order_cancellations_with_scheme<S>(
     order_uids: &[OrderUid],
     chain_id: SupportedChainId,
@@ -187,6 +220,17 @@ where
 /// # Errors
 ///
 /// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        skip_all,
+        fields(
+            chain = ?chain_id,
+            scheme = ?scheme,
+            endpoint = "signing.order_cancellations",
+        ),
+    ),
+)]
 pub async fn sign_order_cancellations_with_scheme_async<S>(
     order_uids: &[OrderUid],
     chain_id: SupportedChainId,

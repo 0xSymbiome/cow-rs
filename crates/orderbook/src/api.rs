@@ -299,6 +299,18 @@ impl OrderBookApi {
     /// not well-formed, [`OrderbookError::Cancelled`] when `token` fires
     /// during the call, or any transport/API/serialization error returned by
     /// the orderbook request helpers.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/quote",
+                method = "POST",
+            ),
+        ),
+    )]
     pub async fn get_quote_with_cancellation(
         &self,
         request: &OrderQuoteRequest,
@@ -345,6 +357,18 @@ impl OrderBookApi {
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport/API/serialization error returned by the
     /// orderbook request helpers.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/orders",
+                method = "POST",
+            ),
+        ),
+    )]
     pub async fn send_order_with_cancellation(
         &self,
         request: &OrderCreation,
@@ -389,6 +413,18 @@ impl OrderBookApi {
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport/API/serialization error returned by the
     /// orderbook request helpers.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/orders",
+                method = "DELETE",
+            ),
+        ),
+    )]
     pub async fn send_signed_order_cancellations_with_cancellation(
         &self,
         request: &OrderCancellations,
@@ -427,6 +463,19 @@ impl OrderBookApi {
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport, API, or normalization error returned by the
     /// orderbook request helpers.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/orders/:uid",
+                method = "GET",
+                order_uid = order_uid.as_str(),
+            ),
+        ),
+    )]
     pub async fn get_order_with_cancellation(
         &self,
         order_uid: &OrderUid,
@@ -471,6 +520,19 @@ impl OrderBookApi {
     ///
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during either
     /// lookup, or any error from the primary or fallback order lookup.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/orders/:uid",
+                method = "GET",
+                order_uid = order_uid.as_str(),
+            ),
+        ),
+    )]
     pub async fn get_order_multi_env_with_cancellation(
         &self,
         order_uid: &OrderUid,
@@ -521,6 +583,19 @@ impl OrderBookApi {
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport, API, or normalization error returned by the
     /// orderbook request helpers.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/account/:owner/orders",
+                method = "GET",
+                owner = request.owner.as_str(),
+            ),
+        ),
+    )]
     pub async fn get_orders_with_cancellation(
         &self,
         request: &GetOrdersRequest,
@@ -564,6 +639,18 @@ impl OrderBookApi {
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport, API, or normalization error returned by the
     /// orderbook request helpers.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/transactions/:tx/orders",
+                method = "GET",
+            ),
+        ),
+    )]
     pub async fn get_tx_orders_with_cancellation(
         &self,
         tx_hash: &str,
@@ -609,6 +696,18 @@ impl OrderBookApi {
     /// filters are set, [`OrderbookError::Cancelled`] when `token` fires
     /// during the call, or any transport/API/serialization error from the
     /// request helpers.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v2/trades",
+                method = "GET",
+            ),
+        ),
+    )]
     pub async fn get_trades_with_cancellation(
         &self,
         request: &GetTradesRequest,
@@ -666,6 +765,19 @@ impl OrderBookApi {
     ///
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport or decoding error.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/orders/:uid/status",
+                method = "GET",
+                order_uid = order_uid.as_str(),
+            ),
+        ),
+    )]
     pub async fn get_order_competition_status_with_cancellation(
         &self,
         order_uid: &OrderUid,
@@ -705,6 +817,18 @@ impl OrderBookApi {
     ///
     /// Returns [`OrderbookError::Cancelled`] when `cancellation` fires during
     /// the call, or any transport or decoding error.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/token/:address/native_price",
+                method = "GET",
+            ),
+        ),
+    )]
     pub async fn get_native_price_with_cancellation(
         &self,
         token: &crate::types::Address,
@@ -744,6 +868,19 @@ impl OrderBookApi {
     ///
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport or decoding error.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/users/:address/total_surplus",
+                method = "GET",
+                owner = owner.as_str(),
+            ),
+        ),
+    )]
     pub async fn get_total_surplus_with_cancellation(
         &self,
         owner: &crate::types::Address,
@@ -783,6 +920,18 @@ impl OrderBookApi {
     ///
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport or decoding error.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/app_data/:hash",
+                method = "GET",
+            ),
+        ),
+    )]
     pub async fn get_app_data_with_cancellation(
         &self,
         app_data_hash: &AppDataHash,
@@ -830,6 +979,18 @@ impl OrderBookApi {
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport, API, or serialization error from the request
     /// helpers.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/app_data/:hash",
+                method = "PUT",
+            ),
+        ),
+    )]
     pub async fn upload_app_data_with_cancellation(
         &self,
         app_data_hash: &AppDataHash,
@@ -874,6 +1035,18 @@ impl OrderBookApi {
     ///
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport or decoding error.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/solver_competition/:auction",
+                method = "GET",
+            ),
+        ),
+    )]
     pub async fn get_solver_competition_by_auction_id_with_cancellation(
         &self,
         auction_id: i64,
@@ -916,6 +1089,18 @@ impl OrderBookApi {
     ///
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport or decoding error.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/solver_competition/by_tx_hash/:tx",
+                method = "GET",
+            ),
+        ),
+    )]
     pub async fn get_solver_competition_by_tx_hash_with_cancellation(
         &self,
         tx_hash: &str,
@@ -956,6 +1141,18 @@ impl OrderBookApi {
     ///
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport or decoding error.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/solver_competition/latest",
+                method = "GET",
+            ),
+        ),
+    )]
     pub async fn get_latest_solver_competition_with_cancellation(
         &self,
         token: &cow_sdk_core::CancellationToken,
@@ -988,6 +1185,18 @@ impl OrderBookApi {
     ///
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport or decoding error.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/auction",
+                method = "GET",
+            ),
+        ),
+    )]
     pub async fn get_auction_with_cancellation(
         &self,
         token: &cow_sdk_core::CancellationToken,

@@ -479,6 +479,16 @@ impl BrowserWallet {
     /// Returns an error when the wallet rejects `eth_chainId`, reports a
     /// malformed chain id, or is currently connected to a different chain than
     /// `chain_id`.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?chain_id,
+                method = "browser_wallet.signer_for_chain",
+            ),
+        ),
+    )]
     pub async fn signer_for_chain(
         &self,
         chain_id: SupportedChainId,
@@ -589,6 +599,16 @@ impl BrowserWallet {
     ///
     /// Returns an error when the wallet rejects the switch request, does not support the method,
     /// or reports that the chain has not been added.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?chain_id,
+                method = "browser_wallet.switch_chain",
+            ),
+        ),
+    )]
     pub async fn switch_chain(
         &self,
         chain_id: SupportedChainId,
@@ -626,6 +646,16 @@ impl BrowserWallet {
     /// Returns an error when the switch request fails for reasons other than chain absence, when
     /// the typed add-chain request is invalid, when the wallet rejects either request, or when the
     /// refreshed session cannot be loaded afterwards.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?parameters.chain_id,
+                method = "browser_wallet.switch_or_add_chain",
+            ),
+        ),
+    )]
     pub async fn switch_or_add_chain(
         &self,
         parameters: &WalletChainParameters,

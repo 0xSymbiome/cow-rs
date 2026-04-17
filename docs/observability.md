@@ -74,14 +74,108 @@ downstream dashboards can pivot on the same names across every SDK call.
 | `chain` | numeric or debug | Active chain id or `SupportedChainId` variant |
 | `env` | string | Environment label (`prod` / `staging`) |
 | `endpoint` | string | Stable route identity or GraphQL operation name |
-| `method` | string | HTTP method (`GET`, `POST`, `DELETE`) |
+| `method` | string | HTTP method (`GET`, `POST`, `DELETE`) for transport calls, or JSON-RPC-like operation name for wallet-mediated calls |
 | `status` | numeric | HTTP status code once a response is received |
 | `attempts` | numeric | Attempt index on retry-bearing paths |
 | `duration_ms` | numeric | Elapsed time in milliseconds for the span |
-| `order_uid` | string | Redacted order UID (no owner bytes) |
+| `order_uid` | string | Order UID of the target order |
 | `quote_id` | numeric | Orderbook quote id returned by the service |
-| `owner` | string | Lowercase-normalised owner address |
+| `owner` | string | Owner address exposed on the request parameters |
 | `scheme` | string | Signing scheme (`eip712`, `eth_sign`, `eip1271`, `pre_sign`) |
+
+## Coverage
+
+Tracing spans are emitted by every long-running public async method on
+`cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-signing`,
+and `cow-sdk-browser-wallet`. The per-crate surface below lists the
+canonical entry points that carry `#[tracing::instrument]`; wrapper
+methods that build a default [`cow_sdk_core::CancellationToken`] delegate
+through their `_with_cancellation` sibling so the span is emitted exactly
+once per call regardless of which public surface the caller used.
+
+### `cow-sdk-orderbook`
+
+Every public async method on `OrderBookApi` emits one span. Spans carry
+`chain`, `env`, `endpoint`, and `method`; `order_uid` and `owner` are added
+where the input parameters expose them.
+
+- `get_version_with_cancellation`
+- `get_quote_with_cancellation`
+- `send_order_with_cancellation`
+- `send_signed_order_cancellations_with_cancellation`
+- `get_order_with_cancellation`
+- `get_order_multi_env_with_cancellation`
+- `get_orders_with_cancellation`
+- `get_tx_orders_with_cancellation`
+- `get_trades_with_cancellation`
+- `get_order_competition_status_with_cancellation`
+- `get_native_price_with_cancellation`
+- `get_total_surplus_with_cancellation`
+- `get_app_data_with_cancellation`
+- `upload_app_data_with_cancellation`
+- `get_solver_competition_by_auction_id_with_cancellation`
+- `get_solver_competition_by_tx_hash_with_cancellation`
+- `get_latest_solver_competition_with_cancellation`
+- `get_auction_with_cancellation`
+
+### `cow-sdk-subgraph`
+
+Every top-level public async method on `SubgraphApi` emits one span.
+Spans carry `chain`, `endpoint`, and `method`; subgraph does not have a
+protocol `env` axis.
+
+- `get_totals_with_cancellation`
+- `get_last_days_volume_with_cancellation`
+- `get_last_hours_volume_with_cancellation`
+- `run_query_with_cancellation`
+
+### `cow-sdk-trading`
+
+Every public async method on `TradingSdk` plus the module-level async
+helpers emit one span each. Spans carry `chain`, `env`, and `endpoint`;
+`order_uid` is added on order-bound helpers.
+
+- `get_quote_only_with_cancellation`
+- `get_quote_results_with_cancellation`
+- `get_quote_results_async_with_cancellation`
+- `post_swap_order_with_cancellation`
+- `post_swap_order_async_with_cancellation`
+- `post_swap_order_from_quote_with_cancellation`
+- `post_swap_order_from_quote_async_with_cancellation`
+- `post_limit_order_with_cancellation`
+- `post_limit_order_async_with_cancellation`
+- `get_pre_sign_transaction_async_with_cancellation`
+- `get_order_with_cancellation`
+- `off_chain_cancel_order_with_cancellation`
+- `off_chain_cancel_order_async_with_cancellation`
+- `on_chain_cancel_order_with_cancellation`
+- `on_chain_cancel_order_async_with_cancellation`
+- `get_cow_protocol_allowance_async_with_cancellation`
+- `approve_cow_protocol_async_with_cancellation`
+- `post_swap_order_from_quote_async_with_cancellation` (module-level)
+- `post_sell_native_currency_order_async_with_cancellation` (module-level)
+
+### `cow-sdk-signing`
+
+Local signing helpers carry `chain`, `scheme`, and `endpoint`. Signing is
+chain-bound, not env-bound; the owner is determined by the supplied signer
+and is not surfaced as a span field.
+
+- `sign_order_with_scheme`
+- `sign_order_with_scheme_async`
+- `sign_order_cancellation_with_scheme`
+- `sign_order_cancellation_with_scheme_async`
+- `sign_order_cancellations_with_scheme`
+- `sign_order_cancellations_with_scheme_async`
+
+### `cow-sdk-browser-wallet`
+
+Wallet-mediated chain operations carry `chain` and an explicit `method`
+label identifying the operation.
+
+- `BrowserWallet::signer_for_chain`
+- `BrowserWallet::switch_chain`
+- `BrowserWallet::switch_or_add_chain`
 
 ## Secrets
 
