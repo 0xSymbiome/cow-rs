@@ -43,6 +43,7 @@ families.
 - [Change History](../CHANGELOG.md)
 - [Security Policy](../SECURITY.md)
 - [Release Checklist](release-checklist.md)
+- [Publication Handoff](publication-handoff.md)
 
 Use these pages when you need the public maintenance posture, disclosure path,
 or publication-readiness contract.
