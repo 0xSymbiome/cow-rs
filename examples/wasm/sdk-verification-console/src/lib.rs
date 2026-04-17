@@ -101,6 +101,72 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
     }))
 }
 
+/// Drive the deterministic verification cycle end-to-end so a first-time
+/// visitor has a single primary walkthrough entry. Composes
+/// `supported_chains_json`, `capability_report_json(1, "prod")`,
+/// `app_data_report_json`, and the CID roundtrip helpers in order and
+/// returns a tagged envelope.
+#[wasm_bindgen]
+pub fn walkthrough_determinism_cycle_json() -> Result<String, JsValue> {
+    let sample_doc = r#"{
+        "version": "1.14.0",
+        "appCode": "cow-rs/wasm-console",
+        "environment": "browser",
+        "metadata": {
+          "quote": { "slippageBips": 50 }
+        }
+      }"#;
+
+    let mut steps: Vec<Value> = Vec::new();
+
+    let chains = supported_chains_json()?;
+    steps.push(json!({
+        "name": "supported-chains",
+        "result": parse_json::<Value>(&chains, "supportedChains")?
+    }));
+
+    let capability = capability_report_json(1, "prod")?;
+    steps.push(json!({
+        "name": "capability-report",
+        "result": parse_json::<Value>(&capability, "capabilityReport")?
+    }));
+
+    let app_data = app_data_report_json(sample_doc)?;
+    let app_data_value: Value = parse_json(&app_data, "appDataReport")?;
+    steps.push(json!({
+        "name": "app-data-report",
+        "result": app_data_value.clone(),
+    }));
+
+    let cid = app_data_value
+        .get("cid")
+        .and_then(Value::as_str)
+        .ok_or_else(|| to_js_error("app-data report did not expose a cid"))?;
+    let app_data_hex = app_data_value
+        .get("appDataHex")
+        .and_then(Value::as_str)
+        .ok_or_else(|| to_js_error("app-data report did not expose an appDataHex"))?;
+
+    let hex_from_cid = hex_from_cid_json(cid)?;
+    steps.push(json!({
+        "name": "hex-from-cid",
+        "result": parse_json::<Value>(&hex_from_cid, "hexFromCid")?
+    }));
+
+    let cid_from_hex = cid_from_hex_json(app_data_hex)?;
+    steps.push(json!({
+        "name": "cid-from-hex",
+        "result": parse_json::<Value>(&cid_from_hex, "cidFromHex")?
+    }));
+
+    pretty_json(&json!({
+        "name": "sdk-verification-console.determinism-cycle",
+        "completed": true,
+        "failedAt": Value::Null,
+        "steps": steps,
+    }))
+}
+
 #[wasm_bindgen]
 pub fn app_data_report_json(doc_json: &str) -> Result<String, JsValue> {
     let document: Value = parse_json(doc_json, "appDataDoc")?;

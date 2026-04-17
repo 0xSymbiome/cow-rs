@@ -787,6 +787,7 @@ dependencies = [
  "serde_json",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm-bindgen-test",
 ]
 
 [[package]]
@@ -811,20 +812,6 @@ dependencies = [
  "num-bigint",
  "serde",
  "thiserror 2.0.18",
-]
-
-[[package]]
-name = "cow-sdk-examples-wasm"
-version = "0.1.0"
-dependencies = [
- "console_error_panic_hook",
- "cow-sdk",
- "cow-sdk-subgraph",
- "serde",
- "serde_json",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-bindgen-test",
 ]
 
 [[package]]
@@ -883,6 +870,20 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.18",
  "web-time",
+]
+
+[[package]]
+name = "cow-sdk-verification-console"
+version = "0.1.0"
+dependencies = [
+ "console_error_panic_hook",
+ "cow-sdk",
+ "cow-sdk-subgraph",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-bindgen-test",
 ]
 
 [[package]]

@@ -1,12 +1,12 @@
 [package]
-name = "cow-sdk-examples-wasm"
+name = "cow-sdk-verification-console"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.94.0"
 publish = false
 license-file = "../../../LICENSE"
 repository = "https://github.com/cowdao-grants/cow-rs"
-description = "WASM consumer-facing capability example for cow-rs"
+description = "WASM verification console for the cow-rs SDK surface"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

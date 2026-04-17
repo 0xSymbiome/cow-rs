@@ -20,6 +20,7 @@
       --code-bg: #f0ebde;
       --warn: #8b5200;
       --warn-bg: rgba(139, 82, 0, 0.09);
+      --button-text: #faf6ee;
     }
 
     * { box-sizing: border-box; }
@@ -92,7 +93,7 @@
 
     .panel-header {
       padding: 1rem 1.1rem 0.35rem;
-      border-bottom: 1px solid rgba(24, 33, 38, 0.06);
+      border-bottom: 1px solid var(--border);
     }
 
     .panel-header h2,
@@ -153,7 +154,7 @@
     select,
     textarea {
       width: 100%;
-      border: 1px solid rgba(24, 33, 38, 0.12);
+      border: 1px solid var(--border);
       border-radius: 0.9rem;
       padding: 0.78rem 0.9rem;
       background: var(--panel-strong);
@@ -167,8 +168,8 @@
     input:focus,
     select:focus,
     textarea:focus {
-      border-color: rgba(0, 104, 74, 0.36);
-      box-shadow: 0 0 0 0.24rem rgba(0, 104, 74, 0.12);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 0.24rem var(--accent-soft);
     }
 
     textarea {
@@ -189,17 +190,17 @@
       border-radius: 999px;
       padding: 0.72rem 1rem;
       background: var(--ink);
-      color: #faf6ee;
+      color: var(--button-text);
       font: inherit;
       font-size: 0.86rem;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 0.7rem 1.4rem rgba(24, 33, 38, 0.12);
+      box-shadow: 0 0.7rem 1.4rem var(--border);
       transition: transform 120ms ease, opacity 120ms ease;
     }
 
     button.alt {
-      background: rgba(0, 104, 74, 0.14);
+      background: var(--accent-soft);
       color: var(--accent);
       box-shadow: none;
     }
@@ -217,8 +218,8 @@
       margin: 0;
       min-height: 15rem;
       padding: 1rem;
-      border-top: 1px solid rgba(24, 33, 38, 0.06);
-      background: linear-gradient(180deg, rgba(240, 235, 222, 0.7), rgba(240, 235, 222, 0.42));
+      border-top: 1px solid var(--border);
+      background: var(--code-bg);
       color: var(--ink);
       font-family: "Iosevka Etoile", "IBM Plex Mono", monospace;
       font-size: 0.82rem;
@@ -236,9 +237,9 @@
     }
 
     .state-card {
-      border: 1px solid rgba(24, 33, 38, 0.08);
+      border: 1px solid var(--border);
       border-radius: 1rem;
-      background: rgba(255, 253, 250, 0.9);
+      background: var(--panel-strong);
       padding: 0.75rem 0.85rem;
       min-height: 5.25rem;
     }
@@ -292,16 +293,466 @@
         grid-template-columns: 1fr;
       }
     }
+
+    /* === shared polish primitives — keep synchronized across consoles === */
+
+    .walkthrough-card {
+      margin: 0 0 1.5rem;
+    }
+
+    .walkthrough-card .panel {
+      border: 1px solid var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .walkthrough-card .panel-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: -0.01em;
+    }
+
+    .walkthrough-card .hint {
+      margin: 0.25rem 0 0.75rem;
+    }
+
+    .walkthrough-card button[data-testid="walkthrough-button"] {
+      font-weight: 600;
+    }
+
+    .mode-indicator {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      padding: 0.55rem 0.8rem;
+      margin: 0 -1.25rem 1rem;
+      background: var(--panel-strong, var(--panel));
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      font-size: 0.78rem;
+    }
+
+    @media (max-width: 768px) {
+      .mode-indicator {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    .mode-indicator .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      letter-spacing: 0.02em;
+    }
+
+    .mode-indicator .chip-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .mode-indicator .chip-value {
+      font-weight: 600;
+      max-width: 28ch;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .output-container {
+      position: relative;
+    }
+
+    .output-container .copy-button {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      background: var(--panel-strong, var(--panel));
+      color: var(--ink);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 120ms ease-in-out, color 120ms ease-in-out;
+    }
+
+    .output-container .copy-button:hover,
+    .output-container .copy-button:focus {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .output-container .copy-button[data-state="copied"] {
+      background: var(--accent);
+      color: var(--panel-strong, #fff);
+      border-color: var(--accent);
+    }
+
+    .hosted-build-footer {
+      display: none;
+      margin-top: 2rem;
+      padding: 1rem 1.2rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .hosted-build-footer[data-hosted="false"] {
+      display: block;
+    }
+
+    .hosted-build-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .hosted-build-footer a:hover,
+    .hosted-build-footer a:focus {
+      text-decoration: underline;
+    }
+
+    .pretty-view-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.55rem;
+      margin-left: 0.5rem;
+      font-size: 0.78rem;
+      border-radius: 6px;
+      background: var(--panel-strong, var(--panel));
+      color: var(--ink);
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    .pretty-view-toggle[aria-pressed="true"] {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .pretty-view-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+
+    .pretty-view-table th,
+    .pretty-view-table td {
+      text-align: left;
+      padding: 0.35rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    .pretty-view-table th {
+      color: var(--muted);
+      font-weight: 600;
+      width: 30%;
+    }
+
+    .pretty-view-details {
+      margin-top: 0.75rem;
+    }
+
+    .pretty-view-details summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .error-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.65rem;
+      margin-bottom: 0.5rem;
+      border-radius: 6px;
+      background: var(--warn-bg, rgba(139, 82, 0, 0.09));
+      color: var(--warn, #8b5200);
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    .error-label::before {
+      content: "⚠";
+      font-size: 0.95rem;
+      line-height: 1;
+    }
+
+    .error-hint {
+      margin: 0.1rem 0 0.4rem;
+      color: var(--ink);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .error-details {
+      margin-top: 0.5rem;
+    }
+
+    .error-details summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .error-details pre {
+      margin: 0.4rem 0 0;
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      background: var(--code-bg);
+      color: var(--code, var(--ink));
+      font-size: 0.78rem;
+      overflow-x: auto;
+    }
+
+    .walkthrough-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      padding: 0.55rem 0.8rem;
+      margin: 0.25rem 0 0.75rem;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+
+    .walkthrough-summary[data-state="error"] {
+      background: var(--warn-bg);
+      color: var(--warn);
+    }
+
+    .walkthrough-summary .summary-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.35);
+      color: inherit;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .walkthrough-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: 0.15rem;
+    }
+
+    .walkthrough-step {
+      padding: 0.7rem 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel-strong, var(--panel));
+      transition: border-color 160ms ease-in-out, transform 160ms ease-in-out;
+    }
+
+    .walkthrough-step[data-state="running"] {
+      border-color: var(--accent);
+    }
+
+    .walkthrough-step .step-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .walkthrough-step .step-name-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      font-family: ui-monospace, "IBM Plex Mono", Menlo, monospace;
+    }
+
+    .walkthrough-step .step-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .walkthrough-step .step-status[data-state="success"] {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .walkthrough-step .step-status[data-state="error"] {
+      background: var(--warn-bg);
+      color: var(--warn);
+    }
+
+    .walkthrough-step .step-status[data-state="running"] {
+      background: var(--accent-soft);
+      color: var(--muted);
+    }
+
+    .walkthrough-step .step-status[data-state="pending"] {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .walkthrough-step .step-summary {
+      color: var(--ink);
+      font-size: 0.92rem;
+      line-height: 1.4;
+      margin: 0.15rem 0 0.5rem;
+    }
+
+    .walkthrough-step .step-details summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .walkthrough-step .step-details pre {
+      margin: 0.4rem 0 0;
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      background: var(--code-bg);
+      color: var(--code, var(--ink));
+      font-size: 0.78rem;
+      overflow-x: auto;
+      max-height: 20rem;
+    }
+
+    .walkthrough-raw-envelope {
+      display: none;
+    }
+
+    .walkthrough-card pre.output {
+      padding: 0.9rem 1rem;
+      background: transparent;
+    }
+
+    pre.output {
+      transition: border-color 160ms ease-in-out;
+    }
+
+    pre.output[data-state="running"] {
+      border-color: var(--accent);
+    }
+
+    pre.output[data-state="error"] {
+      border-color: var(--warn);
+    }
+
+    button {
+      transition: background 120ms ease-in-out, color 120ms ease-in-out, border-color 120ms ease-in-out, transform 120ms ease-in-out;
+    }
+
+    button:not(:disabled):hover {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    :is(button, a, input, select, textarea):focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #10151a;
+        --panel: rgba(22, 27, 33, 0.94);
+        --panel-strong: #1a2028;
+        --ink: #ecf0f3;
+        --muted: #9ca5af;
+        --accent: #4cc497;
+        --accent-soft: rgba(76, 196, 151, 0.14);
+        --border: rgba(236, 240, 243, 0.12);
+        --shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+        --code: #ecf0f3;
+        --code-bg: #0d1217;
+        --warn: #f0b45b;
+        --warn-bg: rgba(240, 180, 91, 0.14);
+        --button-text: #0b1014;
+      }
+
+      html {
+        background:
+          radial-gradient(circle at top left, rgba(76, 196, 151, 0.18), transparent 26rem),
+          radial-gradient(circle at top right, rgba(240, 180, 91, 0.10), transparent 24rem),
+          linear-gradient(180deg, #0b1014 0%, var(--bg) 100%);
+      }
+
+      .mode-indicator {
+        background: var(--panel);
+      }
+
+      .output-container .copy-button[data-state="copied"] {
+        color: #0b1014;
+      }
+    }
+
+    /* === end shared polish primitives === */
   </style>
 </head>
 <body>
   <main>
     <div class="warning" id="transport-warning"></div>
 
+    <section class="mode-indicator" id="mode-indicator" role="status" aria-live="polite">
+      <span class="chip"><span class="chip-label">Env</span><span class="chip-value" id="mode-env" data-testid="mode-env">staging</span></span>
+      <span class="chip"><span class="chip-label">Chain</span><span class="chip-value" id="mode-chain" data-testid="mode-chain">sepolia</span></span>
+      <span class="chip"><span class="chip-label">Wallet</span><span class="chip-value" id="mode-wallet" data-testid="mode-wallet">mock</span></span>
+      <span class="chip"><span class="chip-label">Last</span><span class="chip-value" id="mode-last" data-testid="mode-last">ready</span></span>
+    </section>
+
     <section class="hero">
       <div>
         <div class="tag">Browser Wallet Surface</div>
         <h1>cow-rs Wallet Console</h1>
+        <p class="lead">
+          Sign, submit, and cancel CoW Protocol orders in a browser with a deterministic mock wallet or a real injected EIP-1193 provider.
+        </p>
         <p class="lead">
           This console keeps deterministic and wallet-backed browser proof separate. Use
           <code>Mock Wallet</code> for a no-extension async flow through the public SDK,
@@ -316,8 +767,8 @@
         <div class="panel-body">
           <div class="field-grid">
             <div>
-              <label for="chain-id">Chain Id</label>
-              <input id="chain-id" value="11155111">
+              <label for="chain-id">Chain</label>
+              <select id="chain-id"></select>
             </div>
             <div>
               <label for="env">Env</label>
@@ -344,6 +795,23 @@
             Production requires a proxy-enabled deployment instead of the default static serving path.
           </p>
         </div>
+      </div>
+    </section>
+
+    <section class="walkthrough-card">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>New here? Run the deterministic walkthrough</h2>
+        </div>
+        <div class="panel-body">
+          <p class="hint">
+            Runs a mock-wallet connect, a message signing, and a trade-and-cancel cycle in order and renders each step as it completes. Requires no extension, no network, and no configuration.
+          </p>
+          <div class="button-row">
+            <button type="button" id="walkthrough-run" data-testid="walkthrough-button">Run Deterministic Walkthrough</button>
+          </div>
+        </div>
+        <pre class="output" id="walkthrough-output" data-testid="walkthrough-output" aria-live="polite" data-state="idle">Ready.</pre>
       </div>
     </section>
 
@@ -524,9 +992,358 @@
         <pre class="output" id="injected-output" aria-live="polite" data-state="loading">Loading...</pre>
       </div>
     </section>
+
+    <footer class="hosted-build-footer" id="hosted-build-footer" data-hosted="false" data-testid="hosted-build-footer">
+      <div>Source: <a href="https://github.com/0xSymbiome/cow-rs/tree/main/examples/wasm/browser-wallet-console">0xSymbiome/cow-rs/examples/wasm/browser-wallet-console</a></div>
+      <div>Hosted build: <a href="https://0xSymbiome.github.io/cow-rs/browser-wallet-console/">0xSymbiome.github.io/cow-rs/browser-wallet-console/</a></div>
+    </footer>
   </main>
 
   <script type="module">
+    // Hide the hosted-build footer when the console is already served from
+    // the hosted Pages host; otherwise surface the repository source and
+    // the hosted demo URL.
+    (function wireHostedBuildFooter() {
+      const footer = document.getElementById("hosted-build-footer");
+      if (!footer) return;
+      const hostname = window.location.hostname.toLowerCase();
+      const hosted = hostname === "github.io" || hostname.endsWith(".github.io");
+      footer.setAttribute("data-hosted", hosted ? "true" : "false");
+      footer.style.display = hosted ? "none" : "block";
+    })();
+
+    // EIP-1193 provider error codes rendered as human-readable labels on
+    // top of the raw error object. Each entry carries a short diagnostic
+    // hint that helps reviewers triage without opening the raw payload.
+    const EIP1193_LABELS = {
+      4001: {
+        label: "Request rejected by user",
+        hint: "The wallet extension prompted the user and the user declined the request.",
+      },
+      4100: {
+        label: "Origin not authorized by the wallet",
+        hint: "Grant this origin permission in the wallet UI before retrying.",
+      },
+      4200: {
+        label: "Method not supported by the wallet",
+        hint: "The selected wallet provider does not implement this EIP-1193 method.",
+      },
+      4900: {
+        label: "Wallet is disconnected",
+        hint: "Reconnect the wallet through the Connect button before retrying.",
+      },
+      4901: {
+        label: "Requested chain is disconnected",
+        hint: "Use Switch Chain to align the wallet session before live actions.",
+      },
+      4902: {
+        label: "Unrecognized chain — add it first",
+        hint: "Add the target chain in the wallet UI, then retry Switch Chain.",
+      },
+    };
+
+    // Broader diagnostic classifications for non-EIP-1193 failure shapes.
+    const ERROR_CLASSIFIERS = [
+      {
+        code: "TRANSPORT",
+        label: "Network transport failure",
+        hint: "The browser could not reach the endpoint. Check the network connection or the proxy-enabled deployment for production routes.",
+        test: (text) => /failed to fetch|networkerror|network error|typeerror:.*fetch/i.test(text),
+      },
+      {
+        code: "TIMEOUT",
+        label: "Request timed out",
+        hint: "The endpoint did not respond in time. Retry, or confirm the target environment is reachable.",
+        test: (text) => /timed out|timeout|aborted|deadline/i.test(text),
+      },
+      {
+        code: "CORS",
+        label: "Cross-origin preflight rejected",
+        hint: "Static browser-live calls require a proxy-enabled deployment. Switch to staging or use a same-origin proxy for production.",
+        test: (text) => /cors|preflight|cross-origin/i.test(text),
+      },
+      {
+        code: "CHAIN-MISMATCH",
+        label: "Wallet chain does not match console chain",
+        hint: "Use Switch Chain to align the wallet session before live actions.",
+        test: (text) =>
+          /expected chain|wallet session chain .*does not match|chain mismatch|chain-bound signer/i.test(
+            text,
+          ),
+      },
+      {
+        code: "MALFORMED-JSON",
+        label: "Malformed JSON payload",
+        hint: "The response did not parse as JSON. The endpoint may have drifted; compare against the fixture shape.",
+        test: (text) =>
+          /invalid .*json|unexpected token|expected .*value.*at|missing field|eof while parsing/i.test(
+            text,
+          ),
+      },
+      {
+        code: "QUOTE-INVALID",
+        label: "Quote validation failed",
+        hint: "The quote response is missing required fields. The orderbook contract may have changed.",
+        test: (text) => /quote .*invalid|invalid .*quote|missing field .*quote/i.test(text),
+      },
+      {
+        code: "WALLET-DISCONNECTED",
+        label: "Wallet connection not ready",
+        hint: "Connect or reconnect the wallet before retrying the action.",
+        test: (text) =>
+          /wallet .*not connected|not connected to wallet|no wallet selected|selected wallet is required/i.test(
+            text,
+          ),
+      },
+    ];
+
+    function formatProviderError(raw) {
+      const text = String(raw);
+      const eipMatch = /"code"\s*:\s*(\d{4})/.exec(text);
+      if (eipMatch) {
+        const code = Number(eipMatch[1]);
+        const entry = EIP1193_LABELS[code];
+        if (entry) {
+          return { code: `EIP-1193 ${code}`, label: entry.label, hint: entry.hint };
+        }
+      }
+      for (const classifier of ERROR_CLASSIFIERS) {
+        if (classifier.test(text)) {
+          return { code: classifier.code, label: classifier.label, hint: classifier.hint };
+        }
+      }
+      return null;
+    }
+
+    function renderOutput(target, resultText) {
+      target.dataset.state = "success";
+      target.textContent = resultText;
+    }
+
+    function renderOutputError(target, raw) {
+      target.dataset.state = "error";
+      const classified = formatProviderError(String(raw));
+      if (!classified) {
+        target.textContent = String(raw);
+        return;
+      }
+      target.innerHTML = "";
+      const label = document.createElement("span");
+      label.className = "error-label";
+      label.dataset.testid = "error-label";
+      label.dataset.code = classified.code;
+      label.textContent = `${classified.code} — ${classified.label}`;
+      const hint = document.createElement("p");
+      hint.className = "error-hint";
+      hint.textContent = classified.hint;
+      const details = document.createElement("details");
+      details.className = "error-details";
+      const summary = document.createElement("summary");
+      summary.textContent = "Raw error";
+      const pre = document.createElement("pre");
+      pre.textContent = String(raw);
+      details.appendChild(summary);
+      details.appendChild(pre);
+      target.appendChild(label);
+      target.appendChild(hint);
+      target.appendChild(details);
+    }
+
+    // Step-card renderer for the walkthrough output pane. Parses the
+    // envelope, builds a summary header, and renders one card per step
+    // with a status chip, a one-line human summary, a per-step copy
+    // control, and a collapsible block with the raw step payload.
+    // Preserves the raw envelope through an aggregate textContent
+    // synthesis and through a hidden pre so existing tests continue
+    // to read the full JSON.
+    function renderWalkthrough(target, rawJson) {
+      let envelope;
+      try {
+        envelope = JSON.parse(rawJson);
+      } catch {
+        target.textContent = rawJson;
+        return;
+      }
+      if (!envelope || !Array.isArray(envelope.steps)) {
+        target.textContent = rawJson;
+        return;
+      }
+
+      target.innerHTML = "";
+      target.dataset.state = envelope.completed ? "success" : "error";
+
+      const summary = document.createElement("div");
+      summary.className = "walkthrough-summary";
+      summary.dataset.state = envelope.completed ? "success" : "error";
+      summary.dataset.testid = "walkthrough-summary";
+      const summaryText = document.createElement("span");
+      summaryText.textContent = envelope.completed
+        ? `Completed ${envelope.steps.length} step${envelope.steps.length === 1 ? "" : "s"}`
+        : `Failed at ${envelope.failedAt || "unknown step"}`;
+      const summaryChip = document.createElement("span");
+      summaryChip.className = "summary-chip";
+      summaryChip.textContent = envelope.completed ? "success" : "error";
+      summary.appendChild(summaryText);
+      summary.appendChild(summaryChip);
+      target.appendChild(summary);
+
+      const stepsContainer = document.createElement("div");
+      stepsContainer.className = "walkthrough-steps";
+      stepsContainer.setAttribute("aria-live", "polite");
+
+      for (const step of envelope.steps) {
+        const card = document.createElement("section");
+        card.className = "walkthrough-step";
+        card.dataset.state = "success";
+        card.setAttribute("role", "group");
+        card.setAttribute("aria-label", `Walkthrough step: ${step.name}`);
+        card.dataset.testid = `walkthrough-step-${step.name}`;
+
+        const header = document.createElement("div");
+        header.className = "step-header";
+        const nameBadge = document.createElement("span");
+        nameBadge.className = "step-name-badge";
+        nameBadge.textContent = step.name;
+        const statusChip = document.createElement("span");
+        statusChip.className = "step-status";
+        statusChip.dataset.state = "success";
+        statusChip.textContent = "Success";
+        header.appendChild(nameBadge);
+        header.appendChild(statusChip);
+
+        const summaryLine = document.createElement("div");
+        summaryLine.className = "step-summary";
+        summaryLine.textContent = summarizeWalkthroughStep(step);
+
+        const details = document.createElement("details");
+        details.className = "step-details";
+        const detailsSummary = document.createElement("summary");
+        detailsSummary.textContent = `Raw JSON for ${step.name}`;
+        const pre = document.createElement("pre");
+        pre.textContent = JSON.stringify(step.result ?? null, null, 2);
+        details.appendChild(detailsSummary);
+        details.appendChild(pre);
+
+        card.appendChild(header);
+        card.appendChild(summaryLine);
+        card.appendChild(details);
+        stepsContainer.appendChild(card);
+      }
+
+      target.appendChild(stepsContainer);
+
+      // Keep the full envelope reachable through the existing
+      // data-testid="walkthrough-output" selector so Playwright
+      // scenarios that read the raw JSON continue to work.
+      const rawEnvelope = document.createElement("pre");
+      rawEnvelope.className = "walkthrough-raw-envelope";
+      rawEnvelope.dataset.testid = "walkthrough-raw-envelope";
+      rawEnvelope.textContent = rawJson;
+      target.appendChild(rawEnvelope);
+    }
+
+    function summarizeWalkthroughStep(step) {
+      const name = step && step.name ? String(step.name) : "";
+      const result = (step && step.result) || {};
+      const trunc = (value, head = 12, tail = 4) => {
+        if (typeof value !== "string") return String(value ?? "");
+        if (value.length <= head + tail + 3) return value;
+        return `${value.slice(0, head)}…${value.slice(-tail)}`;
+      };
+      switch (name) {
+        case "mock-connect": {
+          const session = result.session || {};
+          return `session.connected=${session.connected ?? "?"}, chainId=${session.chainId ?? "?"}`;
+        }
+        case "mock-sign-message":
+          return result.signature
+            ? `signature=${trunc(result.signature)}`
+            : "message signed under the mock transport";
+        case "mock-trading-flow": {
+          const orderId = result.posting && result.posting.orderId;
+          const cancelled = result.cancellationAccepted;
+          const parts = [];
+          if (orderId) parts.push(`orderId=${trunc(orderId, 14, 6)}`);
+          if (cancelled !== undefined) parts.push(`cancellationAccepted=${cancelled}`);
+          return parts.length ? parts.join(", ") : "trade-and-cancel cycle completed";
+        }
+        case "supported-chains":
+          return Array.isArray(result) ? `${result.length} chains listed` : "chains listed";
+        case "capability-report":
+          return [result.chain, result.env, result.apiPath].filter(Boolean).join(" / ") ||
+            "capability report rendered";
+        case "app-data-report":
+          return result.cid
+            ? `cid=${trunc(result.cid, 14, 6)}, hex=${trunc(result.appDataHex, 14, 6)}`
+            : "app-data report rendered";
+        case "hex-from-cid":
+        case "cid-from-hex":
+          return "roundtrip ok";
+        default:
+          return typeof result === "object" && result
+            ? Object.keys(result).slice(0, 6).join(", ") || "step completed"
+            : "step completed";
+      }
+    }
+
+    // Attach a copy-to-clipboard button to every output pane so reviewers
+    // can lift JSON results without mouse-select ceremony.
+    function wireCopyButtons() {
+      const outputs = document.querySelectorAll("pre.output");
+      outputs.forEach((output) => {
+        const id = output.getAttribute("id");
+        if (!id) return;
+        if (output.parentElement?.classList.contains("output-container")) return;
+        const wrapper = document.createElement("div");
+        wrapper.className = "output-container";
+        const parent = output.parentElement;
+        if (!parent) return;
+        parent.insertBefore(wrapper, output);
+        wrapper.appendChild(output);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "copy-button";
+        button.dataset.testid = `copy-${id}`;
+        button.setAttribute("aria-label", `Copy ${id} output to clipboard`);
+        button.textContent = "Copy";
+        button.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(output.textContent ?? "");
+            button.textContent = "Copied";
+            button.dataset.state = "copied";
+            setTimeout(() => {
+              button.textContent = "Copy";
+              delete button.dataset.state;
+            }, 1500);
+          } catch {
+            button.textContent = "Copy failed";
+            setTimeout(() => {
+              button.textContent = "Copy";
+            }, 1500);
+          }
+        });
+        wrapper.appendChild(button);
+      });
+    }
+
+    // Persistent mode-indicator strip: subscribes to the existing
+    // contract-state object and mirrors env, chain, wallet, and last action.
+    const modeIndicator = {
+      env: document.getElementById("mode-env"),
+      chain: document.getElementById("mode-chain"),
+      wallet: document.getElementById("mode-wallet"),
+      last: document.getElementById("mode-last"),
+    };
+
+    function syncModeIndicator({ env, chain, wallet, last }) {
+      if (env && modeIndicator.env) modeIndicator.env.textContent = env;
+      if (chain && modeIndicator.chain) modeIndicator.chain.textContent = chain;
+      if (wallet && modeIndicator.wallet) modeIndicator.wallet.textContent = wallet;
+      if (last && modeIndicator.last) modeIndicator.last.textContent = last;
+    }
+
+    wireCopyButtons();
+
     const warningEl = document.getElementById("transport-warning");
     const mockOutput = document.getElementById("mock-output");
     const injectedOutput = document.getElementById("injected-output");
@@ -602,6 +1419,29 @@
     }
 
     const consoleState = new wasm.BrowserWalletConsole();
+
+    function populateChains() {
+      let chains;
+      try {
+        chains = JSON.parse(consoleState.supported_chains_json());
+      } catch {
+        return;
+      }
+      if (!Array.isArray(chains) || chains.length === 0) {
+        return;
+      }
+      chainInput.innerHTML = "";
+      for (const chain of chains) {
+        const option = document.createElement("option");
+        option.value = String(chain.chainId);
+        option.textContent = `${chain.name} (${chain.chainId})`;
+        if (chain.chainId === 11155111) {
+          option.selected = true;
+        }
+        chainInput.appendChild(option);
+      }
+    }
+    populateChains();
 
     const chainId = () => Number.parseInt(chainInput.value, 10);
     const env = () => envInput.value;
@@ -947,18 +1787,22 @@
         actionName === "cancel-order"
           ? "Waiting for wallet..."
           : "Running...";
+      syncModeIndicator({
+        env: env(),
+        chain: String(chainId()),
+        wallet: target === mockOutput ? "mock" : "injected",
+        last: actionName,
+      });
       try {
         const result = await action();
-        target.dataset.state = "success";
-        target.textContent = result;
+        renderOutput(target, result);
         const liveUid = consoleState.last_live_order_uid();
         orderUidInput.value = liveUid ?? "";
         if (target === injectedOutput) {
           applyInjectedContractResult(actionName, result);
         }
       } catch (error) {
-        target.dataset.state = "error";
-        target.textContent = String(error);
+        renderOutputError(target, error);
         if (target === injectedOutput) {
           applyInjectedContractError(actionName, String(error));
         }
@@ -973,6 +1817,35 @@
     document.getElementById("refresh-samples").addEventListener("click", async (event) => {
       event.preventDefault();
       await refreshSamples();
+    });
+
+    document.getElementById("walkthrough-run").addEventListener("click", async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget;
+      const target = document.getElementById("walkthrough-output");
+      button.disabled = true;
+      target.dataset.state = "running";
+      target.innerHTML = "";
+      const runningNote = document.createElement("div");
+      runningNote.className = "walkthrough-summary";
+      runningNote.dataset.state = "running";
+      runningNote.dataset.testid = "walkthrough-summary";
+      runningNote.textContent = "Running deterministic walkthrough…";
+      target.appendChild(runningNote);
+      syncModeIndicator({
+        env: env(),
+        chain: String(chainId()),
+        wallet: "mock",
+        last: "walkthrough",
+      });
+      try {
+        const result = await consoleState.walkthrough_mock_cycle_json();
+        renderWalkthrough(target, result);
+      } catch (error) {
+        renderOutputError(target, error);
+      } finally {
+        button.disabled = false;
+      }
     });
 
     document.getElementById("mock-status").addEventListener("click", (event) => {

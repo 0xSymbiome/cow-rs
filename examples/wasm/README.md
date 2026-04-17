@@ -9,14 +9,23 @@ specifically need browser-hosted verification.
 
 ## Surfaces
 
-| Example | Purpose |
-| --- | --- |
-| `sdk-verification-console/` | Deterministic SDK verification and browser inspection for WASM-compatible surfaces |
-| `browser-wallet-console/` | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
+| Console | Package | Purpose |
+| --- | --- | --- |
+| `sdk-verification-console/` | `cow-sdk-verification-console` | Deterministic SDK verification and browser inspection for WASM-compatible surfaces |
+| `browser-wallet-console/` | `cow-sdk-browser-wallet-console-wasm` | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
 
 `cow-sdk` remains the default facade for pure SDK flows. Browser-wallet support
 is additive behind the `browser-wallet` feature and is intentionally separated
 from the deterministic native onboarding path.
+
+Each console is self-contained and served from its own directory. The palette,
+layout, and polish primitives live inline in each console's `index.html` behind
+a `shared polish primitives — keep synchronized across consoles` comment marker
+so the rendered surface works unchanged under every serve flow (per-console
+`bunx serve`, `python -m http.server`, and the Playwright `serve:console`
+command). When both consoles need the same primitive, update the marker block
+in both files in the same change so the two consoles stay visually identical
+on the polish surface.
 
 ## Local Use
 

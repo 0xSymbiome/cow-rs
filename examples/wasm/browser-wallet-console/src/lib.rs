@@ -137,6 +137,113 @@ impl BrowserWalletConsole {
         pretty_json(&approval)
     }
 
+    pub fn supported_chains_json(&self) -> Result<String, JsValue> {
+        let report = SupportedChainId::ALL
+            .into_iter()
+            .map(|chain_id| {
+                let wrapped = wrapped_native_token(chain_id);
+                json!({
+                    "chainId": u64::from(chain_id),
+                    "name": chain_label(chain_id),
+                    "apiPath": chain_id.api_path(),
+                    "wrappedNative": {
+                        "address": wrapped.address.as_str(),
+                        "symbol": wrapped.symbol,
+                        "decimals": wrapped.decimals
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+
+        pretty_json(&report)
+    }
+
+    /// Drive the deterministic mock-wallet cycle end-to-end so a first-time
+    /// visitor has a single primary walkthrough entry. Composes
+    /// `mock_connect_json`, `mock_sign_message_json`, and
+    /// `mock_trading_flow_json` in order and returns a tagged envelope.
+    pub async fn walkthrough_mock_cycle_json(&self) -> Result<String, JsValue> {
+        let chain_id = SupportedChainId::Sepolia;
+        let env = CowEnv::Staging;
+        let app_code = "cow-rs/wasm-console";
+        let sample_trade = sample_trade_parameters(chain_id);
+        let trade_json = serde_json::to_string(&sample_trade).map_err(js_string_error)?;
+        let message = "cow-rs verification console walkthrough";
+
+        let mut steps: Vec<serde_json::Value> = Vec::new();
+
+        let connect =
+            self.mock_wallet.connect().await.map_err(js_string_error)?;
+        steps.push(json!({
+            "name": "mock-connect",
+            "result": { "mode": "mock", "session": connect },
+        }));
+
+        let signer = self.mock_wallet.signer();
+        let signature = signer
+            .sign_message(message.as_bytes())
+            .await
+            .map_err(js_string_error)?;
+        steps.push(json!({
+            "name": "mock-sign-message",
+            "result": {
+                "mode": "mock",
+                "message": message,
+                "signature": signature,
+            },
+        }));
+
+        let trade = parse_trade_parameters(&trade_json)?;
+        let mock_orderbook = Arc::new(MockBrowserOrderbook::new(chain_id, env));
+        let sdk = TradingSdk::new(
+            PartialTraderParameters {
+                chain_id: Some(chain_id),
+                app_code: Some(app_code.to_owned()),
+                owner: None,
+                env: Some(env),
+                ..Default::default()
+            },
+            TradingSdkOptions::new().with_orderbook_client(mock_orderbook.clone()),
+        )
+        .map_err(js_string_error)?;
+        let posting = sdk
+            .post_swap_order_async(trade, &signer, None)
+            .await
+            .map_err(js_string_error)?;
+        let cancellation = sdk
+            .off_chain_cancel_order_async(
+                &OrderTraderParameters {
+                    order_uid: posting.order_id.clone(),
+                    chain_id: Some(chain_id),
+                    env: Some(env),
+                    settlement_contract_override: None,
+                    eth_flow_contract_override: None,
+                },
+                &signer,
+            )
+            .await
+            .map_err(js_string_error)?;
+        steps.push(json!({
+            "name": "mock-trading-flow",
+            "result": {
+                "mode": "mock",
+                "posting": posting,
+                "cancellationAccepted": cancellation,
+                "orderbookState": mock_orderbook.snapshot(),
+            },
+        }));
+
+        let _ = self.mock_wallet.take_events();
+        let _ = self.mock_transport.request_log();
+
+        pretty_json(&json!({
+            "name": "browser-wallet-console.mock-cycle",
+            "completed": true,
+            "failedAt": serde_json::Value::Null,
+            "steps": steps,
+        }))
+    }
+
     pub fn mock_status_json(&self) -> Result<String, JsValue> {
         pretty_json(&json!({
             "wallet": self.mock_wallet.session(),
@@ -783,6 +890,22 @@ fn sample_buy_token() -> Address {
 
 fn parse_chain_id(chain_id: u32) -> Result<SupportedChainId, JsValue> {
     SupportedChainId::try_from(u64::from(chain_id)).map_err(|error| to_js_error(error.to_string()))
+}
+
+fn chain_label(chain_id: SupportedChainId) -> &'static str {
+    match chain_id {
+        SupportedChainId::Mainnet => "Mainnet",
+        SupportedChainId::Bnb => "BNB Chain",
+        SupportedChainId::GnosisChain => "Gnosis Chain",
+        SupportedChainId::Polygon => "Polygon",
+        SupportedChainId::Base => "Base",
+        SupportedChainId::Plasma => "Plasma",
+        SupportedChainId::ArbitrumOne => "Arbitrum One",
+        SupportedChainId::Avalanche => "Avalanche",
+        SupportedChainId::Ink => "Ink",
+        SupportedChainId::Linea => "Linea",
+        SupportedChainId::Sepolia => "Sepolia",
+    }
 }
 
 fn parse_env(env: &str) -> Result<CowEnv, JsValue> {
