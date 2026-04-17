@@ -175,6 +175,7 @@ pub struct MockOrderbook {
     context: ApiContext,
     quote_response: OrderQuoteResponse,
     state: Arc<Mutex<MockOrderbookState>>,
+    quote_delay: Option<std::time::Duration>,
 }
 
 #[derive(Clone, Default)]
@@ -204,7 +205,13 @@ impl MockOrderbook {
                 order_id: Some(order_uid()),
                 ..MockOrderbookState::default()
             })),
+            quote_delay: None,
         }
+    }
+
+    pub const fn with_quote_delay(mut self, delay: std::time::Duration) -> Self {
+        self.quote_delay = Some(delay);
+        self
     }
 
     pub fn new_with_base_url(
@@ -252,6 +259,9 @@ impl OrderbookClient for MockOrderbook {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .quote_requests
             .push(request.clone());
+        if let Some(delay) = self.quote_delay {
+            tokio::time::sleep(delay).await;
+        }
         Ok(self.quote_response.clone())
     }
 

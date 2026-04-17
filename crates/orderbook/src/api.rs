@@ -223,6 +223,11 @@ impl OrderBookApi {
 
     /// Fetches the orderbook service version string.
     ///
+    /// This is a thin wrapper around
+    /// [`get_version_with_cancellation`](Self::get_version_with_cancellation)
+    /// that passes a fresh [`cow_sdk_core::CancellationToken`]; existing
+    /// callers observe no behavioural change.
+    ///
     /// # Errors
     ///
     /// Returns [`OrderbookError`] when request execution fails or the response
@@ -278,6 +283,27 @@ impl OrderBookApi {
         &self,
         request: &OrderQuoteRequest,
     ) -> Result<OrderQuoteResponse, OrderbookError> {
+        self.get_quote_with_cancellation(request, &cow_sdk_core::CancellationToken::new())
+            .await
+    }
+
+    /// Fetches a quote for the provided request payload with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook returns a response. In-flight request futures are dropped on
+    /// cancellation so the underlying socket is released promptly.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::InvalidQuoteRequest`] when the quote side is
+    /// not well-formed, [`OrderbookError::Cancelled`] when `token` fires
+    /// during the call, or any transport/API/serialization error returned by
+    /// the orderbook request helpers.
+    pub async fn get_quote_with_cancellation(
+        &self,
+        request: &OrderQuoteRequest,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<OrderQuoteResponse, OrderbookError> {
         if !request.is_valid() {
             return Err(OrderbookError::InvalidQuoteRequest(
                 "quote side must set exactly one of sellAmountBeforeFee or buyAmountAfterFee"
@@ -285,13 +311,15 @@ impl OrderBookApi {
             ));
         }
 
-        self.fetch_json(
-            FetchParams::new("/api/v1/quote", HttpMethod::Post).with_body(
-                serde_json::to_value(request)
-                    .map_err(|error| OrderbookError::Serialization(error.to_string()))?,
-            ),
-        )
-        .await
+        let body = serde_json::to_value(request)
+            .map_err(|error| OrderbookError::Serialization(error.to_string()))?;
+        let params = FetchParams::new("/api/v1/quote", HttpMethod::Post).with_body(body);
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     /// Submits a signed order to the orderbook.
@@ -301,13 +329,36 @@ impl OrderBookApi {
     /// Returns [`OrderbookError`] if the request cannot be serialized, the API
     /// rejects the order, or request execution fails.
     pub async fn send_order(&self, request: &OrderCreation) -> Result<OrderUid, OrderbookError> {
-        self.fetch_json(
-            FetchParams::new("/api/v1/orders", HttpMethod::Post).with_body(
-                serde_json::to_value(request)
-                    .map_err(|error| OrderbookError::Serialization(error.to_string()))?,
-            ),
-        )
-        .await
+        self.send_order_with_cancellation(request, &cow_sdk_core::CancellationToken::new())
+            .await
+    }
+
+    /// Submits a signed order to the orderbook with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook acknowledges the submission. The payload is consumed only if
+    /// the submission actually reaches the wire; the orderbook treats an
+    /// unsubmitted order as a no-op.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport/API/serialization error returned by the
+    /// orderbook request helpers.
+    pub async fn send_order_with_cancellation(
+        &self,
+        request: &OrderCreation,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<OrderUid, OrderbookError> {
+        let body = serde_json::to_value(request)
+            .map_err(|error| OrderbookError::Serialization(error.to_string()))?;
+        let params = FetchParams::new("/api/v1/orders", HttpMethod::Post).with_body(body);
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     /// Submits a signed order-cancellation payload.
@@ -320,13 +371,38 @@ impl OrderBookApi {
         &self,
         request: &OrderCancellations,
     ) -> Result<(), OrderbookError> {
-        self.fetch_empty(
-            FetchParams::new("/api/v1/orders", HttpMethod::Delete).with_body(
-                serde_json::to_value(request)
-                    .map_err(|error| OrderbookError::Serialization(error.to_string()))?,
-            ),
+        self.send_signed_order_cancellations_with_cancellation(
+            request,
+            &cow_sdk_core::CancellationToken::new(),
         )
         .await
+    }
+
+    /// Submits a signed order-cancellation payload with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook acknowledges the cancellation. An unacknowledged cancellation
+    /// payload is a no-op on the orderbook service.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport/API/serialization error returned by the
+    /// orderbook request helpers.
+    pub async fn send_signed_order_cancellations_with_cancellation(
+        &self,
+        request: &OrderCancellations,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<(), OrderbookError> {
+        let body = serde_json::to_value(request)
+            .map_err(|error| OrderbookError::Serialization(error.to_string()))?;
+        let params = FetchParams::new("/api/v1/orders", HttpMethod::Delete).with_body(body);
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_empty(params) => result,
+        }
     }
 
     /// Fetches and normalizes a single order by UID.
@@ -336,12 +412,36 @@ impl OrderBookApi {
     /// Returns [`OrderbookError`] if request execution fails or the response
     /// cannot be transformed into the crate's stable order DTO.
     pub async fn get_order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
-        let order: Order = self
-            .fetch_json(FetchParams::new(
-                format!("/api/v1/orders/{}", order_uid.as_str()),
-                HttpMethod::Get,
-            ))
-            .await?;
+        self.get_order_with_cancellation(order_uid, &cow_sdk_core::CancellationToken::new())
+            .await
+    }
+
+    /// Fetches and normalizes a single order by UID with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook responds. Response normalization is synchronous and happens
+    /// only after the fetch resolves.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport, API, or normalization error returned by the
+    /// orderbook request helpers.
+    pub async fn get_order_with_cancellation(
+        &self,
+        order_uid: &OrderUid,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<Order, OrderbookError> {
+        let params = FetchParams::new(
+            format!("/api/v1/orders/{}", order_uid.as_str()),
+            HttpMethod::Get,
+        );
+
+        let order: Order = tokio::select! {
+            biased;
+            () = token.cancelled() => return Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result?,
+        };
 
         transform_order(order)
     }
@@ -355,7 +455,28 @@ impl OrderBookApi {
     ///
     /// Returns any error from the primary or fallback order lookup.
     pub async fn get_order_multi_env(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
-        match self.get_order(order_uid).await {
+        self.get_order_multi_env_with_cancellation(
+            order_uid,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Fetches an order with environment fallback and cooperative cancellation support.
+    ///
+    /// Both the primary and the fallback lookup respect `token`; cancelling
+    /// during the primary request aborts before the fallback is attempted.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during either
+    /// lookup, or any error from the primary or fallback order lookup.
+    pub async fn get_order_multi_env_with_cancellation(
+        &self,
+        order_uid: &OrderUid,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<Order, OrderbookError> {
+        match self.get_order_with_cancellation(order_uid, token).await {
             Ok(order) => Ok(order),
             Err(OrderbookError::Api(error)) if error.status == 404 => {
                 let current_env = self.context.env;
@@ -365,7 +486,7 @@ impl OrderBookApi {
                             env: Some(fallback_env),
                             ..ApiContextOverride::default()
                         })
-                        .get_order(order_uid)
+                        .get_order_with_cancellation(order_uid, token)
                         .await
                 } else {
                     Err(OrderbookError::Api(error))
@@ -385,16 +506,38 @@ impl OrderBookApi {
         &self,
         request: &GetOrdersRequest,
     ) -> Result<Vec<Order>, OrderbookError> {
-        let orders: Vec<Order> = self
-            .fetch_json(
-                FetchParams::new(
-                    format!("/api/v1/account/{}/orders", request.owner.as_str()),
-                    HttpMethod::Get,
-                )
-                .with_query("offset", request.offset.to_string())
-                .with_query("limit", request.limit.to_string()),
-            )
-            .await?;
+        self.get_orders_with_cancellation(request, &cow_sdk_core::CancellationToken::new())
+            .await
+    }
+
+    /// Fetches and normalizes orders for a specific owner with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook responds. Response normalization is synchronous and happens
+    /// only after the fetch resolves.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport, API, or normalization error returned by the
+    /// orderbook request helpers.
+    pub async fn get_orders_with_cancellation(
+        &self,
+        request: &GetOrdersRequest,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<Vec<Order>, OrderbookError> {
+        let params = FetchParams::new(
+            format!("/api/v1/account/{}/orders", request.owner.as_str()),
+            HttpMethod::Get,
+        )
+        .with_query("offset", request.offset.to_string())
+        .with_query("limit", request.limit.to_string());
+
+        let orders: Vec<Order> = tokio::select! {
+            biased;
+            () = token.cancelled() => return Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result?,
+        };
 
         transform_orders(orders)
     }
@@ -406,12 +549,36 @@ impl OrderBookApi {
     /// Returns [`OrderbookError`] if request execution fails or any order in
     /// the response cannot be normalized.
     pub async fn get_tx_orders(&self, tx_hash: &str) -> Result<Vec<Order>, OrderbookError> {
-        let orders: Vec<Order> = self
-            .fetch_json(FetchParams::new(
-                format!("/api/v1/transactions/{tx_hash}/orders"),
-                HttpMethod::Get,
-            ))
-            .await?;
+        self.get_tx_orders_with_cancellation(tx_hash, &cow_sdk_core::CancellationToken::new())
+            .await
+    }
+
+    /// Fetches orders by settlement transaction hash with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook responds. Response normalization is synchronous and happens
+    /// only after the fetch resolves.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport, API, or normalization error returned by the
+    /// orderbook request helpers.
+    pub async fn get_tx_orders_with_cancellation(
+        &self,
+        tx_hash: &str,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<Vec<Order>, OrderbookError> {
+        let params = FetchParams::new(
+            format!("/api/v1/transactions/{tx_hash}/orders"),
+            HttpMethod::Get,
+        );
+
+        let orders: Vec<Order> = tokio::select! {
+            biased;
+            () = token.cancelled() => return Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result?,
+        };
 
         transform_orders(orders)
     }
@@ -426,6 +593,26 @@ impl OrderBookApi {
     pub async fn get_trades(
         &self,
         request: &GetTradesRequest,
+    ) -> Result<Vec<Trade>, OrderbookError> {
+        self.get_trades_with_cancellation(request, &cow_sdk_core::CancellationToken::new())
+            .await
+    }
+
+    /// Fetches trades with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook responds.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::InvalidTradesQuery`] when both or neither
+    /// filters are set, [`OrderbookError::Cancelled`] when `token` fires
+    /// during the call, or any transport/API/serialization error from the
+    /// request helpers.
+    pub async fn get_trades_with_cancellation(
+        &self,
+        request: &GetTradesRequest,
+        token: &cow_sdk_core::CancellationToken,
     ) -> Result<Vec<Trade>, OrderbookError> {
         if !request.is_valid() {
             return Err(OrderbookError::InvalidTradesQuery(
@@ -443,12 +630,15 @@ impl OrderBookApi {
             params = params.with_query("orderUid", order_uid.as_str().to_owned());
         }
 
-        self.fetch_json(
-            params
-                .with_query("offset", request.offset.to_string())
-                .with_query("limit", request.limit.to_string()),
-        )
-        .await
+        let params = params
+            .with_query("offset", request.offset.to_string())
+            .with_query("limit", request.limit.to_string());
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     /// Fetches the current competition status for an order.
@@ -460,11 +650,37 @@ impl OrderBookApi {
         &self,
         order_uid: &OrderUid,
     ) -> Result<CompetitionOrderStatus, OrderbookError> {
-        self.fetch_json(FetchParams::new(
+        self.get_order_competition_status_with_cancellation(
+            order_uid,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Fetches the current competition status for an order with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook responds.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport or decoding error.
+    pub async fn get_order_competition_status_with_cancellation(
+        &self,
+        order_uid: &OrderUid,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<CompetitionOrderStatus, OrderbookError> {
+        let params = FetchParams::new(
             format!("/api/v1/orders/{}/status", order_uid.as_str()),
             HttpMethod::Get,
-        ))
-        .await
+        );
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     /// Fetches the token price quoted in the chain's native asset.
@@ -476,11 +692,34 @@ impl OrderBookApi {
         &self,
         token: &crate::types::Address,
     ) -> Result<NativePriceResponse, OrderbookError> {
-        self.fetch_json(FetchParams::new(
+        self.get_native_price_with_cancellation(token, &cow_sdk_core::CancellationToken::new())
+            .await
+    }
+
+    /// Fetches the native-asset-denominated price of a token with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `cancellation` fires before
+    /// the orderbook responds.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `cancellation` fires during
+    /// the call, or any transport or decoding error.
+    pub async fn get_native_price_with_cancellation(
+        &self,
+        token: &crate::types::Address,
+        cancellation: &cow_sdk_core::CancellationToken,
+    ) -> Result<NativePriceResponse, OrderbookError> {
+        let params = FetchParams::new(
             format!("/api/v1/token/{}/native_price", token.as_str()),
             HttpMethod::Get,
-        ))
-        .await
+        );
+
+        tokio::select! {
+            biased;
+            () = cancellation.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     /// Fetches the recorded total surplus for a user.
@@ -492,11 +731,34 @@ impl OrderBookApi {
         &self,
         owner: &crate::types::Address,
     ) -> Result<TotalSurplus, OrderbookError> {
-        self.fetch_json(FetchParams::new(
+        self.get_total_surplus_with_cancellation(owner, &cow_sdk_core::CancellationToken::new())
+            .await
+    }
+
+    /// Fetches the recorded total surplus for a user with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook responds.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport or decoding error.
+    pub async fn get_total_surplus_with_cancellation(
+        &self,
+        owner: &crate::types::Address,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<TotalSurplus, OrderbookError> {
+        let params = FetchParams::new(
             format!("/api/v1/users/{}/total_surplus", owner.as_str()),
             HttpMethod::Get,
-        ))
-        .await
+        );
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     /// Fetches full app-data JSON for the provided app-data hash.
@@ -508,11 +770,34 @@ impl OrderBookApi {
         &self,
         app_data_hash: &AppDataHash,
     ) -> Result<AppDataObject, OrderbookError> {
-        self.fetch_json(FetchParams::new(
+        self.get_app_data_with_cancellation(app_data_hash, &cow_sdk_core::CancellationToken::new())
+            .await
+    }
+
+    /// Fetches full app-data JSON for the provided app-data hash with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook responds.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport or decoding error.
+    pub async fn get_app_data_with_cancellation(
+        &self,
+        app_data_hash: &AppDataHash,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<AppDataObject, OrderbookError> {
+        let params = FetchParams::new(
             format!("/api/v1/app_data/{}", app_data_hash.as_str()),
             HttpMethod::Get,
-        ))
-        .await
+        );
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     /// Uploads full app-data JSON for the provided app-data hash.
@@ -526,14 +811,42 @@ impl OrderBookApi {
         app_data_hash: &AppDataHash,
         full_app_data: &str,
     ) -> Result<AppDataObject, OrderbookError> {
-        self.fetch_json(
-            FetchParams::new(
-                format!("/api/v1/app_data/{}", app_data_hash.as_str()),
-                HttpMethod::Put,
-            )
-            .with_body(json!({ "fullAppData": full_app_data })),
+        self.upload_app_data_with_cancellation(
+            app_data_hash,
+            full_app_data,
+            &cow_sdk_core::CancellationToken::new(),
         )
         .await
+    }
+
+    /// Uploads full app-data JSON with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook acknowledges the upload. An unacknowledged upload is a no-op
+    /// on the orderbook service.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport, API, or serialization error from the request
+    /// helpers.
+    pub async fn upload_app_data_with_cancellation(
+        &self,
+        app_data_hash: &AppDataHash,
+        full_app_data: &str,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<AppDataObject, OrderbookError> {
+        let params = FetchParams::new(
+            format!("/api/v1/app_data/{}", app_data_hash.as_str()),
+            HttpMethod::Put,
+        )
+        .with_body(json!({ "fullAppData": full_app_data }));
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     /// Fetches solver-competition data by auction id.
@@ -545,11 +858,37 @@ impl OrderBookApi {
         &self,
         auction_id: i64,
     ) -> Result<SolverCompetitionResponse, OrderbookError> {
-        self.fetch_json(FetchParams::new(
+        self.get_solver_competition_by_auction_id_with_cancellation(
+            auction_id,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Fetches solver-competition data by auction id with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook responds.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport or decoding error.
+    pub async fn get_solver_competition_by_auction_id_with_cancellation(
+        &self,
+        auction_id: i64,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<SolverCompetitionResponse, OrderbookError> {
+        let params = FetchParams::new(
             format!("/api/v1/solver_competition/{auction_id}"),
             HttpMethod::Get,
-        ))
-        .await
+        );
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     /// Fetches solver-competition data by settlement transaction hash.
@@ -561,11 +900,37 @@ impl OrderBookApi {
         &self,
         tx_hash: &str,
     ) -> Result<SolverCompetitionResponse, OrderbookError> {
-        self.fetch_json(FetchParams::new(
+        self.get_solver_competition_by_tx_hash_with_cancellation(
+            tx_hash,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Fetches solver-competition data by settlement transaction hash with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook responds.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport or decoding error.
+    pub async fn get_solver_competition_by_tx_hash_with_cancellation(
+        &self,
+        tx_hash: &str,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<SolverCompetitionResponse, OrderbookError> {
+        let params = FetchParams::new(
             format!("/api/v1/solver_competition/by_tx_hash/{tx_hash}"),
             HttpMethod::Get,
-        ))
-        .await
+        );
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     /// Fetches the latest solver-competition snapshot from the orderbook.
@@ -576,11 +941,32 @@ impl OrderBookApi {
     pub async fn get_latest_solver_competition(
         &self,
     ) -> Result<SolverCompetitionResponse, OrderbookError> {
-        self.fetch_json(FetchParams::new(
-            "/api/v1/solver_competition/latest",
-            HttpMethod::Get,
-        ))
+        self.get_latest_solver_competition_with_cancellation(
+            &cow_sdk_core::CancellationToken::new(),
+        )
         .await
+    }
+
+    /// Fetches the latest solver-competition snapshot with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook responds.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport or decoding error.
+    pub async fn get_latest_solver_competition_with_cancellation(
+        &self,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<SolverCompetitionResponse, OrderbookError> {
+        let params = FetchParams::new("/api/v1/solver_competition/latest", HttpMethod::Get);
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     /// Fetches the current auction snapshot from the orderbook.
@@ -589,8 +975,30 @@ impl OrderBookApi {
     ///
     /// Returns [`OrderbookError`] when request execution or response decoding fails.
     pub async fn get_auction(&self) -> Result<Auction, OrderbookError> {
-        self.fetch_json(FetchParams::new("/api/v1/auction", HttpMethod::Get))
+        self.get_auction_with_cancellation(&cow_sdk_core::CancellationToken::new())
             .await
+    }
+
+    /// Fetches the current auction snapshot with cooperative cancellation support.
+    ///
+    /// Returns [`OrderbookError::Cancelled`] if `token` fires before the
+    /// orderbook responds.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport or decoding error.
+    pub async fn get_auction_with_cancellation(
+        &self,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<Auction, OrderbookError> {
+        let params = FetchParams::new("/api/v1/auction", HttpMethod::Get);
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_json(params) => result,
+        }
     }
 
     async fn fetch_json<T>(&self, params: FetchParams) -> Result<T, OrderbookError>

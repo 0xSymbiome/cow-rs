@@ -975,6 +975,39 @@ async fn get_totals_with_cancellation_returns_cancelled_when_token_is_fired_befo
 }
 
 #[tokio::test]
+async fn get_totals_with_cancellation_aborts_an_in_flight_request() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({ "data": { "totals": [] } }))
+                .set_delay(std::time::Duration::from_secs(30)),
+        )
+        .mount(&server)
+        .await;
+
+    let api = api_with_override(&server);
+    let token = cow_sdk_core::CancellationToken::new();
+    let token_for_task = token.clone();
+
+    let started = std::time::Instant::now();
+    let task = tokio::spawn(async move { api.get_totals_with_cancellation(&token_for_task).await });
+
+    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    token.cancel();
+
+    let result = task.await.expect("cancellation task should not panic");
+    let elapsed = started.elapsed();
+
+    assert!(matches!(result, Err(SubgraphError::Cancelled)));
+    assert!(
+        elapsed < std::time::Duration::from_secs(5),
+        "cancellation must drop the in-flight future within the request deadline; elapsed = {elapsed:?}"
+    );
+}
+
+#[tokio::test]
 async fn shared_client_fans_queries_across_multiple_subgraph_instances() {
     let first = MockServer::start().await;
     Mock::given(method("POST"))

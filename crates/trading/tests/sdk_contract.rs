@@ -613,6 +613,51 @@ async fn get_quote_only_with_cancellation_returns_cancelled_when_token_is_fired_
 }
 
 #[tokio::test]
+async fn get_quote_only_with_cancellation_aborts_an_in_flight_quote() {
+    let orderbook = Arc::new(
+        MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response())
+            .with_quote_delay(std::time::Duration::from_secs(30)),
+    );
+    let sdk = TradingSdk::new(
+        PartialTraderParameters {
+            chain_id: Some(SupportedChainId::Sepolia),
+            app_code: Some("cancellation-test".to_owned()),
+            owner: Some(address(OWNER)),
+            env: Some(CowEnv::Prod),
+            settlement_contract_override: None,
+            eth_flow_contract_override: None,
+        },
+        TradingSdkOptions::new().with_orderbook_client(orderbook),
+    )
+    .expect("trading sdk must construct for the cancellation test");
+
+    let trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
+    let token = cow_sdk_core::CancellationToken::new();
+    let token_for_call = token.clone();
+
+    let trigger_cancellation = async {
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        token.cancel();
+    };
+
+    let started = std::time::Instant::now();
+    let (result, ()) = tokio::join!(
+        sdk.get_quote_only_with_cancellation(trade, None, &token_for_call),
+        trigger_cancellation,
+    );
+    let elapsed = started.elapsed();
+
+    assert!(matches!(
+        result,
+        Err(cow_sdk_trading::TradingError::Cancelled)
+    ));
+    assert!(
+        elapsed < std::time::Duration::from_secs(5),
+        "cancellation must drop the in-flight future within the quote deadline; elapsed = {elapsed:?}"
+    );
+}
+
+#[tokio::test]
 async fn helper_only_sdk_refuses_quote_post_and_off_chain_cancel_flows() {
     let sdk = cow_sdk_trading::TradingSdkBuilder::new()
         .with_chain_id(SupportedChainId::Sepolia)

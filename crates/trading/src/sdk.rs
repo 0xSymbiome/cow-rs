@@ -15,7 +15,7 @@ use crate::{
     TradingSdkOptions, cancel_order_onchain_async, get_cow_protocol_allowance,
     get_cow_protocol_allowance_async, get_pre_sign_transaction, get_pre_sign_transaction_async,
     get_quote_only, get_quote_results_async, off_chain_cancel_order_async, post_limit_order_async,
-    post_swap_order_async, types::validate_orderbook_context,
+    post_swap_order_async, post_swap_order_from_quote_async, types::validate_orderbook_context,
 };
 
 /// Runtime readiness of a constructed [`TradingSdk`].
@@ -454,6 +454,11 @@ impl TradingSdk {
     ///
     /// Owner precedence is: quote override `from`, call-level `owner`, SDK default `owner`.
     ///
+    /// This is a thin wrapper around
+    /// [`get_quote_only_with_cancellation`](Self::get_quote_only_with_cancellation)
+    /// that passes a fresh [`cow_sdk_core::CancellationToken`]; existing
+    /// callers observe no behavioural change.
+    ///
     /// # Errors
     ///
     /// Returns [`TradingError`] when required defaults are missing, the quote
@@ -525,7 +530,33 @@ impl TradingSdk {
         S: Signer,
         S::Error: std::fmt::Display,
     {
-        self.get_quote_results_async(params, signer, advanced_settings)
+        self.get_quote_results_with_cancellation(
+            params,
+            signer,
+            advanced_settings,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Fetches quote results for a sync signer with cooperative cancellation support.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or any error from [`Self::get_quote_results_async_with_cancellation`].
+    pub async fn get_quote_results_with_cancellation<S>(
+        &self,
+        params: TradeParameters,
+        signer: &S,
+        advanced_settings: Option<&SwapAdvancedSettings>,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<QuoteResults, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display,
+    {
+        self.get_quote_results_async_with_cancellation(params, signer, advanced_settings, token)
             .await
     }
 
@@ -539,9 +570,36 @@ impl TradingSdk {
     /// address resolution fails, or downstream quote construction fails.
     pub async fn get_quote_results_async<S>(
         &self,
+        params: TradeParameters,
+        signer: &S,
+        advanced_settings: Option<&SwapAdvancedSettings>,
+    ) -> Result<QuoteResults, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
+        self.get_quote_results_async_with_cancellation(
+            params,
+            signer,
+            advanced_settings,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Fetches quote results for an async signer with cooperative cancellation support.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or [`TradingError`] when required defaults are missing, signer
+    /// address resolution fails, or downstream quote construction fails.
+    pub async fn get_quote_results_async_with_cancellation<S>(
+        &self,
         mut params: TradeParameters,
         signer: &S,
         advanced_settings: Option<&SwapAdvancedSettings>,
+        token: &cow_sdk_core::CancellationToken,
     ) -> Result<QuoteResults, TradingError>
     where
         S: AsyncSigner,
@@ -551,14 +609,17 @@ impl TradingSdk {
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
-        get_quote_results_async(
-            &params,
-            &trader,
-            signer,
-            advanced_settings,
-            orderbook.client.as_ref(),
-        )
-        .await
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(TradingError::Cancelled),
+            result = get_quote_results_async(
+                &params,
+                &trader,
+                signer,
+                advanced_settings,
+                orderbook.client.as_ref(),
+            ) => result,
+        }
     }
 
     /// Quotes and posts a swap order using a sync signer.
@@ -576,7 +637,38 @@ impl TradingSdk {
         S: Signer,
         S::Error: std::fmt::Display,
     {
-        self.post_swap_order_async(params, signer, advanced_settings)
+        self.post_swap_order_with_cancellation(
+            params,
+            signer,
+            advanced_settings,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Quotes and posts a swap order using a sync signer with cooperative cancellation support.
+    ///
+    /// Cancellation only affects pre-broadcast work: once the signed order
+    /// payload has been accepted by the orderbook, the order cannot be
+    /// un-submitted. Cancelling a submission that has not yet reached the
+    /// orderbook is a no-op on the service.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or any error from [`Self::post_swap_order_async_with_cancellation`].
+    pub async fn post_swap_order_with_cancellation<S>(
+        &self,
+        params: TradeParameters,
+        signer: &S,
+        advanced_settings: Option<&SwapAdvancedSettings>,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<crate::OrderPostingResult, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display,
+    {
+        self.post_swap_order_async_with_cancellation(params, signer, advanced_settings, token)
             .await
     }
 
@@ -588,9 +680,40 @@ impl TradingSdk {
     /// order submission fails.
     pub async fn post_swap_order_async<S>(
         &self,
+        params: TradeParameters,
+        signer: &S,
+        advanced_settings: Option<&SwapAdvancedSettings>,
+    ) -> Result<crate::OrderPostingResult, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
+        self.post_swap_order_async_with_cancellation(
+            params,
+            signer,
+            advanced_settings,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Quotes and posts a swap order using an async signer with cooperative cancellation support.
+    ///
+    /// Cancellation only affects pre-broadcast work: once the signed order
+    /// payload has been accepted by the orderbook, the order cannot be
+    /// un-submitted.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or [`TradingError`] when quoting, signing, app-data upload, or
+    /// order submission fails.
+    pub async fn post_swap_order_async_with_cancellation<S>(
+        &self,
         mut params: TradeParameters,
         signer: &S,
         advanced_settings: Option<&SwapAdvancedSettings>,
+        token: &cow_sdk_core::CancellationToken,
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: AsyncSigner,
@@ -600,14 +723,138 @@ impl TradingSdk {
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
-        post_swap_order_async(
-            &params,
-            &trader,
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(TradingError::Cancelled),
+            result = post_swap_order_async(
+                &params,
+                &trader,
+                signer,
+                advanced_settings,
+                orderbook.client.as_ref(),
+            ) => result,
+        }
+    }
+
+    /// Posts a swap order from previously computed quote results using a sync signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from [`Self::post_swap_order_from_quote_async`].
+    pub async fn post_swap_order_from_quote<S>(
+        &self,
+        quote_results: &QuoteResults,
+        signer: &S,
+        advanced_settings: Option<&SwapAdvancedSettings>,
+    ) -> Result<crate::OrderPostingResult, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display,
+    {
+        self.post_swap_order_from_quote_with_cancellation(
+            quote_results,
             signer,
             advanced_settings,
-            orderbook.client.as_ref(),
+            &cow_sdk_core::CancellationToken::new(),
         )
         .await
+    }
+
+    /// Posts a swap order from previously computed quote results using a sync signer with cooperative cancellation support.
+    ///
+    /// Cancellation only affects pre-broadcast work: once the signed order
+    /// payload has been accepted by the orderbook, the order cannot be
+    /// un-submitted.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or any error from
+    /// [`Self::post_swap_order_from_quote_async_with_cancellation`].
+    pub async fn post_swap_order_from_quote_with_cancellation<S>(
+        &self,
+        quote_results: &QuoteResults,
+        signer: &S,
+        advanced_settings: Option<&SwapAdvancedSettings>,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<crate::OrderPostingResult, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display,
+    {
+        self.post_swap_order_from_quote_async_with_cancellation(
+            quote_results,
+            signer,
+            advanced_settings,
+            token,
+        )
+        .await
+    }
+
+    /// Posts a swap order from previously computed quote results using an async signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when the stored orderbook binding no longer
+    /// matches the SDK's active orderbook, when app-data merging fails, when
+    /// signing fails, or when the orderbook rejects the submission.
+    pub async fn post_swap_order_from_quote_async<S>(
+        &self,
+        quote_results: &QuoteResults,
+        signer: &S,
+        advanced_settings: Option<&SwapAdvancedSettings>,
+    ) -> Result<crate::OrderPostingResult, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
+        self.post_swap_order_from_quote_async_with_cancellation(
+            quote_results,
+            signer,
+            advanced_settings,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Posts a swap order from previously computed quote results using an async signer with cooperative cancellation support.
+    ///
+    /// Cancellation only affects pre-broadcast work: once the signed order
+    /// payload has been accepted by the orderbook, the order cannot be
+    /// un-submitted.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or [`TradingError`] when the stored orderbook binding no longer
+    /// matches the SDK's active orderbook, when app-data merging fails, when
+    /// signing fails, or when the orderbook rejects the submission.
+    pub async fn post_swap_order_from_quote_async_with_cancellation<S>(
+        &self,
+        quote_results: &QuoteResults,
+        signer: &S,
+        advanced_settings: Option<&SwapAdvancedSettings>,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<crate::OrderPostingResult, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
+        self.ensure_ready_mode()?;
+        let (trader, orderbook) =
+            self.resolve_orderbook_trader(None, quote_results.trade_parameters.env)?;
+
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(TradingError::Cancelled),
+            result = post_swap_order_from_quote_async(
+                quote_results,
+                &trader,
+                signer,
+                advanced_settings,
+                orderbook.client.as_ref(),
+            ) => result,
+        }
     }
 
     /// Posts a limit order using a sync signer.
@@ -625,7 +872,37 @@ impl TradingSdk {
         S: Signer,
         S::Error: std::fmt::Display,
     {
-        self.post_limit_order_async(params, signer, advanced_settings)
+        self.post_limit_order_with_cancellation(
+            params,
+            signer,
+            advanced_settings,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Posts a limit order using a sync signer with cooperative cancellation support.
+    ///
+    /// Cancellation only affects pre-broadcast work: once the signed order
+    /// payload has been accepted by the orderbook, the order cannot be
+    /// un-submitted.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or any error from [`Self::post_limit_order_async_with_cancellation`].
+    pub async fn post_limit_order_with_cancellation<S>(
+        &self,
+        params: LimitTradeParameters,
+        signer: &S,
+        advanced_settings: Option<&LimitOrderAdvancedSettings>,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<crate::OrderPostingResult, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display,
+    {
+        self.post_limit_order_async_with_cancellation(params, signer, advanced_settings, token)
             .await
     }
 
@@ -637,9 +914,40 @@ impl TradingSdk {
     /// generation fails, or downstream signing/submission fails.
     pub async fn post_limit_order_async<S>(
         &self,
+        params: LimitTradeParameters,
+        signer: &S,
+        advanced_settings: Option<&LimitOrderAdvancedSettings>,
+    ) -> Result<crate::OrderPostingResult, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
+        self.post_limit_order_async_with_cancellation(
+            params,
+            signer,
+            advanced_settings,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Posts a limit order using an async signer with cooperative cancellation support.
+    ///
+    /// Cancellation only affects pre-broadcast work: once the signed order
+    /// payload has been accepted by the orderbook, the order cannot be
+    /// un-submitted.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or [`TradingError`] when required defaults are missing,
+    /// app-data generation fails, or downstream signing/submission fails.
+    pub async fn post_limit_order_async_with_cancellation<S>(
+        &self,
         mut params: LimitTradeParameters,
         signer: &S,
         advanced_settings: Option<&LimitOrderAdvancedSettings>,
+        token: &cow_sdk_core::CancellationToken,
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: AsyncSigner,
@@ -649,14 +957,17 @@ impl TradingSdk {
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
-        post_limit_order_async(
-            &params,
-            &trader,
-            signer,
-            advanced_settings,
-            orderbook.client.as_ref(),
-        )
-        .await
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(TradingError::Cancelled),
+            result = post_limit_order_async(
+                &params,
+                &trader,
+                signer,
+                advanced_settings,
+                orderbook.client.as_ref(),
+            ) => result,
+        }
     }
 
     /// Builds the pre-sign transaction for an order using a sync signer.
@@ -698,13 +1009,42 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display,
     {
+        self.get_pre_sign_transaction_async_with_cancellation(
+            params,
+            signer,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Builds the pre-sign transaction with cooperative cancellation support.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or [`TradingError`] when trader defaults are incomplete or gas
+    /// estimation / transaction construction fails.
+    pub async fn get_pre_sign_transaction_async_with_cancellation<S>(
+        &self,
+        params: &OrderTraderParameters,
+        signer: &S,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<cow_sdk_core::TransactionRequest, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
             .ok_or_else(|| TradingError::MissingTraderParameters("chainId".to_owned()))?;
         let options = protocol_options_for_partial_order(params, &trader);
 
-        get_pre_sign_transaction_async(signer, chain_id, &params.order_uid, Some(&options)).await
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(TradingError::Cancelled),
+            result = get_pre_sign_transaction_async(signer, chain_id, &params.order_uid, Some(&options)) => result,
+        }
     }
 
     /// Fetches an order from the active orderbook binding.
@@ -717,13 +1057,29 @@ impl TradingSdk {
         &self,
         params: &OrderTraderParameters,
     ) -> Result<cow_sdk_orderbook::Order, TradingError> {
+        self.get_order_with_cancellation(params, &cow_sdk_core::CancellationToken::new())
+            .await
+    }
+
+    /// Fetches an order with cooperative cancellation support.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or [`TradingError`] when chain resolution fails or the orderbook
+    /// request fails.
+    pub async fn get_order_with_cancellation(
+        &self,
+        params: &OrderTraderParameters,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<cow_sdk_orderbook::Order, TradingError> {
         let (_, orderbook) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
 
-        orderbook
-            .client
-            .get_order(&params.order_uid)
-            .await
-            .map_err(Into::into)
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(TradingError::Cancelled),
+            result = orderbook.client.get_order(&params.order_uid) => result.map_err(Into::into),
+        }
     }
 
     /// Signs and submits an off-chain cancellation using a sync signer.
@@ -740,7 +1096,33 @@ impl TradingSdk {
         S: Signer,
         S::Error: std::fmt::Display,
     {
-        self.off_chain_cancel_order_async(params, signer).await
+        self.off_chain_cancel_order_with_cancellation(
+            params,
+            signer,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Signs and submits an off-chain cancellation using a sync signer with cooperative cancellation support.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or any error from
+    /// [`Self::off_chain_cancel_order_async_with_cancellation`].
+    pub async fn off_chain_cancel_order_with_cancellation<S>(
+        &self,
+        params: &OrderTraderParameters,
+        signer: &S,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<bool, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display,
+    {
+        self.off_chain_cancel_order_async_with_cancellation(params, signer, token)
+            .await
     }
 
     /// Signs and submits an off-chain cancellation using an async signer.
@@ -758,6 +1140,31 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display,
     {
+        self.off_chain_cancel_order_async_with_cancellation(
+            params,
+            signer,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Signs and submits an off-chain cancellation using an async signer with cooperative cancellation support.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or [`TradingError`] when orderbook context resolution, signing,
+    /// or orderbook submission fails.
+    pub async fn off_chain_cancel_order_async_with_cancellation<S>(
+        &self,
+        params: &OrderTraderParameters,
+        signer: &S,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<bool, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
         self.ensure_ready_mode()?;
         let (trader, orderbook) = self.resolve_orderbook_trader(params.chain_id, params.env)?;
         let effective_params = OrderTraderParameters {
@@ -766,13 +1173,16 @@ impl TradingSdk {
             ..params.clone()
         };
 
-        off_chain_cancel_order_async(
-            orderbook.client.as_ref(),
-            &effective_params,
-            &trader,
-            signer,
-        )
-        .await
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(TradingError::Cancelled),
+            result = off_chain_cancel_order_async(
+                orderbook.client.as_ref(),
+                &effective_params,
+                &trader,
+                signer,
+            ) => result,
+        }
     }
 
     /// Cancels an order on-chain using a sync signer.
@@ -789,7 +1199,36 @@ impl TradingSdk {
         S: Signer,
         S::Error: std::fmt::Display,
     {
-        self.on_chain_cancel_order_async(params, signer).await
+        self.on_chain_cancel_order_with_cancellation(
+            params,
+            signer,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Cancels an order on-chain using a sync signer with cooperative cancellation support.
+    ///
+    /// Cancellation only affects pre-broadcast work; once a transaction has
+    /// been signed and broadcast to the chain, it cannot be withdrawn.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or any error from
+    /// [`Self::on_chain_cancel_order_async_with_cancellation`].
+    pub async fn on_chain_cancel_order_with_cancellation<S>(
+        &self,
+        params: &OrderTraderParameters,
+        signer: &S,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<TransactionHash, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display,
+    {
+        self.on_chain_cancel_order_async_with_cancellation(params, signer, token)
+            .await
     }
 
     /// Cancels an order on-chain using an async signer.
@@ -807,8 +1246,42 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display,
     {
+        self.on_chain_cancel_order_async_with_cancellation(
+            params,
+            signer,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Cancels an order on-chain using an async signer with cooperative cancellation support.
+    ///
+    /// Cancellation only affects pre-broadcast work; once the on-chain
+    /// cancellation transaction has been broadcast, it cannot be withdrawn.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or [`TradingError`] when order lookup, transaction construction,
+    /// or transaction submission fails.
+    pub async fn on_chain_cancel_order_async_with_cancellation<S>(
+        &self,
+        params: &OrderTraderParameters,
+        signer: &S,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<TransactionHash, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
         let (trader, orderbook) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
-        let order = orderbook.client.get_order(&params.order_uid).await?;
+
+        let order = tokio::select! {
+            biased;
+            () = token.cancelled() => return Err(TradingError::Cancelled),
+            order = orderbook.client.get_order(&params.order_uid) => order?,
+        };
+
         let effective_params = OrderTraderParameters {
             chain_id: Some(orderbook.chain_id),
             env: Some(orderbook.env),
@@ -816,7 +1289,11 @@ impl TradingSdk {
         };
         let options = protocol_options_for_partial_order(&effective_params, &trader);
 
-        cancel_order_onchain_async(signer, orderbook.chain_id, &order, Some(&options)).await
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(TradingError::Cancelled),
+            result = cancel_order_onchain_async(signer, orderbook.chain_id, &order, Some(&options)) => result,
+        }
     }
 
     /// Reads the `CoW` Protocol allowance using a sync provider.
@@ -865,21 +1342,49 @@ impl TradingSdk {
         P: AsyncProvider,
         P::Error: std::fmt::Display,
     {
+        self.get_cow_protocol_allowance_async_with_cancellation(
+            provider,
+            params,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Reads the `CoW` Protocol allowance using an async provider with cooperative cancellation support.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or [`TradingError`] when trader defaults are incomplete or
+    /// provider reads fail.
+    pub async fn get_cow_protocol_allowance_async_with_cancellation<P>(
+        &self,
+        provider: &P,
+        params: &AllowanceParameters,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<Amount, TradingError>
+    where
+        P: AsyncProvider,
+        P::Error: std::fmt::Display,
+    {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
             .ok_or_else(|| TradingError::MissingTraderParameters("chainId".to_owned()))?;
         let env = trader.env.unwrap_or(CowEnv::Prod);
 
-        get_cow_protocol_allowance_async(
-            provider,
-            &params.token_address,
-            &params.owner,
-            chain_id,
-            env,
-            params.vault_relayer_address.as_ref(),
-        )
-        .await
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(TradingError::Cancelled),
+            result = get_cow_protocol_allowance_async(
+                provider,
+                &params.token_address,
+                &params.owner,
+                chain_id,
+                env,
+                params.vault_relayer_address.as_ref(),
+            ) => result,
+        }
     }
 
     /// Sends an approval transaction using a sync signer.
@@ -921,13 +1426,45 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display,
     {
+        self.approve_cow_protocol_async_with_cancellation(
+            signer,
+            params,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Sends an approval transaction using an async signer with cooperative cancellation support.
+    ///
+    /// Cancellation only affects pre-broadcast work; once the approval
+    /// transaction has been broadcast, it cannot be withdrawn.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or [`TradingError`] when trader defaults are incomplete or
+    /// transaction submission fails.
+    pub async fn approve_cow_protocol_async_with_cancellation<S>(
+        &self,
+        signer: &S,
+        params: &ApprovalParameters,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<TransactionHash, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
             .ok_or_else(|| TradingError::MissingTraderParameters("chainId".to_owned()))?;
         let env = trader.env.unwrap_or(CowEnv::Prod);
 
-        crate::approve_cow_protocol_async(signer, params, chain_id, env).await
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(TradingError::Cancelled),
+            result = crate::approve_cow_protocol_async(signer, params, chain_id, env) => result,
+        }
     }
 
     fn resolve_quote_owner(
