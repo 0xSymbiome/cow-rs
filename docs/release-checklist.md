@@ -103,7 +103,107 @@ cargo package -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.
 cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
 ```
 
-## 6. Provenance-Sensitive Parity Proof
+## 6. Manual Publish Sequence
+
+The functional `0.1.0` crates.io release publishes the nine Phase One
+crates in dependency order so every step depends only on a version
+already indexed by the registry. Reserved-placeholder `0.0.1-reserved.0`
+publishes are independent of the functional release and do not satisfy
+this sequence.
+
+### Prerequisites
+
+- Sections 1 through 5 above are green on the release branch.
+- The dry-run matrix in section 5 completes cleanly for every crate
+  against the release commit.
+- Workspace and per-crate versions agree with the release tag.
+- The release engineer is authenticated against crates.io with publish
+  rights for every crate listed below.
+
+### Publish order
+
+Publish one crate at a time in the order below:
+
+```text
+cargo publish -p cow-sdk-core
+cargo publish -p cow-sdk-contracts
+cargo publish -p cow-sdk-app-data
+cargo publish -p cow-sdk-orderbook
+cargo publish -p cow-sdk-signing
+cargo publish -p cow-sdk-subgraph
+cargo publish -p cow-sdk-trading
+cargo publish -p cow-sdk-browser-wallet
+cargo publish -p cow-sdk
+```
+
+### Index propagation backoff
+
+- After each `cargo publish` returns successfully, wait 30 to 60 seconds
+  before the next step so the freshly-published version appears in the
+  crates.io index that the next dependency resolution reads.
+- If the next publish fails with a missing-dependency or index-cache
+  resolution error, pause another 30 to 60 seconds and retry. Repeat up
+  to three times before escalating.
+- For the `cow-sdk-trading`, `cow-sdk-browser-wallet`, and `cow-sdk`
+  steps, which pull multiple freshly-published first-party dependencies,
+  the safe fallback is a two-minute wait between that step and the
+  previous step.
+- If crates.io returns an HTTP 429 or a documented publication
+  rate-limit error, stop the sequence, wait for the rate-limit window
+  to elapse, and resume from the next unpublished crate. A successful
+  `cargo publish` is idempotent on the version number and cannot be
+  re-executed for the same version.
+
+### Ownership
+
+`cargo owner --add <username> <crate>` and
+`cargo owner --remove <username> <crate>` manage the per-crate owner
+set on crates.io. Any ownership change applies per crate; record the
+executed commands in `CHANGELOG.md` under the release heading or in
+the release announcement so the owner list stays auditable.
+
+### Yank rollback
+
+If a published version must not be resolved by new builds, yank each
+affected crate at that version:
+
+```text
+cargo yank --version <version> cow-sdk-<crate>
+```
+
+`cargo yank` marks the version unsafe to select by default for new
+dependency resolution. It does not remove the crate from crates.io;
+projects that have already locked the yanked version continue to
+build.
+
+Rules:
+
+- Yank every crate in the release that carries the broken change.
+- Post a release-retraction notice in `CHANGELOG.md` naming the yanked
+  version, the reason, and the recommended replacement, and notify
+  downstream consumers through the same announcement channel used for
+  routine releases. When the yank responds to a security issue, follow
+  the private disclosure path in `SECURITY.md` before publishing the
+  retraction notice.
+- Open a rollback pull request that either reverts the breaking change
+  or advances to a corrected patch version. The next functional
+  release is always a new version; a yanked version number is not
+  re-used.
+- If the flaw does not materialize and the yank is reversed later, run
+  `cargo yank --undo --version <version>` against every previously
+  yanked crate and update the `CHANGELOG.md` retraction notice
+  accordingly.
+
+### Post-publish confirmation
+
+- Record the release tag, the published versions, any ownership
+  changes executed in the same window, and any yank or unyank events
+  in `CHANGELOG.md` under the released version heading.
+- Confirm the released crates resolve cleanly from a fresh checkout
+  by running the public `cargo add cow-sdk` path described in
+  [Getting Started](getting-started.md) before announcing the release.
+
+## 7. Provenance-Sensitive Parity Proof
 
 Use this lane when the release needs explicit proof against pinned upstream
 repositories instead of only the committed fixture contract.
@@ -135,7 +235,7 @@ Rules:
 - same-checkout directory copies are not valid provenance evidence
 - `release-readiness.yml` owns the routine automated provenance-sensitive lane
 
-## 7. WASM And Browser Surfaces
+## 8. WASM And Browser Surfaces
 
 Build the WASM surfaces:
 
@@ -168,7 +268,7 @@ bun run --cwd e2e/browser-wallet playwright install chromium
 bun run --cwd e2e/browser-wallet test
 ```
 
-## 8. Optional Validation Smoke
+## 9. Optional Validation Smoke
 
 Use the smoke kit when a change needs live service confirmation, live
 extension-backed wallet confirmation, or deployed-page inspection in addition
@@ -182,7 +282,7 @@ cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-pages --sd
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
 ```
 
-## 9. Manual Confirmation Before Publish
+## 10. Manual Confirmation Before Publish
 
 - serve the WASM examples over HTTP and confirm that the built artifacts load
 - if the browser-wallet console changed, run an extension-backed spot check on
@@ -191,3 +291,21 @@ cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
   Pages workflow completes
 - if parity inputs changed, confirm that the pinned SHAs and fixture provenance
   still align
+
+## 11. Software Bill Of Materials
+
+The `release-readiness.yml` workflow emits a CycloneDX Software Bill of
+Materials on every non-schedule run through a dedicated `sbom` job that
+depends on the publication dry-run. The job installs `cargo-cyclonedx`,
+regenerates the CycloneDX JSON for every workspace crate, and uploads
+the combined output as a workflow artifact.
+
+- Artifact name: `cow-rs-sbom-cyclonedx`
+- Artifact format: CycloneDX JSON (`*.cdx.json`), one file per workspace
+  crate, archived together
+- Download location: GitHub Actions run page for the
+  `release-readiness` workflow, under "Artifacts"
+- Retention: 90 days
+
+The SBOM artifact surfaces component provenance for reviewers and
+downstream consumers on each release-readiness workflow run.

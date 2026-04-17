@@ -195,3 +195,36 @@ jobs:
         run: |
           PARITY_UPSTREAM_ROOT="$RUNNER_TEMP/parity-upstreams"
           cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root "$PARITY_UPSTREAM_ROOT/cow-sdk" --contracts-root "$PARITY_UPSTREAM_ROOT/contracts" --services-root "$PARITY_UPSTREAM_ROOT/services"
+
+  sbom:
+    if: ${{ github.event_name != 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - publication
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Install cargo-cyclonedx
+        run: cargo install cargo-cyclonedx --version 0.5.7 --locked
+      - name: Generate CycloneDX SBOM for the workspace
+        run: cargo cyclonedx --format json --all --override-filename cow-rs-sbom
+      - name: Collect SBOM artifacts
+        run: |
+          mkdir -p target/sbom
+          find . -type f -name 'cow-rs-sbom*.cdx.json' ! -path './target/sbom/*' -print -exec cp {} target/sbom/ \;
+      # Source ref: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cow-rs-sbom-cyclonedx
+          path: target/sbom/
+          if-no-files-found: error
+          retention-days: 90
