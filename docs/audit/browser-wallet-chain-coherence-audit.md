@@ -7,9 +7,12 @@ Refresh trigger: Changes to `BrowserWallet::signer_for_chain`, typed-data chain 
 Related docs:
 - [ADR 0004](../adr/0004-feature-gated-browser-wallet-sidecar.md)
 - [ADR 0007](../adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
+- [ADR 0009](../adr/0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)
+- [Browser-Runtime Proof Posture](../browser-runtime-proof-posture.md)
+- [WASM Example Proof-Posture Audit](wasm-example-proof-posture-audit.md)
 
 ## Scope
 

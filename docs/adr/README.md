@@ -16,6 +16,7 @@ public and runtime shape of `cow-rs`.
 | [0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md) | Accepted | Keep policy contracts explicit, review-visible, and instance-scoped. |
 | [0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md) | Accepted | Keep browser wallet support explicit, bounded, and aligned to the current browser-runtime seam. |
 | [0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md) | Accepted | Grow new capability surfaces through additive leaf crates and owned sidecars. |
+| [0009](0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md) | Accepted | Keep WASM examples as named verification consoles with one naming shape, one ship checklist, a two-tier proof posture, and a hybrid extensibility rule. |
 
 ## When To Write An ADR
 

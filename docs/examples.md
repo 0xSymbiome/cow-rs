@@ -28,10 +28,59 @@ environment notes.
 
 Use the WASM examples when you need browser-facing verification surfaces.
 
-| Surface | Purpose |
-| --- | --- |
-| [`sdk-verification-console`](../examples/wasm/sdk-verification-console/README.md) | Deterministic SDK verification and browser inspection for WASM-compatible surfaces |
-| [`browser-wallet-console`](../examples/wasm/browser-wallet-console/README.md) | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
+| Surface | Package | Purpose |
+| --- | --- | --- |
+| [`sdk-verification-console`](../examples/wasm/sdk-verification-console/README.md) | `cow-sdk-verification-console` | Deterministic SDK verification and browser inspection for WASM-compatible surfaces |
+| [`browser-wallet-console`](../examples/wasm/browser-wallet-console/README.md) | `cow-sdk-browser-wallet-console-wasm` | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
+
+For the two-tier browser-runtime proof posture these consoles follow, see
+[Browser-runtime proof posture](browser-runtime-proof-posture.md).
+
+## Adding A WASM Console
+
+WASM consoles under `examples/wasm/` are verification dashboards, not
+pedagogical playgrounds. New consoles extend the existing surface without
+diluting that genre. The rules below govern naming, shape, and scope.
+
+### Naming
+
+- Folder: `examples/wasm/<capability>-console/` in kebab-case, suffix
+  `-console`.
+- Cargo package name: `cow-sdk-<capability>-console`. Drop the inner `sdk-`
+  only when the literal substitution would repeat, so the folder
+  `sdk-verification-console/` maps to the package `cow-sdk-verification-console`
+  rather than `cow-sdk-sdk-verification-console`.
+- Playwright lane folder: `e2e/<capability>/`.
+- Hosted Pages path: `<capability>-console/` under the repository Pages host.
+
+### Shape
+
+Every console ships with:
+
+- A one-sentence user-outcome subheading immediately under the H1 in both the
+  README and the HTML landing page
+- A primary walkthrough entry that drives a deterministic flow end-to-end so
+  the first reviewer click exercises a signed result
+- A persistent mode indicator exposing env, chain, wallet, and last action
+  while the reader scrolls
+- A visible hosted-build link when the page is not already served from the
+  hosted Pages host
+- A README on the fixed template shape: H1, user-outcome subheading,
+  What this shows, Modes, Build, Serve, Validation, Hosted build, Related
+- Deterministic host-side Rust tests plus an in-browser `wasm-bindgen-test`
+  lane and a route-mocked Playwright lane
+
+### Hybrid Extensibility
+
+- A capability that introduces a new user workflow in the browser lands as a
+  new `examples/wasm/<capability>-console/` crate with its own Playwright lane
+  and hosted Pages path.
+- A capability that is a deterministic SDK addition without a new user
+  workflow extends the existing sdk-verification console as one or more new
+  panels inside `cow-sdk-verification-console` rather than forking a new
+  console crate.
+- When in doubt, default to a panel. Lifting a panel to its own console later
+  is cheaper than splitting an over-broad console after the fact.
 
 ## Integration Notes
 

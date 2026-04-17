@@ -54,6 +54,12 @@ If the reviewed surface did not change, leave the audit alone.
 | [Browser Wallet Chain Coherence Audit](browser-wallet-chain-coherence-audit.md) | Standing audit | `cow-sdk-browser-wallet` chain-bound signer and typed chain-management contract | Wallet-session chain coherence for browser-wallet-backed flows | Current | 2026-04-15 |
 | [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md) | Standing audit | `cow-sdk-browser-wallet` ABI helper family and reachable alloy proc-macro advisories | Adoption of `alloy-primitives`, `alloy-dyn-abi`, and `alloy-json-abi` with revisit triggers for the two proc-macro advisories they transit | Current | 2026-04-16 |
 
+## WASM Example Proof Posture
+
+| Artifact | Type | Owning surface | Scope | Status | Last reviewed |
+| --- | --- | --- | --- | --- | --- |
+| [WASM Example Proof-Posture Audit](wasm-example-proof-posture-audit.md) | Standing audit | WASM verification consoles and their two-tier proof posture | Deterministic console proof, mock-versus-injected separation, staging-versus-proxy posture, and the shipped Playwright and wasm-bindgen-test evidence set | Current | 2026-04-17 |
+
 ## App-Data And Dependencies
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
