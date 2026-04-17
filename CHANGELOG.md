@@ -139,13 +139,16 @@ unreleased public contract of the repository.
   published leaf crate now exposes a `tracing` feature that pulls
   `tracing = { version = "0.1", default-features = false, features = ["attributes"] }`
   as an optional dependency, and the facade `cow-sdk/tracing` feature
-  activates the leaves in one step. Representative `_with_cancellation`
-  entry points on the orderbook, subgraph, and trading surfaces are
-  annotated with `#[cfg_attr(feature = "tracing", tracing::instrument(...))]`
+  activates the leaves in one step. Every long-running public
+  operation on `OrderBookApi`, `SubgraphApi`, and `TradingSdk`, the
+  canonical local signing entry points on `cow-sdk-signing`, and the
+  wallet-mediated chain operations on `BrowserWallet` are annotated
+  with `#[cfg_attr(feature = "tracing", tracing::instrument(...))]`
   using the documented field registry (`chain`, `env`, `endpoint`,
-  `method`, and related safe identifiers) so host applications can route
-  structured spans into their own subscriber. With the feature off the
-  SDK emits zero spans and incurs no dependency or runtime cost.
+  `method`, `scheme`, `order_uid`, and related safe identifiers) so
+  host applications can route structured spans into their own
+  subscriber. With the feature off the SDK emits zero spans and
+  incurs no dependency or runtime cost.
 - `SdkError::class() -> ErrorClass` classification helper on the facade
   aggregate. Every variant of the facade error family resolves to one of
   `Validation`, `Transport`, `Remote`, `Signing`, `Cancelled`, or
@@ -158,18 +161,18 @@ unreleased public contract of the repository.
 - Cooperative cancellation support on long-running SDK operations.
   `cow-sdk-core` re-exports `tokio_util::sync::CancellationToken` as
   `cow_sdk_core::CancellationToken` so every public crate routes
-  cancellation through a single typed import. `OrderBookApi`,
-  `SubgraphApi`, and `TradingSdk` gain representative `_with_cancellation`
-  entry points (`OrderBookApi::get_version_with_cancellation`,
-  `SubgraphApi::get_totals_with_cancellation`, and
-  `TradingSdk::get_quote_only_with_cancellation`) whose internal
-  implementation threads a biased `tokio::select!` against
-  `token.cancelled()` so in-flight request futures are dropped promptly
-  and the underlying socket is released rather than waiting for the
-  request deadline. Existing non-cancellation methods are thin wrappers
-  that construct a default token. `CoreError`, `OrderbookError`,
-  `TradingError`, and `SubgraphError` gain a typed `Cancelled` variant so
-  cancellation surfaces at the caller without ambiguity, and
+  cancellation through a single typed import. Every long-running
+  public operation on `OrderBookApi`, `SubgraphApi`, and `TradingSdk`
+  exposes a `_with_cancellation` sibling that accepts
+  `&CancellationToken`; the non-cancellation wrappers construct a
+  default token and delegate to the cancellation path so existing
+  callers observe no behavioural change. The cancellation-aware
+  variant threads a biased `tokio::select!` against
+  `token.cancelled()` so in-flight request futures are dropped
+  promptly and the underlying socket is released rather than waiting
+  for the request deadline. `CoreError`, `OrderbookError`,
+  `TradingError`, and `SubgraphError` gain a typed `Cancelled` variant
+  so cancellation surfaces at the caller without ambiguity, and
   `docs/architecture.md` records the cancellation contract under a
   dedicated Cancellation subsection.
 
@@ -220,9 +223,10 @@ unreleased public contract of the repository.
 - ADR 0011 records the typed amount boundary and the typestate ready-state
   construction rule for `TradingSdkBuilder`.
 - The Cooperative Cancellation Contract Audit is a new standing audit covering
-  the shared `CancellationToken` re-export, the representative
-  `_with_cancellation` entry points, the typed `Cancelled` variants, and the
-  biased `tokio::select!` propagation path.
+  the shared `CancellationToken` re-export, `_with_cancellation` entry points
+  on every long-running public operation of `OrderBookApi`, `SubgraphApi`, and
+  `TradingSdk`, the typed `Cancelled` variants, and the biased
+  `tokio::select!` propagation path.
 - The Credential Surface Contract Hygiene Audit is refreshed to cover the
   `Redacted<T>` wrapper and the transport-level error redaction path.
 
