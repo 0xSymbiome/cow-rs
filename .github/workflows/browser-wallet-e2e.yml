@@ -6,11 +6,31 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - '.github/workflows/browser-wallet-e2e.yml'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/browser-wallet/**'
+      - 'crates/core/**'
+      - 'crates/sdk/**'
+      - 'e2e/browser-wallet/**'
+      - 'examples/wasm/browser-wallet-console/**'
+      - 'rust-toolchain.toml'
   push:
     branches:
       - main
       - develop
       - feat/**
+    paths:
+      - '.github/workflows/browser-wallet-e2e.yml'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/browser-wallet/**'
+      - 'crates/core/**'
+      - 'crates/sdk/**'
+      - 'e2e/browser-wallet/**'
+      - 'examples/wasm/browser-wallet-console/**'
+      - 'rust-toolchain.toml'
 
 permissions:
   contents: read

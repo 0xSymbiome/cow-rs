@@ -6,11 +6,39 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - '.github/workflows/sdk-verification-e2e.yml'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/app-data/**'
+      - 'crates/contracts/**'
+      - 'crates/core/**'
+      - 'crates/orderbook/**'
+      - 'crates/sdk/**'
+      - 'crates/signing/**'
+      - 'crates/trading/**'
+      - 'e2e/sdk-verification/**'
+      - 'examples/wasm/sdk-verification-console/**'
+      - 'rust-toolchain.toml'
   push:
     branches:
       - main
       - develop
       - feat/**
+    paths:
+      - '.github/workflows/sdk-verification-e2e.yml'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/app-data/**'
+      - 'crates/contracts/**'
+      - 'crates/core/**'
+      - 'crates/orderbook/**'
+      - 'crates/sdk/**'
+      - 'crates/signing/**'
+      - 'crates/trading/**'
+      - 'e2e/sdk-verification/**'
+      - 'examples/wasm/sdk-verification-console/**'
+      - 'rust-toolchain.toml'
 
 permissions:
   contents: read
