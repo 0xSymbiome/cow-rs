@@ -198,6 +198,60 @@ fn compatibility_models_remain_stable_for_current_workspace_consumers() {
 }
 
 #[test]
+fn from_bytes_constructors_match_string_based_equivalents_byte_for_byte() {
+    let address_bytes: [u8; 20] = [
+        0x90, 0x08, 0xD1, 0x9f, 0x58, 0xAA, 0xBD, 0x9E, 0xD0, 0xD6, 0x09, 0x71, 0x56, 0x5A, 0xA8,
+        0x51, 0x05, 0x60, 0xAB, 0x41,
+    ];
+    let from_bytes_address = Address::from_bytes(address_bytes);
+    let from_new_address =
+        Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").expect("valid address literal");
+    assert_eq!(
+        from_bytes_address, from_new_address,
+        "Address::from_bytes must match the case-insensitive Address::new equivalent"
+    );
+    assert_eq!(
+        from_bytes_address.as_str(),
+        "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+        "Address::from_bytes must produce the canonical lowercase hex form"
+    );
+
+    let hash_bytes: [u8; 32] = [0xab; 32];
+    let from_bytes_hash = Hash32::from_bytes(hash_bytes);
+    let from_new_hash = Hash32::new(format!("0x{}", "ab".repeat(32))).expect("valid hash literal");
+    assert_eq!(
+        from_bytes_hash, from_new_hash,
+        "Hash32::from_bytes must match the Hash32::new equivalent"
+    );
+
+    let app_data_bytes: [u8; 32] = [0x5a; 32];
+    let from_bytes_app_data = AppDataHex::from_bytes(app_data_bytes);
+    let from_new_app_data =
+        AppDataHex::new(format!("0x{}", "5a".repeat(32))).expect("valid app-data hash literal");
+    assert_eq!(
+        from_bytes_app_data, from_new_app_data,
+        "AppDataHex::from_bytes must match the AppDataHex::new equivalent"
+    );
+
+    let mut uid_bytes = [0u8; 56];
+    for (i, byte) in uid_bytes.iter_mut().enumerate() {
+        *byte = u8::try_from(i).expect("index fits in u8 for the 56-byte test array");
+    }
+    let from_bytes_uid = OrderUid::from_bytes(uid_bytes);
+    let mut hex_form = String::with_capacity(uid_bytes.len() * 2);
+    for byte in uid_bytes {
+        use std::fmt::Write as _;
+        write!(&mut hex_form, "{byte:02x}").expect("writing to a String never fails");
+    }
+    let from_new_uid =
+        OrderUid::new(format!("0x{hex_form}")).expect("valid order UID literal for fixture");
+    assert_eq!(
+        from_bytes_uid, from_new_uid,
+        "OrderUid::from_bytes must match the OrderUid::new equivalent"
+    );
+}
+
+#[test]
 fn typed_atom_and_decimal_amounts_expose_semantic_accessors() {
     let atom = AtomAmount::from_atoms(BigUint::from(1_000_000_000_000_000_000u128));
     assert_eq!(atom.to_string(), "1000000000000000000");

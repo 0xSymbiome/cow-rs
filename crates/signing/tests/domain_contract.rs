@@ -49,12 +49,12 @@ fn domain_resolution_honors_default_env_staging_and_override_precedence() {
     .unwrap();
 
     assert_eq!(
-        default_domain.verifying_contract.as_str(),
-        "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+        default_domain.verifying_contract,
+        Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap()
     );
     assert_eq!(
-        staging_domain.verifying_contract.as_str(),
-        "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+        staging_domain.verifying_contract,
+        Address::new("0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13").unwrap()
     );
     assert_eq!(override_domain.verifying_contract, override_address);
 }

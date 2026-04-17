@@ -7,7 +7,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::{
     errors::{CoreError, ValidationError},
     redaction::{REDACTED_PLACEHOLDER, Redacted},
-    types::{Address, ChainId, TokenInfo},
+    types::{Address, ChainId, TokenInfo, hex_decode_20},
 };
 
 /// All supported `CoW` API environments.
@@ -23,13 +23,38 @@ const PROD_BASE_URL: &str = "https://api.cow.fi";
 const STAGING_BASE_URL: &str = "https://barn.api.cow.fi";
 const PARTNER_PROD_BASE_URL: &str = "https://partners.cow.fi";
 const PARTNER_STAGING_BASE_URL: &str = "https://partners.barn.cow.fi";
-const SETTLEMENT_CONTRACT_ADDRESS: &str = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41";
-const SETTLEMENT_CONTRACT_ADDRESS_STAGING: &str = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13";
-const VAULT_RELAYER_ADDRESS: &str = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110";
-const VAULT_RELAYER_ADDRESS_STAGING: &str = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2";
-const ETH_FLOW_ADDRESS: &str = "0xba3cb449bd2b4adddbc894d8697f5170800eadec";
-const ETH_FLOW_ADDRESS_STAGING: &str = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC";
+const SETTLEMENT_CONTRACT_BYTES: [u8; 20] =
+    hex_decode_20("0x9008D19f58AAbD9eD0D60971565AA8510560ab41");
+const SETTLEMENT_CONTRACT_BYTES_STAGING: [u8; 20] =
+    hex_decode_20("0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13");
+const VAULT_RELAYER_BYTES: [u8; 20] = hex_decode_20("0xC92E8bdf79f0507f65a392b0ab4667716BFE0110");
+const VAULT_RELAYER_BYTES_STAGING: [u8; 20] =
+    hex_decode_20("0xC7242d167563352E2BCA4d71C043fbe542DB8FB2");
+const ETH_FLOW_BYTES: [u8; 20] = hex_decode_20("0xba3cb449bd2b4adddbc894d8697f5170800eadec");
+const ETH_FLOW_BYTES_STAGING: [u8; 20] =
+    hex_decode_20("0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC");
 const TOKEN_LIST_IMAGES_PATH: &str = "https://files.cow.fi/token-lists/images";
+
+const WRAPPED_NATIVE_MAINNET_BYTES: [u8; 20] =
+    hex_decode_20("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
+const WRAPPED_NATIVE_GNOSIS_BYTES: [u8; 20] =
+    hex_decode_20("0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d");
+const WRAPPED_NATIVE_ARBITRUM_BYTES: [u8; 20] =
+    hex_decode_20("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1");
+const WRAPPED_NATIVE_BASE_INK_BYTES: [u8; 20] =
+    hex_decode_20("0x4200000000000000000000000000000000000006");
+const WRAPPED_NATIVE_SEPOLIA_BYTES: [u8; 20] =
+    hex_decode_20("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14");
+const WRAPPED_NATIVE_POLYGON_BYTES: [u8; 20] =
+    hex_decode_20("0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270");
+const WRAPPED_NATIVE_AVALANCHE_BYTES: [u8; 20] =
+    hex_decode_20("0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7");
+const WRAPPED_NATIVE_BNB_BYTES: [u8; 20] =
+    hex_decode_20("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c");
+const WRAPPED_NATIVE_PLASMA_BYTES: [u8; 20] =
+    hex_decode_20("0x6100e367285b01f48d07953803a2d8dca5d19873");
+const WRAPPED_NATIVE_LINEA_BYTES: [u8; 20] =
+    hex_decode_20("0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f");
 
 /// Supported `CoW` Protocol chain ids with explicit API configuration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -383,8 +408,8 @@ pub fn default_api_base_urls(env: CowEnv, partner_api: bool) -> ApiBaseUrls {
 #[must_use]
 pub fn settlement_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
     match env {
-        CowEnv::Prod => address_literal(SETTLEMENT_CONTRACT_ADDRESS),
-        CowEnv::Staging => address_literal(SETTLEMENT_CONTRACT_ADDRESS_STAGING),
+        CowEnv::Prod => Address::from_bytes(SETTLEMENT_CONTRACT_BYTES),
+        CowEnv::Staging => Address::from_bytes(SETTLEMENT_CONTRACT_BYTES_STAGING),
     }
 }
 
@@ -392,8 +417,8 @@ pub fn settlement_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> 
 #[must_use]
 pub fn vault_relayer_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
     match env {
-        CowEnv::Prod => address_literal(VAULT_RELAYER_ADDRESS),
-        CowEnv::Staging => address_literal(VAULT_RELAYER_ADDRESS_STAGING),
+        CowEnv::Prod => Address::from_bytes(VAULT_RELAYER_BYTES),
+        CowEnv::Staging => Address::from_bytes(VAULT_RELAYER_BYTES_STAGING),
     }
 }
 
@@ -401,78 +426,34 @@ pub fn vault_relayer_address(_chain_id: SupportedChainId, env: CowEnv) -> Addres
 #[must_use]
 pub fn eth_flow_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
     match env {
-        CowEnv::Prod => address_literal(ETH_FLOW_ADDRESS),
-        CowEnv::Staging => address_literal(ETH_FLOW_ADDRESS_STAGING),
+        CowEnv::Prod => Address::from_bytes(ETH_FLOW_BYTES),
+        CowEnv::Staging => Address::from_bytes(ETH_FLOW_BYTES_STAGING),
     }
 }
 
 /// Returns wrapped-native token metadata for a supported chain.
 #[must_use]
 pub fn wrapped_native_token(chain_id: SupportedChainId) -> TokenInfo {
-    let (address, decimals, name, symbol) = match chain_id {
-        SupportedChainId::Mainnet => (
-            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-            18,
-            "Wrapped Ether",
-            "WETH",
-        ),
-        SupportedChainId::GnosisChain => (
-            "0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d",
-            18,
-            "Wrapped XDAI",
-            "WXDAI",
-        ),
-        SupportedChainId::ArbitrumOne => (
-            "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-            18,
-            "Wrapped Ether",
-            "WETH",
-        ),
-        SupportedChainId::Base | SupportedChainId::Ink => (
-            "0x4200000000000000000000000000000000000006",
-            18,
-            "Wrapped Ether",
-            "WETH",
-        ),
-        SupportedChainId::Sepolia => (
-            "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
-            18,
-            "Wrapped Ether",
-            "WETH",
-        ),
-        SupportedChainId::Polygon => (
-            "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270",
-            18,
-            "Wrapped POL",
-            "WPOL",
-        ),
-        SupportedChainId::Avalanche => (
-            "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7",
-            18,
-            "Wrapped AVAX",
-            "WAVAX",
-        ),
-        SupportedChainId::Bnb => (
-            "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
-            18,
-            "Wrapped BNB",
-            "WBNB",
-        ),
-        SupportedChainId::Plasma => (
-            "0x6100e367285b01f48d07953803a2d8dca5d19873",
-            18,
-            "Wrapped XPL",
-            "WXPL",
-        ),
-        SupportedChainId::Linea => (
-            "0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f",
-            18,
-            "Wrapped Ether",
-            "WETH",
-        ),
+    let (address_bytes, decimals, name, symbol) = match chain_id {
+        SupportedChainId::Mainnet => (WRAPPED_NATIVE_MAINNET_BYTES, 18, "Wrapped Ether", "WETH"),
+        SupportedChainId::GnosisChain => (WRAPPED_NATIVE_GNOSIS_BYTES, 18, "Wrapped XDAI", "WXDAI"),
+        SupportedChainId::ArbitrumOne => {
+            (WRAPPED_NATIVE_ARBITRUM_BYTES, 18, "Wrapped Ether", "WETH")
+        }
+        SupportedChainId::Base | SupportedChainId::Ink => {
+            (WRAPPED_NATIVE_BASE_INK_BYTES, 18, "Wrapped Ether", "WETH")
+        }
+        SupportedChainId::Sepolia => (WRAPPED_NATIVE_SEPOLIA_BYTES, 18, "Wrapped Ether", "WETH"),
+        SupportedChainId::Polygon => (WRAPPED_NATIVE_POLYGON_BYTES, 18, "Wrapped POL", "WPOL"),
+        SupportedChainId::Avalanche => {
+            (WRAPPED_NATIVE_AVALANCHE_BYTES, 18, "Wrapped AVAX", "WAVAX")
+        }
+        SupportedChainId::Bnb => (WRAPPED_NATIVE_BNB_BYTES, 18, "Wrapped BNB", "WBNB"),
+        SupportedChainId::Plasma => (WRAPPED_NATIVE_PLASMA_BYTES, 18, "Wrapped XPL", "WXPL"),
+        SupportedChainId::Linea => (WRAPPED_NATIVE_LINEA_BYTES, 18, "Wrapped Ether", "WETH"),
     };
 
-    let address = address_literal(address);
+    let address = Address::from_bytes(address_bytes);
 
     TokenInfo {
         chain_id: chain_id.into(),
@@ -486,10 +467,6 @@ pub fn wrapped_native_token(chain_id: SupportedChainId) -> TokenInfo {
         name: name.to_owned(),
         symbol: symbol.to_owned(),
     }
-}
-
-fn address_literal(value: &str) -> Address {
-    Address::new(value).expect("static address literals must remain valid")
 }
 
 fn validate_user_agent(user_agent: String) -> Result<String, ValidationError> {

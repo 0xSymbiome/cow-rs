@@ -70,6 +70,27 @@ impl Address {
         Ok(Self(value))
     }
 
+    /// Creates an address from its raw 20-byte representation.
+    ///
+    /// The input bytes are encoded into the canonical lowercase hex form
+    /// without re-validating the character set, so this path is intended for
+    /// protocol constants and other inputs whose byte-level shape is already
+    /// known to the caller.
+    ///
+    /// # Panics
+    ///
+    /// Never panics in practice; the internal UTF-8 assertion exists only to
+    /// keep the constructor free of `unsafe` code while still asserting the
+    /// ASCII-only invariant produced by [`hex_encode_20`].
+    #[inline]
+    #[must_use]
+    pub fn from_bytes(bytes: [u8; 20]) -> Self {
+        let hex_bytes = hex_encode_20(bytes);
+        let value = String::from_utf8(hex_bytes.to_vec())
+            .expect("hex_encode_20 only emits valid ASCII hex characters plus the 0x prefix");
+        Self(value)
+    }
+
     /// Returns the original address string.
     ///
     /// The stored string preserves the input casing exactly; equality and
@@ -279,6 +300,27 @@ impl AppDataHash {
         Ok(Self(value))
     }
 
+    /// Creates an app-data hash from its raw 32-byte representation.
+    ///
+    /// The input bytes are encoded into the canonical lowercase hex form
+    /// without re-validating the character set, so this path is intended for
+    /// protocol constants and other inputs whose byte-level shape is already
+    /// known to the caller.
+    ///
+    /// # Panics
+    ///
+    /// Never panics in practice; the internal UTF-8 assertion exists only to
+    /// keep the constructor free of `unsafe` code while still asserting the
+    /// ASCII-only invariant produced by [`hex_encode_32`].
+    #[inline]
+    #[must_use]
+    pub fn from_bytes(bytes: [u8; 32]) -> Self {
+        let hex_bytes = hex_encode_32(bytes);
+        let value = String::from_utf8(hex_bytes.to_vec())
+            .expect("hex_encode_32 only emits valid ASCII hex characters plus the 0x prefix");
+        Self(value)
+    }
+
     /// Returns the original hash string.
     #[inline]
     #[must_use]
@@ -354,6 +396,27 @@ impl Hash32 {
         let value = value.into();
         validate_hex_field("hash32", &value, HASH32_HEX_CHARS)?;
         Ok(Self(value))
+    }
+
+    /// Creates a 32-byte hash from its raw 32-byte representation.
+    ///
+    /// The input bytes are encoded into the canonical lowercase hex form
+    /// without re-validating the character set, so this path is intended for
+    /// protocol constants and other inputs whose byte-level shape is already
+    /// known to the caller.
+    ///
+    /// # Panics
+    ///
+    /// Never panics in practice; the internal UTF-8 assertion exists only to
+    /// keep the constructor free of `unsafe` code while still asserting the
+    /// ASCII-only invariant produced by [`hex_encode_32`].
+    #[inline]
+    #[must_use]
+    pub fn from_bytes(bytes: [u8; 32]) -> Self {
+        let hex_bytes = hex_encode_32(bytes);
+        let value = String::from_utf8(hex_bytes.to_vec())
+            .expect("hex_encode_32 only emits valid ASCII hex characters plus the 0x prefix");
+        Self(value)
     }
 
     /// Returns the original hash string.
@@ -438,6 +501,27 @@ impl OrderUid {
         let value = value.into();
         validate_hex_field("order_uid", &value, ORDER_UID_HEX_CHARS)?;
         Ok(Self(value))
+    }
+
+    /// Creates an order UID from its raw 56-byte representation.
+    ///
+    /// The input bytes are encoded into the canonical lowercase hex form
+    /// without re-validating the character set, so this path is intended for
+    /// protocol constants and other inputs whose byte-level shape is already
+    /// known to the caller.
+    ///
+    /// # Panics
+    ///
+    /// Never panics in practice; the internal UTF-8 assertion exists only to
+    /// keep the constructor free of `unsafe` code while still asserting the
+    /// ASCII-only invariant produced by [`hex_encode_56`].
+    #[inline]
+    #[must_use]
+    pub fn from_bytes(bytes: [u8; 56]) -> Self {
+        let hex_bytes = hex_encode_56(bytes);
+        let value = String::from_utf8(hex_bytes.to_vec())
+            .expect("hex_encode_56 only emits valid ASCII hex characters plus the 0x prefix");
+        Self(value)
     }
 
     /// Returns the original order UID string.
@@ -990,7 +1074,7 @@ impl fmt::Display for SignedAmount {
 }
 
 /// Side of an order relative to the sell token.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OrderKind {
     /// Buy an exact amount of the buy token.
@@ -1000,7 +1084,7 @@ pub enum OrderKind {
 }
 
 /// Token-balance source selection used by `CoW` orders.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum OrderBalance {
     /// ERC-20 balance directly held by the owner.
@@ -1311,6 +1395,146 @@ impl<T> QuoteAmountsAndCosts<T> {
     #[must_use]
     pub const fn stage_names() -> &'static [&'static str; QUOTE_AMOUNT_STAGE_NAMES.len()] {
         &QUOTE_AMOUNT_STAGE_NAMES
+    }
+}
+
+const HEX_ALPHABET: [u8; 16] = *b"0123456789abcdef";
+
+/// Returns the canonical `0x`-prefixed lowercase hex encoding of a 20-byte input.
+#[must_use]
+pub const fn hex_encode_20(bytes: [u8; 20]) -> [u8; 42] {
+    let mut out = [0u8; 42];
+    out[0] = b'0';
+    out[1] = b'x';
+    let mut i = 0;
+    while i < 20 {
+        let byte = bytes[i];
+        out[2 + 2 * i] = HEX_ALPHABET[(byte >> 4) as usize];
+        out[2 + 2 * i + 1] = HEX_ALPHABET[(byte & 0x0F) as usize];
+        i += 1;
+    }
+    out
+}
+
+/// Returns the canonical `0x`-prefixed lowercase hex encoding of a 32-byte input.
+#[must_use]
+pub const fn hex_encode_32(bytes: [u8; 32]) -> [u8; 66] {
+    let mut out = [0u8; 66];
+    out[0] = b'0';
+    out[1] = b'x';
+    let mut i = 0;
+    while i < 32 {
+        let byte = bytes[i];
+        out[2 + 2 * i] = HEX_ALPHABET[(byte >> 4) as usize];
+        out[2 + 2 * i + 1] = HEX_ALPHABET[(byte & 0x0F) as usize];
+        i += 1;
+    }
+    out
+}
+
+/// Returns the canonical `0x`-prefixed lowercase hex encoding of a 56-byte input.
+#[must_use]
+pub const fn hex_encode_56(bytes: [u8; 56]) -> [u8; 114] {
+    let mut out = [0u8; 114];
+    out[0] = b'0';
+    out[1] = b'x';
+    let mut i = 0;
+    while i < 56 {
+        let byte = bytes[i];
+        out[2 + 2 * i] = HEX_ALPHABET[(byte >> 4) as usize];
+        out[2 + 2 * i + 1] = HEX_ALPHABET[(byte & 0x0F) as usize];
+        i += 1;
+    }
+    out
+}
+
+/// Decodes a `0x`-prefixed hex string literal into a fixed-length byte array at compile time.
+///
+/// Intended for converting the embedded protocol-address hex literals to their
+/// raw byte form inside `const` initialisers.
+///
+/// # Panics
+///
+/// Panics at compile time when the input is not exactly 42 characters long,
+/// is missing the `0x` prefix, or contains a non-hex character.
+#[must_use]
+pub const fn hex_decode_20(hex: &str) -> [u8; 20] {
+    let bytes = hex.as_bytes();
+    assert!(
+        bytes.len() == 42,
+        "hex_decode_20 requires a 42-character input"
+    );
+    assert!(
+        bytes[0] == b'0' && bytes[1] == b'x',
+        "hex_decode_20 requires a 0x prefix"
+    );
+    let mut out = [0u8; 20];
+    let mut i = 0;
+    while i < 20 {
+        out[i] = (decode_nibble(bytes[2 + 2 * i]) << 4) | decode_nibble(bytes[2 + 2 * i + 1]);
+        i += 1;
+    }
+    out
+}
+
+/// Decodes a `0x`-prefixed 32-byte hex string literal at compile time.
+///
+/// # Panics
+///
+/// Panics at compile time when the input is not exactly 66 characters long,
+/// is missing the `0x` prefix, or contains a non-hex character.
+#[must_use]
+pub const fn hex_decode_32(hex: &str) -> [u8; 32] {
+    let bytes = hex.as_bytes();
+    assert!(
+        bytes.len() == 66,
+        "hex_decode_32 requires a 66-character input"
+    );
+    assert!(
+        bytes[0] == b'0' && bytes[1] == b'x',
+        "hex_decode_32 requires a 0x prefix"
+    );
+    let mut out = [0u8; 32];
+    let mut i = 0;
+    while i < 32 {
+        out[i] = (decode_nibble(bytes[2 + 2 * i]) << 4) | decode_nibble(bytes[2 + 2 * i + 1]);
+        i += 1;
+    }
+    out
+}
+
+/// Decodes a `0x`-prefixed 56-byte hex string literal at compile time.
+///
+/// # Panics
+///
+/// Panics at compile time when the input is not exactly 114 characters long,
+/// is missing the `0x` prefix, or contains a non-hex character.
+#[must_use]
+pub const fn hex_decode_56(hex: &str) -> [u8; 56] {
+    let bytes = hex.as_bytes();
+    assert!(
+        bytes.len() == 114,
+        "hex_decode_56 requires a 114-character input"
+    );
+    assert!(
+        bytes[0] == b'0' && bytes[1] == b'x',
+        "hex_decode_56 requires a 0x prefix"
+    );
+    let mut out = [0u8; 56];
+    let mut i = 0;
+    while i < 56 {
+        out[i] = (decode_nibble(bytes[2 + 2 * i]) << 4) | decode_nibble(bytes[2 + 2 * i + 1]);
+        i += 1;
+    }
+    out
+}
+
+const fn decode_nibble(c: u8) -> u8 {
+    match c {
+        b'0'..=b'9' => c - b'0',
+        b'a'..=b'f' => c - b'a' + 10,
+        b'A'..=b'F' => c - b'A' + 10,
+        _ => panic!("hex nibble must be 0-9, a-f, or A-F"),
     }
 }
 

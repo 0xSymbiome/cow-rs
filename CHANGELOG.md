@@ -68,6 +68,23 @@ unreleased public contract of the repository.
   consumers can pool one TCP, TLS, and HTTP/2 connection cache across every
   SDK instance they build. The default `new()` constructors stay unchanged
   and keep conservative upstream defaults.
+- Opt-in quote-cache seam in `cow-sdk-trading`. The `QuoteCache` trait
+  exposes async `lookup`, `insert`, and `invalidate` contract, with
+  `NoopQuoteCache` shipped as the pass-through default and
+  `InMemoryQuoteCache` shipped as a TTL-driven reference implementation.
+  `TradingSdkBuilder::with_quote_cache` wires an `Arc<dyn QuoteCache>`
+  onto the builder, so cache policy stays instance-scoped and caller-owned.
+  The deterministic `QuoteCacheKey` derivation normalises address inputs so
+  Redis-backed user implementations can share entries across processes.
+- Byte-oriented constructors on the fixed-length typed newtypes. `Address`,
+  `AppDataHash`, `Hash32`, and `OrderUid` expose `from_bytes` built on top
+  of exported `const fn` hex encoders (`hex_encode_20`, `hex_encode_32`,
+  `hex_encode_56`) and compile-time hex decoders
+  (`hex_decode_20`, `hex_decode_32`, `hex_decode_56`). The embedded
+  protocol-constant tables in `cow-sdk-core::config` now declare settlement,
+  vault-relayer, ethflow, and wrapped-native addresses as `const [u8; 20]`
+  byte arrays and construct the typed addresses through `from_bytes`,
+  preserving the existing public accessor signatures and behaviour.
 
 ### Security
 

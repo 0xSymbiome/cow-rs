@@ -8,6 +8,8 @@ pub use cow_sdk_core::{AtomAmount, DecimalAmount};
 
 /// Allowance reads, approval transactions, and approval submission helpers.
 pub mod allowance;
+/// Opt-in quote-cache seam with pass-through and TTL reference implementations.
+pub mod cache;
 /// Off-chain cancellation helpers.
 pub mod cancel;
 /// Trading crate error types.
@@ -31,6 +33,7 @@ pub use allowance::{
     approval_transaction, approve_cow_protocol, approve_cow_protocol_async,
     get_cow_protocol_allowance, get_cow_protocol_allowance_async,
 };
+pub use cache::{InMemoryQuoteCache, NoopQuoteCache, QuoteCache, QuoteCacheKey};
 pub use cancel::{off_chain_cancel_order, off_chain_cancel_order_async};
 pub use error::TradingError;
 pub use onchain::{
