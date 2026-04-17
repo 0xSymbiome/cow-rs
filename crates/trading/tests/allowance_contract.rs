@@ -43,13 +43,13 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
 
     let custom = address(ALT_RECEIVER);
     let tx = approval_transaction(
-        &ApprovalParameters {
-            token_address: address(COW),
-            amount: Amount::new("123456").expect("test approval amount literal must be valid"),
-            chain_id: Some(SupportedChainId::Sepolia),
-            env: Some(CowEnv::Prod),
-            vault_relayer_address: Some(custom.clone()),
-        },
+        &ApprovalParameters::new(
+            address(COW),
+            Amount::new("123456").expect("test approval amount literal must be valid"),
+        )
+        .with_chain_id(SupportedChainId::Sepolia)
+        .with_env(CowEnv::Prod)
+        .with_vault_relayer_address(custom.clone()),
         SupportedChainId::Mainnet,
         CowEnv::Staging,
     )
@@ -77,13 +77,12 @@ fn approval_submission_returns_transaction_hash() {
     let signer = MockSigner::default();
     let tx_hash = approve_cow_protocol(
         &signer,
-        &ApprovalParameters {
-            token_address: address(COW),
-            amount: Amount::new("1000").expect("test approval amount literal must be valid"),
-            chain_id: Some(SupportedChainId::Sepolia),
-            env: Some(CowEnv::Prod),
-            vault_relayer_address: None,
-        },
+        &ApprovalParameters::new(
+            address(COW),
+            Amount::new("1000").expect("test approval amount literal must be valid"),
+        )
+        .with_chain_id(SupportedChainId::Sepolia)
+        .with_env(CowEnv::Prod),
         SupportedChainId::Sepolia,
         CowEnv::Prod,
     )
@@ -95,16 +94,15 @@ fn approval_submission_returns_transaction_hash() {
 #[test]
 fn approval_transaction_accepts_max_uint256_amount() {
     let tx = approval_transaction(
-        &ApprovalParameters {
-            token_address: address(COW),
-            amount: Amount::new(
+        &ApprovalParameters::new(
+            address(COW),
+            Amount::new(
                 "115792089237316195423570985008687907853269984665640564039457584007913129639935",
             )
             .expect("max uint256 literal must be valid"),
-            chain_id: Some(SupportedChainId::Sepolia),
-            env: Some(CowEnv::Prod),
-            vault_relayer_address: None,
-        },
+        )
+        .with_chain_id(SupportedChainId::Sepolia)
+        .with_env(CowEnv::Prod),
         SupportedChainId::Sepolia,
         CowEnv::Prod,
     )
@@ -121,20 +119,17 @@ fn approval_transaction_accepts_max_uint256_amount() {
 
 #[test]
 fn parameter_structs_preserve_call_level_chain_and_override_values() {
-    let allowance = AllowanceParameters {
-        token_address: address(COW),
-        owner: address(OWNER),
-        chain_id: Some(SupportedChainId::Mainnet),
-        env: Some(CowEnv::Staging),
-        vault_relayer_address: Some(address(ALT_RECEIVER)),
-    };
-    let approval = ApprovalParameters {
-        token_address: address(COW),
-        amount: Amount::new("42").expect("test approval amount literal must be valid"),
-        chain_id: Some(SupportedChainId::Mainnet),
-        env: Some(CowEnv::Staging),
-        vault_relayer_address: Some(address(ALT_RECEIVER)),
-    };
+    let allowance = AllowanceParameters::new(address(COW), address(OWNER))
+        .with_chain_id(SupportedChainId::Mainnet)
+        .with_env(CowEnv::Staging)
+        .with_vault_relayer_address(address(ALT_RECEIVER));
+    let approval = ApprovalParameters::new(
+        address(COW),
+        Amount::new("42").expect("test approval amount literal must be valid"),
+    )
+    .with_chain_id(SupportedChainId::Mainnet)
+    .with_env(CowEnv::Staging)
+    .with_vault_relayer_address(address(ALT_RECEIVER));
 
     assert_eq!(allowance.chain_id, Some(SupportedChainId::Mainnet));
     assert_eq!(approval.chain_id, Some(SupportedChainId::Mainnet));

@@ -101,40 +101,19 @@ pub fn buy_quote_response() -> OrderQuoteResponse {
 }
 
 pub fn sample_trade_parameters(kind: OrderKind) -> cow_sdk_trading::TradeParameters {
-    cow_sdk_trading::TradeParameters {
-        kind,
-        owner: Some(address(OWNER)),
-        sell_token: address(WETH),
-        sell_token_decimals: 18,
-        buy_token: address(COW),
-        buy_token_decimals: 18,
-        amount: if kind == OrderKind::Sell {
-            Amount::new("100000000000000000").expect("test sell amount literal must be valid")
-        } else {
-            Amount::new("400000000000000000000").expect("test buy amount literal must be valid")
-        },
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-        partially_fillable: false,
-        sell_token_balance: cow_sdk_core::OrderBalance::Erc20,
-        buy_token_balance: cow_sdk_core::OrderBalance::Erc20,
-        slippage_bps: Some(50),
-        receiver: None,
-        valid_for: None,
-        valid_to: None,
-        partner_fee: None,
-    }
+    let amount = if kind == OrderKind::Sell {
+        Amount::new("100000000000000000").expect("test sell amount literal must be valid")
+    } else {
+        Amount::new("400000000000000000000").expect("test buy amount literal must be valid")
+    };
+    cow_sdk_trading::TradeParameters::new(kind, address(WETH), 18, address(COW), 18, amount)
+        .with_owner(address(OWNER))
+        .with_slippage_bps(50)
 }
 
 pub fn sample_trader_parameters() -> cow_sdk_trading::TraderParameters {
-    cow_sdk_trading::TraderParameters {
-        chain_id: SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        env: Some(CowEnv::Prod),
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    }
+    cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+        .with_env(CowEnv::Prod)
 }
 
 pub fn sample_limit_parameters(kind: OrderKind) -> cow_sdk_trading::LimitTradeParameters {
@@ -144,30 +123,27 @@ pub fn sample_limit_parameters(kind: OrderKind) -> cow_sdk_trading::LimitTradePa
         buy_quote_response()
     };
 
-    cow_sdk_trading::LimitTradeParameters {
+    let sell_amount = Amount::new(quote.quote.sell_amount.clone())
+        .expect("quote sell amount literal must be valid");
+    let buy_amount = Amount::new(quote.quote.buy_amount.clone())
+        .expect("quote buy amount literal must be valid");
+    let mut params = cow_sdk_trading::LimitTradeParameters::new(
         kind,
-        owner: Some(address(OWNER)),
-        sell_token: address(WETH),
-        sell_token_decimals: 18,
-        buy_token: address(COW),
-        buy_token_decimals: 18,
-        sell_amount: Amount::new(quote.quote.sell_amount.clone())
-            .expect("quote sell amount literal must be valid"),
-        buy_amount: Amount::new(quote.quote.buy_amount.clone())
-            .expect("quote buy amount literal must be valid"),
-        quote_id: quote.id,
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-        partially_fillable: false,
-        sell_token_balance: quote.quote.sell_token_balance,
-        buy_token_balance: quote.quote.buy_token_balance,
-        slippage_bps: Some(50),
-        receiver: None,
-        valid_for: None,
-        valid_to: None,
-        partner_fee: None,
+        address(WETH),
+        18,
+        address(COW),
+        18,
+        sell_amount,
+        buy_amount,
+    )
+    .with_owner(address(OWNER))
+    .with_sell_token_balance(quote.quote.sell_token_balance)
+    .with_buy_token_balance(quote.quote.buy_token_balance)
+    .with_slippage_bps(50);
+    if let Some(id) = quote.id {
+        params = params.with_quote_id(id);
     }
+    params
 }
 
 #[derive(Clone)]
@@ -309,9 +285,7 @@ impl OrderbookClient for MockOrderbook {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .uploads
             .push((app_data_hash.clone(), full_app_data.to_owned()));
-        Ok(AppDataObject {
-            full_app_data: full_app_data.to_owned(),
-        })
+        Ok(AppDataObject::new(full_app_data.to_owned()))
     }
 }
 
@@ -588,9 +562,11 @@ impl SlippageSuggestionProvider for MockSlippageProvider {
         &self,
         _request: SlippageToleranceRequest,
     ) -> Result<SlippageToleranceResponse, TradingError> {
-        Ok(SlippageToleranceResponse {
-            slippage_bps: self.response,
-        })
+        let mut response = SlippageToleranceResponse::new();
+        if let Some(bps) = self.response {
+            response = response.with_slippage_bps(bps);
+        }
+        Ok(response)
     }
 }
 
@@ -661,9 +637,6 @@ pub fn regular_order() -> Order {
 
 pub fn ethflow_order() -> Order {
     let mut order = regular_order();
-    order.ethflow_data = Some(cow_sdk_orderbook::EthflowData {
-        refund_tx_hash: None,
-        user_valid_to: order.valid_to,
-    });
+    order.ethflow_data = Some(cow_sdk_orderbook::EthflowData::new(order.valid_to));
     order
 }

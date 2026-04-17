@@ -31,9 +31,11 @@ impl SlippageSuggestionProvider for CountingProvider {
         _request: SlippageToleranceRequest,
     ) -> Result<SlippageToleranceResponse, cow_sdk_trading::TradingError> {
         self.calls.fetch_add(1, Ordering::SeqCst);
-        Ok(SlippageToleranceResponse {
-            slippage_bps: self.response,
-        })
+        let mut response = SlippageToleranceResponse::new();
+        if let Some(bps) = self.response {
+            response = response.with_slippage_bps(bps);
+        }
+        Ok(response)
     }
 }
 
@@ -62,44 +64,46 @@ fn slippage_helpers_follow_upstream_fee_and_volume_examples() {
 
 #[test]
 fn slippage_bps_clamps_to_expected_bounds() {
-    let trader = cow_sdk_trading::QuoterParameters {
-        chain_id: SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        account: address(OWNER),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader =
+        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
     let trade = sample_trade_parameters(OrderKind::Sell);
 
-    let zero_quote = cow_sdk_orderbook::OrderQuoteResponse {
-        quote: QuoteData {
-            sell_token: address(WETH),
-            buy_token: address(COW),
-            receiver: Some(address(OWNER)),
-            sell_amount: "1".to_owned(),
-            buy_amount: "1".to_owned(),
-            valid_to: 1,
-            app_data: crate::common::app_data_hash(),
-            fee_amount: "0".to_owned(),
-            kind: OrderKind::Sell,
-            partially_fillable: false,
-            sell_token_balance: cow_sdk_core::OrderBalance::Erc20,
-            buy_token_balance: cow_sdk_core::OrderBalance::Erc20,
-        },
-        from: Some(address(OWNER)),
-        expiration: "2025-01-21T12:55:14.799709609Z".to_owned(),
-        id: Some(1),
-        verified: true,
-        protocol_fee_bps: None,
-    };
-    let huge_fee_quote = cow_sdk_orderbook::OrderQuoteResponse {
-        quote: QuoteData {
-            fee_amount: "1000000000000000000000".to_owned(),
-            ..zero_quote.quote.clone()
-        },
-        ..zero_quote.clone()
-    };
+    let zero_quote_data = QuoteData::new(
+        address(WETH),
+        address(COW),
+        "1",
+        "1",
+        1,
+        crate::common::app_data_hash(),
+        "0",
+        OrderKind::Sell,
+    )
+    .with_receiver(address(OWNER));
+    let zero_quote = cow_sdk_orderbook::OrderQuoteResponse::new(
+        zero_quote_data,
+        "2025-01-21T12:55:14.799709609Z",
+        true,
+    )
+    .with_from(address(OWNER))
+    .with_id(1);
+    let huge_fee_quote_data = QuoteData::new(
+        address(WETH),
+        address(COW),
+        "1",
+        "1",
+        1,
+        crate::common::app_data_hash(),
+        "1000000000000000000000",
+        OrderKind::Sell,
+    )
+    .with_receiver(address(OWNER));
+    let huge_fee_quote = cow_sdk_orderbook::OrderQuoteResponse::new(
+        huge_fee_quote_data,
+        "2025-01-21T12:55:14.799709609Z",
+        true,
+    )
+    .with_from(address(OWNER))
+    .with_id(1);
 
     assert_eq!(
         suggest_slippage_bps(&zero_quote, &trade, &trader, false, None)
@@ -161,27 +165,16 @@ fn partner_fee_extraction_prefers_supported_object_and_array_shapes() {
 async fn resolve_slippage_suggestion_skips_provider_for_fast_quotes_and_uses_provider_for_optimal()
 {
     let trade = sample_trade_parameters(OrderKind::Sell);
-    let trader = cow_sdk_trading::QuoterParameters {
-        chain_id: SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        account: address(OWNER),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader =
+        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
     let quote = sell_quote_response();
     let fast_calls = Arc::new(AtomicUsize::new(0));
-    let fast_settings = SwapAdvancedSettings {
-        quote_request: Some(QuoteRequestOverride {
-            price_quality: Some(PriceQuality::Fast),
-            ..QuoteRequestOverride::default()
-        }),
-        slippage_suggester: Some(Arc::new(CountingProvider {
+    let fast_settings = SwapAdvancedSettings::new()
+        .with_quote_request(QuoteRequestOverride::new().with_price_quality(PriceQuality::Fast))
+        .with_slippage_suggester(Arc::new(CountingProvider {
             calls: fast_calls.clone(),
             response: Some(200),
-        })),
-        ..SwapAdvancedSettings::default()
-    };
+        }));
 
     let fast = resolve_slippage_suggestion(
         SupportedChainId::Sepolia,
@@ -197,13 +190,11 @@ async fn resolve_slippage_suggestion_skips_provider_for_fast_quotes_and_uses_pro
     assert!(fast.slippage_bps.is_some());
 
     let optimal_calls = Arc::new(AtomicUsize::new(0));
-    let optimal_settings = SwapAdvancedSettings {
-        slippage_suggester: Some(Arc::new(CountingProvider {
+    let optimal_settings =
+        SwapAdvancedSettings::new().with_slippage_suggester(Arc::new(CountingProvider {
             calls: optimal_calls.clone(),
             response: Some(200),
-        })),
-        ..SwapAdvancedSettings::default()
-    };
+        }));
     let optimal = resolve_slippage_suggestion(
         SupportedChainId::Sepolia,
         &trade,

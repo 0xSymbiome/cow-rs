@@ -738,25 +738,27 @@ where
     )
     .await?;
 
-    let order_body = OrderCreation {
-        sell_token: order_to_sign.sell_token.clone(),
-        buy_token: order_to_sign.buy_token.clone(),
-        receiver: Some(order_to_sign.receiver.clone()),
-        sell_amount: order_to_sign.sell_amount.as_str().to_owned(),
-        buy_amount: order_to_sign.buy_amount.as_str().to_owned(),
-        valid_to: order_to_sign.valid_to,
-        app_data: Some(app_data.full_app_data.clone()),
-        app_data_hash: Some(app_data.app_data_keccak256.clone()),
-        fee_amount: order_to_sign.fee_amount.as_str().to_owned(),
-        kind: order_to_sign.kind,
-        partially_fillable: order_to_sign.partially_fillable,
-        sell_token_balance: order_to_sign.sell_token_balance,
-        buy_token_balance: order_to_sign.buy_token_balance,
+    let mut order_body = OrderCreation::new(
+        order_to_sign.sell_token.clone(),
+        order_to_sign.buy_token.clone(),
+        order_to_sign.sell_amount.as_str().to_owned(),
+        order_to_sign.buy_amount.as_str().to_owned(),
+        order_to_sign.valid_to,
+        order_to_sign.fee_amount.as_str().to_owned(),
+        order_to_sign.kind,
         signing_scheme,
-        signature: signature.clone(),
+        signature.clone(),
         from,
-        quote_id: params.quote_id,
-    };
+    )
+    .with_receiver(order_to_sign.receiver.clone())
+    .with_app_data(app_data.full_app_data.clone())
+    .with_app_data_hash(app_data.app_data_keccak256.clone())
+    .with_partially_fillable(order_to_sign.partially_fillable)
+    .with_sell_token_balance(order_to_sign.sell_token_balance)
+    .with_buy_token_balance(order_to_sign.buy_token_balance);
+    if let Some(quote_id) = params.quote_id {
+        order_body = order_body.with_quote_id(quote_id);
+    }
     let order_id = orderbook.send_order(&order_body).await?;
 
     Ok(OrderPostingResult {

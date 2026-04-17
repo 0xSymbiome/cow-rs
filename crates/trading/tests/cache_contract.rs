@@ -16,13 +16,8 @@ use crate::common::{
 async fn sample_quote_results() -> QuoteResults {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response());
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters {
-        chain_id: SupportedChainId::Sepolia,
-        app_code: "cache-test".to_owned(),
-        env: Some(CowEnv::Prod),
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader = cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, "cache-test")
+        .with_env(CowEnv::Prod);
     let trade = sample_trade_parameters(OrderKind::Sell);
 
     get_quote_results(&trade, &trader, &signer, None, &orderbook)

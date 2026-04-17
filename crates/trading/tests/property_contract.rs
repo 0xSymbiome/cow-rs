@@ -66,14 +66,7 @@ impl CaseRng {
 }
 
 fn trader() -> QuoterParameters {
-    QuoterParameters {
-        chain_id: SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        account: address(OWNER),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    }
+    QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER))
 }
 
 fn generated_uint256_decimal(rng: &mut CaseRng, max_bytes: usize) -> String {
@@ -252,10 +245,7 @@ async fn ethflow_calldata_preserves_uint256_boundary_values() {
             &app_data_hash(),
             &params,
             SupportedChainId::Sepolia,
-            &PostTradeAdditionalParams {
-                apply_costs_slippage_and_fees: Some(false),
-                ..PostTradeAdditionalParams::default()
-            },
+            &PostTradeAdditionalParams::new().with_apply_costs_slippage_and_fees(false),
             &trader,
             &signer,
         )
@@ -315,19 +305,26 @@ async fn quote_results_preserve_generated_override_shape_across_request_and_orde
         let (override_valid_for, override_valid_to) =
             generated_optional_override_validity(&mut rng);
 
-        let quote_request = QuoteRequestOverride {
-            receiver: rng.next_bool().then(|| address(CUSTOM_SETTLEMENT)),
-            valid_for: override_valid_for,
-            valid_to: override_valid_to,
-            from: rng.next_bool().then(|| address(ALT_RECEIVER)),
-            price_quality: rng.next_bool().then(|| generated_price_quality(&mut rng)),
-            partially_fillable: rng.next_bool().then(|| rng.next_bool()),
-            ..QuoteRequestOverride::default()
-        };
-        let advanced = SwapAdvancedSettings {
-            quote_request: Some(quote_request.clone()),
-            ..SwapAdvancedSettings::default()
-        };
+        let mut quote_request = QuoteRequestOverride::new();
+        if let Some(receiver) = rng.next_bool().then(|| address(CUSTOM_SETTLEMENT)) {
+            quote_request = quote_request.with_receiver(receiver);
+        }
+        if let Some(valid_for) = override_valid_for {
+            quote_request = quote_request.with_valid_for(valid_for);
+        }
+        if let Some(valid_to) = override_valid_to {
+            quote_request = quote_request.with_valid_to(valid_to);
+        }
+        if let Some(from) = rng.next_bool().then(|| address(ALT_RECEIVER)) {
+            quote_request = quote_request.with_from(from);
+        }
+        if let Some(price_quality) = rng.next_bool().then(|| generated_price_quality(&mut rng)) {
+            quote_request = quote_request.with_price_quality(price_quality);
+        }
+        if let Some(partially_fillable) = rng.next_bool().then(|| rng.next_bool()) {
+            quote_request = quote_request.with_partially_fillable(partially_fillable);
+        }
+        let advanced = SwapAdvancedSettings::new().with_quote_request(quote_request.clone());
 
         let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
             .await

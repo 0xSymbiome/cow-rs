@@ -21,6 +21,7 @@ use web_time::{SystemTime, UNIX_EPOCH};
 
 /// Inputs that control how an unsigned order is derived for signing or posting.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct OrderToSignParams {
     /// Active chain id.
     pub chain_id: SupportedChainId,
@@ -34,6 +35,42 @@ pub struct OrderToSignParams {
     pub apply_costs_slippage_and_fees: bool,
     /// Optional protocol-fee value used during amount calculation.
     pub protocol_fee_bps: Option<f64>,
+}
+
+impl OrderToSignParams {
+    /// Creates an order-signing input with the required identity fields.
+    #[must_use]
+    pub const fn new(chain_id: SupportedChainId, from: Address, is_ethflow: bool) -> Self {
+        Self {
+            chain_id,
+            from,
+            is_ethflow,
+            network_costs_amount: None,
+            apply_costs_slippage_and_fees: false,
+            protocol_fee_bps: None,
+        }
+    }
+
+    /// Returns a copy with an explicit network-cost amount.
+    #[must_use]
+    pub fn with_network_costs_amount(mut self, amount: Amount) -> Self {
+        self.network_costs_amount = Some(amount);
+        self
+    }
+
+    /// Returns a copy with the cost/slippage/fee application flag set.
+    #[must_use]
+    pub const fn with_apply_costs_slippage_and_fees(mut self, apply: bool) -> Self {
+        self.apply_costs_slippage_and_fees = apply;
+        self
+    }
+
+    /// Returns a copy with an explicit protocol-fee value.
+    #[must_use]
+    pub const fn with_protocol_fee_bps(mut self, protocol_fee_bps: f64) -> Self {
+        self.protocol_fee_bps = Some(protocol_fee_bps);
+        self
+    }
 }
 
 impl LimitTradeParameters {
@@ -195,20 +232,20 @@ pub fn get_order_to_sign(
         .slippage_bps
         .unwrap_or_else(|| default_slippage_bps(params.chain_id, params.is_ethflow));
     let (sell_amount_to_use, buy_amount_to_use) = if params.apply_costs_slippage_and_fees {
-        let quote = cow_sdk_orderbook::QuoteData {
-            sell_token: limit_parameters.sell_token.clone(),
-            buy_token: limit_parameters.buy_token.clone(),
-            receiver: Some(receiver.clone()),
-            sell_amount: limit_parameters.sell_amount.as_str().to_owned(),
-            buy_amount: limit_parameters.buy_amount.as_str().to_owned(),
+        let quote = cow_sdk_orderbook::QuoteData::new(
+            limit_parameters.sell_token.clone(),
+            limit_parameters.buy_token.clone(),
+            limit_parameters.sell_amount.as_str().to_owned(),
+            limit_parameters.buy_amount.as_str().to_owned(),
             valid_to,
-            app_data: app_data_keccak256.clone(),
-            fee_amount: network_costs_amount.as_str().to_owned(),
-            kind: limit_parameters.kind,
-            partially_fillable: limit_parameters.partially_fillable,
-            sell_token_balance: limit_parameters.sell_token_balance,
-            buy_token_balance: limit_parameters.buy_token_balance,
-        };
+            app_data_keccak256.clone(),
+            network_costs_amount.as_str().to_owned(),
+            limit_parameters.kind,
+        )
+        .with_receiver(receiver.clone())
+        .with_partially_fillable(limit_parameters.partially_fillable)
+        .with_sell_token_balance(limit_parameters.sell_token_balance)
+        .with_buy_token_balance(limit_parameters.buy_token_balance);
         let amounts = calculate_quote_amounts_and_costs(
             &quote,
             slippage_bps,

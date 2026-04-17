@@ -207,6 +207,7 @@ pub enum OrderStatus {
 /// Encodes the mutually exclusive buy-side or sell-side amount on quote requests.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct QuoteSide {
     /// Whether the quote is sell-driven or buy-driven.
     pub kind: OrderKind,
@@ -268,6 +269,7 @@ impl QuoteSide {
 /// Quote request DTO for the orderbook `/api/v1/quote` endpoint.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct OrderQuoteRequest {
     /// Sell-token address.
     pub sell_token: Address,
@@ -464,6 +466,7 @@ impl OrderQuoteRequest {
 /// that into the app-data hash used by downstream order creation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct QuoteData {
     /// Sell-token address.
     pub sell_token: Address,
@@ -545,9 +548,72 @@ impl<'de> Deserialize<'de> for QuoteData {
     }
 }
 
+impl QuoteData {
+    /// Creates a quote-data payload with the required trade fields.
+    ///
+    /// Optional fields (receiver, partial-fill, balance sources) can be
+    /// attached through the `with_*` setters.
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        sell_token: Address,
+        buy_token: Address,
+        sell_amount: impl Into<String>,
+        buy_amount: impl Into<String>,
+        valid_to: u32,
+        app_data: AppDataHash,
+        fee_amount: impl Into<String>,
+        kind: OrderKind,
+    ) -> Self {
+        Self {
+            sell_token,
+            buy_token,
+            receiver: None,
+            sell_amount: sell_amount.into(),
+            buy_amount: buy_amount.into(),
+            valid_to,
+            app_data,
+            fee_amount: fee_amount.into(),
+            kind,
+            partially_fillable: false,
+            sell_token_balance: OrderBalance::Erc20,
+            buy_token_balance: OrderBalance::Erc20,
+        }
+    }
+
+    /// Returns a copy of this payload with an explicit receiver.
+    #[must_use]
+    pub fn with_receiver(mut self, receiver: Address) -> Self {
+        self.receiver = Some(receiver);
+        self
+    }
+
+    /// Returns a copy of this payload with the partial-fill flag set.
+    #[must_use]
+    pub const fn with_partially_fillable(mut self, partially_fillable: bool) -> Self {
+        self.partially_fillable = partially_fillable;
+        self
+    }
+
+    /// Returns a copy of this payload with an explicit sell-token balance source.
+    #[must_use]
+    pub const fn with_sell_token_balance(mut self, balance: OrderBalance) -> Self {
+        self.sell_token_balance = balance;
+        self
+    }
+
+    /// Returns a copy of this payload with an explicit buy-token balance destination.
+    #[must_use]
+    pub const fn with_buy_token_balance(mut self, balance: OrderBalance) -> Self {
+        self.buy_token_balance = balance;
+        self
+    }
+}
+
 /// Quote response DTO returned by `/api/v1/quote`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct OrderQuoteResponse {
     /// Resolved quote payload.
     pub quote: QuoteData,
@@ -566,6 +632,42 @@ pub struct OrderQuoteResponse {
     pub protocol_fee_bps: Option<String>,
 }
 
+impl OrderQuoteResponse {
+    /// Creates a quote response from the resolved quote payload and its expiration timestamp.
+    #[must_use]
+    pub fn new(quote: QuoteData, expiration: impl Into<String>, verified: bool) -> Self {
+        Self {
+            quote,
+            from: None,
+            expiration: expiration.into(),
+            id: None,
+            verified,
+            protocol_fee_bps: None,
+        }
+    }
+
+    /// Returns a copy of this response with an explicit owner address.
+    #[must_use]
+    pub fn with_from(mut self, from: Address) -> Self {
+        self.from = Some(from);
+        self
+    }
+
+    /// Returns a copy of this response with an explicit quote id.
+    #[must_use]
+    pub const fn with_id(mut self, id: i64) -> Self {
+        self.id = Some(id);
+        self
+    }
+
+    /// Returns a copy of this response with explicit protocol-fee basis points.
+    #[must_use]
+    pub fn with_protocol_fee_bps(mut self, value: impl Into<String>) -> Self {
+        self.protocol_fee_bps = Some(value.into());
+        self
+    }
+}
+
 /// Orderbook order submission DTO.
 ///
 /// This is kept separate from `QuoteData` because submission adds signature,
@@ -573,6 +675,7 @@ pub struct OrderQuoteResponse {
 /// orderbook wire shape expected by `/api/v1/orders`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct OrderCreation {
     /// Sell-token address.
     pub sell_token: Address,
@@ -619,6 +722,46 @@ pub struct OrderCreation {
 }
 
 impl OrderCreation {
+    /// Creates an order-submission payload with the required trade fields.
+    ///
+    /// Optional and defaulted fields (app-data, balance sources,
+    /// partial-fill, receiver, quote id) can be attached through the
+    /// `with_*` setters.
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        sell_token: Address,
+        buy_token: Address,
+        sell_amount: impl Into<String>,
+        buy_amount: impl Into<String>,
+        valid_to: u32,
+        fee_amount: impl Into<String>,
+        kind: OrderKind,
+        signing_scheme: SigningScheme,
+        signature: impl Into<String>,
+        from: Address,
+    ) -> Self {
+        Self {
+            sell_token,
+            buy_token,
+            receiver: None,
+            sell_amount: sell_amount.into(),
+            buy_amount: buy_amount.into(),
+            valid_to,
+            app_data: None,
+            app_data_hash: None,
+            fee_amount: fee_amount.into(),
+            kind,
+            partially_fillable: false,
+            sell_token_balance: OrderBalance::Erc20,
+            buy_token_balance: OrderBalance::Erc20,
+            signing_scheme,
+            signature: signature.into(),
+            from,
+            quote_id: None,
+        }
+    }
+
     /// Creates an order-submission payload from a quote response.
     #[must_use]
     pub fn from_quote(
@@ -649,6 +792,48 @@ impl OrderCreation {
         }
     }
 
+    /// Returns a copy of this submission payload with an explicit receiver.
+    #[must_use]
+    pub fn with_receiver(mut self, receiver: Address) -> Self {
+        self.receiver = Some(receiver);
+        self
+    }
+
+    /// Returns a copy of this submission payload with inline app-data content.
+    #[must_use]
+    pub fn with_app_data(mut self, app_data: impl Into<String>) -> Self {
+        self.app_data = Some(app_data.into());
+        self
+    }
+
+    /// Returns a copy of this submission payload with an explicit app-data hash.
+    #[must_use]
+    pub fn with_app_data_hash(mut self, app_data_hash: AppDataHash) -> Self {
+        self.app_data_hash = Some(app_data_hash);
+        self
+    }
+
+    /// Returns a copy of this submission payload marked as partially fillable.
+    #[must_use]
+    pub const fn with_partially_fillable(mut self, partially_fillable: bool) -> Self {
+        self.partially_fillable = partially_fillable;
+        self
+    }
+
+    /// Returns a copy of this submission payload with an explicit sell-token balance source.
+    #[must_use]
+    pub const fn with_sell_token_balance(mut self, balance: OrderBalance) -> Self {
+        self.sell_token_balance = balance;
+        self
+    }
+
+    /// Returns a copy of this submission payload with an explicit buy-token balance destination.
+    #[must_use]
+    pub const fn with_buy_token_balance(mut self, balance: OrderBalance) -> Self {
+        self.buy_token_balance = balance;
+        self
+    }
+
     /// Returns a copy of this submission payload with an attached quote id.
     #[must_use]
     pub const fn with_quote_id(mut self, quote_id: i64) -> Self {
@@ -660,6 +845,7 @@ impl OrderCreation {
 /// Signed order-cancellation payload for `/api/v1/orders`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct OrderCancellations {
     /// Order UIDs to cancel.
     pub order_uids: Vec<OrderUid>,
@@ -670,15 +856,56 @@ pub struct OrderCancellations {
     pub signing_scheme: EcdsaSigningScheme,
 }
 
+impl OrderCancellations {
+    /// Creates a cancellation payload from the supplied order UIDs and signature.
+    ///
+    /// Defaults to the `Eip712` ECDSA signing scheme; use
+    /// [`with_signing_scheme`](Self::with_signing_scheme) to override.
+    #[must_use]
+    pub fn new(order_uids: Vec<OrderUid>, signature: impl Into<String>) -> Self {
+        Self {
+            order_uids,
+            signature: signature.into(),
+            signing_scheme: EcdsaSigningScheme::Eip712,
+        }
+    }
+
+    /// Returns a copy of this payload carrying a different signing scheme.
+    #[must_use]
+    pub const fn with_signing_scheme(mut self, scheme: EcdsaSigningScheme) -> Self {
+        self.signing_scheme = scheme;
+        self
+    }
+}
+
 /// `EthFlow`-specific orderbook metadata.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct EthflowData {
     /// Transaction hash for the refund path, when present.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub refund_tx_hash: Option<String>,
     /// User-facing validity timestamp for the `EthFlow` order.
     pub user_valid_to: u32,
+}
+
+impl EthflowData {
+    /// Creates an `EthFlow` metadata record for the given user validity timestamp.
+    #[must_use]
+    pub const fn new(user_valid_to: u32) -> Self {
+        Self {
+            refund_tx_hash: None,
+            user_valid_to,
+        }
+    }
+
+    /// Returns a copy carrying an explicit refund-transaction hash.
+    #[must_use]
+    pub fn with_refund_tx_hash(mut self, tx_hash: impl Into<String>) -> Self {
+        self.refund_tx_hash = Some(tx_hash.into());
+        self
+    }
 }
 
 /// Orderbook order response DTO.
@@ -688,6 +915,7 @@ pub struct EthflowData {
 /// hashing payload.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct Order {
     /// Sell-token address.
     pub sell_token: Address,
@@ -776,9 +1004,68 @@ pub struct Order {
     pub total_fee: String,
 }
 
+impl Order {
+    /// Creates an orderbook order DTO with the minimal identity fields.
+    ///
+    /// Remaining response fields default to zero/empty; consumers that hand
+    /// craft an `Order` for tests or fixtures set additional state through
+    /// direct field access on the returned instance.
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        sell_token: Address,
+        buy_token: Address,
+        sell_amount: impl Into<String>,
+        buy_amount: impl Into<String>,
+        valid_to: u32,
+        app_data: AppDataHash,
+        fee_amount: impl Into<String>,
+        kind: OrderKind,
+        signature: impl Into<String>,
+        owner: Address,
+        uid: OrderUid,
+    ) -> Self {
+        Self {
+            sell_token,
+            buy_token,
+            receiver: None,
+            sell_amount: sell_amount.into(),
+            buy_amount: buy_amount.into(),
+            valid_to,
+            app_data,
+            fee_amount: fee_amount.into(),
+            kind,
+            partially_fillable: false,
+            sell_token_balance: OrderBalance::Erc20,
+            buy_token_balance: OrderBalance::Erc20,
+            signing_scheme: SigningScheme::Eip712,
+            signature: signature.into(),
+            from: None,
+            quote_id: None,
+            class: OrderClass::default(),
+            owner,
+            uid,
+            creation_date: None,
+            available_balance: None,
+            executed_sell_amount: String::new(),
+            executed_sell_amount_before_fees: None,
+            executed_buy_amount: String::new(),
+            executed_fee_amount: None,
+            executed_fee: None,
+            invalidated: false,
+            status: OrderStatus::default(),
+            full_fee_amount: None,
+            onchain_user: None,
+            ethflow_data: None,
+            total_fee: String::new(),
+        }
+    }
+}
+
 /// Request DTO for listing an account's orders.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct GetOrdersRequest {
     /// Account owner whose orders should be listed.
     pub owner: Address,
@@ -804,11 +1091,26 @@ impl GetOrdersRequest {
             limit: default_orders_limit(),
         }
     }
+
+    /// Returns a copy of this request with an explicit pagination offset.
+    #[must_use]
+    pub const fn with_offset(mut self, offset: u32) -> Self {
+        self.offset = offset;
+        self
+    }
+
+    /// Returns a copy of this request with an explicit pagination limit.
+    #[must_use]
+    pub const fn with_limit(mut self, limit: u32) -> Self {
+        self.limit = limit;
+        self
+    }
 }
 
 /// Request DTO for listing trades by owner or order UID.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct GetTradesRequest {
     /// Optional owner filter.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -829,26 +1131,46 @@ const fn default_trades_limit() -> u32 {
 }
 
 impl GetTradesRequest {
-    /// Creates a trades request filtered by owner.
+    /// Creates a trades request with raw owner and order-UID filter slots.
+    ///
+    /// Prefer [`by_owner`](Self::by_owner) or
+    /// [`by_order_uid`](Self::by_order_uid) for the supported shapes; this
+    /// constructor exists so callers can materialize malformed requests for
+    /// validation coverage.
     #[must_use]
-    pub const fn by_owner(owner: Address) -> Self {
+    pub const fn new(owner: Option<Address>, order_uid: Option<OrderUid>) -> Self {
         Self {
-            owner: Some(owner),
-            order_uid: None,
+            owner,
+            order_uid,
             offset: 0,
             limit: default_trades_limit(),
         }
     }
 
+    /// Creates a trades request filtered by owner.
+    #[must_use]
+    pub const fn by_owner(owner: Address) -> Self {
+        Self::new(Some(owner), None)
+    }
+
     /// Creates a trades request filtered by order UID.
     #[must_use]
     pub const fn by_order_uid(order_uid: OrderUid) -> Self {
-        Self {
-            owner: None,
-            order_uid: Some(order_uid),
-            offset: 0,
-            limit: default_trades_limit(),
-        }
+        Self::new(None, Some(order_uid))
+    }
+
+    /// Returns a copy of this request with an explicit pagination offset.
+    #[must_use]
+    pub const fn with_offset(mut self, offset: u32) -> Self {
+        self.offset = offset;
+        self
+    }
+
+    /// Returns a copy of this request with an explicit pagination limit.
+    #[must_use]
+    pub const fn with_limit(mut self, limit: u32) -> Self {
+        self.limit = limit;
+        self
     }
 
     /// Returns `true` when exactly one of `owner` or `order_uid` is set.
@@ -861,6 +1183,7 @@ impl GetTradesRequest {
 /// Trade DTO returned by the orderbook trades endpoint.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct Trade {
     /// Block number containing the trade event.
     pub block_number: u64,
@@ -886,28 +1209,96 @@ pub struct Trade {
     pub transaction_hash: String,
 }
 
+impl Trade {
+    /// Creates a trade DTO with the required identity and execution fields.
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        block_number: u64,
+        log_index: u64,
+        order_uid: OrderUid,
+        owner: Address,
+        sell_token: Address,
+        buy_token: Address,
+        sell_amount: impl Into<String>,
+        buy_amount: impl Into<String>,
+        transaction_hash: impl Into<String>,
+    ) -> Self {
+        Self {
+            block_number,
+            log_index,
+            order_uid,
+            owner,
+            sell_token,
+            buy_token,
+            sell_amount: sell_amount.into(),
+            sell_amount_before_fees: None,
+            buy_amount: buy_amount.into(),
+            transaction_hash: transaction_hash.into(),
+        }
+    }
+
+    /// Returns a copy of this trade with an explicit pre-fee sell amount.
+    #[must_use]
+    pub fn with_sell_amount_before_fees(mut self, amount: impl Into<String>) -> Self {
+        self.sell_amount_before_fees = Some(amount.into());
+        self
+    }
+}
+
 /// Native-price response from `/api/v1/token/{token}/native_price`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct NativePriceResponse {
     /// Token price quoted in the chain's native asset.
     pub price: f64,
 }
 
+impl NativePriceResponse {
+    /// Creates a native-price response for the supplied numeric quote.
+    #[must_use]
+    pub const fn new(price: f64) -> Self {
+        Self { price }
+    }
+}
+
 /// Total-surplus response from `/api/v1/users/{owner}/total_surplus`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct TotalSurplus {
     /// Total surplus value as an upstream decimal string.
     pub total_surplus: String,
 }
 
+impl TotalSurplus {
+    /// Creates a total-surplus response from an upstream decimal string.
+    #[must_use]
+    pub fn new(total_surplus: impl Into<String>) -> Self {
+        Self {
+            total_surplus: total_surplus.into(),
+        }
+    }
+}
+
 /// Full app-data response from the orderbook app-data endpoint.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct AppDataObject {
     /// Full serialized app-data payload.
     pub full_app_data: String,
+}
+
+impl AppDataObject {
+    /// Creates an app-data response from an already-serialized payload.
+    #[must_use]
+    pub fn new(full_app_data: impl Into<String>) -> Self {
+        Self {
+            full_app_data: full_app_data.into(),
+        }
+    }
 }
 
 /// Order entry inside an auction snapshot.
@@ -944,8 +1335,9 @@ pub struct AuctionOrder {
 }
 
 /// Auction snapshot returned by the orderbook.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct Auction {
     /// Auction id, when exposed by the endpoint.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -961,6 +1353,50 @@ pub struct Auction {
     /// Clearing prices keyed by token address.
     #[serde(default)]
     pub prices: std::collections::BTreeMap<String, String>,
+}
+
+impl Auction {
+    /// Creates an auction snapshot pinned to the supplied block number.
+    ///
+    /// Additional fields are attached through the `with_*` setters.
+    #[must_use]
+    pub const fn new(block: u64) -> Self {
+        Self {
+            id: None,
+            block,
+            latest_settlement_block: None,
+            orders: Vec::new(),
+            prices: std::collections::BTreeMap::new(),
+        }
+    }
+
+    /// Returns a copy of this snapshot with an explicit auction id.
+    #[must_use]
+    pub const fn with_id(mut self, id: i64) -> Self {
+        self.id = Some(id);
+        self
+    }
+
+    /// Returns a copy of this snapshot with an explicit latest settlement block.
+    #[must_use]
+    pub const fn with_latest_settlement_block(mut self, block: u64) -> Self {
+        self.latest_settlement_block = Some(block);
+        self
+    }
+
+    /// Returns a copy of this snapshot with an explicit auction-order list.
+    #[must_use]
+    pub fn with_orders(mut self, orders: Vec<AuctionOrder>) -> Self {
+        self.orders = orders;
+        self
+    }
+
+    /// Returns a copy of this snapshot with an explicit clearing-prices map.
+    #[must_use]
+    pub fn with_prices(mut self, prices: std::collections::BTreeMap<String, String>) -> Self {
+        self.prices = prices;
+        self
+    }
 }
 
 /// Competition-status kind returned by `/api/v1/orders/{uid}/status`.
@@ -985,8 +1421,9 @@ pub enum CompetitionOrderStatusKind {
 }
 
 /// Solver execution entry nested inside competition-status responses.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct SolverExecution {
     /// Solver identifier or address rendered by the API.
     pub solver: String,
@@ -998,9 +1435,36 @@ pub struct SolverExecution {
     pub executed_buy_amount: Option<String>,
 }
 
+impl SolverExecution {
+    /// Creates a solver-execution entry for the given solver identifier.
+    #[must_use]
+    pub fn new(solver: impl Into<String>) -> Self {
+        Self {
+            solver: solver.into(),
+            executed_sell_amount: None,
+            executed_buy_amount: None,
+        }
+    }
+
+    /// Returns a copy with an explicit executed sell amount.
+    #[must_use]
+    pub fn with_executed_sell_amount(mut self, amount: impl Into<String>) -> Self {
+        self.executed_sell_amount = Some(amount.into());
+        self
+    }
+
+    /// Returns a copy with an explicit executed buy amount.
+    #[must_use]
+    pub fn with_executed_buy_amount(mut self, amount: impl Into<String>) -> Self {
+        self.executed_buy_amount = Some(amount.into());
+        self
+    }
+}
+
 /// Competition-status response for an order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct CompetitionOrderStatus {
     /// High-level competition status kind.
     #[serde(rename = "type")]
@@ -1010,9 +1474,25 @@ pub struct CompetitionOrderStatus {
     pub value: Option<Vec<SolverExecution>>,
 }
 
+impl CompetitionOrderStatus {
+    /// Creates a competition-status response for the given kind.
+    #[must_use]
+    pub const fn new(kind: CompetitionOrderStatusKind) -> Self {
+        Self { kind, value: None }
+    }
+
+    /// Returns a copy carrying an explicit solver-execution payload.
+    #[must_use]
+    pub fn with_value(mut self, value: Vec<SolverExecution>) -> Self {
+        self.value = Some(value);
+        self
+    }
+}
+
 /// Nested auction snapshot inside solver-competition responses.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct CompetitionAuction {
     /// Order UIDs participating in the competition.
     #[serde(default)]
@@ -1022,9 +1502,32 @@ pub struct CompetitionAuction {
     pub prices: std::collections::BTreeMap<String, String>,
 }
 
+impl CompetitionAuction {
+    /// Creates an empty competition-auction snapshot.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns a copy of this snapshot with an explicit order-UID list.
+    #[must_use]
+    pub fn with_orders(mut self, orders: Vec<String>) -> Self {
+        self.orders = orders;
+        self
+    }
+
+    /// Returns a copy of this snapshot with an explicit clearing-prices map.
+    #[must_use]
+    pub fn with_prices(mut self, prices: std::collections::BTreeMap<String, String>) -> Self {
+        self.prices = prices;
+        self
+    }
+}
+
 /// Settlement candidate nested inside solver-competition responses.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct SolverSettlement {
     /// Optional settlement ranking score.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1052,9 +1555,46 @@ pub struct SolverSettlement {
     pub filtered_out: Option<bool>,
 }
 
+impl SolverSettlement {
+    /// Creates an empty settlement candidate; attach fields through the `with_*` setters.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns a copy of this settlement with an explicit solver address.
+    #[must_use]
+    pub fn with_solver_address(mut self, address: impl Into<String>) -> Self {
+        self.solver_address = Some(address.into());
+        self
+    }
+
+    /// Returns a copy of this settlement with an explicit score.
+    #[must_use]
+    pub fn with_score(mut self, score: impl Into<String>) -> Self {
+        self.score = Some(score.into());
+        self
+    }
+
+    /// Returns a copy of this settlement with an explicit settlement transaction hash.
+    #[must_use]
+    pub fn with_tx_hash(mut self, tx_hash: impl Into<String>) -> Self {
+        self.tx_hash = Some(tx_hash.into());
+        self
+    }
+
+    /// Returns a copy of this settlement with an explicit winner flag.
+    #[must_use]
+    pub const fn with_is_winner(mut self, is_winner: bool) -> Self {
+        self.is_winner = Some(is_winner);
+        self
+    }
+}
+
 /// Solver-competition response returned by the orderbook.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct SolverCompetitionResponse {
     /// Auction id, when present.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1074,4 +1614,48 @@ pub struct SolverCompetitionResponse {
     /// Settlement candidates, when returned by the endpoint.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub solutions: Option<Vec<SolverSettlement>>,
+}
+
+impl SolverCompetitionResponse {
+    /// Creates an empty solver-competition response; attach fields through the `with_*` setters.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns a copy of this response with an explicit auction id.
+    #[must_use]
+    pub const fn with_auction_id(mut self, auction_id: i64) -> Self {
+        self.auction_id = Some(auction_id);
+        self
+    }
+
+    /// Returns a copy of this response with the auction block range.
+    #[must_use]
+    pub const fn with_auction_block_range(mut self, start: u64, deadline: u64) -> Self {
+        self.auction_start_block = Some(start);
+        self.auction_deadline_block = Some(deadline);
+        self
+    }
+
+    /// Returns a copy of this response with explicit settlement transaction hashes.
+    #[must_use]
+    pub fn with_transaction_hashes(mut self, hashes: Vec<String>) -> Self {
+        self.transaction_hashes = Some(hashes);
+        self
+    }
+
+    /// Returns a copy of this response with an explicit nested auction payload.
+    #[must_use]
+    pub fn with_auction(mut self, auction: CompetitionAuction) -> Self {
+        self.auction = Some(auction);
+        self
+    }
+
+    /// Returns a copy of this response with explicit settlement candidates.
+    #[must_use]
+    pub fn with_solutions(mut self, solutions: Vec<SolverSettlement>) -> Self {
+        self.solutions = Some(solutions);
+        self
+    }
 }

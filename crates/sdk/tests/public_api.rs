@@ -8,11 +8,9 @@ use cow_sdk::{
 #[test]
 fn public_api_reexports_cover_primary_root_surface() {
     let _ready_sdk = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("cow-rs/public-api".to_owned()),
-            ..Default::default()
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_app_code("cow-rs/public-api".to_owned()),
         TradingSdkOptions::default(),
     )
     .expect("ready trading sdk construction should succeed");
@@ -53,26 +51,17 @@ fn public_api_reexports_cover_primary_root_surface() {
     assert_eq!(generated.order_digest.as_str().len(), 66);
     assert_eq!(generated.order_id.as_str().len(), 114);
 
-    let _trade = TradeParameters {
-        kind: OrderKind::Sell,
-        owner: Some(owner),
-        sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        sell_token_decimals: 18,
-        buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-        buy_token_decimals: 18,
-        amount: Amount::new("100000000000000000").unwrap(),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-        partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
-        slippage_bps: Some(50),
-        receiver: None,
-        valid_for: None,
-        valid_to: None,
-        partner_fee: Some(partner_fee),
-    };
+    let _trade = TradeParameters::new(
+        OrderKind::Sell,
+        Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        18,
+        Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+        18,
+        Amount::new("100000000000000000").unwrap(),
+    )
+    .with_owner(owner)
+    .with_slippage_bps(50)
+    .with_partner_fee(partner_fee);
 }
 
 #[test]

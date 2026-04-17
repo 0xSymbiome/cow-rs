@@ -133,14 +133,14 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
     trade.owner = Some(address(OWNER));
     trade.partner_fee = Some(PartnerFeePolicy::volume(50, address(ALT_RECEIVER)).into());
 
-    let advanced = SwapAdvancedSettings {
-        quote_request: Some(QuoteRequestOverride {
-            receiver: Some(address(ALT_RECEIVER)),
-            valid_to: Some(5_600_000),
-            signing_scheme: Some(cow_sdk_orderbook::SigningScheme::Eip1271),
-            ..QuoteRequestOverride::default()
-        }),
-        app_data: Some(cow_sdk_app_data::AppDataParams {
+    let advanced = SwapAdvancedSettings::new()
+        .with_quote_request(
+            QuoteRequestOverride::new()
+                .with_receiver(address(ALT_RECEIVER))
+                .with_valid_to(5_600_000)
+                .with_signing_scheme(cow_sdk_orderbook::SigningScheme::Eip1271),
+        )
+        .with_app_data(cow_sdk_app_data::AppDataParams {
             app_code: None,
             environment: None,
             metadata: serde_json::from_value(json!({
@@ -150,9 +150,7 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
                 }
             }))
             .expect("partner fee metadata should build"),
-        }),
-        ..SwapAdvancedSettings::default()
-    };
+        });
 
     let result = post_swap_order(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
@@ -191,14 +189,11 @@ async fn swap_posting_preserves_non_default_balance_semantics_from_quote_to_subm
     let orderbook = MockOrderbook::new(trader.chain_id, quote_response);
     let signer = MockSigner::default();
     let trade = sample_trade_parameters(OrderKind::Sell);
-    let advanced = SwapAdvancedSettings {
-        quote_request: Some(QuoteRequestOverride {
-            sell_token_balance: Some(OrderBalance::External),
-            buy_token_balance: Some(OrderBalance::Internal),
-            ..QuoteRequestOverride::default()
-        }),
-        ..SwapAdvancedSettings::default()
-    };
+    let advanced = SwapAdvancedSettings::new().with_quote_request(
+        QuoteRequestOverride::new()
+            .with_sell_token_balance(OrderBalance::External)
+            .with_buy_token_balance(OrderBalance::Internal),
+    );
 
     let result = post_swap_order(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
@@ -297,17 +292,15 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
     params.quote_id = Some(3);
     params.slippage_bps = Some(50);
     let collision_results = Arc::new(Mutex::new(vec![true, false]));
-    let additional = PostTradeAdditionalParams {
-        check_eth_flow_order_exists: Some(Arc::new(MockEthFlowChecker {
+    let additional = PostTradeAdditionalParams::new()
+        .with_check_eth_flow_order_exists(Arc::new(MockEthFlowChecker {
             results: collision_results.clone(),
-        })),
-        network_costs_amount: Some(
+        }))
+        .with_network_costs_amount(
             Amount::new(sell_quote_response().quote.fee_amount.clone())
                 .expect("quote fee amount must be valid"),
-        ),
-        custom_eip1271_signature: Some(Arc::new(MockEip1271Provider)),
-        ..PostTradeAdditionalParams::default()
-    };
+        )
+        .with_custom_eip1271_signature(Arc::new(MockEip1271Provider));
 
     let result = post_sell_native_currency_order(
         &orderbook,
@@ -339,14 +332,11 @@ async fn limit_posting_accepts_custom_eip1271_signatures_without_local_re_signin
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = MockSigner::default();
     let params = sample_limit_parameters(OrderKind::Sell);
-    let advanced = LimitOrderAdvancedSettings {
-        additional_params: Some(PostTradeAdditionalParams {
-            signing_scheme: Some(cow_sdk_orderbook::SigningScheme::Eip1271),
-            custom_eip1271_signature: Some(Arc::new(MockEip1271Provider)),
-            ..PostTradeAdditionalParams::default()
-        }),
-        ..LimitOrderAdvancedSettings::default()
-    };
+    let advanced = LimitOrderAdvancedSettings::new().with_additional_params(
+        PostTradeAdditionalParams::new()
+            .with_signing_scheme(cow_sdk_orderbook::SigningScheme::Eip1271)
+            .with_custom_eip1271_signature(Arc::new(MockEip1271Provider)),
+    );
 
     let result = post_limit_order(&params, &trader, &signer, Some(&advanced), &orderbook)
         .await
@@ -475,14 +465,8 @@ async fn async_order_level_eip1271_verification_is_explicit_and_reuses_contract_
         .await
         .expect("app data should build");
     let order_to_sign = cow_sdk_trading::get_order_to_sign(
-        cow_sdk_trading::OrderToSignParams {
-            chain_id: trader.chain_id,
-            from: address(OWNER),
-            is_ethflow: false,
-            network_costs_amount: None,
-            apply_costs_slippage_and_fees: false,
-            protocol_fee_bps: None,
-        },
+        cow_sdk_trading::OrderToSignParams::new(trader.chain_id, address(OWNER), false)
+            .with_apply_costs_slippage_and_fees(false),
         &params,
         &app_data.app_data_keccak256,
     )
@@ -521,14 +505,8 @@ async fn order_level_eip1271_verification_surfaces_contract_failures_explicitly(
         .await
         .expect("app data should build");
     let order_to_sign = cow_sdk_trading::get_order_to_sign(
-        cow_sdk_trading::OrderToSignParams {
-            chain_id: trader.chain_id,
-            from: address(OWNER),
-            is_ethflow: false,
-            network_costs_amount: None,
-            apply_costs_slippage_and_fees: false,
-            protocol_fee_bps: None,
-        },
+        cow_sdk_trading::OrderToSignParams::new(trader.chain_id, address(OWNER), false)
+            .with_apply_costs_slippage_and_fees(false),
         &params,
         &app_data.app_data_keccak256,
     )

@@ -75,19 +75,17 @@ where
         Some(&options),
     )
     .await?;
-    let body = OrderCancellations {
-        order_uids: vec![params.order_uid.clone()],
-        signature: signing.signature,
-        signing_scheme: match signing.signing_scheme {
-            SigningSchemeContract::Eip712 => EcdsaSigningScheme::Eip712,
-            SigningSchemeContract::EthSign => EcdsaSigningScheme::EthSign,
-            _ => {
-                return Err(TradingError::UnsupportedLocalSigningScheme {
-                    scheme: signing.signing_scheme,
-                });
-            }
-        },
+    let scheme = match signing.signing_scheme {
+        SigningSchemeContract::Eip712 => EcdsaSigningScheme::Eip712,
+        SigningSchemeContract::EthSign => EcdsaSigningScheme::EthSign,
+        _ => {
+            return Err(TradingError::UnsupportedLocalSigningScheme {
+                scheme: signing.signing_scheme,
+            });
+        }
     };
+    let body = OrderCancellations::new(vec![params.order_uid.clone()], signing.signature)
+        .with_signing_scheme(scheme);
 
     orderbook.send_signed_order_cancellations(&body).await?;
     Ok(true)

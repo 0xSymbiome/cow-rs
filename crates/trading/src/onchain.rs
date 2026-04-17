@@ -13,6 +13,7 @@ use crate::{
 
 /// `EthFlow` transaction bundle returned by native-sell helper flows.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct EthFlowTransaction {
     /// Final unique order id.
     pub order_id: cow_sdk_core::OrderUid,
@@ -20,6 +21,22 @@ pub struct EthFlowTransaction {
     pub transaction: TransactionRequest,
     /// Unsigned order payload used to derive `order_id` and the transaction body.
     pub order_to_sign: cow_sdk_core::UnsignedOrder,
+}
+
+impl EthFlowTransaction {
+    /// Creates an `EthFlow` transaction bundle from its component pieces.
+    #[must_use]
+    pub const fn new(
+        order_id: cow_sdk_core::OrderUid,
+        transaction: TransactionRequest,
+        order_to_sign: cow_sdk_core::UnsignedOrder,
+    ) -> Self {
+        Self {
+            order_id,
+            transaction,
+            order_to_sign,
+        }
+    }
 }
 
 /// Builds a pre-sign transaction using a sync signer.

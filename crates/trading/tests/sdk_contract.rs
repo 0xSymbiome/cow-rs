@@ -33,14 +33,10 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
         sell_quote_response(),
     ));
     let sdk = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("0x007".to_owned()),
-            owner: None,
-            env: Some(CowEnv::Prod),
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_app_code("0x007".to_owned())
+            .with_env(CowEnv::Prod),
         TradingSdkOptions::new().with_orderbook_client(orderbook.clone()),
     )
     .expect("sdk construction should succeed");
@@ -83,14 +79,7 @@ fn sdk_ready_construction_requires_chain_authority_and_app_code() {
     ));
 
     let missing_ready_defaults = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: None,
-            owner: None,
-            env: None,
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new().with_chain_id(SupportedChainId::Sepolia),
         TradingSdkOptions::default(),
     )
     .expect_err("ready constructor must reject missing appCode");
@@ -151,14 +140,10 @@ fn sdk_new_validates_injected_orderbook_context_with_the_same_contract_as_the_bu
     ));
 
     let error = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Mainnet),
-            app_code: Some("0x007".to_owned()),
-            owner: None,
-            env: Some(CowEnv::Prod),
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Mainnet)
+            .with_app_code("0x007".to_owned())
+            .with_env(CowEnv::Prod),
         TradingSdkOptions::new().with_orderbook_client(orderbook),
     )
     .expect_err("direct constructor must reject injected orderbook conflicts");
@@ -203,14 +188,7 @@ async fn sdk_partial_construction_still_reports_missing_chainid_and_appcode_for_
     let trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
 
     let missing_chain = TradingSdk::new_partial(
-        PartialTraderParameters {
-            chain_id: None,
-            app_code: Some("0x007".to_owned()),
-            owner: None,
-            env: None,
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new().with_app_code("0x007".to_owned()),
         TradingSdkOptions::default(),
     )
     .expect("partial sdk construction without injected orderbook should succeed");
@@ -222,14 +200,7 @@ async fn sdk_partial_construction_still_reports_missing_chainid_and_appcode_for_
     assert!(chain_error.contains("Missing quoter parameters: chainId"));
 
     let missing_app = TradingSdk::new_partial(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: None,
-            owner: None,
-            env: None,
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new().with_chain_id(SupportedChainId::Sepolia),
         TradingSdkOptions::default(),
     )
     .expect("partial sdk construction without injected orderbook should succeed");
@@ -246,14 +217,9 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
     let provider = MockProvider::default();
     let signer = MockSigner::default();
     let sdk = TradingSdk::new_partial(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: None,
-            owner: None,
-            env: Some(CowEnv::Prod),
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_env(CowEnv::Prod),
         TradingSdkOptions::default(),
     )
     .expect("partial sdk construction should succeed");
@@ -261,13 +227,9 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
     let allowance = sdk
         .get_cow_protocol_allowance(
             &provider,
-            &cow_sdk_trading::AllowanceParameters {
-                token_address: address(COW),
-                owner: address(OWNER),
-                chain_id: Some(SupportedChainId::Mainnet),
-                env: Some(CowEnv::Prod),
-                vault_relayer_address: None,
-            },
+            &cow_sdk_trading::AllowanceParameters::new(address(COW), address(OWNER))
+                .with_chain_id(SupportedChainId::Mainnet)
+                .with_env(CowEnv::Prod),
         )
         .expect("allowance read should succeed");
     assert_eq!(
@@ -278,13 +240,13 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
     let approval_hash = sdk
         .approve_cow_protocol(
             &signer,
-            &ApprovalParameters {
-                token_address: address(COW),
-                amount: Amount::new("1000").expect("test approval amount literal must be valid"),
-                chain_id: Some(SupportedChainId::Mainnet),
-                env: Some(CowEnv::Prod),
-                vault_relayer_address: Some(address(ALT_RECEIVER)),
-            },
+            &ApprovalParameters::new(
+                address(COW),
+                Amount::new("1000").expect("test approval amount literal must be valid"),
+            )
+            .with_chain_id(SupportedChainId::Mainnet)
+            .with_env(CowEnv::Prod)
+            .with_vault_relayer_address(address(ALT_RECEIVER)),
         )
         .expect("approval should succeed");
     let sent = signer
@@ -316,14 +278,9 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
     let provider = MockProvider::default();
     let signer = MockSigner::default();
     let sdk = TradingSdk::new_partial(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: None,
-            owner: None,
-            env: Some(CowEnv::Prod),
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_env(CowEnv::Prod),
         TradingSdkOptions::default(),
     )
     .expect("partial sdk construction should succeed");
@@ -331,13 +288,9 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
     let allowance = sdk
         .get_cow_protocol_allowance_async(
             &provider,
-            &cow_sdk_trading::AllowanceParameters {
-                token_address: address(COW),
-                owner: address(OWNER),
-                chain_id: Some(SupportedChainId::Mainnet),
-                env: Some(CowEnv::Prod),
-                vault_relayer_address: None,
-            },
+            &cow_sdk_trading::AllowanceParameters::new(address(COW), address(OWNER))
+                .with_chain_id(SupportedChainId::Mainnet)
+                .with_env(CowEnv::Prod),
         )
         .await
         .expect("async allowance read should succeed");
@@ -349,13 +302,13 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
     let approval_hash = sdk
         .approve_cow_protocol_async(
             &signer,
-            &ApprovalParameters {
-                token_address: address(COW),
-                amount: Amount::new("1000").expect("test approval amount literal must be valid"),
-                chain_id: Some(SupportedChainId::Mainnet),
-                env: Some(CowEnv::Prod),
-                vault_relayer_address: Some(address(ALT_RECEIVER)),
-            },
+            &ApprovalParameters::new(
+                address(COW),
+                Amount::new("1000").expect("test approval amount literal must be valid"),
+            )
+            .with_chain_id(SupportedChainId::Mainnet)
+            .with_env(CowEnv::Prod)
+            .with_vault_relayer_address(address(ALT_RECEIVER)),
         )
         .await
         .expect("async approval should succeed");
@@ -372,36 +325,30 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
     orderbook.push_order(ethflow_order());
     let signer = MockSigner::default();
     let sdk = TradingSdk::new_partial(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: None,
-            owner: None,
-            env: Some(CowEnv::Staging),
-            settlement_contract_override: Some(AddressPerChain::from([(
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_env(CowEnv::Staging)
+            .with_settlement_contract_override(AddressPerChain::from([(
                 u64::from(SupportedChainId::Sepolia),
                 address("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
-            )])),
-            eth_flow_contract_override: Some(AddressPerChain::from([(
+            )]))
+            .with_eth_flow_contract_override(AddressPerChain::from([(
                 u64::from(SupportedChainId::Sepolia),
                 address("0xcccccccccccccccccccccccccccccccccccccccc"),
             )])),
-        },
         TradingSdkOptions::new().with_orderbook_client(orderbook.clone()),
     )
     .expect("partial sdk construction should succeed");
 
     let pre_sign_tx = sdk
         .get_pre_sign_transaction(
-            &OrderTraderParameters {
-                order_uid: order_uid(),
-                chain_id: Some(SupportedChainId::Sepolia),
-                env: Some(CowEnv::Staging),
-                settlement_contract_override: Some(AddressPerChain::from([(
+            &OrderTraderParameters::new(order_uid())
+                .with_chain_id(SupportedChainId::Sepolia)
+                .with_env(CowEnv::Staging)
+                .with_settlement_contract_override(AddressPerChain::from([(
                     u64::from(SupportedChainId::Sepolia),
                     address(CUSTOM_SETTLEMENT),
                 )])),
-                eth_flow_contract_override: None,
-            },
             &signer,
         )
         .expect("pre-sign transaction should succeed");
@@ -409,16 +356,13 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
 
     let tx_hash = sdk
         .on_chain_cancel_order(
-            &OrderTraderParameters {
-                order_uid: order_uid(),
-                chain_id: Some(SupportedChainId::Sepolia),
-                env: Some(CowEnv::Staging),
-                settlement_contract_override: None,
-                eth_flow_contract_override: Some(AddressPerChain::from([(
+            &OrderTraderParameters::new(order_uid())
+                .with_chain_id(SupportedChainId::Sepolia)
+                .with_env(CowEnv::Staging)
+                .with_eth_flow_contract_override(AddressPerChain::from([(
                     u64::from(SupportedChainId::Sepolia),
                     address(CUSTOM_ETHFLOW),
                 )])),
-            },
             &signer,
         )
         .await
@@ -443,32 +387,26 @@ async fn sdk_onchain_cancel_order_routes_regular_orders_through_settlement_when_
     orderbook.push_order(crate::common::regular_order());
     let signer = MockSigner::default();
     let sdk = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("0x007".to_owned()),
-            owner: None,
-            env: Some(CowEnv::Prod),
-            settlement_contract_override: Some(AddressPerChain::from([(
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_app_code("0x007".to_owned())
+            .with_env(CowEnv::Prod)
+            .with_settlement_contract_override(AddressPerChain::from([(
                 u64::from(SupportedChainId::Sepolia),
                 address(CUSTOM_SETTLEMENT),
-            )])),
-            eth_flow_contract_override: Some(AddressPerChain::from([(
+            )]))
+            .with_eth_flow_contract_override(AddressPerChain::from([(
                 u64::from(SupportedChainId::Sepolia),
                 address(CUSTOM_ETHFLOW),
             )])),
-        },
         TradingSdkOptions::new().with_orderbook_client(orderbook),
     )
     .expect("sdk construction should succeed");
 
     sdk.on_chain_cancel_order(
-        &OrderTraderParameters {
-            order_uid: order_uid(),
-            chain_id: Some(SupportedChainId::Sepolia),
-            env: Some(CowEnv::Prod),
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        &OrderTraderParameters::new(order_uid())
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_env(CowEnv::Prod),
         &signer,
     )
     .await
@@ -500,32 +438,26 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
 
     let signer = MockSigner::default();
     let sdk = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("0x007".to_owned()),
-            owner: None,
-            env: Some(CowEnv::Prod),
-            settlement_contract_override: Some(AddressPerChain::from([(
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_app_code("0x007".to_owned())
+            .with_env(CowEnv::Prod)
+            .with_settlement_contract_override(AddressPerChain::from([(
                 u64::from(SupportedChainId::Sepolia),
                 address(CUSTOM_SETTLEMENT),
-            )])),
-            eth_flow_contract_override: Some(AddressPerChain::from([(
+            )]))
+            .with_eth_flow_contract_override(AddressPerChain::from([(
                 u64::from(SupportedChainId::Sepolia),
                 address(CUSTOM_ETHFLOW),
             )])),
-        },
         TradingSdkOptions::new().with_orderbook_client(orderbook),
     )
     .expect("sdk construction should succeed");
 
     sdk.on_chain_cancel_order(
-        &OrderTraderParameters {
-            order_uid: order_uid(),
-            chain_id: Some(SupportedChainId::Sepolia),
-            env: Some(CowEnv::Prod),
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        &OrderTraderParameters::new(order_uid())
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_env(CowEnv::Prod),
         &signer,
     )
     .await
@@ -589,14 +521,11 @@ async fn get_quote_only_with_cancellation_returns_cancelled_when_token_is_fired_
         sell_quote_response(),
     ));
     let sdk = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("cancellation-test".to_owned()),
-            owner: Some(address(OWNER)),
-            env: Some(CowEnv::Prod),
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_app_code("cancellation-test".to_owned())
+            .with_owner(address(OWNER))
+            .with_env(CowEnv::Prod),
         TradingSdkOptions::new().with_orderbook_client(orderbook),
     )
     .expect("trading sdk must construct for the cancellation test");
@@ -619,14 +548,11 @@ async fn get_quote_only_with_cancellation_aborts_an_in_flight_quote() {
             .with_quote_delay(std::time::Duration::from_secs(30)),
     );
     let sdk = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("cancellation-test".to_owned()),
-            owner: Some(address(OWNER)),
-            env: Some(CowEnv::Prod),
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_app_code("cancellation-test".to_owned())
+            .with_owner(address(OWNER))
+            .with_env(CowEnv::Prod),
         TradingSdkOptions::new().with_orderbook_client(orderbook),
     )
     .expect("trading sdk must construct for the cancellation test");
@@ -677,13 +603,9 @@ async fn helper_only_sdk_refuses_quote_post_and_off_chain_cancel_flows() {
 
     let cancel_error = sdk
         .off_chain_cancel_order_async(
-            &OrderTraderParameters {
-                chain_id: Some(SupportedChainId::Sepolia),
-                env: Some(CowEnv::Prod),
-                order_uid: order_uid(),
-                settlement_contract_override: None,
-                eth_flow_contract_override: None,
-            },
+            &OrderTraderParameters::new(order_uid())
+                .with_chain_id(SupportedChainId::Sepolia)
+                .with_env(CowEnv::Prod),
             &MockSigner::default(),
         )
         .await

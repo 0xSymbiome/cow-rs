@@ -148,9 +148,9 @@ fn compatibility_models_remain_stable_for_current_workspace_consumers() {
         .expect("compatibility quote model should remain serializable");
     assert_eq!(parsed, quote);
 
-    let amounts = QuoteAmountsAndCosts {
-        is_sell: true,
-        costs: Costs {
+    let amounts = QuoteAmountsAndCosts::new(
+        true,
+        Costs {
             network_fee: NetworkFee {
                 amount_in_sell_currency: Amount::new("1").unwrap(),
                 amount_in_buy_currency: Amount::new("2").unwrap(),
@@ -164,35 +164,35 @@ fn compatibility_models_remain_stable_for_current_workspace_consumers() {
                 bps: 6,
             },
         },
-        before_all_fees: Amounts {
+        Amounts {
             sell_amount: Amount::new("10").unwrap(),
             buy_amount: Amount::new("20").unwrap(),
         },
-        before_network_costs: Amounts {
+        Amounts {
             sell_amount: Amount::new("11").unwrap(),
             buy_amount: Amount::new("21").unwrap(),
         },
-        after_protocol_fees: Amounts {
+        Amounts {
             sell_amount: Amount::new("12").unwrap(),
             buy_amount: Amount::new("22").unwrap(),
         },
-        after_network_costs: Amounts {
+        Amounts {
             sell_amount: Amount::new("13").unwrap(),
             buy_amount: Amount::new("23").unwrap(),
         },
-        after_partner_fees: Amounts {
+        Amounts {
             sell_amount: Amount::new("14").unwrap(),
             buy_amount: Amount::new("24").unwrap(),
         },
-        after_slippage: Amounts {
+        Amounts {
             sell_amount: Amount::new("15").unwrap(),
             buy_amount: Amount::new("25").unwrap(),
         },
-        amounts_to_sign: Amounts {
+        Amounts {
             sell_amount: Amount::new("16").unwrap(),
             buy_amount: Amount::new("26").unwrap(),
         },
-    };
+    );
     let encoded = serde_json::to_value(amounts).unwrap();
     assert!(encoded.as_object().unwrap().contains_key("amountsToSign"));
 }

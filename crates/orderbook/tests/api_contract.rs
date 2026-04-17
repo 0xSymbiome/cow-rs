@@ -6,9 +6,8 @@ use std::time::{Duration, Instant};
 use cow_sdk_core::{CoreError, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError};
 use cow_sdk_orderbook::{
     ApiContextOverride, AppDataObject, CowEnv, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
-    EcdsaSigningScheme, GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderBookTransportPolicy,
-    OrderCancellations, OrderCreation, OrderStatus, QuoteSide, RequestPolicy, SigningScheme,
-    SupportedChainId,
+    GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderBookTransportPolicy, OrderCancellations,
+    OrderCreation, OrderStatus, QuoteSide, RequestPolicy, SigningScheme, SupportedChainId,
 };
 use serde_json::json;
 use wiremock::{
@@ -309,12 +308,10 @@ async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() 
     assert_eq!(trades[0].transaction_hash, sample_tx_hash());
 
     let invalid = api
-        .get_trades(&GetTradesRequest {
-            owner: Some(sample_owner()),
-            order_uid: Some(sample_order_uid()),
-            offset: 0,
-            limit: 10,
-        })
+        .get_trades(&GetTradesRequest::new(
+            Some(sample_owner()),
+            Some(sample_order_uid()),
+        ))
         .await
         .expect_err("owner+uid request must fail before transport");
 
@@ -393,11 +390,8 @@ async fn signed_cancellations_use_delete_orders_route() {
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         server.uri(),
     );
-    let cancellation = OrderCancellations {
-        order_uids: vec![sample_order_uid()],
-        signature: sample_signature().to_owned(),
-        signing_scheme: EcdsaSigningScheme::Eip712,
-    };
+    let cancellation =
+        OrderCancellations::new(vec![sample_order_uid()], sample_signature().to_owned());
 
     api.send_signed_order_cancellations(&cancellation)
         .await

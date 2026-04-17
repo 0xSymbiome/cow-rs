@@ -129,16 +129,11 @@ async fn get_totals_posts_totals_operation_and_returns_first_row() {
     assert_graphql_request(&request, TOTALS_QUERY, Some("Totals"), None);
     assert_eq!(
         totals,
-        Total {
-            tokens: "192".to_owned(),
-            orders: "365210".to_owned(),
-            traders: "50731".to_owned(),
-            settlements: "160092".to_owned(),
-            volume_usd: Some("49548634.23978489392550883815112596".to_owned()),
-            volume_eth: Some("20349080.82753326160179174564685693".to_owned()),
-            fees_usd: Some("1495.18088540037791409373835505834".to_owned()),
-            fees_eth: Some("632.7328748466552906975758491191759".to_owned()),
-        }
+        Total::new("192", "365210", "50731", "160092")
+            .with_volume_usd("49548634.23978489392550883815112596")
+            .with_volume_eth("20349080.82753326160179174564685693")
+            .with_fees_usd("1495.18088540037791409373835505834")
+            .with_fees_eth("632.7328748466552906975758491191759")
     );
 }
 
@@ -177,18 +172,10 @@ async fn get_last_days_volume_posts_variableized_query() {
     );
     assert_eq!(
         response,
-        LastDaysVolumeResponse {
-            daily_totals: vec![
-                DailyTotal {
-                    timestamp: 1_651_104_000,
-                    volume_usd: Some("32085.1639220805155999650325844739".to_owned()),
-                },
-                DailyTotal {
-                    timestamp: 1_651_017_600,
-                    volume_usd: Some("34693.62007717297749801092930059675".to_owned()),
-                },
-            ],
-        }
+        LastDaysVolumeResponse::new(vec![
+            DailyTotal::new(1_651_104_000).with_volume_usd("32085.1639220805155999650325844739"),
+            DailyTotal::new(1_651_017_600).with_volume_usd("34693.62007717297749801092930059675"),
+        ])
     );
 }
 
@@ -227,18 +214,10 @@ async fn get_last_hours_volume_posts_variableized_query() {
     );
     assert_eq!(
         response,
-        LastHoursVolumeResponse {
-            hourly_totals: vec![
-                HourlyTotal {
-                    timestamp: 1_651_186_800,
-                    volume_usd: Some("190.9404913756501392195019404899438".to_owned()),
-                },
-                HourlyTotal {
-                    timestamp: 1_651_183_200,
-                    volume_usd: Some("529.9946238000561779423929757743504".to_owned()),
-                },
-            ],
-        }
+        LastHoursVolumeResponse::new(vec![
+            HourlyTotal::new(1_651_186_800).with_volume_usd("190.9404913756501392195019404899438"),
+            HourlyTotal::new(1_651_183_200).with_volume_usd("529.9946238000561779423929757743504"),
+        ])
     );
 }
 

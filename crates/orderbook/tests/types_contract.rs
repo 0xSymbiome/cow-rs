@@ -100,18 +100,8 @@ fn orders_and_trades_requests_keep_upstream_defaults() {
 
 #[test]
 fn trades_request_rejects_owner_and_uid_or_neither() {
-    let invalid_both = GetTradesRequest {
-        owner: Some(sample_owner()),
-        order_uid: Some(sample_order_uid()),
-        offset: 0,
-        limit: 10,
-    };
-    let invalid_neither = GetTradesRequest {
-        owner: None,
-        order_uid: None,
-        offset: 0,
-        limit: 10,
-    };
+    let invalid_both = GetTradesRequest::new(Some(sample_owner()), Some(sample_order_uid()));
+    let invalid_neither = GetTradesRequest::new(None, None);
 
     assert!(!invalid_both.is_valid());
     assert!(!invalid_neither.is_valid());

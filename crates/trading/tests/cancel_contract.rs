@@ -12,13 +12,10 @@ async fn offchain_cancellation_signs_and_dispatches_order_uids_to_orderbook() {
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = MockSigner::default();
-    let params = OrderTraderParameters {
-        order_uid: order_uid(),
-        chain_id: Some(trader.chain_id),
-        env: trader.env,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let mut params = OrderTraderParameters::new(order_uid()).with_chain_id(trader.chain_id);
+    if let Some(env) = trader.env {
+        params = params.with_env(env);
+    }
 
     let cancelled = off_chain_cancel_order(&orderbook, &params, &trader, &signer)
         .await
@@ -44,13 +41,11 @@ async fn offchain_cancellation_rejects_call_level_chain_conflicts_with_orderbook
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = MockSigner::default();
-    let params = OrderTraderParameters {
-        order_uid: order_uid(),
-        chain_id: Some(SupportedChainId::Mainnet),
-        env: trader.env,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let mut params =
+        OrderTraderParameters::new(order_uid()).with_chain_id(SupportedChainId::Mainnet);
+    if let Some(env) = trader.env {
+        params = params.with_env(env);
+    }
 
     let error = off_chain_cancel_order(&orderbook, &params, &trader, &signer)
         .await

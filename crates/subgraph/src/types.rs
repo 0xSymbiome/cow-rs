@@ -12,6 +12,7 @@ use serde_json::Value;
     reason = "the `variables: Option<serde_json::Value>` field cannot participate in `Eq` because `serde_json::Value` does not implement `Eq`"
 )]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct SubgraphQueryRequest {
     /// Raw GraphQL document sent to the subgraph endpoint.
     pub document: String,
@@ -87,16 +88,26 @@ impl From<String> for SubgraphQueryRequest {
 }
 
 /// Response payload for the canonical totals query.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct TotalsResponse {
     /// Totals rows returned by the subgraph.
     pub totals: Vec<Total>,
 }
 
+impl TotalsResponse {
+    /// Creates a totals response with an explicit totals list.
+    #[must_use]
+    pub const fn new(totals: Vec<Total>) -> Self {
+        Self { totals }
+    }
+}
+
 /// Aggregate totals row returned by the canonical totals query.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct Total {
     /// Number of tokens represented in the indexed dataset.
     #[serde(deserialize_with = "deserialize_string_or_number")]
@@ -124,17 +135,77 @@ pub struct Total {
     pub fees_eth: Option<String>,
 }
 
+impl Total {
+    /// Creates a totals row with the four required count fields.
+    #[must_use]
+    pub fn new(
+        tokens: impl Into<String>,
+        orders: impl Into<String>,
+        traders: impl Into<String>,
+        settlements: impl Into<String>,
+    ) -> Self {
+        Self {
+            tokens: tokens.into(),
+            orders: orders.into(),
+            traders: traders.into(),
+            settlements: settlements.into(),
+            volume_usd: None,
+            volume_eth: None,
+            fees_usd: None,
+            fees_eth: None,
+        }
+    }
+
+    /// Returns a copy of this row with an explicit USD volume string.
+    #[must_use]
+    pub fn with_volume_usd(mut self, value: impl Into<String>) -> Self {
+        self.volume_usd = Some(value.into());
+        self
+    }
+
+    /// Returns a copy of this row with an explicit ETH volume string.
+    #[must_use]
+    pub fn with_volume_eth(mut self, value: impl Into<String>) -> Self {
+        self.volume_eth = Some(value.into());
+        self
+    }
+
+    /// Returns a copy of this row with an explicit USD fee string.
+    #[must_use]
+    pub fn with_fees_usd(mut self, value: impl Into<String>) -> Self {
+        self.fees_usd = Some(value.into());
+        self
+    }
+
+    /// Returns a copy of this row with an explicit ETH fee string.
+    #[must_use]
+    pub fn with_fees_eth(mut self, value: impl Into<String>) -> Self {
+        self.fees_eth = Some(value.into());
+        self
+    }
+}
+
 /// Response payload for the canonical daily-volume query.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct LastDaysVolumeResponse {
     /// Daily totals ordered by descending timestamp.
     pub daily_totals: Vec<DailyTotal>,
 }
 
+impl LastDaysVolumeResponse {
+    /// Creates a daily-volume response with an explicit daily totals list.
+    #[must_use]
+    pub const fn new(daily_totals: Vec<DailyTotal>) -> Self {
+        Self { daily_totals }
+    }
+}
+
 /// Single daily volume row from the canonical daily-volume query.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct DailyTotal {
     /// Unix timestamp for the indexed day bucket.
     #[serde(deserialize_with = "deserialize_u64_from_string_or_number")]
@@ -144,17 +215,45 @@ pub struct DailyTotal {
     pub volume_usd: Option<String>,
 }
 
+impl DailyTotal {
+    /// Creates a daily-total row for the given day-bucket timestamp.
+    #[must_use]
+    pub const fn new(timestamp: u64) -> Self {
+        Self {
+            timestamp,
+            volume_usd: None,
+        }
+    }
+
+    /// Returns a copy of this row with an explicit USD volume string.
+    #[must_use]
+    pub fn with_volume_usd(mut self, value: impl Into<String>) -> Self {
+        self.volume_usd = Some(value.into());
+        self
+    }
+}
+
 /// Response payload for the canonical hourly-volume query.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct LastHoursVolumeResponse {
     /// Hourly totals ordered by descending timestamp.
     pub hourly_totals: Vec<HourlyTotal>,
 }
 
+impl LastHoursVolumeResponse {
+    /// Creates an hourly-volume response with an explicit hourly totals list.
+    #[must_use]
+    pub const fn new(hourly_totals: Vec<HourlyTotal>) -> Self {
+        Self { hourly_totals }
+    }
+}
+
 /// Single hourly volume row from the canonical hourly-volume query.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct HourlyTotal {
     /// Unix timestamp for the indexed hour bucket.
     #[serde(deserialize_with = "deserialize_u64_from_string_or_number")]
@@ -162,6 +261,24 @@ pub struct HourlyTotal {
     /// USD volume for the indexed hour bucket when available.
     #[serde(default, deserialize_with = "deserialize_optional_string_or_number")]
     pub volume_usd: Option<String>,
+}
+
+impl HourlyTotal {
+    /// Creates an hourly-total row for the given hour-bucket timestamp.
+    #[must_use]
+    pub const fn new(timestamp: u64) -> Self {
+        Self {
+            timestamp,
+            volume_usd: None,
+        }
+    }
+
+    /// Returns a copy of this row with an explicit USD volume string.
+    #[must_use]
+    pub fn with_volume_usd(mut self, value: impl Into<String>) -> Self {
+        self.volume_usd = Some(value.into());
+        self
+    }
 }
 
 fn deserialize_string_or_number<'de, D>(deserializer: D) -> Result<String, D::Error>

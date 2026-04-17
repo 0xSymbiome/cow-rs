@@ -492,17 +492,17 @@ impl QuoteAmountStages {
         is_sell: bool,
         fee_breakdown: QuoteFeeBreakdown,
     ) -> Result<QuoteAmountsAndCosts, TradingError> {
-        Ok(QuoteAmountsAndCosts {
+        Ok(QuoteAmountsAndCosts::new(
             is_sell,
-            costs: fee_breakdown.into_costs()?,
-            before_all_fees: self.before_all_fees.into_amounts()?,
-            before_network_costs: self.after_protocol_fees.clone().into_amounts()?,
-            after_protocol_fees: self.after_protocol_fees.into_amounts()?,
-            after_network_costs: self.after_network_costs.into_amounts()?,
-            after_partner_fees: self.after_partner_fees.into_amounts()?,
-            after_slippage: self.after_slippage.into_amounts()?,
-            amounts_to_sign: self.amounts_to_sign.into_amounts()?,
-        })
+            fee_breakdown.into_costs()?,
+            self.before_all_fees.into_amounts()?,
+            self.after_protocol_fees.clone().into_amounts()?,
+            self.after_protocol_fees.into_amounts()?,
+            self.after_network_costs.into_amounts()?,
+            self.after_partner_fees.into_amounts()?,
+            self.after_slippage.into_amounts()?,
+            self.amounts_to_sign.into_amounts()?,
+        ))
     }
 }
 

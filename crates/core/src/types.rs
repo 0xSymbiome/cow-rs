@@ -1370,6 +1370,7 @@ pub struct Costs<T> {
 /// Stepwise quote amounts and cost components across the quote lifecycle.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct QuoteAmountsAndCosts<T = Amount> {
     /// Whether the source quote was sell-sided.
     pub is_sell: bool,
@@ -1392,6 +1393,33 @@ pub struct QuoteAmountsAndCosts<T = Amount> {
 }
 
 impl<T> QuoteAmountsAndCosts<T> {
+    /// Creates a quote-stage breakdown from its individual stage amounts.
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub const fn new(
+        is_sell: bool,
+        costs: Costs<T>,
+        before_all_fees: Amounts<T>,
+        before_network_costs: Amounts<T>,
+        after_protocol_fees: Amounts<T>,
+        after_network_costs: Amounts<T>,
+        after_partner_fees: Amounts<T>,
+        after_slippage: Amounts<T>,
+        amounts_to_sign: Amounts<T>,
+    ) -> Self {
+        Self {
+            is_sell,
+            costs,
+            before_all_fees,
+            before_network_costs,
+            after_protocol_fees,
+            after_network_costs,
+            after_partner_fees,
+            after_slippage,
+            amounts_to_sign,
+        }
+    }
+
     /// Returns the canonical stage ordering for quote amount breakdowns.
     #[must_use]
     pub const fn stage_names() -> &'static [&'static str; QUOTE_AMOUNT_STAGE_NAMES.len()] {

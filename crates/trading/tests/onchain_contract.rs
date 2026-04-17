@@ -4,9 +4,8 @@ use cow_sdk_core::{
     AddressPerChain, Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId,
 };
 use cow_sdk_trading::{
-    GAS_LIMIT_DEFAULT, PostTradeAdditionalParams, TraderParameters, TradingError,
-    cancel_order_onchain, get_eth_flow_transaction, get_pre_sign_transaction,
-    onchain_cancellation_transaction,
+    GAS_LIMIT_DEFAULT, PostTradeAdditionalParams, TradingError, cancel_order_onchain,
+    get_eth_flow_transaction, get_pre_sign_transaction, onchain_cancellation_transaction,
 };
 use num_bigint::BigUint;
 
@@ -64,13 +63,11 @@ async fn ethflow_transaction_uses_wrapped_native_value_margin_and_ethflow_overri
         u64::from(SupportedChainId::Sepolia),
         address(CUSTOM_ETHFLOW),
     )]));
-    let trader = TraderParameters {
-        eth_flow_contract_override: Some(AddressPerChain::from([(
-            u64::from(SupportedChainId::Sepolia),
-            address("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
-        )])),
-        ..sample_trader_parameters()
-    };
+    let mut trader = sample_trader_parameters();
+    trader.eth_flow_contract_override = Some(AddressPerChain::from([(
+        u64::from(SupportedChainId::Sepolia),
+        address("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+    )]));
 
     let transaction = get_eth_flow_transaction(
         &app_data_hash(),
@@ -117,10 +114,7 @@ async fn ethflow_transaction_encodes_high_bit_uint256_amounts_as_unsigned_words(
         &app_data_hash(),
         &params,
         SupportedChainId::Sepolia,
-        &PostTradeAdditionalParams {
-            apply_costs_slippage_and_fees: Some(false),
-            ..PostTradeAdditionalParams::default()
-        },
+        &PostTradeAdditionalParams::new().with_apply_costs_slippage_and_fees(false),
         &trader,
         &signer,
     )
@@ -149,10 +143,7 @@ async fn ethflow_transaction_rejects_negative_quote_id_at_the_abi_boundary() {
         &app_data_hash(),
         &params,
         SupportedChainId::Sepolia,
-        &PostTradeAdditionalParams {
-            apply_costs_slippage_and_fees: Some(false),
-            ..PostTradeAdditionalParams::default()
-        },
+        &PostTradeAdditionalParams::new().with_apply_costs_slippage_and_fees(false),
         &trader,
         &signer,
     )

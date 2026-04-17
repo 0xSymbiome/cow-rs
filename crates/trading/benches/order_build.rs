@@ -4,39 +4,28 @@ use cow_sdk_core::{Address, Amount, AppDataHash, OrderBalance, OrderKind, Suppor
 use cow_sdk_trading::{LimitTradeParameters, OrderToSignParams, get_order_to_sign};
 
 fn sample_limit_parameters() -> LimitTradeParameters {
-    LimitTradeParameters {
-        kind: OrderKind::Sell,
-        owner: None,
-        sell_token: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
-        sell_token_decimals: 18,
-        buy_token: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        buy_token_decimals: 18,
-        sell_amount: Amount::new("1000000000000000000").unwrap(),
-        buy_amount: Amount::new("2000000000000000000000").unwrap(),
-        quote_id: None,
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-        partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
-        slippage_bps: Some(50),
-        receiver: None,
-        valid_for: None,
-        valid_to: Some(1_900_000_000),
-        partner_fee: None,
-    }
+    LimitTradeParameters::new(
+        OrderKind::Sell,
+        Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
+        18,
+        Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
+        18,
+        Amount::new("1000000000000000000").unwrap(),
+        Amount::new("2000000000000000000000").unwrap(),
+    )
+    .with_sell_token_balance(OrderBalance::Erc20)
+    .with_buy_token_balance(OrderBalance::Erc20)
+    .with_slippage_bps(50)
+    .with_valid_to(1_900_000_000)
 }
 
 fn sample_params() -> OrderToSignParams {
-    OrderToSignParams {
-        chain_id: SupportedChainId::Mainnet,
-        from: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        is_ethflow: false,
-        network_costs_amount: None,
-        apply_costs_slippage_and_fees: false,
-        protocol_fee_bps: None,
-    }
+    OrderToSignParams::new(
+        SupportedChainId::Mainnet,
+        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+        false,
+    )
+    .with_apply_costs_slippage_and_fees(false)
 }
 
 fn bench_get_order_to_sign(c: &mut Criterion) {

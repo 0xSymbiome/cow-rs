@@ -112,6 +112,29 @@ unreleased public contract of the repository.
   `with_env`/`with_settlement_contract_override`/`with_eth_flow_contract_override`,
   `ApiContextOverride::new` plus `with_chain_id`/`with_env`/`with_base_urls`/`with_api_key`)
   replace struct-literal construction for downstream callers.
+- Broadened `#[non_exhaustive]` coverage across every public DTO family in
+  the trading-first surface so future additive fields no longer require a
+  major version bump. `cow-sdk-orderbook` now annotates `OrderCreation`,
+  `OrderQuoteRequest`, `OrderQuoteResponse`, the wire `Order` and `Trade`
+  DTOs, `EthflowData`, `QuoteSide`, `QuoteData`, `GetOrdersRequest`,
+  `GetTradesRequest`, `OrderCancellations`, `NativePriceResponse`,
+  `TotalSurplus`, `AppDataObject`, `CompetitionOrderStatus`,
+  `CompetitionAuction`, `SolverCompetitionResponse`, `SolverSettlement`,
+  `SolverExecution`, and `Auction`. `cow-sdk-trading` annotates
+  `TradeParameters`, `LimitTradeParameters`, `TraderParameters`,
+  `PartialTraderParameters`, `OrderTraderParameters`, `QuoterParameters`,
+  `QuoteResults`, `QuoteRequestOverride`, `OrderPostingResult`,
+  `SwapAdvancedSettings`, `LimitOrderAdvancedSettings`,
+  `PostTradeAdditionalParams`, `TradingAppDataInfo`, `OrderToSignParams`,
+  `AllowanceParameters`, `ApprovalParameters`, `OrderbookRuntimeBinding`,
+  `SlippageToleranceRequest`, `SlippageToleranceResponse`, and
+  `EthFlowTransaction`. `cow-sdk-subgraph` annotates `TotalsResponse`,
+  `DailyTotal`, `HourlyTotal`, `LastDaysVolumeResponse`,
+  `LastHoursVolumeResponse`, `Total`, and `SubgraphQueryRequest`.
+  `cow-sdk-core` also annotates `QuoteAmountsAndCosts`. Every annotated
+  struct ships an ergonomic constructor (`::new(required_args)` plus
+  chainable `with_*` setters for the optional fields) so downstream
+  callers migrate off struct-literal syntax without boilerplate.
 - Opt-in `tracing` feature family across the public crate graph. Every
   published leaf crate now exposes a `tracing` feature that pulls
   `tracing = { version = "0.1", default-features = false, features = ["attributes"] }`

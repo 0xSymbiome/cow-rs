@@ -31,13 +31,9 @@ async fn quote_app_data_and_request_shape_follow_pinned_contract() {
         sell_quote_response(),
     );
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters {
-        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        env: Some(CowEnv::Prod),
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader =
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .with_env(CowEnv::Prod);
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.slippage_bps = Some(76);
 
@@ -70,13 +66,8 @@ async fn quote_validity_uses_valid_for_by_default_and_exact_valid_to_when_reques
         sell_quote_response(),
     );
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters {
-        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader =
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007");
 
     let default_trade = sample_trade_parameters(OrderKind::Sell);
     let _ = get_quote_results(&default_trade, &trader, &signer, None, &orderbook)
@@ -130,13 +121,8 @@ async fn native_sell_quote_uses_wrapped_native_and_onchain_defaults() {
         sell_quote_response(),
     );
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters {
-        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader =
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007");
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.sell_token = address(cow_sdk_core::EVM_NATIVE_CURRENCY_ADDRESS);
     trade.slippage_bps = None;
@@ -169,23 +155,18 @@ async fn auto_slippage_uses_provider_suggestion_and_quote_only_uses_owner_withou
         cow_sdk_core::SupportedChainId::Sepolia,
         sell_quote_response(),
     );
-    let quoter = QuoterParameters {
-        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        account: address(OWNER),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let quoter = QuoterParameters::new(
+        cow_sdk_core::SupportedChainId::Sepolia,
+        "0x007",
+        address(OWNER),
+    );
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.owner = Some(address(OWNER));
     trade.slippage_bps = None;
-    let advanced = SwapAdvancedSettings {
-        slippage_suggester: Some(Arc::new(MockSlippageProvider {
+    let advanced =
+        SwapAdvancedSettings::new().with_slippage_suggester(Arc::new(MockSlippageProvider {
             response: Some(200),
-        })),
-        ..SwapAdvancedSettings::default()
-    };
+        }));
 
     let result = get_quote_only(&trade, &quoter, Some(&advanced), &orderbook)
         .await
@@ -214,22 +195,14 @@ async fn quote_request_override_can_change_receiver_and_price_quality() {
         sell_quote_response(),
     );
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters {
-        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader =
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007");
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
-    let advanced = SwapAdvancedSettings {
-        quote_request: Some(QuoteRequestOverride {
-            receiver: Some(address(crate::common::ALT_RECEIVER)),
-            price_quality: Some(cow_sdk_orderbook::PriceQuality::Fast),
-            ..QuoteRequestOverride::default()
-        }),
-        ..SwapAdvancedSettings::default()
-    };
+    let advanced = SwapAdvancedSettings::new().with_quote_request(
+        QuoteRequestOverride::new()
+            .with_receiver(address(crate::common::ALT_RECEIVER))
+            .with_price_quality(cow_sdk_orderbook::PriceQuality::Fast),
+    );
 
     let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
@@ -260,22 +233,14 @@ async fn quote_results_preserve_non_default_balance_semantics_from_quote_and_ove
     quote_response.quote.buy_token_balance = OrderBalance::Internal;
     let orderbook = MockOrderbook::new(cow_sdk_core::SupportedChainId::Sepolia, quote_response);
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters {
-        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader =
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007");
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
-    let advanced = SwapAdvancedSettings {
-        quote_request: Some(QuoteRequestOverride {
-            sell_token_balance: Some(OrderBalance::External),
-            buy_token_balance: Some(OrderBalance::Internal),
-            ..QuoteRequestOverride::default()
-        }),
-        ..SwapAdvancedSettings::default()
-    };
+    let advanced = SwapAdvancedSettings::new().with_quote_request(
+        QuoteRequestOverride::new()
+            .with_sell_token_balance(OrderBalance::External)
+            .with_buy_token_balance(OrderBalance::Internal),
+    );
 
     let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
@@ -322,13 +287,8 @@ async fn quote_request_keeps_trade_partial_fill_flag_without_direct_override() {
         sell_quote_response(),
     );
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters {
-        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader =
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007");
     let mut trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
     trade.partially_fillable = true;
 
@@ -353,14 +313,12 @@ async fn quote_helpers_reject_injected_orderbook_chain_conflicts() {
         cow_sdk_core::SupportedChainId::Sepolia,
         sell_quote_response(),
     );
-    let quoter = QuoterParameters {
-        chain_id: cow_sdk_core::SupportedChainId::Mainnet,
-        app_code: "0x007".to_owned(),
-        account: address(OWNER),
-        env: Some(CowEnv::Prod),
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let quoter = QuoterParameters::new(
+        cow_sdk_core::SupportedChainId::Mainnet,
+        "0x007",
+        address(OWNER),
+    )
+    .with_env(CowEnv::Prod);
     let trade = sample_trade_parameters(OrderKind::Sell);
 
     let error = get_quote_only(&trade, &quoter, None, &orderbook)
@@ -386,13 +344,9 @@ async fn quote_results_capture_originating_orderbook_runtime_binding() {
         sell_quote_response(),
     );
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters {
-        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        env: Some(CowEnv::Prod),
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader =
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .with_env(CowEnv::Prod);
     let trade = sample_trade_parameters(OrderKind::Sell);
 
     let result = get_quote_results(&trade, &trader, &signer, None, &orderbook)
@@ -417,25 +371,21 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
         sell_quote_response(),
     );
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters {
-        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        env: Some(CowEnv::Prod),
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader =
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .with_env(CowEnv::Prod);
     let mut trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
     trade.owner = None;
     trade.slippage_bps = None;
-    let advanced = SwapAdvancedSettings {
-        quote_request: Some(QuoteRequestOverride {
-            from: Some(address(crate::common::ALT_RECEIVER)),
-            receiver: Some(address(crate::common::ALT_RECEIVER)),
-            valid_to: Some(5_600_000),
-            partially_fillable: Some(true),
-            ..QuoteRequestOverride::default()
-        }),
-        app_data: Some(cow_sdk_app_data::AppDataParams {
+    let advanced = SwapAdvancedSettings::new()
+        .with_quote_request(
+            QuoteRequestOverride::new()
+                .with_from(address(crate::common::ALT_RECEIVER))
+                .with_receiver(address(crate::common::ALT_RECEIVER))
+                .with_valid_to(5_600_000)
+                .with_partially_fillable(true),
+        )
+        .with_app_data(cow_sdk_app_data::AppDataParams {
             app_code: None,
             environment: None,
             metadata: serde_json::from_value(serde_json::json!({
@@ -448,9 +398,7 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
                 }
             }))
             .expect("advanced app-data metadata must deserialize"),
-        }),
-        ..SwapAdvancedSettings::default()
-    };
+        });
 
     let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
@@ -500,27 +448,20 @@ async fn quote_results_reject_invalid_partner_fee_metadata_before_quoting() {
         sell_quote_response(),
     );
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters {
-        chain_id: cow_sdk_core::SupportedChainId::Sepolia,
-        app_code: "0x007".to_owned(),
-        env: Some(CowEnv::Prod),
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let trader =
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .with_env(CowEnv::Prod);
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
-    let advanced = SwapAdvancedSettings {
-        app_data: Some(cow_sdk_app_data::AppDataParams {
-            app_code: None,
-            environment: None,
-            metadata: serde_json::from_value(serde_json::json!({
-                "partnerFee": {
-                    "unexpected": true
-                }
-            }))
-            .expect("invalid metadata shape should still deserialize as json"),
-        }),
-        ..SwapAdvancedSettings::default()
-    };
+    let advanced = SwapAdvancedSettings::new().with_app_data(cow_sdk_app_data::AppDataParams {
+        app_code: None,
+        environment: None,
+        metadata: serde_json::from_value(serde_json::json!({
+            "partnerFee": {
+                "unexpected": true
+            }
+        }))
+        .expect("invalid metadata shape should still deserialize as json"),
+    });
 
     let error = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await

@@ -131,14 +131,8 @@ fn get_order_to_sign_preserves_non_default_balance_semantics() {
     params.buy_token_balance = OrderBalance::Internal;
 
     let order = get_order_to_sign(
-        OrderToSignParams {
-            chain_id: SupportedChainId::Sepolia,
-            from: address(OWNER),
-            is_ethflow: false,
-            network_costs_amount: None,
-            apply_costs_slippage_and_fees: false,
-            protocol_fee_bps: None,
-        },
+        OrderToSignParams::new(SupportedChainId::Sepolia, address(OWNER), false)
+            .with_apply_costs_slippage_and_fees(false),
         &params,
         &app_data_hash(),
     )

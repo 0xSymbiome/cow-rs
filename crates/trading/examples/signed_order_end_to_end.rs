@@ -91,26 +91,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn sample_trade_parameters(kind: OrderKind, owner: &Address) -> TradeParameters {
-    TradeParameters {
+    TradeParameters::new(
         kind,
-        owner: Some(owner.clone()),
-        sell_token: Address::new(WETH).expect("example WETH literal must be valid"),
-        sell_token_decimals: 18,
-        buy_token: Address::new(COW_TOKEN).expect("example COW token literal must be valid"),
-        buy_token_decimals: 18,
-        amount: Amount::new("100000000000000000").expect("example amount literal must be valid"),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-        partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
-        slippage_bps: Some(50),
-        receiver: None,
-        valid_for: None,
-        valid_to: None,
-        partner_fee: None,
-    }
+        Address::new(WETH).expect("example WETH literal must be valid"),
+        18,
+        Address::new(COW_TOKEN).expect("example COW token literal must be valid"),
+        18,
+        Amount::new("100000000000000000").expect("example amount literal must be valid"),
+    )
+    .with_owner(owner.clone())
+    .with_sell_token_balance(OrderBalance::Erc20)
+    .with_buy_token_balance(OrderBalance::Erc20)
+    .with_slippage_bps(50)
 }
 
 fn sell_quote_response() -> OrderQuoteResponse {
@@ -211,9 +203,7 @@ impl OrderbookClient for ExampleOrderbook {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .uploads
             .push((app_data_hash.clone(), full_app_data.to_owned()));
-        Ok(AppDataObject {
-            full_app_data: full_app_data.to_owned(),
-        })
+        Ok(AppDataObject::new(full_app_data.to_owned()))
     }
 }
 

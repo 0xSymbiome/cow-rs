@@ -230,11 +230,9 @@ fn quote_request_app_data_and_pagination_shape_roundtrip_without_normalization()
         let owner_request = if rng.next_bool() {
             GetOrdersRequest::new(sample_owner())
         } else {
-            GetOrdersRequest {
-                owner: sample_owner(),
-                offset: rng.next_u32(),
-                limit: 1 + (rng.next_u32() % 5_000),
-            }
+            GetOrdersRequest::new(sample_owner())
+                .with_offset(rng.next_u32())
+                .with_limit(1 + (rng.next_u32() % 5_000))
         };
         let owner_value =
             serde_json::to_value(&owner_request).expect("orders request must serialize");
@@ -254,12 +252,9 @@ fn trades_request_filter_xor_is_never_silently_normalized() {
         let mut rng = CaseRng::new(seed + 4_001);
         let owner = rng.next_bool().then(sample_owner);
         let order_uid = rng.next_bool().then(sample_order_uid);
-        let request = GetTradesRequest {
-            owner: owner.clone(),
-            order_uid: order_uid.clone(),
-            offset: rng.next_u32() % 500,
-            limit: 1 + (rng.next_u32() % 100),
-        };
+        let request = GetTradesRequest::new(owner.clone(), order_uid.clone())
+            .with_offset(rng.next_u32() % 500)
+            .with_limit(1 + (rng.next_u32() % 100));
 
         let value = serde_json::to_value(&request).expect("trades request must serialize");
         let roundtrip: GetTradesRequest =

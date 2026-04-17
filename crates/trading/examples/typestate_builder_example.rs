@@ -58,26 +58,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // A quote invocation on a helper-only sdk surfaces the typed
     // helper-only error rather than silently falling through to a
     // partially-configured flow.
-    let trade_parameters = cow_sdk_trading::TradeParameters {
-        kind: cow_sdk_core::OrderKind::Sell,
-        owner: None,
-        sell_token: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")?,
-        sell_token_decimals: 18,
-        buy_token: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f")?,
-        buy_token_decimals: 18,
-        amount: cow_sdk_core::Amount::new("1000000000000000000")?,
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-        partially_fillable: false,
-        sell_token_balance: cow_sdk_core::OrderBalance::Erc20,
-        buy_token_balance: cow_sdk_core::OrderBalance::Erc20,
-        slippage_bps: None,
-        receiver: None,
-        valid_for: None,
-        valid_to: None,
-        partner_fee: None,
-    };
+    let trade_parameters = cow_sdk_trading::TradeParameters::new(
+        cow_sdk_core::OrderKind::Sell,
+        Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")?,
+        18,
+        Address::new("0x6b175474e89094c44da98b954eedeac495271d0f")?,
+        18,
+        cow_sdk_core::Amount::new("1000000000000000000")?,
+    );
 
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
