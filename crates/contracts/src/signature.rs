@@ -10,10 +10,12 @@ use crate::{
 };
 
 /// EIP-1271 success magic value.
+#[doc(alias = "magic-value")]
 pub const EIP1271_MAGICVALUE: &str = "0x1626ba7e";
 const EIP1271_IS_VALID_SIGNATURE_ABI_JSON: &str = r#"[{"type":"function","name":"isValidSignature","inputs":[{"name":"hash","type":"bytes32"},{"name":"signature","type":"bytes"}],"outputs":[{"name":"","type":"bytes4"}],"stateMutability":"view"}]"#;
 
 /// Supported `CoW` signing schemes.
+#[doc(alias = "Scheme")]
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]

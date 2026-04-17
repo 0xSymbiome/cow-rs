@@ -185,6 +185,8 @@ impl fmt::Display for HexData {
 }
 
 /// Validated 32-byte app-data hash string.
+#[doc(alias = "app-data")]
+#[doc(alias = "AppData")]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct AppDataHash(String);
@@ -313,6 +315,9 @@ pub type BlockHash = Hash32;
 pub type OrderDigest = Hash32;
 
 /// Validated `CoW` order UID string.
+#[doc(alias = "UID")]
+#[doc(alias = "Uid")]
+#[doc(alias = "order-id")]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct OrderUid(String);
