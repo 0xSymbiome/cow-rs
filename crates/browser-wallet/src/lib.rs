@@ -29,6 +29,8 @@
 //! [docs/audit/browser-wallet-alloy-dependency-audit.md](https://github.com/cowdao-grants/cow-rs/blob/main/docs/audit/browser-wallet-alloy-dependency-audit.md).
 //! No `alloy_*` type appears in any `pub fn` signature across the workspace.
 
+#![warn(missing_docs)]
+
 /// Browser-wallet error and RPC failure types.
 pub mod error;
 /// Session state, event-log types, and provider-driven session synchronization.

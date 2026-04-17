@@ -4,6 +4,8 @@
 //! and typed error boundaries in a dedicated crate instead of widening the root
 //! facade with GraphQL transport behavior.
 
+#![warn(missing_docs)]
+
 /// Typed subgraph client configuration and query execution.
 pub mod api;
 /// Typed subgraph transport, GraphQL, and decoding errors.

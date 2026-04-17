@@ -1,3 +1,15 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::iter_on_single_items,
+    clippy::missing_const_for_fn,
+    clippy::option_if_let_else,
+    clippy::redundant_clone,
+    clippy::too_many_lines,
+    clippy::unnested_or_patterns,
+    reason = "pedantic, nursery, and perf lints acceptable in test helper code"
+)]
+
 use cow_sdk_contracts::{
     Eip1271SignatureData, Order, OrderFlags, Signature, SigningScheme, TokenRegistry,
     TradeExecution, TradeFlags, decode_eip1271_signature_data, decode_order, decode_order_flags,

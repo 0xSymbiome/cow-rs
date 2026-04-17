@@ -1,6 +1,7 @@
 //! Low-level `CoW` Protocol contract helpers for hashing, settlement encoding,
 //! signature verification, and deployment metadata.
 
+#![warn(missing_docs)]
 #![allow(
     clippy::redundant_pub_crate,
     reason = "items inside the private `primitives` module carry explicit `pub(crate)` markers as cross-module use documentation and as defensive scoping if the module is ever promoted to `pub mod`"

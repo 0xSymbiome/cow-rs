@@ -1,3 +1,17 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::derive_partial_eq_without_eq,
+    clippy::iter_on_single_items,
+    clippy::missing_const_for_fn,
+    clippy::option_if_let_else,
+    clippy::redundant_clone,
+    clippy::too_many_lines,
+    clippy::uninlined_format_args,
+    clippy::unnested_or_patterns,
+    reason = "pedantic, nursery, style, and perf lints acceptable in test helper code"
+)]
+
 use num_bigint::BigUint;
 
 use cow_sdk_core::{

@@ -490,12 +490,13 @@ mod tests {
     }
 
     fn encode_u256_word(value: &str) -> [u8; 32] {
-        let parsed = if let Some(stripped) = value.strip_prefix("0x") {
-            BigUint::parse_bytes(stripped.as_bytes(), 16)
-        } else {
-            BigUint::parse_bytes(value.as_bytes(), 10)
-        }
-        .unwrap();
+        let parsed = value
+            .strip_prefix("0x")
+            .map_or_else(
+                || BigUint::parse_bytes(value.as_bytes(), 10),
+                |stripped| BigUint::parse_bytes(stripped.as_bytes(), 16),
+            )
+            .unwrap();
         let bytes = parsed.to_bytes_be();
         let mut out = [0u8; 32];
         out[32 - bytes.len()..].copy_from_slice(&bytes);

@@ -304,7 +304,7 @@ mod tests {
             encode_fixed_bytes([0xaa, 0xbb, 0xcc])[..3],
             [0xaa, 0xbb, 0xcc]
         );
-        let expected_string_hash: [u8; 32] = Keccak256::digest("hello".as_bytes()).into();
+        let expected_string_hash: [u8; 32] = Keccak256::digest(b"hello").into();
         assert_eq!(encode_string_hash("hello"), expected_string_hash);
     }
 

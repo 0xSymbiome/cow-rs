@@ -6,6 +6,8 @@
 //! can transport typed-data payloads without reconstructing structure from
 //! field-name heuristics.
 
+#![warn(missing_docs)]
+
 /// Order-cancellation signing helpers.
 pub mod cancellation;
 /// Typed-data domain and payload construction helpers.

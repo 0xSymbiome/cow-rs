@@ -41,6 +41,7 @@
 //! ```compile_fail
 //! use cow_sdk::SubgraphApi;
 //! ```
+#![warn(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 /// Curated re-exports for the default `cow-sdk` facade.

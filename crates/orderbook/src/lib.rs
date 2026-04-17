@@ -1,6 +1,8 @@
 //! Typed `CoW` Protocol orderbook transport models, request policy, and response
 //! transforms.
 
+#![warn(missing_docs)]
+
 /// High-level orderbook client with chain/env-aware endpoint resolution.
 pub mod api;
 /// Typed orderbook client errors.

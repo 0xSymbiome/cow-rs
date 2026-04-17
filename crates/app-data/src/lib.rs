@@ -1,6 +1,8 @@
 //! `CoW` Protocol app-data generation, schema validation, CID conversion, and
 //! IPFS transport seams.
 
+#![warn(missing_docs)]
+
 /// CID conversion helpers for app-data hashes and documents.
 pub mod cid;
 /// App-data crate error types.

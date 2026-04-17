@@ -1,6 +1,8 @@
 //! Shared `CoW` Protocol core types, validation helpers, configuration, and
 //! runtime-neutral traits used across the `cow-sdk` crate family.
 
+#![warn(missing_docs)]
+
 /// Environment, address-book, and HTTP client policy types shared across crates.
 pub mod config;
 /// Common validation and configuration errors used by the foundational crates.
