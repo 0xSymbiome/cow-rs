@@ -169,17 +169,24 @@ where
         adjusted.slippage_bps = Some(crate::default_slippage_bps(chain_id, true));
     }
 
-    let options = ProtocolOptions {
-        env: adjusted.env.or(trader.env),
-        settlement_contract_override: adjusted
-            .settlement_contract_override
-            .clone()
-            .or_else(|| trader.settlement_contract_override.clone()),
-        eth_flow_contract_override: adjusted
-            .eth_flow_contract_override
-            .clone()
-            .or_else(|| trader.eth_flow_contract_override.clone()),
-    };
+    let mut options = ProtocolOptions::new();
+    if let Some(env) = adjusted.env.or(trader.env) {
+        options = options.with_env(env);
+    }
+    if let Some(overrides) = adjusted
+        .settlement_contract_override
+        .clone()
+        .or_else(|| trader.settlement_contract_override.clone())
+    {
+        options = options.with_settlement_contract_override(overrides);
+    }
+    if let Some(overrides) = adjusted
+        .eth_flow_contract_override
+        .clone()
+        .or_else(|| trader.eth_flow_contract_override.clone())
+    {
+        options = options.with_eth_flow_contract_override(overrides);
+    }
     let order_to_sign = get_order_to_sign(
         crate::order::OrderToSignParams {
             chain_id,
@@ -409,17 +416,25 @@ pub(crate) fn protocol_options_for_partial_order(
     params: &OrderTraderParameters,
     trader: &PartialTraderParameters,
 ) -> ProtocolOptions {
-    ProtocolOptions {
-        env: params.env.or(trader.env),
-        settlement_contract_override: params
-            .settlement_contract_override
-            .clone()
-            .or_else(|| trader.settlement_contract_override.clone()),
-        eth_flow_contract_override: params
-            .eth_flow_contract_override
-            .clone()
-            .or_else(|| trader.eth_flow_contract_override.clone()),
+    let mut options = ProtocolOptions::new();
+    if let Some(env) = params.env.or(trader.env) {
+        options = options.with_env(env);
     }
+    if let Some(overrides) = params
+        .settlement_contract_override
+        .clone()
+        .or_else(|| trader.settlement_contract_override.clone())
+    {
+        options = options.with_settlement_contract_override(overrides);
+    }
+    if let Some(overrides) = params
+        .eth_flow_contract_override
+        .clone()
+        .or_else(|| trader.eth_flow_contract_override.clone())
+    {
+        options = options.with_eth_flow_contract_override(overrides);
+    }
+    options
 }
 
 fn resolve_settlement_address(

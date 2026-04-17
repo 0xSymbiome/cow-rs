@@ -922,6 +922,7 @@ impl<'de> Deserialize<'de> for AtomAmount {
 /// human-oriented conversion paths. Wire formats continue to carry the
 /// atomic value as a base-10 string; this type is intended for in-process
 /// typing and ergonomic conversions rather than transport.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DecimalAmount {
     atoms: BigUint,

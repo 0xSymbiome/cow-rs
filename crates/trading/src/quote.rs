@@ -351,19 +351,23 @@ struct QuoteResultInputs<'a> {
 }
 
 fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, TradingError> {
-    let options = ProtocolOptions {
-        env: Some(inputs.resolved_env),
-        settlement_contract_override: inputs
-            .trade_parameters
-            .settlement_contract_override
-            .clone()
-            .or_else(|| inputs.trader.settlement_contract_override.clone()),
-        eth_flow_contract_override: inputs
-            .trade_parameters
-            .eth_flow_contract_override
-            .clone()
-            .or_else(|| inputs.trader.eth_flow_contract_override.clone()),
-    };
+    let mut options = ProtocolOptions::new().with_env(inputs.resolved_env);
+    if let Some(overrides) = inputs
+        .trade_parameters
+        .settlement_contract_override
+        .clone()
+        .or_else(|| inputs.trader.settlement_contract_override.clone())
+    {
+        options = options.with_settlement_contract_override(overrides);
+    }
+    if let Some(overrides) = inputs
+        .trade_parameters
+        .eth_flow_contract_override
+        .clone()
+        .or_else(|| inputs.trader.eth_flow_contract_override.clone())
+    {
+        options = options.with_eth_flow_contract_override(overrides);
+    }
     let order_to_sign = get_order_to_sign(
         crate::order::OrderToSignParams {
             chain_id: inputs.trader.chain_id,

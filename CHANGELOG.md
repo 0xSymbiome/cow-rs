@@ -101,6 +101,17 @@ unreleased public contract of the repository.
   and on-chain cancellation) stay fully usable. A runnable
   `typestate_builder_example` demonstrates both terminals without requiring
   external credentials.
+- Forward-compatible `#[non_exhaustive]` audit on the public configuration
+  and context-override DTO families. `ApiContext`, `ProtocolOptions`, and
+  `HttpClientPolicy` in `cow-sdk-core`, `ApiContextOverride` and
+  `EnvBaseUrlOverrides` in `cow-sdk-orderbook`, and `DecimalAmount` in
+  `cow-sdk-core` all carry `#[non_exhaustive]` at the struct head so the
+  SDK can extend these surfaces with additive fields without a major
+  semver bump. Ergonomic constructors (`ApiContext::new` plus
+  `with_base_urls`/`with_api_key`, `ProtocolOptions::new` plus
+  `with_env`/`with_settlement_contract_override`/`with_eth_flow_contract_override`,
+  `ApiContextOverride::new` plus `with_chain_id`/`with_env`/`with_base_urls`/`with_api_key`)
+  replace struct-literal construction for downstream callers.
 
 ### Security
 

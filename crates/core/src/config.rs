@@ -192,6 +192,7 @@ pub type ApiBaseUrls = BTreeMap<ChainId, String>;
 pub type AddressPerChain = BTreeMap<ChainId, Address>;
 
 /// Shared HTTP client policy used by transport-owning crates.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpClientPolicy {
     timeout: Option<Duration>,
@@ -269,7 +270,8 @@ impl HttpClientPolicy {
 }
 
 /// Protocol-wide address and environment overrides.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProtocolOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -283,7 +285,41 @@ pub struct ProtocolOptions {
     pub eth_flow_contract_override: Option<AddressPerChain>,
 }
 
+impl ProtocolOptions {
+    /// Creates an empty options bundle.
+    ///
+    /// Callers typically attach overrides through [`ProtocolOptions::with_env`],
+    /// [`ProtocolOptions::with_settlement_contract_override`], and
+    /// [`ProtocolOptions::with_eth_flow_contract_override`].
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns a copy of these options with an explicit environment override.
+    #[must_use]
+    pub const fn with_env(mut self, env: CowEnv) -> Self {
+        self.env = Some(env);
+        self
+    }
+
+    /// Returns a copy of these options with explicit settlement-contract overrides.
+    #[must_use]
+    pub fn with_settlement_contract_override(mut self, overrides: AddressPerChain) -> Self {
+        self.settlement_contract_override = Some(overrides);
+        self
+    }
+
+    /// Returns a copy of these options with explicit `EthFlow`-contract overrides.
+    #[must_use]
+    pub fn with_eth_flow_contract_override(mut self, overrides: AddressPerChain) -> Self {
+        self.eth_flow_contract_override = Some(overrides);
+        self
+    }
+}
+
 /// API routing context used by transport-owning crates.
+#[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiContext {
@@ -345,6 +381,35 @@ impl Default for ApiContext {
 }
 
 impl ApiContext {
+    /// Creates a routing context for the supplied chain and environment.
+    ///
+    /// Every optional field defaults to `None`; callers that need to override
+    /// the base-URL map or attach a partner API key can chain
+    /// [`ApiContext::with_base_urls`] and [`ApiContext::with_api_key`].
+    #[must_use]
+    pub const fn new(chain_id: SupportedChainId, env: CowEnv) -> Self {
+        Self {
+            chain_id,
+            env,
+            base_urls: None,
+            api_key: None,
+        }
+    }
+
+    /// Returns a copy of this context with an explicit base-URL override map.
+    #[must_use]
+    pub fn with_base_urls(mut self, base_urls: ApiBaseUrls) -> Self {
+        self.base_urls = Some(base_urls);
+        self
+    }
+
+    /// Returns a copy of this context with an attached partner API key.
+    #[must_use]
+    pub fn with_api_key(mut self, api_key: Redacted<String>) -> Self {
+        self.api_key = Some(api_key);
+        self
+    }
+
     /// Returns the configured partner API key after local header validation.
     ///
     /// # Errors

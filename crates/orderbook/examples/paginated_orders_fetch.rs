@@ -63,12 +63,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     mount_page(&server, &owner, PAGE_SIZE * 2, PAGE_SIZE, vec![]).await;
 
     let api = OrderBookApi::new_with_base_url(
-        ApiContext {
-            chain_id: SupportedChainId::GnosisChain,
-            env: CowEnv::Prod,
-            base_urls: None,
-            api_key: None,
-        },
+        ApiContext::new(SupportedChainId::GnosisChain, CowEnv::Prod),
         server.uri(),
     );
 

@@ -1020,12 +1020,7 @@ impl TradingSdk {
         let env = requested_env.unwrap_or(CowEnv::Prod);
 
         Ok(ResolvedOrderbookBinding {
-            client: Arc::new(OrderBookApi::new(ApiContext {
-                chain_id,
-                env,
-                base_urls: None,
-                api_key: None,
-            })),
+            client: Arc::new(OrderBookApi::new(ApiContext::new(chain_id, env))),
             chain_id,
             env,
         })

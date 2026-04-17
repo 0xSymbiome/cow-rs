@@ -30,14 +30,12 @@ fn uint256_word(value: &BigUint) -> String {
 #[test]
 fn presign_transaction_uses_zero_value_margin_and_settlement_override() {
     let signer = MockSigner::default();
-    let options = cow_sdk_core::ProtocolOptions {
-        env: Some(CowEnv::Staging),
-        settlement_contract_override: Some(AddressPerChain::from([(
+    let options = cow_sdk_core::ProtocolOptions::new()
+        .with_env(CowEnv::Staging)
+        .with_settlement_contract_override(AddressPerChain::from([(
             u64::from(SupportedChainId::Sepolia),
             address(CUSTOM_SETTLEMENT),
-        )])),
-        eth_flow_contract_override: None,
-    };
+        )]));
 
     let tx = get_pre_sign_transaction(
         &signer,
@@ -170,17 +168,16 @@ async fn ethflow_transaction_rejects_negative_quote_id_at_the_abi_boundary() {
 #[test]
 fn onchain_cancellation_routes_regular_orders_to_settlement_and_ethflow_orders_to_ethflow() {
     let signer = MockSigner::default();
-    let options = cow_sdk_core::ProtocolOptions {
-        env: Some(CowEnv::Staging),
-        settlement_contract_override: Some(AddressPerChain::from([(
+    let options = cow_sdk_core::ProtocolOptions::new()
+        .with_env(CowEnv::Staging)
+        .with_settlement_contract_override(AddressPerChain::from([(
             u64::from(SupportedChainId::Sepolia),
             address(CUSTOM_SETTLEMENT),
-        )])),
-        eth_flow_contract_override: Some(AddressPerChain::from([(
+        )]))
+        .with_eth_flow_contract_override(AddressPerChain::from([(
             u64::from(SupportedChainId::Sepolia),
             address(CUSTOM_ETHFLOW),
-        )])),
-    };
+        )]));
     let regular_tx = onchain_cancellation_transaction(
         &signer,
         SupportedChainId::Sepolia,

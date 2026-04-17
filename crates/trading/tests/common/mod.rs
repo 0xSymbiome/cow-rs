@@ -198,12 +198,7 @@ impl MockOrderbook {
         quote_response: OrderQuoteResponse,
     ) -> Self {
         Self {
-            context: ApiContext {
-                chain_id,
-                env,
-                base_urls: None,
-                api_key: None,
-            },
+            context: ApiContext::new(chain_id, env),
             quote_response,
             state: Arc::new(Mutex::new(MockOrderbookState {
                 order_id: Some(order_uid()),

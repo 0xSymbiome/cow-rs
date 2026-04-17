@@ -16,7 +16,23 @@ use std::sync::{Arc, Mutex};
 
 use serde_json::json;
 
-use cow_sdk_core::{Amount, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderBalance, OrderKind};
+use cow_sdk_core::{
+    Amount, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderBalance, OrderKind, ProtocolOptions,
+};
+
+fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParameters) -> ProtocolOptions {
+    let mut options = ProtocolOptions::new();
+    if let Some(env) = trader.env {
+        options = options.with_env(env);
+    }
+    if let Some(overrides) = trader.settlement_contract_override.clone() {
+        options = options.with_settlement_contract_override(overrides);
+    }
+    if let Some(overrides) = trader.eth_flow_contract_override.clone() {
+        options = options.with_eth_flow_contract_override(overrides);
+    }
+    options
+}
 use cow_sdk_trading::{
     LimitOrderAdvancedSettings, LimitTradeParameters, PartnerFeePolicy, PostTradeAdditionalParams,
     QuoteRequestOverride, SwapAdvancedSettings, build_app_data, get_quote_results,
@@ -484,11 +500,7 @@ async fn async_order_level_eip1271_verification_is_explicit_and_reuses_contract_
             verifier: verifier.clone(),
             signature: HexData::new("0x7e57c0de").unwrap(),
         },
-        Some(&cow_sdk_core::ProtocolOptions {
-            env: trader.env,
-            settlement_contract_override: trader.settlement_contract_override.clone(),
-            eth_flow_contract_override: trader.eth_flow_contract_override.clone(),
-        }),
+        Some(&protocol_options_from_trader(&trader)),
     )
     .await
     .expect("verification should succeed");
@@ -534,11 +546,7 @@ async fn order_level_eip1271_verification_surfaces_contract_failures_explicitly(
             verifier,
             signature: HexData::new("0x7e57c0de").unwrap(),
         },
-        Some(&cow_sdk_core::ProtocolOptions {
-            env: trader.env,
-            settlement_contract_override: trader.settlement_contract_override.clone(),
-            eth_flow_contract_override: trader.eth_flow_contract_override.clone(),
-        }),
+        Some(&protocol_options_from_trader(&trader)),
     )
     .await
     .expect_err("wrong magic value must fail");

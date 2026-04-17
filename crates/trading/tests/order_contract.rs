@@ -40,11 +40,7 @@ async fn unique_order_id_decrements_buy_amount_after_a_collision() {
     let checker = MockEthFlowChecker {
         results: Arc::new(Mutex::new(vec![true, false])),
     };
-    let options = ProtocolOptions {
-        env: Some(CowEnv::Prod),
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let options = ProtocolOptions::new().with_env(CowEnv::Prod);
 
     let generated = calculate_unique_order_id(chain_id, &order, Some(&checker), Some(&options))
         .await

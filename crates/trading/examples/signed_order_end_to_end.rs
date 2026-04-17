@@ -156,12 +156,7 @@ struct OrderbookState {
 impl ExampleOrderbook {
     fn new(chain_id: SupportedChainId, env: CowEnv, quote_response: OrderQuoteResponse) -> Self {
         Self {
-            context: ApiContext {
-                chain_id,
-                env,
-                base_urls: None,
-                api_key: None,
-            },
+            context: ApiContext::new(chain_id, env),
             quote_response,
             state: Mutex::new(OrderbookState::default()),
         }

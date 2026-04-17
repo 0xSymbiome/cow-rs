@@ -10,6 +10,7 @@ pub use cow_sdk_core::{
 };
 
 /// Partial override applied to an [`ApiContext`] when cloning an orderbook client.
+#[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiContextOverride {
@@ -25,6 +26,42 @@ pub struct ApiContextOverride {
     /// Replacement partner API key used for request headers and endpoint selection.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub api_key: Option<Redacted<String>>,
+}
+
+impl ApiContextOverride {
+    /// Creates an empty context override.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns a copy of this override with an explicit chain id.
+    #[must_use]
+    pub const fn with_chain_id(mut self, chain_id: SupportedChainId) -> Self {
+        self.chain_id = Some(chain_id);
+        self
+    }
+
+    /// Returns a copy of this override with an explicit environment.
+    #[must_use]
+    pub const fn with_env(mut self, env: CowEnv) -> Self {
+        self.env = Some(env);
+        self
+    }
+
+    /// Returns a copy of this override with an explicit base-URL override map.
+    #[must_use]
+    pub fn with_base_urls(mut self, base_urls: ApiBaseUrls) -> Self {
+        self.base_urls = Some(base_urls);
+        self
+    }
+
+    /// Returns a copy of this override with an attached partner API key.
+    #[must_use]
+    pub fn with_api_key(mut self, api_key: Redacted<String>) -> Self {
+        self.api_key = Some(api_key);
+        self
+    }
 }
 
 impl fmt::Debug for ApiContextOverride {
@@ -66,6 +103,7 @@ impl Serialize for ApiContextOverride {
 }
 
 /// Per-environment base URL overrides applied ahead of [`ApiContext`] resolution.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct EnvBaseUrlOverrides {
     /// Explicit production base URL.

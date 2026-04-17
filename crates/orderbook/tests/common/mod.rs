@@ -28,12 +28,7 @@ pub fn order_uid(value: &str) -> OrderUid {
 }
 
 pub fn default_context(chain_id: SupportedChainId, env: CowEnv) -> ApiContext {
-    ApiContext {
-        chain_id,
-        env,
-        base_urls: None,
-        api_key: None,
-    }
+    ApiContext::new(chain_id, env)
 }
 
 pub fn sample_order_uid() -> OrderUid {

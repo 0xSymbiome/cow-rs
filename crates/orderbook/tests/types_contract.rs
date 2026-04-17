@@ -37,12 +37,10 @@ fn quote_request_defaults_match_transport_contract() {
 
 #[test]
 fn quote_request_supports_buy_side_and_context_overrides() {
-    let override_context = ApiContextOverride {
-        chain_id: Some(SupportedChainId::Mainnet),
-        env: Some(CowEnv::Staging),
-        base_urls: None,
-        api_key: Some("partner-key".to_owned().into()),
-    };
+    let override_context = ApiContextOverride::new()
+        .with_chain_id(SupportedChainId::Mainnet)
+        .with_env(CowEnv::Staging)
+        .with_api_key("partner-key".to_owned().into());
 
     let request = OrderQuoteRequest::new(
         sample_owner(),

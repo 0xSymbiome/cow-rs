@@ -65,11 +65,10 @@ fn protocol_options_and_base_url_resolution_are_chain_aware() {
         1u64,
         Address::new("0xba3cb449bd2b4adddbc894d8697f5170800eadec").unwrap(),
     );
-    let options = ProtocolOptions {
-        env: Some(CowEnv::Staging),
-        settlement_contract_override: Some(settlement_override),
-        eth_flow_contract_override: Some(eth_flow_override),
-    };
+    let options = ProtocolOptions::new()
+        .with_env(CowEnv::Staging)
+        .with_settlement_contract_override(settlement_override)
+        .with_eth_flow_contract_override(eth_flow_override);
 
     let json = serde_json::to_value(&options).unwrap();
     let object = json.as_object().unwrap();
@@ -77,23 +76,14 @@ fn protocol_options_and_base_url_resolution_are_chain_aware() {
         assert!(object.contains_key(field));
     }
 
-    let gnosis_staging = ApiContext {
-        chain_id: SupportedChainId::GnosisChain,
-        env: CowEnv::Staging,
-        base_urls: None,
-        api_key: None,
-    };
+    let gnosis_staging = ApiContext::new(SupportedChainId::GnosisChain, CowEnv::Staging);
     assert_eq!(
         gnosis_staging.resolved_base_url().unwrap(),
         "https://barn.api.cow.fi/xdai"
     );
 
-    let partner = ApiContext {
-        chain_id: SupportedChainId::Base,
-        env: CowEnv::Prod,
-        base_urls: None,
-        api_key: Some("partner-key".to_owned().into()),
-    };
+    let partner = ApiContext::new(SupportedChainId::Base, CowEnv::Prod)
+        .with_api_key("partner-key".to_owned().into());
     assert_eq!(
         partner.resolved_base_url().unwrap(),
         "https://partners.cow.fi/base"
@@ -108,12 +98,8 @@ fn protocol_options_and_base_url_resolution_are_chain_aware() {
 
 #[test]
 fn api_context_debug_and_serialize_redact_partner_api_keys() {
-    let context = ApiContext {
-        chain_id: SupportedChainId::Base,
-        env: CowEnv::Prod,
-        base_urls: None,
-        api_key: Some("partner-key".to_owned().into()),
-    };
+    let context = ApiContext::new(SupportedChainId::Base, CowEnv::Prod)
+        .with_api_key("partner-key".to_owned().into());
 
     let debug = format!("{context:?}");
     let json = serde_json::to_value(&context).expect("api context serializes");
@@ -127,12 +113,8 @@ fn api_context_debug_and_serialize_redact_partner_api_keys() {
 
 #[test]
 fn invalid_partner_api_keys_fail_during_local_route_resolution() {
-    let context = ApiContext {
-        chain_id: SupportedChainId::Base,
-        env: CowEnv::Prod,
-        base_urls: None,
-        api_key: Some("partner\r\nkey".to_owned().into()),
-    };
+    let context = ApiContext::new(SupportedChainId::Base, CowEnv::Prod)
+        .with_api_key("partner\r\nkey".to_owned().into());
 
     let error = context
         .resolved_base_url()

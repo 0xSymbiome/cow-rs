@@ -186,11 +186,14 @@ fn protocol_options_for_chain(
     if env.is_none() && settlement_contract_override.is_none() {
         None
     } else {
-        Some(ProtocolOptions {
-            env,
-            settlement_contract_override,
-            eth_flow_contract_override: None,
-        })
+        let mut options = ProtocolOptions::new();
+        if let Some(env) = env {
+            options = options.with_env(env);
+        }
+        if let Some(overrides) = settlement_contract_override {
+            options = options.with_settlement_contract_override(overrides);
+        }
+        Some(options)
     }
 }
 

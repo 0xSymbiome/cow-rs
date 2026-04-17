@@ -53,17 +53,21 @@ where
     let orderbook_context = orderbook.context();
     let canonical_chain_id = orderbook_context.chain_id;
     let canonical_env = orderbook_context.env;
-    let options = ProtocolOptions {
-        env: Some(canonical_env),
-        settlement_contract_override: params
-            .settlement_contract_override
-            .clone()
-            .or_else(|| trader.settlement_contract_override.clone()),
-        eth_flow_contract_override: params
-            .eth_flow_contract_override
-            .clone()
-            .or_else(|| trader.eth_flow_contract_override.clone()),
-    };
+    let mut options = ProtocolOptions::new().with_env(canonical_env);
+    if let Some(overrides) = params
+        .settlement_contract_override
+        .clone()
+        .or_else(|| trader.settlement_contract_override.clone())
+    {
+        options = options.with_settlement_contract_override(overrides);
+    }
+    if let Some(overrides) = params
+        .eth_flow_contract_override
+        .clone()
+        .or_else(|| trader.eth_flow_contract_override.clone())
+    {
+        options = options.with_eth_flow_contract_override(overrides);
+    }
     let signing = sign_order_cancellations_async(
         std::slice::from_ref(&params.order_uid),
         canonical_chain_id,

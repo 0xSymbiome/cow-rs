@@ -72,11 +72,11 @@ async fn context_override_applies_base_urls_and_api_key_to_requests() {
     )]);
 
     let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
-        .with_context_override(ApiContextOverride {
-            base_urls: Some(base_urls),
-            api_key: Some("partner-key".to_owned().into()),
-            ..ApiContextOverride::default()
-        });
+        .with_context_override(
+            ApiContextOverride::new()
+                .with_base_urls(base_urls)
+                .with_api_key("partner-key".to_owned().into()),
+        );
 
     let version = api
         .get_version()
@@ -96,10 +96,9 @@ async fn context_override_applies_base_urls_and_api_key_to_requests() {
 #[tokio::test]
 async fn invalid_partner_api_key_fails_before_transport() {
     let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
-        .with_context_override(ApiContextOverride {
-            api_key: Some("partner\r\nkey".to_owned().into()),
-            ..ApiContextOverride::default()
-        });
+        .with_context_override(
+            ApiContextOverride::new().with_api_key("partner\r\nkey".to_owned().into()),
+        );
 
     let error = api
         .get_version()
@@ -123,10 +122,7 @@ fn explicit_env_base_url_override_precedes_context_base_urls() {
     )]);
 
     let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
-        .with_context_override(ApiContextOverride {
-            base_urls: Some(context_base_urls),
-            ..ApiContextOverride::default()
-        })
+        .with_context_override(ApiContextOverride::new().with_base_urls(context_base_urls))
         .with_env_base_url(CowEnv::Prod, "https://override.example/xdai/");
 
     assert_eq!(
@@ -240,10 +236,9 @@ async fn cloned_clients_share_the_same_instance_scoped_rate_limiter() {
 fn order_link_uses_chain_aware_urls_for_gnosis_and_mainnet() {
     let uid = sample_order_uid();
     let gnosis = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod));
-    let mainnet = gnosis.clone().with_context_override(ApiContextOverride {
-        chain_id: Some(SupportedChainId::Mainnet),
-        ..ApiContextOverride::default()
-    });
+    let mainnet = gnosis
+        .clone()
+        .with_context_override(ApiContextOverride::new().with_chain_id(SupportedChainId::Mainnet));
 
     assert_eq!(
         gnosis
@@ -623,12 +618,8 @@ async fn shared_client_fans_requests_across_multiple_orderbook_instances() {
     )]);
     let first_api = OrderBookApi::from_shared_client(
         shared.clone(),
-        cow_sdk_core::ApiContext {
-            chain_id: SupportedChainId::Mainnet,
-            env: CowEnv::Prod,
-            base_urls: Some(first_base_urls),
-            api_key: None,
-        },
+        cow_sdk_core::ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod)
+            .with_base_urls(first_base_urls),
     );
 
     let second_base_urls = std::collections::BTreeMap::from([(
@@ -637,12 +628,8 @@ async fn shared_client_fans_requests_across_multiple_orderbook_instances() {
     )]);
     let second_api = OrderBookApi::from_shared_client(
         shared,
-        cow_sdk_core::ApiContext {
-            chain_id: SupportedChainId::GnosisChain,
-            env: CowEnv::Prod,
-            base_urls: Some(second_base_urls),
-            api_key: None,
-        },
+        cow_sdk_core::ApiContext::new(SupportedChainId::GnosisChain, CowEnv::Prod)
+            .with_base_urls(second_base_urls),
     );
 
     let first_version = first_api

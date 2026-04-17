@@ -23,28 +23,24 @@ fn domain_resolution_honors_default_env_staging_and_override_precedence() {
     let default_domain = get_domain(SupportedChainId::Mainnet, None).unwrap();
     let staging_domain = get_domain(
         SupportedChainId::Mainnet,
-        Some(&ProtocolOptions {
-            env: Some(CowEnv::Staging),
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        }),
+        Some(&ProtocolOptions::new().with_env(CowEnv::Staging)),
     )
     .unwrap();
     let override_address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
     let override_domain = get_domain(
         SupportedChainId::Mainnet,
-        Some(&ProtocolOptions {
-            env: Some(CowEnv::Staging),
-            settlement_contract_override: Some(
-                [(
-                    u64::from(SupportedChainId::Mainnet),
-                    override_address.clone(),
-                )]
-                .into_iter()
-                .collect(),
-            ),
-            eth_flow_contract_override: None,
-        }),
+        Some(
+            &ProtocolOptions::new()
+                .with_env(CowEnv::Staging)
+                .with_settlement_contract_override(
+                    [(
+                        u64::from(SupportedChainId::Mainnet),
+                        override_address.clone(),
+                    )]
+                    .into_iter()
+                    .collect(),
+                ),
+        ),
     )
     .unwrap();
 

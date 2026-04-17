@@ -88,6 +88,7 @@ impl fmt::Debug for SubgraphConfigOverride {
 }
 
 /// Shared HTTP client policy for subgraph requests.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubgraphTransportPolicy {
     client: HttpClientPolicy,
