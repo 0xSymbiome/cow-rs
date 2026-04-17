@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use cow_sdk_core::Address;
+use cow_sdk_core::{Address, REDACTED_PLACEHOLDER, Redacted};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -44,8 +44,6 @@ pub const LATEST_USER_CONSENTS_METADATA_VERSION: &str = "0.1.0";
 pub type AppDataDoc = Value;
 /// Mutable JSON object used for nested `metadata` sections.
 pub type MetadataMap = Map<String, Value>;
-
-const REDACTED_SECRET: &str = "<redacted>";
 
 /// Semantic version for bundled app-data schemas.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -288,14 +286,14 @@ pub struct IpfsConfig {
         rename = "pinataApiKey",
         skip_serializing_if = "Option::is_none"
     )]
-    pub pinata_api_key: Option<String>,
+    pub pinata_api_key: Option<Redacted<String>>,
     /// Pinata API secret used by upload helpers.
     #[serde(
         default,
         rename = "pinataApiSecret",
         skip_serializing_if = "Option::is_none"
     )]
-    pub pinata_api_secret: Option<String>,
+    pub pinata_api_secret: Option<Redacted<String>>,
 }
 
 impl fmt::Debug for IpfsConfig {
@@ -306,11 +304,14 @@ impl fmt::Debug for IpfsConfig {
             .field("read_uri", &self.read_uri)
             .field(
                 "pinata_api_key",
-                &self.pinata_api_key.as_ref().map(|_| REDACTED_SECRET),
+                &self.pinata_api_key.as_ref().map(|_| REDACTED_PLACEHOLDER),
             )
             .field(
                 "pinata_api_secret",
-                &self.pinata_api_secret.as_ref().map(|_| REDACTED_SECRET),
+                &self
+                    .pinata_api_secret
+                    .as_ref()
+                    .map(|_| REDACTED_PLACEHOLDER),
             )
             .finish()
     }
@@ -333,10 +334,10 @@ impl Serialize for IpfsConfig {
             state.serialize_field("readUri", read_uri)?;
         }
         if self.pinata_api_key.is_some() {
-            state.serialize_field("pinataApiKey", REDACTED_SECRET)?;
+            state.serialize_field("pinataApiKey", REDACTED_PLACEHOLDER)?;
         }
         if self.pinata_api_secret.is_some() {
-            state.serialize_field("pinataApiSecret", REDACTED_SECRET)?;
+            state.serialize_field("pinataApiSecret", REDACTED_PLACEHOLDER)?;
         }
 
         state.end()
@@ -460,18 +461,24 @@ mod tests {
             uri: Some("https://ipfs.example".to_owned()),
             write_uri: Some("https://pinata.example".to_owned()),
             read_uri: Some("https://read.example".to_owned()),
-            pinata_api_key: Some("pinata-key".to_owned()),
-            pinata_api_secret: Some("pinata-secret".to_owned()),
+            pinata_api_key: Some("pinata-key".to_owned().into()),
+            pinata_api_secret: Some("pinata-secret".to_owned().into()),
         };
 
         let debug = format!("{config:?}");
         let json = serde_json::to_value(&config).expect("ipfs config serializes");
 
         assert!(debug.contains("IpfsConfig"));
-        assert!(debug.contains(REDACTED_SECRET));
+        assert!(debug.contains(REDACTED_PLACEHOLDER));
         assert!(!debug.contains("pinata-key"));
         assert!(!debug.contains("pinata-secret"));
-        assert_eq!(json["pinataApiKey"], serde_json::json!(REDACTED_SECRET));
-        assert_eq!(json["pinataApiSecret"], serde_json::json!(REDACTED_SECRET));
+        assert_eq!(
+            json["pinataApiKey"],
+            serde_json::json!(REDACTED_PLACEHOLDER)
+        );
+        assert_eq!(
+            json["pinataApiSecret"],
+            serde_json::json!(REDACTED_PLACEHOLDER)
+        );
     }
 }

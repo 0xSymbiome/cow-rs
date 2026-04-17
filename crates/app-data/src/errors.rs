@@ -40,4 +40,12 @@ pub enum AppDataError {
     /// Pinning or upload failed.
     #[error("pinning error: {0}")]
     Pinning(String),
+    /// The stringified app-data document exceeded the configured size ceiling.
+    #[error("app-data document is {actual_bytes} bytes which exceeds the {max_bytes}-byte limit")]
+    TooLarge {
+        /// Size of the stringified document in bytes.
+        actual_bytes: usize,
+        /// Configured size ceiling in bytes.
+        max_bytes: usize,
+    },
 }

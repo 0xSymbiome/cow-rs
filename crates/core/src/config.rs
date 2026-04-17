@@ -6,6 +6,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
     errors::{CoreError, ValidationError},
+    redaction::{REDACTED_PLACEHOLDER, Redacted},
     types::{Address, ChainId, TokenInfo},
 };
 
@@ -29,7 +30,6 @@ const VAULT_RELAYER_ADDRESS_STAGING: &str = "0xC7242d167563352E2BCA4d71C043fbe54
 const ETH_FLOW_ADDRESS: &str = "0xba3cb449bd2b4adddbc894d8697f5170800eadec";
 const ETH_FLOW_ADDRESS_STAGING: &str = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC";
 const TOKEN_LIST_IMAGES_PATH: &str = "https://files.cow.fi/token-lists/images";
-const REDACTED_SECRET: &str = "<redacted>";
 
 /// Supported `CoW` Protocol chain ids with explicit API configuration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -271,7 +271,7 @@ pub struct ApiContext {
     pub base_urls: Option<ApiBaseUrls>,
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Optional partner API key that switches resolution to partner endpoints.
-    pub api_key: Option<String>,
+    pub api_key: Option<Redacted<String>>,
 }
 
 impl fmt::Debug for ApiContext {
@@ -280,7 +280,10 @@ impl fmt::Debug for ApiContext {
             .field("chain_id", &self.chain_id)
             .field("env", &self.env)
             .field("base_urls", &self.base_urls)
-            .field("api_key", &self.api_key.as_ref().map(|_| REDACTED_SECRET))
+            .field(
+                "api_key",
+                &self.api_key.as_ref().map(|_| REDACTED_PLACEHOLDER),
+            )
             .finish()
     }
 }
@@ -298,7 +301,7 @@ impl Serialize for ApiContext {
             state.serialize_field("baseUrls", base_urls)?;
         }
         if self.api_key.is_some() {
-            state.serialize_field("apiKey", REDACTED_SECRET)?;
+            state.serialize_field("apiKey", REDACTED_PLACEHOLDER)?;
         }
 
         state.end()
@@ -325,10 +328,11 @@ impl ApiContext {
     /// API key cannot be encoded as an HTTP header value.
     pub fn validated_api_key(&self) -> Result<Option<&str>, ValidationError> {
         self.api_key
-            .as_deref()
+            .as_ref()
             .map(|api_key| {
-                validate_header_value(api_key, "api_key")?;
-                Ok(api_key)
+                let value = api_key.as_inner().as_str();
+                validate_header_value(value, "api_key")?;
+                Ok(value)
             })
             .transpose()
     }

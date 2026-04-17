@@ -95,8 +95,8 @@ fn fetch_policy_can_be_derived_without_leaking_pinning_credentials() {
         uri: Some("https://fallback.example.test/ipfs".to_owned()),
         read_uri: Some("https://read.example.test/ipfs/".to_owned()),
         write_uri: Some("https://write.example.test".to_owned()),
-        pinata_api_key: Some("pinata-key".to_owned()),
-        pinata_api_secret: Some("pinata-secret".to_owned()),
+        pinata_api_key: Some("pinata-key".to_owned().into()),
+        pinata_api_secret: Some("pinata-secret".to_owned().into()),
     };
     let policy = IpfsFetchPolicy::from_config(&config).expect("read config should be valid");
 

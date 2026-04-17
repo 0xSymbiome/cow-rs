@@ -44,6 +44,42 @@ unreleased public contract of the repository.
   and JSON reports.
 - Public performance posture note under `docs/performance.md` mapping the
   benchmarked hot paths and their reported ranges.
+- Typed `ValidTo` newtype in `cow-sdk-core` with absolute and relative-window
+  constructors plus exported `VALID_TO_MIN_RELATIVE_SECONDS` and
+  `VALID_TO_MAX_RELATIVE_SECONDS` constants. `LimitTradeParameters` exposes a
+  `valid_to_typed` accessor that resolves absolute or relative inputs through
+  the typed boundary so out-of-window deadlines fail closed with a typed
+  `ValidationError::ValidToOutOfRange` at the client edge.
+- Client-side 8 KB app-data size guard in `cow-sdk-app-data`. `get_app_data_info`
+  and `get_app_data_info_legacy` now reject oversized stringified documents
+  with a typed `AppDataError::TooLarge { actual_bytes, max_bytes }` before any
+  network round trip, matching the orderbook's documented 8192-byte ceiling
+  through the exported `APP_DATA_MAX_BYTES` constant.
+- `Redacted<T>` newtype in `cow-sdk-core` with `Debug`, `Display`, and
+  `Serialize` emitting the literal `[redacted]` placeholder and an
+  `into_inner` escape for deliberate access. Secret-bearing configuration
+  fields migrated to `Redacted<T>`: `ApiContext::api_key`,
+  `ApiContextOverride::api_key`, `IpfsConfig::pinata_api_key`,
+  `IpfsConfig::pinata_api_secret`, and the internal `SubgraphApi` API key.
+- Shared `reqwest::Client` constructors on the orderbook and subgraph
+  clients. `OrderBookApi::from_shared_client` plus its transport-policy
+  variant and `SubgraphApi::from_shared_client` plus its static-config and
+  transport-policy variants accept a pre-configured client so multi-chain
+  consumers can pool one TCP, TLS, and HTTP/2 connection cache across every
+  SDK instance they build. The default `new()` constructors stay unchanged
+  and keep conservative upstream defaults.
+
+### Security
+
+- Defense-in-depth redaction in transport error paths. `From<reqwest::Error>`
+  on the orderbook and subgraph error surfaces now calls
+  `reqwest::Error::without_url` and classifies failures through the
+  documented `is_timeout`, `is_connect`, `is_redirect`, `is_decode`,
+  `is_body`, `is_builder`, `is_request`, and `is_status` set, so partner
+  routes and their query-string API keys cannot leak through error
+  `Display` output. The `Redacted<T>` newtype and the config-layer
+  migrations above keep the configuration surface redacted even before a
+  request is built.
 
 ### Changed
 

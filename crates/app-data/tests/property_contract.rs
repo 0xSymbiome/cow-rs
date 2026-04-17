@@ -394,22 +394,22 @@ fn upload_helpers_require_non_empty_credentials_before_transport() {
         let config = match seed % 4 {
             0 => IpfsConfig {
                 pinata_api_key: None,
-                pinata_api_secret: Some("secret".to_owned()),
+                pinata_api_secret: Some("secret".to_owned().into()),
                 ..IpfsConfig::default()
             },
             1 => IpfsConfig {
-                pinata_api_key: Some(String::new()),
-                pinata_api_secret: Some("secret".to_owned()),
+                pinata_api_key: Some(String::new().into()),
+                pinata_api_secret: Some("secret".to_owned().into()),
                 ..IpfsConfig::default()
             },
             2 => IpfsConfig {
-                pinata_api_key: Some("key".to_owned()),
+                pinata_api_key: Some("key".to_owned().into()),
                 pinata_api_secret: None,
                 ..IpfsConfig::default()
             },
             _ => IpfsConfig {
-                pinata_api_key: Some("key".to_owned()),
-                pinata_api_secret: Some(String::new()),
+                pinata_api_key: Some("key".to_owned().into()),
+                pinata_api_secret: Some(String::new().into()),
                 ..IpfsConfig::default()
             },
         };

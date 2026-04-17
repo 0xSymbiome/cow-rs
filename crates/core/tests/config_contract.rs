@@ -92,7 +92,7 @@ fn protocol_options_and_base_url_resolution_are_chain_aware() {
         chain_id: SupportedChainId::Base,
         env: CowEnv::Prod,
         base_urls: None,
-        api_key: Some("partner-key".to_owned()),
+        api_key: Some("partner-key".to_owned().into()),
     };
     assert_eq!(
         partner.resolved_base_url().unwrap(),
@@ -112,16 +112,16 @@ fn api_context_debug_and_serialize_redact_partner_api_keys() {
         chain_id: SupportedChainId::Base,
         env: CowEnv::Prod,
         base_urls: None,
-        api_key: Some("partner-key".to_owned()),
+        api_key: Some("partner-key".to_owned().into()),
     };
 
     let debug = format!("{context:?}");
     let json = serde_json::to_value(&context).expect("api context serializes");
 
     assert!(debug.contains("ApiContext"));
-    assert!(debug.contains("<redacted>"));
+    assert!(debug.contains("[redacted]"));
     assert!(!debug.contains("partner-key"));
-    assert_eq!(json["apiKey"], serde_json::json!("<redacted>"));
+    assert_eq!(json["apiKey"], serde_json::json!("[redacted]"));
     assert_eq!(json["chainId"], serde_json::json!(8453));
 }
 
@@ -131,7 +131,7 @@ fn invalid_partner_api_keys_fail_during_local_route_resolution() {
         chain_id: SupportedChainId::Base,
         env: CowEnv::Prod,
         base_urls: None,
-        api_key: Some("partner\r\nkey".to_owned()),
+        api_key: Some("partner\r\nkey".to_owned().into()),
     };
 
     let error = context

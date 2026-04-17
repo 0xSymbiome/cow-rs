@@ -960,3 +960,91 @@ struct TokensByVolumeResponse {
 struct TokenByVolume {
     symbol: String,
 }
+
+#[tokio::test]
+async fn shared_client_fans_queries_across_multiple_subgraph_instances() {
+    let first = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": {
+                "totals": [
+                    {
+                        "tokens": "100",
+                        "orders": "200",
+                        "traders": "50",
+                        "settlements": "150",
+                        "volumeUsd": "1000",
+                        "volumeEth": "2000",
+                        "feesUsd": "10",
+                        "feesEth": "20"
+                    }
+                ]
+            }
+        })))
+        .expect(1)
+        .mount(&first)
+        .await;
+
+    let second = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": {
+                "totals": [
+                    {
+                        "tokens": "300",
+                        "orders": "400",
+                        "traders": "75",
+                        "settlements": "250",
+                        "volumeUsd": "3000",
+                        "volumeEth": "4000",
+                        "feesUsd": "30",
+                        "feesEth": "40"
+                    }
+                ]
+            }
+        })))
+        .expect(1)
+        .mount(&second)
+        .await;
+
+    let shared = reqwest::Client::builder()
+        .user_agent(DEFAULT_SUBGRAPH_USER_AGENT)
+        .build()
+        .expect("reqwest client must build for the shared-client regression test");
+
+    let first_base_urls: SubgraphApiBaseUrls =
+        std::iter::once((SupportedChainId::Mainnet, Some(first.uri()))).collect();
+    let first_api = SubgraphApi::from_shared_client_with_config(
+        shared.clone(),
+        "FakeApiKey",
+        SubgraphConfig {
+            chain_id: SupportedChainId::Mainnet,
+            base_urls: Some(first_base_urls),
+        },
+    );
+
+    let second_base_urls: SubgraphApiBaseUrls =
+        std::iter::once((SupportedChainId::GnosisChain, Some(second.uri()))).collect();
+    let second_api = SubgraphApi::from_shared_client_with_config(
+        shared,
+        "FakeApiKey",
+        SubgraphConfig {
+            chain_id: SupportedChainId::GnosisChain,
+            base_urls: Some(second_base_urls),
+        },
+    );
+
+    let first_totals = first_api
+        .get_totals()
+        .await
+        .expect("first shared-client query must succeed");
+    let second_totals = second_api
+        .get_totals()
+        .await
+        .expect("second shared-client query must succeed");
+
+    assert_eq!(first_totals.tokens, "100");
+    assert_eq!(second_totals.tokens, "300");
+}

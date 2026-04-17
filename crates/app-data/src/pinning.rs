@@ -56,12 +56,14 @@ pub fn pin_json_in_pinata_ipfs(
 ) -> Result<Value, AppDataError> {
     let pinata_api_key = ipfs_config
         .pinata_api_key
-        .as_deref()
+        .as_ref()
+        .map(|value| value.as_inner().as_str())
         .filter(|value| !value.is_empty())
         .ok_or(AppDataError::MissingIpfsCredentials)?;
     let pinata_api_secret = ipfs_config
         .pinata_api_secret
-        .as_deref()
+        .as_ref()
+        .map(|value| value.as_inner().as_str())
         .filter(|value| !value.is_empty())
         .ok_or(AppDataError::MissingIpfsCredentials)?;
     let write_uri = ipfs_config

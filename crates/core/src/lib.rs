@@ -7,6 +7,8 @@
 pub mod config;
 /// Common validation and configuration errors used by the foundational crates.
 pub mod errors;
+/// Typed redaction wrapper for secret-bearing configuration fields.
+pub mod redaction;
 /// Runtime-neutral signer, provider, and typed-data trait contracts.
 pub mod traits;
 /// Strongly typed user-domain values used across the SDK surface.
@@ -19,6 +21,7 @@ pub use config::{
     settlement_contract_address, vault_relayer_address, wrapped_native_token,
 };
 pub use errors::{CoreError, ValidationError};
+pub use redaction::{REDACTED_PLACEHOLDER, Redacted};
 pub use traits::{
     AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle, GraphTransport,
     HttpTransport, PinningTransport, Provider, Signer, TransactionReceipt, TransactionRequest,
@@ -29,5 +32,6 @@ pub use types::{
     DecimalAmount, FeeComponent, Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, Order,
     OrderBalance, OrderDigest, OrderKind, OrderModel, OrderUid, QUOTE_AMOUNT_STAGE_NAMES,
     QuoteAmountsAndCosts, QuoteModel, QuoteRequest, QuoteResponse, SignedAmount, TokenInfo, Trade,
-    TradeModel, TransactionHash, UnsignedOrder, addresses_equal, token_id,
+    TradeModel, TransactionHash, UnsignedOrder, VALID_TO_MAX_RELATIVE_SECONDS,
+    VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, addresses_equal, token_id,
 };

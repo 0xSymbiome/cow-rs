@@ -54,6 +54,14 @@ or publication-readiness contract.
 - [Parity Sources](parity-sources.md)
 - [Parity Scope](parity-scope.md)
 
+## For Performance And Transport Tuning
+
+- [Performance Posture](performance.md)
+
+The performance posture records the benchmarked hot paths, reported measurement
+ranges, the shared `reqwest::Client` pattern, and the production-bot HTTP/2
+keep-alive recipe.
+
 ## For Focused Reviews And Design History
 
 - [Audits](audit/README.md)

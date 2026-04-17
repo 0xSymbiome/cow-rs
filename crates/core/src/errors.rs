@@ -54,6 +54,18 @@ pub enum ValidationError {
         /// Unsupported numeric chain id supplied by the caller.
         chain_id: u64,
     },
+    /// A `valid_to` duration fell outside the supported relative-window range.
+    #[error(
+        "valid_to duration {actual_seconds} is outside the supported relative range {min}..={max}"
+    )]
+    ValidToOutOfRange {
+        /// Requested duration in seconds.
+        actual_seconds: u64,
+        /// Minimum supported duration in seconds.
+        min: u32,
+        /// Maximum supported duration in seconds.
+        max: u32,
+    },
 }
 
 /// Top-level core crate error.

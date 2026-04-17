@@ -41,7 +41,7 @@ fn quote_request_supports_buy_side_and_context_overrides() {
         chain_id: Some(SupportedChainId::Mainnet),
         env: Some(CowEnv::Staging),
         base_urls: None,
-        api_key: Some("partner-key".to_owned()),
+        api_key: Some("partner-key".to_owned().into()),
     };
 
     let request = OrderQuoteRequest::new(
@@ -67,16 +67,22 @@ fn quote_request_supports_buy_side_and_context_overrides() {
     assert_eq!(value["verificationGasLimit"], json!(0));
     assert_eq!(override_context.env, Some(CowEnv::Staging));
     assert_eq!(override_context.chain_id, Some(SupportedChainId::Mainnet));
-    assert_eq!(override_context.api_key.as_deref(), Some("partner-key"));
+    assert_eq!(
+        override_context
+            .api_key
+            .as_ref()
+            .map(|value| value.as_inner().as_str()),
+        Some("partner-key")
+    );
 
     let debug = format!("{override_context:?}");
     assert!(debug.contains("ApiContextOverride"));
-    assert!(debug.contains("<redacted>"));
+    assert!(debug.contains("[redacted]"));
     assert!(!debug.contains("partner-key"));
 
     let override_value =
         serde_json::to_value(&override_context).expect("context override must serialize");
-    assert_eq!(override_value["apiKey"], json!("<redacted>"));
+    assert_eq!(override_value["apiKey"], json!("[redacted]"));
 }
 
 #[test]

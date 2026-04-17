@@ -70,8 +70,8 @@ fn legacy_pinning_uses_deterministic_body_and_returns_cid_and_digest() {
         ..AppDataParams::default()
     });
     let config = IpfsConfig {
-        pinata_api_key: Some("apikey".to_string()),
-        pinata_api_secret: Some("apiSecret".to_string()),
+        pinata_api_key: Some("apikey".to_string().into()),
+        pinata_api_secret: Some("apiSecret".to_string().into()),
         ..IpfsConfig::default()
     };
 

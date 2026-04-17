@@ -2,7 +2,7 @@ use num_bigint::BigInt;
 
 use cow_sdk_core::{
     Address, Amount, AppDataHash, AtomAmount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS,
-    MAX_VALID_TO_EPOCH, ProtocolOptions, SupportedChainId, UnsignedOrder,
+    MAX_VALID_TO_EPOCH, ProtocolOptions, SupportedChainId, UnsignedOrder, ValidTo,
     eth_flow_contract_address, wrapped_native_token,
 };
 use cow_sdk_orderbook::OrderQuoteResponse;
@@ -57,6 +57,28 @@ impl LimitTradeParameters {
     pub fn buy_atom_amount(&self) -> Result<AtomAmount, TradingError> {
         AtomAmount::try_from(&self.buy_amount)
             .map_err(|err| TradingError::InvalidInput(err.to_string()))
+    }
+
+    /// Resolves the order expiration into a typed [`ValidTo`].
+    ///
+    /// `valid_to` wins when present; otherwise `valid_for` is combined with
+    /// the supplied `now_epoch_seconds` through [`ValidTo::relative`]. Returns
+    /// `Ok(None)` when neither field is configured so callers can apply their
+    /// own default before signing.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::InvalidInput`] when a relative `valid_for`
+    /// value falls outside the supported duration window.
+    pub fn valid_to_typed(&self, now_epoch_seconds: u64) -> Result<Option<ValidTo>, TradingError> {
+        if let Some(absolute) = self.valid_to {
+            return Ok(Some(ValidTo::absolute(absolute)));
+        }
+        self.valid_for.map_or(Ok(None), |duration| {
+            ValidTo::relative(now_epoch_seconds, u64::from(duration))
+                .map(Some)
+                .map_err(|err| TradingError::InvalidInput(err.to_string()))
+        })
     }
 }
 

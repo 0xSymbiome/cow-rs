@@ -10,7 +10,7 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 use thiserror::Error;
 
-use crate::error::OrderbookError;
+use crate::error::{OrderbookError, classify_reqwest_error};
 
 #[cfg(not(target_arch = "wasm32"))]
 use futures_timer::Delay;
@@ -737,10 +737,7 @@ async fn send_request(
         request = request.timeout(timeout);
     }
 
-    let response = request
-        .send()
-        .await
-        .map_err(|error| format!("request failed: {error}"))?;
+    let response = request.send().await.map_err(classify_reqwest_error)?;
 
     let status = response.status();
     let status_text = status
@@ -755,7 +752,7 @@ async fn send_request(
     let body = response
         .bytes()
         .await
-        .map_err(|error| format!("response body read failed: {error}"))?
+        .map_err(classify_reqwest_error)?
         .to_vec();
 
     Ok(ResponseEnvelope {

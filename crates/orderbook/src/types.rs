@@ -5,7 +5,8 @@ use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError};
 
 pub use cow_sdk_core::{
     Address, ApiBaseUrls, ApiContext, AppDataHash, CowEnv, ENVS_LIST, EVM_NATIVE_CURRENCY_ADDRESS,
-    OrderBalance, OrderKind, OrderUid, QuoteAmountsAndCosts, SupportedChainId,
+    OrderBalance, OrderKind, OrderUid, QuoteAmountsAndCosts, REDACTED_PLACEHOLDER, Redacted,
+    SupportedChainId,
 };
 
 /// Partial override applied to an [`ApiContext`] when cloning an orderbook client.
@@ -23,7 +24,7 @@ pub struct ApiContextOverride {
     pub base_urls: Option<ApiBaseUrls>,
     /// Replacement partner API key used for request headers and endpoint selection.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub api_key: Option<String>,
+    pub api_key: Option<Redacted<String>>,
 }
 
 impl fmt::Debug for ApiContextOverride {
@@ -32,7 +33,10 @@ impl fmt::Debug for ApiContextOverride {
             .field("chain_id", &self.chain_id)
             .field("env", &self.env)
             .field("base_urls", &self.base_urls)
-            .field("api_key", &self.api_key.as_ref().map(|_| "<redacted>"))
+            .field(
+                "api_key",
+                &self.api_key.as_ref().map(|_| REDACTED_PLACEHOLDER),
+            )
             .finish()
     }
 }
@@ -54,7 +58,7 @@ impl Serialize for ApiContextOverride {
             state.serialize_field("baseUrls", base_urls)?;
         }
         if self.api_key.is_some() {
-            state.serialize_field("apiKey", "<redacted>")?;
+            state.serialize_field("apiKey", REDACTED_PLACEHOLDER)?;
         }
 
         state.end()

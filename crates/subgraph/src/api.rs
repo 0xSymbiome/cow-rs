@@ -3,13 +3,15 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use cow_sdk_core::{HttpClientPolicy, SupportedChainId};
+use cow_sdk_core::{HttpClientPolicy, Redacted, SupportedChainId};
 use reqwest::Client;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 
 use crate::{
-    error::{SubgraphError, SubgraphGraphQlError, SubgraphRequestErrorContext},
+    error::{
+        SubgraphError, SubgraphGraphQlError, SubgraphRequestErrorContext, classify_reqwest_error,
+    },
     queries::{LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY, TOTALS_QUERY},
     types::{
         LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphQueryRequest, Total,
@@ -131,7 +133,7 @@ impl SubgraphTransportPolicy {
 pub struct SubgraphApi {
     client: Client,
     config: SubgraphConfig,
-    api_key: String,
+    api_key: Redacted<String>,
     prod_config: SubgraphApiBaseUrls,
     transport_policy: SubgraphTransportPolicy,
 }
@@ -175,10 +177,64 @@ impl SubgraphApi {
         config: SubgraphConfig,
         transport_policy: SubgraphTransportPolicy,
     ) -> Self {
-        let api_key = api_key.into();
+        let api_key = Redacted::new(api_key.into());
 
         Self {
             client: build_client(transport_policy.client_policy()),
+            api_key,
+            prod_config: build_prod_config(),
+            config,
+            transport_policy,
+        }
+    }
+
+    /// Creates a subgraph client that shares an externally built [`reqwest::Client`].
+    ///
+    /// Multi-chain consumers can pool one `reqwest::Client` (and its TCP,
+    /// TLS, and HTTP/2 connection cache) across every client they build, which
+    /// is the recommended pattern for production deployments that fan queries
+    /// across several chains. The supplied client keeps any custom keep-alive,
+    /// timeout, or TLS configuration the caller chose; see
+    /// `docs/performance.md` for the production-bot HTTP/2 keep-alive recipe.
+    #[must_use]
+    pub fn from_shared_client(client: Client, api_key: impl Into<String>) -> Self {
+        Self::from_shared_client_with_config(client, api_key, SubgraphConfig::default())
+    }
+
+    /// Creates a subgraph client that shares an externally built [`reqwest::Client`] and
+    /// uses an explicit static configuration.
+    #[must_use]
+    pub fn from_shared_client_with_config(
+        client: Client,
+        api_key: impl Into<String>,
+        config: SubgraphConfig,
+    ) -> Self {
+        Self::from_shared_client_with_transport_policy(
+            client,
+            api_key,
+            config,
+            SubgraphTransportPolicy::default(),
+        )
+    }
+
+    /// Creates a subgraph client that shares an externally built [`reqwest::Client`] and
+    /// uses an explicit transport policy for request-timeout and retry behaviour.
+    ///
+    /// The shared client is reused verbatim so its keep-alive and connection
+    /// pool settings stay under caller control. Only the request-policy side
+    /// of the supplied [`SubgraphTransportPolicy`] drives retry, rate-limit,
+    /// and timeout decisions on this instance.
+    #[must_use]
+    pub fn from_shared_client_with_transport_policy(
+        client: Client,
+        api_key: impl Into<String>,
+        config: SubgraphConfig,
+        transport_policy: SubgraphTransportPolicy,
+    ) -> Self {
+        let api_key = Redacted::new(api_key.into());
+
+        Self {
+            client,
             api_key,
             prod_config: build_prod_config(),
             config,
@@ -393,7 +449,7 @@ impl SubgraphApi {
                 &public_api,
                 resolved_config.chain_id,
                 &request,
-                error.to_string(),
+                classify_reqwest_error(error),
             )
         })?;
 
@@ -403,7 +459,7 @@ impl SubgraphApi {
                 &public_api,
                 resolved_config.chain_id,
                 &request,
-                error.to_string(),
+                classify_reqwest_error(error),
             )
         })?;
 
@@ -465,7 +521,7 @@ impl SubgraphApi {
         }
 
         prod_subgraph_id(config.chain_id)
-            .map(|subgraph_id| build_prod_gateway_url(&self.api_key, subgraph_id))
+            .map(|subgraph_id| build_prod_gateway_url(self.api_key.as_inner(), subgraph_id))
             .ok_or(SubgraphError::UnsupportedNetwork {
                 chain_id: config.chain_id as u64,
             })

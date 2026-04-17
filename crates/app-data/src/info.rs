@@ -6,6 +6,13 @@ use crate::{
     cid_to_app_data_hex, validate_app_data_doc,
 };
 
+/// Client-side size ceiling for stringified app-data documents.
+///
+/// Matches the upstream orderbook's 8 KB app-data limit. Surfaces the limit as
+/// a typed [`AppDataError::TooLarge`] at the client boundary instead of
+/// waiting for the orderbook's 422 response.
+pub const APP_DATA_MAX_BYTES: usize = 8192;
+
 /// Source abstraction for app-data generation helpers.
 pub trait AppDataSource {
     /// Converts the source into a parsed document plus the serialized content string.
@@ -80,6 +87,7 @@ impl AppDataSource for String {
 /// CID conversion fails.
 pub fn get_app_data_info(source: impl AppDataSource) -> Result<AppDataInfo, AppDataError> {
     let (document, app_data_content) = source.into_document_and_content(true)?;
+    ensure_document_under_size_limit(&app_data_content, APP_DATA_MAX_BYTES)?;
     ensure_valid_document(&document)?;
 
     let digest = Keccak256::digest(app_data_content.as_bytes());
@@ -101,6 +109,7 @@ pub fn get_app_data_info(source: impl AppDataSource) -> Result<AppDataInfo, AppD
 /// legacy CID conversion fails.
 pub fn get_app_data_info_legacy(source: impl AppDataSource) -> Result<AppDataInfo, AppDataError> {
     let (document, app_data_content) = source.into_document_and_content(false)?;
+    ensure_document_under_size_limit(&app_data_content, APP_DATA_MAX_BYTES)?;
     ensure_valid_document(&document)?;
 
     let cid = app_data_bytes_to_legacy_cid(app_data_content.as_bytes())?;
@@ -122,6 +131,20 @@ pub fn stringify_deterministic(value: &AppDataDoc) -> Result<String, AppDataErro
     let mut rendered = String::new();
     write_canonical_json(value, &mut rendered)?;
     Ok(rendered)
+}
+
+const fn ensure_document_under_size_limit(
+    content: &str,
+    max_bytes: usize,
+) -> Result<(), AppDataError> {
+    let actual = content.len();
+    if actual > max_bytes {
+        return Err(AppDataError::TooLarge {
+            actual_bytes: actual,
+            max_bytes,
+        });
+    }
+    Ok(())
 }
 
 fn ensure_valid_document(document: &AppDataDoc) -> Result<(), AppDataError> {

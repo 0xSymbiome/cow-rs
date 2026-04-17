@@ -5,6 +5,7 @@ use std::sync::{
 use std::time::{Duration, Instant};
 
 use cow_sdk_core::HttpClientPolicy;
+use cow_sdk_orderbook::error::classify_reqwest_error;
 use cow_sdk_orderbook::request::{
     DEFAULT_ORDERBOOK_USER_AGENT, FetchParams, HttpMethod, OrderBookApiError,
     OrderBookTransportPolicy, RateLimitSettings, RequestPolicy, RequestRateLimiter, ResponseBody,
@@ -13,7 +14,7 @@ use cow_sdk_orderbook::request::{
 };
 use cow_sdk_orderbook::{
     DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_TOKENS_PER_INTERVAL,
-    INTERNAL_SERVER_ERROR, RETRYABLE_STATUS_CODES, TOO_MANY_REQUESTS,
+    INTERNAL_SERVER_ERROR, OrderbookError, RETRYABLE_STATUS_CODES, TOO_MANY_REQUESTS,
 };
 use reqwest::{
     Client,
@@ -627,5 +628,80 @@ async fn api_errors_keep_plain_text_payloads_out_of_the_json_decoder() {
             );
         }
         other => panic!("expected API error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn reqwest_error_classification_strips_url_query_and_host() {
+    let secret_host = "invalid-orderbook-host-for-redaction-regression.test";
+    let secret_key = "super-secret-api-key-should-never-leak";
+    let url = format!("http://{secret_host}/v1/auction?api_key={secret_key}");
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_millis(200))
+        .build()
+        .expect("test client must construct");
+    let raw_error = client
+        .get(&url)
+        .send()
+        .await
+        .expect_err("unreachable host must produce a reqwest error");
+
+    let classified = classify_reqwest_error(raw_error);
+    assert!(
+        !classified.contains(secret_host),
+        "classified transport error must strip the host: {classified}"
+    );
+    assert!(
+        !classified.contains(secret_key),
+        "classified transport error must strip query-string secrets: {classified}"
+    );
+    assert!(
+        !classified.contains("api_key"),
+        "classified transport error must strip query parameter names: {classified}"
+    );
+    assert!(
+        !classified.contains("http://"),
+        "classified transport error must not include the URL scheme prefix: {classified}"
+    );
+    let class_prefix = classified.split(':').next().unwrap();
+    assert!(
+        [
+            "timeout", "connect", "redirect", "decode", "body", "builder", "request", "status",
+            "other"
+        ]
+        .contains(&class_prefix),
+        "classification prefix must come from the documented reqwest is_* set, got {class_prefix}"
+    );
+}
+
+#[test]
+fn orderbook_transport_error_from_conversion_classifies_without_url_exposure() {
+    // Construct a builder-time reqwest error so conversion path is exercised
+    // deterministically without requiring the network.
+    let builder_error = reqwest::Url::parse("not a url").unwrap_err();
+    let message = format!("builder-error-fixture: {builder_error}");
+    // Route a synthetic reqwest error through OrderbookError by triggering an
+    // invalid URL inside reqwest::Client::get so the redaction path is covered.
+    let client = reqwest::Client::new();
+    let err = client
+        .request(reqwest::Method::GET, "http://[invalid ipv6]/")
+        .build()
+        .expect_err("malformed URL must produce a builder-layer reqwest error");
+
+    let orderbook_err: OrderbookError = err.into();
+    let rendered = format!("{orderbook_err}");
+    assert!(
+        !rendered.contains("invalid ipv6"),
+        "converted orderbook error must not expose URL fragments: {rendered} ({message})"
+    );
+    match orderbook_err {
+        OrderbookError::Transport(body) | OrderbookError::Serialization(body) => {
+            assert!(
+                !body.contains("http://"),
+                "wrapped body must not include the URL scheme prefix: {body}"
+            );
+        }
+        other => panic!("expected Transport or Serialization variant, got {other:?}"),
     }
 }

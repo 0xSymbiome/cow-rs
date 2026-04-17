@@ -29,8 +29,8 @@ pub use fetch::{
     fetch_doc_from_app_data_hex_with_policy, fetch_doc_from_cid, fetch_doc_from_cid_with_policy,
 };
 pub use info::{
-    AppDataSource, digest_from_cid, get_app_data_cid, get_app_data_content, get_app_data_info,
-    get_app_data_info_hex, get_app_data_info_legacy, stringify_deterministic,
+    APP_DATA_MAX_BYTES, AppDataSource, digest_from_cid, get_app_data_cid, get_app_data_content,
+    get_app_data_info, get_app_data_info_hex, get_app_data_info_legacy, stringify_deterministic,
 };
 pub use pinning::{
     IpfsUploadTransport, pin_json_in_pinata_ipfs, upload_metadata_doc_to_ipfs_legacy,

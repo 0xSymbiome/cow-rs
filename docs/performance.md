@@ -90,3 +90,89 @@ casing. Equality on the public address boundary is therefore `O(n)` byte
 comparisons without any intermediate allocation, which keeps token-registry
 lookups and order-owner checks out of the allocator on every signed-order
 path.
+
+## Shared HTTP Client Pattern
+
+Production deployments that issue orderbook or subgraph requests across
+several chains should pool a single [`reqwest::Client`] and share it with
+every SDK client they construct. A shared client keeps one TCP, TLS, and
+HTTP/2 connection cache warm across all routes, cuts first-byte latency for
+every subsequent request, and bounds the per-host file-descriptor footprint.
+
+Both public clients expose an additive constructor that accepts a
+pre-configured `reqwest::Client`:
+
+- [`cow_sdk_orderbook::OrderBookApi::from_shared_client`] and its
+  transport-policy variant reuse the supplied client verbatim so any custom
+  keep-alive, timeout, or TLS configuration is preserved.
+- [`cow_sdk_subgraph::SubgraphApi::from_shared_client`] and its transport-policy
+  and static-config variants do the same for the subgraph gateway surface.
+
+The default `new()` constructors stay unchanged; they build a conservative
+client that tracks `reqwest`'s upstream defaults and are the right choice for
+the common single-chain consumer.
+
+## HTTP/2 Keep-Alive Recipe
+
+HTTP/2 keep-alive is a user opt-in, not a default, because the right values
+depend on deployment topology. The recipe below reflects the typical
+production-bot configuration: one shared client, long-lived connections, and
+active HTTP/2 ping frames so the pool detects dead peers before user-facing
+requests inherit the latency.
+
+```rust,ignore
+use std::time::Duration;
+
+use cow_sdk_core::ApiContext;
+use cow_sdk_orderbook::{OrderBookApi, DEFAULT_ORDERBOOK_USER_AGENT};
+use cow_sdk_subgraph::SubgraphApi;
+
+fn build_shared_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .user_agent(DEFAULT_ORDERBOOK_USER_AGENT)
+        // Cap request-level latency so a stalled peer cannot hold a worker
+        // thread indefinitely.
+        .timeout(Duration::from_secs(10))
+        // HTTP/2 ping frames at a cadence well below the server keep-alive
+        // window keep idle connections observably healthy.
+        .http2_keep_alive_interval(Duration::from_secs(30))
+        .http2_keep_alive_timeout(Duration::from_secs(10))
+        .http2_keep_alive_while_idle(true)
+        // Connection pool tuning: keep idle connections warm for 5 minutes
+        // and cap concurrency per host so pool growth is predictable.
+        .pool_idle_timeout(Duration::from_secs(300))
+        .pool_max_idle_per_host(16)
+        // TCP keep-alive at the socket layer catches half-open NAT entries
+        // that never surface an HTTP/2 PING failure.
+        .tcp_keepalive(Duration::from_secs(60))
+        .build()
+        .expect("shared client configuration must build")
+}
+
+fn assemble_sdk_clients(
+    shared: reqwest::Client,
+    orderbook_context: ApiContext,
+    subgraph_api_key: impl Into<String>,
+) -> (OrderBookApi, SubgraphApi) {
+    let orderbook = OrderBookApi::from_shared_client(shared.clone(), orderbook_context);
+    let subgraph = SubgraphApi::from_shared_client(shared, subgraph_api_key);
+    (orderbook, subgraph)
+}
+```
+
+### Knob Summary
+
+| Setting | Purpose |
+| --- | --- |
+| `timeout` | Upper bound on end-to-end request latency before the call fails. |
+| `http2_keep_alive_interval` | Cadence of HTTP/2 PING frames on open connections. |
+| `http2_keep_alive_timeout` | Grace period before a missing PING ack closes the connection. |
+| `http2_keep_alive_while_idle` | Enables keep-alive even for connections with no active streams. |
+| `pool_idle_timeout` | Longest an idle connection stays warm before eviction. |
+| `pool_max_idle_per_host` | Cap on idle connections retained per destination host. |
+| `tcp_keepalive` | Socket-layer keep-alive for catching half-open NAT entries. |
+| `user_agent` | Stable identifier sent on every request so operators can correlate traffic. |
+
+All settings above are operator opt-ins; the SDK's default constructors keep
+upstream `reqwest` defaults so single-chain consumers and short-lived
+scripts stay simple.

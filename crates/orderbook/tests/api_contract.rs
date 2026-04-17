@@ -74,7 +74,7 @@ async fn context_override_applies_base_urls_and_api_key_to_requests() {
     let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
         .with_context_override(ApiContextOverride {
             base_urls: Some(base_urls),
-            api_key: Some("partner-key".to_owned()),
+            api_key: Some("partner-key".to_owned().into()),
             ..ApiContextOverride::default()
         });
 
@@ -84,14 +84,20 @@ async fn context_override_applies_base_urls_and_api_key_to_requests() {
         .expect("context override request should succeed");
 
     assert_eq!(version, "v1.2.3");
-    assert_eq!(api.context().api_key.as_deref(), Some("partner-key"));
+    assert_eq!(
+        api.context()
+            .api_key
+            .as_ref()
+            .map(|value| value.as_inner().as_str()),
+        Some("partner-key")
+    );
 }
 
 #[tokio::test]
 async fn invalid_partner_api_key_fails_before_transport() {
     let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
         .with_context_override(ApiContextOverride {
-            api_key: Some("partner\r\nkey".to_owned()),
+            api_key: Some("partner\r\nkey".to_owned().into()),
             ..ApiContextOverride::default()
         });
 
@@ -586,4 +592,68 @@ async fn get_order_status_route_is_typed() {
         status.kind,
         cow_sdk_orderbook::CompetitionOrderStatusKind::Open
     );
+}
+
+#[tokio::test]
+async fn shared_client_fans_requests_across_multiple_orderbook_instances() {
+    let first = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/version"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("shared-client-first"))
+        .expect(1)
+        .mount(&first)
+        .await;
+
+    let second = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/version"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("shared-client-second"))
+        .expect(1)
+        .mount(&second)
+        .await;
+
+    let shared = reqwest::Client::builder()
+        .user_agent(DEFAULT_ORDERBOOK_USER_AGENT)
+        .build()
+        .expect("reqwest client must build for the shared-client regression test");
+
+    let first_base_urls = std::collections::BTreeMap::from([(
+        u64::from(SupportedChainId::Mainnet),
+        format!("{}/", first.uri()),
+    )]);
+    let first_api = OrderBookApi::from_shared_client(
+        shared.clone(),
+        cow_sdk_core::ApiContext {
+            chain_id: SupportedChainId::Mainnet,
+            env: CowEnv::Prod,
+            base_urls: Some(first_base_urls),
+            api_key: None,
+        },
+    );
+
+    let second_base_urls = std::collections::BTreeMap::from([(
+        u64::from(SupportedChainId::GnosisChain),
+        format!("{}/", second.uri()),
+    )]);
+    let second_api = OrderBookApi::from_shared_client(
+        shared,
+        cow_sdk_core::ApiContext {
+            chain_id: SupportedChainId::GnosisChain,
+            env: CowEnv::Prod,
+            base_urls: Some(second_base_urls),
+            api_key: None,
+        },
+    );
+
+    let first_version = first_api
+        .get_version()
+        .await
+        .expect("first shared-client request must succeed");
+    let second_version = second_api
+        .get_version()
+        .await
+        .expect("second shared-client request must succeed");
+
+    assert_eq!(first_version, "shared-client-first");
+    assert_eq!(second_version, "shared-client-second");
 }

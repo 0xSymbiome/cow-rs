@@ -2,6 +2,7 @@ use cow_sdk_core::{
     Address, Amount, Amounts, AppDataHex, AtomAmount, Costs, DecimalAmount, FeeComponent, Hash32,
     HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderBalance, OrderKind, OrderModel, OrderUid,
     QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteModel, SignedAmount, UnsignedOrder,
+    VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
     addresses_equal, token_id,
 };
 use num_bigint::BigUint;
@@ -220,6 +221,60 @@ fn typed_atom_and_decimal_amounts_expose_semantic_accessors() {
 
     let clamped = DecimalAmount::from_whole_approx(-0.5, 18);
     assert_eq!(clamped.atoms(), &BigUint::from(0u32));
+}
+
+#[test]
+fn valid_to_absolute_accepts_any_representable_epoch() {
+    let absolute = ValidTo::absolute(1_800_000_000);
+    assert_eq!(absolute.as_u32(), 1_800_000_000);
+    assert_eq!(absolute.as_u64(), 1_800_000_000);
+
+    let converted: u32 = absolute.into();
+    assert_eq!(converted, 1_800_000_000);
+
+    let via_from: ValidTo = 2_000_000_000u32.into();
+    assert_eq!(via_from, ValidTo::absolute(2_000_000_000));
+}
+
+#[test]
+fn valid_to_relative_rejects_values_outside_the_supported_window() {
+    let now = 1_800_000_000u64;
+
+    let min = VALID_TO_MIN_RELATIVE_SECONDS;
+    let max = VALID_TO_MAX_RELATIVE_SECONDS;
+
+    let at_min = ValidTo::relative(now, u64::from(min)).expect("min must be accepted");
+    assert_eq!(at_min.as_u64(), now + u64::from(min));
+
+    let at_max = ValidTo::relative(now, u64::from(max)).expect("max must be accepted");
+    assert_eq!(
+        at_max.as_u64(),
+        (now + u64::from(max)).min(u64::from(u32::MAX))
+    );
+
+    match ValidTo::relative(now, u64::from(min) - 1) {
+        Err(err) => {
+            let validation: ValidationError = match err {
+                cow_sdk_core::CoreError::Validation(v) => v,
+                other => panic!("expected validation error, got {other:?}"),
+            };
+            assert!(matches!(
+                validation,
+                ValidationError::ValidToOutOfRange { .. }
+            ));
+        }
+        Ok(value) => panic!("sub-minimum duration must fail closed, got {value:?}"),
+    }
+
+    match ValidTo::relative(now, u64::from(max) + 1) {
+        Err(err) => {
+            assert!(matches!(
+                err,
+                cow_sdk_core::CoreError::Validation(ValidationError::ValidToOutOfRange { .. })
+            ));
+        }
+        Ok(value) => panic!("above-maximum duration must fail closed, got {value:?}"),
+    }
 }
 
 #[test]

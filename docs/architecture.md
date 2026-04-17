@@ -114,6 +114,16 @@ that own those behaviors. For subgraph access, stable production metadata and
 typed request failures expose only redacted or non-secret route identity while
 keeping explicit override support.
 
+Production deployments that issue requests across several chains can pool a
+single `reqwest::Client` across every orderbook and subgraph instance they
+build. `OrderBookApi::from_shared_client` and
+`SubgraphApi::from_shared_client` accept a pre-configured client, keep any
+custom keep-alive or TLS settings intact, and leave the default `new()`
+constructors unchanged for single-chain consumers. The
+[Performance Posture](performance.md) records the recommended HTTP/2
+keep-alive recipe, shared-client usage pattern, and the knob summary that
+accompanies each opt-in setting.
+
 ### Workflow Ownership
 
 `cow-sdk-trading` owns quote-to-order orchestration. It composes lower-level

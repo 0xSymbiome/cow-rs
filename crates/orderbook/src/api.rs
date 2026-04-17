@@ -72,6 +72,53 @@ impl OrderBookApi {
         }
     }
 
+    /// Creates a client that shares an externally built [`reqwest::Client`].
+    ///
+    /// Multi-chain consumers can pool one `reqwest::Client` (and its TCP,
+    /// TLS, and HTTP/2 connection cache) across every `OrderBookApi` instance
+    /// they construct, which is the recommended pattern for production bots
+    /// that issue requests on behalf of several chains or trading accounts.
+    /// The supplied client keeps any custom keep-alive, timeout, or TLS
+    /// configuration the caller chose; see `docs/performance.md` for the
+    /// production-bot HTTP/2 keep-alive recipe.
+    #[must_use]
+    pub fn from_shared_client(client: Client, context: ApiContext) -> Self {
+        let transport_policy = OrderBookTransportPolicy::default();
+        let rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
+
+        Self {
+            client,
+            context,
+            transport_policy,
+            rate_limiter,
+            env_base_url_overrides: EnvBaseUrlOverrides::default(),
+        }
+    }
+
+    /// Creates a client that shares an externally built [`reqwest::Client`] and uses an
+    /// explicit transport policy for request-timeout and retry behaviour.
+    ///
+    /// The shared client is reused verbatim so its keep-alive and connection
+    /// pool settings stay under caller control. Only the request-policy side
+    /// of the supplied [`OrderBookTransportPolicy`] drives retry, rate-limit,
+    /// and timeout decisions on this instance.
+    #[must_use]
+    pub fn from_shared_client_with_transport_policy(
+        client: Client,
+        context: ApiContext,
+        transport_policy: OrderBookTransportPolicy,
+    ) -> Self {
+        let rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
+
+        Self {
+            client,
+            context,
+            transport_policy,
+            rate_limiter,
+            env_base_url_overrides: EnvBaseUrlOverrides::default(),
+        }
+    }
+
     /// Creates a client with an explicit base URL override for the current environment.
     ///
     /// This override takes precedence over URLs resolved from [`ApiContext`].
