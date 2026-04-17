@@ -29,14 +29,17 @@ consumers plug the SDK into any async ecosystem they already run.
 
 ## Must Remain True
 
-- Public surface: every long-running public operation has a
-  `_with_cancellation` variant that accepts a reference to a
-  `cow_sdk_core::CancellationToken`; the non-cancellation wrappers build a
-  default token so existing callers keep their signatures. `OrderBookApi`
-  and `SubgraphApi` expose `from_shared_client` constructors plus a
-  transport-policy variant so consumers can pool one `reqwest::Client`
-  across chains and services. `SdkError::class()` returns a stable
-  `ErrorClass` partition.
+- Public surface: every long-running public operation on `OrderBookApi`,
+  `SubgraphApi`, and `TradingSdk` has a `_with_cancellation` variant that
+  accepts a reference to a `cow_sdk_core::CancellationToken`; the
+  non-cancellation wrappers build a default token and delegate to the
+  cancellation path so existing callers keep their signatures and
+  observe no behavioural change. Any new long-running public method
+  added to those surfaces ships with a matching `_with_cancellation`
+  variant at the same time. `OrderBookApi` and `SubgraphApi` expose
+  `from_shared_client` constructors plus a transport-policy variant so
+  consumers can pool one `reqwest::Client` across chains and services.
+  `SdkError::class()` returns a stable `ErrorClass` partition.
 - Runtime and support: the SDK does not call `tokio::spawn` from library
   code, does not require `rt-multi-thread`, and does not use
   `#[tokio::main]` anywhere in library sources. Cancellation is wired
