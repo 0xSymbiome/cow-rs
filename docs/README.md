@@ -10,6 +10,7 @@ and design history for `cow-rs`.
 - [Principles](principles.md)
 - [Architecture](architecture.md)
 - [Examples](examples.md)
+- [Provider Adapters](providers/README.md)
 
 Start with [Getting Started](getting-started.md) for the canonical onboarding
 path. Then use the other consumer pages to choose crates, understand public
@@ -63,3 +64,4 @@ ADRs capture durable design decisions and their rationale.
 ## For Contributors
 
 - [Contributing](../CONTRIBUTING.md)
+- [Code of Conduct](code-of-conduct.md)
