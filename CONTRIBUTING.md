@@ -4,6 +4,25 @@ Use this file for the public contribution contract. For crate boundaries,
 verification scope, and release posture, see the public docs hub in
 [docs/README.md](docs/README.md).
 
+## Code Of Conduct
+
+Participation in this repository is governed by the project
+[Code of Conduct](docs/code-of-conduct.md). Report unacceptable behavior
+through the channels named in that document.
+
+## Before Your First Contribution
+
+Install the pinned Rust toolchain and the clippy and rustfmt components
+so local checks match the repository CI lanes:
+
+```text
+rustup show
+rustup component add clippy rustfmt
+```
+
+`rustup show` picks up the pinned toolchain from `rust-toolchain.toml`,
+which keeps the local toolchain version aligned with the CI contract.
+
 ## Baseline Validation
 
 Run these checks before opening a pull request:
@@ -43,6 +62,19 @@ cd examples/wasm/browser-wallet-console && wasm-pack build --target web
 Update public docs when a change moves a public crate boundary, support claim,
 release contract, or verification story.
 
+Build the workspace documentation locally before opening a pull request that
+touches any rustdoc surface:
+
+```text
+cargo doc --workspace --no-deps
+```
+
+Use `--all-features` if the change touches feature-gated documentation:
+
+```text
+cargo doc --workspace --no-deps --all-features
+```
+
 ## Branch Naming
 
 Use one focused branch per change set.
@@ -68,6 +100,31 @@ and any follow-up work that remains out of scope.
 
 Request review from repository maintainers once the branch is ready for
 review. Update the branch in place if review identifies follow-up fixes.
+
+## Required Status Checks By Path
+
+The repository CI lanes gate merge on the `ci.yml` aggregate status
+check plus the path-filtered end-to-end lanes below. Branch-protection
+configuration reflects the same list on the public fork target and is
+maintained by repository administrators.
+
+| Lane | Workflow | Blocks PRs that touch |
+| --- | --- | --- |
+| Core CI aggregate | `.github/workflows/ci.yml` (`ci-success`) | every pull request |
+| Browser wallet end-to-end | `.github/workflows/browser-wallet-e2e.yml` | `crates/browser-wallet/**`, `examples/wasm/browser-wallet-console/**`, `e2e/browser-wallet/**`, and any workspace change that pulls the browser-wallet path (`crates/core/**`, `crates/sdk/**`, `Cargo.lock`, `Cargo.toml`, `rust-toolchain.toml`) |
+| SDK verification end-to-end | `.github/workflows/sdk-verification-e2e.yml` | `examples/wasm/sdk-verification-console/**`, `e2e/sdk-verification/**`, and every workspace crate that the verification console exercises (`crates/app-data/**`, `crates/contracts/**`, `crates/core/**`, `crates/orderbook/**`, `crates/sdk/**`, `crates/signing/**`, `crates/trading/**`, `Cargo.lock`, `Cargo.toml`, `rust-toolchain.toml`) |
+
+The path filters on each workflow keep the end-to-end lanes off PRs
+that cannot plausibly regress the covered surface, so workflows only
+run (and only block) when the change touches code that the lane
+exercises.
+
+Repository administrators maintain the required-status-check set on
+the protected branches so the browser-wallet-e2e and
+sdk-verification-e2e lanes block merge whenever a PR matches the
+paths listed above. Contributors do not need to configure this; the
+path filters keep the lanes deterministic, and the branch-protection
+list enforces the merge gate.
 
 ## Merge Policy
 

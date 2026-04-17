@@ -50,6 +50,28 @@ Include as much of the following as you can:
 - reproduction steps or proof of concept
 - suggested mitigation if you already have one
 
+## Response Timeline
+
+Reports filed through the private channels above follow this response
+posture as a best-effort service-level target:
+
+- **Initial acknowledgement**: within 5 business days.
+- **Triage and reproduction**: within 14 calendar days of acknowledgement,
+  including a preliminary severity call and an indication of whether the
+  report is in scope.
+- **Coordinated disclosure window**: typically 30 to 90 days from triage
+  to public disclosure, depending on severity, mitigation complexity, and
+  any dependent upstream releases. Deep or high-severity issues may
+  require an extended window; if so, maintainers communicate the new
+  target with the reporter.
+- **Fix delivery**: security fixes ship through the normal release flow
+  with a `CHANGELOG.md` entry, and, where applicable, a private advisory
+  or coordinated announcement alongside the release.
+
+If a report has not received an acknowledgement within the window above,
+re-send the advisory through the same private channel and include a note
+that the initial message appears to have been missed.
+
 ## Disclosure Expectations
 
 - Keep the report private until maintainers confirm a fix or mitigation path.
