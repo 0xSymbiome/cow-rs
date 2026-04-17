@@ -62,6 +62,14 @@ The performance posture records the benchmarked hot paths, reported measurement
 ranges, the shared `reqwest::Client` pattern, and the production-bot HTTP/2
 keep-alive recipe.
 
+## For Observability
+
+- [Observability](observability.md)
+
+The observability page documents the opt-in `tracing` feature family, the
+subscriber setup, the complete structured-field registry, and the
+`SdkError::class` classification surface used by downstream telemetry.
+
 ## For Focused Reviews And Design History
 
 - [Audits](audit/README.md)

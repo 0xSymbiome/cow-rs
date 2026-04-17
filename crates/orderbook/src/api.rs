@@ -244,6 +244,18 @@ impl OrderBookApi {
     /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
     /// call, or any transport/decoding error returned by the orderbook
     /// request helpers.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.context().chain_id,
+                env = ?self.context().env,
+                endpoint = "/api/v1/version",
+                method = "GET",
+            ),
+        ),
+    )]
     pub async fn get_version_with_cancellation(
         &self,
         token: &cow_sdk_core::CancellationToken,

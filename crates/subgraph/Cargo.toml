@@ -20,6 +20,10 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 [lints]
 workspace = true
 
+[features]
+default = []
+tracing = ["dep:tracing"]
+
 [dependencies]
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 serde = { workspace = true, features = ["derive"] }
@@ -27,6 +31,7 @@ serde_json.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 tokio-util.workspace = true
+tracing = { workspace = true, optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = { workspace = true, features = ["json", "rustls"] }

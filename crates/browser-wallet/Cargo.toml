@@ -20,6 +20,10 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 [lints]
 workspace = true
 
+[features]
+default = []
+tracing = ["dep:tracing"]
+
 [dependencies]
 alloy-dyn-abi.workspace = true
 alloy-json-abi.workspace = true
@@ -31,6 +35,7 @@ num-bigint.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+tracing = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2.17", features = ["js"] }

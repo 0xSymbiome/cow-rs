@@ -477,6 +477,16 @@ impl TradingSdk {
     ///
     /// Returns [`TradingError::Cancelled`] when `token` fires during the
     /// call, or any error surfaced by the underlying quote flow.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.env,
+                endpoint = "trading.quote_only",
+            ),
+        ),
+    )]
     pub async fn get_quote_only_with_cancellation(
         &self,
         mut params: TradeParameters,

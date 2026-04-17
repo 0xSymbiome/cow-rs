@@ -3,6 +3,7 @@
 //! The facade remains a re-export layer. Package-specific implementation details stay in the
 //! leaf crates that own them.
 
+pub use crate::{ErrorClass, SdkError};
 pub use cow_sdk_app_data::{
     AppDataDoc, AppDataError, AppDataInfo, AppDataParams, CidMode, IpfsConfig, IpfsFetchTransport,
     IpfsUploadResult, IpfsUploadTransport, PartnerFee, PartnerFeePolicy, SchemaVersion,

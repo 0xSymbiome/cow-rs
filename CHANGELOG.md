@@ -112,6 +112,26 @@ unreleased public contract of the repository.
   `with_env`/`with_settlement_contract_override`/`with_eth_flow_contract_override`,
   `ApiContextOverride::new` plus `with_chain_id`/`with_env`/`with_base_urls`/`with_api_key`)
   replace struct-literal construction for downstream callers.
+- Opt-in `tracing` feature family across the public crate graph. Every
+  published leaf crate now exposes a `tracing` feature that pulls
+  `tracing = { version = "0.1", default-features = false, features = ["attributes"] }`
+  as an optional dependency, and the facade `cow-sdk/tracing` feature
+  activates the leaves in one step. Representative `_with_cancellation`
+  entry points on the orderbook, subgraph, and trading surfaces are
+  annotated with `#[cfg_attr(feature = "tracing", tracing::instrument(...))]`
+  using the documented field registry (`chain`, `env`, `endpoint`,
+  `method`, and related safe identifiers) so host applications can route
+  structured spans into their own subscriber. With the feature off the
+  SDK emits zero spans and incurs no dependency or runtime cost.
+- `SdkError::class() -> ErrorClass` classification helper on the facade
+  aggregate. Every variant of the facade error family resolves to one of
+  `Validation`, `Transport`, `Remote`, `Signing`, `Cancelled`, or
+  `Internal` so downstream telemetry layers can partition failures
+  without pattern-matching every nested variant by hand. The new
+  `docs/observability.md` page ships the complete structured-field
+  registry, baseline `tracing-subscriber` setup, OpenTelemetry notes, and
+  an explicit reminder that secret-bearing fields are never emitted
+  through SDK spans.
 - Cooperative cancellation support on long-running SDK operations.
   `cow-sdk-core` re-exports `tokio_util::sync::CancellationToken` as
   `cow_sdk_core::CancellationToken` so every public crate routes

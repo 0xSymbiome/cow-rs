@@ -88,3 +88,114 @@ pub enum SdkError {
     #[error("browser wallet error: {0}")]
     BrowserWallet(#[from] cow_sdk_browser_wallet::BrowserWalletError),
 }
+
+/// Coarse-grained classification surface for [`SdkError`].
+///
+/// Downstream telemetry layers partition failures through this class set
+/// without pattern-matching every nested variant by hand. Retry policies
+/// typically only retry [`ErrorClass::Transport`] and
+/// [`ErrorClass::Remote`]; the other classes signal caller-side or
+/// protocol-level conditions that benefit from different recovery paths.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ErrorClass {
+    /// Caller-side input failed a client-side validation boundary.
+    Validation,
+    /// A transport-layer failure occurred before a complete response was received.
+    Transport,
+    /// The remote endpoint returned a structured error response.
+    Remote,
+    /// A signing, provider, or cryptographic helper surfaced an error.
+    Signing,
+    /// A long-running operation was cancelled through a cooperative token.
+    Cancelled,
+    /// An internal invariant or helper contract was violated.
+    Internal,
+}
+
+impl SdkError {
+    /// Returns the coarse-grained class for this error.
+    ///
+    /// The classification is exhaustive: every supported variant resolves to
+    /// one of the [`ErrorClass`] buckets without falling through to a
+    /// default arm, so downstream telemetry layers can rely on the mapping
+    /// staying stable across releases.
+    #[must_use]
+    pub const fn class(&self) -> ErrorClass {
+        match self {
+            Self::Types(error) => classify_core(error),
+            Self::Signing(_) => ErrorClass::Signing,
+            Self::AppData(error) => classify_app_data(error),
+            Self::Contracts(_) => ErrorClass::Signing,
+            Self::Orderbook(error) => classify_orderbook(error),
+            Self::Trading(error) => classify_trading(error),
+            #[cfg(feature = "browser-wallet")]
+            Self::BrowserWallet(_) => ErrorClass::Signing,
+        }
+    }
+}
+
+const fn classify_core(error: &cow_sdk_core::CoreError) -> ErrorClass {
+    match error {
+        cow_sdk_core::CoreError::Validation(_) | cow_sdk_core::CoreError::MissingBaseUrl { .. } => {
+            ErrorClass::Validation
+        }
+        cow_sdk_core::CoreError::Cancelled => ErrorClass::Cancelled,
+        // Serialization and transport-contract failures plus any future
+        // additive variants signal invariant violations, so they are
+        // classified as internal.
+        _ => ErrorClass::Internal,
+    }
+}
+
+const fn classify_app_data(error: &cow_sdk_app_data::AppDataError) -> ErrorClass {
+    match error {
+        cow_sdk_app_data::AppDataError::InvalidAppDataHex
+        | cow_sdk_app_data::AppDataError::InvalidCid
+        | cow_sdk_app_data::AppDataError::InvalidSchemaVersion(_)
+        | cow_sdk_app_data::AppDataError::UnknownSchemaVersion(_)
+        | cow_sdk_app_data::AppDataError::MissingSchemaVersion
+        | cow_sdk_app_data::AppDataError::InvalidAppDataProvided(_)
+        | cow_sdk_app_data::AppDataError::MissingIpfsCredentials
+        | cow_sdk_app_data::AppDataError::TooLarge { .. } => ErrorClass::Validation,
+        cow_sdk_app_data::AppDataError::Transport(_)
+        | cow_sdk_app_data::AppDataError::Pinning(_) => ErrorClass::Transport,
+        // Json, Schema, Calculation failures plus any future additive
+        // variants signal invariant violations and classify as internal.
+        _ => ErrorClass::Internal,
+    }
+}
+
+const fn classify_orderbook(error: &cow_sdk_orderbook::OrderbookError) -> ErrorClass {
+    match error {
+        cow_sdk_orderbook::OrderbookError::Core(core_error) => classify_core(core_error),
+        cow_sdk_orderbook::OrderbookError::Api(_) => ErrorClass::Remote,
+        cow_sdk_orderbook::OrderbookError::Transport(_) => ErrorClass::Transport,
+        cow_sdk_orderbook::OrderbookError::InvalidTradesQuery(_)
+        | cow_sdk_orderbook::OrderbookError::InvalidQuoteRequest(_) => ErrorClass::Validation,
+        cow_sdk_orderbook::OrderbookError::Cancelled => ErrorClass::Cancelled,
+        // Serialization and transform failures plus any future additive
+        // variants classify as internal.
+        _ => ErrorClass::Internal,
+    }
+}
+
+const fn classify_trading(error: &cow_sdk_trading::TradingError) -> ErrorClass {
+    match error {
+        cow_sdk_trading::TradingError::Core(core_error) => classify_core(core_error),
+        cow_sdk_trading::TradingError::AppData(app_data_error) => classify_app_data(app_data_error),
+        cow_sdk_trading::TradingError::Orderbook(orderbook_error) => {
+            classify_orderbook(orderbook_error)
+        }
+        cow_sdk_trading::TradingError::Contracts(_)
+        | cow_sdk_trading::TradingError::Signing(_)
+        | cow_sdk_trading::TradingError::Signer { .. }
+        | cow_sdk_trading::TradingError::Provider { .. } => ErrorClass::Signing,
+        cow_sdk_trading::TradingError::Cancelled => ErrorClass::Cancelled,
+        // Every remaining variant represents a caller-side input failure
+        // (missing parameters, validity conflicts, owner mismatches, or
+        // numeric input failures) and classifies as validation. Future
+        // additive validation variants fall through the same arm.
+        _ => ErrorClass::Validation,
+    }
+}

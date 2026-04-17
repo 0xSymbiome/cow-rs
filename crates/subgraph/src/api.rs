@@ -308,6 +308,17 @@ impl SubgraphApi {
     /// call, [`SubgraphError::NoTotalsFound`] when the response contains no
     /// totals rows, or any transport, HTTP, GraphQL, serialization, missing
     /// data, or unsupported-network error surfaced by the underlying query.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.config().chain_id,
+                endpoint = "subgraph.totals",
+                method = "POST",
+            ),
+        ),
+    )]
     pub async fn get_totals_with_cancellation(
         &self,
         token: &cow_sdk_core::CancellationToken,

@@ -27,6 +27,15 @@ workspace = true
 [features]
 default = []
 browser-wallet = ["dep:cow-sdk-browser-wallet"]
+tracing = [
+    "cow-sdk-app-data/tracing",
+    "cow-sdk-contracts/tracing",
+    "cow-sdk-core/tracing",
+    "cow-sdk-orderbook/tracing",
+    "cow-sdk-signing/tracing",
+    "cow-sdk-trading/tracing",
+    "cow-sdk-browser-wallet?/tracing",
+]
 
 [dependencies]
 cow-sdk-app-data = { path = "../app-data", version = "0.1.0" }

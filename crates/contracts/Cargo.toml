@@ -20,6 +20,10 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 [lints]
 workspace = true
 
+[features]
+default = []
+tracing = ["dep:tracing"]
+
 [dependencies]
 bytes.workspace = true
 cow-sdk-core = { path = "../core", version = "0.1.0" }
@@ -29,6 +33,7 @@ serde.workspace = true
 serde_json.workspace = true
 sha3.workspace = true
 thiserror.workspace = true
+tracing = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion.workspace = true
