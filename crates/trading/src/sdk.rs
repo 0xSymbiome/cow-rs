@@ -460,21 +460,44 @@ impl TradingSdk {
     /// request is invalid, or downstream quote construction fails.
     pub async fn get_quote_only(
         &self,
+        params: TradeParameters,
+        advanced_settings: Option<&SwapAdvancedSettings>,
+    ) -> Result<QuoteResults, TradingError> {
+        self.get_quote_only_with_cancellation(
+            params,
+            advanced_settings,
+            &cow_sdk_core::CancellationToken::new(),
+        )
+        .await
+    }
+
+    /// Fetches quote-only results with cooperative cancellation support.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Cancelled`] when `token` fires during the
+    /// call, or any error surfaced by the underlying quote flow.
+    pub async fn get_quote_only_with_cancellation(
+        &self,
         mut params: TradeParameters,
         advanced_settings: Option<&SwapAdvancedSettings>,
+        token: &cow_sdk_core::CancellationToken,
     ) -> Result<QuoteResults, TradingError> {
         self.ensure_ready_mode()?;
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let owner = self.resolve_quote_owner(&params, advanced_settings)?;
         let (quoter, orderbook) = self.resolve_quoter(owner, params.env)?;
 
-        get_quote_only(
-            &params,
-            &quoter,
-            advanced_settings,
-            orderbook.client.as_ref(),
-        )
-        .await
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(TradingError::Cancelled),
+            result = get_quote_only(
+                &params,
+                &quoter,
+                advanced_settings,
+                orderbook.client.as_ref(),
+            ) => result,
+        }
     }
 
     /// Fetches quote results for a sync signer.

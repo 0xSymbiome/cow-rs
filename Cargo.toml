@@ -61,6 +61,7 @@ reqwest = { version = "0.13.2", default-features = false }
 serde-wasm-bindgen = "0.6.5"
 sha3 = "0.11.0"
 tokio = { version = "1.51.1", default-features = false }
+tokio-util = { version = "0.7.18", default-features = false }
 wasm-bindgen = "0.2.117"
 wasm-bindgen-futures = "0.4.55"
 wasm-bindgen-test = "0.3.68"

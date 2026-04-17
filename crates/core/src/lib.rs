@@ -22,6 +22,14 @@ pub use config::{
 };
 pub use errors::{CoreError, ValidationError};
 pub use redaction::{REDACTED_PLACEHOLDER, Redacted};
+
+/// Cooperative cancellation token propagated through SDK long-running operations.
+///
+/// Re-exported from [`tokio_util::sync::CancellationToken`] so every public
+/// crate in the workspace routes cancellation through a single typed surface
+/// and avoids pulling a direct `tokio-util` dependency on the downstream
+/// consumer.
+pub use tokio_util::sync::CancellationToken;
 pub use traits::{
     AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle, GraphTransport,
     HttpTransport, PinningTransport, Provider, Signer, TransactionReceipt, TransactionRequest,

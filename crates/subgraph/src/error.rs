@@ -97,6 +97,9 @@ pub enum SubgraphError {
         /// Resolved request metadata captured at the failure boundary.
         context: Box<SubgraphRequestErrorContext>,
     },
+    /// A long-running subgraph operation was cancelled through a cooperative cancellation token.
+    #[error("subgraph operation was cancelled")]
+    Cancelled,
 }
 
 /// Classifies a `reqwest::Error`, strips any attached URL, and returns a sanitized message.

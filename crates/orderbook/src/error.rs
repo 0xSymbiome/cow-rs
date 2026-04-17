@@ -28,6 +28,9 @@ pub enum OrderbookError {
     /// Invalid normalized orderbook data encountered after a successful HTTP response.
     #[error("invalid transform: {0}")]
     InvalidTransform(String),
+    /// A long-running orderbook operation was cancelled through a cooperative cancellation token.
+    #[error("orderbook operation was cancelled")]
+    Cancelled,
 }
 
 impl From<OrderBookApiError> for OrderbookError {

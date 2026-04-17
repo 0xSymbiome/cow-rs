@@ -590,6 +590,22 @@ async fn get_order_status_route_is_typed() {
 }
 
 #[tokio::test]
+async fn get_version_with_cancellation_returns_cancelled_when_token_is_fired_before_send() {
+    let api = OrderBookApi::new(default_context(SupportedChainId::Mainnet, CowEnv::Prod));
+    let token = cow_sdk_core::CancellationToken::new();
+    token.cancel();
+
+    let error = api
+        .get_version_with_cancellation(&token)
+        .await
+        .expect_err("pre-cancelled token must produce a Cancelled error");
+    assert!(matches!(
+        error,
+        cow_sdk_orderbook::OrderbookError::Cancelled
+    ));
+}
+
+#[tokio::test]
 async fn shared_client_fans_requests_across_multiple_orderbook_instances() {
     let first = MockServer::start().await;
     Mock::given(method("GET"))

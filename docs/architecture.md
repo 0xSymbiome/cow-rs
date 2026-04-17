@@ -124,6 +124,21 @@ constructors unchanged for single-chain consumers. The
 keep-alive recipe, shared-client usage pattern, and the knob summary that
 accompanies each opt-in setting.
 
+### Cancellation
+
+Long-running public operations expose `_with_cancellation` variants that
+accept a `cow_sdk_core::CancellationToken` (a re-export of
+`tokio_util::sync::CancellationToken`). Every non-cancellation entry point
+is a thin wrapper that constructs a default token, so existing callers see
+no behavioural change. Internally the cancellation path is wired through a
+biased `tokio::select!` against `token.cancelled()`; when the token fires,
+the SDK drops the in-flight request future so the underlying socket is
+released promptly rather than waiting for the request deadline, and the
+typed `Cancelled` variant on `OrderbookError`, `SubgraphError`, and
+`TradingError` surfaces at the caller. Cancellation is cooperative: the
+caller owns the token, and every SDK instance that needs to propagate
+shutdown through a shared token simply clones it.
+
 ### Workflow Ownership
 
 `cow-sdk-trading` owns quote-to-order orchestration. It composes lower-level

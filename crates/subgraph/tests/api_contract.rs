@@ -962,6 +962,19 @@ struct TokenByVolume {
 }
 
 #[tokio::test]
+async fn get_totals_with_cancellation_returns_cancelled_when_token_is_fired_before_send() {
+    let api = SubgraphApi::new("FakeApiKey");
+    let token = cow_sdk_core::CancellationToken::new();
+    token.cancel();
+
+    let error = api
+        .get_totals_with_cancellation(&token)
+        .await
+        .expect_err("pre-cancelled token must produce a Cancelled error");
+    assert!(matches!(error, SubgraphError::Cancelled));
+}
+
+#[tokio::test]
 async fn shared_client_fans_queries_across_multiple_subgraph_instances() {
     let first = MockServer::start().await;
     Mock::given(method("POST"))

@@ -583,6 +583,36 @@ fn typestate_build_helper_only_produces_a_helper_mode_sdk_from_a_chain_only_stat
 }
 
 #[tokio::test]
+async fn get_quote_only_with_cancellation_returns_cancelled_when_token_is_fired_before_call() {
+    let orderbook = Arc::new(MockOrderbook::new(
+        SupportedChainId::Sepolia,
+        sell_quote_response(),
+    ));
+    let sdk = TradingSdk::new(
+        PartialTraderParameters {
+            chain_id: Some(SupportedChainId::Sepolia),
+            app_code: Some("cancellation-test".to_owned()),
+            owner: Some(address(OWNER)),
+            env: Some(CowEnv::Prod),
+            settlement_contract_override: None,
+            eth_flow_contract_override: None,
+        },
+        TradingSdkOptions::new().with_orderbook_client(orderbook),
+    )
+    .expect("trading sdk must construct for the cancellation test");
+
+    let trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
+    let token = cow_sdk_core::CancellationToken::new();
+    token.cancel();
+
+    let error = sdk
+        .get_quote_only_with_cancellation(trade, None, &token)
+        .await
+        .expect_err("pre-cancelled token must produce a Cancelled error");
+    assert!(matches!(error, cow_sdk_trading::TradingError::Cancelled));
+}
+
+#[tokio::test]
 async fn helper_only_sdk_refuses_quote_post_and_off_chain_cancel_flows() {
     let sdk = cow_sdk_trading::TradingSdkBuilder::new()
         .with_chain_id(SupportedChainId::Sepolia)

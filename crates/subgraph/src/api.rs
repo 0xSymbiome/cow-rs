@@ -296,8 +296,27 @@ impl SubgraphApi {
     /// totals rows, or any transport, HTTP, GraphQL, serialization, missing
     /// data, or unsupported-network error surfaced by the underlying query.
     pub async fn get_totals(&self) -> Result<Total, SubgraphError> {
-        self.get_totals_with_config(SubgraphConfigOverride::default())
+        self.get_totals_with_cancellation(&cow_sdk_core::CancellationToken::new())
             .await
+    }
+
+    /// Fetches the first totals row with cooperative cancellation support.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SubgraphError::Cancelled`] when `token` fires during the
+    /// call, [`SubgraphError::NoTotalsFound`] when the response contains no
+    /// totals rows, or any transport, HTTP, GraphQL, serialization, missing
+    /// data, or unsupported-network error surfaced by the underlying query.
+    pub async fn get_totals_with_cancellation(
+        &self,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<Total, SubgraphError> {
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(SubgraphError::Cancelled),
+            result = self.get_totals_with_config(SubgraphConfigOverride::default()) => result,
+        }
     }
 
     /// Fetches the first totals row with per-call configuration overrides.

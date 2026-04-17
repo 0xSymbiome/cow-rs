@@ -130,4 +130,7 @@ pub enum TradingError {
         "trading sdk is in helper-only mode; quote, post, and off-chain cancellation require a fully-configured sdk built through TradingSdkBuilder::build"
     )]
     HelperOnlyMode,
+    /// A long-running trading operation was cancelled through a cooperative cancellation token.
+    #[error("trading operation was cancelled")]
+    Cancelled,
 }

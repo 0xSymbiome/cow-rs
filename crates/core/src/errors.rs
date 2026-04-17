@@ -93,4 +93,7 @@ pub enum CoreError {
     /// A downstream transport implementation violated the core contract.
     #[error("transport contract violation: {0}")]
     TransportContract(String),
+    /// A long-running operation was cancelled through a cooperative cancellation token.
+    #[error("operation was cancelled")]
+    Cancelled,
 }

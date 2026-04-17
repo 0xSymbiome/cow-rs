@@ -228,8 +228,31 @@ impl OrderBookApi {
     /// Returns [`OrderbookError`] when request execution fails or the response
     /// body cannot be decoded as plain text.
     pub async fn get_version(&self) -> Result<String, OrderbookError> {
-        self.fetch_text(FetchParams::new("/api/v1/version", HttpMethod::Get))
+        self.get_version_with_cancellation(&cow_sdk_core::CancellationToken::new())
             .await
+    }
+
+    /// Fetches the orderbook API version string with cooperative cancellation support.
+    ///
+    /// The call returns [`OrderbookError::Cancelled`] if the supplied token
+    /// fires before a response is received. In-flight request futures are
+    /// dropped on cancellation so the underlying socket is released
+    /// promptly rather than waiting for the request deadline.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::Cancelled`] when `token` fires during the
+    /// call, or any transport/decoding error returned by the orderbook
+    /// request helpers.
+    pub async fn get_version_with_cancellation(
+        &self,
+        token: &cow_sdk_core::CancellationToken,
+    ) -> Result<String, OrderbookError> {
+        tokio::select! {
+            biased;
+            () = token.cancelled() => Err(OrderbookError::Cancelled),
+            result = self.fetch_text(FetchParams::new("/api/v1/version", HttpMethod::Get)) => result,
+        }
     }
 
     /// Fetches a quote for the provided request payload.

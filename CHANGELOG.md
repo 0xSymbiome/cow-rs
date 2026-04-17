@@ -112,6 +112,23 @@ unreleased public contract of the repository.
   `with_env`/`with_settlement_contract_override`/`with_eth_flow_contract_override`,
   `ApiContextOverride::new` plus `with_chain_id`/`with_env`/`with_base_urls`/`with_api_key`)
   replace struct-literal construction for downstream callers.
+- Cooperative cancellation support on long-running SDK operations.
+  `cow-sdk-core` re-exports `tokio_util::sync::CancellationToken` as
+  `cow_sdk_core::CancellationToken` so every public crate routes
+  cancellation through a single typed import. `OrderBookApi`,
+  `SubgraphApi`, and `TradingSdk` gain representative `_with_cancellation`
+  entry points (`OrderBookApi::get_version_with_cancellation`,
+  `SubgraphApi::get_totals_with_cancellation`, and
+  `TradingSdk::get_quote_only_with_cancellation`) whose internal
+  implementation threads a biased `tokio::select!` against
+  `token.cancelled()` so in-flight request futures are dropped promptly
+  and the underlying socket is released rather than waiting for the
+  request deadline. Existing non-cancellation methods are thin wrappers
+  that construct a default token. `CoreError`, `OrderbookError`,
+  `TradingError`, and `SubgraphError` gain a typed `Cancelled` variant so
+  cancellation surfaces at the caller without ambiguity, and
+  `docs/architecture.md` records the cancellation contract under a
+  dedicated Cancellation subsection.
 
 ### Security
 
