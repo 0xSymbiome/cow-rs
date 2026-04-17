@@ -1,0 +1,369 @@
+//! Signed order end-to-end journey against in-process mocks.
+//!
+//! This example shows the public `cow-sdk-trading` builder API plus the
+//! `post_swap_order_async` entry point that drives the full quote → sign →
+//! post journey against an injected [`OrderbookClient`] and an injected
+//! [`Signer`]. It runs without RPC credentials because every external seam
+//! (orderbook HTTP, signer, quote fixture) is supplied locally by the
+//! example.
+//!
+//! Run with:
+//!
+//! ```text
+//! cargo run -p cow-sdk-trading --example signed_order_end_to_end
+//! ```
+//!
+//! Expected output:
+//!
+//! - the posted order UID returned by the mock orderbook
+//! - the signing scheme selected by the trading flow
+//! - the prefix of the signature returned by the example signer
+
+use std::sync::{Arc, Mutex};
+
+use async_trait::async_trait;
+use cow_sdk_core::{
+    Address, Amount, ApiContext, BlockInfo, ContractCall, ContractHandle, CowEnv, HexData,
+    OrderBalance, OrderKind, Provider, Signer, SupportedChainId, TransactionHash,
+    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
+};
+use cow_sdk_orderbook::{
+    AppDataHash, AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
+    OrderQuoteResponse, OrderUid, OrderbookError,
+};
+use cow_sdk_trading::{
+    OrderbookClient, PartialTraderParameters, TradeParameters, TradingError, TradingSdk,
+};
+use serde_json::json;
+
+const OWNER: &str = "0xc8c753ee51e8fc80e199ab297fb575634a1ac1d3";
+const WETH: &str = "0xfff9976782d46cc05630d1f6ebab18b2324d6b14";
+const COW_TOKEN: &str = "0x0625afb445c3b6b7b929342a04a22599fd5dbb59";
+const APP_DATA_HASH_HEX: &str =
+    "0xe269b09f45b1d3c98d8e4e841b99a0779fbd3b77943d069b91ddc4fd9789e27e";
+const ORDER_UID_HEX: &str = "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f42e1a42f0ad0b7795e18767259cc253a2af471dbc4c72b49516ffffffff";
+const TYPED_SIGNATURE: &str = "0x1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111b";
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let owner = Address::new(OWNER)?;
+
+    let orderbook: Arc<dyn OrderbookClient> = Arc::new(ExampleOrderbook::new(
+        SupportedChainId::Sepolia,
+        CowEnv::Prod,
+        sell_quote_response(),
+    ));
+
+    let signer = ExampleSigner::new(owner.clone());
+
+    // Builder path: every builder method shown below is public. Calling
+    // `.build()` validates that the `appCode` + chain authority are set and
+    // that the injected orderbook runtime agrees with the trader defaults.
+    let sdk: TradingSdk = TradingSdk::builder()
+        .with_trader_defaults(PartialTraderParameters::default())
+        .with_chain_id(SupportedChainId::Sepolia)
+        .with_app_code("cow-rs-signed-order-example")
+        .with_owner(owner.clone())
+        .with_orderbook_client(orderbook)
+        .build()
+        .map_err(TradingErrorReport::from)?;
+
+    // Full journey: quote fetch, order signing, and order submission all run
+    // inside `post_swap_order_async` against the injected orderbook and
+    // signer.
+    let posting = sdk
+        .post_swap_order_async(
+            sample_trade_parameters(OrderKind::Sell, &owner),
+            &signer,
+            None,
+        )
+        .await
+        .map_err(TradingErrorReport::from)?;
+
+    println!("order_id={}", posting.order_id.as_str());
+    println!("signing_scheme={:?}", posting.signing_scheme);
+    println!(
+        "signature_prefix={}",
+        posting.signature.chars().take(10).collect::<String>()
+    );
+
+    Ok(())
+}
+
+fn sample_trade_parameters(kind: OrderKind, owner: &Address) -> TradeParameters {
+    TradeParameters {
+        kind,
+        owner: Some(owner.clone()),
+        sell_token: Address::new(WETH).expect("example WETH literal must be valid"),
+        sell_token_decimals: 18,
+        buy_token: Address::new(COW_TOKEN).expect("example COW token literal must be valid"),
+        buy_token_decimals: 18,
+        amount: Amount::new("100000000000000000").expect("example amount literal must be valid"),
+        env: None,
+        settlement_contract_override: None,
+        eth_flow_contract_override: None,
+        partially_fillable: false,
+        sell_token_balance: OrderBalance::Erc20,
+        buy_token_balance: OrderBalance::Erc20,
+        slippage_bps: Some(50),
+        receiver: None,
+        valid_for: None,
+        valid_to: None,
+        partner_fee: None,
+    }
+}
+
+fn sell_quote_response() -> OrderQuoteResponse {
+    serde_json::from_value(json!({
+        "quote": {
+            "sellToken": WETH,
+            "buyToken": COW_TOKEN,
+            "receiver": OWNER,
+            "sellAmount": "98646335338956442",
+            "buyAmount": "30000000000000000000",
+            "validTo": 1_737_464_594_u32,
+            "appData": APP_DATA_HASH_HEX,
+            "feeAmount": "1353664661043558",
+            "kind": "sell",
+            "partiallyFillable": false,
+            "sellTokenBalance": "erc20",
+            "buyTokenBalance": "erc20"
+        },
+        "from": OWNER,
+        "expiration": "2025-01-21T12:55:14.799709609Z",
+        "id": 575_401,
+        "verified": true
+    }))
+    .expect("example quote fixture must deserialize")
+}
+
+/// Minimal in-process [`OrderbookClient`] stand-in that returns a fixed
+/// quote, records submitted orders, and hands back a stable order UID so
+/// the example can run end-to-end without a live orderbook.
+struct ExampleOrderbook {
+    context: ApiContext,
+    quote_response: OrderQuoteResponse,
+    state: Mutex<OrderbookState>,
+}
+
+#[derive(Default)]
+struct OrderbookState {
+    quote_requests: Vec<OrderQuoteRequest>,
+    sent_orders: Vec<OrderCreation>,
+    uploads: Vec<(AppDataHash, String)>,
+}
+
+impl ExampleOrderbook {
+    fn new(chain_id: SupportedChainId, env: CowEnv, quote_response: OrderQuoteResponse) -> Self {
+        Self {
+            context: ApiContext {
+                chain_id,
+                env,
+                base_urls: None,
+                api_key: None,
+            },
+            quote_response,
+            state: Mutex::new(OrderbookState::default()),
+        }
+    }
+}
+
+#[async_trait]
+impl OrderbookClient for ExampleOrderbook {
+    fn context(&self) -> &ApiContext {
+        &self.context
+    }
+
+    async fn get_quote(
+        &self,
+        request: &OrderQuoteRequest,
+    ) -> Result<OrderQuoteResponse, OrderbookError> {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .quote_requests
+            .push(request.clone());
+        Ok(self.quote_response.clone())
+    }
+
+    async fn send_order(&self, request: &OrderCreation) -> Result<OrderUid, OrderbookError> {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .sent_orders
+            .push(request.clone());
+        Ok(OrderUid::new(ORDER_UID_HEX).expect("example order uid literal must be valid"))
+    }
+
+    async fn send_signed_order_cancellations(
+        &self,
+        _request: &OrderCancellations,
+    ) -> Result<(), OrderbookError> {
+        Ok(())
+    }
+
+    async fn get_order(&self, _order_uid: &OrderUid) -> Result<Order, OrderbookError> {
+        unimplemented!("example orderbook does not implement order lookup")
+    }
+
+    async fn upload_app_data(
+        &self,
+        app_data_hash: &AppDataHash,
+        full_app_data: &str,
+    ) -> Result<AppDataObject, OrderbookError> {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .uploads
+            .push((app_data_hash.clone(), full_app_data.to_owned()));
+        Ok(AppDataObject {
+            full_app_data: full_app_data.to_owned(),
+        })
+    }
+}
+
+/// Minimal in-process [`Signer`] that returns a fixed address and a fixed
+/// typed-data signature. Real consumers wire in a hardware wallet, keystore,
+/// or alloy-backed signer through the same trait surface.
+#[derive(Clone)]
+struct ExampleSigner {
+    address: Address,
+}
+
+impl ExampleSigner {
+    const fn new(address: Address) -> Self {
+        Self { address }
+    }
+}
+
+impl Signer for ExampleSigner {
+    type Provider = ();
+    type Error = ExampleSignerError;
+
+    fn connect(&mut self, _provider: Self::Provider) {}
+
+    fn get_address(&self) -> Result<Address, Self::Error> {
+        Ok(self.address.clone())
+    }
+
+    fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
+        Ok(TYPED_SIGNATURE.to_owned())
+    }
+
+    fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+        Ok(TYPED_SIGNATURE.to_owned())
+    }
+
+    fn sign_typed_data(
+        &self,
+        _domain: &TypedDataDomain,
+        _fields: &[TypedDataField],
+        _value_json: &str,
+    ) -> Result<String, Self::Error> {
+        Ok(TYPED_SIGNATURE.to_owned())
+    }
+
+    fn send_transaction(
+        &self,
+        _tx: &TransactionRequest,
+    ) -> Result<TransactionReceipt, Self::Error> {
+        Err(ExampleSignerError::Unsupported("send_transaction"))
+    }
+
+    fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
+        Err(ExampleSignerError::Unsupported("estimate_gas"))
+    }
+}
+
+/// Optional [`Provider`] implementation kept for completeness; the trading
+/// flow used by this example does not require it.
+#[allow(dead_code)]
+struct ExampleProvider;
+
+#[allow(dead_code)]
+impl Provider for ExampleProvider {
+    type Signer = ExampleSigner;
+    type Error = ExampleSignerError;
+
+    fn signer_or_null(&self) -> Option<&Self::Signer> {
+        None
+    }
+
+    fn get_chain_id(&self) -> Result<cow_sdk_core::ChainId, Self::Error> {
+        Err(ExampleSignerError::Unsupported("get_chain_id"))
+    }
+
+    fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
+        Err(ExampleSignerError::Unsupported("get_code"))
+    }
+
+    fn get_transaction_receipt(
+        &self,
+        _transaction_hash: &TransactionHash,
+    ) -> Result<Option<TransactionReceipt>, Self::Error> {
+        Err(ExampleSignerError::Unsupported("get_transaction_receipt"))
+    }
+
+    fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
+        Err(ExampleSignerError::Unsupported("create_signer"))
+    }
+
+    fn get_storage_at(&self, _address: &Address, _slot: &str) -> Result<HexData, Self::Error> {
+        Err(ExampleSignerError::Unsupported("get_storage_at"))
+    }
+
+    fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
+        Err(ExampleSignerError::Unsupported("call"))
+    }
+
+    fn read_contract(&self, _request: &ContractCall) -> Result<String, Self::Error> {
+        Err(ExampleSignerError::Unsupported("read_contract"))
+    }
+
+    fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
+        Err(ExampleSignerError::Unsupported("get_block"))
+    }
+
+    fn set_signer(&mut self, _signer: Self::Signer) {}
+
+    fn set_provider(&mut self, _provider_hint: String) {}
+
+    fn get_contract(
+        &self,
+        _address: &Address,
+        _abi_json: &str,
+    ) -> Result<ContractHandle, Self::Error> {
+        Err(ExampleSignerError::Unsupported("get_contract"))
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+enum ExampleSignerError {
+    #[error("example signer does not implement {0}")]
+    Unsupported(&'static str),
+}
+
+/// Thin wrapper around [`TradingError`] used to plug the trading error type
+/// into `Box<dyn Error>` without adding an explicit `impl From` on the
+/// upstream type.
+struct TradingErrorReport(String);
+
+impl std::fmt::Display for TradingErrorReport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::fmt::Debug for TradingErrorReport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for TradingErrorReport {}
+
+impl From<TradingError> for TradingErrorReport {
+    fn from(error: TradingError) -> Self {
+        Self(error.to_string())
+    }
+}
