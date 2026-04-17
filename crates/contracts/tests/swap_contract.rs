@@ -1,5 +1,6 @@
 mod common;
 
+use bytes::Bytes;
 use cow_sdk_contracts::{BatchSwapStep, Order, Signature, Swap, SwapEncoder, encode_swap_step};
 use cow_sdk_core::{Address, Amount, AppDataHex, OrderBalance, OrderKind, TypedDataDomain};
 
@@ -40,6 +41,17 @@ fn sample_signature() -> Signature {
     }
 }
 
+fn bytes_from_hex_literal(literal: &str) -> Bytes {
+    let stripped = literal
+        .strip_prefix("0x")
+        .expect("hex literal must start with 0x");
+    Bytes::from(hex::decode(stripped).expect("hex literal must decode"))
+}
+
+fn hex_prefixed(bytes: &Bytes) -> String {
+    format!("0x{}", hex::encode(bytes))
+}
+
 #[test]
 fn swap_step_encoding_defaults_user_data_and_indexes_tokens() {
     let fixture = fixture_case("contracts-swap-default-user-data");
@@ -61,15 +73,20 @@ fn swap_step_encoding_defaults_user_data_and_indexes_tokens() {
             asset_in_index: 0,
             asset_out_index: 1,
             amount: Amount::new("42").unwrap(),
-            user_data: fixture["expected"]["user_data"]
-                .as_str()
-                .unwrap()
-                .to_owned(),
+            user_data: Bytes::new(),
         }]
+    );
+    assert_eq!(
+        hex_prefixed(&encoded_steps[0].user_data),
+        fixture["expected"]["user_data"].as_str().unwrap(),
+        "default user data must serialize as the fixture hex form"
     );
 
     let step = encode_swap_step(&mut cow_sdk_contracts::TokenRegistry::new(), &swap);
-    assert_eq!(step.user_data, "0x");
+    assert!(
+        step.user_data.is_empty(),
+        "missing user data must normalize to an empty byte buffer"
+    );
 }
 
 #[test]
@@ -115,9 +132,34 @@ fn swap_encoder_tokens_preserve_unique_registry_order() {
             asset_in: dai.clone(),
             asset_out: usdc.clone(),
             amount: Amount::new("2").unwrap(),
-            user_data: Some("0x1234".to_owned()),
+            user_data: Some(bytes_from_hex_literal("0x1234")),
         },
     ]);
 
     assert_eq!(encoder.tokens(), vec![weth, dai, usdc]);
+}
+
+#[test]
+fn swap_step_user_data_round_trips_byte_equal_through_the_encoder() {
+    let swap = Swap {
+        pool_id: format!("0x{}", "33".repeat(32)),
+        asset_in: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
+        asset_out: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
+        amount: Amount::new("100").unwrap(),
+        user_data: Some(bytes_from_hex_literal("0xdeadbeefcafef00d")),
+    };
+
+    let step = encode_swap_step(&mut cow_sdk_contracts::TokenRegistry::new(), &swap);
+    assert_eq!(
+        step.user_data.as_ref(),
+        &[0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xf0, 0x0d][..],
+        "user data must preserve the input bytes byte-for-byte through the encoder"
+    );
+
+    let cloned = step.user_data.clone();
+    assert_eq!(
+        cloned.as_ptr(),
+        step.user_data.as_ptr(),
+        "bytes::Bytes clone must reference the same backing allocation"
+    );
 }

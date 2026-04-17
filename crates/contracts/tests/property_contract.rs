@@ -239,6 +239,43 @@ fn order_hashing_is_deterministic_for_equivalent_normalized_inputs() {
 }
 
 #[test]
+fn order_hashing_is_stable_across_address_case_variants() {
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed ^ 0xC011_AA06);
+        let domain = generated_domain(&mut rng);
+        let order = generated_order(&mut rng);
+
+        let uppercase_address = |address: &Address| -> Address {
+            let upper = format!(
+                "0x{}",
+                address
+                    .as_str()
+                    .trim_start_matches("0x")
+                    .to_ascii_uppercase()
+            );
+            Address::new(upper).unwrap()
+        };
+
+        let mut uppercase_order = order.clone();
+        uppercase_order.sell_token = uppercase_address(&order.sell_token);
+        uppercase_order.buy_token = uppercase_address(&order.buy_token);
+        uppercase_order.receiver = order.receiver.as_ref().map(uppercase_address);
+
+        assert_eq!(
+            order.sell_token, uppercase_order.sell_token,
+            "PartialEq must treat address case variants as equal at seed {seed}"
+        );
+
+        let hash_original = hash_order(&domain, &order).unwrap();
+        let hash_upper = hash_order(&domain, &uppercase_order).unwrap();
+        assert_eq!(
+            hash_original, hash_upper,
+            "order hashing must be invariant across address case variants at seed {seed}"
+        );
+    }
+}
+
+#[test]
 fn encoded_trades_preserve_the_normalized_order_boundary() {
     for seed in 0..CASE_COUNT {
         let mut rng = CaseRng::new(seed ^ 0xC011_AA02);

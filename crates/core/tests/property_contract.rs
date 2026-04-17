@@ -162,6 +162,60 @@ fn address_normalized_key_is_lowercase_case_insensitive() {
 }
 
 #[test]
+fn address_partial_eq_and_hash_are_case_insensitive() {
+    use std::collections::{HashMap, HashSet};
+
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed);
+        let bytes = rng.fill::<20>();
+        let mixed = mixed_case_hex(&mut rng, &bytes);
+        let lowercase = format!("0x{}", hex::encode(bytes));
+        let uppercase = format!("0x{}", hex::encode_upper(bytes));
+
+        let address_mixed = Address::new(&mixed).unwrap();
+        let address_lower = Address::new(&lowercase).unwrap();
+        let address_upper = Address::new(&uppercase).unwrap();
+
+        assert_eq!(
+            address_mixed, address_lower,
+            "PartialEq must treat mixed-case and lowercase variants as equal"
+        );
+        assert_eq!(
+            address_upper, address_lower,
+            "PartialEq must treat uppercase and lowercase variants as equal"
+        );
+        assert_eq!(
+            address_mixed.as_str(),
+            mixed,
+            "as_str must preserve the original input casing"
+        );
+
+        let mut map = HashMap::new();
+        map.insert(address_mixed.clone(), "value");
+        assert_eq!(
+            map.get(&address_lower),
+            Some(&"value"),
+            "hash must agree with PartialEq for lowercase lookup"
+        );
+        assert_eq!(
+            map.get(&address_upper),
+            Some(&"value"),
+            "hash must agree with PartialEq for uppercase lookup"
+        );
+
+        let mut set = HashSet::new();
+        set.insert(address_mixed.clone());
+        set.insert(address_lower.clone());
+        set.insert(address_upper.clone());
+        assert_eq!(
+            set.len(),
+            1,
+            "a HashSet must collapse case-variant addresses into one element"
+        );
+    }
+}
+
+#[test]
 fn address_rejects_malformed_inputs() {
     assert!(
         Address::new("").is_err(),

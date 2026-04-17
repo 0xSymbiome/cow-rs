@@ -32,12 +32,14 @@ pub enum SigningScheme {
 
 impl SigningScheme {
     /// Returns the compact numeric encoding for the signing scheme.
+    #[inline]
     #[must_use]
     pub const fn as_u8(self) -> u8 {
         self as u8
     }
 
     /// Returns whether the scheme produces an ECDSA signature locally.
+    #[inline]
     #[must_use]
     pub const fn is_ecdsa(self) -> bool {
         matches!(self, Self::Eip712 | Self::EthSign)
@@ -152,6 +154,7 @@ pub fn decode_eip1271_signature_data(
 }
 
 /// Encodes a signing scheme into the compact trade-flag representation.
+#[inline]
 #[must_use]
 pub const fn encode_signing_scheme(scheme: SigningScheme) -> u8 {
     scheme.as_u8()
@@ -162,6 +165,7 @@ pub const fn encode_signing_scheme(scheme: SigningScheme) -> u8 {
 /// # Errors
 ///
 /// Returns [`ContractsError::UnsupportedSigningScheme`] for unknown values.
+#[inline]
 pub fn decode_signing_scheme(flags: u8) -> Result<SigningScheme, ContractsError> {
     SigningScheme::try_from(flags)
 }

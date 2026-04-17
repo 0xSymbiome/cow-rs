@@ -1,9 +1,10 @@
 use std::collections::BTreeMap;
 
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, HexData, OrderBalance, OrderKind, OrderUid, TypedDataDomain,
+    Address, Amount, AppDataHash, OrderBalance, OrderKind, OrderUid, TypedDataDomain,
 };
 
 use crate::{
@@ -236,7 +237,7 @@ impl SettlementEncoder {
             interactions.push(Interaction {
                 target: self.domain.verifying_contract.clone(),
                 value: Amount::zero(),
-                call_data: HexData::new(format!("0x{}", hex::encode(call_data)))?,
+                call_data: Bytes::from(call_data),
             });
         }
         Ok(interactions)

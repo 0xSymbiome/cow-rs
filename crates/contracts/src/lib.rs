@@ -28,6 +28,7 @@ pub mod swap;
 /// Vault authorization role helpers.
 pub mod vault;
 
+mod bytes_serde;
 mod primitives;
 
 pub use deploy::{

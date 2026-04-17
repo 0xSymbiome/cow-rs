@@ -35,6 +35,20 @@ fn shared_type_contract_matches_core_fixture() {
         "0x742d35cc6634c0532925a3b844bc9e7595f0bebd"
     );
     assert!(addresses_equal(&checksummed, &lowercase));
+    assert_eq!(
+        checksummed, lowercase,
+        "PartialEq must agree with addresses_equal on case variants"
+    );
+    assert_eq!(
+        checksummed.byte_length(),
+        20,
+        "byte_length must match the fixed EVM address width"
+    );
+    assert_eq!(
+        checksummed.as_bytes().len(),
+        42,
+        "as_bytes exposes the stored hex string as a byte slice"
+    );
 
     let token_case = fixture["cases"]
         .as_array()

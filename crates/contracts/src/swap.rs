@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, Amount, TypedDataDomain};
@@ -22,11 +23,20 @@ pub struct Swap {
     /// Swap amount.
     pub amount: Amount,
     /// Optional user data encoded as hex.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub user_data: Option<String>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "crate::bytes_serde::option_hex_bytes"
+    )]
+    pub user_data: Option<Bytes>,
 }
 
 /// Encoded Balancer batch-swap step.
+///
+/// Encoded user data is carried as [`bytes::Bytes`] so encoder pipelines that
+/// evaluate multiple swap candidates share a single backing allocation through
+/// reference-counted clones. The JSON wire form remains the `0x`-prefixed
+/// hexadecimal string accepted by downstream consumers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BatchSwapStep {
@@ -39,7 +49,8 @@ pub struct BatchSwapStep {
     /// Swap amount.
     pub amount: Amount,
     /// Encoded user data.
-    pub user_data: String,
+    #[serde(with = "crate::bytes_serde::hex_bytes")]
+    pub user_data: Bytes,
 }
 
 /// Optional trade-execution override for swap encoding.
@@ -153,6 +164,6 @@ pub fn encode_swap_step(tokens: &mut TokenRegistry, swap: &Swap) -> BatchSwapSte
         asset_in_index: tokens.index(&swap.asset_in),
         asset_out_index: tokens.index(&swap.asset_out),
         amount: swap.amount.clone(),
-        user_data: swap.user_data.clone().unwrap_or_else(|| "0x".to_owned()),
+        user_data: swap.user_data.clone().unwrap_or_default(),
     }
 }

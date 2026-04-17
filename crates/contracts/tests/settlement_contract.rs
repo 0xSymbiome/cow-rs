@@ -16,13 +16,14 @@ mod common;
 
 use sha3::{Digest, Keccak256};
 
+use bytes::Bytes;
 use cow_sdk_contracts::{
     InteractionLike, InteractionStage, Order, OrderFlags, OrderRefunds, SettlementEncoder,
     Signature, SigningScheme, TokenRegistry, Trade, TradeExecution, TradeFlags, decode_order,
     decode_order_flags, decode_trade_flags, encode_order_flags, encode_trade_flags,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, HexData, OrderBalance, OrderKind, OrderUid, TypedDataDomain,
+    Address, Amount, AppDataHex, OrderBalance, OrderKind, OrderUid, TypedDataDomain,
 };
 
 use common::fixture_case;
@@ -69,6 +70,17 @@ fn sample_signature() -> Signature {
 fn selector(signature: &str) -> String {
     let digest = Keccak256::digest(signature.as_bytes());
     format!("0x{}", hex::encode(&digest[..4]))
+}
+
+fn bytes_from_hex_literal(literal: &str) -> Bytes {
+    let stripped = literal
+        .strip_prefix("0x")
+        .expect("hex literal must start with 0x");
+    Bytes::from(hex::decode(stripped).expect("hex literal must decode"))
+}
+
+fn hex_prefixed(bytes: &Bytes) -> String {
+    format!("0x{}", hex::encode(bytes))
 }
 
 #[test]
@@ -168,7 +180,7 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
         &InteractionLike {
             target: Address::new("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(),
             value: None,
-            call_data: Some(HexData::new("0x12345678").unwrap()),
+            call_data: Some(bytes_from_hex_literal("0x12345678")),
         },
         InteractionStage::Pre,
     );
@@ -212,7 +224,7 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
         InteractionLike {
             target: Address::new("0x1234567890123456789012345678901234567890").unwrap(),
             value: None,
-            call_data: Some(HexData::new("0x87654321").unwrap()),
+            call_data: Some(bytes_from_hex_literal("0x87654321")),
         },
         InteractionLike {
             target: Address::new("0xabcdef0123456789abcdef0123456789abcdef01").unwrap(),
@@ -260,14 +272,18 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
     let post = encoder.interactions().unwrap()[InteractionStage::Post as usize].clone();
     assert_eq!(post.len(), 2);
     assert_eq!(post[0].target, domain.verifying_contract);
-    assert!(post[0].call_data.as_str().starts_with(&selector(&format!(
-        "{}(bytes[])",
-        fixture["expected"]["methods"][0].as_str().unwrap()
-    ))));
-    assert!(post[1].call_data.as_str().starts_with(&selector(&format!(
-        "{}(bytes[])",
-        fixture["expected"]["methods"][1].as_str().unwrap()
-    ))));
+    assert!(
+        hex_prefixed(&post[0].call_data).starts_with(&selector(&format!(
+            "{}(bytes[])",
+            fixture["expected"]["methods"][0].as_str().unwrap()
+        )))
+    );
+    assert!(
+        hex_prefixed(&post[1].call_data).starts_with(&selector(&format!(
+            "{}(bytes[])",
+            fixture["expected"]["methods"][1].as_str().unwrap()
+        )))
+    );
     let invalid = serde_json::from_value::<OrderRefunds>(serde_json::json!({
         "filledAmounts": ["0x1234"],
         "preSignatures": []

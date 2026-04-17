@@ -1,0 +1,65 @@
+name: benchmarks
+
+on:
+  schedule:
+    # Weekly cadence on Mondays at 06:00 UTC. Non-blocking; results are only
+    # uploaded as build artifacts so this workflow never gates PRs or releases.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_CI_TOOLCHAIN: 1.94.1
+
+jobs:
+  criterion:
+    name: criterion benchmarks (${{ matrix.crate }})
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - cow-sdk-contracts
+          - cow-sdk-signing
+          - cow-sdk-app-data
+          - cow-sdk-orderbook
+          - cow-sdk-trading
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install "${RUST_CI_TOOLCHAIN}" --profile minimal --component clippy,rustfmt
+          rustup default "${RUST_CI_TOOLCHAIN}"
+
+      - name: Cache cargo build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-bench-${{ matrix.crate }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Compile benches
+        run: cargo bench -p ${{ matrix.crate }} --no-run
+
+      - name: Run benches
+        run: cargo bench -p ${{ matrix.crate }} -- --output-format bencher | tee bench-output-${{ matrix.crate }}.txt
+
+      - name: Upload criterion reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: criterion-reports-${{ matrix.crate }}
+          path: |
+            target/criterion/**/report/index.html
+            target/criterion/**/*.json
+            bench-output-${{ matrix.crate }}.txt
+          if-no-files-found: ignore
+          retention-days: 14

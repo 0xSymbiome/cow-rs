@@ -308,6 +308,7 @@ pub fn hash_order_cancellations(
 /// # Errors
 ///
 /// Returns [`ContractsError`] if order hashing or UID packing fails.
+#[inline]
 pub fn compute_order_uid(
     domain: &TypedDataDomain,
     order: &Order,
@@ -326,6 +327,7 @@ pub fn compute_order_uid(
 ///
 /// Returns [`ContractsError`] if the digest or owner cannot be decoded into the
 /// fixed byte lengths required by the UID format.
+#[inline]
 pub fn pack_order_uid_params(params: &OrderUidParams) -> Result<OrderUid, ContractsError> {
     let digest = parse_hex32(params.order_digest.as_str(), "orderDigest")?;
     let owner = parse_hex_exact(params.owner.as_str(), "owner", 20)?;
@@ -341,6 +343,7 @@ pub fn pack_order_uid_params(params: &OrderUidParams) -> Result<OrderUid, Contra
 /// # Errors
 ///
 /// Returns [`ContractsError`] if the UID cannot be decoded into the expected format.
+#[inline]
 pub fn extract_order_uid_params(order_uid: &OrderUid) -> Result<OrderUidParams, ContractsError> {
     let bytes = parse_hex_exact(order_uid.as_str(), "orderUid", ORDER_UID_LENGTH)?;
     if bytes.len() != ORDER_UID_LENGTH {
@@ -371,6 +374,7 @@ pub fn extract_order_uid_params(order_uid: &OrderUid) -> Result<OrderUidParams, 
 /// # Errors
 ///
 /// Returns [`ContractsError`] if the chain is unsupported or if order hashing fails.
+#[inline]
 pub fn hash_order_for_contract(
     order: &OrderModel,
     chain_id: u64,

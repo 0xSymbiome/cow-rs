@@ -47,7 +47,13 @@ pub const QUOTE_AMOUNT_STAGE_NAMES: [&str; 7] = [
 ];
 
 /// Validated EVM address string.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+///
+/// [`PartialEq`], [`Eq`], [`Hash`](std::hash::Hash), [`PartialOrd`], and [`Ord`]
+/// compare addresses case-insensitively so mixed-case hexadecimal variants of the
+/// same address are treated as equal. [`Address::as_str`] preserves the original
+/// input casing exactly, while [`Address::normalized_key`] exposes the lowercase
+/// form used for those comparisons.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct Address(String);
 
@@ -65,15 +71,69 @@ impl Address {
     }
 
     /// Returns the original address string.
+    ///
+    /// The stored string preserves the input casing exactly; equality and
+    /// hashing operate on the lowercase form instead.
+    #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 
+    /// Returns the stored hex string as a byte slice.
+    #[inline]
+    #[must_use]
+    pub const fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    /// Returns the fixed decoded byte length of an EVM address.
+    #[inline]
+    #[must_use]
+    pub const fn byte_length(&self) -> usize {
+        EVM_ADDRESS_HEX_CHARS / 2
+    }
+
     /// Returns the lowercase key form used for case-insensitive comparisons.
+    #[inline]
     #[must_use]
     pub fn normalized_key(&self) -> String {
         self.0.to_ascii_lowercase()
+    }
+}
+
+impl PartialEq for Address {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.0.eq_ignore_ascii_case(&other.0)
+    }
+}
+
+impl Eq for Address {}
+
+impl PartialOrd for Address {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Address {
+    #[inline]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0
+            .bytes()
+            .map(|byte| byte.to_ascii_lowercase())
+            .cmp(other.0.bytes().map(|byte| byte.to_ascii_lowercase()))
+    }
+}
+
+impl std::hash::Hash for Address {
+    #[inline]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        for byte in self.0.as_bytes() {
+            state.write_u8(byte.to_ascii_lowercase());
+        }
     }
 }
 
@@ -138,9 +198,24 @@ impl HexData {
     }
 
     /// Returns the original hex string.
+    #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Returns the stored hex string as a byte slice.
+    #[inline]
+    #[must_use]
+    pub const fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    /// Returns the decoded byte length of the payload.
+    #[inline]
+    #[must_use]
+    pub const fn byte_length(&self) -> usize {
+        (self.0.len() - 2) / 2
     }
 }
 
@@ -205,9 +280,24 @@ impl AppDataHash {
     }
 
     /// Returns the original hash string.
+    #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Returns the stored hex string as a byte slice.
+    #[inline]
+    #[must_use]
+    pub const fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    /// Returns the fixed decoded byte length of an app-data hash.
+    #[inline]
+    #[must_use]
+    pub const fn byte_length(&self) -> usize {
+        APP_DATA_HASH_HEX_CHARS / 2
     }
 }
 
@@ -267,9 +357,24 @@ impl Hash32 {
     }
 
     /// Returns the original hash string.
+    #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Returns the stored hex string as a byte slice.
+    #[inline]
+    #[must_use]
+    pub const fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    /// Returns the fixed decoded byte length of a 32-byte hash.
+    #[inline]
+    #[must_use]
+    pub const fn byte_length(&self) -> usize {
+        HASH32_HEX_CHARS / 2
     }
 }
 
@@ -336,9 +441,24 @@ impl OrderUid {
     }
 
     /// Returns the original order UID string.
+    #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Returns the stored hex string as a byte slice.
+    #[inline]
+    #[must_use]
+    pub const fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    /// Returns the fixed decoded byte length of an order UID.
+    #[inline]
+    #[must_use]
+    pub const fn byte_length(&self) -> usize {
+        ORDER_UID_HEX_CHARS / 2
     }
 }
 
@@ -590,12 +710,17 @@ pub struct TokenInfo {
 }
 
 /// Compares two addresses using case-insensitive normalization.
+///
+/// Equivalent to `left == right`; kept as a named helper for call sites that
+/// want to make the case-insensitive intent explicit.
+#[inline]
 #[must_use]
 pub fn addresses_equal(left: &Address, right: &Address) -> bool {
-    left.normalized_key() == right.normalized_key()
+    left == right
 }
 
 /// Builds the canonical `<chain_id>:<lowercase-address>` token identifier.
+#[inline]
 #[must_use]
 pub fn token_id(chain_id: ChainId, address: &Address) -> String {
     format!("{chain_id}:{}", address.normalized_key())

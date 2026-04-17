@@ -21,6 +21,7 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 workspace = true
 
 [dependencies]
+bytes.workspace = true
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 hex.workspace = true
 num-bigint.workspace = true
@@ -30,5 +31,14 @@ sha3.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+criterion.workspace = true
 serde_json.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+
+[[bench]]
+name = "order_hashing"
+harness = false
+
+[[bench]]
+name = "uid_packing"
+harness = false

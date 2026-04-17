@@ -16,11 +16,12 @@ mod common;
 
 use sha3::{Digest, Keccak256};
 
+use bytes::Bytes;
 use cow_sdk_contracts::{
     AllowListReader, InteractionStage, SettlementReader, TradeSimulation,
     TradeSimulationBalanceDelta, TradeSimulationResult, TradeSimulator,
 };
-use cow_sdk_core::{Address, Amount, HexData, OrderBalance, OrderUid, SignedAmount};
+use cow_sdk_core::{Address, Amount, OrderBalance, OrderUid, SignedAmount};
 
 use common::{MockProvider, fixture_case};
 
@@ -150,7 +151,7 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
                 vec![cow_sdk_contracts::InteractionLike {
                     target: Address::new("0x8888888888888888888888888888888888888888").unwrap(),
                     value: None,
-                    call_data: Some(HexData::new("0x1234").unwrap()),
+                    call_data: Some(Bytes::from_static(&[0x12, 0x34])),
                 }],
             )],
         )
