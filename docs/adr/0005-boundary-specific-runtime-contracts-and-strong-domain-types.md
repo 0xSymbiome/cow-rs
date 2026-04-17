@@ -45,5 +45,8 @@ actual runtime seams.
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
+
+**Proven by:**
+
 - [Credential Surface Contract Hygiene Audit](../audit/credential-surface-contract-hygiene-audit.md)
 - [Shared Logic Reviewability Audit](../audit/shared-logic-reviewability-audit.md)

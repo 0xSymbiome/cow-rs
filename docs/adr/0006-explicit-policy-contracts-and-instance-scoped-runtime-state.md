@@ -44,7 +44,11 @@ work will copy accidental behavior instead of intentional design.
 - [Architecture](../architecture.md)
 - [Release Checklist](../release-checklist.md)
 - [Verification Guide](../verification-guide.md)
+
+**Proven by:**
+
 - [Credential Surface Contract Hygiene Audit](../audit/credential-surface-contract-hygiene-audit.md)
 - [Dependency Gate Audit](../audit/dependency-gate-audit.md)
 - [Partner API Routing Audit](../audit/partner-api-routing-audit.md)
+- [Trading Orderbook Context Audit](../audit/trading-orderbook-context-audit.md)
 - [Trading SDK Runtime Prerequisites Audit](../audit/trading-sdk-runtime-prerequisites-audit.md)

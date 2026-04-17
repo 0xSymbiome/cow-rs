@@ -48,4 +48,8 @@ carrying compatibility-era behavior indefinitely.
 - [Verification Matrix](../verification-matrix.md)
 - [Validation Scope](../validation-scope.md)
 - [Verification Guide](../verification-guide.md)
+
+**Proven by:**
+
+- [Browser Wallet Alloy Dependency Audit](../audit/browser-wallet-alloy-dependency-audit.md)
 - [Browser Wallet Chain Coherence Audit](../audit/browser-wallet-chain-coherence-audit.md)

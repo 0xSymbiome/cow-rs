@@ -41,10 +41,18 @@ public and runtime shape of `cow-rs`.
   current-state proof for one of the ADR's invariants.
 - Prefer the ADR `Links` section for standing audits so the main body stays
   focused on the durable rule rather than the current review snapshot.
+- Mark proof-bearing audits with a `**Proven by:**` label inside the `Links`
+  section, placed after the general support links, and list each audit on its
+  own line. The label makes the audit-to-decision proof relationship
+  reviewable at a glance without disturbing the fixed `Links` anchor heading.
 - Keep the top `Related` metadata focused on directly coupled ADRs or other
   navigation links that belong beside the decision header.
 - When an accepted ADR points to a standing audit as current-state proof, the
-  audit should reciprocate in `Related docs`.
+  audit reciprocates by naming the ADR under `Related docs`. Cross-linking
+  is expected to be reciprocal: every audit listed under an ADR's
+  `**Proven by:**` block names that ADR in its `Related docs`, and every
+  audit whose `Related docs` names an ADR is listed under that ADR's
+  `**Proven by:**` block.
 
 ## Title Contract
 
