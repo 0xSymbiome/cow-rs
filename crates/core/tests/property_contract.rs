@@ -15,8 +15,8 @@
 use num_bigint::BigUint;
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, ChainId, Hash32, HexData, OrderUid, SupportedChainId,
-    addresses_equal, token_id,
+    Address, Amount, AppDataHex, AtomAmount, ChainId, DecimalAmount, Hash32, HexData, OrderUid,
+    SupportedChainId, addresses_equal, token_id,
 };
 
 const CASE_COUNT: u64 = 128;
@@ -536,6 +536,127 @@ fn token_id_is_chain_and_address_sensitive() {
             "token_id must change when the chain changes"
         );
     }
+}
+
+#[test]
+fn atom_amount_roundtrips_through_biguint_and_wire_string() {
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed ^ 0x10CA_FE11);
+        let (value, canonical, _hex) = rng.decimal_amount_components();
+
+        let atom = AtomAmount::from_atoms(value.clone());
+        assert_eq!(
+            atom.as_biguint(),
+            &value,
+            "AtomAmount must preserve the underlying BigUint input"
+        );
+
+        let biguint: BigUint = atom.clone().into();
+        assert_eq!(
+            biguint, value,
+            "AtomAmount must convert back into the original BigUint"
+        );
+
+        let from_biguint: AtomAmount = value.clone().into();
+        assert_eq!(
+            from_biguint, atom,
+            "BigUint conversion must be symmetric with from_atoms"
+        );
+
+        let serialized = serde_json::to_string(&atom).unwrap();
+        let deserialized: AtomAmount = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(
+            deserialized.as_biguint(),
+            &value,
+            "AtomAmount must round-trip through its canonical string wire form"
+        );
+
+        assert_eq!(
+            atom.to_string(),
+            canonical,
+            "Display must match the canonical base-10 representation"
+        );
+
+        let amount = Amount::new(canonical.clone()).unwrap();
+        let via_amount: AtomAmount = (&amount).try_into().unwrap();
+        assert_eq!(
+            via_amount, atom,
+            "Conversion from the legacy string-backed Amount must preserve the atom value"
+        );
+
+        let round_trip_amount: Amount = atom.clone().into();
+        assert_eq!(
+            round_trip_amount, amount,
+            "Conversion back into Amount must produce the canonical wire form"
+        );
+    }
+
+    assert_eq!(AtomAmount::zero().as_biguint(), &BigUint::from(0u32));
+    assert_eq!(AtomAmount::default(), AtomAmount::zero());
+}
+
+#[test]
+fn decimal_amount_preserves_atoms_and_scale_across_seeds() {
+    for seed in 0..CASE_COUNT {
+        let mut rng = CaseRng::new(seed ^ 0x10CA_FE22);
+        let (atoms, _, _) = rng.decimal_amount_components();
+        let decimals = u8::try_from(rng.next_u32() % 31).unwrap();
+
+        let decimal = DecimalAmount::new(atoms.clone(), decimals);
+        assert_eq!(decimal.atoms(), &atoms);
+        assert_eq!(decimal.decimals(), decimals);
+
+        let extracted = decimal.clone().into_atoms();
+        assert_eq!(
+            extracted, atoms,
+            "into_atoms must surface the original BigUint input"
+        );
+
+        let rebuilt = DecimalAmount::new(decimal.atoms().clone(), decimal.decimals());
+        assert_eq!(
+            rebuilt, decimal,
+            "rebuilding a DecimalAmount from its accessors must round-trip"
+        );
+    }
+}
+
+#[test]
+fn decimal_amount_from_whole_approx_handles_boundary_inputs() {
+    let zero = DecimalAmount::from_whole_approx(0.0, 18);
+    assert_eq!(zero.atoms(), &BigUint::from(0u32));
+    assert_eq!(zero.decimals(), 18);
+
+    let negative = DecimalAmount::from_whole_approx(-1.5, 18);
+    assert_eq!(
+        negative.atoms(),
+        &BigUint::from(0u32),
+        "negative inputs must clamp to zero atoms"
+    );
+
+    let nan = DecimalAmount::from_whole_approx(f64::NAN, 18);
+    assert_eq!(
+        nan.atoms(),
+        &BigUint::from(0u32),
+        "NaN inputs must clamp to zero atoms"
+    );
+
+    let infinity = DecimalAmount::from_whole_approx(f64::INFINITY, 18);
+    assert!(
+        infinity.atoms() <= &BigUint::from(u128::MAX),
+        "infinite inputs must not exceed the bounded u128 range"
+    );
+
+    let one_token = DecimalAmount::from_whole_approx(1.0, 18);
+    let expected = BigUint::from(10u128.pow(18));
+    assert_eq!(
+        one_token.atoms(),
+        &expected,
+        "one whole token at 18 decimals must resolve to 10^18 atoms"
+    );
+    assert!(
+        (one_token.to_f64_approx() - 1.0).abs() < 1e-12,
+        "to_f64_approx must recover the whole-unit value within f64 precision"
+    );
 }
 
 #[test]

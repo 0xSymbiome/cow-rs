@@ -1,9 +1,9 @@
 use num_bigint::BigInt;
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, MAX_VALID_TO_EPOCH,
-    ProtocolOptions, SupportedChainId, UnsignedOrder, eth_flow_contract_address,
-    wrapped_native_token,
+    Address, Amount, AppDataHash, AtomAmount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS,
+    MAX_VALID_TO_EPOCH, ProtocolOptions, SupportedChainId, UnsignedOrder,
+    eth_flow_contract_address, wrapped_native_token,
 };
 use cow_sdk_orderbook::OrderQuoteResponse;
 use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
@@ -34,6 +34,30 @@ pub struct OrderToSignParams {
     pub apply_costs_slippage_and_fees: bool,
     /// Optional protocol-fee value used during amount calculation.
     pub protocol_fee_bps: Option<f64>,
+}
+
+impl LimitTradeParameters {
+    /// Returns the sell amount as a typed [`AtomAmount`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::InvalidInput`] when the stored wire-format
+    /// sell amount cannot be parsed into the supported `uint256` range.
+    pub fn sell_atom_amount(&self) -> Result<AtomAmount, TradingError> {
+        AtomAmount::try_from(&self.sell_amount)
+            .map_err(|err| TradingError::InvalidInput(err.to_string()))
+    }
+
+    /// Returns the buy amount as a typed [`AtomAmount`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::InvalidInput`] when the stored wire-format
+    /// buy amount cannot be parsed into the supported `uint256` range.
+    pub fn buy_atom_amount(&self) -> Result<AtomAmount, TradingError> {
+        AtomAmount::try_from(&self.buy_amount)
+            .map_err(|err| TradingError::InvalidInput(err.to_string()))
+    }
 }
 
 /// Returns `true` when `sell_token` is the protocol native-asset sentinel address.

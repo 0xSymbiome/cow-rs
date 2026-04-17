@@ -1,9 +1,10 @@
 use cow_sdk_core::{
-    Address, Amount, Amounts, AppDataHex, Costs, FeeComponent, Hash32, HexData, NetworkFee,
-    ORDER_TYPE_FIELD_NAMES, OrderBalance, OrderKind, OrderModel, OrderUid,
+    Address, Amount, Amounts, AppDataHex, AtomAmount, Costs, DecimalAmount, FeeComponent, Hash32,
+    HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderBalance, OrderKind, OrderModel, OrderUid,
     QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteModel, SignedAmount, UnsignedOrder,
     addresses_equal, token_id,
 };
+use num_bigint::BigUint;
 
 fn core_fixture() -> serde_json::Value {
     serde_json::from_str(include_str!("../../../parity/fixtures/core.json"))
@@ -193,6 +194,32 @@ fn compatibility_models_remain_stable_for_current_workspace_consumers() {
     };
     let encoded = serde_json::to_value(amounts).unwrap();
     assert!(encoded.as_object().unwrap().contains_key("amountsToSign"));
+}
+
+#[test]
+fn typed_atom_and_decimal_amounts_expose_semantic_accessors() {
+    let atom = AtomAmount::from_atoms(BigUint::from(1_000_000_000_000_000_000u128));
+    assert_eq!(atom.to_string(), "1000000000000000000");
+    assert_eq!(
+        atom.as_biguint(),
+        &BigUint::from(1_000_000_000_000_000_000u128)
+    );
+    let as_amount: Amount = atom.clone().into();
+    assert_eq!(as_amount.as_str(), "1000000000000000000");
+
+    let parsed: AtomAmount = "1000000000000000000".try_into().unwrap();
+    assert_eq!(parsed, atom);
+
+    let decimal = DecimalAmount::new(BigUint::from(1_000_000_000_000_000_000u128), 18);
+    assert_eq!(decimal.decimals(), 18);
+    assert_eq!(
+        decimal.atoms(),
+        &BigUint::from(1_000_000_000_000_000_000u128)
+    );
+    assert!((decimal.to_f64_approx() - 1.0).abs() < 1e-12);
+
+    let clamped = DecimalAmount::from_whole_approx(-0.5, 18);
+    assert_eq!(clamped.atoms(), &BigUint::from(0u32));
 }
 
 #[test]
