@@ -547,3 +547,74 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
     assert_eq!(calldata_word(data.as_str(), 3), uint256_word(&high_buy));
     assert_eq!(calldata_word(data.as_str(), 4), uint256_word(&max_uint256));
 }
+
+#[test]
+fn typestate_build_ready_produces_a_ready_mode_sdk_without_runtime_default_checks() {
+    let sdk = cow_sdk_trading::TradingSdkBuilder::new()
+        .with_chain_id(SupportedChainId::Sepolia)
+        .with_app_code("typestate-ready")
+        .build_ready()
+        .expect("typestate build_ready must succeed when the prerequisites are set");
+
+    assert_eq!(sdk.mode(), cow_sdk_trading::TradingSdkMode::Ready);
+    assert_eq!(
+        sdk.trader_defaults().chain_id,
+        Some(SupportedChainId::Sepolia)
+    );
+    assert_eq!(
+        sdk.trader_defaults().app_code.as_deref(),
+        Some("typestate-ready")
+    );
+}
+
+#[test]
+fn typestate_build_helper_only_produces_a_helper_mode_sdk_from_a_chain_only_state() {
+    let sdk = cow_sdk_trading::TradingSdkBuilder::new()
+        .with_chain_id(SupportedChainId::Sepolia)
+        .build_helper_only()
+        .expect("typestate build_helper_only must succeed when chain id is set");
+
+    assert_eq!(sdk.mode(), cow_sdk_trading::TradingSdkMode::HelperOnly);
+    assert_eq!(
+        sdk.trader_defaults().chain_id,
+        Some(SupportedChainId::Sepolia)
+    );
+    assert!(sdk.trader_defaults().app_code.is_none());
+}
+
+#[tokio::test]
+async fn helper_only_sdk_refuses_quote_post_and_off_chain_cancel_flows() {
+    let sdk = cow_sdk_trading::TradingSdkBuilder::new()
+        .with_chain_id(SupportedChainId::Sepolia)
+        .with_owner(address(OWNER))
+        .build_helper_only()
+        .expect("helper-only builder must succeed when chain id is set");
+
+    let trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
+    let quote_error = sdk
+        .get_quote_only(trade, None)
+        .await
+        .expect_err("helper-only sdk must refuse the quote flow");
+    assert!(matches!(
+        quote_error,
+        cow_sdk_trading::TradingError::HelperOnlyMode
+    ));
+
+    let cancel_error = sdk
+        .off_chain_cancel_order_async(
+            &OrderTraderParameters {
+                chain_id: Some(SupportedChainId::Sepolia),
+                env: Some(CowEnv::Prod),
+                order_uid: order_uid(),
+                settlement_contract_override: None,
+                eth_flow_contract_override: None,
+            },
+            &MockSigner::default(),
+        )
+        .await
+        .expect_err("helper-only sdk must refuse the off-chain cancellation flow");
+    assert!(matches!(
+        cancel_error,
+        cow_sdk_trading::TradingError::HelperOnlyMode
+    ));
+}

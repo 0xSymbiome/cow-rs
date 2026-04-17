@@ -124,4 +124,10 @@ pub enum TradingError {
         /// Local signing scheme returned by the signer integration.
         scheme: SigningScheme,
     },
+    /// A quote, post, or off-chain cancellation method was called on an sdk
+    /// that was constructed through the helper-only terminal.
+    #[error(
+        "trading sdk is in helper-only mode; quote, post, and off-chain cancellation require a fully-configured sdk built through TradingSdkBuilder::build"
+    )]
+    HelperOnlyMode,
 }

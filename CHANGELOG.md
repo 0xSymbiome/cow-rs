@@ -85,6 +85,22 @@ unreleased public contract of the repository.
   vault-relayer, ethflow, and wrapped-native addresses as `const [u8; 20]`
   byte arrays and construct the typed addresses through `from_bytes`,
   preserving the existing public accessor signatures and behaviour.
+- Typestate `TradingSdkBuilder`. The builder carries two marker type
+  parameters (`ChainIdUnset`/`ChainIdSet` and `AppCodeUnset`/`AppCodeSet`)
+  that track whether the required chain id and app code prerequisites have
+  been supplied through the explicit `with_chain_id` and `with_app_code`
+  setters. The compile-time-checked `build_ready` terminal is only
+  available once both markers reach the `Set` state, and `build_helper_only`
+  is only available once the chain-id marker is `Set`. The permissive
+  runtime-validated `build` and `build_partial` terminals remain on every
+  state for the migration window. A `TradingSdkMode` enum (`Ready` or
+  `HelperOnly`) plus the new `TradingError::HelperOnlyMode` variant fail
+  quote, post, and off-chain cancellation flows closed when the sdk was
+  constructed through the helper-only terminal, while chain-bound helpers
+  (pre-sign transaction construction, allowance reads, approval submission,
+  and on-chain cancellation) stay fully usable. A runnable
+  `typestate_builder_example` demonstrates both terminals without requiring
+  external credentials.
 
 ### Security
 
