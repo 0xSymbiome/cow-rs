@@ -191,6 +191,17 @@ unreleased public contract of the repository.
 - `CoreError` is now the single canonical shared core error name across the
   public facade and guides; the unused `CowRsError` alias has been removed as a
   naming finalization before the first functional release.
+- ADR 0010 records the runtime-neutral async and transport posture covering
+  cooperative cancellation, the shared `reqwest::Client` pattern, the
+  url-stripped reqwest error classification, and the opt-in `tracing` feature.
+- ADR 0011 records the typed amount boundary and the typestate ready-state
+  construction rule for `TradingSdkBuilder`.
+- The Cooperative Cancellation Contract Audit is a new standing audit covering
+  the shared `CancellationToken` re-export, the representative
+  `_with_cancellation` entry points, the typed `Cancelled` variants, and the
+  biased `tokio::select!` propagation path.
+- The Credential Surface Contract Hygiene Audit is refreshed to cover the
+  `Redacted<T>` wrapper and the transport-level error redaction path.
 
 ### Security
 

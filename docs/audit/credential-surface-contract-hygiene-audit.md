@@ -1,12 +1,13 @@
 # Credential Surface Contract Hygiene Audit
 
 Status: Current  
-Last reviewed: 2026-04-16  
+Last reviewed: 2026-04-17  
 Owning surface: Cross-cutting credential redaction and typed partner-fee public boundary across core, app-data, orderbook, subgraph, and trading  
-Refresh trigger: Changes to public credential-bearing configs, subgraph route identity or request-failure context, or typed partner-fee request boundaries  
+Refresh trigger: Changes to public credential-bearing configs, subgraph route identity or request-failure context, the `Redacted<T>` newtype contract, the transport `From<reqwest::Error>` conversion classifiers, or typed partner-fee request boundaries  
 Related docs:
 - [ADR 0005](../adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
+- [ADR 0010](../adr/0010-runtime-neutral-async-and-transport-posture.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)
@@ -30,6 +31,8 @@ surface.
 | --- | --- | --- |
 | Subgraph route identity | Keep Graph API credentials out of stable metadata and typed failure context | Conforms |
 | Credential-bearing config diagnostics | Redact secret material in default `Debug` and serialized forms while preserving explicit inputs | Conforms |
+| `Redacted<T>` secret wrapper | Type-level redaction in `Debug`, `Display`, and `Serialize` with an explicit `into_inner` escape | Conforms |
+| Transport error redaction | `From<reqwest::Error>` on orderbook and subgraph classifies via the upstream kind checkers and strips the URL before wrapping | Conforms |
 | Trading partner-fee policy | Keep user-facing partner-fee inputs typed until explicit app-data translation | Conforms |
 
 ## Current Contract
@@ -50,6 +53,26 @@ redact secret material. This keeps routine diagnostics and generic
 serialization from turning partner API keys or Pinata credentials into
 ordinary log output.
 
+### `Redacted<T>` Secret Wrapper
+
+`cow-sdk-core` exposes `Redacted<T>`, a generic newtype whose `Debug`,
+`Display`, and `Serialize` implementations emit the literal `[redacted]`
+placeholder. Consumers reach the wrapped secret through an explicit
+`into_inner` escape. Secret-bearing configuration fields (`ApiContext`,
+`ApiContextOverride`, `IpfsConfig`, and the internal subgraph API key
+slot) carry `Redacted<String>` at the type level so accidental logging,
+default serialization, and ad-hoc diagnostics cannot print the secret.
+
+### Transport Error Redaction
+
+`From<reqwest::Error>` on the orderbook and subgraph error surfaces
+classifies failures through the upstream `is_timeout`, `is_connect`,
+`is_decode`, `is_body`, `is_redirect`, `is_builder`, `is_request`, and
+`is_status` set and calls `reqwest::Error::without_url` before wrapping.
+Partner routes and their query-string credentials cannot leak through
+the wrapped `Display` output, adding a second layer of defense below the
+config-level `Redacted<T>` migration.
+
 ### Typed Partner-Fee Boundary
 
 `cow-sdk-trading` accepts typed partner-fee policy values on its public request
@@ -62,7 +85,9 @@ transport proceeds.
 Primary implementation points:
 
 - `crates/core/src/config.rs`
+- `crates/core/src/redaction.rs`
 - `crates/app-data/src/types.rs`
+- `crates/orderbook/src/error.rs`
 - `crates/orderbook/src/types.rs`
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/error.rs`

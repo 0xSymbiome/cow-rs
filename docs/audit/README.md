@@ -91,5 +91,6 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, and typed user policy | Current | 2026-04-16 |
+| [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, `Redacted<T>` wrapper, transport error redaction, and typed user policy | Current | 2026-04-17 |
 | [Shared Logic Reviewability Audit](shared-logic-reviewability-audit.md) | Standing audit | Orderbook, signing, and trading shared-logic reviewability boundary | Shared request execution, signing payload preparation, thin posting wrappers, and justified DTO separation | Current | 2026-04-15 |
+| [Cooperative Cancellation Contract Audit](cooperative-cancellation-contract-audit.md) | Standing audit | Cross-cutting cooperative cancellation across core, orderbook, subgraph, and trading | Shared `CancellationToken` re-export, `_with_cancellation` entry points, typed `Cancelled` variants, and biased `select!` propagation | Current | 2026-04-17 |

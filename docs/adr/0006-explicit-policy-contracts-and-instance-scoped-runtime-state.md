@@ -52,3 +52,4 @@ work will copy accidental behavior instead of intentional design.
 - [Partner API Routing Audit](../audit/partner-api-routing-audit.md)
 - [Trading Orderbook Context Audit](../audit/trading-orderbook-context-audit.md)
 - [Trading SDK Runtime Prerequisites Audit](../audit/trading-sdk-runtime-prerequisites-audit.md)
+- [Cooperative Cancellation Contract Audit](../audit/cooperative-cancellation-contract-audit.md)

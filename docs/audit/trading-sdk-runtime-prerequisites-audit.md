@@ -7,6 +7,7 @@ Refresh trigger: Changes to ready-state `TradingSdk` constructors or builders, p
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
+- [ADR 0011](../adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [README](../../README.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)
