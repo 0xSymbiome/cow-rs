@@ -25,6 +25,30 @@ const SINGLE_WALLET_MAINNET_FIXTURE: InjectedWalletFixtureSet = {
   ],
 };
 
+const SINGLE_WALLET_REJECT_SIGN_FIXTURE: InjectedWalletFixtureSet = {
+  wallets: [
+    {
+      label: "MetaMask",
+      uuid: "wallet-metamask",
+      rdns: "io.metamask",
+      icon: "data:text/plain,metamask",
+      accounts: [PRIMARY_ACCOUNT],
+      chainId: "0xaa36a7", // Sepolia
+      isMetaMask: true,
+      failures: {
+        eth_signTypedData_v4: {
+          code: 4001,
+          message: "User rejected typed-data signature",
+        },
+        personal_sign: {
+          code: 4001,
+          message: "User rejected message signature",
+        },
+      },
+    },
+  ],
+};
+
 type ContractState = {
   lastAction: string;
   lastStatus: string;
@@ -136,6 +160,47 @@ test("prod keeps static live orderbook actions gated while local signing stays a
   await expect(page.locator("[data-testid='injected-live-gate']")).toContainText(
     "Static browser-live orderbook actions are enabled only for staging on this page.",
   );
+});
+
+test("typed-data rejection renders the classified EIP-1193 4001 label", async ({ page }) => {
+  await installInjectedWalletFixtures(page, SINGLE_WALLET_REJECT_SIGN_FIXTURE);
+  await loadConsole(page);
+
+  await page.locator("#connect-wallet").click();
+  await expectInjectedState(page, "connect-wallet", "success");
+
+  // The wallet session reports Sepolia so the chain-coherence guard allows
+  // sign-order against the default console chain. The fixture then rejects
+  // with a 4001 on eth_signTypedData_v4.
+  await page.locator("#sign-order").click();
+  await expectInjectedState(page, "sign-order", "error");
+
+  const errorLabel = page.locator("#injected-output [data-testid='error-label']");
+  await expect(errorLabel).toBeVisible();
+  await expect(errorLabel).toContainText("EIP-1193 4001");
+  await expect(errorLabel).toContainText("Request rejected by user");
+  await expect(errorLabel).toHaveAttribute("data-code", "EIP-1193 4001");
+});
+
+test("chain-bound signer surfaces the classified chain-mismatch label before live actions", async ({
+  page,
+}) => {
+  await installInjectedWalletFixtures(page, SINGLE_WALLET_MAINNET_FIXTURE);
+  await loadConsole(page);
+
+  await page.locator("#connect-wallet").click();
+  await expectInjectedState(page, "connect-wallet", "success");
+
+  // Wallet session is on mainnet; console chain is Sepolia. Sign-order
+  // pulls a chain-bound signer for the console chain and must fail-closed
+  // with a chain-mismatch error before producing a signature.
+  await page.locator("#sign-order").click();
+  await expectInjectedState(page, "sign-order", "error");
+
+  const errorLabel = page.locator("#injected-output [data-testid='error-label']");
+  await expect(errorLabel).toBeVisible();
+  await expect(errorLabel).toHaveAttribute("data-code", "CHAIN-MISMATCH");
+  await expect(errorLabel).toContainText("Wallet chain does not match console chain");
 });
 
 async function loadConsole(page: Page): Promise<void> {

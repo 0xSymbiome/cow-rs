@@ -156,7 +156,7 @@ test("route-mocked orderbook and subgraph flows return reviewable JSON", async (
   expect(requestIssues).toEqual([]);
 });
 
-test("malformed orderbook responses surface as visible errors", async ({ page }) => {
+test("malformed orderbook responses surface as classified diagnostic labels", async ({ page }) => {
   const requestIssues: string[] = [];
   const quoteRequests: JsonRecord[] = [];
   await routeOrderbookQuote(page, requestIssues, quoteRequests, "malformed");
@@ -164,8 +164,11 @@ test("malformed orderbook responses surface as visible errors", async ({ page })
   await loadConsole(page);
   await page.locator("#btn-ob-quote").click();
 
-  await expect(page.locator("#orderbook-output")).toContainText("Error");
   await expect(page.locator("#orderbook-output")).toContainText("missing field");
+  const errorLabel = page.locator("#orderbook-output [data-testid='error-label']");
+  await expect(errorLabel).toBeVisible();
+  await expect(errorLabel).toHaveAttribute("data-code", "MALFORMED-JSON");
+  await expect(errorLabel).toContainText("Malformed JSON payload");
   expect(requestIssues).toEqual([]);
   expect(quoteRequests).toHaveLength(1);
 });

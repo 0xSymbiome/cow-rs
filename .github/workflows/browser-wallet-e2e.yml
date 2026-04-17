@@ -56,6 +56,13 @@ jobs:
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       # Source ref: oven-sh/setup-bun@v2
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+      # Source ref: browser-actions/setup-chrome@v2
+      - id: setup-chrome
+        uses: browser-actions/setup-chrome@0e0d4d8f26f09af32ad610babb8d68f98b92cfab
+        with:
+          chrome-version: stable
+          install-chromedriver: true
+          install-dependencies: true
 
       - name: Install wasm target
         run: rustup target add wasm32-unknown-unknown
@@ -76,9 +83,21 @@ jobs:
       - name: Build browser wallet console
         run: cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
 
+      - name: Test browser wallet console host-side
+        run: cargo test --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
+
       - name: Build browser wallet console web package
         working-directory: examples/wasm/browser-wallet-console
         run: wasm-pack build --target web
+
+      - name: Configure Chrome for browser wallet console wasm-bindgen tests
+        working-directory: examples/wasm/browser-wallet-console
+        run: |
+          printf '{"goog:chromeOptions":{"binary":"%s","args":["--headless=new","--disable-gpu","--no-sandbox"]}}\n' '${{ steps.setup-chrome.outputs.chrome-path }}' > webdriver.json
+
+      - name: Run browser wallet console wasm-bindgen tests
+        working-directory: examples/wasm/browser-wallet-console
+        run: wasm-pack test --headless --chrome --chromedriver "${{ steps.setup-chrome.outputs.chromedriver-path }}"
 
       - name: Install browser wallet e2e dependencies
         run: bun install --cwd e2e/browser-wallet --frozen-lockfile

@@ -1,7 +1,14 @@
-import type { Route } from "@playwright/test";
+import type { Page, Route } from "@playwright/test";
 
 export const ORDERBOOK_VERSION_URL = "https://barn.api.cow.fi/mainnet/api/v1/version";
 export const ORDERBOOK_QUOTE_URL = "https://barn.api.cow.fi/mainnet/api/v1/quote";
+export const ORDERBOOK_SOLVER_COMPETITION_LATEST_URL =
+  "https://barn.api.cow.fi/mainnet/api/v1/solver_competition/latest";
+export const ORDERBOOK_ORDER_BASE_URL = "https://barn.api.cow.fi/mainnet/api/v1/orders";
+export const ORDERBOOK_ORDER_URL_GLOB = `${ORDERBOOK_ORDER_BASE_URL}/*`;
+export const ORDERBOOK_TRADES_URL_GLOB = "https://barn.api.cow.fi/mainnet/api/v1/trades**";
+export const ORDERBOOK_APP_DATA_BASE_URL = "https://barn.api.cow.fi/mainnet/api/v1/app_data";
+export const ORDERBOOK_APP_DATA_URL_GLOB = `${ORDERBOOK_APP_DATA_BASE_URL}/*`;
 export const SUBGRAPH_URL_GLOB = "https://gateway.thegraph.com/api/mock-key/subgraphs/id/**";
 
 export const OWNER = "0x4444444444444444444444444444444444444444";
@@ -9,6 +16,8 @@ export const MAINNET_WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 export const MAINNET_USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 export const APP_DATA_HASH =
   "0x6caf30d0b35e6523444e6a6eb9c5562ba5480cdab16e00cb46963f1dc6cda0e1";
+export const DEFAULT_ORDER_UID = `0x${"11".repeat(56)}`;
+export const DEFAULT_TX_HASH = `0x${"aa".repeat(32)}`;
 
 export type JsonRecord = Record<string, unknown>;
 
@@ -175,4 +184,284 @@ function assertField(
 
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function defaultLatestCompetitionPayload(): JsonRecord {
+  return {
+    auctionId: 27,
+    authBlock: 21_000_000,
+    transactionHashes: [DEFAULT_TX_HASH],
+    solutions: [
+      {
+        solver: "0x0000000000000000000000000000000000000001",
+        solverAddress: "0x0000000000000000000000000000000000000001",
+        score: "1",
+        ranking: 1,
+        ref: "mock-solver",
+        orders: [
+          {
+            id: DEFAULT_ORDER_UID,
+            uid: DEFAULT_ORDER_UID,
+            owner: OWNER,
+            appData: APP_DATA_HASH,
+            sellToken: MAINNET_WETH,
+            buyToken: MAINNET_USDC,
+            executedSellAmount: "100000000000000000",
+            executedBuyAmount: "250000000",
+          },
+        ],
+        clearingPrices: {
+          [MAINNET_WETH]: "1",
+          [MAINNET_USDC]: "1",
+        },
+      },
+    ],
+  };
+}
+
+export function defaultOrderPayload(): JsonRecord {
+  return {
+    uid: DEFAULT_ORDER_UID,
+    owner: OWNER,
+    appData: APP_DATA_HASH,
+    appDataHash: APP_DATA_HASH,
+    sellToken: MAINNET_WETH,
+    buyToken: MAINNET_USDC,
+    receiver: OWNER,
+    sellAmount: "100000000000000000",
+    buyAmount: "250000000",
+    feeAmount: "0",
+    kind: "sell",
+    partiallyFillable: false,
+    sellTokenBalance: "erc20",
+    buyTokenBalance: "erc20",
+    validTo: 1_900_000_000,
+    creationDate: "2030-03-17T17:46:40Z",
+    status: "open",
+    class: "limit",
+    signingScheme: "eip712",
+    signature: `0x${"02".repeat(65)}`,
+    executedSellAmount: "0",
+    executedBuyAmount: "0",
+    executedFeeAmount: "0",
+    executedSurplusFee: "0",
+    invalidated: false,
+  };
+}
+
+export function defaultTradesPayload(): JsonRecord[] {
+  return [
+    {
+      blockNumber: 21_000_000,
+      logIndex: 1,
+      orderUid: DEFAULT_ORDER_UID,
+      owner: OWNER,
+      sellToken: MAINNET_WETH,
+      buyToken: MAINNET_USDC,
+      sellAmount: "100000000000000000",
+      buyAmount: "250000000",
+      sellAmountBeforeFees: "100000000000000000",
+      txHash: DEFAULT_TX_HASH,
+    },
+  ];
+}
+
+export function defaultAppDataPayload(): JsonRecord {
+  return {
+    fullAppData: JSON.stringify({
+      version: "1.14.0",
+      appCode: "cow-rs/wasm-console",
+      environment: "browser",
+      metadata: {
+        quote: {
+          slippageBips: 50,
+        },
+      },
+    }),
+  };
+}
+
+export interface RouteCaptureOptions {
+  issues?: string[];
+}
+
+export interface LatestCompetitionRouteOptions extends RouteCaptureOptions {
+  body?: JsonRecord;
+}
+
+export async function routeSolverCompetitionLatest(
+  page: Page,
+  options: LatestCompetitionRouteOptions = {},
+): Promise<void> {
+  await page.route(ORDERBOOK_SOLVER_COMPETITION_LATEST_URL, async (route) => {
+    if (route.request().method() === "OPTIONS") {
+      await fulfillPreflight(route);
+      return;
+    }
+    if (route.request().method() !== "GET") {
+      options.issues?.push(
+        `solver_competition/latest request used ${route.request().method()} instead of GET`,
+      );
+    }
+    await fulfillJson(route, options.body ?? defaultLatestCompetitionPayload());
+  });
+}
+
+export interface OrderByUidRouteOptions extends RouteCaptureOptions {
+  bodyByUid?: Record<string, JsonRecord>;
+  fallback?: JsonRecord;
+}
+
+export async function routeOrderByUid(
+  page: Page,
+  options: OrderByUidRouteOptions = {},
+): Promise<void> {
+  await page.route(ORDERBOOK_ORDER_URL_GLOB, async (route) => {
+    if (route.request().method() === "OPTIONS") {
+      await fulfillPreflight(route);
+      return;
+    }
+    if (route.request().method() !== "GET") {
+      options.issues?.push(
+        `orders/{uid} request used ${route.request().method()} instead of GET`,
+      );
+    }
+    const uid = uidFromUrl(route.request().url());
+    const body =
+      (uid && options.bodyByUid?.[uid]) ?? options.fallback ?? defaultOrderPayload();
+    await fulfillJson(route, body);
+  });
+}
+
+export interface OrderTradesRouteOptions extends RouteCaptureOptions {
+  body?: JsonRecord[];
+  byOrderUid?: Record<string, JsonRecord[]>;
+}
+
+export async function routeOrderTrades(
+  page: Page,
+  options: OrderTradesRouteOptions = {},
+): Promise<void> {
+  await page.route(ORDERBOOK_TRADES_URL_GLOB, async (route) => {
+    if (route.request().method() === "OPTIONS") {
+      await fulfillPreflight(route);
+      return;
+    }
+    if (route.request().method() !== "GET") {
+      options.issues?.push(
+        `trades request used ${route.request().method()} instead of GET`,
+      );
+    }
+    const orderUid = orderUidFromQuery(route.request().url());
+    const body =
+      (orderUid && options.byOrderUid?.[orderUid]) ?? options.body ?? defaultTradesPayload();
+    await fulfillJson(route, body);
+  });
+}
+
+export interface AppDataRouteOptions extends RouteCaptureOptions {
+  bodyByHash?: Record<string, JsonRecord>;
+  fallback?: JsonRecord;
+}
+
+export async function routeAppData(
+  page: Page,
+  options: AppDataRouteOptions = {},
+): Promise<void> {
+  await page.route(ORDERBOOK_APP_DATA_URL_GLOB, async (route) => {
+    if (route.request().method() === "OPTIONS") {
+      await fulfillPreflight(route);
+      return;
+    }
+    if (route.request().method() !== "GET") {
+      options.issues?.push(
+        `app_data/{hash} request used ${route.request().method()} instead of GET`,
+      );
+    }
+    const hash = hashFromUrl(route.request().url());
+    const body =
+      (hash && options.bodyByHash?.[hash]) ?? options.fallback ?? defaultAppDataPayload();
+    await fulfillJson(route, body);
+  });
+}
+
+export interface SubgraphQueryRouteOptions extends RouteCaptureOptions {
+  captured?: JsonRecord[];
+  validate?: boolean;
+}
+
+export type SubgraphMatcher = string | ((body: JsonRecord) => boolean);
+
+export async function routeSubgraphQuery(
+  page: Page,
+  matcher: SubgraphMatcher,
+  response: JsonRecord,
+  options: SubgraphQueryRouteOptions = {},
+): Promise<void> {
+  await page.route(SUBGRAPH_URL_GLOB, async (route) => {
+    if (route.request().method() === "OPTIONS") {
+      await fulfillPreflight(route);
+      return;
+    }
+    if (route.request().method() !== "POST") {
+      options.issues?.push(
+        `subgraph request used ${route.request().method()} instead of POST`,
+      );
+    }
+
+    let body: JsonRecord = {};
+    try {
+      const parsed = route.request().postDataJSON();
+      if (isRecord(parsed)) {
+        body = parsed;
+      } else {
+        options.issues?.push("subgraph request body was not a JSON object");
+      }
+    } catch (error) {
+      options.issues?.push(`subgraph request body was not valid JSON: ${String(error)}`);
+    }
+
+    if (options.validate !== false) {
+      options.issues?.push(...validateSubgraphRequestShape(body));
+    }
+    options.captured?.push(body);
+
+    if (matchesSubgraphRequest(matcher, body)) {
+      await fulfillJson(route, response);
+      return;
+    }
+
+    const operationName =
+      typeof body.operationName === "string" ? body.operationName : undefined;
+    await fulfillJson(route, subgraphResponse(operationName));
+  });
+}
+
+function matchesSubgraphRequest(matcher: SubgraphMatcher, body: JsonRecord): boolean {
+  if (typeof matcher === "string") {
+    if (typeof body.operationName === "string" && body.operationName === matcher) {
+      return true;
+    }
+    return typeof body.query === "string" && body.query.includes(matcher);
+  }
+  return matcher(body);
+}
+
+function uidFromUrl(url: string): string {
+  const [pathOnly] = url.split("?", 1);
+  const segments = pathOnly.split("/");
+  return segments[segments.length - 1] ?? "";
+}
+
+function hashFromUrl(url: string): string {
+  return uidFromUrl(url);
+}
+
+function orderUidFromQuery(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get("orderUid") ?? "";
+  } catch {
+    return "";
+  }
 }

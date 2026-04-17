@@ -1,0 +1,200 @@
+import { expect, test, type Page } from "@playwright/test";
+
+import {
+  APP_DATA_HASH,
+  DEFAULT_ORDER_UID,
+  MAINNET_USDC,
+  MAINNET_WETH,
+  OWNER,
+  defaultAppDataPayload,
+  defaultLatestCompetitionPayload,
+  defaultOrderPayload,
+  defaultTradesPayload,
+  routeAppData,
+  routeOrderByUid,
+  routeOrderTrades,
+  routeSolverCompetitionLatest,
+  routeSubgraphQuery,
+  subgraphResponse,
+  type JsonRecord,
+} from "../fixtures/cow-api";
+
+let browserErrors: string[];
+
+test.beforeEach(async ({ page }) => {
+  browserErrors = [];
+  page.on("pageerror", (error) => browserErrors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") {
+      browserErrors.push(message.text());
+    }
+  });
+});
+
+test.afterEach(() => {
+  expect(browserErrors).toEqual([]);
+});
+
+test("manual-network: Latest Competition renders deterministic solver-competition payload", async ({
+  page,
+}) => {
+  const issues: string[] = [];
+  await routeSolverCompetitionLatest(page, { issues });
+  await loadConsole(page);
+
+  await page.locator("#btn-ob-auction").click();
+  const payload = await outputJson<JsonRecord>(page, "#orderbook-output");
+
+  const expected = defaultLatestCompetitionPayload();
+  expect(payload.auctionId).toBe(expected.auctionId);
+  expect(payload.transactionHashes).toEqual(expected.transactionHashes);
+
+  const solutions = payload.solutions as JsonRecord[];
+  expect(Array.isArray(solutions)).toBe(true);
+  expect(solutions).toHaveLength(1);
+
+  const orders = solutions[0].orders as JsonRecord[];
+  expect(Array.isArray(orders)).toBe(true);
+  expect(orders[0].uid).toBe(DEFAULT_ORDER_UID);
+  expect(orders[0].owner).toBe(OWNER);
+  expect(orders[0].appData).toBe(APP_DATA_HASH);
+
+  expect(issues).toEqual([]);
+});
+
+test("manual-network: Order panel resolves seeded uid into deterministic order envelope", async ({
+  page,
+}) => {
+  const issues: string[] = [];
+  await routeOrderByUid(page, { issues });
+  await loadConsole(page);
+
+  await page.locator("#lookup-order-uid").fill(DEFAULT_ORDER_UID);
+  await page.locator("#btn-ob-order").click();
+
+  const order = await outputJson<JsonRecord>(page, "#orderbook-output");
+  const expected = defaultOrderPayload();
+  expect(order.uid).toBe(expected.uid);
+  expect(order.owner).toBe(OWNER);
+  expect(order.sellToken).toBe(MAINNET_WETH);
+  expect(order.buyToken).toBe(MAINNET_USDC);
+  expect(order.kind).toBe("sell");
+  expect(order.status).toBe("open");
+
+  expect(issues).toEqual([]);
+});
+
+test("manual-network: Order Trades panel renders deterministic trades array for seeded uid", async ({
+  page,
+}) => {
+  const issues: string[] = [];
+  await routeOrderTrades(page, { issues });
+  await loadConsole(page);
+
+  await page.locator("#lookup-order-uid").fill(DEFAULT_ORDER_UID);
+  await page.locator("#btn-ob-order-trades").click();
+
+  const trades = await outputJson<JsonRecord[]>(page, "#orderbook-output");
+  const expected = defaultTradesPayload();
+  expect(Array.isArray(trades)).toBe(true);
+  expect(trades).toHaveLength(expected.length);
+  expect(trades[0].orderUid).toBe(DEFAULT_ORDER_UID);
+  expect(trades[0].owner).toBe(OWNER);
+  expect(trades[0].sellToken).toBe(MAINNET_WETH);
+  expect(trades[0].buyToken).toBe(MAINNET_USDC);
+
+  expect(issues).toEqual([]);
+});
+
+test("manual-network: App Data panel renders deterministic AppData document for seeded hash", async ({
+  page,
+}) => {
+  const issues: string[] = [];
+  await routeAppData(page, { issues });
+  await loadConsole(page);
+
+  await page.locator("#lookup-appdata-hex").fill(APP_DATA_HASH);
+  await page.locator("#btn-ob-appdata").click();
+
+  const response = await outputJson<JsonRecord>(page, "#orderbook-output");
+  const expected = defaultAppDataPayload();
+  expect(response.fullAppData).toBe(expected.fullAppData);
+
+  const parsed = JSON.parse(response.fullAppData as string) as JsonRecord;
+  expect(parsed.appCode).toBe("cow-rs/wasm-console");
+  expect(parsed.environment).toBe("browser");
+
+  expect(issues).toEqual([]);
+});
+
+test("manual-network: Subgraph Totals resolves deterministic totals response for reviewed operation", async ({
+  page,
+}) => {
+  const issues: string[] = [];
+  const captured: JsonRecord[] = [];
+  await routeSubgraphQuery(page, "Totals", subgraphResponse("Totals"), {
+    issues,
+    captured,
+  });
+  await loadConsole(page);
+
+  await page.locator("#subgraph-api-key").fill("mock-key");
+  await page.locator("#btn-subgraph-totals").click();
+
+  const totals = await outputJson<JsonRecord>(page, "#subgraph-output");
+  expect(totals.tokens).toBe("2");
+  expect(totals.orders).toBe("3");
+  expect(totals.volumeUsd).toBe("10.25");
+
+  expect(captured.length).toBeGreaterThan(0);
+  expect(captured[0].operationName).toBe("Totals");
+  expect(issues).toEqual([]);
+});
+
+test("manual-network: Subgraph custom operation resolves deterministic daily-volume response via query matcher", async ({
+  page,
+}) => {
+  const issues: string[] = [];
+  const captured: JsonRecord[] = [];
+  await routeSubgraphQuery(page, "LastDaysVolume", subgraphResponse("LastDaysVolume"), {
+    issues,
+    captured,
+  });
+  await loadConsole(page);
+
+  await page.locator("#subgraph-api-key").fill("mock-key");
+  await page.locator("#btn-subgraph-days").click();
+
+  const response = await outputJson<JsonRecord>(page, "#subgraph-output");
+  const dailyTotals = response.dailyTotals as JsonRecord[] | undefined;
+  if (Array.isArray(dailyTotals)) {
+    expect(dailyTotals.length).toBeGreaterThan(0);
+    expect(dailyTotals[0].volumeUsd).toBe("123.45");
+  } else {
+    // The console may unwrap the dailyTotals array directly.
+    const first = (response as unknown as JsonRecord[])[0];
+    expect(first.volumeUsd).toBe("123.45");
+  }
+
+  expect(captured.length).toBeGreaterThan(0);
+  expect(captured[0].operationName).toBe("LastDaysVolume");
+  expect(issues).toEqual([]);
+});
+
+async function outputJson<T>(page: Page, selector: string): Promise<T> {
+  const output = page.locator(selector);
+  await expect(output).not.toContainText("Loading");
+  await expect(output).not.toContainText("Working");
+  await expect(output).not.toContainText("Failed to load the WASM module");
+  const text = (await output.textContent()) ?? "";
+  try {
+    return JSON.parse(text) as T;
+  } catch (error) {
+    throw new Error(`Invalid JSON in ${selector}: ${text}\n${String(error)}`);
+  }
+}
+
+async function loadConsole(page: Page): Promise<void> {
+  await page.goto("/");
+  await expect(page.locator("#runtime-output")).toContainText('"surface": "cow-sdk"');
+}
