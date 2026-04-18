@@ -86,12 +86,13 @@ downstream dashboards can pivot on the same names across every SDK call.
 ## Coverage
 
 Tracing spans are emitted by every long-running public async method on
-`cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-signing`,
-and `cow-sdk-browser-wallet`. The per-crate surface below lists the
-canonical entry points that carry `#[tracing::instrument]`; wrapper
-methods that build a default [`cow_sdk_core::CancellationToken`] delegate
-through their `_with_cancellation` sibling so the span is emitted exactly
-once per call regardless of which public surface the caller used.
+`cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`,
+`cow-sdk-signing`, and `cow-sdk-browser-wallet`. Each canonical public
+async method carries `#[tracing::instrument]` and emits exactly one span
+per call. Callers that need cooperative cancellation wrap the returned
+future through [`cow_sdk_core::Cancellable::cancel_with`] at the call
+site; the span is emitted through the wrapped future without additional
+instrumentation.
 
 ### `cow-sdk-orderbook`
 
@@ -99,24 +100,24 @@ Every public async method on `OrderBookApi` emits one span. Spans carry
 `chain`, `env`, `endpoint`, and `method`; `order_uid` and `owner` are added
 where the input parameters expose them.
 
-- `get_version_with_cancellation`
-- `get_quote_with_cancellation`
-- `send_order_with_cancellation`
-- `send_signed_order_cancellations_with_cancellation`
-- `get_order_with_cancellation`
-- `get_order_multi_env_with_cancellation`
-- `get_orders_with_cancellation`
-- `get_tx_orders_with_cancellation`
-- `get_trades_with_cancellation`
-- `get_order_competition_status_with_cancellation`
-- `get_native_price_with_cancellation`
-- `get_total_surplus_with_cancellation`
-- `get_app_data_with_cancellation`
-- `upload_app_data_with_cancellation`
-- `get_solver_competition_by_auction_id_with_cancellation`
-- `get_solver_competition_by_tx_hash_with_cancellation`
-- `get_latest_solver_competition_with_cancellation`
-- `get_auction_with_cancellation`
+- `get_version`
+- `get_quote`
+- `send_order`
+- `send_signed_order_cancellations`
+- `get_order`
+- `get_order_multi_env`
+- `get_orders`
+- `get_tx_orders`
+- `get_trades`
+- `get_order_competition_status`
+- `get_native_price`
+- `get_total_surplus`
+- `get_app_data`
+- `upload_app_data`
+- `get_solver_competition_by_auction_id`
+- `get_solver_competition_by_tx_hash`
+- `get_latest_solver_competition`
+- `get_auction`
 
 ### `cow-sdk-subgraph`
 
@@ -124,10 +125,10 @@ Every top-level public async method on `SubgraphApi` emits one span.
 Spans carry `chain`, `endpoint`, and `method`; subgraph does not have a
 protocol `env` axis.
 
-- `get_totals_with_cancellation`
-- `get_last_days_volume_with_cancellation`
-- `get_last_hours_volume_with_cancellation`
-- `run_query_with_cancellation`
+- `get_totals`
+- `get_last_days_volume`
+- `get_last_hours_volume`
+- `run_query`
 
 ### `cow-sdk-trading`
 
@@ -135,25 +136,25 @@ Every public async method on `TradingSdk` plus the module-level async
 helpers emit one span each. Spans carry `chain`, `env`, and `endpoint`;
 `order_uid` is added on order-bound helpers.
 
-- `get_quote_only_with_cancellation`
-- `get_quote_results_with_cancellation`
-- `get_quote_results_async_with_cancellation`
-- `post_swap_order_with_cancellation`
-- `post_swap_order_async_with_cancellation`
-- `post_swap_order_from_quote_with_cancellation`
-- `post_swap_order_from_quote_async_with_cancellation`
-- `post_limit_order_with_cancellation`
-- `post_limit_order_async_with_cancellation`
-- `get_pre_sign_transaction_async_with_cancellation`
-- `get_order_with_cancellation`
-- `off_chain_cancel_order_with_cancellation`
-- `off_chain_cancel_order_async_with_cancellation`
-- `on_chain_cancel_order_with_cancellation`
-- `on_chain_cancel_order_async_with_cancellation`
-- `get_cow_protocol_allowance_async_with_cancellation`
-- `approve_cow_protocol_async_with_cancellation`
-- `post_swap_order_from_quote_async_with_cancellation` (module-level)
-- `post_sell_native_currency_order_async_with_cancellation` (module-level)
+- `get_quote_only`
+- `get_quote_results`
+- `get_quote_results_async`
+- `post_swap_order`
+- `post_swap_order_async`
+- `post_swap_order_from_quote`
+- `post_swap_order_from_quote_async`
+- `post_limit_order`
+- `post_limit_order_async`
+- `get_pre_sign_transaction_async`
+- `get_order`
+- `off_chain_cancel_order`
+- `off_chain_cancel_order_async`
+- `on_chain_cancel_order`
+- `on_chain_cancel_order_async`
+- `get_cow_protocol_allowance_async`
+- `approve_cow_protocol_async`
+- `post_swap_order_from_quote_async` (module-level)
+- `post_sell_native_currency_order_async` (module-level)
 
 ### `cow-sdk-signing`
 

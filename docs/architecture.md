@@ -126,18 +126,37 @@ accompanies each opt-in setting.
 
 ### Cancellation
 
-Long-running public operations expose `_with_cancellation` variants that
-accept a `cow_sdk_core::CancellationToken` (a re-export of
-`tokio_util::sync::CancellationToken`). Every non-cancellation entry point
-is a thin wrapper that constructs a default token, so existing callers see
-no behavioural change. Internally the cancellation path is wired through a
-biased `tokio::select!` against `token.cancelled()`; when the token fires,
-the SDK drops the in-flight request future so the underlying socket is
-released promptly rather than waiting for the request deadline, and the
-typed `Cancelled` variant on `OrderbookError`, `SubgraphError`, and
-`TradingError` surfaces at the caller. Cancellation is cooperative: the
-caller owns the token, and every SDK instance that needs to propagate
-shutdown through a shared token simply clones it.
+Long-running public operations on `OrderBookApi`, `SubgraphApi`, and
+`TradingSdk` each expose one canonical async method, and callers compose
+cooperative cancellation by wrapping the returned future through
+`cow_sdk_core::Cancellable::cancel_with(&token)` at the call site. The
+`cow_sdk_core::CancellationToken` is a re-export of
+`tokio_util::sync::CancellationToken`, so every SDK surface routes
+cancellation through the same typed import. The combinator polls the
+borrowed token in a biased branch before each inner poll; when the token
+fires, the wrapper drops the inner request future so the underlying
+socket releases promptly, and the typed `Cancelled` variant on the
+relevant error aggregate surfaces at the caller.
+
+For example, the following quotes and posts a swap with a shared
+cancellation token:
+
+```rust,ignore
+use cow_sdk_core::Cancellable;
+
+let token = cow_sdk_core::CancellationToken::new();
+let result = sdk
+    .post_swap_order_async(params, &signer, None)
+    .cancel_with(&token)
+    .await?;
+```
+
+Cancellation is cooperative: the caller owns the token, and every SDK
+instance that needs to propagate shutdown through a shared token simply
+clones it. `From<Cancelled>` bridges on `CoreError`, `OrderbookError`,
+`SubgraphError`, `TradingError`, `SigningError`, `BrowserWalletError`,
+and the facade `SdkError` lift the marker through `?` across every public
+error boundary.
 
 ### Workflow Ownership
 

@@ -1,10 +1,12 @@
 # Cooperative Cancellation Contract Audit
 
 Status: Current
-Last reviewed: 2026-04-17
+Last reviewed: 2026-04-18
 Owning surface: Cross-cutting cooperative cancellation across `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, and `cow-sdk-trading`
-Refresh trigger: Changes to the cancellation token re-export, to the `_with_cancellation` public entry points, to the typed `Cancelled` error variants, or to the biased `select!` implementation path
+Refresh trigger: Changes to the `Cancellable` combinator, to the `CancellationToken` re-export, to the canonical long-running public methods on the three client surfaces, or to the `From<Cancelled>` bridges on the typed error aggregates
 Related docs:
+- [ADR 0005](../adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
+- [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [ADR 0010](../adr/0010-runtime-neutral-async-and-transport-posture.md)
 - [Architecture](../architecture.md)
 - [Observability](../observability.md)
@@ -14,11 +16,16 @@ Related docs:
 This audit covers:
 
 - the shared `CancellationToken` re-export on `cow-sdk-core`
-- `_with_cancellation` entry points on every long-running public
-  operation of `OrderBookApi`, `SubgraphApi`, and `TradingSdk`
+- the `Cancellable` extension trait and its `WithCancellation<'t, F>`
+  wrapper on `cow-sdk-core`
+- the canonical long-running public methods on `OrderBookApi`,
+  `SubgraphApi`, and `TradingSdk`, each composed with the combinator at
+  the call site
 - typed `Cancelled` variants on `CoreError`, `OrderbookError`,
-  `SubgraphError`, and `TradingError`
-- the biased `tokio::select!` propagation pattern that drops in-flight
+  `SubgraphError`, `TradingError`, `SigningError`, `BrowserWalletError`,
+  and the facade `SdkError`, plus the `From<Cancelled>` bridges that lift
+  the marker across every public error boundary
+- the biased cancellation poll inside the combinator that drops in-flight
   request futures promptly when the caller cancels
 
 It does not cover browser-wallet session cancellation, unrelated transport
@@ -29,9 +36,9 @@ policy, or future capability crates outside the published surface.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Shared token import | One typed cancellation token re-export across every public crate | Conforms |
-| `_with_cancellation` entry points | Every long-running public operation on `OrderBookApi`, `SubgraphApi`, and `TradingSdk` exposes a `_with_cancellation` sibling that accepts `&CancellationToken` and returns `Cancelled` when it fires | Conforms |
-| Typed `Cancelled` variants | Every affected error aggregate surfaces cancellation as a discrete typed variant | Conforms |
-| Biased `select!` propagation | In-flight futures are dropped promptly so sockets release rather than waiting on deadlines | Conforms |
+| Canonical public methods | Every long-running public operation on `OrderBookApi`, `SubgraphApi`, and `TradingSdk` is exposed as one canonical async method; cancellation composes through `Cancellable::cancel_with(&token)` at the call site | Conforms |
+| Typed `Cancelled` variants | Every affected error aggregate surfaces cancellation as a discrete typed variant, and each carries a `From<Cancelled>` bridge so the marker propagates with `?` across every public boundary | Conforms |
+| Combinator poll | The combinator polls the token in a biased branch, drops the inner future promptly on cancellation, and routes the marker through the inner result's `From<Cancelled>` implementation | Conforms |
 
 ## Current Contract
 
@@ -42,67 +49,52 @@ policy, or future capability crates outside the published surface.
 cancellation through that one typed import so consumers do not mix
 independent tokens across crate boundaries.
 
-### `_with_cancellation` Entry Points
+### `Cancellable` Combinator
+
+`cow-sdk-core` exposes the `Cancellable` extension trait, implemented for
+every `Future`, plus the `WithCancellation<'t, F>` future wrapper. Callers
+compose cancellation by wrapping any returned future through
+`cow_sdk_core::Cancellable::cancel_with(&token)` at the call site. The
+wrapper polls the borrowed `CancellationToken` in a biased branch before
+each inner poll; when the token fires, the wrapper drops the inner future
+promptly and resolves to the typed `Cancelled` variant through the inner
+result's `From<Cancelled>` implementation.
+
+### Canonical Public Methods
 
 Every long-running public operation on `OrderBookApi`, `SubgraphApi`, and
-`TradingSdk` exposes a `_with_cancellation` sibling that accepts
-`&CancellationToken`. The non-cancellation wrappers construct a default
-token and delegate to the cancellation path, so the cancellation-aware
-variant is the canonical entry for the span and trace surface while the
-existing signatures stay intact.
+`TradingSdk` is exposed as one canonical async method that performs its
+request directly and carries the observability instrumentation for the
+operation. Callers that need cooperative cancellation wrap that future
+through the combinator at the call site.
 
-`OrderBookApi` covers `get_version`, `get_quote`, `send_order`,
-`send_signed_order_cancellations`, `get_order`, `get_order_multi_env`,
-`get_orders`, `get_tx_orders`, `get_trades`,
-`get_order_competition_status`, `get_native_price`, `get_total_surplus`,
-`get_app_data`, `upload_app_data`, the three solver-competition lookups,
-and `get_auction`.
+### Typed `Cancelled` Variants And `From<Cancelled>` Bridges
 
-`SubgraphApi` covers `get_totals`, `get_last_days_volume`,
-`get_last_hours_volume`, and `run_query` at both the top-level shape and
-the per-call `_with_config` shape.
+`CoreError`, `OrderbookError`, `SubgraphError`, `TradingError`,
+`SigningError`, `BrowserWalletError`, and the facade `SdkError` each
+expose a typed `Cancelled` variant and an
+`impl From<cow_sdk_core::Cancelled>` that lifts the marker into that
+variant. Operation code therefore propagates cancellation with `?` across
+every public error boundary without pulling the raw `tokio-util` future
+type into downstream signatures. Facade classification through
+`SdkError::class()` routes every reachable `Cancelled` variant to
+`ErrorClass::Cancelled`.
 
-`TradingSdk` covers `get_quote_only`, `get_quote_results` (sync and
-async), `post_swap_order` (sync and async), `post_swap_order_from_quote`
-(sync and async), `post_limit_order` (sync and async),
-`get_pre_sign_transaction_async`, `get_order`, `off_chain_cancel_order`
-(sync and async), `on_chain_cancel_order` (sync and async),
-`get_cow_protocol_allowance_async`, and `approve_cow_protocol_async`.
-The module-level swap-from-quote and native-currency posting helpers on
-`cow-sdk-trading` also ship cancellation-aware entry points for
-consumers using the lower-level API.
+### Combinator Poll And Drop Semantics
 
-Synchronous helpers on `TradingSdk` (`approve_cow_protocol`,
-`get_cow_protocol_allowance`, `get_pre_sign_transaction`) are not
-`async fn` and therefore cannot host cancellation-aware siblings;
-callers that need cancellation on those flows reach for the `_async`
-variant of the same helper.
-
-Any new long-running public method added to these surfaces ships with a
-matching `_with_cancellation` sibling at the same time, and the
-non-cancellation wrapper delegates through it.
-
-### Typed `Cancelled` Variants
-
-`CoreError`, `OrderbookError`, `SubgraphError`, and `TradingError` each
-expose a discrete `Cancelled` variant. Facade aggregation through
-`SdkError` preserves the variant so downstream telemetry can distinguish
-cancellation from transport or validation failure without pattern-matching
-error sources.
-
-### Biased `select!` Propagation
-
-Internal implementation drives a biased `tokio::select!` against
-`token.cancelled()`. When the token fires, the SDK drops the in-flight
-request future so the underlying socket releases promptly rather than
-waiting for the request deadline. Cancellation is cooperative: the caller
-owns the token and can clone it to propagate shutdown across multiple
-SDK instances.
+The `WithCancellation<'t, F>` wrapper drives a biased poll against the
+borrowed token's cancellation future. When the token fires, the wrapper
+returns `Poll::Ready(Err(E::from(Cancelled)))` and the caller's `.await`
+drops the inner future, so the underlying socket releases promptly rather
+than waiting for the request deadline. Cancellation is cooperative: the
+caller owns the token and can clone it to propagate shutdown across
+multiple SDK instances.
 
 ## Evidence
 
 Primary implementation points:
 
+- `crates/core/src/cancellation.rs`
 - `crates/core/src/lib.rs`
 - `crates/core/src/errors.rs`
 - `crates/orderbook/src/api.rs`
@@ -110,10 +102,15 @@ Primary implementation points:
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/error.rs`
 - `crates/trading/src/sdk.rs`
+- `crates/trading/src/post.rs`
 - `crates/trading/src/error.rs`
+- `crates/signing/src/errors.rs`
+- `crates/browser-wallet/src/error.rs`
+- `crates/sdk/src/lib.rs`
 
 Primary regression coverage:
 
+- `crates/core/tests/cancellation_contract.rs`
 - `crates/orderbook/tests/api_contract.rs`
 - `crates/subgraph/tests/api_contract.rs`
 - `crates/trading/tests/sdk_contract.rs`

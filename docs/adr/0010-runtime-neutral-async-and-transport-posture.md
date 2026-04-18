@@ -29,21 +29,22 @@ consumers plug the SDK into any async ecosystem they already run.
 
 ## Must Remain True
 
-- Public surface: every long-running public operation on `OrderBookApi`,
-  `SubgraphApi`, and `TradingSdk` has a `_with_cancellation` variant that
-  accepts a reference to a `cow_sdk_core::CancellationToken`; the
-  non-cancellation wrappers build a default token and delegate to the
-  cancellation path so existing callers keep their signatures and
-  observe no behavioural change. Any new long-running public method
-  added to those surfaces ships with a matching `_with_cancellation`
-  variant at the same time. `OrderBookApi` and `SubgraphApi` expose
-  `from_shared_client` constructors plus a transport-policy variant so
-  consumers can pool one `reqwest::Client` across chains and services.
-  `SdkError::class()` returns a stable `ErrorClass` partition.
+- Public surface: the cancellation-aware surface on `OrderBookApi`,
+  `SubgraphApi`, and `TradingSdk` is expressed through the
+  `cow_sdk_core::Cancellable::cancel_with(&token)` extension-trait
+  combinator. Every public async method carries one canonical shape, and
+  cancellation composes through the combinator at the call site, returning
+  the crate-level `Cancelled` variant on every affected error aggregate.
+  `SdkError::class()` returns `ErrorClass::Cancelled` for every such
+  variant. `OrderBookApi` and `SubgraphApi` expose `from_shared_client`
+  constructors plus a transport-policy variant so consumers can pool one
+  `reqwest::Client` across chains and services. Any new long-running
+  public method lands under the canonical shape.
 - Runtime and support: the SDK does not call `tokio::spawn` from library
   code, does not require `rt-multi-thread`, and does not use
-  `#[tokio::main]` anywhere in library sources. Cancellation is wired
-  through a biased `tokio::select!` that drops in-flight futures promptly.
+  `#[tokio::main]` anywhere in library sources. The combinator runs a
+  biased poll against the borrowed token and drops the inner future the
+  moment the token fires, releasing the underlying socket promptly.
   `std::sync::Mutex` (or `parking_lot::Mutex`) is the default lock for user
   data; `tokio::sync::Mutex` is reserved for I/O resources held across
   `.await` points.
@@ -54,10 +55,10 @@ consumers plug the SDK into any async ecosystem they already run.
   bearing URLs cannot leak through error `Display`. The `tracing` feature
   stays per-crate optional and zero-cost when disabled; the facade
   `cow-sdk/tracing` feature activates the leaves in one step.
-- Cost: two surface families per public operation (sync and
-  `_with_cancellation`) and a small `tokio-util` dependency with the
-  `sync`-only feature. The `tracing` feature lights a documented field
-  registry that must not carry secret values.
+- Cost: one `Cancellable` extension trait and a small `tokio-util`
+  dependency pulled in for its shared `CancellationToken`. The `tracing`
+  feature lights a documented field registry that must not carry secret
+  values.
 
 ## Alternatives Rejected
 
@@ -70,6 +71,9 @@ consumers plug the SDK into any async ecosystem they already run.
 - Stringly-typed error classification on the facade aggregate: easier to
   grow, but forces every downstream telemetry layer to pattern-match on
   variant shapes instead of partition classes.
+- Per-method cancellation siblings (a `_with_cancellation` variant on
+  every operation): rejected as an API-surface-doubling pattern. The extension-trait combinator delivers
+  the same typed-error semantics at one-to-many-times lower surface cost.
 
 ## Links
 

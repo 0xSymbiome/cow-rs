@@ -1370,7 +1370,7 @@ impl TradingSdkOptions {
     ///
     /// The cache is instance-scoped; the trading SDK never registers a global
     /// cache on the caller's behalf. Passing `None` through
-    /// [`TradingSdkBuilder::with_quote_cache`] keeps the pass-through
+    /// [`crate::TradingSdkBuilder::with_quote_cache`] keeps the pass-through
     /// [`crate::NoopQuoteCache`] default behaviour.
     #[must_use]
     pub fn with_quote_cache(mut self, quote_cache: Arc<dyn crate::cache::QuoteCache>) -> Self {
