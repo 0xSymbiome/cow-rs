@@ -1,5 +1,6 @@
 mod common;
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -606,6 +607,14 @@ async fn get_version_returns_cancelled_when_combinator_token_fires_before_send()
 async fn get_version_combinator_aborts_an_in_flight_request() {
     use cow_sdk_core::Cancellable;
 
+    struct DropSpy(Arc<AtomicBool>);
+
+    impl Drop for DropSpy {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::SeqCst);
+        }
+    }
+
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/api/v1/version"))
@@ -623,9 +632,14 @@ async fn get_version_combinator_aborts_an_in_flight_request() {
     );
     let token = cow_sdk_core::CancellationToken::new();
     let token_for_task = token.clone();
+    let dropped = Arc::new(AtomicBool::new(false));
+    let spy = DropSpy(Arc::clone(&dropped));
 
     let started = Instant::now();
-    let task = tokio::spawn(async move { api.get_version().cancel_with(&token_for_task).await });
+    let task = tokio::spawn(async move {
+        let _spy = spy;
+        api.get_version().cancel_with(&token_for_task).await
+    });
 
     tokio::time::sleep(Duration::from_millis(50)).await;
     token.cancel();
@@ -640,6 +654,10 @@ async fn get_version_combinator_aborts_an_in_flight_request() {
     assert!(
         elapsed < Duration::from_secs(5),
         "cancellation must drop the in-flight future within the request deadline; elapsed = {elapsed:?}"
+    );
+    assert!(
+        dropped.load(Ordering::SeqCst),
+        "the inner request future must be dropped when the cancellation token fires"
     );
 }
 

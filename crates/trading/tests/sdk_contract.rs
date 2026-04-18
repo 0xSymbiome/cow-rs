@@ -1,6 +1,7 @@
 mod common;
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use cow_sdk_core::{AddressPerChain, Amount, CowEnv, SupportedChainId};
 use cow_sdk_trading::{
@@ -548,6 +549,14 @@ async fn get_quote_only_returns_cancelled_when_combinator_token_fires_before_cal
 async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
     use cow_sdk_core::Cancellable;
 
+    struct DropSpy(Arc<AtomicBool>);
+
+    impl Drop for DropSpy {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::SeqCst);
+        }
+    }
+
     let orderbook = Arc::new(
         MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response())
             .with_quote_delay(std::time::Duration::from_secs(30)),
@@ -565,17 +574,23 @@ async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
     let trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
     let token = cow_sdk_core::CancellationToken::new();
     let token_for_call = token.clone();
+    let dropped = Arc::new(AtomicBool::new(false));
+    let spy = DropSpy(Arc::clone(&dropped));
 
     let trigger_cancellation = async {
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
         token.cancel();
     };
 
+    let quote_call = async {
+        let _spy = spy;
+        sdk.get_quote_only(trade, None)
+            .cancel_with(&token_for_call)
+            .await
+    };
+
     let started = std::time::Instant::now();
-    let (result, ()) = tokio::join!(
-        sdk.get_quote_only(trade, None).cancel_with(&token_for_call),
-        trigger_cancellation,
-    );
+    let (result, ()) = tokio::join!(quote_call, trigger_cancellation);
     let elapsed = started.elapsed();
 
     assert!(matches!(
@@ -585,6 +600,10 @@ async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
     assert!(
         elapsed < std::time::Duration::from_secs(5),
         "cancellation must drop the in-flight future within the quote deadline; elapsed = {elapsed:?}"
+    );
+    assert!(
+        dropped.load(Ordering::SeqCst),
+        "the inner quote future must be dropped when the cancellation token fires"
     );
 }
 
