@@ -1,6 +1,6 @@
 use cow_sdk_app_data::AppDataError;
 use cow_sdk_contracts::{ContractsError, SigningScheme};
-use cow_sdk_core::CoreError;
+use cow_sdk_core::{Cancelled, CoreError};
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_signing::SigningError;
 use thiserror::Error;
@@ -133,4 +133,10 @@ pub enum TradingError {
     /// A long-running trading operation was cancelled through a cooperative cancellation token.
     #[error("trading operation was cancelled")]
     Cancelled,
+}
+
+impl From<Cancelled> for TradingError {
+    fn from(_: Cancelled) -> Self {
+        Self::Cancelled
+    }
 }

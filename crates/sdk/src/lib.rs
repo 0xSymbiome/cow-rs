@@ -124,14 +124,20 @@ impl SdkError {
     pub const fn class(&self) -> ErrorClass {
         match self {
             Self::Types(error) => classify_core(error),
-            Self::Signing(_) => ErrorClass::Signing,
+            Self::Signing(error) => classify_signing(error),
             Self::AppData(error) => classify_app_data(error),
             Self::Contracts(_) => ErrorClass::Signing,
             Self::Orderbook(error) => classify_orderbook(error),
             Self::Trading(error) => classify_trading(error),
             #[cfg(feature = "browser-wallet")]
-            Self::BrowserWallet(_) => ErrorClass::Signing,
+            Self::BrowserWallet(error) => classify_browser_wallet(error),
         }
+    }
+}
+
+impl From<cow_sdk_core::Cancelled> for SdkError {
+    fn from(cancelled: cow_sdk_core::Cancelled) -> Self {
+        Self::Types(cow_sdk_core::CoreError::from(cancelled))
     }
 }
 
@@ -187,8 +193,8 @@ const fn classify_trading(error: &cow_sdk_trading::TradingError) -> ErrorClass {
         cow_sdk_trading::TradingError::Orderbook(orderbook_error) => {
             classify_orderbook(orderbook_error)
         }
+        cow_sdk_trading::TradingError::Signing(signing_error) => classify_signing(signing_error),
         cow_sdk_trading::TradingError::Contracts(_)
-        | cow_sdk_trading::TradingError::Signing(_)
         | cow_sdk_trading::TradingError::Signer { .. }
         | cow_sdk_trading::TradingError::Provider { .. } => ErrorClass::Signing,
         cow_sdk_trading::TradingError::Cancelled => ErrorClass::Cancelled,
@@ -197,5 +203,28 @@ const fn classify_trading(error: &cow_sdk_trading::TradingError) -> ErrorClass {
         // numeric input failures) and classifies as validation. Future
         // additive validation variants fall through the same arm.
         _ => ErrorClass::Validation,
+    }
+}
+
+const fn classify_signing(error: &cow_sdk_signing::SigningError) -> ErrorClass {
+    match error {
+        cow_sdk_signing::SigningError::Core(core_error) => classify_core(core_error),
+        cow_sdk_signing::SigningError::Cancelled => ErrorClass::Cancelled,
+        // Contracts, Serialization, Signer, and UnsupportedSignerGeneratedScheme
+        // failures plus any future additive variants classify as signing.
+        _ => ErrorClass::Signing,
+    }
+}
+
+#[cfg(feature = "browser-wallet")]
+const fn classify_browser_wallet(error: &cow_sdk_browser_wallet::BrowserWalletError) -> ErrorClass {
+    match error {
+        cow_sdk_browser_wallet::BrowserWalletError::Core(core_error) => classify_core(core_error),
+        cow_sdk_browser_wallet::BrowserWalletError::Cancelled => ErrorClass::Cancelled,
+        // Every other typed wallet failure (user rejection, disconnected,
+        // wrong chain, malformed response, JS interop, serialization, or
+        // unclassified RPC payload) plus any future additive variants
+        // classify as signing because they surface from the signing edge.
+        _ => ErrorClass::Signing,
     }
 }

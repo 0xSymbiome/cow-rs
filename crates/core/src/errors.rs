@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use crate::cancellation::Cancelled;
+
 /// Validation failures for typed user input and configuration values.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -96,4 +98,10 @@ pub enum CoreError {
     /// A long-running operation was cancelled through a cooperative cancellation token.
     #[error("operation was cancelled")]
     Cancelled,
+}
+
+impl From<Cancelled> for CoreError {
+    fn from(_: Cancelled) -> Self {
+        Self::Cancelled
+    }
 }

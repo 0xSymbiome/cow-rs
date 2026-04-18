@@ -1,5 +1,5 @@
 use cow_sdk_contracts::{ContractsError, SigningScheme};
-use cow_sdk_core::CoreError;
+use cow_sdk_core::{Cancelled, CoreError};
 use thiserror::Error;
 
 /// Errors returned by explicit signing helpers.
@@ -31,4 +31,13 @@ pub enum SigningError {
         /// Unsupported requested signing scheme.
         scheme: SigningScheme,
     },
+    /// A long-running signing operation was cancelled through a cooperative cancellation token.
+    #[error("operation cancelled")]
+    Cancelled,
+}
+
+impl From<Cancelled> for SigningError {
+    fn from(_: Cancelled) -> Self {
+        Self::Cancelled
+    }
 }

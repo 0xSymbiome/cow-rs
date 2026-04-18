@@ -1,5 +1,6 @@
 //! Typed error surface for subgraph requests.
 
+use cow_sdk_core::Cancelled;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -100,6 +101,12 @@ pub enum SubgraphError {
     /// A long-running subgraph operation was cancelled through a cooperative cancellation token.
     #[error("subgraph operation was cancelled")]
     Cancelled,
+}
+
+impl From<Cancelled> for SubgraphError {
+    fn from(_: Cancelled) -> Self {
+        Self::Cancelled
+    }
 }
 
 /// Classifies a `reqwest::Error`, strips any attached URL, and returns a sanitized message.

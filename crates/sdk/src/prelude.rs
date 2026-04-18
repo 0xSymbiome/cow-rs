@@ -25,9 +25,9 @@ pub use cow_sdk_contracts::{
 };
 pub use cow_sdk_core::{
     Address, Amount, ApiBaseUrls, AppDataHash, AppDataHex, AsyncProvider, AsyncSigner, BlockHash,
-    CoreError, CowEnv, Hash32, HexData, OrderBalance, OrderDigest, OrderKind, OrderModel, OrderUid,
-    ProtocolOptions, QuoteModel, SignedAmount, SupportedChainId, TradeModel, TransactionHash,
-    UnsignedOrder, ValidationError,
+    Cancellable, Cancelled, CoreError, CowEnv, Hash32, HexData, OrderBalance, OrderDigest,
+    OrderKind, OrderModel, OrderUid, ProtocolOptions, QuoteModel, SignedAmount, SupportedChainId,
+    TradeModel, TransactionHash, UnsignedOrder, ValidationError,
 };
 pub use cow_sdk_orderbook::{
     ApiContext, AppDataObject, CompetitionOrderStatus, GetOrdersRequest, GetTradesRequest,

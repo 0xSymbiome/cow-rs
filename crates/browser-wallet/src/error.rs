@@ -3,7 +3,7 @@
 //! Browser runtime failures are normalized before they cross the public Rust boundary so callers
 //! receive typed wallet and transport errors rather than raw JS values.
 
-use cow_sdk_core::{ChainId, CoreError};
+use cow_sdk_core::{Cancelled, ChainId, CoreError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -169,6 +169,15 @@ pub enum BrowserWalletError {
     /// Shared core type or validation error.
     #[error(transparent)]
     Core(#[from] CoreError),
+    /// A long-running browser-wallet operation was cancelled through a cooperative cancellation token.
+    #[error("operation cancelled")]
+    Cancelled,
+}
+
+impl From<Cancelled> for BrowserWalletError {
+    fn from(_: Cancelled) -> Self {
+        Self::Cancelled
+    }
 }
 
 impl BrowserWalletError {

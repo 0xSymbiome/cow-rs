@@ -3,6 +3,8 @@
 
 #![warn(missing_docs)]
 
+/// Canonical cancellation combinator for long-running SDK futures.
+pub mod cancellation;
 /// Environment, address-book, and HTTP client policy types shared across crates.
 pub mod config;
 /// Common validation and configuration errors used by the foundational crates.
@@ -14,6 +16,7 @@ pub mod traits;
 /// Strongly typed user-domain values used across the SDK surface.
 pub mod types;
 
+pub use cancellation::{Cancellable, Cancelled, WithCancellation};
 pub use config::{
     AddressPerChain, ApiBaseUrls, ApiContext, CowEnv, DEFAULT_HTTP_TIMEOUT, ENVS_LIST,
     EVM_NATIVE_CURRENCY_ADDRESS, HttpClientPolicy, MAX_VALID_TO_EPOCH, ProtocolOptions,

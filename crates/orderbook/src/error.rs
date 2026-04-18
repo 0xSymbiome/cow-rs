@@ -1,4 +1,4 @@
-use cow_sdk_core::CoreError;
+use cow_sdk_core::{Cancelled, CoreError};
 use thiserror::Error;
 
 use crate::request::OrderBookApiError;
@@ -36,6 +36,12 @@ pub enum OrderbookError {
 impl From<OrderBookApiError> for OrderbookError {
     fn from(value: OrderBookApiError) -> Self {
         Self::Api(Box::new(value))
+    }
+}
+
+impl From<Cancelled> for OrderbookError {
+    fn from(_: Cancelled) -> Self {
+        Self::Cancelled
     }
 }
 
