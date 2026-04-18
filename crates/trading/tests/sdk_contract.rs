@@ -515,7 +515,9 @@ fn typestate_build_helper_only_produces_a_helper_mode_sdk_from_a_chain_only_stat
 }
 
 #[tokio::test]
-async fn get_quote_only_with_cancellation_returns_cancelled_when_token_is_fired_before_call() {
+async fn get_quote_only_returns_cancelled_when_combinator_token_fires_before_call() {
+    use cow_sdk_core::Cancellable;
+
     let orderbook = Arc::new(MockOrderbook::new(
         SupportedChainId::Sepolia,
         sell_quote_response(),
@@ -535,14 +537,17 @@ async fn get_quote_only_with_cancellation_returns_cancelled_when_token_is_fired_
     token.cancel();
 
     let error = sdk
-        .get_quote_only_with_cancellation(trade, None, &token)
+        .get_quote_only(trade, None)
+        .cancel_with(&token)
         .await
         .expect_err("pre-cancelled token must produce a Cancelled error");
     assert!(matches!(error, cow_sdk_trading::TradingError::Cancelled));
 }
 
-#[tokio::test]
-async fn get_quote_only_with_cancellation_aborts_an_in_flight_quote() {
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
+    use cow_sdk_core::Cancellable;
+
     let orderbook = Arc::new(
         MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response())
             .with_quote_delay(std::time::Duration::from_secs(30)),
@@ -568,7 +573,7 @@ async fn get_quote_only_with_cancellation_aborts_an_in_flight_quote() {
 
     let started = std::time::Instant::now();
     let (result, ()) = tokio::join!(
-        sdk.get_quote_only_with_cancellation(trade, None, &token_for_call),
+        sdk.get_quote_only(trade, None).cancel_with(&token_for_call),
         trigger_cancellation,
     );
     let elapsed = started.elapsed();

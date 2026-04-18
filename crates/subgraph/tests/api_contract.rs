@@ -941,20 +941,25 @@ struct TokenByVolume {
 }
 
 #[tokio::test]
-async fn get_totals_with_cancellation_returns_cancelled_when_token_is_fired_before_send() {
+async fn get_totals_returns_cancelled_when_combinator_token_fires_before_send() {
+    use cow_sdk_core::Cancellable;
+
     let api = SubgraphApi::new("FakeApiKey");
     let token = cow_sdk_core::CancellationToken::new();
     token.cancel();
 
     let error = api
-        .get_totals_with_cancellation(&token)
+        .get_totals()
+        .cancel_with(&token)
         .await
         .expect_err("pre-cancelled token must produce a Cancelled error");
     assert!(matches!(error, SubgraphError::Cancelled));
 }
 
-#[tokio::test]
-async fn get_totals_with_cancellation_aborts_an_in_flight_request() {
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn get_totals_combinator_aborts_an_in_flight_request() {
+    use cow_sdk_core::Cancellable;
+
     let server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/"))
@@ -971,7 +976,7 @@ async fn get_totals_with_cancellation_aborts_an_in_flight_request() {
     let token_for_task = token.clone();
 
     let started = std::time::Instant::now();
-    let task = tokio::spawn(async move { api.get_totals_with_cancellation(&token_for_task).await });
+    let task = tokio::spawn(async move { api.get_totals().cancel_with(&token_for_task).await });
 
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
     token.cancel();

@@ -1,9 +1,9 @@
-//! Contract coverage for the [`Cancellable`] combinator.
+//! Contract coverage for the [`Cancellable`] combinator on `cow-sdk-core`.
 //!
-//! These scenarios lock the observable behaviour of the additive
-//! combinator introduced on `cow-sdk-core`: the biased cancellation poll,
-//! the pass-through on a quiescent token, drop semantics when the wrapper
-//! is discarded, and the generic composition shape consumers rely on.
+//! These scenarios lock the observable behaviour of the combinator: the
+//! biased cancellation poll, the pass-through on a quiescent token, drop
+//! semantics when the wrapper is discarded, and the generic composition
+//! shape consumers rely on.
 
 #![allow(
     clippy::missing_const_for_fn,
@@ -74,10 +74,7 @@ async fn dropping_the_wrapper_drops_the_inner_future() {
 
 #[tokio::test]
 async fn blanket_impl_composes_generic_futures() {
-    async fn run_with_cancellation<F, T>(
-        future: F,
-        token: &CancellationToken,
-    ) -> Result<T, CoreError>
+    async fn run_cancellable<F, T>(future: F, token: &CancellationToken) -> Result<T, CoreError>
     where
         F: Future<Output = Result<T, CoreError>>,
     {
@@ -85,13 +82,13 @@ async fn blanket_impl_composes_generic_futures() {
     }
 
     let token = CancellationToken::new();
-    let value = run_with_cancellation(async { Ok::<u32, CoreError>(7) }, &token)
+    let value = run_cancellable(async { Ok::<u32, CoreError>(7) }, &token)
         .await
         .expect("quiescent token must let the inner resolve");
     assert_eq!(value, 7);
 
     token.cancel();
-    let error = run_with_cancellation(async { Ok::<u32, CoreError>(7) }, &token)
+    let error = run_cancellable(async { Ok::<u32, CoreError>(7) }, &token)
         .await
         .expect_err("fired token must short-circuit through the generic adapter");
     assert!(matches!(error, CoreError::Cancelled));

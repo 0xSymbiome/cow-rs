@@ -149,40 +149,6 @@ where
         .await
 }
 
-/// Signs and submits a swap order from quote results using a sync signer with cooperative cancellation support.
-///
-/// Cancellation only affects pre-broadcast work: once the signed order
-/// payload has been accepted by the orderbook, the order cannot be
-/// un-submitted.
-///
-/// # Errors
-///
-/// Returns [`TradingError::Cancelled`] when `token` fires during the call,
-/// or any error from [`post_swap_order_from_quote_async_with_cancellation`].
-pub async fn post_swap_order_from_quote_with_cancellation<O, S>(
-    quote_results: &QuoteResults,
-    trader: &TraderParameters,
-    signer: &S,
-    advanced_settings: Option<&SwapAdvancedSettings>,
-    orderbook: &O,
-    token: &cow_sdk_core::CancellationToken,
-) -> Result<OrderPostingResult, TradingError>
-where
-    O: OrderbookClient + ?Sized,
-    S: Signer,
-    S::Error: std::fmt::Display,
-{
-    post_swap_order_from_quote_async_with_cancellation(
-        quote_results,
-        trader,
-        signer,
-        advanced_settings,
-        orderbook,
-        token,
-    )
-    .await
-}
-
 /// Signs and submits a swap order from previously computed quote results using an asynchronous
 /// signer.
 ///
@@ -190,47 +156,14 @@ where
 /// document before submission. The submission orderbook must match the runtime
 /// binding captured by the quote flow, and any explicit chain or environment
 /// must agree with the injected orderbook client, which remains the canonical
-/// runtime authority for signing and submission.
+/// runtime authority for signing and submission. Callers that need cooperative
+/// cancellation wrap this future through
+/// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
 ///
 /// # Errors
 ///
 /// Returns an error when the quoted trade cannot be converted into a postable order, when app-data
 /// merging fails, when signing fails, or when the orderbook rejects the order submission.
-pub async fn post_swap_order_from_quote_async<O, S>(
-    quote_results: &QuoteResults,
-    trader: &TraderParameters,
-    signer: &S,
-    advanced_settings: Option<&SwapAdvancedSettings>,
-    orderbook: &O,
-) -> Result<OrderPostingResult, TradingError>
-where
-    O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
-    S::Error: std::fmt::Display,
-{
-    post_swap_order_from_quote_async_with_cancellation(
-        quote_results,
-        trader,
-        signer,
-        advanced_settings,
-        orderbook,
-        &cow_sdk_core::CancellationToken::new(),
-    )
-    .await
-}
-
-/// Signs and submits a swap order from quote results using an async signer with cooperative cancellation support.
-///
-/// Cancellation only affects pre-broadcast work: once the signed order
-/// payload has been accepted by the orderbook, the order cannot be
-/// un-submitted.
-///
-/// # Errors
-///
-/// Returns [`TradingError::Cancelled`] when `token` fires during the call,
-/// or an error when the quoted trade cannot be converted into a postable
-/// order, when app-data merging fails, when signing fails, or when the
-/// orderbook rejects the order submission.
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(
@@ -242,13 +175,12 @@ where
         ),
     ),
 )]
-pub async fn post_swap_order_from_quote_async_with_cancellation<O, S>(
+pub async fn post_swap_order_from_quote_async<O, S>(
     quote_results: &QuoteResults,
     trader: &TraderParameters,
     signer: &S,
     advanced_settings: Option<&SwapAdvancedSettings>,
     orderbook: &O,
-    token: &cow_sdk_core::CancellationToken,
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
@@ -282,18 +214,15 @@ where
         ..additional
     };
 
-    tokio::select! {
-        biased;
-        () = token.cancelled() => Err(TradingError::Cancelled),
-        result = post_cow_protocol_trade_async(
-            orderbook,
-            &app_data_info,
-            &params,
-            &additional_params,
-            trader,
-            signer,
-        ) => result,
-    }
+    post_cow_protocol_trade_async(
+        orderbook,
+        &app_data_info,
+        &params,
+        &additional_params,
+        trader,
+        signer,
+    )
+    .await
 }
 
 /// Signs and submits a limit order using a synchronous signer.
@@ -378,7 +307,9 @@ where
 /// Submits an `EthFlow`-style native-currency sell order using a synchronous signer.
 ///
 /// This path uploads the supplied app-data, sends the prepared transaction through the signer, and
-/// returns the resulting transaction hash.
+/// returns the resulting transaction hash. Callers that need cooperative
+/// cancellation wrap this future through
+/// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
 ///
 /// # Errors
 ///
@@ -397,49 +328,13 @@ where
     S: Signer,
     S::Error: std::fmt::Display,
 {
-    post_sell_native_currency_order_with_cancellation(
+    post_sell_native_currency_order_async(
         orderbook,
         app_data,
         params,
         additional_params,
         trader,
         signer,
-        &cow_sdk_core::CancellationToken::new(),
-    )
-    .await
-}
-
-/// Submits a native-currency sell order with cooperative cancellation support.
-///
-/// Cancellation only affects pre-broadcast work: once the signer has
-/// broadcast the prepared transaction, it cannot be withdrawn.
-///
-/// # Errors
-///
-/// Returns [`TradingError::Cancelled`] when `token` fires during the call,
-/// or any error from [`post_sell_native_currency_order_async_with_cancellation`].
-pub async fn post_sell_native_currency_order_with_cancellation<O, S>(
-    orderbook: &O,
-    app_data: &TradingAppDataInfo,
-    params: &LimitTradeParameters,
-    additional_params: &crate::types::PostTradeAdditionalParams,
-    trader: &TraderParameters,
-    signer: &S,
-    token: &cow_sdk_core::CancellationToken,
-) -> Result<OrderPostingResult, TradingError>
-where
-    O: OrderbookClient + ?Sized,
-    S: Signer,
-    S::Error: std::fmt::Display,
-{
-    post_sell_native_currency_order_async_with_cancellation(
-        orderbook,
-        app_data,
-        params,
-        additional_params,
-        trader,
-        signer,
-        token,
     )
     .await
 }
@@ -447,50 +342,19 @@ where
 /// Submits an `EthFlow`-style native-currency sell order using an asynchronous signer.
 ///
 /// This path uploads the supplied app-data, sends the prepared transaction through the signer, and
-/// returns the resulting transaction hash.
+/// returns the resulting transaction hash. Callers that need cooperative
+/// cancellation wrap this future through
+/// [`cow_sdk_core::Cancellable::cancel_with`] at the call site; cancellation
+/// only affects pre-broadcast work, because once the signer has broadcast the
+/// prepared transaction, it cannot be withdrawn and the returned receipt will
+/// reflect the chain result even if cancellation fires after submission. A
+/// cancellation fired between transaction preparation and app-data upload is
+/// a no-op on the orderbook service.
 ///
 /// # Errors
 ///
 /// Returns an error when transaction preparation fails, when app-data upload fails, or when the
 /// signer cannot send the transaction.
-pub async fn post_sell_native_currency_order_async<O, S>(
-    orderbook: &O,
-    app_data: &TradingAppDataInfo,
-    params: &LimitTradeParameters,
-    additional_params: &crate::types::PostTradeAdditionalParams,
-    trader: &TraderParameters,
-    signer: &S,
-) -> Result<OrderPostingResult, TradingError>
-where
-    O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
-    S::Error: std::fmt::Display,
-{
-    post_sell_native_currency_order_async_with_cancellation(
-        orderbook,
-        app_data,
-        params,
-        additional_params,
-        trader,
-        signer,
-        &cow_sdk_core::CancellationToken::new(),
-    )
-    .await
-}
-
-/// Submits a native-currency sell order with an async signer and cooperative cancellation support.
-///
-/// Cancellation affects only pre-broadcast work. Once the prepared
-/// transaction has been broadcast, it cannot be withdrawn and the returned
-/// receipt will reflect the chain result even if cancellation fires after
-/// submission. A cancellation fired between transaction preparation and
-/// app-data upload is a no-op on the orderbook service.
-///
-/// # Errors
-///
-/// Returns [`TradingError::Cancelled`] when `token` fires during the call,
-/// or an error when transaction preparation fails, when app-data upload
-/// fails, or when the signer cannot send the transaction.
 #[cfg_attr(
     feature = "tracing",
     tracing::instrument(
@@ -502,14 +366,13 @@ where
         ),
     ),
 )]
-pub async fn post_sell_native_currency_order_async_with_cancellation<O, S>(
+pub async fn post_sell_native_currency_order_async<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
     params: &LimitTradeParameters,
     additional_params: &crate::types::PostTradeAdditionalParams,
     trader: &TraderParameters,
     signer: &S,
-    token: &cow_sdk_core::CancellationToken,
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
@@ -525,35 +388,27 @@ where
     let mut params = params.clone();
     params.env = Some(canonical_env);
 
-    let tx = tokio::select! {
-        biased;
-        () = token.cancelled() => return Err(TradingError::Cancelled),
-        result = crate::get_eth_flow_transaction_async(
-            &app_data.app_data_keccak256,
-            &params,
-            canonical_chain_id,
-            additional_params,
-            trader,
-            signer,
-        ) => result?,
-    };
+    let tx = crate::get_eth_flow_transaction_async(
+        &app_data.app_data_keccak256,
+        &params,
+        canonical_chain_id,
+        additional_params,
+        trader,
+        signer,
+    )
+    .await?;
 
-    tokio::select! {
-        biased;
-        () = token.cancelled() => return Err(TradingError::Cancelled),
-        result = orderbook.upload_app_data(&app_data.app_data_keccak256, &app_data.full_app_data) => {
-            result?;
-        }
-    }
+    orderbook
+        .upload_app_data(&app_data.app_data_keccak256, &app_data.full_app_data)
+        .await?;
 
-    let receipt = tokio::select! {
-        biased;
-        () = token.cancelled() => return Err(TradingError::Cancelled),
-        result = signer.send_transaction(&tx.transaction) => result.map_err(|error| TradingError::Signer {
+    let receipt = signer
+        .send_transaction(&tx.transaction)
+        .await
+        .map_err(|error| TradingError::Signer {
             operation: "send_transaction",
             message: error.to_string(),
-        })?,
-    };
+        })?;
 
     Ok(OrderPostingResult {
         order_id: tx.order_id,

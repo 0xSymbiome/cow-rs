@@ -42,5 +42,5 @@ reqwest = { workspace = true, features = ["json"] }
 [dev-dependencies]
 graphql_client = "0.16.0"
 serde_json.workspace = true
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }
 wiremock = "0.6.5"

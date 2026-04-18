@@ -290,27 +290,12 @@ impl SubgraphApi {
 
     /// Fetches the first totals row from the canonical totals query.
     ///
-    /// This is a thin wrapper around
-    /// [`get_totals_with_cancellation`](Self::get_totals_with_cancellation)
-    /// that passes a fresh [`cow_sdk_core::CancellationToken`]; existing
-    /// callers observe no behavioural change.
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
     ///
     /// # Errors
     ///
     /// Returns [`SubgraphError::NoTotalsFound`] when the response contains no
-    /// totals rows, or any transport, HTTP, GraphQL, serialization, missing
-    /// data, or unsupported-network error surfaced by the underlying query.
-    pub async fn get_totals(&self) -> Result<Total, SubgraphError> {
-        self.get_totals_with_cancellation(&cow_sdk_core::CancellationToken::new())
-            .await
-    }
-
-    /// Fetches the first totals row with cooperative cancellation support.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SubgraphError::Cancelled`] when `token` fires during the
-    /// call, [`SubgraphError::NoTotalsFound`] when the response contains no
     /// totals rows, or any transport, HTTP, GraphQL, serialization, missing
     /// data, or unsupported-network error surfaced by the underlying query.
     #[cfg_attr(
@@ -324,15 +309,15 @@ impl SubgraphApi {
             ),
         ),
     )]
-    pub async fn get_totals_with_cancellation(
-        &self,
-        token: &cow_sdk_core::CancellationToken,
-    ) -> Result<Total, SubgraphError> {
-        self.get_totals_with_config_with_cancellation(SubgraphConfigOverride::default(), token)
+    pub async fn get_totals(&self) -> Result<Total, SubgraphError> {
+        self.get_totals_with_config(SubgraphConfigOverride::default())
             .await
     }
 
     /// Fetches the first totals row with per-call configuration overrides.
+    ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
     ///
     /// # Errors
     ///
@@ -343,31 +328,10 @@ impl SubgraphApi {
         &self,
         config_override: SubgraphConfigOverride,
     ) -> Result<Total, SubgraphError> {
-        self.get_totals_with_config_with_cancellation(
-            config_override,
-            &cow_sdk_core::CancellationToken::new(),
-        )
-        .await
-    }
-
-    /// Fetches the first totals row with per-call overrides and cooperative cancellation support.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SubgraphError::Cancelled`] when `token` fires during the
-    /// call, [`SubgraphError::NoTotalsFound`] when the response contains no
-    /// totals rows, or any transport, HTTP, GraphQL, serialization, missing
-    /// data, or unsupported-network error surfaced by the underlying query.
-    pub async fn get_totals_with_config_with_cancellation(
-        &self,
-        config_override: SubgraphConfigOverride,
-        token: &cow_sdk_core::CancellationToken,
-    ) -> Result<Total, SubgraphError> {
         let response: TotalsResponse = self
-            .run_query_with_config_with_cancellation(
+            .run_query_with_config(
                 SubgraphQueryRequest::new(TOTALS_QUERY).with_operation_name("Totals"),
                 config_override,
-                token,
             )
             .await?;
 
@@ -380,24 +344,12 @@ impl SubgraphApi {
 
     /// Fetches daily volume rows for the last `days` entries.
     ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
+    ///
     /// # Errors
     ///
     /// Returns any transport, HTTP, GraphQL, serialization, missing-data, or
-    /// unsupported-network error surfaced by the underlying query.
-    pub async fn get_last_days_volume(
-        &self,
-        days: u32,
-    ) -> Result<LastDaysVolumeResponse, SubgraphError> {
-        self.get_last_days_volume_with_cancellation(days, &cow_sdk_core::CancellationToken::new())
-            .await
-    }
-
-    /// Fetches daily volume rows with cooperative cancellation support.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SubgraphError::Cancelled`] when `token` fires during the
-    /// call, or any transport, HTTP, GraphQL, serialization, missing-data, or
     /// unsupported-network error surfaced by the underlying query.
     #[cfg_attr(
         feature = "tracing",
@@ -410,20 +362,18 @@ impl SubgraphApi {
             ),
         ),
     )]
-    pub async fn get_last_days_volume_with_cancellation(
+    pub async fn get_last_days_volume(
         &self,
         days: u32,
-        token: &cow_sdk_core::CancellationToken,
     ) -> Result<LastDaysVolumeResponse, SubgraphError> {
-        self.get_last_days_volume_with_config_with_cancellation(
-            days,
-            SubgraphConfigOverride::default(),
-            token,
-        )
-        .await
+        self.get_last_days_volume_with_config(days, SubgraphConfigOverride::default())
+            .await
     }
 
     /// Fetches daily volume rows for the last `days` entries with per-call overrides.
+    ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
     ///
     /// # Errors
     ///
@@ -434,57 +384,23 @@ impl SubgraphApi {
         days: u32,
         config_override: SubgraphConfigOverride,
     ) -> Result<LastDaysVolumeResponse, SubgraphError> {
-        self.get_last_days_volume_with_config_with_cancellation(
-            days,
-            config_override,
-            &cow_sdk_core::CancellationToken::new(),
-        )
-        .await
-    }
-
-    /// Fetches daily volume rows with per-call overrides and cooperative cancellation support.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SubgraphError::Cancelled`] when `token` fires during the
-    /// call, or any transport, HTTP, GraphQL, serialization, missing-data, or
-    /// unsupported-network error surfaced by the underlying query.
-    pub async fn get_last_days_volume_with_config_with_cancellation(
-        &self,
-        days: u32,
-        config_override: SubgraphConfigOverride,
-        token: &cow_sdk_core::CancellationToken,
-    ) -> Result<LastDaysVolumeResponse, SubgraphError> {
-        self.run_query_with_config_with_cancellation(
+        self.run_query_with_config(
             SubgraphQueryRequest::new(LAST_DAYS_VOLUME_QUERY)
                 .with_variables(json!({ "days": days }))
                 .with_operation_name("LastDaysVolume"),
             config_override,
-            token,
         )
         .await
     }
 
     /// Fetches hourly volume rows for the last `hours` entries.
     ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
+    ///
     /// # Errors
     ///
     /// Returns any transport, HTTP, GraphQL, serialization, missing-data, or
-    /// unsupported-network error surfaced by the underlying query.
-    pub async fn get_last_hours_volume(
-        &self,
-        hours: u32,
-    ) -> Result<LastHoursVolumeResponse, SubgraphError> {
-        self.get_last_hours_volume_with_cancellation(hours, &cow_sdk_core::CancellationToken::new())
-            .await
-    }
-
-    /// Fetches hourly volume rows with cooperative cancellation support.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SubgraphError::Cancelled`] when `token` fires during the
-    /// call, or any transport, HTTP, GraphQL, serialization, missing-data, or
     /// unsupported-network error surfaced by the underlying query.
     #[cfg_attr(
         feature = "tracing",
@@ -497,20 +413,18 @@ impl SubgraphApi {
             ),
         ),
     )]
-    pub async fn get_last_hours_volume_with_cancellation(
+    pub async fn get_last_hours_volume(
         &self,
         hours: u32,
-        token: &cow_sdk_core::CancellationToken,
     ) -> Result<LastHoursVolumeResponse, SubgraphError> {
-        self.get_last_hours_volume_with_config_with_cancellation(
-            hours,
-            SubgraphConfigOverride::default(),
-            token,
-        )
-        .await
+        self.get_last_hours_volume_with_config(hours, SubgraphConfigOverride::default())
+            .await
     }
 
     /// Fetches hourly volume rows for the last `hours` entries with per-call overrides.
+    ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
     ///
     /// # Errors
     ///
@@ -521,33 +435,11 @@ impl SubgraphApi {
         hours: u32,
         config_override: SubgraphConfigOverride,
     ) -> Result<LastHoursVolumeResponse, SubgraphError> {
-        self.get_last_hours_volume_with_config_with_cancellation(
-            hours,
-            config_override,
-            &cow_sdk_core::CancellationToken::new(),
-        )
-        .await
-    }
-
-    /// Fetches hourly volume rows with per-call overrides and cooperative cancellation support.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SubgraphError::Cancelled`] when `token` fires during the
-    /// call, or any transport, HTTP, GraphQL, serialization, missing-data, or
-    /// unsupported-network error surfaced by the underlying query.
-    pub async fn get_last_hours_volume_with_config_with_cancellation(
-        &self,
-        hours: u32,
-        config_override: SubgraphConfigOverride,
-        token: &cow_sdk_core::CancellationToken,
-    ) -> Result<LastHoursVolumeResponse, SubgraphError> {
-        self.run_query_with_config_with_cancellation(
+        self.run_query_with_config(
             SubgraphQueryRequest::new(LAST_HOURS_VOLUME_QUERY)
                 .with_variables(json!({ "hours": hours }))
                 .with_operation_name("LastHoursVolume"),
             config_override,
-            token,
         )
         .await
     }
@@ -556,28 +448,13 @@ impl SubgraphApi {
     ///
     /// Anonymous single-operation documents may omit `operation_name`.
     /// Multi-operation documents must provide an explicit operation name
-    /// through [`SubgraphQueryRequest`].
+    /// through [`SubgraphQueryRequest`]. Callers that need cooperative
+    /// cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
     ///
     /// # Errors
     ///
     /// Returns [`SubgraphError`] for transport failures, non-success HTTP
-    /// status codes, GraphQL error payloads, response-decoding failures,
-    /// missing `data`, or unsupported networks.
-    pub async fn run_query<T, R>(&self, request: R) -> Result<T, SubgraphError>
-    where
-        T: DeserializeOwned,
-        R: Into<SubgraphQueryRequest>,
-    {
-        self.run_query_with_cancellation(request, &cow_sdk_core::CancellationToken::new())
-            .await
-    }
-
-    /// Executes an explicit raw GraphQL request with cooperative cancellation support.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SubgraphError::Cancelled`] when `token` fires during the
-    /// call, or [`SubgraphError`] for transport failures, non-success HTTP
     /// status codes, GraphQL error payloads, response-decoding failures,
     /// missing `data`, or unsupported networks.
     #[cfg_attr(
@@ -591,24 +468,22 @@ impl SubgraphApi {
             ),
         ),
     )]
-    pub async fn run_query_with_cancellation<T, R>(
-        &self,
-        request: R,
-        token: &cow_sdk_core::CancellationToken,
-    ) -> Result<T, SubgraphError>
+    pub async fn run_query<T, R>(&self, request: R) -> Result<T, SubgraphError>
     where
         T: DeserializeOwned,
         R: Into<SubgraphQueryRequest>,
     {
-        self.run_query_with_config_with_cancellation(
-            request,
-            SubgraphConfigOverride::default(),
-            token,
-        )
-        .await
+        self.run_query_with_config(request, SubgraphConfigOverride::default())
+            .await
     }
 
     /// Executes an explicit raw GraphQL request with per-call configuration overrides.
+    ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site. The
+    /// in-flight request future is dropped on cancellation so the underlying
+    /// socket is released promptly rather than waiting for the request
+    /// deadline.
     ///
     /// # Errors
     ///
@@ -619,36 +494,6 @@ impl SubgraphApi {
         &self,
         request: R,
         config_override: SubgraphConfigOverride,
-    ) -> Result<T, SubgraphError>
-    where
-        T: DeserializeOwned,
-        R: Into<SubgraphQueryRequest>,
-    {
-        self.run_query_with_config_with_cancellation(
-            request,
-            config_override,
-            &cow_sdk_core::CancellationToken::new(),
-        )
-        .await
-    }
-
-    /// Executes an explicit raw GraphQL request with per-call overrides and cooperative cancellation support.
-    ///
-    /// The in-flight request future is dropped on cancellation so the
-    /// underlying socket is released promptly rather than waiting for the
-    /// request deadline.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SubgraphError::Cancelled`] when `token` fires during the
-    /// call, or [`SubgraphError`] for transport failures, non-success HTTP
-    /// status codes, GraphQL error payloads, response-decoding failures,
-    /// missing `data`, or unsupported networks.
-    pub async fn run_query_with_config_with_cancellation<T, R>(
-        &self,
-        request: R,
-        config_override: SubgraphConfigOverride,
-        token: &cow_sdk_core::CancellationToken,
     ) -> Result<T, SubgraphError>
     where
         T: DeserializeOwned,
@@ -670,65 +515,57 @@ impl SubgraphApi {
             request_builder = request_builder.timeout(timeout);
         }
 
-        let fetch = async {
-            let response = request_builder.send().await.map_err(|error| {
-                transport_error(
-                    &public_api,
-                    resolved_config.chain_id,
-                    &request,
-                    classify_reqwest_error(error),
-                )
-            })?;
+        let response = request_builder.send().await.map_err(|error| {
+            transport_error(
+                &public_api,
+                resolved_config.chain_id,
+                &request,
+                classify_reqwest_error(error),
+            )
+        })?;
 
-            let status = response.status();
-            let body = response.text().await.map_err(|error| {
-                transport_error(
-                    &public_api,
-                    resolved_config.chain_id,
-                    &request,
-                    classify_reqwest_error(error),
-                )
-            })?;
+        let status = response.status();
+        let body = response.text().await.map_err(|error| {
+            transport_error(
+                &public_api,
+                resolved_config.chain_id,
+                &request,
+                classify_reqwest_error(error),
+            )
+        })?;
 
-            if !status.is_success() {
-                return Err(http_status_error(
-                    &public_api,
-                    resolved_config.chain_id,
-                    &request,
-                    status.as_u16(),
-                    body,
-                ));
-            }
-
-            let response: GraphQlResponse<T> = serde_json::from_str(&body).map_err(|error| {
-                serialization_error(
-                    &public_api,
-                    resolved_config.chain_id,
-                    &request,
-                    &body,
-                    error.to_string(),
-                )
-            })?;
-
-            if !response.errors.is_empty() {
-                return Err(graphql_error(
-                    &public_api,
-                    resolved_config.chain_id,
-                    &request,
-                    response.errors,
-                ));
-            }
-
-            response
-                .data
-                .ok_or_else(|| missing_data_error(&public_api, resolved_config.chain_id, &request))
-        };
-
-        tokio::select! {
-            biased;
-            () = token.cancelled() => Err(SubgraphError::Cancelled),
-            result = fetch => result,
+        if !status.is_success() {
+            return Err(http_status_error(
+                &public_api,
+                resolved_config.chain_id,
+                &request,
+                status.as_u16(),
+                body,
+            ));
         }
+
+        let response: GraphQlResponse<T> = serde_json::from_str(&body).map_err(|error| {
+            serialization_error(
+                &public_api,
+                resolved_config.chain_id,
+                &request,
+                &body,
+                error.to_string(),
+            )
+        })?;
+
+        if !response.errors.is_empty() {
+            return Err(graphql_error(
+                &public_api,
+                resolved_config.chain_id,
+                &request,
+                response.errors,
+            ));
+        }
+
+        response
+            .data
+            .ok_or_else(|| missing_data_error(&public_api, resolved_config.chain_id, &request))
     }
 
     fn config_with_override(&self, config_override: &SubgraphConfigOverride) -> SubgraphConfig {

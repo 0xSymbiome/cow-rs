@@ -43,7 +43,7 @@ tracing = { workspace = true, optional = true }
 [dev-dependencies]
 criterion.workspace = true
 serde_json.workspace = true
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }
 
 [[bench]]
 name = "order_build"

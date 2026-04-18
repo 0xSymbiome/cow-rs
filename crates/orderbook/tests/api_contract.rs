@@ -584,13 +584,16 @@ async fn get_order_status_route_is_typed() {
 }
 
 #[tokio::test]
-async fn get_version_with_cancellation_returns_cancelled_when_token_is_fired_before_send() {
+async fn get_version_returns_cancelled_when_combinator_token_fires_before_send() {
+    use cow_sdk_core::Cancellable;
+
     let api = OrderBookApi::new(default_context(SupportedChainId::Mainnet, CowEnv::Prod));
     let token = cow_sdk_core::CancellationToken::new();
     token.cancel();
 
     let error = api
-        .get_version_with_cancellation(&token)
+        .get_version()
+        .cancel_with(&token)
         .await
         .expect_err("pre-cancelled token must produce a Cancelled error");
     assert!(matches!(
@@ -599,8 +602,10 @@ async fn get_version_with_cancellation_returns_cancelled_when_token_is_fired_bef
     ));
 }
 
-#[tokio::test]
-async fn get_version_with_cancellation_aborts_an_in_flight_request() {
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn get_version_combinator_aborts_an_in_flight_request() {
+    use cow_sdk_core::Cancellable;
+
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/api/v1/version"))
@@ -620,8 +625,7 @@ async fn get_version_with_cancellation_aborts_an_in_flight_request() {
     let token_for_task = token.clone();
 
     let started = Instant::now();
-    let task =
-        tokio::spawn(async move { api.get_version_with_cancellation(&token_for_task).await });
+    let task = tokio::spawn(async move { api.get_version().cancel_with(&token_for_task).await });
 
     tokio::time::sleep(Duration::from_millis(50)).await;
     token.cancel();
