@@ -155,7 +155,7 @@
     {
       "id": "core-evm-address-contract",
       "kind": "contract-shape",
-      "description": "Phase One core address handling is EVM-first: accepted addresses are 0x-prefixed 20-byte hex strings and normalized keys lowercase the address bytes.",
+      "description": "First-release core address handling is EVM-first: accepted addresses are 0x-prefixed 20-byte hex strings and normalized keys lowercase the address bytes.",
       "expected": {
         "address_prefix": "0x",
         "hex_chars": 40,

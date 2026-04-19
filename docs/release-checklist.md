@@ -105,11 +105,11 @@ cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.pa
 
 ## 6. Manual Publish Sequence
 
-The functional `0.1.0` crates.io release publishes the nine Phase One
-crates in dependency order so every step depends only on a version
-already indexed by the registry. Reserved-placeholder `0.0.1-reserved.0`
-publishes are independent of the functional release and do not satisfy
-this sequence.
+The functional `0.1.0` crates.io release publishes the nine
+first-release crates in dependency order so every step depends only on
+a version already indexed by the registry. Reserved-placeholder
+`0.0.1-reserved.0` publishes are independent of the functional release
+and do not satisfy this sequence.
 
 ### Prerequisites
 

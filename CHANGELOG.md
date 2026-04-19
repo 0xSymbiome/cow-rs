@@ -209,6 +209,31 @@ unreleased public contract of the repository.
   `compute_order_uid`, and the small `SigningScheme` and trade-flag codecs)
   carry `#[inline]` annotations so equality checks and contract encoding on
   the fast path incur no avoidable work.
+- Generator-backed property tests on the four deterministic-codec crates.
+  `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, and `cow-sdk-app-data`
+  now run their `property_contract.rs` suites through `proptest = "1.11"` with
+  shrinking and committed `proptest-regressions/` seed files so shrink outcomes
+  stay reproducible across contributors. Every invariant family the previous
+  deterministic enumerator exercised is preserved as a named `proptest!` case
+  with a plain-English doc comment.
+- Fixture-driven `parity_contract.rs` regressions on `cow-sdk-signing`,
+  `cow-sdk-orderbook`, `cow-sdk-app-data`, `cow-sdk-subgraph`, and
+  `cow-sdk-contracts`. Each regression loads `parity/fixtures/<surface>.json`
+  at compile time, validates the schema version and surface label, iterates
+  every documented case with an id-keyed dispatcher that fails closed on
+  unknown ids, invokes the covered Rust helper, and carries the fixture
+  case id into every assertion message so a broken CI run names the upstream
+  vector that diverged.
+- A field-level trading parity round-trip on
+  `crates/trading/tests/parity_contract.rs`. The regression reconstructs typed
+  Rust inputs from every case in `parity/fixtures/trading.json` and drives
+  the shipped helpers — `post_swap_order`, `post_limit_order`,
+  `post_sell_native_currency_order`, `get_quote_results`, `get_quote_only`,
+  `get_order_to_sign`, `get_pre_sign_transaction`, `get_eth_flow_transaction`,
+  `onchain_cancellation_transaction`, `build_app_data`, `merge_app_data_doc`,
+  `suggest_slippage_bps`, `TradingSdk`, and `protocol_options_for_order` —
+  with per-field `assert_eq!` messages that name the fixture case id and
+  the diverging field at once.
 
 ### Changed
 
@@ -239,6 +264,9 @@ unreleased public contract of the repository.
   delivers inside its `Future::poll`.
 - The Credential Surface Contract Hygiene Audit is refreshed to cover the
   `Redacted<T>` wrapper and the transport-level error redaction path.
+- `docs/release-checklist.md` now describes the functional `0.1.0` crates.io
+  release publish sequence in finished-product language, naming the nine
+  `first-release` crates the sequence publishes in dependency order.
 
 ### Security
 
