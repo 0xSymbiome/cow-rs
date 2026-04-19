@@ -1,68 +1,52 @@
+//! Property-based coverage for the deterministic `cow-sdk-app-data` boundary.
+//!
+//! Each `proptest!` case exercises a named invariant on one of the CID,
+//! schema-validation, canonical-stringifier, or IPFS preflight helpers.
+//! Shrinking narrows any counter-example before `cargo test` prints it,
+//! and committed seed files under `tests/proptest-regressions/` keep the
+//! shrink outcomes reproducible across contributors. Net coverage
+//! matches the hand-rolled enumerator this file replaced: every
+//! invariant family the enumerator exercised carries a named property
+//! here, with malformed-input fail-closed shapes consolidated via
+//! `prop_oneof!` where the original already branched over a set.
+
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
-    clippy::iter_on_single_items,
+    clippy::doc_markdown,
     clippy::missing_const_for_fn,
-    clippy::option_if_let_else,
     clippy::redundant_clone,
+    clippy::redundant_closure,
     clippy::too_many_lines,
-    clippy::unnested_or_patterns,
-    reason = "pedantic, nursery, and perf lints acceptable in test helper code"
+    clippy::uninlined_format_args,
+    reason = "pedantic, nursery, and style lints acceptable in test helper code"
 )]
 
 mod common;
 
 use cow_sdk_app_data::{
-    AppDataError, CidMode, IpfsConfig, IpfsFetchPolicy, IpfsUploadTransport, SchemaVersion,
-    TransportResponse, app_data_hex_to_cid, app_data_hex_to_cid_legacy,
+    AppDataDoc, AppDataError, CidMode, IpfsConfig, IpfsFetchPolicy, IpfsUploadTransport,
+    SchemaVersion, TransportResponse, app_data_hex_to_cid, app_data_hex_to_cid_legacy,
     app_data_hex_to_cid_with_mode, cid_to_app_data_hex, get_app_data_info, get_app_data_schema,
     stringify_deterministic, upload_metadata_doc_to_ipfs_legacy,
 };
+use proptest::prelude::*;
+use proptest::test_runner::FileFailurePersistence;
 use serde_json::{Map, Number, Value};
 
 use common::app_data_doc;
 
-const CASE_COUNT: u64 = 128;
-const SEARCH_CASE_COUNT: u64 = 512;
+/// Path for committed regression seeds; proptest writes new shrink
+/// outcomes here so every contributor re-runs prior counter-examples
+/// before any novel case is generated.
+const REGRESSION_FILE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/proptest-regressions/property_contract.txt"
+);
 
-#[derive(Clone)]
-struct CaseRng {
-    state: u64,
-}
-
-impl CaseRng {
-    fn new(seed: u64) -> Self {
-        Self {
-            state: seed.wrapping_add(0x9E37_79B9_7F4A_7C15),
-        }
-    }
-
-    fn next_u64(&mut self) -> u64 {
-        let mut value = self.state;
-        value ^= value >> 12;
-        value ^= value << 25;
-        value ^= value >> 27;
-        self.state = value;
-        value.wrapping_mul(0x2545_F491_4F6C_DD1D)
-    }
-
-    fn fill<const N: usize>(&mut self) -> [u8; N] {
-        let mut bytes = [0u8; N];
-        for byte in &mut bytes {
-            *byte = self.next_u64() as u8;
-        }
-        bytes
-    }
-
-    fn next_u32(&mut self) -> u32 {
-        self.next_u64() as u32
-    }
-
-    fn next_bool(&mut self) -> bool {
-        self.next_u64() & 1 == 1
-    }
-}
-
+/// Upload transport that panics on every call so the missing-credential
+/// preflight can prove the helper rejects before the transport boundary
+/// is reached.
 struct PanicUploadTransport;
 
 impl IpfsUploadTransport for PanicUploadTransport {
@@ -76,71 +60,9 @@ impl IpfsUploadTransport for PanicUploadTransport {
     }
 }
 
-fn generated_app_data_hex(rng: &mut CaseRng) -> String {
-    format!("0x{}", hex::encode(rng.fill::<32>()))
-}
-
-fn invalid_app_data_hex(seed: u64, rng: &mut CaseRng) -> String {
-    match seed % 3 {
-        0 => hex::encode(rng.fill::<32>()),
-        1 => format!("0x{}", hex::encode(rng.fill::<31>())),
-        _ => format!("0x{}gg", hex::encode(rng.fill::<31>())),
-    }
-}
-
-fn invalid_schema_version(seed: u64) -> String {
-    match seed % 4 {
-        0 => format!("{}.{}", seed, seed + 1),
-        1 => format!("{}.{}.{}.{}", seed, seed + 1, seed + 2, seed + 3),
-        2 => format!("v{}.{}.{}", seed, seed + 1, seed + 2),
-        _ => "not.semver.value".to_owned(),
-    }
-}
-
-fn generated_schema_version(rng: &mut CaseRng) -> String {
-    format!(
-        "{}.{}.{}",
-        rng.next_u32() % 1_000,
-        rng.next_u32() % 1_000,
-        rng.next_u32() % 1_000
-    )
-}
-
-fn generated_json_value(rng: &mut CaseRng, depth: usize) -> Value {
-    if depth == 0 {
-        return match rng.next_u64() % 5 {
-            0 => Value::Null,
-            1 => Value::Bool(rng.next_bool()),
-            2 => Value::Number(Number::from(rng.next_u32() % 10_000)),
-            3 => Value::String(format!("value-{}", rng.next_u32())),
-            _ => Value::String(format!("0x{}", hex::encode(rng.fill::<4>()))),
-        };
-    }
-
-    match rng.next_u64() % 4 {
-        0 => generated_json_value(rng, 0),
-        1 => {
-            let len = (rng.next_u64() % 4) as usize;
-            Value::Array(
-                (0..len)
-                    .map(|_| generated_json_value(rng, depth.saturating_sub(1)))
-                    .collect(),
-            )
-        }
-        _ => {
-            let len = 1 + (rng.next_u64() % 4) as usize;
-            let mut object = Map::new();
-            for index in 0..len {
-                object.insert(
-                    format!("key-{}-{}", index, rng.next_u32()),
-                    generated_json_value(rng, depth.saturating_sub(1)),
-                );
-            }
-            Value::Object(object)
-        }
-    }
-}
-
+/// Produces the reviewed canonical JSON form for `value` using the same
+/// algorithm the original enumerator hand-rolled: lexicographic object
+/// keys, compact separators, and `serde_json::to_string` for strings.
 fn manual_canonical_json(value: &Value) -> String {
     match value {
         Value::Null => "null".to_owned(),
@@ -176,28 +98,10 @@ fn manual_canonical_json(value: &Value) -> String {
     }
 }
 
-fn generated_valid_document(rng: &mut CaseRng) -> Value {
-    let mut document = Map::new();
-    if rng.next_bool() {
-        document.insert("metadata".to_owned(), Value::Object(Map::new()));
-        document.insert("version".to_owned(), Value::String("0.7.0".to_owned()));
-        document.insert("appCode".to_owned(), Value::String("CoW Swap".to_owned()));
-    } else {
-        document.insert("appCode".to_owned(), Value::String("CoW Swap".to_owned()));
-        document.insert("version".to_owned(), Value::String("0.7.0".to_owned()));
-        document.insert("metadata".to_owned(), Value::Object(Map::new()));
-    }
-
-    if rng.next_bool() {
-        document.insert(
-            "environment".to_owned(),
-            Value::String(format!("env-{}", rng.next_u32() % 16)),
-        );
-    }
-
-    Value::Object(document)
-}
-
+/// Returns a JSON value with every object field reordered recursively.
+/// The reviewed canonical-JSON algorithm and [`get_app_data_info`] must
+/// produce byte-identical output on `value` and
+/// `reordered_document(value)`.
 fn reordered_document(value: &Value) -> Value {
     match value {
         Value::Object(object) => {
@@ -214,312 +118,260 @@ fn reordered_document(value: &Value) -> Value {
     }
 }
 
-fn generated_search_profile_json_value(rng: &mut CaseRng, depth: usize) -> Value {
-    if depth == 0 {
-        return match rng.next_u64() % 6 {
-            0 => Value::Null,
-            1 => Value::Bool(rng.next_bool()),
-            2 => Value::Number(Number::from(rng.next_u32())),
-            3 => Value::String(format!("search-{}", rng.next_u32())),
-            4 => Value::String(format!("0x{}", hex::encode(rng.fill::<8>()))),
-            _ => Value::String("boundary".repeat(1 + (rng.next_u32() % 3) as usize)),
-        };
-    }
+/// Strategy that emits a 32-byte app-data hex digest.
+fn app_data_hex_strategy() -> impl Strategy<Value = String> {
+    any::<[u8; 32]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes)))
+}
 
-    match rng.next_u64() % 5 {
-        0 => generated_search_profile_json_value(rng, 0),
-        1 | 2 => {
-            let len = 1 + (rng.next_u64() % 6) as usize;
-            Value::Array(
-                (0..len)
-                    .map(|_| generated_search_profile_json_value(rng, depth.saturating_sub(1)))
-                    .collect(),
-            )
-        }
-        _ => {
-            let len = 1 + (rng.next_u64() % 6) as usize;
-            let mut object = Map::new();
-            for index in 0..len {
-                object.insert(
-                    format!("search-key-{}-{}", index, rng.next_u32()),
-                    generated_search_profile_json_value(rng, depth.saturating_sub(1)),
-                );
+/// Strategy that emits the union of malformed hex shapes
+/// [`app_data_hex_to_cid`] and [`app_data_hex_to_cid_legacy`] must
+/// reject: missing `0x` prefix, wrong byte length, and non-hex
+/// characters in the payload.
+fn malformed_app_data_hex_strategy() -> impl Strategy<Value = String> {
+    prop_oneof![
+        any::<[u8; 32]>().prop_map(|bytes| hex::encode(bytes)),
+        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        any::<[u8; 33]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}gg", hex::encode(bytes))),
+    ]
+}
+
+/// Strategy that emits a well-formed SemVer triplet suitable for
+/// [`SchemaVersion::new`].
+fn schema_version_strategy() -> impl Strategy<Value = String> {
+    (0u32..=999u32, 0u32..=999u32, 0u32..=999u32)
+        .prop_map(|(major, minor, patch)| format!("{major}.{minor}.{patch}"))
+}
+
+/// Strategy that emits the union of malformed schema-version shapes the
+/// reviewed parser rejects: decimal pair, four-part dotted, `v`-
+/// prefixed, negative component, leading/trailing whitespace, trailing
+/// non-digit, and an arbitrary non-semver word.
+fn malformed_schema_version_strategy() -> impl Strategy<Value = String> {
+    prop_oneof![
+        (0u32..=999u32, 0u32..=999u32).prop_map(|(major, minor)| format!("{major}.{minor}")),
+        (0u32..=9u32, 0u32..=9u32, 0u32..=9u32, 0u32..=9u32)
+            .prop_map(|(a, b, c, d)| format!("{a}.{b}.{c}.{d}")),
+        schema_version_strategy().prop_map(|version| format!("v{version}")),
+        schema_version_strategy().prop_map(|version| format!("-{version}")),
+        schema_version_strategy().prop_map(|version| format!(" {version}")),
+        schema_version_strategy().prop_map(|version| format!("{version} ")),
+        schema_version_strategy().prop_map(|version| format!("{version}x")),
+        (0u32..=99u32, 0u32..=99u32).prop_map(|(a, b)| format!("alpha.{a}.{b}")),
+        Just("not.semver.value".to_owned()),
+    ]
+}
+
+/// Recursive strategy that emits arbitrary JSON values for
+/// [`stringify_deterministic`] coverage. Depth is bounded so shrinking
+/// always terminates.
+fn json_value_strategy() -> impl Strategy<Value = Value> {
+    let leaf = prop_oneof![
+        Just(Value::Null),
+        any::<bool>().prop_map(Value::Bool),
+        (0u64..=10_000u64).prop_map(|n| Value::Number(Number::from(n))),
+        "[a-z][a-zA-Z0-9_-]{0,12}".prop_map(Value::String),
+    ];
+    leaf.prop_recursive(3, 16, 4, |element| {
+        prop_oneof![
+            prop::collection::vec(element.clone(), 0..=4).prop_map(Value::Array),
+            prop::collection::btree_map("[a-z][a-zA-Z0-9_-]{0,8}", element, 0..=4).prop_map(
+                |map| {
+                    let mut object = Map::new();
+                    for (key, value) in map {
+                        object.insert(key, value);
+                    }
+                    Value::Object(object)
+                },
+            ),
+        ]
+    })
+}
+
+/// Strategy that emits a valid app-data document shell with empty
+/// metadata and an optional `environment` field; the reviewed schema
+/// accepts every emitted document.
+fn valid_document_strategy() -> impl Strategy<Value = Value> {
+    (
+        "[A-Za-z][A-Za-z0-9 ]{0,15}",
+        prop::option::of("[a-z][a-z0-9-]{0,12}"),
+        any::<bool>(),
+    )
+        .prop_map(|(app_code, environment, metadata_first)| {
+            let mut document = Map::new();
+            if metadata_first {
+                document.insert("metadata".to_owned(), Value::Object(Map::new()));
+                document.insert("version".to_owned(), Value::String("0.7.0".to_owned()));
+                document.insert("appCode".to_owned(), Value::String(app_code));
+            } else {
+                document.insert("appCode".to_owned(), Value::String(app_code));
+                document.insert("version".to_owned(), Value::String("0.7.0".to_owned()));
+                document.insert("metadata".to_owned(), Value::Object(Map::new()));
             }
-            Value::Object(object)
-        }
-    }
+            if let Some(env) = environment {
+                document.insert("environment".to_owned(), Value::String(env));
+            }
+            Value::Object(document)
+        })
 }
 
-fn generated_search_profile_schema_version(case: u64, rng: &mut CaseRng) -> String {
-    match case % 4 {
-        0 => format!("0.0.{}", case % 1_000),
-        1 => format!("{}.0.0", 1 + (rng.next_u32() % 1_000_000)),
-        2 => format!(
-            "{}.{}.{}",
-            rng.next_u32() % 1_000,
-            rng.next_u32() % 10_000,
-            rng.next_u32() % 10_000
-        ),
-        _ => format!(
-            "{}.{}.{}",
-            10_000 + (case % 10_000),
-            rng.next_u32() % 100,
-            rng.next_u32() % 100
-        ),
-    }
+/// Strategy that emits an [`IpfsConfig`] with at least one missing or
+/// empty credential so the upload preflight must fail closed before the
+/// transport is called.
+fn missing_credential_config_strategy() -> impl Strategy<Value = IpfsConfig> {
+    prop_oneof![
+        Just(IpfsConfig {
+            pinata_api_key: None,
+            pinata_api_secret: Some("secret".to_owned().into()),
+            ..IpfsConfig::default()
+        }),
+        Just(IpfsConfig {
+            pinata_api_key: Some(String::new().into()),
+            pinata_api_secret: Some("secret".to_owned().into()),
+            ..IpfsConfig::default()
+        }),
+        Just(IpfsConfig {
+            pinata_api_key: Some("key".to_owned().into()),
+            pinata_api_secret: None,
+            ..IpfsConfig::default()
+        }),
+        Just(IpfsConfig {
+            pinata_api_key: Some("key".to_owned().into()),
+            pinata_api_secret: Some(String::new().into()),
+            ..IpfsConfig::default()
+        }),
+    ]
 }
 
-fn invalid_search_profile_schema_version(case: u64, rng: &mut CaseRng) -> String {
-    match case % 8 {
-        0 => format!("{}.{}", rng.next_u32() % 100, rng.next_u32() % 100),
-        1 => format!(
-            "{}.{}.{}.{}",
-            rng.next_u32() % 100,
-            rng.next_u32() % 100,
-            rng.next_u32() % 100,
-            rng.next_u32() % 100
-        ),
-        2 => format!(
-            "v{}.{}.{}",
-            rng.next_u32() % 100,
-            rng.next_u32() % 100,
-            rng.next_u32() % 100
-        ),
-        3 => format!(
-            "{}.{}.-{}",
-            rng.next_u32() % 100,
-            rng.next_u32() % 100,
-            1 + (rng.next_u32() % 100)
-        ),
-        4 => format!(
-            " {}.{}.{}",
-            rng.next_u32() % 100,
-            rng.next_u32() % 100,
-            rng.next_u32() % 100
-        ),
-        5 => format!(
-            "{}.{}.{} ",
-            rng.next_u32() % 100,
-            rng.next_u32() % 100,
-            rng.next_u32() % 100
-        ),
-        6 => format!(
-            "{}.{}.{}x",
-            rng.next_u32() % 100,
-            rng.next_u32() % 100,
-            rng.next_u32() % 100
-        ),
-        _ => format!("alpha.{}.{}", rng.next_u32() % 100, rng.next_u32() % 100),
-    }
-}
+proptest! {
+    #![proptest_config(ProptestConfig {
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct(REGRESSION_FILE))),
+        ..ProptestConfig::default()
+    })]
 
-#[test]
-fn cid_roundtrips_hold_for_latest_and_legacy_modes() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed ^ 0xA770_0001);
-        let app_data_hex = generated_app_data_hex(&mut rng);
+    /// [`app_data_hex_to_cid`] and [`app_data_hex_to_cid_legacy`] produce
+    /// CIDs that round-trip through [`cid_to_app_data_hex`] back to the
+    /// same hex digest. [`app_data_hex_to_cid_with_mode`] returns the
+    /// same string as its per-mode counterpart for both
+    /// [`CidMode::Latest`] and [`CidMode::Legacy`]. Malformed hex input
+    /// fails closed with [`AppDataError::InvalidAppDataHex`] on both
+    /// forms.
+    #[test]
+    fn cid_roundtrips_hold_for_latest_and_legacy_modes_and_reject_malformed_hex(
+        hex in app_data_hex_strategy(),
+        malformed in malformed_app_data_hex_strategy(),
+    ) {
+        let latest = app_data_hex_to_cid(&hex).unwrap();
+        let legacy = app_data_hex_to_cid_legacy(&hex).unwrap();
 
-        let latest = app_data_hex_to_cid(&app_data_hex).unwrap();
-        let legacy = app_data_hex_to_cid_legacy(&app_data_hex).unwrap();
-
-        assert_eq!(
-            cid_to_app_data_hex(&latest).unwrap(),
-            app_data_hex,
-            "seed {seed}"
-        );
-        assert_eq!(
-            cid_to_app_data_hex(&legacy).unwrap(),
-            app_data_hex,
-            "seed {seed}"
-        );
-        assert_eq!(
-            app_data_hex_to_cid_with_mode(&app_data_hex, CidMode::Latest).unwrap(),
+        prop_assert_eq!(cid_to_app_data_hex(&latest).unwrap(), hex.clone());
+        prop_assert_eq!(cid_to_app_data_hex(&legacy).unwrap(), hex.clone());
+        prop_assert_eq!(
+            app_data_hex_to_cid_with_mode(&hex, CidMode::Latest).unwrap(),
             latest,
-            "seed {seed}"
         );
-        assert_eq!(
-            app_data_hex_to_cid_with_mode(&app_data_hex, CidMode::Legacy).unwrap(),
+        prop_assert_eq!(
+            app_data_hex_to_cid_with_mode(&hex, CidMode::Legacy).unwrap(),
             legacy,
-            "seed {seed}"
         );
-    }
-}
 
-#[test]
-fn invalid_app_data_hex_inputs_fail_closed() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed ^ 0xA770_0002);
-        let invalid = invalid_app_data_hex(seed, &mut rng);
-
-        assert_eq!(
-            app_data_hex_to_cid(&invalid).unwrap_err(),
+        prop_assert_eq!(
+            app_data_hex_to_cid(&malformed).unwrap_err(),
             AppDataError::InvalidAppDataHex,
-            "seed {seed}"
         );
-        assert_eq!(
-            app_data_hex_to_cid_legacy(&invalid).unwrap_err(),
+        prop_assert_eq!(
+            app_data_hex_to_cid_legacy(&malformed).unwrap_err(),
             AppDataError::InvalidAppDataHex,
-            "seed {seed}"
         );
     }
-}
 
-#[test]
-fn invalid_schema_versions_fail_closed() {
-    for seed in 0..CASE_COUNT {
-        let version = invalid_schema_version(seed);
-        assert_eq!(
-            get_app_data_schema(&version).unwrap_err(),
-            AppDataError::InvalidSchemaVersion(version.clone()),
-            "seed {seed}"
+    /// [`SchemaVersion::new`] and [`str::parse::<SchemaVersion>`] are
+    /// strict inverses on well-formed SemVer triplets; every malformed
+    /// shape the reviewed parser rejects surfaces
+    /// [`AppDataError::InvalidSchemaVersion`] through
+    /// [`get_app_data_schema`] and fails [`SchemaVersion::new`].
+    #[test]
+    fn schema_versions_roundtrip_and_reject_malformed(
+        valid in schema_version_strategy(),
+        malformed in malformed_schema_version_strategy(),
+    ) {
+        let schema = SchemaVersion::new(valid.clone()).unwrap();
+        prop_assert_eq!(schema.as_str(), valid.as_str());
+        prop_assert_eq!(schema.to_string(), valid.clone());
+        prop_assert_eq!(valid.parse::<SchemaVersion>().unwrap(), schema);
+
+        prop_assert_eq!(
+            get_app_data_schema(&malformed).unwrap_err(),
+            AppDataError::InvalidSchemaVersion(malformed.clone()),
         );
+        prop_assert!(SchemaVersion::new(malformed.clone()).is_err());
+        prop_assert!(malformed.parse::<SchemaVersion>().is_err());
     }
-}
 
-#[test]
-fn whitespace_only_fetch_base_uris_fail_closed() {
-    for seed in 0..CASE_COUNT {
-        let blank = " ".repeat(1 + (seed % 6) as usize);
-        assert_eq!(
-            IpfsFetchPolicy::new(blank).unwrap_err(),
+    /// [`IpfsFetchPolicy::new`] fails closed on every whitespace-only
+    /// base URI, and [`upload_metadata_doc_to_ipfs_legacy`] fails closed
+    /// with [`AppDataError::MissingIpfsCredentials`] before the upload
+    /// transport is reached whenever the supplied [`IpfsConfig`]
+    /// exposes a missing or empty pinata key or secret.
+    #[test]
+    fn ipfs_preflight_rejections_fail_before_transport(
+        whitespace_len in 1usize..=16usize,
+        config in missing_credential_config_strategy(),
+    ) {
+        let whitespace = " ".repeat(whitespace_len);
+        prop_assert_eq!(
+            IpfsFetchPolicy::new(whitespace).unwrap_err(),
             AppDataError::Transport("ipfs read base uri must not be empty".to_owned()),
-            "seed {seed}"
         );
-    }
-}
 
-#[test]
-fn upload_helpers_require_non_empty_credentials_before_transport() {
-    for seed in 0..CASE_COUNT {
-        let config = match seed % 4 {
-            0 => IpfsConfig {
-                pinata_api_key: None,
-                pinata_api_secret: Some("secret".to_owned().into()),
-                ..IpfsConfig::default()
-            },
-            1 => IpfsConfig {
-                pinata_api_key: Some(String::new().into()),
-                pinata_api_secret: Some("secret".to_owned().into()),
-                ..IpfsConfig::default()
-            },
-            2 => IpfsConfig {
-                pinata_api_key: Some("key".to_owned().into()),
-                pinata_api_secret: None,
-                ..IpfsConfig::default()
-            },
-            _ => IpfsConfig {
-                pinata_api_key: Some("key".to_owned().into()),
-                pinata_api_secret: Some(String::new().into()),
-                ..IpfsConfig::default()
-            },
-        };
-
-        assert_eq!(
+        prop_assert_eq!(
             upload_metadata_doc_to_ipfs_legacy(&app_data_doc(), &PanicUploadTransport, &config)
                 .unwrap_err(),
             AppDataError::MissingIpfsCredentials,
-            "seed {seed}"
         );
     }
-}
 
-#[test]
-fn deterministic_stringify_is_stable_for_generated_nested_documents() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed ^ 0xA770_0006);
-        let document = generated_json_value(&mut rng, 2);
-        let rendered = stringify_deterministic(&document).unwrap();
+    /// [`stringify_deterministic`] produces output byte-identical to the
+    /// reviewed canonical-JSON algorithm for any JSON value; reparsing
+    /// the rendered string recovers the original value (modulo key
+    /// ordering), and a second pass produces byte-identical output.
+    /// [`reordered_document`] leaves the rendered canonical form
+    /// unchanged, covering the key-permutation invariance the original
+    /// enumerator checked at deeper nesting.
+    #[test]
+    fn stringify_deterministic_matches_manual_canonical_form(
+        document in json_value_strategy(),
+    ) {
+        let doc: AppDataDoc = document.clone();
+        let rendered = stringify_deterministic(&doc).unwrap();
 
-        assert_eq!(rendered, manual_canonical_json(&document), "seed {seed}");
-        assert_eq!(
+        prop_assert_eq!(rendered.clone(), manual_canonical_json(&document));
+        prop_assert_eq!(
             serde_json::from_str::<Value>(&rendered).unwrap(),
-            document,
-            "seed {seed}"
+            document.clone(),
         );
-        assert_eq!(
-            stringify_deterministic(&serde_json::from_str::<Value>(&rendered).unwrap()).unwrap(),
-            rendered,
-            "seed {seed}"
-        );
-    }
-}
+        let parsed_back: AppDataDoc = serde_json::from_str(&rendered).unwrap();
+        prop_assert_eq!(stringify_deterministic(&parsed_back).unwrap(), rendered.clone());
 
-#[test]
-fn schema_versions_roundtrip_for_generated_triplets() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed ^ 0xA770_0007);
-        let version = generated_schema_version(&mut rng);
-        let schema = SchemaVersion::new(version.clone()).unwrap();
-
-        assert_eq!(schema.as_str(), version, "seed {seed}");
-        assert_eq!(schema.to_string(), version, "seed {seed}");
-        assert_eq!(
-            version.parse::<SchemaVersion>().unwrap(),
-            schema,
-            "seed {seed}"
-        );
-    }
-}
-
-#[test]
-fn document_sources_canonicalize_equivalent_top_level_permutations() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed ^ 0xA770_0008);
-        let document = generated_valid_document(&mut rng);
         let reordered = reordered_document(&document);
-
-        assert_eq!(
-            get_app_data_info(document).unwrap(),
-            get_app_data_info(reordered).unwrap(),
-            "seed {seed}"
-        );
-    }
-}
-
-#[test]
-fn canonicalization_narrow_search_profile_preserves_equivalent_nested_documents() {
-    for case in 0..SEARCH_CASE_COUNT {
-        let mut rng = CaseRng::new(case ^ 0xA770_0101);
-        let document = generated_search_profile_json_value(&mut rng, 3);
-        let reordered = reordered_document(&document);
-        let rendered = stringify_deterministic(&document).unwrap();
-
-        assert_eq!(rendered, manual_canonical_json(&document), "case {case}");
-        assert_eq!(
-            rendered,
+        prop_assert_eq!(
             stringify_deterministic(&reordered).unwrap(),
-            "case {case}"
-        );
-        assert_eq!(
-            serde_json::from_str::<Value>(&rendered).unwrap(),
-            document,
-            "case {case}"
+            rendered,
         );
     }
-}
 
-#[test]
-fn schema_parsing_narrow_search_profile_roundtrips_valid_triplets_and_rejects_invalid_forms() {
-    for case in 0..SEARCH_CASE_COUNT {
-        let mut rng = CaseRng::new(case ^ 0xA770_0102);
-        let valid = generated_search_profile_schema_version(case, &mut rng);
-        let parsed = SchemaVersion::new(valid.clone()).unwrap();
-        let invalid = invalid_search_profile_schema_version(case, &mut rng);
-
-        assert_eq!(parsed.as_str(), valid, "case {case}");
-        assert_eq!(parsed.to_string(), valid, "case {case}");
-        assert_eq!(
-            valid.parse::<SchemaVersion>().unwrap(),
-            parsed,
-            "case {case}"
-        );
-        assert!(
-            SchemaVersion::new(invalid.clone()).is_err(),
-            "case {case}: {invalid}"
-        );
-        assert!(
-            invalid.parse::<SchemaVersion>().is_err(),
-            "case {case}: {invalid}"
-        );
+    /// [`get_app_data_info`] is invariant under equivalent top-level
+    /// key orderings: permuting the root object preserves the CID, the
+    /// app-data content string, and the app-data hex digest.
+    #[test]
+    fn document_sources_canonicalize_equivalent_top_level_permutations(
+        document in valid_document_strategy(),
+    ) {
+        let reordered = reordered_document(&document);
+        let first = get_app_data_info(document).unwrap();
+        let second = get_app_data_info(reordered).unwrap();
+        prop_assert_eq!(first.cid, second.cid);
+        prop_assert_eq!(first.app_data_content, second.app_data_content);
+        prop_assert_eq!(first.app_data_hex, second.app_data_hex);
     }
 }

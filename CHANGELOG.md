@@ -158,21 +158,28 @@ unreleased public contract of the repository.
   registry, baseline `tracing-subscriber` setup, OpenTelemetry notes, and
   an explicit reminder that secret-bearing fields are never emitted
   through SDK spans.
-- Cooperative cancellation support on long-running SDK operations.
-  `cow-sdk-core` re-exports `tokio_util::sync::CancellationToken` as
+- Cooperative cancellation on long-running SDK operations via the
+  `cow_sdk_core::Cancellable::cancel_with(&token)` extension-trait
+  combinator. `cow-sdk-core` defines the `Cancellable` trait, the
+  `WithCancellation<'t, F>` future wrapper, and the `Cancelled`
+  marker error; the `cow-sdk` prelude re-exports `Cancellable` and
+  `Cancelled` so `use cow_sdk::prelude::*` reaches the combinator.
+  `cow-sdk-core` also re-exports
+  `tokio_util::sync::CancellationToken` as
   `cow_sdk_core::CancellationToken` so every public crate routes
-  cancellation through a single typed import. Every long-running
-  public operation on `OrderBookApi`, `SubgraphApi`, and `TradingSdk`
-  exposes a `_with_cancellation` sibling that accepts
-  `&CancellationToken`; the non-cancellation wrappers construct a
-  default token and delegate to the cancellation path so existing
-  callers observe no behavioural change. The cancellation-aware
-  variant threads a biased `tokio::select!` against
-  `token.cancelled()` so in-flight request futures are dropped
-  promptly and the underlying socket is released rather than waiting
+  cancellation through a single typed import. Every public
+  long-running async method on `OrderBookApi`, `SubgraphApi`, and
+  `TradingSdk` composes with `.cancel_with(&token)` at the call
+  site; the combinator's `Future::poll` performs a biased check
+  against `token.is_cancelled()` before polling the inner future,
+  so cancellation is observed before the next `.await` and the
+  in-flight request future is dropped promptly rather than waiting
   for the request deadline. `CoreError`, `OrderbookError`,
-  `TradingError`, and `SubgraphError` gain a typed `Cancelled` variant
-  so cancellation surfaces at the caller without ambiguity, and
+  `TradingError`, `SubgraphError`, `SigningError`, and
+  `BrowserWalletError` each carry a typed `Cancelled` variant and
+  implement `From<cow_sdk_core::Cancelled>` so the combinator yields
+  the crate-level error directly; `SdkError::class()` routes every
+  such variant to `ErrorClass::Cancelled` exhaustively.
   `docs/architecture.md` records the cancellation contract under a
   dedicated Cancellation subsection.
 
@@ -222,11 +229,14 @@ unreleased public contract of the repository.
   url-stripped reqwest error classification, and the opt-in `tracing` feature.
 - ADR 0011 records the typed amount boundary and the typestate ready-state
   construction rule for `TradingSdkBuilder`.
-- The Cooperative Cancellation Contract Audit is a new standing audit covering
-  the shared `CancellationToken` re-export, `_with_cancellation` entry points
-  on every long-running public operation of `OrderBookApi`, `SubgraphApi`, and
-  `TradingSdk`, the typed `Cancelled` variants, and the biased
-  `tokio::select!` propagation path.
+- The Cooperative Cancellation Contract Audit is a standing audit covering
+  the shared `CancellationToken` re-export, the
+  `cow_sdk_core::Cancellable::cancel_with(&token)` extension-trait combinator
+  as the canonical public composition path for every long-running public
+  operation on `OrderBookApi`, `SubgraphApi`, and `TradingSdk`, the typed
+  `Cancelled` variants on each crate-level error enum, the `From<Cancelled>`
+  bridges, and the biased `tokio::select!` semantics that the combinator
+  delivers inside its `Future::poll`.
 - The Credential Surface Contract Hygiene Audit is refreshed to cover the
   `Redacted<T>` wrapper and the transport-level error redaction path.
 

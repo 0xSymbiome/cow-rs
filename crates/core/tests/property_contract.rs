@@ -1,688 +1,448 @@
+//! Property-based coverage for the strongly-typed `cow-sdk-core` boundary.
+//!
+//! Each `proptest!` case exercises a named invariant on one of the core
+//! domain types. Shrinking narrows any counter-example to a minimal
+//! input before `cargo test` prints it, and committed seed files under
+//! `tests/proptest-regressions/` keep the shrink outcomes reproducible
+//! across contributors. Net coverage matches the hand-rolled enumerator
+//! this file replaced: every invariant family the enumerator exercised
+//! carries a named property here.
+
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
-    clippy::derive_partial_eq_without_eq,
-    clippy::iter_on_single_items,
     clippy::missing_const_for_fn,
-    clippy::option_if_let_else,
     clippy::redundant_clone,
+    clippy::redundant_closure,
     clippy::too_many_lines,
     clippy::uninlined_format_args,
-    clippy::unnested_or_patterns,
-    reason = "pedantic, nursery, style, and perf lints acceptable in test helper code"
+    reason = "pedantic, nursery, and style lints acceptable in test helper code"
 )]
 
-use num_bigint::BigUint;
+use std::collections::{HashMap, HashSet};
 
 use cow_sdk_core::{
     Address, Amount, AppDataHex, AtomAmount, ChainId, DecimalAmount, Hash32, HexData, OrderUid,
-    SupportedChainId, addresses_equal, token_id,
+    SupportedChainId, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
+    addresses_equal, token_id,
 };
+use num_bigint::BigUint;
+use proptest::prelude::*;
+use proptest::test_runner::FileFailurePersistence;
 
-const CASE_COUNT: u64 = 128;
+/// Path for committed regression seeds; proptest writes new shrink
+/// outcomes here so every contributor re-runs prior counter-examples
+/// before any novel case is generated.
+const REGRESSION_FILE: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/proptest-regressions/property_contract.txt"
+);
 
-#[derive(Clone)]
-struct CaseRng {
-    state: u64,
+/// Renders a byte slice as hex with the per-nibble casing bits supplied
+/// by the strategy so shrinking can isolate casing-sensitive failures.
+fn render_mixed_case(bytes: &[u8], casing: &[bool]) -> String {
+    debug_assert_eq!(bytes.len() * 2, casing.len());
+    let mut out = String::with_capacity(bytes.len() * 2 + 2);
+    out.push_str("0x");
+    for (index, byte) in bytes.iter().enumerate() {
+        let hi = byte >> 4;
+        let lo = byte & 0x0F;
+        out.push(nibble_char(hi, casing[index * 2]));
+        out.push(nibble_char(lo, casing[index * 2 + 1]));
+    }
+    out
 }
 
-impl CaseRng {
-    fn new(seed: u64) -> Self {
-        Self {
-            state: seed.wrapping_add(0x9E37_79B9_7F4A_7C15),
-        }
+fn nibble_char(value: u8, uppercase: bool) -> char {
+    match value {
+        0..=9 => (b'0' + value) as char,
+        10..=15 if uppercase => (b'A' + value - 10) as char,
+        10..=15 => (b'a' + value - 10) as char,
+        _ => unreachable!("a nibble value always fits in four bits"),
+    }
+}
+
+/// Strategy that emits every supported chain id.
+fn supported_chain_strategy() -> impl Strategy<Value = SupportedChainId> {
+    prop::sample::select(SupportedChainId::ALL.to_vec())
+}
+
+/// Strategy that emits an arbitrary 20-byte address payload.
+fn address_bytes() -> impl Strategy<Value = [u8; 20]> {
+    any::<[u8; 20]>()
+}
+
+/// Strategy that emits an arbitrary 32-byte payload; used as the
+/// atom-amount value domain because every representable [`AtomAmount`]
+/// fits in 256 bits.
+fn atom_amount_bytes() -> impl Strategy<Value = [u8; 32]> {
+    any::<[u8; 32]>()
+}
+
+/// Strategy that emits an arbitrary 56-byte order-UID payload.
+fn order_uid_bytes() -> impl Strategy<Value = [u8; 56]> {
+    (any::<[u8; 32]>(), any::<[u8; 24]>()).prop_map(|(first, second)| {
+        let mut out = [0u8; 56];
+        out[..32].copy_from_slice(&first);
+        out[32..].copy_from_slice(&second);
+        out
+    })
+}
+
+/// Strategy that emits the union of malformed hex shapes
+/// [`Address::new`] must reject: missing `0x` prefix, uppercase `0X`
+/// prefix, short payload, long payload, and non-hex-character payload.
+fn malformed_address_strategy() -> impl Strategy<Value = String> {
+    prop_oneof![
+        any::<[u8; 20]>().prop_map(|bytes| hex::encode(bytes)),
+        any::<[u8; 20]>().prop_map(|bytes| format!("0X{}", hex::encode(bytes))),
+        any::<[u8; 19]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        any::<[u8; 21]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        (any::<[u8; 20]>(), 2usize..42).prop_map(|(bytes, flip)| {
+            let mut encoded = format!("0x{}", hex::encode(bytes)).into_bytes();
+            encoded[flip] = b'g';
+            String::from_utf8(encoded).unwrap()
+        }),
+    ]
+}
+
+/// Strategy that emits the union of malformed hex shapes [`Hash32::new`]
+/// must reject: empty, empty payload after the prefix, short, long, and
+/// non-hex-character payloads.
+fn malformed_hash32_strategy() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just(String::new()),
+        Just("0x".to_owned()),
+        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        any::<[u8; 33]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        (any::<[u8; 32]>(), 2usize..66).prop_map(|(bytes, flip)| {
+            let mut encoded = format!("0x{}", hex::encode(bytes)).into_bytes();
+            encoded[flip] = b'z';
+            String::from_utf8(encoded).unwrap()
+        }),
+    ]
+}
+
+/// Strategy that emits the union of malformed hex shapes
+/// [`AppDataHex::new`] must reject.
+fn malformed_app_data_hex_strategy() -> impl Strategy<Value = String> {
+    prop_oneof![
+        any::<[u8; 32]>().prop_map(|bytes| hex::encode(bytes)),
+        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        any::<[u8; 33]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+    ]
+}
+
+/// Strategy that emits the union of malformed hex shapes
+/// [`OrderUid::new`] must reject.
+fn malformed_order_uid_strategy() -> impl Strategy<Value = String> {
+    prop_oneof![
+        any::<[u8; 55]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        any::<[u8; 57]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+    ]
+}
+
+/// Strategy that emits the union of malformed [`Amount`] inputs: empty,
+/// negative decimal, invalid hex, decimal with fractional part, and a
+/// value larger than 256 bits.
+fn malformed_amount_strategy() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just(String::new()),
+        (1u64..=u64::MAX).prop_map(|value| format!("-{value}")),
+        any::<[u8; 4]>().prop_map(|bytes| format!("0x{}gg", hex::encode(bytes))),
+        (1u64..=u64::MAX, 1u64..=u64::MAX).prop_map(|(whole, frac)| format!("{whole}.{frac}")),
+        Just(format!("0x1{}", "0".repeat(64))),
+    ]
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig {
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct(REGRESSION_FILE))),
+        ..ProptestConfig::default()
+    })]
+
+    /// Any 20-byte payload rendered as lowercase, uppercase, or mixed-case
+    /// hex parses into an [`Address`] whose [`PartialEq`],
+    /// [`addresses_equal`], `normalized_key`, and [`std::hash::Hash`]
+    /// implementations all treat the three renderings as the same address.
+    /// `HashMap` and `HashSet` lookups must agree with the equality rule
+    /// across every casing variant, and the stored string form must
+    /// preserve the original input casing exactly.
+    #[test]
+    fn address_case_normalization_holds_across_hash_and_equality(
+        bytes in address_bytes(),
+        casing in prop::collection::vec(any::<bool>(), 40),
+    ) {
+        let mixed = render_mixed_case(&bytes, &casing);
+        let lowercase = format!("0x{}", hex::encode(bytes));
+        let uppercase = format!("0x{}", hex::encode_upper(bytes));
+
+        let mixed_address = Address::new(&mixed).unwrap();
+        let lowercase_address = Address::new(&lowercase).unwrap();
+        let uppercase_address = Address::new(&uppercase).unwrap();
+
+        prop_assert_eq!(mixed_address.as_str(), &mixed);
+
+        let roundtrip: String = mixed_address.clone().into();
+        prop_assert_eq!(&roundtrip, &mixed);
+        prop_assert_eq!(Address::new(roundtrip).unwrap(), mixed_address.clone());
+
+        prop_assert_eq!(&mixed_address, &lowercase_address);
+        prop_assert_eq!(&uppercase_address, &lowercase_address);
+        prop_assert_eq!(mixed_address.normalized_key(), lowercase.clone());
+        prop_assert_eq!(lowercase_address.normalized_key(), uppercase_address.normalized_key());
+        prop_assert!(addresses_equal(&mixed_address, &lowercase_address));
+        prop_assert!(addresses_equal(&uppercase_address, &lowercase_address));
+
+        let mut map = HashMap::new();
+        map.insert(mixed_address.clone(), "value");
+        prop_assert_eq!(map.get(&lowercase_address), Some(&"value"));
+        prop_assert_eq!(map.get(&uppercase_address), Some(&"value"));
+
+        let mut set = HashSet::new();
+        set.insert(mixed_address.clone());
+        set.insert(lowercase_address.clone());
+        set.insert(uppercase_address.clone());
+        prop_assert_eq!(set.len(), 1);
     }
 
-    fn next_u64(&mut self) -> u64 {
-        let mut value = self.state;
-        value ^= value >> 12;
-        value ^= value << 25;
-        value ^= value >> 27;
-        self.state = value;
-        value.wrapping_mul(0x2545_F491_4F6C_DD1D)
+    /// [`Address::new`] fails closed on every malformed hex shape the
+    /// reviewed contract rejects: missing `0x` prefix, uppercase `0X`
+    /// prefix, wrong length, and non-hex characters inside the payload.
+    #[test]
+    fn address_rejects_malformed_inputs(input in malformed_address_strategy()) {
+        prop_assert!(Address::new(&input).is_err(), "input = {input}");
     }
 
-    fn fill<const N: usize>(&mut self) -> [u8; N] {
-        let mut bytes = [0u8; N];
-        for byte in &mut bytes {
-            *byte = self.next_u64() as u8;
-        }
-        bytes
-    }
-
-    fn next_u32(&mut self) -> u32 {
-        self.next_u64() as u32
-    }
-
-    fn next_bool(&mut self) -> bool {
-        self.next_u64() & 1 == 1
-    }
-
-    fn supported_chain(&mut self) -> SupportedChainId {
-        SupportedChainId::ALL[(self.next_u64() as usize) % SupportedChainId::ALL.len()]
-    }
-
-    fn decimal_amount_components(&mut self) -> (BigUint, String, String) {
-        let bytes = self.fill::<32>();
+    /// [`Amount`] treats decimal and hex renderings of the same 256-bit
+    /// value as equal, preserves the canonical base-10 form as its own
+    /// output, and round-trips through its own string form.
+    #[test]
+    fn amount_canonical_decimal_matches_hex_equivalent(bytes in atom_amount_bytes()) {
         let value = BigUint::from_bytes_be(&bytes);
         let canonical = value.to_str_radix(10);
         let hex_form = format!("0x{}", value.to_str_radix(16));
-        (value, canonical, hex_form)
-    }
-}
-
-fn mixed_case_hex(rng: &mut CaseRng, bytes: &[u8]) -> String {
-    let mut output = String::with_capacity(bytes.len() * 2 + 2);
-    output.push_str("0x");
-    for byte in bytes {
-        let hi = (byte >> 4) & 0x0F;
-        let lo = byte & 0x0F;
-        let hi_char = hex_nibble(hi, rng.next_bool());
-        let lo_char = hex_nibble(lo, rng.next_bool());
-        output.push(hi_char);
-        output.push(lo_char);
-    }
-    output
-}
-
-fn hex_nibble(value: u8, uppercase: bool) -> char {
-    match value {
-        0..=9 => (b'0' + value) as char,
-        10..=15 => {
-            if uppercase {
-                (b'A' + value - 10) as char
-            } else {
-                (b'a' + value - 10) as char
-            }
-        }
-        _ => unreachable!("nibble value must fit in four bits"),
-    }
-}
-
-#[test]
-fn address_roundtrip_preserves_input_case_across_seeds() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let bytes = rng.fill::<20>();
-        let mixed = mixed_case_hex(&mut rng, &bytes);
-
-        let address = Address::new(&mixed).unwrap();
-        assert_eq!(
-            address.as_str(),
-            mixed,
-            "address must preserve the original input string exactly"
-        );
-
-        let roundtrip: String = address.clone().into();
-        assert_eq!(
-            roundtrip, mixed,
-            "address-to-string conversion must return the stored input"
-        );
-
-        let rebuilt = Address::new(roundtrip).unwrap();
-        assert_eq!(
-            rebuilt, address,
-            "rebuilding an address from its own string form must produce an equal value"
-        );
-    }
-}
-
-#[test]
-fn address_normalized_key_is_lowercase_case_insensitive() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let bytes = rng.fill::<20>();
-        let mixed = mixed_case_hex(&mut rng, &bytes);
-        let lowercase = format!("0x{}", hex::encode(bytes));
-        let uppercase = format!("0x{}", hex::encode_upper(bytes));
-
-        let address_mixed = Address::new(&mixed).unwrap();
-        let address_lower = Address::new(&lowercase).unwrap();
-        let address_upper = Address::new(&uppercase).unwrap();
-
-        assert_eq!(
-            address_mixed.normalized_key(),
-            lowercase,
-            "normalized key must always be the lowercase form"
-        );
-        assert_eq!(
-            address_lower.normalized_key(),
-            address_upper.normalized_key(),
-            "case variants must share one normalized key"
-        );
-        assert!(
-            addresses_equal(&address_mixed, &address_lower),
-            "addresses_equal must treat case variants as equal"
-        );
-        assert!(
-            addresses_equal(&address_upper, &address_lower),
-            "addresses_equal must treat uppercase and lowercase as equal"
-        );
-    }
-}
-
-#[test]
-fn address_partial_eq_and_hash_are_case_insensitive() {
-    use std::collections::{HashMap, HashSet};
-
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let bytes = rng.fill::<20>();
-        let mixed = mixed_case_hex(&mut rng, &bytes);
-        let lowercase = format!("0x{}", hex::encode(bytes));
-        let uppercase = format!("0x{}", hex::encode_upper(bytes));
-
-        let address_mixed = Address::new(&mixed).unwrap();
-        let address_lower = Address::new(&lowercase).unwrap();
-        let address_upper = Address::new(&uppercase).unwrap();
-
-        assert_eq!(
-            address_mixed, address_lower,
-            "PartialEq must treat mixed-case and lowercase variants as equal"
-        );
-        assert_eq!(
-            address_upper, address_lower,
-            "PartialEq must treat uppercase and lowercase variants as equal"
-        );
-        assert_eq!(
-            address_mixed.as_str(),
-            mixed,
-            "as_str must preserve the original input casing"
-        );
-
-        let mut map = HashMap::new();
-        map.insert(address_mixed.clone(), "value");
-        assert_eq!(
-            map.get(&address_lower),
-            Some(&"value"),
-            "hash must agree with PartialEq for lowercase lookup"
-        );
-        assert_eq!(
-            map.get(&address_upper),
-            Some(&"value"),
-            "hash must agree with PartialEq for uppercase lookup"
-        );
-
-        let mut set = HashSet::new();
-        set.insert(address_mixed.clone());
-        set.insert(address_lower.clone());
-        set.insert(address_upper.clone());
-        assert_eq!(
-            set.len(),
-            1,
-            "a HashSet must collapse case-variant addresses into one element"
-        );
-    }
-}
-
-#[test]
-fn address_rejects_malformed_inputs() {
-    assert!(
-        Address::new("").is_err(),
-        "empty string must not parse as an address"
-    );
-    assert!(
-        Address::new("742d35cc6634c0532925a3b844bc9e7595f0bebd").is_err(),
-        "missing 0x prefix must fail closed"
-    );
-    assert!(
-        Address::new("0X742d35cc6634c0532925a3b844bc9e7595f0bebd").is_err(),
-        "uppercase 0X prefix must fail closed"
-    );
-
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let bytes = rng.fill::<20>();
-        let canonical = format!("0x{}", hex::encode(bytes));
-
-        let too_short = format!("0x{}", &hex::encode(bytes)[..38]);
-        assert!(
-            Address::new(&too_short).is_err(),
-            "short address input {too_short} must fail closed"
-        );
-
-        let mut too_long = canonical.clone();
-        too_long.push_str("00");
-        assert!(
-            Address::new(&too_long).is_err(),
-            "long address input {too_long} must fail closed"
-        );
-
-        let mut nonhex = canonical.as_bytes().to_vec();
-        let flip = (rng.next_u32() as usize) % 20 + 2;
-        nonhex[flip] = b'g';
-        let nonhex = String::from_utf8(nonhex).unwrap();
-        assert!(
-            Address::new(&nonhex).is_err(),
-            "non-hex character in {nonhex} must fail closed"
-        );
-    }
-}
-
-#[test]
-fn amount_canonical_decimal_matches_hex_equivalent() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let (value, canonical, hex_form) = rng.decimal_amount_components();
 
         let from_decimal = Amount::new(&canonical).unwrap();
         let from_hex = Amount::new(&hex_form).unwrap();
 
-        assert_eq!(
-            from_decimal, from_hex,
-            "decimal and hex inputs representing the same value must compare equal"
-        );
-        assert_eq!(
-            from_decimal.as_str(),
-            canonical,
-            "canonical form must be the base-10 representation of the input"
-        );
+        prop_assert_eq!(&from_decimal, &from_hex);
+        prop_assert_eq!(from_decimal.as_str(), &canonical);
 
         let roundtrip = Amount::new(from_decimal.as_str()).unwrap();
-        assert_eq!(
-            roundtrip, from_decimal,
-            "feeding the canonical form back into Amount::new must roundtrip"
-        );
+        prop_assert_eq!(&roundtrip, &from_decimal);
 
         let reparsed = BigUint::parse_bytes(from_decimal.as_str().as_bytes(), 10).unwrap();
-        assert_eq!(
-            reparsed, value,
-            "canonical Amount string must parse back to the original BigUint"
-        );
+        prop_assert_eq!(&reparsed, &value);
     }
 
-    assert_eq!(
-        Amount::new("0").unwrap(),
-        Amount::zero(),
-        "Amount::zero must match the canonical decimal zero"
-    );
-    assert_eq!(
-        Amount::new("0x0").unwrap(),
-        Amount::zero(),
-        "Amount::zero must match the canonical hex zero"
-    );
-    assert_eq!(
-        Amount::new("0x00000000").unwrap(),
-        Amount::zero(),
-        "leading hex zeros must normalize to canonical zero"
-    );
-}
-
-#[test]
-fn amount_rejects_malformed_and_out_of_range_inputs() {
-    assert!(
-        Amount::new("").is_err(),
-        "empty input must not parse as an amount"
-    );
-    assert!(
-        Amount::new("-1").is_err(),
-        "negative decimal inputs must fail closed"
-    );
-    assert!(
-        Amount::new("0xg").is_err(),
-        "non-hex characters after 0x prefix must fail closed"
-    );
-    assert!(
-        Amount::new("1.5").is_err(),
-        "non-integer decimals must fail closed"
-    );
-
-    let overflow_hex = format!("0x1{}", "0".repeat(64));
-    assert!(
-        Amount::new(&overflow_hex).is_err(),
-        "inputs beyond 256 bits must fail closed"
-    );
-
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let bytes = rng.fill::<4>();
-        let garbled = format!("0x{}gg", hex::encode(bytes));
-        assert!(
-            Amount::new(&garbled).is_err(),
-            "hex input {garbled} with non-hex suffix must fail closed"
-        );
+    /// [`Amount::new`] fails closed on every malformed input shape the
+    /// reviewed contract rejects: empty string, negative decimal, invalid
+    /// hex, fractional decimal, and values larger than 256 bits.
+    #[test]
+    fn amount_rejects_malformed_and_out_of_range_inputs(input in malformed_amount_strategy()) {
+        prop_assert!(Amount::new(&input).is_err(), "input = {input}");
     }
-}
 
-#[test]
-fn hash32_family_roundtrip_preserves_input() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let bytes = rng.fill::<32>();
+    /// [`Hash32::new`] preserves the supplied input string exactly
+    /// (including casing) and round-trips through its own string form.
+    #[test]
+    fn hash32_roundtrip_preserves_input(
+        bytes in any::<[u8; 32]>(),
+        casing in prop::collection::vec(any::<bool>(), 64),
+    ) {
         let canonical = format!("0x{}", hex::encode(bytes));
-        let mixed = mixed_case_hex(&mut rng, &bytes);
+        let mixed = render_mixed_case(&bytes, &casing);
 
         let hash = Hash32::new(&canonical).unwrap();
-        assert_eq!(
-            hash.as_str(),
-            canonical,
-            "Hash32 must preserve input string"
-        );
+        prop_assert_eq!(hash.as_str(), &canonical);
 
         let hash_mixed = Hash32::new(&mixed).unwrap();
-        assert_eq!(
-            hash_mixed.as_str(),
-            mixed,
-            "Hash32 must preserve the exact input case"
-        );
+        prop_assert_eq!(hash_mixed.as_str(), &mixed);
 
         let rebuilt = Hash32::new(hash.as_str()).unwrap();
-        assert_eq!(
-            rebuilt, hash,
-            "Hash32 must roundtrip through its string form"
-        );
+        prop_assert_eq!(rebuilt, hash);
     }
-}
 
-#[test]
-fn hash32_rejects_malformed_inputs() {
-    assert!(Hash32::new("").is_err());
-    assert!(Hash32::new("0x").is_err(), "empty payload must fail closed");
-
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let canonical = format!("0x{}", hex::encode(rng.fill::<32>()));
-
-        let too_short = format!("0x{}", &canonical[2..canonical.len() - 2]);
-        assert!(
-            Hash32::new(&too_short).is_err(),
-            "short hex {too_short} must fail closed"
-        );
-
-        let too_long = format!("{canonical}00");
-        assert!(
-            Hash32::new(&too_long).is_err(),
-            "long hex {too_long} must fail closed"
-        );
-
-        let mut nonhex = canonical.as_bytes().to_vec();
-        let flip = (rng.next_u32() as usize) % 64 + 2;
-        nonhex[flip] = b'z';
-        let nonhex = String::from_utf8(nonhex).unwrap();
-        assert!(
-            Hash32::new(&nonhex).is_err(),
-            "non-hex character in {nonhex} must fail closed"
-        );
+    /// [`Hash32::new`] fails closed on every malformed hex shape.
+    #[test]
+    fn hash32_rejects_malformed_inputs(input in malformed_hash32_strategy()) {
+        prop_assert!(Hash32::new(&input).is_err(), "input = {input}");
     }
-}
 
-#[test]
-fn app_data_hex_roundtrip_preserves_input_and_rejects_malformed_inputs() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let bytes = rng.fill::<32>();
+    /// [`AppDataHex::new`] preserves a 32-byte canonical payload and
+    /// round-trips through its own string form; malformed shapes (missing
+    /// prefix, wrong length) fail closed.
+    #[test]
+    fn app_data_hex_roundtrip_and_rejects_malformed(
+        bytes in any::<[u8; 32]>(),
+        malformed in malformed_app_data_hex_strategy(),
+    ) {
         let canonical = format!("0x{}", hex::encode(bytes));
 
         let app_data = AppDataHex::new(&canonical).unwrap();
-        assert_eq!(app_data.as_str(), canonical);
+        prop_assert_eq!(app_data.as_str(), &canonical);
+        prop_assert_eq!(AppDataHex::new(app_data.as_str()).unwrap(), app_data);
 
-        let rebuilt = AppDataHex::new(app_data.as_str()).unwrap();
-        assert_eq!(
-            rebuilt, app_data,
-            "AppDataHex must roundtrip through its own string form"
-        );
-
-        let too_short = format!("0x{}", &hex::encode(bytes)[..62]);
-        assert!(
-            AppDataHex::new(&too_short).is_err(),
-            "short AppDataHex {too_short} must fail closed"
-        );
-
-        let too_long = format!("{canonical}00");
-        assert!(
-            AppDataHex::new(&too_long).is_err(),
-            "long AppDataHex {too_long} must fail closed"
-        );
-
-        let missing_prefix = hex::encode(bytes);
-        assert!(
-            AppDataHex::new(&missing_prefix).is_err(),
-            "AppDataHex without 0x prefix must fail closed"
-        );
+        prop_assert!(AppDataHex::new(&malformed).is_err(), "malformed = {malformed}");
     }
-}
 
-#[test]
-fn order_uid_roundtrip_preserves_input_and_rejects_malformed_inputs() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let bytes = rng.fill::<56>();
+    /// [`OrderUid::new`] preserves a 56-byte canonical payload and
+    /// round-trips through its own string form; malformed lengths fail
+    /// closed.
+    #[test]
+    fn order_uid_roundtrip_and_rejects_malformed(
+        bytes in order_uid_bytes(),
+        malformed in malformed_order_uid_strategy(),
+    ) {
         let canonical = format!("0x{}", hex::encode(bytes));
 
         let uid = OrderUid::new(&canonical).unwrap();
-        assert_eq!(uid.as_str(), canonical);
+        prop_assert_eq!(uid.as_str(), &canonical);
+        prop_assert_eq!(OrderUid::new(uid.as_str()).unwrap(), uid);
 
-        let rebuilt = OrderUid::new(uid.as_str()).unwrap();
-        assert_eq!(
-            rebuilt, uid,
-            "OrderUid must roundtrip through its own string form"
-        );
-
-        let too_short = format!("0x{}", &hex::encode(bytes)[..110]);
-        assert!(
-            OrderUid::new(&too_short).is_err(),
-            "short OrderUid {too_short} must fail closed"
-        );
-
-        let too_long = format!("{canonical}00");
-        assert!(
-            OrderUid::new(&too_long).is_err(),
-            "long OrderUid {too_long} must fail closed"
-        );
+        prop_assert!(OrderUid::new(&malformed).is_err(), "malformed = {malformed}");
     }
-}
 
-#[test]
-fn hex_data_accepts_empty_payload_and_preserves_valid_inputs() {
-    let empty = HexData::empty();
-    assert_eq!(
-        empty.as_str(),
-        "0x",
-        "canonical empty payload is literally 0x"
-    );
+    /// [`HexData`] preserves the canonical empty payload `0x`, matches
+    /// [`HexData::default`], and preserves any 0x-prefixed hex body
+    /// byte-for-byte.
+    #[test]
+    fn hex_data_accepts_empty_payload_and_preserves_valid_inputs(bytes in any::<[u8; 32]>()) {
+        let empty = HexData::empty();
+        prop_assert_eq!(empty.as_str(), "0x");
+        prop_assert_eq!(HexData::default(), empty);
 
-    let default: HexData = HexData::default();
-    assert_eq!(
-        default, empty,
-        "default HexData must match HexData::empty()"
-    );
-
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let bytes = rng.fill::<32>();
         let canonical = format!("0x{}", hex::encode(bytes));
-
         let data = HexData::new(&canonical).unwrap();
-        assert_eq!(
-            data.as_str(),
-            canonical,
-            "HexData must preserve valid inputs byte-for-byte"
-        );
-
-        let rebuilt = HexData::new(data.as_str()).unwrap();
-        assert_eq!(rebuilt, data);
+        prop_assert_eq!(data.as_str(), &canonical);
+        prop_assert_eq!(HexData::new(data.as_str()).unwrap(), data);
     }
-}
 
-#[test]
-fn token_id_is_chain_and_address_sensitive() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let address_a = Address::new(format!("0x{}", hex::encode(rng.fill::<20>()))).unwrap();
-        let address_b = Address::new(format!("0x{}", hex::encode(rng.fill::<20>()))).unwrap();
+    /// [`token_id`] is deterministic for identical `(chain, address)`
+    /// inputs and changes when either the chain or the address changes.
+    #[test]
+    fn token_id_is_chain_and_address_sensitive(
+        first_bytes in address_bytes(),
+        second_bytes in address_bytes(),
+        chain_a in supported_chain_strategy(),
+        chain_b in supported_chain_strategy(),
+    ) {
+        prop_assume!(first_bytes != second_bytes);
+        prop_assume!(chain_a != chain_b);
 
-        let chain_a: ChainId = rng.supported_chain().into();
-        let mut chain_b: ChainId = rng.supported_chain().into();
-        while chain_b == chain_a {
-            chain_b = rng.supported_chain().into();
-        }
+        let address_a = Address::new(format!("0x{}", hex::encode(first_bytes))).unwrap();
+        let address_b = Address::new(format!("0x{}", hex::encode(second_bytes))).unwrap();
+        let chain_a: ChainId = chain_a.into();
+        let chain_b: ChainId = chain_b.into();
 
-        let id_same = token_id(chain_a, &address_a);
-        let id_same_again = token_id(chain_a, &address_a);
-        assert_eq!(
-            id_same, id_same_again,
-            "token_id must be deterministic for identical inputs"
-        );
-
-        let id_different_address = token_id(chain_a, &address_b);
-        assert_ne!(
-            id_same, id_different_address,
-            "token_id must change when the address changes"
-        );
-
-        let id_different_chain = token_id(chain_b, &address_a);
-        assert_ne!(
-            id_same, id_different_chain,
-            "token_id must change when the chain changes"
-        );
+        prop_assert_eq!(token_id(chain_a, &address_a), token_id(chain_a, &address_a));
+        prop_assert_ne!(token_id(chain_a, &address_a), token_id(chain_a, &address_b));
+        prop_assert_ne!(token_id(chain_a, &address_a), token_id(chain_b, &address_a));
     }
-}
 
-#[test]
-fn atom_amount_roundtrips_through_biguint_and_wire_string() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed ^ 0x10CA_FE11);
-        let (value, canonical, _hex) = rng.decimal_amount_components();
+    /// [`AtomAmount::from_atoms`] preserves the originating [`BigUint`]
+    /// input, round-trips through the canonical wire-string Serde form,
+    /// and preserves values through the legacy [`Amount`] bridge.
+    #[test]
+    fn atom_amount_roundtrips_through_biguint_and_wire_string(bytes in atom_amount_bytes()) {
+        let value = BigUint::from_bytes_be(&bytes);
+        let canonical = value.to_str_radix(10);
 
         let atom = AtomAmount::from_atoms(value.clone());
-        assert_eq!(
-            atom.as_biguint(),
-            &value,
-            "AtomAmount must preserve the underlying BigUint input"
-        );
+        prop_assert_eq!(atom.as_biguint(), &value);
 
-        let biguint: BigUint = atom.clone().into();
-        assert_eq!(
-            biguint, value,
-            "AtomAmount must convert back into the original BigUint"
-        );
+        let round_trip_big_uint: BigUint = atom.clone().into();
+        prop_assert_eq!(&round_trip_big_uint, &value);
 
-        let from_biguint: AtomAmount = value.clone().into();
-        assert_eq!(
-            from_biguint, atom,
-            "BigUint conversion must be symmetric with from_atoms"
-        );
+        prop_assert_eq!(atom.to_string(), canonical.clone());
 
         let serialized = serde_json::to_string(&atom).unwrap();
         let deserialized: AtomAmount = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(
-            deserialized.as_biguint(),
-            &value,
-            "AtomAmount must round-trip through its canonical string wire form"
-        );
-
-        assert_eq!(
-            atom.to_string(),
-            canonical,
-            "Display must match the canonical base-10 representation"
-        );
+        prop_assert_eq!(deserialized.as_biguint(), &value);
 
         let amount = Amount::new(canonical.clone()).unwrap();
         let via_amount: AtomAmount = (&amount).try_into().unwrap();
-        assert_eq!(
-            via_amount, atom,
-            "Conversion from the legacy string-backed Amount must preserve the atom value"
-        );
+        prop_assert_eq!(via_amount.as_biguint(), &value);
 
-        let round_trip_amount: Amount = atom.clone().into();
-        assert_eq!(
-            round_trip_amount, amount,
-            "Conversion back into Amount must produce the canonical wire form"
-        );
+        let round_trip_amount: Amount = atom.into();
+        prop_assert_eq!(round_trip_amount, amount);
     }
 
-    assert_eq!(AtomAmount::zero().as_biguint(), &BigUint::from(0u32));
-    assert_eq!(AtomAmount::default(), AtomAmount::zero());
-}
+    /// [`DecimalAmount::new`] preserves atoms and decimals across any
+    /// representable scale and round-trips through its accessors.
+    #[test]
+    fn decimal_amount_preserves_atoms_and_scale(
+        bytes in atom_amount_bytes(),
+        decimals in 0u8..=30u8,
+    ) {
+        let atoms = BigUint::from_bytes_be(&bytes);
+        let amount = DecimalAmount::new(atoms.clone(), decimals);
 
-#[test]
-fn decimal_amount_preserves_atoms_and_scale_across_seeds() {
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed ^ 0x10CA_FE22);
-        let (atoms, _, _) = rng.decimal_amount_components();
-        let decimals = u8::try_from(rng.next_u32() % 31).unwrap();
+        prop_assert_eq!(amount.atoms(), &atoms);
+        prop_assert_eq!(amount.decimals(), decimals);
 
-        let decimal = DecimalAmount::new(atoms.clone(), decimals);
-        assert_eq!(decimal.atoms(), &atoms);
-        assert_eq!(decimal.decimals(), decimals);
+        let rebuilt = DecimalAmount::new(amount.atoms().clone(), amount.decimals());
+        prop_assert_eq!(&rebuilt, &amount);
 
-        let extracted = decimal.clone().into_atoms();
-        assert_eq!(
-            extracted, atoms,
-            "into_atoms must surface the original BigUint input"
-        );
-
-        let rebuilt = DecimalAmount::new(decimal.atoms().clone(), decimal.decimals());
-        assert_eq!(
-            rebuilt, decimal,
-            "rebuilding a DecimalAmount from its accessors must round-trip"
-        );
+        let extracted = amount.into_atoms();
+        prop_assert_eq!(extracted, atoms);
     }
-}
 
-#[test]
-fn decimal_amount_from_whole_approx_handles_boundary_inputs() {
-    let zero = DecimalAmount::from_whole_approx(0.0, 18);
-    assert_eq!(zero.atoms(), &BigUint::from(0u32));
-    assert_eq!(zero.decimals(), 18);
+    /// [`DecimalAmount::from_whole_approx`] clamps negatives, NaN, and
+    /// infinity to safe atoms values and recovers one-token inputs
+    /// byte-exactly at 18 decimals.
+    #[test]
+    fn decimal_amount_from_whole_approx_handles_boundary_inputs(decimals in 0u8..=30u8) {
+        let zero = DecimalAmount::from_whole_approx(0.0, decimals);
+        prop_assert_eq!(zero.atoms(), &BigUint::from(0u32));
+        prop_assert_eq!(zero.decimals(), decimals);
 
-    let negative = DecimalAmount::from_whole_approx(-1.5, 18);
-    assert_eq!(
-        negative.atoms(),
-        &BigUint::from(0u32),
-        "negative inputs must clamp to zero atoms"
-    );
+        let negative = DecimalAmount::from_whole_approx(-1.5, decimals);
+        prop_assert_eq!(negative.atoms(), &BigUint::from(0u32));
 
-    let nan = DecimalAmount::from_whole_approx(f64::NAN, 18);
-    assert_eq!(
-        nan.atoms(),
-        &BigUint::from(0u32),
-        "NaN inputs must clamp to zero atoms"
-    );
+        let nan = DecimalAmount::from_whole_approx(f64::NAN, decimals);
+        prop_assert_eq!(nan.atoms(), &BigUint::from(0u32));
 
-    let infinity = DecimalAmount::from_whole_approx(f64::INFINITY, 18);
-    assert!(
-        infinity.atoms() <= &BigUint::from(u128::MAX),
-        "infinite inputs must not exceed the bounded u128 range"
-    );
+        let infinity = DecimalAmount::from_whole_approx(f64::INFINITY, decimals);
+        prop_assert!(infinity.atoms() <= &BigUint::from(u128::MAX));
 
-    let one_token = DecimalAmount::from_whole_approx(1.0, 18);
-    let expected = BigUint::from(10u128.pow(18));
-    assert_eq!(
-        one_token.atoms(),
-        &expected,
-        "one whole token at 18 decimals must resolve to 10^18 atoms"
-    );
-    assert!(
-        (one_token.to_f64_approx() - 1.0).abs() < 1e-12,
-        "to_f64_approx must recover the whole-unit value within f64 precision"
-    );
-}
+        let one_token = DecimalAmount::from_whole_approx(1.0, 18);
+        let expected = BigUint::from(10u128.pow(18));
+        prop_assert_eq!(one_token.atoms(), &expected);
+        prop_assert!((one_token.to_f64_approx() - 1.0).abs() < 1e-12);
+    }
 
-#[test]
-fn supported_chain_id_roundtrips_through_chain_id() {
-    for supported in SupportedChainId::ALL {
+    /// Every [`SupportedChainId`] round-trips through its [`ChainId`]
+    /// numeric form, and any u64 outside the supported set fails the
+    /// [`TryFrom`] conversion.
+    #[test]
+    fn supported_chain_id_roundtrips_and_rejects_unknown(
+        supported in supported_chain_strategy(),
+        candidate in any::<u64>(),
+    ) {
         let raw: ChainId = supported.into();
-        let rebuilt = SupportedChainId::try_from(raw)
-            .expect("every supported chain id must roundtrip through its numeric form");
-        assert_eq!(
-            supported, rebuilt,
-            "numeric roundtrip must preserve the supported chain value"
-        );
+        let rebuilt = SupportedChainId::try_from(raw).unwrap();
+        prop_assert_eq!(supported, rebuilt);
+
+        let is_supported = SupportedChainId::ALL
+            .iter()
+            .any(|chain| ChainId::from(*chain) == candidate);
+        prop_assert_eq!(SupportedChainId::try_from(candidate).is_ok(), is_supported);
     }
 
-    for seed in 0..CASE_COUNT {
-        let mut rng = CaseRng::new(seed);
-        let mut candidate = rng.next_u64();
-        while SupportedChainId::ALL
-            .iter()
-            .any(|chain| ChainId::from(*chain) == candidate)
-        {
-            candidate = candidate.wrapping_add(1);
-        }
-        assert!(
-            SupportedChainId::try_from(candidate).is_err(),
-            "unsupported chain id {candidate} must fail closed"
-        );
+    /// [`ValidTo::relative`] admits every duration inside
+    /// `[VALID_TO_MIN_RELATIVE_SECONDS, VALID_TO_MAX_RELATIVE_SECONDS]`
+    /// and fails closed on every duration outside that inclusive window.
+    #[test]
+    fn valid_to_relative_enforces_documented_bounds(
+        now_epoch_seconds in 1_600_000_000u64..=4_000_000_000u64,
+        duration_seconds in 0u64..=(u64::from(VALID_TO_MAX_RELATIVE_SECONDS) + 3_600),
+    ) {
+        let result = ValidTo::relative(now_epoch_seconds, duration_seconds);
+        let in_range = (u64::from(VALID_TO_MIN_RELATIVE_SECONDS)
+            ..=u64::from(VALID_TO_MAX_RELATIVE_SECONDS))
+            .contains(&duration_seconds);
+        prop_assert_eq!(result.is_ok(), in_range);
     }
 }
