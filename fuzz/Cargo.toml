@@ -9,12 +9,46 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "=0.4.12"
+arbitrary = { version = "=1.4.2", features = ["derive"] }
+hex = "=0.4.3"
+serde_json = "=1.0.149"
 cow-sdk-contracts = { path = "../crates/contracts" }
 cow-sdk-core = { path = "../crates/core" }
+cow-sdk-signing = { path = "../crates/signing" }
+cow-sdk-app-data = { path = "../crates/app-data" }
+cow-sdk-subgraph = { path = "../crates/subgraph" }
 
 [[bin]]
 name = "fuzz_order_uid_pack_unpack"
 path = "fuzz_targets/fuzz_order_uid_pack_unpack.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_typed_data_digest"
+path = "fuzz_targets/fuzz_typed_data_digest.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_app_data_cid_roundtrip"
+path = "fuzz_targets/fuzz_app_data_cid_roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_order_signature_classify"
+path = "fuzz_targets/fuzz_order_signature_classify.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_subgraph_graphql_error_decode"
+path = "fuzz_targets/fuzz_subgraph_graphql_error_decode.rs"
 test = false
 doc = false
 bench = false
