@@ -1,4 +1,8 @@
 target/
+fuzz/corpus/
+fuzz/artifacts/
+fuzz/target/
+fuzz/Cargo.lock
 pkg/
 node_modules/
 .local

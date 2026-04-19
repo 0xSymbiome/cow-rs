@@ -1,0 +1,25 @@
+[package]
+name = "cow-sdk-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "=0.4.12"
+cow-sdk-contracts = { path = "../crates/contracts" }
+cow-sdk-core = { path = "../crates/core" }
+
+[[bin]]
+name = "fuzz_order_uid_pack_unpack"
+path = "fuzz_targets/fuzz_order_uid_pack_unpack.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
+# The fuzz crate stands alone because cargo-fuzz requires a nightly-only
+# toolchain with unstable RUSTFLAGS. Embedding it in the workspace at the
+# repo root would force every other crate onto the nightly channel.
