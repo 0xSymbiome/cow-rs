@@ -24,12 +24,15 @@ claim and runs on every commit.
   generators and the selection-confirmation sequence under the mock EIP-1193
   transport.
 - Playwright with mocked fixtures covers end-to-end DOM behavior without a
-  live wallet extension or live orderbook endpoint. The
-  `e2e/browser-wallet/fixtures/injected-wallet.ts` fixture mocks EIP-6963
-  discovery, injected provider requests, and chain-switch events. The
-  `e2e/sdk-verification/fixtures/cow-api.ts` fixture mocks the CoW orderbook
-  and subgraph endpoints with deterministic payloads so the reviewer-facing
-  panel flows reproduce reliably.
+  live wallet extension or live orderbook endpoint. The browser-wallet
+  Playwright suite runs under both Chromium and Firefox projects so the
+  DOM-behavior contract is validated under the two most widely deployed
+  browser engines. The `e2e/browser-wallet/fixtures/injected-wallet.ts`
+  fixture mocks EIP-6963 discovery, injected provider requests, and
+  chain-switch events. The `e2e/sdk-verification/fixtures/cow-api.ts`
+  fixture mocks the CoW orderbook and subgraph endpoints with
+  deterministic payloads so the reviewer-facing panel flows reproduce
+  reliably.
 
 ## Environment-Sensitive Lane
 
