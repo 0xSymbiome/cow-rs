@@ -57,6 +57,42 @@ cd examples/wasm/sdk-verification-console && wasm-pack build --target web
 cd examples/wasm/browser-wallet-console && wasm-pack build --target web
 ```
 
+## Running Fuzz Targets Locally
+
+The `fuzz/` crate ships cargo-fuzz harnesses for the deterministic codec
+boundaries in `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, and
+`cow-sdk-subgraph`. The fuzz crate is a standalone package outside the root
+workspace and requires the Rust nightly channel.
+
+Install the nightly toolchain and cargo-fuzz once:
+
+```text
+rustup toolchain install nightly
+cargo install cargo-fuzz --locked
+```
+
+List the shipped targets to confirm the toolchain is wired up:
+
+```text
+cargo fuzz list --fuzz-dir fuzz
+```
+
+Run a single target for one minute locally:
+
+```text
+cargo +nightly fuzz run <target> --fuzz-dir fuzz -- -max_total_time=60
+```
+
+Reproduce a crash from a saved corpus seed by pointing the target at the
+seed file directly:
+
+```text
+cargo +nightly fuzz run <target> --fuzz-dir fuzz fuzz/corpus/<target>/<seed>
+```
+
+Fuzz targets are exercised on schedule through the `fuzz` workflow; the
+local commands above are sufficient for day-to-day contributor verification.
+
 ## Documentation
 
 Update public docs when a change moves a public crate boundary, support claim,
