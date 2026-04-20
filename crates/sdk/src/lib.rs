@@ -55,6 +55,11 @@ pub use cow_sdk_app_data as app_data;
 pub use cow_sdk_browser_wallet as browser_wallet;
 pub use cow_sdk_contracts as contracts;
 pub use cow_sdk_core as core;
+/// Transport-error classification shared across transport-capable crates.
+///
+/// Typed label that downstream telemetry and retry layers can use to
+/// partition REST-transport failures without parsing error messages.
+pub use cow_sdk_core::TransportErrorClass;
 pub use cow_sdk_orderbook as orderbook;
 pub use cow_sdk_signing as signing;
 pub use cow_sdk_trading as trading;
@@ -161,11 +166,11 @@ const fn classify_app_data(error: &cow_sdk_app_data::AppDataError) -> ErrorClass
         | cow_sdk_app_data::AppDataError::InvalidSchemaVersion(_)
         | cow_sdk_app_data::AppDataError::UnknownSchemaVersion(_)
         | cow_sdk_app_data::AppDataError::MissingSchemaVersion
-        | cow_sdk_app_data::AppDataError::InvalidAppDataProvided(_)
+        | cow_sdk_app_data::AppDataError::InvalidAppDataProvided { .. }
         | cow_sdk_app_data::AppDataError::MissingIpfsCredentials
         | cow_sdk_app_data::AppDataError::TooLarge { .. } => ErrorClass::Validation,
-        cow_sdk_app_data::AppDataError::Transport(_)
-        | cow_sdk_app_data::AppDataError::Pinning(_) => ErrorClass::Transport,
+        cow_sdk_app_data::AppDataError::Transport { .. }
+        | cow_sdk_app_data::AppDataError::Pinning { .. } => ErrorClass::Transport,
         // Json, Schema, Calculation failures plus any future additive
         // variants signal invariant violations and classify as internal.
         _ => ErrorClass::Internal,
@@ -176,9 +181,9 @@ const fn classify_orderbook(error: &cow_sdk_orderbook::OrderbookError) -> ErrorC
     match error {
         cow_sdk_orderbook::OrderbookError::Core(core_error) => classify_core(core_error),
         cow_sdk_orderbook::OrderbookError::Api(_) => ErrorClass::Remote,
-        cow_sdk_orderbook::OrderbookError::Transport(_) => ErrorClass::Transport,
-        cow_sdk_orderbook::OrderbookError::InvalidTradesQuery(_)
-        | cow_sdk_orderbook::OrderbookError::InvalidQuoteRequest(_) => ErrorClass::Validation,
+        cow_sdk_orderbook::OrderbookError::Transport { .. } => ErrorClass::Transport,
+        cow_sdk_orderbook::OrderbookError::InvalidTradesQuery { .. }
+        | cow_sdk_orderbook::OrderbookError::InvalidQuoteRequest { .. } => ErrorClass::Validation,
         cow_sdk_orderbook::OrderbookError::Cancelled => ErrorClass::Cancelled,
         // Serialization and transform failures plus any future additive
         // variants classify as internal.

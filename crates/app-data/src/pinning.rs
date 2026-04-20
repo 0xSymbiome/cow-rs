@@ -68,8 +68,7 @@ pub fn pin_json_in_pinata_ipfs(
         &body,
         &headers,
     )?;
-    let payload: Value =
-        serde_json::from_str(&response.body).map_err(|err| AppDataError::Json(err.to_string()))?;
+    let payload: Value = serde_json::from_str(&response.body).map_err(AppDataError::from)?;
 
     if response.status != 200 {
         let details = payload
@@ -77,7 +76,10 @@ pub fn pin_json_in_pinata_ipfs(
             .and_then(|error| error.get("details").or(Some(error)))
             .and_then(Value::as_str)
             .unwrap_or("IPFS upload failed");
-        return Err(AppDataError::Pinning(details.to_string()));
+        return Err(AppDataError::Pinning {
+            status: Some(response.status),
+            message: details.to_string(),
+        });
     }
 
     Ok(payload)

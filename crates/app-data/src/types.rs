@@ -400,10 +400,13 @@ mod tests {
 
         for invalid in ["1.0", "1.0.0.1", "v1.0.0", "1.two.3", "", "1..3"] {
             assert!(!is_semver(invalid), "{invalid}");
-            assert_eq!(
-                SchemaVersion::new(invalid).unwrap_err(),
-                AppDataError::InvalidSchemaVersion(invalid.to_owned())
-            );
+            let error = SchemaVersion::new(invalid).unwrap_err();
+            match error {
+                AppDataError::InvalidSchemaVersion(ref message) => {
+                    assert_eq!(message, invalid);
+                }
+                other => panic!("expected InvalidSchemaVersion, got {other:?}"),
+            }
         }
 
         assert!(is_non_empty_digits("123456"));
@@ -414,10 +417,13 @@ mod tests {
     #[test]
     fn schema_version_from_str_fails_closed_for_invalid_inputs() {
         for invalid in ["1.0", "1.0.0.1", "v1.0.0", "1.two.3", "", "1..3"] {
-            assert_eq!(
-                invalid.parse::<SchemaVersion>().unwrap_err(),
-                AppDataError::InvalidSchemaVersion(invalid.to_owned())
-            );
+            let error = invalid.parse::<SchemaVersion>().unwrap_err();
+            match error {
+                AppDataError::InvalidSchemaVersion(ref message) => {
+                    assert_eq!(message, invalid);
+                }
+                other => panic!("expected InvalidSchemaVersion, got {other:?}"),
+            }
         }
     }
 

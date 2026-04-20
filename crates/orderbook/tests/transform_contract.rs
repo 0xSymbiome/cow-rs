@@ -37,8 +37,10 @@ fn total_fee_transform_rejects_invalid_decimal_input() {
     let error = calculate_total_fee(Some("nope")).expect_err("invalid decimal should fail");
 
     match error {
-        cow_sdk_orderbook::OrderbookError::InvalidTransform(message) => {
-            assert!(message.contains("unsigned decimal string"));
+        cow_sdk_orderbook::OrderbookError::InvalidTransform { field, reason } => {
+            assert_eq!(field, "executedFee");
+            let rendered = reason.to_string();
+            assert!(rendered.contains("unsigned decimal string"));
         }
         other => panic!("expected InvalidTransform, got {other:?}"),
     }

@@ -114,12 +114,12 @@ fn unsupported_cancellation_modes_fail_with_typed_error() {
     )
     .unwrap_err();
 
-    assert_eq!(
+    assert!(matches!(
         error,
         SigningError::UnsupportedSignerGeneratedScheme {
             scheme: SigningScheme::PreSign
         }
-    );
+    ));
 }
 
 #[tokio::test]

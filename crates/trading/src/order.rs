@@ -92,7 +92,12 @@ impl LimitTradeParameters {
         self.valid_for.map_or(Ok(None), |duration| {
             ValidTo::relative(now_epoch_seconds, u64::from(duration))
                 .map(Some)
-                .map_err(|err| TradingError::InvalidInput(err.to_string()))
+                .map_err(|_| TradingError::InvalidInput {
+                    field: "validFor",
+                    reason: cow_sdk_core::ValidationReason::OutOfRange {
+                        details: "relative valid_for window must sit inside the supported bounds",
+                    },
+                })
         })
     }
 }
@@ -193,10 +198,11 @@ pub fn get_order_to_sign(
         let valid_for = limit_parameters.valid_for.unwrap_or(DEFAULT_QUOTE_VALIDITY);
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|error| {
-                TradingError::InvalidInput(format!(
-                    "system time must not be earlier than the unix epoch: {error}"
-                ))
+            .map_err(|_| TradingError::InvalidInput {
+                field: "systemTime",
+                reason: cow_sdk_core::ValidationReason::Precondition {
+                    details: "system time must not be earlier than the unix epoch",
+                },
             })?
             .as_secs();
         let clamped_valid_to = now
@@ -319,9 +325,12 @@ pub async fn calculate_unique_order_id(
 fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
     let amount = parse_integer("buyAmount", &value.to_string())?;
     if amount <= BigInt::from(0) {
-        return Err(TradingError::InvalidInput(format!(
-            "buyAmount must be greater than 0: {amount}"
-        )));
+        return Err(TradingError::InvalidInput {
+            field: "buyAmount",
+            reason: cow_sdk_core::ValidationReason::OutOfRange {
+                details: "buyAmount must be greater than 0",
+            },
+        });
     }
     Amount::new((amount - BigInt::from(1)).to_string()).map_err(Into::into)
 }

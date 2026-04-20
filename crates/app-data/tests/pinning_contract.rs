@@ -43,7 +43,10 @@ impl IpfsUploadTransport for RecordingUploadTransport {
         self.response
             .borrow()
             .clone()
-            .ok_or_else(|| AppDataError::Transport("missing upload response".to_string()))
+            .ok_or_else(|| AppDataError::Transport {
+                class: cow_sdk_core::TransportErrorClass::Other,
+                detail: "missing upload response".to_string(),
+            })
     }
 }
 

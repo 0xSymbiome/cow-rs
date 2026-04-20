@@ -29,7 +29,9 @@ pub fn app_data_hex_to_cid(app_data_hex: &str) -> Result<String, AppDataError> {
     let digest = parse_app_data_hex(app_data_hex)?;
     let cid = latest_cid_from_digest(&digest)?;
     cid.to_string_of_base(Base::Base16Lower)
-        .map_err(|err| AppDataError::Calculation(err.to_string()))
+        .map_err(|err| AppDataError::Calculation {
+            message: err.to_string(),
+        })
 }
 
 /// Converts a supported CID back into the app-data hex digest.
@@ -57,8 +59,11 @@ fn parse_app_data_hex(value: &str) -> Result<Vec<u8>, AppDataError> {
 }
 
 fn latest_cid_from_digest(digest: &[u8]) -> Result<Cid, AppDataError> {
-    let hash = Multihash::<64>::wrap(KECCAK_256_CODE, digest)
-        .map_err(|err| AppDataError::Calculation(err.to_string()))?;
+    let hash = Multihash::<64>::wrap(KECCAK_256_CODE, digest).map_err(|err| {
+        AppDataError::Calculation {
+            message: err.to_string(),
+        }
+    })?;
     Ok(Cid::new_v1(LATEST_CID_CODEC, hash))
 }
 
@@ -97,15 +102,15 @@ mod tests {
             Multihash::<64>::wrap(SHA2_256_CODE, &[0x33; APP_DATA_HEX_LENGTH]).unwrap(),
         );
 
-        assert_eq!(ensure_supported_cid(&latest), Ok(()));
-        assert_eq!(
+        assert!(ensure_supported_cid(&latest).is_ok());
+        assert!(matches!(
             ensure_supported_cid(&wrong_latest_codec),
             Err(AppDataError::InvalidCid)
-        );
-        assert_eq!(
+        ));
+        assert!(matches!(
             ensure_supported_cid(&wrong_latest_hash),
             Err(AppDataError::InvalidCid)
-        );
+        ));
     }
 
     #[test]
@@ -117,7 +122,10 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(ensure_supported_cid(&v0), Err(AppDataError::InvalidCid));
+        assert!(matches!(
+            ensure_supported_cid(&v0),
+            Err(AppDataError::InvalidCid)
+        ));
     }
 
     #[test]
@@ -127,9 +135,9 @@ mod tests {
             Multihash::<64>::wrap(KECCAK_256_CODE, &[0x11; APP_DATA_HEX_LENGTH - 1]).unwrap(),
         );
 
-        assert_eq!(
+        assert!(matches!(
             ensure_supported_cid(&short_latest),
             Err(AppDataError::InvalidCid)
-        );
+        ));
     }
 }

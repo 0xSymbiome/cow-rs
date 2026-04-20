@@ -272,7 +272,12 @@ impl OrderbookClient for MockOrderbook {
             .orders
             .first()
             .cloned()
-            .ok_or_else(|| OrderbookError::InvalidTransform("missing mock order".to_owned()))
+            .ok_or_else(|| OrderbookError::InvalidTransform {
+                field: "mockOrder",
+                reason: cow_sdk_core::ValidationReason::Precondition {
+                    details: "fixture must register a mock order before dispatch",
+                },
+            })
     }
 
     async fn upload_app_data(

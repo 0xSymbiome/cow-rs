@@ -102,7 +102,7 @@ pub fn fetch_doc_from_cid_with_policy(
     policy: &IpfsFetchPolicy,
 ) -> Result<AppDataDoc, AppDataError> {
     let raw = transport.get(&format!("{}/{}", policy.read_base_uri(), cid))?;
-    serde_json::from_str::<Value>(&raw).map_err(|err| AppDataError::Json(err.to_string()))
+    serde_json::from_str::<Value>(&raw).map_err(AppDataError::from)
 }
 
 /// Fetches an app-data document using the app-data hex digest.
@@ -133,10 +133,9 @@ pub fn fetch_doc_from_app_data_hex_with_policy(
     transport: &impl IpfsFetchTransport,
     policy: &IpfsFetchPolicy,
 ) -> Result<AppDataDoc, AppDataError> {
-    let cid = app_data_hex_to_cid(app_data_hex).map_err(|err| {
-        AppDataError::Transport(format!(
-            "Error decoding AppData: appDataHex={app_data_hex}, message={err}"
-        ))
+    let cid = app_data_hex_to_cid(app_data_hex).map_err(|err| AppDataError::Transport {
+        class: cow_sdk_core::TransportErrorClass::Decode,
+        detail: format!("error decoding appDataHex={app_data_hex}: {err}"),
     })?;
     fetch_doc_from_cid_with_policy(&cid, transport, policy)
 }
@@ -149,9 +148,10 @@ fn normalize_read_base_uri(read_base_uri: &str) -> Result<String, AppDataError> 
     let normalized = read_base_uri.trim().trim_end_matches('/').to_owned();
 
     if normalized.is_empty() {
-        return Err(AppDataError::Transport(
-            "ipfs read base uri must not be empty".to_owned(),
-        ));
+        return Err(AppDataError::Transport {
+            class: cow_sdk_core::TransportErrorClass::Builder,
+            detail: "ipfs read base uri must not be empty".to_owned(),
+        });
     }
 
     Ok(normalized)

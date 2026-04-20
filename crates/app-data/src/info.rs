@@ -37,7 +37,7 @@ impl AppDataSource for &AppDataDoc {
         let content = if deterministic {
             stringify_deterministic(self)?
         } else {
-            serde_json::to_string(self).map_err(|err| AppDataError::Json(err.to_string()))?
+            serde_json::to_string(self).map_err(AppDataError::from)?
         };
         Ok((self.clone(), content))
     }
@@ -51,7 +51,7 @@ impl AppDataSource for AppDataDoc {
         let content = if deterministic {
             stringify_deterministic(&self)?
         } else {
-            serde_json::to_string(&self).map_err(|err| AppDataError::Json(err.to_string()))?
+            serde_json::to_string(&self).map_err(AppDataError::from)?
         };
         Ok((self, content))
     }
@@ -62,8 +62,7 @@ impl AppDataSource for &str {
         self,
         _deterministic: bool,
     ) -> Result<(AppDataDoc, String), AppDataError> {
-        let document: Value =
-            serde_json::from_str(self).map_err(|err| AppDataError::Json(err.to_string()))?;
+        let document: Value = serde_json::from_str(self).map_err(AppDataError::from)?;
         Ok((document, self.to_string()))
     }
 }
@@ -73,8 +72,7 @@ impl AppDataSource for String {
         self,
         _deterministic: bool,
     ) -> Result<(AppDataDoc, String), AppDataError> {
-        let document: Value =
-            serde_json::from_str(&self).map_err(|err| AppDataError::Json(err.to_string()))?;
+        let document: Value = serde_json::from_str(&self).map_err(AppDataError::from)?;
         Ok((document, self))
     }
 }
@@ -132,11 +130,12 @@ fn ensure_valid_document(document: &AppDataDoc) -> Result<(), AppDataError> {
         return Ok(());
     }
 
-    Err(AppDataError::InvalidAppDataProvided(
-        validation
-            .errors
-            .unwrap_or_else(|| "unknown validation error".to_string()),
-    ))
+    Err(AppDataError::InvalidAppDataProvided {
+        field: "document",
+        reason: cow_sdk_core::ValidationReason::BadShape {
+            details: "document failed the embedded JSON schema validation",
+        },
+    })
 }
 
 fn write_canonical_json(value: &Value, out: &mut String) -> Result<(), AppDataError> {
@@ -144,9 +143,9 @@ fn write_canonical_json(value: &Value, out: &mut String) -> Result<(), AppDataEr
         Value::Null => out.push_str("null"),
         Value::Bool(boolean) => out.push_str(if *boolean { "true" } else { "false" }),
         Value::Number(number) => out.push_str(&number.to_string()),
-        Value::String(string) => out.push_str(
-            &serde_json::to_string(string).map_err(|err| AppDataError::Json(err.to_string()))?,
-        ),
+        Value::String(string) => {
+            out.push_str(&serde_json::to_string(string).map_err(AppDataError::from)?);
+        }
         Value::Array(array) => {
             out.push('[');
             for (index, item) in array.iter().enumerate() {
@@ -165,10 +164,7 @@ fn write_canonical_json(value: &Value, out: &mut String) -> Result<(), AppDataEr
                 if index > 0 {
                     out.push(',');
                 }
-                out.push_str(
-                    &serde_json::to_string(key)
-                        .map_err(|err| AppDataError::Json(err.to_string()))?,
-                );
+                out.push_str(&serde_json::to_string(key).map_err(AppDataError::from)?);
                 out.push(':');
                 write_canonical_json(item, out)?;
             }

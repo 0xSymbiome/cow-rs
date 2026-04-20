@@ -21,9 +21,8 @@ fn v0_cid_is_rejected_by_cid_to_app_data_hex() {
         "v0 CIDs must be rejected at the decoder boundary with a typed AppDataError::InvalidCid",
     );
 
-    assert_eq!(
-        error,
-        AppDataError::InvalidCid,
+    assert!(
+        matches!(error, AppDataError::InvalidCid),
         "v0 CIDs must surface AppDataError::InvalidCid, got {error:?}",
     );
 }
@@ -37,5 +36,5 @@ fn additional_v0_sample_is_rejected() {
     let error = cid_to_app_data_hex(v0_cid)
         .expect_err("v0 CIDs must be rejected with a typed AppDataError::InvalidCid");
 
-    assert_eq!(error, AppDataError::InvalidCid);
+    assert!(matches!(error, AppDataError::InvalidCid));
 }

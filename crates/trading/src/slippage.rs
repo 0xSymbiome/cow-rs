@@ -64,9 +64,12 @@ pub fn suggest_slippage_from_fee(
     let fee_amount = parse_integer("feeAmount", fee_amount)?;
 
     if fee_amount < BigInt::from(0) {
-        return Err(TradingError::InvalidInput(format!(
-            "Fee amount must be non-negative: {fee_amount}"
-        )));
+        return Err(TradingError::InvalidInput {
+            field: "feeAmount",
+            reason: cow_sdk_core::ValidationReason::OutOfRange {
+                details: "fee amount must be non-negative",
+            },
+        });
     }
 
     let percent = parse_percent_scaled(multiplying_factor_percent, "multiplyingFactorPercent")?;
@@ -100,9 +103,12 @@ pub fn suggest_slippage_from_volume(
     let sell_amount = if is_sell { sell_after } else { sell_before };
 
     if sell_amount <= BigInt::from(0) {
-        return Err(TradingError::InvalidInput(format!(
-            "sellAmount must be greater than 0: {sell_amount}"
-        )));
+        return Err(TradingError::InvalidInput {
+            field: "sellAmount",
+            reason: cow_sdk_core::ValidationReason::OutOfRange {
+                details: "sell amount must be greater than 0",
+            },
+        });
     }
 
     let percent = parse_percent_scaled(slippage_percent, "slippagePercent")?;
@@ -134,9 +140,12 @@ pub fn calculate_quote_amounts_and_costs(
     let network_cost_amount = parse_integer("feeAmount", quote.network_cost_amount())?;
 
     if sell_amount <= BigInt::from(0) {
-        return Err(TradingError::InvalidInput(format!(
-            "sellAmount must be greater than 0: {sell_amount}"
-        )));
+        return Err(TradingError::InvalidInput {
+            field: "sellAmount",
+            reason: cow_sdk_core::ValidationReason::OutOfRange {
+                details: "sell amount must be greater than 0",
+            },
+        });
     }
 
     let network_cost_amount_in_buy_currency = (&buy_amount * &network_cost_amount) / &sell_amount;
@@ -333,9 +342,12 @@ pub(crate) fn parse_integer(field: &'static str, value: &str) -> Result<BigInt, 
 
 fn parse_percent_scaled(percent: f64, field: &'static str) -> Result<BigInt, TradingError> {
     if !percent.is_finite() || percent < 0.0 {
-        return Err(TradingError::InvalidInput(format!(
-            "{field} must be non-negative: {percent}"
-        )));
+        return Err(TradingError::InvalidInput {
+            field,
+            reason: cow_sdk_core::ValidationReason::OutOfRange {
+                details: "percent must be finite and non-negative",
+            },
+        });
     }
 
     let rendered = format!("{percent:.6}");
@@ -410,14 +422,20 @@ fn get_slippage_percent_scaled(
     let sell_amount = if is_sell { sell_after } else { sell_before };
 
     if sell_amount <= BigInt::from(0) {
-        return Err(TradingError::InvalidInput(format!(
-            "sellAmount must be greater than 0: {sell_amount}"
-        )));
+        return Err(TradingError::InvalidInput {
+            field: "sellAmount",
+            reason: cow_sdk_core::ValidationReason::OutOfRange {
+                details: "sell amount must be greater than 0",
+            },
+        });
     }
     if slippage < BigInt::from(0) {
-        return Err(TradingError::InvalidInput(format!(
-            "slippage must be non-negative: {slippage}"
-        )));
+        return Err(TradingError::InvalidInput {
+            field: "slippage",
+            reason: cow_sdk_core::ValidationReason::OutOfRange {
+                details: "slippage must be non-negative",
+            },
+        });
     }
 
     let scale = BigInt::from(PERCENT_SCALE);

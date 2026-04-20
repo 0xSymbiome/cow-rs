@@ -30,8 +30,10 @@ where
     let spender = vault_relayer_override
         .cloned()
         .unwrap_or_else(|| vault_relayer_address(chain_id, env));
-    let args_json = serde_json::to_string(&(owner.as_str(), spender.as_str()))
-        .map_err(|error| TradingError::InvalidInput(error.to_string()))?;
+    let args_json =
+        serde_json::to_string(&(owner.as_str(), spender.as_str())).map_err(|error| {
+            TradingError::Contracts(cow_sdk_contracts::ContractsError::Serialization(error))
+        })?;
     let raw = provider
         .read_contract(&ContractCall {
             address: token_address.clone(),
@@ -68,8 +70,10 @@ where
     let spender = vault_relayer_override
         .cloned()
         .unwrap_or_else(|| vault_relayer_address(chain_id, env));
-    let args_json = serde_json::to_string(&(owner.as_str(), spender.as_str()))
-        .map_err(|error| TradingError::InvalidInput(error.to_string()))?;
+    let args_json =
+        serde_json::to_string(&(owner.as_str(), spender.as_str())).map_err(|error| {
+            TradingError::Contracts(cow_sdk_contracts::ContractsError::Serialization(error))
+        })?;
     let raw = provider
         .read_contract(&ContractCall {
             address: token_address.clone(),
@@ -217,9 +221,12 @@ fn decode_allowance_result(raw: &str) -> Result<Amount, TradingError> {
     match serde_json::from_str::<serde_json::Value>(raw) {
         Ok(serde_json::Value::String(value)) => Ok(Amount::new(value)?),
         Ok(serde_json::Value::Number(value)) => Ok(Amount::new(value.to_string())?),
-        Ok(_) => Err(TradingError::InvalidInput(
-            "allowance response must be a string or number".to_owned(),
-        )),
+        Ok(_) => Err(TradingError::InvalidInput {
+            field: "allowance",
+            reason: cow_sdk_core::ValidationReason::BadShape {
+                details: "response must be a string or number",
+            },
+        }),
         Err(_) => Ok(Amount::new(raw.to_owned())?),
     }
 }

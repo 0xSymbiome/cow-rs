@@ -316,23 +316,29 @@ fn signer_error<E: fmt::Display>(operation: &'static str, error: E) -> SigningEr
 
 fn parse_hex(value: &str, field: &'static str) -> Result<Vec<u8>, SigningError> {
     let Some(stripped) = value.strip_prefix("0x") else {
-        return Err(ContractsError::Decode(format!(
-            "{field} must be 0x-prefixed hexadecimal data"
-        ))
+        return Err(ContractsError::Decode {
+            field,
+            message: "value must be 0x-prefixed hexadecimal data".to_owned(),
+        }
         .into());
     };
 
-    hex::decode(stripped)
-        .map_err(|_| ContractsError::Decode(format!("{field} contains non-hex characters")).into())
+    hex::decode(stripped).map_err(|_| {
+        ContractsError::Decode {
+            field,
+            message: "value contains non-hex characters".to_owned(),
+        }
+        .into()
+    })
 }
 
 fn parse_hex32(value: &str, field: &'static str) -> Result<[u8; 32], SigningError> {
     let bytes = parse_hex(value, field)?;
     if bytes.len() != 32 {
-        return Err(ContractsError::Decode(format!(
-            "{field} must be 32 bytes, got {}",
-            bytes.len()
-        ))
+        return Err(ContractsError::Decode {
+            field,
+            message: format!("value must be 32 bytes, got {}", bytes.len()),
+        }
         .into());
     }
     let mut out = [0u8; 32];
@@ -343,10 +349,10 @@ fn parse_hex32(value: &str, field: &'static str) -> Result<[u8; 32], SigningErro
 fn encode_address(value: &str) -> Result<[u8; 32], SigningError> {
     let bytes = parse_hex(value, "address")?;
     if bytes.len() != 20 {
-        return Err(ContractsError::Decode(format!(
-            "address must be 20 bytes, got {}",
-            bytes.len()
-        ))
+        return Err(ContractsError::Decode {
+            field: "address",
+            message: format!("value must be 20 bytes, got {}", bytes.len()),
+        }
         .into());
     }
     let mut out = [0u8; 32];

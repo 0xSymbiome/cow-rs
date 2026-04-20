@@ -122,10 +122,9 @@ where
             &self.reader_address,
             &self.reader_abi_json,
             "areSolvers",
-            &serde_json::to_value(solvers)
-                .map_err(|error| ContractsError::Serialization(error.to_string()))?,
+            &serde_json::to_value(solvers)?,
         )?;
-        serde_json::from_str(&raw).map_err(|error| ContractsError::Decode(error.to_string()))
+        serde_json::from_str(&raw).map_err(ContractsError::from)
     }
 }
 
@@ -151,10 +150,9 @@ where
             &self.reader_address,
             &self.reader_abi_json,
             "filledAmountsForOrders",
-            &serde_json::to_value(order_uids)
-                .map_err(|error| ContractsError::Serialization(error.to_string()))?,
+            &serde_json::to_value(order_uids)?,
         )?;
-        serde_json::from_str(&raw).map_err(|error| ContractsError::Decode(error.to_string()))
+        serde_json::from_str(&raw).map_err(ContractsError::from)
     }
 }
 
@@ -196,7 +194,7 @@ where
             "simulateTrade",
             &serde_json::json!([normalized_trade, normalized_interactions]),
         )?;
-        serde_json::from_str(&raw).map_err(|error| ContractsError::Decode(error.to_string()))
+        serde_json::from_str(&raw).map_err(ContractsError::from)
     }
 }
 
@@ -226,7 +224,10 @@ where
             })
             .to_string(),
         })
-        .map_err(|error| ContractsError::Provider(error.to_string()))
+        .map_err(|error| ContractsError::Provider {
+            operation: "read_contract",
+            message: error.to_string(),
+        })
 }
 
 fn balance_id(balance: OrderBalance) -> String {

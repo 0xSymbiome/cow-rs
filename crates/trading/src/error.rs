@@ -1,6 +1,6 @@
 use cow_sdk_app_data::AppDataError;
 use cow_sdk_contracts::{ContractsError, SigningScheme};
-use cow_sdk_core::{Address, Cancelled, CoreError};
+use cow_sdk_core::{Address, Cancelled, CoreError, ValidationReason};
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_signing::SigningError;
 use thiserror::Error;
@@ -116,8 +116,13 @@ pub enum TradingError {
         value: String,
     },
     /// Input violated a documented helper precondition.
-    #[error("invalid input: {0}")]
-    InvalidInput(String),
+    #[error("invalid input for field `{field}`: {reason}")]
+    InvalidInput {
+        /// Public field name that failed validation.
+        field: &'static str,
+        /// Canonical validation-failure mode.
+        reason: ValidationReason,
+    },
     /// Local signing produced a scheme that the public workflow does not accept.
     #[error("unsupported local signer-generated scheme `{scheme:?}`")]
     UnsupportedLocalSigningScheme {

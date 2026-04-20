@@ -276,10 +276,13 @@ fn normalized_ecdsa_signature_normalizes_hex_and_rejects_invalid_payloads() {
     );
 
     let invalid = normalized_ecdsa_signature("xyzzy").unwrap_err();
-    assert_eq!(
-        invalid,
-        ContractsError::Decode("signature must be 0x-prefixed hexadecimal data".to_owned())
-    );
+    match invalid {
+        ContractsError::Decode { field, message } => {
+            assert_eq!(field, "signature");
+            assert!(message.contains("0x-prefixed"));
+        }
+        other => panic!("expected Decode variant, got {other:?}"),
+    }
 }
 
 #[test]
@@ -322,12 +325,12 @@ fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
         },
     )
     .unwrap_err();
-    assert_eq!(
-        missing,
-        ContractsError::UnsupportedEip1271Verifier {
-            verifier: verifier.clone()
+    match &missing {
+        ContractsError::UnsupportedEip1271Verifier { verifier: got } => {
+            assert_eq!(got.as_str(), verifier.as_str());
         }
-    );
+        other => panic!("expected UnsupportedEip1271Verifier, got {other:?}"),
+    }
 
     provider.set_code(Some("0x6001600055"));
     provider.set_response_error(Some("rpc unavailable"));
@@ -340,13 +343,13 @@ fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
         },
     )
     .unwrap_err();
-    assert_eq!(
-        transport,
-        ContractsError::Eip1271Provider {
-            operation: "read_contract",
-            message: "rpc unavailable".to_owned()
+    match transport {
+        ContractsError::Eip1271Provider { operation, message } => {
+            assert_eq!(operation, "read_contract");
+            assert_eq!(message, "rpc unavailable");
         }
-    );
+        other => panic!("expected Eip1271Provider, got {other:?}"),
+    }
 }
 
 #[test]
@@ -365,12 +368,12 @@ fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
         },
     )
     .unwrap_err();
-    assert_eq!(
-        malformed,
-        ContractsError::MalformedEip1271Response {
-            response: "{\"unexpected\":true}".to_owned()
+    match &malformed {
+        ContractsError::MalformedEip1271Response { response } => {
+            assert_eq!(response, "{\"unexpected\":true}");
         }
-    );
+        other => panic!("expected MalformedEip1271Response, got {other:?}"),
+    }
 
     provider.set_response("\"0xffffffff\"");
     let mismatch = verify_eip1271_signature(
@@ -382,13 +385,13 @@ fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
         },
     )
     .unwrap_err();
-    assert_eq!(
-        mismatch,
-        ContractsError::Eip1271MagicValueMismatch {
-            expected: [0x16, 0x26, 0xba, 0x7e],
-            actual: [0xff, 0xff, 0xff, 0xff],
+    match &mismatch {
+        ContractsError::Eip1271MagicValueMismatch { expected, actual } => {
+            assert_eq!(*expected, [0x16, 0x26, 0xba, 0x7e]);
+            assert_eq!(*actual, [0xff, 0xff, 0xff, 0xff]);
         }
-    );
+        other => panic!("expected Eip1271MagicValueMismatch, got {other:?}"),
+    }
     assert_eq!(EIP1271_MAGICVALUE, "0x1626ba7e");
     assert_eq!(
         mismatch.to_string(),
@@ -434,12 +437,12 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
     )
     .await
     .unwrap_err();
-    assert_eq!(
-        missing,
-        ContractsError::UnsupportedEip1271Verifier {
-            verifier: verifier.clone()
+    match &missing {
+        ContractsError::UnsupportedEip1271Verifier { verifier: got } => {
+            assert_eq!(got.as_str(), verifier.as_str());
         }
-    );
+        other => panic!("expected UnsupportedEip1271Verifier, got {other:?}"),
+    }
 
     provider.set_code(Some("0x6001600055"));
     provider.set_response_error(Some("rpc unavailable"));
@@ -453,13 +456,13 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
     )
     .await
     .unwrap_err();
-    assert_eq!(
-        transport,
-        ContractsError::Eip1271Provider {
-            operation: "read_contract",
-            message: "rpc unavailable".to_owned()
+    match &transport {
+        ContractsError::Eip1271Provider { operation, message } => {
+            assert_eq!(*operation, "read_contract");
+            assert_eq!(message, "rpc unavailable");
         }
-    );
+        other => panic!("expected Eip1271Provider, got {other:?}"),
+    }
 
     provider.set_response_error(None);
     provider.set_code_error(Some("code lookup unavailable"));
@@ -473,11 +476,11 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
     )
     .await
     .unwrap_err();
-    assert_eq!(
-        code_error,
-        ContractsError::Eip1271Provider {
-            operation: "get_code",
-            message: "code lookup unavailable".to_owned()
+    match &code_error {
+        ContractsError::Eip1271Provider { operation, message } => {
+            assert_eq!(*operation, "get_code");
+            assert_eq!(message, "code lookup unavailable");
         }
-    );
+        other => panic!("expected Eip1271Provider, got {other:?}"),
+    }
 }

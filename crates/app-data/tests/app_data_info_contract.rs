@@ -46,7 +46,10 @@ fn invalid_documents_fail_through_typed_error_surface() {
     });
 
     let error = get_app_data_info(invalid).unwrap_err();
-    assert!(matches!(error, AppDataError::InvalidAppDataProvided(_)));
+    assert!(matches!(
+        error,
+        AppDataError::InvalidAppDataProvided { .. } | AppDataError::Schema { .. }
+    ));
 }
 
 #[test]

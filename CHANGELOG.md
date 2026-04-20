@@ -368,6 +368,29 @@ unreleased public contract of the repository.
   cross-link the parity-scope document as the authoritative exclusion
   list; reviewers can now navigate between the ADR and the scope doc
   without private-context chasing.
+- Strengthen error types on `ContractsError`, `AppDataError`,
+  `OrderbookError`, and `TradingError`: wrapper variants that previously
+  held arbitrary external error strings now carry typed `#[from]`
+  converters (`ContractsError::Abi(alloy_sol_types::Error)`,
+  `ContractsError::Serialization(serde_json::Error)`,
+  `AppDataError::Json(serde_json::Error)`,
+  `OrderbookError::Serialization(serde_json::Error)`) or structured
+  validation fields (`{ field, reason }` for every validation-class
+  variant; `{ operation, message }` for `ContractsError::Provider`;
+  `{ message }` for `ContractsError::Decode`, `AppDataError::Schema`,
+  and `AppDataError::Calculation`; `{ class, detail }` for the REST
+  transport variants on `AppDataError` and `OrderbookError`;
+  `{ status, message }` for `AppDataError::Pinning`). A new
+  `cow_sdk::ValidationReason` enum describes the canonical validation
+  failure modes (`Missing`, `OutOfRange`, `BadShape`, `Precondition`)
+  and surfaces through `cow_sdk::prelude::*`; a new
+  `cow_sdk::TransportErrorClass` enum classifies REST-transport failure
+  categories (`Timeout`, `Connect`, `Redirect`, `Decode`, `Body`,
+  `Builder`, `Request`, `Status`, `Other`) and is re-exported from the
+  facade. `ContractsError::Decode` has also been split so hex-decode
+  failures carry a structured `{ field, message }` payload and
+  trade-index violations surface through the dedicated
+  `ContractsError::InvalidTokenIndex { index, registered }` variant.
 - Tighten the typed shape of three public error variants so downstream
   callers can pattern-match on the typed payload without re-parsing
   error messages: `cow_sdk_contracts::ContractsError::MissingClearingPrice`

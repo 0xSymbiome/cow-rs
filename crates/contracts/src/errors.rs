@@ -3,7 +3,7 @@ use thiserror::Error;
 
 /// Errors returned by low-level `CoW` contract helpers.
 #[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Error)]
 pub enum ContractsError {
     /// Core validation failed for an input value.
     #[error("core validation error: {0}")]
@@ -89,16 +89,34 @@ pub enum ContractsError {
     /// Contract orders cannot use the zero address as a receiver.
     #[error("receiver cannot be address(0)")]
     ZeroReceiver,
+    /// A settlement trade referenced a token index outside the registered range.
+    #[error("invalid trade token index {index}; only {registered} tokens are registered")]
+    InvalidTokenIndex {
+        /// Offending token index on the trade.
+        index: usize,
+        /// Number of registered tokens in the settlement registry.
+        registered: usize,
+    },
     /// Provider operation failed outside the EIP-1271 helpers.
-    #[error("provider error: {0}")]
-    Provider(String),
-    /// ABI encoding failed.
-    #[error("ABI encoding error: {0}")]
-    Abi(String),
-    /// Hex, JSON, or response decoding failed.
-    #[error("decode error: {0}")]
-    Decode(String),
+    #[error("provider error during {operation}: {message}")]
+    Provider {
+        /// Failed provider operation.
+        operation: &'static str,
+        /// Provider error message.
+        message: String,
+    },
+    /// ABI encoding or decoding failed through the `alloy-sol-types` surface.
+    #[error("ABI error: {0}")]
+    Abi(#[from] alloy_sol_types::Error),
+    /// Hex or structured-payload decoding failed.
+    #[error("decode error for field `{field}`: {message}")]
+    Decode {
+        /// Public field or payload name that failed to decode.
+        field: &'static str,
+        /// Redacted detail message sourced from the decoder.
+        message: String,
+    },
     /// Serialization to JSON or ABI-adjacent payloads failed.
     #[error("serialization error: {0}")]
-    Serialization(String),
+    Serialization(#[from] serde_json::Error),
 }

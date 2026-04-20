@@ -1503,10 +1503,13 @@ pub(crate) fn apply_app_data_parameter_overrides(
 
     if let Some(partner_fee_override) = app_data_override.metadata.get("partnerFee") {
         *partner_fee = Some(
-            PartnerFee::from_value(partner_fee_override.clone()).map_err(|error| {
-                TradingError::InvalidInput(format!(
-                    "appData.metadata.partnerFee must match the partner-fee schema: {error}"
-                ))
+            PartnerFee::from_value(partner_fee_override.clone()).map_err(|_| {
+                TradingError::InvalidInput {
+                    field: "appData.metadata.partnerFee",
+                    reason: cow_sdk_core::ValidationReason::BadShape {
+                        details: "value must match the partner-fee schema",
+                    },
+                }
             })?,
         );
     }

@@ -59,7 +59,10 @@ fn slippage_helpers_follow_upstream_fee_and_volume_examples() {
     let error = suggest_slippage_from_fee("-100", 50.0)
         .expect_err("negative fee must fail")
         .to_string();
-    assert!(error.contains("Fee amount must be non-negative: -100"));
+    assert!(
+        error.contains("feeAmount") && error.contains("non-negative"),
+        "negative fee error must name the field and reason, got: {error}"
+    );
 }
 
 #[test]

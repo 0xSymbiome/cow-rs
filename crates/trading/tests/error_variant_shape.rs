@@ -55,3 +55,30 @@ fn recoverable_signature_owner_mismatch_carries_typed_addresses() {
         ),
     );
 }
+
+#[test]
+fn invalid_input_carries_typed_field_and_validation_reason() {
+    use cow_sdk_core::ValidationReason;
+
+    let error = TradingError::InvalidInput {
+        field: "buyAmount",
+        reason: ValidationReason::OutOfRange {
+            details: "buyAmount must be greater than 0",
+        },
+    };
+
+    let TradingError::InvalidInput { field, reason } = &error else {
+        panic!("expected InvalidInput variant, got {error:?}");
+    };
+    assert_eq!(*field, "buyAmount");
+    assert!(matches!(
+        reason,
+        ValidationReason::OutOfRange { details } if *details == "buyAmount must be greater than 0"
+    ));
+
+    let rendered = error.to_string();
+    assert!(
+        rendered.contains("buyAmount") && rendered.contains("out of range"),
+        "InvalidInput must render the field and the validation reason, got: {rendered}",
+    );
+}

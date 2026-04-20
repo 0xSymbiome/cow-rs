@@ -83,9 +83,9 @@ fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataE
         options = options.with_resource(uri.clone(), Resource::from_contents(resource.clone()));
     }
 
-    let validator = options
-        .build(&schema)
-        .map_err(|err| AppDataError::Schema(err.to_string()))?;
+    let validator = options.build(&schema).map_err(|err| AppDataError::Schema {
+        message: err.to_string(),
+    })?;
 
     let mut errors = validator.iter_errors(app_data_doc);
     if let Some(first) = errors.next() {
@@ -94,7 +94,7 @@ fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataE
             rendered.push_str("; ");
             rendered.push_str(&render_validation_error(&error));
         }
-        return Err(AppDataError::Schema(rendered));
+        return Err(AppDataError::Schema { message: rendered });
     }
 
     Ok(())

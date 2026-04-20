@@ -467,10 +467,14 @@ async fn quote_results_reject_invalid_partner_fee_metadata_before_quoting() {
         .await
         .expect_err("invalid partner-fee metadata must fail before quote transport");
 
+    let rendered = error.to_string();
     assert!(
-        error
-            .to_string()
-            .contains("appData.metadata.partnerFee must match the partner-fee schema")
+        rendered.contains("appData.metadata.partnerFee"),
+        "error text must name the offending field, got: {rendered}"
+    );
+    assert!(
+        rendered.contains("partner-fee schema"),
+        "error text must describe the shape violation, got: {rendered}"
     );
     assert!(orderbook.state().quote_requests.is_empty());
 }

@@ -136,7 +136,10 @@ where
     // sol!-first Ethereum-binding policy governing this hybrid shape.
     let word = provider
         .get_storage_at(proxy, slot.as_hex_str())
-        .map_err(|error| ContractsError::Provider(error.to_string()))?;
+        .map_err(|error| ContractsError::Provider {
+            operation: "get_storage_at",
+            message: error.to_string(),
+        })?;
     decode_storage_address(word.as_str())
 }
 

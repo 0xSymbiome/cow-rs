@@ -470,7 +470,7 @@ async fn request_json_surfaces_malformed_success_payloads() {
 
     match error {
         cow_sdk_orderbook::OrderbookError::Serialization(message) => {
-            assert!(!message.is_empty());
+            assert!(!message.to_string().is_empty());
         }
         other => panic!("expected serialization error, got {other:?}"),
     }
@@ -540,7 +540,10 @@ async fn transport_errors_delay_between_retryable_attempts() {
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
                     .push(Instant::now());
-                Err("temporary network outage".to_owned())
+                Err((
+                    cow_sdk_core::TransportErrorClass::Other,
+                    "temporary network outage".to_owned(),
+                ))
             }
         }
     })
@@ -559,8 +562,8 @@ async fn transport_errors_delay_between_retryable_attempts() {
     );
     assert!(matches!(
         error,
-        cow_sdk_orderbook::OrderbookError::Transport(message)
-            if message == "temporary network outage"
+        cow_sdk_orderbook::OrderbookError::Transport { ref detail, .. }
+            if detail == "temporary network outage"
     ));
 }
 
@@ -575,7 +578,10 @@ async fn final_transport_error_returns_without_sleeping_again() {
     timeout(
         Duration::from_millis(35),
         execute_empty_with(&policy, &limiter, || async {
-            Err("single-attempt transport failure".to_owned())
+            Err((
+                cow_sdk_core::TransportErrorClass::Other,
+                "single-attempt transport failure".to_owned(),
+            ))
         }),
     )
     .await
@@ -647,24 +653,24 @@ async fn reqwest_error_classification_strips_url_query_and_host() {
         .await
         .expect_err("unreachable host must produce a reqwest error");
 
-    let classified = classify_reqwest_error(raw_error);
+    let (class, detail) = classify_reqwest_error(raw_error);
     assert!(
-        !classified.contains(secret_host),
-        "classified transport error must strip the host: {classified}"
+        !detail.contains(secret_host),
+        "classified transport error must strip the host: {detail}"
     );
     assert!(
-        !classified.contains(secret_key),
-        "classified transport error must strip query-string secrets: {classified}"
+        !detail.contains(secret_key),
+        "classified transport error must strip query-string secrets: {detail}"
     );
     assert!(
-        !classified.contains("api_key"),
-        "classified transport error must strip query parameter names: {classified}"
+        !detail.contains("api_key"),
+        "classified transport error must strip query parameter names: {detail}"
     );
     assert!(
-        !classified.contains("http://"),
-        "classified transport error must not include the URL scheme prefix: {classified}"
+        !detail.contains("http://"),
+        "classified transport error must not include the URL scheme prefix: {detail}"
     );
-    let class_prefix = classified.split(':').next().unwrap();
+    let class_prefix = class.as_str();
     assert!(
         [
             "timeout", "connect", "redirect", "decode", "body", "builder", "request", "status",
@@ -695,11 +701,18 @@ fn orderbook_transport_error_from_conversion_classifies_without_url_exposure() {
         !rendered.contains("invalid ipv6"),
         "converted orderbook error must not expose URL fragments: {rendered} ({message})"
     );
-    match orderbook_err {
-        OrderbookError::Transport(body) | OrderbookError::Serialization(body) => {
+    match &orderbook_err {
+        OrderbookError::Transport { detail, .. } => {
+            assert!(
+                !detail.contains("http://"),
+                "wrapped transport detail must not include the URL scheme prefix: {detail}"
+            );
+        }
+        OrderbookError::Serialization(inner) => {
+            let body = inner.to_string();
             assert!(
                 !body.contains("http://"),
-                "wrapped body must not include the URL scheme prefix: {body}"
+                "wrapped serialization body must not include the URL scheme prefix: {body}"
             );
         }
         other => panic!("expected Transport or Serialization variant, got {other:?}"),

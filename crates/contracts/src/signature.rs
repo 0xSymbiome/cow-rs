@@ -215,8 +215,7 @@ where
             args_json: serde_json::to_string(&(
                 request.digest.as_str(),
                 request.signature.as_str(),
-            ))
-            .map_err(|error| ContractsError::Serialization(error.to_string()))?,
+            ))?,
         })
         .map_err(|error| ContractsError::Eip1271Provider {
             operation: "read_contract",
@@ -250,8 +249,7 @@ where
             args_json: serde_json::to_string(&(
                 request.digest.as_str(),
                 request.signature.as_str(),
-            ))
-            .map_err(|error| ContractsError::Serialization(error.to_string()))?,
+            ))?,
         })
         .await
         .map_err(|error| ContractsError::Eip1271Provider {

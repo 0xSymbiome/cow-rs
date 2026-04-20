@@ -259,10 +259,10 @@ proptest! {
 
         prop_assert_eq!(cid_to_app_data_hex(&latest).unwrap(), hex.clone());
 
-        prop_assert_eq!(
+        prop_assert!(matches!(
             app_data_hex_to_cid(&malformed).unwrap_err(),
-            AppDataError::InvalidAppDataHex,
-        );
+            AppDataError::InvalidAppDataHex
+        ));
     }
 
     /// [`SchemaVersion::new`] and [`str::parse::<SchemaVersion>`] are
@@ -280,10 +280,10 @@ proptest! {
         prop_assert_eq!(schema.to_string(), valid.clone());
         prop_assert_eq!(valid.parse::<SchemaVersion>().unwrap(), schema);
 
-        prop_assert_eq!(
+        prop_assert!(matches!(
             get_app_data_schema(&malformed).unwrap_err(),
-            AppDataError::InvalidSchemaVersion(malformed.clone()),
-        );
+            AppDataError::InvalidSchemaVersion(ref message) if message == &malformed
+        ));
         prop_assert!(SchemaVersion::new(malformed.clone()).is_err());
         prop_assert!(malformed.parse::<SchemaVersion>().is_err());
     }
@@ -299,16 +299,17 @@ proptest! {
         config in missing_credential_config_strategy(),
     ) {
         let whitespace = " ".repeat(whitespace_len);
-        prop_assert_eq!(
-            IpfsFetchPolicy::new(whitespace).unwrap_err(),
-            AppDataError::Transport("ipfs read base uri must not be empty".to_owned()),
-        );
+        let policy_err = IpfsFetchPolicy::new(whitespace).unwrap_err();
+        match policy_err {
+            AppDataError::Transport { ref detail, .. } => {
+                prop_assert_eq!(detail, "ipfs read base uri must not be empty");
+            }
+            other => prop_assert!(false, "expected Transport, got {:?}", other),
+        }
 
-        prop_assert_eq!(
-            pin_json_in_pinata_ipfs(&app_data_doc(), &PanicUploadTransport, &config)
-                .unwrap_err(),
-            AppDataError::MissingIpfsCredentials,
-        );
+        let pinning_err =
+            pin_json_in_pinata_ipfs(&app_data_doc(), &PanicUploadTransport, &config).unwrap_err();
+        prop_assert!(matches!(pinning_err, AppDataError::MissingIpfsCredentials));
     }
 
     /// [`stringify_deterministic`] produces output byte-identical to the

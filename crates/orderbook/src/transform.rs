@@ -61,9 +61,12 @@ pub fn ensure_order_uid(uid: &OrderUid) -> &str {
 
 fn validate_decimal(value: &str) -> Result<(), OrderbookError> {
     if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
-        return Err(OrderbookError::InvalidTransform(format!(
-            "expected unsigned decimal string, got `{value}`"
-        )));
+        return Err(OrderbookError::InvalidTransform {
+            field: "executedFee",
+            reason: cow_sdk_core::ValidationReason::BadShape {
+                details: "expected unsigned decimal string",
+            },
+        });
     }
 
     Ok(())

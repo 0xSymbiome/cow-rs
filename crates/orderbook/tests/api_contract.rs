@@ -317,8 +317,8 @@ async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() 
         .expect_err("owner+uid request must fail before transport");
 
     match invalid {
-        cow_sdk_orderbook::OrderbookError::InvalidTradesQuery(message) => {
-            assert!(message.contains("exactly one"));
+        cow_sdk_orderbook::OrderbookError::InvalidTradesQuery { reason, .. } => {
+            assert!(reason.to_string().contains("exactly one"));
         }
         other => panic!("expected InvalidTradesQuery, got {other:?}"),
     }

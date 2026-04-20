@@ -120,7 +120,10 @@ async fn unique_order_id_rejects_zero_buy_amount_when_a_collision_requires_a_ret
 
     assert!(matches!(
         error,
-        TradingError::InvalidInput(message) if message == "buyAmount must be greater than 0: 0"
+        TradingError::InvalidInput {
+            field: "buyAmount",
+            reason: cow_sdk_core::ValidationReason::OutOfRange { .. }
+        }
     ));
 }
 

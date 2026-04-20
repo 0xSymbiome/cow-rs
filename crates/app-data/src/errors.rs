@@ -1,8 +1,9 @@
+use cow_sdk_core::{TransportErrorClass, ValidationReason};
 use thiserror::Error;
 
 /// Errors returned by app-data generation, validation, transport, and CID helpers.
 #[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Error)]
 pub enum AppDataError {
     /// The supplied app-data hash was not valid `0x`-prefixed 32-byte hex.
     #[error("invalid app data hex")]
@@ -21,25 +22,47 @@ pub enum AppDataError {
     MissingSchemaVersion,
     /// JSON serialization or parsing failed.
     #[error("json error: {0}")]
-    Json(String),
+    Json(#[from] serde_json::Error),
     /// JSON schema validation or schema construction failed.
-    #[error("schema error: {0}")]
-    Schema(String),
+    #[error("schema error: {message}")]
+    Schema {
+        /// Rendered validator message, potentially concatenating multiple
+        /// schema-validation failures.
+        message: String,
+    },
     /// The supplied app-data document failed semantic validation.
-    #[error("Invalid appData provided: {0}")]
-    InvalidAppDataProvided(String),
+    #[error("invalid appData field `{field}`: {reason}")]
+    InvalidAppDataProvided {
+        /// Public field name that failed validation.
+        field: &'static str,
+        /// Canonical validation-failure mode.
+        reason: ValidationReason,
+    },
     /// CID or digest calculation failed.
-    #[error("Failed to calculate appDataHex: {0}")]
-    Calculation(String),
+    #[error("appDataHex calculation failed: {message}")]
+    Calculation {
+        /// Redacted detail sourced from the hashing or CID crate.
+        message: String,
+    },
     /// Fetch-transport configuration or execution failed.
-    #[error("transport error: {0}")]
-    Transport(String),
+    #[error("transport error ({class}): {detail}")]
+    Transport {
+        /// Classification of the underlying REST-transport failure.
+        class: TransportErrorClass,
+        /// Redacted detail message sourced from the transport layer.
+        detail: String,
+    },
     /// Upload helpers were called without the required credentials.
     #[error("You need to pass IPFS api credentials.")]
     MissingIpfsCredentials,
     /// Pinning or upload failed.
-    #[error("pinning error: {0}")]
-    Pinning(String),
+    #[error("pinning error (status {status:?}): {message}")]
+    Pinning {
+        /// HTTP status code returned by the pinning service, when known.
+        status: Option<u16>,
+        /// Redacted detail message sourced from the pinning response.
+        message: String,
+    },
     /// The stringified app-data document exceeded the configured size ceiling.
     #[error("app-data document is {actual_bytes} bytes which exceeds the {max_bytes}-byte limit")]
     TooLarge {

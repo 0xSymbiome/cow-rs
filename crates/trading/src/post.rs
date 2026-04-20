@@ -665,9 +665,12 @@ where
                 SigningScheme::Eip712 => SigningSchemeContract::Eip712,
                 SigningScheme::EthSign => SigningSchemeContract::EthSign,
                 _ => {
-                    return Err(TradingError::InvalidInput(format!(
-                        "unsupported order signing scheme `{scheme:?}`"
-                    )));
+                    return Err(TradingError::InvalidInput {
+                        field: "signingScheme",
+                        reason: cow_sdk_core::ValidationReason::Precondition {
+                            details: "order signing scheme is not supported",
+                        },
+                    });
                 }
             };
             let signing_result = sign_order_with_scheme_async(
@@ -683,9 +686,12 @@ where
                 map_contract_scheme(signing_result.signing_scheme)?,
             ))
         }
-        _ => Err(TradingError::InvalidInput(format!(
-            "unsupported order signing scheme `{scheme:?}`"
-        ))),
+        _ => Err(TradingError::InvalidInput {
+            field: "signingScheme",
+            reason: cow_sdk_core::ValidationReason::Precondition {
+                details: "order signing scheme is not supported",
+            },
+        }),
     }
 }
 

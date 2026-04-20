@@ -280,14 +280,15 @@ impl OrderBookApi {
         request: &OrderQuoteRequest,
     ) -> Result<OrderQuoteResponse, OrderbookError> {
         if !request.is_valid() {
-            return Err(OrderbookError::InvalidQuoteRequest(
-                "quote side must set exactly one of sellAmountBeforeFee or buyAmountAfterFee"
-                    .to_owned(),
-            ));
+            return Err(OrderbookError::InvalidQuoteRequest {
+                field: "side",
+                reason: cow_sdk_core::ValidationReason::Precondition {
+                    details: "exactly one of sellAmountBeforeFee or buyAmountAfterFee must be set",
+                },
+            });
         }
 
-        let body = serde_json::to_value(request)
-            .map_err(|error| OrderbookError::Serialization(error.to_string()))?;
+        let body = serde_json::to_value(request)?;
         let params = FetchParams::new("/api/v1/quote", HttpMethod::Post).with_body(body);
 
         self.fetch_json(params).await
@@ -317,8 +318,7 @@ impl OrderBookApi {
         ),
     )]
     pub async fn send_order(&self, request: &OrderCreation) -> Result<OrderUid, OrderbookError> {
-        let body = serde_json::to_value(request)
-            .map_err(|error| OrderbookError::Serialization(error.to_string()))?;
+        let body = serde_json::to_value(request)?;
         let params = FetchParams::new("/api/v1/orders", HttpMethod::Post).with_body(body);
 
         self.fetch_json(params).await
@@ -351,8 +351,7 @@ impl OrderBookApi {
         &self,
         request: &OrderCancellations,
     ) -> Result<(), OrderbookError> {
-        let body = serde_json::to_value(request)
-            .map_err(|error| OrderbookError::Serialization(error.to_string()))?;
+        let body = serde_json::to_value(request)?;
         let params = FetchParams::new("/api/v1/orders", HttpMethod::Delete).with_body(body);
 
         self.fetch_empty(params).await
@@ -533,9 +532,12 @@ impl OrderBookApi {
         request: &GetTradesRequest,
     ) -> Result<Vec<Trade>, OrderbookError> {
         if !request.is_valid() {
-            return Err(OrderbookError::InvalidTradesQuery(
-                "must specify exactly one of owner or orderUid".to_owned(),
-            ));
+            return Err(OrderbookError::InvalidTradesQuery {
+                field: "filter",
+                reason: cow_sdk_core::ValidationReason::Precondition {
+                    details: "exactly one of owner or orderUid must be set",
+                },
+            });
         }
 
         let mut params = FetchParams::new("/api/v2/trades", HttpMethod::Get);

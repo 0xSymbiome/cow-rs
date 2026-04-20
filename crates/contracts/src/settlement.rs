@@ -678,7 +678,11 @@ fn encode_settle_call(
 /// cannot be decoded.
 pub fn decode_order(trade: &Trade, tokens: &[Address]) -> Result<Order, ContractsError> {
     if trade.sell_token_index >= tokens.len() || trade.buy_token_index >= tokens.len() {
-        return Err(ContractsError::Decode("Invalid trade".to_owned()));
+        let offending = trade.sell_token_index.max(trade.buy_token_index);
+        return Err(ContractsError::InvalidTokenIndex {
+            index: offending,
+            registered: tokens.len(),
+        });
     }
     let flags = decode_order_flags(trade.flags)?;
     Ok(Order {

@@ -33,7 +33,10 @@ impl IpfsFetchTransport for RecordingFetchTransport {
         self.responses
             .get(uri)
             .cloned()
-            .ok_or_else(|| AppDataError::Transport(format!("missing fixture for {uri}")))
+            .ok_or_else(|| AppDataError::Transport {
+                class: cow_sdk_core::TransportErrorClass::Other,
+                detail: format!("missing fixture for {uri}"),
+            })
     }
 }
 
@@ -68,8 +71,8 @@ fn fetch_helpers_use_explicit_transport_and_default_ipfs_uri() {
 fn fetch_by_app_data_hex_rejects_invalid_hex() {
     let transport = RecordingFetchTransport::default();
     let error = fetch_doc_from_app_data_hex("invalidHash", &transport, None).unwrap_err();
-    assert!(matches!(error, AppDataError::Transport(_)));
-    assert!(error.to_string().contains("Error decoding AppData"));
+    assert!(matches!(error, AppDataError::Transport { .. }));
+    assert!(error.to_string().contains("error decoding appDataHex"));
 }
 
 #[test]
@@ -155,6 +158,6 @@ fn fetch_doc_from_cid_rejects_empty_explicit_read_base_uri() {
 
     assert_eq!(
         error.to_string(),
-        "transport error: ipfs read base uri must not be empty"
+        "transport error (builder): ipfs read base uri must not be empty"
     );
 }

@@ -15,6 +15,8 @@ pub mod redaction;
 pub mod traits;
 /// Strongly typed user-domain values used across the SDK surface.
 pub mod types;
+/// Shared validation-failure and transport-classification enums.
+pub mod validation;
 
 pub use cancellation::{Cancellable, Cancelled, WithCancellation};
 pub use config::{
@@ -46,3 +48,4 @@ pub use types::{
     TransactionHash, UnsignedOrder, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS,
     ValidTo, addresses_equal, token_id,
 };
+pub use validation::{TransportErrorClass, ValidationReason};

@@ -129,10 +129,11 @@ fn unsupported_local_signer_modes_fail_with_typed_errors() {
             sign_order_with_scheme(&order, SupportedChainId::Mainnet, &signer, scheme, None)
                 .unwrap_err();
 
-        assert_eq!(
+        assert!(matches!(
             error,
-            SigningError::UnsupportedSignerGeneratedScheme { scheme }
-        );
+            SigningError::UnsupportedSignerGeneratedScheme { scheme: got }
+                if got == scheme
+        ));
     }
 
     assert!(signer.calls.borrow().typed_data.is_empty());

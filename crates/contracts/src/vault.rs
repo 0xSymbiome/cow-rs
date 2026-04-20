@@ -173,8 +173,7 @@ pub fn required_vault_role_calls(
                 authorizer_address: authorizer_address.clone(),
                 authorizer_abi_json: authorizer_abi_json.to_owned(),
                 method: "grantRole".to_owned(),
-                args_json: serde_json::to_string(&(role.role, vault_relayer_address.clone()))
-                    .map_err(|error| ContractsError::Serialization(error.to_string()))?,
+                args_json: serde_json::to_string(&(role.role, vault_relayer_address.clone()))?,
             })
         })
         .collect()
@@ -203,7 +202,10 @@ where
         vault_address,
         vault_relayer_address,
     )? {
-        contract_call(&call).map_err(|error| ContractsError::Provider(error.to_string()))?;
+        contract_call(&call).map_err(|error| ContractsError::Provider {
+            operation: "grantRole",
+            message: error.to_string(),
+        })?;
     }
     Ok(())
 }

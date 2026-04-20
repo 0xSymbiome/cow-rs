@@ -301,7 +301,7 @@ fn malformed_payloads_fail_closed_in_decoding_and_transforms() {
                     transform_order(order).expect_err("invalid executedFee must fail closed");
                 assert!(matches!(
                     error,
-                    cow_sdk_orderbook::OrderbookError::InvalidTransform(_)
+                    cow_sdk_orderbook::OrderbookError::InvalidTransform { .. }
                 ));
             }
             _ => {
@@ -314,7 +314,7 @@ fn malformed_payloads_fail_closed_in_decoding_and_transforms() {
                     transform_order(order).expect_err("invalid executedFee must fail closed");
                 assert!(matches!(
                     error,
-                    cow_sdk_orderbook::OrderbookError::InvalidTransform(_)
+                    cow_sdk_orderbook::OrderbookError::InvalidTransform { .. }
                 ));
             }
         }

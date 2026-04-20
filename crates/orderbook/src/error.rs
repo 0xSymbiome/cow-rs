@@ -1,4 +1,4 @@
-use cow_sdk_core::{Cancelled, CoreError};
+use cow_sdk_core::{Cancelled, CoreError, TransportErrorClass, ValidationReason};
 use thiserror::Error;
 
 use crate::request::OrderBookApiError;
@@ -14,20 +14,40 @@ pub enum OrderbookError {
     #[error(transparent)]
     Api(Box<OrderBookApiError>),
     /// Network or request-execution failure before a structured API response was decoded.
-    #[error("transport error: {0}")]
-    Transport(String),
+    #[error("transport error ({class}): {detail}")]
+    Transport {
+        /// Classification of the underlying REST-transport failure.
+        class: TransportErrorClass,
+        /// Redacted detail message sourced from the transport layer.
+        detail: String,
+    },
     /// JSON or text decoding failure while parsing a successful or error response.
     #[error("serialization error: {0}")]
-    Serialization(String),
+    Serialization(#[from] serde_json::Error),
     /// Invalid trades query assembled locally before any network request was sent.
-    #[error("invalid trades query: {0}")]
-    InvalidTradesQuery(String),
+    #[error("invalid trades query for field `{field}`: {reason}")]
+    InvalidTradesQuery {
+        /// Public field name that failed validation.
+        field: &'static str,
+        /// Canonical validation-failure mode.
+        reason: ValidationReason,
+    },
     /// Invalid quote request assembled locally before any network request was sent.
-    #[error("invalid quote request: {0}")]
-    InvalidQuoteRequest(String),
+    #[error("invalid quote request for field `{field}`: {reason}")]
+    InvalidQuoteRequest {
+        /// Public field name that failed validation.
+        field: &'static str,
+        /// Canonical validation-failure mode.
+        reason: ValidationReason,
+    },
     /// Invalid normalized orderbook data encountered after a successful HTTP response.
-    #[error("invalid transform: {0}")]
-    InvalidTransform(String),
+    #[error("invalid transform for field `{field}`: {reason}")]
+    InvalidTransform {
+        /// Public field name that failed validation.
+        field: &'static str,
+        /// Canonical validation-failure mode.
+        reason: ValidationReason,
+    },
     /// A long-running orderbook operation was cancelled through a cooperative cancellation token.
     #[error("orderbook operation was cancelled")]
     Cancelled,
@@ -47,53 +67,51 @@ impl From<Cancelled> for OrderbookError {
 
 impl From<reqwest::Error> for OrderbookError {
     fn from(error: reqwest::Error) -> Self {
-        let message = classify_reqwest_error(error);
-        if message.starts_with("decode:") || message.starts_with("body:") {
-            Self::Serialization(message)
-        } else {
-            Self::Transport(message)
-        }
+        let (class, detail) = classify_reqwest_error(error);
+        Self::Transport { class, detail }
     }
 }
 
-/// Classifies a `reqwest::Error`, strips any attached URL, and returns a sanitized message.
+/// Classifies a `reqwest::Error`, strips any attached URL, and returns a typed
+/// `(class, detail)` pair.
 ///
-/// The transport error is partitioned through `is_timeout`, `is_connect`,
-/// `is_redirect`, `is_decode`, `is_body`, `is_builder`, `is_request`, and
-/// `is_status`. [`reqwest::Error::without_url`] is called before the
+/// [`reqwest::Error::without_url`] is called before the
 /// [`std::fmt::Display`] implementation runs so partner-route URLs and their
-/// query parameters cannot leak through error text.
+/// query parameters cannot leak through error text; the typed
+/// [`TransportErrorClass`] captures the classification produced by the
+/// documented `is_timeout`, `is_connect`, `is_redirect`, `is_decode`,
+/// `is_body`, `is_builder`, `is_request`, and `is_status` partition.
 #[must_use]
-pub fn classify_reqwest_error(error: reqwest::Error) -> String {
+pub fn classify_reqwest_error(error: reqwest::Error) -> (TransportErrorClass, String) {
     let sanitized = error.without_url();
     let class = reqwest_error_class(&sanitized);
-    format!("{class}: {sanitized}")
+    (class, sanitized.to_string())
 }
 
-fn reqwest_error_class(error: &reqwest::Error) -> &'static str {
+fn reqwest_error_class(error: &reqwest::Error) -> TransportErrorClass {
     if error.is_timeout() {
-        return "timeout";
+        return TransportErrorClass::Timeout;
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
         if error.is_connect() {
-            return "connect";
+            return TransportErrorClass::Connect;
         }
         if error.is_redirect() {
-            return "redirect";
+            return TransportErrorClass::Redirect;
         }
     }
     if error.is_decode() {
-        "decode"
+        TransportErrorClass::Decode
     } else if error.is_body() {
-        "body"
+        TransportErrorClass::Body
     } else if error.is_builder() {
-        "builder"
+        TransportErrorClass::Builder
     } else if error.is_request() {
-        "request"
+        TransportErrorClass::Request
     } else if error.is_status() {
-        "status"
+        TransportErrorClass::Status
     } else {
-        "other"
+        TransportErrorClass::Other
     }
 }

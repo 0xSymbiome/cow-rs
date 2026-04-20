@@ -246,7 +246,9 @@ fn assert_get_app_data_info_deterministic(id: &str, expected: &Value) {
     assert!(
         matches!(
             error,
-            AppDataError::UnknownSchemaVersion(_) | AppDataError::InvalidAppDataProvided(_)
+            AppDataError::UnknownSchemaVersion(_)
+                | AppDataError::InvalidAppDataProvided { .. }
+                | AppDataError::Schema { .. }
         ),
         "case {id}: invalid doc must surface a typed AppDataError",
     );
@@ -369,7 +371,7 @@ fn assert_fetch_transport_boundary(id: &str, expected: &Value) {
     let err = cow_sdk_app_data::fetch_doc_from_cid("bafybeiany", &PanicFetchTransport, Some(""))
         .expect_err("empty IPFS URI must fail-closed before dispatching the transport");
     assert!(
-        matches!(err, AppDataError::Transport(_)),
+        matches!(err, AppDataError::Transport { .. }),
         "case {id}: fetch_doc_from_cid must reject empty URI through AppDataError::Transport",
     );
 
@@ -379,7 +381,7 @@ fn assert_fetch_transport_boundary(id: &str, expected: &Value) {
     let err = cow_sdk_app_data::fetch_doc_from_app_data_hex("0xzz", &PanicFetchTransport, None)
         .expect_err("malformed app-data hex must fail-closed before dispatching the transport");
     assert!(
-        matches!(err, AppDataError::Transport(_)),
+        matches!(err, AppDataError::Transport { .. }),
         "case {id}: fetch_doc_from_app_data_hex must reject malformed hex before dispatch",
     );
 }

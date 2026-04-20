@@ -4,7 +4,7 @@ use thiserror::Error;
 
 /// Errors returned by explicit signing helpers.
 #[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Error)]
 pub enum SigningError {
     /// Core validation failed while building a signing payload.
     #[error("core error: {0}")]

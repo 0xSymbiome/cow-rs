@@ -357,7 +357,7 @@ impl ResponseEnvelope {
             {
                 serde_json::from_slice::<Value>(&self.body)
                     .map(ResponseBody::Json)
-                    .map_err(|error| OrderbookError::Serialization(error.to_string()))
+                    .map_err(OrderbookError::from)
             }
             _ => Ok(ResponseBody::Text(
                 String::from_utf8_lossy(&self.body).into_owned(),
@@ -638,7 +638,7 @@ pub async fn execute_json_with<T, F, Fut>(
 where
     T: DeserializeOwned,
     F: FnMut() -> Fut,
-    Fut: Future<Output = Result<ResponseEnvelope, String>>,
+    Fut: Future<Output = Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)>>,
 {
     execute_with(policy, rate_limiter, attempt, decode_success_body::<T>).await
 }
@@ -656,7 +656,7 @@ pub async fn execute_text_with<F, Fut>(
 ) -> Result<String, OrderbookError>
 where
     F: FnMut() -> Fut,
-    Fut: Future<Output = Result<ResponseEnvelope, String>>,
+    Fut: Future<Output = Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)>>,
 {
     execute_with(policy, rate_limiter, attempt, decode_text_body).await
 }
@@ -674,7 +674,7 @@ pub async fn execute_empty_with<F, Fut>(
 ) -> Result<(), OrderbookError>
 where
     F: FnMut() -> Fut,
-    Fut: Future<Output = Result<ResponseEnvelope, String>>,
+    Fut: Future<Output = Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)>>,
 {
     execute_with(policy, rate_limiter, attempt, |_| Ok(())).await
 }
@@ -720,7 +720,7 @@ async fn send_request(
     timeout: Option<Duration>,
     response_kind: ResponseKind,
     additional_headers: Option<HeaderMap>,
-) -> Result<ResponseEnvelope, String> {
+) -> Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)> {
     let mut request = client
         .request(params.method.into(), url)
         .headers(request_headers(response_kind, additional_headers));
@@ -786,7 +786,7 @@ async fn execute_with<T, F, Fut, D>(
 ) -> Result<T, OrderbookError>
 where
     F: FnMut() -> Fut,
-    Fut: Future<Output = Result<ResponseEnvelope, String>>,
+    Fut: Future<Output = Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)>>,
     D: Fn(&ResponseEnvelope) -> Result<T, OrderbookError>,
 {
     let mut last_transport_error = None;
@@ -821,9 +821,13 @@ where
         }
     }
 
-    Err(OrderbookError::Transport(
-        last_transport_error.unwrap_or_else(|| "request attempts exhausted".to_owned()),
-    ))
+    let (class, detail) = last_transport_error.unwrap_or_else(|| {
+        (
+            cow_sdk_core::TransportErrorClass::Other,
+            "request attempts exhausted".to_owned(),
+        )
+    });
+    Err(OrderbookError::Transport { class, detail })
 }
 
 async fn delay_for(duration: Duration) {
@@ -846,13 +850,14 @@ fn decode_success_body<T>(response: &ResponseEnvelope) -> Result<T, OrderbookErr
 where
     T: DeserializeOwned,
 {
-    serde_json::from_slice::<T>(&response.body)
-        .map_err(|error| OrderbookError::Serialization(error.to_string()))
+    serde_json::from_slice::<T>(&response.body).map_err(OrderbookError::from)
 }
 
 fn decode_text_body(response: &ResponseEnvelope) -> Result<String, OrderbookError> {
-    String::from_utf8(response.body.clone())
-        .map_err(|error| OrderbookError::Serialization(error.to_string()))
+    String::from_utf8(response.body.clone()).map_err(|error| OrderbookError::Transport {
+        class: cow_sdk_core::TransportErrorClass::Decode,
+        detail: error.to_string(),
+    })
 }
 
 fn canonical_status_text(status: u16) -> String {
