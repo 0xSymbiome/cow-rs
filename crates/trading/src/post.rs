@@ -505,8 +505,8 @@ where
     {
         return Err(TradingError::RecoverableSignatureOwnerMismatch {
             scheme: requested_scheme,
-            owner: from.as_str().to_owned(),
-            signer: signer_address.as_str().to_owned(),
+            owner: from.clone(),
+            signer: signer_address.clone(),
         });
     }
     let mut options = ProtocolOptions::new();

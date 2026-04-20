@@ -262,7 +262,9 @@ impl SettlementEncoder {
                 normalized
                     .get(&token.normalized_key())
                     .cloned()
-                    .ok_or_else(|| ContractsError::MissingClearingPrice(token.as_str().to_owned()))
+                    .ok_or_else(|| ContractsError::MissingClearingPrice {
+                        token: token.clone(),
+                    })
             })
             .collect()
     }

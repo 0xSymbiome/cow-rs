@@ -9,9 +9,14 @@ use crate::{
     primitives::{function_selector, normalize_hex_payload, parse_hex, parse_hex_exact},
 };
 
-/// EIP-1271 success magic value.
+/// EIP-1271 success magic value as the canonical `0x`-prefixed hex string
+/// form documented by the protocol.
 #[doc(alias = "magic-value")]
 pub const EIP1271_MAGICVALUE: &str = "0x1626ba7e";
+
+/// EIP-1271 success magic value as the 4-byte function selector
+/// (`isValidSignature(bytes32,bytes)`) the protocol uses on the wire.
+const EIP1271_MAGICVALUE_BYTES: [u8; 4] = [0x16, 0x26, 0xba, 0x7e];
 const EIP1271_IS_VALID_SIGNATURE_ABI_JSON: &str = r#"[{"type":"function","name":"isValidSignature","inputs":[{"name":"hash","type":"bytes32"},{"name":"signature","type":"bytes"}],"outputs":[{"name":"","type":"bytes4"}],"stateMutability":"view"}]"#;
 
 /// Supported `CoW` signing schemes.
@@ -310,17 +315,17 @@ fn has_contract_code(code: Option<&HexData>) -> bool {
 
 fn ensure_magic_value(raw: &str) -> Result<(), ContractsError> {
     let actual = decode_magic_value_response(raw)?;
-    if actual == EIP1271_MAGICVALUE {
+    if actual == EIP1271_MAGICVALUE_BYTES {
         Ok(())
     } else {
         Err(ContractsError::Eip1271MagicValueMismatch {
-            expected: EIP1271_MAGICVALUE.to_owned(),
+            expected: EIP1271_MAGICVALUE_BYTES,
             actual,
         })
     }
 }
 
-fn decode_magic_value_response(raw: &str) -> Result<String, ContractsError> {
+fn decode_magic_value_response(raw: &str) -> Result<[u8; 4], ContractsError> {
     let candidate = match serde_json::from_str::<serde_json::Value>(raw) {
         Ok(serde_json::Value::String(value)) => value,
         Ok(other) => {
@@ -331,9 +336,12 @@ fn decode_magic_value_response(raw: &str) -> Result<String, ContractsError> {
         Err(_) => raw.to_owned(),
     };
 
-    parse_hex_exact(&candidate, "magicValue", 4)
-        .map(|bytes| format!("0x{}", hex::encode(bytes)))
-        .map_err(|_| ContractsError::MalformedEip1271Response {
+    let bytes = parse_hex_exact(&candidate, "magicValue", 4).map_err(|_| {
+        ContractsError::MalformedEip1271Response {
             response: raw.to_owned(),
-        })
+        }
+    })?;
+    let mut out = [0u8; 4];
+    out.copy_from_slice(&bytes);
+    Ok(out)
 }

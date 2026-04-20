@@ -356,6 +356,20 @@ unreleased public contract of the repository.
   cross-link the parity-scope document as the authoritative exclusion
   list; reviewers can now navigate between the ADR and the scope doc
   without private-context chasing.
+- Tighten the typed shape of three public error variants so downstream
+  callers can pattern-match on the typed payload without re-parsing
+  error messages: `cow_sdk_contracts::ContractsError::MissingClearingPrice`
+  now carries `{ token: cow_sdk_core::Address }` in place of the prior
+  stringly-typed token payload; `cow_sdk_contracts::ContractsError::Eip1271MagicValueMismatch`
+  now carries `{ expected: [u8; 4], actual: [u8; 4] }` in place of the
+  prior hex-string payload, matching the four-byte EIP-1271 function
+  selector the protocol uses on the wire; and
+  `cow_sdk_trading::TradingError::RecoverableSignatureOwnerMismatch` now
+  carries `{ owner: cow_sdk_core::Address, signer: cow_sdk_core::Address }`
+  in place of the prior stringly-typed address payload. The `Display`
+  output for each variant is unchanged: addresses render as their
+  canonical `0x`-prefixed hex form and the 4-byte magic values render as
+  `0x`-prefixed lowercase hex.
 
 ### Changed
 

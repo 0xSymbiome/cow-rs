@@ -1,6 +1,6 @@
 use cow_sdk_app_data::AppDataError;
 use cow_sdk_contracts::{ContractsError, SigningScheme};
-use cow_sdk_core::{Cancelled, CoreError};
+use cow_sdk_core::{Address, Cancelled, CoreError};
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_signing::SigningError;
 use thiserror::Error;
@@ -79,9 +79,9 @@ pub enum TradingError {
         /// Recoverable signing scheme selected for submission.
         scheme: cow_sdk_orderbook::SigningScheme,
         /// Explicit owner used in the order payload.
-        owner: String,
+        owner: Address,
         /// Address resolved from the signing backend.
-        signer: String,
+        signer: Address,
     },
     /// Signer operation failed.
     #[error("signer error during {operation}: {message}")]

@@ -63,16 +63,23 @@ pub enum ContractsError {
         response: String,
     },
     /// The verifier returned an unexpected EIP-1271 magic value.
-    #[error("unexpected EIP-1271 magic value: expected {expected}, got {actual}")]
+    #[error(
+        "unexpected EIP-1271 magic value: expected 0x{}, got 0x{}",
+        hex::encode(expected),
+        hex::encode(actual)
+    )]
     Eip1271MagicValueMismatch {
-        /// Expected magic value.
-        expected: String,
-        /// Actual magic value returned by the verifier.
-        actual: String,
+        /// Expected 4-byte magic value.
+        expected: [u8; 4],
+        /// Actual 4-byte magic value returned by the verifier.
+        actual: [u8; 4],
     },
     /// A clearing price was missing for a token used in a settlement.
-    #[error("missing clearing price for token {0}")]
-    MissingClearingPrice(String),
+    #[error("missing clearing price for token {token}")]
+    MissingClearingPrice {
+        /// Token address whose clearing price was missing.
+        token: Address,
+    },
     /// Partially fillable trade encoding requires an executed amount.
     #[error("missing executed amount for partially fillable trade")]
     MissingExecutedAmount,

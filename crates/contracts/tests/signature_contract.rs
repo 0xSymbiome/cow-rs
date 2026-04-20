@@ -385,9 +385,14 @@ fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
     assert_eq!(
         mismatch,
         ContractsError::Eip1271MagicValueMismatch {
-            expected: EIP1271_MAGICVALUE.to_owned(),
-            actual: "0xffffffff".to_owned()
+            expected: [0x16, 0x26, 0xba, 0x7e],
+            actual: [0xff, 0xff, 0xff, 0xff],
         }
+    );
+    assert_eq!(EIP1271_MAGICVALUE, "0x1626ba7e");
+    assert_eq!(
+        mismatch.to_string(),
+        "unexpected EIP-1271 magic value: expected 0x1626ba7e, got 0xffffffff",
     );
 }
 
