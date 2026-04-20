@@ -416,6 +416,24 @@ unreleased public contract of the repository.
   for downstream consumers, and the committed Solidity excerpt at
   `crates/contracts/abi/eth-flow/CoWSwapEthFlow.sol` preserves upstream
   provenance for reviewers.
+- The `cow-sdk-contracts` EIP-1967 proxy-inspection surface now derives
+  from an `alloy::sol!` interface block that declares the canonical
+  EIP-173 ownership proxy ABI alongside the EIP-1967 storage-slot
+  derivations. The paired `IMPLEMENTATION_STORAGE_SLOT` / `OWNER_STORAGE_SLOT`
+  hex-string constants and the `proxy_interface` / `EIP173_PROXY_ABI`
+  JSON-fragment helpers are replaced by a typed `Eip1967Slot` enum with
+  `Admin` and `Implementation` variants carrying the canonical 32-byte slot
+  hashes, a public `SlotBytes` type alias for the underlying `B256`
+  representation, the generated `IEip173Proxy` interface type, and an
+  `admin_address` reader that decodes storage responses through
+  `alloy_primitives::Address::from_word` rather than ad-hoc byte slicing.
+  The existing `implementation_address` and `owner_address` readers keep
+  their signatures and now route through the typed surface; `owner_address`
+  stays available as a legacy alias for `admin_address` so downstream
+  ownership-proxy consumers migrate without behavioral changes. The
+  committed Solidity excerpt at
+  `crates/contracts/abi/eip1967/Eip1967.sol` preserves upstream provenance
+  for reviewers.
 
 ### Changed
 

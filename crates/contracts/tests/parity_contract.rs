@@ -13,7 +13,7 @@
 //!   and EIP-1271 success value.
 //! * [`normalize_interaction`] — interaction defaulting rule.
 //! * [`SALT`], [`DEPLOYER_CONTRACT`] — deterministic deployment constants.
-//! * [`IMPLEMENTATION_STORAGE_SLOT`], [`OWNER_STORAGE_SLOT`] — EIP-1967 proxy
+//! * [`Eip1967Slot::Implementation`], [`Eip1967Slot::Admin`] — EIP-1967 proxy
 //!   storage slot constants.
 //! * [`encode_order_flags`], [`encode_trade_flags`] — order and trade flag
 //!   bitfield codecs.
@@ -27,12 +27,11 @@
 //! broken CI run sees the exact upstream vector that diverged.
 
 use cow_sdk_contracts::{
-    AllowListReader, CANCELLATIONS_TYPE_FIELDS, DEPLOYER_CONTRACT, EIP1271_MAGICVALUE,
-    IMPLEMENTATION_STORAGE_SLOT, InteractionLike, ORDER_TYPE_FIELDS, ORDER_TYPE_HASH,
-    ORDER_UID_LENGTH, OWNER_STORAGE_SLOT, OrderFlags, SALT, SettlementEncoder, SettlementReader,
-    SigningScheme, Swap, TokenRegistry, TradeFlags, TradeSimulator, VAULT_INTERFACE,
-    encode_order_flags, encode_swap_step, encode_trade_flags, normalize_buy_token_balance,
-    normalize_interaction,
+    AllowListReader, CANCELLATIONS_TYPE_FIELDS, DEPLOYER_CONTRACT, EIP1271_MAGICVALUE, Eip1967Slot,
+    InteractionLike, ORDER_TYPE_FIELDS, ORDER_TYPE_HASH, ORDER_UID_LENGTH, OrderFlags, SALT,
+    SettlementEncoder, SettlementReader, SigningScheme, Swap, TokenRegistry, TradeFlags,
+    TradeSimulator, VAULT_INTERFACE, encode_order_flags, encode_swap_step, encode_trade_flags,
+    normalize_buy_token_balance, normalize_interaction,
 };
 use cow_sdk_core::{
     Address, Amount, CowEnv, OrderBalance, OrderDigest, OrderKind, OrderUid, SupportedChainId,
@@ -333,12 +332,14 @@ fn assert_proxy_storage_slots(id: &str, expected: &Value) {
         .unwrap_or_else(|| panic!("case {id}: expected.owner_slot must be a string"));
 
     assert_eq!(
-        IMPLEMENTATION_STORAGE_SLOT, expected_impl,
-        "case {id}: IMPLEMENTATION_STORAGE_SLOT must match the EIP-1967 slot",
+        Eip1967Slot::Implementation.as_hex_str(),
+        expected_impl,
+        "case {id}: Eip1967Slot::Implementation must match the EIP-1967 slot",
     );
     assert_eq!(
-        OWNER_STORAGE_SLOT, expected_owner,
-        "case {id}: OWNER_STORAGE_SLOT must match the EIP-1967 admin slot",
+        Eip1967Slot::Admin.as_hex_str(),
+        expected_owner,
+        "case {id}: Eip1967Slot::Admin must match the fixture admin-slot hash",
     );
 }
 

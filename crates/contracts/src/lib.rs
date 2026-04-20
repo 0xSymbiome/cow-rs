@@ -53,8 +53,7 @@ pub use order::{
     normalize_order, pack_order_uid_params, uid_for_contract,
 };
 pub use proxy::{
-    EIP173_PROXY_ABI, IMPLEMENTATION_STORAGE_SLOT, OWNER_STORAGE_SLOT, implementation_address,
-    owner_address, proxy_interface,
+    Eip1967Slot, IEip173Proxy, SlotBytes, admin_address, implementation_address, owner_address,
 };
 pub use reader::{
     AllowListReader, SettlementReader, TradeSimulation, TradeSimulationBalanceDelta,

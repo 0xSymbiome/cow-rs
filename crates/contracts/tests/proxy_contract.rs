@@ -1,8 +1,7 @@
 mod common;
 
 use cow_sdk_contracts::{
-    EIP173_PROXY_ABI, IMPLEMENTATION_STORAGE_SLOT, OWNER_STORAGE_SLOT, implementation_address,
-    owner_address, proxy_interface,
+    Eip1967Slot, IEip173Proxy, admin_address, implementation_address, owner_address,
 };
 use cow_sdk_core::Address;
 
@@ -12,24 +11,25 @@ use common::{MockProvider, fixture_case};
 fn proxy_constants_and_storage_readers_match_contract_surface() {
     let fixture = fixture_case("contracts-proxy-storage-slots");
     assert_eq!(
-        IMPLEMENTATION_STORAGE_SLOT,
+        Eip1967Slot::Implementation.as_hex_str(),
         fixture["expected"]["implementation_slot"].as_str().unwrap()
     );
     assert_eq!(
-        OWNER_STORAGE_SLOT,
-        fixture["expected"]["owner_slot"].as_str().unwrap()
+        Eip1967Slot::Admin.as_hex_str(),
+        fixture["expected"]["owner_slot"].as_str().unwrap(),
+        "fixture `owner_slot` field stores the EIP-1967 admin-slot hash by spec",
     );
 
     let proxy = Address::new("0x1234567890123456789012345678901234567890").unwrap();
     let provider = MockProvider::new();
     provider.set_storage(
         &proxy,
-        IMPLEMENTATION_STORAGE_SLOT,
+        Eip1967Slot::Implementation.as_hex_str(),
         "0x0000000000000000000000001111111111111111111111111111111111111111",
     );
     provider.set_storage(
         &proxy,
-        OWNER_STORAGE_SLOT,
+        Eip1967Slot::Admin.as_hex_str(),
         "0x0000000000000000000000002222222222222222222222222222222222222222",
     );
 
@@ -38,19 +38,44 @@ fn proxy_constants_and_storage_readers_match_contract_surface() {
         "0x1111111111111111111111111111111111111111"
     );
     assert_eq!(
-        owner_address(&provider, &proxy).unwrap().as_str(),
+        admin_address(&provider, &proxy).unwrap().as_str(),
         "0x2222222222222222222222222222222222222222"
+    );
+    assert_eq!(
+        owner_address(&provider, &proxy).unwrap().as_str(),
+        admin_address(&provider, &proxy).unwrap().as_str(),
+        "owner_address is the legacy alias for admin_address",
     );
 }
 
 #[test]
-fn proxy_interface_exposes_eip173_abi_handle() {
-    let proxy = Address::new("0x1234567890123456789012345678901234567890").unwrap();
-    let handle = proxy_interface(&proxy).unwrap();
-    let abi: Vec<String> = serde_json::from_str(&handle.abi_json).unwrap();
+fn eip1967_slot_bytes_match_the_canonical_hex_payload() {
+    let admin_bytes = Eip1967Slot::Admin.as_bytes();
+    assert_eq!(
+        format!("0x{}", hex::encode(admin_bytes)),
+        Eip1967Slot::Admin.as_hex_str(),
+        "admin slot bytes must round-trip through the typed hex accessor",
+    );
 
-    assert_eq!(handle.address, proxy);
-    assert_eq!(abi.len(), EIP173_PROXY_ABI.len());
-    assert_eq!(abi[0], EIP173_PROXY_ABI[0]);
-    assert_eq!(abi[1], EIP173_PROXY_ABI[1]);
+    let implementation_bytes = Eip1967Slot::Implementation.as_bytes();
+    assert_eq!(
+        format!("0x{}", hex::encode(implementation_bytes)),
+        Eip1967Slot::Implementation.as_hex_str(),
+        "implementation slot bytes must round-trip through the typed hex accessor",
+    );
+}
+
+#[test]
+fn eip173_proxy_interface_exposes_the_expected_function_selectors() {
+    use alloy_sol_types::SolCall;
+
+    assert_eq!(IEip173Proxy::ownerCall::SIGNATURE, "owner()");
+    assert_eq!(
+        IEip173Proxy::transferOwnershipCall::SIGNATURE,
+        "transferOwnership(address)",
+    );
+    assert_eq!(
+        IEip173Proxy::supportsInterfaceCall::SIGNATURE,
+        "supportsInterface(bytes4)",
+    );
 }
