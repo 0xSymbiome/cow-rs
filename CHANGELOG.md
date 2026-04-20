@@ -400,6 +400,22 @@ unreleased public contract of the repository.
   committed Solidity excerpt at
   `crates/contracts/abi/vault-relayer/GPv2VaultRelayer.sol` preserves
   upstream provenance for reviewers.
+- `cow-sdk-contracts` now hosts the typed `CoWSwapEthFlow` call-data
+  bindings under a new `cow_sdk_contracts::eth_flow` module generated from
+  an `alloy::sol!` interface block sourced from the upstream Solidity
+  surface. The module exposes a typed `EthFlowOrderData` payload plus
+  `encode_create_order_calldata` and `encode_invalidate_order_calldata`
+  helpers, the latter covering the `invalidateOrder(EthFlowOrderData)` entry
+  point that is distinct from the `GPv2Settlement::invalidateOrder(bytes)`
+  call used for regular orders. `cow-sdk-trading` now produces its EthFlow
+  order-creation and on-chain-cancellation transaction call-data through the
+  new typed encoder; signed `int64` quote ids round-trip through the ABI
+  boundary with canonical two's-complement sign-extension, and the call-data
+  layout now matches the upstream on-chain struct field order byte-for-byte.
+  The typed EthFlow surface is re-exported as `cow_sdk_trading::eth_flow`
+  for downstream consumers, and the committed Solidity excerpt at
+  `crates/contracts/abi/eth-flow/CoWSwapEthFlow.sol` preserves upstream
+  provenance for reviewers.
 
 ### Changed
 

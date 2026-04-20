@@ -270,13 +270,16 @@ async fn ethflow_calldata_preserves_uint256_boundary_values() {
             hex_word_to_biguint(calldata_word(data.as_str(), 3)),
             BigUint::parse_bytes(buy_amount.as_bytes(), 10).unwrap()
         );
+        // The canonical upstream EthFlowOrder.Data tuple lays validTo out at
+        // word index 6 and quoteId at word index 8; intermediate words carry
+        // appData, feeAmount, and partiallyFillable.
         assert_eq!(
             hex_word_to_biguint(calldata_word(data.as_str(), 6)),
-            BigUint::from(quote_id as u64)
+            BigUint::from(valid_to)
         );
         assert_eq!(
             hex_word_to_biguint(calldata_word(data.as_str(), 8)),
-            BigUint::from(valid_to)
+            BigUint::from(quote_id as u64)
         );
     }
 }

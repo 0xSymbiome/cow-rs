@@ -1,9 +1,11 @@
+use cow_sdk_contracts::eth_flow::{
+    EthFlowOrderData, encode_create_order_calldata, encode_invalidate_order_calldata,
+};
 use cow_sdk_core::{
     Address, Amount, AsyncSigner, HexData, ProtocolOptions, Signer, SupportedChainId,
     TransactionHash, TransactionRequest, eth_flow_contract_address, settlement_contract_address,
 };
 use cow_sdk_orderbook::Order;
-use num_bigint::Sign;
 
 use crate::slippage::{gas_with_margin, parse_integer};
 use crate::{
@@ -511,7 +513,9 @@ fn encode_ethflow_create_order(
     order: &cow_sdk_core::UnsignedOrder,
     quote_id: i64,
 ) -> Result<String, TradingError> {
-    encode_ethflow_tuple_call("createOrder", order, quote_id)
+    let payload = EthFlowOrderData::from_unsigned_order(order, quote_id);
+    let encoded = encode_create_order_calldata(&payload)?;
+    Ok(format!("0x{}", hex::encode(encoded)))
 }
 
 fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError> {
@@ -519,77 +523,20 @@ fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError
         .receiver
         .clone()
         .unwrap_or_else(|| order.owner.clone());
-    encode_ethflow_tuple_static(
-        "invalidateOrder",
-        &EthFlowTupleData {
-            buy_token: &order.buy_token,
-            receiver: &receiver,
-            sell_amount: &order.sell_amount,
-            buy_amount: &order.buy_amount,
-            fee_amount: "0",
-            partially_fillable: false,
-            quote_id: 0,
-            app_data: order.app_data.as_str(),
-            valid_to: order.valid_to,
-        },
-    )
-}
-
-fn encode_ethflow_tuple_call(
-    method: &str,
-    order: &cow_sdk_core::UnsignedOrder,
-    quote_id: i64,
-) -> Result<String, TradingError> {
-    let sell_amount = order.sell_amount.to_string();
-    let buy_amount = order.buy_amount.to_string();
-    let fee_amount = order.fee_amount.to_string();
-    encode_ethflow_tuple_static(
-        method,
-        &EthFlowTupleData {
-            buy_token: &order.buy_token,
-            receiver: &order.receiver,
-            sell_amount: &sell_amount,
-            buy_amount: &buy_amount,
-            fee_amount: &fee_amount,
-            partially_fillable: order.partially_fillable,
-            quote_id,
-            app_data: order.app_data.as_str(),
-            valid_to: order.valid_to,
-        },
-    )
-}
-
-struct EthFlowTupleData<'a> {
-    buy_token: &'a Address,
-    receiver: &'a Address,
-    sell_amount: &'a str,
-    buy_amount: &'a str,
-    fee_amount: &'a str,
-    partially_fillable: bool,
-    quote_id: i64,
-    app_data: &'a str,
-    valid_to: u32,
-}
-
-fn encode_ethflow_tuple_static(
-    method: &str,
-    data: &EthFlowTupleData<'_>,
-) -> Result<String, TradingError> {
-    let selector = selector_bytes(&format!(
-        "{method}((address,address,uint256,uint256,uint256,bool,uint256,bytes32,uint32))"
-    ))?;
-    let mut encoded = Vec::new();
-    encoded.extend_from_slice(&selector);
-    encoded.extend_from_slice(&encode_address_word(data.buy_token)?);
-    encoded.extend_from_slice(&encode_address_word(data.receiver)?);
-    encoded.extend_from_slice(&encode_uint_word(data.sell_amount)?);
-    encoded.extend_from_slice(&encode_uint_word(data.buy_amount)?);
-    encoded.extend_from_slice(&encode_uint_word(data.fee_amount)?);
-    encoded.extend_from_slice(&encode_bool_word(data.partially_fillable));
-    encoded.extend_from_slice(&encode_uint_word(&data.quote_id.to_string())?);
-    encoded.extend_from_slice(&encode_bytes32_word(data.app_data)?);
-    encoded.extend_from_slice(&encode_uint_word(&data.valid_to.to_string())?);
-
+    let sell_amount = Amount::new(order.sell_amount.clone())?;
+    let buy_amount = Amount::new(order.buy_amount.clone())?;
+    let payload = EthFlowOrderData {
+        buy_token: order.buy_token.clone(),
+        receiver,
+        sell_amount,
+        buy_amount,
+        app_data: order.app_data.clone(),
+        fee_amount: Amount::zero(),
+        valid_to: order.valid_to,
+        partially_fillable: false,
+        quote_id: 0,
+    };
+    let encoded = encode_invalidate_order_calldata(&payload)?;
     Ok(format!("0x{}", hex::encode(encoded)))
 }
 
@@ -644,38 +591,6 @@ fn decode_hex_field(field: &'static str, value: &str) -> Result<Vec<u8>, Trading
     })
 }
 
-fn encode_address_word(address: &Address) -> Result<[u8; 32], TradingError> {
-    let bytes = decode_hex_field("address", address.as_str())?;
-    if bytes.len() != 20 {
-        return Err(TradingError::InvalidNumeric {
-            field: "address",
-            value: address.as_str().to_owned(),
-        });
-    }
-    let mut out = [0u8; 32];
-    out[12..].copy_from_slice(&bytes);
-    Ok(out)
-}
-
-fn encode_uint_word(value: &str) -> Result<[u8; 32], TradingError> {
-    let parsed = parse_integer("uint256", value)?;
-    let (sign, bytes) = parsed.to_bytes_be();
-    if sign == Sign::Minus {
-        return Err(TradingError::InvalidInput(format!(
-            "uint256 must be non-negative: {value}"
-        )));
-    }
-    if bytes.len() > 32 {
-        return Err(TradingError::NumericOverflow {
-            field: "uint256",
-            value: value.to_owned(),
-        });
-    }
-    let mut out = [0u8; 32];
-    out[32 - bytes.len()..].copy_from_slice(&bytes);
-    Ok(out)
-}
-
 fn encode_usize_word(value: usize) -> [u8; 32] {
     let mut out = [0u8; 32];
     out[24..].copy_from_slice(&(value as u64).to_be_bytes());
@@ -686,19 +601,6 @@ fn encode_bool_word(value: bool) -> [u8; 32] {
     let mut out = [0u8; 32];
     out[31] = u8::from(value);
     out
-}
-
-fn encode_bytes32_word(value: &str) -> Result<[u8; 32], TradingError> {
-    let bytes = decode_hex_field("bytes32", value)?;
-    if bytes.len() != 32 {
-        return Err(TradingError::InvalidNumeric {
-            field: "bytes32",
-            value: value.to_owned(),
-        });
-    }
-    let mut out = [0u8; 32];
-    out.copy_from_slice(&bytes);
-    Ok(out)
 }
 
 fn pad_to_word(mut bytes: Vec<u8>) -> Vec<u8> {

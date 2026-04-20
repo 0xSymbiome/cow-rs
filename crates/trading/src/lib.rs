@@ -4,6 +4,7 @@
 #![warn(missing_docs)]
 
 pub use cow_sdk_app_data::{PartnerFee, PartnerFeePolicy};
+pub use cow_sdk_contracts::eth_flow;
 pub use cow_sdk_core::DecimalAmount;
 
 /// Allowance reads, approval transactions, and approval submission helpers.

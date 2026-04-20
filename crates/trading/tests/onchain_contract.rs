@@ -4,8 +4,8 @@ use cow_sdk_core::{
     AddressPerChain, Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId,
 };
 use cow_sdk_trading::{
-    GAS_LIMIT_DEFAULT, PostTradeAdditionalParams, TradingError, cancel_order_onchain,
-    get_eth_flow_transaction, get_pre_sign_transaction, onchain_cancellation_transaction,
+    GAS_LIMIT_DEFAULT, PostTradeAdditionalParams, cancel_order_onchain, get_eth_flow_transaction,
+    get_pre_sign_transaction, onchain_cancellation_transaction,
 };
 use num_bigint::BigUint;
 
@@ -131,7 +131,11 @@ async fn ethflow_transaction_encodes_high_bit_uint256_amounts_as_unsigned_words(
 }
 
 #[tokio::test]
-async fn ethflow_transaction_rejects_negative_quote_id_at_the_abi_boundary() {
+async fn ethflow_transaction_sign_extends_negative_quote_id_in_the_encoded_tuple() {
+    // The canonical upstream `EthFlowOrder.Data.quoteId` field is a signed
+    // `int64` value and must be sign-extended to a full 256-bit two's-complement
+    // word in the ABI-encoded tuple. The quoteId sits at word index 8 of the
+    // encoded struct.
     let signer = MockSigner::default();
     let trader = sample_trader_parameters();
     let mut params = sample_limit_parameters(OrderKind::Sell);
@@ -139,7 +143,7 @@ async fn ethflow_transaction_rejects_negative_quote_id_at_the_abi_boundary() {
     params.quote_id = Some(-1);
     params.valid_to = Some(1_234_567_890);
 
-    let error = get_eth_flow_transaction(
+    let transaction = get_eth_flow_transaction(
         &app_data_hash(),
         &params,
         SupportedChainId::Sepolia,
@@ -148,12 +152,19 @@ async fn ethflow_transaction_rejects_negative_quote_id_at_the_abi_boundary() {
         &signer,
     )
     .await
-    .expect_err("negative quote ids must be rejected before ABI encoding");
+    .expect("signed int64 quote id must round-trip through the ABI boundary");
 
-    assert!(matches!(
-        error,
-        TradingError::InvalidInput(message) if message == "uint256 must be non-negative: -1"
-    ));
+    let data = transaction
+        .transaction
+        .data
+        .as_ref()
+        .expect("ethflow transaction must include call data");
+
+    assert_eq!(
+        calldata_word(data.as_str(), 8),
+        "f".repeat(64),
+        "negative int64 quote id must sign-extend to a full 256-bit two's-complement word",
+    );
 }
 
 #[test]

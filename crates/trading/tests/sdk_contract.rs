@@ -476,10 +476,11 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
     assert_eq!(sent.to, Some(address(CUSTOM_ETHFLOW)));
     assert_eq!(calldata_word(data.as_str(), 2), uint256_word(&high_sell));
     assert_eq!(calldata_word(data.as_str(), 3), uint256_word(&high_buy));
-    assert_eq!(
-        calldata_word(data.as_str(), 4),
-        uint256_word(&BigUint::from(0u8)),
-    );
+    // The canonical upstream EthFlowOrder.Data tuple places the `appData`
+    // bytes32 at word index 4; the fixture order pins that hash, so confirm
+    // the ABI layout carries it through the cancellation call-data unmodified.
+    let app_data_without_prefix = crate::common::APP_DATA_HASH.trim_start_matches("0x");
+    assert_eq!(calldata_word(data.as_str(), 4), app_data_without_prefix);
 }
 
 #[test]

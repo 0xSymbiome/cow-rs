@@ -11,6 +11,9 @@
 pub mod deploy;
 /// Contract crate error types.
 pub mod errors;
+/// Typed `CoWSwapEthFlow` call-data encoders generated from the upstream
+/// Solidity surface via the `alloy::sol!` macro.
+pub mod eth_flow;
 /// Typed interaction models and normalization helpers.
 pub mod interaction;
 /// Order hashing, UID packing, and normalization helpers.
@@ -36,6 +39,9 @@ pub use deploy::{
     deterministic_deployment_address,
 };
 pub use errors::ContractsError;
+pub use eth_flow::{
+    EthFlowOrderData, encode_create_order_calldata, encode_invalidate_order_calldata,
+};
 pub use interaction::{
     Interaction, InteractionLike, normalize_interaction, normalize_interactions,
 };
