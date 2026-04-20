@@ -83,6 +83,26 @@ fn hex_prefixed(bytes: &Bytes) -> String {
     format!("0x{}", hex::encode(bytes))
 }
 
+fn u256_word(value: u64) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    out[24..].copy_from_slice(&value.to_be_bytes());
+    out
+}
+
+fn expected_bytes_array_call_data(selector_signature: &str, uid: &[u8; 56]) -> Vec<u8> {
+    let digest = Keccak256::digest(selector_signature.as_bytes());
+    let selector = [digest[0], digest[1], digest[2], digest[3]];
+    let mut expected = Vec::new();
+    expected.extend_from_slice(&selector);
+    expected.extend_from_slice(&u256_word(32));
+    expected.extend_from_slice(&u256_word(1));
+    expected.extend_from_slice(&u256_word(32));
+    expected.extend_from_slice(&u256_word(56));
+    expected.extend_from_slice(uid);
+    expected.extend_from_slice(&[0u8; 8]);
+    expected
+}
+
 #[test]
 fn settlement_flag_encoding_matches_fixture_values() {
     let default_flags = fixture_case("contracts-order-flags-default-sell");
@@ -341,4 +361,94 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
         "0x2222222222222222222222222222222222222222"
     );
     assert!(decode_order(&trade, &[]).is_err());
+}
+
+#[test]
+fn order_refund_call_data_matches_the_canonical_abi_byte_layout() {
+    // Manual reference encoding for `freeFilledAmountStorage(bytes[] orderUids)`
+    // and `freePreSignatureStorage(bytes[] orderUids)` for a single 56-byte
+    // orderUid argument. The layout is the canonical Solidity ABI:
+    //
+    //   4-byte function selector
+    //   32-byte pointer to the head of `bytes[]`              (0x20)
+    //   32-byte array length                                  (0x01)
+    //   32-byte offset of the first element within the array  (0x20)
+    //   32-byte length of the first element                   (56 = 0x38)
+    //   56-byte payload, right-padded to 64 bytes
+    let uid_bytes = [
+        0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+        0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+        0x11, 0x11, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+        0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x00, 0x00, 0x00, 0x00,
+    ];
+    let uid_hex = format!("0x{}", hex::encode(uid_bytes));
+    let uid = OrderUid::new(uid_hex).unwrap();
+
+    let mut encoder = SettlementEncoder::new(sample_domain());
+    encoder
+        .encode_order_refunds(&OrderRefunds {
+            filled_amounts: vec![uid.clone()],
+            pre_signatures: vec![uid.clone()],
+        })
+        .unwrap();
+
+    let post = encoder.interactions().unwrap()[InteractionStage::Post as usize].clone();
+    assert_eq!(post.len(), 2);
+
+    assert_eq!(
+        post[0].call_data.as_ref(),
+        expected_bytes_array_call_data("freeFilledAmountStorage(bytes[])", &uid_bytes).as_slice(),
+        "freeFilledAmountStorage call-data must match the canonical Solidity ABI byte layout",
+    );
+    assert_eq!(
+        post[1].call_data.as_ref(),
+        expected_bytes_array_call_data("freePreSignatureStorage(bytes[])", &uid_bytes).as_slice(),
+        "freePreSignatureStorage call-data must match the canonical Solidity ABI byte layout",
+    );
+}
+
+#[test]
+fn encoded_settlement_calldata_starts_with_the_settle_selector() {
+    let domain = sample_domain();
+    let mut encoder = SettlementEncoder::new(domain);
+
+    let prices = serde_json::from_value::<cow_sdk_contracts::Prices>(serde_json::json!({
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "1000000000000000000",
+        "0x6b175474e89094c44da98b954eedeac495271d0f": "500000000000000",
+    }))
+    .unwrap();
+    encoder
+        .encode_trade(
+            &sample_order(OrderKind::Sell, false),
+            &sample_signature(),
+            Some(TradeExecution {
+                executed_amount: Amount::new("1000000000000000000").unwrap(),
+            }),
+        )
+        .unwrap();
+    encoder.encode_interaction(
+        &InteractionLike {
+            target: Address::new("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(),
+            value: None,
+            call_data: Some(bytes_from_hex_literal("0xdeadbeef")),
+        },
+        InteractionStage::Intra,
+    );
+
+    let calldata = encoder.encoded_settlement_calldata(&prices).unwrap();
+
+    let expected_selector = {
+        let signature = "settle(address[],uint256[],(uint256,uint256,address,uint256,uint256,uint32,bytes32,uint256,uint256,uint256,bytes)[],(address,uint256,bytes)[][3])";
+        let digest = Keccak256::digest(signature.as_bytes());
+        [digest[0], digest[1], digest[2], digest[3]]
+    };
+    assert_eq!(
+        &calldata[..4],
+        expected_selector,
+        "encoded_settlement_calldata must start with the GPv2Settlement settle(...) selector",
+    );
+    assert!(
+        calldata.len() > 4,
+        "encoded settle calldata must carry ABI arguments beyond the selector",
+    );
 }

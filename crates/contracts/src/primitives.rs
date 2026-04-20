@@ -193,48 +193,6 @@ pub(crate) fn encode_fixed_bytes<const N: usize>(bytes: [u8; N]) -> [u8; 32] {
     out
 }
 
-pub(crate) fn abi_encode_bytes_array(items: &[Vec<u8>]) -> Vec<u8> {
-    let mut encoded = Vec::new();
-    encoded.extend_from_slice(&encode_u256_usize(32));
-
-    let mut array_data = Vec::new();
-    array_data.extend_from_slice(&encode_u256_usize(items.len()));
-
-    let mut offsets = Vec::new();
-    let mut tail = Vec::new();
-    let mut current_offset = 32 * items.len();
-
-    for item in items {
-        offsets.push(current_offset);
-        tail.extend_from_slice(&encode_u256_usize(item.len()));
-        tail.extend_from_slice(item);
-        let padding = padded_len(item.len()) - item.len();
-        tail.extend(std::iter::repeat_n(0u8, padding));
-        current_offset += 32 + padded_len(item.len());
-    }
-
-    for offset in offsets {
-        array_data.extend_from_slice(&encode_u256_usize(offset));
-    }
-    array_data.extend_from_slice(&tail);
-    encoded.extend_from_slice(&array_data);
-    encoded
-}
-
-pub(crate) const fn padded_len(len: usize) -> usize {
-    if len == 0 {
-        0
-    } else {
-        ((len - 1) / 32 + 1) * 32
-    }
-}
-
-pub(crate) fn encode_u256_usize(value: usize) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[24..].copy_from_slice(&(value as u64).to_be_bytes());
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -352,32 +310,5 @@ mod tests {
             typed_data_digest(&domain, struct_hash).unwrap(),
             expected_digest
         );
-    }
-
-    #[test]
-    fn bytes_array_encoding_matches_manual_abi_layout_and_padding() {
-        let items = vec![vec![0x01, 0x02], vec![0xaa, 0xbb, 0xcc]];
-        let mut expected = Vec::new();
-        expected.extend_from_slice(&u256_word_from_u64(32));
-        expected.extend_from_slice(&u256_word_from_u64(2));
-        expected.extend_from_slice(&u256_word_from_u64(64));
-        expected.extend_from_slice(&u256_word_from_u64(128));
-        expected.extend_from_slice(&u256_word_from_u64(2));
-        expected.extend_from_slice(&[0x01, 0x02]);
-        expected.extend(std::iter::repeat_n(0u8, 30));
-        expected.extend_from_slice(&u256_word_from_u64(3));
-        expected.extend_from_slice(&[0xaa, 0xbb, 0xcc]);
-        expected.extend(std::iter::repeat_n(0u8, 29));
-
-        let mut empty_expected = Vec::new();
-        empty_expected.extend_from_slice(&u256_word_from_u64(32));
-        empty_expected.extend_from_slice(&u256_word_from_u64(0));
-
-        assert_eq!(abi_encode_bytes_array(&items), expected);
-        assert_eq!(abi_encode_bytes_array(&[]), empty_expected);
-        assert_eq!(padded_len(0), 0);
-        assert_eq!(padded_len(1), 32);
-        assert_eq!(padded_len(32), 32);
-        assert_eq!(padded_len(33), 64);
     }
 }

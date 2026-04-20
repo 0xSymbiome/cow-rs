@@ -25,6 +25,8 @@ default = []
 tracing = ["dep:tracing"]
 
 [dependencies]
+alloy-sol-macro.workspace = true
+alloy-sol-types.workspace = true
 bytes.workspace = true
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 hex.workspace = true

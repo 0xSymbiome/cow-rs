@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use alloy_sol_types::{SolCall, sol};
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
@@ -11,9 +12,57 @@ use crate::{
     ContractsError,
     interaction::{Interaction, InteractionLike, normalize_interaction},
     order::{NormalizedOrder, Order, extract_order_uid_params, normalize_order},
-    primitives::{abi_encode_bytes_array, function_selector, normalize_hex_payload, zero_address},
+    primitives::{normalize_hex_payload, zero_address},
     signature::{Signature, SigningScheme, decode_signing_scheme, encode_eip1271_signature_data},
 };
+
+sol! {
+    // Canonical GPv2Settlement ABI surface used by this crate for call-data
+    // encoding. Signatures are reproduced verbatim from the mainnet-deployed
+    // GPv2Settlement contract at 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+    // (upstream source at https://github.com/cowprotocol/contracts —
+    // src/contracts/GPv2Settlement.sol plus libraries/GPv2Trade.sol and
+    // libraries/GPv2Interaction.sol). The Solidity excerpt used to author this
+    // binding is committed under `crates/contracts/abi/settlement/` for
+    // provenance.
+    #[sol(rename_all = "camelcase")]
+    interface IGPv2Settlement {
+        struct TradeData {
+            uint256 sellTokenIndex;
+            uint256 buyTokenIndex;
+            address receiver;
+            uint256 sellAmount;
+            uint256 buyAmount;
+            uint32 validTo;
+            bytes32 appData;
+            uint256 feeAmount;
+            uint256 flags;
+            uint256 executedAmount;
+            bytes signature;
+        }
+
+        struct InteractionData {
+            address target;
+            uint256 value;
+            bytes callData;
+        }
+
+        function settle(
+            address[] calldata tokens,
+            uint256[] calldata clearingPrices,
+            TradeData[] calldata trades,
+            InteractionData[][3] calldata interactions
+        ) external;
+
+        function invalidateOrder(bytes calldata orderUid) external;
+
+        function setPreSignature(bytes calldata orderUid, bool signed) external;
+
+        function freeFilledAmountStorage(bytes[] calldata orderUids) external;
+
+        function freePreSignatureStorage(bytes[] calldata orderUids) external;
+    }
+}
 
 /// Settlement interaction stage.
 #[non_exhaustive]
@@ -26,6 +75,12 @@ pub enum InteractionStage {
     Intra = 1,
     /// Interactions executed after trades.
     Post = 2,
+}
+
+#[derive(Clone, Copy)]
+enum OrderRefundKind {
+    FilledAmount,
+    PreSignature,
 }
 
 /// Compact order-flag inputs.
@@ -207,21 +262,20 @@ impl SettlementEncoder {
     /// Returns [`ContractsError`] if a stored order UID cannot be decoded.
     pub fn encoded_order_refunds(&self) -> Result<Vec<Interaction>, ContractsError> {
         let mut interactions = Vec::new();
-        for (method, order_uids) in [
+        for (kind, order_uids) in [
             (
-                "freeFilledAmountStorage(bytes[])",
+                OrderRefundKind::FilledAmount,
                 &self.order_refunds.filled_amounts,
             ),
             (
-                "freePreSignatureStorage(bytes[])",
+                OrderRefundKind::PreSignature,
                 &self.order_refunds.pre_signatures,
             ),
         ] {
             if order_uids.is_empty() {
                 continue;
             }
-            let selector = function_selector(method);
-            let encoded_items = order_uids
+            let encoded_uids = order_uids
                 .iter()
                 .map(|uid| {
                     crate::primitives::parse_hex_exact(
@@ -229,11 +283,19 @@ impl SettlementEncoder {
                         "orderUid",
                         crate::order::ORDER_UID_LENGTH,
                     )
+                    .map(alloy_sol_types::private::Bytes::from)
                 })
                 .collect::<Result<Vec<_>, _>>()?;
-            let mut call_data = Vec::new();
-            call_data.extend_from_slice(&selector);
-            call_data.extend_from_slice(&abi_encode_bytes_array(&encoded_items));
+            let call_data = match kind {
+                OrderRefundKind::FilledAmount => IGPv2Settlement::freeFilledAmountStorageCall {
+                    orderUids: encoded_uids,
+                }
+                .abi_encode(),
+                OrderRefundKind::PreSignature => IGPv2Settlement::freePreSignatureStorageCall {
+                    orderUids: encoded_uids,
+                }
+                .abi_encode(),
+            };
             interactions.push(Interaction {
                 target: self.domain.verifying_contract.clone(),
                 value: Amount::zero(),
@@ -337,6 +399,22 @@ impl SettlementEncoder {
             self.trades(),
             self.interactions()?,
         ))
+    }
+
+    /// Returns the ABI-encoded `settle(...)` call-data for the current encoder state.
+    ///
+    /// The encoded bytes match the canonical `GPv2Settlement` `settle` function
+    /// selector and argument layout generated by the `alloy::sol!` binding,
+    /// suitable for routing through a submission transport.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError`] if clearing prices or interactions cannot be
+    /// encoded, or if any typed domain value is not representable on the wire.
+    pub fn encoded_settlement_calldata(&self, prices: &Prices) -> Result<Vec<u8>, ContractsError> {
+        let (tokens, clearing_prices, trades, interactions) = self.encoded_settlement(prices)?;
+        let call = encode_settle_call(&tokens, &clearing_prices, &trades, &interactions)?;
+        Ok(call.abi_encode())
     }
 
     /// Returns an interaction-only settlement setup payload.
@@ -500,6 +578,95 @@ pub fn encode_trade(
         })?,
         executed_amount: execution.executed_amount.clone(),
         signature: encode_signature_data(signature)?,
+    })
+}
+
+fn encode_settle_call(
+    tokens: &[Address],
+    clearing_prices: &[Amount],
+    trades: &[Trade],
+    interactions: &[Vec<Interaction>; 3],
+) -> Result<IGPv2Settlement::settleCall, ContractsError> {
+    use alloy_sol_types::private::{Address as SolAddress, Bytes as SolBytes, FixedBytes, U256};
+
+    fn amount_to_u256(amount: &Amount) -> Result<U256, ContractsError> {
+        let bytes = amount.as_biguint().to_bytes_be();
+        if bytes.len() > 32 {
+            return Err(ContractsError::NumericOverflow {
+                field: "amount",
+                value: amount.to_string(),
+            });
+        }
+        let mut buf = [0u8; 32];
+        buf[32 - bytes.len()..].copy_from_slice(&bytes);
+        Ok(U256::from_be_bytes(buf))
+    }
+
+    fn address_to_sol(address: &Address) -> Result<SolAddress, ContractsError> {
+        let bytes = crate::primitives::parse_hex_exact(address.as_str(), "address", 20)?;
+        let mut buf = [0u8; 20];
+        buf.copy_from_slice(&bytes);
+        Ok(SolAddress::from(buf))
+    }
+
+    fn hex_to_bytes(value: &str, field: &'static str) -> Result<SolBytes, ContractsError> {
+        let bytes = crate::primitives::parse_hex(value, field)?;
+        Ok(SolBytes::from(bytes))
+    }
+
+    let sol_tokens = tokens
+        .iter()
+        .map(address_to_sol)
+        .collect::<Result<Vec<_>, _>>()?;
+    let sol_clearing_prices = clearing_prices
+        .iter()
+        .map(amount_to_u256)
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let sol_trades = trades
+        .iter()
+        .map(
+            |trade| -> Result<IGPv2Settlement::TradeData, ContractsError> {
+                let app_data_bytes = crate::primitives::parse_bytes32_hash(&trade.app_data)?;
+                Ok(IGPv2Settlement::TradeData {
+                    sellTokenIndex: U256::from(trade.sell_token_index),
+                    buyTokenIndex: U256::from(trade.buy_token_index),
+                    receiver: address_to_sol(&trade.receiver)?,
+                    sellAmount: amount_to_u256(&trade.sell_amount)?,
+                    buyAmount: amount_to_u256(&trade.buy_amount)?,
+                    validTo: trade.valid_to,
+                    appData: FixedBytes::from(app_data_bytes),
+                    feeAmount: amount_to_u256(&trade.fee_amount)?,
+                    flags: U256::from(trade.flags),
+                    executedAmount: amount_to_u256(&trade.executed_amount)?,
+                    signature: hex_to_bytes(&trade.signature, "signature")?,
+                })
+            },
+        )
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let mut sol_interactions: [Vec<IGPv2Settlement::InteractionData>; 3] =
+        [Vec::new(), Vec::new(), Vec::new()];
+    for (stage, stage_interactions) in interactions.iter().enumerate() {
+        sol_interactions[stage] = stage_interactions
+            .iter()
+            .map(
+                |interaction| -> Result<IGPv2Settlement::InteractionData, ContractsError> {
+                    Ok(IGPv2Settlement::InteractionData {
+                        target: address_to_sol(&interaction.target)?,
+                        value: amount_to_u256(&interaction.value)?,
+                        callData: SolBytes::copy_from_slice(&interaction.call_data),
+                    })
+                },
+            )
+            .collect::<Result<Vec<_>, _>>()?;
+    }
+
+    Ok(IGPv2Settlement::settleCall {
+        tokens: sol_tokens,
+        clearingPrices: sol_clearing_prices,
+        trades: sol_trades,
+        interactions: sol_interactions,
     })
 }
 
