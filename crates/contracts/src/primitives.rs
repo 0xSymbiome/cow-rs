@@ -187,12 +187,6 @@ pub(crate) fn function_selector(signature: &str) -> [u8; 4] {
     [hash[0], hash[1], hash[2], hash[3]]
 }
 
-pub(crate) fn encode_fixed_bytes<const N: usize>(bytes: [u8; N]) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[..N].copy_from_slice(&bytes);
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -269,10 +263,6 @@ mod tests {
         assert_eq!(
             normalize_hex_payload("0xABcd", "payload").unwrap(),
             "0xabcd"
-        );
-        assert_eq!(
-            encode_fixed_bytes([0xaa, 0xbb, 0xcc])[..3],
-            [0xaa, 0xbb, 0xcc]
         );
         let expected_string_hash: [u8; 32] = Keccak256::digest(b"hello").into();
         assert_eq!(encode_string_hash("hello"), expected_string_hash);

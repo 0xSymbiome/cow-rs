@@ -389,6 +389,17 @@ unreleased public contract of the repository.
   baseline, and the committed Solidity excerpt at
   `crates/contracts/abi/settlement/GPv2Settlement.sol` preserves upstream
   provenance for reviewers.
+- `cow-sdk-contracts` now derives its `GPv2VaultRelayer` authorization-role
+  bindings from an `alloy::sol!` interface block that declares the canonical
+  GPv2 Vault Relayer surface alongside the partial Balancer V2 Vault ABI the
+  relayer proxies (`manageUserBalance` and `batchSwap`). Vault role hashes
+  returned by `required_vault_roles` now source their 4-byte method selectors
+  from the generated typed interface and derive the role digest through the
+  `alloy-sol-types` ABI-encoded `(address, bytes4)` tuple, keeping the
+  role-hash byte output identical to the pre-migration baseline. The
+  committed Solidity excerpt at
+  `crates/contracts/abi/vault-relayer/GPv2VaultRelayer.sol` preserves
+  upstream provenance for reviewers.
 
 ### Changed
 

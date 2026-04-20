@@ -1,16 +1,111 @@
+use alloy_sol_types::{SolCall, SolValue, sol};
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::Address;
 
 use crate::{
     ContractsError,
-    primitives::{encode_address, encode_fixed_bytes, function_selector, keccak256_hex},
+    primitives::{keccak256, parse_address_bytes},
 };
 
+sol! {
+    // Canonical GPv2VaultRelayer ABI surface plus the partial Balancer V2 Vault
+    // interface whose selectors drive the role-grant flow. Signatures are
+    // reproduced verbatim from the upstream cowprotocol/contracts repository
+    // (`src/contracts/GPv2VaultRelayer.sol` and the Balancer V2 Vault ABI used
+    // by the GPv2 toolchain). The Solidity excerpt used to author these
+    // bindings is committed under `crates/contracts/abi/vault-relayer/` for
+    // provenance.
+    #[sol(rename_all = "camelcase")]
+    interface IGPv2VaultRelayer {
+        struct Transfer {
+            address account;
+            address token;
+            uint256 amount;
+            uint8 balance;
+        }
+
+        struct BatchSwapStep {
+            bytes32 poolId;
+            uint256 assetInIndex;
+            uint256 assetOutIndex;
+            uint256 amount;
+            bytes userData;
+        }
+
+        struct FundManagement {
+            address sender;
+            bool fromInternalBalance;
+            address recipient;
+            bool toInternalBalance;
+        }
+
+        function transferFromAccounts(Transfer[] calldata transfers) external;
+
+        function batchSwapWithFee(
+            uint8 kind,
+            BatchSwapStep[] calldata swaps,
+            address[] memory tokens,
+            FundManagement memory funds,
+            int256[] memory limits,
+            uint256 deadline,
+            Transfer calldata feeTransfer
+        ) external returns (int256[] memory tokenDeltas);
+    }
+
+    #[sol(rename_all = "camelcase")]
+    interface IVault {
+        struct UserBalanceOp {
+            uint8 kind;
+            address asset;
+            uint256 amount;
+            address sender;
+            address recipient;
+        }
+
+        struct BatchSwapStep {
+            bytes32 poolId;
+            uint256 assetInIndex;
+            uint256 assetOutIndex;
+            uint256 amount;
+            bytes userData;
+        }
+
+        struct FundManagement {
+            address sender;
+            bool fromInternalBalance;
+            address recipient;
+            bool toInternalBalance;
+        }
+
+        function manageUserBalance(UserBalanceOp[] calldata ops) external payable;
+
+        function batchSwap(
+            uint8 kind,
+            BatchSwapStep[] calldata swaps,
+            address[] memory assets,
+            FundManagement memory funds,
+            int256[] memory limits,
+            uint256 deadline
+        ) external payable returns (int256[] memory assetDeltas);
+    }
+}
+
 /// Vault methods that require explicit relayer authorization.
+///
+/// The list mirrors the Balancer V2 Vault entrypoints the `GPv2` Vault Relayer
+/// invokes on behalf of the settlement contract. Signature strings are
+/// preserved for legacy reader helpers that parse the method name off the
+/// head of each entry; selectors used to derive role hashes are sourced from
+/// the `alloy::sol!`-generated `IVault` interface above.
 pub const VAULT_INTERFACE: [&str; 2] = [
     "function manageUserBalance((uint8, address, uint256, address, address)[])",
     "function batchSwap(uint8, (bytes32, uint256, uint256, uint256, bytes)[], address[], (address, bool, address, bool), int256[], uint256)",
+];
+
+const VAULT_ROLE_SOURCES: [(&str, [u8; 4]); 2] = [
+    ("manageUserBalance", IVault::manageUserBalanceCall::SELECTOR),
+    ("batchSwap", IVault::batchSwapCall::SELECTOR),
 ];
 
 /// Derived vault role metadata for a specific method selector.
@@ -47,19 +142,12 @@ pub struct GrantRoleCall {
 pub fn required_vault_roles(
     vault_address: &Address,
 ) -> Result<Vec<RequiredVaultRole>, ContractsError> {
-    VAULT_INTERFACE
+    VAULT_ROLE_SOURCES
         .iter()
-        .map(|entry| {
-            let method = entry
-                .trim_start_matches("function ")
-                .split('(')
-                .next()
-                .unwrap_or(entry)
-                .to_owned();
-            let selector = function_selector(entry.trim_start_matches("function "));
-            let role = role_hash(vault_address, selector)?;
+        .map(|(method, selector)| {
+            let role = role_hash(vault_address, *selector)?;
             Ok(RequiredVaultRole {
-                method,
+                method: (*method).to_owned(),
                 selector: format!("0x{}", hex::encode(selector)),
                 role,
             })
@@ -121,8 +209,11 @@ where
 }
 
 fn role_hash(vault_address: &Address, selector: [u8; 4]) -> Result<String, ContractsError> {
-    let mut payload = Vec::with_capacity(64);
-    payload.extend_from_slice(&encode_address(vault_address)?);
-    payload.extend_from_slice(&encode_fixed_bytes(selector));
-    Ok(keccak256_hex(payload))
+    use alloy_sol_types::private::{Address as SolAddress, FixedBytes};
+
+    let address_bytes = parse_address_bytes(vault_address)?;
+    let addr = SolAddress::from(address_bytes);
+    let sel = FixedBytes::<4>::from(selector);
+    let encoded = <(SolAddress, FixedBytes<4>)>::abi_encode(&(addr, sel));
+    Ok(format!("0x{}", hex::encode(keccak256(&encoded))))
 }
