@@ -379,6 +379,26 @@ unreleased public contract of the repository.
   a protocol-level escalation note for issues that could affect deployed CoW
   Protocol infrastructure or user funds.
 
+### Removed
+
+- The order-level `fee_amount` descriptor is no longer a public field or a
+  public builder setter on `cow_sdk_orderbook::QuoteData`,
+  `cow_sdk_orderbook::OrderCreation`, `cow_sdk_orderbook::Order`, or
+  `cow_sdk_orderbook::AuctionOrder`. Order submissions always wire
+  `"feeAmount": "0"` to satisfy the services `NonZeroFee` constraint and
+  preserve the EIP-712 struct-hash contract, so callers no longer risk
+  constructing an order that the orderbook would reject at submission. The
+  network-cost amount returned by `/api/v1/quote` is now accessed through
+  the typed `QuoteData::network_cost_amount` getter and the
+  `with_network_cost_amount` / `set_network_cost_amount` setters.
+- The retired `executedFeeAmount` and `fullFeeAmount` descriptors have been
+  removed from the orderbook order-response DTO. Fee exposure on the
+  response flows through the canonical `executedFee` component, and
+  quote-response fee descriptors flow through `protocolFeeBps` only, in
+  line with the current services schema. `cow_sdk_orderbook::calculate_total_fee`
+  now takes a single `executed_fee` argument and normalizes it into the
+  `total_fee` value surfaced on the transformed order.
+
 ### Notes
 
 - `0.1.0` will be recorded here when the first functional crates.io release is

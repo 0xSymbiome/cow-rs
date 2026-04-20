@@ -239,9 +239,9 @@ pub fn get_order_to_sign(
             limit_parameters.buy_amount.as_str().to_owned(),
             valid_to,
             app_data_keccak256.clone(),
-            network_costs_amount.as_str().to_owned(),
             limit_parameters.kind,
         )
+        .with_network_cost_amount(network_costs_amount.as_str().to_owned())
         .with_receiver(receiver.clone())
         .with_partially_fillable(limit_parameters.partially_fillable)
         .with_sell_token_balance(limit_parameters.sell_token_balance)

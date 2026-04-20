@@ -5,39 +5,36 @@ use cow_sdk_orderbook::{EVM_NATIVE_CURRENCY_ADDRESS, Order, calculate_total_fee,
 use crate::common::{sample_ethflow_order_json, sample_order_json, sample_order_uid, sample_owner};
 
 #[test]
-fn total_fee_transform_sums_both_fee_fields() {
-    let total_fee = calculate_total_fee(Some("11"), Some("9")).expect("fee math must work");
+fn total_fee_transform_surfaces_executed_fee_value() {
+    let total_fee = calculate_total_fee(Some("9")).expect("fee normalization must succeed");
 
-    assert_eq!(total_fee, "20");
+    assert_eq!(total_fee, "9");
 }
 
 #[test]
 fn total_fee_transform_defaults_missing_executed_fee_to_zero() {
-    let total_fee = calculate_total_fee(Some("11"), None).expect("missing executed fee is zero");
+    let total_fee = calculate_total_fee(None).expect("missing executed fee defaults to zero");
 
-    assert_eq!(total_fee, "11");
+    assert_eq!(total_fee, "0");
 }
 
 #[test]
-fn total_fee_transform_handles_carry_chains_and_trims_leading_zeroes() {
-    let total_fee =
-        calculate_total_fee(Some("000099"), Some("000901")).expect("decimal carry must work");
+fn total_fee_transform_trims_leading_zeroes_on_normalized_input() {
+    let total_fee = calculate_total_fee(Some("000099")).expect("normalization must succeed");
 
-    assert_eq!(total_fee, "1000");
+    assert_eq!(total_fee, "99");
 }
 
 #[test]
-fn total_fee_transform_preserves_final_carry_beyond_the_longest_input() {
-    let total_fee =
-        calculate_total_fee(Some("999"), Some("1")).expect("final carry must remain explicit");
+fn total_fee_transform_treats_all_zero_input_as_single_zero() {
+    let total_fee = calculate_total_fee(Some("0000")).expect("all-zero input must normalize");
 
-    assert_eq!(total_fee, "1000");
+    assert_eq!(total_fee, "0");
 }
 
 #[test]
 fn total_fee_transform_rejects_invalid_decimal_input() {
-    let error =
-        calculate_total_fee(Some("11"), Some("nope")).expect_err("invalid decimal should fail");
+    let error = calculate_total_fee(Some("nope")).expect_err("invalid decimal should fail");
 
     match error {
         cow_sdk_orderbook::OrderbookError::InvalidTransform(message) => {

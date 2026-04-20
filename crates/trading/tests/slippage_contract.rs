@@ -75,9 +75,9 @@ fn slippage_bps_clamps_to_expected_bounds() {
         "1",
         1,
         crate::common::app_data_hash(),
-        "0",
         OrderKind::Sell,
     )
+    .with_network_cost_amount("0")
     .with_receiver(address(OWNER));
     let zero_quote = cow_sdk_orderbook::OrderQuoteResponse::new(
         zero_quote_data,
@@ -93,9 +93,9 @@ fn slippage_bps_clamps_to_expected_bounds() {
         "1",
         1,
         crate::common::app_data_hash(),
-        "1000000000000000000000",
         OrderKind::Sell,
     )
+    .with_network_cost_amount("1000000000000000000000")
     .with_receiver(address(OWNER));
     let huge_fee_quote = cow_sdk_orderbook::OrderQuoteResponse::new(
         huge_fee_quote_data,

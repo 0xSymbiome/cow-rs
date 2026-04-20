@@ -526,7 +526,7 @@ fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError
             receiver: &receiver,
             sell_amount: &order.sell_amount,
             buy_amount: &order.buy_amount,
-            fee_amount: &order.fee_amount,
+            fee_amount: "0",
             partially_fillable: false,
             quote_id: 0,
             app_data: order.app_data.as_str(),

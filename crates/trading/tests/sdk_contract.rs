@@ -430,11 +430,9 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
     ));
     let high_sell: BigUint = BigUint::from(1u8) << 255u32;
     let high_buy = &high_sell + BigUint::from(1u8);
-    let max_uint256: BigUint = (BigUint::from(1u8) << 256u32) - BigUint::from(1u8);
     let mut order = ethflow_order();
     order.sell_amount = high_sell.to_str_radix(10);
     order.buy_amount = high_buy.to_str_radix(10);
-    order.fee_amount = max_uint256.to_str_radix(10);
     orderbook.push_order(order);
 
     let signer = MockSigner::default();
@@ -478,7 +476,10 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
     assert_eq!(sent.to, Some(address(CUSTOM_ETHFLOW)));
     assert_eq!(calldata_word(data.as_str(), 2), uint256_word(&high_sell));
     assert_eq!(calldata_word(data.as_str(), 3), uint256_word(&high_buy));
-    assert_eq!(calldata_word(data.as_str(), 4), uint256_word(&max_uint256));
+    assert_eq!(
+        calldata_word(data.as_str(), 4),
+        uint256_word(&BigUint::from(0u8)),
+    );
 }
 
 #[test]

@@ -87,8 +87,7 @@
       "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
       "path": "packages/order-book/src/transformOrder.test.ts",
       "anchors": [
-        "describe('transformOrder')",
-        "should use sum of executedFeeAmount and executedFee"
+        "describe('transformOrder')"
       ]
     },
     {
@@ -295,9 +294,9 @@
     {
       "id": "orderbook-total-fee-transform",
       "kind": "behavior-contract",
-      "description": "Order transforms compute totalFee as executedFeeAmount plus executedFee, tolerating missing executedFee values.",
+      "description": "Order transforms surface totalFee as the normalized executedFee value and default to '0' when the upstream response omits executedFee.",
       "expected": {
-        "total_fee_formula": "executedFeeAmount + executedFee",
+        "total_fee_formula": "executedFee",
         "missing_executed_fee_defaults_to": "0"
       }
     },

@@ -91,7 +91,7 @@ fn generated_quote(kind: OrderKind, rng: &mut CaseRng) -> cow_sdk_orderbook::Ord
 
     quote.quote.sell_amount = sell_amount.to_string();
     quote.quote.buy_amount = buy_amount.to_string();
-    quote.quote.fee_amount = fee_amount.to_string();
+    quote.quote.set_network_cost_amount(fee_amount.to_string());
     quote.protocol_fee_bps = None;
     quote
 }

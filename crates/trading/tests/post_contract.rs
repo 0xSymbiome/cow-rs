@@ -297,7 +297,7 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
             results: collision_results.clone(),
         }))
         .with_network_costs_amount(
-            Amount::new(sell_quote_response().quote.fee_amount.clone())
+            Amount::new(sell_quote_response().quote.network_cost_amount().to_owned())
                 .expect("quote fee amount must be valid"),
         )
         .with_custom_eip1271_signature(Arc::new(MockEip1271Provider));

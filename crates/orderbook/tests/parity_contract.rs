@@ -480,21 +480,21 @@ fn assert_total_fee_transform(id: &str, expected: &Value) {
         .unwrap_or_else(|| {
             panic!("case {id}: expected.missing_executed_fee_defaults_to must be a string")
         });
-    assert_eq!(formula, "executedFeeAmount + executedFee");
+    assert_eq!(formula, "executedFee");
     assert_eq!(missing_default, "0");
 
-    // Two reviewed shapes prove the aggregator and the missing-fee default.
-    let total = calculate_total_fee(Some("100"), Some("50"))
-        .expect("sum path must succeed for pinned integer inputs");
+    // Two reviewed shapes prove the single-source exposure and the
+    // missing-fee default.
+    let total = calculate_total_fee(Some("150"))
+        .expect("normalization must succeed for pinned integer inputs");
     assert_eq!(
         total, "150",
-        "case {id}: aggregator must add executedFeeAmount and executedFee",
+        "case {id}: total fee must surface the executedFee value",
     );
-    let total_missing =
-        calculate_total_fee(Some("1"), None).expect("missing executed fee path must succeed");
+    let total_missing = calculate_total_fee(None).expect("missing executed fee path must succeed");
     assert_eq!(
-        total_missing, "1",
-        "case {id}: missing executedFee must default to 0 without perturbing executedFeeAmount",
+        total_missing, "0",
+        "case {id}: missing executedFee must default to the canonical zero string",
     );
 }
 

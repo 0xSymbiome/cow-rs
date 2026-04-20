@@ -483,8 +483,13 @@ pub struct QuoteData {
     pub valid_to: u32,
     /// Effective app-data hash derived from the orderbook response.
     pub app_data: AppDataHash,
-    /// Fee amount as an upstream decimal string.
-    pub fee_amount: String,
+    /// Network-cost amount echoed by the orderbook `/quote` response.
+    ///
+    /// Stored under the upstream wire name `feeAmount` so the deterministic
+    /// JSON schema stays aligned with the services contract; consumers read
+    /// the value through [`QuoteData::network_cost_amount`] and configure it
+    /// through [`QuoteData::with_network_cost_amount`].
+    fee_amount: String,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.
@@ -551,8 +556,10 @@ impl<'de> Deserialize<'de> for QuoteData {
 impl QuoteData {
     /// Creates a quote-data payload with the required trade fields.
     ///
-    /// Optional fields (receiver, partial-fill, balance sources) can be
-    /// attached through the `with_*` setters.
+    /// Optional fields (receiver, partial-fill, balance sources, network-cost
+    /// amount) can be attached through the `with_*` setters. The
+    /// network-cost amount defaults to `"0"` and is populated from the
+    /// orderbook wire on deserialization.
     #[must_use]
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -562,7 +569,6 @@ impl QuoteData {
         buy_amount: impl Into<String>,
         valid_to: u32,
         app_data: AppDataHash,
-        fee_amount: impl Into<String>,
         kind: OrderKind,
     ) -> Self {
         Self {
@@ -573,12 +579,32 @@ impl QuoteData {
             buy_amount: buy_amount.into(),
             valid_to,
             app_data,
-            fee_amount: fee_amount.into(),
+            fee_amount: "0".to_owned(),
             kind,
             partially_fillable: false,
             sell_token_balance: OrderBalance::Erc20,
             buy_token_balance: OrderBalance::Erc20,
         }
+    }
+
+    /// Returns the network-cost amount echoed by the orderbook `/quote`
+    /// response.
+    #[must_use]
+    pub fn network_cost_amount(&self) -> &str {
+        &self.fee_amount
+    }
+
+    /// Returns a copy of this payload with an explicit network-cost amount.
+    #[must_use]
+    pub fn with_network_cost_amount(mut self, value: impl Into<String>) -> Self {
+        self.fee_amount = value.into();
+        self
+    }
+
+    /// Sets the network-cost amount echoed by the orderbook `/quote`
+    /// response, mutating the payload in place.
+    pub fn set_network_cost_amount(&mut self, value: impl Into<String>) {
+        self.fee_amount = value.into();
     }
 
     /// Returns a copy of this payload with an explicit receiver.
@@ -696,8 +722,14 @@ pub struct OrderCreation {
     /// App-data hash for the submission payload.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub app_data_hash: Option<AppDataHash>,
-    /// Fee amount as an upstream decimal string.
-    pub fee_amount: String,
+    /// Order-level fee hardcoded to `"0"` on every submission.
+    ///
+    /// The cow-protocol services backend rejects orders that carry a
+    /// non-zero order-level fee (`NonZeroFee`), so the submission path
+    /// always wires this component as `"0"` and preserves the EIP-712
+    /// struct-hash contract that hashes it as `uint256(0)`.
+    #[serde(default = "order_creation_zero_fee_amount")]
+    fee_amount: String,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.
@@ -721,12 +753,18 @@ pub struct OrderCreation {
     pub quote_id: Option<i64>,
 }
 
+fn order_creation_zero_fee_amount() -> String {
+    "0".to_owned()
+}
+
 impl OrderCreation {
     /// Creates an order-submission payload with the required trade fields.
     ///
     /// Optional and defaulted fields (app-data, balance sources,
     /// partial-fill, receiver, quote id) can be attached through the
-    /// `with_*` setters.
+    /// `with_*` setters. The order-level fee is always wired as `"0"`
+    /// to satisfy the services `NonZeroFee` constraint and the EIP-712
+    /// struct-hash contract.
     #[must_use]
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -735,7 +773,6 @@ impl OrderCreation {
         sell_amount: impl Into<String>,
         buy_amount: impl Into<String>,
         valid_to: u32,
-        fee_amount: impl Into<String>,
         kind: OrderKind,
         signing_scheme: SigningScheme,
         signature: impl Into<String>,
@@ -750,7 +787,7 @@ impl OrderCreation {
             valid_to,
             app_data: None,
             app_data_hash: None,
-            fee_amount: fee_amount.into(),
+            fee_amount: order_creation_zero_fee_amount(),
             kind,
             partially_fillable: false,
             sell_token_balance: OrderBalance::Erc20,
@@ -763,6 +800,10 @@ impl OrderCreation {
     }
 
     /// Creates an order-submission payload from a quote response.
+    ///
+    /// The order-level fee is always wired as `"0"` on submission; the
+    /// network-cost component returned on the quote response does not
+    /// round-trip into the signed order.
     #[must_use]
     pub fn from_quote(
         quote: &QuoteData,
@@ -780,7 +821,7 @@ impl OrderCreation {
             valid_to: quote.valid_to,
             app_data: None,
             app_data_hash: Some(quote.app_data.clone()),
-            fee_amount: quote.fee_amount.clone(),
+            fee_amount: order_creation_zero_fee_amount(),
             kind: quote.kind,
             partially_fillable: quote.partially_fillable,
             sell_token_balance: quote.sell_token_balance,
@@ -932,8 +973,14 @@ pub struct Order {
     pub valid_to: u32,
     /// App-data hash attached to the order.
     pub app_data: AppDataHash,
-    /// Fee amount as an upstream decimal string.
-    pub fee_amount: String,
+    /// Order-level fee echoed on the orderbook response; always `"0"` in
+    /// practice because services rejects non-zero order-level fees.
+    ///
+    /// Stored under the upstream wire name `feeAmount` so deserialization
+    /// preserves services-schema parity; the value is not exposed on the
+    /// public Rust surface.
+    #[serde(default = "order_creation_zero_fee_amount")]
+    fee_amount: String,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.
@@ -978,10 +1025,7 @@ pub struct Order {
     /// Executed buy amount.
     #[serde(default)]
     pub executed_buy_amount: String,
-    /// Executed fee amount component, when provided.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub executed_fee_amount: Option<String>,
-    /// Additional executed fee component, when provided.
+    /// Executed fee component, when provided.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub executed_fee: Option<String>,
     /// Whether the order was invalidated by the protocol.
@@ -990,9 +1034,6 @@ pub struct Order {
     /// Order lifecycle status.
     #[serde(default)]
     pub status: OrderStatus,
-    /// Full fee amount, when returned by the endpoint.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub full_fee_amount: Option<String>,
     /// On-chain user for `EthFlow`-style orders.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub onchain_user: Option<Address>,
@@ -1019,7 +1060,6 @@ impl Order {
         buy_amount: impl Into<String>,
         valid_to: u32,
         app_data: AppDataHash,
-        fee_amount: impl Into<String>,
         kind: OrderKind,
         signature: impl Into<String>,
         owner: Address,
@@ -1033,7 +1073,7 @@ impl Order {
             buy_amount: buy_amount.into(),
             valid_to,
             app_data,
-            fee_amount: fee_amount.into(),
+            fee_amount: order_creation_zero_fee_amount(),
             kind,
             partially_fillable: false,
             sell_token_balance: OrderBalance::Erc20,
@@ -1050,11 +1090,9 @@ impl Order {
             executed_sell_amount: String::new(),
             executed_sell_amount_before_fees: None,
             executed_buy_amount: String::new(),
-            executed_fee_amount: None,
             executed_fee: None,
             invalidated: false,
             status: OrderStatus::default(),
-            full_fee_amount: None,
             onchain_user: None,
             ethflow_data: None,
             total_fee: String::new(),
@@ -1322,8 +1360,10 @@ pub struct AuctionOrder {
     pub valid_to: u32,
     /// App-data hash.
     pub app_data: AppDataHash,
-    /// Fee amount as an upstream decimal string.
-    pub fee_amount: String,
+    /// Order-level fee echoed by the auction snapshot; always `"0"` in
+    /// practice because services rejects non-zero order-level fees.
+    #[serde(default = "order_creation_zero_fee_amount")]
+    fee_amount: String,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.

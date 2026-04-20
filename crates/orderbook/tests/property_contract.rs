@@ -293,12 +293,12 @@ fn malformed_payloads_fail_closed_in_decoding_and_transforms() {
             }
             2 => {
                 let mut order_json = sample_order_json(&sample_order_uid());
-                order_json["executedFeeAmount"] = serde_json::json!("abc");
+                order_json["executedFee"] = serde_json::json!("abc");
 
                 let order: Order =
                     serde_json::from_value(order_json).expect("order fixture must deserialize");
                 let error =
-                    transform_order(order).expect_err("invalid executedFeeAmount must fail closed");
+                    transform_order(order).expect_err("invalid executedFee must fail closed");
                 assert!(matches!(
                     error,
                     cow_sdk_orderbook::OrderbookError::InvalidTransform(_)
@@ -322,19 +322,18 @@ fn malformed_payloads_fail_closed_in_decoding_and_transforms() {
 }
 
 #[test]
-fn fee_normalization_matches_integer_addition_across_generated_decimal_inputs() {
+fn fee_normalization_trims_leading_zeroes_across_generated_decimal_inputs() {
     for seed in 0..CASE_COUNT {
         let mut rng = CaseRng::new(seed + 12_001);
-        let left = generated_decimal(&mut rng);
-        let right = generated_decimal(&mut rng);
-        let left_padded = format!("{}{}", "0".repeat((rng.next_u32() % 3) as usize), left);
-        let right_padded = format!("{}{}", "0".repeat((rng.next_u32() % 3) as usize), right);
+        let value = generated_decimal(&mut rng);
+        let padded = format!("{}{}", "0".repeat((rng.next_u32() % 3) as usize), value);
 
-        let expected = (left.parse::<u128>().expect("generated decimal must parse")
-            + right.parse::<u128>().expect("generated decimal must parse"))
-        .to_string();
-        let total_fee = calculate_total_fee(Some(&left_padded), Some(&right_padded))
-            .expect("generated decimal addition must remain valid");
+        let expected = value
+            .parse::<u128>()
+            .expect("generated decimal must parse")
+            .to_string();
+        let total_fee = calculate_total_fee(Some(&padded))
+            .expect("generated decimal normalization must remain valid");
 
         assert_eq!(total_fee, expected);
     }

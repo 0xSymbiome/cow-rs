@@ -209,7 +209,11 @@ where
             .and_then(|settings| settings.quote_request.as_ref())
             .and_then(|request| request.signing_scheme),
         network_costs_amount: Some(Amount::new(
-            quote_results.quote_response.quote.fee_amount.clone(),
+            quote_results
+                .quote_response
+                .quote
+                .network_cost_amount()
+                .to_owned(),
         )?),
         ..additional
     };
@@ -599,7 +603,6 @@ where
         order_to_sign.sell_amount.as_str().to_owned(),
         order_to_sign.buy_amount.as_str().to_owned(),
         order_to_sign.valid_to,
-        order_to_sign.fee_amount.as_str().to_owned(),
         order_to_sign.kind,
         signing_scheme,
         signature.clone(),

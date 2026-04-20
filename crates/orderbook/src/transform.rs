@@ -12,13 +12,10 @@ use crate::{
 ///
 /// # Errors
 ///
-/// Returns [`OrderbookError::InvalidTransform`] when fee fields cannot be
-/// normalized as unsigned decimal strings.
+/// Returns [`OrderbookError::InvalidTransform`] when the executed-fee field
+/// cannot be normalized as an unsigned decimal string.
 pub fn transform_order(mut order: Order) -> Result<Order, OrderbookError> {
-    order.total_fee = calculate_total_fee(
-        order.executed_fee_amount.as_deref(),
-        order.executed_fee.as_deref(),
-    )?;
+    order.total_fee = calculate_total_fee(order.executed_fee.as_deref())?;
 
     if let Some(ethflow_data) = &order.ethflow_data {
         order.valid_to = ethflow_data.user_valid_to;
@@ -40,68 +37,26 @@ pub fn transform_orders(orders: Vec<Order>) -> Result<Vec<Order>, OrderbookError
     orders.into_iter().map(transform_order).collect()
 }
 
-/// Adds the two orderbook fee components into the exposed `total_fee` value.
+/// Normalizes the executed-fee component into the exposed `total_fee` value.
 ///
-/// Missing components are treated as zero because the orderbook can expose
-/// either or both fee fields depending on endpoint and order class.
+/// A missing executed fee is treated as zero; the services schema uses
+/// `executedFee` as the canonical executed-fee exposure and
+/// `protocolFeeBps` for protocol-fee descriptors on the quote response.
 ///
 /// # Errors
 ///
-/// Returns [`OrderbookError::InvalidTransform`] when either input is not an
+/// Returns [`OrderbookError::InvalidTransform`] when the input is not an
 /// unsigned decimal string.
-pub fn calculate_total_fee(
-    executed_fee_amount: Option<&str>,
-    executed_fee: Option<&str>,
-) -> Result<String, OrderbookError> {
-    add_decimal_strings(
-        executed_fee_amount.unwrap_or("0"),
-        executed_fee.unwrap_or("0"),
-    )
+pub fn calculate_total_fee(executed_fee: Option<&str>) -> Result<String, OrderbookError> {
+    let value = executed_fee.unwrap_or("0");
+    validate_decimal(value)?;
+    Ok(trim_leading_zeroes(value))
 }
 
 /// Returns the order UID as a string slice for transport-layer interpolation.
 #[must_use]
 pub fn ensure_order_uid(uid: &OrderUid) -> &str {
     uid.as_str()
-}
-
-fn add_decimal_strings(left: &str, right: &str) -> Result<String, OrderbookError> {
-    validate_decimal(left)?;
-    validate_decimal(right)?;
-
-    let left_bytes = left.as_bytes();
-    let right_bytes = right.as_bytes();
-    let max_digits = left_bytes.len().max(right_bytes.len());
-    let mut carry = 0u32;
-    let mut digits = Vec::with_capacity(max_digits + 1);
-
-    for index in 0..max_digits {
-        let left_digit = left_bytes
-            .get(left_bytes.len().wrapping_sub(index + 1))
-            .map_or(0, |byte| u32::from(byte - b'0'));
-        let right_digit = right_bytes
-            .get(right_bytes.len().wrapping_sub(index + 1))
-            .map_or(0, |byte| u32::from(byte - b'0'));
-        let sum = left_digit + right_digit + carry;
-        carry = sum / 10;
-        // Each digit is in the range 0..=9 because `sum % 10` cannot exceed 9.
-        #[allow(
-            clippy::cast_possible_truncation,
-            reason = "sum % 10 is bounded to 0..=9 which always fits in u8"
-        )]
-        digits.push(char::from(b'0' + (sum % 10) as u8));
-    }
-
-    // The final carry is bounded by the loop above (max 1 per step over base-10 digits).
-    #[allow(
-        clippy::cast_possible_truncation,
-        reason = "final carry is bounded to 0..=9 over base-10 digit sums"
-    )]
-    digits.push(char::from(b'0' + carry as u8));
-
-    digits.reverse();
-    let value: String = digits.into_iter().collect();
-    Ok(trim_leading_zeroes(&value))
 }
 
 fn validate_decimal(value: &str) -> Result<(), OrderbookError> {

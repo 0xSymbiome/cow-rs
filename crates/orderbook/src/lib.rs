@@ -1,5 +1,54 @@
 //! Typed `CoW` Protocol orderbook transport models, request policy, and response
 //! transforms.
+//!
+//! # Parity-scope invariant: `fee_amount` is not a public builder setter
+//!
+//! The cow-protocol services backend rejects orders that carry a non-zero
+//! order-level fee, so the submission path always wires `"feeAmount": "0"`
+//! and no public builder on this crate exposes a `fee_amount(...)` setter.
+//! The compile-fail witnesses below prove that attempting `.fee_amount(...)`
+//! on any public builder fails to compile. If any of the snippets ever
+//! compiles, the intentional parity-scope divergence has regressed.
+//!
+//! ```compile_fail
+//! use cow_sdk_core::{Address, AppDataHash, OrderKind};
+//! use cow_sdk_orderbook::QuoteData;
+//!
+//! let address = Address::new("0x0000000000000000000000000000000000000001").unwrap();
+//! let app_data = AppDataHash::new(
+//!     "0x0000000000000000000000000000000000000000000000000000000000000000",
+//! )
+//! .unwrap();
+//! let _quote = QuoteData::new(
+//!     address.clone(),
+//!     address,
+//!     "1",
+//!     "1",
+//!     1,
+//!     app_data,
+//!     OrderKind::Sell,
+//! )
+//! .fee_amount("1");
+//! ```
+//!
+//! ```compile_fail
+//! use cow_sdk_core::{Address, OrderKind};
+//! use cow_sdk_orderbook::{OrderCreation, SigningScheme};
+//!
+//! let address = Address::new("0x0000000000000000000000000000000000000001").unwrap();
+//! let _order = OrderCreation::new(
+//!     address.clone(),
+//!     address.clone(),
+//!     "1",
+//!     "1",
+//!     1,
+//!     OrderKind::Sell,
+//!     SigningScheme::Eip712,
+//!     "0x",
+//!     address,
+//! )
+//! .fee_amount("1");
+//! ```
 
 #![warn(missing_docs)]
 

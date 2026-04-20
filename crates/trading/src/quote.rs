@@ -374,7 +374,7 @@ fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, Tr
             from: inputs.trader.account.clone(),
             is_ethflow: inputs.is_ethflow,
             network_costs_amount: Some(Amount::new(
-                inputs.quote_response.quote.fee_amount.clone(),
+                inputs.quote_response.quote.network_cost_amount().to_owned(),
             )?),
             apply_costs_slippage_and_fees: true,
             protocol_fee_bps: sanitize_protocol_fee_bps(
