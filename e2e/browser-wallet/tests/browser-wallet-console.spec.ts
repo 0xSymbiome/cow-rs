@@ -204,10 +204,10 @@ test("typed-data signing and route-mocked quote-submit-cancel stay deterministic
   expect(capture.appDataBodies).toHaveLength(1);
   expect(capture.orderBodies).toHaveLength(1);
   expect(capture.cancelBodies).toHaveLength(1);
-  expect(capture.quoteBodies[0]?.sellToken).toBe(WRAPPED_NATIVE);
-  expect(capture.quoteBodies[0]?.buyToken).toBe(BUY_TOKEN);
-  expect(capture.orderBodies[0]?.sellToken).toBe(WRAPPED_NATIVE);
-  expect(capture.orderBodies[0]?.buyToken).toBe(BUY_TOKEN);
+  expectAddressEqual(capture.quoteBodies[0]?.sellToken as string, WRAPPED_NATIVE);
+  expectAddressEqual(capture.quoteBodies[0]?.buyToken as string, BUY_TOKEN);
+  expectAddressEqual(capture.orderBodies[0]?.sellToken as string, WRAPPED_NATIVE);
+  expectAddressEqual(capture.orderBodies[0]?.buyToken as string, BUY_TOKEN);
 });
 
 test("rejected typed-data signing stays visible on the DOM contract surface", async ({ page }) => {
@@ -256,4 +256,10 @@ async function contractState(page: Page): Promise<ContractState> {
     throw new Error("injected contract state was empty");
   }
   return JSON.parse(text) as ContractState;
+}
+
+// Protocol-constant tables are emitted as lowercase hex, so address equality
+// must be case-insensitive. Checksum-case constants remain as documentation.
+function expectAddressEqual(actual: string, expected: string): void {
+  expect(actual.toLowerCase()).toBe(expected.toLowerCase());
 }

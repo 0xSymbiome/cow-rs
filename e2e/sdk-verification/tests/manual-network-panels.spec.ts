@@ -53,11 +53,18 @@ test("manual-network: Latest Competition renders deterministic solver-competitio
   expect(Array.isArray(solutions)).toBe(true);
   expect(solutions).toHaveLength(1);
 
-  const orders = solutions[0].orders as JsonRecord[];
-  expect(Array.isArray(orders)).toBe(true);
-  expect(orders[0].uid).toBe(DEFAULT_ORDER_UID);
-  expect(orders[0].owner).toBe(OWNER);
-  expect(orders[0].appData).toBe(APP_DATA_HASH);
+  // The reviewed solver-settlement contract tracks ranking, solver address,
+  // score, and clearing prices. Order lists inside a settlement are not part
+  // of the typed boundary and are therefore not re-serialised by the SDK.
+  expect(solutions[0].ranking).toBe(1);
+  expect(solutions[0].solverAddress).toBe("0x0000000000000000000000000000000000000001");
+  expect(solutions[0].score).toBe("1");
+  const clearingPrices = solutions[0].clearingPrices as Record<string, string>;
+  expect(clearingPrices).toBeDefined();
+  const clearingKeys = Object.keys(clearingPrices).map((key) => key.toLowerCase());
+  expect(clearingKeys).toEqual(
+    expect.arrayContaining([MAINNET_WETH.toLowerCase(), MAINNET_USDC.toLowerCase()]),
+  );
 
   expect(issues).toEqual([]);
 });
@@ -75,9 +82,9 @@ test("manual-network: Order panel resolves seeded uid into deterministic order e
   const order = await outputJson<JsonRecord>(page, "#orderbook-output");
   const expected = defaultOrderPayload();
   expect(order.uid).toBe(expected.uid);
-  expect(order.owner).toBe(OWNER);
-  expect(order.sellToken).toBe(MAINNET_WETH);
-  expect(order.buyToken).toBe(MAINNET_USDC);
+  expectAddressEqual(order.owner as string, OWNER);
+  expectAddressEqual(order.sellToken as string, MAINNET_WETH);
+  expectAddressEqual(order.buyToken as string, MAINNET_USDC);
   expect(order.kind).toBe("sell");
   expect(order.status).toBe("open");
 
@@ -99,9 +106,9 @@ test("manual-network: Order Trades panel renders deterministic trades array for 
   expect(Array.isArray(trades)).toBe(true);
   expect(trades).toHaveLength(expected.length);
   expect(trades[0].orderUid).toBe(DEFAULT_ORDER_UID);
-  expect(trades[0].owner).toBe(OWNER);
-  expect(trades[0].sellToken).toBe(MAINNET_WETH);
-  expect(trades[0].buyToken).toBe(MAINNET_USDC);
+  expectAddressEqual(trades[0].owner as string, OWNER);
+  expectAddressEqual(trades[0].sellToken as string, MAINNET_WETH);
+  expectAddressEqual(trades[0].buyToken as string, MAINNET_USDC);
 
   expect(issues).toEqual([]);
 });
@@ -197,4 +204,10 @@ async function outputJson<T>(page: Page, selector: string): Promise<T> {
 async function loadConsole(page: Page): Promise<void> {
   await page.goto("/");
   await expect(page.locator("#runtime-output")).toContainText('"surface": "cow-sdk"');
+}
+
+// Protocol-constant tables are emitted as lowercase hex, so address equality
+// must be case-insensitive. Checksum-case constants remain as documentation.
+function expectAddressEqual(actual: string, expected: string): void {
+  expect(actual.toLowerCase()).toBe(expected.toLowerCase());
 }

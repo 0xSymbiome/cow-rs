@@ -93,9 +93,9 @@ test("property-0 loads the WASM bundle and runs deterministic exports", async ({
   expect(runtime.mode).toBe("wasm-console");
   expect(runtime.chainId).toBe(1);
   expect(runtime.sdkConstructed).toBe(true);
-  expect(runtime.wrappedNative.address).toBe(MAINNET_WETH);
-  expect(runtime.sampleOrder.sellToken).toBe(MAINNET_WETH);
-  expect(runtime.sampleOrder.buyToken).toBe(MAINNET_USDC);
+  expectAddressEqual(runtime.wrappedNative.address, MAINNET_WETH);
+  expectAddressEqual(runtime.sampleOrder.sellToken, MAINNET_WETH);
+  expectAddressEqual(runtime.sampleOrder.buyToken, MAINNET_USDC);
   expect(runtime.sampleOrderNotes.buyToken).toContain("Static USDC");
 
   await page.locator("#btn-chains").click();
@@ -106,15 +106,10 @@ test("property-0 loads the WASM bundle and runs deterministic exports", async ({
       wrappedNative: { address: string };
     }>
   >(page, "#runtime-output");
-  expect(chains).toEqual(
-    expect.arrayContaining([
-      expect.objectContaining({
-        chainId: 1,
-        apiPath: "mainnet",
-        wrappedNative: expect.objectContaining({ address: MAINNET_WETH }),
-      }),
-    ]),
-  );
+  const mainnet = chains.find((entry) => entry.chainId === 1);
+  expect(mainnet).toBeDefined();
+  expect(mainnet?.apiPath).toBe("mainnet");
+  expectAddressEqual(mainnet!.wrappedNative.address, MAINNET_WETH);
 
   await page.locator("#btn-trading-defaults").click();
   const defaults = await outputJson<TradingDefaultsOutput>(page, "#trading-output");
@@ -138,13 +133,13 @@ test("route-mocked orderbook and subgraph flows return reviewable JSON", async (
   await page.locator("#btn-ob-quote").click();
   const quote = await outputJson<OrderbookQuoteOutput>(page, "#orderbook-output");
   expect(quote.verified).toBe(true);
-  expect(quote.quote.sellToken).toBe(MAINNET_WETH);
-  expect(quote.quote.buyToken).toBe(MAINNET_USDC);
+  expectAddressEqual(quote.quote.sellToken, MAINNET_WETH);
+  expectAddressEqual(quote.quote.buyToken, MAINNET_USDC);
 
   await page.locator("#btn-trading-quote").click();
   const trading = await outputJson<TradingQuoteOutput>(page, "#trading-output");
   expect(trading.quoteResults.quoteResponse.verified).toBe(true);
-  expect(trading.derived.limitTradeParameters.sellToken).toBe(MAINNET_WETH);
+  expectAddressEqual(trading.derived.limitTradeParameters.sellToken, MAINNET_WETH);
   expect(quoteRequests).toHaveLength(2);
 
   await page.locator("#subgraph-api-key").fill("mock-key");
@@ -182,7 +177,7 @@ test("orderbook network failures surface as visible errors", async ({ page }) =>
 
   await expect(page.locator("#orderbook-output")).toContainText("Error", { timeout: 20_000 });
   await expect(page.locator("#orderbook-output")).toContainText("transport error");
-  await expect(page.locator("#orderbook-output")).toContainText("request failed");
+  await expect(page.locator("#orderbook-output")).toContainText("error sending request");
   expect(requestIssues).toEqual([]);
 });
 
@@ -319,4 +314,10 @@ function requestJson(route: Route, issues: string[], label: string): unknown {
     issues.push(`${label} request body was not valid JSON: ${String(error)}`);
     return undefined;
   }
+}
+
+// Protocol-constant tables are emitted as lowercase hex, so address equality
+// must be case-insensitive. Checksum-case constants remain as documentation.
+function expectAddressEqual(actual: string, expected: string): void {
+  expect(actual.toLowerCase()).toBe(expected.toLowerCase());
 }

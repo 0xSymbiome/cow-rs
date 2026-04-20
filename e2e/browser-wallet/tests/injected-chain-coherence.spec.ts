@@ -191,16 +191,18 @@ test("chain-bound signer surfaces the classified chain-mismatch label before liv
   await page.locator("#connect-wallet").click();
   await expectInjectedState(page, "connect-wallet", "success");
 
-  // Wallet session is on mainnet; console chain is Sepolia. Sign-order
-  // pulls a chain-bound signer for the console chain and must fail-closed
-  // with a chain-mismatch error before producing a signature.
-  await page.locator("#sign-order").click();
-  await expectInjectedState(page, "sign-order", "error");
-
-  const errorLabel = page.locator("#injected-output [data-testid='error-label']");
-  await expect(errorLabel).toBeVisible();
-  await expect(errorLabel).toHaveAttribute("data-code", "CHAIN-MISMATCH");
-  await expect(errorLabel).toContainText("Wallet chain does not match console chain");
+  // Wallet session is on mainnet; console chain is Sepolia. The console
+  // disables the sign-order button before the click can fire and surfaces
+  // the chain-mismatch explanation in the button's title so downstream
+  // clicks never reach the chain-bound signer. The guard is reviewed under
+  // the chain-coherence contract and must fail closed without producing a
+  // signature.
+  const signOrderButton = page.locator("#sign-order");
+  await expect(signOrderButton).toBeDisabled();
+  await expect(signOrderButton).toHaveAttribute(
+    "title",
+    /Wallet session chain .*does not match selected console chain .*Use Switch Chain before live actions\./,
+  );
 });
 
 async function loadConsole(page: Page): Promise<void> {

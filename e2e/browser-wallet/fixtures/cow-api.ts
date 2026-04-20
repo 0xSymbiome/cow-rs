@@ -174,8 +174,8 @@ export function validateQuoteRequestShape(body: unknown): string[] {
   }
 
   const issues: string[] = [];
-  assertField(body, issues, "sellToken", WRAPPED_NATIVE);
-  assertField(body, issues, "buyToken", BUY_TOKEN);
+  assertAddressField(body, issues, "sellToken", WRAPPED_NATIVE);
+  assertAddressField(body, issues, "buyToken", BUY_TOKEN);
 
   if (!isHexAddress(body.from)) {
     issues.push("quote request must include a valid from address");
@@ -203,8 +203,8 @@ export function validateOrderRequestShape(body: unknown): string[] {
   }
 
   const issues: string[] = [];
-  assertField(body, issues, "sellToken", WRAPPED_NATIVE);
-  assertField(body, issues, "buyToken", BUY_TOKEN);
+  assertAddressField(body, issues, "sellToken", WRAPPED_NATIVE);
+  assertAddressField(body, issues, "buyToken", BUY_TOKEN);
 
   if (!isHexAddress(body.from)) {
     issues.push("order submission must include a valid from address");
@@ -246,6 +246,18 @@ export function validateCancellationRequestShape(body: unknown): string[] {
 
 function assertField(body: JsonRecord, issues: string[], field: string, expected: string): void {
   if (body[field] !== expected) {
+    issues.push(`${field} must be ${expected}`);
+  }
+}
+
+function assertAddressField(
+  body: JsonRecord,
+  issues: string[],
+  field: string,
+  expected: string,
+): void {
+  const actual = body[field];
+  if (typeof actual !== "string" || actual.toLowerCase() !== expected.toLowerCase()) {
     issues.push(`${field} must be ${expected}`);
   }
 }

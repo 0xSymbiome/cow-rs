@@ -1099,7 +1099,16 @@
 
     function formatProviderError(raw) {
       const text = String(raw);
-      const eipMatch = /"code"\s*:\s*(\d{4})/.exec(text);
+      // Extract the EIP-1193 numeric code from either the JSON-serialised
+      // provider error shape (`"code": 4001`) or the Display-formatted Rust
+      // error shape the browser-wallet crate emits through the injected
+      // transport (`… was rejected by the user (4001): …`,
+      // `wallet request \`method\` returned provider error (-32603): …`,
+      // and similar parenthesised forms).
+      const eipMatch =
+        /"code"\s*:\s*(-?\d{3,5})/.exec(text) ??
+        /\((-?\d{3,5})\)\s*:/.exec(text) ??
+        /\((-?\d{3,5})\)/.exec(text);
       if (eipMatch) {
         const code = Number(eipMatch[1]);
         const entry = EIP1193_LABELS[code];

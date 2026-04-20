@@ -205,6 +205,23 @@ unreleased public contract of the repository.
   the injected-wallet, session, and cached-detection paths alongside
   their native counterparts. The helpers remain marked `#[doc(hidden)]`
   and stay excluded from the public API surface.
+- Playwright deterministic-lane suites for both example consoles now
+  track the current SDK contract end-to-end. Quote, order, and
+  order-trades assertions compare addresses through a case-insensitive
+  helper; the order-trades fixture routes the current `/api/v2/trades`
+  endpoint; the solver-competition assertions describe the reviewed
+  `SolverSettlement` contract (ranking, solver address, score, and
+  clearing-prices map) rather than fields that are not part of the
+  typed boundary; the orderbook network-failure assertion matches the
+  classified `reqwest` error text; and the chain-mismatch fail-closed
+  contract is verified by asserting the disabled `#sign-order` button
+  and its chain-mismatch title rather than attempting to click a button
+  the console deliberately disables. The `browser-wallet-console`
+  diagnostic labeller also classifies EIP-1193 provider codes that
+  arrive through the `Display`-formatted Rust error shape
+  (`… rejected by the user (4001): …`) in addition to the JSON
+  `"code": 4001` shape, so rejected typed-data signing now renders the
+  `EIP-1193 4001` label consistently across Chromium and Firefox.
 
 ### Security
 

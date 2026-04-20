@@ -6,7 +6,7 @@ export const ORDERBOOK_SOLVER_COMPETITION_LATEST_URL =
   "https://barn.api.cow.fi/mainnet/api/v1/solver_competition/latest";
 export const ORDERBOOK_ORDER_BASE_URL = "https://barn.api.cow.fi/mainnet/api/v1/orders";
 export const ORDERBOOK_ORDER_URL_GLOB = `${ORDERBOOK_ORDER_BASE_URL}/*`;
-export const ORDERBOOK_TRADES_URL_GLOB = "https://barn.api.cow.fi/mainnet/api/v1/trades**";
+export const ORDERBOOK_TRADES_URL_GLOB = "https://barn.api.cow.fi/mainnet/api/v2/trades**";
 export const ORDERBOOK_APP_DATA_BASE_URL = "https://barn.api.cow.fi/mainnet/api/v1/app_data";
 export const ORDERBOOK_APP_DATA_URL_GLOB = `${ORDERBOOK_APP_DATA_BASE_URL}/*`;
 export const SUBGRAPH_URL_GLOB = "https://gateway.thegraph.com/api/mock-key/subgraphs/id/**";
@@ -89,9 +89,9 @@ export function validateQuoteRequestShape(body: unknown): string[] {
   }
 
   const issues: string[] = [];
-  assertField(body, issues, "sellToken", MAINNET_WETH);
-  assertField(body, issues, "buyToken", MAINNET_USDC);
-  assertField(body, issues, "from", OWNER);
+  assertAddressField(body, issues, "sellToken", MAINNET_WETH);
+  assertAddressField(body, issues, "buyToken", MAINNET_USDC);
+  assertAddressField(body, issues, "from", OWNER);
 
   const hasSellAmount = typeof body.sellAmountBeforeFee === "string";
   const hasBuyAmount = typeof body.buyAmountAfterFee === "string";
@@ -178,6 +178,18 @@ function assertField(
   expected: string,
 ): void {
   if (body[field] !== expected) {
+    issues.push(`quote request ${field} must be ${expected}`);
+  }
+}
+
+function assertAddressField(
+  body: JsonRecord,
+  issues: string[],
+  field: string,
+  expected: string,
+): void {
+  const actual = body[field];
+  if (typeof actual !== "string" || actual.toLowerCase() !== expected.toLowerCase()) {
     issues.push(`quote request ${field} must be ${expected}`);
   }
 }
