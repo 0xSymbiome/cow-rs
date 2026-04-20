@@ -19,6 +19,18 @@ unreleased public contract of the repository.
   `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
   `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`, and
   `cow-sdk-browser-wallet`.
+- Typed ERC-20 and EIP-2612 Permit bindings under a new
+  `cow_sdk_contracts::erc20` module, generated from the canonical Solidity
+  surfaces through the `alloy::sol!` macro. The module exposes the minimal
+  `IERC20` interface (`balanceOf`, `approve`, `allowance`, `transfer`,
+  `transferFrom` plus the `Transfer` and `Approval` events) and the
+  `IERC20Permit` extension covering the EIP-2612 `permit(...)` method, the
+  `DOMAIN_SEPARATOR()` and `nonces(...)` view functions, and the `Permit`
+  struct used to derive the typed-data hash. A pinned `PERMIT_TYPE_HASH`
+  constant and a `permit_typed_data_hash(domain, permit)` helper compose the
+  EIP-712 envelope so off-chain signers produce a digest every EIP-2612
+  deployment will accept, and the committed Solidity excerpts under
+  `crates/contracts/abi/erc20/` preserve upstream provenance for reviewers.
 - Deterministic native example scenarios plus browser-hosted WASM verification
   surfaces for the supported SDK and browser-wallet flows.
 - Public verification, parity, architecture, ADR, and audit documentation for
