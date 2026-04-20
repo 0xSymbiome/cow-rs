@@ -3,6 +3,8 @@ fuzz/corpus/
 fuzz/artifacts/
 fuzz/target/
 fuzz/Cargo.lock
+playwright-report/
+test-results/
 pkg/
 node_modules/
 .local

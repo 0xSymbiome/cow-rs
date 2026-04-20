@@ -91,65 +91,46 @@ pub fn sample_unsigned_order() -> UnsignedOrder {
 }
 
 pub fn sample_trade_parameters() -> TradeParameters {
-    TradeParameters {
-        kind: OrderKind::Sell,
-        owner: Some(sample_owner()),
-        sell_token: sample_sell_token(),
-        sell_token_decimals: 18,
-        buy_token: sample_buy_token(),
-        buy_token_decimals: 18,
-        amount: Amount::new("100000000000000000").expect("example trade amount must remain valid"),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-        partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
-        slippage_bps: Some(50),
-        receiver: None,
-        valid_for: None,
-        valid_to: None,
-        partner_fee: None,
-    }
+    TradeParameters::new(
+        OrderKind::Sell,
+        sample_sell_token(),
+        18,
+        sample_buy_token(),
+        18,
+        Amount::new("100000000000000000").expect("example trade amount must remain valid"),
+    )
+    .with_owner(sample_owner())
+    .with_slippage_bps(50)
 }
 
 pub fn sample_limit_parameters() -> cow_sdk::LimitTradeParameters {
     let quote = sample_quote_response();
+    let sell_token_balance = quote.quote.sell_token_balance;
+    let buy_token_balance = quote.quote.buy_token_balance;
+    let quote_id = quote.id;
 
-    cow_sdk::LimitTradeParameters {
-        kind: OrderKind::Sell,
-        owner: Some(sample_owner()),
-        sell_token: sample_sell_token(),
-        sell_token_decimals: 18,
-        buy_token: sample_buy_token(),
-        buy_token_decimals: 18,
-        sell_amount: Amount::new(quote.quote.sell_amount)
-            .expect("example quote sell amount must remain valid"),
-        buy_amount: Amount::new(quote.quote.buy_amount)
-            .expect("example quote buy amount must remain valid"),
-        quote_id: quote.id,
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-        partially_fillable: false,
-        sell_token_balance: quote.quote.sell_token_balance,
-        buy_token_balance: quote.quote.buy_token_balance,
-        slippage_bps: Some(0),
-        receiver: None,
-        valid_for: None,
-        valid_to: None,
-        partner_fee: None,
+    let mut params = cow_sdk::LimitTradeParameters::new(
+        OrderKind::Sell,
+        sample_sell_token(),
+        18,
+        sample_buy_token(),
+        18,
+        Amount::new(quote.quote.sell_amount).expect("example quote sell amount must remain valid"),
+        Amount::new(quote.quote.buy_amount).expect("example quote buy amount must remain valid"),
+    )
+    .with_owner(sample_owner())
+    .with_sell_token_balance(sell_token_balance)
+    .with_buy_token_balance(buy_token_balance)
+    .with_slippage_bps(0);
+    if let Some(id) = quote_id {
+        params = params.with_quote_id(id);
     }
+    params
 }
 
 pub fn sample_trader_parameters() -> TraderParameters {
-    TraderParameters {
-        chain_id: SupportedChainId::Sepolia,
-        app_code: "cow-rs-native-examples".to_owned(),
-        env: Some(CowEnv::Prod),
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    }
+    TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-native-examples")
+        .with_env(CowEnv::Prod)
 }
 
 pub fn sample_quote_response() -> OrderQuoteResponse {
@@ -232,12 +213,7 @@ pub struct MockOrderbookState {
 impl MockOrderbook {
     pub fn new(chain_id: SupportedChainId, quote_response: OrderQuoteResponse) -> Self {
         Self {
-            context: ApiContext {
-                chain_id,
-                env: CowEnv::Prod,
-                base_urls: None,
-                api_key: None,
-            },
+            context: ApiContext::new(chain_id, CowEnv::Prod),
             quote_response,
             state: Arc::new(Mutex::new(MockOrderbookState {
                 order_id: Some(sample_order_uid()),
@@ -334,9 +310,7 @@ impl OrderbookClient for MockOrderbook {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .uploads
             .push((app_data_hash.clone(), full_app_data.to_owned()));
-        Ok(AppDataObject {
-            full_app_data: full_app_data.to_owned(),
-        })
+        Ok(AppDataObject::new(full_app_data))
     }
 }
 

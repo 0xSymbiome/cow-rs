@@ -17,24 +17,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     orderbook.push_order(sample_open_order());
     let signer = MockSigner::default();
     let sdk = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("cow-rs-order-lifecycle".to_owned()),
-            owner: Some(sample_owner()),
-            env: None,
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_app_code("cow-rs-order-lifecycle".to_owned())
+            .with_owner(sample_owner()),
         TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     )?;
 
-    let params = OrderTraderParameters {
-        order_uid: sample_order_uid(),
-        chain_id: None,
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let params = OrderTraderParameters::new(sample_order_uid());
 
     let order = sdk.get_order(&params).await?;
     let cancelled = sdk.off_chain_cancel_order(&params, &signer).await?;

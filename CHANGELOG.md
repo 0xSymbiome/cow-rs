@@ -183,6 +183,29 @@ unreleased public contract of the repository.
   `docs/architecture.md` records the cancellation contract under a
   dedicated Cancellation subsection.
 
+### Fixed
+
+- Example crates now construct every `#[non_exhaustive]` public DTO
+  through the published ergonomic constructors (`::new(required_args)`
+  plus chained `with_*` setters) rather than struct-literal syntax, so
+  the `examples/native`, `examples/wasm/sdk-verification-console`, and
+  `examples/wasm/browser-wallet-console` build surfaces stay green
+  under the broadened `#[non_exhaustive]` coverage shipped in the same
+  `[Unreleased]` cycle. The `cow-sdk-core::cancellation` rustdoc also
+  corrects a spelling drift in the `Cancelled` marker's documentation.
+- Example-crate browser-hosted tests now align with the current public
+  contract. The `sdk-verification-console` deterministic-export suite
+  compares wrapped-native and sample-order addresses through a
+  case-insensitive helper so the byte-array-sourced lowercase hex output
+  no longer breaks the assertion, and the EIP-1271 payload preview
+  assertion now matches the `0x`-prefixed hex shape that
+  `eip1271_signature_payload` actually returns. The
+  `browser-wallet-console` test-only helper surface is also reachable
+  under `wasm32-unknown-unknown`, so headless wasm-pack runs exercise
+  the injected-wallet, session, and cached-detection paths alongside
+  their native counterparts. The helpers remain marked `#[doc(hidden)]`
+  and stay excluded from the public API surface.
+
 ### Security
 
 - Defense-in-depth redaction in transport error paths. `From<reqwest::Error>`
@@ -234,6 +257,59 @@ unreleased public contract of the repository.
   `suggest_slippage_bps`, `TradingSdk`, and `protocol_options_for_order` —
   with per-field `assert_eq!` messages that name the fixture case id and
   the diverging field at once.
+- A cargo-fuzz harness under a standalone `fuzz/` crate that pins
+  `libfuzzer-sys` to an exact version and carries five fuzz targets
+  covering the deterministic codec boundaries: `fuzz_order_uid_pack_unpack`
+  asserts the pack-and-extract round-trip for `OrderUid` components;
+  `fuzz_typed_data_digest` asserts `hash_order` stays deterministic under
+  Arbitrary-derived `UnsignedOrder` shapes and exercises
+  `hash_order_cancellations`; `fuzz_app_data_cid_roundtrip` asserts
+  `cid_to_app_data_hex(app_data_hex_to_cid(x)?)? == x` on both the
+  keccak-256 and sha2-256 multihash paths and typed-error-not-panic on
+  malformed input; `fuzz_order_signature_classify` confirms
+  `SigningScheme::try_from(u8)` remains total across all 256
+  discriminants and feeds arbitrary bytes through
+  `decode_eip1271_signature_data` and the `Signature` decoder;
+  `fuzz_subgraph_graphql_error_decode` feeds arbitrary JSON candidates to
+  the `SubgraphGraphQlError` decoder and asserts successful decodes
+  round-trip through `serde_json::to_vec` without panicking. The
+  fuzz crate sits outside the root workspace members list so the stable
+  toolchain is never forced onto nightly; `fuzz/README.md` documents the
+  shared-harness conventions, supported-platform boundary, and the
+  reproduce-from-corpus workflow.
+- A scheduled weekly `.github/workflows/fuzz.yml` report-only lane
+  (Friday 05:00 UTC plus `workflow_dispatch`) that matrix-runs each of
+  the five fuzz targets on `ubuntu-latest` for five minutes under a
+  sixty-minute job timeout. The workflow uses SHA-pinned third-party
+  actions with `# Source ref:` comments, `permissions: contents: read`,
+  a `concurrency` group scoped to workflow and ref with
+  `cancel-in-progress: false`, the pinned nightly toolchain exposed
+  through the `RUST_FUZZ_TOOLCHAIN` env variable, and uploads
+  `fuzz/corpus/<target>/` and `fuzz/artifacts/<target>/` as a
+  `fuzz-<target>-corpus-and-artifacts` workflow artifact on
+  `if: failure()`. `CONTRIBUTING.md` gained a "Running Fuzz Targets
+  Locally" section covering the nightly prerequisite,
+  `cargo install cargo-fuzz --locked`, `cargo fuzz list`, the per-target
+  one-minute local-run command, and the reproduce-from-corpus
+  invocation.
+- A Firefox Playwright project on `e2e/browser-wallet/` that runs
+  alongside the existing Chromium project, so the browser-wallet
+  deterministic-lane DOM contract is validated under both widely
+  deployed browser engines. `e2e/browser-wallet/playwright.config.ts`
+  declares the additional project with `{ ...devices["Desktop Firefox"] }`
+  and inherits every root-level setting (`baseURL`, `viewport`, `trace`,
+  `webServer`, `fullyParallel`, `forbidOnly`, `retries`, `timeout`,
+  `expect.timeout`, `reporter`). `.github/workflows/browser-wallet-e2e.yml`
+  installs both browsers via
+  `bunx playwright install --with-deps chromium firefox` while keeping
+  the existing SHA-pinned actions, `permissions: contents: read`,
+  `concurrency`, `persist-credentials: false`, and `timeout-minutes: 45`
+  hygiene intact. The EIP-6963 `announceProvider` fixture at
+  `e2e/browser-wallet/fixtures/injected-wallet.ts` is unchanged; the
+  fixture uses standard DOM surfaces that resolve identically under
+  Chromium and Firefox. `docs/browser-runtime-proof-posture.md`
+  acknowledges the two-browser deterministic matrix under the existing
+  Deterministic Lane. ADR 0007 is unchanged.
 
 ### Changed
 

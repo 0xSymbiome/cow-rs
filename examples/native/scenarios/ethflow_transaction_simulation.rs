@@ -19,10 +19,7 @@ fn call_data_prefix(data: &cow_sdk::HexData) -> &str {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let orderbook = MockOrderbook::new(
-        cow_sdk::SupportedChainId::Sepolia,
-        sample_quote_response(),
-    );
+    let orderbook = MockOrderbook::new(cow_sdk::SupportedChainId::Sepolia, sample_quote_response());
     let signer = MockSigner::default();
     let trader = sample_trader_parameters();
     let mut params = sample_limit_parameters();

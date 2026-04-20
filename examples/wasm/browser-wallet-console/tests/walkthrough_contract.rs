@@ -17,7 +17,10 @@ fn walkthrough_mock_cycle_drives_connect_sign_and_trading_flow_in_order() {
 
     assert_eq!(envelope["name"], "browser-wallet-console.mock-cycle");
     assert_eq!(envelope["completed"], true);
-    assert!(envelope["failedAt"].is_null(), "deterministic walkthrough must never fail");
+    assert!(
+        envelope["failedAt"].is_null(),
+        "deterministic walkthrough must never fail"
+    );
 
     let steps = envelope["steps"]
         .as_array()
@@ -40,7 +43,10 @@ fn walkthrough_mock_cycle_drives_connect_sign_and_trading_flow_in_order() {
             result.is_object(),
             "each walkthrough step must carry a reviewable result object"
         );
-        assert_eq!(result["mode"], "mock", "walkthrough must never leave the deterministic mock lane");
+        assert_eq!(
+            result["mode"], "mock",
+            "walkthrough must never leave the deterministic mock lane"
+        );
     }
 }
 
@@ -77,5 +83,4 @@ unsafe fn noop_clone(_: *const ()) -> RawWaker {
 
 unsafe fn noop(_: *const ()) {}
 
-static NOOP_WAKER_VTABLE: RawWakerVTable =
-    RawWakerVTable::new(noop_clone, noop, noop, noop);
+static NOOP_WAKER_VTABLE: RawWakerVTable = RawWakerVTable::new(noop_clone, noop, noop, noop);

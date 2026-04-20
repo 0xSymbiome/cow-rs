@@ -9,7 +9,10 @@ wasm_bindgen_test_configure!(run_in_browser);
 fn walkthrough_determinism_cycle_drives_reviewed_helpers_in_order() {
     let envelope = parse_json(walkthrough_determinism_cycle_json());
 
-    assert_eq!(envelope["name"], "sdk-verification-console.determinism-cycle");
+    assert_eq!(
+        envelope["name"],
+        "sdk-verification-console.determinism-cycle"
+    );
     assert_eq!(envelope["completed"], true);
     assert!(
         envelope["failedAt"].is_null(),

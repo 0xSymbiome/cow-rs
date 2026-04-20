@@ -16,25 +16,22 @@ fn call_data_prefix(data: &cow_sdk::HexData) -> &str {
 
 fn sample_ethflow_order() -> cow_sdk::orderbook::Order {
     let mut order = sample_open_order();
-    order.ethflow_data = Some(cow_sdk::orderbook::EthflowData {
-        refund_tx_hash: None,
-        user_valid_to: order.valid_to,
-    });
+    order.ethflow_data = Some(cow_sdk::orderbook::EthflowData::new(order.valid_to));
     order
 }
 
 fn trading_sdk(orderbook: MockOrderbook) -> TradingSdk {
     let trader = sample_trader_parameters();
+    let mut partial = PartialTraderParameters::new()
+        .with_chain_id(trader.chain_id)
+        .with_app_code(trader.app_code)
+        .with_owner(sample_owner());
+    if let Some(env) = trader.env {
+        partial = partial.with_env(env);
+    }
 
     TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(trader.chain_id),
-            app_code: Some(trader.app_code),
-            owner: Some(sample_owner()),
-            env: trader.env,
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        partial,
         TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook)),
     )
     .expect("example trading sdk construction should succeed")
@@ -45,13 +42,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = cow_sdk::SupportedChainId::Sepolia;
     let preview_signer = MockSigner::default();
     let order_uid = sample_order_uid();
-    let params = OrderTraderParameters {
-        order_uid: order_uid.clone(),
-        chain_id: Some(chain_id),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-    };
+    let params = OrderTraderParameters::new(order_uid.clone()).with_chain_id(chain_id);
 
     let pre_sign = get_pre_sign_transaction(&preview_signer, chain_id, &order_uid, None)?;
     let regular_preview =

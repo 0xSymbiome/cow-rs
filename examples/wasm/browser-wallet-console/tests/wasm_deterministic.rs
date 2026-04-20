@@ -131,9 +131,7 @@ async fn seeded_wallet(label: &str) -> BrowserWallet {
     wallet
 }
 
-fn parse_json_result(
-    result: Result<String, wasm_bindgen::JsValue>,
-) -> Value {
+fn parse_json_result(result: Result<String, wasm_bindgen::JsValue>) -> Value {
     let payload = result.expect("wasm-bindgen export must return a JSON string");
     parse_json(payload)
 }

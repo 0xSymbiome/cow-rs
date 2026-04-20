@@ -21,14 +21,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     provider.set_signer(signer.clone());
 
     let sdk = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("cow-rs-native-examples".to_owned()),
-            owner: Some(sample_owner()),
-            env: None,
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_app_code("cow-rs-native-examples".to_owned())
+            .with_owner(sample_owner()),
         TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     )?;
 
@@ -40,34 +36,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
     let allowance = sdk.get_cow_protocol_allowance(
         &provider,
-        &AllowanceParameters {
-            token_address: sample_sell_token(),
-            owner: sample_owner(),
-            chain_id: None,
-            env: None,
-            vault_relayer_address: None,
-        },
+        &AllowanceParameters::new(sample_sell_token(), sample_owner()),
     )?;
     let approval_tx_hash = sdk.approve_cow_protocol(
         &signer,
-        &ApprovalParameters {
-            token_address: sample_sell_token(),
-            amount: Amount::new("1000000000000000000")
-                .expect("example approval amount must remain valid"),
-            chain_id: None,
-            env: None,
-            vault_relayer_address: None,
-        },
+        &ApprovalParameters::new(
+            sample_sell_token(),
+            Amount::new("1000000000000000000").expect("example approval amount must remain valid"),
+        ),
     )?;
     let cancelled = sdk
         .off_chain_cancel_order(
-            &OrderTraderParameters {
-                order_uid: post_result.order_id.clone(),
-                chain_id: None,
-                env: None,
-                settlement_contract_override: None,
-                eth_flow_contract_override: None,
-            },
+            &OrderTraderParameters::new(post_result.order_id.clone()),
             &signer,
         )
         .await?;

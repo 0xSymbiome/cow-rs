@@ -28,7 +28,8 @@ fn multi_wallet_connect_fails_closed_until_confirmation() {
     assert_eq!(detection["confirmedSelectionPresent"], false);
     assert_eq!(detection["connectReady"], false);
 
-    let error = block_on(console.testing_injected_connect_json()).expect_err("connect must fail closed");
+    let error =
+        block_on(console.testing_injected_connect_json()).expect_err("connect must fail closed");
     assert!(error.contains("confirm a detected wallet before connecting"));
     assert_eq!(console.testing_confirmed_wallet_index(), None);
 }
@@ -56,8 +57,9 @@ fn confirmed_selection_enables_connect_and_tracks_provider() {
     assert_eq!(confirmed["connectReady"], true);
     assert_eq!(console.testing_confirmed_wallet_index(), Some(1));
 
-    let connected =
-        parse_json(block_on(console.testing_injected_connect_json()).expect("connect must succeed"));
+    let connected = parse_json(
+        block_on(console.testing_injected_connect_json()).expect("connect must succeed"),
+    );
     assert_eq!(connected["connectionSource"], "cachedDetection");
     assert_eq!(connected["walletInfo"]["providerLabel"], "Rabby");
     assert_eq!(connected["selectionIndex"], 1);
@@ -79,13 +81,15 @@ fn reconnect_after_confirmation_uses_retained_wallet_handle() {
     console
         .testing_confirm_injected_selection_json(1)
         .expect("confirmation must succeed");
-    let _ = block_on(console.testing_injected_connect_json()).expect("initial connect must succeed");
+    let _ =
+        block_on(console.testing_injected_connect_json()).expect("initial connect must succeed");
 
     console
         .injected_reset_session_json()
         .expect("reset must keep the retained wallet and confirmation");
-    let reconnect =
-        parse_json(block_on(console.testing_injected_connect_json()).expect("reconnect must succeed"));
+    let reconnect = parse_json(
+        block_on(console.testing_injected_connect_json()).expect("reconnect must succeed"),
+    );
 
     assert_eq!(reconnect["connectionSource"], "selectedWallet");
     assert_eq!(reconnect["walletInfo"]["providerLabel"], "MetaMask");
@@ -154,7 +158,10 @@ fn cached_wallet(
             provider_label: label.to_owned(),
             discovery_source,
             provider_uuid: Some(format!("uuid-{label}")),
-            provider_rdns: Some(format!("{}.wallet", label.to_ascii_lowercase().replace(' ', "-"))),
+            provider_rdns: Some(format!(
+                "{}.wallet",
+                label.to_ascii_lowercase().replace(' ', "-")
+            )),
             provider_icon: None,
             is_meta_mask: label == "MetaMask",
             is_coinbase_wallet: label == "Coinbase Wallet",
@@ -205,5 +212,4 @@ unsafe fn noop_clone(_: *const ()) -> RawWaker {
 
 unsafe fn noop(_: *const ()) {}
 
-static NOOP_WAKER_VTABLE: RawWakerVTable =
-    RawWakerVTable::new(noop_clone, noop, noop, noop);
+static NOOP_WAKER_VTABLE: RawWakerVTable = RawWakerVTable::new(noop_clone, noop, noop, noop);

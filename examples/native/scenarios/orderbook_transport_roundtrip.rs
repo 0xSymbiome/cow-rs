@@ -53,12 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await;
 
     let api = OrderBookApi::new_with_base_url(
-        ApiContext {
-            chain_id: SupportedChainId::Sepolia,
-            env: CowEnv::Prod,
-            base_urls: None,
-            api_key: None,
-        },
+        ApiContext::new(SupportedChainId::Sepolia, CowEnv::Prod),
         server.uri(),
     );
 

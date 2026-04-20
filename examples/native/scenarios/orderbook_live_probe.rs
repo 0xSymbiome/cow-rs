@@ -2,21 +2,20 @@ use std::{env, error::Error, io};
 
 use serde_json::json;
 
+use cow_sdk::core::Redacted;
 use cow_sdk::{ApiContext, CowEnv, OrderBookApi, SupportedChainId};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let env = optional_cow_env("COW_SMOKE_ORDERBOOK_ENV")?;
     let chain_id = optional_supported_chain_id("COW_SMOKE_ORDERBOOK_CHAIN_ID")?;
-    let api_key = optional_env("COW_SMOKE_ORDERBOOK_API_KEY");
+    let api_key = optional_env("COW_SMOKE_ORDERBOOK_API_KEY").map(Redacted::new);
     let base_url_override = optional_env("COW_SMOKE_ORDERBOOK_BASE_URL");
 
-    let context = ApiContext {
-        chain_id,
-        env,
-        base_urls: None,
-        api_key,
-    };
+    let mut context = ApiContext::new(chain_id, env);
+    if let Some(api_key) = api_key {
+        context = context.with_api_key(api_key);
+    }
     let resolved_base_url = base_url_override
         .clone()
         .unwrap_or(context.resolved_base_url()?);

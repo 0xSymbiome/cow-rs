@@ -41,7 +41,7 @@ use tokio_util::sync::{CancellationToken, WaitForCancellationFuture};
 /// before the inner future resolves.
 ///
 /// The marker carries no context by design: every crate-level error
-/// aggregate ships a contextful `Cancelled` variant and lifts the marker
+/// aggregate ships a contextual `Cancelled` variant and lifts the marker
 /// through a blanket `From<Cancelled>` implementation so cancellation can
 /// propagate with `?` across every public error boundary.
 #[derive(Debug, Clone, Copy, thiserror::Error)]

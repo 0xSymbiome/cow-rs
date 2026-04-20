@@ -15,7 +15,11 @@ fn reset_session_retains_selected_wallet_and_clears_console_state() {
     console.testing_set_injected_wallet(wallet);
     console.testing_set_last_live_order_uid(Some("0xfeedbeef".to_owned()));
 
-    let reset = parse_json(console.injected_reset_session_json().expect("reset must succeed"));
+    let reset = parse_json(
+        console
+            .injected_reset_session_json()
+            .expect("reset must succeed"),
+    );
 
     assert_eq!(reset["mode"], "injected");
     assert_eq!(reset["walletSelectionRetained"], true);
@@ -24,7 +28,11 @@ fn reset_session_retains_selected_wallet_and_clears_console_state() {
     assert_eq!(reset["session"]["selectedAccount"], Value::Null);
     assert_eq!(console.last_live_order_uid(), None);
 
-    let status = parse_json(console.injected_status_json().expect("status must succeed after reset"));
+    let status = parse_json(
+        console
+            .injected_status_json()
+            .expect("status must succeed after reset"),
+    );
     assert_eq!(status["session"]["connected"], false);
 }
 
@@ -37,7 +45,8 @@ fn refresh_rehydrates_session_after_reset_without_reselecting_wallet() {
     console
         .injected_reset_session_json()
         .expect("reset must succeed");
-    let refreshed = parse_json(block_on(console.injected_refresh_json()).expect("refresh must succeed"));
+    let refreshed =
+        parse_json(block_on(console.injected_refresh_json()).expect("refresh must succeed"));
 
     assert_eq!(refreshed["mode"], "injected");
     assert_eq!(refreshed["session"]["connected"], true);
@@ -54,7 +63,11 @@ fn forget_wallet_clears_selection_and_post_forget_actions_fail_closed() {
     console.testing_set_injected_wallet(wallet);
     console.testing_set_last_live_order_uid(Some("0xfeedbeef".to_owned()));
 
-    let forget = parse_json(console.injected_forget_wallet_json().expect("forget must succeed"));
+    let forget = parse_json(
+        console
+            .injected_forget_wallet_json()
+            .expect("forget must succeed"),
+    );
 
     assert_eq!(forget["mode"], "injected");
     assert_eq!(forget["walletSelectionCleared"], true);
@@ -106,5 +119,4 @@ unsafe fn noop_clone(_: *const ()) -> RawWaker {
 
 unsafe fn noop(_: *const ()) {}
 
-static NOOP_WAKER_VTABLE: RawWakerVTable =
-    RawWakerVTable::new(noop_clone, noop, noop, noop);
+static NOOP_WAKER_VTABLE: RawWakerVTable = RawWakerVTable::new(noop_clone, noop, noop, noop);

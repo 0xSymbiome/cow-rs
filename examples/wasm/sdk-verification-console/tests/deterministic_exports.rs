@@ -24,16 +24,16 @@ fn property_0_exports_are_callable_and_constants_are_present() {
         .find(|chain| chain["chainId"] == 1)
         .expect("mainnet must be listed");
     assert_eq!(mainnet["apiPath"], "mainnet");
-    assert_eq!(mainnet["wrappedNative"]["address"], MAINNET_WETH);
+    assert_address_eq(&mainnet["wrappedNative"]["address"], MAINNET_WETH);
 
     let capability = parse_json(capability_report_json(1, "prod"));
     assert_eq!(capability["surface"], "cow-sdk");
     assert_eq!(capability["mode"], "wasm-console");
     assert_eq!(capability["chainId"], 1);
     assert_eq!(capability["sdkConstructed"], true);
-    assert_eq!(capability["wrappedNative"]["address"], MAINNET_WETH);
-    assert_eq!(capability["sampleOrder"]["sellToken"], MAINNET_WETH);
-    assert_eq!(capability["sampleOrder"]["buyToken"], MAINNET_USDC);
+    assert_address_eq(&capability["wrappedNative"]["address"], MAINNET_WETH);
+    assert_address_eq(&capability["sampleOrder"]["sellToken"], MAINNET_WETH);
+    assert_address_eq(&capability["sampleOrder"]["buyToken"], MAINNET_USDC);
     assert!(
         capability["sampleOrderNotes"]["buyToken"]
             .as_str()
@@ -141,7 +141,10 @@ fn trading_defaults_expose_reviewed_slippage_and_quote_validity_bounds() {
         .as_u64()
         .expect("maxSlippageBps must be a number");
     assert!(max_bps >= default_bps, "max slippage must be >= default");
-    assert_eq!(max_bps, 10_000, "max slippage stays at 100% per the reviewed contract");
+    assert_eq!(
+        max_bps, 10_000,
+        "max slippage stays at 100% per the reviewed contract"
+    );
 
     let validity = defaults["quoteValiditySeconds"]
         .as_u64()
@@ -167,22 +170,23 @@ fn eip1271_payload_preview_captures_signature_payload_for_reviewed_order() {
     let sample_signature = format!("0x{}", "02".repeat(65));
     let preview = parse_json(eip1271_payload_preview_json(order, &sample_signature));
 
-    let payload = &preview["payload"];
+    let payload = preview["payload"]
+        .as_str()
+        .expect("eip1271 payload must be a string");
     assert!(
-        payload.is_object(),
-        "eip1271 payload must be a reviewable JSON object"
+        payload.starts_with("0x"),
+        "eip1271 payload must be a 0x-prefixed hex blob"
     );
-    let fields = payload
-        .as_object()
-        .expect("eip1271 payload must expose reviewable fields");
-    assert!(!fields.is_empty(), "eip1271 payload must not be empty");
-
-    let has_hex_field = fields
-        .values()
-        .any(|value| value.as_str().is_some_and(|s| s.starts_with("0x")));
+    let body = payload
+        .strip_prefix("0x")
+        .expect("eip1271 payload must start with 0x");
     assert!(
-        has_hex_field,
-        "eip1271 payload must expose at least one 0x-prefixed hex field"
+        !body.is_empty() && body.len() % 2 == 0,
+        "eip1271 payload must encode a non-empty even-length byte sequence"
+    );
+    assert!(
+        body.chars().all(|c| c.is_ascii_hexdigit()),
+        "eip1271 payload must contain only ascii hex digits"
     );
 }
 
@@ -201,7 +205,10 @@ fn approval_preview_emits_full_range_max_uint_calldata() {
     let data = preview["transaction"]["data"]
         .as_str()
         .expect("approval transaction data must be a hex string");
-    assert!(data.starts_with("0x"), "approval calldata must be 0x-prefixed");
+    assert!(
+        data.starts_with("0x"),
+        "approval calldata must be 0x-prefixed"
+    );
     assert!(
         data.ends_with(&"f".repeat(64)),
         "max-uint amount must encode the full unsigned uint256 word at the tail of the calldata"
@@ -280,10 +287,7 @@ fn app_data_schema_surfaces_reviewed_schema_fields() {
 /// Property 9 — capability report stays coherent across supported chain and env pairings.
 #[wasm_bindgen_test]
 fn capability_report_holds_across_supported_chains_and_envs() {
-    for (chain_id, env) in [
-        (1_u32, "prod"),
-        (11_155_111_u32, "staging"),
-    ] {
+    for (chain_id, env) in [(1_u32, "prod"), (11_155_111_u32, "staging")] {
         let report = parse_json(capability_report_json(chain_id, env));
         assert_eq!(report["surface"], "cow-sdk");
         assert_eq!(report["mode"], "wasm-console");
@@ -330,4 +334,18 @@ fn error_message(error: JsValue) -> String {
     error
         .as_string()
         .expect("console errors must be string values")
+}
+
+/// Asserts that a JSON address value matches the expected hex literal without
+/// enforcing a specific ASCII case. Protocol-constant tables are emitted as
+/// lowercase byte arrays, so consumers must treat addresses as
+/// case-insensitive hex blobs.
+fn assert_address_eq(actual: &Value, expected: &str) {
+    let actual = actual
+        .as_str()
+        .expect("address value must be a JSON string");
+    assert!(
+        actual.eq_ignore_ascii_case(expected),
+        "address `{actual}` does not match expected `{expected}` (case-insensitive)"
+    );
 }

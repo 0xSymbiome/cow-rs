@@ -13,14 +13,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
     let signer = MockSigner::default();
     let sdk = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(SupportedChainId::Sepolia),
-            app_code: Some("cow-rs-limit-order".to_owned()),
-            owner: Some(sample_owner()),
-            env: None,
-            settlement_contract_override: None,
-            eth_flow_contract_override: None,
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(SupportedChainId::Sepolia)
+            .with_app_code("cow-rs-limit-order".to_owned())
+            .with_owner(sample_owner()),
         TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     )?;
 

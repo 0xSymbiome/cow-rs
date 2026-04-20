@@ -26,7 +26,8 @@ fn legacy_only_cached_detection_connects_without_rescan() {
     assert_eq!(detection["walletCount"], 1);
     assert_eq!(detection["usedWindowEthereumFallback"], true);
 
-    let connected = parse_json(block_on(console.injected_connect_json()).expect("connect must succeed"));
+    let connected =
+        parse_json(block_on(console.injected_connect_json()).expect("connect must succeed"));
     assert_eq!(connected["connectionSource"], "cachedDetection");
     assert_eq!(connected["selectionIndex"], 0);
     assert_eq!(
@@ -93,7 +94,8 @@ fn explicit_rescan_replaces_cached_candidates_for_next_selection() {
     assert_eq!(detection["selectedIndex"], 0);
 
     let connected = parse_json(
-        block_on(console.injected_connect_selected_json(1)).expect("connect after rescan must succeed"),
+        block_on(console.injected_connect_selected_json(1))
+            .expect("connect after rescan must succeed"),
     );
     assert_eq!(connected["connectionSource"], "cachedDetection");
     assert_eq!(connected["walletInfo"]["providerLabel"], "Rabby");
@@ -104,7 +106,10 @@ fn explicit_rescan_replaces_cached_candidates_for_next_selection() {
 fn cached_eip6963_detection_supports_one_shot_connect_flow() {
     let console = BrowserWalletConsole::new();
     console.testing_set_cached_injected_wallets(
-        vec![cached_wallet("Rabby", InjectedWalletDiscoverySource::Eip6963)],
+        vec![cached_wallet(
+            "Rabby",
+            InjectedWalletDiscoverySource::Eip6963,
+        )],
         750,
         false,
     );
@@ -182,5 +187,4 @@ unsafe fn noop_clone(_: *const ()) -> RawWaker {
 
 unsafe fn noop(_: *const ()) {}
 
-static NOOP_WAKER_VTABLE: RawWakerVTable =
-    RawWakerVTable::new(noop_clone, noop, noop, noop);
+static NOOP_WAKER_VTABLE: RawWakerVTable = RawWakerVTable::new(noop_clone, noop, noop, noop);

@@ -14,10 +14,10 @@ use cow_sdk::orderbook::AppDataObject;
 use cow_sdk::trading::OrderbookClient;
 use cow_sdk::{
     Address, Amount, ApiContext, ApprovalParameters, AsyncSigner, CowEnv, OrderBookApi,
-    OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderTraderParameters,
-    OrderUid, PartialTraderParameters, SupportedChainId, TradeParameters, TradingSdk,
-    TradingSdkOptions, WalletEvent, WalletSession, approval_transaction, generate_order_id,
-    sign_order_async,
+    OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
+    OrderTraderParameters, OrderUid, PartialTraderParameters, SupportedChainId, TradeParameters,
+    TradingSdk, TradingSdkOptions, WalletEvent, WalletSession, approval_transaction,
+    generate_order_id, sign_order_async,
 };
 
 #[wasm_bindgen(start)]
@@ -172,8 +172,7 @@ impl BrowserWalletConsole {
 
         let mut steps: Vec<serde_json::Value> = Vec::new();
 
-        let connect =
-            self.mock_wallet.connect().await.map_err(js_string_error)?;
+        let connect = self.mock_wallet.connect().await.map_err(js_string_error)?;
         steps.push(json!({
             "name": "mock-connect",
             "result": { "mode": "mock", "session": connect },
@@ -196,13 +195,10 @@ impl BrowserWalletConsole {
         let trade = parse_trade_parameters(&trade_json)?;
         let mock_orderbook = Arc::new(MockBrowserOrderbook::new(chain_id, env));
         let sdk = TradingSdk::new(
-            PartialTraderParameters {
-                chain_id: Some(chain_id),
-                app_code: Some(app_code.to_owned()),
-                owner: None,
-                env: Some(env),
-                ..Default::default()
-            },
+            PartialTraderParameters::new()
+                .with_chain_id(chain_id)
+                .with_app_code(app_code.to_owned())
+                .with_env(env),
             TradingSdkOptions::new().with_orderbook_client(mock_orderbook.clone()),
         )
         .map_err(js_string_error)?;
@@ -212,13 +208,9 @@ impl BrowserWalletConsole {
             .map_err(js_string_error)?;
         let cancellation = sdk
             .off_chain_cancel_order_async(
-                &OrderTraderParameters {
-                    order_uid: posting.order_id.clone(),
-                    chain_id: Some(chain_id),
-                    env: Some(env),
-                    settlement_contract_override: None,
-                    eth_flow_contract_override: None,
-                },
+                &OrderTraderParameters::new(posting.order_id.clone())
+                    .with_chain_id(chain_id)
+                    .with_env(env),
                 &signer,
             )
             .await
@@ -287,7 +279,10 @@ impl BrowserWalletConsole {
         let tx = approval_transaction(&approval, chain_id, env).map_err(js_string_error)?;
         let signer = self.mock_wallet.signer();
         let estimated_gas = signer.estimate_gas(&tx).await.map_err(js_string_error)?;
-        let receipt = signer.send_transaction(&tx).await.map_err(js_string_error)?;
+        let receipt = signer
+            .send_transaction(&tx)
+            .await
+            .map_err(js_string_error)?;
 
         pretty_json(&json!({
             "mode": "mock",
@@ -311,13 +306,10 @@ impl BrowserWalletConsole {
         let trade = parse_trade_parameters(trade_json)?;
         let mock_orderbook = Arc::new(MockBrowserOrderbook::new(chain_id, env));
         let sdk = TradingSdk::new(
-            PartialTraderParameters {
-                chain_id: Some(chain_id),
-                app_code: Some(app_code.trim().to_owned()),
-                owner: None,
-                env: Some(env),
-                ..Default::default()
-            },
+            PartialTraderParameters::new()
+                .with_chain_id(chain_id)
+                .with_app_code(app_code.trim().to_owned())
+                .with_env(env),
             TradingSdkOptions::new().with_orderbook_client(mock_orderbook.clone()),
         )
         .map_err(js_string_error)?;
@@ -328,17 +320,13 @@ impl BrowserWalletConsole {
             .map_err(js_string_error)?;
         let cancellation = sdk
             .off_chain_cancel_order_async(
-            &OrderTraderParameters {
-                order_uid: posting.order_id.clone(),
-                chain_id: Some(chain_id),
-                env: Some(env),
-                settlement_contract_override: None,
-                eth_flow_contract_override: None,
-            },
-            &signer,
-        )
-        .await
-        .map_err(js_string_error)?;
+                &OrderTraderParameters::new(posting.order_id.clone())
+                    .with_chain_id(chain_id)
+                    .with_env(env),
+                &signer,
+            )
+            .await
+            .map_err(js_string_error)?;
 
         pretty_json(&json!({
             "mode": "mock",
@@ -367,7 +355,10 @@ impl BrowserWalletConsole {
     }
 
     pub async fn injected_connect_json(&self) -> Result<String, JsValue> {
-        let report = self.connect_injected_wallet(None).await.map_err(js_string_error)?;
+        let report = self
+            .connect_injected_wallet(None)
+            .await
+            .map_err(js_string_error)?;
         pretty_json(&report)
     }
 
@@ -434,7 +425,9 @@ impl BrowserWalletConsole {
         let forgotten_wallet_info = forgotten_wallet
             .as_ref()
             .and_then(|wallet| wallet.info.clone());
-        let forgotten_session = forgotten_wallet.as_ref().map(|wallet| wallet.wallet.session());
+        let forgotten_session = forgotten_wallet
+            .as_ref()
+            .map(|wallet| wallet.wallet.session());
         let forgotten_selection_index = forgotten_wallet
             .as_ref()
             .and_then(|wallet| wallet.selection_index.map(|index| index as u32));
@@ -523,7 +516,8 @@ impl BrowserWalletConsole {
         let signing = sign_order_async(&order, chain_id, &signer, None)
             .await
             .map_err(js_string_error)?;
-        let generated = generate_order_id(chain_id, &order, &owner, None).map_err(js_string_error)?;
+        let generated =
+            generate_order_id(chain_id, &order, &owner, None).map_err(js_string_error)?;
 
         pretty_json(&json!({
             "mode": "injected",
@@ -619,13 +613,9 @@ impl BrowserWalletConsole {
             .map_err(js_string_error)?;
         let cancelled = sdk
             .off_chain_cancel_order_async(
-                &OrderTraderParameters {
-                    order_uid,
-                    chain_id: Some(chain_id),
-                    env: Some(env),
-                    settlement_contract_override: None,
-                    eth_flow_contract_override: None,
-                },
+                &OrderTraderParameters::new(order_uid)
+                    .with_chain_id(chain_id)
+                    .with_env(env),
                 &signer,
             )
             .await
@@ -663,12 +653,7 @@ struct MockBrowserOrderbookState {
 impl MockBrowserOrderbook {
     fn new(chain_id: SupportedChainId, env: CowEnv) -> Self {
         Self {
-            context: ApiContext {
-                chain_id,
-                env,
-                base_urls: None,
-                api_key: None,
-            },
+            context: ApiContext::new(chain_id, env),
             state: Arc::new(Mutex::new(MockBrowserOrderbookState::default())),
         }
     }
@@ -689,7 +674,11 @@ impl OrderbookClient for MockBrowserOrderbook {
         &self,
         request: &OrderQuoteRequest,
     ) -> Result<OrderQuoteResponse, cow_sdk::OrderbookError> {
-        self.state.lock().unwrap().quote_requests.push(request.clone());
+        self.state
+            .lock()
+            .unwrap()
+            .quote_requests
+            .push(request.clone());
         Ok(mock_quote_response(request))
     }
 
@@ -708,7 +697,11 @@ impl OrderbookClient for MockBrowserOrderbook {
         &self,
         request: &OrderCancellations,
     ) -> Result<(), cow_sdk::OrderbookError> {
-        self.state.lock().unwrap().cancellations.push(request.clone());
+        self.state
+            .lock()
+            .unwrap()
+            .cancellations
+            .push(request.clone());
         Ok(())
     }
 
@@ -753,27 +746,18 @@ impl OrderbookClient for MockBrowserOrderbook {
             .unwrap()
             .uploads
             .push((app_data_hash.as_str().to_owned(), full_app_data.to_owned()));
-        Ok(AppDataObject {
-            full_app_data: full_app_data.to_owned(),
-        })
+        Ok(AppDataObject::new(full_app_data))
     }
 }
 
 fn live_sdk(chain_id: SupportedChainId, env: CowEnv, app_code: &str) -> TradingSdk {
     TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(chain_id),
-            app_code: Some(app_code.to_owned()),
-            owner: None,
-            env: Some(env),
-            ..Default::default()
-        },
-        TradingSdkOptions::new().with_orderbook_client(Arc::new(OrderBookApi::new(ApiContext {
-                chain_id,
-                env,
-                base_urls: None,
-                api_key: None,
-            }))),
+        PartialTraderParameters::new()
+            .with_chain_id(chain_id)
+            .with_app_code(app_code.to_owned())
+            .with_env(env),
+        TradingSdkOptions::new()
+            .with_orderbook_client(Arc::new(OrderBookApi::new(ApiContext::new(chain_id, env)))),
     )
     .expect("browser wallet console sdk construction should succeed")
 }
@@ -826,26 +810,16 @@ fn mock_quote_response(request: &OrderQuoteRequest) -> OrderQuoteResponse {
 }
 
 fn sample_trade_parameters(chain_id: SupportedChainId) -> TradeParameters {
-    TradeParameters {
-        kind: cow_sdk::OrderKind::Sell,
-        owner: None,
-        sell_token: wrapped_native_token(chain_id).address,
-        sell_token_decimals: 18,
-        buy_token: sample_buy_token(),
-        buy_token_decimals: 18,
-        amount: Amount::new("10000000000000000").unwrap(),
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-        partially_fillable: false,
-        sell_token_balance: cow_sdk::OrderBalance::Erc20,
-        buy_token_balance: cow_sdk::OrderBalance::Erc20,
-        slippage_bps: Some(50),
-        receiver: None,
-        valid_for: Some(1800),
-        valid_to: None,
-        partner_fee: None,
-    }
+    TradeParameters::new(
+        cow_sdk::OrderKind::Sell,
+        wrapped_native_token(chain_id).address,
+        18,
+        sample_buy_token(),
+        18,
+        Amount::new("10000000000000000").unwrap(),
+    )
+    .with_slippage_bps(50)
+    .with_valid_for(1800)
 }
 
 fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
@@ -869,13 +843,11 @@ fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
 }
 
 fn sample_approval_parameters(chain_id: SupportedChainId) -> ApprovalParameters {
-    ApprovalParameters {
-        token_address: wrapped_native_token(chain_id).address,
-        amount: Amount::new("100000000000000000").unwrap(),
-        chain_id: Some(chain_id),
-        env: None,
-        vault_relayer_address: None,
-    }
+    ApprovalParameters::new(
+        wrapped_native_token(chain_id).address,
+        Amount::new("100000000000000000").unwrap(),
+    )
+    .with_chain_id(chain_id)
 }
 
 fn sample_owner() -> Address {
@@ -962,22 +934,19 @@ impl BrowserWalletConsole {
             let cached = self.injected_discovery.lock().unwrap().clone();
             if !cached.is_empty() {
                 let confirmed = self.revalidate_confirmed_injected_selection(&cached);
-                return Ok(cached.report(
-                    self.selected_injected_wallet().as_ref(),
-                    confirmed.as_ref(),
-                ));
+                return Ok(
+                    cached.report(self.selected_injected_wallet().as_ref(), confirmed.as_ref())
+                );
             }
         }
 
-        let discovery = BrowserWallet::discover().await.map_err(|error| error.to_string())?;
+        let discovery = BrowserWallet::discover()
+            .await
+            .map_err(|error| error.to_string())?;
         let next_generation = self.injected_discovery.lock().unwrap().generation + 1;
-        let cached =
-            CachedInjectedWalletDiscovery::from_discovery(discovery, next_generation)?;
+        let cached = CachedInjectedWalletDiscovery::from_discovery(discovery, next_generation)?;
         let confirmed = self.revalidate_confirmed_injected_selection(&cached);
-        let report = cached.report(
-            self.selected_injected_wallet().as_ref(),
-            confirmed.as_ref(),
-        );
+        let report = cached.report(self.selected_injected_wallet().as_ref(), confirmed.as_ref());
         *self.injected_discovery.lock().unwrap() = cached;
         Ok(report)
     }
@@ -1011,7 +980,10 @@ impl BrowserWalletConsole {
                 } else if cached.is_empty() {
                     return Err("detect injected wallets before connecting".to_owned());
                 } else {
-                    (cached.wallet_at(index)?, InjectedConnectSource::CachedDetection)
+                    (
+                        cached.wallet_at(index)?,
+                        InjectedConnectSource::CachedDetection,
+                    )
                 }
             }
             None => {
@@ -1086,10 +1058,7 @@ impl BrowserWalletConsole {
 
         let confirmed = cached.confirmed_selection_at(selection_index)?;
         *self.confirmed_injected_selection.lock().unwrap() = Some(confirmed.clone());
-        Ok(cached.report(
-            self.selected_injected_wallet().as_ref(),
-            Some(&confirmed),
-        ))
+        Ok(cached.report(self.selected_injected_wallet().as_ref(), Some(&confirmed)))
     }
 
     fn revalidate_confirmed_injected_selection(
@@ -1132,7 +1101,9 @@ impl BrowserWalletConsole {
         let chain_id = parse_chain_id(chain_id)?;
         let session = selected.wallet.session();
         if !session.connected {
-            return Err(to_js_error("connect the injected wallet before live quote, signing, submission, or cancellation"));
+            return Err(to_js_error(
+                "connect the injected wallet before live quote, signing, submission, or cancellation",
+            ));
         }
 
         let requested_chain_id = u64::from(chain_id);
@@ -1152,7 +1123,6 @@ impl BrowserWalletConsole {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 #[doc(hidden)]
 impl BrowserWalletConsole {
     pub fn testing_set_injected_wallet(&self, wallet: BrowserWallet) {
@@ -1229,10 +1199,9 @@ impl BrowserWalletConsole {
     pub fn testing_cached_detection_json(&self) -> String {
         let cached = self.injected_discovery.lock().unwrap().clone();
         let confirmed = self.revalidate_confirmed_injected_selection(&cached);
-        serde_json::to_string_pretty(&cached.report(
-            self.selected_injected_wallet().as_ref(),
-            confirmed.as_ref(),
-        ))
+        serde_json::to_string_pretty(
+            &cached.report(self.selected_injected_wallet().as_ref(), confirmed.as_ref()),
+        )
         .expect("cached detection snapshot must remain serializable")
     }
 }
@@ -1249,7 +1218,8 @@ impl ConfirmedInjectedWalletSelection {
     }
 
     fn revalidated(self, cached: &CachedInjectedWalletDiscovery) -> Option<Self> {
-        if self.discovery_generation == cached.generation && self.selection_index < cached.wallets.len()
+        if self.discovery_generation == cached.generation
+            && self.selection_index < cached.wallets.len()
         {
             return Some(Self {
                 wallet_info: cached.wallets[self.selection_index].info.clone(),
@@ -1274,15 +1244,14 @@ impl ConfirmedInjectedWalletSelection {
 }
 
 impl CachedInjectedWalletDiscovery {
-    fn from_discovery(
-        discovery: InjectedWalletDiscovery,
-        generation: u64,
-    ) -> Result<Self, String> {
+    fn from_discovery(discovery: InjectedWalletDiscovery, generation: u64) -> Result<Self, String> {
         let wallet_infos = discovery.wallets();
         let mut wallets = Vec::with_capacity(wallet_infos.len());
         for (index, info) in wallet_infos.into_iter().enumerate() {
             wallets.push(CachedInjectedWallet {
-                wallet: discovery.wallet_at(index).map_err(|error| error.to_string())?,
+                wallet: discovery
+                    .wallet_at(index)
+                    .map_err(|error| error.to_string())?,
                 info: Some(info),
             });
         }
@@ -1319,9 +1288,12 @@ impl CachedInjectedWalletDiscovery {
             timeout_ms: self.timeout_ms,
             used_window_ethereum_fallback: self.used_window_ethereum_fallback,
             requires_explicit_selection: self.requires_explicit_selection(),
-            connect_ready: selected.is_some() || !self.requires_explicit_selection() || confirmed.is_some(),
+            connect_ready: selected.is_some()
+                || !self.requires_explicit_selection()
+                || confirmed.is_some(),
             selected_wallet_present: selected.is_some(),
-            selected_index: selected.and_then(|wallet| wallet.selection_index.map(|index| index as u32)),
+            selected_index: selected
+                .and_then(|wallet| wallet.selection_index.map(|index| index as u32)),
             confirmed_selection_present: confirmed.is_some(),
             confirmed_selection_index: confirmed.map(|selection| selection.selection_index as u32),
             confirmed_wallet_info: confirmed.and_then(|selection| selection.wallet_info.clone()),
@@ -1367,9 +1339,9 @@ impl CachedInjectedWalletDiscovery {
         match self.wallets.len() {
             0 => Ok(None),
             1 => self.wallet_at(0).map(Some),
-            candidates => Err(
-                BrowserWalletError::DiscoverySelectionRequired { candidates }.to_string(),
-            ),
+            candidates => {
+                Err(BrowserWalletError::DiscoverySelectionRequired { candidates }.to_string())
+            }
         }
     }
 }
@@ -1380,15 +1352,17 @@ fn injected_wallet_identity_matches(
 ) -> bool {
     match (left, right) {
         (Some(left), Some(right)) => {
-            if let (Some(left_uuid), Some(right_uuid)) =
-                (left.provider_uuid.as_deref(), right.provider_uuid.as_deref())
-            {
+            if let (Some(left_uuid), Some(right_uuid)) = (
+                left.provider_uuid.as_deref(),
+                right.provider_uuid.as_deref(),
+            ) {
                 return left_uuid == right_uuid;
             }
 
-            if let (Some(left_rdns), Some(right_rdns)) =
-                (left.provider_rdns.as_deref(), right.provider_rdns.as_deref())
-            {
+            if let (Some(left_rdns), Some(right_rdns)) = (
+                left.provider_rdns.as_deref(),
+                right.provider_rdns.as_deref(),
+            ) {
                 return left_rdns == right_rdns
                     && left.provider_label == right.provider_label
                     && left.discovery_source == right.discovery_source;

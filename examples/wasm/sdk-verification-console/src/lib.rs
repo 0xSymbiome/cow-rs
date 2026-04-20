@@ -8,11 +8,11 @@ use cow_sdk::{
     Address, Amount, ApiContext, ApprovalParameters, CowEnv, DEFAULT_QUOTE_VALIDITY,
     DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT, GetOrdersRequest,
     GetTradesRequest, MAX_SLIPPAGE_BPS, ORDER_PRIMARY_TYPE, OrderBookApi, OrderQuoteRequest,
-    OrderUid, OrderbookError, PartnerFee, PartnerFeePolicy, PartialTraderParameters,
+    OrderUid, OrderbookError, PartialTraderParameters, PartnerFee, PartnerFeePolicy,
     SupportedChainId, TradingSdk, TradingSdkOptions, app_data_hex_to_cid,
-    app_data_hex_to_cid_legacy, approval_transaction, cid_to_app_data_hex,
-    default_slippage_bps, deployment_for_chain, eip1271_signature_payload, generate_order_id,
-    get_app_data_info, get_app_data_schema, is_ethflow_order, order_typed_data, partner_fee_bps,
+    app_data_hex_to_cid_legacy, approval_transaction, cid_to_app_data_hex, default_slippage_bps,
+    deployment_for_chain, eip1271_signature_payload, generate_order_id, get_app_data_info,
+    get_app_data_schema, is_ethflow_order, order_typed_data, partner_fee_bps,
     sanitize_protocol_fee_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
     swap_params_to_limit_order_params, validate_app_data_doc,
 };
@@ -50,13 +50,11 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
     let chain_id = parse_chain_id(chain_id)?;
     let env = parse_env(env)?;
     let sdk = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(chain_id),
-            app_code: Some("cow-rs/wasm-console".to_owned()),
-            owner: Some(sample_owner()),
-            env: Some(env),
-            ..Default::default()
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(chain_id)
+            .with_app_code("cow-rs/wasm-console".to_owned())
+            .with_owner(sample_owner())
+            .with_env(env),
         TradingSdkOptions::default(),
     )
     .map_err(js_string_error)?;
@@ -330,13 +328,11 @@ pub async fn trading_quote_preview_json(
     params.env = params.env.or(Some(env));
 
     let sdk = TradingSdk::new(
-        PartialTraderParameters {
-            chain_id: Some(chain_id),
-            app_code: Some(app_code.trim().to_owned()),
-            owner: Some(owner),
-            env: Some(env),
-            ..Default::default()
-        },
+        PartialTraderParameters::new()
+            .with_chain_id(chain_id)
+            .with_app_code(app_code.trim().to_owned())
+            .with_owner(owner)
+            .with_env(env),
         TradingSdkOptions::default(),
     )
     .map_err(js_string_error)?;
@@ -516,7 +512,10 @@ pub async fn orderbook_app_data_json(
 }
 
 #[wasm_bindgen]
-pub async fn orderbook_latest_competition_json(chain_id: u32, env: &str) -> Result<String, JsValue> {
+pub async fn orderbook_latest_competition_json(
+    chain_id: u32,
+    env: &str,
+) -> Result<String, JsValue> {
     let chain_id = parse_chain_id(chain_id)?;
     let env = parse_env(env)?;
     let competition = orderbook_api(chain_id, env)
@@ -578,12 +577,7 @@ fn orderbook_api(chain_id: SupportedChainId, env: CowEnv) -> OrderBookApi {
 }
 
 fn api_context(chain_id: SupportedChainId, env: CowEnv) -> ApiContext {
-    ApiContext {
-        chain_id,
-        env,
-        base_urls: None,
-        api_key: None,
-    }
+    ApiContext::new(chain_id, env)
 }
 
 fn subgraph_api(chain_id: SupportedChainId, api_key: &str) -> Result<SubgraphApi, JsValue> {
