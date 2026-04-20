@@ -34,6 +34,6 @@ pub use domain::{
 };
 pub use errors::SigningError;
 pub use order_signing::{
-    GeneratedOrderId, SigningResult, TypedOrder, eip1271_signature_payload, generate_order_id,
-    sign_order, sign_order_async, sign_order_with_scheme, sign_order_with_scheme_async,
+    GeneratedOrderId, SigningResult, eip1271_signature_payload, generate_order_id, sign_order,
+    sign_order_async, sign_order_with_scheme, sign_order_with_scheme_async,
 };

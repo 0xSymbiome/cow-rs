@@ -327,6 +327,18 @@ unreleased public contract of the repository.
   Chromium and Firefox. `docs/browser-runtime-proof-posture.md`
   acknowledges the two-browser deterministic matrix under the existing
   Deterministic Lane. ADR 0007 is unchanged.
+- Workspace dependency hygiene. The `http` crate now lives in the root
+  `[workspace.dependencies]` table pinned at `1.4.0` alongside the other
+  shared transport crates, so `cow-sdk-core` consumes it through a single
+  `http.workspace = true` declaration instead of an inline `1.3.1` pin.
+  `crates/app-data/Cargo.toml` now carries exactly one `serde_json`
+  declaration (with the `preserve_order` feature preserved) routed through
+  `[workspace.dependencies]`, rather than a duplicated entry across the
+  `[dependencies]` and `[dev-dependencies]` tables. The internal
+  backward-compatibility `TypedOrder = UnsignedOrder` alias in
+  `cow-sdk-signing` is retired; the canonical `UnsignedOrder` type is the
+  single name for the pre-signature order state exported through the public
+  signing surface and the `cow-sdk` prelude.
 
 ### Changed
 

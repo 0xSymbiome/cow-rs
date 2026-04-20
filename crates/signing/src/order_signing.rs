@@ -17,9 +17,6 @@ use crate::{
     domain::{get_domain, order_typed_data_payload},
 };
 
-/// Backward-compatible alias for the typed order input.
-pub type TypedOrder = UnsignedOrder;
-
 /// Result of a local signing operation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
