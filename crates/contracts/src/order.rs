@@ -9,7 +9,7 @@ use crate::{
     ContractsError,
     primitives::{
         ORDER_UID_LENGTH_BYTES, balance_name, encode_address, encode_bool, encode_string_hash,
-        encode_u32, encode_u256_str, keccak256, order_kind_name, parse_bytes32_hash,
+        encode_u32, encode_u256_biguint, keccak256, order_kind_name, parse_bytes32_hash,
         parse_hex_exact, parse_hex32, typed_data_digest, zero_address,
     },
 };
@@ -434,11 +434,11 @@ fn order_struct_hash(order: &NormalizedOrder) -> Result<[u8; 32], ContractsError
     encoded.extend_from_slice(&encode_address(&order.sell_token)?);
     encoded.extend_from_slice(&encode_address(&order.buy_token)?);
     encoded.extend_from_slice(&encode_address(&order.receiver)?);
-    encoded.extend_from_slice(&encode_u256_str("sellAmount", order.sell_amount.as_str())?);
-    encoded.extend_from_slice(&encode_u256_str("buyAmount", order.buy_amount.as_str())?);
+    encoded.extend_from_slice(&encode_u256_biguint(order.sell_amount.as_biguint())?);
+    encoded.extend_from_slice(&encode_u256_biguint(order.buy_amount.as_biguint())?);
     encoded.extend_from_slice(&encode_u32(order.valid_to));
     encoded.extend_from_slice(&parse_bytes32_hash(&order.app_data)?);
-    encoded.extend_from_slice(&encode_u256_str("feeAmount", order.fee_amount.as_str())?);
+    encoded.extend_from_slice(&encode_u256_biguint(order.fee_amount.as_biguint())?);
     encoded.extend_from_slice(&encode_string_hash(order_kind_name(order.kind)));
     encoded.extend_from_slice(&encode_bool(order.partially_fillable));
     encoded.extend_from_slice(&encode_string_hash(balance_name(order.sell_token_balance)));
@@ -536,13 +536,13 @@ mod tests {
         encoded.extend_from_slice(&encode_address_word(&order.sell_token));
         encoded.extend_from_slice(&encode_address_word(&order.buy_token));
         encoded.extend_from_slice(&encode_address_word(&order.receiver));
-        encoded.extend_from_slice(&encode_u256_word(order.sell_amount.as_str()));
-        encoded.extend_from_slice(&encode_u256_word(order.buy_amount.as_str()));
+        encoded.extend_from_slice(&encode_u256_word(&order.sell_amount.to_string()));
+        encoded.extend_from_slice(&encode_u256_word(&order.buy_amount.to_string()));
         encoded.extend_from_slice(&encode_u32_word(order.valid_to));
         encoded.extend_from_slice(
             &hex::decode(order.app_data.as_str().trim_start_matches("0x")).unwrap(),
         );
-        encoded.extend_from_slice(&encode_u256_word(order.fee_amount.as_str()));
+        encoded.extend_from_slice(&encode_u256_word(&order.fee_amount.to_string()));
         encoded.extend_from_slice(&keccak_word("sell"));
         encoded.extend_from_slice(&{
             let mut out = [0u8; 32];

@@ -1,6 +1,6 @@
 use cow_sdk_core::{
-    Address, Amount, Amounts, AppDataHex, AtomAmount, Costs, DecimalAmount, FeeComponent, Hash32,
-    HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderBalance, OrderKind, OrderModel, OrderUid,
+    Address, Amount, Amounts, AppDataHex, Costs, DecimalAmount, FeeComponent, Hash32, HexData,
+    NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderBalance, OrderKind, OrderModel, OrderUid,
     QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteModel, SignedAmount, UnsignedOrder,
     VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
     addresses_equal, token_id,
@@ -252,18 +252,16 @@ fn from_bytes_constructors_match_string_based_equivalents_byte_for_byte() {
 }
 
 #[test]
-fn typed_atom_and_decimal_amounts_expose_semantic_accessors() {
-    let atom = AtomAmount::from_atoms(BigUint::from(1_000_000_000_000_000_000u128));
-    assert_eq!(atom.to_string(), "1000000000000000000");
+fn typed_amount_and_decimal_amount_expose_semantic_accessors() {
+    let amount = Amount::from_atoms(BigUint::from(1_000_000_000_000_000_000u128));
+    assert_eq!(amount.to_string(), "1000000000000000000");
     assert_eq!(
-        atom.as_biguint(),
+        amount.as_biguint(),
         &BigUint::from(1_000_000_000_000_000_000u128)
     );
-    let as_amount: Amount = atom.clone().into();
-    assert_eq!(as_amount.as_str(), "1000000000000000000");
 
-    let parsed: AtomAmount = "1000000000000000000".try_into().unwrap();
-    assert_eq!(parsed, atom);
+    let parsed: Amount = "1000000000000000000".try_into().unwrap();
+    assert_eq!(parsed, amount);
 
     let decimal = DecimalAmount::new(BigUint::from(1_000_000_000_000_000_000u128), 18);
     assert_eq!(decimal.decimals(), 18);
@@ -333,8 +331,8 @@ fn valid_to_relative_rejects_values_outside_the_supported_window() {
 
 #[test]
 fn typed_primitives_normalize_and_fail_closed() {
-    assert_eq!(Amount::new("00042").unwrap().as_str(), "42");
-    assert_eq!(Amount::new("0x2a").unwrap().as_str(), "42");
+    assert_eq!(Amount::new("00042").unwrap().to_string(), "42");
+    assert_eq!(Amount::new("0x2a").unwrap().to_string(), "42");
     assert!(Amount::new("-1").is_err());
     assert!(Amount::new("abc").is_err());
     assert!(Amount::new(format!("0x1{}", "0".repeat(64))).is_err());

@@ -182,11 +182,11 @@ fn eip1271_signature_payload_matches_the_manual_contract_encoding() {
     expected.extend_from_slice(&encode_address_word(order.sell_token.as_str()));
     expected.extend_from_slice(&encode_address_word(order.buy_token.as_str()));
     expected.extend_from_slice(&encode_address_word(order.receiver.as_str()));
-    expected.extend_from_slice(&encode_u256_word(order.sell_amount.as_str()));
-    expected.extend_from_slice(&encode_u256_word(order.buy_amount.as_str()));
+    expected.extend_from_slice(&encode_u256_word(&order.sell_amount.to_string()));
+    expected.extend_from_slice(&encode_u256_word(&order.buy_amount.to_string()));
     expected.extend_from_slice(&encode_u32_word(order.valid_to));
     expected.extend_from_slice(&encode_bytes32_word(order.app_data.as_str()));
-    expected.extend_from_slice(&encode_u256_word(order.fee_amount.as_str()));
+    expected.extend_from_slice(&encode_u256_word(&order.fee_amount.to_string()));
     expected.extend_from_slice(&keccak_word("sell"));
     expected.extend_from_slice(&encode_bool_word(order.partially_fillable));
     expected.extend_from_slice(&keccak_word("erc20"));

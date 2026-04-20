@@ -196,13 +196,13 @@ pub fn suggest_slippage_bps(
     )?;
     let volume_amount = suggest_slippage_from_volume(
         amounts.is_sell,
-        amounts.before_network_costs.sell_amount.as_str(),
-        amounts.after_network_costs.sell_amount.as_str(),
+        &amounts.before_network_costs.sell_amount.to_string(),
+        &amounts.after_network_costs.sell_amount.to_string(),
         volume_multiplier_percent.unwrap_or(SLIPPAGE_VOLUME_MULTIPLIER_PERCENT),
     )?;
 
-    let total_slippage = parse_integer("totalSlippage", fee_amount.as_str())?
-        + parse_integer("totalSlippage", volume_amount.as_str())?;
+    let total_slippage = parse_integer("totalSlippage", &fee_amount.to_string())?
+        + parse_integer("totalSlippage", &volume_amount.to_string())?;
     let slippage_percent_scaled = get_slippage_percent_scaled(
         amounts.is_sell,
         &amounts.before_network_costs.sell_amount,
@@ -308,7 +308,7 @@ pub fn partner_fee_bps(partner_fee: Option<&PartnerFee>) -> Option<u32> {
 }
 
 pub(crate) fn gas_with_margin(gas: &Amount) -> Result<Amount, TradingError> {
-    let gas = parse_integer("gas", gas.as_str())?;
+    let gas = parse_integer("gas", &gas.to_string())?;
     let margin = (&gas * BigInt::from(GAS_MARGIN_PERCENT)) / BigInt::from(100);
     Amount::new((gas + margin).to_string()).map_err(Into::into)
 }
@@ -400,11 +400,11 @@ fn get_slippage_percent_scaled(
 ) -> Result<BigInt, TradingError> {
     let sell_before = parse_integer(
         "sellAmountBeforeNetworkCosts",
-        sell_amount_before_network_costs.as_str(),
+        &sell_amount_before_network_costs.to_string(),
     )?;
     let sell_after = parse_integer(
         "sellAmountAfterNetworkCosts",
-        sell_amount_after_network_costs.as_str(),
+        &sell_amount_after_network_costs.to_string(),
     )?;
     let slippage = parse_integer("slippage", slippage)?;
     let sell_amount = if is_sell { sell_after } else { sell_before };

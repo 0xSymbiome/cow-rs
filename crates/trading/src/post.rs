@@ -1,6 +1,4 @@
-use cow_sdk_core::{
-    Amount, AsyncProvider, AsyncSigner, AtomAmount, ProtocolOptions, Provider, Signer,
-};
+use cow_sdk_core::{Amount, AsyncProvider, AsyncSigner, ProtocolOptions, Provider, Signer};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use cow_sdk_signing::{
     SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order_async,
@@ -18,44 +16,6 @@ use crate::{
     TradingError, adjust_ethflow_limit_parameters, build_app_data, get_order_to_sign,
     is_ethflow_order, merge_app_data_doc, swap_params_to_limit_order_params,
 };
-
-impl OrderPostingResult {
-    /// Returns the posted order's sell amount as a typed [`AtomAmount`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InvalidInput`] when the submitted order's
-    /// wire-format sell amount cannot be parsed into the supported
-    /// `uint256` range.
-    pub fn sell_atom_amount(&self) -> Result<AtomAmount, TradingError> {
-        AtomAmount::try_from(&self.order_to_sign.sell_amount)
-            .map_err(|err| TradingError::InvalidInput(err.to_string()))
-    }
-
-    /// Returns the posted order's buy amount as a typed [`AtomAmount`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InvalidInput`] when the submitted order's
-    /// wire-format buy amount cannot be parsed into the supported
-    /// `uint256` range.
-    pub fn buy_atom_amount(&self) -> Result<AtomAmount, TradingError> {
-        AtomAmount::try_from(&self.order_to_sign.buy_amount)
-            .map_err(|err| TradingError::InvalidInput(err.to_string()))
-    }
-
-    /// Returns the posted order's fee amount as a typed [`AtomAmount`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InvalidInput`] when the submitted order's
-    /// wire-format fee amount cannot be parsed into the supported
-    /// `uint256` range.
-    pub fn fee_atom_amount(&self) -> Result<AtomAmount, TradingError> {
-        AtomAmount::try_from(&self.order_to_sign.fee_amount)
-            .map_err(|err| TradingError::InvalidInput(err.to_string()))
-    }
-}
 
 // Non-suffixed posting functions are async entry points for synchronous Signer implementors.
 // Keep workflow logic in the AsyncSigner implementations so both public paths stay aligned.
@@ -600,8 +560,8 @@ where
     let mut order_body = OrderCreation::new(
         order_to_sign.sell_token.clone(),
         order_to_sign.buy_token.clone(),
-        order_to_sign.sell_amount.as_str().to_owned(),
-        order_to_sign.buy_amount.as_str().to_owned(),
+        order_to_sign.sell_amount.to_string(),
+        order_to_sign.buy_amount.to_string(),
         order_to_sign.valid_to,
         order_to_sign.kind,
         signing_scheme,

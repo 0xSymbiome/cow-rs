@@ -156,8 +156,8 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
             )],
         )
         .unwrap();
-    assert_eq!(result.gas_used.as_str(), "21000");
-    assert_eq!(result.executed_buy_amount.as_str(), "1980");
+    assert_eq!(result.gas_used.to_string(), "21000");
+    assert_eq!(result.executed_buy_amount.to_string(), "1980");
 
     let call = provider.calls.borrow().last().cloned().unwrap();
     assert_eq!(call.method, "simulateTrade");

@@ -235,7 +235,7 @@ async fn limit_posting_disables_cost_slippage_adjustments_for_sell_and_buy_order
         .expect("sell limit order must be sent");
 
     assert_eq!(sell_result.order_to_sign.buy_amount, sell_params.buy_amount);
-    assert_eq!(sell_sent.buy_amount, sell_params.buy_amount.as_str());
+    assert_eq!(sell_sent.buy_amount, sell_params.buy_amount.to_string());
 
     let buy_orderbook = MockOrderbook::new(trader.chain_id, buy_quote_response());
     let buy_params = sample_limit_parameters(OrderKind::Buy);
@@ -250,7 +250,7 @@ async fn limit_posting_disables_cost_slippage_adjustments_for_sell_and_buy_order
         .expect("buy limit order must be sent");
 
     assert_eq!(buy_result.order_to_sign.sell_amount, buy_params.sell_amount);
-    assert_eq!(buy_sent.sell_amount, buy_params.sell_amount.as_str());
+    assert_eq!(buy_sent.sell_amount, buy_params.sell_amount.to_string());
 }
 
 #[tokio::test]

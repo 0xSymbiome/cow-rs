@@ -96,11 +96,23 @@ pub(crate) fn encode_u256_str(
             value: value.to_owned(),
         })?;
 
-    let bytes = parsed.to_bytes_be();
+    encode_u256_biguint_inner(field, &parsed, || value.to_owned())
+}
+
+pub(crate) fn encode_u256_biguint(value: &BigUint) -> Result<[u8; 32], ContractsError> {
+    encode_u256_biguint_inner("amount", value, || value.to_str_radix(10))
+}
+
+fn encode_u256_biguint_inner(
+    field: &'static str,
+    value: &BigUint,
+    display: impl FnOnce() -> String,
+) -> Result<[u8; 32], ContractsError> {
+    let bytes = value.to_bytes_be();
     if bytes.len() > 32 {
         return Err(ContractsError::NumericOverflow {
             field,
-            value: value.to_owned(),
+            value: display(),
         });
     }
 

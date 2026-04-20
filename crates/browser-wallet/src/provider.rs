@@ -458,13 +458,13 @@ pub(crate) fn transaction_to_rpc(
     if let Some(value) = &tx.value {
         object.insert(
             "value".to_owned(),
-            Value::String(hex_quantity(value.as_str())?),
+            Value::String(hex_quantity(&value.to_string())?),
         );
     }
     if let Some(gas_limit) = &tx.gas_limit {
         object.insert(
             "gas".to_owned(),
-            Value::String(hex_quantity(gas_limit.as_str())?),
+            Value::String(hex_quantity(&gas_limit.to_string())?),
         );
     }
     Ok(Value::Object(object))

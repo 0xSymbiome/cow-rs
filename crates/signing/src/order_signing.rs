@@ -184,17 +184,17 @@ pub fn eip1271_signature_payload(
     encoded.extend_from_slice(&encode_address(normalized_order.receiver.as_str())?);
     encoded.extend_from_slice(&encode_u256_str(
         "sellAmount",
-        normalized_order.sell_amount.as_str(),
+        &normalized_order.sell_amount.to_string(),
     )?);
     encoded.extend_from_slice(&encode_u256_str(
         "buyAmount",
-        normalized_order.buy_amount.as_str(),
+        &normalized_order.buy_amount.to_string(),
     )?);
     encoded.extend_from_slice(&encode_u32(normalized_order.valid_to));
     encoded.extend_from_slice(&parse_hex32(normalized_order.app_data.as_str(), "appData")?);
     encoded.extend_from_slice(&encode_u256_str(
         "feeAmount",
-        normalized_order.fee_amount.as_str(),
+        &normalized_order.fee_amount.to_string(),
     )?);
     encoded.extend_from_slice(&keccak256(
         order_kind_name(normalized_order.kind).as_bytes(),

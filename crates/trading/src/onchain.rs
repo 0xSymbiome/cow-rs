@@ -299,7 +299,7 @@ where
             message: error.to_string(),
         });
     tx.gas_limit = Some(match gas {
-        Ok(value) => Amount::new(parse_integer("gas", value.as_str())?.to_string())?,
+        Ok(value) => Amount::new(parse_integer("gas", &value.to_string())?.to_string())?,
         Err(_) => default_gas_limit(),
     });
     Ok(tx)
@@ -347,7 +347,7 @@ where
             message: error.to_string(),
         });
     tx.gas_limit = Some(match gas {
-        Ok(value) => Amount::new(parse_integer("gas", value.as_str())?.to_string())?,
+        Ok(value) => Amount::new(parse_integer("gas", &value.to_string())?.to_string())?,
         Err(_) => default_gas_limit(),
     });
     Ok(tx)
@@ -540,14 +540,17 @@ fn encode_ethflow_tuple_call(
     order: &cow_sdk_core::UnsignedOrder,
     quote_id: i64,
 ) -> Result<String, TradingError> {
+    let sell_amount = order.sell_amount.to_string();
+    let buy_amount = order.buy_amount.to_string();
+    let fee_amount = order.fee_amount.to_string();
     encode_ethflow_tuple_static(
         method,
         &EthFlowTupleData {
             buy_token: &order.buy_token,
             receiver: &order.receiver,
-            sell_amount: order.sell_amount.as_str(),
-            buy_amount: order.buy_amount.as_str(),
-            fee_amount: order.fee_amount.as_str(),
+            sell_amount: &sell_amount,
+            buy_amount: &buy_amount,
+            fee_amount: &fee_amount,
             partially_fillable: order.partially_fillable,
             quote_id,
             app_data: order.app_data.as_str(),

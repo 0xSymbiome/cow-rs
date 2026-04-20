@@ -1,9 +1,9 @@
 use num_bigint::BigInt;
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, AtomAmount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS,
-    MAX_VALID_TO_EPOCH, ProtocolOptions, SupportedChainId, UnsignedOrder, ValidTo,
-    eth_flow_contract_address, wrapped_native_token,
+    Address, Amount, AppDataHash, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, MAX_VALID_TO_EPOCH,
+    ProtocolOptions, SupportedChainId, UnsignedOrder, ValidTo, eth_flow_contract_address,
+    wrapped_native_token,
 };
 use cow_sdk_orderbook::OrderQuoteResponse;
 use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
@@ -74,28 +74,6 @@ impl OrderToSignParams {
 }
 
 impl LimitTradeParameters {
-    /// Returns the sell amount as a typed [`AtomAmount`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InvalidInput`] when the stored wire-format
-    /// sell amount cannot be parsed into the supported `uint256` range.
-    pub fn sell_atom_amount(&self) -> Result<AtomAmount, TradingError> {
-        AtomAmount::try_from(&self.sell_amount)
-            .map_err(|err| TradingError::InvalidInput(err.to_string()))
-    }
-
-    /// Returns the buy amount as a typed [`AtomAmount`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InvalidInput`] when the stored wire-format
-    /// buy amount cannot be parsed into the supported `uint256` range.
-    pub fn buy_atom_amount(&self) -> Result<AtomAmount, TradingError> {
-        AtomAmount::try_from(&self.buy_amount)
-            .map_err(|err| TradingError::InvalidInput(err.to_string()))
-    }
-
     /// Resolves the order expiration into a typed [`ValidTo`].
     ///
     /// `valid_to` wins when present; otherwise `valid_for` is combined with
@@ -235,13 +213,13 @@ pub fn get_order_to_sign(
         let quote = cow_sdk_orderbook::QuoteData::new(
             limit_parameters.sell_token.clone(),
             limit_parameters.buy_token.clone(),
-            limit_parameters.sell_amount.as_str().to_owned(),
-            limit_parameters.buy_amount.as_str().to_owned(),
+            limit_parameters.sell_amount.to_string(),
+            limit_parameters.buy_amount.to_string(),
             valid_to,
             app_data_keccak256.clone(),
             limit_parameters.kind,
         )
-        .with_network_cost_amount(network_costs_amount.as_str().to_owned())
+        .with_network_cost_amount(network_costs_amount.to_string())
         .with_receiver(receiver.clone())
         .with_partially_fillable(limit_parameters.partially_fillable)
         .with_sell_token_balance(limit_parameters.sell_token_balance)
@@ -339,7 +317,7 @@ pub async fn calculate_unique_order_id(
 }
 
 fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
-    let amount = parse_integer("buyAmount", value.as_str())?;
+    let amount = parse_integer("buyAmount", &value.to_string())?;
     if amount <= BigInt::from(0) {
         return Err(TradingError::InvalidInput(format!(
             "buyAmount must be greater than 0: {amount}"

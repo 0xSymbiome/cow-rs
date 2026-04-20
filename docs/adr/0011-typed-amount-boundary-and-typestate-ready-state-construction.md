@@ -10,15 +10,15 @@
 
 Public amount-carrying surfaces distinguish atomic and decimal-scaled
 values through dedicated newtypes, and `TradingSdkBuilder` advertises its
-prerequisites through typestate terminals. `AtomAmount` wraps an unsigned
-256-bit integer in wire-native base-10 string form for ABI and transport
-use; `DecimalAmount` pairs an atomic value with a `decimals` scale for
-display and user-input flows. The builder carries two marker type
-parameters that track whether `chain_id` and `app_code` have been
-supplied, and the `build_ready` terminal is only reachable from the fully-
-set state. `build_helper_only` is only reachable once the chain-id marker
-is set. A permissive runtime-validated `build` terminal stays available on
-every state for the migration window.
+prerequisites through typestate terminals. `Amount` wraps an unsigned
+256-bit integer as a typed `BigUint` with wire-native base-10 string
+serialization for ABI and transport use; `DecimalAmount` pairs an atomic
+value with a `decimals` scale for display and user-input flows. The
+builder carries two marker type parameters that track whether `chain_id`
+and `app_code` have been supplied, and the `build_ready` terminal is only
+reachable from the fully-set state. `build_helper_only` is only reachable
+once the chain-id marker is set. A permissive runtime-validated `build`
+terminal stays available on every state for the migration window.
 
 ## Why
 
@@ -33,17 +33,18 @@ widening the runtime surface.
 
 ## Must Remain True
 
-- Public surface: `AtomAmount` and `DecimalAmount` are the forward
+- Public surface: `Amount` (typed `BigUint`) and `DecimalAmount` are the
   amount-carrying contract on the `cow-sdk-trading` request surface;
-  existing `Amount`-typed signatures stay supported through the migration
-  window with `From<BigUint>` and `Into<BigUint>` conversions.
-  `TradingSdkBuilder` exposes `build_ready` (requires both markers set)
-  and `build_helper_only` (requires only the chain-id marker). The
-  permissive `build` and `build_partial` terminals remain on every state.
+  `From<BigUint>`, `Into<BigUint>`, and `TryFrom<&str>` conversions keep
+  atomic interop ergonomic. `TradingSdkBuilder` exposes `build_ready`
+  (requires both markers set) and `build_helper_only` (requires only the
+  chain-id marker). The permissive `build` and `build_partial` terminals
+  remain on every state.
 - Runtime and support: the wire form of every amount remains the
   canonical base-10 string already defined by the orderbook contract.
-  `AtomAmount` serializes to that exact string; decimal scaling is a
-  pure presentation concern. Helper-only `TradingSdk` instances fail
+  `Amount` serializes to that exact string via a custom serializer;
+  decimal scaling is a pure presentation concern. Helper-only
+  `TradingSdk` instances fail
   quote, post, and off-chain cancellation flows with a typed
   `TradingError::HelperOnlyMode` while pre-sign, allowance, approval, and
   on-chain cancellation helpers stay fully usable.

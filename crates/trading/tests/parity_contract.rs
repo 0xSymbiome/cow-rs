@@ -186,12 +186,12 @@ async fn assert_sell_order_amount_adjustment(case_id: &str, expected: &Value) {
         "case {case_id}: sent order buy_amount must match the pinned vector",
     );
     assert_eq!(
-        result.order_to_sign.sell_amount.as_str(),
+        result.order_to_sign.sell_amount.to_string(),
         expected_sell_amount,
         "case {case_id}: order_to_sign.sell_amount must match the pinned vector",
     );
     assert_eq!(
-        result.order_to_sign.buy_amount.as_str(),
+        result.order_to_sign.buy_amount.to_string(),
         expected_buy_amount,
         "case {case_id}: order_to_sign.buy_amount must match the pinned vector",
     );
@@ -236,12 +236,12 @@ async fn assert_buy_order_amount_adjustment(case_id: &str, expected: &Value) {
         "case {case_id}: sent order buy_amount must match the pinned vector",
     );
     assert_eq!(
-        result.order_to_sign.sell_amount.as_str(),
+        result.order_to_sign.sell_amount.to_string(),
         expected_sell_amount,
         "case {case_id}: order_to_sign.sell_amount must match the pinned vector",
     );
     assert_eq!(
-        result.order_to_sign.buy_amount.as_str(),
+        result.order_to_sign.buy_amount.to_string(),
         expected_buy_amount,
         "case {case_id}: order_to_sign.buy_amount must match the pinned vector",
     );
@@ -929,12 +929,12 @@ async fn assert_limit_order_disable_adjustments(case_id: &str, expected: &Value)
     );
     assert_eq!(
         sell_sent.buy_amount,
-        sell_params.buy_amount.as_str(),
+        sell_params.buy_amount.to_string(),
         "case {case_id}: sent sell limit order.buy_amount must stay unchanged",
     );
     assert_eq!(
         sell_sent.sell_amount,
-        sell_params.sell_amount.as_str(),
+        sell_params.sell_amount.to_string(),
         "case {case_id}: sent sell limit order.sell_amount must stay unchanged",
     );
 
@@ -957,12 +957,12 @@ async fn assert_limit_order_disable_adjustments(case_id: &str, expected: &Value)
     );
     assert_eq!(
         buy_sent.sell_amount,
-        buy_params.sell_amount.as_str(),
+        buy_params.sell_amount.to_string(),
         "case {case_id}: sent buy limit order.sell_amount must stay unchanged",
     );
     assert_eq!(
         buy_sent.buy_amount,
-        buy_params.buy_amount.as_str(),
+        buy_params.buy_amount.to_string(),
         "case {case_id}: sent buy limit order.buy_amount must stay unchanged",
     );
 }

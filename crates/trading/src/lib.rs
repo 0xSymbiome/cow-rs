@@ -4,7 +4,7 @@
 #![warn(missing_docs)]
 
 pub use cow_sdk_app_data::{PartnerFee, PartnerFeePolicy};
-pub use cow_sdk_core::{AtomAmount, DecimalAmount};
+pub use cow_sdk_core::DecimalAmount;
 
 /// Allowance reads, approval transactions, and approval submission helpers.
 pub mod allowance;

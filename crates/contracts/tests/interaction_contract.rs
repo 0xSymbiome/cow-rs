@@ -41,7 +41,7 @@ fn interaction_normalization_applies_zero_value_call_defaults() {
     });
     assert_eq!(normalized.target, target);
     assert_eq!(
-        normalized.value.as_str(),
+        normalized.value.to_string(),
         fixture["expected"]["value"].as_str().unwrap()
     );
     assert_eq!(
@@ -58,7 +58,7 @@ fn interaction_normalization_applies_zero_value_call_defaults() {
         value: Some(Amount::new("42").unwrap()),
         call_data: Some(bytes_from_hex_literal("0x12345678")),
     });
-    assert_eq!(explicit.value.as_str(), "42");
+    assert_eq!(explicit.value.to_string(), "42");
     assert_eq!(
         explicit.call_data.as_ref(),
         &[0x12, 0x34, 0x56, 0x78][..],
@@ -83,12 +83,12 @@ fn batch_interaction_normalization_preserves_order() {
 
     let normalized = normalize_interactions(&interactions);
     assert_eq!(normalized.len(), 2);
-    assert_eq!(normalized[0].value.as_str(), "0");
+    assert_eq!(normalized[0].value.to_string(), "0");
     assert!(
         normalized[0].call_data.is_empty(),
         "missing calldata must normalize to an empty byte buffer"
     );
-    assert_eq!(normalized[1].value.as_str(), "7");
+    assert_eq!(normalized[1].value.to_string(), "7");
     assert_eq!(
         normalized[1].call_data.as_ref(),
         &[0x01, 0x02, 0x03, 0x04][..],

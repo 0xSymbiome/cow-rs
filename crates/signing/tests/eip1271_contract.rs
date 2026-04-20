@@ -55,11 +55,11 @@ fn independent_payload(order: &cow_sdk_core::UnsignedOrder, ecdsa_signature: &st
     encoded.extend_from_slice(&encode_address(order.sell_token.as_str()));
     encoded.extend_from_slice(&encode_address(order.buy_token.as_str()));
     encoded.extend_from_slice(&encode_address(order.receiver.as_str()));
-    encoded.extend_from_slice(&encode_u256(order.sell_amount.as_str()));
-    encoded.extend_from_slice(&encode_u256(order.buy_amount.as_str()));
+    encoded.extend_from_slice(&encode_u256(&order.sell_amount.to_string()));
+    encoded.extend_from_slice(&encode_u256(&order.buy_amount.to_string()));
     encoded.extend_from_slice(&encode_u32(order.valid_to));
     encoded.extend_from_slice(&parse_hex32(order.app_data.as_str()));
-    encoded.extend_from_slice(&encode_u256(order.fee_amount.as_str()));
+    encoded.extend_from_slice(&encode_u256(&order.fee_amount.to_string()));
     encoded.extend_from_slice(&keccak256(match order.kind {
         OrderKind::Buy => b"buy".as_slice(),
         OrderKind::Sell => b"sell".as_slice(),

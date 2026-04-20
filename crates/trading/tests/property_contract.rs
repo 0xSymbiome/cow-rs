@@ -208,8 +208,8 @@ fn swap_params_to_limit_order_params_preserves_generated_quote_to_limit_shape() 
         assert_eq!(limit.buy_token, trade.buy_token);
         assert_eq!(limit.sell_token_decimals, trade.sell_token_decimals);
         assert_eq!(limit.buy_token_decimals, trade.buy_token_decimals);
-        assert_eq!(limit.sell_amount.as_str(), quote.quote.sell_amount);
-        assert_eq!(limit.buy_amount.as_str(), quote.quote.buy_amount);
+        assert_eq!(limit.sell_amount.to_string(), quote.quote.sell_amount);
+        assert_eq!(limit.buy_amount.to_string(), quote.quote.buy_amount);
         assert_eq!(limit.quote_id, quote.id);
         assert_eq!(limit.env, trade.env);
         assert_eq!(limit.partially_fillable, trade.partially_fillable);
@@ -257,8 +257,11 @@ async fn ethflow_calldata_preserves_uint256_boundary_values() {
             .as_ref()
             .expect("ethflow transaction must include calldata");
 
-        assert_eq!(transaction.order_to_sign.sell_amount.as_str(), sell_amount);
-        assert_eq!(transaction.order_to_sign.buy_amount.as_str(), buy_amount);
+        assert_eq!(
+            transaction.order_to_sign.sell_amount.to_string(),
+            sell_amount
+        );
+        assert_eq!(transaction.order_to_sign.buy_amount.to_string(), buy_amount);
         assert_eq!(
             hex_word_to_biguint(calldata_word(data.as_str(), 2)),
             BigUint::parse_bytes(sell_amount.as_bytes(), 10).unwrap()
@@ -389,11 +392,11 @@ async fn quote_results_preserve_generated_override_shape_across_request_and_orde
         assert_eq!(limit.sell_token, result.trade_parameters.sell_token);
         assert_eq!(limit.buy_token, result.trade_parameters.buy_token);
         assert_eq!(
-            limit.sell_amount.as_str(),
+            limit.sell_amount.to_string(),
             result.quote_response.quote.sell_amount
         );
         assert_eq!(
-            limit.buy_amount.as_str(),
+            limit.buy_amount.to_string(),
             result.quote_response.quote.buy_amount
         );
         assert_eq!(limit.quote_id, result.quote_response.id);

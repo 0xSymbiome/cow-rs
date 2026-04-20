@@ -677,117 +677,41 @@ impl fmt::Display for ValidTo {
     }
 }
 
-/// Canonical non-negative `uint256` quantity rendered as a base-10 string.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(try_from = "String", into = "String")]
-pub struct Amount(String);
+/// Canonical non-negative `uint256` quantity rendered in the smallest token unit.
+///
+/// `Amount` is the typed boundary for atomic token values on every
+/// `CoW` Protocol surface: contract hashing, EIP-712 typed data,
+/// orderbook DTOs, and decimal-aware display. The inner `BigUint`
+/// stays the authoritative storage while the wire format remains the
+/// canonical base-10 string accepted by the orderbook and contract
+/// layer. The custom `Serialize`/`Deserialize` impls emit and parse
+/// that decimal-string form without changing the stored numeric.
+///
+/// For decimal-aware values that also carry a scale, see
+/// [`DecimalAmount`]. For signed quantities, see [`SignedAmount`].
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Amount(BigUint);
 
 impl Amount {
-    /// Creates a canonical non-negative `uint256` quantity.
-    ///
-    /// Decimal strings and `0x`-prefixed hexadecimal strings are accepted.
+    /// Parses a canonical non-negative `uint256` quantity from a
+    /// decimal or `0x`-prefixed hexadecimal literal.
     ///
     /// # Errors
     ///
     /// Returns [`CoreError`] when the input is empty, cannot be parsed, or
     /// exceeds `uint256` bounds.
     pub fn new(value: impl Into<String>) -> Result<Self, CoreError> {
-        let parsed = parse_u256_quantity("amount", &value.into())?;
-        Ok(Self(parsed.to_str_radix(10)))
+        parse_u256_quantity("amount", &value.into()).map(Self)
     }
 
     /// Returns the zero quantity.
-    #[must_use]
-    pub fn zero() -> Self {
-        Self("0".to_owned())
-    }
-
-    /// Returns the canonical decimal string.
-    #[must_use]
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl Default for Amount {
-    fn default() -> Self {
-        Self::zero()
-    }
-}
-
-impl TryFrom<String> for Amount {
-    type Error = CoreError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::new(value)
-    }
-}
-
-impl TryFrom<&str> for Amount {
-    type Error = CoreError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Self::new(value.to_owned())
-    }
-}
-
-impl From<Amount> for String {
-    fn from(value: Amount) -> Self {
-        value.0
-    }
-}
-
-impl From<u32> for Amount {
-    fn from(value: u32) -> Self {
-        Self(value.to_string())
-    }
-}
-
-impl From<u64> for Amount {
-    fn from(value: u64) -> Self {
-        Self(value.to_string())
-    }
-}
-
-impl From<usize> for Amount {
-    fn from(value: usize) -> Self {
-        Self(value.to_string())
-    }
-}
-
-impl AsRef<str> for Amount {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
-}
-
-impl fmt::Display for Amount {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
-
-/// Unsigned 256-bit atomic token quantity rendered in the smallest token unit.
-///
-/// `AtomAmount` is the forward-looking typed boundary for atomic token
-/// values. The inner `BigUint` stays the authoritative storage while the
-/// wire format remains the canonical base-10 string accepted by the `CoW`
-/// Protocol orderbook and contract layer. For decimal-aware values that also
-/// carry a scale, see [`DecimalAmount`]. Existing `Amount`-based surfaces are
-/// preserved for wire compatibility; new typed code should reach for
-/// `AtomAmount` and `DecimalAmount` instead.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct AtomAmount(BigUint);
-
-impl AtomAmount {
-    /// Returns the zero atom quantity.
     #[inline]
     #[must_use]
     pub fn zero() -> Self {
         Self(BigUint::from(0u32))
     }
 
-    /// Creates an atomic amount from a raw `BigUint` quantity.
+    /// Creates an amount from a raw `BigUint` quantity.
     #[inline]
     #[must_use]
     pub const fn from_atoms(atoms: BigUint) -> Self {
@@ -809,107 +733,86 @@ impl AtomAmount {
     }
 }
 
-impl Default for AtomAmount {
+impl Default for Amount {
     fn default() -> Self {
         Self::zero()
     }
 }
 
-impl From<BigUint> for AtomAmount {
+impl From<BigUint> for Amount {
     #[inline]
     fn from(value: BigUint) -> Self {
         Self(value)
     }
 }
 
-impl From<AtomAmount> for BigUint {
+impl From<Amount> for BigUint {
     #[inline]
-    fn from(value: AtomAmount) -> Self {
+    fn from(value: Amount) -> Self {
         value.0
     }
 }
 
-impl From<u32> for AtomAmount {
+impl From<u32> for Amount {
     #[inline]
     fn from(value: u32) -> Self {
         Self(BigUint::from(value))
     }
 }
 
-impl From<u64> for AtomAmount {
+impl From<u64> for Amount {
     #[inline]
     fn from(value: u64) -> Self {
         Self(BigUint::from(value))
     }
 }
 
-impl From<u128> for AtomAmount {
+impl From<u128> for Amount {
     #[inline]
     fn from(value: u128) -> Self {
         Self(BigUint::from(value))
     }
 }
 
-impl TryFrom<&str> for AtomAmount {
+impl From<usize> for Amount {
+    #[inline]
+    fn from(value: usize) -> Self {
+        Self(BigUint::from(value))
+    }
+}
+
+impl TryFrom<&str> for Amount {
     type Error = CoreError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        parse_u256_quantity("atom_amount", value).map(Self)
+        parse_u256_quantity("amount", value).map(Self)
     }
 }
 
-impl TryFrom<String> for AtomAmount {
+impl TryFrom<String> for Amount {
     type Error = CoreError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        parse_u256_quantity("atom_amount", &value).map(Self)
+        parse_u256_quantity("amount", &value).map(Self)
     }
 }
 
-impl TryFrom<&Amount> for AtomAmount {
-    type Error = CoreError;
-
-    fn try_from(value: &Amount) -> Result<Self, Self::Error> {
-        parse_u256_quantity("atom_amount", value.as_str()).map(Self)
-    }
-}
-
-impl TryFrom<Amount> for AtomAmount {
-    type Error = CoreError;
-
-    fn try_from(value: Amount) -> Result<Self, Self::Error> {
-        (&value).try_into()
-    }
-}
-
-impl From<&AtomAmount> for Amount {
-    fn from(value: &AtomAmount) -> Self {
-        Self(value.0.to_str_radix(10))
-    }
-}
-
-impl From<AtomAmount> for Amount {
-    fn from(value: AtomAmount) -> Self {
-        Self::from(&value)
-    }
-}
-
-impl fmt::Display for AtomAmount {
+impl fmt::Display for Amount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.0, f)
     }
 }
 
-impl Serialize for AtomAmount {
+impl Serialize for Amount {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(&self.0.to_str_radix(10))
     }
 }
 
-impl<'de> Deserialize<'de> for AtomAmount {
+impl<'de> Deserialize<'de> for Amount {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let value = String::deserialize(deserializer)?;
-        parse_u256_quantity("atom_amount", &value)
+        parse_u256_quantity("amount", &value)
             .map(Self)
             .map_err(|err| serde::de::Error::custom(err.to_string()))
     }

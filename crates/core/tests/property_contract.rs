@@ -22,7 +22,7 @@
 use std::collections::{HashMap, HashSet};
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, AtomAmount, ChainId, DecimalAmount, Hash32, HexData, OrderUid,
+    Address, Amount, AppDataHex, ChainId, DecimalAmount, Hash32, HexData, OrderUid,
     SupportedChainId, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
     addresses_equal, token_id,
 };
@@ -73,7 +73,7 @@ fn address_bytes() -> impl Strategy<Value = [u8; 20]> {
 }
 
 /// Strategy that emits an arbitrary 32-byte payload; used as the
-/// atom-amount value domain because every representable [`AtomAmount`]
+/// amount value domain because every representable [`Amount`]
 /// fits in 256 bits.
 fn atom_amount_bytes() -> impl Strategy<Value = [u8; 32]> {
     any::<[u8; 32]>()
@@ -227,13 +227,12 @@ proptest! {
         let from_hex = Amount::new(&hex_form).unwrap();
 
         prop_assert_eq!(&from_decimal, &from_hex);
-        prop_assert_eq!(from_decimal.as_str(), &canonical);
+        prop_assert_eq!(from_decimal.to_string(), canonical.clone());
 
-        let roundtrip = Amount::new(from_decimal.as_str()).unwrap();
+        let roundtrip = Amount::new(from_decimal.to_string()).unwrap();
         prop_assert_eq!(&roundtrip, &from_decimal);
 
-        let reparsed = BigUint::parse_bytes(from_decimal.as_str().as_bytes(), 10).unwrap();
-        prop_assert_eq!(&reparsed, &value);
+        prop_assert_eq!(from_decimal.as_biguint(), &value);
     }
 
     /// [`Amount::new`] fails closed on every malformed input shape the
@@ -341,32 +340,29 @@ proptest! {
         prop_assert_ne!(token_id(chain_a, &address_a), token_id(chain_b, &address_a));
     }
 
-    /// [`AtomAmount::from_atoms`] preserves the originating [`BigUint`]
-    /// input, round-trips through the canonical wire-string Serde form,
-    /// and preserves values through the legacy [`Amount`] bridge.
+    /// [`Amount::from_atoms`] preserves the originating [`BigUint`]
+    /// input, round-trips through the canonical decimal-string Serde
+    /// form, and accepts the same value constructed through
+    /// [`Amount::new`].
     #[test]
-    fn atom_amount_roundtrips_through_biguint_and_wire_string(bytes in atom_amount_bytes()) {
+    fn amount_roundtrips_through_biguint_and_wire_string(bytes in atom_amount_bytes()) {
         let value = BigUint::from_bytes_be(&bytes);
         let canonical = value.to_str_radix(10);
 
-        let atom = AtomAmount::from_atoms(value.clone());
-        prop_assert_eq!(atom.as_biguint(), &value);
+        let amount = Amount::from_atoms(value.clone());
+        prop_assert_eq!(amount.as_biguint(), &value);
 
-        let round_trip_big_uint: BigUint = atom.clone().into();
+        let round_trip_big_uint: BigUint = amount.clone().into();
         prop_assert_eq!(&round_trip_big_uint, &value);
 
-        prop_assert_eq!(atom.to_string(), canonical.clone());
+        prop_assert_eq!(amount.to_string(), canonical.clone());
 
-        let serialized = serde_json::to_string(&atom).unwrap();
-        let deserialized: AtomAmount = serde_json::from_str(&serialized).unwrap();
+        let serialized = serde_json::to_string(&amount).unwrap();
+        let deserialized: Amount = serde_json::from_str(&serialized).unwrap();
         prop_assert_eq!(deserialized.as_biguint(), &value);
 
-        let amount = Amount::new(canonical.clone()).unwrap();
-        let via_amount: AtomAmount = (&amount).try_into().unwrap();
-        prop_assert_eq!(via_amount.as_biguint(), &value);
-
-        let round_trip_amount: Amount = atom.into();
-        prop_assert_eq!(round_trip_amount, amount);
+        let from_new = Amount::new(canonical.clone()).unwrap();
+        prop_assert_eq!(from_new, amount);
     }
 
     /// [`DecimalAmount::new`] preserves atoms and decimals across any

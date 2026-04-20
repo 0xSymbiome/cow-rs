@@ -1,7 +1,7 @@
 use serde_json::{Map, Value, json};
 
 use cow_sdk_app_data::{AppDataParams, PartnerFee, generate_app_data_doc, get_app_data_info};
-use cow_sdk_core::{Amount, AsyncSigner, AtomAmount, ProtocolOptions, Signer};
+use cow_sdk_core::{Amount, AsyncSigner, ProtocolOptions, Signer};
 use cow_sdk_orderbook::{OrderQuoteRequest, PriceQuality, QuoteSide, SigningScheme};
 use cow_sdk_signing::order_typed_data;
 
@@ -17,19 +17,6 @@ use crate::{
     get_order_to_sign, is_ethflow_order, partner_fee_bps, resolve_slippage_suggestion,
     sanitize_protocol_fee_bps,
 };
-
-impl TradeParameters {
-    /// Returns the kind-dependent trade amount as a typed [`AtomAmount`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InvalidInput`] when the stored wire-format
-    /// amount cannot be parsed into the supported `uint256` range.
-    pub fn atom_amount(&self) -> Result<AtomAmount, TradingError> {
-        AtomAmount::try_from(&self.amount)
-            .map_err(|err| TradingError::InvalidInput(err.to_string()))
-    }
-}
 
 /// Builds a quote and signing payload without requiring a signer.
 ///
@@ -443,8 +430,8 @@ fn build_quote_request(
         .clone()
         .unwrap_or_else(|| trader.account.clone());
     let side = match trade_parameters.kind {
-        cow_sdk_core::OrderKind::Sell => QuoteSide::sell(trade_parameters.amount.as_str()),
-        cow_sdk_core::OrderKind::Buy => QuoteSide::buy(trade_parameters.amount.as_str()),
+        cow_sdk_core::OrderKind::Sell => QuoteSide::sell(trade_parameters.amount.to_string()),
+        cow_sdk_core::OrderKind::Buy => QuoteSide::buy(trade_parameters.amount.to_string()),
     };
     let mut request = OrderQuoteRequest::new(
         trade_parameters.sell_token.clone(),

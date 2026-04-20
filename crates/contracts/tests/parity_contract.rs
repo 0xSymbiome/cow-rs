@@ -291,7 +291,7 @@ fn assert_interaction_defaults(id: &str, expected: &Value) {
     });
 
     assert_eq!(
-        normalized.value.as_str(),
+        normalized.value.to_string(),
         expected_value,
         "case {id}: normalize_interaction must default missing value to zero",
     );

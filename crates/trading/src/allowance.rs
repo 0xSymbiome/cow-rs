@@ -1,11 +1,8 @@
-use num_bigint::Sign;
-
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, ContractCall, Provider, Signer, SupportedChainId,
     TransactionHash, TransactionRequest, vault_relayer_address,
 };
 
-use crate::slippage::parse_integer;
 use crate::{ApprovalParameters, TradingError};
 
 const ERC20_ALLOWANCE_ABI_JSON: &str = r#"[{"type":"function","name":"allowance","inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#;
@@ -204,18 +201,11 @@ fn encode_address_word(address: &Address) -> Result<[u8; 32], TradingError> {
 }
 
 fn encode_uint_word(value: &Amount) -> Result<[u8; 32], TradingError> {
-    let parsed = parse_integer("uint256", value.as_str())?;
-    let (sign, bytes) = parsed.to_bytes_be();
-    if sign == Sign::Minus {
-        return Err(TradingError::InvalidNumeric {
-            field: "uint256",
-            value: value.as_str().to_owned(),
-        });
-    }
+    let bytes = value.as_biguint().to_bytes_be();
     if bytes.len() > 32 {
         return Err(TradingError::NumericOverflow {
             field: "uint256",
-            value: value.as_str().to_owned(),
+            value: value.to_string(),
         });
     }
     let mut out = [0u8; 32];

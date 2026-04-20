@@ -23,15 +23,13 @@ unreleased public contract of the repository.
   surfaces for the supported SDK and browser-wallet flows.
 - Public verification, parity, architecture, ADR, and audit documentation for
   the current Rust SDK surface.
-- Typed decimal-aware amount boundary in `cow-sdk-core`. `AtomAmount` wraps an
-  unsigned 256-bit atomic quantity and keeps the canonical base-10 string on
-  the wire, while `DecimalAmount` pairs an atomic value with a decimals scale
-  for display and user-input flows. Typed accessor helpers on
-  `cow-sdk-trading::TradeParameters` and
-  `cow-sdk-trading::LimitTradeParameters` surface the new types at the
-  trading boundary without changing the existing wire-compatible
-  `Amount`-based signatures. Existing `Amount`-backed surfaces remain
-  supported; new typed code should prefer `AtomAmount` and `DecimalAmount`.
+- Typed decimal-aware amount boundary in `cow-sdk-core`. `Amount` wraps an
+  unsigned 256-bit atomic quantity as a typed `BigUint` and keeps the
+  canonical base-10 string on the wire, while `DecimalAmount` pairs an
+  atomic value with a decimals scale for display and user-input flows. The
+  typed amount surface is the single canonical shape on the
+  `cow-sdk-trading` request boundary, with `From<BigUint>` and
+  `TryFrom<&str>` conversions for atomic interop.
 - Zero-copy settlement call-data representation. Settlement, interaction, and
   swap encoder outputs now hold their payload as `bytes::Bytes` so fanning
   the same encoded call data across multiple settlement candidates shares a
@@ -327,6 +325,16 @@ unreleased public contract of the repository.
   Chromium and Firefox. `docs/browser-runtime-proof-posture.md`
   acknowledges the two-browser deterministic matrix under the existing
   Deterministic Lane. ADR 0007 is unchanged.
+- The canonical atomic amount type is now `cow_sdk_core::Amount(BigUint)`.
+  A single typed newtype carries every atomic quantity across
+  `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-signing`,
+  `cow-sdk-app-data`, and `cow-sdk-contracts`; the custom
+  `Serialize`/`Deserialize` impls emit and parse the canonical base-10
+  decimal string so every DTO, ABI encoder, and pinned parity fixture
+  remains byte-identical against upstream. `Amount::new` accepts decimal
+  and `0x`-prefixed hex literals as before, and `Amount::from_atoms`,
+  `Amount::as_biguint`, and `Amount::into_biguint` expose the inner
+  `BigUint` directly for typed arithmetic.
 - Workspace dependency hygiene. The `http` crate now lives in the root
   `[workspace.dependencies]` table pinned at `1.4.0` alongside the other
   shared transport crates, so `cow-sdk-core` consumes it through a single
