@@ -347,6 +347,15 @@ unreleased public contract of the repository.
   `cow-sdk-signing` is retired; the canonical `UnsignedOrder` type is the
   single name for the pre-signature order state exported through the public
   signing surface and the `cow-sdk` prelude.
+- `docs/parity-scope.md` now carries an explicit `Intentionally Out-of-Scope`
+  section enumerating the upstream TypeScript-SDK surfaces that `cow-rs`
+  intentionally declines to mirror, each entry paired with its rationale
+  and the negative parity test that enforces the exclusion at the code
+  level. ADR 0011 is refreshed in place to describe the canonical typed
+  `Amount(BigUint)` newtype as the single atomic-amount shape and to
+  cross-link the parity-scope document as the authoritative exclusion
+  list; reviewers can now navigate between the ADR and the scope doc
+  without private-context chasing.
 
 ### Changed
 
