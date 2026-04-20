@@ -9,8 +9,7 @@
       "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
       "path": "packages/app-data/src/api/appDataHexToCid.ts",
       "anchors": [
-        "appDataHexToCid",
-        "appDataHexToCidLegacy"
+        "appDataHexToCid"
       ]
     },
     {
@@ -18,8 +17,7 @@
       "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
       "path": "packages/app-data/src/api/appDataHexToCid.spec.ts",
       "anchors": [
-        "describe('appDataHexToCid')",
-        "describe('appDataHexToCidLegacy')"
+        "describe('appDataHexToCid')"
       ]
     },
     {
@@ -62,7 +60,6 @@
       "path": "packages/app-data/src/api/getAppDataInfo.ts",
       "anchors": [
         "getAppDataInfo",
-        "getAppDataInfoLegacy",
         "_appDataToCidAux"
       ]
     },
@@ -71,8 +68,7 @@
       "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
       "path": "packages/app-data/src/api/getAppDataInfo.spec.ts",
       "anchors": [
-        "describe('getAppDataInfo')",
-        "describe('getAppDataInfoLegacy')"
+        "describe('getAppDataInfo')"
       ]
     },
     {
@@ -133,8 +129,7 @@
       "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
       "path": "packages/app-data/src/api/fetchDocFromAppData.ts",
       "anchors": [
-        "fetchDocFromAppDataHex",
-        "fetchDocFromAppDataHexLegacy"
+        "fetchDocFromAppDataHex"
       ]
     },
     {
@@ -152,18 +147,7 @@
       "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
       "path": "packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.ts",
       "anchors": [
-        "uploadMetadataDocToIpfsLegacy",
         "_pinJsonInPinataIpfs"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
-      "path": "packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.spec.ts",
-      "anchors": [
-        "describe('uploadMetadataDocToIpfsLegacy')",
-        "Fails without passing credentials",
-        "Uploads to IPFS"
       ]
     },
     {
@@ -242,10 +226,7 @@
         "APP_DATA_HEX",
         "APP_DATA_STRING_2",
         "CID_2",
-        "APP_DATA_HEX_2",
-        "APP_DATA_STRING_LEGACY",
-        "CID_LEGACY",
-        "APP_DATA_HEX_LEGACY"
+        "APP_DATA_HEX_2"
       ]
     },
     {
@@ -346,17 +327,6 @@
       }
     },
     {
-      "id": "app-data-legacy-cid-compatibility",
-      "kind": "positive",
-      "description": "Legacy CID conversion remains available as an explicit compatibility path and preserves the historical Qm-prefixed sample from upstream mocks.",
-      "input": {
-        "app_data_hex": "0x447320af985c5e834321dc495545f764ad20d8397eeed2f4a2dcbee44a56b725"
-      },
-      "expected": {
-        "cid": "QmSwrFbdFcryazEr361YmSwtGcN4uo4U5DKpzA4KbGxw4Q"
-      }
-    },
-    {
       "id": "app-data-get-app-data-info-deterministic",
       "kind": "behavior-scenario",
       "description": "Structured docs are deterministically stringified, validated, hashed, and returned as appDataContent, appDataHex, and CID through getAppDataInfo.",
@@ -368,15 +338,6 @@
         ],
         "structured_doc_stringification": "deterministic",
         "invalid_doc_behavior": "typed-rejection"
-      }
-    },
-    {
-      "id": "app-data-get-app-data-info-legacy",
-      "kind": "behavior-scenario",
-      "description": "Legacy app-data info generation remains explicitly named and uses the compatibility hashing path rather than replacing the default deterministic flow.",
-      "expected": {
-        "legacy_method_name": "getAppDataInfoLegacy",
-        "default_method_name": "getAppDataInfo"
       }
     },
     {
@@ -406,23 +367,18 @@
       "expected": {
         "helpers": [
           "fetchDocFromCid",
-          "fetchDocFromAppDataHex",
-          "fetchDocFromAppDataHexLegacy"
+          "fetchDocFromAppDataHex"
         ],
         "transport_injection": "explicit-uri-parameter"
       }
     },
     {
-      "id": "app-data-upload-legacy-transport-boundary",
+      "id": "app-data-upload-transport-boundary",
       "kind": "behavior-contract",
-      "description": "Legacy upload requires explicit credentials and returns both the resulting appData digest and CID.",
+      "description": "The IPFS upload helper requires explicit credentials and fails closed before dispatching the transport when either key or secret is missing.",
       "expected": {
-        "helper": "uploadMetadataDocToIpfsLegacy",
-        "requires_credentials": true,
-        "returns": [
-          "appData",
-          "cid"
-        ]
+        "helper": "pinJsonInPinataIpfs",
+        "requires_credentials": true
       }
     },
     {

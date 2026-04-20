@@ -25,10 +25,9 @@
 mod common;
 
 use cow_sdk_app_data::{
-    AppDataDoc, AppDataError, CidMode, IpfsConfig, IpfsFetchPolicy, IpfsUploadTransport,
-    SchemaVersion, TransportResponse, app_data_hex_to_cid, app_data_hex_to_cid_legacy,
-    app_data_hex_to_cid_with_mode, cid_to_app_data_hex, get_app_data_info, get_app_data_schema,
-    stringify_deterministic, upload_metadata_doc_to_ipfs_legacy,
+    AppDataDoc, AppDataError, IpfsConfig, IpfsFetchPolicy, IpfsUploadTransport, SchemaVersion,
+    TransportResponse, app_data_hex_to_cid, cid_to_app_data_hex, get_app_data_info,
+    get_app_data_schema, pin_json_in_pinata_ipfs, stringify_deterministic,
 };
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
@@ -124,9 +123,8 @@ fn app_data_hex_strategy() -> impl Strategy<Value = String> {
 }
 
 /// Strategy that emits the union of malformed hex shapes
-/// [`app_data_hex_to_cid`] and [`app_data_hex_to_cid_legacy`] must
-/// reject: missing `0x` prefix, wrong byte length, and non-hex
-/// characters in the payload.
+/// [`app_data_hex_to_cid`] must reject: missing `0x` prefix, wrong
+/// byte length, and non-hex characters in the payload.
 fn malformed_app_data_hex_strategy() -> impl Strategy<Value = String> {
     prop_oneof![
         any::<[u8; 32]>().prop_map(|bytes| hex::encode(bytes)),
@@ -249,38 +247,20 @@ proptest! {
         ..ProptestConfig::default()
     })]
 
-    /// [`app_data_hex_to_cid`] and [`app_data_hex_to_cid_legacy`] produce
-    /// CIDs that round-trip through [`cid_to_app_data_hex`] back to the
-    /// same hex digest. [`app_data_hex_to_cid_with_mode`] returns the
-    /// same string as its per-mode counterpart for both
-    /// [`CidMode::Latest`] and [`CidMode::Legacy`]. Malformed hex input
-    /// fails closed with [`AppDataError::InvalidAppDataHex`] on both
-    /// forms.
+    /// [`app_data_hex_to_cid`] produces CIDs that round-trip through
+    /// [`cid_to_app_data_hex`] back to the same hex digest. Malformed
+    /// hex input fails closed with [`AppDataError::InvalidAppDataHex`].
     #[test]
-    fn cid_roundtrips_hold_for_latest_and_legacy_modes_and_reject_malformed_hex(
+    fn cid_roundtrips_hold_and_malformed_hex_inputs_fail_closed(
         hex in app_data_hex_strategy(),
         malformed in malformed_app_data_hex_strategy(),
     ) {
         let latest = app_data_hex_to_cid(&hex).unwrap();
-        let legacy = app_data_hex_to_cid_legacy(&hex).unwrap();
 
         prop_assert_eq!(cid_to_app_data_hex(&latest).unwrap(), hex.clone());
-        prop_assert_eq!(cid_to_app_data_hex(&legacy).unwrap(), hex.clone());
-        prop_assert_eq!(
-            app_data_hex_to_cid_with_mode(&hex, CidMode::Latest).unwrap(),
-            latest,
-        );
-        prop_assert_eq!(
-            app_data_hex_to_cid_with_mode(&hex, CidMode::Legacy).unwrap(),
-            legacy,
-        );
 
         prop_assert_eq!(
             app_data_hex_to_cid(&malformed).unwrap_err(),
-            AppDataError::InvalidAppDataHex,
-        );
-        prop_assert_eq!(
-            app_data_hex_to_cid_legacy(&malformed).unwrap_err(),
             AppDataError::InvalidAppDataHex,
         );
     }
@@ -309,8 +289,8 @@ proptest! {
     }
 
     /// [`IpfsFetchPolicy::new`] fails closed on every whitespace-only
-    /// base URI, and [`upload_metadata_doc_to_ipfs_legacy`] fails closed
-    /// with [`AppDataError::MissingIpfsCredentials`] before the upload
+    /// base URI, and [`pin_json_in_pinata_ipfs`] fails closed with
+    /// [`AppDataError::MissingIpfsCredentials`] before the upload
     /// transport is reached whenever the supplied [`IpfsConfig`]
     /// exposes a missing or empty pinata key or secret.
     #[test]
@@ -325,7 +305,7 @@ proptest! {
         );
 
         prop_assert_eq!(
-            upload_metadata_doc_to_ipfs_legacy(&app_data_doc(), &PanicUploadTransport, &config)
+            pin_json_in_pinata_ipfs(&app_data_doc(), &PanicUploadTransport, &config)
                 .unwrap_err(),
             AppDataError::MissingIpfsCredentials,
         );

@@ -4,11 +4,11 @@ use std::cell::RefCell;
 
 use cow_sdk_app_data::{
     AppDataError, AppDataParams, IpfsConfig, IpfsUploadTransport, TransportResponse,
-    generate_app_data_doc, upload_metadata_doc_to_ipfs_legacy,
+    generate_app_data_doc, pin_json_in_pinata_ipfs,
 };
 use serde_json::json;
 
-use crate::common::{PINATA_APP_DATA_HEX, PINATA_IPFS_HASH};
+use crate::common::PINATA_IPFS_HASH;
 
 type UploadHeaders = Vec<(String, String)>;
 type UploadRequest = (String, String, UploadHeaders);
@@ -51,13 +51,12 @@ impl IpfsUploadTransport for RecordingUploadTransport {
 fn pinning_requires_explicit_credentials() {
     let transport = RecordingUploadTransport::default();
     let document = generate_app_data_doc(AppDataParams::default());
-    let error = upload_metadata_doc_to_ipfs_legacy(&document, &transport, &IpfsConfig::default())
-        .unwrap_err();
+    let error = pin_json_in_pinata_ipfs(&document, &transport, &IpfsConfig::default()).unwrap_err();
     assert_eq!(error.to_string(), "You need to pass IPFS api credentials.");
 }
 
 #[test]
-fn legacy_pinning_uses_deterministic_body_and_returns_cid_and_digest() {
+fn pinning_uses_deterministic_body_and_surfaces_the_returned_cid() {
     let transport = RecordingUploadTransport::default().with_response(TransportResponse {
         status: 200,
         body: format!("{{\"IpfsHash\":\"{PINATA_IPFS_HASH}\"}}"),
@@ -75,10 +74,9 @@ fn legacy_pinning_uses_deterministic_body_and_returns_cid_and_digest() {
         ..IpfsConfig::default()
     };
 
-    let result = upload_metadata_doc_to_ipfs_legacy(&document, &transport, &config).unwrap();
+    let response = pin_json_in_pinata_ipfs(&document, &transport, &config).unwrap();
 
-    assert_eq!(result.cid, PINATA_IPFS_HASH);
-    assert_eq!(result.app_data, PINATA_APP_DATA_HEX);
+    assert_eq!(response["IpfsHash"].as_str(), Some(PINATA_IPFS_HASH));
 
     let (uri, body, headers) = transport.request().unwrap();
     assert_eq!(uri, "https://api.pinata.cloud/pinning/pinJSONToIPFS");

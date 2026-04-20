@@ -353,7 +353,7 @@ pub struct TransportResponse {
     pub body: String,
 }
 
-/// Result returned by legacy Pinata upload helpers.
+/// Result returned by Pinata upload helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IpfsUploadResult {
     /// `0x`-prefixed app-data digest derived from the returned CID.

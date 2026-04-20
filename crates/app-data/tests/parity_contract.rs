@@ -5,26 +5,23 @@
 //! reproduce the pinned upstream behavior. The helpers exercised are:
 //!
 //! * [`generate_app_data_doc`] — default and custom document generation.
-//! * [`app_data_hex_to_cid`] / [`cid_to_app_data_hex`] — latest CID form
-//!   round-trip.
-//! * [`app_data_hex_to_cid_legacy`] — legacy Qm-prefixed CID form.
-//! * [`get_app_data_info`] / [`get_app_data_info_legacy`] — deterministic
-//!   document processing and legacy compatibility naming.
+//! * [`app_data_hex_to_cid`] / [`cid_to_app_data_hex`] — supported CID
+//!   form round-trip.
+//! * [`get_app_data_info`] — deterministic document processing.
 //! * [`get_app_data_schema`] / [`LATEST_APP_DATA_VERSION`] — semver-only
 //!   schema lookup and latest-version surface.
 //! * [`validate_app_data_doc`] — schema validation with a typed result.
 //! * [`fetch_doc_from_cid`] / [`fetch_doc_from_app_data_hex`] —
 //!   configurable-URI fetch helpers.
-//! * [`upload_metadata_doc_to_ipfs_legacy`] — credential-gated upload.
+//! * [`pin_json_in_pinata_ipfs`] — credential-gated upload transport.
 //!
 //! Failure messages carry the fixture case id so a reviewer looking at a
 //! broken CI run sees the exact upstream vector that diverged.
 
 use cow_sdk_app_data::{
     AppDataError, AppDataParams, IpfsConfig, LATEST_APP_DATA_VERSION, app_data_hex_to_cid,
-    app_data_hex_to_cid_legacy, cid_to_app_data_hex, generate_app_data_doc, get_app_data_info,
-    get_app_data_info_legacy, get_app_data_schema, upload_metadata_doc_to_ipfs_legacy,
-    validate_app_data_doc,
+    cid_to_app_data_hex, generate_app_data_doc, get_app_data_info, get_app_data_schema,
+    pin_json_in_pinata_ipfs, validate_app_data_doc,
 };
 use serde_json::{Value, json};
 
@@ -60,18 +57,14 @@ fn parity_fixture_cases_hold() {
             "app-data-custom-doc-generation" => assert_custom_doc_generation(id, case, expected),
             "app-data-cid-v1-conversion" => assert_cid_v1_conversion(id, case, expected),
             "app-data-cid-digest-extraction" => assert_cid_digest_extraction(id, case, expected),
-            "app-data-legacy-cid-compatibility" => {
-                assert_legacy_cid_compatibility(id, case, expected);
-            }
             "app-data-get-app-data-info-deterministic" => {
                 assert_get_app_data_info_deterministic(id, expected);
             }
-            "app-data-get-app-data-info-legacy" => assert_get_app_data_info_legacy(id, expected),
             "app-data-schema-lookup-contract" => assert_schema_lookup_contract(id, expected),
             "app-data-validation-contract" => assert_validation_contract(id, expected),
             "app-data-fetch-transport-boundary" => assert_fetch_transport_boundary(id, expected),
-            "app-data-upload-legacy-transport-boundary" => {
-                assert_upload_legacy_transport_boundary(id, expected);
+            "app-data-upload-transport-boundary" => {
+                assert_upload_transport_boundary(id, expected);
             }
             "app-data-schema-regression-families" => {
                 assert_schema_regression_families(id, expected);
@@ -193,32 +186,6 @@ fn assert_cid_digest_extraction(id: &str, case: &Value, expected: &Value) {
     );
 }
 
-fn assert_legacy_cid_compatibility(id: &str, case: &Value, expected: &Value) {
-    let hex_input = case["input"]["app_data_hex"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: input.app_data_hex must be a string"));
-    let expected_cid = expected["cid"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.cid must be a string"));
-
-    let cid = app_data_hex_to_cid_legacy(hex_input).unwrap_or_else(|error| {
-        panic!("case {id}: app_data_hex_to_cid_legacy must succeed, got {error:?}")
-    });
-    assert_eq!(
-        cid, expected_cid,
-        "case {id}: legacy Qm-prefixed CID conversion must match the pinned vector",
-    );
-
-    let roundtrip = cid_to_app_data_hex(&cid).unwrap_or_else(|error| {
-        panic!("case {id}: legacy CID round-trip must decode, got {error:?}")
-    });
-    assert_eq!(
-        roundtrip.to_lowercase(),
-        hex_input.to_lowercase(),
-        "case {id}: legacy CID round-trip must return the original app-data hex",
-    );
-}
-
 fn assert_get_app_data_info_deterministic(id: &str, expected: &Value) {
     let returns: Vec<&str> = expected["returns"]
         .as_array()
@@ -282,34 +249,6 @@ fn assert_get_app_data_info_deterministic(id: &str, expected: &Value) {
             AppDataError::UnknownSchemaVersion(_) | AppDataError::InvalidAppDataProvided(_)
         ),
         "case {id}: invalid doc must surface a typed AppDataError",
-    );
-}
-
-fn assert_get_app_data_info_legacy(id: &str, expected: &Value) {
-    let legacy = expected["legacy_method_name"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.legacy_method_name must be a string"));
-    let default = expected["default_method_name"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.default_method_name must be a string"));
-
-    assert_eq!(
-        legacy, "getAppDataInfoLegacy",
-        "case {id}: legacy helper name must be preserved verbatim",
-    );
-    assert_eq!(
-        default, "getAppDataInfo",
-        "case {id}: default helper name must be preserved verbatim",
-    );
-
-    // Both helpers must succeed for a structurally valid document.
-    let doc = generate_app_data_doc(AppDataParams::default());
-    let legacy_info =
-        get_app_data_info_legacy(doc.clone()).expect("legacy helper must succeed for valid doc");
-    let default_info = get_app_data_info(doc).expect("default helper must succeed for valid doc");
-    assert_ne!(
-        legacy_info.cid, default_info.cid,
-        "case {id}: legacy CID must differ from latest CID for the same document",
     );
 }
 
@@ -414,10 +353,8 @@ fn assert_fetch_transport_boundary(id: &str, expected: &Value) {
         .unwrap_or_else(|| panic!("case {id}: expected.transport_injection must be a string"));
 
     assert!(
-        helpers.contains(&"fetchDocFromCid")
-            && helpers.contains(&"fetchDocFromAppDataHex")
-            && helpers.contains(&"fetchDocFromAppDataHexLegacy"),
-        "case {id}: fixture must name the three transport-boundary helpers",
+        helpers.contains(&"fetchDocFromCid") && helpers.contains(&"fetchDocFromAppDataHex"),
+        "case {id}: fixture must name the transport-boundary helpers",
     );
     assert_eq!(
         injection, "explicit-uri-parameter",
@@ -445,51 +382,27 @@ fn assert_fetch_transport_boundary(id: &str, expected: &Value) {
         matches!(err, AppDataError::Transport(_)),
         "case {id}: fetch_doc_from_app_data_hex must reject malformed hex before dispatch",
     );
-    let err =
-        cow_sdk_app_data::fetch_doc_from_app_data_hex_legacy("0xzz", &PanicFetchTransport, None)
-            .expect_err(
-                "malformed legacy app-data hex must fail-closed before dispatching the transport",
-            );
-    assert!(
-        matches!(err, AppDataError::Transport(_)),
-        "case {id}: fetch_doc_from_app_data_hex_legacy must reject malformed hex before dispatch",
-    );
 }
 
-fn assert_upload_legacy_transport_boundary(id: &str, expected: &Value) {
+fn assert_upload_transport_boundary(id: &str, expected: &Value) {
     let helper = expected["helper"]
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.helper must be a string"));
     assert_eq!(
-        helper, "uploadMetadataDocToIpfsLegacy",
+        helper, "pinJsonInPinataIpfs",
         "case {id}: helper name must stay verbatim",
     );
     assert!(
         expected["requires_credentials"].as_bool().unwrap_or(false),
         "case {id}: fixture must declare requires_credentials=true",
     );
-    let returns: Vec<&str> = expected["returns"]
-        .as_array()
-        .unwrap_or_else(|| panic!("case {id}: expected.returns must be an array"))
-        .iter()
-        .map(|value| {
-            value
-                .as_str()
-                .unwrap_or_else(|| panic!("case {id}: returns entries must be strings"))
-        })
-        .collect();
-    assert!(
-        returns.contains(&"appData") && returns.contains(&"cid"),
-        "case {id}: fixture must name both appData and cid in the return shape",
-    );
 
     // Without credentials the helper must fail-closed through a typed
     // MissingIpfsCredentials error before the transport is invoked. We prove
     // the transport is not invoked by wiring a panic-on-call transport.
     let doc = generate_app_data_doc(AppDataParams::default());
-    let error =
-        upload_metadata_doc_to_ipfs_legacy(&doc, &PanicUploadTransport, &IpfsConfig::default())
-            .expect_err("missing credentials must reject before the transport runs");
+    let error = pin_json_in_pinata_ipfs(&doc, &PanicUploadTransport, &IpfsConfig::default())
+        .expect_err("missing credentials must reject before the transport runs");
     assert!(
         matches!(error, AppDataError::MissingIpfsCredentials),
         "case {id}: missing credentials must surface MissingIpfsCredentials, got {error:?}",

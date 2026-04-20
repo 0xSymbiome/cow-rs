@@ -1,9 +1,9 @@
 # CID Dependency Audit
 
 Status: Current  
-Last reviewed: 2026-04-16  
+Last reviewed: 2026-04-20  
 Owning surface: `cow-sdk-app-data` CID encoding and published dependency boundary  
-Refresh trigger: Changes to CID dependencies, supported CID encodings, legacy compatibility logic, or the published dependency posture for the app-data stack, or a new `cid` or `core2` release that moves the reviewed warning state  
+Refresh trigger: Changes to CID dependencies, the supported CID encoding, or the published dependency posture for the app-data stack, or a new `cid` or `core2` release that moves the reviewed warning state  
 Related docs:
 - [Dependency Gate Audit](dependency-gate-audit.md)
 - [Verification Guide](../verification-guide.md)
@@ -14,7 +14,7 @@ Related docs:
 This audit covers:
 
 - the CID and multihash dependencies used by `cow-sdk-app-data`
-- latest and legacy app-data CID construction paths
+- the supported app-data CID construction path
 - published-upstream dependency posture for the maintained CID stack
 - fail-closed handling for malformed app-data hex and unsupported CID
   encodings
@@ -26,10 +26,9 @@ outside the app-data boundary.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Latest CID conversion | Keep `cid`, `multihash`, and `multibase` as the maintained path | Conforms |
-| Legacy CID generation | Keep `ipfs-cid` removed and generate the legacy CID through `sha2` plus the maintained `cid` and `multihash` stack | Conforms |
+| Supported CID conversion | Keep `cid`, `multihash`, and `multibase` as the maintained path | Conforms |
 | Published upstream dependency posture | Carry the current `cid 0.11.1` to `core2 0.4.0` yanked reachability as an explicit reviewed warning until a published replacement exists | Reviewed warning |
-| Unsupported CID encodings | Reject malformed or unsupported inputs through typed errors | Conforms |
+| Unsupported CID encodings | Reject malformed or unsupported inputs, including CIDv0 (`Qm...` / dag-pb / sha2-256), through typed errors | Conforms |
 
 ## Current Contract
 
@@ -40,21 +39,20 @@ The current app-data crate uses:
 - `cid` for CID parsing and construction
 - `multihash` for explicit multihash wrapping
 - `multibase` for lowercase base16 CID rendering
-- `sha2` for the legacy compatibility digest path
-- `sha3` for deterministic latest app-data digest generation
+- `sha3` for deterministic app-data digest generation
 
 ### Supported Input Boundary
 
-Supported CID inputs are intentionally narrow:
+The supported CID input is intentionally narrow:
 
-- latest app-data CID: CIDv1, raw codec (`0x55`), keccak-256 multihash
-  (`0x1b`), 32-byte digest
-- legacy compatibility CID: CIDv0 / `Qm...`, dag-pb codec (`0x70`),
-  sha2-256 multihash (`0x12`), 32-byte digest
+- app-data CID: CIDv1, raw codec (`0x55`), keccak-256 multihash (`0x1b`),
+  32-byte digest
 
 Rejected inputs include malformed app-data hex, malformed CID strings, wrong
-digest lengths, unsupported multicodec values, and unsupported multihash
-values.
+digest lengths, unsupported multicodec values, unsupported multihash
+values, and every non-CIDv1 version (in particular CIDv0 / `Qm...` /
+dag-pb / sha2-256, which is surfaced as a typed rejection at the decoder
+boundary).
 
 ### Published Upstream Dependency Posture
 
@@ -97,11 +95,11 @@ Primary implementation points:
 
 Primary regression coverage:
 
-- `crates/app-data/tests/cid_contract.rs::latest_and_legacy_cid_conversion_match_upstream_samples`
-- `crates/app-data/tests/cid_contract.rs::cid_digest_extraction_supports_latest_and_legacy_inputs`
+- `crates/app-data/tests/cid_contract.rs::latest_cid_conversion_matches_upstream_samples`
+- `crates/app-data/tests/cid_contract.rs::cid_digest_extraction_supports_the_supported_cid_shape`
 - `crates/app-data/tests/cid_contract.rs::invalid_app_data_hex_inputs_fail_closed`
 - `crates/app-data/tests/cid_contract.rs::unsupported_and_malformed_cids_are_rejected`
-- `crates/app-data/tests/app_data_info_contract.rs::legacy_info_flow_remains_explicit_and_compatible`
+- `crates/app-data/tests/v0_cid_is_out_of_scope.rs::v0_cid_is_rejected_by_cid_to_app_data_hex`
 
 Validation surface:
 

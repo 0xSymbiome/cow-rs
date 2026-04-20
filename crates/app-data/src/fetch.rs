@@ -1,9 +1,6 @@
 use serde_json::Value;
 
-use crate::{
-    AppDataDoc, AppDataError, DEFAULT_IPFS_READ_URI, IpfsConfig, app_data_hex_to_cid,
-    app_data_hex_to_cid_legacy,
-};
+use crate::{AppDataDoc, AppDataError, DEFAULT_IPFS_READ_URI, IpfsConfig, app_data_hex_to_cid};
 
 /// Read transport seam for fetching app-data JSON from IPFS.
 pub trait IpfsFetchTransport {
@@ -44,7 +41,7 @@ impl IpfsFetchPolicy {
 
     /// Creates a fetch policy from [`IpfsConfig`].
     ///
-    /// `read_uri` takes precedence over the legacy `uri` field.
+    /// `read_uri` takes precedence over the general `uri` field.
     ///
     /// # Errors
     ///
@@ -108,7 +105,7 @@ pub fn fetch_doc_from_cid_with_policy(
     serde_json::from_str::<Value>(&raw).map_err(|err| AppDataError::Json(err.to_string()))
 }
 
-/// Fetches an app-data document using the latest CID derivation mode.
+/// Fetches an app-data document using the app-data hex digest.
 ///
 /// # Errors
 ///
@@ -126,7 +123,7 @@ pub fn fetch_doc_from_app_data_hex(
     )
 }
 
-/// Fetches an app-data document using the latest CID derivation mode and an explicit policy.
+/// Fetches an app-data document using the app-data hex digest and an explicit policy.
 ///
 /// # Errors
 ///
@@ -136,47 +133,7 @@ pub fn fetch_doc_from_app_data_hex_with_policy(
     transport: &impl IpfsFetchTransport,
     policy: &IpfsFetchPolicy,
 ) -> Result<AppDataDoc, AppDataError> {
-    fetch_doc_from_app_data_hex_inner(app_data_hex_to_cid, app_data_hex, transport, policy)
-}
-
-/// Fetches an app-data document using the legacy CID derivation mode.
-///
-/// # Errors
-///
-/// Returns [`AppDataError`] if CID derivation, policy creation, transport execution,
-/// or JSON decoding fails.
-pub fn fetch_doc_from_app_data_hex_legacy(
-    app_data_hex: &str,
-    transport: &impl IpfsFetchTransport,
-    ipfs_uri: Option<&str>,
-) -> Result<AppDataDoc, AppDataError> {
-    fetch_doc_from_app_data_hex_legacy_with_policy(
-        app_data_hex,
-        transport,
-        &policy_from_optional_uri(ipfs_uri)?,
-    )
-}
-
-/// Fetches an app-data document using the legacy CID derivation mode and an explicit policy.
-///
-/// # Errors
-///
-/// Returns [`AppDataError`] if CID derivation, transport execution, or JSON decoding fails.
-pub fn fetch_doc_from_app_data_hex_legacy_with_policy(
-    app_data_hex: &str,
-    transport: &impl IpfsFetchTransport,
-    policy: &IpfsFetchPolicy,
-) -> Result<AppDataDoc, AppDataError> {
-    fetch_doc_from_app_data_hex_inner(app_data_hex_to_cid_legacy, app_data_hex, transport, policy)
-}
-
-fn fetch_doc_from_app_data_hex_inner(
-    hex_to_cid: fn(&str) -> Result<String, AppDataError>,
-    app_data_hex: &str,
-    transport: &impl IpfsFetchTransport,
-    policy: &IpfsFetchPolicy,
-) -> Result<AppDataDoc, AppDataError> {
-    let cid = hex_to_cid(app_data_hex).map_err(|err| {
+    let cid = app_data_hex_to_cid(app_data_hex).map_err(|err| {
         AppDataError::Transport(format!(
             "Error decoding AppData: appDataHex={app_data_hex}, message={err}"
         ))

@@ -1,8 +1,8 @@
 use serde_json::Value;
 
 use crate::{
-    AppDataDoc, AppDataError, DEFAULT_IPFS_WRITE_URI, IpfsConfig, IpfsUploadResult,
-    TransportResponse, cid_to_app_data_hex, stringify_deterministic,
+    AppDataDoc, AppDataError, DEFAULT_IPFS_WRITE_URI, IpfsConfig, TransportResponse,
+    stringify_deterministic,
 };
 
 /// Upload transport seam for JSON pinning backends.
@@ -18,29 +18,6 @@ pub trait IpfsUploadTransport {
         body: &str,
         headers: &[(String, String)],
     ) -> Result<TransportResponse, AppDataError>;
-}
-
-/// Uploads an app-data document using the legacy Pinata flow.
-///
-/// # Errors
-///
-/// Returns [`AppDataError`] if credentials are missing, the transport fails, or
-/// the response does not contain a valid `IpfsHash`.
-pub fn upload_metadata_doc_to_ipfs_legacy(
-    app_data_doc: &AppDataDoc,
-    transport: &impl IpfsUploadTransport,
-    ipfs_config: &IpfsConfig,
-) -> Result<IpfsUploadResult, AppDataError> {
-    let response = pin_json_in_pinata_ipfs(app_data_doc, transport, ipfs_config)?;
-    let cid = response
-        .get("IpfsHash")
-        .and_then(Value::as_str)
-        .ok_or_else(|| AppDataError::Pinning("missing IpfsHash field in response".to_string()))?;
-
-    Ok(IpfsUploadResult {
-        app_data: cid_to_app_data_hex(cid)?,
-        cid: cid.to_string(),
-    })
 }
 
 /// Pins a JSON document through the Pinata `pinJSONToIPFS` API.

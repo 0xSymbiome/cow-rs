@@ -18,23 +18,17 @@ pub mod schema;
 /// Shared app-data types, constants, and configuration structs.
 pub mod types;
 
-pub use cid::{
-    CidMode, app_data_hex_to_cid, app_data_hex_to_cid_legacy, app_data_hex_to_cid_with_mode,
-    cid_to_app_data_hex,
-};
+pub use cid::{app_data_hex_to_cid, cid_to_app_data_hex};
 pub use errors::AppDataError;
 pub use fetch::{
     IpfsFetchPolicy, IpfsFetchTransport, fetch_doc_from_app_data_hex,
-    fetch_doc_from_app_data_hex_legacy, fetch_doc_from_app_data_hex_legacy_with_policy,
     fetch_doc_from_app_data_hex_with_policy, fetch_doc_from_cid, fetch_doc_from_cid_with_policy,
 };
 pub use info::{
     APP_DATA_MAX_BYTES, AppDataSource, digest_from_cid, get_app_data_cid, get_app_data_content,
-    get_app_data_info, get_app_data_info_hex, get_app_data_info_legacy, stringify_deterministic,
+    get_app_data_info, get_app_data_info_hex, stringify_deterministic,
 };
-pub use pinning::{
-    IpfsUploadTransport, pin_json_in_pinata_ipfs, upload_metadata_doc_to_ipfs_legacy,
-};
+pub use pinning::{IpfsUploadTransport, pin_json_in_pinata_ipfs};
 pub use schema::{
     extract_schema_version, generate_app_data_doc, get_app_data_schema, validate_app_data_doc,
 };

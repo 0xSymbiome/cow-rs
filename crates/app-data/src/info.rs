@@ -2,8 +2,8 @@ use serde_json::Value;
 use sha3::{Digest, Keccak256};
 
 use crate::{
-    AppDataDoc, AppDataError, AppDataInfo, app_data_hex_to_cid, cid::app_data_bytes_to_legacy_cid,
-    cid_to_app_data_hex, validate_app_data_doc,
+    AppDataDoc, AppDataError, AppDataInfo, app_data_hex_to_cid, cid_to_app_data_hex,
+    validate_app_data_doc,
 };
 
 /// Client-side size ceiling for stringified app-data documents.
@@ -79,7 +79,7 @@ impl AppDataSource for String {
     }
 }
 
-/// Returns CID, canonical content, and hex digest for the latest app-data path.
+/// Returns CID, canonical content, and hex digest for the supplied app-data source.
 ///
 /// # Errors
 ///
@@ -93,27 +93,6 @@ pub fn get_app_data_info(source: impl AppDataSource) -> Result<AppDataInfo, AppD
     let digest = Keccak256::digest(app_data_content.as_bytes());
     let app_data_hex = format!("0x{}", hex::encode(digest));
     let cid = app_data_hex_to_cid(&app_data_hex)?;
-
-    Ok(AppDataInfo {
-        cid,
-        app_data_content,
-        app_data_hex,
-    })
-}
-
-/// Returns CID, content, and hex digest for the legacy app-data path.
-///
-/// # Errors
-///
-/// Returns [`AppDataError`] if the source cannot be parsed, validation fails, or
-/// legacy CID conversion fails.
-pub fn get_app_data_info_legacy(source: impl AppDataSource) -> Result<AppDataInfo, AppDataError> {
-    let (document, app_data_content) = source.into_document_and_content(false)?;
-    ensure_document_under_size_limit(&app_data_content, APP_DATA_MAX_BYTES)?;
-    ensure_valid_document(&document)?;
-
-    let cid = app_data_bytes_to_legacy_cid(app_data_content.as_bytes())?;
-    let app_data_hex = cid_to_app_data_hex(&cid)?;
 
     Ok(AppDataInfo {
         cid,
@@ -200,7 +179,7 @@ fn write_canonical_json(value: &Value, out: &mut String) -> Result<(), AppDataEr
     Ok(())
 }
 
-/// Returns only the app-data hex digest for the latest path.
+/// Returns only the app-data hex digest.
 ///
 /// # Errors
 ///
@@ -209,7 +188,7 @@ pub fn get_app_data_info_hex(source: impl AppDataSource) -> Result<String, AppDa
     Ok(get_app_data_info(source)?.app_data_hex)
 }
 
-/// Returns only the CID for the latest path.
+/// Returns only the CID derived from the app-data content.
 ///
 /// # Errors
 ///
@@ -218,7 +197,7 @@ pub fn get_app_data_cid(source: impl AppDataSource) -> Result<String, AppDataErr
     Ok(get_app_data_info(source)?.cid)
 }
 
-/// Returns only the serialized app-data content for the latest path.
+/// Returns only the serialized app-data content.
 ///
 /// # Errors
 ///

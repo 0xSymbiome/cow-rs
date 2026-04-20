@@ -6,10 +6,10 @@ CID conversion, and IPFS transport seams.
 `appData` is the canonical metadata attached to every CoW Protocol order.
 This crate produces deterministic app-data documents, validates them
 against the versioned app-data schema, and converts between the 32-byte
-hex hash form and both the latest (CIDv1 + raw + keccak-256) and legacy
-(CIDv0 + dag-pb + sha2-256) CID encodings. It also defines the fetch and
-upload transport seams so consumers can provide their own IPFS client
-without coupling the SDK to a specific HTTP stack.
+hex hash form and the supported CID encoding (CIDv1 + raw + keccak-256).
+It also defines the fetch and upload transport seams so consumers can
+provide their own IPFS client without coupling the SDK to a specific
+HTTP stack.
 
 ## Install
 

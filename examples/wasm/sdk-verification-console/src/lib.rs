@@ -9,10 +9,10 @@ use cow_sdk::{
     DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT, GetOrdersRequest,
     GetTradesRequest, MAX_SLIPPAGE_BPS, ORDER_PRIMARY_TYPE, OrderBookApi, OrderQuoteRequest,
     OrderUid, OrderbookError, PartialTraderParameters, PartnerFee, PartnerFeePolicy,
-    SupportedChainId, TradingSdk, TradingSdkOptions, app_data_hex_to_cid,
-    app_data_hex_to_cid_legacy, approval_transaction, cid_to_app_data_hex, default_slippage_bps,
-    deployment_for_chain, eip1271_signature_payload, generate_order_id, get_app_data_info,
-    get_app_data_schema, is_ethflow_order, order_typed_data, partner_fee_bps,
+    SupportedChainId, TradingSdk, TradingSdkOptions, app_data_hex_to_cid, approval_transaction,
+    cid_to_app_data_hex, default_slippage_bps, deployment_for_chain, eip1271_signature_payload,
+    generate_order_id, get_app_data_info, get_app_data_schema, is_ethflow_order,
+    order_typed_data, partner_fee_bps,
     sanitize_protocol_fee_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
     swap_params_to_limit_order_params, validate_app_data_doc,
 };
@@ -177,8 +177,6 @@ pub fn app_data_report_json(doc_json: &str) -> Result<String, JsValue> {
         "valid": validation.success,
         "errors": validation.errors,
         "cid": info.cid,
-        "legacyCid": app_data_hex_to_cid_legacy(&info.app_data_hex)
-            .map_err(|error| to_js_error(error.to_string()))?,
         "appDataHex": info.app_data_hex,
         "deterministicJson": deterministic,
         "content": info.app_data_content
@@ -205,8 +203,6 @@ pub fn cid_from_hex_json(app_data_hex: &str) -> Result<String, JsValue> {
     pretty_json(&json!({
         "appDataHex": app_data_hex,
         "cid": app_data_hex_to_cid(app_data_hex)
-            .map_err(|error| to_js_error(error.to_string()))?,
-        "legacyCid": app_data_hex_to_cid_legacy(app_data_hex)
             .map_err(|error| to_js_error(error.to_string()))?
     }))
 }

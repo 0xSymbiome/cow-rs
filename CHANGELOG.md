@@ -381,6 +381,19 @@ unreleased public contract of the repository.
 
 ### Removed
 
+- Retired every CIDv0 (dag-pb + sha2-256, `Qm...`-prefixed) encoding and
+  decoding path from `cow-sdk-app-data`. CIDv1 with the raw multicodec
+  (`0x55`) over a keccak-256 multihash (`0x1b`) is the only supported
+  CID shape, matching the cow-protocol services backend. The retired
+  helpers `app_data_hex_to_cid_legacy`, `app_data_hex_to_cid_with_mode`,
+  `get_app_data_info_legacy`, `fetch_doc_from_app_data_hex_legacy`,
+  `fetch_doc_from_app_data_hex_legacy_with_policy`,
+  `upload_metadata_doc_to_ipfs_legacy`, and the `CidMode` enum are no
+  longer part of the public surface. The decoder now rejects CIDv0
+  inputs at the boundary with a typed `AppDataError::InvalidCid`;
+  consumers that need to parse historical Qm-prefixed values use a
+  general-purpose `cid` crate directly. The `sha2` dependency has been
+  dropped from `cow-sdk-app-data`.
 - The order-level `fee_amount` descriptor is no longer a public field or a
   public builder setter on `cow_sdk_orderbook::QuoteData`,
   `cow_sdk_orderbook::OrderCreation`, `cow_sdk_orderbook::Order`, or
