@@ -370,6 +370,25 @@ unreleased public contract of the repository.
   output for each variant is unchanged: addresses render as their
   canonical `0x`-prefixed hex form and the 4-byte magic values render as
   `0x`-prefixed lowercase hex.
+- The `alloy-sol-macro` and `alloy-sol-types` crates now live in the root
+  `[workspace.dependencies]` table pinned at `1.5.7` alongside the existing
+  `alloy-primitives`, `alloy-dyn-abi`, and `alloy-json-abi` declarations.
+  No crate consumes the new dependencies in this release yet; the workspace
+  table pin ensures every future consumer of the `alloy::sol!` macro idiom
+  resolves against a single authoritative version, keeping the Ethereum
+  primitives stack consistent across the published surface.
+- `cow-sdk-contracts` now derives its `GPv2Settlement` call-data bindings from
+  an `alloy::sol!` interface block sourced from the upstream
+  `cowprotocol/contracts` Solidity surface. The `SettlementEncoder` order-refund
+  interactions (`freeFilledAmountStorage` and `freePreSignatureStorage`) now
+  produce their ABI call-data through the generated typed selector encoders, and
+  a new `SettlementEncoder::encoded_settlement_calldata` helper exposes the
+  fully ABI-encoded `settle(...)` payload for downstream transaction builders.
+  The `GPv2Order` EIP-712 type-hash, the 56-byte `OrderUid` layout, and the
+  trade-flags bit encoding remain byte-identical to the pre-migration
+  baseline, and the committed Solidity excerpt at
+  `crates/contracts/abi/settlement/GPv2Settlement.sol` preserves upstream
+  provenance for reviewers.
 
 ### Changed
 

@@ -849,6 +849,8 @@ dependencies = [
 name = "cow-sdk-contracts"
 version = "0.1.0"
 dependencies = [
+ "alloy-sol-macro",
+ "alloy-sol-types",
  "bytes",
  "cow-sdk-core",
  "criterion",
