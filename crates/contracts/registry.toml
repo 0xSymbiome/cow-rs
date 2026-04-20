@@ -1,0 +1,427 @@
+# CoW Protocol chain-keyed deployed-contract registry.
+#
+# The manifest is the single source of truth for the canonical deployed
+# addresses this crate exposes through `cow_sdk_contracts::deployments::Registry`.
+# Every row pairs a logical contract identifier with a supported chain id and
+# a deployment environment; the address is the 20-byte Ethereum account
+# that contract lives at on that chain.
+#
+# Invariants enforced by `build.rs` at compile time:
+#
+#   * schema_version must be the reviewed shape version (currently 1).
+#   * contract_id must be one of the canonical variants (Settlement,
+#     VaultRelayer, EthFlow).
+#   * chain_id must appear in the supported chain set shared with
+#     `src/chain_ids.rs` (the eleven supported chains).
+#   * env must be "prod" or "staging".
+#   * address must be 0x-prefixed 40-character (20-byte) hex.
+#   * each (contract_id, chain_id, env) tuple must be unique.
+#
+# Initial rows seed every chain within a given (contract_id, env) pair to
+# the canonical mainnet-style address because the protocol publishes a
+# single deployment per environment today. Per-chain address divergence
+# will land as additive manifest edits without any call-site changes.
+
+schema_version = 1
+
+# ----- Settlement (GPv2Settlement) -----
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 1
+env = "prod"
+address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 1
+env = "staging"
+address = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 56
+env = "prod"
+address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 56
+env = "staging"
+address = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 100
+env = "prod"
+address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 100
+env = "staging"
+address = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 137
+env = "prod"
+address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 137
+env = "staging"
+address = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 8453
+env = "prod"
+address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 8453
+env = "staging"
+address = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 9745
+env = "prod"
+address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 9745
+env = "staging"
+address = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 42161
+env = "prod"
+address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 42161
+env = "staging"
+address = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 43114
+env = "prod"
+address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 43114
+env = "staging"
+address = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 57073
+env = "prod"
+address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 57073
+env = "staging"
+address = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 59144
+env = "prod"
+address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 59144
+env = "staging"
+address = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 11155111
+env = "prod"
+address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 11155111
+env = "staging"
+address = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13"
+
+# ----- VaultRelayer (GPv2VaultRelayer) -----
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 1
+env = "prod"
+address = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 1
+env = "staging"
+address = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 56
+env = "prod"
+address = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 56
+env = "staging"
+address = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 100
+env = "prod"
+address = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 100
+env = "staging"
+address = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 137
+env = "prod"
+address = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 137
+env = "staging"
+address = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 8453
+env = "prod"
+address = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 8453
+env = "staging"
+address = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 9745
+env = "prod"
+address = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 9745
+env = "staging"
+address = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 42161
+env = "prod"
+address = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 42161
+env = "staging"
+address = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 43114
+env = "prod"
+address = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 43114
+env = "staging"
+address = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 57073
+env = "prod"
+address = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 57073
+env = "staging"
+address = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 59144
+env = "prod"
+address = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 59144
+env = "staging"
+address = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 11155111
+env = "prod"
+address = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110"
+
+[[entries]]
+contract_id = "VaultRelayer"
+chain_id = 11155111
+env = "staging"
+address = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2"
+
+# ----- EthFlow (CoWSwapEthFlow) -----
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 1
+env = "prod"
+address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 1
+env = "staging"
+address = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 56
+env = "prod"
+address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 56
+env = "staging"
+address = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 100
+env = "prod"
+address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 100
+env = "staging"
+address = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 137
+env = "prod"
+address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 137
+env = "staging"
+address = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 8453
+env = "prod"
+address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 8453
+env = "staging"
+address = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 9745
+env = "prod"
+address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 9745
+env = "staging"
+address = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 42161
+env = "prod"
+address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 42161
+env = "staging"
+address = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 43114
+env = "prod"
+address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 43114
+env = "staging"
+address = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 57073
+env = "prod"
+address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 57073
+env = "staging"
+address = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 59144
+env = "prod"
+address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 59144
+env = "staging"
+address = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 11155111
+env = "prod"
+address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 11155111
+env = "staging"
+address = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC"

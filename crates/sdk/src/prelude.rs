@@ -18,8 +18,8 @@ pub use cow_sdk_browser_wallet::{
     MockEip1193Transport, RpcErrorPayload, WalletEvent, WalletSession,
 };
 pub use cow_sdk_contracts::{
-    BUY_ETH_ADDRESS, ContractsError, ORDER_TYPE_HASH, ORDER_UID_LENGTH, compute_order_uid,
-    deployment_for_chain, hash_order_for_contract, uid_for_contract,
+    BUY_ETH_ADDRESS, ContractId, ContractsError, ORDER_TYPE_HASH, ORDER_UID_LENGTH, Registry,
+    compute_order_uid, deployment_for_chain, hash_order_for_contract, uid_for_contract,
 };
 pub use cow_sdk_core::{
     Address, Amount, ApiBaseUrls, AppDataHash, AppDataHex, AsyncProvider, AsyncSigner, BlockHash,

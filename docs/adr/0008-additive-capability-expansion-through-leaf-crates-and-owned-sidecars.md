@@ -27,7 +27,7 @@ broader, harder to review, and harder to evolve cleanly.
   tooling helpers, and evidence-refresh machinery stay separately owned when
   their dependency or runtime assumptions differ materially from the core SDK
   crates.
-- Validation and review: opening a new capability wave requires explicit crate
+- Validation and review: opening a new capability surface requires explicit crate
   ownership, public-surface documentation, and proof lanes rather than silent
   widening of existing crates.
 - Cost: the workspace may gain more crates and more deliberate design work

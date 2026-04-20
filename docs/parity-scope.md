@@ -67,10 +67,11 @@ entirely) so future contributors cannot quietly reintroduce the upstream
 shape on the assumption that a missing positive fixture implies a gap.
 
 See [ADR 0011](./adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
-for the canonical typed-amount decision, and see the ADR-Reset-030
-parity-scope discipline record in the architecture decision record for
-the governing four-layer defense (negative test, scope-doc entry,
-ADR cross-link, risk-register entry).
+for the canonical typed-amount decision. The governing parity-scope
+discipline is the four-layer defense documented in the architecture
+record: a negative test that fails closed, a scope-doc entry that names
+the exclusion, a cross-link to the owning ADR, and a risk-register
+entry for anyone who later considers reintroducing the surface.
 
 - **CIDv0 (`Qm...`) encoding and decoding** — the cow-protocol services
   backend enforces CIDv1 with the raw multicodec (`0x55`) over a

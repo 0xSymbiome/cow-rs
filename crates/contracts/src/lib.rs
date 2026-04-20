@@ -9,6 +9,8 @@
 
 /// Deterministic deployment metadata and address derivation helpers.
 pub mod deploy;
+/// Chain-keyed registry of canonical CoW Protocol contract deployments.
+pub mod deployments;
 /// Typed ERC-20 and EIP-2612 Permit bindings generated from the upstream
 /// Solidity surface via the `alloy::sol!` macro.
 pub mod erc20;
@@ -35,12 +37,14 @@ pub mod swap;
 pub mod vault;
 
 mod bytes_serde;
+mod chain_ids;
 mod primitives;
 
 pub use deploy::{
     ContractAddresses, ContractName, DEPLOYER_CONTRACT, SALT, deployment_for_chain,
     deterministic_deployment_address,
 };
+pub use deployments::{ContractId, Registry, RegistryError};
 pub use erc20::{IERC20, IERC20Permit, PERMIT_TYPE_HASH, permit_typed_data_hash};
 pub use errors::ContractsError;
 pub use eth_flow::{

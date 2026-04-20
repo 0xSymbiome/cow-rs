@@ -90,7 +90,8 @@ and the related parity-scope exclusions from the same release cycle —
 lives in [Parity Scope](../parity-scope.md). Reviewers and contributors
 should consult that document before filing any issue claiming a missing
 positive fixture implies a parity gap; the parity-scope discipline is
-governed by ADR-Reset-030 in the architecture decision record.
+recorded alongside the typed-amount decision in the shipped
+architecture record.
 
 ## Links
 

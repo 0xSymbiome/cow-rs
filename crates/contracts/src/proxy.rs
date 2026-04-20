@@ -132,8 +132,7 @@ where
     // The `Provider::get_storage_at` contract below the typed surface takes
     // the slot selector as a `0x`-prefixed hex string; we pipe the typed
     // value through `Eip1967Slot::as_hex_str` so the call-site consumes the
-    // typed slot instead of an ad-hoc literal. See ADR-Reset-031 for the
-    // sol!-first Ethereum-binding policy governing this hybrid shape.
+    // typed slot instead of an ad-hoc literal.
     let word = provider
         .get_storage_at(proxy, slot.as_hex_str())
         .map_err(|error| ContractsError::Provider {

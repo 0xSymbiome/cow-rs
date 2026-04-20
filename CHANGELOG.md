@@ -19,6 +19,22 @@ unreleased public contract of the repository.
   `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
   `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`, and
   `cow-sdk-browser-wallet`.
+- Chain-keyed registry of canonical CoW Protocol contract deployments
+  under `cow_sdk_contracts::deployments`. The new `Registry` type
+  resolves deployed addresses through the typed
+  `(ContractId, SupportedChainId, CowEnv)` key triple and ships with an
+  embedded manifest at `crates/contracts/registry.toml` seeded for the
+  GPv2 settlement, vault-relayer, and EthFlow contracts across every
+  supported chain in both the production and staging environments. A
+  compile-time `build.rs` validator rejects malformed manifests at build
+  time with a precise diagnostic that names the offending row, and the
+  runtime `Registry::from_toml_str` loader surfaces the same taxonomy of
+  failures through a typed `RegistryError` enum so downstream consumers
+  who pipe their own TOML into the loader see the same actionable
+  errors. `Registry`, `ContractId`, and `RegistryError` are re-exported
+  from the facade, and `Registry` plus `ContractId` surface through
+  `cow_sdk::prelude::*` so the typed address lookup is a single import
+  away for trading and bridging consumers.
 - Typed ERC-20 and EIP-2612 Permit bindings under a new
   `cow_sdk_contracts::erc20` module, generated from the canonical Solidity
   surfaces through the `alloy::sol!` macro. The module exposes the minimal
