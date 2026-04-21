@@ -170,6 +170,8 @@ pub async fn build_app_data(
     let mut params = AppDataParams {
         app_code: Some(app_code.to_owned()),
         environment: None,
+        signer: None,
+        flashloan: None,
         metadata,
     };
     if let Some(advanced_params) = advanced_params {
@@ -545,6 +547,14 @@ fn merge_app_data_params(base: &AppDataParams, override_params: &AppDataParams) 
             .environment
             .clone()
             .or_else(|| base.environment.clone()),
+        signer: override_params
+            .signer
+            .clone()
+            .or_else(|| base.signer.clone()),
+        flashloan: override_params
+            .flashloan
+            .clone()
+            .or_else(|| base.flashloan.clone()),
         metadata,
     }
 }

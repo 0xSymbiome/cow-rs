@@ -1,10 +1,11 @@
 mod common;
 
 use cow_sdk_app_data::{
-    AppDataParams, LATEST_APP_DATA_VERSION, generate_app_data_doc, get_app_data_schema,
-    validate_app_data_doc,
+    AppDataParams, FlashloanHints, LATEST_APP_DATA_VERSION, generate_app_data_doc,
+    get_app_data_schema, validate_app_data_doc,
 };
-use serde_json::json;
+use cow_sdk_core::{Address, Amount};
+use serde_json::{Value, json};
 
 use crate::common::{app_data_doc_custom, invalid_referrer_doc, parity_fixture};
 
@@ -88,6 +89,27 @@ fn schema_regression_families_are_supported() {
         }
     });
     assert!(validate_app_data_doc(&flashloan).success);
+
+    // Assert the typed `FlashloanHints` surface produces a document that
+    // still validates against the bundled `flashloan/v0.2.0` sub-schema.
+    let hints = FlashloanHints::new(
+        Address::new("0xb50201558B00496A145fE76f7424749556E326D8").unwrap(),
+        Address::new("0x1186B5ad42E3e6d6c6901FC53b4A367540E6EcFE").unwrap(),
+        Address::new("0x1186B5ad42E3e6d6c6901FC53b4A367540E6EcFE").unwrap(),
+        Address::new("0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d").unwrap(),
+        Amount::new("2000000000000000000").unwrap(),
+    )
+    .expect("typed flashloan hints must validate");
+    let params = AppDataParams {
+        app_code: Some("aave-v3-flashloan".to_owned()),
+        flashloan: Some(hints),
+        ..Default::default()
+    };
+    let mut generated = generate_app_data_doc(params);
+    if let Value::Object(map) = &mut generated {
+        map.insert("version".to_owned(), Value::String("1.7.0".to_owned()));
+    }
+    assert!(validate_app_data_doc(&generated).success);
 
     let wrappers = json!({
         "version": "1.13.0",

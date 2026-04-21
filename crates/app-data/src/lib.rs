@@ -11,6 +11,8 @@ pub mod errors;
 pub mod fetch;
 /// Deterministic app-data rendering and digest helpers.
 pub mod info;
+/// Typed sub-metadata shapes carried inside the app-data envelope.
+pub mod metadata;
 /// IPFS pinning transport seams and upload helpers.
 pub mod pinning;
 /// Schema generation and validation helpers.
@@ -28,6 +30,7 @@ pub use info::{
     APP_DATA_MAX_BYTES, AppDataSource, digest_from_cid, get_app_data_cid, get_app_data_content,
     get_app_data_info, get_app_data_info_hex, stringify_deterministic,
 };
+pub use metadata::FlashloanHints;
 pub use pinning::{IpfsUploadTransport, pin_json_in_pinata_ipfs};
 pub use schema::{
     extract_schema_version, generate_app_data_doc, get_app_data_schema, validate_app_data_doc,

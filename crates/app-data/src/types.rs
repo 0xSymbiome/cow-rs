@@ -95,21 +95,126 @@ impl FromStr for SchemaVersion {
 }
 
 /// Inputs used to build an app-data document.
+///
+/// The two typed sub-metadata fields `signer` and `flashloan` sit alongside
+/// the open-ended `metadata` slot. On the wire both typed fields land inside
+/// the nested `metadata` object in their reviewed camelCase positions, and
+/// any key other than `signer` or `flashloan` continues to flow through the
+/// untyped [`MetadataMap`] slot so open-ended sub-objects remain supported.
 #[allow(
     clippy::derive_partial_eq_without_eq,
     reason = "the `metadata: MetadataMap` field is a `serde_json::Map<String, serde_json::Value>` alias, and `serde_json::Value` does not implement `Eq`"
 )]
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct AppDataParams {
     /// Optional application name written to the `appCode` field.
-    #[serde(default, rename = "appCode", skip_serializing_if = "Option::is_none")]
     pub app_code: Option<String>,
     /// Optional environment label for distinguishing deployments.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub environment: Option<String>,
-    /// Arbitrary application metadata merged into the document.
-    #[serde(default)]
+    /// Declared signer carried as `metadata.signer` on the wire, read by the
+    /// submission-seam validator that enforces the reviewed
+    /// `AppdataFromMismatch` invariant.
+    pub signer: Option<Address>,
+    /// Typed flash-loan hint carried as `metadata.flashloan` on the wire.
+    pub flashloan: Option<crate::metadata::FlashloanHints>,
+    /// Arbitrary application metadata merged into the document. The two
+    /// typed sub-metadata fields above leave this slot; every other
+    /// open-ended sub-object continues to live inside the map.
     pub metadata: MetadataMap,
+}
+
+impl Serialize for AppDataParams {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeMap;
+
+        let mut state = serializer.serialize_map(None)?;
+        if let Some(app_code) = &self.app_code {
+            state.serialize_entry("appCode", app_code)?;
+        }
+        if let Some(environment) = &self.environment {
+            state.serialize_entry("environment", environment)?;
+        }
+        let metadata_value = self
+            .metadata_wire_value()
+            .map_err(serde::ser::Error::custom)?;
+        state.serialize_entry("metadata", &metadata_value)?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for AppDataParams {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Wire {
+            #[serde(default, rename = "appCode")]
+            app_code: Option<String>,
+            #[serde(default)]
+            environment: Option<String>,
+            #[serde(default)]
+            metadata: MetadataMap,
+        }
+
+        let Wire {
+            app_code,
+            environment,
+            mut metadata,
+        } = Wire::deserialize(deserializer)?;
+
+        let signer = match metadata.remove("signer") {
+            Some(value) => {
+                Some(serde_json::from_value::<Address>(value).map_err(serde::de::Error::custom)?)
+            }
+            None => None,
+        };
+        let flashloan = match metadata.remove("flashloan") {
+            Some(value) => Some(
+                serde_json::from_value::<crate::metadata::FlashloanHints>(value)
+                    .map_err(serde::de::Error::custom)?,
+            ),
+            None => None,
+        };
+
+        Ok(Self {
+            app_code,
+            environment,
+            signer,
+            flashloan,
+            metadata,
+        })
+    }
+}
+
+impl AppDataParams {
+    /// Returns the canonical metadata [`Value`] merged from the typed
+    /// sub-fields and the open-ended [`MetadataMap`] slot.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AppDataError::Json`] when the typed `flashloan` sub-field
+    /// fails to serialize — which cannot happen for values produced through
+    /// the public constructors and is surfaced only for the defensive path.
+    pub fn metadata_wire_value(&self) -> Result<Value, AppDataError> {
+        let mut metadata = self.metadata.clone();
+        if let Some(signer) = &self.signer {
+            metadata.insert(
+                "signer".to_owned(),
+                Value::String(signer.as_str().to_owned()),
+            );
+        }
+        if let Some(flashloan) = &self.flashloan {
+            metadata.insert(
+                "flashloan".to_owned(),
+                serde_json::to_value(flashloan).map_err(AppDataError::from)?,
+            );
+        }
+        Ok(Value::Object(metadata))
+    }
 }
 
 /// Derived identifiers for a validated app-data document.

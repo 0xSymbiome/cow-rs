@@ -118,6 +118,8 @@ fn assert_custom_doc_generation(id: &str, case: &Value, expected: &Value) {
     let doc = generate_app_data_doc(AppDataParams {
         app_code: None,
         environment: Some(environment),
+        signer: None,
+        flashloan: None,
         metadata,
     });
 

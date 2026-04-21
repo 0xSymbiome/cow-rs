@@ -1,0 +1,251 @@
+//! Contract suite pinning the public typed flash-loan hint surface.
+//!
+//! The fixture input mirrors the reviewed golden sample for the
+//! `flashloan/v0.2.0.json` sub-schema so drift in either the wire shape or
+//! the construction-time validation rules surfaces before it reaches
+//! release.
+
+#![allow(
+    clippy::doc_markdown,
+    clippy::too_many_lines,
+    clippy::uninlined_format_args,
+    reason = "pedantic lint group acceptable inside integration test code"
+)]
+
+use cow_sdk_app_data::{
+    AppDataError, AppDataParams, FlashloanHints, generate_app_data_doc, validate_app_data_doc,
+};
+use cow_sdk_core::{Address, Amount, ValidationReason};
+use serde_json::{Value, json};
+
+const FIXTURE_PATH: &str = "../../parity/fixtures/app_data/flashloan_v1.7.0.json";
+const LIQUIDITY_PROVIDER: &str = "0xb50201558B00496A145fE76f7424749556E326D8";
+const PROTOCOL_ADAPTER: &str = "0x1186B5ad42E3e6d6c6901FC53b4A367540E6EcFE";
+const RECEIVER: &str = "0x1186B5ad42E3e6d6c6901FC53b4A367540E6EcFE";
+const TOKEN: &str = "0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d";
+const AMOUNT: &str = "2000000000000000000";
+const ZERO_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
+
+fn address(hex: &str) -> Address {
+    Address::new(hex).expect("fixture address must be valid")
+}
+
+fn amount(value: &str) -> Amount {
+    Amount::new(value).expect("fixture amount must be valid")
+}
+
+fn sample_hints() -> FlashloanHints {
+    FlashloanHints::new(
+        address(LIQUIDITY_PROVIDER),
+        address(PROTOCOL_ADAPTER),
+        address(RECEIVER),
+        address(TOKEN),
+        amount(AMOUNT),
+    )
+    .expect("sample hints must validate")
+}
+
+#[test]
+fn fixture_golden_sample_roundtrips_byte_identically() {
+    let fixture_text = std::fs::read_to_string(FIXTURE_PATH)
+        .expect("flash-loan fixture sample must remain pinned in the tree");
+    let wire: Value =
+        serde_json::from_str(&fixture_text).expect("fixture sample must be valid JSON");
+
+    let parsed: FlashloanHints = serde_json::from_value(wire.clone())
+        .expect("fixture sample must parse into FlashloanHints");
+    let reserialized = serde_json::to_value(&parsed)
+        .expect("parsed FlashloanHints must reserialize through serde");
+
+    assert_eq!(
+        reserialized, wire,
+        "FlashloanHints must roundtrip the reviewed fixture byte-identically",
+    );
+    assert_eq!(parsed.amount.to_string(), AMOUNT);
+    assert_eq!(parsed.liquidity_provider.as_str(), LIQUIDITY_PROVIDER);
+    assert_eq!(parsed.protocol_adapter.as_str(), PROTOCOL_ADAPTER);
+    assert_eq!(parsed.receiver.as_str(), RECEIVER);
+    assert_eq!(parsed.token.as_str(), TOKEN);
+}
+
+#[test]
+fn valid_hints_validate_and_match_the_golden_sample_shape() {
+    let hints = sample_hints();
+    hints.validate().expect("valid hints must validate");
+    assert_eq!(hints.amount.to_string(), AMOUNT);
+    assert_eq!(hints.liquidity_provider.as_str(), LIQUIDITY_PROVIDER);
+}
+
+#[test]
+fn zero_amount_is_rejected_as_out_of_range() {
+    let error = FlashloanHints::new(
+        address(LIQUIDITY_PROVIDER),
+        address(PROTOCOL_ADAPTER),
+        address(RECEIVER),
+        address(TOKEN),
+        Amount::zero(),
+    )
+    .expect_err("zero amount must fail validation");
+    assert!(matches!(
+        error,
+        AppDataError::InvalidFlashloanHints {
+            field: "amount",
+            reason: ValidationReason::OutOfRange { .. },
+        }
+    ));
+}
+
+#[test]
+fn zero_liquidity_provider_is_rejected_as_bad_shape() {
+    let error = FlashloanHints::new(
+        address(ZERO_ADDRESS),
+        address(PROTOCOL_ADAPTER),
+        address(RECEIVER),
+        address(TOKEN),
+        amount(AMOUNT),
+    )
+    .expect_err("zero liquidityProvider must fail validation");
+    assert!(matches!(
+        error,
+        AppDataError::InvalidFlashloanHints {
+            field: "liquidityProvider",
+            reason: ValidationReason::BadShape { .. },
+        }
+    ));
+}
+
+#[test]
+fn zero_protocol_adapter_is_rejected_as_bad_shape() {
+    let error = FlashloanHints::new(
+        address(LIQUIDITY_PROVIDER),
+        address(ZERO_ADDRESS),
+        address(RECEIVER),
+        address(TOKEN),
+        amount(AMOUNT),
+    )
+    .expect_err("zero protocolAdapter must fail validation");
+    assert!(matches!(
+        error,
+        AppDataError::InvalidFlashloanHints {
+            field: "protocolAdapter",
+            reason: ValidationReason::BadShape { .. },
+        }
+    ));
+}
+
+#[test]
+fn zero_receiver_is_rejected_as_bad_shape() {
+    let error = FlashloanHints::new(
+        address(LIQUIDITY_PROVIDER),
+        address(PROTOCOL_ADAPTER),
+        address(ZERO_ADDRESS),
+        address(TOKEN),
+        amount(AMOUNT),
+    )
+    .expect_err("zero receiver must fail validation");
+    assert!(matches!(
+        error,
+        AppDataError::InvalidFlashloanHints {
+            field: "receiver",
+            reason: ValidationReason::BadShape { .. },
+        }
+    ));
+}
+
+#[test]
+fn zero_token_is_rejected_as_bad_shape() {
+    let error = FlashloanHints::new(
+        address(LIQUIDITY_PROVIDER),
+        address(PROTOCOL_ADAPTER),
+        address(RECEIVER),
+        address(ZERO_ADDRESS),
+        amount(AMOUNT),
+    )
+    .expect_err("zero token must fail validation");
+    assert!(matches!(
+        error,
+        AppDataError::InvalidFlashloanHints {
+            field: "token",
+            reason: ValidationReason::BadShape { .. },
+        }
+    ));
+}
+
+#[test]
+fn flashloan_hint_appears_inside_metadata_of_generated_document() {
+    let params = AppDataParams {
+        app_code: Some("aave-v3-flashloan".to_owned()),
+        flashloan: Some(sample_hints()),
+        ..Default::default()
+    };
+
+    let doc = generate_app_data_doc(params);
+    let flashloan = doc
+        .get("metadata")
+        .and_then(Value::as_object)
+        .and_then(|metadata| metadata.get("flashloan"))
+        .expect("generated document must carry metadata.flashloan");
+
+    assert_eq!(flashloan["amount"], json!(AMOUNT));
+    assert_eq!(flashloan["liquidityProvider"], json!(LIQUIDITY_PROVIDER));
+    assert_eq!(flashloan["protocolAdapter"], json!(PROTOCOL_ADAPTER));
+    assert_eq!(flashloan["receiver"], json!(RECEIVER));
+    assert_eq!(flashloan["token"], json!(TOKEN));
+}
+
+#[test]
+fn bundled_schema_accepts_documents_carrying_the_typed_flashloan_hint() {
+    let params = AppDataParams {
+        app_code: Some("aave-v3-flashloan".to_owned()),
+        flashloan: Some(sample_hints()),
+        ..Default::default()
+    };
+
+    let mut doc = generate_app_data_doc(params);
+    if let Value::Object(map) = &mut doc {
+        map.insert("version".to_owned(), Value::String("1.7.0".to_owned()));
+    }
+
+    let validation = validate_app_data_doc(&doc);
+    assert!(
+        validation.success,
+        "generated document carrying typed FlashloanHints must validate against the bundled schema, got {:?}",
+        validation.errors,
+    );
+}
+
+#[test]
+fn typed_flashloan_field_survives_appdataparams_roundtrip() {
+    let params = AppDataParams {
+        flashloan: Some(sample_hints()),
+        ..Default::default()
+    };
+
+    let json_value =
+        serde_json::to_value(&params).expect("AppDataParams with typed flashloan must serialize");
+    assert_eq!(
+        json_value
+            .get("metadata")
+            .and_then(Value::as_object)
+            .and_then(|metadata| metadata.get("flashloan"))
+            .and_then(|flashloan| flashloan.get("amount"))
+            .and_then(Value::as_str),
+        Some(AMOUNT),
+        "AppDataParams must emit `metadata.flashloan.amount` on the wire",
+    );
+
+    let reparsed: AppDataParams = serde_json::from_value(json_value)
+        .expect("serialized AppDataParams must reparse through the custom deserializer");
+    assert_eq!(
+        reparsed
+            .flashloan
+            .as_ref()
+            .map(|hints| hints.amount.to_string()),
+        Some(AMOUNT.to_owned()),
+        "typed flashloan field must survive a roundtrip through AppDataParams",
+    );
+    assert!(
+        !reparsed.metadata.contains_key("flashloan"),
+        "typed flashloan sub-field must leave the open-ended metadata map on deserialization",
+    );
+}

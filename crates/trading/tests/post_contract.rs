@@ -148,6 +148,8 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
         .with_app_data(cow_sdk_app_data::AppDataParams {
             app_code: None,
             environment: None,
+            signer: None,
+            flashloan: None,
             metadata: serde_json::from_value(json!({
                 "partnerFee": {
                     "volumeBps": 50,

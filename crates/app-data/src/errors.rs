@@ -55,6 +55,17 @@ pub enum AppDataError {
         /// Canonical validation-failure mode.
         reason: ValidationReason,
     },
+    /// A flash-loan hint failed semantic validation against the documented
+    /// bounds for `amount` or the non-zero-address preconditions on
+    /// `liquidityProvider`, `protocolAdapter`, `receiver`, and `token`.
+    #[error("invalid flashloan-hints field `{field}`: {reason}")]
+    InvalidFlashloanHints {
+        /// Public field name that failed validation, spelled as the
+        /// camelCase wire key for stable error observability.
+        field: &'static str,
+        /// Canonical validation-failure mode.
+        reason: ValidationReason,
+    },
     /// CID or digest calculation failed with a typed underlying error
     /// preserved through the error-source chain.
     #[error("appDataHex calculation failed: {source}")]

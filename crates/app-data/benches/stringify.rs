@@ -18,6 +18,8 @@ fn sample_app_data() -> cow_sdk_app_data::AppDataDoc {
     generate_app_data_doc(AppDataParams {
         app_code: Some("cow-sdk-bench".to_owned()),
         environment: Some("production".to_owned()),
+        signer: None,
+        flashloan: None,
         metadata,
     })
 }

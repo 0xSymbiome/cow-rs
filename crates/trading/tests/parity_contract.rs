@@ -741,6 +741,8 @@ async fn assert_partner_fee_in_app_data(case_id: &str, input: &Value, expected: 
     let override_params = cow_sdk_app_data::AppDataParams {
         app_code: None,
         environment: None,
+        signer: None,
+        flashloan: None,
         metadata: serde_json::from_value(json!({
             "partnerFee": {
                 "volumeBps": volume_bps,

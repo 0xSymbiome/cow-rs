@@ -15,6 +15,25 @@ unreleased public contract of the repository.
 
 ### Added
 
+- Typed flash-loan hints and signer fields on the app-data metadata
+  shape. `cow_sdk_app_data::FlashloanHints` is a new
+  `#[non_exhaustive]` Rust type with five required fields —
+  `liquidityProvider`, `protocolAdapter`, `receiver`, `token`, and
+  `amount` — that narrow the reviewed flash-loan hint envelope from a
+  free-form JSON object into a byte-identical camelCase typed
+  struct. The companion `FlashloanHints::new` constructor and
+  `FlashloanHints::validate` method enforce the published bounds by
+  rejecting a zero `amount` and every zero-address field before a
+  document would fail the reviewed schema. `AppDataParams` gains two
+  typed sub-metadata fields — `signer: Option<Address>` and
+  `flashloan: Option<FlashloanHints>` — that carry the reviewed
+  `metadata.signer` and `metadata.flashloan` positions on the wire;
+  the open-ended `AppDataParams.metadata` slot remains available for
+  every other metadata sub-object, and a new typed
+  `AppDataError::InvalidFlashloanHints { field, reason }` variant
+  reuses the shared `cow_sdk_core::ValidationReason` enum so callers
+  can pattern-match on the validation-failure mode without parsing
+  free-form strings.
 - Typed orderbook-rejection enum with structured per-code variants.
   `cow_sdk_orderbook::OrderbookRejection` ships a
   `#[non_exhaustive]` classification of every authoritative

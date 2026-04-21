@@ -388,6 +388,8 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
         .with_app_data(cow_sdk_app_data::AppDataParams {
             app_code: None,
             environment: None,
+            signer: None,
+            flashloan: None,
             metadata: serde_json::from_value(serde_json::json!({
                 "quote": {
                     "slippageBips": 77
@@ -459,6 +461,8 @@ async fn quote_results_reject_invalid_partner_fee_metadata_before_quoting() {
     let advanced = SwapAdvancedSettings::new().with_app_data(cow_sdk_app_data::AppDataParams {
         app_code: None,
         environment: None,
+        signer: None,
+        flashloan: None,
         metadata: serde_json::from_value(serde_json::json!({
             "partnerFee": {
                 "unexpected": true

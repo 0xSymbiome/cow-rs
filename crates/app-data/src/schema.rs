@@ -13,8 +13,23 @@ static ROOT_SCHEMAS: OnceLock<BTreeMap<String, Value>> = OnceLock::new();
 const SCHEMA_BASE_URI: &str = "https://cowswap.exchange/schemas/app-data/";
 
 /// Builds a canonical app-data document from typed parameters.
+///
+/// The typed `signer` and `flashloan` sub-fields on [`AppDataParams`] are
+/// merged into the nested `metadata` object in their reviewed camelCase
+/// positions before the document is sealed, so the document carries the
+/// same wire shape whether the caller supplied the typed fields directly
+/// or folded them through the open-ended metadata map.
+///
+/// # Panics
+///
+/// Panics only if the typed `flashloan` sub-field ever stops serializing to
+/// JSON — which cannot happen for values produced through the public
+/// constructors.
 #[must_use]
 pub fn generate_app_data_doc(params: AppDataParams) -> AppDataDoc {
+    let metadata = params
+        .metadata_wire_value()
+        .expect("typed flashloan metadata must remain serializable");
     let mut doc = serde_json::Map::new();
     doc.insert(
         "appCode".to_string(),
@@ -23,7 +38,7 @@ pub fn generate_app_data_doc(params: AppDataParams) -> AppDataDoc {
     if let Some(environment) = params.environment {
         doc.insert("environment".to_string(), Value::String(environment));
     }
-    doc.insert("metadata".to_string(), Value::Object(params.metadata));
+    doc.insert("metadata".to_string(), metadata);
     doc.insert(
         "version".to_string(),
         Value::String(LATEST_APP_DATA_VERSION.to_string()),
