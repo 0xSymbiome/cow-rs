@@ -113,8 +113,13 @@ fn generated_validity(rng: &mut CaseRng) -> (Option<u32>, Option<u32>) {
 }
 
 fn generated_partner_fee(rng: &mut CaseRng) -> Option<PartnerFee> {
-    rng.next_bool()
-        .then(|| PartnerFeePolicy::volume(1 + (rng.next_u32() % 100), address(ALT_RECEIVER)).into())
+    rng.next_bool().then(|| {
+        let bps =
+            u16::try_from(1 + (rng.next_u32() % 100)).expect("generated volume bps must fit a u16");
+        PartnerFeePolicy::volume(bps, address(ALT_RECEIVER))
+            .expect("generated volume policy must validate")
+            .into()
+    })
 }
 
 fn generated_optional_override_validity(rng: &mut CaseRng) -> (Option<u32>, Option<u32>) {

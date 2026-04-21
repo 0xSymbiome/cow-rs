@@ -313,7 +313,7 @@ pub async fn resolve_slippage_suggestion(
 /// partner-fee payload.
 #[must_use]
 pub fn partner_fee_bps(partner_fee: Option<&PartnerFee>) -> Option<u32> {
-    partner_fee.and_then(PartnerFee::volume_bps)
+    partner_fee.and_then(PartnerFee::volume_bps).map(u32::from)
 }
 
 pub(crate) fn gas_with_margin(gas: &Amount) -> Result<Amount, TradingError> {

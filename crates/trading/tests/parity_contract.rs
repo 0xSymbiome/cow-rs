@@ -697,17 +697,20 @@ async fn assert_partner_fee_in_app_data(case_id: &str, input: &Value, expected: 
     let partner_fee_input = input["partnerFee"]
         .as_object()
         .unwrap_or_else(|| panic!("case {case_id}: input.partnerFee must be an object"));
-    let volume_bps = u32::try_from(
+    let volume_bps = u16::try_from(
         partner_fee_input["volumeBps"]
             .as_u64()
             .unwrap_or_else(|| panic!("case {case_id}: input.partnerFee.volumeBps must be a u64")),
     )
-    .expect("fixture volume bps must fit in u32");
+    .expect("fixture volume bps must fit in u16");
     let metadata_path = expected["metadata_path"]
         .as_str()
         .unwrap_or_else(|| panic!("case {case_id}: expected.metadata_path must be a string"));
 
-    let partner_fee = PartnerFee::from(PartnerFeePolicy::volume(volume_bps, address(ALT_RECEIVER)));
+    let partner_fee = PartnerFee::from(
+        PartnerFeePolicy::volume(volume_bps, address(ALT_RECEIVER))
+            .expect("fixture volume policy must validate"),
+    );
     let info = build_app_data("0x007", 50, "market", Some(&partner_fee), None)
         .await
         .unwrap_or_else(|error| {

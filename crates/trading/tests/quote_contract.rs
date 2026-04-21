@@ -431,7 +431,11 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
     assert_eq!(result.trade_parameters.slippage_bps, Some(77));
     assert_eq!(
         result.trade_parameters.partner_fee,
-        Some(PartnerFeePolicy::volume(42, address(crate::common::ALT_RECEIVER)).into())
+        Some(
+            PartnerFeePolicy::volume(42, address(crate::common::ALT_RECEIVER))
+                .expect("volume policy must validate")
+                .into(),
+        )
     );
     assert!(result.trade_parameters.partially_fillable);
     assert!(result.order_to_sign.partially_fillable);

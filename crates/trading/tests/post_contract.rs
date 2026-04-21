@@ -132,7 +132,11 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
     let signer = MockSigner::new(address(ALT_RECEIVER));
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.owner = Some(address(OWNER));
-    trade.partner_fee = Some(PartnerFeePolicy::volume(50, address(ALT_RECEIVER)).into());
+    trade.partner_fee = Some(
+        PartnerFeePolicy::volume(50, address(ALT_RECEIVER))
+            .expect("volume policy must validate")
+            .into(),
+    );
 
     let advanced = SwapAdvancedSettings::new()
         .with_quote_request(

@@ -306,8 +306,9 @@ fn classify(envelope: RejectionEnvelope) -> OrderbookRejection {
         "TokenTemporarilySuspended" => OrderbookRejection::TokenTemporarilySuspended,
         "InsufficientLiquidity" => OrderbookRejection::InsufficientLiquidity,
         "CustomSolverError" => OrderbookRejection::CustomSolverError,
-        "SellAmountDoesNotCoverFee" => parse_sell_amount_does_not_cover_fee(&envelope)
-            .unwrap_or_else(|| unknown(envelope)),
+        "SellAmountDoesNotCoverFee" => {
+            parse_sell_amount_does_not_cover_fee(&envelope).unwrap_or_else(|| unknown(envelope))
+        }
         "AlreadyCancelled" => OrderbookRejection::AlreadyCancelled,
         "OrderFullyExecuted" => OrderbookRejection::OrderFullyExecuted,
         "OrderExpired" => OrderbookRejection::OrderExpired,

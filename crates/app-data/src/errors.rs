@@ -46,6 +46,15 @@ pub enum AppDataError {
         /// Canonical validation-failure mode.
         reason: ValidationReason,
     },
+    /// A partner-fee policy failed semantic validation against the
+    /// documented basis-point bounds or recipient preconditions.
+    #[error("invalid partner-fee field `{field}`: {reason}")]
+    InvalidPartnerFee {
+        /// Public field name that failed validation.
+        field: &'static str,
+        /// Canonical validation-failure mode.
+        reason: ValidationReason,
+    },
     /// CID or digest calculation failed with a typed underlying error
     /// preserved through the error-source chain.
     #[error("appDataHex calculation failed: {source}")]

@@ -140,25 +140,26 @@ fn protocol_fee_sanitization_accepts_only_finite_supported_values() {
 #[test]
 fn partner_fee_extraction_prefers_supported_object_and_array_shapes() {
     assert_eq!(
-        partner_fee_bps(Some(&PartnerFee::from(PartnerFeePolicy::volume(
-            42,
-            address(crate::common::ALT_RECEIVER),
-        )))),
+        partner_fee_bps(Some(&PartnerFee::from(
+            PartnerFeePolicy::volume(42, address(crate::common::ALT_RECEIVER))
+                .expect("volume policy must validate"),
+        ))),
         Some(42)
     );
     assert_eq!(
         partner_fee_bps(Some(&PartnerFee::from(vec![
-            PartnerFeePolicy::price_improvement(12, 100, address(crate::common::ALT_RECEIVER)),
-            PartnerFeePolicy::volume(55, address(crate::common::ALT_RECEIVER)),
+            PartnerFeePolicy::price_improvement(12, 100, address(crate::common::ALT_RECEIVER))
+                .expect("price-improvement policy must validate"),
+            PartnerFeePolicy::volume(55, address(crate::common::ALT_RECEIVER))
+                .expect("volume policy must validate"),
         ]))),
         Some(55)
     );
     assert_eq!(
-        partner_fee_bps(Some(&PartnerFee::from(PartnerFeePolicy::surplus(
-            250,
-            100,
-            address(crate::common::ALT_RECEIVER),
-        )))),
+        partner_fee_bps(Some(&PartnerFee::from(
+            PartnerFeePolicy::surplus(250, 100, address(crate::common::ALT_RECEIVER))
+                .expect("surplus policy must validate"),
+        ))),
         None
     );
     assert_eq!(partner_fee_bps(None), None);

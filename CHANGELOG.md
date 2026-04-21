@@ -360,6 +360,34 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Partner-fee validation surface is tightened across the public
+  contract. Every basis-point field on
+  `cow_sdk_app_data::PartnerFee` and
+  `cow_sdk_app_data::PartnerFeePolicy` narrows from `u32` to `u16`, so
+  values outside the published partner-fee range are rejected at the
+  compiler rather than at the wire, and both enums gain
+  `#[non_exhaustive]` so future wire shapes may be introduced as a
+  minor change without breaking downstream exhaustive matches. A new
+  `PartnerFee::validate` / `PartnerFeePolicy::validate` surface
+  enforces the published basis-point ranges (`volumeBps` and
+  `maxVolumeBps` in `[1, 100]`; `surplusBps` and
+  `priceImprovementBps` in `[1, 9999]`) and rejects the zero address
+  as a partner-fee recipient; the three typed constructors
+  `PartnerFeePolicy::volume`, `::surplus`, and `::price_improvement`
+  now return `Result<Self, AppDataError>` and run `validate` before
+  admitting the value. `PartnerFee::from_value` no longer leaks a
+  raw `serde_json::Error` across the crate boundary — its signature
+  returns `Result<Self, AppDataError>` and surfaces invalid inputs
+  through the existing `AppDataError::Json` conversion, and a new
+  typed `AppDataError::InvalidPartnerFee { field, reason }` variant
+  reuses the shared `cow_sdk_core::ValidationReason` enum so callers
+  can pattern-match on the validation-failure mode without parsing
+  free-form strings. The deserializer additionally accepts the
+  reviewed legacy `{ bps, recipient }` shape and promotes it to the
+  modern `Volume { volume_bps, recipient }` shape on input, keeping
+  parse-time parity with the reviewed services behaviour while every
+  value emitted on the wire continues to use the modern `volumeBps`
+  key.
 - Orderbook transport error surface now carries a typed rejection
   variant. `cow_sdk_orderbook::OrderbookError` gains
   `Rejected { status: http::StatusCode, rejection: OrderbookRejection,
