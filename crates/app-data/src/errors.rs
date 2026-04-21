@@ -23,12 +23,20 @@ pub enum AppDataError {
     /// JSON serialization or parsing failed.
     #[error("json error: {0}")]
     Json(#[from] serde_json::Error),
-    /// JSON schema validation or schema construction failed.
+    /// JSON schema validation or schema construction failed; the path-prefixed
+    /// validator message is exposed through `Display` and the typed underlying
+    /// [`jsonschema::ValidationError`] is preserved through the error-source
+    /// chain.
     #[error("schema error: {message}")]
     Schema {
-        /// Rendered validator message, potentially concatenating multiple
-        /// schema-validation failures.
+        /// Path-prefixed validator message rendered for human inspection;
+        /// includes the failing JSON instance path when available so the
+        /// `Display` rendering identifies the offending field.
         message: String,
+        /// Owned schema-validator error returned by the underlying
+        /// [`jsonschema`] crate.
+        #[source]
+        source: Box<jsonschema::ValidationError<'static>>,
     },
     /// The supplied app-data document failed semantic validation.
     #[error("invalid appData field `{field}`: {reason}")]
@@ -38,11 +46,16 @@ pub enum AppDataError {
         /// Canonical validation-failure mode.
         reason: ValidationReason,
     },
-    /// CID or digest calculation failed.
-    #[error("appDataHex calculation failed: {message}")]
+    /// CID or digest calculation failed with a typed underlying error
+    /// preserved through the error-source chain.
+    #[error("appDataHex calculation failed: {source}")]
     Calculation {
-        /// Redacted detail sourced from the hashing or CID crate.
-        message: String,
+        /// Typed source error returned by the underlying hashing or CID
+        /// crate. Boxed as a trait object so the variant can carry either
+        /// a [`cid`]-crate or a [`multihash`]-crate failure without
+        /// widening the enum surface.
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync + 'static>,
     },
     /// Fetch-transport configuration or execution failed.
     #[error("transport error ({class}): {detail}")]

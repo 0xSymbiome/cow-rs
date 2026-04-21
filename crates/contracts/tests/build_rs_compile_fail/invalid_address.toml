@@ -1,0 +1,7 @@
+schema_version = 1
+
+[[entries]]
+contract_id = "Settlement"
+chain_id = 1
+env = "prod"
+address = "0xZZZZ"

@@ -1,10 +1,11 @@
-//! Public-surface regressions for the typed shape of every structured
-//! [`cow_sdk_contracts::ContractsError`] variant that previously carried
-//! stringly-typed payloads.
+//! Public-surface contract assertions for every structured
+//! [`cow_sdk_contracts::ContractsError`] variant.
 //!
-//! Each test destructures the current shape through an exhaustive pattern
-//! match; any regression to a `(String)` payload (or any shape other than the
-//! reviewed typed form) fails this file at compile time.
+//! Each test destructures the typed shape of one variant through an
+//! exhaustive pattern match so the public contract is exercised against
+//! the canonical field set the consumer-facing API documents. Any future
+//! variant whose shape drifts from this contract fails the corresponding
+//! test at compile time.
 
 use cow_sdk_contracts::ContractsError;
 use cow_sdk_core::Address;
@@ -88,17 +89,51 @@ fn abi_variant_wraps_alloy_sol_types_error_via_from_conversion() {
 }
 
 #[test]
-fn decode_variant_carries_structured_field_and_message_fields() {
-    let error = ContractsError::Decode {
+fn invalid_decoded_length_variant_carries_structured_field_expected_and_actual_fields() {
+    let error = ContractsError::InvalidDecodedLength {
         field: "orderUid",
-        message: "value must be 56 bytes, got 4".to_owned(),
+        expected: 56,
+        actual: 4,
     };
 
-    let ContractsError::Decode { field, message } = &error else {
-        panic!("expected Decode variant, got {error:?}");
+    let ContractsError::InvalidDecodedLength {
+        field,
+        expected,
+        actual,
+    } = &error
+    else {
+        panic!("expected InvalidDecodedLength variant, got {error:?}");
     };
     assert_eq!(*field, "orderUid");
-    assert!(message.contains("must be 56 bytes"));
+    assert_eq!(*expected, 56);
+    assert_eq!(*actual, 4);
+}
+
+#[test]
+fn decode_hex_variant_wraps_hex_from_hex_error_source() {
+    let source = hex::decode("zzzz").unwrap_err();
+    let error = ContractsError::DecodeHex {
+        field: "appData",
+        source,
+    };
+
+    let ContractsError::DecodeHex { field, source } = &error else {
+        panic!("expected DecodeHex variant, got {error:?}");
+    };
+    assert_eq!(*field, "appData");
+    assert!(format!("{source}").to_ascii_lowercase().contains("invalid"));
+}
+
+#[test]
+fn invalid_hex_prefix_variant_carries_field_context() {
+    let error = ContractsError::InvalidHexPrefix {
+        field: "verifyingContract",
+    };
+
+    let ContractsError::InvalidHexPrefix { field } = &error else {
+        panic!("expected InvalidHexPrefix variant, got {error:?}");
+    };
+    assert_eq!(*field, "verifyingContract");
 }
 
 #[test]

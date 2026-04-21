@@ -150,7 +150,7 @@ impl Registry {
     pub fn from_toml_str(raw: &str) -> Result<Self, RegistryError> {
         let manifest: ManifestSchema =
             toml::from_str(raw).map_err(|source| RegistryError::Parse {
-                message: source.to_string(),
+                source: Box::new(source),
             })?;
         if manifest.schema_version != SCHEMA_VERSION {
             return Err(RegistryError::UnsupportedSchemaVersion {
@@ -202,11 +202,13 @@ impl Registry {
 #[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum RegistryError {
-    /// The TOML manifest could not be parsed.
-    #[error("failed to parse registry manifest: {message}")]
+    /// The TOML manifest could not be parsed; the underlying
+    /// [`toml::de::Error`] is preserved through the error-source chain.
+    #[error("failed to parse registry manifest: {source}")]
     Parse {
-        /// Redacted detail from the underlying TOML parser.
-        message: String,
+        /// Typed TOML-deserialization error sourced from the parser.
+        #[source]
+        source: Box<toml::de::Error>,
     },
     /// The manifest declared a `schema_version` the loader does not support.
     #[error("unsupported registry schema version: expected {expected}, got {actual}")]

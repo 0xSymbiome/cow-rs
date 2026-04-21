@@ -65,8 +65,8 @@ async fn mock_order_lookup_is_uid_keyed() {
         .expect_err("mock lookup must reject a mismatched order uid");
 
     match error {
-        OrderbookError::InvalidTransform(message) => {
-            assert!(message.contains(unknown_uid.as_str()));
+        OrderbookError::InvalidTransform { field, reason: _ } => {
+            assert_eq!(field, "orderUid");
         }
         other => panic!("expected InvalidTransform for unknown mock order uid, got {other:?}"),
     }

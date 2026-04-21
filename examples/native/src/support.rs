@@ -292,11 +292,11 @@ impl OrderbookClient for MockOrderbook {
             .iter()
             .find(|order| &order.uid == order_uid)
             .cloned()
-            .ok_or_else(|| {
-                OrderbookError::InvalidTransform(format!(
-                    "missing mock order for requested uid {}",
-                    order_uid.as_str()
-                ))
+            .ok_or_else(|| OrderbookError::InvalidTransform {
+                field: "orderUid",
+                reason: cow_sdk::core::ValidationReason::Precondition {
+                    details: "requested order uid is not registered with the mock orderbook",
+                },
             })
     }
 

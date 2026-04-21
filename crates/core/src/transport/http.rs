@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use thiserror::Error;
 
 use crate::validation::TransportErrorClass;
@@ -53,7 +54,15 @@ impl TransportError {
 /// [`ReqwestTransport`](crate::transport::ReqwestTransport); the browser
 /// default implementation lives in `cow-sdk-transport-wasm` and bridges the
 /// same async signature through `JsFuture`.
-#[allow(async_fn_in_trait)]
+///
+/// The trait uses [`async_trait`] so downstream clients can hold the
+/// transport behind `Arc<dyn HttpTransport>` without reaching for a
+/// bespoke adapter trait. The returned futures are `!Send` to keep the
+/// browser implementation viable; consumers that want to pin a native
+/// transport onto a multi-threaded runtime keep the concrete type or
+/// wrap it in `Arc<dyn HttpTransport + Send + Sync>` through their own
+/// thin newtype.
+#[async_trait(?Send)]
 pub trait HttpTransport {
     /// Performs an HTTP `GET` against the supplied path.
     ///

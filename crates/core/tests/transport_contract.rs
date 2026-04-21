@@ -242,3 +242,49 @@ fn configuration_error_surfaces_without_class() {
     };
     assert!(error.class().is_none());
 }
+
+#[tokio::test]
+async fn reqwest_transport_is_dyn_compatible_behind_arc() {
+    use std::sync::Arc;
+
+    let transport: Arc<dyn HttpTransport> = Arc::new(
+        ReqwestTransport::new(
+            ReqwestTransportConfig::new("http://127.0.0.1:1").with_user_agent("cow-rs-tests"),
+        )
+        .expect("reqwest transport must build"),
+    );
+    // Exercise the dyn dispatch path: the call must fail since port 1 is
+    // closed, but the trait-object invocation itself must compile.
+    let error = transport
+        .get("/path")
+        .await
+        .expect_err("connect to a closed port must fail through the trait-object dispatch");
+    assert!(error.class().is_some());
+}
+
+#[tokio::test]
+async fn connect_failure_through_invalid_url_classifies_as_builder() {
+    // An invalid URL bypasses the resolver and forces `reqwest` to surface
+    // a builder-layer error at request construction time.
+    let client = reqwest::Client::new();
+    let builder_error = client
+        .request(reqwest::Method::GET, "http://[invalid ipv6]/")
+        .build()
+        .expect_err("malformed URL must produce a builder-layer reqwest error");
+
+    let transport_error = classify_reqwest_error(builder_error);
+    assert_eq!(transport_error.class(), Some(TransportErrorClass::Builder));
+}
+
+#[test]
+fn transport_error_class_labels_cover_every_documented_variant() {
+    assert_eq!(TransportErrorClass::Timeout.as_str(), "timeout");
+    assert_eq!(TransportErrorClass::Connect.as_str(), "connect");
+    assert_eq!(TransportErrorClass::Redirect.as_str(), "redirect");
+    assert_eq!(TransportErrorClass::Decode.as_str(), "decode");
+    assert_eq!(TransportErrorClass::Body.as_str(), "body");
+    assert_eq!(TransportErrorClass::Builder.as_str(), "builder");
+    assert_eq!(TransportErrorClass::Request.as_str(), "request");
+    assert_eq!(TransportErrorClass::Status.as_str(), "status");
+    assert_eq!(TransportErrorClass::Other.as_str(), "other");
+}

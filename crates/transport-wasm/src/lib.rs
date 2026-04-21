@@ -25,17 +25,21 @@
 //!
 //! # Minimal usage
 //!
-//! ```ignore
+//! ```
+//! # #[cfg(target_arch = "wasm32")]
+//! # mod wasm_only {
 //! use cow_sdk_core::HttpTransport;
 //! use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 //!
-//! # async fn example() -> Result<(), cow_sdk_core::TransportError> {
-//! let transport = FetchTransport::new(FetchTransportConfig::new(
-//!     "https://api.cow.fi",
-//! ));
-//! let body = transport.get("/api/v1/version").await?;
-//! println!("{body}");
-//! # Ok(())
+//! pub async fn example(
+//!     transport: &FetchTransport,
+//! ) -> Result<String, cow_sdk_core::TransportError> {
+//!     transport.get("/api/v1/version").await
+//! }
+//!
+//! pub fn build_transport() -> FetchTransport {
+//!     FetchTransport::new(&FetchTransportConfig::new("https://api.cow.fi"))
+//! }
 //! # }
 //! ```
 //!

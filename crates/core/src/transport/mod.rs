@@ -13,14 +13,6 @@
 //! text. Callers that want to partition telemetry or shape retry policy on
 //! the failure category match on the [`class`](TransportError) of the
 //! [`TransportError::Transport`] variant.
-//!
-//! # Stability
-//!
-//! The trait methods are `async`. This is the shipped trait shape; any
-//! external implementor that wrote against the historical synchronous shape
-//! must migrate to the `async` signature. The shape adjustment is safe for
-//! consumers because `cow-rs` is pre-release and the trait had no production
-//! call sites before this change.
 
 mod http;
 

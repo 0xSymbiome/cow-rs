@@ -83,8 +83,12 @@ fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataE
         options = options.with_resource(uri.clone(), Resource::from_contents(resource.clone()));
     }
 
-    let validator = options.build(&schema).map_err(|err| AppDataError::Schema {
-        message: err.to_string(),
+    let validator = options.build(&schema).map_err(|err| {
+        let message = render_validation_error(&err);
+        AppDataError::Schema {
+            message,
+            source: Box::new(err.to_owned()),
+        }
     })?;
 
     let mut errors = validator.iter_errors(app_data_doc);
@@ -94,7 +98,10 @@ fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataE
             rendered.push_str("; ");
             rendered.push_str(&render_validation_error(&error));
         }
-        return Err(AppDataError::Schema { message: rendered });
+        return Err(AppDataError::Schema {
+            message: rendered,
+            source: Box::new(first.to_owned()),
+        });
     }
 
     Ok(())

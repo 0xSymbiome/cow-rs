@@ -25,6 +25,7 @@ default = []
 tracing = ["dep:tracing"]
 
 [dependencies]
+async-trait.workspace = true
 hex.workspace = true
 http.workspace = true
 num-bigint.workspace = true

@@ -690,7 +690,12 @@ impl OrderbookClient for MockBrowserOrderbook {
         OrderUid::new(
             "0x9f0c29bfbafde4cf5f43f67ff6be7277e5a103ce3be3d05a02f3f42e1a42f0ad44444444444444444444444444444444444444446ff1d400",
         )
-        .map_err(|error| cow_sdk::OrderbookError::InvalidTransform(error.to_string()))
+        .map_err(|_error| cow_sdk::OrderbookError::InvalidTransform {
+            field: "orderUid",
+            reason: cow_sdk::core::ValidationReason::BadShape {
+                details: "mock order uid literal failed validation",
+            },
+        })
     }
 
     async fn send_signed_order_cancellations(
@@ -733,7 +738,12 @@ impl OrderbookClient for MockBrowserOrderbook {
             "status": "open",
             "totalFee": "0"
         }))
-        .map_err(|error| cow_sdk::OrderbookError::InvalidTransform(error.to_string()))?)
+        .map_err(|_error| cow_sdk::OrderbookError::InvalidTransform {
+            field: "order",
+            reason: cow_sdk::core::ValidationReason::BadShape {
+                details: "mock order payload failed deserialization",
+            },
+        })?)
     }
 
     async fn upload_app_data(

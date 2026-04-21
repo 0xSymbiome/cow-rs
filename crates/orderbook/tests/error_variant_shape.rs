@@ -1,11 +1,12 @@
-//! Public-surface regressions for the typed shape of every structured
+//! Public-surface contract assertions for every structured
 //! [`cow_sdk_orderbook::OrderbookError`] wrapper variant plus the shared
 //! [`cow_sdk_core::TransportErrorClass`] classification.
 //!
-//! Each test destructures the current shape through an exhaustive pattern
-//! match; any regression to a `(String)` payload fails this file at compile
-//! time. The `TransportErrorClass` coverage walks every named variant so the
-//! partition stays stable.
+//! Each test destructures the typed shape of one variant through an
+//! exhaustive pattern match. The `TransportErrorClass` coverage walks every
+//! named variant so the partition stays stable for downstream telemetry and
+//! retry layers. Any future variant whose shape drifts from this contract
+//! fails the corresponding test at compile time.
 
 use cow_sdk_core::{TransportErrorClass, ValidationReason};
 use cow_sdk_orderbook::OrderbookError;

@@ -18,6 +18,7 @@
 use std::time::Duration;
 
 use ::reqwest::{Client, RequestBuilder, header::CONTENT_TYPE};
+use async_trait::async_trait;
 
 use crate::{
     redaction::Redacted,
@@ -148,6 +149,7 @@ impl ReqwestTransport {
     }
 }
 
+#[async_trait(?Send)]
 impl HttpTransport for ReqwestTransport {
     async fn get(&self, path: &str) -> Result<String, TransportError> {
         let url = self.resolve_url(path);
@@ -182,7 +184,57 @@ impl HttpTransport for ReqwestTransport {
 ///
 /// The helper strips any attached URL through
 /// [`reqwest::Error::without_url`] before classifying it through the
-/// documented [`TransportErrorClass`] partition.
+/// documented [`TransportErrorClass`] partition. Downstream crates that
+/// bridge their own `reqwest::Error` wraps share the classification by
+/// routing every failure through this helper.
+///
+/// # Examples
+///
+/// Classify a builder-layer `reqwest::Error` and observe that the
+/// redaction path keeps the URL out of the rendered error text:
+///
+/// ```
+/// use cow_sdk_core::TransportErrorClass;
+/// use cow_sdk_core::transport::classify_reqwest_error;
+///
+/// let client = reqwest::Client::new();
+/// let builder_error = client
+///     .request(reqwest::Method::GET, "http://[invalid ipv6]/")
+///     .build()
+///     .expect_err("malformed URL must fail at the builder layer");
+///
+/// let transport_error = classify_reqwest_error(builder_error);
+/// assert_eq!(transport_error.class(), Some(TransportErrorClass::Builder));
+/// assert!(!format!("{transport_error}").contains("invalid ipv6"));
+/// ```
+///
+/// Timeout errors classify through the same helper, and the attached URL is
+/// stripped before the detail message is rendered:
+///
+/// ```no_run
+/// use std::time::Duration;
+///
+/// use cow_sdk_core::TransportErrorClass;
+/// use cow_sdk_core::transport::classify_reqwest_error;
+///
+/// # async fn demonstrate_timeout() {
+/// let client = reqwest::Client::builder()
+///     .timeout(Duration::from_millis(1))
+///     .build()
+///     .expect("client must build");
+/// let timeout_error = client
+///     .get("https://example.invalid/slow")
+///     .send()
+///     .await
+///     .expect_err("an unreachable host exceeds the 1ms timeout");
+///
+/// let transport_error = classify_reqwest_error(timeout_error);
+/// // The class surface is partitioned; timeouts always map to `Timeout`.
+/// let _: Option<TransportErrorClass> = transport_error.class();
+/// // The attached URL never appears in the rendered error text.
+/// assert!(!format!("{transport_error}").contains("example.invalid"));
+/// # }
+/// ```
 #[must_use]
 pub fn classify_reqwest_error(error: ::reqwest::Error) -> TransportError {
     map_reqwest_error(error)

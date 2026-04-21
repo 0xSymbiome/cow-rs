@@ -25,15 +25,9 @@ pub(crate) fn keccak256_hex(bytes: impl AsRef<[u8]>) -> String {
 
 pub(crate) fn parse_hex(value: &str, field: &'static str) -> Result<Vec<u8>, ContractsError> {
     let Some(stripped) = value.strip_prefix("0x") else {
-        return Err(ContractsError::Decode {
-            field,
-            message: "value must be 0x-prefixed hexadecimal data".to_owned(),
-        });
+        return Err(ContractsError::InvalidHexPrefix { field });
     };
-    hex::decode(stripped).map_err(|_| ContractsError::Decode {
-        field,
-        message: "value contains non-hex characters".to_owned(),
-    })
+    hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source })
 }
 
 pub(crate) fn parse_hex_exact(
@@ -43,9 +37,10 @@ pub(crate) fn parse_hex_exact(
 ) -> Result<Vec<u8>, ContractsError> {
     let bytes = parse_hex(value, field)?;
     if bytes.len() != expected {
-        return Err(ContractsError::Decode {
+        return Err(ContractsError::InvalidDecodedLength {
             field,
-            message: format!("value must be {expected} bytes, got {}", bytes.len()),
+            expected,
+            actual: bytes.len(),
         });
     }
     Ok(bytes)

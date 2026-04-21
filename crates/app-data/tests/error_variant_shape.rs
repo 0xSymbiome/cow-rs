@@ -1,12 +1,16 @@
-//! Public-surface regressions for the typed shape of every structured
+//! Public-surface contract assertions for every structured
 //! [`cow_sdk_app_data::AppDataError`] wrapper variant.
 //!
-//! The six wrappers that previously held arbitrary external error strings
-//! (`Json`, `Schema`, `InvalidAppDataProvided`, `Calculation`, `Transport`,
-//! `Pinning`) now carry either a typed `#[from]` converter or a structured
-//! validation field set. Each test destructures the current shape through an
-//! exhaustive pattern match; any regression to a `(String)` payload fails
-//! this file at compile time.
+//! Each test destructures the typed shape of one variant through an
+//! exhaustive pattern match. The `Json` variant wraps [`serde_json::Error`]
+//! through a `#[from]` converter; `Schema` carries a path-prefixed display
+//! message paired with a typed [`jsonschema::ValidationError`] source;
+//! `InvalidAppDataProvided` carries `{ field, reason: ValidationReason }`;
+//! `Calculation` carries a typed `Box<dyn Error>` source so the underlying
+//! cid or multihash failure stays addressable; `Transport` carries
+//! `{ class: TransportErrorClass, detail }`; and `Pinning` carries
+//! `{ status: Option<u16>, message }`. Any future variant whose shape drifts
+//! from this contract fails the corresponding test at compile time.
 
 use cow_sdk_app_data::AppDataError;
 use cow_sdk_core::{TransportErrorClass, ValidationReason};
@@ -25,15 +29,25 @@ fn json_variant_wraps_serde_json_error_via_from_conversion() {
 }
 
 #[test]
-fn schema_variant_carries_structured_message_field() {
+fn schema_variant_wraps_jsonschema_validation_error_through_typed_source() {
+    let schema = serde_json::json!({"type": "object", "required": ["x"]});
+    let candidate = serde_json::json!({});
+    let validator = jsonschema::validator_for(&schema).expect("schema fixture must compile");
+    let validation_error = validator
+        .iter_errors(&candidate)
+        .next()
+        .expect("missing-required-property must surface a validation error")
+        .to_owned();
     let error = AppDataError::Schema {
-        message: "draft-07 reference missing `$id`".to_owned(),
+        message: format!("data {validation_error}"),
+        source: Box::new(validation_error),
     };
 
-    let AppDataError::Schema { message } = &error else {
+    let AppDataError::Schema { message, source } = &error else {
         panic!("expected Schema variant, got {error:?}");
     };
-    assert!(message.contains("reference missing"));
+    assert!(message.contains("required"));
+    assert!(format!("{source}").contains("required"));
 }
 
 #[test]
@@ -53,15 +67,19 @@ fn invalid_app_data_provided_carries_structured_field_and_reason() {
 }
 
 #[test]
-fn calculation_variant_carries_structured_message_field() {
+fn calculation_variant_carries_typed_source_through_box_dyn_error() {
+    #[derive(Debug, thiserror::Error)]
+    #[error("synthetic multihash failure: {0}")]
+    struct StubMultihashFailure(&'static str);
+
     let error = AppDataError::Calculation {
-        message: "multihash length overflow".to_owned(),
+        source: Box::new(StubMultihashFailure("multihash length overflow")),
     };
 
-    let AppDataError::Calculation { message } = &error else {
+    let AppDataError::Calculation { source } = &error else {
         panic!("expected Calculation variant, got {error:?}");
     };
-    assert!(message.contains("multihash"));
+    assert!(format!("{source}").contains("multihash"));
 }
 
 #[test]

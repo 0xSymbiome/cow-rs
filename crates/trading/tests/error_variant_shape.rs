@@ -1,16 +1,13 @@
-//! Public-surface regression for the typed shape of
+//! Public-surface contract assertion for the typed shape of
 //! [`cow_sdk_trading::TradingError::RecoverableSignatureOwnerMismatch`].
 //!
-//! The variant previously carried stringly-typed `owner` and `signer`
-//! payloads that lost information at construction time: both values
-//! are always Ethereum addresses resolved from the order payload and
-//! the signing backend respectively. The variant now carries typed
-//! [`cow_sdk_core::Address`] fields so downstream callers can
-//! pattern-match on the typed payload without re-parsing error
-//! messages. This test destructures the new shape and asserts the
-//! typed field types through an exhaustive pattern match; if the
-//! variant regresses to a stringly-typed shape, this file fails to
-//! compile.
+//! The variant carries typed [`cow_sdk_core::Address`] fields for the
+//! `owner` and `signer` so downstream callers pattern-match on the typed
+//! payload without re-parsing error messages. The `owner` is the address
+//! resolved from the order payload and the `signer` is the address
+//! produced by the signing backend. This test destructures the typed
+//! shape through an exhaustive pattern match; any future variant whose
+//! shape drifts from this contract fails this file at compile time.
 
 use cow_sdk_core::Address;
 use cow_sdk_orderbook::SigningScheme;

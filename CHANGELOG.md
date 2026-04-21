@@ -279,9 +279,36 @@ unreleased public contract of the repository.
   `Display` output. The `Redacted<T>` newtype and the config-layer
   migrations above keep the configuration surface redacted even before a
   request is built.
+- Repository security reporting now has an explicit private disclosure path and
+  a protocol-level escalation note for issues that could affect deployed CoW
+  Protocol infrastructure or user funds.
 
 ### Changed
 
+- `cow_sdk_core::HttpTransport` is dyn-compatible through `async-trait`,
+  so downstream clients compose transports as `Arc<dyn HttpTransport>`
+  without reaching for a bespoke adapter trait. Both the native
+  `ReqwestTransport` default and the browser `FetchTransport` default
+  carry the matching `#[async_trait(?Send)]` impl annotation so the
+  trait-object dispatch compiles on every supported runtime.
+- `ContractsError`, `AppDataError`, and `RegistryError` carry typed
+  underlying sources through `#[source]` chains.
+  `ContractsError::DecodeHex { field, source: hex::FromHexError }`,
+  `ContractsError::InvalidHexPrefix { field }`, and
+  `ContractsError::InvalidDecodedLength { field, expected, actual }`
+  partition the contracts hex-decode diagnostic surface so each arm
+  exposes its underlying cause typed; `AppDataError::Schema` pairs a
+  path-prefixed display message with a typed
+  `jsonschema::ValidationError<'static>` source;
+  `AppDataError::Calculation` carries the typed `cid` / `multihash`
+  failure through a boxed trait-object source; and
+  `RegistryError::Parse { source: toml::de::Error }` exposes the typed
+  TOML-deserialization error.
+- The browser `FetchTransport` default uses the browser-native
+  `redirect: "follow"` fetch mode, so redirect-chain failures surface as
+  `TypeError`-shaped DOMExceptions classified through
+  `TransportErrorClass::Connect`. The module-level rustdoc documents the
+  redirect-mode choice.
 - Lifted `cow_sdk_core::HttpTransport` to the production injection point for
   HTTPS REST traffic and shipped `cow_sdk_core::transport::reqwest::ReqwestTransport`
   as the native default implementation. The trait now exposes `async fn`
@@ -519,8 +546,6 @@ unreleased public contract of the repository.
   `crates/contracts/abi/eip1967/Eip1967.sol` preserves upstream provenance
   for reviewers.
 
-### Changed
-
 - The typed `cow_sdk_contracts::deployments::Registry` is now the single
   authority for resolving canonical contract addresses from the
   `(ContractId, SupportedChainId, CowEnv)` key triple. The historical
@@ -568,12 +593,6 @@ unreleased public contract of the repository.
 - `docs/release-checklist.md` now describes the functional `0.1.0` crates.io
   release publish sequence in finished-product language, naming the nine
   `first-release` crates the sequence publishes in dependency order.
-
-### Security
-
-- Repository security reporting now has an explicit private disclosure path and
-  a protocol-level escalation note for issues that could affect deployed CoW
-  Protocol infrastructure or user funds.
 
 ### Removed
 

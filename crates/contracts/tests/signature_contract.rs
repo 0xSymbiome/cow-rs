@@ -277,11 +277,8 @@ fn normalized_ecdsa_signature_normalizes_hex_and_rejects_invalid_payloads() {
 
     let invalid = normalized_ecdsa_signature("xyzzy").unwrap_err();
     match invalid {
-        ContractsError::Decode { field, message } => {
-            assert_eq!(field, "signature");
-            assert!(message.contains("0x-prefixed"));
-        }
-        other => panic!("expected Decode variant, got {other:?}"),
+        ContractsError::InvalidHexPrefix { field } => assert_eq!(field, "signature"),
+        other => panic!("expected InvalidHexPrefix variant, got {other:?}"),
     }
 }
 

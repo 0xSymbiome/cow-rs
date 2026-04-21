@@ -108,13 +108,33 @@ pub enum ContractsError {
     /// ABI encoding or decoding failed through the `alloy-sol-types` surface.
     #[error("ABI error: {0}")]
     Abi(#[from] alloy_sol_types::Error),
-    /// Hex or structured-payload decoding failed.
-    #[error("decode error for field `{field}`: {message}")]
-    Decode {
+    /// Hex decoding failed for a named field; the underlying
+    /// [`hex::FromHexError`] is preserved in the error-source chain.
+    #[error("hex decode error for field `{field}`: {source}")]
+    DecodeHex {
         /// Public field or payload name that failed to decode.
         field: &'static str,
-        /// Redacted detail message sourced from the decoder.
-        message: String,
+        /// Typed hex-decode error sourced from the decoder.
+        #[source]
+        source: hex::FromHexError,
+    },
+    /// A hexadecimal payload was not `0x`-prefixed.
+    #[error("field `{field}` must be 0x-prefixed hexadecimal data")]
+    InvalidHexPrefix {
+        /// Public field or payload name that failed the prefix check.
+        field: &'static str,
+    },
+    /// A hexadecimal payload decoded to an unexpected byte length.
+    #[error(
+        "field `{field}` must decode to {expected} bytes, got {actual} byte(s) after 0x prefix"
+    )]
+    InvalidDecodedLength {
+        /// Public field or payload name that failed the length check.
+        field: &'static str,
+        /// Expected decoded byte length.
+        expected: usize,
+        /// Actual decoded byte length.
+        actual: usize,
     },
     /// Serialization to JSON or ABI-adjacent payloads failed.
     #[error("serialization error: {0}")]

@@ -127,10 +127,11 @@ address = "0x1111111111111111111111111111111111111111"
     let error = Registry::from_toml_str(manifest)
         .expect_err("unknown contract_id variants must be rejected");
     match error {
-        RegistryError::Parse { message } => {
+        RegistryError::Parse { source } => {
+            let rendered = source.to_string();
             assert!(
-                message.contains("contract_id"),
-                "parser must name the offending field, got: {message}"
+                rendered.contains("contract_id"),
+                "parser must name the offending field, got: {rendered}"
             );
         }
         other => panic!("expected Parse variant for unknown contract_id, got {other:?}"),

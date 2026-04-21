@@ -20,9 +20,20 @@
 //! The configured base URL is held in [`cow_sdk_core::Redacted`] so it never
 //! appears in [`std::fmt::Debug`], [`std::fmt::Display`], or serde output,
 //! matching the native default.
+//!
+//! # Redirect handling
+//!
+//! The transport uses the browser's default `redirect: "follow"` fetch mode,
+//! so the `fetch` call resolves to the final destination response after the
+//! browser has walked every intermediate redirect. Redirect-chain failures
+//! surface as `TypeError`-shaped DOMExceptions classified through
+//! [`TransportErrorClass::Connect`], consistent with the browser platform
+//! contract. Callers that need manual redirect inspection run the request
+//! through their own fetch bridge rather than through this default adapter.
 
 use std::time::Duration;
 
+use async_trait::async_trait;
 use cow_sdk_core::{HttpTransport, Redacted, TransportError, TransportErrorClass};
 use js_sys::{Object, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
@@ -170,6 +181,7 @@ impl FetchTransport {
     }
 }
 
+#[async_trait(?Send)]
 impl HttpTransport for FetchTransport {
     async fn get(&self, path: &str) -> Result<String, TransportError> {
         self.dispatch("GET", path, None).await
@@ -247,11 +259,6 @@ fn check_status(response: &Response) -> Result<(), TransportError> {
     let status = response.status();
     if (200..300).contains(&status) {
         Ok(())
-    } else if (300..400).contains(&status) && !response.redirected() {
-        Err(TransportError::Transport {
-            class: TransportErrorClass::Redirect,
-            detail: format!("redirect-mode error surfaced HTTP status {status}"),
-        })
     } else {
         Err(TransportError::Transport {
             class: TransportErrorClass::Status,

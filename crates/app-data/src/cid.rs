@@ -30,7 +30,7 @@ pub fn app_data_hex_to_cid(app_data_hex: &str) -> Result<String, AppDataError> {
     let cid = latest_cid_from_digest(&digest)?;
     cid.to_string_of_base(Base::Base16Lower)
         .map_err(|err| AppDataError::Calculation {
-            message: err.to_string(),
+            source: Box::new(err),
         })
 }
 
@@ -61,7 +61,7 @@ fn parse_app_data_hex(value: &str) -> Result<Vec<u8>, AppDataError> {
 fn latest_cid_from_digest(digest: &[u8]) -> Result<Cid, AppDataError> {
     let hash = Multihash::<64>::wrap(KECCAK_256_CODE, digest).map_err(|err| {
         AppDataError::Calculation {
-            message: err.to_string(),
+            source: Box::new(err),
         }
     })?;
     Ok(Cid::new_v1(LATEST_CID_CODEC, hash))
