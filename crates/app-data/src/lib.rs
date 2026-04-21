@@ -27,7 +27,8 @@ pub use fetch::{
     fetch_doc_from_app_data_hex_with_policy, fetch_doc_from_cid, fetch_doc_from_cid_with_policy,
 };
 pub use info::{
-    APP_DATA_MAX_BYTES, AppDataSource, digest_from_cid, get_app_data_cid, get_app_data_content,
+    APP_DATA_APPROACHING_LIMIT_RATIO, APP_DATA_MAX_BYTES, AppDataSource, AppDataValidated,
+    AppDataValidation, AppDataWarning, digest_from_cid, get_app_data_cid, get_app_data_content,
     get_app_data_info, get_app_data_info_hex, stringify_deterministic,
 };
 pub use metadata::FlashloanHints;

@@ -1,3 +1,6 @@
+use std::ops::Deref;
+
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha3::{Digest, Keccak256};
 
@@ -12,6 +15,81 @@ use crate::{
 /// a typed [`AppDataError::TooLarge`] at the client boundary instead of
 /// waiting for the orderbook's 422 response.
 pub const APP_DATA_MAX_BYTES: usize = 8192;
+
+/// Fraction of [`APP_DATA_MAX_BYTES`] at which a typed
+/// [`AppDataWarning::ApproachingSizeLimit`] is emitted.
+///
+/// A stringified deterministic payload whose byte size reaches or exceeds
+/// this fraction of the configured ceiling surfaces a soft warning so
+/// callers can react before the hard [`AppDataError::TooLarge`] path fires.
+pub const APP_DATA_APPROACHING_LIMIT_RATIO: f64 = 0.75;
+
+/// Successful outcome of [`get_app_data_info`], pairing the canonical
+/// [`AppDataInfo`] result with typed validation metadata.
+///
+/// `AppDataValidated` implements [`Deref`] with
+/// [`AppDataInfo`] as its target so every existing field access via dot
+/// notation (for example `validated.app_data_hex`) continues to compile
+/// without code change. Destructure `validated.info` when moving the
+/// underlying [`AppDataInfo`] out of the wrapper.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AppDataValidated {
+    /// Canonical [`AppDataInfo`] for the validated document.
+    pub info: AppDataInfo,
+    /// Validation metadata captured alongside the canonical result.
+    pub validation: AppDataValidation,
+}
+
+impl Deref for AppDataValidated {
+    type Target = AppDataInfo;
+
+    fn deref(&self) -> &Self::Target {
+        &self.info
+    }
+}
+
+/// Validation metadata captured alongside a successful [`AppDataValidated`]
+/// result.
+///
+/// The struct is `#[non_exhaustive]` so future additions to the validation
+/// surface may be introduced as a minor change without breaking downstream
+/// exhaustive matches.
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AppDataValidation {
+    /// Byte size of the stringified deterministic payload — the same value
+    /// the reviewed services validator measures.
+    pub bytes_used: usize,
+    /// Soft-warning channel carrying non-fatal observations about the
+    /// validated document. Hard errors remain on the
+    /// [`AppDataError`] path.
+    pub warnings: Vec<AppDataWarning>,
+}
+
+/// Non-fatal observation emitted alongside a successful
+/// [`AppDataValidated`] result.
+///
+/// The enum is `#[non_exhaustive]` so future soft-warning variants may be
+/// introduced as a minor change without breaking downstream exhaustive
+/// matches. Hard errors — unknown keys, schema violations, and oversized
+/// payloads — stay on the [`AppDataError`] path and
+/// are never demoted to warnings.
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum AppDataWarning {
+    /// The stringified deterministic payload reached the configured
+    /// near-limit fraction of [`APP_DATA_MAX_BYTES`]. The payload is still
+    /// within the hard ceiling; callers that want headroom for subsequent
+    /// edits may want to trim metadata before sealing the document.
+    #[serde(rename_all = "camelCase")]
+    ApproachingSizeLimit {
+        /// Byte size of the stringified deterministic payload.
+        bytes_used: usize,
+        /// Configured hard ceiling for stringified app-data documents.
+        max_bytes: usize,
+    },
+}
 
 /// Source abstraction for app-data generation helpers.
 pub trait AppDataSource {
@@ -77,26 +155,64 @@ impl AppDataSource for String {
     }
 }
 
-/// Returns CID, canonical content, and hex digest for the supplied app-data source.
+/// Returns the canonical [`AppDataInfo`] plus the typed
+/// [`AppDataValidation`] metadata for the supplied app-data source.
+///
+/// On the success path the wrapper carries the deterministic payload size
+/// in `validation.bytes_used` and an ordered soft-warning channel in
+/// `validation.warnings`. A stringified payload whose byte size reaches or
+/// exceeds [`APP_DATA_APPROACHING_LIMIT_RATIO`] of [`APP_DATA_MAX_BYTES`]
+/// emits an [`AppDataWarning::ApproachingSizeLimit`]; the hard
+/// [`AppDataError::TooLarge`] path continues to fire at the configured
+/// ceiling and the wrapper is never constructed on the error path.
 ///
 /// # Errors
 ///
-/// Returns [`AppDataError`] if the source cannot be parsed, validation fails, or
-/// CID conversion fails.
-pub fn get_app_data_info(source: impl AppDataSource) -> Result<AppDataInfo, AppDataError> {
+/// Returns [`AppDataError`] if the source cannot be parsed, validation
+/// fails, the stringified payload exceeds [`APP_DATA_MAX_BYTES`], or CID
+/// conversion fails.
+pub fn get_app_data_info(source: impl AppDataSource) -> Result<AppDataValidated, AppDataError> {
     let (document, app_data_content) = source.into_document_and_content(true)?;
     ensure_document_under_size_limit(&app_data_content, APP_DATA_MAX_BYTES)?;
     ensure_valid_document(&document)?;
 
+    let bytes_used = app_data_content.len();
     let digest = Keccak256::digest(app_data_content.as_bytes());
     let app_data_hex = format!("0x{}", hex::encode(digest));
     let cid = app_data_hex_to_cid(&app_data_hex)?;
 
-    Ok(AppDataInfo {
+    let info = AppDataInfo {
         cid,
         app_data_content,
         app_data_hex,
+    };
+
+    let mut warnings = Vec::new();
+    if approaching_size_limit(bytes_used, APP_DATA_MAX_BYTES) {
+        warnings.push(AppDataWarning::ApproachingSizeLimit {
+            bytes_used,
+            max_bytes: APP_DATA_MAX_BYTES,
+        });
+    }
+
+    Ok(AppDataValidated {
+        info,
+        validation: AppDataValidation {
+            bytes_used,
+            warnings,
+        },
     })
+}
+
+fn approaching_size_limit(bytes_used: usize, max_bytes: usize) -> bool {
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "byte-size and ratio multiplication produces values that fit back inside usize with the floor the test contract requires"
+    )]
+    let threshold = (max_bytes as f64 * APP_DATA_APPROACHING_LIMIT_RATIO) as usize;
+    bytes_used >= threshold
 }
 
 /// Serializes an app-data document with deterministic object-key ordering.
@@ -181,7 +297,7 @@ fn write_canonical_json(value: &Value, out: &mut String) -> Result<(), AppDataEr
 ///
 /// Returns any error from [`get_app_data_info`].
 pub fn get_app_data_info_hex(source: impl AppDataSource) -> Result<String, AppDataError> {
-    Ok(get_app_data_info(source)?.app_data_hex)
+    Ok(get_app_data_info(source)?.info.app_data_hex)
 }
 
 /// Returns only the CID derived from the app-data content.
@@ -190,7 +306,7 @@ pub fn get_app_data_info_hex(source: impl AppDataSource) -> Result<String, AppDa
 ///
 /// Returns any error from [`get_app_data_info`].
 pub fn get_app_data_cid(source: impl AppDataSource) -> Result<String, AppDataError> {
-    Ok(get_app_data_info(source)?.cid)
+    Ok(get_app_data_info(source)?.info.cid)
 }
 
 /// Returns only the serialized app-data content.
@@ -199,7 +315,7 @@ pub fn get_app_data_cid(source: impl AppDataSource) -> Result<String, AppDataErr
 ///
 /// Returns any error from [`get_app_data_info`].
 pub fn get_app_data_content(source: impl AppDataSource) -> Result<String, AppDataError> {
-    Ok(get_app_data_info(source)?.app_data_content)
+    Ok(get_app_data_info(source)?.info.app_data_content)
 }
 
 /// Extracts the app-data hex digest from a supported CID.

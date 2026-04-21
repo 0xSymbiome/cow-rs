@@ -179,7 +179,7 @@ pub async fn build_app_data(
     }
 
     let doc = generate_app_data_doc(params);
-    let info = get_app_data_info(doc.clone())?;
+    let info = get_app_data_info(doc.clone())?.info;
 
     Ok(TradingAppDataInfo {
         doc,
@@ -216,7 +216,7 @@ pub fn merge_app_data_doc(
         Value::Object(app_data_override.metadata.clone()),
     );
 
-    let info = get_app_data_info(merged.clone())?;
+    let info = get_app_data_info(merged.clone())?.info;
 
     Ok(TradingAppDataInfo {
         doc: merged,

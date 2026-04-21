@@ -379,6 +379,25 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Return shape of app-data info construction carries typed
+  validation metadata. `cow_sdk_app_data::get_app_data_info` now
+  returns `Result<AppDataValidated, AppDataError>`, where
+  `AppDataValidated { info: AppDataInfo, validation: AppDataValidation { bytes_used, warnings } }`
+  pairs the canonical deterministic result with a typed observation
+  channel. A new `AppDataWarning` enum ships with
+  `#[non_exhaustive]` and a single launch variant
+  `ApproachingSizeLimit { bytes_used, max_bytes }` that fires when
+  the stringified deterministic payload reaches or exceeds
+  `APP_DATA_APPROACHING_LIMIT_RATIO` (default 0.75) of
+  `APP_DATA_MAX_BYTES`; hard errors — unknown keys, schema
+  violations, and oversized payloads — remain on the
+  `AppDataError` path and `AppDataValidated` is never constructed
+  when `AppDataError::TooLarge { actual_bytes, max_bytes }` fires.
+  `AppDataValidated` implements `Deref<Target = AppDataInfo>` so
+  every existing caller that reads `cid`, `app_data_hex`, or
+  `app_data_content` through dot notation continues to compile
+  without code change; callers that need to move the underlying
+  `AppDataInfo` out destructure `validated.info`.
 - Partner-fee validation surface is tightened across the public
   contract. Every basis-point field on
   `cow_sdk_app_data::PartnerFee` and

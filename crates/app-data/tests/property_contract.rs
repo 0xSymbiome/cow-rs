@@ -351,8 +351,11 @@ proptest! {
         let reordered = reordered_document(&document);
         let first = get_app_data_info(document).unwrap();
         let second = get_app_data_info(reordered).unwrap();
-        prop_assert_eq!(first.cid, second.cid);
-        prop_assert_eq!(first.app_data_content, second.app_data_content);
-        prop_assert_eq!(first.app_data_hex, second.app_data_hex);
+        prop_assert_eq!(first.cid.clone(), second.cid.clone());
+        prop_assert_eq!(
+            first.app_data_content.clone(),
+            second.app_data_content.clone()
+        );
+        prop_assert_eq!(first.app_data_hex.clone(), second.app_data_hex.clone());
     }
 }
