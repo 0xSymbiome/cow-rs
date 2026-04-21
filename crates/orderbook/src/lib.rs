@@ -54,6 +54,8 @@
 
 /// High-level orderbook client with chain/env-aware endpoint resolution.
 pub mod api;
+/// Typestate-checked construction surface for [`OrderBookApi`].
+pub mod builder;
 /// Typed orderbook client errors.
 pub mod error;
 /// Request execution policy, retry rules, and low-level transport helpers.
@@ -64,6 +66,9 @@ pub mod transform;
 pub mod types;
 
 pub use api::OrderBookApi;
+pub use builder::{
+    ChainIdSet, ChainIdUnset, EnvSet, EnvUnset, OrderBookApiBuilder, TransportSet, TransportUnset,
+};
 pub use error::OrderbookError;
 pub use request::{
     BAD_GATEWAY, DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,

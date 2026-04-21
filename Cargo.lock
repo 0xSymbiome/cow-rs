@@ -891,6 +891,7 @@ name = "cow-sdk-orderbook"
 version = "0.1.0"
 dependencies = [
  "async-lock",
+ "async-trait",
  "cow-sdk-core",
  "criterion",
  "futures-timer",

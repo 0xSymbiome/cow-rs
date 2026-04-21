@@ -2,9 +2,10 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use cow_sdk_core::{
-    Address, Amount, ApiContext, AsyncProvider, AsyncSigner, CowEnv, Provider, Signer,
-    SupportedChainId, TransactionHash,
+    Address, Amount, AsyncProvider, AsyncSigner, CowEnv, Provider, Signer, SupportedChainId,
+    TransactionHash,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_orderbook::OrderBookApi;
 
 use crate::onchain::protocol_options_for_partial_order;
@@ -1328,13 +1329,29 @@ impl TradingSdk {
             });
         }
 
-        let chain_id = requested_chain.ok_or(missing_chain_error)?;
-        let env = requested_env.unwrap_or(CowEnv::Prod);
-
-        Ok(ResolvedOrderbookBinding {
-            client: Arc::new(OrderBookApi::new(ApiContext::new(chain_id, env))),
-            chain_id,
-            env,
-        })
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let chain_id = requested_chain.ok_or(missing_chain_error)?;
+            let env = requested_env.unwrap_or(CowEnv::Prod);
+            let client = OrderBookApi::builder()
+                .chain(chain_id)
+                .environment(env)
+                .build();
+            Ok(ResolvedOrderbookBinding {
+                client: Arc::new(client),
+                chain_id,
+                env,
+            })
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            // On `wasm32` the typestate builder requires an explicit
+            // `HttpTransport`. Browser consumers compose a `FetchTransport`
+            // from `cow-sdk-transport-wasm` and inject the resulting
+            // [`OrderBookApi`] through
+            // [`TradingSdkOptions::with_orderbook_client`].
+            let _ = (requested_chain, requested_env);
+            Err(missing_chain_error)
+        }
     }
 }

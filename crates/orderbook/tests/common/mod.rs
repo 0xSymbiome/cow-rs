@@ -13,7 +13,10 @@
 
 use serde_json::{Value, json};
 
-use cow_sdk_orderbook::{Address, ApiContext, AppDataHash, CowEnv, OrderUid, SupportedChainId};
+use cow_sdk_orderbook::{
+    Address, ApiContext, AppDataHash, CowEnv, OrderBookApi, OrderBookTransportPolicy, OrderUid,
+    SupportedChainId,
+};
 
 pub fn address(value: &str) -> Address {
     Address::new(value).expect("test address literal must be valid")
@@ -29,6 +32,37 @@ pub fn order_uid(value: &str) -> OrderUid {
 
 pub fn default_context(chain_id: SupportedChainId, env: CowEnv) -> ApiContext {
     ApiContext::new(chain_id, env)
+}
+
+pub fn build_orderbook_api(context: ApiContext) -> OrderBookApi {
+    OrderBookApi::builder_from_context(context).build()
+}
+
+pub fn build_orderbook_api_with_base_url(
+    context: ApiContext,
+    base_url: impl Into<String>,
+) -> OrderBookApi {
+    OrderBookApi::builder_from_context(context)
+        .base_url(base_url)
+        .build()
+}
+
+pub fn build_orderbook_api_with_policy(
+    context: ApiContext,
+    policy: OrderBookTransportPolicy,
+) -> OrderBookApi {
+    OrderBookApi::builder_from_context(context)
+        .policy(policy)
+        .build()
+}
+
+pub fn build_orderbook_api_with_shared_client(
+    client: reqwest::Client,
+    context: ApiContext,
+) -> OrderBookApi {
+    OrderBookApi::builder_from_context(context)
+        .client(client)
+        .build()
 }
 
 pub fn sample_order_uid() -> OrderUid {

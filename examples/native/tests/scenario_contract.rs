@@ -31,10 +31,11 @@ async fn version_fixture_is_plain_text() {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::new_with_base_url(
+    let api = OrderBookApi::builder_from_context(
         ApiContext::new(SupportedChainId::Sepolia, CowEnv::Prod),
-        server.uri(),
-    );
+    )
+    .base_url(server.uri())
+    .build();
 
     let version = api
         .get_version()

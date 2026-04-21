@@ -57,13 +57,15 @@ impl TransportError {
 ///
 /// The trait uses [`async_trait`] so downstream clients can hold the
 /// transport behind `Arc<dyn HttpTransport>` without reaching for a
-/// bespoke adapter trait. The returned futures are `!Send` to keep the
-/// browser implementation viable; consumers that want to pin a native
-/// transport onto a multi-threaded runtime keep the concrete type or
-/// wrap it in `Arc<dyn HttpTransport + Send + Sync>` through their own
-/// thin newtype.
+/// bespoke adapter trait. Implementations carry [`std::fmt::Debug`] so
+/// trait objects render in derived `Debug` output of consumer-facing
+/// clients without bespoke formatters. The returned futures are `!Send`
+/// to keep the browser implementation viable; consumers that want to pin
+/// a native transport onto a multi-threaded runtime keep the concrete
+/// type or wrap it in `Arc<dyn HttpTransport + Send + Sync>` through
+/// their own thin newtype.
 #[async_trait(?Send)]
-pub trait HttpTransport {
+pub trait HttpTransport: std::fmt::Debug {
     /// Performs an HTTP `GET` against the supplied path.
     ///
     /// The semantics of `path` are adapter-defined: the native

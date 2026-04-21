@@ -285,6 +285,27 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- `cow_sdk_orderbook::OrderBookApi` is constructed exclusively through the
+  typestate `OrderBookApi::builder()` (or the convenience
+  `OrderBookApi::builder_from_context(ApiContext)` seed) so the compiler
+  enforces that the chain id, environment, and HTTP transport are all
+  supplied before `.build()` becomes callable. The builder accepts an
+  `Arc<dyn HttpTransport + Send + Sync>` via `.transport(...)` and exposes
+  optional fluent setters for the `OrderBookTransportPolicy`, partner
+  API key, base-URL map, per-environment base-URL overrides, and a shared
+  `reqwest::Client` for multi-chain connection-pool reuse. On native
+  targets the builder also exposes a `.build()` overload that defaults the
+  transport to `ReqwestTransport`, so the common single-target consumer
+  never has to wire a transport explicitly; on `wasm32` targets the
+  caller must supply a `FetchTransport` from `cow-sdk-transport-wasm`
+  before `.build()` becomes reachable. The legacy `OrderBookApi::new`,
+  `new_with_transport_policy`, `from_shared_client`,
+  `from_shared_client_with_transport_policy`, and `new_with_base_url`
+  free constructors are retired; the post-construction
+  `with_transport_policy`, `with_env_base_url`, and
+  `with_context_override` modifiers remain available for adjusting an
+  existing instance. `OrderBookApiBuilder` is re-exported through the
+  facade and prelude.
 - `cow_sdk_core::HttpTransport` is dyn-compatible through `async-trait`,
   so downstream clients compose transports as `Arc<dyn HttpTransport>`
   without reaching for a bespoke adapter trait. Both the native

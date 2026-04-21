@@ -782,6 +782,7 @@ dependencies = [
  "async-trait",
  "console_error_panic_hook",
  "cow-sdk",
+ "cow-sdk-transport-wasm",
  "serde",
  "serde_json",
  "wasm-bindgen",
@@ -886,12 +887,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "cow-sdk-transport-wasm"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cow-sdk-core",
+ "js-sys",
+ "serde",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "cow-sdk-verification-console"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
  "cow-sdk",
  "cow-sdk-subgraph",
+ "cow-sdk-transport-wasm",
  "serde",
  "serde_json",
  "wasm-bindgen",

@@ -52,10 +52,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::new_with_base_url(
+    let api = OrderBookApi::builder_from_context(
         ApiContext::new(SupportedChainId::Sepolia, CowEnv::Prod),
-        server.uri(),
-    );
+    )
+    .base_url(server.uri())
+    .build();
 
     let version = api.get_version().await?;
     let quote_request = OrderQuoteRequest::new(

@@ -569,7 +569,18 @@ pub async fn subgraph_last_hours_volume_json(
 }
 
 fn orderbook_api(chain_id: SupportedChainId, env: CowEnv) -> OrderBookApi {
-    OrderBookApi::new(api_context(chain_id, env))
+    use std::sync::Arc;
+
+    use cow_sdk::HttpTransport;
+    use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
+
+    let context = api_context(chain_id, env);
+    let base_url = context.resolved_base_url().unwrap_or_default();
+    let transport: Arc<dyn HttpTransport + Send + Sync> =
+        Arc::new(FetchTransport::new(&FetchTransportConfig::new(base_url)));
+    OrderBookApi::builder_from_context(context)
+        .transport(transport)
+        .build()
 }
 
 fn api_context(chain_id: SupportedChainId, env: CowEnv) -> ApiContext {

@@ -62,10 +62,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Page 2: empty, ending the iteration.
     mount_page(&server, &owner, PAGE_SIZE * 2, PAGE_SIZE, vec![]).await;
 
-    let api = OrderBookApi::new_with_base_url(
-        ApiContext::new(SupportedChainId::GnosisChain, CowEnv::Prod),
-        server.uri(),
-    );
+    let api = OrderBookApi::builder_from_context(ApiContext::new(
+        SupportedChainId::GnosisChain,
+        CowEnv::Prod,
+    ))
+    .base_url(server.uri())
+    .build();
 
     let mut total_orders = 0_usize;
     let mut offset = 0_u32;

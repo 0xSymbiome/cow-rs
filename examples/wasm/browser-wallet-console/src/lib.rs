@@ -761,13 +761,22 @@ impl OrderbookClient for MockBrowserOrderbook {
 }
 
 fn live_sdk(chain_id: SupportedChainId, env: CowEnv, app_code: &str) -> TradingSdk {
+    use cow_sdk::HttpTransport;
+    use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
+
+    let context = ApiContext::new(chain_id, env);
+    let base_url = context.resolved_base_url().unwrap_or_default();
+    let transport: Arc<dyn HttpTransport + Send + Sync> =
+        Arc::new(FetchTransport::new(&FetchTransportConfig::new(base_url)));
+    let orderbook_client = OrderBookApi::builder_from_context(context)
+        .transport(transport)
+        .build();
     TradingSdk::new(
         PartialTraderParameters::new()
             .with_chain_id(chain_id)
             .with_app_code(app_code.to_owned())
             .with_env(env),
-        TradingSdkOptions::new()
-            .with_orderbook_client(Arc::new(OrderBookApi::new(ApiContext::new(chain_id, env)))),
+        TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook_client)),
     )
     .expect("browser wallet console sdk construction should succeed")
 }

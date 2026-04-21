@@ -20,9 +20,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .clone()
         .unwrap_or(context.resolved_base_url()?);
     let api = if let Some(base_url) = base_url_override {
-        OrderBookApi::new_with_base_url(context, base_url)
+        OrderBookApi::builder_from_context(context)
+            .base_url(base_url)
+            .build()
     } else {
-        OrderBookApi::new(context)
+        OrderBookApi::builder_from_context(context).build()
     };
 
     let version = api.get_version().await?;

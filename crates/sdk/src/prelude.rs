@@ -32,9 +32,9 @@ pub use cow_sdk_core::{
 pub use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
 pub use cow_sdk_orderbook::{
     ApiContext, AppDataObject, CompetitionOrderStatus, GetOrdersRequest, GetTradesRequest,
-    NativePriceResponse, OrderBookApi, OrderBookApiError, OrderCancellations, OrderCreation,
-    OrderQuoteRequest, OrderQuoteResponse, OrderbookClient, OrderbookError, PriceQuality,
-    QuoteData, QuoteSide, SolverCompetitionResponse, TotalSurplus,
+    NativePriceResponse, OrderBookApi, OrderBookApiBuilder, OrderBookApiError, OrderCancellations,
+    OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderbookClient, OrderbookError,
+    PriceQuality, QuoteData, QuoteSide, SolverCompetitionResponse, TotalSurplus,
 };
 pub use cow_sdk_signing::{
     GeneratedOrderId, ORDER_PRIMARY_TYPE, OrderTypedData, SigningError, SigningResult,

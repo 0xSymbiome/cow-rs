@@ -155,8 +155,8 @@ fn assert_base_url_resolution(id: &str, expected: &Value) {
     let ctx_no_key = ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod);
     let ctx_with_key = ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod)
         .with_api_key(Redacted::new("partner-key".to_owned()));
-    let api_no_key = OrderBookApi::new(ctx_no_key);
-    let api_with_key = OrderBookApi::new(ctx_with_key);
+    let api_no_key = OrderBookApi::builder_from_context(ctx_no_key).build();
+    let api_with_key = OrderBookApi::builder_from_context(ctx_with_key).build();
     let base_no_key = api_no_key
         .effective_base_url()
         .expect("prod mainnet without API key must resolve");
@@ -193,9 +193,16 @@ fn assert_get_order_endpoints(id: &str, case: &Value, expected: &Value) {
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.mainnet_path must be a string"));
 
-    let gnosis_api =
-        OrderBookApi::new(ApiContext::new(SupportedChainId::GnosisChain, CowEnv::Prod));
-    let mainnet_api = OrderBookApi::new(ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod));
+    let gnosis_api = OrderBookApi::builder_from_context(ApiContext::new(
+        SupportedChainId::GnosisChain,
+        CowEnv::Prod,
+    ))
+    .build();
+    let mainnet_api = OrderBookApi::builder_from_context(ApiContext::new(
+        SupportedChainId::Mainnet,
+        CowEnv::Prod,
+    ))
+    .build();
     let gnosis_uid = cow_sdk_core::OrderUid::new(uid).expect("fixture UID must round-trip");
     let mainnet_uid = cow_sdk_core::OrderUid::new(uid).expect("fixture UID must round-trip");
 
@@ -233,7 +240,11 @@ fn assert_get_order_multi_env_fallback(id: &str, expected: &Value) {
     // `reqwest::Client` can still be constructed; using the constructor here
     // pins the public constructor surface and leaves the actual fallback-on-404
     // behavior to the live orderbook suite.
-    let _api = OrderBookApi::new(ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod));
+    let _api = OrderBookApi::builder_from_context(ApiContext::new(
+        SupportedChainId::Mainnet,
+        CowEnv::Prod,
+    ))
+    .build();
 }
 
 fn assert_get_orders_pagination(id: &str, expected: &Value) {

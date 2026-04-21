@@ -1,4 +1,6 @@
-use cow_sdk_core::HttpClientPolicy;
+use std::sync::Arc;
+
+use cow_sdk_core::{HttpClientPolicy, HttpTransport};
 use reqwest::{
     Client,
     header::{HeaderMap, HeaderValue},
@@ -6,6 +8,7 @@ use reqwest::{
 use serde_json::json;
 
 use crate::{
+    builder::{ChainIdSet, ChainIdUnset, EnvSet, EnvUnset, OrderBookApiBuilder, TransportUnset},
     error::OrderbookError,
     request::{
         FetchParams, HttpMethod, OrderBookTransportPolicy, RequestPolicy, RequestRateLimiter,
@@ -40,98 +43,66 @@ pub struct OrderBookApi {
     transport_policy: OrderBookTransportPolicy,
     rate_limiter: RequestRateLimiter,
     env_base_url_overrides: EnvBaseUrlOverrides,
+    transport: Arc<dyn HttpTransport + Send + Sync>,
 }
 
 impl OrderBookApi {
-    /// Creates a client with the default transport policy for `context`.
+    /// Returns a fresh [`OrderBookApiBuilder`] for typestate-checked
+    /// construction.
+    ///
+    /// The builder enforces at compile time that the chain id, environment,
+    /// and HTTP transport are all supplied before
+    /// [`OrderBookApiBuilder::build`] becomes callable. On native targets the
+    /// builder also exposes a `build` overload that defaults the transport to
+    /// the [`ReqwestTransport`](cow_sdk_core::ReqwestTransport) when the
+    /// caller does not supply one.
     #[must_use]
-    pub fn new(context: ApiContext) -> Self {
-        let transport_policy = OrderBookTransportPolicy::default();
-        let (client, rate_limiter) = build_request_runtime(&transport_policy);
-
-        Self {
-            client,
-            rate_limiter,
-            transport_policy,
-            context,
-            env_base_url_overrides: EnvBaseUrlOverrides::default(),
-        }
+    pub fn builder() -> OrderBookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
+        OrderBookApiBuilder::new()
     }
 
-    /// Creates a client with an explicit transport policy.
+    /// Returns a builder seeded from the supplied [`ApiContext`].
     ///
-    /// The policy rebuilds both the underlying HTTP client and the
-    /// instance-scoped request limiter.
+    /// Convenience entry point that fans the context's chain id, environment,
+    /// API key, and base-URL map onto the typestate builder. The transport
+    /// is left unset so the caller can either inject an explicit
+    /// [`HttpTransport`] or fall through to the native-default
+    /// [`OrderBookApiBuilder::build`] path.
     #[must_use]
-    pub fn new_with_transport_policy(
+    pub fn builder_from_context(
         context: ApiContext,
-        transport_policy: OrderBookTransportPolicy,
-    ) -> Self {
-        let (client, rate_limiter) = build_request_runtime(&transport_policy);
-
-        Self {
-            client,
-            context,
-            transport_policy,
-            rate_limiter,
-            env_base_url_overrides: EnvBaseUrlOverrides::default(),
-        }
+    ) -> OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
+        OrderBookApiBuilder::from_context(context)
     }
 
-    /// Creates a client that shares an externally built [`reqwest::Client`].
-    ///
-    /// Multi-chain consumers can pool one `reqwest::Client` (and its TCP,
-    /// TLS, and HTTP/2 connection cache) across every `OrderBookApi` instance
-    /// they construct, which is the recommended pattern for production bots
-    /// that issue requests on behalf of several chains or trading accounts.
-    /// The supplied client keeps any custom keep-alive, timeout, or TLS
-    /// configuration the caller chose; see `docs/performance.md` for the
-    /// production-bot HTTP/2 keep-alive recipe.
+    /// Crate-private constructor used by [`OrderBookApiBuilder::build`].
     #[must_use]
-    pub fn from_shared_client(client: Client, context: ApiContext) -> Self {
-        let transport_policy = OrderBookTransportPolicy::default();
-        let rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
-
-        Self {
-            client,
-            context,
-            transport_policy,
-            rate_limiter,
-            env_base_url_overrides: EnvBaseUrlOverrides::default(),
-        }
-    }
-
-    /// Creates a client that shares an externally built [`reqwest::Client`] and uses an
-    /// explicit transport policy for request-timeout and retry behaviour.
-    ///
-    /// The shared client is reused verbatim so its keep-alive and connection
-    /// pool settings stay under caller control. Only the request-policy side
-    /// of the supplied [`OrderBookTransportPolicy`] drives retry, rate-limit,
-    /// and timeout decisions on this instance.
-    #[must_use]
-    pub fn from_shared_client_with_transport_policy(
+    pub(crate) fn from_parts(
         client: Client,
         context: ApiContext,
         transport_policy: OrderBookTransportPolicy,
+        rate_limiter: RequestRateLimiter,
+        env_base_url_overrides: EnvBaseUrlOverrides,
+        transport: Arc<dyn HttpTransport + Send + Sync>,
     ) -> Self {
-        let rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
-
         Self {
             client,
             context,
             transport_policy,
             rate_limiter,
-            env_base_url_overrides: EnvBaseUrlOverrides::default(),
+            env_base_url_overrides,
+            transport,
         }
     }
 
-    /// Creates a client with an explicit base URL override for the current environment.
+    /// Returns the [`HttpTransport`] handle injected at construction time.
     ///
-    /// This override takes precedence over URLs resolved from [`ApiContext`].
+    /// Downstream consumers reach the runtime-neutral transport seam through
+    /// this accessor when they need to share the same transport with other
+    /// typed clients constructed from the workspace.
     #[must_use]
-    pub fn new_with_base_url(context: ApiContext, base_url: impl Into<String>) -> Self {
-        let env = context.env;
-        Self::new(context).with_env_base_url(env, base_url.into())
+    pub fn transport(&self) -> &Arc<dyn HttpTransport + Send + Sync> {
+        &self.transport
     }
 
     /// Returns a copy of this client with a new transport policy.
@@ -919,7 +890,7 @@ fn build_client(policy: &HttpClientPolicy) -> Client {
         .expect("validated orderbook client policy must remain buildable")
 }
 
-fn build_request_runtime(
+pub(crate) fn build_request_runtime(
     transport_policy: &OrderBookTransportPolicy,
 ) -> (Client, RequestRateLimiter) {
     (

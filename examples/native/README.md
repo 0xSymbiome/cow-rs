@@ -103,7 +103,7 @@ examples compile under the pinned MSRV and require no RPC credentials.
 | Crate | Example | Primary user journey |
 | --- | --- | --- |
 | `cow-sdk-trading` | `signed_order_end_to_end` | full quote → sign → post flow through `TradingSdk::builder()` against an injected in-process orderbook and signer |
-| `cow-sdk-orderbook` | `paginated_orders_fetch` | paginated `GetOrdersRequest` loop through `OrderBookApi::new_with_base_url` against a `wiremock::MockServer` |
+| `cow-sdk-orderbook` | `paginated_orders_fetch` | paginated `GetOrdersRequest` loop through `OrderBookApi::builder_from_context(...).base_url(...).build()` against a `wiremock::MockServer` |
 | `cow-sdk-subgraph` | `typed_query_with_escape_hatch` | canonical `TOTALS_QUERY` typed path plus the explicit `run_query` raw-document escape hatch, both against a `wiremock::MockServer` |
 
 Run them with:

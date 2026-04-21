@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use cow_sdk_core::{CoreError, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError};
 use cow_sdk_orderbook::{
     ApiContextOverride, AppDataObject, CowEnv, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
-    GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderBookTransportPolicy, OrderCancellations,
+    GetOrdersRequest, GetTradesRequest, OrderBookTransportPolicy, OrderCancellations,
     OrderCreation, OrderStatus, QuoteSide, RequestPolicy, SigningScheme, SupportedChainId,
 };
 use serde_json::json;
@@ -17,8 +17,10 @@ use wiremock::{
 };
 
 use crate::common::{
-    default_context, sample_app_data_hash, sample_order_json, sample_order_uid, sample_owner,
-    sample_quote_response_json, sample_signature, sample_trade_json, sample_tx_hash,
+    build_orderbook_api, build_orderbook_api_with_base_url, build_orderbook_api_with_policy,
+    build_orderbook_api_with_shared_client, default_context, sample_app_data_hash,
+    sample_order_json, sample_order_uid, sample_owner, sample_quote_response_json,
+    sample_signature, sample_trade_json, sample_tx_hash,
 };
 
 #[tokio::test]
@@ -30,7 +32,7 @@ async fn version_endpoint_matches_transport_contract() {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::new_with_base_url(
+    let api = build_orderbook_api_with_base_url(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         server.uri(),
     );
@@ -45,7 +47,7 @@ async fn version_endpoint_matches_transport_contract() {
 
 #[test]
 fn default_transport_policy_is_explicit_and_stable() {
-    let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod));
+    let api = build_orderbook_api(default_context(SupportedChainId::GnosisChain, CowEnv::Prod));
     let policy = api.transport_policy();
 
     assert_eq!(policy.client_policy().timeout(), Some(DEFAULT_HTTP_TIMEOUT));
@@ -71,7 +73,7 @@ async fn context_override_applies_base_urls_and_api_key_to_requests() {
         format!("{}/", server.uri()),
     )]);
 
-    let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
+    let api = build_orderbook_api(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
         .with_context_override(
             ApiContextOverride::new()
                 .with_base_urls(base_urls)
@@ -95,7 +97,7 @@ async fn context_override_applies_base_urls_and_api_key_to_requests() {
 
 #[tokio::test]
 async fn invalid_partner_api_key_fails_before_transport() {
-    let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
+    let api = build_orderbook_api(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
         .with_context_override(
             ApiContextOverride::new().with_api_key("partner\r\nkey".to_owned().into()),
         );
@@ -121,7 +123,7 @@ fn explicit_env_base_url_override_precedes_context_base_urls() {
         "https://context.example/xdai/".to_owned(),
     )]);
 
-    let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
+    let api = build_orderbook_api(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
         .with_context_override(ApiContextOverride::new().with_base_urls(context_base_urls))
         .with_env_base_url(CowEnv::Prod, "https://override.example/xdai/");
 
@@ -158,7 +160,7 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
             max_attempts: 1,
             ..RequestPolicy::default()
         });
-    let api = OrderBookApi::new_with_transport_policy(
+    let api = build_orderbook_api_with_policy(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         transport_policy,
     )
@@ -203,7 +205,7 @@ async fn cloned_clients_share_the_same_instance_scoped_rate_limiter() {
             interval_label: "test",
         },
     });
-    let api = OrderBookApi::new_with_transport_policy(
+    let api = build_orderbook_api_with_policy(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         transport_policy,
     )
@@ -235,7 +237,7 @@ async fn cloned_clients_share_the_same_instance_scoped_rate_limiter() {
 #[test]
 fn order_link_uses_chain_aware_urls_for_gnosis_and_mainnet() {
     let uid = sample_order_uid();
-    let gnosis = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod));
+    let gnosis = build_orderbook_api(default_context(SupportedChainId::GnosisChain, CowEnv::Prod));
     let mainnet = gnosis
         .clone()
         .with_context_override(ApiContextOverride::new().with_chain_id(SupportedChainId::Mainnet));
@@ -269,7 +271,7 @@ async fn get_orders_uses_default_pagination_and_transforms_orders() {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::new_with_base_url(
+    let api = build_orderbook_api_with_base_url(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         server.uri(),
     );
@@ -296,7 +298,7 @@ async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() 
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::new_with_base_url(
+    let api = build_orderbook_api_with_base_url(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         server.uri(),
     );
@@ -341,7 +343,7 @@ async fn get_quote_and_send_order_cover_quote_and_duplicate_order_paths() {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::new_with_base_url(
+    let api = build_orderbook_api_with_base_url(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         server.uri(),
     );
@@ -387,7 +389,7 @@ async fn signed_cancellations_use_delete_orders_route() {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::new_with_base_url(
+    let api = build_orderbook_api_with_base_url(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         server.uri(),
     );
@@ -419,7 +421,7 @@ async fn order_lookup_falls_back_to_staging_only_on_404() {
         .mount(&staging)
         .await;
 
-    let api = OrderBookApi::new(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
+    let api = build_orderbook_api(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
         .with_env_base_url(CowEnv::Prod, prod.uri())
         .with_env_base_url(CowEnv::Staging, staging.uri());
 
@@ -455,7 +457,7 @@ async fn app_data_transport_helpers_use_get_and_put_hash_routes() {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::new_with_base_url(
+    let api = build_orderbook_api_with_base_url(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         server.uri(),
     );
@@ -523,7 +525,7 @@ async fn native_price_surplus_solver_competition_and_auction_routes_are_covered(
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::new_with_base_url(
+    let api = build_orderbook_api_with_base_url(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         server.uri(),
     );
@@ -569,7 +571,7 @@ async fn get_order_status_route_is_typed() {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::new_with_base_url(
+    let api = build_orderbook_api_with_base_url(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         server.uri(),
     );
@@ -588,7 +590,7 @@ async fn get_order_status_route_is_typed() {
 async fn get_version_returns_cancelled_when_combinator_token_fires_before_send() {
     use cow_sdk_core::Cancellable;
 
-    let api = OrderBookApi::new(default_context(SupportedChainId::Mainnet, CowEnv::Prod));
+    let api = build_orderbook_api(default_context(SupportedChainId::Mainnet, CowEnv::Prod));
     let token = cow_sdk_core::CancellationToken::new();
     token.cancel();
 
@@ -626,7 +628,7 @@ async fn get_version_combinator_aborts_an_in_flight_request() {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::new_with_base_url(
+    let api = build_orderbook_api_with_base_url(
         default_context(SupportedChainId::Mainnet, CowEnv::Prod),
         server.uri(),
     );
@@ -688,7 +690,7 @@ async fn shared_client_fans_requests_across_multiple_orderbook_instances() {
         u64::from(SupportedChainId::Mainnet),
         format!("{}/", first.uri()),
     )]);
-    let first_api = OrderBookApi::from_shared_client(
+    let first_api = build_orderbook_api_with_shared_client(
         shared.clone(),
         cow_sdk_core::ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod)
             .with_base_urls(first_base_urls),
@@ -698,7 +700,7 @@ async fn shared_client_fans_requests_across_multiple_orderbook_instances() {
         u64::from(SupportedChainId::GnosisChain),
         format!("{}/", second.uri()),
     )]);
-    let second_api = OrderBookApi::from_shared_client(
+    let second_api = build_orderbook_api_with_shared_client(
         shared,
         cow_sdk_core::ApiContext::new(SupportedChainId::GnosisChain, CowEnv::Prod)
             .with_base_urls(second_base_urls),
