@@ -316,6 +316,8 @@ pub async fn trading_quote_preview_json(
     owner: &str,
     trade_json: &str,
 ) -> Result<String, JsValue> {
+    use std::sync::Arc;
+
     let chain_id = parse_chain_id(chain_id)?;
     let env = parse_env(env)?;
     let owner = parse_address(owner, "owner")?;
@@ -323,13 +325,14 @@ pub async fn trading_quote_preview_json(
     params.owner = params.owner.or(Some(owner.clone()));
     params.env = params.env.or(Some(env));
 
+    let orderbook_client = orderbook_api(chain_id, env);
     let sdk = TradingSdk::new(
         PartialTraderParameters::new()
             .with_chain_id(chain_id)
             .with_app_code(app_code.trim().to_owned())
             .with_owner(owner)
             .with_env(env),
-        TradingSdkOptions::default(),
+        TradingSdkOptions::default().with_orderbook_client(Arc::new(orderbook_client)),
     )
     .map_err(js_string_error)?;
     let results = sdk
