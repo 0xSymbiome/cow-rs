@@ -116,10 +116,11 @@ keeping explicit override support.
 
 Production deployments that issue requests across several chains can pool a
 single `reqwest::Client` across every orderbook and subgraph instance they
-build. `OrderBookApi::from_shared_client` and
-`SubgraphApi::from_shared_client` accept a pre-configured client, keep any
-custom keep-alive or TLS settings intact, and leave the default `new()`
-constructors unchanged for single-chain consumers. The
+build. Both `OrderBookApi::builder()` and `SubgraphApi::builder()` expose a
+`.client(shared_client)` method that accepts a pre-configured
+`reqwest::Client` and preserves any custom keep-alive, timeout, or TLS
+settings verbatim, so one warm connection cache backs every chain the
+consumer routes through. The
 [Performance Posture](performance.md) records the recommended HTTP/2
 keep-alive recipe, shared-client usage pattern, and the knob summary that
 accompanies each opt-in setting.

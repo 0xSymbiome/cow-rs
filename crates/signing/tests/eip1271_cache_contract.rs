@@ -98,6 +98,7 @@ async fn in_memory_cache_is_thread_safe_under_concurrent_probe_and_populate_load
     const TASKS: usize = 64;
     const PROBES: usize = 256;
     const KEY_SPACE: u8 = 8;
+    const VERIFIER_SPACE: u8 = 4;
 
     let cache = Arc::new(InMemoryEip1271VerificationCache::new(
         Duration::from_secs(60),
@@ -108,7 +109,8 @@ async fn in_memory_cache_is_thread_safe_under_concurrent_probe_and_populate_load
     for task_id in 0..TASKS {
         let cache = Arc::clone(&cache);
         handles.push(tokio::spawn(async move {
-            let verifier = sample_address(u8::try_from(task_id % 4).unwrap());
+            let verifier =
+                sample_address(u8::try_from(task_id % usize::from(VERIFIER_SPACE)).unwrap());
             for probe in 0..PROBES {
                 let key_digest = digest(u8::try_from(probe).unwrap() % KEY_SPACE);
                 let result = (probe + task_id) % 2 == 0;
@@ -129,16 +131,21 @@ async fn in_memory_cache_is_thread_safe_under_concurrent_probe_and_populate_load
         "concurrent hammer must finish within the 10-second timeout",
     );
 
-    // Final consistency: every key in the (verifier, digest) space the
-    // hammer populated must hold a boolean value (or be absent if it
-    // was evicted), and the probe-and-populate cycle must not have
-    // panicked or deadlocked.
-    let verifiers: Vec<Address> = (0..4)
-        .map(|index| sample_address(u8::try_from(index).unwrap()))
-        .collect();
+    // Final-value observability: every (verifier, digest) key the
+    // hammer populated must be observable as `Some(_)` after all
+    // racing tasks joined. Racing writes may reorder the final bool,
+    // but at least one write for every key must be visible — the
+    // cache's capacity bound is well above the populated key count
+    // (VERIFIER_SPACE * KEY_SPACE = 32 << 4096) so no populated
+    // entry can have been evicted.
+    let verifiers: Vec<Address> = (0..VERIFIER_SPACE).map(sample_address).collect();
     for verifier in verifiers {
         for probe in 0..KEY_SPACE {
-            let _ = cache.get(verifier.clone(), digest(probe));
+            assert!(
+                cache.get(verifier.clone(), digest(probe)).is_some(),
+                "every populated (verifier, digest) key must be observable \
+                 after the concurrent hammer joins (verifier={verifier:?}, probe={probe})",
+            );
         }
     }
 }

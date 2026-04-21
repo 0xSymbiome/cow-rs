@@ -3,10 +3,12 @@
 //! This example shows the public `cow-sdk-orderbook` path for iterating
 //! through an owner's order history without requiring live API credentials.
 //! A `wiremock::MockServer` stands in for the real orderbook HTTP endpoint,
-//! and `OrderBookApi` points at the mock through `new_with_base_url`. The
-//! example mirrors the behavior a real consumer would see: `GetOrdersRequest`
-//! carries the owner plus a mutable `offset` / `limit` pair, and each call
-//! returns the next page of decoded `Order` values.
+//! and `OrderBookApi` points at the mock through the typestate builder,
+//! with a native `ReqwestTransport` dispatched against the mock URL via
+//! the builder's `.base_url(...)` step. The example mirrors the behavior
+//! a real consumer would see: `GetOrdersRequest` carries the owner plus a
+//! mutable `offset` / `limit` pair, and each call returns the next page
+//! of decoded `Order` values.
 //!
 //! Run with:
 //!

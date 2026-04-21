@@ -69,7 +69,7 @@ pub struct TransportSet;
 
 /// Typestate-checked builder for [`SubgraphApi`].
 ///
-/// The four type parameters track which of the required inputs (chain id,
+/// The three type parameters track which of the required inputs (chain id,
 /// API key, transport) have been supplied. [`SubgraphApiBuilder::build`]
 /// is implemented only against the typestates that satisfy the documented
 /// preconditions, so calling it with any required field still unset is a

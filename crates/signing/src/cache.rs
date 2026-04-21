@@ -74,6 +74,17 @@ struct CacheEntry {
 ///
 /// The store is `Send + Sync + 'static`, so the cache may be wrapped in
 /// [`std::sync::Arc`] and shared across `tokio` tasks.
+///
+/// # Eviction Trade-Off
+///
+/// Eviction beyond capacity is `O(N)` per insert: the oldest entry is
+/// found by scanning the map for the minimum insertion timestamp. The
+/// default `1024`-entry bound keeps the scan comfortably bounded for
+/// the target workloads (composable orders, flash loans, bridging).
+/// Consumers that require a much larger key space, or that probe a
+/// very high fan-out of verifier addresses, should compose a proper
+/// LRU-backed impl of [`Eip1271VerificationCache`] rather than grow
+/// the in-memory cache past a few thousand entries.
 #[derive(Debug)]
 pub struct InMemoryEip1271VerificationCache {
     inner: RwLock<HashMap<(Address, [u8; 32]), CacheEntry>>,

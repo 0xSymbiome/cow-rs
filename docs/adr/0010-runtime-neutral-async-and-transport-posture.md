@@ -6,6 +6,17 @@
 - Tags: async, cancellation, transport, observability, error-model
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 
+> **Superseded in part:** the shared-client construction pattern recorded
+> below — the `OrderBookApi::from_shared_client` and
+> `SubgraphApi::from_shared_client` constructors — has been replaced by
+> the typestate builder construction seam. `OrderBookApi::builder()` and
+> `SubgraphApi::builder()` are now the sole production construction
+> paths; the shared `reqwest::Client` is installed through the builder's
+> `.client(...)` step, preserving the multi-service pooling guarantee
+> recorded here. The `Must Remain True` section line that names the
+> legacy constructors is preserved below as historical record of the
+> original decision.
+
 ## Decision
 
 The public `cow-rs` async surface stays runtime-neutral. Long-running

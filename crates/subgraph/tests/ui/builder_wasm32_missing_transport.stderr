@@ -1,0 +1,11 @@
+error[E0599]: no method named `build` found for struct `SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset>` in the current scope
+  --> tests/ui/builder_wasm32_missing_transport.rs
+   |
+   |     let _ = SubgraphApi::builder()
+   |         .chain(SupportedChainId::Mainnet)
+   |         .api_key("partner-graph-api-key")
+   |         .build();
+   |          ^^^^^ method not found in `SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset>`
+   |
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the only `build` impl on `SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportSet>` is reachable once `SubgraphApiBuilder::transport` has installed an `Arc<dyn HttpTransport + Send + Sync>` (for example `FetchTransport` from `cow-sdk-transport-wasm`); the default-transport build path is gated on `#[cfg(not(target_arch = "wasm32"))]`

@@ -99,18 +99,18 @@ every SDK client they construct. A shared client keeps one TCP, TLS, and
 HTTP/2 connection cache warm across all routes, cuts first-byte latency for
 every subsequent request, and bounds the per-host file-descriptor footprint.
 
-Both public clients expose an additive constructor that accepts a
-pre-configured `reqwest::Client`:
+Both public clients accept a pre-configured `reqwest::Client` through their
+typestate builder's `.client(...)` step:
 
-- [`cow_sdk_orderbook::OrderBookApi::from_shared_client`] and its
-  transport-policy variant reuse the supplied client verbatim so any custom
-  keep-alive, timeout, or TLS configuration is preserved.
-- [`cow_sdk_subgraph::SubgraphApi::from_shared_client`] and its transport-policy
-  and static-config variants do the same for the subgraph gateway surface.
+- [`cow_sdk_orderbook::OrderBookApi::builder`] exposes `.client(shared)` so
+  any custom keep-alive, timeout, or TLS configuration on the supplied
+  client is preserved verbatim.
+- [`cow_sdk_subgraph::SubgraphApi::builder`] exposes the matching
+  `.client(shared)` step on the subgraph gateway surface.
 
-The default `new()` constructors stay unchanged; they build a conservative
-client that tracks `reqwest`'s upstream defaults and are the right choice for
-the common single-chain consumer.
+When `.client(...)` is omitted the builder constructs a conservative client
+that tracks `reqwest`'s upstream defaults, which is the right choice for the
+common single-chain consumer.
 
 ## HTTP/2 Keep-Alive Recipe
 
@@ -123,8 +123,8 @@ requests inherit the latency.
 ```rust,ignore
 use std::time::Duration;
 
-use cow_sdk_core::ApiContext;
-use cow_sdk_orderbook::{OrderBookApi, DEFAULT_ORDERBOOK_USER_AGENT};
+use cow_sdk_core::SupportedChainId;
+use cow_sdk_orderbook::{CowEnv, OrderBookApi, DEFAULT_ORDERBOOK_USER_AGENT};
 use cow_sdk_subgraph::SubgraphApi;
 
 fn build_shared_client() -> reqwest::Client {
@@ -151,11 +151,20 @@ fn build_shared_client() -> reqwest::Client {
 
 fn assemble_sdk_clients(
     shared: reqwest::Client,
-    orderbook_context: ApiContext,
+    chain: SupportedChainId,
+    environment: CowEnv,
     subgraph_api_key: impl Into<String>,
 ) -> (OrderBookApi, SubgraphApi) {
-    let orderbook = OrderBookApi::from_shared_client(shared.clone(), orderbook_context);
-    let subgraph = SubgraphApi::from_shared_client(shared, subgraph_api_key);
+    let orderbook = OrderBookApi::builder()
+        .chain(chain)
+        .environment(environment)
+        .client(shared.clone())
+        .build();
+    let subgraph = SubgraphApi::builder()
+        .chain(chain)
+        .api_key(subgraph_api_key)
+        .client(shared)
+        .build();
     (orderbook, subgraph)
 }
 ```
