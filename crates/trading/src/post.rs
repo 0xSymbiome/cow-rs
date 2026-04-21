@@ -760,7 +760,12 @@ where
 {
     let request =
         eip1271_order_verification_request(order_to_sign, chain_id, verification, options)?;
-    cow_sdk_contracts::verify_eip1271_signature_async(provider, &request).await?;
+    cow_sdk_contracts::verify_eip1271_signature_async(
+        provider,
+        &request,
+        &cow_sdk_signing::NoopEip1271VerificationCache,
+    )
+    .await?;
     Ok(())
 }
 

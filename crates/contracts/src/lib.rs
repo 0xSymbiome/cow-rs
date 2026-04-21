@@ -35,6 +35,8 @@ pub mod signature;
 pub mod swap;
 /// Vault authorization role helpers.
 pub mod vault;
+/// Cache-aware EIP-1271 signature verification path.
+pub mod verify;
 
 mod bytes_serde;
 mod chain_ids;
@@ -77,10 +79,11 @@ pub use signature::{
     EIP1271_MAGICVALUE, Eip1271SignatureData, Eip1271VerificationRequest, Signature, SigningScheme,
     decode_eip1271_signature_data, decode_signing_scheme, encode_eip1271_signature_data,
     encode_signing_scheme, function_magic_value, normalized_ecdsa_signature,
-    verify_eip1271_signature, verify_eip1271_signature_async,
+    verify_eip1271_signature,
 };
 pub use swap::{BatchSwapStep, EncodedSwap, Swap, SwapEncoder, SwapExecution, encode_swap_step};
 pub use vault::{
     GrantRoleCall, RequiredVaultRole, VAULT_INTERFACE, grant_required_roles,
     required_vault_role_calls, required_vault_roles,
 };
+pub use verify::{Eip1271VerificationCache, verify_eip1271_signature_async};

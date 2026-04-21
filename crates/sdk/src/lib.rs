@@ -77,6 +77,18 @@ pub use cow_sdk_core::{HttpTransport, TransportError};
 pub use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
 pub use cow_sdk_orderbook as orderbook;
 pub use cow_sdk_signing as signing;
+/// Optional caching seam for EIP-1271 signature verification.
+///
+/// [`Eip1271VerificationCache`](cow_sdk_signing::Eip1271VerificationCache)
+/// is the trait consumed by
+/// [`cow_sdk_contracts::verify_eip1271_signature_async`].
+/// [`NoopEip1271VerificationCache`](cow_sdk_signing::NoopEip1271VerificationCache)
+/// is the zero-sized default for callers that do not want caching;
+/// [`InMemoryEip1271VerificationCache`](cow_sdk_signing::InMemoryEip1271VerificationCache)
+/// ships a TTL-respecting, capacity-bounded in-memory store.
+pub use cow_sdk_signing::{
+    Eip1271VerificationCache, InMemoryEip1271VerificationCache, NoopEip1271VerificationCache,
+};
 pub use cow_sdk_trading as trading;
 
 use thiserror::Error;

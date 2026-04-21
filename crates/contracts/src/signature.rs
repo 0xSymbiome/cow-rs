@@ -16,8 +16,8 @@ pub const EIP1271_MAGICVALUE: &str = "0x1626ba7e";
 
 /// EIP-1271 success magic value as the 4-byte function selector
 /// (`isValidSignature(bytes32,bytes)`) the protocol uses on the wire.
-const EIP1271_MAGICVALUE_BYTES: [u8; 4] = [0x16, 0x26, 0xba, 0x7e];
-const EIP1271_IS_VALID_SIGNATURE_ABI_JSON: &str = r#"[{"type":"function","name":"isValidSignature","inputs":[{"name":"hash","type":"bytes32"},{"name":"signature","type":"bytes"}],"outputs":[{"name":"","type":"bytes4"}],"stateMutability":"view"}]"#;
+pub(crate) const EIP1271_MAGICVALUE_BYTES: [u8; 4] = [0x16, 0x26, 0xba, 0x7e];
+pub(crate) const EIP1271_IS_VALID_SIGNATURE_ABI_JSON: &str = r#"[{"type":"function","name":"isValidSignature","inputs":[{"name":"hash","type":"bytes32"},{"name":"signature","type":"bytes"}],"outputs":[{"name":"","type":"bytes4"}],"stateMutability":"view"}]"#;
 
 /// Supported `CoW` signing schemes.
 #[doc(alias = "Scheme")]
@@ -225,41 +225,6 @@ where
     ensure_magic_value(&raw)
 }
 
-/// Verifies an EIP-1271 signature using an asynchronous provider.
-///
-/// # Errors
-///
-/// Returns [`ContractsError`] if the verifier has no code, the provider call
-/// fails, or the verifier response is malformed or does not match the expected
-/// magic value.
-pub async fn verify_eip1271_signature_async<P>(
-    provider: &P,
-    request: &Eip1271VerificationRequest,
-) -> Result<(), ContractsError>
-where
-    P: AsyncProvider,
-    P::Error: fmt::Display,
-{
-    ensure_contract_code_async(provider, &request.verifier).await?;
-    let raw = provider
-        .read_contract(&cow_sdk_core::ContractCall {
-            address: request.verifier.clone(),
-            method: "isValidSignature".to_owned(),
-            abi_json: EIP1271_IS_VALID_SIGNATURE_ABI_JSON.to_owned(),
-            args_json: serde_json::to_string(&(
-                request.digest.as_str(),
-                request.signature.as_str(),
-            ))?,
-        })
-        .await
-        .map_err(|error| ContractsError::Eip1271Provider {
-            operation: "read_contract",
-            message: error.to_string(),
-        })?;
-
-    ensure_magic_value(&raw)
-}
-
 fn ensure_contract_code<P>(provider: &P, verifier: &Address) -> Result<(), ContractsError>
 where
     P: Provider,
@@ -281,7 +246,7 @@ where
     }
 }
 
-async fn ensure_contract_code_async<P>(
+pub(crate) async fn ensure_contract_code_async<P>(
     provider: &P,
     verifier: &Address,
 ) -> Result<(), ContractsError>
@@ -323,7 +288,7 @@ fn ensure_magic_value(raw: &str) -> Result<(), ContractsError> {
     }
 }
 
-fn decode_magic_value_response(raw: &str) -> Result<[u8; 4], ContractsError> {
+pub(crate) fn decode_magic_value_response(raw: &str) -> Result<[u8; 4], ContractsError> {
     let candidate = match serde_json::from_str::<serde_json::Value>(raw) {
         Ok(serde_json::Value::String(value)) => value,
         Ok(other) => {

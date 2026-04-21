@@ -3,15 +3,26 @@ mod common;
 use std::{cell::RefCell, fmt, rc::Rc};
 
 use cow_sdk_contracts::{
-    ContractsError, EIP1271_MAGICVALUE, Eip1271SignatureData, Eip1271VerificationRequest,
-    Signature, SigningScheme, decode_eip1271_signature_data, decode_signing_scheme,
-    encode_eip1271_signature_data, encode_signing_scheme, function_magic_value,
-    normalized_ecdsa_signature, verify_eip1271_signature, verify_eip1271_signature_async,
+    ContractsError, EIP1271_MAGICVALUE, Eip1271SignatureData, Eip1271VerificationCache,
+    Eip1271VerificationRequest, Signature, SigningScheme, decode_eip1271_signature_data,
+    decode_signing_scheme, encode_eip1271_signature_data, encode_signing_scheme,
+    function_magic_value, normalized_ecdsa_signature, verify_eip1271_signature,
+    verify_eip1271_signature_async,
 };
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle, Hash32,
     HexData, TransactionReceipt, TransactionRequest,
 };
+
+#[derive(Default)]
+struct NoCache;
+
+impl Eip1271VerificationCache for NoCache {
+    fn get(&self, _verifier: Address, _digest: [u8; 32]) -> Option<bool> {
+        None
+    }
+    fn put(&self, _verifier: Address, _digest: [u8; 32], _result: bool) {}
+}
 
 use common::{MockProvider, fixture_case};
 
@@ -410,6 +421,7 @@ async fn async_eip1271_verification_reads_contract_code_and_magic_value() {
             digest: Hash32::new(format!("0x{}", "11".repeat(32))).unwrap(),
             signature: HexData::new("0x1234").unwrap(),
         },
+        &NoCache,
     )
     .await
     .unwrap();
@@ -431,6 +443,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
             digest: Hash32::new(format!("0x{}", "22".repeat(32))).unwrap(),
             signature: HexData::new("0x1234").unwrap(),
         },
+        &NoCache,
     )
     .await
     .unwrap_err();
@@ -450,6 +463,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
             digest: Hash32::new(format!("0x{}", "33".repeat(32))).unwrap(),
             signature: HexData::new("0x1234").unwrap(),
         },
+        &NoCache,
     )
     .await
     .unwrap_err();
@@ -470,6 +484,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
             digest: Hash32::new(format!("0x{}", "44".repeat(32))).unwrap(),
             signature: HexData::new("0x1234").unwrap(),
         },
+        &NoCache,
     )
     .await
     .unwrap_err();

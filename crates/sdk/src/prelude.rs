@@ -37,9 +37,9 @@ pub use cow_sdk_orderbook::{
     PriceQuality, QuoteData, QuoteSide, SolverCompetitionResponse, TotalSurplus,
 };
 pub use cow_sdk_signing::{
-    GeneratedOrderId, ORDER_PRIMARY_TYPE, OrderTypedData, SigningError, SigningResult,
-    SigningScheme, domain_separator, eip1271_signature_payload, generate_order_id, get_domain,
-    order_typed_data, sign_order, sign_order_async, sign_order_cancellation,
+    Eip1271VerificationCache, GeneratedOrderId, ORDER_PRIMARY_TYPE, OrderTypedData, SigningError,
+    SigningResult, SigningScheme, domain_separator, eip1271_signature_payload, generate_order_id,
+    get_domain, order_typed_data, sign_order, sign_order_async, sign_order_cancellation,
     sign_order_cancellation_async, sign_order_cancellations, sign_order_cancellations_async,
     sign_order_cancellations_with_scheme_async, sign_order_with_scheme,
     sign_order_with_scheme_async,

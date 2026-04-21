@@ -916,6 +916,7 @@ dependencies = [
  "criterion",
  "hex",
  "num-bigint",
+ "parking_lot",
  "proptest",
  "serde",
  "serde_json",

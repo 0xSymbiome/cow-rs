@@ -19,6 +19,25 @@ unreleased public contract of the repository.
   `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
   `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`, and
   `cow-sdk-browser-wallet`.
+- Optional caching seam for EIP-1271 signature verification.
+  `cow_sdk_signing::Eip1271VerificationCache` is a narrow `Send + Sync`
+  trait keyed by `(verifier, digest)` that
+  `cow_sdk_contracts::verify_eip1271_signature_async` consults before
+  any on-chain `isValidSignature` call. Two default implementations
+  ship from the signing crate: the zero-sized
+  `NoopEip1271VerificationCache` for callers that do not want caching
+  and `InMemoryEip1271VerificationCache`, a TTL-respecting,
+  capacity-bounded in-memory store backed by `parking_lot::RwLock`
+  (default five-minute TTL, default 1024-entry capacity, oldest-first
+  eviction). The cache stores `bool` outcomes — `true` for a
+  successful magic-value match and `false` for the typed
+  `Eip1271MagicValueMismatch` — and never caches transport, missing
+  contract code, serialization, or hex-decode failures so transient
+  errors always re-hit the chain. `Eip1271VerificationCache`,
+  `NoopEip1271VerificationCache`, and `InMemoryEip1271VerificationCache`
+  re-export through the `cow-sdk` facade, and the trait surfaces
+  through `cow_sdk::prelude::*` for compositions that hold the cache
+  generically.
 - New browser-side transport leaf crate `cow-sdk-transport-wasm`.
   The crate ships `FetchTransport`, a `wasm32`-only implementation of
   the shared `cow_sdk_core::HttpTransport` trait backed by

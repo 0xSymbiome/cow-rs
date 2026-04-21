@@ -8,6 +8,8 @@
 
 #![warn(missing_docs)]
 
+/// EIP-1271 signature-verification cache trait and default impls.
+pub mod cache;
 /// Order-cancellation signing helpers.
 pub mod cancellation;
 /// Typed-data domain and payload construction helpers.
@@ -17,6 +19,10 @@ pub mod errors;
 /// Order signing and order-id generation helpers.
 pub mod order_signing;
 
+pub use cache::{
+    DEFAULT_EIP1271_VERIFICATION_CACHE_CAPACITY, DEFAULT_EIP1271_VERIFICATION_CACHE_TTL,
+    Eip1271VerificationCache, InMemoryEip1271VerificationCache, NoopEip1271VerificationCache,
+};
 pub use cancellation::{
     ORDER_CANCELLATIONS_PRIMARY_TYPE, order_cancellation_typed_data_payload,
     order_cancellations_typed_data_payload, sign_order_cancellation, sign_order_cancellation_async,
