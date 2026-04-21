@@ -84,8 +84,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "preSignTransaction": {
             "orderUid": order_uid.as_str(),
             "contract": pre_sign.to.as_ref().map(|address| address.as_str()),
-            "value": pre_sign.value.as_ref().map(|value| value.as_str()),
-            "gasLimit": pre_sign.gas_limit.as_ref().map(|value| value.as_str()),
+            "value": pre_sign.value.as_ref().map(ToString::to_string),
+            "gasLimit": pre_sign.gas_limit.as_ref().map(ToString::to_string),
             "callDataPrefix": call_data_prefix(
                 pre_sign
                     .data
@@ -120,7 +120,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 "route": "settlement",
                 "txHash": regular_hash.as_str(),
                 "contract": regular_sent.to.as_ref().map(|address| address.as_str()),
-                "gasLimit": regular_sent.gas_limit.as_ref().map(|value| value.as_str()),
+                "gasLimit": regular_sent.gas_limit.as_ref().map(ToString::to_string),
                 "callDataPrefix": call_data_prefix(
                     regular_sent
                         .data
@@ -132,7 +132,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 "route": "eth-flow",
                 "txHash": ethflow_hash.as_str(),
                 "contract": ethflow_sent.to.as_ref().map(|address| address.as_str()),
-                "gasLimit": ethflow_sent.gas_limit.as_ref().map(|value| value.as_str()),
+                "gasLimit": ethflow_sent.gas_limit.as_ref().map(ToString::to_string),
                 "callDataPrefix": call_data_prefix(
                     ethflow_sent
                         .data

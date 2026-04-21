@@ -60,8 +60,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "ethFlowTransaction": {
             "orderId": ethflow.order_id.as_str(),
             "contract": ethflow.transaction.to.as_ref().map(|address| address.as_str()),
-            "value": ethflow.transaction.value.as_ref().map(|value| value.as_str()),
-            "gasLimit": ethflow.transaction.gas_limit.as_ref().map(|value| value.as_str()),
+            "value": ethflow.transaction.value.as_ref().map(ToString::to_string),
+            "gasLimit": ethflow.transaction.gas_limit.as_ref().map(ToString::to_string),
             "callDataPrefix": call_data_prefix(
                 ethflow
                     .transaction

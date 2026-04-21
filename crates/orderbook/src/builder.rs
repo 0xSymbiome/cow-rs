@@ -13,8 +13,8 @@
 //! single-target consumer never has to wire a transport explicitly. On
 //! `wasm32` targets the default-transport build path is unavailable: the
 //! caller MUST supply a `FetchTransport` from `cow-sdk-transport-wasm`
-//! through [`OrderBookApiBuilder::transport`] before [`build`](Self::build)
-//! becomes reachable.
+//! through [`OrderBookApiBuilder::transport`] before `build` becomes
+//! reachable.
 //!
 //! # Examples
 //!
@@ -331,7 +331,7 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
     /// This convenience build path is only available on non-`wasm32` targets;
     /// browser consumers must call
     /// [`OrderBookApiBuilder::transport`] with a `FetchTransport` before
-    /// reaching [`build`](Self::build).
+    /// reaching `build`.
     ///
     /// # Panics
     ///

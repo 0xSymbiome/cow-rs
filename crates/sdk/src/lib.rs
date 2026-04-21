@@ -54,10 +54,10 @@ pub use cow_sdk_app_data as app_data;
 #[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]
 pub use cow_sdk_browser_wallet as browser_wallet;
 pub use cow_sdk_contracts as contracts;
-/// Typed [`RegistryError`](cow_sdk_contracts::RegistryError) surface produced
-/// by the runtime registry loader, re-exported on the facade so downstream
-/// consumers can match against every failure mode without reaching into the
-/// contracts crate directly.
+/// Typed [`RegistryError`] surface produced by the runtime registry
+/// loader, re-exported on the facade so downstream consumers can match
+/// against every failure mode without reaching into the contracts crate
+/// directly.
 pub use cow_sdk_contracts::RegistryError;
 pub use cow_sdk_core as core;
 /// Transport-error classification shared across transport-capable crates.
@@ -67,10 +67,9 @@ pub use cow_sdk_core as core;
 pub use cow_sdk_core::TransportErrorClass;
 /// Production HTTP transport surface shared across `cow-sdk` crates.
 ///
-/// [`HttpTransport`](cow_sdk_core::HttpTransport) is the async injection
-/// point downstream clients consume; [`TransportError`](cow_sdk_core::TransportError)
-/// is its typed failure surface. The native default implementation is
-/// [`ReqwestTransport`](cow_sdk_core::ReqwestTransport); the browser default
+/// [`HttpTransport`] is the async injection point downstream clients
+/// consume; [`TransportError`] is its typed failure surface. The native
+/// default implementation is [`ReqwestTransport`]; the browser default
 /// lives in `cow-sdk-transport-wasm`.
 pub use cow_sdk_core::{HttpTransport, TransportError};
 #[cfg(not(target_arch = "wasm32"))]
@@ -79,13 +78,11 @@ pub use cow_sdk_orderbook as orderbook;
 pub use cow_sdk_signing as signing;
 /// Optional caching seam for EIP-1271 signature verification.
 ///
-/// [`Eip1271VerificationCache`](cow_sdk_signing::Eip1271VerificationCache)
-/// is the trait consumed by
+/// [`Eip1271VerificationCache`] is the trait consumed by
 /// [`cow_sdk_contracts::verify_eip1271_signature_async`].
-/// [`NoopEip1271VerificationCache`](cow_sdk_signing::NoopEip1271VerificationCache)
-/// is the zero-sized default for callers that do not want caching;
-/// [`InMemoryEip1271VerificationCache`](cow_sdk_signing::InMemoryEip1271VerificationCache)
-/// ships a TTL-respecting, capacity-bounded in-memory store.
+/// [`NoopEip1271VerificationCache`] is the zero-sized default for callers
+/// that do not want caching; [`InMemoryEip1271VerificationCache`] ships
+/// a TTL-respecting, capacity-bounded in-memory store.
 pub use cow_sdk_signing::{
     Eip1271VerificationCache, InMemoryEip1271VerificationCache, NoopEip1271VerificationCache,
 };

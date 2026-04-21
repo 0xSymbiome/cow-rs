@@ -7,7 +7,7 @@ use wiremock::{
 };
 
 use cow_sdk::SupportedChainId;
-use cow_sdk_subgraph::{SubgraphApi, SubgraphConfig};
+use cow_sdk_subgraph::SubgraphApi;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

@@ -13,8 +13,8 @@
 //! single-target consumer never has to wire a transport explicitly. On
 //! `wasm32` targets the default-transport build path is unavailable: the
 //! caller MUST supply a `FetchTransport` from `cow-sdk-transport-wasm`
-//! through [`SubgraphApiBuilder::transport`] before
-//! [`build`](Self::build) becomes reachable.
+//! through [`SubgraphApiBuilder::transport`] before `build` becomes
+//! reachable.
 //!
 //! # Examples
 //!
@@ -266,7 +266,7 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset> {
     /// This convenience build path is only available on non-`wasm32`
     /// targets; browser consumers must call
     /// [`SubgraphApiBuilder::transport`] with a `FetchTransport` before
-    /// reaching [`build`](Self::build).
+    /// reaching `build`.
     ///
     /// # Panics
     ///

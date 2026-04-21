@@ -2,13 +2,13 @@
 //!
 //! [`verify_eip1271_signature_async`] orchestrates the canonical
 //! `isValidSignature` dispatch against the verifier contract through an
-//! injected [`AsyncProvider`], consulting an
+//! injected [`cow_sdk_core::AsyncProvider`], consulting an
 //! [`Eip1271VerificationCache`] before reaching the chain. The trait is
 //! defined here so the contracts crate can take it as a parameter
 //! without depending on its sibling crates; downstream consumers
 //! typically reach for the trait through `cow_sdk_signing::cache` and
-//! the [`NoopEip1271VerificationCache`](`#noopeip1271verificationcache`)
-//! and `InMemoryEip1271VerificationCache` impls shipped by signing.
+//! the `NoopEip1271VerificationCache` and `InMemoryEip1271VerificationCache`
+//! impls shipped by signing.
 //!
 //! # Cached-value semantics
 //!

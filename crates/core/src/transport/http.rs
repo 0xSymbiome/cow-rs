@@ -55,7 +55,7 @@ impl TransportError {
 /// default implementation lives in `cow-sdk-transport-wasm` and bridges the
 /// same async signature through `JsFuture`.
 ///
-/// The trait uses [`async_trait`] so downstream clients can hold the
+/// The trait uses [`macro@async_trait`] so downstream clients can hold the
 /// transport behind `Arc<dyn HttpTransport>` without reaching for a
 /// bespoke adapter trait. Implementations carry [`std::fmt::Debug`] so
 /// trait objects render in derived `Debug` output of consumer-facing

@@ -8,7 +8,7 @@ use wiremock::{
 };
 
 use cow_sdk::SupportedChainId;
-use cow_sdk_subgraph::{SubgraphApi, SubgraphConfig, SubgraphQueryRequest};
+use cow_sdk_subgraph::{SubgraphApi, SubgraphQueryRequest};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
