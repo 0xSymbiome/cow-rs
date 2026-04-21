@@ -1,7 +1,9 @@
 use cow_sdk_core::{Cancelled, CoreError, TransportErrorClass, ValidationReason};
+use http::StatusCode;
 use thiserror::Error;
 
-use crate::request::OrderBookApiError;
+use crate::rejection::{OrderbookRejection, parse_rejection};
+use crate::request::{OrderBookApiError, ResponseBody};
 
 /// Errors returned by the typed orderbook client and transport helpers.
 #[non_exhaustive]
@@ -10,9 +12,22 @@ pub enum OrderbookError {
     /// Error bubbled up from shared core configuration or type validation.
     #[error(transparent)]
     Core(#[from] CoreError),
-    /// Structured non-2xx response returned by the orderbook API.
+    /// Structured non-2xx response returned by the orderbook API whose body
+    /// did not carry a recognisable rejection envelope.
     #[error(transparent)]
     Api(Box<OrderBookApiError>),
+    /// Structured rejection classified from the non-2xx response body using
+    /// the typed [`OrderbookRejection`] taxonomy.
+    #[error("orderbook rejected the request ({status}): {rejection}")]
+    Rejected {
+        /// HTTP status code surfaced by the orderbook service.
+        status: StatusCode,
+        /// Typed rejection classification parsed from the response body.
+        rejection: OrderbookRejection,
+        /// Raw transport-level envelope preserved for diagnostics.
+        #[source]
+        source: Box<OrderBookApiError>,
+    },
     /// Network or request-execution failure before a structured API response was decoded.
     #[error("transport error ({class}): {detail}")]
     Transport {
@@ -55,7 +70,22 @@ pub enum OrderbookError {
 
 impl From<OrderBookApiError> for OrderbookError {
     fn from(value: OrderBookApiError) -> Self {
-        Self::Api(Box::new(value))
+        let status = StatusCode::from_u16(value.status).ok();
+        let rejection = match (status, &value.body) {
+            (Some(status_code), ResponseBody::Json(body)) => serde_json::to_vec(body)
+                .ok()
+                .and_then(|bytes| parse_rejection(status_code, &bytes)),
+            _ => None,
+        };
+
+        match (status, rejection) {
+            (Some(status), Some(rejection)) => Self::Rejected {
+                status,
+                rejection,
+                source: Box::new(value),
+            },
+            _ => Self::Api(Box::new(value)),
+        }
     }
 }
 

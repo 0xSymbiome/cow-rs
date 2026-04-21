@@ -15,7 +15,9 @@
 //! * [`RequestPolicy`] / [`RETRYABLE_STATUS_CODES`] /
 //!   [`DEFAULT_TOKENS_PER_INTERVAL`] / [`DEFAULT_INTERVAL_LABEL`] — typed
 //!   request policy.
-//! * [`OrderBookApiError::error_type`] — typed API error body access.
+//! * [`OrderbookRejection`] — typed classification of the services
+//!   rejection envelope, parsed from the JSON body on non-2xx
+//!   responses.
 //! * [`transform_order`] / [`calculate_total_fee`] — `EthFlow` transform and
 //!   total-fee aggregation.
 //! * [`EVM_NATIVE_CURRENCY_ADDRESS`] — canonical native-token address used
@@ -381,14 +383,33 @@ fn assert_duplicate_order_error(id: &str, expected: &Value) {
         "Bad Request",
         ResponseBody::Json(json!({
             "errorType": error_type,
-            "description": "duplicate order",
+            "description": "order already exists",
         })),
     );
-    assert_eq!(
-        api_error.error_type(),
-        Some(error_type),
-        "case {id}: error_type() must surface the fixture errorType field",
-    );
+
+    match cow_sdk_orderbook::OrderbookError::from(api_error) {
+        cow_sdk_orderbook::OrderbookError::Rejected {
+            status,
+            rejection,
+            source,
+        } => {
+            assert_eq!(
+                u64::from(status.as_u16()),
+                400,
+                "case {id}: typed rejection must preserve the services status",
+            );
+            assert_eq!(
+                rejection,
+                cow_sdk_orderbook::OrderbookRejection::DuplicatedOrder,
+                "case {id}: rejection envelope must classify to DuplicatedOrder",
+            );
+            assert_eq!(
+                source.status, 400,
+                "case {id}: source envelope must preserve the raw status",
+            );
+        }
+        other => panic!("case {id}: expected Rejected, got {other:?}"),
+    }
 }
 
 fn assert_app_data_transport(id: &str, expected: &Value) {

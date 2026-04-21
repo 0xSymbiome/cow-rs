@@ -58,6 +58,9 @@ pub mod api;
 pub mod builder;
 /// Typed orderbook client errors.
 pub mod error;
+/// Typed rejection taxonomy and wire-envelope parser for orderbook
+/// non-2xx responses.
+pub mod rejection;
 /// Request execution policy, retry rules, and low-level transport helpers.
 pub mod request;
 /// Orderbook response normalization helpers.
@@ -70,6 +73,7 @@ pub use builder::{
     ChainIdSet, ChainIdUnset, EnvSet, EnvUnset, OrderBookApiBuilder, TransportSet, TransportUnset,
 };
 pub use error::OrderbookError;
+pub use rejection::{OrderbookRejection, parse_rejection};
 pub use request::{
     BAD_GATEWAY, DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
     DEFAULT_TOKENS_PER_INTERVAL, GATEWAY_TIMEOUT, HttpMethod, INTERNAL_SERVER_ERROR,

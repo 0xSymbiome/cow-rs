@@ -337,7 +337,7 @@ async fn get_quote_and_send_order_cover_quote_and_duplicate_order_paths() {
     Mock::given(method("POST"))
         .and(path("/api/v1/orders"))
         .respond_with(ResponseTemplate::new(400).set_body_json(json!({
-            "errorType": "DuplicateOrder",
+            "errorType": "DuplicatedOrder",
             "description": "order already exists"
         })))
         .mount(&server)
@@ -372,11 +372,19 @@ async fn get_quote_and_send_order_cover_quote_and_duplicate_order_paths() {
         .expect_err("duplicate order should surface API error");
 
     match error {
-        cow_sdk_orderbook::OrderbookError::Api(api_error) => {
-            assert_eq!(api_error.status, 400);
-            assert_eq!(api_error.error_type(), Some("DuplicateOrder"));
+        cow_sdk_orderbook::OrderbookError::Rejected {
+            status,
+            rejection,
+            source,
+        } => {
+            assert_eq!(status.as_u16(), 400);
+            assert_eq!(
+                rejection,
+                cow_sdk_orderbook::OrderbookRejection::DuplicatedOrder
+            );
+            assert_eq!(source.status, 400);
         }
-        other => panic!("expected API error, got {other:?}"),
+        other => panic!("expected Rejected, got {other:?}"),
     }
 }
 

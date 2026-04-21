@@ -204,7 +204,8 @@ const fn classify_app_data(error: &cow_sdk_app_data::AppDataError) -> ErrorClass
 const fn classify_orderbook(error: &cow_sdk_orderbook::OrderbookError) -> ErrorClass {
     match error {
         cow_sdk_orderbook::OrderbookError::Core(core_error) => classify_core(core_error),
-        cow_sdk_orderbook::OrderbookError::Api(_) => ErrorClass::Remote,
+        cow_sdk_orderbook::OrderbookError::Api(_)
+        | cow_sdk_orderbook::OrderbookError::Rejected { .. } => ErrorClass::Remote,
         cow_sdk_orderbook::OrderbookError::Transport { .. } => ErrorClass::Transport,
         cow_sdk_orderbook::OrderbookError::InvalidTradesQuery { .. }
         | cow_sdk_orderbook::OrderbookError::InvalidQuoteRequest { .. } => ErrorClass::Validation,

@@ -15,6 +15,38 @@ unreleased public contract of the repository.
 
 ### Added
 
+- Typed orderbook-rejection enum with structured per-code variants.
+  `cow_sdk_orderbook::OrderbookRejection` ships a
+  `#[non_exhaustive]` classification of every authoritative
+  `errorType` tag emitted by the CoW Protocol orderbook across order
+  submission, quoting, cancellation, and price-estimation flows — for
+  example `DuplicatedOrder`, `MissingFrom`, `AppdataFromMismatch`,
+  `SameBuyAndSellToken`, `InvalidNativeSellToken`,
+  `UnsupportedBuyTokenDestination`, `UnsupportedSellTokenSource`,
+  `UnsupportedOrderType`, `UnsupportedToken`, `NonZeroFee`,
+  `InsufficientBalance`, `InsufficientAllowance`, `InvalidSignature`,
+  `SellAmountOverflow`, `TransferSimulationFailed`, `WrongOwner`,
+  `InvalidEip1271Signature`, `ZeroAmount`,
+  `IncompatibleSigningScheme`, `TooManyLimitOrders`, `TooMuchGas`,
+  `QuoteNotVerified`, `QuoteNotFound`, `InvalidAppData`,
+  `AppDataHashMismatch`, `MetadataSerializationFailed`,
+  `OldOrderActivelyBidOn`, `ExcessiveValidTo`, `InsufficientValidTo`,
+  `Forbidden`, `NoLiquidity`, `TradingOutsideAllowedWindow`,
+  `TokenTemporarilySuspended`, `InsufficientLiquidity`,
+  `CustomSolverError`, `AlreadyCancelled`, `OrderFullyExecuted`,
+  `OrderExpired`, `OrderNotFound`, `OnChainOrder`, and
+  `InternalServerError`. The single wire variant that carries
+  machine-readable data — `SellAmountDoesNotCoverFee` — exposes the
+  services `data.fee_amount` payload through a typed `fee_amount:
+  Amount` field. The tail variant `Unknown { code, message }`
+  preserves forward compatibility so a newly-introduced services
+  tag never silently coerces to a default placeholder, and the
+  accompanying free function
+  `cow_sdk_orderbook::parse_rejection(status, body)` exposes the
+  same classification at the byte-slice level for consumers that
+  hold a raw HTTP response instead of an `OrderBookApiError`.
+  `OrderbookRejection` and `parse_rejection` re-export through the
+  `cow-sdk` facade and `cow_sdk::prelude`.
 - A trading-first Rust SDK workspace covering `cow-sdk`, `cow-sdk-core`,
   `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
   `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`, and
@@ -328,6 +360,23 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Orderbook transport error surface now carries a typed rejection
+  variant. `cow_sdk_orderbook::OrderbookError` gains
+  `Rejected { status: http::StatusCode, rejection: OrderbookRejection,
+  source: Box<OrderBookApiError> }`, which the `From<OrderBookApiError>`
+  conversion promotes whenever the non-2xx response body carries a
+  valid services rejection envelope. Bodies that fail envelope
+  decoding, responses without an `errorType` tag, and empty bodies
+  continue to surface through the existing
+  `OrderbookError::Api(Box<OrderBookApiError>)` arm so no rejection is
+  silently misclassified. The raw transport envelope
+  `OrderBookApiError` stays on the public surface for telemetry and
+  diagnostics, and its fields continue to expose the HTTP status,
+  status text, decoded body, and rendered message; the prior
+  stringly-typed `OrderBookApiError::error_type() -> Option<&str>`
+  helper is retired in favour of the typed `OrderbookRejection`
+  classification path, and the multi-environment order-lookup
+  fallback honours both `Api` and `Rejected` on a 404 response.
 - `cow_sdk_core::OrderBalance` is replaced with two distinct contract
   types — `SellTokenSource { Erc20, External, Internal }` and
   `BuyTokenDestination { Erc20, Internal }` — modeling the sell-side

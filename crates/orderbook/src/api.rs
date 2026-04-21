@@ -388,7 +388,7 @@ impl OrderBookApi {
     pub async fn get_order_multi_env(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
         match self.get_order(order_uid).await {
             Ok(order) => Ok(order),
-            Err(OrderbookError::Api(error)) if error.status == 404 => {
+            Err(error) if is_not_found(&error) => {
                 let current_env = self.context.env;
                 if let Some(fallback_env) = ENVS_LIST.into_iter().find(|env| *env != current_env) {
                     self.clone()
@@ -399,7 +399,7 @@ impl OrderBookApi {
                         .get_order(order_uid)
                         .await
                 } else {
-                    Err(OrderbookError::Api(error))
+                    Err(error)
                 }
             }
             Err(error) => Err(error),
@@ -880,6 +880,14 @@ impl OrderBookApi {
 
 fn normalize_base_url(base_url: &str) -> String {
     base_url.trim_end_matches('/').to_owned()
+}
+
+fn is_not_found(error: &OrderbookError) -> bool {
+    match error {
+        OrderbookError::Api(envelope) => envelope.status == 404,
+        OrderbookError::Rejected { status, .. } => status.as_u16() == 404,
+        _ => false,
+    }
 }
 
 fn build_client(policy: &HttpClientPolicy) -> Client {

@@ -34,7 +34,8 @@ pub use cow_sdk_orderbook::{
     ApiContext, AppDataObject, CompetitionOrderStatus, GetOrdersRequest, GetTradesRequest,
     NativePriceResponse, OrderBookApi, OrderBookApiBuilder, OrderBookApiError, OrderCancellations,
     OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderbookClient, OrderbookError,
-    PriceQuality, QuoteData, QuoteSide, SolverCompetitionResponse, TotalSurplus,
+    OrderbookRejection, PriceQuality, QuoteData, QuoteSide, SolverCompetitionResponse,
+    TotalSurplus, parse_rejection,
 };
 pub use cow_sdk_signing::{
     Eip1271VerificationCache, GeneratedOrderId, ORDER_PRIMARY_TYPE, OrderTypedData, SigningError,

@@ -130,15 +130,6 @@ impl OrderBookApiError {
             message,
         }
     }
-
-    /// Returns the orderbook `errorType` field when present in a JSON error payload.
-    #[must_use]
-    pub fn error_type(&self) -> Option<&str> {
-        match &self.body {
-            ResponseBody::Json(Value::Object(map)) => map.get("errorType").and_then(Value::as_str),
-            _ => None,
-        }
-    }
 }
 
 /// Token-bucket settings for the shared request limiter.

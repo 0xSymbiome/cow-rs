@@ -238,10 +238,10 @@
     {
       "id": "orderbook-duplicate-order-error",
       "kind": "negative",
-      "description": "Duplicate order submission surfaces a DuplicateOrder error body on HTTP 400.",
+      "description": "Duplicate order submission surfaces a DuplicatedOrder error body on HTTP 400.",
       "expected": {
         "status": 400,
-        "errorType": "DuplicateOrder"
+        "errorType": "DuplicatedOrder"
       }
     },
     {

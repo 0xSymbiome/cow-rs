@@ -153,7 +153,7 @@ async fn execute_json_with_stops_on_non_retryable_api_error_and_preserves_body()
                 Ok(ResponseEnvelope::json(
                     400,
                     &json!({
-                        "errorType": "DuplicateOrder",
+                        "errorType": "DuplicatedOrder",
                         "description": "order already exists"
                     }),
                 ))
@@ -164,12 +164,20 @@ async fn execute_json_with_stops_on_non_retryable_api_error_and_preserves_body()
     .expect_err("400 duplicate order should not be retried");
 
     match error {
-        cow_sdk_orderbook::OrderbookError::Api(api_error) => {
-            assert_eq!(api_error.status, 400);
-            assert_eq!(api_error.error_type(), Some("DuplicateOrder"));
+        cow_sdk_orderbook::OrderbookError::Rejected {
+            status,
+            rejection,
+            source,
+        } => {
+            assert_eq!(status.as_u16(), 400);
+            assert_eq!(
+                rejection,
+                cow_sdk_orderbook::OrderbookRejection::DuplicatedOrder
+            );
+            assert_eq!(source.status, 400);
             assert_eq!(attempts.load(Ordering::SeqCst), 1);
         }
-        other => panic!("expected API error, got {other:?}"),
+        other => panic!("expected Rejected, got {other:?}"),
     }
 }
 
@@ -402,18 +410,53 @@ async fn cancelling_waiting_attempt_keeps_limiter_reusable() {
 }
 
 #[test]
-fn typed_api_error_exposes_json_body_and_error_type() {
+fn typed_api_error_preserves_status_body_and_message() {
     let error = OrderBookApiError::new(
         400,
         "Bad Request",
         ResponseBody::Json(json!({
-            "errorType": "DuplicateOrder",
-            "description": "duplicate order"
+            "errorType": "DuplicatedOrder",
+            "description": "order already exists"
         })),
     );
 
     assert_eq!(error.status, 400);
-    assert_eq!(error.error_type(), Some("DuplicateOrder"));
+    assert!(
+        matches!(&error.body, ResponseBody::Json(_)),
+        "typed body must be preserved verbatim"
+    );
+    assert!(
+        error.to_string().contains("order already exists"),
+        "Display must surface the description from the envelope",
+    );
+}
+
+#[test]
+fn json_envelope_classifies_to_typed_rejection_through_from_api_error() {
+    let api_error = OrderBookApiError::new(
+        400,
+        "Bad Request",
+        ResponseBody::Json(json!({
+            "errorType": "DuplicatedOrder",
+            "description": "order already exists"
+        })),
+    );
+
+    match cow_sdk_orderbook::OrderbookError::from(api_error) {
+        cow_sdk_orderbook::OrderbookError::Rejected {
+            status,
+            rejection,
+            source,
+        } => {
+            assert_eq!(status.as_u16(), 400);
+            assert_eq!(
+                rejection,
+                cow_sdk_orderbook::OrderbookRejection::DuplicatedOrder
+            );
+            assert_eq!(source.status, 400);
+        }
+        other => panic!("expected Rejected, got {other:?}"),
+    }
 }
 
 #[test]
@@ -506,15 +549,20 @@ async fn retryable_api_error_does_not_retry_past_the_final_attempt() {
 
     assert_eq!(attempts.load(Ordering::SeqCst), 1);
     match error {
-        cow_sdk_orderbook::OrderbookError::Api(api_error) => {
-            assert_eq!(api_error.status, INTERNAL_SERVER_ERROR);
+        cow_sdk_orderbook::OrderbookError::Rejected {
+            status,
+            rejection,
+            source,
+        } => {
+            assert_eq!(status.as_u16(), INTERNAL_SERVER_ERROR);
             assert_eq!(
-                api_error.error_type(),
-                Some("InternalServerError"),
-                "the final retryable status must not degrade into a transport error"
+                rejection,
+                cow_sdk_orderbook::OrderbookRejection::InternalServerError,
+                "the final retryable status must not degrade into a transport error",
             );
+            assert_eq!(source.status, INTERNAL_SERVER_ERROR);
         }
-        other => panic!("expected API error, got {other:?}"),
+        other => panic!("expected Rejected, got {other:?}"),
     }
 }
 
