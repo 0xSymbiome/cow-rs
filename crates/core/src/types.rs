@@ -987,28 +987,41 @@ pub enum OrderKind {
     Sell,
 }
 
-/// Token-balance source selection used by `CoW` orders.
+/// Source from which the `sellAmount` is drawn upon order fulfillment.
+///
+/// This mirrors the services `SellTokenSource` enum byte-for-byte on the wire.
+/// Orders model the sell-side allowance path independently of the buy-side
+/// payout path, which is typed as [`BuyTokenDestination`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
-#[serde(rename_all = "lowercase")]
-pub enum OrderBalance {
-    /// ERC-20 balance directly held by the owner.
+#[non_exhaustive]
+#[serde(rename_all = "snake_case")]
+pub enum SellTokenSource {
+    /// Sell tokens are drawn through the regular ERC-20 allowance granted to
+    /// the vault relayer.
     #[default]
     Erc20,
-    /// External balance tracked by the settlement contract.
+    /// Sell tokens are drawn through the Balancer vault relayer using an
+    /// external ERC-20 allowance on the vault.
     External,
-    /// Internal balance tracked by the settlement contract.
+    /// Sell tokens are drawn from the user's internal Balancer vault balance.
     Internal,
 }
 
-impl OrderBalance {
-    /// Normalizes buy-balance selection to the protocol-supported value set.
-    #[must_use]
-    pub const fn normalize_for_buy(self) -> Self {
-        match self {
-            Self::Internal => Self::Internal,
-            Self::Erc20 | Self::External => Self::Erc20,
-        }
-    }
+/// Destination to which the `buyAmount` is transferred upon order fulfillment.
+///
+/// This mirrors the services `BuyTokenDestination` enum byte-for-byte on the
+/// wire. The buy-side payout path only accepts the ERC-20 and internal
+/// variants; the [`SellTokenSource::External`] variant has no buy-side
+/// counterpart.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[non_exhaustive]
+#[serde(rename_all = "snake_case")]
+pub enum BuyTokenDestination {
+    /// Buy tokens are paid out as a regular ERC-20 transfer.
+    #[default]
+    Erc20,
+    /// Buy tokens are paid out as a Balancer vault internal balance credit.
+    Internal,
 }
 
 /// Token metadata used by user-domain SDK surfaces.
@@ -1078,19 +1091,13 @@ pub struct UnsignedOrder {
     pub partially_fillable: bool,
     /// Sell-token balance source.
     #[serde(default)]
-    pub sell_token_balance: OrderBalance,
-    /// Buy-token balance source.
+    pub sell_token_balance: SellTokenSource,
+    /// Buy-token balance destination.
     #[serde(default)]
-    pub buy_token_balance: OrderBalance,
+    pub buy_token_balance: BuyTokenDestination,
 }
 
 impl UnsignedOrder {
-    /// Returns the normalized buy-token balance that contract hashing uses.
-    #[must_use]
-    pub const fn normalized_buy_token_balance(&self) -> OrderBalance {
-        self.buy_token_balance.normalize_for_buy()
-    }
-
     /// Returns the canonical EIP-712 field ordering for orders.
     #[must_use]
     pub const fn field_names() -> &'static [&'static str; ORDER_TYPE_FIELD_NAMES.len()] {

@@ -17,7 +17,8 @@ use std::sync::{Arc, Mutex};
 use serde_json::json;
 
 use cow_sdk_core::{
-    Amount, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderBalance, OrderKind, ProtocolOptions,
+    Amount, BuyTokenDestination, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderKind, ProtocolOptions,
+    SellTokenSource,
 };
 
 fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParameters) -> ProtocolOptions {
@@ -184,15 +185,15 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
 async fn swap_posting_preserves_non_default_balance_semantics_from_quote_to_submission() {
     let trader = sample_trader_parameters();
     let mut quote_response = sell_quote_response();
-    quote_response.quote.sell_token_balance = OrderBalance::External;
-    quote_response.quote.buy_token_balance = OrderBalance::Internal;
+    quote_response.quote.sell_token_balance = SellTokenSource::External;
+    quote_response.quote.buy_token_balance = BuyTokenDestination::Internal;
     let orderbook = MockOrderbook::new(trader.chain_id, quote_response);
     let signer = MockSigner::default();
     let trade = sample_trade_parameters(OrderKind::Sell);
     let advanced = SwapAdvancedSettings::new().with_quote_request(
         QuoteRequestOverride::new()
-            .with_sell_token_balance(OrderBalance::External)
-            .with_buy_token_balance(OrderBalance::Internal),
+            .with_sell_token_balance(SellTokenSource::External)
+            .with_buy_token_balance(BuyTokenDestination::Internal),
     );
 
     let result = post_swap_order(&trade, &trader, &signer, Some(&advanced), &orderbook)
@@ -207,14 +208,14 @@ async fn swap_posting_preserves_non_default_balance_semantics_from_quote_to_subm
 
     assert_eq!(
         result.order_to_sign.sell_token_balance,
-        OrderBalance::External
+        SellTokenSource::External
     );
     assert_eq!(
         result.order_to_sign.buy_token_balance,
-        OrderBalance::Internal
+        BuyTokenDestination::Internal
     );
-    assert_eq!(sent_order.sell_token_balance, OrderBalance::External);
-    assert_eq!(sent_order.buy_token_balance, OrderBalance::Internal);
+    assert_eq!(sent_order.sell_token_balance, SellTokenSource::External);
+    assert_eq!(sent_order.buy_token_balance, BuyTokenDestination::Internal);
 }
 
 #[tokio::test]

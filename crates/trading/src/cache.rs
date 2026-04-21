@@ -38,7 +38,7 @@ use std::time::{Duration, Instant};
 use web_time::Instant;
 
 use async_trait::async_trait;
-use cow_sdk_core::{Address, OrderBalance, OrderKind};
+use cow_sdk_core::{Address, BuyTokenDestination, OrderKind, SellTokenSource};
 
 use crate::QuoteResults;
 
@@ -73,9 +73,9 @@ pub struct QuoteCacheKey {
     /// Whether the quote request allows partial fills.
     pub partially_fillable: bool,
     /// Sell-token balance source.
-    pub sell_token_balance: OrderBalance,
-    /// Buy-token balance source.
-    pub buy_token_balance: OrderBalance,
+    pub sell_token_balance: SellTokenSource,
+    /// Buy-token balance destination.
+    pub buy_token_balance: BuyTokenDestination,
 }
 
 impl QuoteCacheKey {
@@ -106,8 +106,8 @@ impl QuoteCacheKey {
             amount: amount.into(),
             valid_to: None,
             partially_fillable: false,
-            sell_token_balance: OrderBalance::Erc20,
-            buy_token_balance: OrderBalance::Erc20,
+            sell_token_balance: SellTokenSource::Erc20,
+            buy_token_balance: BuyTokenDestination::Erc20,
         }
     }
 
@@ -143,8 +143,8 @@ impl QuoteCacheKey {
     #[must_use]
     pub const fn with_token_balances(
         mut self,
-        sell_token_balance: OrderBalance,
-        buy_token_balance: OrderBalance,
+        sell_token_balance: SellTokenSource,
+        buy_token_balance: BuyTokenDestination,
     ) -> Self {
         self.sell_token_balance = sell_token_balance;
         self.buy_token_balance = buy_token_balance;

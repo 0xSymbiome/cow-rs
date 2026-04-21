@@ -3,7 +3,7 @@ mod common;
 use std::sync::Arc;
 use std::time::Duration;
 
-use cow_sdk_core::{CowEnv, OrderBalance, OrderKind, SupportedChainId};
+use cow_sdk_core::{BuyTokenDestination, CowEnv, OrderKind, SellTokenSource, SupportedChainId};
 use cow_sdk_trading::{
     InMemoryQuoteCache, NoopQuoteCache, QuoteCache, QuoteCacheKey, QuoteResults, TradingSdkBuilder,
     get_quote_results,
@@ -35,7 +35,7 @@ fn sample_cache_key() -> QuoteCacheKey {
         OrderKind::Sell,
     )
     .with_owner(&address(common::OWNER))
-    .with_token_balances(OrderBalance::Erc20, OrderBalance::Erc20)
+    .with_token_balances(SellTokenSource::Erc20, BuyTokenDestination::Erc20)
 }
 
 #[tokio::test]

@@ -29,7 +29,8 @@ use cow_sdk_contracts::{
     normalized_ecdsa_signature, pack_order_uid_params,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, OrderBalance, OrderDigest, OrderKind, TypedDataDomain,
+    Address, Amount, AppDataHex, BuyTokenDestination, OrderDigest, OrderKind, SellTokenSource,
+    TypedDataDomain,
 };
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
@@ -47,16 +48,6 @@ const REGRESSION_FILE: &str = concat!(
 const SIGNATURE_BOUNDARY_LENGTHS: [usize; 18] = [
     0, 1, 2, 15, 16, 31, 32, 33, 47, 48, 63, 64, 65, 95, 96, 97, 127, 128,
 ];
-
-/// Applies the upstream buy-balance normalization rule used inside the
-/// settlement encoder and mirrored in the compact flag codec: `Internal`
-/// stays `Internal`; `Erc20`/`External` collapse to `Erc20`.
-fn canonical_buy_balance(balance: OrderBalance) -> OrderBalance {
-    match balance {
-        OrderBalance::Internal => OrderBalance::Internal,
-        OrderBalance::Erc20 | OrderBalance::External => OrderBalance::Erc20,
-    }
-}
 
 /// Renders the hex encoding of `bytes` with per-nibble casing drawn from
 /// `casing` so shrinking can isolate casing-sensitive failures.
@@ -129,23 +120,22 @@ fn signing_scheme_strategy() -> impl Strategy<Value = SigningScheme> {
 
 /// Strategy that emits every `sell_token_balance` shape the reviewed
 /// order contract admits.
-fn sell_balance_strategy() -> impl Strategy<Value = OrderBalance> {
+fn sell_balance_strategy() -> impl Strategy<Value = SellTokenSource> {
     prop_oneof![
-        Just(OrderBalance::Erc20),
-        Just(OrderBalance::External),
-        Just(OrderBalance::Internal),
+        Just(SellTokenSource::Erc20),
+        Just(SellTokenSource::External),
+        Just(SellTokenSource::Internal),
     ]
 }
 
 /// Strategy that emits every `buy_token_balance` shape the reviewed
-/// order contract admits. The codec collapses `External` to `Erc20` on
-/// encode; this strategy emits all three so the normalization path is
-/// exercised.
-fn buy_balance_strategy() -> impl Strategy<Value = OrderBalance> {
+/// order contract admits. `BuyTokenDestination` is a closed type in the
+/// services model, so the strategy cycles through `Erc20` and `Internal`
+/// only.
+fn buy_balance_strategy() -> impl Strategy<Value = BuyTokenDestination> {
     prop_oneof![
-        Just(OrderBalance::Erc20),
-        Just(OrderBalance::External),
-        Just(OrderBalance::Internal),
+        Just(BuyTokenDestination::Erc20),
+        Just(BuyTokenDestination::Internal),
     ]
 }
 
@@ -205,35 +195,25 @@ fn order_strategy() -> impl Strategy<Value = Order> {
 }
 
 /// Strategy that emits an order plus an equivalent order under the
-/// reviewed balance-normalization rule. `sell_token_balance == Erc20`
-/// may become `None` on the equivalent side; `buy_token_balance` is
-/// reshuffled among the collapsing group
-/// `{None, Some(Erc20), Some(External)}` while `Some(Internal)` stays
-/// pinned. The two orders must produce byte-identical
-/// [`normalize_order`] output and therefore the same [`hash_order`]
-/// digest under a shared typed-data domain.
+/// balance-default rule for `normalize_order`. `sell_token_balance ==
+/// Some(Erc20)` is equivalent to `None` on the sell side; `buy_token_balance ==
+/// Some(Erc20)` is equivalent to `None` on the buy side. The two orders must
+/// produce byte-identical [`normalize_order`] output and therefore the same
+/// [`hash_order`] digest under a shared typed-data domain.
 fn equivalent_order_pair_strategy() -> impl Strategy<Value = (Order, Order)> {
     order_strategy().prop_flat_map(|order| {
-        let sell_is_erc20 = order.sell_token_balance == Some(OrderBalance::Erc20);
-        let buy_is_internal = order.buy_token_balance == Some(OrderBalance::Internal);
-        (
-            any::<bool>(),
-            prop_oneof![
-                Just(None),
-                Just(Some(OrderBalance::Erc20)),
-                Just(Some(OrderBalance::External)),
-            ],
-        )
-            .prop_map(move |(erase_sell, buy_selector)| {
-                let mut equivalent = order.clone();
-                if sell_is_erc20 && erase_sell {
-                    equivalent.sell_token_balance = None;
-                }
-                if !buy_is_internal {
-                    equivalent.buy_token_balance = buy_selector;
-                }
-                (order.clone(), equivalent)
-            })
+        let sell_is_erc20 = order.sell_token_balance == Some(SellTokenSource::Erc20);
+        let buy_is_erc20 = order.buy_token_balance == Some(BuyTokenDestination::Erc20);
+        (any::<bool>(), any::<bool>()).prop_map(move |(erase_sell, erase_buy)| {
+            let mut equivalent = order.clone();
+            if sell_is_erc20 && erase_sell {
+                equivalent.sell_token_balance = None;
+            }
+            if buy_is_erc20 && erase_buy {
+                equivalent.buy_token_balance = None;
+            }
+            (order.clone(), equivalent)
+        })
     })
 }
 
@@ -439,11 +419,7 @@ proptest! {
         };
         let encoded_order = encode_order_flags(&order_flags).unwrap();
         let decoded_order = decode_order_flags(encoded_order).unwrap();
-        let expected_order = OrderFlags {
-            buy_token_balance: canonical_buy_balance(order_flags.buy_token_balance),
-            ..order_flags.clone()
-        };
-        prop_assert_eq!(&decoded_order, &expected_order);
+        prop_assert_eq!(&decoded_order, &order_flags);
         prop_assert_eq!(encode_order_flags(&decoded_order).unwrap(), encoded_order);
 
         let trade_flags = TradeFlags {
@@ -455,12 +431,8 @@ proptest! {
         };
         let encoded_trade = encode_trade_flags(&trade_flags).unwrap();
         let decoded_trade = decode_trade_flags(encoded_trade).unwrap();
-        let expected_trade = TradeFlags {
-            buy_token_balance: canonical_buy_balance(trade_flags.buy_token_balance),
-            ..trade_flags.clone()
-        };
         prop_assert_eq!(encoded_trade & 0b1000_0000, 0);
-        prop_assert_eq!(&decoded_trade, &expected_trade);
+        prop_assert_eq!(&decoded_trade, &trade_flags);
         prop_assert_eq!(encode_trade_flags(&decoded_trade).unwrap(), encoded_trade);
     }
 

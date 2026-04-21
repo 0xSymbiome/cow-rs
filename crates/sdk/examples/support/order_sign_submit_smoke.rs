@@ -1,7 +1,7 @@
 use cow_sdk::{
-    Address, Amount, AppDataHex, ORDER_PRIMARY_TYPE, OrderBalance, OrderKind,
-    PartialTraderParameters, SupportedChainId, TradingSdk, TradingSdkOptions, UnsignedOrder,
-    generate_order_id, order_typed_data,
+    Address, Amount, AppDataHex, BuyTokenDestination, ORDER_PRIMARY_TYPE, OrderKind,
+    PartialTraderParameters, SellTokenSource, SupportedChainId, TradingSdk, TradingSdkOptions,
+    UnsignedOrder, generate_order_id, order_typed_data,
 };
 
 pub fn smoke_hash_and_uid() -> Result<String, Box<dyn std::error::Error>> {
@@ -23,8 +23,8 @@ pub fn smoke_hash_and_uid() -> Result<String, Box<dyn std::error::Error>> {
         fee_amount: Amount::zero(),
         kind: OrderKind::Sell,
         partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
+        sell_token_balance: SellTokenSource::Erc20,
+        buy_token_balance: BuyTokenDestination::Erc20,
     };
 
     let typed = order_typed_data(SupportedChainId::Sepolia, &order, None)?;

@@ -5,7 +5,8 @@ use bytes::Bytes;
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, OrderBalance, OrderKind, OrderUid, TypedDataDomain,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, OrderUid, SellTokenSource,
+    TypedDataDomain,
 };
 
 use crate::{
@@ -92,9 +93,9 @@ pub struct OrderFlags {
     /// Whether the order is partially fillable.
     pub partially_fillable: bool,
     /// Sell-token balance source.
-    pub sell_token_balance: OrderBalance,
-    /// Buy-token balance source.
-    pub buy_token_balance: OrderBalance,
+    pub sell_token_balance: SellTokenSource,
+    /// Buy-token balance destination.
+    pub buy_token_balance: BuyTokenDestination,
 }
 
 /// Compact trade-flag inputs.
@@ -106,9 +107,9 @@ pub struct TradeFlags {
     /// Whether the order is partially fillable.
     pub partially_fillable: bool,
     /// Sell-token balance source.
-    pub sell_token_balance: OrderBalance,
-    /// Buy-token balance source.
-    pub buy_token_balance: OrderBalance,
+    pub sell_token_balance: SellTokenSource,
+    /// Buy-token balance destination.
+    pub buy_token_balance: BuyTokenDestination,
     /// Signing scheme used for the signature.
     pub signing_scheme: SigningScheme,
 }
@@ -455,13 +456,15 @@ pub fn encode_order_flags(flags: &OrderFlags) -> Result<u8, ContractsError> {
     };
     let partial = if flags.partially_fillable { 0b10 } else { 0 };
     let sell = match flags.sell_token_balance {
-        OrderBalance::Erc20 => 0,
-        OrderBalance::External => 0b10 << 2,
-        OrderBalance::Internal => 0b11 << 2,
+        SellTokenSource::Erc20 => 0,
+        SellTokenSource::External => 0b10 << 2,
+        SellTokenSource::Internal => 0b11 << 2,
+        _ => unreachable!("SellTokenSource variants are exhaustively covered"),
     };
     let buy = match flags.buy_token_balance {
-        OrderBalance::Erc20 | OrderBalance::External => 0,
-        OrderBalance::Internal => 0b1 << 4,
+        BuyTokenDestination::Erc20 => 0,
+        BuyTokenDestination::Internal => 0b1 << 4,
+        _ => unreachable!("BuyTokenDestination variants are exhaustively covered"),
     };
     Ok([kind, partial, sell, buy].into_iter().sum())
 }
@@ -478,15 +481,15 @@ pub fn decode_order_flags(encoded: u8) -> Result<OrderFlags, ContractsError> {
 
     let sell_bits = (encoded >> 2) & 0b11;
     let sell_token_balance = match sell_bits {
-        0b00 | 0b01 => OrderBalance::Erc20,
-        0b10 => OrderBalance::External,
-        0b11 => OrderBalance::Internal,
+        0b00 | 0b01 => SellTokenSource::Erc20,
+        0b10 => SellTokenSource::External,
+        0b11 => SellTokenSource::Internal,
         _ => unreachable!(),
     };
 
     let buy_token_balance = match (encoded >> 4) & 0b1 {
-        0 => OrderBalance::Erc20,
-        1 => OrderBalance::Internal,
+        0 => BuyTokenDestination::Erc20,
+        1 => BuyTokenDestination::Internal,
         _ => unreachable!(),
     };
 
@@ -720,8 +723,8 @@ mod tests {
             fee_amount: Amount::new("1").unwrap(),
             kind: OrderKind::Buy,
             partially_fillable,
-            sell_token_balance: Some(OrderBalance::Internal),
-            buy_token_balance: Some(OrderBalance::External),
+            sell_token_balance: Some(SellTokenSource::Internal),
+            buy_token_balance: Some(BuyTokenDestination::Internal),
         }
     }
 
@@ -738,13 +741,15 @@ mod tests {
         };
         let partial = u8::from(flags.partially_fillable) << 1;
         let sell = match flags.sell_token_balance {
-            OrderBalance::Erc20 => 0,
-            OrderBalance::External => 0b10 << 2,
-            OrderBalance::Internal => 0b11 << 2,
+            SellTokenSource::Erc20 => 0,
+            SellTokenSource::External => 0b10 << 2,
+            SellTokenSource::Internal => 0b11 << 2,
+            _ => unreachable!("SellTokenSource variants are exhaustively covered"),
         };
         let buy = match flags.buy_token_balance {
-            OrderBalance::Erc20 | OrderBalance::External => 0,
-            OrderBalance::Internal => 0b1 << 4,
+            BuyTokenDestination::Erc20 => 0,
+            BuyTokenDestination::Internal => 0b1 << 4,
+            _ => unreachable!("BuyTokenDestination variants are exhaustively covered"),
         };
         kind | partial | sell | buy
     }
@@ -754,11 +759,13 @@ mod tests {
         for kind in [OrderKind::Sell, OrderKind::Buy] {
             for partially_fillable in [false, true] {
                 for sell_token_balance in [
-                    OrderBalance::Erc20,
-                    OrderBalance::External,
-                    OrderBalance::Internal,
+                    SellTokenSource::Erc20,
+                    SellTokenSource::External,
+                    SellTokenSource::Internal,
                 ] {
-                    for buy_token_balance in [OrderBalance::Erc20, OrderBalance::Internal] {
+                    for buy_token_balance in
+                        [BuyTokenDestination::Erc20, BuyTokenDestination::Internal]
+                    {
                         let order_flags = OrderFlags {
                             kind,
                             partially_fillable,

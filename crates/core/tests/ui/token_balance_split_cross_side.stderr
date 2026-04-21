@@ -1,0 +1,17 @@
+error[E0308]: mismatched types
+  --> tests/ui/order_balance_split_cross_side.rs
+   |
+   |         buy_token_balance: sell_source,
+   |                            ^^^^^^^^^^^ expected `BuyTokenDestination`, found `SellTokenSource`
+   |
+   = note: `SellTokenSource` models the three-variant sell-side allowance path (`Erc20`, `External`, `Internal`); `BuyTokenDestination` models the two-variant buy-side payout path (`Erc20`, `Internal`). The type system rejects any silent cross-side coercion so quote-derived and direct trading-order construction cannot rewrite the buy-side destination.
+
+error[E0308]: mismatched types
+  --> tests/ui/order_balance_split_cross_side.rs
+   |
+   |     let _mismatch: BuyTokenDestination = sell_source;
+   |                    -------------------   ^^^^^^^^^^^ expected `BuyTokenDestination`, found `SellTokenSource`
+   |                    |
+   |                    expected due to this
+
+For more information about this error, try `rustc --explain E0308`.

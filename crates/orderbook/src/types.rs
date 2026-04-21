@@ -4,9 +4,9 @@ use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError};
 
 pub use cow_sdk_core::{
-    Address, ApiBaseUrls, ApiContext, AppDataHash, CowEnv, ENVS_LIST, EVM_NATIVE_CURRENCY_ADDRESS,
-    OrderBalance, OrderKind, OrderUid, QuoteAmountsAndCosts, REDACTED_PLACEHOLDER, Redacted,
-    SupportedChainId,
+    Address, ApiBaseUrls, ApiContext, AppDataHash, BuyTokenDestination, CowEnv, ENVS_LIST,
+    EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, OrderUid, QuoteAmountsAndCosts, REDACTED_PLACEHOLDER,
+    Redacted, SellTokenSource, SupportedChainId,
 };
 
 /// Partial override applied to an [`ApiContext`] when cloning an orderbook client.
@@ -295,10 +295,10 @@ pub struct OrderQuoteRequest {
     pub partially_fillable: bool,
     /// Sell-token balance source.
     #[serde(default)]
-    pub sell_token_balance: OrderBalance,
+    pub sell_token_balance: SellTokenSource,
     /// Buy-token balance destination.
     #[serde(default)]
-    pub buy_token_balance: OrderBalance,
+    pub buy_token_balance: BuyTokenDestination,
     /// Effective order owner used for quote verification.
     pub from: Address,
     /// Quote-quality mode.
@@ -337,8 +337,8 @@ impl OrderQuoteRequest {
             app_data: Some(format!("0x{}", "0".repeat(64))),
             app_data_hash: None,
             partially_fillable: false,
-            sell_token_balance: OrderBalance::Erc20,
-            buy_token_balance: OrderBalance::Erc20,
+            sell_token_balance: SellTokenSource::Erc20,
+            buy_token_balance: BuyTokenDestination::Erc20,
             from,
             price_quality: PriceQuality::Verified,
             signing_scheme: SigningScheme::Eip712,
@@ -428,14 +428,14 @@ impl OrderQuoteRequest {
 
     /// Returns a copy of this request with a new sell-token balance source.
     #[must_use]
-    pub const fn with_sell_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_sell_token_balance(mut self, balance: SellTokenSource) -> Self {
         self.sell_token_balance = balance;
         self
     }
 
     /// Returns a copy of this request with a new buy-token balance destination.
     #[must_use]
-    pub const fn with_buy_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_buy_token_balance(mut self, balance: BuyTokenDestination) -> Self {
         self.buy_token_balance = balance;
         self
     }
@@ -497,10 +497,10 @@ pub struct QuoteData {
     pub partially_fillable: bool,
     /// Sell-token balance source.
     #[serde(default)]
-    pub sell_token_balance: OrderBalance,
+    pub sell_token_balance: SellTokenSource,
     /// Buy-token balance destination.
     #[serde(default)]
-    pub buy_token_balance: OrderBalance,
+    pub buy_token_balance: BuyTokenDestination,
 }
 
 impl<'de> Deserialize<'de> for QuoteData {
@@ -525,9 +525,9 @@ impl<'de> Deserialize<'de> for QuoteData {
             #[serde(default)]
             partially_fillable: bool,
             #[serde(default)]
-            sell_token_balance: OrderBalance,
+            sell_token_balance: SellTokenSource,
             #[serde(default)]
-            buy_token_balance: OrderBalance,
+            buy_token_balance: BuyTokenDestination,
         }
 
         let wire = QuoteDataWire::deserialize(deserializer)?;
@@ -582,8 +582,8 @@ impl QuoteData {
             fee_amount: "0".to_owned(),
             kind,
             partially_fillable: false,
-            sell_token_balance: OrderBalance::Erc20,
-            buy_token_balance: OrderBalance::Erc20,
+            sell_token_balance: SellTokenSource::Erc20,
+            buy_token_balance: BuyTokenDestination::Erc20,
         }
     }
 
@@ -623,14 +623,14 @@ impl QuoteData {
 
     /// Returns a copy of this payload with an explicit sell-token balance source.
     #[must_use]
-    pub const fn with_sell_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_sell_token_balance(mut self, balance: SellTokenSource) -> Self {
         self.sell_token_balance = balance;
         self
     }
 
     /// Returns a copy of this payload with an explicit buy-token balance destination.
     #[must_use]
-    pub const fn with_buy_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_buy_token_balance(mut self, balance: BuyTokenDestination) -> Self {
         self.buy_token_balance = balance;
         self
     }
@@ -737,10 +737,10 @@ pub struct OrderCreation {
     pub partially_fillable: bool,
     /// Sell-token balance source.
     #[serde(default)]
-    pub sell_token_balance: OrderBalance,
+    pub sell_token_balance: SellTokenSource,
     /// Buy-token balance destination.
     #[serde(default)]
-    pub buy_token_balance: OrderBalance,
+    pub buy_token_balance: BuyTokenDestination,
     /// Signature scheme used for `signature`.
     #[serde(default)]
     pub signing_scheme: SigningScheme,
@@ -790,8 +790,8 @@ impl OrderCreation {
             fee_amount: order_creation_zero_fee_amount(),
             kind,
             partially_fillable: false,
-            sell_token_balance: OrderBalance::Erc20,
-            buy_token_balance: OrderBalance::Erc20,
+            sell_token_balance: SellTokenSource::Erc20,
+            buy_token_balance: BuyTokenDestination::Erc20,
             signing_scheme,
             signature: signature.into(),
             from,
@@ -863,14 +863,14 @@ impl OrderCreation {
 
     /// Returns a copy of this submission payload with an explicit sell-token balance source.
     #[must_use]
-    pub const fn with_sell_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_sell_token_balance(mut self, balance: SellTokenSource) -> Self {
         self.sell_token_balance = balance;
         self
     }
 
     /// Returns a copy of this submission payload with an explicit buy-token balance destination.
     #[must_use]
-    pub const fn with_buy_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_buy_token_balance(mut self, balance: BuyTokenDestination) -> Self {
         self.buy_token_balance = balance;
         self
     }
@@ -988,10 +988,10 @@ pub struct Order {
     pub partially_fillable: bool,
     /// Sell-token balance source.
     #[serde(default)]
-    pub sell_token_balance: OrderBalance,
+    pub sell_token_balance: SellTokenSource,
     /// Buy-token balance destination.
     #[serde(default)]
-    pub buy_token_balance: OrderBalance,
+    pub buy_token_balance: BuyTokenDestination,
     /// Signature scheme used for `signature`.
     #[serde(default)]
     pub signing_scheme: SigningScheme,
@@ -1076,8 +1076,8 @@ impl Order {
             fee_amount: order_creation_zero_fee_amount(),
             kind,
             partially_fillable: false,
-            sell_token_balance: OrderBalance::Erc20,
-            buy_token_balance: OrderBalance::Erc20,
+            sell_token_balance: SellTokenSource::Erc20,
+            buy_token_balance: BuyTokenDestination::Erc20,
             signing_scheme: SigningScheme::Eip712,
             signature: signature.into(),
             from: None,

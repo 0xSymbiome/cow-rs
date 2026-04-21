@@ -17,12 +17,12 @@ mod common;
 use cow_sdk_contracts::{
     BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, ORDER_TYPE_FIELDS, ORDER_TYPE_HASH, Order,
     OrderCancellations, OrderUidParams, compute_order_uid, extract_order_uid_params, hash_order,
-    hash_order_cancellation, hash_order_cancellations, hash_order_for_contract,
-    normalize_buy_token_balance, normalize_order, pack_order_uid_params, uid_for_contract,
+    hash_order_cancellation, hash_order_cancellations, hash_order_for_contract, normalize_order,
+    pack_order_uid_params, uid_for_contract,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, OrderBalance, OrderKind, OrderModel, TypedDataDomain,
-    UnsignedOrder,
+    Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, OrderModel, SellTokenSource,
+    TypedDataDomain, UnsignedOrder,
 };
 
 use common::fixture_case;
@@ -52,7 +52,7 @@ fn sample_order() -> Order {
         kind: OrderKind::Sell,
         partially_fillable: false,
         sell_token_balance: None,
-        buy_token_balance: Some(OrderBalance::External),
+        buy_token_balance: Some(BuyTokenDestination::Internal),
     }
 }
 
@@ -99,12 +99,8 @@ fn order_contract_matches_fixture_and_normalization_rules() {
         normalized.receiver.as_str(),
         "0x0000000000000000000000000000000000000000"
     );
-    assert_eq!(normalized.sell_token_balance, OrderBalance::Erc20);
-    assert_eq!(normalized.buy_token_balance, OrderBalance::Erc20);
-    assert_eq!(
-        normalize_buy_token_balance(Some(OrderBalance::External)),
-        OrderBalance::Erc20
-    );
+    assert_eq!(normalized.sell_token_balance, SellTokenSource::Erc20);
+    assert_eq!(normalized.buy_token_balance, BuyTokenDestination::Internal);
     assert_eq!(
         BUY_ETH_ADDRESS,
         "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
@@ -172,8 +168,8 @@ fn unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit(
         fee_amount: Amount::new("10").unwrap(),
         kind: OrderKind::Sell,
         partially_fillable: true,
-        sell_token_balance: OrderBalance::External,
-        buy_token_balance: OrderBalance::External,
+        sell_token_balance: SellTokenSource::External,
+        buy_token_balance: BuyTokenDestination::Internal,
     };
 
     let contract = Order::from(&unsigned);
@@ -196,8 +192,8 @@ fn unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit(
 
     let normalized = contract.normalize().unwrap();
     assert_eq!(normalized.receiver, unsigned.receiver);
-    assert_eq!(normalized.sell_token_balance, OrderBalance::External);
-    assert_eq!(normalized.buy_token_balance, OrderBalance::Erc20);
+    assert_eq!(normalized.sell_token_balance, SellTokenSource::External);
+    assert_eq!(normalized.buy_token_balance, BuyTokenDestination::Internal);
 }
 
 #[test]

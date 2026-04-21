@@ -1,7 +1,8 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, OrderBalance, OrderKind, SupportedChainId, UnsignedOrder,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
+    SupportedChainId, UnsignedOrder,
 };
 use cow_sdk_signing::order_typed_data_payload;
 
@@ -20,8 +21,8 @@ fn sample_order() -> UnsignedOrder {
         fee_amount: Amount::new("5000000000000000").unwrap(),
         kind: OrderKind::Sell,
         partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
+        sell_token_balance: SellTokenSource::Erc20,
+        buy_token_balance: BuyTokenDestination::Erc20,
     }
 }
 

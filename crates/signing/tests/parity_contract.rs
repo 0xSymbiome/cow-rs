@@ -495,7 +495,7 @@ fn sample_order() -> UnsignedOrder {
         fee_amount: Amount::new("1000").unwrap(),
         kind: OrderKind::Sell,
         partially_fillable: false,
-        sell_token_balance: cow_sdk_core::OrderBalance::default(),
-        buy_token_balance: cow_sdk_core::OrderBalance::default(),
+        sell_token_balance: cow_sdk_core::SellTokenSource::default(),
+        buy_token_balance: cow_sdk_core::BuyTokenDestination::default(),
     }
 }

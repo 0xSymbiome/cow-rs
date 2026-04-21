@@ -59,8 +59,8 @@ pub use order::{
     BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, NormalizedOrder, ORDER_TYPE_FIELDS,
     ORDER_TYPE_HASH, ORDER_UID_LENGTH, Order, OrderCancellations, OrderTypeField, OrderUidParams,
     compute_order_uid, extract_order_uid_params, hash_order, hash_order_cancellation,
-    hash_order_cancellations, hash_order_for_contract, normalize_buy_token_balance,
-    normalize_order, pack_order_uid_params, uid_for_contract,
+    hash_order_cancellations, hash_order_for_contract, normalize_order, pack_order_uid_params,
+    uid_for_contract,
 };
 pub use proxy::{
     Eip1967Slot, IEip173Proxy, SlotBytes, admin_address, implementation_address, owner_address,

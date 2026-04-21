@@ -1,7 +1,9 @@
 use num_bigint::BigUint;
 use sha3::{Digest, Keccak256};
 
-use cow_sdk_core::{Address, AppDataHash, ChainId, OrderBalance, OrderKind, TypedDataDomain};
+use cow_sdk_core::{
+    Address, AppDataHash, BuyTokenDestination, ChainId, OrderKind, SellTokenSource, TypedDataDomain,
+};
 
 use crate::ContractsError;
 
@@ -140,11 +142,20 @@ pub(crate) const fn order_kind_name(kind: OrderKind) -> &'static str {
     }
 }
 
-pub(crate) const fn balance_name(balance: OrderBalance) -> &'static str {
+pub(crate) fn sell_balance_name(balance: SellTokenSource) -> &'static str {
     match balance {
-        OrderBalance::Erc20 => "erc20",
-        OrderBalance::External => "external",
-        OrderBalance::Internal => "internal",
+        SellTokenSource::Erc20 => "erc20",
+        SellTokenSource::External => "external",
+        SellTokenSource::Internal => "internal",
+        _ => unreachable!("SellTokenSource variants are exhaustively covered"),
+    }
+}
+
+pub(crate) fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
+    match balance {
+        BuyTokenDestination::Erc20 => "erc20",
+        BuyTokenDestination::Internal => "internal",
+        _ => unreachable!("BuyTokenDestination variants are exhaustively covered"),
     }
 }
 

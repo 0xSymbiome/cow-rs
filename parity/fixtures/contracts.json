@@ -269,14 +269,12 @@
       }
     },
     {
-      "id": "contracts-buy-balance-normalization",
-      "kind": "behavior-scenario",
-      "description": "Buy token balance value external normalizes to erc20 in the contracts order helpers.",
-      "input": {
-        "buy_token_balance": "external"
-      },
+      "id": "contracts-buy-balance-domain",
+      "kind": "contract-shape",
+      "description": "BuyTokenDestination is a closed type whose supported variants are the services enum {erc20, internal}; the external variant is sell-only and cannot be constructed on the buy-side destination type.",
       "expected": {
-        "normalized_buy_token_balance": "erc20"
+        "buy_token_destination_variants": ["erc20", "internal"],
+        "sell_token_source_variants": ["erc20", "external", "internal"]
       }
     },
     {

@@ -2,8 +2,8 @@ use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 use cow_sdk_contracts::{ContractId, Order, Registry, hash_order};
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, CowEnv, OrderBalance, OrderKind, SupportedChainId,
-    TypedDataDomain,
+    Address, Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderKind, SellTokenSource,
+    SupportedChainId, TypedDataDomain,
 };
 
 fn sample_domain() -> TypedDataDomain {
@@ -36,8 +36,8 @@ fn sample_order() -> Order {
         fee_amount: Amount::new("5000000000000000").unwrap(),
         kind: OrderKind::Sell,
         partially_fillable: false,
-        sell_token_balance: Some(OrderBalance::Erc20),
-        buy_token_balance: Some(OrderBalance::Erc20),
+        sell_token_balance: Some(SellTokenSource::Erc20),
+        buy_token_balance: Some(BuyTokenDestination::Erc20),
     }
 }
 

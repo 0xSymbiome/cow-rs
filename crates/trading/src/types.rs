@@ -6,9 +6,9 @@ use serde_json::Value;
 
 use cow_sdk_app_data::{AppDataDoc, AppDataParams, PartnerFee};
 use cow_sdk_core::{
-    Address, AddressPerChain, Amount, ApiContext, AppDataHash, CowEnv, HexData, OrderBalance,
-    OrderDigest, OrderKind, OrderUid, QuoteAmountsAndCosts, SupportedChainId, TransactionHash,
-    TransactionRequest, UnsignedOrder,
+    Address, AddressPerChain, Amount, ApiContext, AppDataHash, BuyTokenDestination, CowEnv,
+    HexData, OrderDigest, OrderKind, OrderUid, QuoteAmountsAndCosts, SellTokenSource,
+    SupportedChainId, TransactionHash, TransactionRequest, UnsignedOrder,
 };
 use cow_sdk_orderbook::{
     AppDataObject, Order, OrderBookApi, OrderCancellations, OrderCreation, OrderQuoteRequest,
@@ -18,8 +18,12 @@ use cow_sdk_signing::OrderTypedData;
 
 use crate::TradingError;
 
-const fn default_order_balance() -> OrderBalance {
-    OrderBalance::Erc20
+const fn default_sell_token_source() -> SellTokenSource {
+    SellTokenSource::Erc20
+}
+
+const fn default_buy_token_destination() -> BuyTokenDestination {
+    BuyTokenDestination::Erc20
 }
 
 /// Fully resolved trader configuration used by order-posting and on-chain flows.
@@ -243,11 +247,11 @@ pub struct TradeParameters {
     #[serde(default)]
     pub partially_fillable: bool,
     /// Sell-token balance source preserved through quote and post flows.
-    #[serde(default = "default_order_balance")]
-    pub sell_token_balance: OrderBalance,
+    #[serde(default = "default_sell_token_source")]
+    pub sell_token_balance: SellTokenSource,
     /// Buy-token balance destination preserved through quote and post flows.
-    #[serde(default = "default_order_balance")]
-    pub buy_token_balance: OrderBalance,
+    #[serde(default = "default_buy_token_destination")]
+    pub buy_token_balance: BuyTokenDestination,
     /// Optional explicit slippage tolerance in basis points.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub slippage_bps: Option<u32>,
@@ -289,8 +293,8 @@ impl TradeParameters {
             settlement_contract_override: None,
             eth_flow_contract_override: None,
             partially_fillable: false,
-            sell_token_balance: default_order_balance(),
-            buy_token_balance: default_order_balance(),
+            sell_token_balance: default_sell_token_source(),
+            buy_token_balance: default_buy_token_destination(),
             slippage_bps: None,
             receiver: None,
             valid_for: None,
@@ -350,14 +354,14 @@ impl TradeParameters {
 
     /// Returns a copy with an explicit sell-token balance source.
     #[must_use]
-    pub const fn with_sell_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_sell_token_balance(mut self, balance: SellTokenSource) -> Self {
         self.sell_token_balance = balance;
         self
     }
 
     /// Returns a copy with an explicit buy-token balance destination.
     #[must_use]
-    pub const fn with_buy_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_buy_token_balance(mut self, balance: BuyTokenDestination) -> Self {
         self.buy_token_balance = balance;
         self
     }
@@ -408,11 +412,11 @@ pub struct LimitTradeParameters {
     #[serde(default)]
     pub partially_fillable: bool,
     /// Sell-token balance source preserved through final order construction.
-    #[serde(default = "default_order_balance")]
-    pub sell_token_balance: OrderBalance,
+    #[serde(default = "default_sell_token_source")]
+    pub sell_token_balance: SellTokenSource,
     /// Buy-token balance destination preserved through final order construction.
-    #[serde(default = "default_order_balance")]
-    pub buy_token_balance: OrderBalance,
+    #[serde(default = "default_buy_token_destination")]
+    pub buy_token_balance: BuyTokenDestination,
     /// Optional explicit slippage tolerance in basis points.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub slippage_bps: Option<u32>,
@@ -457,8 +461,8 @@ impl LimitTradeParameters {
             settlement_contract_override: None,
             eth_flow_contract_override: None,
             partially_fillable: false,
-            sell_token_balance: default_order_balance(),
-            buy_token_balance: default_order_balance(),
+            sell_token_balance: default_sell_token_source(),
+            buy_token_balance: default_buy_token_destination(),
             slippage_bps: None,
             receiver: None,
             valid_for: None,
@@ -525,14 +529,14 @@ impl LimitTradeParameters {
 
     /// Returns a copy with an explicit sell-token balance source.
     #[must_use]
-    pub const fn with_sell_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_sell_token_balance(mut self, balance: SellTokenSource) -> Self {
         self.sell_token_balance = balance;
         self
     }
 
     /// Returns a copy with an explicit buy-token balance destination.
     #[must_use]
-    pub const fn with_buy_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_buy_token_balance(mut self, balance: BuyTokenDestination) -> Self {
         self.buy_token_balance = balance;
         self
     }
@@ -832,10 +836,10 @@ pub struct QuoteRequestOverride {
     pub partially_fillable: Option<bool>,
     /// Replacement sell-token balance source.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sell_token_balance: Option<OrderBalance>,
+    pub sell_token_balance: Option<SellTokenSource>,
     /// Replacement buy-token balance destination.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub buy_token_balance: Option<OrderBalance>,
+    pub buy_token_balance: Option<BuyTokenDestination>,
 }
 
 impl QuoteRequestOverride {
@@ -924,14 +928,14 @@ impl QuoteRequestOverride {
 
     /// Returns a copy with an explicit sell-token balance replacement.
     #[must_use]
-    pub const fn with_sell_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_sell_token_balance(mut self, balance: SellTokenSource) -> Self {
         self.sell_token_balance = Some(balance);
         self
     }
 
     /// Returns a copy with an explicit buy-token balance replacement.
     #[must_use]
-    pub const fn with_buy_token_balance(mut self, balance: OrderBalance) -> Self {
+    pub const fn with_buy_token_balance(mut self, balance: BuyTokenDestination) -> Self {
         self.buy_token_balance = Some(balance);
         self
     }
@@ -1525,8 +1529,8 @@ pub(crate) struct QuoteRequestParameterTargets<'a> {
     pub valid_for: &'a mut Option<u32>,
     pub valid_to: &'a mut Option<u32>,
     pub partially_fillable: &'a mut bool,
-    pub sell_token_balance: &'a mut OrderBalance,
-    pub buy_token_balance: &'a mut OrderBalance,
+    pub sell_token_balance: &'a mut SellTokenSource,
+    pub buy_token_balance: &'a mut BuyTokenDestination,
 }
 
 pub(crate) fn apply_quote_request_parameter_overrides(

@@ -13,8 +13,8 @@ use cow_sdk::orderbook::{
 };
 use cow_sdk::trading::OrderbookClient;
 use cow_sdk::{
-    Address, AppDataHex, CowEnv, OrderBalance, OrderKind, OrderUid, SupportedChainId,
-    TradeParameters, TraderParameters, UnsignedOrder,
+    Address, AppDataHex, BuyTokenDestination, CowEnv, OrderKind, OrderUid, SellTokenSource,
+    SupportedChainId, TradeParameters, TraderParameters, UnsignedOrder,
 };
 use wiremock::ResponseTemplate;
 
@@ -85,8 +85,8 @@ pub fn sample_unsigned_order() -> UnsignedOrder {
         fee_amount: Amount::zero(),
         kind: OrderKind::Sell,
         partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
+        sell_token_balance: SellTokenSource::Erc20,
+        buy_token_balance: BuyTokenDestination::Erc20,
     }
 }
 

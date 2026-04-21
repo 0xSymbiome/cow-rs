@@ -1,6 +1,8 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
-use cow_sdk_core::{Address, Amount, AppDataHash, OrderBalance, OrderKind, SupportedChainId};
+use cow_sdk_core::{
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource, SupportedChainId,
+};
 use cow_sdk_trading::{LimitTradeParameters, OrderToSignParams, get_order_to_sign};
 
 fn sample_limit_parameters() -> LimitTradeParameters {
@@ -13,8 +15,8 @@ fn sample_limit_parameters() -> LimitTradeParameters {
         Amount::new("1000000000000000000").unwrap(),
         Amount::new("2000000000000000000000").unwrap(),
     )
-    .with_sell_token_balance(OrderBalance::Erc20)
-    .with_buy_token_balance(OrderBalance::Erc20)
+    .with_sell_token_balance(SellTokenSource::Erc20)
+    .with_buy_token_balance(BuyTokenDestination::Erc20)
     .with_slippage_bps(50)
     .with_valid_to(1_900_000_000)
 }

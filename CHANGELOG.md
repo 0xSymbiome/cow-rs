@@ -328,6 +328,34 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- `cow_sdk_core::OrderBalance` is replaced with two distinct contract
+  types — `SellTokenSource { Erc20, External, Internal }` and
+  `BuyTokenDestination { Erc20, Internal }` — modeling the sell-side
+  allowance path and the buy-side payout path as separate enums that
+  mirror the services `model::order::SellTokenSource` and
+  `model::order::BuyTokenDestination` byte-identically on the wire.
+  Every `OrderCreation`, `UnsignedOrder`, `QuoteData`, `Order`,
+  `OrderFlags`, `TradeFlags`, `TradeSimulation`, `TradeParameters`,
+  `LimitTradeParameters`, `QuoteRequestOverride`, `QuoteCacheKey`, and
+  related SDK surface now carries the side-specific type on its
+  `sell_token_balance` and `buy_token_balance` fields, so quote-derived
+  and direct trading-order construction cannot silently rewrite the
+  buy-side destination: the previously-shipped
+  `OrderBalance::normalize_for_buy` and
+  `cow_sdk_contracts::normalize_buy_token_balance` helpers, which
+  collapsed `External` into `Erc20` on the buy side, are retired and the
+  type system now rejects any cross-side assignment at compile time. A
+  fixture round-trip test pins both enums to the services kebab-case
+  wire strings (`"erc20"`, `"external"`, `"internal"`) and the closed
+  `BuyTokenDestination` domain rejects the sell-only `"external"` value
+  on deserialization; a pinned compile-fail witness under
+  `crates/core/tests/ui/` guards the cross-side rejection against
+  regression. Both new enums are `#[non_exhaustive]` with
+  `Default = Erc20`, derive the full
+  `Debug + Clone + Copy + PartialEq + Eq + Hash + Serialize + Deserialize`
+  set, re-export through the root `cow-sdk` facade and `cow_sdk::prelude`,
+  and surface from the `cow-sdk-orderbook` crate for downstream consumers
+  that construct orderbook DTOs directly.
 - `cow_sdk_subgraph::SubgraphApi` is constructed exclusively through the
   typestate `SubgraphApi::builder()` so the compiler enforces that the
   chain id, partner Graph API key, and HTTP transport are all supplied

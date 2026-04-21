@@ -2,7 +2,9 @@ mod common;
 
 use bytes::Bytes;
 use cow_sdk_contracts::{BatchSwapStep, Order, Signature, Swap, SwapEncoder, encode_swap_step};
-use cow_sdk_core::{Address, Amount, AppDataHex, OrderBalance, OrderKind, TypedDataDomain};
+use cow_sdk_core::{
+    Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, TypedDataDomain,
+};
 
 use common::fixture_case;
 
@@ -30,8 +32,8 @@ fn sample_order(kind: OrderKind) -> Order {
         fee_amount: Amount::new("5000000000000000").unwrap(),
         kind,
         partially_fillable: false,
-        sell_token_balance: Some(OrderBalance::Erc20),
-        buy_token_balance: Some(OrderBalance::Erc20),
+        sell_token_balance: Some(SellTokenSource::Erc20),
+        buy_token_balance: Some(BuyTokenDestination::Erc20),
     }
 }
 

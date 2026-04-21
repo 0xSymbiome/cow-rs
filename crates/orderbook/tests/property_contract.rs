@@ -13,8 +13,9 @@
 mod common;
 
 use cow_sdk_orderbook::{
-    GetOrdersRequest, GetTradesRequest, Order, OrderBalance, OrderQuoteRequest, OrderQuoteResponse,
-    PriceQuality, QuoteSide, SigningScheme, calculate_total_fee, transform_order,
+    BuyTokenDestination, GetOrdersRequest, GetTradesRequest, Order, OrderQuoteRequest,
+    OrderQuoteResponse, PriceQuality, QuoteSide, SellTokenSource, SigningScheme,
+    calculate_total_fee, transform_order,
 };
 
 use crate::common::{
@@ -81,11 +82,18 @@ fn generated_signing_scheme(rng: &mut CaseRng) -> SigningScheme {
     }
 }
 
-fn generated_balance(rng: &mut CaseRng) -> OrderBalance {
+fn generated_sell_balance(rng: &mut CaseRng) -> SellTokenSource {
     match rng.next_u32() % 3 {
-        0 => OrderBalance::Erc20,
-        1 => OrderBalance::External,
-        _ => OrderBalance::Internal,
+        0 => SellTokenSource::Erc20,
+        1 => SellTokenSource::External,
+        _ => SellTokenSource::Internal,
+    }
+}
+
+fn generated_buy_balance(rng: &mut CaseRng) -> BuyTokenDestination {
+    match rng.next_u32() % 2 {
+        0 => BuyTokenDestination::Erc20,
+        _ => BuyTokenDestination::Internal,
     }
 }
 
@@ -111,8 +119,8 @@ fn quote_request_shape_roundtrips_without_side_coercion() {
             OrderQuoteRequest::new(sample_owner(), sample_buy_token(), sample_owner(), side)
                 .with_price_quality(generated_price_quality(&mut rng))
                 .with_signing_scheme(generated_signing_scheme(&mut rng))
-                .with_sell_token_balance(generated_balance(&mut rng))
-                .with_buy_token_balance(generated_balance(&mut rng));
+                .with_sell_token_balance(generated_sell_balance(&mut rng))
+                .with_buy_token_balance(generated_buy_balance(&mut rng));
 
         if rng.next_bool() {
             request = request.with_receiver(sample_buy_token());

@@ -5,8 +5,8 @@ use cow_sdk_contracts::{
     normalize_order, normalized_ecdsa_signature, pack_order_uid_params,
 };
 use cow_sdk_core::{
-    Address, AsyncSigner, OrderBalance, OrderDigest, OrderKind, OrderUid, ProtocolOptions, Signer,
-    SupportedChainId, TypedDataPayload, UnsignedOrder,
+    Address, AsyncSigner, BuyTokenDestination, OrderDigest, OrderKind, OrderUid, ProtocolOptions,
+    SellTokenSource, Signer, SupportedChainId, TypedDataPayload, UnsignedOrder,
 };
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
@@ -201,10 +201,10 @@ pub fn eip1271_signature_payload(
     ));
     encoded.extend_from_slice(&encode_bool(normalized_order.partially_fillable));
     encoded.extend_from_slice(&keccak256(
-        balance_name(normalized_order.sell_token_balance).as_bytes(),
+        sell_balance_name(normalized_order.sell_token_balance).as_bytes(),
     ));
     encoded.extend_from_slice(&keccak256(
-        balance_name(normalized_order.buy_token_balance).as_bytes(),
+        buy_balance_name(normalized_order.buy_token_balance).as_bytes(),
     ));
     encoded.extend_from_slice(&encode_usize_u256(32 * 13));
     encoded.extend_from_slice(&encode_usize_u256(signature_bytes.len()));
@@ -418,10 +418,19 @@ const fn order_kind_name(kind: OrderKind) -> &'static str {
     }
 }
 
-const fn balance_name(balance: OrderBalance) -> &'static str {
+fn sell_balance_name(balance: SellTokenSource) -> &'static str {
     match balance {
-        OrderBalance::Erc20 => "erc20",
-        OrderBalance::External => "external",
-        OrderBalance::Internal => "internal",
+        SellTokenSource::Erc20 => "erc20",
+        SellTokenSource::External => "external",
+        SellTokenSource::Internal => "internal",
+        _ => unreachable!("SellTokenSource variants are exhaustively covered"),
+    }
+}
+
+fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
+    match balance {
+        BuyTokenDestination::Erc20 => "erc20",
+        BuyTokenDestination::Internal => "internal",
+        _ => unreachable!("BuyTokenDestination variants are exhaustively covered"),
     }
 }

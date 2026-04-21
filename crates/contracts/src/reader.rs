@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use cow_sdk_core::{Address, Amount, ContractCall, OrderBalance, Provider, SignedAmount};
+use cow_sdk_core::{
+    Address, Amount, BuyTokenDestination, ContractCall, Provider, SellTokenSource, SignedAmount,
+};
 
 use crate::{
     ContractsError,
     interaction::{InteractionLike, normalize_interactions},
-    primitives::{balance_name, keccak256_hex, zero_address},
+    primitives::{buy_balance_name, keccak256_hex, sell_balance_name, zero_address},
     settlement::InteractionStage,
 };
 
@@ -71,10 +73,10 @@ pub struct TradeSimulation {
     pub buy_amount: Amount,
     /// Optional sell-token balance source.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sell_token_balance: Option<OrderBalance>,
-    /// Optional buy-token balance source.
+    pub sell_token_balance: Option<SellTokenSource>,
+    /// Optional buy-token balance destination.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub buy_token_balance: Option<OrderBalance>,
+    pub buy_token_balance: Option<BuyTokenDestination>,
     /// Trade owner address.
     pub owner: Address,
 }
@@ -181,8 +183,8 @@ where
             "receiver": trade.receiver.clone().unwrap_or_else(zero_address),
             "sellAmount": trade.sell_amount,
             "buyAmount": trade.buy_amount,
-            "sellTokenBalance": balance_id(trade.sell_token_balance.unwrap_or(OrderBalance::Erc20)),
-            "buyTokenBalance": balance_id(trade.buy_token_balance.unwrap_or(OrderBalance::Erc20)),
+            "sellTokenBalance": sell_balance_id(trade.sell_token_balance.unwrap_or_default()),
+            "buyTokenBalance": buy_balance_id(trade.buy_token_balance.unwrap_or_default()),
             "owner": trade.owner,
         });
         let raw = read_storage(
@@ -230,6 +232,10 @@ where
         })
 }
 
-fn balance_id(balance: OrderBalance) -> String {
-    keccak256_hex(balance_name(balance).as_bytes())
+fn sell_balance_id(balance: SellTokenSource) -> String {
+    keccak256_hex(sell_balance_name(balance).as_bytes())
+}
+
+fn buy_balance_id(balance: BuyTokenDestination) -> String {
+    keccak256_hex(buy_balance_name(balance).as_bytes())
 }

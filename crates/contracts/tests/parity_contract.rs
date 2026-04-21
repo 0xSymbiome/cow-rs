@@ -8,7 +8,10 @@
 //!   [`ORDER_UID_LENGTH`] — canonical EIP-712 and UID layout constants.
 //! * [`extract_order_uid_params`] — UID length validation through
 //!   [`ContractsError::InvalidOrderUidLength`].
-//! * [`normalize_buy_token_balance`] — buy-balance normalization rule.
+//! * [`SellTokenSource`] / [`BuyTokenDestination`] — split balance enums; the
+//!   parity fixture pins that `BuyTokenDestination` has no `external` variant
+//!   so quote-derived and direct trading orders cannot rewrite the buy-side
+//!   destination silently.
 //! * [`SigningScheme`], [`EIP1271_MAGICVALUE`] — signature scheme discriminants
 //!   and EIP-1271 success value.
 //! * [`normalize_interaction`] — interaction defaulting rule.
@@ -31,11 +34,11 @@ use cow_sdk_contracts::{
     Eip1967Slot, InteractionLike, ORDER_TYPE_FIELDS, ORDER_TYPE_HASH, ORDER_UID_LENGTH, OrderFlags,
     Registry, SALT, SettlementEncoder, SettlementReader, SigningScheme, Swap, TokenRegistry,
     TradeFlags, TradeSimulator, VAULT_INTERFACE, encode_order_flags, encode_swap_step,
-    encode_trade_flags, normalize_buy_token_balance, normalize_interaction,
+    encode_trade_flags, normalize_interaction,
 };
 use cow_sdk_core::{
-    Address, Amount, CowEnv, OrderBalance, OrderDigest, OrderKind, OrderUid, SupportedChainId,
-    TypedDataDomain,
+    Address, Amount, BuyTokenDestination, CowEnv, OrderDigest, OrderKind, OrderUid,
+    SellTokenSource, SupportedChainId, TypedDataDomain,
 };
 use serde_json::Value;
 
@@ -74,8 +77,8 @@ fn parity_fixture_cases_hold() {
             "contracts-extract-order-uid-invalid-length" => {
                 assert_extract_order_uid_invalid_length(id, expected);
             }
-            "contracts-buy-balance-normalization" => {
-                assert_buy_balance_normalization(id, case, expected);
+            "contracts-buy-balance-domain" => {
+                assert_buy_balance_domain(id, expected);
             }
             "contracts-signing-scheme-discriminants" => {
                 assert_signing_scheme_discriminants(id, expected);
@@ -199,33 +202,64 @@ fn assert_extract_order_uid_invalid_length(id: &str, expected: &Value) {
     );
 }
 
-fn assert_buy_balance_normalization(id: &str, case: &Value, expected: &Value) {
-    let input = case["input"]["buy_token_balance"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: input.buy_token_balance must be a string"));
-    let expected_balance = expected["normalized_buy_token_balance"]
-        .as_str()
+fn assert_buy_balance_domain(id: &str, expected: &Value) {
+    let expected_buy = expected["buy_token_destination_variants"]
+        .as_array()
         .unwrap_or_else(|| {
-            panic!("case {id}: expected.normalized_buy_token_balance must be a string")
-        });
+            panic!("case {id}: expected.buy_token_destination_variants must be an array")
+        })
+        .iter()
+        .map(|entry| {
+            entry.as_str().unwrap_or_else(|| {
+                panic!("case {id}: buy_token_destination_variants entries must be strings")
+            })
+        })
+        .collect::<Vec<_>>();
+    let expected_sell = expected["sell_token_source_variants"]
+        .as_array()
+        .unwrap_or_else(|| {
+            panic!("case {id}: expected.sell_token_source_variants must be an array")
+        })
+        .iter()
+        .map(|entry| {
+            entry.as_str().unwrap_or_else(|| {
+                panic!("case {id}: sell_token_source_variants entries must be strings")
+            })
+        })
+        .collect::<Vec<_>>();
 
-    let input_balance = match input {
-        "external" => OrderBalance::External,
-        "internal" => OrderBalance::Internal,
-        "erc20" => OrderBalance::Erc20,
-        other => panic!("case {id}: unsupported buy_token_balance input {other:?}"),
-    };
-
-    let normalized = normalize_buy_token_balance(Some(input_balance));
-    let normalized_label = match normalized {
-        OrderBalance::Erc20 => "erc20",
-        OrderBalance::External => "external",
-        OrderBalance::Internal => "internal",
-    };
+    let buy_variants = [BuyTokenDestination::Erc20, BuyTokenDestination::Internal]
+        .into_iter()
+        .map(|variant| serde_json::to_value(variant).expect("variant serialization"))
+        .map(|value| {
+            value
+                .as_str()
+                .expect("BuyTokenDestination must serialize to a snake_case string")
+                .to_owned()
+        })
+        .collect::<Vec<_>>();
+    let sell_variants = [
+        SellTokenSource::Erc20,
+        SellTokenSource::External,
+        SellTokenSource::Internal,
+    ]
+    .into_iter()
+    .map(|variant| serde_json::to_value(variant).expect("variant serialization"))
+    .map(|value| {
+        value
+            .as_str()
+            .expect("SellTokenSource must serialize to a snake_case string")
+            .to_owned()
+    })
+    .collect::<Vec<_>>();
 
     assert_eq!(
-        normalized_label, expected_balance,
-        "case {id}: normalize_buy_token_balance must map {input} → {expected_balance}",
+        buy_variants, expected_buy,
+        "case {id}: BuyTokenDestination must expose exactly the services buy-side variant set",
+    );
+    assert_eq!(
+        sell_variants, expected_sell,
+        "case {id}: SellTokenSource must expose exactly the services sell-side variant set",
     );
 }
 
@@ -351,8 +385,8 @@ fn assert_order_flags_default_sell(id: &str, expected: &Value) {
     let encoded = encode_order_flags(&OrderFlags {
         kind: OrderKind::Sell,
         partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
+        sell_token_balance: SellTokenSource::Erc20,
+        buy_token_balance: BuyTokenDestination::Erc20,
     })
     .expect("default sell-erc20 order flags must encode");
 
@@ -371,8 +405,8 @@ fn assert_order_flags_buy_partial_internal(id: &str, expected: &Value) {
     let encoded = encode_order_flags(&OrderFlags {
         kind: OrderKind::Buy,
         partially_fillable: true,
-        sell_token_balance: OrderBalance::Internal,
-        buy_token_balance: OrderBalance::Internal,
+        sell_token_balance: SellTokenSource::Internal,
+        buy_token_balance: BuyTokenDestination::Internal,
     })
     .expect("buy-partial-internal order flags must encode");
 
@@ -391,8 +425,8 @@ fn assert_trade_flags_presign(id: &str, expected: &Value) {
     let encoded = encode_trade_flags(&TradeFlags {
         kind: OrderKind::Sell,
         partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
+        sell_token_balance: SellTokenSource::Erc20,
+        buy_token_balance: BuyTokenDestination::Erc20,
         signing_scheme: SigningScheme::PreSign,
     })
     .expect("presign trade flags must encode");

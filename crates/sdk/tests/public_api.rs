@@ -1,8 +1,8 @@
 use cow_sdk::{
-    Address, Amount, AppDataHex, ORDER_PRIMARY_TYPE, OrderBalance, OrderKind,
-    PartialTraderParameters, PartnerFee, PartnerFeePolicy, SupportedChainId, TradeParameters,
-    TradingSdk, TradingSdkBuilder, TradingSdkOptions, UnsignedOrder, generate_order_id,
-    order_typed_data,
+    Address, Amount, AppDataHex, BuyTokenDestination, ORDER_PRIMARY_TYPE, OrderKind,
+    PartialTraderParameters, PartnerFee, PartnerFeePolicy, SellTokenSource, SupportedChainId,
+    TradeParameters, TradingSdk, TradingSdkBuilder, TradingSdkOptions, UnsignedOrder,
+    generate_order_id, order_typed_data,
 };
 
 #[test]
@@ -40,8 +40,8 @@ fn public_api_reexports_cover_primary_root_surface() {
         fee_amount: Amount::zero(),
         kind: OrderKind::Sell,
         partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
+        sell_token_balance: SellTokenSource::Erc20,
+        buy_token_balance: BuyTokenDestination::Erc20,
     };
     let typed = order_typed_data(SupportedChainId::Sepolia, &order, None).unwrap();
     let generated = generate_order_id(SupportedChainId::Sepolia, &order, &owner, None).unwrap();

@@ -23,7 +23,8 @@ use cow_sdk_contracts::{
     decode_order_flags, decode_trade_flags, encode_order_flags, encode_trade_flags,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, OrderBalance, OrderKind, OrderUid, TypedDataDomain,
+    Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, OrderUid, SellTokenSource,
+    TypedDataDomain,
 };
 
 use common::fixture_case;
@@ -56,8 +57,8 @@ fn sample_order(kind: OrderKind, partially_fillable: bool) -> Order {
         fee_amount: Amount::new("5000000000000000").unwrap(),
         kind,
         partially_fillable,
-        sell_token_balance: Some(OrderBalance::Internal),
-        buy_token_balance: Some(OrderBalance::External),
+        sell_token_balance: Some(SellTokenSource::Internal),
+        buy_token_balance: Some(BuyTokenDestination::Internal),
     }
 }
 
@@ -110,8 +111,8 @@ fn settlement_flag_encoding_matches_fixture_values() {
         encode_order_flags(&OrderFlags {
             kind: OrderKind::Sell,
             partially_fillable: false,
-            sell_token_balance: OrderBalance::Erc20,
-            buy_token_balance: OrderBalance::Erc20,
+            sell_token_balance: SellTokenSource::Erc20,
+            buy_token_balance: BuyTokenDestination::Erc20,
         })
         .unwrap(),
         expected_u8(&default_flags["expected"]["encoded_flags"])
@@ -121,8 +122,8 @@ fn settlement_flag_encoding_matches_fixture_values() {
     let encoded_buy_partial = encode_order_flags(&OrderFlags {
         kind: OrderKind::Buy,
         partially_fillable: true,
-        sell_token_balance: OrderBalance::Internal,
-        buy_token_balance: OrderBalance::Internal,
+        sell_token_balance: SellTokenSource::Internal,
+        buy_token_balance: BuyTokenDestination::Internal,
     })
     .unwrap();
     assert_eq!(
@@ -134,8 +135,8 @@ fn settlement_flag_encoding_matches_fixture_values() {
     let encoded_trade = encode_trade_flags(&TradeFlags {
         kind: OrderKind::Sell,
         partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
+        sell_token_balance: SellTokenSource::Erc20,
+        buy_token_balance: BuyTokenDestination::Erc20,
         signing_scheme: SigningScheme::PreSign,
     })
     .unwrap();
@@ -146,14 +147,17 @@ fn settlement_flag_encoding_matches_fixture_values() {
 
     let decoded_order = decode_order_flags(encoded_buy_partial).unwrap();
     assert_eq!(decoded_order.kind, OrderKind::Buy);
-    assert_eq!(decoded_order.sell_token_balance, OrderBalance::Internal);
-    assert_eq!(decoded_order.buy_token_balance, OrderBalance::Internal);
+    assert_eq!(decoded_order.sell_token_balance, SellTokenSource::Internal);
+    assert_eq!(
+        decoded_order.buy_token_balance,
+        BuyTokenDestination::Internal
+    );
 
     let decoded_trade = decode_trade_flags(encoded_trade).unwrap();
     assert_eq!(decoded_trade.signing_scheme, SigningScheme::PreSign);
     assert_eq!(
         decode_order_flags(0b0100).unwrap().sell_token_balance,
-        OrderBalance::Erc20
+        SellTokenSource::Erc20
     );
     assert!(decode_order_flags(1 << 7).is_err());
 }
@@ -163,8 +167,8 @@ fn trade_flag_encoding_keeps_order_and_signing_bits_partitioned() {
     let order_flags = OrderFlags {
         kind: OrderKind::Buy,
         partially_fillable: true,
-        sell_token_balance: OrderBalance::Internal,
-        buy_token_balance: OrderBalance::Internal,
+        sell_token_balance: SellTokenSource::Internal,
+        buy_token_balance: BuyTokenDestination::Internal,
     };
     let encoded_order = encode_order_flags(&order_flags).unwrap();
     assert_eq!(encoded_order & 0b1110_0000, 0);
@@ -337,8 +341,8 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
         flags: encode_order_flags(&OrderFlags {
             kind: OrderKind::Sell,
             partially_fillable: false,
-            sell_token_balance: OrderBalance::Erc20,
-            buy_token_balance: OrderBalance::Erc20,
+            sell_token_balance: SellTokenSource::Erc20,
+            buy_token_balance: BuyTokenDestination::Erc20,
         })
         .unwrap(),
         executed_amount: Amount::zero(),

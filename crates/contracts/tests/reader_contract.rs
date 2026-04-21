@@ -21,7 +21,7 @@ use cow_sdk_contracts::{
     AllowListReader, InteractionStage, SettlementReader, TradeSimulation,
     TradeSimulationBalanceDelta, TradeSimulationResult, TradeSimulator,
 };
-use cow_sdk_core::{Address, Amount, OrderBalance, OrderUid, SignedAmount};
+use cow_sdk_core::{Address, Amount, BuyTokenDestination, OrderUid, SignedAmount};
 
 use common::{MockProvider, fixture_case};
 
@@ -140,7 +140,7 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
         sell_amount: Amount::new("100").unwrap(),
         buy_amount: Amount::new("200").unwrap(),
         sell_token_balance: None,
-        buy_token_balance: Some(OrderBalance::Internal),
+        buy_token_balance: Some(BuyTokenDestination::Internal),
         owner: Address::new("0x7777777777777777777777777777777777777777").unwrap(),
     };
     let result = simulator

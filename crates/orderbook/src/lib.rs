@@ -79,13 +79,13 @@ pub use request::{
 pub use transform::{calculate_total_fee, transform_order, transform_orders};
 pub use types::{
     Address, ApiBaseUrls, ApiContext, ApiContextOverride, AppDataHash, AppDataObject, Auction,
-    CompetitionAuction, CompetitionOrderStatus, CompetitionOrderStatusKind, CowEnv, ENVS_LIST,
-    EVM_NATIVE_CURRENCY_ADDRESS, EcdsaSigningScheme, EnvBaseUrlOverrides, EthflowData,
-    GetOrdersRequest, GetTradesRequest, NativePriceResponse, Order, OrderBalance,
+    BuyTokenDestination, CompetitionAuction, CompetitionOrderStatus, CompetitionOrderStatusKind,
+    CowEnv, ENVS_LIST, EVM_NATIVE_CURRENCY_ADDRESS, EcdsaSigningScheme, EnvBaseUrlOverrides,
+    EthflowData, GetOrdersRequest, GetTradesRequest, NativePriceResponse, Order,
     OrderCancellations, OrderClass, OrderCreation, OrderKind, OrderQuoteRequest,
     OrderQuoteResponse, OrderStatus, OrderUid, PriceQuality, QuoteAmountsAndCosts, QuoteData,
-    QuoteSide, SigningScheme, SolverCompetitionResponse, SolverExecution, SolverSettlement,
-    SupportedChainId, TotalSurplus, Trade,
+    QuoteSide, SellTokenSource, SigningScheme, SolverCompetitionResponse, SolverExecution,
+    SolverSettlement, SupportedChainId, TotalSurplus, Trade,
 };
 
 /// Backwards-compatible alias for the orderbook API client.

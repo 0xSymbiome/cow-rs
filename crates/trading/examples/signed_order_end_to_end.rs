@@ -23,9 +23,9 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use cow_sdk_core::{
-    Address, Amount, ApiContext, BlockInfo, ContractCall, ContractHandle, CowEnv, HexData,
-    OrderBalance, OrderKind, Provider, Signer, SupportedChainId, TransactionHash,
-    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
+    Address, Amount, ApiContext, BlockInfo, BuyTokenDestination, ContractCall, ContractHandle,
+    CowEnv, HexData, OrderKind, Provider, SellTokenSource, Signer, SupportedChainId,
+    TransactionHash, TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
 };
 use cow_sdk_orderbook::{
     AppDataHash, AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
@@ -100,8 +100,8 @@ fn sample_trade_parameters(kind: OrderKind, owner: &Address) -> TradeParameters 
         Amount::new("100000000000000000").expect("example amount literal must be valid"),
     )
     .with_owner(owner.clone())
-    .with_sell_token_balance(OrderBalance::Erc20)
-    .with_buy_token_balance(OrderBalance::Erc20)
+    .with_sell_token_balance(SellTokenSource::Erc20)
+    .with_buy_token_balance(BuyTokenDestination::Erc20)
     .with_slippage_bps(50)
 }
 

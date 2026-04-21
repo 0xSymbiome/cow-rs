@@ -26,8 +26,8 @@ use std::collections::BTreeMap;
 
 use cow_sdk_contracts::{OrderCancellations, SigningScheme, hash_order, hash_order_cancellations};
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, CowEnv, OrderBalance, OrderKind, OrderUid, ProtocolOptions,
-    SupportedChainId, TypedDataDomain, UnsignedOrder,
+    Address, Amount, AppDataHex, BuyTokenDestination, CowEnv, OrderKind, OrderUid, ProtocolOptions,
+    SellTokenSource, SupportedChainId, TypedDataDomain, UnsignedOrder,
 };
 use cow_sdk_signing::{
     ORDER_PRIMARY_TYPE, domain_fields, domain_separator_for, eip1271_signature_payload,
@@ -175,13 +175,13 @@ fn unsigned_order_strategy() -> impl Strategy<Value = UnsignedOrder> {
                 buy_balance_selector,
             )| {
                 let sell_token_balance = match sell_balance_selector {
-                    0 => OrderBalance::Erc20,
-                    1 => OrderBalance::External,
-                    _ => OrderBalance::Internal,
+                    0 => SellTokenSource::Erc20,
+                    1 => SellTokenSource::External,
+                    _ => SellTokenSource::Internal,
                 };
                 let buy_token_balance = match buy_balance_selector {
-                    0 => OrderBalance::Erc20,
-                    _ => OrderBalance::Internal,
+                    0 => BuyTokenDestination::Erc20,
+                    _ => BuyTokenDestination::Internal,
                 };
 
                 UnsignedOrder {

@@ -5,8 +5,8 @@ use std::time::Duration;
 
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
-    Amount, CowEnv, MAX_VALID_TO_EPOCH, OrderBalance, ProtocolOptions, SupportedChainId,
-    UnsignedOrder, wrapped_native_token,
+    Amount, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, ProtocolOptions, SellTokenSource,
+    SupportedChainId, UnsignedOrder, wrapped_native_token,
 };
 use cow_sdk_signing::generate_order_id;
 use cow_sdk_trading::{
@@ -29,8 +29,8 @@ fn sample_ethflow_order(buy_amount: &str) -> UnsignedOrder {
         fee_amount: Amount::zero(),
         kind: cow_sdk_core::OrderKind::Sell,
         partially_fillable: false,
-        sell_token_balance: OrderBalance::Erc20,
-        buy_token_balance: OrderBalance::Erc20,
+        sell_token_balance: SellTokenSource::Erc20,
+        buy_token_balance: BuyTokenDestination::Erc20,
     }
 }
 
@@ -137,8 +137,8 @@ async fn unique_order_id_rejects_zero_buy_amount_when_a_collision_requires_a_ret
 #[test]
 fn get_order_to_sign_preserves_non_default_balance_semantics() {
     let mut params = sample_limit_parameters(cow_sdk_core::OrderKind::Sell);
-    params.sell_token_balance = OrderBalance::External;
-    params.buy_token_balance = OrderBalance::Internal;
+    params.sell_token_balance = SellTokenSource::External;
+    params.buy_token_balance = BuyTokenDestination::Internal;
 
     let order = get_order_to_sign(
         OrderToSignParams::new(SupportedChainId::Sepolia, address(OWNER), false)
@@ -148,6 +148,6 @@ fn get_order_to_sign_preserves_non_default_balance_semantics() {
     )
     .expect("order construction should preserve configured balances");
 
-    assert_eq!(order.sell_token_balance, OrderBalance::External);
-    assert_eq!(order.buy_token_balance, OrderBalance::Internal);
+    assert_eq!(order.sell_token_balance, SellTokenSource::External);
+    assert_eq!(order.buy_token_balance, BuyTokenDestination::Internal);
 }

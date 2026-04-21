@@ -864,8 +864,8 @@ fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
         fee_amount: Amount::new("0").unwrap(),
         kind: cow_sdk::OrderKind::Sell,
         partially_fillable: false,
-        sell_token_balance: cow_sdk::OrderBalance::Erc20,
-        buy_token_balance: cow_sdk::OrderBalance::Erc20,
+        sell_token_balance: cow_sdk::SellTokenSource::Erc20,
+        buy_token_balance: cow_sdk::BuyTokenDestination::Erc20,
     }
 }
 

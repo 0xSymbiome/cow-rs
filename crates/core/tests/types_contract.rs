@@ -1,9 +1,9 @@
 use cow_sdk_core::{
-    Address, Amount, Amounts, AppDataHex, Costs, DecimalAmount, FeeComponent, Hash32, HexData,
-    NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderBalance, OrderKind, OrderModel, OrderUid,
-    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteModel, SignedAmount, UnsignedOrder,
-    VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
-    addresses_equal, token_id,
+    Address, Amount, Amounts, AppDataHex, BuyTokenDestination, Costs, DecimalAmount, FeeComponent,
+    Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderKind, OrderModel, OrderUid,
+    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteModel, SellTokenSource, SignedAmount,
+    UnsignedOrder, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
+    ValidationError, addresses_equal, token_id,
 };
 use num_bigint::BigUint;
 
@@ -104,11 +104,12 @@ fn canonical_order_and_quote_shapes_are_pinned() {
         fee_amount: Amount::new("5").unwrap(),
         kind: OrderKind::Sell,
         partially_fillable: true,
-        sell_token_balance: OrderBalance::External,
-        buy_token_balance: OrderBalance::External,
+        sell_token_balance: SellTokenSource::External,
+        buy_token_balance: BuyTokenDestination::Internal,
     };
 
-    assert_eq!(order.normalized_buy_token_balance(), OrderBalance::Erc20);
+    assert_eq!(order.sell_token_balance, SellTokenSource::External);
+    assert_eq!(order.buy_token_balance, BuyTokenDestination::Internal);
 
     let json = serde_json::to_value(&order).unwrap();
     let object = json.as_object().unwrap();

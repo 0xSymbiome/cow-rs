@@ -1,8 +1,9 @@
 mod common;
 
 use cow_sdk_orderbook::{
-    ApiContextOverride, CowEnv, GetOrdersRequest, GetTradesRequest, OrderBalance, OrderCreation,
-    OrderKind, OrderQuoteRequest, PriceQuality, QuoteSide, SigningScheme, SupportedChainId,
+    ApiContextOverride, BuyTokenDestination, CowEnv, GetOrdersRequest, GetTradesRequest,
+    OrderCreation, OrderKind, OrderQuoteRequest, PriceQuality, QuoteSide, SellTokenSource,
+    SigningScheme, SupportedChainId,
 };
 use serde_json::json;
 
@@ -52,8 +53,8 @@ fn quote_request_supports_buy_side_and_context_overrides() {
     .with_valid_for(1_800)
     .with_price_quality(PriceQuality::Optimal)
     .with_signing_scheme(SigningScheme::Eip1271)
-    .with_sell_token_balance(OrderBalance::External)
-    .with_buy_token_balance(OrderBalance::Internal)
+    .with_sell_token_balance(SellTokenSource::External)
+    .with_buy_token_balance(BuyTokenDestination::Internal)
     .with_verification_gas_limit(0)
     .with_timeout(2_500)
     .with_onchain_order();

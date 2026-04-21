@@ -22,7 +22,7 @@ cow-sdk-contracts = "0.1"
 
 ```rust
 use cow_sdk_contracts::hash_order;
-use cow_sdk_core::{Address, Amount, AppDataHex, OrderBalance, OrderKind, UnsignedOrder};
+use cow_sdk_core::{Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, UnsignedOrder};
 
 let order = UnsignedOrder {
     sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
@@ -35,8 +35,8 @@ let order = UnsignedOrder {
     fee_amount: Amount::zero(),
     kind: OrderKind::Sell,
     partially_fillable: false,
-    sell_token_balance: OrderBalance::Erc20,
-    buy_token_balance: OrderBalance::Erc20,
+    sell_token_balance: SellTokenSource::Erc20,
+    buy_token_balance: BuyTokenDestination::Erc20,
 };
 
 let _digest = hash_order(&order);

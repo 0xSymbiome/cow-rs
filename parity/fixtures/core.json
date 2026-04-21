@@ -147,7 +147,9 @@
       "anchors": [
         "ORDER_TYPE_FIELDS",
         "OrderKind",
-        "OrderBalance"
+        "OrderBalance",
+        "SellTokenSource",
+        "BuyTokenDestination"
       ]
     }
   ],

@@ -1,17 +1,17 @@
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, Hash32, OrderBalance, OrderDigest, OrderKind, OrderModel,
-    OrderUid, SupportedChainId, TypedDataDomain,
+    Address, Amount, AppDataHash, BuyTokenDestination, Hash32, OrderDigest, OrderKind, OrderModel,
+    OrderUid, SellTokenSource, SupportedChainId, TypedDataDomain,
 };
 
 use crate::{
     ContractsError,
     deployments::{ContractId, Registry},
     primitives::{
-        ORDER_UID_LENGTH_BYTES, balance_name, encode_address, encode_bool, encode_string_hash,
+        ORDER_UID_LENGTH_BYTES, buy_balance_name, encode_address, encode_bool, encode_string_hash,
         encode_u32, encode_u256_biguint, keccak256, order_kind_name, parse_bytes32_hash,
-        parse_hex_exact, parse_hex32, typed_data_digest, zero_address,
+        parse_hex_exact, parse_hex32, sell_balance_name, typed_data_digest, zero_address,
     },
 };
 
@@ -122,10 +122,10 @@ pub struct Order {
     pub partially_fillable: bool,
     /// Optional sell-token balance source.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sell_token_balance: Option<OrderBalance>,
-    /// Optional buy-token balance source.
+    pub sell_token_balance: Option<SellTokenSource>,
+    /// Optional buy-token balance destination.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub buy_token_balance: Option<OrderBalance>,
+    pub buy_token_balance: Option<BuyTokenDestination>,
 }
 
 /// Canonical contract order used for struct hashing.
@@ -157,9 +157,9 @@ pub struct NormalizedOrder {
     /// Whether the order is partially fillable.
     pub partially_fillable: bool,
     /// Normalized sell-token balance source.
-    pub sell_token_balance: OrderBalance,
-    /// Normalized buy-token balance source.
-    pub buy_token_balance: OrderBalance,
+    pub sell_token_balance: SellTokenSource,
+    /// Normalized buy-token balance destination.
+    pub buy_token_balance: BuyTokenDestination,
 }
 
 /// Structured order UID components.
@@ -213,12 +213,6 @@ impl From<&cow_sdk_core::UnsignedOrder> for Order {
     }
 }
 
-/// Normalizes the buy-token balance to the protocol-supported value set.
-#[must_use]
-pub fn normalize_buy_token_balance(balance: Option<OrderBalance>) -> OrderBalance {
-    balance.unwrap_or_default().normalize_for_buy()
-}
-
 /// Normalizes an order into its canonical contract hashing form.
 ///
 /// # Errors
@@ -249,7 +243,7 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
         kind: order.kind,
         partially_fillable: order.partially_fillable,
         sell_token_balance: order.sell_token_balance.unwrap_or_default(),
-        buy_token_balance: normalize_buy_token_balance(order.buy_token_balance),
+        buy_token_balance: order.buy_token_balance.unwrap_or_default(),
     })
 }
 
@@ -451,8 +445,12 @@ fn order_struct_hash(order: &NormalizedOrder) -> Result<[u8; 32], ContractsError
     encoded.extend_from_slice(&encode_u256_biguint(order.fee_amount.as_biguint())?);
     encoded.extend_from_slice(&encode_string_hash(order_kind_name(order.kind)));
     encoded.extend_from_slice(&encode_bool(order.partially_fillable));
-    encoded.extend_from_slice(&encode_string_hash(balance_name(order.sell_token_balance)));
-    encoded.extend_from_slice(&encode_string_hash(balance_name(order.buy_token_balance)));
+    encoded.extend_from_slice(&encode_string_hash(sell_balance_name(
+        order.sell_token_balance,
+    )));
+    encoded.extend_from_slice(&encode_string_hash(buy_balance_name(
+        order.buy_token_balance,
+    )));
     Ok(keccak256(encoded))
 }
 
@@ -494,8 +492,8 @@ mod tests {
             fee_amount: Amount::new("10").unwrap(),
             kind: OrderKind::Sell,
             partially_fillable: true,
-            sell_token_balance: Some(OrderBalance::External),
-            buy_token_balance: Some(OrderBalance::External),
+            sell_token_balance: Some(SellTokenSource::External),
+            buy_token_balance: Some(BuyTokenDestination::Internal),
         }
     }
 
@@ -563,21 +561,8 @@ mod tests {
             out
         });
         encoded.extend_from_slice(&keccak_word("external"));
-        encoded.extend_from_slice(&keccak_word("erc20"));
+        encoded.extend_from_slice(&keccak_word("internal"));
         Keccak256::digest(&encoded).into()
-    }
-
-    #[test]
-    fn normalize_buy_token_balance_defaults_to_erc20_and_preserves_internal() {
-        assert_eq!(normalize_buy_token_balance(None), OrderBalance::Erc20);
-        assert_eq!(
-            normalize_buy_token_balance(Some(OrderBalance::External)),
-            OrderBalance::Erc20
-        );
-        assert_eq!(
-            normalize_buy_token_balance(Some(OrderBalance::Internal)),
-            OrderBalance::Internal
-        );
     }
 
     #[test]
