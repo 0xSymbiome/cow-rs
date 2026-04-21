@@ -1,7 +1,7 @@
-use cow_sdk_contracts::{CANCELLATIONS_TYPE_FIELDS, ORDER_TYPE_FIELDS};
+use cow_sdk_contracts::{CANCELLATIONS_TYPE_FIELDS, ContractId, ORDER_TYPE_FIELDS, Registry};
 use cow_sdk_core::{
     Address, CowEnv, ProtocolOptions, SupportedChainId, TypedDataDomain, TypedDataEnvelope,
-    TypedDataField, TypedDataPayload, TypedDataTypes, UnsignedOrder, settlement_contract_address,
+    TypedDataField, TypedDataPayload, TypedDataTypes, UnsignedOrder,
 };
 use serde::Serialize;
 use sha3::{Digest, Keccak256};
@@ -18,6 +18,13 @@ pub type OrderTypedData = TypedDataEnvelope<UnsignedOrder>;
 /// # Errors
 ///
 /// Returns [`SigningError`] if any override address is invalid through lower-level contracts.
+///
+/// # Panics
+///
+/// Panics if the embedded deployment registry is missing the canonical
+/// settlement-contract entry for the resolved chain and environment. The
+/// shipped registry manifest is validated at compile time, so this panic
+/// cannot be reached from an unmodified binary.
 pub fn get_domain(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
@@ -33,8 +40,11 @@ pub fn get_domain(
         name: "Gnosis Protocol".to_owned(),
         version: "v2".to_owned(),
         chain_id: chain_id.into(),
-        verifying_contract: override_address
-            .unwrap_or_else(|| settlement_contract_address(chain_id, env)),
+        verifying_contract: override_address.unwrap_or_else(|| {
+            Registry::default()
+                .address(ContractId::Settlement, chain_id, env)
+                .expect("canonical settlement address is registered for every supported chain/env")
+        }),
     })
 }
 

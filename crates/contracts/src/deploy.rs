@@ -1,12 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use cow_sdk_core::{
-    Address, CowEnv, SupportedChainId, eth_flow_contract_address, settlement_contract_address,
-    vault_relayer_address,
-};
+use cow_sdk_core::{Address, CowEnv, SupportedChainId};
 
 use crate::{
     ContractsError,
+    deployments::{ContractId, Registry},
     primitives::{encode_address, keccak256},
 };
 
@@ -75,13 +73,27 @@ pub fn deterministic_deployment_address(
 ///
 /// Returns [`ContractsError::UnsupportedChain`] when `chain_id` is not part of
 /// the supported `CoW` deployment set.
+///
+/// # Panics
+///
+/// Panics if the embedded deployment registry is missing an entry for any of
+/// the three canonical contracts on the resolved chain. The shipped registry
+/// manifest is validated at compile time, so this panic cannot be reached
+/// from an unmodified binary.
 pub fn deployment_for_chain(chain_id: u64) -> Result<ContractAddresses, ContractsError> {
     let chain = SupportedChainId::try_from(chain_id)
         .map_err(|_| ContractsError::UnsupportedChain(chain_id))?;
+    let registry = Registry::default();
     Ok(ContractAddresses {
-        settlement: settlement_contract_address(chain, CowEnv::Prod),
-        vault_relayer: vault_relayer_address(chain, CowEnv::Prod),
-        eth_flow: eth_flow_contract_address(chain, CowEnv::Prod),
+        settlement: registry
+            .address(ContractId::Settlement, chain, CowEnv::Prod)
+            .expect("canonical settlement address is registered for every supported chain"),
+        vault_relayer: registry
+            .address(ContractId::VaultRelayer, chain, CowEnv::Prod)
+            .expect("canonical vault-relayer address is registered for every supported chain"),
+        eth_flow: registry
+            .address(ContractId::EthFlow, chain, CowEnv::Prod)
+            .expect("canonical EthFlow address is registered for every supported chain"),
     })
 }
 

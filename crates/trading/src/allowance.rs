@@ -1,9 +1,16 @@
+use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, ContractCall, Provider, Signer, SupportedChainId,
-    TransactionHash, TransactionRequest, vault_relayer_address,
+    TransactionHash, TransactionRequest,
 };
 
 use crate::{ApprovalParameters, TradingError};
+
+fn resolve_vault_relayer(chain_id: SupportedChainId, env: cow_sdk_core::CowEnv) -> Address {
+    Registry::default()
+        .address(ContractId::VaultRelayer, chain_id, env)
+        .expect("canonical vault-relayer address is registered for every supported chain/env")
+}
 
 const ERC20_ALLOWANCE_ABI_JSON: &str = r#"[{"type":"function","name":"allowance","inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#;
 const ERC20_APPROVE_SIGNATURE: &str = "approve(address,uint256)";
@@ -29,7 +36,7 @@ where
 {
     let spender = vault_relayer_override
         .cloned()
-        .unwrap_or_else(|| vault_relayer_address(chain_id, env));
+        .unwrap_or_else(|| resolve_vault_relayer(chain_id, env));
     let args_json =
         serde_json::to_string(&(owner.as_str(), spender.as_str())).map_err(|error| {
             TradingError::Contracts(cow_sdk_contracts::ContractsError::Serialization(error))
@@ -69,7 +76,7 @@ where
 {
     let spender = vault_relayer_override
         .cloned()
-        .unwrap_or_else(|| vault_relayer_address(chain_id, env));
+        .unwrap_or_else(|| resolve_vault_relayer(chain_id, env));
     let args_json =
         serde_json::to_string(&(owner.as_str(), spender.as_str())).map_err(|error| {
             TradingError::Contracts(cow_sdk_contracts::ContractsError::Serialization(error))
@@ -104,9 +111,9 @@ pub fn approval_transaction(
     env: cow_sdk_core::CowEnv,
 ) -> Result<TransactionRequest, TradingError> {
     let spender = params
-        .vault_relayer_address
+        .vault_relayer_override
         .clone()
-        .unwrap_or_else(|| vault_relayer_address(chain_id, env));
+        .unwrap_or_else(|| resolve_vault_relayer(chain_id, env));
     Ok(TransactionRequest {
         to: Some(params.token_address.clone()),
         data: Some(cow_sdk_core::HexData::new(encode_approve_call(

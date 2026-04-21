@@ -27,15 +27,15 @@
 //! broken CI run sees the exact upstream vector that diverged.
 
 use cow_sdk_contracts::{
-    AllowListReader, CANCELLATIONS_TYPE_FIELDS, DEPLOYER_CONTRACT, EIP1271_MAGICVALUE, Eip1967Slot,
-    InteractionLike, ORDER_TYPE_FIELDS, ORDER_TYPE_HASH, ORDER_UID_LENGTH, OrderFlags, SALT,
-    SettlementEncoder, SettlementReader, SigningScheme, Swap, TokenRegistry, TradeFlags,
-    TradeSimulator, VAULT_INTERFACE, encode_order_flags, encode_swap_step, encode_trade_flags,
-    normalize_buy_token_balance, normalize_interaction,
+    AllowListReader, CANCELLATIONS_TYPE_FIELDS, ContractId, DEPLOYER_CONTRACT, EIP1271_MAGICVALUE,
+    Eip1967Slot, InteractionLike, ORDER_TYPE_FIELDS, ORDER_TYPE_HASH, ORDER_UID_LENGTH, OrderFlags,
+    Registry, SALT, SettlementEncoder, SettlementReader, SigningScheme, Swap, TokenRegistry,
+    TradeFlags, TradeSimulator, VAULT_INTERFACE, encode_order_flags, encode_swap_step,
+    encode_trade_flags, normalize_buy_token_balance, normalize_interaction,
 };
 use cow_sdk_core::{
     Address, Amount, CowEnv, OrderBalance, OrderDigest, OrderKind, OrderUid, SupportedChainId,
-    TypedDataDomain, settlement_contract_address,
+    TypedDataDomain,
 };
 use serde_json::Value;
 
@@ -542,7 +542,13 @@ fn sample_domain() -> TypedDataDomain {
         name: "Gnosis Protocol".to_owned(),
         version: "v2".to_owned(),
         chain_id: u64::from(SupportedChainId::Mainnet),
-        verifying_contract: settlement_contract_address(SupportedChainId::Mainnet, CowEnv::Prod),
+        verifying_contract: Registry::default()
+            .address(
+                ContractId::Settlement,
+                SupportedChainId::Mainnet,
+                CowEnv::Prod,
+            )
+            .expect("canonical settlement address is registered on mainnet"),
     }
 }
 

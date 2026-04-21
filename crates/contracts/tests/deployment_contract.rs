@@ -3,12 +3,10 @@ mod common;
 use sha3::{Digest, Keccak256};
 
 use cow_sdk_contracts::{
-    DEPLOYER_CONTRACT, SALT, deployment_for_chain, deterministic_deployment_address,
+    ContractId, DEPLOYER_CONTRACT, Registry, SALT, deployment_for_chain,
+    deterministic_deployment_address,
 };
-use cow_sdk_core::{
-    CowEnv, SupportedChainId, eth_flow_contract_address, settlement_contract_address,
-    vault_relayer_address,
-};
+use cow_sdk_core::{CowEnv, SupportedChainId};
 
 use common::fixture_case;
 
@@ -54,17 +52,32 @@ fn deployment_constants_and_create2_address_match_fixture_contract() {
 #[test]
 fn deployment_for_chain_uses_core_protocol_addresses() {
     let mainnet = deployment_for_chain(1).unwrap();
+    let registry = Registry::default();
     assert_eq!(
         mainnet.settlement,
-        settlement_contract_address(SupportedChainId::Mainnet, CowEnv::Prod)
+        registry
+            .address(
+                ContractId::Settlement,
+                SupportedChainId::Mainnet,
+                CowEnv::Prod
+            )
+            .expect("canonical settlement address is registered on mainnet")
     );
     assert_eq!(
         mainnet.vault_relayer,
-        vault_relayer_address(SupportedChainId::Mainnet, CowEnv::Prod)
+        registry
+            .address(
+                ContractId::VaultRelayer,
+                SupportedChainId::Mainnet,
+                CowEnv::Prod
+            )
+            .expect("canonical vault-relayer address is registered on mainnet")
     );
     assert_eq!(
         mainnet.eth_flow,
-        eth_flow_contract_address(SupportedChainId::Mainnet, CowEnv::Prod)
+        registry
+            .address(ContractId::EthFlow, SupportedChainId::Mainnet, CowEnv::Prod)
+            .expect("canonical EthFlow address is registered on mainnet")
     );
 
     assert!(deployment_for_chain(999_999).is_err());

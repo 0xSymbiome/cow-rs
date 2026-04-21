@@ -164,7 +164,7 @@ pub fn required_vault_role_calls(
     authorizer_address: &Address,
     authorizer_abi_json: &str,
     vault_address: &Address,
-    vault_relayer_address: &Address,
+    vault_relayer: &Address,
 ) -> Result<Vec<GrantRoleCall>, ContractsError> {
     required_vault_roles(vault_address)?
         .into_iter()
@@ -173,7 +173,7 @@ pub fn required_vault_role_calls(
                 authorizer_address: authorizer_address.clone(),
                 authorizer_abi_json: authorizer_abi_json.to_owned(),
                 method: "grantRole".to_owned(),
-                args_json: serde_json::to_string(&(role.role, vault_relayer_address.clone()))?,
+                args_json: serde_json::to_string(&(role.role, vault_relayer.clone()))?,
             })
         })
         .collect()
@@ -189,7 +189,7 @@ pub fn grant_required_roles<F, E>(
     authorizer_address: &Address,
     authorizer_abi_json: &str,
     vault_address: &Address,
-    vault_relayer_address: &Address,
+    vault_relayer: &Address,
     mut contract_call: F,
 ) -> Result<(), ContractsError>
 where
@@ -200,7 +200,7 @@ where
         authorizer_address,
         authorizer_abi_json,
         vault_address,
-        vault_relayer_address,
+        vault_relayer,
     )? {
         contract_call(&call).map_err(|error| ContractsError::Provider {
             operation: "grantRole",

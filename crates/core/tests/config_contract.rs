@@ -2,8 +2,7 @@ use std::collections::BTreeMap;
 
 use cow_sdk_core::{
     Address, ApiContext, CoreError, CowEnv, ENVS_LIST, ProtocolOptions, SupportedChainId,
-    ValidationError, default_api_base_urls, eth_flow_contract_address, settlement_contract_address,
-    vault_relayer_address, wrapped_native_token,
+    ValidationError, default_api_base_urls, wrapped_native_token,
 };
 
 fn core_fixture() -> serde_json::Value {
@@ -142,22 +141,10 @@ fn wrapped_and_protocol_addresses_match_pinned_upstream_values() {
     );
     assert_eq!(gnosis_wrapped.symbol, "WXDAI");
 
-    assert_eq!(
-        settlement_contract_address(SupportedChainId::Mainnet, CowEnv::Prod),
-        Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap()
-    );
-    assert_eq!(
-        settlement_contract_address(SupportedChainId::Mainnet, CowEnv::Staging),
-        Address::new("0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13").unwrap()
-    );
-    assert_eq!(
-        vault_relayer_address(SupportedChainId::Mainnet, CowEnv::Prod),
-        Address::new("0xC92E8bdf79f0507f65a392b0ab4667716BFE0110").unwrap()
-    );
-    assert_eq!(
-        eth_flow_contract_address(SupportedChainId::Mainnet, CowEnv::Prod),
-        Address::new("0xba3cb449bd2b4adddbc894d8697f5170800eadec").unwrap()
-    );
+    // Canonical GPv2Settlement, GPv2VaultRelayer, and EthFlow address
+    // assertions live in the typed registry test suite under
+    // `crates/contracts/tests/registry.rs` now that the address authority
+    // has moved out of the core crate into `cow_sdk_contracts::deployments::Registry`.
 }
 
 #[test]
@@ -175,12 +162,8 @@ fn protocol_constants_surface_byte_equivalent_addresses_across_every_accessor() 
         );
     }
 
-    for env in [CowEnv::Prod, CowEnv::Staging] {
-        let settlement = settlement_contract_address(SupportedChainId::Mainnet, env);
-        let relayer = vault_relayer_address(SupportedChainId::Mainnet, env);
-        let ethflow = eth_flow_contract_address(SupportedChainId::Mainnet, env);
-        assert_ne!(settlement, relayer);
-        assert_ne!(settlement, ethflow);
-        assert_ne!(relayer, ethflow);
-    }
+    // Cross-contract distinctness assertions now live alongside the
+    // address registry at `crates/contracts/tests/registry.rs`; the
+    // legacy `(SupportedChainId, CowEnv)` accessors in this crate have
+    // been retired in favour of the typed `Registry` surface.
 }

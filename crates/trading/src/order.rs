@@ -1,9 +1,9 @@
 use num_bigint::BigInt;
 
+use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, MAX_VALID_TO_EPOCH,
-    ProtocolOptions, SupportedChainId, UnsignedOrder, ValidTo, eth_flow_contract_address,
-    wrapped_native_token,
+    ProtocolOptions, SupportedChainId, UnsignedOrder, ValidTo, wrapped_native_token,
 };
 use cow_sdk_orderbook::OrderQuoteResponse;
 use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
@@ -280,6 +280,13 @@ pub fn get_order_to_sign(
 ///
 /// Returns [`TradingError`] when id generation fails, the optional checker
 /// fails, or the buy amount can no longer be decremented safely.
+///
+/// # Panics
+///
+/// Panics if the embedded deployment registry is missing the canonical
+/// `EthFlow` contract entry for the resolved chain and environment. The
+/// shipped registry manifest is validated at compile time, so this panic
+/// cannot be reached from an unmodified binary.
 pub async fn calculate_unique_order_id(
     chain_id: SupportedChainId,
     order: &UnsignedOrder,
@@ -290,10 +297,10 @@ pub async fn calculate_unique_order_id(
         .and_then(|opts| opts.eth_flow_contract_override.as_ref())
         .and_then(|override_map| override_map.get(&u64::from(chain_id)).cloned())
         .unwrap_or_else(|| {
-            eth_flow_contract_address(
-                chain_id,
-                options.and_then(|opts| opts.env).unwrap_or(CowEnv::Prod),
-            )
+            let env = options.and_then(|opts| opts.env).unwrap_or(CowEnv::Prod);
+            Registry::default()
+                .address(ContractId::EthFlow, chain_id, env)
+                .expect("canonical EthFlow address is registered for every supported chain/env")
         });
     let mut current = order.clone();
 

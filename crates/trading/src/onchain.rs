@@ -1,9 +1,10 @@
 use cow_sdk_contracts::eth_flow::{
     EthFlowOrderData, encode_create_order_calldata, encode_invalidate_order_calldata,
 };
+use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
     Address, Amount, AsyncSigner, HexData, ProtocolOptions, Signer, SupportedChainId,
-    TransactionHash, TransactionRequest, eth_flow_contract_address, settlement_contract_address,
+    TransactionHash, TransactionRequest,
 };
 use cow_sdk_orderbook::Order;
 
@@ -464,12 +465,12 @@ fn resolve_settlement_address(
         .and_then(|opts| opts.settlement_contract_override.as_ref())
         .and_then(|override_map| override_map.get(&u64::from(chain_id)).cloned())
         .unwrap_or_else(|| {
-            settlement_contract_address(
-                chain_id,
-                options
-                    .and_then(|opts| opts.env)
-                    .unwrap_or(cow_sdk_core::CowEnv::Prod),
-            )
+            let env = options
+                .and_then(|opts| opts.env)
+                .unwrap_or(cow_sdk_core::CowEnv::Prod);
+            Registry::default()
+                .address(ContractId::Settlement, chain_id, env)
+                .expect("canonical settlement address is registered for every supported chain/env")
         })
 }
 
@@ -481,12 +482,12 @@ fn resolve_eth_flow_address(
         .and_then(|opts| opts.eth_flow_contract_override.as_ref())
         .and_then(|override_map| override_map.get(&u64::from(chain_id)).cloned())
         .unwrap_or_else(|| {
-            eth_flow_contract_address(
-                chain_id,
-                options
-                    .and_then(|opts| opts.env)
-                    .unwrap_or(cow_sdk_core::CowEnv::Prod),
-            )
+            let env = options
+                .and_then(|opts| opts.env)
+                .unwrap_or(cow_sdk_core::CowEnv::Prod);
+            Registry::default()
+                .address(ContractId::EthFlow, chain_id, env)
+                .expect("canonical EthFlow address is registered for every supported chain/env")
         })
 }
 

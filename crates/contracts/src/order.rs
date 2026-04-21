@@ -2,11 +2,12 @@ use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{
     Address, Amount, AppDataHash, Hash32, OrderBalance, OrderDigest, OrderKind, OrderModel,
-    OrderUid, SupportedChainId, TypedDataDomain, settlement_contract_address,
+    OrderUid, SupportedChainId, TypedDataDomain,
 };
 
 use crate::{
     ContractsError,
+    deployments::{ContractId, Registry},
     primitives::{
         ORDER_UID_LENGTH_BYTES, balance_name, encode_address, encode_bool, encode_string_hash,
         encode_u32, encode_u256_biguint, keccak256, order_kind_name, parse_bytes32_hash,
@@ -374,6 +375,13 @@ pub fn extract_order_uid_params(order_uid: &OrderUid) -> Result<OrderUidParams, 
 /// # Errors
 ///
 /// Returns [`ContractsError`] if the chain is unsupported or if order hashing fails.
+///
+/// # Panics
+///
+/// Panics if the embedded deployment registry is missing the canonical
+/// settlement-contract entry for the resolved chain. The shipped registry
+/// manifest is validated at compile time, so this panic cannot be reached
+/// from an unmodified binary.
 #[inline]
 pub fn hash_order_for_contract(
     order: &OrderModel,
@@ -385,7 +393,9 @@ pub fn hash_order_for_contract(
         name: "Gnosis Protocol".to_owned(),
         version: "v2".to_owned(),
         chain_id,
-        verifying_contract: settlement_contract_address(chain, cow_sdk_core::CowEnv::Prod),
+        verifying_contract: Registry::default()
+            .address(ContractId::Settlement, chain, cow_sdk_core::CowEnv::Prod)
+            .expect("canonical settlement address is registered for every supported chain"),
     };
     let order = compatibility_order(order);
     let digest = hash_order(&domain, &order)?;
@@ -459,10 +469,13 @@ mod tests {
             name: "Gnosis Protocol".to_owned(),
             version: "v2".to_owned(),
             chain_id: 1,
-            verifying_contract: settlement_contract_address(
-                SupportedChainId::Mainnet,
-                cow_sdk_core::CowEnv::Prod,
-            ),
+            verifying_contract: Registry::default()
+                .address(
+                    ContractId::Settlement,
+                    SupportedChainId::Mainnet,
+                    cow_sdk_core::CowEnv::Prod,
+                )
+                .expect("canonical settlement address is registered for every supported chain"),
         }
     }
 

@@ -1,6 +1,7 @@
 mod common;
 
-use cow_sdk_core::{Amount, CowEnv, SupportedChainId, vault_relayer_address};
+use cow_sdk_contracts::{ContractId, Registry};
+use cow_sdk_core::{Amount, CowEnv, SupportedChainId};
 use cow_sdk_trading::{
     AllowanceParameters, ApprovalParameters, approval_transaction, approve_cow_protocol,
     get_cow_protocol_allowance,
@@ -25,7 +26,13 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .clone();
-    let expected_spender = vault_relayer_address(SupportedChainId::Sepolia, CowEnv::Prod);
+    let expected_spender = Registry::default()
+        .address(
+            ContractId::VaultRelayer,
+            SupportedChainId::Sepolia,
+            CowEnv::Prod,
+        )
+        .expect("canonical vault-relayer address is registered on sepolia");
 
     assert_eq!(
         result,
@@ -49,7 +56,7 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
         )
         .with_chain_id(SupportedChainId::Sepolia)
         .with_env(CowEnv::Prod)
-        .with_vault_relayer_address(custom.clone()),
+        .with_vault_relayer_override(custom.clone()),
         SupportedChainId::Mainnet,
         CowEnv::Staging,
     )
@@ -122,17 +129,20 @@ fn parameter_structs_preserve_call_level_chain_and_override_values() {
     let allowance = AllowanceParameters::new(address(COW), address(OWNER))
         .with_chain_id(SupportedChainId::Mainnet)
         .with_env(CowEnv::Staging)
-        .with_vault_relayer_address(address(ALT_RECEIVER));
+        .with_vault_relayer_override(address(ALT_RECEIVER));
     let approval = ApprovalParameters::new(
         address(COW),
         Amount::new("42").expect("test approval amount literal must be valid"),
     )
     .with_chain_id(SupportedChainId::Mainnet)
     .with_env(CowEnv::Staging)
-    .with_vault_relayer_address(address(ALT_RECEIVER));
+    .with_vault_relayer_override(address(ALT_RECEIVER));
 
     assert_eq!(allowance.chain_id, Some(SupportedChainId::Mainnet));
     assert_eq!(approval.chain_id, Some(SupportedChainId::Mainnet));
-    assert_eq!(allowance.vault_relayer_address, Some(address(ALT_RECEIVER)));
-    assert_eq!(approval.vault_relayer_address, Some(address(ALT_RECEIVER)));
+    assert_eq!(
+        allowance.vault_relayer_override,
+        Some(address(ALT_RECEIVER))
+    );
+    assert_eq!(approval.vault_relayer_override, Some(address(ALT_RECEIVER)));
 }

@@ -111,6 +111,32 @@ impl Registry {
         self.entries.is_empty()
     }
 
+    /// Returns a new registry with the supplied
+    /// `(ContractId, SupportedChainId, CowEnv)` entry replaced by `address`.
+    ///
+    /// Consumers that need to point a single lookup at a non-default
+    /// deployment (for example, a local-dev settlement contract) layer the
+    /// override on top of [`Registry::default`] and keep resolving through
+    /// the typed [`Registry::address`] surface.
+    #[must_use]
+    pub fn with_override(
+        mut self,
+        contract_id: ContractId,
+        chain_id: SupportedChainId,
+        env: CowEnv,
+        address: Address,
+    ) -> Self {
+        self.entries.insert(
+            RegistryKey {
+                contract_id,
+                chain_id,
+                env,
+            },
+            address,
+        );
+        self
+    }
+
     /// Parses a TOML manifest string into a typed registry, applying the
     /// same validation rules the compile-time gate enforces.
     ///

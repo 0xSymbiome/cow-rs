@@ -1095,7 +1095,7 @@ impl TradingSdk {
             &params.owner,
             chain_id,
             env,
-            params.vault_relayer_address.as_ref(),
+            params.vault_relayer_override.as_ref(),
         )
     }
 
@@ -1140,7 +1140,7 @@ impl TradingSdk {
             &params.owner,
             chain_id,
             env,
-            params.vault_relayer_address.as_ref(),
+            params.vault_relayer_override.as_ref(),
         )
         .await
     }

@@ -22,8 +22,7 @@ pub use cancellation::{Cancellable, Cancelled, WithCancellation};
 pub use config::{
     AddressPerChain, ApiBaseUrls, ApiContext, CowEnv, DEFAULT_HTTP_TIMEOUT, ENVS_LIST,
     EVM_NATIVE_CURRENCY_ADDRESS, HttpClientPolicy, MAX_VALID_TO_EPOCH, ProtocolOptions,
-    SupportedChainId, default_api_base_urls, eth_flow_contract_address,
-    settlement_contract_address, vault_relayer_address, wrapped_native_token,
+    SupportedChainId, default_api_base_urls, wrapped_native_token,
 };
 pub use errors::{CoreError, ValidationError};
 pub use redaction::{REDACTED_PLACEHOLDER, Redacted};

@@ -1,9 +1,9 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
-use cow_sdk_contracts::{Order, hash_order};
+use cow_sdk_contracts::{ContractId, Order, Registry, hash_order};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, OrderBalance, OrderKind, SupportedChainId,
-    TypedDataDomain, settlement_contract_address,
+    TypedDataDomain,
 };
 
 fn sample_domain() -> TypedDataDomain {
@@ -11,7 +11,13 @@ fn sample_domain() -> TypedDataDomain {
         name: "Gnosis Protocol".to_owned(),
         version: "v2".to_owned(),
         chain_id: 1,
-        verifying_contract: settlement_contract_address(SupportedChainId::Mainnet, CowEnv::Prod),
+        verifying_contract: Registry::default()
+            .address(
+                ContractId::Settlement,
+                SupportedChainId::Mainnet,
+                CowEnv::Prod,
+            )
+            .expect("canonical settlement address is registered for every supported chain"),
     }
 }
 

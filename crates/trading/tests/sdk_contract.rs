@@ -128,7 +128,13 @@ async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can
     assert_eq!(result.trade_parameters.env, Some(CowEnv::Staging));
     assert_eq!(
         result.order_typed_data.domain.verifying_contract,
-        cow_sdk_core::settlement_contract_address(SupportedChainId::Sepolia, CowEnv::Staging)
+        cow_sdk_contracts::Registry::default()
+            .address(
+                cow_sdk_contracts::ContractId::Settlement,
+                SupportedChainId::Sepolia,
+                CowEnv::Staging
+            )
+            .expect("canonical settlement address is registered for sepolia staging")
     );
 }
 
@@ -247,7 +253,7 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
             )
             .with_chain_id(SupportedChainId::Mainnet)
             .with_env(CowEnv::Prod)
-            .with_vault_relayer_address(address(ALT_RECEIVER)),
+            .with_vault_relayer_override(address(ALT_RECEIVER)),
         )
         .expect("approval should succeed");
     let sent = signer
@@ -309,7 +315,7 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
             )
             .with_chain_id(SupportedChainId::Mainnet)
             .with_env(CowEnv::Prod)
-            .with_vault_relayer_address(address(ALT_RECEIVER)),
+            .with_vault_relayer_override(address(ALT_RECEIVER)),
         )
         .await
         .expect("async approval should succeed");

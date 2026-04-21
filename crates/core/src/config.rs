@@ -23,16 +23,6 @@ const PROD_BASE_URL: &str = "https://api.cow.fi";
 const STAGING_BASE_URL: &str = "https://barn.api.cow.fi";
 const PARTNER_PROD_BASE_URL: &str = "https://partners.cow.fi";
 const PARTNER_STAGING_BASE_URL: &str = "https://partners.barn.cow.fi";
-const SETTLEMENT_CONTRACT_BYTES: [u8; 20] =
-    hex_decode_20("0x9008D19f58AAbD9eD0D60971565AA8510560ab41");
-const SETTLEMENT_CONTRACT_BYTES_STAGING: [u8; 20] =
-    hex_decode_20("0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13");
-const VAULT_RELAYER_BYTES: [u8; 20] = hex_decode_20("0xC92E8bdf79f0507f65a392b0ab4667716BFE0110");
-const VAULT_RELAYER_BYTES_STAGING: [u8; 20] =
-    hex_decode_20("0xC7242d167563352E2BCA4d71C043fbe542DB8FB2");
-const ETH_FLOW_BYTES: [u8; 20] = hex_decode_20("0xba3cb449bd2b4adddbc894d8697f5170800eadec");
-const ETH_FLOW_BYTES_STAGING: [u8; 20] =
-    hex_decode_20("0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC");
 const TOKEN_LIST_IMAGES_PATH: &str = "https://files.cow.fi/token-lists/images";
 
 const WRAPPED_NATIVE_MAINNET_BYTES: [u8; 20] =
@@ -467,33 +457,6 @@ pub fn default_api_base_urls(env: CowEnv, partner_api: bool) -> ApiBaseUrls {
             (chain_id.into(), format!("{base}/{}", chain_id.api_path()))
         })
         .collect()
-}
-
-/// Returns the settlement contract address for the requested environment.
-#[must_use]
-pub fn settlement_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
-    match env {
-        CowEnv::Prod => Address::from_bytes(SETTLEMENT_CONTRACT_BYTES),
-        CowEnv::Staging => Address::from_bytes(SETTLEMENT_CONTRACT_BYTES_STAGING),
-    }
-}
-
-/// Returns the Balancer vault relayer address for the requested environment.
-#[must_use]
-pub fn vault_relayer_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
-    match env {
-        CowEnv::Prod => Address::from_bytes(VAULT_RELAYER_BYTES),
-        CowEnv::Staging => Address::from_bytes(VAULT_RELAYER_BYTES_STAGING),
-    }
-}
-
-/// Returns the `EthFlow` contract address for the requested environment.
-#[must_use]
-pub fn eth_flow_contract_address(_chain_id: SupportedChainId, env: CowEnv) -> Address {
-    match env {
-        CowEnv::Prod => Address::from_bytes(ETH_FLOW_BYTES),
-        CowEnv::Staging => Address::from_bytes(ETH_FLOW_BYTES_STAGING),
-    }
 }
 
 /// Returns wrapped-native token metadata for a supported chain.

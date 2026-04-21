@@ -488,6 +488,23 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- The typed `cow_sdk_contracts::deployments::Registry` is now the single
+  authority for resolving canonical contract addresses from the
+  `(ContractId, SupportedChainId, CowEnv)` key triple. The historical
+  `cow_sdk_core::settlement_contract_address`,
+  `cow_sdk_core::vault_relayer_address`, and
+  `cow_sdk_core::eth_flow_contract_address` free-function accessors are
+  retired; every caller in the workspace now goes through
+  `Registry::default().address(...)`, with configuration-override use
+  cases routed through the new `Registry::with_override` extension point
+  so callers that previously supplied a local-dev deployment address
+  retain that capability without reaching for the retired accessors.
+  `AllowanceParameters` and `ApprovalParameters` rename their
+  `vault_relayer_address` field and the matching
+  `with_vault_relayer_address` builder to `vault_relayer_override` and
+  `with_vault_relayer_override` respectively so the name tells the
+  reader the field only applies when the canonical registry entry needs
+  to be bypassed.
 - The public documentation graph now routes first-touch users through one
   canonical getting-started path before branching into the maintained example
   families.

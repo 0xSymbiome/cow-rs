@@ -1233,9 +1233,9 @@ pub struct AllowanceParameters {
     /// Optional environment override.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub env: Option<CowEnv>,
-    /// Optional explicit vault relayer address override.
+    /// Optional explicit vault-relayer deployment override.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub vault_relayer_address: Option<Address>,
+    pub vault_relayer_override: Option<Address>,
 }
 
 impl AllowanceParameters {
@@ -1247,7 +1247,7 @@ impl AllowanceParameters {
             owner,
             chain_id: None,
             env: None,
-            vault_relayer_address: None,
+            vault_relayer_override: None,
         }
     }
 
@@ -1265,10 +1265,10 @@ impl AllowanceParameters {
         self
     }
 
-    /// Returns a copy with an explicit vault-relayer address override.
+    /// Returns a copy with an explicit vault-relayer deployment override.
     #[must_use]
-    pub fn with_vault_relayer_address(mut self, address: Address) -> Self {
-        self.vault_relayer_address = Some(address);
+    pub fn with_vault_relayer_override(mut self, address: Address) -> Self {
+        self.vault_relayer_override = Some(address);
         self
     }
 }
@@ -1288,9 +1288,9 @@ pub struct ApprovalParameters {
     /// Optional environment override.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub env: Option<CowEnv>,
-    /// Optional explicit vault relayer address override.
+    /// Optional explicit vault-relayer deployment override.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub vault_relayer_address: Option<Address>,
+    pub vault_relayer_override: Option<Address>,
 }
 
 impl ApprovalParameters {
@@ -1302,7 +1302,7 @@ impl ApprovalParameters {
             amount,
             chain_id: None,
             env: None,
-            vault_relayer_address: None,
+            vault_relayer_override: None,
         }
     }
 
@@ -1320,10 +1320,10 @@ impl ApprovalParameters {
         self
     }
 
-    /// Returns a copy with an explicit vault-relayer address override.
+    /// Returns a copy with an explicit vault-relayer deployment override.
     #[must_use]
-    pub fn with_vault_relayer_address(mut self, address: Address) -> Self {
-        self.vault_relayer_address = Some(address);
+    pub fn with_vault_relayer_override(mut self, address: Address) -> Self {
+        self.vault_relayer_override = Some(address);
         self
     }
 }

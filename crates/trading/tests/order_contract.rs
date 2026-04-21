@@ -3,9 +3,10 @@ mod common;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
     Amount, CowEnv, MAX_VALID_TO_EPOCH, OrderBalance, ProtocolOptions, SupportedChainId,
-    UnsignedOrder, eth_flow_contract_address, wrapped_native_token,
+    UnsignedOrder, wrapped_native_token,
 };
 use cow_sdk_signing::generate_order_id;
 use cow_sdk_trading::{
@@ -51,7 +52,9 @@ async fn unique_order_id_decrements_buy_amount_after_a_collision() {
     expected_order.sell_token = wrapped_native_token(chain_id).address;
     expected_order.buy_amount =
         Amount::new("499").expect("decremented buy amount literal must remain valid");
-    let expected_owner = eth_flow_contract_address(chain_id, CowEnv::Prod);
+    let expected_owner = Registry::default()
+        .address(ContractId::EthFlow, chain_id, CowEnv::Prod)
+        .expect("canonical EthFlow address is registered for every supported chain");
     let expected = generate_order_id(chain_id, &expected_order, &expected_owner, Some(&options))
         .expect("expected order id generation must succeed");
 
@@ -75,7 +78,9 @@ async fn unique_order_id_returns_immediately_when_no_collision_exists() {
     let mut expected_order = order.clone();
     expected_order.valid_to = MAX_VALID_TO_EPOCH;
     expected_order.sell_token = wrapped_native_token(chain_id).address;
-    let expected_owner = eth_flow_contract_address(chain_id, CowEnv::Prod);
+    let expected_owner = Registry::default()
+        .address(ContractId::EthFlow, chain_id, CowEnv::Prod)
+        .expect("canonical EthFlow address is registered for every supported chain");
     let expected = generate_order_id(chain_id, &expected_order, &expected_owner, None)
         .expect("expected order id generation must succeed");
 
@@ -98,7 +103,9 @@ async fn unique_order_id_keeps_the_first_generated_value_when_checker_reports_no
     let mut expected_order = order.clone();
     expected_order.valid_to = MAX_VALID_TO_EPOCH;
     expected_order.sell_token = wrapped_native_token(chain_id).address;
-    let expected_owner = eth_flow_contract_address(chain_id, CowEnv::Prod);
+    let expected_owner = Registry::default()
+        .address(ContractId::EthFlow, chain_id, CowEnv::Prod)
+        .expect("canonical EthFlow address is registered for every supported chain");
     let expected = generate_order_id(chain_id, &expected_order, &expected_owner, None)
         .expect("expected order id generation must succeed");
 
