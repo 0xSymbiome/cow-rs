@@ -2,13 +2,15 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
+use std::sync::Arc;
 
-use cow_sdk_core::{HttpClientPolicy, Redacted, SupportedChainId};
+use cow_sdk_core::{HttpClientPolicy, HttpTransport, Redacted, SupportedChainId};
 use reqwest::Client;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 
 use crate::{
+    builder::{ApiKeyUnset, ChainIdUnset, SubgraphApiBuilder, TransportUnset},
     error::{
         SubgraphError, SubgraphGraphQlError, SubgraphRequestErrorContext, classify_reqwest_error,
     },
@@ -137,6 +139,7 @@ pub struct SubgraphApi {
     api_key: Redacted<String>,
     prod_config: SubgraphApiBaseUrls,
     transport_policy: SubgraphTransportPolicy,
+    transport: Arc<dyn HttpTransport + Send + Sync>,
 }
 
 impl fmt::Debug for SubgraphApi {
@@ -156,91 +159,49 @@ impl fmt::Debug for SubgraphApi {
 }
 
 impl SubgraphApi {
-    /// Creates a subgraph client with the default production configuration.
+    /// Returns a fresh [`SubgraphApiBuilder`] for typestate-checked
+    /// construction.
     ///
-    /// The supplied API key is used only to route production requests; stable
-    /// public metadata keeps the key redacted.
+    /// The builder enforces at compile time that the chain id, API key,
+    /// and HTTP transport are all supplied before
+    /// [`SubgraphApiBuilder::build`] becomes callable. On native targets
+    /// the builder also exposes a `build` overload that defaults the
+    /// transport to the
+    /// [`ReqwestTransport`](cow_sdk_core::ReqwestTransport) when the
+    /// caller does not supply one.
     #[must_use]
-    pub fn new(api_key: impl Into<String>) -> Self {
-        Self::with_config(api_key, SubgraphConfig::default())
+    pub fn builder() -> SubgraphApiBuilder<ChainIdUnset, ApiKeyUnset, TransportUnset> {
+        SubgraphApiBuilder::new()
     }
 
-    /// Creates a subgraph client with explicit static configuration.
+    /// Crate-private constructor used by [`SubgraphApiBuilder::build`].
     #[must_use]
-    pub fn with_config(api_key: impl Into<String>, config: SubgraphConfig) -> Self {
-        Self::with_config_and_transport_policy(api_key, config, SubgraphTransportPolicy::default())
-    }
-
-    /// Creates a subgraph client with explicit static configuration and transport policy.
-    #[must_use]
-    pub fn with_config_and_transport_policy(
-        api_key: impl Into<String>,
+    pub(crate) fn from_parts(
+        client: Client,
         config: SubgraphConfig,
+        api_key: Redacted<String>,
+        prod_config: SubgraphApiBaseUrls,
         transport_policy: SubgraphTransportPolicy,
+        transport: Arc<dyn HttpTransport + Send + Sync>,
     ) -> Self {
-        let api_key = Redacted::new(api_key.into());
-
         Self {
-            client: build_client(transport_policy.client_policy()),
-            api_key,
-            prod_config: build_prod_config(),
+            client,
             config,
+            api_key,
+            prod_config,
             transport_policy,
+            transport,
         }
     }
 
-    /// Creates a subgraph client that shares an externally built [`reqwest::Client`].
+    /// Returns the [`HttpTransport`] handle injected at construction time.
     ///
-    /// Multi-chain consumers can pool one `reqwest::Client` (and its TCP,
-    /// TLS, and HTTP/2 connection cache) across every client they build, which
-    /// is the recommended pattern for production deployments that fan queries
-    /// across several chains. The supplied client keeps any custom keep-alive,
-    /// timeout, or TLS configuration the caller chose; see
-    /// `docs/performance.md` for the production-bot HTTP/2 keep-alive recipe.
+    /// Downstream consumers reach the runtime-neutral transport seam
+    /// through this accessor when they need to share the same transport
+    /// with other typed clients constructed from the workspace.
     #[must_use]
-    pub fn from_shared_client(client: Client, api_key: impl Into<String>) -> Self {
-        Self::from_shared_client_with_config(client, api_key, SubgraphConfig::default())
-    }
-
-    /// Creates a subgraph client that shares an externally built [`reqwest::Client`] and
-    /// uses an explicit static configuration.
-    #[must_use]
-    pub fn from_shared_client_with_config(
-        client: Client,
-        api_key: impl Into<String>,
-        config: SubgraphConfig,
-    ) -> Self {
-        Self::from_shared_client_with_transport_policy(
-            client,
-            api_key,
-            config,
-            SubgraphTransportPolicy::default(),
-        )
-    }
-
-    /// Creates a subgraph client that shares an externally built [`reqwest::Client`] and
-    /// uses an explicit transport policy for request-timeout and retry behaviour.
-    ///
-    /// The shared client is reused verbatim so its keep-alive and connection
-    /// pool settings stay under caller control. Only the request-policy side
-    /// of the supplied [`SubgraphTransportPolicy`] drives retry, rate-limit,
-    /// and timeout decisions on this instance.
-    #[must_use]
-    pub fn from_shared_client_with_transport_policy(
-        client: Client,
-        api_key: impl Into<String>,
-        config: SubgraphConfig,
-        transport_policy: SubgraphTransportPolicy,
-    ) -> Self {
-        let api_key = Redacted::new(api_key.into());
-
-        Self {
-            client,
-            api_key,
-            prod_config: build_prod_config(),
-            config,
-            transport_policy,
-        }
+    pub fn transport(&self) -> &Arc<dyn HttpTransport + Send + Sync> {
+        &self.transport
     }
 
     /// Returns the human-readable API name for this client.
@@ -637,7 +598,7 @@ struct GraphQlResponse<T> {
     errors: Vec<SubgraphGraphQlError>,
 }
 
-fn build_prod_config() -> SubgraphApiBaseUrls {
+pub(crate) fn build_prod_config() -> SubgraphApiBaseUrls {
     BTreeMap::from([
         (
             SupportedChainId::Mainnet,

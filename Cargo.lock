@@ -929,6 +929,7 @@ dependencies = [
 name = "cow-sdk-subgraph"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "cow-sdk-core",
  "graphql_client",
  "reqwest",

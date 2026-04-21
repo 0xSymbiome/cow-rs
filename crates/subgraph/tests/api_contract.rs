@@ -2,9 +2,9 @@ use cow_sdk_core::{DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, SupportedChainId};
 use cow_sdk_subgraph::{
     DEFAULT_SUBGRAPH_USER_AGENT, DailyTotal, HourlyTotal, LAST_DAYS_VOLUME_QUERY,
     LAST_HOURS_VOLUME_QUERY, LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi,
-    SubgraphApiBaseUrls, SubgraphConfig, SubgraphError, SubgraphGraphQlError,
-    SubgraphGraphQlErrorLocation, SubgraphQueryRequest, SubgraphRequestErrorContext,
-    SubgraphTransportPolicy, TOTALS_QUERY, Total,
+    SubgraphApiBaseUrls, SubgraphError, SubgraphGraphQlError, SubgraphGraphQlErrorLocation,
+    SubgraphQueryRequest, SubgraphRequestErrorContext, SubgraphTransportPolicy, TOTALS_QUERY,
+    Total,
 };
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
@@ -18,7 +18,10 @@ use wiremock::{
 
 #[tokio::test]
 async fn prod_url_map_matches_pinned_supported_and_unsupported_chains() {
-    let api = SubgraphApi::new("FakeApiKey");
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("FakeApiKey")
+        .build();
     let prod_config = api.prod_config();
 
     assert_eq!(
@@ -78,7 +81,10 @@ async fn prod_url_map_matches_pinned_supported_and_unsupported_chains() {
 
 #[test]
 fn default_transport_policy_is_explicit_and_reviewable() {
-    let api = SubgraphApi::new("FakeApiKey");
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("FakeApiKey")
+        .build();
 
     assert_eq!(api.client_policy().timeout(), Some(DEFAULT_HTTP_TIMEOUT));
     assert_eq!(
@@ -89,7 +95,10 @@ fn default_transport_policy_is_explicit_and_reviewable() {
 
 #[test]
 fn debug_output_keeps_subgraph_contract_visible_without_printing_prod_urls() {
-    let api = SubgraphApi::new("FakeApiKey");
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("FakeApiKey")
+        .build();
     let debug = format!("{api:?}");
 
     assert!(debug.contains("SubgraphApi"));
@@ -390,13 +399,11 @@ async fn run_query_with_config_honors_chain_override_for_generic_queries() {
     ]
     .into_iter()
     .collect();
-    let api = SubgraphApi::with_config(
-        "FakeApiKey",
-        SubgraphConfig {
-            chain_id: SupportedChainId::Mainnet,
-            base_urls: Some(base_urls),
-        },
-    );
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("FakeApiKey")
+        .base_urls(base_urls)
+        .build();
     let query = "query TotalsForAudit { totals { orders } }";
 
     Mock::given(method("POST"))
@@ -450,13 +457,11 @@ async fn run_query_uses_custom_base_url_overrides() {
     ]
     .into_iter()
     .collect();
-    let api = SubgraphApi::with_config(
-        "FakeApiKey",
-        SubgraphConfig {
-            chain_id: SupportedChainId::Mainnet,
-            base_urls: Some(custom_urls),
-        },
-    );
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("FakeApiKey")
+        .base_urls(custom_urls)
+        .build();
 
     Mock::given(method("POST"))
         .and(path("/"))
@@ -527,14 +532,12 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
             .expect("custom user-agent must be valid")
             .without_timeout(),
     );
-    let api = SubgraphApi::with_config_and_transport_policy(
-        "FakeApiKey",
-        SubgraphConfig {
-            chain_id: SupportedChainId::Mainnet,
-            base_urls: Some(base_urls),
-        },
-        transport_policy,
-    );
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("FakeApiKey")
+        .base_urls(base_urls)
+        .policy(transport_policy)
+        .build();
 
     let totals = api.get_totals().await.expect("custom policy should work");
 
@@ -544,13 +547,10 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
 
 #[tokio::test]
 async fn unsupported_network_rejects_before_transport() {
-    let api = SubgraphApi::with_config(
-        "FakeApiKey",
-        SubgraphConfig {
-            chain_id: SupportedChainId::Polygon,
-            base_urls: None,
-        },
-    );
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Polygon)
+        .api_key("FakeApiKey")
+        .build();
 
     let error = api.get_totals().await.unwrap_err();
 
@@ -842,13 +842,11 @@ async fn transport_failures_surface_typed_context() {
     ]
     .into_iter()
     .collect();
-    let api = SubgraphApi::with_config(
-        "FakeApiKey",
-        SubgraphConfig {
-            chain_id: SupportedChainId::Mainnet,
-            base_urls: Some(base_urls),
-        },
-    );
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("FakeApiKey")
+        .base_urls(base_urls)
+        .build();
     let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
 
     let error = api
@@ -893,13 +891,11 @@ fn api_with_override(server: &MockServer) -> SubgraphApi {
     .into_iter()
     .collect();
 
-    SubgraphApi::with_config(
-        "FakeApiKey",
-        SubgraphConfig {
-            chain_id: SupportedChainId::Mainnet,
-            base_urls: Some(base_urls),
-        },
-    )
+    SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("FakeApiKey")
+        .base_urls(base_urls)
+        .build()
 }
 
 async fn only_request(server: &MockServer) -> Request {
@@ -946,7 +942,10 @@ struct TokenByVolume {
 async fn get_totals_returns_cancelled_when_combinator_token_fires_before_send() {
     use cow_sdk_core::Cancellable;
 
-    let api = SubgraphApi::new("FakeApiKey");
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("FakeApiKey")
+        .build();
     let token = cow_sdk_core::CancellationToken::new();
     token.cancel();
 
@@ -1065,25 +1064,21 @@ async fn shared_client_fans_queries_across_multiple_subgraph_instances() {
 
     let first_base_urls: SubgraphApiBaseUrls =
         std::iter::once((SupportedChainId::Mainnet, Some(first.uri()))).collect();
-    let first_api = SubgraphApi::from_shared_client_with_config(
-        shared.clone(),
-        "FakeApiKey",
-        SubgraphConfig {
-            chain_id: SupportedChainId::Mainnet,
-            base_urls: Some(first_base_urls),
-        },
-    );
+    let first_api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("FakeApiKey")
+        .base_urls(first_base_urls)
+        .client(shared.clone())
+        .build();
 
     let second_base_urls: SubgraphApiBaseUrls =
         std::iter::once((SupportedChainId::GnosisChain, Some(second.uri()))).collect();
-    let second_api = SubgraphApi::from_shared_client_with_config(
-        shared,
-        "FakeApiKey",
-        SubgraphConfig {
-            chain_id: SupportedChainId::GnosisChain,
-            base_urls: Some(second_base_urls),
-        },
-    );
+    let second_api = SubgraphApi::builder()
+        .chain(SupportedChainId::GnosisChain)
+        .api_key("FakeApiKey")
+        .base_urls(second_base_urls)
+        .client(shared)
+        .build();
 
     let first_totals = first_api
         .get_totals()

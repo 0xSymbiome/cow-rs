@@ -285,6 +285,26 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- `cow_sdk_subgraph::SubgraphApi` is constructed exclusively through the
+  typestate `SubgraphApi::builder()` so the compiler enforces that the
+  chain id, partner Graph API key, and HTTP transport are all supplied
+  before `.build()` becomes callable. The builder accepts an
+  `Arc<dyn HttpTransport + Send + Sync>` via `.transport(...)` and
+  exposes optional fluent setters for the `SubgraphTransportPolicy`,
+  per-chain base-URL map, and a shared `reqwest::Client` for multi-chain
+  connection-pool reuse. On native targets the builder also exposes a
+  `.build()` overload that defaults the transport to `ReqwestTransport`,
+  so the common single-target consumer never has to wire a transport
+  explicitly; on `wasm32` targets the caller must supply a
+  `FetchTransport` from `cow-sdk-transport-wasm` before `.build()`
+  becomes reachable. The legacy `SubgraphApi::new`, `with_config`,
+  `with_config_and_transport_policy`, `from_shared_client`,
+  `from_shared_client_with_config`, and
+  `from_shared_client_with_transport_policy` free constructors are
+  retired; the post-construction `with_transport_policy` modifier
+  remains available for adjusting an existing instance. `SubgraphApi`
+  surface continues to live in the dedicated `cow-sdk-subgraph` crate
+  and is not re-exported through the root facade.
 - `cow_sdk_orderbook::OrderBookApi` is constructed exclusively through the
   typestate `OrderBookApi::builder()` (or the convenience
   `OrderBookApi::builder_from_context(ApiContext)` seed) so the compiler

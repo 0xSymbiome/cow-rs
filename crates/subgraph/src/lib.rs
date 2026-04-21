@@ -8,6 +8,8 @@
 
 /// Typed subgraph client configuration and query execution.
 pub mod api;
+/// Typestate-checked construction surface for [`SubgraphApi`].
+pub mod builder;
 /// Typed subgraph transport, GraphQL, and decoding errors.
 pub mod error;
 /// Saved query documents exposed as stable helper constants.
@@ -18,6 +20,10 @@ pub mod types;
 pub use api::{
     API_NAME, DEFAULT_SUBGRAPH_USER_AGENT, SubgraphApi, SubgraphApiBaseUrls, SubgraphConfig,
     SubgraphConfigOverride, SubgraphTransportPolicy,
+};
+pub use builder::{
+    ApiKeySet, ApiKeyUnset, ChainIdSet, ChainIdUnset, SubgraphApiBuilder, TransportSet,
+    TransportUnset,
 };
 pub use error::{
     SubgraphError, SubgraphGraphQlError, SubgraphGraphQlErrorLocation, SubgraphRequestErrorContext,

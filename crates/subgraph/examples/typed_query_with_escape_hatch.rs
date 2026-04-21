@@ -19,9 +19,7 @@
 //! ```
 
 use cow_sdk_core::SupportedChainId;
-use cow_sdk_subgraph::{
-    SubgraphApi, SubgraphApiBaseUrls, SubgraphConfig, SubgraphQueryRequest, Total,
-};
+use cow_sdk_subgraph::{SubgraphApi, SubgraphApiBaseUrls, SubgraphQueryRequest, Total};
 use serde_json::{Value, json};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -125,11 +123,9 @@ fn api_pointed_at(server: &MockServer) -> SubgraphApi {
     .into_iter()
     .collect();
 
-    SubgraphApi::with_config(
-        "example-api-key",
-        SubgraphConfig {
-            chain_id: SupportedChainId::Mainnet,
-            base_urls: Some(base_urls),
-        },
-    )
+    SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("example-api-key")
+        .base_urls(base_urls)
+        .build()
 }

@@ -20,13 +20,13 @@ cow-sdk-subgraph = "0.1"
 ## Minimal example
 
 ```rust
-use cow_sdk_subgraph::{SubgraphApi, SubgraphConfig};
+use cow_sdk_core::SupportedChainId;
+use cow_sdk_subgraph::SubgraphApi;
 
-let _config = SubgraphConfig::builder()
-    .with_api_key("your-subgraph-api-key")
-    .build()
-    .unwrap();
-let _api = SubgraphApi::new(_config);
+let _api = SubgraphApi::builder()
+    .chain(SupportedChainId::Mainnet)
+    .api_key("your-subgraph-api-key")
+    .build();
 ```
 
 ## Where to next

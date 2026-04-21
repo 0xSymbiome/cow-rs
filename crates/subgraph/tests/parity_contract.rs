@@ -86,7 +86,10 @@ fn assert_prod_url_resolution(id: &str, expected: &Value) {
         "case {id}: base URL template must match the pinned Graph gateway",
     );
 
-    let api = SubgraphApi::new("redacted-for-test");
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("redacted-for-test")
+        .build();
     let prod_config = api.prod_config();
 
     let supported = expected["supported_urls"]
@@ -355,7 +358,10 @@ fn assert_unsupported_network_error(id: &str, expected: &Value) {
     );
 
     // The fixture names polygon; polygon maps to None in the production config.
-    let api = SubgraphApi::new("redacted-for-test");
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("redacted-for-test")
+        .build();
     let prod_config = api.prod_config();
     let polygon = prod_config
         .get(&SupportedChainId::Polygon)

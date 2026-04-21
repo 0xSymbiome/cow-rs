@@ -66,13 +66,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
-    let api = SubgraphApi::with_config(
-        "review-key",
-        SubgraphConfig {
-            chain_id: SupportedChainId::Mainnet,
-            base_urls: Some(base_urls),
-        },
-    );
+    let api = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("review-key")
+        .base_urls(base_urls)
+        .build();
 
     let totals = api.get_totals().await?;
     let last_days = api.get_last_days_volume(7).await?;

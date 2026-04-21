@@ -16,7 +16,7 @@ use cow_sdk::{
     sanitize_protocol_fee_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
     swap_params_to_limit_order_params, validate_app_data_doc,
 };
-use cow_sdk_subgraph::{SubgraphApi, SubgraphConfig};
+use cow_sdk_subgraph::SubgraphApi;
 
 #[wasm_bindgen(start)]
 pub fn start() {
@@ -588,18 +588,24 @@ fn api_context(chain_id: SupportedChainId, env: CowEnv) -> ApiContext {
 }
 
 fn subgraph_api(chain_id: SupportedChainId, api_key: &str) -> Result<SubgraphApi, JsValue> {
+    use std::sync::Arc;
+
+    use cow_sdk::HttpTransport;
+    use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
+
     let api_key = api_key.trim();
     if api_key.is_empty() {
         return Err(to_js_error("subgraph API key is required"));
     }
 
-    Ok(SubgraphApi::with_config(
-        api_key,
-        SubgraphConfig {
-            chain_id,
-            base_urls: None,
-        },
-    ))
+    let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
+        &FetchTransportConfig::new("https://gateway.thegraph.com/api"),
+    ));
+    Ok(SubgraphApi::builder()
+        .chain(chain_id)
+        .api_key(api_key)
+        .transport(transport)
+        .build())
 }
 
 fn parse_chain_id(chain_id: u32) -> Result<SupportedChainId, JsValue> {
