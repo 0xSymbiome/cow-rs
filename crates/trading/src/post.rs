@@ -6,13 +6,13 @@ use cow_sdk_signing::{
     SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order_async,
     sign_order_with_scheme_async,
 };
-use serde_json::Value;
 
 use crate::types::{
     QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
     apply_quote_request_parameter_overrides, validate_orderbook_context,
     validate_orderbook_env_context, validate_quote_orderbook_binding,
 };
+use crate::validation::OrderBoundsValidator;
 use crate::{
     LimitOrderAdvancedSettings, LimitTradeParameters, OrderPostingResult, OrderbookClient,
     QuoteResults, SwapAdvancedSettings, TradeParameters, TraderParameters, TradingAppDataInfo,
@@ -42,12 +42,46 @@ where
     S: Signer,
     S::Error: std::fmt::Display,
 {
-    post_swap_order_async(
+    post_swap_order_with_bounds(
         trade_parameters,
         trader,
         signer,
         advanced_settings,
         orderbook,
+        crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
+    )
+    .await
+}
+
+/// Variant of [`post_swap_order`] that accepts a caller-supplied
+/// [`crate::validation::OrderValidityBounds`] so the reviewed lifetime
+/// ceiling can be tightened by policy.
+///
+/// # Errors
+///
+/// Returns an error when quoting fails, when app-data generation or merging
+/// fails, when signing fails, or when the orderbook rejects the order
+/// submission.
+pub async fn post_swap_order_with_bounds<O, S>(
+    trade_parameters: &TradeParameters,
+    trader: &TraderParameters,
+    signer: &S,
+    advanced_settings: Option<&SwapAdvancedSettings>,
+    orderbook: &O,
+    order_bounds: crate::validation::OrderValidityBounds,
+) -> Result<OrderPostingResult, TradingError>
+where
+    O: OrderbookClient + ?Sized,
+    S: Signer,
+    S::Error: std::fmt::Display,
+{
+    post_swap_order_async_with_bounds(
+        trade_parameters,
+        trader,
+        signer,
+        advanced_settings,
+        orderbook,
+        order_bounds,
     )
     .await
 }
@@ -72,6 +106,38 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
 {
+    post_swap_order_async_with_bounds(
+        trade_parameters,
+        trader,
+        signer,
+        advanced_settings,
+        orderbook,
+        crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
+    )
+    .await
+}
+
+/// Variant of [`post_swap_order_async`] that accepts caller-supplied
+/// [`crate::validation::OrderValidityBounds`].
+///
+/// # Errors
+///
+/// Returns an error when quoting fails, when app-data generation or merging
+/// fails, when signing fails, or when the orderbook rejects the order
+/// submission.
+pub async fn post_swap_order_async_with_bounds<O, S>(
+    trade_parameters: &TradeParameters,
+    trader: &TraderParameters,
+    signer: &S,
+    advanced_settings: Option<&SwapAdvancedSettings>,
+    orderbook: &O,
+    order_bounds: crate::validation::OrderValidityBounds,
+) -> Result<OrderPostingResult, TradingError>
+where
+    O: OrderbookClient + ?Sized,
+    S: AsyncSigner,
+    S::Error: std::fmt::Display,
+{
     let quote_results = crate::get_quote_results_async(
         trade_parameters,
         trader,
@@ -81,8 +147,15 @@ where
     )
     .await?;
 
-    post_swap_order_from_quote_async(&quote_results, trader, signer, advanced_settings, orderbook)
-        .await
+    post_swap_order_from_quote_async_with_bounds(
+        &quote_results,
+        trader,
+        signer,
+        advanced_settings,
+        orderbook,
+        order_bounds,
+    )
+    .await
 }
 
 /// Signs and submits a swap order from previously computed quote results using a synchronous
@@ -108,8 +181,15 @@ where
     S: Signer,
     S::Error: std::fmt::Display,
 {
-    post_swap_order_from_quote_async(quote_results, trader, signer, advanced_settings, orderbook)
-        .await
+    post_swap_order_from_quote_async_with_bounds(
+        quote_results,
+        trader,
+        signer,
+        advanced_settings,
+        orderbook,
+        crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
+    )
+    .await
 }
 
 /// Signs and submits a swap order from previously computed quote results using an asynchronous
@@ -150,7 +230,43 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
 {
+    post_swap_order_from_quote_async_with_bounds(
+        quote_results,
+        trader,
+        signer,
+        advanced_settings,
+        orderbook,
+        crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
+    )
+    .await
+}
+
+/// Variant of [`post_swap_order_from_quote_async`] that accepts a
+/// caller-supplied [`crate::validation::OrderValidityBounds`].
+///
+/// # Errors
+///
+/// Returns an error when the quoted trade cannot be converted into a
+/// postable order, when app-data merging fails, when signing fails, or when
+/// the orderbook rejects the order submission.
+pub async fn post_swap_order_from_quote_async_with_bounds<O, S>(
+    quote_results: &QuoteResults,
+    trader: &TraderParameters,
+    signer: &S,
+    advanced_settings: Option<&SwapAdvancedSettings>,
+    orderbook: &O,
+    order_bounds: crate::validation::OrderValidityBounds,
+) -> Result<OrderPostingResult, TradingError>
+where
+    O: OrderbookClient + ?Sized,
+    S: AsyncSigner,
+    S::Error: std::fmt::Display,
+{
     validate_quote_orderbook_binding(orderbook, quote_results.orderbook_binding.as_ref())?;
+
+    let app_data_signer = advanced_settings
+        .and_then(|settings| settings.app_data.as_ref())
+        .and_then(|params| params.signer.clone());
 
     let app_data_info = match advanced_settings.and_then(|settings| settings.app_data.as_ref()) {
         Some(app_data_override) => {
@@ -188,6 +304,8 @@ where
         &additional_params,
         trader,
         signer,
+        order_bounds,
+        app_data_signer,
     )
     .await
 }
@@ -212,7 +330,15 @@ where
     S: Signer,
     S::Error: std::fmt::Display,
 {
-    post_limit_order_async(params, trader, signer, advanced_settings, orderbook).await
+    post_limit_order_async_with_bounds(
+        params,
+        trader,
+        signer,
+        advanced_settings,
+        orderbook,
+        crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
+    )
+    .await
 }
 
 /// Signs and submits a limit order using an asynchronous signer.
@@ -237,6 +363,41 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display,
 {
+    post_limit_order_async_with_bounds(
+        params,
+        trader,
+        signer,
+        advanced_settings,
+        orderbook,
+        crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
+    )
+    .await
+}
+
+/// Variant of [`post_limit_order_async`] that accepts a caller-supplied
+/// [`crate::validation::OrderValidityBounds`].
+///
+/// # Errors
+///
+/// Returns an error when app-data generation fails, when signing fails, or
+/// when the orderbook rejects the order submission.
+pub async fn post_limit_order_async_with_bounds<O, S>(
+    params: &LimitTradeParameters,
+    trader: &TraderParameters,
+    signer: &S,
+    advanced_settings: Option<&LimitOrderAdvancedSettings>,
+    orderbook: &O,
+    order_bounds: crate::validation::OrderValidityBounds,
+) -> Result<OrderPostingResult, TradingError>
+where
+    O: OrderbookClient + ?Sized,
+    S: AsyncSigner,
+    S::Error: std::fmt::Display,
+{
+    let app_data_signer = advanced_settings
+        .and_then(|settings| settings.app_data.as_ref())
+        .and_then(|params| params.signer.clone());
+
     let mut params = apply_settings_to_limit_trade_parameters(
         params,
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
@@ -267,6 +428,8 @@ where
         &additional,
         trader,
         signer,
+        order_bounds,
+        app_data_signer,
     )
     .await
 }
@@ -282,6 +445,10 @@ where
 ///
 /// Returns an error when transaction preparation fails, when app-data upload fails, or when the
 /// signer cannot send the transaction.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the post-trade submission seam threads orchestration, validator, and runtime context through one entry point for parity with the reviewed services authority"
+)]
 pub async fn post_sell_native_currency_order<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
@@ -289,6 +456,8 @@ pub async fn post_sell_native_currency_order<O, S>(
     additional_params: &crate::types::PostTradeAdditionalParams,
     trader: &TraderParameters,
     signer: &S,
+    order_bounds: crate::validation::OrderValidityBounds,
+    app_data_signer: Option<Address>,
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
@@ -302,6 +471,8 @@ where
         additional_params,
         trader,
         signer,
+        order_bounds,
+        app_data_signer,
     )
     .await
 }
@@ -333,6 +504,10 @@ where
         ),
     ),
 )]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the eth-flow submission seam threads orchestration, validator, and runtime context through one entry point for parity with the reviewed services authority"
+)]
 pub async fn post_sell_native_currency_order_async<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
@@ -340,6 +515,8 @@ pub async fn post_sell_native_currency_order_async<O, S>(
     additional_params: &crate::types::PostTradeAdditionalParams,
     trader: &TraderParameters,
     signer: &S,
+    order_bounds: crate::validation::OrderValidityBounds,
+    app_data_signer: Option<Address>,
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
@@ -364,6 +541,31 @@ where
         signer,
     )
     .await?;
+
+    let preview_from = tx.order_to_sign.receiver.clone();
+    let preview = OrderCreation::new(
+        tx.order_to_sign.sell_token.clone(),
+        tx.order_to_sign.buy_token.clone(),
+        tx.order_to_sign.sell_amount.to_string(),
+        tx.order_to_sign.buy_amount.to_string(),
+        tx.order_to_sign.valid_to,
+        tx.order_to_sign.kind,
+        SigningScheme::Eip1271,
+        String::new(),
+        preview_from,
+    );
+    let validator =
+        OrderBoundsValidator::new(order_bounds, crate::validation::SubmissionClass::Limit)
+            .with_weth_address(wrapped_native_address(canonical_chain_id));
+    validator
+        .validate(
+            &preview,
+            SigningScheme::Eip1271,
+            app_data_signer,
+            current_unix_seconds(),
+            true,
+        )
+        .map_err(TradingError::ClientRejected)?;
 
     orderbook
         .upload_app_data(&app_data.app_data_keccak256, &app_data.full_app_data)
@@ -395,6 +597,10 @@ where
 ///
 /// Returns an error when `EthFlow` routing prerequisites are missing, when signing fails, when
 /// app-data upload fails, or when the orderbook rejects the order submission.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the trade-posting submission seam threads orchestration, validator, and runtime context through one entry point for parity with the reviewed services authority"
+)]
 pub async fn post_cow_protocol_trade<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
@@ -402,6 +608,8 @@ pub async fn post_cow_protocol_trade<O, S>(
     additional_params: &crate::types::PostTradeAdditionalParams,
     trader: &TraderParameters,
     signer: &S,
+    order_bounds: crate::validation::OrderValidityBounds,
+    app_data_signer: Option<Address>,
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
@@ -415,6 +623,8 @@ where
         additional_params,
         trader,
         signer,
+        order_bounds,
+        app_data_signer,
     )
     .await
 }
@@ -434,7 +644,8 @@ where
 /// rejects the order submission.
 #[allow(
     clippy::too_many_lines,
-    reason = "the function linearly sequences one trade-posting orchestration path whose steps must stay co-located to preserve reviewed precedence"
+    clippy::too_many_arguments,
+    reason = "the function linearly sequences one trade-posting orchestration path whose steps must stay co-located to preserve reviewed precedence; the parameter list threads orchestration, validator, and runtime context through one entry point"
 )]
 pub async fn post_cow_protocol_trade_async<O, S>(
     orderbook: &O,
@@ -443,6 +654,8 @@ pub async fn post_cow_protocol_trade_async<O, S>(
     additional_params: &crate::types::PostTradeAdditionalParams,
     trader: &TraderParameters,
     signer: &S,
+    order_bounds: crate::validation::OrderValidityBounds,
+    app_data_signer: Option<Address>,
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
@@ -470,6 +683,8 @@ where
             additional_params,
             trader,
             signer,
+            order_bounds,
+            app_data_signer,
         )
         .await;
     }
@@ -577,13 +792,16 @@ where
         order_body = order_body.with_quote_id(quote_id);
     }
 
-    let app_data_signer = extract_metadata_signer(&app_data.doc);
-    crate::validation::OrderBoundsValidator::services_default()
+    let validator =
+        OrderBoundsValidator::new(order_bounds, crate::validation::SubmissionClass::Limit)
+            .with_weth_address(wrapped_native_address(chain_id));
+    validator
         .validate(
             &order_body,
             signing_scheme,
-            app_data_signer.as_ref(),
+            app_data_signer,
             current_unix_seconds(),
+            false,
         )
         .map_err(TradingError::ClientRejected)?;
     let order_id = orderbook.send_order(&order_body).await?;
@@ -604,11 +822,8 @@ fn current_unix_seconds() -> u64 {
         .unwrap_or(0)
 }
 
-fn extract_metadata_signer(doc: &Value) -> Option<Address> {
-    doc.get("metadata")
-        .and_then(|metadata| metadata.get("signer"))
-        .and_then(Value::as_str)
-        .and_then(|raw| Address::new(raw).ok())
+fn wrapped_native_address(chain_id: cow_sdk_core::SupportedChainId) -> Address {
+    cow_sdk_core::wrapped_native_token(chain_id).address
 }
 
 fn apply_settings_to_limit_trade_parameters(

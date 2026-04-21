@@ -15,8 +15,8 @@ use crate::{
     QuoterParameters, SwapAdvancedSettings, TradeParameters, TraderParameters, TradingError,
     TradingSdkOptions, cancel_order_onchain_async, get_cow_protocol_allowance,
     get_cow_protocol_allowance_async, get_pre_sign_transaction, get_pre_sign_transaction_async,
-    get_quote_only, get_quote_results_async, off_chain_cancel_order_async, post_limit_order_async,
-    post_swap_order_async, post_swap_order_from_quote_async, types::validate_orderbook_context,
+    get_quote_only, get_quote_results_async, off_chain_cancel_order_async,
+    types::validate_orderbook_context,
 };
 
 /// Runtime readiness of a constructed [`TradingSdk`].
@@ -59,6 +59,7 @@ pub struct TradingSdk {
     trader_defaults: PartialTraderParameters,
     options: TradingSdkOptions,
     mode: TradingSdkMode,
+    order_bounds: crate::validation::OrderValidityBounds,
 }
 
 /// Builder for [`TradingSdk`].
@@ -304,6 +305,7 @@ impl<C, A> TradingSdkBuilder<C, A> {
             trader_defaults: self.trader_defaults,
             options: self.options,
             mode: TradingSdkMode::Ready,
+            order_bounds: self.order_bounds,
         })
     }
 
@@ -353,6 +355,7 @@ impl<A> TradingSdkBuilder<ChainIdSet, A> {
             trader_defaults: self.trader_defaults,
             options: self.options,
             mode: TradingSdkMode::HelperOnly,
+            order_bounds: self.order_bounds,
         })
     }
 }
@@ -394,6 +397,7 @@ impl TradingSdkBuilder<ChainIdSet, AppCodeSet> {
             trader_defaults: self.trader_defaults,
             options: self.options,
             mode: TradingSdkMode::Ready,
+            order_bounds: self.order_bounds,
         })
     }
 }
@@ -667,12 +671,13 @@ impl TradingSdk {
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
-        post_swap_order_async(
+        crate::post::post_swap_order_async_with_bounds(
             &params,
             &trader,
             signer,
             advanced_settings,
             orderbook.client.as_ref(),
+            self.order_bounds,
         )
         .await
     }
@@ -749,12 +754,13 @@ impl TradingSdk {
         let (trader, orderbook) =
             self.resolve_orderbook_trader(None, quote_results.trade_parameters.env)?;
 
-        post_swap_order_from_quote_async(
+        crate::post::post_swap_order_from_quote_async_with_bounds(
             quote_results,
             &trader,
             signer,
             advanced_settings,
             orderbook.client.as_ref(),
+            self.order_bounds,
         )
         .await
     }
@@ -830,12 +836,13 @@ impl TradingSdk {
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
-        post_limit_order_async(
+        crate::post::post_limit_order_async_with_bounds(
             &params,
             &trader,
             signer,
             advanced_settings,
             orderbook.client.as_ref(),
+            self.order_bounds,
         )
         .await
     }

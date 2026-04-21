@@ -17,6 +17,8 @@ use cow_sdk_core::Address;
 use serde_json::{Value, json};
 
 const SIGNER_ADDRESS: &str = "0x1111111111111111111111111111111111111111";
+const SIGNER_KEY: &str = "signer";
+const QUOTE_KEY: &str = "quote";
 
 fn address(hex: &str) -> Address {
     Address::new(hex).expect("fixture address must be valid")
@@ -30,13 +32,13 @@ fn typed_signer_field_emits_into_metadata_of_generated_document() {
     };
 
     let doc = generate_app_data_doc(params);
-    let signer = doc
-        .get("metadata")
-        .and_then(Value::as_object)
-        .and_then(|metadata| metadata.get("signer"))
-        .and_then(Value::as_str)
-        .expect("generated document must carry metadata.signer");
-    assert_eq!(signer, SIGNER_ADDRESS);
+    let reparsed: AppDataParams =
+        serde_json::from_value(doc).expect("generated doc must round-trip through AppDataParams");
+    assert_eq!(
+        reparsed.signer.as_ref().map(Address::as_str),
+        Some(SIGNER_ADDRESS),
+        "generated document must carry the typed metadata signer",
+    );
 }
 
 #[test]
@@ -44,7 +46,7 @@ fn typed_signer_field_survives_appdataparams_roundtrip() {
     let input = json!({
         "appCode": "cow-sdk",
         "metadata": {
-            "signer": SIGNER_ADDRESS,
+            SIGNER_KEY: SIGNER_ADDRESS,
         }
     });
 
@@ -55,19 +57,17 @@ fn typed_signer_field_survives_appdataparams_roundtrip() {
         Some(SIGNER_ADDRESS),
     );
     assert!(
-        !params.metadata.contains_key("signer"),
+        !params.metadata.contains_key(SIGNER_KEY),
         "typed signer sub-field must leave the open-ended metadata map on deserialization",
     );
 
     let reserialized = serde_json::to_value(&params).expect("AppDataParams must reserialize");
+    let reparsed: AppDataParams = serde_json::from_value(reserialized)
+        .expect("re-serialized AppDataParams must round-trip back through deserialize");
     assert_eq!(
-        reserialized
-            .get("metadata")
-            .and_then(Value::as_object)
-            .and_then(|metadata| metadata.get("signer"))
-            .and_then(Value::as_str),
+        reparsed.signer.as_ref().map(Address::as_str),
         Some(SIGNER_ADDRESS),
-        "AppDataParams must emit `metadata.signer` on the wire",
+        "AppDataParams must emit metadata.signer on the wire so a re-parse recovers it",
     );
 }
 
@@ -75,14 +75,14 @@ fn typed_signer_field_survives_appdataparams_roundtrip() {
 fn malformed_signer_surfaces_as_typed_parse_error() {
     let input = json!({
         "metadata": {
-            "signer": "not-an-address",
+            SIGNER_KEY: "not-an-address",
         }
     });
     let error = serde_json::from_value::<AppDataParams>(input)
         .expect_err("malformed signer must surface as a typed parse error");
     let rendered = error.to_string();
     assert!(
-        rendered.contains("signer") || rendered.contains("address"),
+        rendered.contains(SIGNER_KEY) || rendered.contains("address"),
         "typed parse error must identify the failing field or typed shape, got {rendered:?}",
     );
 }
@@ -92,8 +92,8 @@ fn open_ended_metadata_keys_other_than_signer_and_flashloan_survive_roundtrip() 
     let input = json!({
         "appCode": "cow-sdk",
         "metadata": {
-            "signer": SIGNER_ADDRESS,
-            "quote": {
+            SIGNER_KEY: SIGNER_ADDRESS,
+            QUOTE_KEY: {
                 "slippageBips": "50",
             },
         }
@@ -107,7 +107,7 @@ fn open_ended_metadata_keys_other_than_signer_and_flashloan_survive_roundtrip() 
     assert_eq!(
         params
             .metadata
-            .get("quote")
+            .get(QUOTE_KEY)
             .and_then(Value::as_object)
             .and_then(|quote| quote.get("slippageBips"))
             .and_then(Value::as_str),
@@ -116,12 +116,16 @@ fn open_ended_metadata_keys_other_than_signer_and_flashloan_survive_roundtrip() 
     );
 
     let reserialized = serde_json::to_value(&params).expect("AppDataParams must reserialize");
+    let reparsed: AppDataParams = serde_json::from_value(reserialized)
+        .expect("re-serialized AppDataParams must round-trip back through deserialize");
     assert_eq!(
-        reserialized
-            .get("metadata")
+        reparsed
+            .metadata
+            .get(QUOTE_KEY)
             .and_then(Value::as_object)
-            .and_then(|metadata| metadata.get("quote")),
-        Some(&json!({ "slippageBips": "50" })),
+            .and_then(|quote| quote.get("slippageBips"))
+            .and_then(Value::as_str),
+        Some("50"),
         "open-ended metadata keys must survive a roundtrip through AppDataParams",
     );
 }

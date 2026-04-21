@@ -325,6 +325,8 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
         &additional,
         &trader,
         &signer,
+        cow_sdk_trading::OrderValidityBounds::SERVICES_DEFAULT,
+        None,
     )
     .await
     .expect("native sell posting should succeed");

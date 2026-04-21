@@ -398,6 +398,25 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Tighten the typed client-side trading validator surface.
+  `TradingSdkBuilder::with_order_bounds` now flows through to
+  `TradingSdk` and the submission seam, so a custom
+  `OrderValidityBounds` policy actually applies on
+  `post_swap_order`, `post_limit_order`, and the eth-flow
+  variants. The `OrderBoundsValidator` accepts a chain-specific
+  wrapped-native address through `with_weth_address` and rejects
+  the paired sell-WETH / buy-native-sentinel case as
+  `ClientRejection::SameBuyAndSellToken { token: weth }` to mirror
+  the reviewed services token-pair guard. The eth-flow submission
+  path now invokes the validator with a typed `is_eth_flow` flag
+  so zero-amount, same-token, owner-mismatch, and lifetime checks
+  still fire on native-currency sells while the native-sentinel
+  sell-token check is correctly skipped. The validator's
+  `app_data_signer` parameter is by value (`Option<Address>`) so
+  call sites pass typed addresses without `.as_ref()`. The post
+  pipeline reads the typed
+  `cow_sdk_app_data::AppDataParams::signer` field directly instead
+  of parsing a free-form JSON path.
 - `TradingError` gains a typed `ClientRejected(ClientRejection)`
   variant that surfaces the new client-side validator output as a
   structured payload; the prior

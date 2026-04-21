@@ -152,10 +152,11 @@ pub enum SubmissionClass {
 
 /// Pure client-side validator that enforces the reviewed services protocol
 /// invariants on an [`OrderCreation`] before it reaches the orderbook.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderBoundsValidator {
     bounds: OrderValidityBounds,
     class: SubmissionClass,
+    weth_address: Option<Address>,
 }
 
 impl OrderBoundsValidator {
@@ -166,13 +167,29 @@ impl OrderBoundsValidator {
         Self {
             bounds: OrderValidityBounds::SERVICES_DEFAULT,
             class: SubmissionClass::Limit,
+            weth_address: None,
         }
     }
 
     /// Creates a validator with the supplied bounds and submission class.
     #[must_use]
     pub const fn new(bounds: OrderValidityBounds, class: SubmissionClass) -> Self {
-        Self { bounds, class }
+        Self {
+            bounds,
+            class,
+            weth_address: None,
+        }
+    }
+
+    /// Returns a copy of this validator configured with the chain-specific
+    /// wrapped-native token address. When supplied, the validator rejects
+    /// `sell_token == weth_address` paired with `buy_token == BUY_ETH_ADDRESS`
+    /// through [`ClientRejection::SameBuyAndSellToken`] to mirror the
+    /// reviewed services token-pair guard.
+    #[must_use]
+    pub fn with_weth_address(mut self, weth_address: Address) -> Self {
+        self.weth_address = Some(weth_address);
+        self
     }
 
     /// Returns the configured lifetime bounds.
@@ -187,6 +204,12 @@ impl OrderBoundsValidator {
         self.class
     }
 
+    /// Returns the configured chain-specific wrapped-native address, if any.
+    #[must_use]
+    pub const fn weth_address(&self) -> Option<&Address> {
+        self.weth_address.as_ref()
+    }
+
     /// Validates the supplied [`OrderCreation`] against the reviewed
     /// protocol-invariant matrix.
     ///
@@ -197,6 +220,12 @@ impl OrderBoundsValidator {
     /// from the app-data payload; pass `None` when the payload has no
     /// declared signer.
     ///
+    /// `is_eth_flow` opts into the eth-flow submission-path defence-in-depth
+    /// coverage: the native-currency-sentinel sell-token check is skipped
+    /// (the sentinel is expected on that path), while every other invariant
+    /// (zero amount, same token, owner mismatch, `valid_to` bounds) still
+    /// runs.
+    ///
     /// # Errors
     ///
     /// Returns [`ClientRejection`] on the first invariant violation so the
@@ -205,8 +234,9 @@ impl OrderBoundsValidator {
         &self,
         order: &OrderCreation,
         scheme: SigningScheme,
-        app_data_signer: Option<&Address>,
+        app_data_signer: Option<Address>,
         now: u64,
+        is_eth_flow: bool,
     ) -> Result<(), ClientRejection> {
         if order.from == zero_address() {
             return Err(ClientRejection::MissingFrom);
@@ -233,22 +263,50 @@ impl OrderBoundsValidator {
             }
         }
 
-        validate_token_bounds(&order.sell_token, &order.buy_token)?;
+        self.validate_token_bounds(&order.sell_token, &order.buy_token, is_eth_flow)?;
 
         validate_amount("sellAmount", AmountSide::Sell, &order.sell_amount)?;
         validate_amount("buyAmount", AmountSide::Buy, &order.buy_amount)?;
 
         if let Some(appdata_signer) = app_data_signer
-            && appdata_signer != &order.from
+            && appdata_signer != order.from
         {
             return Err(ClientRejection::AppdataFromMismatch {
-                appdata_signer: appdata_signer.clone(),
+                appdata_signer,
                 from: order.from.clone(),
             });
         }
 
         let _ = scheme;
 
+        Ok(())
+    }
+
+    fn validate_token_bounds(
+        &self,
+        sell_token: &Address,
+        buy_token: &Address,
+        is_eth_flow: bool,
+    ) -> Result<(), ClientRejection> {
+        if !is_eth_flow {
+            let native = native_sentinel();
+            if sell_token == &native {
+                return Err(ClientRejection::InvalidNativeSellToken);
+            }
+        }
+        if sell_token == buy_token {
+            return Err(ClientRejection::SameBuyAndSellToken {
+                token: sell_token.clone(),
+            });
+        }
+        if let Some(weth) = self.weth_address.as_ref()
+            && sell_token == weth
+            && buy_token == &native_sentinel()
+        {
+            return Err(ClientRejection::SameBuyAndSellToken {
+                token: weth.clone(),
+            });
+        }
         Ok(())
     }
 
@@ -269,19 +327,6 @@ impl Default for OrderBoundsValidator {
     fn default() -> Self {
         Self::services_default()
     }
-}
-
-fn validate_token_bounds(sell_token: &Address, buy_token: &Address) -> Result<(), ClientRejection> {
-    let native = native_sentinel();
-    if sell_token == &native {
-        return Err(ClientRejection::InvalidNativeSellToken);
-    }
-    if sell_token == buy_token {
-        return Err(ClientRejection::SameBuyAndSellToken {
-            token: sell_token.clone(),
-        });
-    }
-    Ok(())
 }
 
 fn validate_amount(

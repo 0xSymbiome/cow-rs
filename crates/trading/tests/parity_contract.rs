@@ -1149,11 +1149,20 @@ async fn assert_native_sell_post_flow(case_id: &str, expected: &Value) {
     let additional = PostTradeAdditionalParams::new()
         .with_check_eth_flow_order_exists(Arc::new(duplicate_checker));
 
-    post_sell_native_currency_order(&orderbook, &info, &params, &additional, &trader, &signer)
-        .await
-        .unwrap_or_else(|error| {
-            panic!("case {case_id}: native-sell posting must succeed, got {error:?}")
-        });
+    post_sell_native_currency_order(
+        &orderbook,
+        &info,
+        &params,
+        &additional,
+        &trader,
+        &signer,
+        cow_sdk_trading::OrderValidityBounds::SERVICES_DEFAULT,
+        None,
+    )
+    .await
+    .unwrap_or_else(|error| {
+        panic!("case {case_id}: native-sell posting must succeed, got {error:?}")
+    });
 
     let orderbook_state = orderbook.state();
     assert_eq!(
