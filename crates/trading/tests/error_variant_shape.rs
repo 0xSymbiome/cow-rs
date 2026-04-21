@@ -1,55 +1,46 @@
 //! Public-surface contract assertion for the typed shape of
-//! [`cow_sdk_trading::TradingError::RecoverableSignatureOwnerMismatch`].
+//! [`cow_sdk_trading::TradingError::ClientRejected`] and the typed
+//! [`cow_sdk_trading::ClientRejection`] surface it carries.
 //!
-//! The variant carries typed [`cow_sdk_core::Address`] fields for the
-//! `owner` and `signer` so downstream callers pattern-match on the typed
-//! payload without re-parsing error messages. The `owner` is the address
-//! resolved from the order payload and the `signer` is the address
-//! produced by the signing backend. This test destructures the typed
-//! shape through an exhaustive pattern match; any future variant whose
-//! shape drifts from this contract fails this file at compile time.
+//! Each variant of [`ClientRejection`] carries typed fields so downstream
+//! callers pattern-match on the typed payload without re-parsing error
+//! messages. The recoverable-signature owner check has merged into the
+//! typed [`ClientRejection::OwnerMismatch`] variant and this test proves
+//! the typed addresses still survive the round-trip.
 
 use cow_sdk_core::Address;
-use cow_sdk_orderbook::SigningScheme;
-use cow_sdk_trading::TradingError;
+use cow_sdk_trading::{ClientRejection, TradingError};
 
-const fn assert_typed_scheme(_: SigningScheme) {}
 const fn assert_typed_address(_: &Address) {}
 
 #[test]
-fn recoverable_signature_owner_mismatch_carries_typed_addresses() {
+fn client_rejection_owner_mismatch_carries_typed_addresses() {
     let owner =
         Address::new("0x1111111111111111111111111111111111111111").expect("literal must parse");
     let signer =
         Address::new("0x2222222222222222222222222222222222222222").expect("literal must parse");
-    let error = TradingError::RecoverableSignatureOwnerMismatch {
-        scheme: SigningScheme::Eip712,
-        owner: owner.clone(),
-        signer: signer.clone(),
+    let rejection = ClientRejection::OwnerMismatch {
+        expected: owner.clone(),
+        recovered: signer.clone(),
     };
+    let error: TradingError = rejection.into();
 
-    let TradingError::RecoverableSignatureOwnerMismatch {
-        scheme,
-        owner: extracted_owner,
-        signer: extracted_signer,
-    } = &error
+    let TradingError::ClientRejected(ClientRejection::OwnerMismatch {
+        expected,
+        recovered,
+    }) = &error
     else {
-        panic!("expected RecoverableSignatureOwnerMismatch variant, got {error:?}");
+        panic!("expected ClientRejected(OwnerMismatch) variant, got {error:?}");
     };
-    assert_typed_scheme(*scheme);
-    assert_typed_address(extracted_owner);
-    assert_typed_address(extracted_signer);
-    assert_eq!(*scheme, SigningScheme::Eip712);
-    assert_eq!(extracted_owner, &owner);
-    assert_eq!(extracted_signer, &signer);
+    assert_typed_address(expected);
+    assert_typed_address(recovered);
+    assert_eq!(expected, &owner);
+    assert_eq!(recovered, &signer);
 
-    assert_eq!(
-        error.to_string(),
-        format!(
-            "recoverable signing scheme `Eip712` requires owner `{}` to match signer `{}`",
-            owner.as_str(),
-            signer.as_str(),
-        ),
+    let rendered = error.to_string();
+    assert!(
+        rendered.contains(owner.as_str()) && rendered.contains(signer.as_str()),
+        "ClientRejection::OwnerMismatch must render the typed addresses, got: {rendered}",
     );
 }
 

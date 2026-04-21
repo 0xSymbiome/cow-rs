@@ -138,11 +138,16 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
             .into(),
     );
 
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("UNIX_EPOCH must remain reachable")
+        .as_secs();
+    let override_valid_to = u32::try_from(now + 3600).expect("valid_to must fit in u32");
     let advanced = SwapAdvancedSettings::new()
         .with_quote_request(
             QuoteRequestOverride::new()
                 .with_receiver(address(ALT_RECEIVER))
-                .with_valid_to(5_600_000)
+                .with_valid_to(override_valid_to)
                 .with_signing_scheme(cow_sdk_orderbook::SigningScheme::Eip1271),
         )
         .with_app_data(cow_sdk_app_data::AppDataParams {
@@ -177,10 +182,10 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
         serde_json::from_str(&uploaded.1).expect("uploaded app data must remain valid json");
 
     assert_eq!(order.receiver, Some(address(ALT_RECEIVER)));
-    assert_eq!(order.valid_to, 5_600_000);
+    assert_eq!(order.valid_to, override_valid_to);
     assert_eq!(order.from, address(OWNER));
     assert_eq!(result.order_to_sign.receiver, address(ALT_RECEIVER));
-    assert_eq!(result.order_to_sign.valid_to, 5_600_000);
+    assert_eq!(result.order_to_sign.valid_to, override_valid_to);
     assert_eq!(
         uploaded_json["metadata"]["partnerFee"]["volumeBps"],
         serde_json::json!(50)
@@ -265,7 +270,11 @@ async fn limit_posting_sync_signer_wrapper_matches_async_suffix_path() {
     let trader = sample_trader_parameters();
     let signer = MockSigner::default();
     let mut params = sample_limit_parameters(OrderKind::Sell);
-    params.valid_to = Some(2_524_608_000);
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("UNIX_EPOCH must remain reachable")
+        .as_secs();
+    params.valid_to = Some(u32::try_from(now + 3600).expect("valid_to must fit in u32"));
 
     let wrapper_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let async_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
@@ -369,10 +378,9 @@ async fn recoverable_limit_posting_rejects_owner_signer_mismatch_before_upload_o
 
     assert!(matches!(
         error,
-        cow_sdk_trading::TradingError::RecoverableSignatureOwnerMismatch {
-            scheme: cow_sdk_orderbook::SigningScheme::Eip712,
-            ..
-        }
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::OwnerMismatch { .. },
+        )
     ));
     assert!(orderbook.state().uploads.is_empty());
     assert!(orderbook.state().sent_orders.is_empty());

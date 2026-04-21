@@ -19,6 +19,8 @@ pub mod error;
 pub mod onchain;
 /// Order-construction helpers and `EthFlow` adjustments.
 pub mod order;
+/// Offline helper validation entry points on trade-parameter builders.
+pub mod parameters;
 /// Quote-to-post orchestration helpers.
 pub mod post;
 /// Quote construction, app-data generation, and quote-request precedence helpers.
@@ -29,6 +31,9 @@ pub mod sdk;
 pub mod slippage;
 /// Shared trading DTOs, trait seams, and settings types.
 pub mod types;
+/// Typed client-side validator enforcing the reviewed services
+/// protocol-invariant matrix on every submission seam.
+pub mod validation;
 
 pub use allowance::{
     approval_transaction, approve_cow_protocol, approve_cow_protocol_async,
@@ -75,4 +80,7 @@ pub use types::{
     QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
     SlippageToleranceResponse, SwapAdvancedSettings, TradeParameters, TraderParameters,
     TradingAppDataInfo, TradingSdkOptions, TradingTransactionParams,
+};
+pub use validation::{
+    AmountSide, ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass,
 };

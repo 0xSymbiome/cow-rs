@@ -731,6 +731,13 @@ impl Amount {
     pub const fn as_biguint(&self) -> &BigUint {
         &self.0
     }
+
+    /// Returns `true` when this amount equals the zero quantity.
+    #[inline]
+    #[must_use]
+    pub fn is_zero(&self) -> bool {
+        self.0 == BigUint::from(0u32)
+    }
 }
 
 impl Default for Amount {

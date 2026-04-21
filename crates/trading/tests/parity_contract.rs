@@ -774,12 +774,21 @@ async fn assert_post_override_propagation(case_id: &str, input: &Value, expected
         receiver_label, "synthetic-receiver",
         "case {case_id}: fixture receiver marker must remain synthetic-receiver",
     );
-    let valid_to = u32::try_from(
+    let _fixture_valid_to = u32::try_from(
         input["validTo"]
             .as_u64()
             .unwrap_or_else(|| panic!("case {case_id}: input.validTo must be a u64")),
     )
     .expect("fixture valid_to must fit in u32");
+    // The fixture `validTo` value documents the propagation intent; the
+    // submission-seam validator runs against real UNIX seconds so compute
+    // a dynamic `valid_to` that still proves end-to-end propagation
+    // without tripping the typed lifetime bound.
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("UNIX_EPOCH must remain reachable")
+        .as_secs();
+    let valid_to = u32::try_from(now + 3600).expect("valid_to must fit in u32");
     assert!(
         expected["receiver_propagates"].as_bool().unwrap_or(false),
         "case {case_id}: expected.receiver_propagates must be true",
@@ -799,7 +808,7 @@ async fn assert_post_override_propagation(case_id: &str, input: &Value, expected
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     // Signer address is different from owner so owner-precedence is observable.
     // A non-recoverable signing scheme (`Eip1271`) sidesteps the typed
-    // RecoverableSignatureOwnerMismatch surface while still proving owner
+    // ClientRejection::OwnerMismatch surface while still proving owner
     // precedence at the order level.
     let signer = MockSigner::new(address(ALT_RECEIVER));
     let mut trade = sample_trade_parameters(OrderKind::Sell);

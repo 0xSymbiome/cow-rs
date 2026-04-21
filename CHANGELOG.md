@@ -15,6 +15,25 @@ unreleased public contract of the repository.
 
 ### Added
 
+- Typed client-side validator on every trading submission path.
+  `cow_sdk_trading::OrderBoundsValidator` pairs
+  `OrderValidityBounds` (with the published services defaults
+  `min = 60s`, `max_market = 3h`, `max_limit = 1y`) and a
+  `SubmissionClass` discriminator to enforce the reviewed protocol
+  invariants at the client before any bytes cross the wire. The
+  typed `ClientRejection` enum ships with `#[non_exhaustive]` and
+  the full launch variant set `ValidToInsufficient`,
+  `ValidToExcessive`, `MissingFrom`, `AppdataFromMismatch`,
+  `SameBuyAndSellToken`, `InvalidNativeSellToken`, `ZeroAmount`
+  (discriminated by the typed `AmountSide` enum), and
+  `OwnerMismatch`. `TradingSdkBuilder::with_order_bounds` is an
+  additive setter that defaults to
+  `OrderValidityBounds::SERVICES_DEFAULT`, and
+  `TradeParameters::validate` / `LimitTradeParameters::validate`
+  expose the builder-level subset of the protocol-invariant matrix
+  for callers that assemble an order outside the hot submission
+  path. `Amount::is_zero` is now exposed on
+  `cow_sdk_core::types::Amount` for predicate-style checks.
 - Typed flash-loan hints and signer fields on the app-data metadata
   shape. `cow_sdk_app_data::FlashloanHints` is a new
   `#[non_exhaustive]` Rust type with five required fields —
@@ -379,6 +398,14 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- `TradingError` gains a typed `ClientRejected(ClientRejection)`
+  variant that surfaces the new client-side validator output as a
+  structured payload; the prior
+  `RecoverableSignatureOwnerMismatch` variant from the recoverable
+  signing contract is retired in favour of
+  `ClientRejection::OwnerMismatch`, whose typed owner and recovered
+  fields preserve the diagnostic information that downstream
+  callers pattern-match on.
 - Return shape of app-data info construction carries typed
   validation metadata. `cow_sdk_app_data::get_app_data_info` now
   returns `Result<AppDataValidated, AppDataError>`, where

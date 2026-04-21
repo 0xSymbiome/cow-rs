@@ -1,9 +1,12 @@
-use cow_sdk_core::{Amount, AsyncProvider, AsyncSigner, ProtocolOptions, Provider, Signer};
+use cow_sdk_core::{
+    Address, Amount, AsyncProvider, AsyncSigner, ProtocolOptions, Provider, Signer,
+};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use cow_sdk_signing::{
     SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order_async,
     sign_order_with_scheme_async,
 };
+use serde_json::Value;
 
 use crate::types::{
     QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
@@ -501,13 +504,9 @@ where
         requested_scheme,
         SigningScheme::Eip712 | SigningScheme::EthSign
     ) && let Some(signer_address) = signer_address.as_ref()
-        && signer_address != &from
     {
-        return Err(TradingError::RecoverableSignatureOwnerMismatch {
-            scheme: requested_scheme,
-            owner: from.clone(),
-            signer: signer_address.clone(),
-        });
+        crate::validation::assert_owner_matches_signer(&from, signer_address)
+            .map_err(TradingError::ClientRejected)?;
     }
     let mut options = ProtocolOptions::new();
     if let Some(env) = params.env {
@@ -577,6 +576,16 @@ where
     if let Some(quote_id) = params.quote_id {
         order_body = order_body.with_quote_id(quote_id);
     }
+
+    let app_data_signer = extract_metadata_signer(&app_data.doc);
+    crate::validation::OrderBoundsValidator::services_default()
+        .validate(
+            &order_body,
+            signing_scheme,
+            app_data_signer.as_ref(),
+            current_unix_seconds(),
+        )
+        .map_err(TradingError::ClientRejected)?;
     let order_id = orderbook.send_order(&order_body).await?;
 
     Ok(OrderPostingResult {
@@ -586,6 +595,20 @@ where
         signature,
         order_to_sign,
     })
+}
+
+fn current_unix_seconds() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0)
+}
+
+fn extract_metadata_signer(doc: &Value) -> Option<Address> {
+    doc.get("metadata")
+        .and_then(|metadata| metadata.get("signer"))
+        .and_then(Value::as_str)
+        .and_then(|raw| Address::new(raw).ok())
 }
 
 fn apply_settings_to_limit_trade_parameters(

@@ -1,9 +1,11 @@
 use cow_sdk_app_data::AppDataError;
 use cow_sdk_contracts::{ContractsError, SigningScheme};
-use cow_sdk_core::{Address, Cancelled, CoreError, ValidationReason};
+use cow_sdk_core::{Cancelled, CoreError, ValidationReason};
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_signing::SigningError;
 use thiserror::Error;
+
+use crate::validation::ClientRejection;
 
 /// Errors returned by trading orchestration, quote construction, and submission helpers.
 #[non_exhaustive]
@@ -71,18 +73,14 @@ pub enum TradingError {
         /// Value used by the submission flow.
         submitted: String,
     },
-    /// Recoverable local signing requires the submission owner to match the signer address.
-    #[error(
-        "recoverable signing scheme `{scheme:?}` requires owner `{owner}` to match signer `{signer}`"
-    )]
-    RecoverableSignatureOwnerMismatch {
-        /// Recoverable signing scheme selected for submission.
-        scheme: cow_sdk_orderbook::SigningScheme,
-        /// Explicit owner used in the order payload.
-        owner: Address,
-        /// Address resolved from the signing backend.
-        signer: Address,
-    },
+    /// Typed client-side rejection surfaced before any HTTP transport runs.
+    ///
+    /// Every variant of [`ClientRejection`] reflects a condition the
+    /// reviewed services validator enforces so the client-side reject
+    /// fires locally with a typed error rather than as an opaque 422
+    /// response from the orderbook.
+    #[error(transparent)]
+    ClientRejected(#[from] ClientRejection),
     /// Signer operation failed.
     #[error("signer error during {operation}: {message}")]
     Signer {
