@@ -65,6 +65,16 @@ pub use cow_sdk_core as core;
 /// Typed label that downstream telemetry and retry layers can use to
 /// partition REST-transport failures without parsing error messages.
 pub use cow_sdk_core::TransportErrorClass;
+/// Production HTTP transport surface shared across `cow-sdk` crates.
+///
+/// [`HttpTransport`](cow_sdk_core::HttpTransport) is the async injection
+/// point downstream clients consume; [`TransportError`](cow_sdk_core::TransportError)
+/// is its typed failure surface. The native default implementation is
+/// [`ReqwestTransport`](cow_sdk_core::ReqwestTransport); the browser default
+/// lives in `cow-sdk-transport-wasm`.
+pub use cow_sdk_core::{HttpTransport, TransportError};
+#[cfg(not(target_arch = "wasm32"))]
+pub use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
 pub use cow_sdk_orderbook as orderbook;
 pub use cow_sdk_signing as signing;
 pub use cow_sdk_trading as trading;

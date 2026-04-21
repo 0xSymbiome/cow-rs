@@ -13,6 +13,8 @@ pub mod errors;
 pub mod redaction;
 /// Runtime-neutral signer, provider, and typed-data trait contracts.
 pub mod traits;
+/// Async HTTP transport injection point and native [`reqwest`] default.
+pub mod transport;
 /// Strongly typed user-domain values used across the SDK surface.
 pub mod types;
 /// Shared validation-failure and transport-classification enums.
@@ -36,9 +38,12 @@ pub use redaction::{REDACTED_PLACEHOLDER, Redacted};
 pub use tokio_util::sync::CancellationToken;
 pub use traits::{
     AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle, GraphTransport,
-    HttpTransport, PinningTransport, Provider, Signer, TransactionReceipt, TransactionRequest,
-    TypedDataDomain, TypedDataEnvelope, TypedDataField, TypedDataPayload, TypedDataTypes,
+    PinningTransport, Provider, Signer, TransactionReceipt, TransactionRequest, TypedDataDomain,
+    TypedDataEnvelope, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
+pub use transport::{HttpTransport, TransportError};
+#[cfg(not(target_arch = "wasm32"))]
+pub use transport::{ReqwestTransport, ReqwestTransportConfig};
 pub use types::{
     Address, Amount, Amounts, AppDataHash, AppDataHex, BlockHash, ChainId, Costs, DecimalAmount,
     FeeComponent, Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, Order, OrderBalance,

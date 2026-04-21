@@ -1,8 +1,7 @@
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle,
-    GraphTransport, Hash32, HexData, HttpTransport, PinningTransport, Provider, Signer,
-    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField, TypedDataPayload,
-    TypedDataTypes,
+    GraphTransport, Hash32, HexData, PinningTransport, Provider, Signer, TransactionReceipt,
+    TransactionRequest, TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
 
 #[derive(Clone)]
@@ -131,24 +130,6 @@ impl Provider for MockProvider {
             address: address.clone(),
             abi_json: abi_json.to_owned(),
         })
-    }
-}
-
-struct MockHttp;
-
-impl HttpTransport for MockHttp {
-    type Error = String;
-
-    fn get(&self, path: &str) -> Result<String, Self::Error> {
-        Ok(format!("GET:{path}"))
-    }
-
-    fn post(&self, path: &str, body: &str) -> Result<String, Self::Error> {
-        Ok(format!("POST:{path}:{body}"))
-    }
-
-    fn delete(&self, path: &str, body: &str) -> Result<String, Self::Error> {
-        Ok(format!("DELETE:{path}:{body}"))
     }
 }
 
@@ -363,20 +344,10 @@ fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
 }
 
 #[test]
-fn http_graph_and_pinning_transports_cover_shared_io_boundaries() {
-    let http = MockHttp;
+fn graph_and_pinning_transports_cover_shared_io_boundaries() {
     let graph = MockGraph;
     let pinning = MockPinning;
 
-    assert_eq!(http.get("/orders").unwrap(), "GET:/orders");
-    assert_eq!(
-        http.post("/quote", "{\"kind\":\"sell\"}").unwrap(),
-        "POST:/quote:{\"kind\":\"sell\"}"
-    );
-    assert_eq!(
-        http.delete("/orders", "{\"uid\":\"0x1\"}").unwrap(),
-        "DELETE:/orders:{\"uid\":\"0x1\"}"
-    );
     assert_eq!(
         graph
             .execute(

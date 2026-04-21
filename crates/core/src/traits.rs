@@ -526,36 +526,6 @@ where
     }
 }
 
-/// Extension seam for downstream HTTP adapters.
-///
-/// The current orderbook client owns its typed request policy directly instead
-/// of routing through this trait. Keep this as an adapter contract for consumers
-/// or future internal transport unification, not as a claim that orderbook uses
-/// a generic core HTTP transport today.
-pub trait HttpTransport {
-    /// Error type returned by transport operations.
-    type Error;
-
-    /// Performs an HTTP `GET`.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined transport error when the request fails.
-    fn get(&self, path: &str) -> Result<String, Self::Error>;
-    /// Performs an HTTP `POST`.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined transport error when the request fails.
-    fn post(&self, path: &str, body: &str) -> Result<String, Self::Error>;
-    /// Performs an HTTP `DELETE`.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined transport error when the request fails.
-    fn delete(&self, path: &str, body: &str) -> Result<String, Self::Error>;
-}
-
 /// Extension seam for downstream GraphQL adapters.
 ///
 /// The current subgraph client owns its typed query execution directly. Keep

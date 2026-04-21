@@ -875,12 +875,14 @@ dependencies = [
  "num-bigint",
  "pin-project-lite",
  "proptest",
+ "reqwest",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
  "tokio-util",
  "tracing",
+ "wiremock",
 ]
 
 [[package]]

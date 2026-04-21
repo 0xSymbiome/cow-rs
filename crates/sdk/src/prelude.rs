@@ -23,10 +23,13 @@ pub use cow_sdk_contracts::{
 };
 pub use cow_sdk_core::{
     Address, Amount, ApiBaseUrls, AppDataHash, AppDataHex, AsyncProvider, AsyncSigner, BlockHash,
-    Cancellable, Cancelled, CoreError, CowEnv, Hash32, HexData, OrderBalance, OrderDigest,
-    OrderKind, OrderModel, OrderUid, ProtocolOptions, QuoteModel, SignedAmount, SupportedChainId,
-    TradeModel, TransactionHash, UnsignedOrder, ValidationError, ValidationReason,
+    Cancellable, Cancelled, CoreError, CowEnv, Hash32, HexData, HttpTransport, OrderBalance,
+    OrderDigest, OrderKind, OrderModel, OrderUid, ProtocolOptions, QuoteModel, SignedAmount,
+    SupportedChainId, TradeModel, TransactionHash, TransportError, UnsignedOrder, ValidationError,
+    ValidationReason,
 };
+#[cfg(not(target_arch = "wasm32"))]
+pub use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
 pub use cow_sdk_orderbook::{
     ApiContext, AppDataObject, CompetitionOrderStatus, GetOrdersRequest, GetTradesRequest,
     NativePriceResponse, OrderBookApi, OrderBookApiError, OrderCancellations, OrderCreation,

@@ -263,6 +263,20 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Lifted `cow_sdk_core::HttpTransport` to the production injection point for
+  HTTPS REST traffic and shipped `cow_sdk_core::transport::reqwest::ReqwestTransport`
+  as the native default implementation. The trait now exposes `async fn`
+  methods returning a typed `TransportError` so browser and native adapters
+  share one async-first signature. The native default classifies every
+  underlying `reqwest::Error` through the documented `is_timeout`,
+  `is_connect`, `is_redirect`, `is_decode`, `is_body`, `is_builder`,
+  `is_request`, `is_status`, fallthrough partition and calls
+  `reqwest::Error::without_url` before wrapping so endpoint URLs never leak
+  through the error surface. URL-bearing configuration rides the existing
+  `Redacted` newtype so the base URL stays redacted in debug, display, and
+  serialized output. The facade and prelude re-export `HttpTransport`,
+  `TransportError`, `ReqwestTransport`, and `ReqwestTransportConfig` so
+  downstream consumers reach the new transport seam through a single import.
 - `cow_sdk_core::Address` compares and hashes case-insensitively through the
   lowercase normalized key while `Address::as_str` preserves the original
   input casing. `addresses_equal` now dispatches to the same case-insensitive
