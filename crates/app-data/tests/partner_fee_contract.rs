@@ -15,8 +15,6 @@
     reason = "pedantic lint group acceptable inside integration test code"
 )]
 
-use std::path::Path;
-
 use cow_sdk_app_data::{AppDataError, PartnerFee, PartnerFeePolicy};
 use cow_sdk_core::{Address, ValidationReason};
 use serde_json::{Value, json};
@@ -380,41 +378,13 @@ fn from_value_returns_typed_appdata_error_on_bad_input() {
     );
 }
 
-const WITNESS_SOURCE: &str = "tests/ui/partner_fee_bps_width_witness.rs";
-const WITNESS_STDERR: &str = "tests/ui/partner_fee_bps_width_witness.stderr";
-
+/// Live `trybuild` harness that re-proves the narrowed-bps compile
+/// failure on every `cargo test` run. Replaces the prior
+/// filesystem-presence-plus-snapshot assertions so a regression that
+/// silently widens `volume_bps` back to `u32` fails the test rather
+/// than passing a stale snapshot.
 #[test]
-fn partner_fee_width_witness_source_is_present() {
-    assert!(
-        Path::new(WITNESS_SOURCE).exists(),
-        "partner-fee width compile-fail witness source must remain pinned at {WITNESS_SOURCE}",
-    );
-    let body =
-        std::fs::read_to_string(WITNESS_SOURCE).expect("reading the witness source must succeed");
-    assert!(
-        body.contains("PartnerFeePolicy::Volume"),
-        "witness source must exercise the `PartnerFeePolicy::Volume` variant",
-    );
-    assert!(
-        body.contains("100_000_u32"),
-        "witness source must still offer a `u32` literal outside the `u16` range so the intended compile error is preserved",
-    );
-}
-
-#[test]
-fn partner_fee_width_witness_stderr_captures_the_expected_error() {
-    assert!(
-        Path::new(WITNESS_STDERR).exists(),
-        "partner-fee width compile-fail stderr snapshot must remain pinned at {WITNESS_STDERR}",
-    );
-    let stderr =
-        std::fs::read_to_string(WITNESS_STDERR).expect("reading the witness stderr must succeed");
-    assert!(
-        stderr.contains("mismatched types"),
-        "pinned stderr must record the `mismatched types` diagnostic so reviewers can verify the intended shape",
-    );
-    assert!(
-        stderr.contains("expected `u16`") && stderr.contains("found `u32`"),
-        "pinned stderr must name both expected and found integer widths so the compile error is scoped to the narrowed-bps contract",
-    );
+fn partner_fee_bps_width_rejects_wider_integer_literal_at_compile_time() {
+    let cases = trybuild::TestCases::new();
+    cases.compile_fail("tests/ui/partner_fee_bps_width_witness.rs");
 }
