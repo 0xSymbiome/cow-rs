@@ -4,18 +4,8 @@
 - Date: 2026-04-17
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: async, cancellation, transport, observability, error-model
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
-
-> **Superseded in part:** the shared-client construction pattern recorded
-> below — the `OrderBookApi::from_shared_client` and
-> `SubgraphApi::from_shared_client` constructors — has been replaced by
-> the typestate builder construction seam. `OrderBookApi::builder()` and
-> `SubgraphApi::builder()` are now the sole production construction
-> paths; the shared `reqwest::Client` is installed through the builder's
-> `.client(...)` step, preserving the multi-service pooling guarantee
-> recorded here. The `Must Remain True` section line that names the
-> legacy constructors is preserved below as historical record of the
-> original decision.
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
+- Superseded in part by: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 
 ## Decision
 
@@ -47,10 +37,14 @@ consumers plug the SDK into any async ecosystem they already run.
   cancellation composes through the combinator at the call site, returning
   the crate-level `Cancelled` variant on every affected error aggregate.
   `SdkError::class()` returns `ErrorClass::Cancelled` for every such
-  variant. `OrderBookApi` and `SubgraphApi` expose `from_shared_client`
-  constructors plus a transport-policy variant so consumers can pool one
-  `reqwest::Client` across chains and services. Any new long-running
-  public method lands under the canonical shape.
+  variant. `OrderBookApi` and `SubgraphApi` construct exclusively through
+  their typestate builders (`OrderBookApi::builder()` and
+  `SubgraphApi::builder()`); the `HttpTransport` trait in `cow-sdk-core`
+  is the production transport seam, and a shared `reqwest::Client` for
+  multi-service pooling is installed through the builder's `.client(...)`
+  step on native targets. ADR 0013 records the construction and transport
+  contract in full. Any new long-running public method lands under the
+  canonical cancellation shape.
 - Runtime and support: the SDK does not call `tokio::spawn` from library
   code, does not require `rt-multi-thread`, and does not use
   `#[tokio::main]` anywhere in library sources. The combinator runs a
@@ -77,8 +71,10 @@ consumers plug the SDK into any async ecosystem they already run.
   platform SDKs, but contradicts the library posture and forces a runtime
   contract on consumers who already own their event loop.
 - Expose `reqwest::Client` as a required constructor argument: simpler, but
-  breaks the default ergonomic path for single-chain consumers and forces
-  every caller to own the transport builder.
+  breaks the default ergonomic path for single-chain consumers. The later
+  typestate-builder seam recorded in ADR 0013 landed the optional
+  `.client(...)` form of this alternative so multi-service consumers keep
+  pool reuse without forcing it on everyone.
 - Stringly-typed error classification on the facade aggregate: easier to
   grow, but forces every downstream telemetry layer to pattern-match on
   variant shapes instead of partition classes.
@@ -89,11 +85,13 @@ consumers plug the SDK into any async ecosystem they already run.
 ## Links
 
 - [Architecture](../architecture.md)
+- [Transport](../transport.md)
 - [Observability](../observability.md)
 - [Performance](../performance.md)
 - [Verification Guide](../verification-guide.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
+- [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 
 **Proven by:**
 

@@ -125,13 +125,37 @@ unreleased public contract of the repository.
   fields migrated to `Redacted<T>`: `ApiContext::api_key`,
   `ApiContextOverride::api_key`, `IpfsConfig::pinata_api_key`,
   `IpfsConfig::pinata_api_secret`, and the internal `SubgraphApi` API key.
-- Shared `reqwest::Client` constructors on the orderbook and subgraph
-  clients. `OrderBookApi::from_shared_client` plus its transport-policy
-  variant and `SubgraphApi::from_shared_client` plus its static-config and
-  transport-policy variants accept a pre-configured client so multi-chain
-  consumers can pool one TCP, TLS, and HTTP/2 connection cache across every
-  SDK instance they build. The default `new()` constructors stay unchanged
-  and keep conservative upstream defaults.
+- Shared `reqwest::Client` pooling for multi-chain consumers.
+  `OrderBookApi::builder()` and `SubgraphApi::builder()` both expose a
+  convenience `.client(shared)` setter on native targets that installs a
+  `cow_sdk_core::ReqwestTransport` wrapping the supplied client, so one
+  warm TCP, TLS, and HTTP/2 connection cache backs every chain and
+  service the consumer routes through. Custom transport implementations
+  install through the analogous `.transport(Arc::new(...))` setter.
+  Default construction on native targets installs a conservative
+  `ReqwestTransport` automatically.
+- Stability invariant across the published `cow-sdk` crate family.
+  `cow-sdk`, `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`,
+  `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`,
+  `cow-sdk-subgraph`, and `cow-sdk-browser-wallet` exclude
+  `alloy-provider` from their transitive dependency graph by
+  construction. Consumers select their own chain-RPC runtime through
+  the `cow_sdk_core::AsyncProvider` seam and its documented alloy
+  adapter guide, and a CI workflow step runs
+  `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk`
+  on every pull request, asserting empty output before the change can
+  land.
+- Canonical `alloy::sol!`-generated typed bindings for every contract
+  surface the SDK emits call-data against: `GPv2Settlement` settlement
+  plus pre-signature and invalidation, `GPv2VaultRelayer` authorization
+  checks, `CoWSwapEthFlow` order creation and invalidation, the EIP-1967
+  storage-slot and proxy ownership surface, and the `IERC20` plus
+  `IERC20Permit` (EIP-2612) ERC-20 surface. Every binding is generated
+  from Solidity excerpts committed under `crates/contracts/abi/**/*.sol`
+  and gated by a byte-identity parity regression against fixtures
+  derived from the upstream TypeScript SDK, so the encoded call-data
+  output is always sourced from the upstream CoW Protocol Solidity
+  surface rather than a parallel Rust reimplementation.
 - Opt-in quote-cache seam in `cow-sdk-trading`. The `QuoteCache` trait
   exposes async `lookup`, `insert`, and `invalidate` contract, with
   `NoopQuoteCache` shipped as the pass-through default and
@@ -651,11 +675,36 @@ unreleased public contract of the repository.
 - The Credential Surface Contract Hygiene Audit is refreshed to cover the
   `Redacted<T>` wrapper and the transport-level error redaction path.
 - `docs/release-checklist.md` now describes the functional `0.1.0` crates.io
-  release publish sequence in finished-product language, naming the nine
-  `first-release` crates the sequence publishes in dependency order.
+  release publish sequence in finished-product language, naming the
+  published `cow-sdk` crate family the sequence publishes in dependency
+  order.
 
 ### Removed
 
+- Retired the hand-rolled ABI encoder helpers previously maintained inside
+  `cow-sdk-contracts`. Every encoded call-data payload the SDK emits now
+  flows through the `alloy::sol!`-generated typed bindings for
+  `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, the EIP-1967
+  proxy, and `IERC20` / `IERC20Permit`, so the byte output is sourced
+  directly from the upstream CoW Protocol Solidity ABI rather than from
+  a parallel Rust reimplementation. Byte-identity parity with the pre-
+  migration encoder output is gated by the regression contract at
+  `crates/contracts/tests/parity_contract.rs`.
+- Retired the legacy free-function constructor family on `OrderBookApi`
+  (`new`, `new_with_transport_policy`, `from_shared_client`,
+  `from_shared_client_with_transport_policy`, `new_with_base_url`) and
+  on `SubgraphApi` (`new`, `with_config`,
+  `with_config_and_transport_policy`, `from_shared_client`,
+  `from_shared_client_with_config`,
+  `from_shared_client_with_transport_policy`). `OrderBookApi::builder()`
+  and `SubgraphApi::builder()` are now the sole production construction
+  paths; the typestate markers encode the required inputs (chain,
+  environment or API key, transport) at compile time so a misconstructed
+  client is a build error rather than a first-quote runtime surprise.
+  Shared `reqwest::Client` pooling remains available through the
+  builder's `.client(shared)` convenience setter on native targets; a
+  `trybuild` UI witness asserts `.build()` without `.transport(...)`
+  does not compile on `wasm32` targets.
 - Retired every CIDv0 (dag-pb + sha2-256, `Qm...`-prefixed) encoding and
   decoding path from `cow-sdk-app-data`. CIDv1 with the raw multicodec
   (`0x55`) over a keccak-256 multihash (`0x1b`) is the only supported

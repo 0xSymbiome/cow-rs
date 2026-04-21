@@ -28,12 +28,12 @@ That design keeps the shipped surface:
 If you need `alloy`, `ethers`, or a custom in-house runtime integration, build
 that adapter in a leaf crate that implements the core traits.
 
-## The Four Runtime Seams
+## The Five Runtime Seams
 
 Import the owning traits from `cow-sdk-core`:
 
 ```rust
-use cow_sdk_core::{AsyncProvider, AsyncSigner, Provider, Signer};
+use cow_sdk_core::{AsyncProvider, AsyncSigner, HttpTransport, Provider, Signer};
 ```
 
 Their roles are:
@@ -54,6 +54,15 @@ Their roles are:
 `AsyncProvider`
 
 - asynchronous chain reads and contract reads for browser or async runtimes
+
+`HttpTransport`
+
+- production HTTPS dispatch for the orderbook and subgraph clients. The
+  native default is `ReqwestTransport`; the browser default is
+  `FetchTransport` from `cow-sdk-transport-wasm`. Custom implementations
+  install through the builder's `.transport(Arc::new(...))` setter on
+  both `OrderBookApi::builder()` and `SubgraphApi::builder()`. See
+  [Transport](transport.md) for the full seam.
 
 ## Contract Shape
 

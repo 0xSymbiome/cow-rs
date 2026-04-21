@@ -14,6 +14,7 @@ flowchart TD
   trading["cow-sdk-trading"];
   subgraph_crate["cow-sdk-subgraph"];
   wallet["cow-sdk-browser-wallet"];
+  transport_wasm["cow-sdk-transport-wasm"];
 
   sdk --> core;
   sdk --> contracts;
@@ -34,6 +35,7 @@ flowchart TD
   trading --> orderbook;
   subgraph_crate --> core;
   wallet --> core;
+  transport_wasm --> core;
 ```
 
 ## Crate Roles
@@ -41,24 +43,25 @@ flowchart TD
 | Crate | Role | Use when |
 | --- | --- | --- |
 | `cow-sdk` | Thin public facade | You want the main Rust SDK entrypoint. |
-| `cow-sdk-core` | Shared domain types, config, validation, and runtime traits | You need the common typed contracts. |
-| `cow-sdk-contracts` | Deterministic contract helpers and hashing | You need ABI-level or settlement-level primitives. |
-| `cow-sdk-signing` | Typed-data, signing, cancellation, and UID helpers | You need signing without the full trading layer. |
+| `cow-sdk-core` | Shared domain types, config, validation, runtime traits, and the `HttpTransport` seam with its native `ReqwestTransport` default | You need the common typed contracts. |
+| `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings, the typed `Registry` deployment authority, and deterministic hashing and verification helpers | You need ABI-level, address-authority, or settlement-level primitives. |
+| `cow-sdk-signing` | Typed-data, signing, cancellation, UID helpers, and the `Eip1271VerificationCache` default implementations | You need signing without the full trading layer. |
 | `cow-sdk-app-data` | App-data encoding, schema handling, and CID behavior | You need app-data generation or validation. |
-| `cow-sdk-orderbook` | Typed orderbook transport | You need explicit request and response control. |
+| `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderBookApiBuilder` typestate | You need explicit request and response control. |
 | `cow-sdk-trading` | Quote-to-order workflows | You need the main trading orchestration layer. |
-| `cow-sdk-subgraph` | Read-only subgraph access | You need GraphQL reads or custom subgraph queries. |
+| `cow-sdk-subgraph` | Read-only subgraph access over the `HttpTransport` seam, with the `SubgraphApiBuilder` typestate | You need GraphQL reads or custom subgraph queries. |
+| `cow-sdk-transport-wasm` | Browser-target `HttpTransport` implementation (`FetchTransport`) | You build for `wasm32-unknown-unknown` and need the shipped browser default. |
 | `cow-sdk-browser-wallet` | Browser-runtime wallet integration | You need EIP-1193 wallet flows in WASM. |
 
 ## Layering
 
 | Layer | Crates | Responsibility |
 | --- | --- | --- |
-| Foundation | `cow-sdk-core` | Shared domain model and runtime seams |
-| Deterministic protocol transforms | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` | Hashing, signing, app-data, and compatibility logic |
-| Transport | `cow-sdk-orderbook`, `cow-sdk-subgraph` | Typed HTTP and GraphQL access |
+| Foundation | `cow-sdk-core` | Shared domain model, runtime seams, and the `HttpTransport` trait |
+| Deterministic protocol transforms | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` | Typed bindings, registry authority, hashing, signing, app-data, and compatibility logic |
+| Client | `cow-sdk-orderbook`, `cow-sdk-subgraph` | Typed HTTP and GraphQL access through the `HttpTransport` seam |
 | Workflow | `cow-sdk-trading` | Quote, submit, cancel, approve, and related flows |
-| Runtime adapter | `cow-sdk-browser-wallet` | Browser-wallet session, signing, and chain-management support |
+| Runtime adapter | `cow-sdk-browser-wallet`, `cow-sdk-transport-wasm` | Browser-wallet session integration and the browser-target HTTP adapter |
 | Facade | `cow-sdk` | Curated public entrypoint |
 
 ## Facade And Adapter FAQ
@@ -105,23 +108,43 @@ config stays explicit as input, but the default diagnostic and serialized
 surfaces owned by `cow-sdk-core`, `cow-sdk-orderbook`, and `cow-sdk-app-data`
 redact secret material instead of treating it as routine log data.
 
+### Transport Seams
+
+`cow-sdk` exposes two orthogonal runtime seams that never share a concrete
+backend. The `HttpTransport` trait in `cow-sdk-core` is the HTTPS seam used
+by `cow-sdk-orderbook` and `cow-sdk-subgraph` for REST and GraphQL
+dispatch; native consumers get `ReqwestTransport` from `cow-sdk-core`, and
+browser consumers get `FetchTransport` from the dedicated
+`cow-sdk-transport-wasm` leaf crate. The `AsyncProvider` trait (also in
+`cow-sdk-core`) is the chain-RPC seam used by on-chain helpers such as
+allowance reads, EIP-1271 verification, and on-chain cancellation; no
+provider implementation ships by default, so consumers bring their own
+through the [Providers](providers/README.md) adapter guide.
+
+The trait is dyn-compatible, so consumers compose transports behind
+`Arc<dyn HttpTransport>`. Typed failures flow through a single
+`TransportError` enum and its `TransportErrorClass` partition, both of
+which strip URLs before wrapping so credential-bearing query strings never
+surface through `Debug` or `Display`. The full transport story lives in
+[Transport](transport.md).
+
 ### Transport Ownership
 
-Shared client policy is intentionally narrow: timeout and user-agent live in
-`cow_sdk_core::HttpClientPolicy`. Retry behavior, rate limits, GraphQL request
-shape, API-key handling, and pinning semantics stay with the transport crates
-that own those behaviors. For subgraph access, stable production metadata and
-typed request failures expose only redacted or non-secret route identity while
-keeping explicit override support.
+Retry behavior, rate limits, GraphQL request shape, API-key handling, and
+pinning semantics stay with the transport crates that own those behaviors.
+For subgraph access, stable production metadata and typed request failures
+expose only redacted or non-secret route identity while keeping explicit
+override support.
 
-Production deployments that issue requests across several chains can pool a
-single `reqwest::Client` across every orderbook and subgraph instance they
-build. Both `OrderBookApi::builder()` and `SubgraphApi::builder()` expose a
-`.client(shared_client)` method that accepts a pre-configured
-`reqwest::Client` and preserves any custom keep-alive, timeout, or TLS
-settings verbatim, so one warm connection cache backs every chain the
-consumer routes through. The
-[Performance Posture](performance.md) records the recommended HTTP/2
+Production deployments that issue requests across several chains can pool
+a single `reqwest::Client` across every orderbook and subgraph instance
+they build. On native targets, `OrderBookApi::builder()` and
+`SubgraphApi::builder()` both expose a `.client(shared_client)` convenience
+method over `ReqwestTransport` that preserves any custom keep-alive,
+timeout, or TLS settings verbatim, so one warm connection cache backs
+every chain the consumer routes through. Browser consumers install
+`FetchTransport` through the builder's `.transport(...)` setter instead.
+The [Performance](performance.md) page records the recommended HTTP/2
 keep-alive recipe, shared-client usage pattern, and the knob summary that
 accompanies each opt-in setting.
 
@@ -214,10 +237,26 @@ switch success.
 - Reviewed subgraph query constants may be public when they are deliberately
   stabilized, but saved GraphQL breadth beyond that reviewed set and test-only
   schema fixtures stay non-public.
+- `OrderBookApi`, `SubgraphApi`, and `TradingSdk` construct exclusively
+  through their typestate builders; no free-function public constructors
+  remain on any of the three.
+- The published `cow-sdk` crate family (`cow-sdk`, `cow-sdk-core`,
+  `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
+  `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`,
+  `cow-sdk-browser-wallet`) does not transitively depend on
+  `alloy-provider`; consumers own their chain-RPC runtime through the
+  `AsyncProvider` seam.
+- Every deployed-contract-address lookup routes through the typed
+  `Registry` authority; hard-coded chain-scoped address constants are not
+  allowed in shipped crates.
+- Every ABI binding the SDK emits call-data against is generated through
+  `alloy::sol!` from committed upstream Solidity excerpts.
 
 ## Related Docs
 
 - [Principles](principles.md)
+- [Transport](transport.md)
+- [Deployments](deployments.md)
 - [Verification Guide](verification-guide.md)
 - [Parity Matrix](parity-matrix.md)
 - [ADRs](adr/README.md)

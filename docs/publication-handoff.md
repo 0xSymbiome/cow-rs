@@ -45,7 +45,6 @@ cargo owner --add <new-owner> cow-sdk-subgraph
 cargo owner --add <new-owner> cow-sdk-trading
 cargo owner --add <new-owner> cow-sdk-browser-wallet
 cargo owner --add <new-owner> cow-sdk
-cargo owner --add <new-owner> cow-sdk-alloy-provider
 ```
 
 `cargo owner --add` issues an invitation that crates.io surfaces to

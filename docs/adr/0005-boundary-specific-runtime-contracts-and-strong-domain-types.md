@@ -25,8 +25,10 @@ actual runtime seams.
   protocol values use strong domain types by default. String-heavy forms remain
   limited to explicit wire, serialized, or compatibility boundaries.
 - Runtime and support: active signer and provider traits remain real runtime
-  contracts. Generic HTTP, GraphQL, or pinning traits stay adapter seams until
-  concrete crates truly adopt them.
+  contracts. The HTTP transport seam has crossed into a production trait in
+  `cow-sdk-core` (`HttpTransport`) adopted by the native `ReqwestTransport`
+  default and the browser `FetchTransport` adapter; GraphQL and pinning
+  traits stay adapter seams until concrete crates truly adopt them.
 - Validation and review: conversions between user-domain, normalized, wire,
   and ABI forms stay explicit, test-backed, and documented. Order-like DTOs do
   not get merged just because they look similar.
@@ -43,8 +45,10 @@ actual runtime seams.
 ## Links
 
 - [Architecture](../architecture.md)
+- [Transport](../transport.md)
 - [Verification Guide](../verification-guide.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
+- [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 
 **Proven by:**
 

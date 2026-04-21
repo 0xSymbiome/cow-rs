@@ -13,7 +13,13 @@ Authority order:
 | Surface | Primary upstream producers | Rust crates | Committed authority | Primary evidence |
 | --- | --- | --- | --- | --- |
 | Order creation, signing, and submission | `cowprotocol/cow-sdk` trading, order-signing, order-book, and sdk packages | `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk` | `parity/fixtures/signing.json`, `parity/fixtures/orderbook.json`, `parity/fixtures/trading.json`, `parity/fixtures/sdk.json` | `crates/signing/tests/order_signing_contract.rs`, `crates/orderbook/tests/api_contract.rs`, `crates/trading/tests/post_contract.rs`, `crates/trading/tests/sdk_contract.rs`, `crates/sdk/tests/public_api.rs` |
-| Contracts parity | `cowprotocol/contracts` plus selected `cow-sdk` contract helpers | `cow-sdk-contracts`, `cow-sdk-signing` | `parity/fixtures/contracts.json` | `crates/contracts/tests/order_contract.rs`, `crates/contracts/tests/settlement_contract.rs`, `crates/contracts/tests/reader_contract.rs`, `crates/signing/tests/eip1271_contract.rs` |
+| Contracts parity | `cowprotocol/contracts` plus selected `cow-sdk` contract helpers | `cow-sdk-contracts`, `cow-sdk-signing` | `parity/fixtures/contracts.json` | `crates/contracts/tests/order_contract.rs`, `crates/contracts/tests/settlement_contract.rs`, `crates/contracts/tests/reader_contract.rs`, `crates/contracts/tests/parity_contract.rs`, `crates/signing/tests/eip1271_contract.rs` |
+| `GPv2Settlement` bindings | `cowprotocol/contracts` settlement surface | `cow-sdk-contracts::settlement` via `alloy::sol!` | Solidity excerpt under `crates/contracts/abi/settlement/` | `crates/contracts/tests/parity_contract.rs::settlement_calldata_matches_upstream_fixtures` |
+| `GPv2VaultRelayer` bindings | `cowprotocol/contracts` vault-relayer surface | `cow-sdk-contracts::vault` via `alloy::sol!` | Solidity excerpt under `crates/contracts/abi/vault-relayer/` | `crates/contracts/tests/parity_contract.rs::vault_relayer_calldata_matches_upstream_fixtures` |
+| `CoWSwapEthFlow` bindings | `cowprotocol/ethflowcontract` surface | `cow-sdk-contracts::eth_flow` via `alloy::sol!` | Solidity excerpt under `crates/contracts/abi/eth-flow/` | `crates/contracts/tests/parity_contract.rs::eth_flow_create_and_invalidate_calldata_match_upstream_fixtures` |
+| EIP-1967 proxy-slot surface | ERC-1967 standard plus selected `cowprotocol/contracts` proxy usage | `cow-sdk-contracts::proxy` via `alloy::sol!` | Solidity excerpt under `crates/contracts/abi/eip1967/` | `crates/contracts/tests/parity_contract.rs::eip1967_slot_reads_match_upstream_fixtures` |
+| ERC-20 and ERC-20 Permit bindings | ERC-20 and EIP-2612 standards | `cow-sdk-contracts::erc20` via `alloy::sol!` | Solidity excerpt under `crates/contracts/abi/erc20/` | `crates/contracts/tests/parity_contract.rs::erc20_and_permit_calldata_match_upstream_fixtures` |
+| Deployment registry authority | `cowprotocol/contracts` deployments record | `cow-sdk-contracts::Registry` via embedded `registry.toml` | `crates/contracts/registry.toml` | `crates/contracts/tests/registry.rs`, `crates/contracts/tests/build_rs_compile_fail.rs` |
 | App-data parity | `cowprotocol/cow-sdk` app-data package and schema inputs | `cow-sdk-app-data`, `cow-sdk-trading` | `parity/fixtures/app-data.json` | `crates/app-data/tests/cid_contract.rs`, `crates/app-data/tests/schema_contract.rs`, `crates/app-data/tests/pinning_contract.rs`, `crates/trading/tests/quote_contract.rs` |
 | Subgraph support | `cowprotocol/cow-sdk` subgraph package | `cow-sdk-subgraph` | `parity/fixtures/subgraph.json` | `crates/subgraph/tests/api_contract.rs`, `crates/subgraph/tests/query_contract.rs`, `crates/subgraph/tests/types_contract.rs` |
 | Orderbook transport | `cowprotocol/cow-sdk` order-book package plus selected `cowprotocol/services` references | `cow-sdk-orderbook` | `parity/fixtures/orderbook.json` | `crates/orderbook/tests/api_contract.rs`, `crates/orderbook/tests/request_contract.rs`, `crates/orderbook/tests/transform_contract.rs`, `crates/orderbook/tests/types_contract.rs` |
@@ -41,5 +47,7 @@ The published crate-family dry-run order is:
 8. `cow-sdk-browser-wallet`
 9. `cow-sdk`
 
-The exact verification commands are recorded in
-[Release Checklist](release-checklist.md).
+`cow-sdk-transport-wasm` is the shipped browser-target `HttpTransport`
+adapter and is consumed through the workspace rather than through the
+first-party publish sequence above; the exact verification commands
+are recorded in [Release Checklist](release-checklist.md).

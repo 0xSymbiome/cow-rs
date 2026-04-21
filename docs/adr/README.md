@@ -17,8 +17,11 @@ public and runtime shape of `cow-rs`.
 | [0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md) | Accepted | Keep browser wallet support explicit, bounded, and aligned to the current browser-runtime seam. |
 | [0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md) | Accepted | Grow new capability surfaces through additive leaf crates and owned sidecars. |
 | [0009](0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md) | Accepted | Keep WASM examples as named verification consoles with one naming shape, one ship checklist, a two-tier proof posture, and a hybrid extensibility rule. |
-| [0010](0010-runtime-neutral-async-and-transport-posture.md) | Accepted | Keep the async surface runtime-neutral with a `CancellationToken` contract, a shared-client pattern, `reqwest::Error` classification that strips the URL, and opt-in `tracing` instrumentation. |
+| [0010](0010-runtime-neutral-async-and-transport-posture.md) | Accepted (superseded in part by [0013](0013-http-transport-injection-and-typestate-builders.md)) | Keep the async surface runtime-neutral with a `CancellationToken` contract, typed transport-error classification that strips the URL, and opt-in `tracing` instrumentation. |
 | [0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md) | Accepted | Distinguish atomic and decimal-scaled amounts through dedicated newtypes and advertise `TradingSdkBuilder` prerequisites through typestate terminals. |
+| [0012](0012-alloy-sol-bindings-and-registry-authority.md) | Accepted | Generate every ABI binding through `alloy::sol!` and resolve every deployed address through a single typed `Registry` authority. |
+| [0013](0013-http-transport-injection-and-typestate-builders.md) | Accepted | Route orderbook and subgraph dispatch through the typed `HttpTransport` seam in `cow-sdk-core`, and construct both public clients through typestate builders. |
+| [0014](0014-eip1271-verification-cache.md) | Accepted | Thread a pluggable `Eip1271VerificationCache` through `verify_eip1271_signature_async` and cache only magic-value-match and explicit mismatch outcomes. |
 
 ## When To Write An ADR
 

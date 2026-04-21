@@ -1,7 +1,7 @@
 # Partner API Routing Audit
 
 Status: Current  
-Last reviewed: 2026-04-15  
+Last reviewed: 2026-04-21  
 Owning surface: `cow-sdk-core` route selection and `cow-sdk-orderbook` partner header assembly  
 Refresh trigger: Changes to `ApiContext` partner-route selection, API-key validation, `X-API-Key` header construction, or partner endpoint family activation  
 Related docs:

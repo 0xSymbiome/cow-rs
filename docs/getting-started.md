@@ -80,8 +80,13 @@ That split matters when you choose where to start:
 - use `cow-sdk` for the main trading-first path
 - use `cow-sdk-subgraph` when you need explicit GraphQL reads
 - use `cow-sdk-browser-wallet` when you need injected-wallet flows in WASM
+- use `cow-sdk-transport-wasm` when you build for
+  `wasm32-unknown-unknown` and need the shipped browser-target HTTP
+  transport (`FetchTransport`); install it on the orderbook and
+  subgraph builders through `.transport(Arc::new(FetchTransport::default()))`
 
-For the rest of this guide, stay on the default `cow-sdk` facade.
+For the rest of this guide, stay on the default `cow-sdk` facade on a
+native target.
 
 ## Step 1: Build A Ready-State `TradingSdk`
 

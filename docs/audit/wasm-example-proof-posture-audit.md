@@ -1,7 +1,7 @@
 # WASM Example Proof-Posture Audit
 
 Status: Current  
-Last reviewed: 2026-04-17  
+Last reviewed: 2026-04-21  
 Owning surface: WASM verification consoles and their two-tier proof posture  
 Refresh trigger: Any change to the console proof lanes, the mock-versus-injected separation, the staging-versus-proxy posture on static pages, or the shipped deterministic and environment-sensitive evidence set  
 Related docs:

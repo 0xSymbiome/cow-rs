@@ -1,7 +1,7 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current  
-Last reviewed: 2026-04-15  
+Last reviewed: 2026-04-21  
 Owning surface: `cow-sdk-trading` ready-state versus partial `TradingSdk` construction and helper-specific prerequisite contract  
 Refresh trigger: Changes to ready-state `TradingSdk` constructors or builders, partial setup entry points, or method-specific prerequisite enforcement  
 Related docs:

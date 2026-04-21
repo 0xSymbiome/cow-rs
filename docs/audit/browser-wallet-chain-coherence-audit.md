@@ -1,7 +1,7 @@
 # Browser Wallet Chain Coherence Audit
 
 Status: Current  
-Last reviewed: 2026-04-15  
+Last reviewed: 2026-04-21  
 Owning surface: `cow-sdk-browser-wallet` chain-bound signer and typed chain-management contract  
 Refresh trigger: Changes to `BrowserWallet::signer_for_chain`, typed-data chain validation, chain-switch helpers, or shipped browser-wallet proof surfaces  
 Related docs:

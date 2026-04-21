@@ -1,7 +1,7 @@
 # Browser-Wallet Alloy Dependency Audit
 
 Status: Current  
-Last reviewed: 2026-04-16  
+Last reviewed: 2026-04-21  
 Owning surface: `cow-sdk-browser-wallet` typed EIP-1193 contract-call bridge and its `alloy-primitives` / `alloy-dyn-abi` / `alloy-json-abi` ABI helpers  
 Refresh trigger: Upstream movement in the alloy family (new major, dropped transitive dependency), a new reviewed warning surfacing through the alloy toolchain, or a new maintained successor to the affected proc-macro deps  
 Related docs:

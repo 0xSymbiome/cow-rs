@@ -1,7 +1,7 @@
 # Shared Logic Reviewability Audit
 
 Status: Current  
-Last reviewed: 2026-04-15  
+Last reviewed: 2026-04-21  
 Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary  
 Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, or boundary-specific order DTO separation that materially affect correctness or reviewability  
 Related docs:

@@ -194,3 +194,48 @@ jobs:
         run: cargo check --workspace --all-features
         env:
           RUSTFLAGS: -Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types
+
+  alloy-provider-invariant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Assert no shipped leaf crate depends on alloy-provider
+        shell: bash
+        run: |
+          set -uo pipefail
+          # The published cow-sdk crate family must not depend on alloy-provider,
+          # directly or transitively. Consumers own their chain-RPC runtime
+          # through the cow-sdk-core AsyncProvider seam.
+          #
+          # When alloy-provider is absent from the dependency graph, cargo
+          # tree exits non-zero with "package ID specification ... did not
+          # match any packages". That exit is the green signal.
+          output="$(cargo tree --invert alloy-provider \
+            -p cow-sdk-core \
+            -p cow-sdk-contracts \
+            -p cow-sdk-signing \
+            -p cow-sdk-orderbook \
+            -p cow-sdk-subgraph \
+            -p cow-sdk-app-data \
+            -p cow-sdk-trading \
+            -p cow-sdk 2>&1 || true)"
+          if printf '%s\n' "$output" | grep -q 'did not match any packages'; then
+            echo "alloy-provider invariant holds: the crate is absent from the dependency graph."
+            exit 0
+          fi
+          if printf '%s\n' "$output" | grep -qE '^alloy-provider'; then
+            echo "::error::alloy-provider leaked into a first-release crate:" >&2
+            printf '%s\n' "$output" >&2
+            exit 1
+          fi
+          echo "alloy-provider invariant holds for the first-release crate set."

@@ -9,6 +9,8 @@ and design history for `cow-rs`.
 - [Integrations](integrations.md)
 - [Principles](principles.md)
 - [Architecture](architecture.md)
+- [Transport](transport.md)
+- [Deployments](deployments.md)
 - [Examples](examples.md)
 - [Provider Adapters](providers/README.md)
 
@@ -30,6 +32,15 @@ families.
   leaf crates rather than widening the default facade. See
   [Integrations](integrations.md) and
   [Architecture](architecture.md#provider-and-signer-adapter-seams).
+- How do I plug in a custom HTTP transport? Every `HttpTransport` impl
+  installs through the builder's `.transport(...)` setter on both
+  `OrderBookApi` and `SubgraphApi`. Native consumers get
+  `ReqwestTransport` by default; browser consumers install
+  `FetchTransport` from `cow-sdk-transport-wasm`. See
+  [Transport](transport.md) for the full seam.
+- Where do deployed contract addresses come from? Every address routes
+  through the typed `Registry` in `cow-sdk-contracts`. See
+  [Deployments](deployments.md).
 
 ## For Verification And Review
 
@@ -56,11 +67,13 @@ or publication-readiness contract.
 
 ## For Performance And Transport Tuning
 
+- [Transport](transport.md)
 - [Performance Posture](performance.md)
 
-The performance posture records the benchmarked hot paths, reported measurement
-ranges, the shared `reqwest::Client` pattern, and the production-bot HTTP/2
-keep-alive recipe.
+The transport page explains the `HttpTransport` seam and its native and
+browser defaults. The performance posture records the benchmarked hot
+paths, reported measurement ranges, the shared transport pattern, and
+the production-bot HTTP/2 keep-alive recipe.
 
 ## For Observability
 

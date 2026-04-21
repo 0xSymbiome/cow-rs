@@ -14,7 +14,14 @@ cargo nextest run --workspace --all-features --config-file .github/config/nextes
 typos --config .github/config/typos.toml
 cargo deny check bans licenses sources --config .github/config/deny.toml
 cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk
 ```
+
+The `cargo tree --invert alloy-provider` command is the stability-invariant
+gate: it must emit no lines for the published `cow-sdk` crate family,
+asserting that consumers keep full control of their chain-RPC runtime
+through the `AsyncProvider` seam rather than being forced onto a specific
+provider ecosystem by a transitive dependency.
 
 `cargo audit` is the blocking RustSec gate for published advisories. It keeps
 vulnerabilities, unsound advisories, and unmaintained advisories blocking while
@@ -105,9 +112,9 @@ cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.pa
 
 ## 6. Manual Publish Sequence
 
-The functional `0.1.0` crates.io release publishes the nine
-first-release crates in dependency order so every step depends only on
-a version already indexed by the registry. Reserved-placeholder
+The functional `0.1.0` crates.io release publishes the crates of the
+`cow-sdk` family in dependency order so every step depends only on a
+version already indexed by the registry. Reserved-placeholder
 `0.0.1-reserved.0` publishes are independent of the functional release
 and do not satisfy this sequence.
 
@@ -243,6 +250,7 @@ Build the WASM surfaces:
 cargo build --target wasm32-unknown-unknown -p cow-sdk
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
+cargo build --target wasm32-unknown-unknown -p cow-sdk-transport-wasm
 cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
 ```
 

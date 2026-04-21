@@ -1,7 +1,7 @@
 # Trading Order Construction Integrity Audit
 
 Status: Current  
-Last reviewed: 2026-04-16  
+Last reviewed: 2026-04-21  
 Owning surface: `cow-sdk-trading` order assembly, injected-orderbook constructor parity, and recoverable-signature posting boundary  
 Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` construction with injected orderbooks, or recoverable-signature posting validation  
 Related docs:

@@ -37,6 +37,31 @@ Optional capabilities grow through leaf crates and feature-gated additions.
 Browser-runtime behavior, provider-specific behavior, and future capability
 families do not silently widen the default facade contract.
 
+## Sole Construction Seam
+
+`OrderBookApi`, `SubgraphApi`, and `TradingSdk` construct exclusively
+through their typestate builders. The required inputs (chain,
+environment or API key, transport) are encoded as compile-time markers
+so a misconstructed client is a build error rather than a first-quote
+runtime surprise. No free-function public constructors remain on any of
+the three.
+
+## Chain-RPC Runtime Neutrality
+
+The published `cow-sdk` crate family does not transitively depend on
+`alloy-provider`. Consumers own their chain-RPC runtime through the
+`AsyncProvider` seam in `cow-sdk-core`, and the `cargo tree --invert
+alloy-provider` check on every crate in the family is a release-gating
+invariant rather than an aspiration.
+
+## Canonical Contract Bindings
+
+Every ABI binding the SDK emits call-data against is generated through
+`alloy::sol!` from Solidity excerpts committed under
+`crates/contracts/abi/`. Hand-rolled encoders are not allowed in
+shipped crates, and every chain-scoped address lookup routes through the
+typed `Registry` authority in `cow-sdk-contracts`.
+
 ## Evidence-Backed Public Claims
 
 Compatibility, support posture, parity, and release claims must be justified by

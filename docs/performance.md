@@ -91,26 +91,41 @@ comparisons without any intermediate allocation, which keeps token-registry
 lookups and order-owner checks out of the allocator on every signed-order
 path.
 
-## Shared HTTP Client Pattern
+## Shared HTTP Transport Pattern
 
 Production deployments that issue orderbook or subgraph requests across
-several chains should pool a single [`reqwest::Client`] and share it with
-every SDK client they construct. A shared client keeps one TCP, TLS, and
-HTTP/2 connection cache warm across all routes, cuts first-byte latency for
-every subsequent request, and bounds the per-host file-descriptor footprint.
+several chains should pool a single native transport and share it with
+every SDK client they construct. A shared transport keeps one TCP, TLS,
+and HTTP/2 connection cache warm across all routes, cuts first-byte
+latency for every subsequent request, and bounds the per-host
+file-descriptor footprint.
 
-Both public clients accept a pre-configured `reqwest::Client` through their
-typestate builder's `.client(...)` step:
+The production HTTP injection point is the `HttpTransport` trait in
+`cow-sdk-core`. On native targets, the shipped default adapter is
+`ReqwestTransport`, which is a thin wrapper over a shared
+`reqwest::Client`. Both public clients accept a pre-configured
+`reqwest::Client` through their typestate builder's `.client(...)`
+convenience step, which constructs a `ReqwestTransport` around the
+supplied client and preserves any custom keep-alive, timeout, or TLS
+settings verbatim:
 
-- [`cow_sdk_orderbook::OrderBookApi::builder`] exposes `.client(shared)` so
-  any custom keep-alive, timeout, or TLS configuration on the supplied
-  client is preserved verbatim.
+- [`cow_sdk_orderbook::OrderBookApi::builder`] exposes `.client(shared)`.
 - [`cow_sdk_subgraph::SubgraphApi::builder`] exposes the matching
   `.client(shared)` step on the subgraph gateway surface.
 
-When `.client(...)` is omitted the builder constructs a conservative client
-that tracks `reqwest`'s upstream defaults, which is the right choice for the
-common single-chain consumer.
+Callers that want to install a bespoke transport implementation — an
+authenticated proxy, an in-process fixture transport, a retry adapter —
+pass it through the builder's `.transport(Arc::new(...))` setter
+instead. When neither `.client(...)` nor `.transport(...)` is called on
+native targets, the builder installs a conservative `ReqwestTransport`
+that tracks `reqwest`'s upstream defaults, which is the right choice
+for the common single-chain consumer.
+
+On `wasm32-unknown-unknown`, the shipped browser adapter is
+`FetchTransport` from `cow-sdk-transport-wasm`. Browser consumers
+install it explicitly through `.transport(...)`; the connection-pool
+tuning recipe below does not apply because browser `fetch` manages its
+own pool.
 
 ## HTTP/2 Keep-Alive Recipe
 
@@ -182,6 +197,9 @@ fn assemble_sdk_clients(
 | `tcp_keepalive` | Socket-layer keep-alive for catching half-open NAT entries. |
 | `user_agent` | Stable identifier sent on every request so operators can correlate traffic. |
 
-All settings above are operator opt-ins; the SDK's default constructors keep
-upstream `reqwest` defaults so single-chain consumers and short-lived
-scripts stay simple.
+All settings above are operator opt-ins; the shipped default
+`ReqwestTransport` adapter keeps upstream `reqwest` defaults so
+single-chain consumers and short-lived scripts stay simple. Browser
+consumers building for `wasm32-unknown-unknown` install `FetchTransport`
+from `cow-sdk-transport-wasm` instead; the knob summary above does not
+apply to that adapter because browser `fetch` owns its connection pool.

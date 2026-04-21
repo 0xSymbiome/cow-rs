@@ -39,15 +39,35 @@ contracts stay explicit, and typed-data payloads remain structured rather than
 being reconstructed from field-name heuristics. Review configuration changes at
 the owning crate boundary as well: default diagnostics and serialized forms for
 credential-bearing config must keep secrets redacted while leaving explicit
-inputs and override seams intact.
+inputs and override seams intact. EIP-1271 verification routes through
+`verify_eip1271_signature_async` with a mandatory
+`Eip1271VerificationCache` argument; only `Ok(())` and
+`Eip1271MagicValueMismatch` outcomes are cached, every other error class
+re-hits the chain.
 
 ### Transport Ownership
 
-Shared HTTP client policy is intentionally narrow. Retry behavior, rate limits,
-GraphQL request shape, API-key handling, and pinning semantics remain owned by
-the transport crates that define those behaviors. For `cow-sdk-subgraph`, that
-includes keeping stable route identity and typed request failures free of raw
-Graph API credentials.
+HTTP dispatch for the orderbook and subgraph surfaces flows through the
+`HttpTransport` trait in `cow-sdk-core`. The native default is
+`ReqwestTransport`; the browser default is `FetchTransport` from
+`cow-sdk-transport-wasm`. Every adapter strips the URL through
+`reqwest::Error::without_url` (native) or explicit omission (browser)
+before wrapping, so credential-bearing query strings never surface
+through the typed `TransportError` enum. Retry behavior, rate limits,
+GraphQL request shape, API-key handling, and pinning semantics sit above
+the transport and remain owned by the orderbook and subgraph crates. For
+`cow-sdk-subgraph`, that includes keeping stable route identity and typed
+request failures free of raw Graph API credentials.
+
+### Stability Invariant
+
+The published `cow-sdk` crate family (`cow-sdk`, `cow-sdk-core`,
+`cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
+`cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`,
+`cow-sdk-browser-wallet`) does not transitively depend on
+`alloy-provider`. Review every dependency change against this invariant;
+the release-gating `cargo tree --invert alloy-provider` command returns
+empty on the shipped workspace.
 
 ### Workflow Ownership
 

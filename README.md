@@ -5,8 +5,10 @@
 `cow-rs` is a Rust SDK for CoW Protocol.
 
 It provides typed Rust surfaces for order creation, signing, quoting,
-submission, app-data handling, orderbook access, read-only subgraph queries,
-and browser-compatible WASM workflows.
+submission, app-data handling, orderbook access, read-only subgraph
+queries, browser-compatible WASM workflows, a pluggable `HttpTransport`
+seam with native and browser default adapters, a typed deployment
+registry, and an optional EIP-1271 signature-verification cache.
 
 ## Start Here
 
@@ -44,9 +46,11 @@ surface that originates the order flow.
 | Need | Crate |
 | --- | --- |
 | Main Rust SDK entrypoint | `cow-sdk` |
+| Shared domain types, runtime traits, and the `HttpTransport` seam with its native `ReqwestTransport` default | `cow-sdk-core` |
+| Browser-target HTTP transport (`FetchTransport`) for `wasm32-unknown-unknown` | `cow-sdk-transport-wasm` |
 | Read-only subgraph queries | `cow-sdk-subgraph` |
 | Browser wallet integration for WASM | `cow-sdk-browser-wallet` or `cow-sdk` with `browser-wallet` |
-| Low-level deterministic protocol helpers | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` |
+| Deterministic protocol helpers, `alloy::sol!` bindings, the `Registry` authority, and EIP-1271 verification | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` |
 | Typed orderbook transport | `cow-sdk-orderbook` |
 | High-level trading workflows | `cow-sdk-trading` |
 
@@ -67,6 +71,7 @@ surface that originates the order flow.
 | Verification and release posture | [Verification Guide](docs/verification-guide.md) and [Release Checklist](docs/release-checklist.md) define the maintained proof and publication contract. |
 | Change history | [CHANGELOG.md](CHANGELOG.md) tracks the current unreleased public contract and future release notes. |
 | Security disclosure | [SECURITY.md](SECURITY.md) defines the private repository reporting path and protocol-level escalation route. |
+| Chain-RPC runtime neutrality | The published `cow-sdk` crate family (`cow-sdk`, `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`, `cow-sdk-browser-wallet`) does not transitively depend on `alloy-provider`; consumers select their own provider ecosystem through the `AsyncProvider` seam, and CI gates the invariant. |
 | Publication state | Reserved-placeholder `0.0.1-reserved.0` crates.io and docs.rs entries are live for the published crate family, but the functional `0.1.0` release is still pending; [Getting Started](docs/getting-started.md) and [Release Checklist](docs/release-checklist.md) describe the current repo-local and release-ready contract truthfully. |
 | Compatibility and license | Public MSRV is Rust `1.94.0`; the current workspace license is `GPL-3.0-only`. |
 
@@ -78,7 +83,10 @@ surface that originates the order flow.
 - [Documentation Index](docs/README.md)
 - [Principles](docs/principles.md)
 - [Architecture](docs/architecture.md)
+- [Transport](docs/transport.md)
+- [Deployments](docs/deployments.md)
 - [Examples](docs/examples.md)
+- [Bring Your Own Provider](docs/providers/README.md)
 
 Start with [Getting Started](docs/getting-started.md) for the shortest path
 from the facade crate to deterministic signed-order output.

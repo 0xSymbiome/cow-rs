@@ -1,7 +1,7 @@
 # Credential Surface Contract Hygiene Audit
 
 Status: Current  
-Last reviewed: 2026-04-17  
+Last reviewed: 2026-04-21  
 Owning surface: Cross-cutting credential redaction and typed partner-fee public boundary across core, app-data, orderbook, subgraph, and trading  
 Refresh trigger: Changes to public credential-bearing configs, subgraph route identity or request-failure context, the `Redacted<T>` newtype contract, the transport `From<reqwest::Error>` conversion classifiers, or typed partner-fee request boundaries  
 Related docs:

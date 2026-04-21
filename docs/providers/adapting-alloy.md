@@ -20,9 +20,13 @@ types.
 - Rust toolchain pinned by `rust-toolchain.toml` (MSRV 1.94.0).
 - `alloy` 1.x (the 0.x line moved into `alloy` in 2025; the examples
   below reference the 1.x trait names).
-- The workspace has `cow-sdk-core` on its dependency list. The alloy
-  crates are supplied by the consumer workspace and are intentionally
-  not workspace dependencies of `cow-rs`.
+- The workspace has `cow-sdk-core` on its dependency list.
+  `cow-rs` pins `alloy-sol-macro`, `alloy-sol-types`, `alloy-primitives`,
+  `alloy-dyn-abi`, and `alloy-json-abi` in its workspace for the
+  deterministic binding, typed-data, and redaction surfaces; the
+  chain-RPC half (`alloy-provider`) is intentionally NOT a workspace
+  dependency, so consumers select their own provider ecosystem and
+  bring the adapter described below.
 
 ## Public Trait Surface
 

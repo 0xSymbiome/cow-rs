@@ -24,7 +24,7 @@ commits.
 | Surface | Rust crate | Pinned evidence |
 | --- | --- | --- |
 | Core config and runtime contracts | `cow-sdk-core` | Common adapter, address, token, config, and selected shared type sources from `cowprotocol/cow-sdk` |
-| Contracts | `cow-sdk-contracts` | `cowprotocol/contracts` helpers, Solidity tests, and selected `contracts-ts` package tests |
+| Contracts | `cow-sdk-contracts` | `cowprotocol/contracts` Solidity sources, committed excerpts under `crates/contracts/abi/**/*.sol`, `alloy::sol!`-generated bindings, the typed `Registry` deployment authority, and selected upstream test fixtures |
 | Signing | `cow-sdk-signing` | Order-signing utilities, typed-data helpers, and contract-signing sources |
 | App-data | `cow-sdk-app-data` | App-data helpers, schema imports, generated schema references, and schema regression tests |
 | Orderbook | `cow-sdk-orderbook` | TypeScript orderbook sources plus selected `cowprotocol/services` OpenAPI and validation references |
@@ -110,3 +110,26 @@ entry for anyone who later considers reintroducing the surface.
   wrapper, there is no negative test because the type does not exist
   and the Rust compiler itself enforces the exclusion at every call
   site.
+- **Legacy free-function constructors on `OrderBookApi` and
+  `SubgraphApi`** — the shipped construction seam for both clients is
+  the typestate builder (`OrderBookApi::builder()` and
+  `SubgraphApi::builder()`, governed by
+  [ADR 0013](./adr/0013-http-transport-injection-and-typestate-builders.md)).
+  The earlier family of free-function constructors (for example
+  `from_shared_client`, `new_with_transport_policy`, `new_with_base_url`
+  on the orderbook client and the matching set on the subgraph client)
+  is absent from the workspace; the Rust compiler itself enforces the
+  exclusion at every call site, and the `trybuild` UI harness at
+  `crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs`
+  captures the compile error a browser consumer sees when `.build()`
+  is attempted without `.transport(...)`.
+- **Hand-rolled ABI encoders in `cow-sdk-contracts`** — every binding
+  shipped by the contracts crate is generated through `alloy::sol!` from
+  the Solidity excerpts committed under `crates/contracts/abi/`
+  (governed by
+  [ADR 0012](./adr/0012-alloy-sol-bindings-and-registry-authority.md)).
+  Hand-rolled encoder helpers for `GPv2Settlement`, `GPv2VaultRelayer`,
+  `CoWSwapEthFlow`, the EIP-1967 proxy, and ERC-20 / ERC-20 Permit are
+  absent from the workspace; byte-identity parity with the upstream
+  Solidity surface is proven by the regression contract at
+  `crates/contracts/tests/parity_contract.rs`.

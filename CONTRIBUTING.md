@@ -33,7 +33,13 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
 cargo check -p cow-sdk --examples
 cargo check --manifest-path examples/native/Cargo.toml --examples
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk
 ```
+
+The `cargo tree --invert alloy-provider` command must emit no lines for
+the published `cow-sdk` crate family. The invariant asserts that
+consumers keep full control of their chain-RPC runtime through the
+`AsyncProvider` seam; CI enforces the same check on every pull request.
 
 The clippy gate runs under the workspace lint posture declared in the root
 `Cargo.toml`, which enables both the `pedantic` and `nursery` groups at warn
@@ -53,6 +59,7 @@ cargo build --target wasm32-unknown-unknown -p cow-sdk
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
+cargo build --target wasm32-unknown-unknown -p cow-sdk-transport-wasm
 cd examples/wasm/sdk-verification-console && wasm-pack build --target web
 cd examples/wasm/browser-wallet-console && wasm-pack build --target web
 ```

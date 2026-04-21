@@ -1,7 +1,7 @@
 # Dependency Gate Audit
 
 Status: Current  
-Last reviewed: 2026-04-16  
+Last reviewed: 2026-04-21  
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces  
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, the current published CID warning status, or the alloy proc-macro advisory posture  
 Related docs:

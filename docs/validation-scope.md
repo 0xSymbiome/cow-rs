@@ -29,8 +29,10 @@ committed in the repository.
 | App-data parity | `cow-sdk-app-data`, `cow-sdk-trading` | CID conversion, schema handling, fetch, pinning seams, and fail-closed encoding tests | Live IPFS or pinning services remain optional integration checks |
 | Subgraph support | `cow-sdk-subgraph` | Typed query construction, decode, and deterministic native scenarios | Live subgraph access depends on external endpoint configuration |
 | Orderbook transport | `cow-sdk-orderbook` | Mocked request-shape, retry, decode, and conversion tests | Live orderbook behavior depends on remote endpoints |
-| WASM target | `cow-sdk`, `cow-sdk-app-data`, WASM examples | WASM target builds, direct browser-bridge proof, deterministic verification-console checks, and committed browser automation | Browser-hosted rendering and deployment inspection remain environment-sensitive |
+| Browser-target HTTP transport | `cow-sdk-transport-wasm` | Cross-adapter parity against the native `ReqwestTransport` default and the shipped `wasm32-unknown-unknown` build | Live browser fetch behavior depends on vendor-specific network stacks |
+| WASM target | `cow-sdk`, `cow-sdk-app-data`, `cow-sdk-transport-wasm`, WASM examples | WASM target builds, direct browser-bridge proof, deterministic verification-console checks, and committed browser automation | Browser-hosted rendering and deployment inspection remain environment-sensitive |
 | Browser wallet integration | `cow-sdk-browser-wallet`, `cow-sdk`, browser-wallet console | Native crate tests, direct `wasm-bindgen-test` bridge proof, deterministic mock-wallet flows, console builds, and committed fixture-backed browser automation | Live extension-backed authorization, prompts, and vendor behavior remain environment-sensitive |
+| Stability invariant | whole workspace | `cargo tree --invert alloy-provider` returns empty for the published `cow-sdk` crate family (`cow-sdk`, `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`, `cow-sdk-browser-wallet`) | None |
 | Quality and publishability | whole workspace | Formatting, linting, tests, doctests, docs, source-lock validation, and package dry runs | Crates.io publication and independent-root provenance checks are separate operational steps |
 
 ## High-Signal Commands

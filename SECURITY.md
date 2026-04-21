@@ -10,6 +10,22 @@ This policy covers security issues in the `cow-rs` repository, including:
 - documentation mistakes that could materially mislead safe integration or
   release use
 
+Security-relevant public surfaces worth a reviewer's attention include:
+
+- the `Eip1271VerificationCache` trait on `verify_eip1271_signature_async`
+  and its conservative caching semantics (only `Ok(())` magic-value
+  matches and `Eip1271MagicValueMismatch` outcomes are cached; every
+  other error class, including transport, missing-contract-code, decode,
+  and provider failures, re-hits the chain)
+- the `Redacted<T>` newtype applied to partner API keys, IPFS pinning
+  credentials, transport base URLs, and other secret-adjacent inputs so
+  debug, display, and serialized output of configuration types never
+  emit the raw value
+- the typed `TransportError` enum and its `TransportErrorClass`
+  partition, including the URL-stripping contract on
+  `ReqwestTransport` (native) and the explicit URL omission on
+  `FetchTransport` (browser)
+
 It does not cover:
 
 - general feature requests
