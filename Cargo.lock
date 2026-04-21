@@ -962,6 +962,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "cow-sdk-transport-wasm"
+version = "0.1.0"
+dependencies = [
+ "cow-sdk-core",
+ "js-sys",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-bindgen-test",
+ "web-sys",
+ "wiremock",
+]
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"

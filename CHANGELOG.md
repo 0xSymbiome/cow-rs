@@ -19,6 +19,25 @@ unreleased public contract of the repository.
   `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
   `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`, and
   `cow-sdk-browser-wallet`.
+- New browser-side transport leaf crate `cow-sdk-transport-wasm`.
+  The crate ships `FetchTransport`, a `wasm32`-only implementation of
+  the shared `cow_sdk_core::HttpTransport` trait backed by
+  `web-sys::fetch` and `wasm-bindgen-futures`. Every browser-fetch
+  failure is classified through the same `TransportErrorClass`
+  taxonomy the native `ReqwestTransport` default uses (`Timeout`,
+  `Connect`, `Redirect`, `Decode`, `Body`, `Status`, fallthrough), an
+  `AbortController` is wired into the in-flight request when a
+  configured timeout elapses so the resulting `AbortError` maps to
+  `TransportErrorClass::Timeout`, and the base URL rides the existing
+  `Redacted` newtype so it never appears in debug, display, or
+  serialized output. A parity integration test drives the native
+  `ReqwestTransport` baseline and the `FetchTransport` harness against
+  shared fixtures so both adapters deliver byte-identical response
+  bodies. The crate compiles to an empty unit on non-`wasm32` targets,
+  and is intentionally not re-exported through the `cow-sdk` facade:
+  consumers compose `Arc<dyn HttpTransport>` values directly from
+  their browser-side code without pulling the crate into native
+  transitive graphs.
 - Chain-keyed registry of canonical CoW Protocol contract deployments
   under `cow_sdk_contracts::deployments`. The new `Registry` type
   resolves deployed addresses through the typed
