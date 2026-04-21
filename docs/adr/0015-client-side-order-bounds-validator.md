@@ -1,0 +1,107 @@
+# ADR 0015: Typed Client-Side Order-Bounds Validator On Every Trading Submission Seam
+
+- Status: Accepted
+- Date: 2026-04-21
+- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
+- Tags: trading, validation, client-side, defense-in-depth, error-typing
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
+
+## Decision
+
+Every public trading submission seam in `cow-sdk-trading` runs the
+typed `OrderBoundsValidator` as a mandatory pre-transport step. The
+validator is pure — `now` is a caller-supplied UNIX-seconds timestamp
+and no `SystemTime::now` is read inside it — and pairs the typed
+`OrderValidityBounds` policy with a `SubmissionClass` discriminator.
+Failures raise `TradingError::ClientRejected(ClientRejection)` so the
+typed reason is observable without parsing free-form strings. The
+default policy is `OrderValidityBounds::SERVICES_DEFAULT` (60 s
+minimum, 3 h market maximum, 1 y limit-class ceiling) and is
+configurable through `TradingSdkBuilder::with_order_bounds`.
+
+## Why
+
+Without a client-side validator the only enforcement point for the
+protocol-invariant matrix is the orderbook itself, which means every
+violation costs a full HTTP round trip and surfaces as an opaque
+`422` response rather than as a structured Rust error. A pure typed
+validator at the submission seam catches the violation locally,
+returns a structured payload the caller can pattern-match on, and
+preserves the orderbook's authoritative posture as the second
+defense line. Pairing the policy with a `SubmissionClass` and a
+configurable bounds struct lets caller-side policy be tightened
+beyond the published defaults without monkey-patching internal code,
+and the explicit `now` parameter keeps the validator deterministic
+under replay.
+
+## Must Remain True
+
+- Public surface: `OrderBoundsValidator::validate(&order, scheme,
+  app_data_signer: Option<Address>, now: u64, is_eth_flow: bool) ->
+  Result<(), ClientRejection>` is the canonical entry point. The
+  `ClientRejection` enum is `#[non_exhaustive]` and ships every
+  variant the reviewed services validator surfaces:
+  `ValidToInsufficient`, `ValidToExcessive`, `MissingFrom`,
+  `AppdataFromMismatch`, `SameBuyAndSellToken`,
+  `InvalidNativeSellToken`, `ZeroAmount` (discriminated by
+  `AmountSide`), and `OwnerMismatch`. `OrderValidityBounds` exposes
+  a `SERVICES_DEFAULT` constant tracking the published production
+  config and is honoured end-to-end by every submission seam:
+  `post_swap_order`, `post_limit_order`,
+  `post_swap_order_from_quote`, the matching `_async` variants, and
+  `post_sell_native_currency_order` for the eth-flow path.
+- Runtime and support: the validator is pure. It performs no network
+  I/O, reads no environment variables, and no system clock. Callers
+  supply the `now` parameter so deterministic regression tests and
+  replay tooling stay reproducible. The eth-flow submission path
+  invokes the validator with `is_eth_flow: true` so zero-amount,
+  same-token, owner-mismatch, and lifetime checks still fire while
+  the native-currency-sentinel sell-token check is skipped (the
+  sentinel is expected on that path). `PreSign` scheme and
+  `Liquidity` class bypass the maximum-lifetime check, matching the
+  reviewed services authority.
+- Validation and review: dedicated fixture coverage exists for every
+  `ClientRejection` variant in
+  `crates/trading/tests/validation_contract.rs`. The custom-bounds
+  end-to-end fixture proves `with_order_bounds` propagates from the
+  builder to the submission seam, the paired sell-WETH /
+  buy-native-sentinel fixture proves the WETH-bound validator
+  rejects locally, and the `Amount::is_zero` predicate is covered
+  in the same suite.
+- Cost: one new module (`crates/trading/src/validation.rs`), one
+  typed error variant on `TradingError`, one builder setter on
+  `TradingSdkBuilder`, and four `_with_bounds` companion functions
+  on the module-level submission helpers. The pure-function shape
+  means no runtime overhead beyond the existing `OrderCreation`
+  construction.
+
+## Alternatives Rejected
+
+- Leave validation to the orderbook only: the orderbook stays
+  authoritative, but every protocol-invariant violation costs a
+  network round trip and surfaces as an opaque `422`. The
+  client-side validator is defence-in-depth, not a replacement.
+- Read `SystemTime::now()` inside the validator: shorter call
+  sites, but the validator becomes non-deterministic under replay
+  and complicates fixture pinning. The caller-supplied `now`
+  keeps every observation reproducible.
+- Hide bounds behind a global static: simpler to read, but inverts
+  the per-instance scoping that keeps the SDK runtime-neutral
+  (see ADR 0006) and prevents downstream consumers from running
+  multiple SDK instances with different policies.
+- Spread the rejection variants across multiple unrelated error
+  types: matches the existing `TradingError` taxonomy more
+  loosely, but loses the typed `ClientRejection` channel that
+  consumers pattern-match on for diagnostics and metrics.
+
+## Links
+
+- [Architecture](../architecture.md)
+- [Verification Guide](../verification-guide.md)
+- [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
+- [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
+- [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
+
+**Proven by:**
+
+- [Trading Order-Bounds Validator Audit](../audit/trading-order-bounds-validator-audit.md)

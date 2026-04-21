@@ -22,6 +22,9 @@ public and runtime shape of `cow-rs`.
 | [0012](0012-alloy-sol-bindings-and-registry-authority.md) | Accepted | Generate every ABI binding through `alloy::sol!` and resolve every deployed address through a single typed `Registry` authority. |
 | [0013](0013-http-transport-injection-and-typestate-builders.md) | Accepted | Route orderbook and subgraph dispatch through the typed `HttpTransport` seam in `cow-sdk-core`, and construct both public clients through typestate builders. |
 | [0014](0014-eip1271-verification-cache.md) | Accepted | Thread a pluggable `Eip1271VerificationCache` through `verify_eip1271_signature_async` and cache only magic-value-match and explicit mismatch outcomes. |
+| [0015](0015-client-side-order-bounds-validator.md) | Accepted | Run the typed `OrderBoundsValidator` as the mandatory pre-transport step on every public trading submission seam and surface failures through `TradingError::ClientRejected(ClientRejection)`. |
+| [0016](0016-split-sell-and-buy-token-balance-enums.md) | Accepted | Split the sell-side allowance path and the buy-side payout path into distinct `SellTokenSource` and `BuyTokenDestination` enums and reject cross-side coercion at the type system. |
+| [0017](0017-typed-orderbook-rejection-parser.md) | Accepted | Classify non-2xx orderbook responses through a typed `OrderbookRejection` enum with a permanent `Unknown { code, message }` fallback and promote the typed payload onto `OrderbookError::Rejected`. |
 
 ## When To Write An ADR
 

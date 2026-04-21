@@ -15,6 +15,16 @@ unreleased public contract of the repository.
 
 ### Added
 
+- ADR 0015 (`Typed Client-Side Order-Bounds Validator On Every
+  Trading Submission Seam`), ADR 0016 (`Split SellTokenSource And
+  BuyTokenDestination Into Distinct Side-Specific Enums`), and ADR
+  0017 (`Typed OrderbookRejection Parser With Permanent Unknown-Tag
+  Fallback`) ship under `docs/adr/`. ADR 0015 ships alongside a
+  standing audit at
+  `docs/audit/trading-order-bounds-validator-audit.md` whose
+  `Related docs` block reciprocates the ADR's `Proven by`
+  cross-link, and the `docs/adr/README.md` index lists the three
+  new entries in numerical order after `0014`.
 - Typed client-side validator on every trading submission path.
   `cow_sdk_trading::OrderBoundsValidator` pairs
   `OrderValidityBounds` (with the published services defaults
@@ -398,6 +408,18 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Promote both compile-fail witnesses to live `trybuild` harnesses
+  that re-prove the captured compile failure on every `cargo test`
+  run. The token-balance split witness at
+  `crates/core/tests/token_balance_ui.rs` and the partner-fee bps
+  width witness at `crates/app-data/tests/partner_fee_contract.rs`
+  now drive `trybuild::TestCases::compile_fail` against their
+  pinned witness sources, replacing the earlier
+  filesystem-presence-plus-snapshot assertions; the regenerated
+  `.stderr` snapshots match the actual source filenames and the
+  current compiler diagnostic. `trybuild = "1.0.116"` is pinned
+  through `[workspace.dependencies]` and consumed via
+  `trybuild.workspace = true` in the consuming crates.
 - Tighten the typed client-side trading validator surface.
   `TradingSdkBuilder::with_order_bounds` now flows through to
   `TradingSdk` and the submission seam, so a custom
