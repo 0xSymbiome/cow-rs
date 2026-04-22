@@ -512,6 +512,14 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- The properties registry now distinguishes `Property` rows
+  (backed by real `proptest!` coverage on codec crates) from
+  `Invariant` rows (backed by curated boundary sweeps on
+  orchestration crates). Five new invariants cover the
+  submission validator, the split sell-token / buy-token balance
+  enums, the partner-fee policy round-trip, the app-data
+  size-limit warning threshold, and the typed orderbook
+  rejection parser.
 - Orchestration-crate boundary-sweep test files now live at
   `tests/invariant_contract.rs`; codec-crate test files continue
   to live at `tests/property_contract.rs` for real property-based
