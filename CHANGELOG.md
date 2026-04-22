@@ -490,6 +490,11 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Orchestration-crate boundary-sweep test files now live at
+  `tests/invariant_contract.rs`; codec-crate test files continue
+  to live at `tests/property_contract.rs` for real property-based
+  coverage. Evidence citations in `PROPERTIES.md` follow the
+  rename.
 - ADR 0013 (`HTTP Transport Injection Seam And Typestate
   Construction For Orderbook And Subgraph`) now cross-links to
   ADR 0019 in the `Links` section and its `Proven by` block
