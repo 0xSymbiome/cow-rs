@@ -1,51 +1,8 @@
+use std::time::Duration;
+
 use async_trait::async_trait;
-use thiserror::Error;
 
-use crate::validation::TransportErrorClass;
-
-/// Typed error surface returned by every [`HttpTransport`] implementation.
-///
-/// Transport adapters funnel every failure into this enum so downstream
-/// telemetry, retry, and backoff layers observe a uniform classification
-/// without parsing free-form error strings. The
-/// [`Transport`](Self::Transport) variant pairs a [`TransportErrorClass`] tag
-/// with a redacted detail string; the [`Configuration`](Self::Configuration)
-/// variant captures builder-time or input-validation failures that happen
-/// before a network request is dispatched.
-#[non_exhaustive]
-#[derive(Debug, Error)]
-pub enum TransportError {
-    /// Network or request-execution failure observed by the transport layer.
-    #[error("transport error ({class}): {detail}")]
-    Transport {
-        /// Categorical failure mode taken from the documented
-        /// `is_timeout`, `is_connect`, `is_redirect`, `is_decode`, `is_body`,
-        /// `is_builder`, `is_request`, `is_status`, fallthrough partition.
-        class: TransportErrorClass,
-        /// Redacted detail message with any URL stripped by the adapter before
-        /// the wrap.
-        detail: String,
-    },
-    /// Builder-time or input-validation failure that prevented a request from
-    /// being dispatched.
-    #[error("transport configuration error: {message}")]
-    Configuration {
-        /// Human-readable configuration-validation message.
-        message: String,
-    },
-}
-
-impl TransportError {
-    /// Returns the [`TransportErrorClass`] for [`Transport`](Self::Transport)
-    /// variants and [`None`] for configuration failures.
-    #[must_use]
-    pub const fn class(&self) -> Option<TransportErrorClass> {
-        match self {
-            Self::Transport { class, .. } => Some(*class),
-            Self::Configuration { .. } => None,
-        }
-    }
-}
+use crate::transport::error::TransportError;
 
 /// Production injection point for HTTPS REST transport.
 ///
@@ -55,20 +12,33 @@ impl TransportError {
 /// default implementation lives in `cow-sdk-transport-wasm` and bridges the
 /// same async signature through `JsFuture`.
 ///
+/// Every method carries the per-call header set and an optional per-call
+/// timeout alongside the URL and body so downstream crates compose typed
+/// clients without holding a parallel `reqwest::Client` for header or
+/// deadline overrides. Implementations merge per-call headers with any
+/// constructor-configured defaults, honor the per-call timeout when `Some`,
+/// and map non-2xx responses into
+/// [`TransportError::HttpStatus`](crate::transport::TransportError::HttpStatus)
+/// so the calling layer receives the numeric status and raw body through
+/// the typed error channel instead of through `Ok(String)`.
+///
 /// The trait uses [`macro@async_trait`] so downstream clients can hold the
 /// transport behind `Arc<dyn HttpTransport>` without reaching for a
 /// bespoke adapter trait. Implementations carry [`std::fmt::Debug`] so
 /// trait objects render in derived `Debug` output of consumer-facing
-/// clients without bespoke formatters. The returned futures are `!Send`
-/// to keep the browser implementation viable; consumers that want to pin
-/// a native transport onto a multi-threaded runtime keep the concrete
-/// type or wrap it in `Arc<dyn HttpTransport + Send + Sync>` through
-/// their own thin newtype.
-#[async_trait(?Send)]
+/// clients without bespoke formatters. On native targets the returned
+/// futures are `Send` so downstream crates compose them onto
+/// multi-threaded runtimes; on `wasm32` targets the futures drop the
+/// `Send` bound so the browser adapter remains viable.
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 pub trait HttpTransport: std::fmt::Debug {
     /// Performs an HTTP `GET` against the supplied path.
     ///
-    /// The semantics of `path` are adapter-defined: the native
+    /// Implementations merge `headers` with any constructor-configured
+    /// defaults and apply `timeout` when `Some`, otherwise honor the
+    /// transport's default timeout. The semantics of `path` are
+    /// adapter-defined: the native
     /// [`ReqwestTransport`](crate::transport::ReqwestTransport) resolves it
     /// against the configured base URL, while other adapters may interpret
     /// it as an absolute URL.
@@ -78,8 +48,15 @@ pub trait HttpTransport: std::fmt::Debug {
     /// Returns [`TransportError::Transport`] when the underlying backend
     /// fails, with [`TransportError::class`] set to the categorical failure
     /// mode. Returns [`TransportError::Configuration`] when the adapter
-    /// could not build the request from the supplied input.
-    async fn get(&self, path: &str) -> Result<String, TransportError>;
+    /// could not build the request from the supplied input. Returns
+    /// [`TransportError::HttpStatus`] when the remote endpoint responded
+    /// with a non-2xx status code.
+    async fn get(
+        &self,
+        path: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError>;
 
     /// Performs an HTTP `POST` with a JSON-compatible body.
     ///
@@ -88,8 +65,34 @@ pub trait HttpTransport: std::fmt::Debug {
     /// Returns [`TransportError::Transport`] when the underlying backend
     /// fails, with [`TransportError::class`] set to the categorical failure
     /// mode. Returns [`TransportError::Configuration`] when the adapter
-    /// could not build the request from the supplied input.
-    async fn post(&self, path: &str, body: &str) -> Result<String, TransportError>;
+    /// could not build the request from the supplied input. Returns
+    /// [`TransportError::HttpStatus`] when the remote endpoint responded
+    /// with a non-2xx status code.
+    async fn post(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError>;
+
+    /// Performs an HTTP `PUT` with a JSON-compatible body.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TransportError::Transport`] when the underlying backend
+    /// fails, with [`TransportError::class`] set to the categorical failure
+    /// mode. Returns [`TransportError::Configuration`] when the adapter
+    /// could not build the request from the supplied input. Returns
+    /// [`TransportError::HttpStatus`] when the remote endpoint responded
+    /// with a non-2xx status code.
+    async fn put(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError>;
 
     /// Performs an HTTP `DELETE` with a JSON-compatible body.
     ///
@@ -98,6 +101,14 @@ pub trait HttpTransport: std::fmt::Debug {
     /// Returns [`TransportError::Transport`] when the underlying backend
     /// fails, with [`TransportError::class`] set to the categorical failure
     /// mode. Returns [`TransportError::Configuration`] when the adapter
-    /// could not build the request from the supplied input.
-    async fn delete(&self, path: &str, body: &str) -> Result<String, TransportError>;
+    /// could not build the request from the supplied input. Returns
+    /// [`TransportError::HttpStatus`] when the remote endpoint responded
+    /// with a non-2xx status code.
+    async fn delete(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError>;
 }

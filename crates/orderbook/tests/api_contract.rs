@@ -726,3 +726,315 @@ async fn shared_client_fans_requests_across_multiple_orderbook_instances() {
     assert_eq!(first_version, "shared-client-first");
     assert_eq!(second_version, "shared-client-second");
 }
+
+mod recording_transport {
+    use std::collections::VecDeque;
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    use async_trait::async_trait;
+    use cow_sdk_core::{
+        ApiContext, HttpTransport, SupportedChainId, TransportError, TransportErrorClass,
+    };
+    use cow_sdk_orderbook::{
+        CowEnv, OrderBookApi, OrderBookTransportPolicy, OrderCancellations, OrderCreation,
+        OrderbookError, OrderbookRejection, QuoteSide, RequestPolicy, SigningScheme,
+    };
+
+    use crate::common::{
+        sample_buy_token, sample_order_uid, sample_owner, sample_quote_response_json,
+        sample_signature,
+    };
+
+    #[derive(Debug, Clone)]
+    struct RecordedRequest {
+        method: &'static str,
+        url: String,
+        body: String,
+        has_timeout: bool,
+    }
+
+    #[derive(Debug, Clone)]
+    enum Canned {
+        Ok(String),
+        HttpStatus { status: u16, body: String },
+    }
+
+    #[derive(Debug)]
+    struct RecordingTransport {
+        calls: Mutex<Vec<RecordedRequest>>,
+        responses: Mutex<VecDeque<Canned>>,
+    }
+
+    impl RecordingTransport {
+        fn new(responses: impl IntoIterator<Item = Canned>) -> Arc<Self> {
+            Arc::new(Self {
+                calls: Mutex::new(Vec::new()),
+                responses: Mutex::new(responses.into_iter().collect()),
+            })
+        }
+
+        fn observed(&self) -> Vec<RecordedRequest> {
+            self.calls
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone()
+        }
+
+        fn record(&self, request: RecordedRequest) -> Canned {
+            self.calls
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(request);
+            self.responses
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .pop_front()
+                .expect("recording transport must have a canned response for every call")
+        }
+    }
+
+    #[async_trait]
+    impl HttpTransport for RecordingTransport {
+        async fn get(
+            &self,
+            path: &str,
+            _headers: &[(String, String)],
+            timeout: Option<Duration>,
+        ) -> Result<String, TransportError> {
+            let canned = self.record(RecordedRequest {
+                method: "GET",
+                url: path.to_owned(),
+                body: String::new(),
+                has_timeout: timeout.is_some(),
+            });
+            canned_into_transport_result(canned)
+        }
+
+        async fn post(
+            &self,
+            path: &str,
+            body: &str,
+            _headers: &[(String, String)],
+            timeout: Option<Duration>,
+        ) -> Result<String, TransportError> {
+            let canned = self.record(RecordedRequest {
+                method: "POST",
+                url: path.to_owned(),
+                body: body.to_owned(),
+                has_timeout: timeout.is_some(),
+            });
+            canned_into_transport_result(canned)
+        }
+
+        async fn put(
+            &self,
+            path: &str,
+            body: &str,
+            _headers: &[(String, String)],
+            timeout: Option<Duration>,
+        ) -> Result<String, TransportError> {
+            let canned = self.record(RecordedRequest {
+                method: "PUT",
+                url: path.to_owned(),
+                body: body.to_owned(),
+                has_timeout: timeout.is_some(),
+            });
+            canned_into_transport_result(canned)
+        }
+
+        async fn delete(
+            &self,
+            path: &str,
+            body: &str,
+            _headers: &[(String, String)],
+            timeout: Option<Duration>,
+        ) -> Result<String, TransportError> {
+            let canned = self.record(RecordedRequest {
+                method: "DELETE",
+                url: path.to_owned(),
+                body: body.to_owned(),
+                has_timeout: timeout.is_some(),
+            });
+            canned_into_transport_result(canned)
+        }
+    }
+
+    fn canned_into_transport_result(canned: Canned) -> Result<String, TransportError> {
+        match canned {
+            Canned::Ok(body) => Ok(body),
+            Canned::HttpStatus { status, body } => Err(TransportError::HttpStatus { status, body }),
+        }
+    }
+
+    fn api_with_recorder(recorder: Arc<RecordingTransport>) -> OrderBookApi {
+        api_with_recorder_and_policy(recorder, OrderBookTransportPolicy::default())
+    }
+
+    fn api_with_recorder_and_policy(
+        recorder: Arc<RecordingTransport>,
+        policy: OrderBookTransportPolicy,
+    ) -> OrderBookApi {
+        let context = ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod);
+        OrderBookApi::builder_from_context(context)
+            .policy(policy)
+            .transport(recorder as Arc<dyn HttpTransport + Send + Sync>)
+            .build()
+    }
+
+    #[tokio::test]
+    async fn orderbook_get_order_dispatches_through_injected_transport() {
+        let uid = sample_order_uid();
+        let order_json = crate::common::sample_order_json(&uid);
+        let recorder = RecordingTransport::new([Canned::Ok(order_json.to_string())]);
+        let api = api_with_recorder(recorder.clone());
+
+        let order = api
+            .get_order(&uid)
+            .await
+            .expect("order lookup must succeed through the injected transport");
+
+        assert_eq!(order.uid, uid);
+        let calls = recorder.observed();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].method, "GET");
+        assert!(calls[0].url.contains(uid.as_str()));
+        assert!(calls[0].body.is_empty());
+        assert!(calls[0].has_timeout);
+    }
+
+    #[tokio::test]
+    async fn orderbook_send_order_dispatches_through_injected_transport() {
+        let recorder = RecordingTransport::new([
+            Canned::Ok(sample_quote_response_json().to_string()),
+            Canned::Ok(format!("\"{}\"", sample_order_uid().as_str())),
+        ]);
+        let api = api_with_recorder(recorder.clone());
+
+        let quote = api
+            .get_quote(&cow_sdk_orderbook::OrderQuoteRequest::new(
+                sample_owner(),
+                sample_buy_token(),
+                sample_owner(),
+                QuoteSide::sell("1000000"),
+            ))
+            .await
+            .expect("quote request must succeed through the injected transport");
+
+        let order = OrderCreation::from_quote(
+            &quote.quote,
+            sample_owner(),
+            None,
+            SigningScheme::Eip712,
+            sample_signature(),
+        )
+        .with_quote_id(quote.id.expect("fixture includes quote id"));
+        let uid = api
+            .send_order(&order)
+            .await
+            .expect("send_order must succeed through the injected transport");
+
+        assert_eq!(uid.as_str(), sample_order_uid().as_str());
+        let calls = recorder.observed();
+        assert_eq!(calls.len(), 2);
+        assert_eq!(calls[0].method, "POST");
+        assert!(calls[0].url.contains("/api/v1/quote"));
+        assert_eq!(calls[1].method, "POST");
+        assert!(calls[1].url.contains("/api/v1/orders"));
+        assert!(
+            calls[1].body.contains("sellToken"),
+            "the POST body must carry a serialized OrderCreation: {}",
+            calls[1].body
+        );
+    }
+
+    #[tokio::test]
+    async fn orderbook_delete_cancellation_dispatches_through_injected_transport() {
+        let recorder = RecordingTransport::new([Canned::Ok(String::new())]);
+        let api = api_with_recorder(recorder.clone());
+        let cancellation =
+            OrderCancellations::new(vec![sample_order_uid()], sample_signature().to_owned());
+
+        api.send_signed_order_cancellations(&cancellation)
+            .await
+            .expect("signed cancellation must succeed through the injected transport");
+
+        let calls = recorder.observed();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].method, "DELETE");
+        assert!(calls[0].url.contains("/api/v1/orders"));
+        assert!(
+            calls[0].body.contains("signature"),
+            "DELETE body must carry a signed cancellation envelope: {}",
+            calls[0].body
+        );
+    }
+
+    #[tokio::test]
+    async fn orderbook_rate_limit_and_backoff_still_apply_through_injected_transport() {
+        let recorder = RecordingTransport::new([
+            Canned::HttpStatus {
+                status: 503,
+                body: "{\"errorType\":\"InternalServerError\",\"description\":\"try again\"}"
+                    .to_owned(),
+            },
+            Canned::HttpStatus {
+                status: 503,
+                body: "{\"errorType\":\"InternalServerError\",\"description\":\"try again\"}"
+                    .to_owned(),
+            },
+            Canned::Ok("v1.2.3".to_owned()),
+        ]);
+        let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy {
+            max_attempts: 5,
+            ..RequestPolicy::default()
+        });
+        let api = api_with_recorder_and_policy(recorder.clone(), policy);
+
+        let version = api
+            .get_version()
+            .await
+            .expect("the third attempt must succeed after the retry loop");
+        assert_eq!(version, "v1.2.3");
+
+        let calls = recorder.observed();
+        assert_eq!(
+            calls.len(),
+            3,
+            "the backoff wrapper must retry transient 503 responses through the injected transport"
+        );
+    }
+
+    #[tokio::test]
+    async fn orderbook_non_2xx_surfaces_as_http_status_error_through_injected_transport() {
+        let recorder = RecordingTransport::new([Canned::HttpStatus {
+            status: 400,
+            body: "{\"errorType\":\"DuplicatedOrder\",\"description\":\"order already exists\"}"
+                .to_owned(),
+        }]);
+        let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy {
+            max_attempts: 1,
+            ..RequestPolicy::default()
+        });
+        let api = api_with_recorder_and_policy(recorder.clone(), policy);
+
+        let error = api
+            .get_version()
+            .await
+            .expect_err("non-2xx response must surface through the typed error channel");
+        match error {
+            OrderbookError::Rejected {
+                status, rejection, ..
+            } => {
+                assert_eq!(status.as_u16(), 400);
+                assert_eq!(rejection, OrderbookRejection::DuplicatedOrder);
+            }
+            OrderbookError::Api(envelope) => {
+                assert_eq!(envelope.status, 400);
+            }
+            other => panic!("expected Rejected or Api error, got {other:?}"),
+        }
+
+        let _ = TransportErrorClass::Status;
+    }
+}

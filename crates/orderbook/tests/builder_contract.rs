@@ -9,6 +9,8 @@
 //! `reqwest::Client` reuse all flow through the resulting `OrderBookApi`.
 
 use std::sync::Arc;
+use std::sync::Mutex;
+use std::time::Duration;
 
 use cow_sdk_core::{
     ApiContext, CowEnv, HttpTransport, ReqwestTransport, ReqwestTransportConfig, SupportedChainId,
@@ -19,15 +21,41 @@ use cow_sdk_orderbook::{OrderBookApi, OrderBookTransportPolicy, RequestPolicy};
 #[derive(Debug, Default)]
 struct StubTransport;
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl HttpTransport for StubTransport {
-    async fn get(&self, _path: &str) -> Result<String, TransportError> {
+    async fn get(
+        &self,
+        _path: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
         Ok(String::new())
     }
-    async fn post(&self, _path: &str, _body: &str) -> Result<String, TransportError> {
+    async fn post(
+        &self,
+        _path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
         Ok(String::new())
     }
-    async fn delete(&self, _path: &str, _body: &str) -> Result<String, TransportError> {
+    async fn put(
+        &self,
+        _path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        Ok(String::new())
+    }
+    async fn delete(
+        &self,
+        _path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
         Ok(String::new())
     }
 }
@@ -113,6 +141,135 @@ fn explicit_transport_overrides_default_native_handle() {
         .build();
 
     assert!(Arc::ptr_eq(api.transport(), &transport));
+}
+
+#[derive(Debug, Default)]
+struct BuilderRecordingTransport {
+    calls: Mutex<Vec<String>>,
+    response: Mutex<String>,
+}
+
+impl BuilderRecordingTransport {
+    fn with_response(response: &str) -> Self {
+        Self {
+            calls: Mutex::new(Vec::new()),
+            response: Mutex::new(response.to_owned()),
+        }
+    }
+
+    fn calls(&self) -> Vec<String> {
+        self.calls
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
+    }
+}
+
+#[async_trait::async_trait]
+impl HttpTransport for BuilderRecordingTransport {
+    async fn get(
+        &self,
+        path: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.calls
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(format!("GET {path}"));
+        Ok(self
+            .response
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone())
+    }
+    async fn post(
+        &self,
+        path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.calls
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(format!("POST {path}"));
+        Ok(self
+            .response
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone())
+    }
+    async fn put(
+        &self,
+        path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.calls
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(format!("PUT {path}"));
+        Ok(self
+            .response
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone())
+    }
+    async fn delete(
+        &self,
+        path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.calls
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(format!("DELETE {path}"));
+        Ok(self
+            .response
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone())
+    }
+}
+
+#[tokio::test]
+async fn injected_transport_observes_every_live_request_from_the_built_client() {
+    let recorder = Arc::new(BuilderRecordingTransport::with_response("v1.2.3"));
+    let transport: Arc<dyn HttpTransport + Send + Sync> = recorder.clone();
+    let api = OrderBookApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .environment(CowEnv::Prod)
+        .transport(transport.clone())
+        .build();
+
+    assert!(Arc::ptr_eq(api.transport(), &transport));
+
+    let version = api
+        .get_version()
+        .await
+        .expect("the injected transport should deliver the canned version response");
+    assert_eq!(version, "v1.2.3");
+
+    let calls = recorder.calls();
+    assert_eq!(
+        calls.len(),
+        1,
+        "exactly one live request should flow through the injected transport"
+    );
+    assert!(
+        calls[0].starts_with("GET "),
+        "the version endpoint must dispatch through the GET path: {}",
+        calls[0]
+    );
+    assert!(
+        calls[0].contains("/api/v1/version"),
+        "the dispatched URL must reach the version endpoint: {}",
+        calls[0]
+    );
 }
 
 #[test]

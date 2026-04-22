@@ -10,6 +10,8 @@ use serde_json::json;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
+const NO_HEADERS: &[(String, String)] = &[];
+
 fn build_transport(base_url: String) -> ReqwestTransport {
     ReqwestTransport::new(ReqwestTransportConfig::new(base_url).with_user_agent("cow-rs-tests"))
         .expect("reqwest client construction must succeed with a validated user agent")
@@ -35,7 +37,7 @@ async fn get_round_trip_returns_response_body() {
 
     let transport = build_transport(server.uri());
     let body = transport
-        .get("/orders")
+        .get("/orders", NO_HEADERS, None)
         .await
         .expect("get round-trip must succeed against the mock server");
 
@@ -53,7 +55,7 @@ async fn post_round_trip_forwards_body_and_returns_response_body() {
 
     let transport = build_transport(server.uri());
     let body = transport
-        .post("/quote", "{\"kind\":\"sell\"}")
+        .post("/quote", "{\"kind\":\"sell\"}", NO_HEADERS, None)
         .await
         .expect("post round-trip must succeed against the mock server");
 
@@ -71,7 +73,7 @@ async fn delete_round_trip_forwards_body_and_returns_response_body() {
 
     let transport = build_transport(server.uri());
     let body = transport
-        .delete("/orders", "{\"uid\":\"0x1\"}")
+        .delete("/orders", "{\"uid\":\"0x1\"}", NO_HEADERS, None)
         .await
         .expect("delete round-trip must succeed against the mock server");
 
@@ -79,24 +81,27 @@ async fn delete_round_trip_forwards_body_and_returns_response_body() {
 }
 
 #[tokio::test]
-async fn status_error_maps_to_status_class_without_exposing_url() {
+async fn status_error_maps_to_http_status_variant_without_exposing_url() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/boom"))
-        .respond_with(ResponseTemplate::new(500))
+        .respond_with(ResponseTemplate::new(500).set_body_string("upstream exploded"))
         .mount(&server)
         .await;
 
     let transport = build_transport(server.uri());
     let error = transport
-        .get("/boom")
+        .get("/boom", NO_HEADERS, None)
         .await
         .expect_err("non-2xx response must surface as a TransportError");
 
-    let Some(class) = error.class() else {
-        panic!("status failure must carry a transport-error class: {error:?}");
-    };
-    assert_eq!(class, TransportErrorClass::Status);
+    match &error {
+        TransportError::HttpStatus { status, body } => {
+            assert_eq!(*status, 500);
+            assert_eq!(body, "upstream exploded");
+        }
+        other => panic!("expected HttpStatus variant, got {other:?}"),
+    }
     let rendered = format!("{error}");
     assert!(
         !rendered.contains(server.uri().trim_start_matches("http://")),
@@ -115,11 +120,49 @@ async fn timeout_maps_to_timeout_class() {
 
     let transport = build_transport_with_timeout(server.uri(), Duration::from_millis(100));
     let error = transport
-        .get("/slow")
+        .get("/slow", NO_HEADERS, None)
         .await
         .expect_err("slow response must exceed the configured timeout");
 
     assert_eq!(error.class(), Some(TransportErrorClass::Timeout));
+}
+
+#[tokio::test]
+async fn per_call_timeout_overrides_constructor_default() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/slow"))
+        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(5)))
+        .mount(&server)
+        .await;
+
+    let transport = build_transport(server.uri());
+    let error = transport
+        .get("/slow", NO_HEADERS, Some(Duration::from_millis(100)))
+        .await
+        .expect_err("the per-call timeout must override the default");
+
+    assert_eq!(error.class(), Some(TransportErrorClass::Timeout));
+}
+
+#[tokio::test]
+async fn per_call_headers_reach_the_remote_endpoint() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/headers"))
+        .and(wiremock::matchers::header("x-api-key", "partner-value"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("ok"))
+        .mount(&server)
+        .await;
+
+    let transport = build_transport(server.uri());
+    let headers = [("x-api-key".to_owned(), "partner-value".to_owned())];
+    let body = transport
+        .get("/headers", &headers, None)
+        .await
+        .expect("per-call headers must be forwarded to the endpoint");
+
+    assert_eq!(body, "ok");
 }
 
 #[tokio::test]
@@ -129,7 +172,7 @@ async fn connect_failure_maps_to_connect_class() {
     // the failure through `is_connect`.
     let transport = build_transport("http://127.0.0.1:1".to_owned());
     let error = transport
-        .get("/anything")
+        .get("/anything", NO_HEADERS, None)
         .await
         .expect_err("connect to a closed port must fail");
 
@@ -148,7 +191,7 @@ async fn redirect_loop_maps_to_redirect_class() {
 
     let transport = build_transport(server.uri());
     let error = transport
-        .get("/loop")
+        .get("/loop", NO_HEADERS, None)
         .await
         .expect_err("self-redirecting endpoint must exhaust the redirect policy");
 
@@ -243,6 +286,22 @@ fn configuration_error_surfaces_without_class() {
     assert!(error.class().is_none());
 }
 
+#[test]
+fn http_status_error_surfaces_without_class_but_preserves_status_and_body() {
+    let error = TransportError::HttpStatus {
+        status: 418,
+        body: "I am a teapot".to_owned(),
+    };
+    assert!(error.class().is_none());
+    match error {
+        TransportError::HttpStatus { status, body } => {
+            assert_eq!(status, 418);
+            assert_eq!(body, "I am a teapot");
+        }
+        _ => panic!("constructed variant must survive the round-trip"),
+    }
+}
+
 #[tokio::test]
 async fn reqwest_transport_is_dyn_compatible_behind_arc() {
     use std::sync::Arc;
@@ -256,7 +315,7 @@ async fn reqwest_transport_is_dyn_compatible_behind_arc() {
     // Exercise the dyn dispatch path: the call must fail since port 1 is
     // closed, but the trait-object invocation itself must compile.
     let error = transport
-        .get("/path")
+        .get("/path", NO_HEADERS, None)
         .await
         .expect_err("connect to a closed port must fail through the trait-object dispatch");
     assert!(error.class().is_some());

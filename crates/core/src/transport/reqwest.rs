@@ -10,6 +10,13 @@
 //! `is_redirect`, `is_decode`, `is_body`, `is_builder`, `is_request`,
 //! `is_status`, fallthrough partition.
 //!
+//! Non-2xx responses are captured as [`TransportError::HttpStatus`] with the
+//! numeric status code and raw body so the calling layer receives the
+//! response through the typed error channel instead of through `Ok(String)`.
+//! Per-call headers merge with any constructor-configured defaults, and the
+//! optional per-call timeout overrides the transport's default timeout when
+//! supplied.
+//!
 //! URL-bearing configuration is held in the [`Redacted`] newtype so the base
 //! URL never appears in debug, display, or serialized output. Callers that
 //! need to observe the configured URL for audit or telemetry purposes unwrap
@@ -17,12 +24,15 @@
 
 use std::time::Duration;
 
-use ::reqwest::{Client, RequestBuilder, header::CONTENT_TYPE};
+use ::reqwest::{
+    Client, RequestBuilder,
+    header::{HeaderMap, HeaderName, HeaderValue},
+};
 use async_trait::async_trait;
 
 use crate::{
     redaction::Redacted,
-    transport::http::{HttpTransport, TransportError},
+    transport::{error::TransportError, http::HttpTransport},
     validation::TransportErrorClass,
 };
 
@@ -133,7 +143,10 @@ impl ReqwestTransport {
     }
 
     fn resolve_url(&self, path: &str) -> String {
-        if path.starts_with("http://") || path.starts_with("https://") {
+        if path.starts_with("http://")
+            || path.starts_with("https://")
+            || self.base_url.as_inner().is_empty()
+        {
             path.to_owned()
         } else if path.starts_with('/') {
             format!("{}{}", self.base_url.as_inner(), path)
@@ -142,41 +155,109 @@ impl ReqwestTransport {
         }
     }
 
+    fn apply_call_overrides(
+        builder: RequestBuilder,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<RequestBuilder, TransportError> {
+        let mut builder = builder;
+        if !headers.is_empty() {
+            let header_map = build_header_map(headers)?;
+            builder = builder.headers(header_map);
+        }
+        if let Some(timeout) = timeout {
+            builder = builder.timeout(timeout);
+        }
+        Ok(builder)
+    }
+
     async fn dispatch(&self, builder: RequestBuilder) -> Result<String, TransportError> {
         let response = builder.send().await.map_err(map_reqwest_error)?;
-        let response = response.error_for_status().map_err(map_reqwest_error)?;
-        response.text().await.map_err(map_reqwest_error)
+        let status = response.status();
+        if status.is_success() {
+            return response.text().await.map_err(map_reqwest_error);
+        }
+
+        let status_code = status.as_u16();
+        let body = response
+            .text()
+            .await
+            .unwrap_or_else(|error| format!("<body unavailable: {error}>"));
+        Err(TransportError::HttpStatus {
+            status: status_code,
+            body,
+        })
     }
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl HttpTransport for ReqwestTransport {
-    async fn get(&self, path: &str) -> Result<String, TransportError> {
+    async fn get(
+        &self,
+        path: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
         let url = self.resolve_url(path);
-        self.dispatch(self.client.get(&url)).await
+        let builder = Self::apply_call_overrides(self.client.get(&url), headers, timeout)?;
+        self.dispatch(builder).await
     }
 
-    async fn post(&self, path: &str, body: &str) -> Result<String, TransportError> {
+    async fn post(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
         let url = self.resolve_url(path);
-        self.dispatch(
-            self.client
-                .post(&url)
-                .header(CONTENT_TYPE, "application/json")
-                .body(body.to_owned()),
-        )
-        .await
+        let builder = self.client.post(&url).body(body.to_owned());
+        let builder = Self::apply_call_overrides(builder, headers, timeout)?;
+        self.dispatch(builder).await
     }
 
-    async fn delete(&self, path: &str, body: &str) -> Result<String, TransportError> {
+    async fn put(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
         let url = self.resolve_url(path);
-        self.dispatch(
-            self.client
-                .delete(&url)
-                .header(CONTENT_TYPE, "application/json")
-                .body(body.to_owned()),
-        )
-        .await
+        let builder = self.client.put(&url).body(body.to_owned());
+        let builder = Self::apply_call_overrides(builder, headers, timeout)?;
+        self.dispatch(builder).await
     }
+
+    async fn delete(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        let url = self.resolve_url(path);
+        let builder = self.client.delete(&url).body(body.to_owned());
+        let builder = Self::apply_call_overrides(builder, headers, timeout)?;
+        self.dispatch(builder).await
+    }
+}
+
+fn build_header_map(headers: &[(String, String)]) -> Result<HeaderMap, TransportError> {
+    let mut header_map = HeaderMap::with_capacity(headers.len());
+    for (name, value) in headers {
+        let header_name = HeaderName::from_bytes(name.as_bytes()).map_err(|error| {
+            TransportError::Configuration {
+                message: format!("invalid header name: {error}"),
+            }
+        })?;
+        let header_value =
+            HeaderValue::from_str(value).map_err(|error| TransportError::Configuration {
+                message: format!("invalid header value: {error}"),
+            })?;
+        header_map.append(header_name, header_value);
+    }
+    Ok(header_map)
 }
 
 /// Converts a `reqwest::Error` into the typed [`TransportError::Transport`]

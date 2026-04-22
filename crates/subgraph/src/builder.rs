@@ -38,6 +38,7 @@ use std::sync::Arc;
 use cow_sdk_core::{HttpTransport, Redacted, SupportedChainId};
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
+#[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -85,7 +86,6 @@ pub struct SubgraphApiBuilder<
     transport: Option<Arc<dyn HttpTransport + Send + Sync>>,
     transport_policy: Option<SubgraphTransportPolicy>,
     base_urls: Option<SubgraphApiBaseUrls>,
-    client: Option<Client>,
     _phantom: PhantomData<(ChainState, ApiKeyState, TransportState)>,
 }
 
@@ -105,7 +105,6 @@ impl SubgraphApiBuilder<ChainIdUnset, ApiKeyUnset, TransportUnset> {
             transport: None,
             transport_policy: None,
             base_urls: None,
-            client: None,
             _phantom: PhantomData,
         }
     }
@@ -123,7 +122,6 @@ impl<A, T> SubgraphApiBuilder<ChainIdUnset, A, T> {
             transport: self.transport,
             transport_policy: self.transport_policy,
             base_urls: self.base_urls,
-            client: self.client,
             _phantom: PhantomData,
         }
     }
@@ -144,7 +142,6 @@ impl<C, T> SubgraphApiBuilder<C, ApiKeyUnset, T> {
             transport: self.transport,
             transport_policy: self.transport_policy,
             base_urls: self.base_urls,
-            client: self.client,
             _phantom: PhantomData,
         }
     }
@@ -167,9 +164,28 @@ impl<C, A> SubgraphApiBuilder<C, A, TransportUnset> {
             transport: Some(transport),
             transport_policy: self.transport_policy,
             base_urls: self.base_urls,
-            client: self.client,
             _phantom: PhantomData,
         }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl<C, A> SubgraphApiBuilder<C, A, TransportUnset> {
+    /// Reuses an externally-built [`reqwest::Client`] as the backing
+    /// transport.
+    ///
+    /// Multi-chain consumers compose one shared [`reqwest::Client`] (with
+    /// its TCP, TLS, and HTTP/2 connection cache) across every
+    /// [`SubgraphApi`] they construct. The shared client is wrapped into a
+    /// [`ReqwestTransport`] so every live request still flows through the
+    /// single `HttpTransport` dispatch seam; the transport resolves paths
+    /// against the empty base URL so the subgraph request pipeline keeps
+    /// building full URLs from the API-key-derived routing map.
+    #[must_use]
+    pub fn client(self, client: Client) -> SubgraphApiBuilder<C, A, TransportSet> {
+        let transport: Arc<dyn HttpTransport + Send + Sync> =
+            Arc::new(ReqwestTransport::with_client(client, ""));
+        self.transport(transport)
     }
 }
 
@@ -196,20 +212,6 @@ impl<C, A, T> SubgraphApiBuilder<C, A, T> {
         self
     }
 
-    /// Reuses an externally-built [`reqwest::Client`] for the request
-    /// pipeline.
-    ///
-    /// Multi-chain consumers compose one shared `reqwest::Client` (with
-    /// its TCP, TLS, and HTTP/2 connection cache) across every
-    /// [`SubgraphApi`] they construct. When no shared client is
-    /// supplied, the builder constructs a fresh one from the active
-    /// [`SubgraphTransportPolicy`].
-    #[must_use]
-    pub fn client(mut self, client: Client) -> Self {
-        self.client = Some(client);
-        self
-    }
-
     fn finish(self, transport: Arc<dyn HttpTransport + Send + Sync>) -> SubgraphApi {
         let chain = self
             .chain
@@ -218,22 +220,13 @@ impl<C, A, T> SubgraphApiBuilder<C, A, T> {
             .api_key
             .expect("typestate guarantees api key is supplied at build time");
         let transport_policy = self.transport_policy.unwrap_or_default();
-        let built_client = build_subgraph_client(&transport_policy);
-        let client = self.client.unwrap_or(built_client);
         let api_key = Redacted::new(api_key);
         let prod_config = build_prod_config();
         let config = SubgraphConfig {
             chain_id: chain,
             base_urls: self.base_urls,
         };
-        SubgraphApi::from_parts(
-            client,
-            config,
-            api_key,
-            prod_config,
-            transport_policy,
-            transport,
-        )
+        SubgraphApi::from_parts(config, api_key, prod_config, transport_policy, transport)
     }
 }
 
@@ -283,16 +276,16 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset> {
                 policy.client_policy().user_agent()
             })
             .to_owned();
-        let config = ReqwestTransportConfig::new(String::new()).with_user_agent(user_agent);
+        let timeout = self
+            .transport_policy
+            .as_ref()
+            .and_then(|policy| policy.client_policy().timeout());
+        let mut config = ReqwestTransportConfig::new(String::new()).with_user_agent(user_agent);
+        if let Some(timeout) = timeout {
+            config = config.with_timeout(timeout);
+        }
         let transport = ReqwestTransport::new(config)
             .expect("default ReqwestTransport must build with the validated user-agent");
         self.finish(Arc::new(transport))
     }
-}
-
-fn build_subgraph_client(policy: &SubgraphTransportPolicy) -> Client {
-    Client::builder()
-        .user_agent(policy.client_policy().user_agent().to_owned())
-        .build()
-        .expect("validated subgraph client policy must remain buildable")
 }

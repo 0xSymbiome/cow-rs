@@ -4,7 +4,7 @@ use std::sync::{
 };
 use std::time::{Duration, Instant};
 
-use cow_sdk_core::HttpClientPolicy;
+use cow_sdk_core::{HttpClientPolicy, HttpTransport, ReqwestTransport, ReqwestTransportConfig};
 use cow_sdk_orderbook::error::classify_reqwest_error;
 use cow_sdk_orderbook::request::{
     DEFAULT_ORDERBOOK_USER_AGENT, FetchParams, HttpMethod, OrderBookApiError,
@@ -16,10 +16,16 @@ use cow_sdk_orderbook::{
     DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_TOKENS_PER_INTERVAL,
     INTERNAL_SERVER_ERROR, OrderbookError, RETRYABLE_STATUS_CODES, TOO_MANY_REQUESTS,
 };
-use reqwest::{
-    Client,
-    header::{HeaderMap, HeaderName, HeaderValue},
-};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+
+fn build_shared_transport() -> Arc<dyn HttpTransport + Send + Sync> {
+    Arc::new(
+        ReqwestTransport::new(
+            ReqwestTransportConfig::new(String::new()).with_user_agent("cow-rs-request-tests"),
+        )
+        .expect("reqwest transport must build for the request-helper tests"),
+    )
+}
 use serde_json::json;
 use tokio::time::{sleep, timeout};
 use wiremock::{
@@ -124,7 +130,7 @@ async fn request_json_retries_429_and_preserves_headers_on_each_attempt() {
     );
 
     let result: serde_json::Value = request_json(
-        &Client::new(),
+        &build_shared_transport(),
         &server.uri(),
         &FetchParams::new("/api/v1/retry", HttpMethod::Get),
         &policy,
@@ -245,7 +251,7 @@ async fn request_text_and_empty_share_the_request_builder_and_success_path() {
     let limiter = RequestRateLimiter::new(policy.rate_limit);
 
     let version = request_text(
-        &Client::new(),
+        &build_shared_transport(),
         &server.uri(),
         &FetchParams::new("/api/v1/version", HttpMethod::Get),
         &policy,
@@ -255,7 +261,7 @@ async fn request_text_and_empty_share_the_request_builder_and_success_path() {
     .await
     .expect("text response should decode");
     request_empty(
-        &Client::new(),
+        &build_shared_transport(),
         &server.uri(),
         &FetchParams::new("/api/v1/orders", HttpMethod::Delete),
         &policy,
@@ -501,7 +507,7 @@ async fn request_json_surfaces_malformed_success_payloads() {
     let limiter = RequestRateLimiter::new(policy.rate_limit);
 
     let error = request_json::<serde_json::Value>(
-        &Client::new(),
+        &build_shared_transport(),
         &server.uri(),
         &FetchParams::new("/api/v1/malformed", HttpMethod::Get),
         &policy,

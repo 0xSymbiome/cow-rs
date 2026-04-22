@@ -2,22 +2,20 @@
 //! `cow_sdk_transport_wasm::FetchTransport`.
 //!
 //! Shared fixtures under `crates/core/tests/fixtures/transport/` carry the
-//! canonical response bytes and the expected [`TransportErrorClass`] for
-//! every partition arm both adapters are required to deliver.
+//! canonical response bytes both adapters are required to deliver through
+//! the shared [`HttpTransport`] trait. The `error-class` matrix re-exercises
+//! each adapter against synthetic failure scenarios (connect-refused,
+//! server-500, timeout, truncated-body) and asserts both adapters agree on
+//! the same partitioned outcome: transport-level failures map to the same
+//! [`TransportErrorClass`], and non-2xx responses map to
+//! [`cow_sdk_core::TransportError::HttpStatus`] with the numeric status
+//! preserved on both runtimes.
 //!
-//! The native half of the suite drives [`cow_sdk_core::ReqwestTransport`]
-//! against a [`wiremock`] server that replays each fixture and asserts the
-//! transport returns the fixture body byte-for-byte. The `error-class`
-//! matrix re-exercises the same adapter against synthetic failure scenarios
-//! (connect-refused, status, timeout, decode) and asserts the mapping into
-//! [`TransportErrorClass`] matches the entry both adapters agree on in
-//! [`CROSS_ADAPTER_ERROR_MATRIX`]. The wasm32 half drives `FetchTransport`
-//! against an injected JavaScript fetch mock that replays the same fixture
-//! bytes and the same synthetic error shapes, asserting equal `class`
-//! values — the explicit cross-adapter byte-identity plus error-class
-//! parity claim the shipped consumer depends on.
-//!
-//! The wasm half is only exercised when the suite is compiled with
+//! The native half drives [`cow_sdk_core::ReqwestTransport`] against a
+//! [`wiremock`] server that replays each fixture. The wasm half drives
+//! `FetchTransport` against an injected JavaScript fetch mock that replays
+//! the same fixture bytes and the same synthetic error shapes. The wasm
+//! half is only exercised when the suite is compiled with
 //! `wasm32-unknown-unknown` and run through a `wasm-bindgen-test` harness.
 //! The standard `cargo test` workflow on native targets builds this file
 //! with only the native half activated.
@@ -31,15 +29,17 @@ const POST_QUOTE_FIXTURE: &str =
 const DELETE_ORDER_FIXTURE: &str =
     include_str!("../../core/tests/fixtures/transport/delete_order_ok.txt");
 
-/// Error-class parity matrix shared between the native and wasm halves.
+/// Transport-layer error-class parity matrix shared between the native and
+/// wasm halves.
 ///
-/// Each entry names a synthetic failure scenario and the single
-/// [`TransportErrorClass`] both adapters must map it to. The native half
-/// drives the scenario end-to-end; the wasm half re-drives each scenario
-/// through the injected fetch mock and asserts the same class.
+/// Each entry names a synthetic transport failure and the single
+/// [`TransportErrorClass`] both adapters must map it to. Non-success HTTP
+/// status responses surface through the typed
+/// [`cow_sdk_core::TransportError::HttpStatus`] variant (without a
+/// [`TransportErrorClass`]) and are asserted through a dedicated test in
+/// each half instead of through this matrix.
 const CROSS_ADAPTER_ERROR_MATRIX: &[(&str, TransportErrorClass)] = &[
     ("connect-refused", TransportErrorClass::Connect),
-    ("server-500", TransportErrorClass::Status),
     ("slow-response", TransportErrorClass::Timeout),
     ("truncated-body", TransportErrorClass::Body),
 ];
@@ -54,7 +54,6 @@ fn cross_adapter_error_matrix_names_every_exercised_class() {
         .map(|(_, class)| *class)
         .collect();
     assert!(class_values.contains(&TransportErrorClass::Connect));
-    assert!(class_values.contains(&TransportErrorClass::Status));
     assert!(class_values.contains(&TransportErrorClass::Timeout));
     assert!(class_values.contains(&TransportErrorClass::Body));
 }
@@ -63,7 +62,7 @@ fn cross_adapter_error_matrix_names_every_exercised_class() {
 mod native {
     use std::time::Duration;
 
-    use cow_sdk_core::{HttpTransport, ReqwestTransport, ReqwestTransportConfig};
+    use cow_sdk_core::{HttpTransport, ReqwestTransport, ReqwestTransportConfig, TransportError};
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -71,6 +70,8 @@ mod native {
         CROSS_ADAPTER_ERROR_MATRIX, DELETE_ORDER_FIXTURE, GET_ORDERS_FIXTURE, POST_QUOTE_FIXTURE,
         TransportErrorClass,
     };
+
+    const NO_HEADERS: &[(String, String)] = &[];
 
     fn build_transport(base_url: String) -> ReqwestTransport {
         ReqwestTransport::new(
@@ -103,7 +104,7 @@ mod native {
 
         let transport = build_transport(server.uri());
         let body = transport
-            .get("/orders")
+            .get("/orders", NO_HEADERS, None)
             .await
             .expect("fixture round-trip must succeed through ReqwestTransport");
         assert_eq!(body, GET_ORDERS_FIXTURE);
@@ -124,7 +125,7 @@ mod native {
 
         let transport = build_transport(server.uri());
         let body = transport
-            .post("/quote", "{\"kind\":\"sell\"}")
+            .post("/quote", "{\"kind\":\"sell\"}", NO_HEADERS, None)
             .await
             .expect("fixture round-trip must succeed through ReqwestTransport");
         assert_eq!(body, POST_QUOTE_FIXTURE);
@@ -145,7 +146,7 @@ mod native {
 
         let transport = build_transport(server.uri());
         let body = transport
-            .delete("/orders/0x1", "{\"uid\":\"0x1\"}")
+            .delete("/orders/0x1", "{\"uid\":\"0x1\"}", NO_HEADERS, None)
             .await
             .expect("fixture round-trip must succeed through ReqwestTransport");
         assert_eq!(body, DELETE_ORDER_FIXTURE);
@@ -155,27 +156,33 @@ mod native {
     async fn connect_refused_maps_to_connect_class_per_matrix() {
         let transport = build_transport("http://127.0.0.1:1".to_owned());
         let error = transport
-            .get("/anything")
+            .get("/anything", NO_HEADERS, None)
             .await
             .expect_err("connect to a closed port must fail");
         assert_eq!(error.class(), Some(expected_class("connect-refused")));
     }
 
     #[tokio::test]
-    async fn server_500_maps_to_status_class_per_matrix() {
+    async fn server_500_maps_to_http_status_with_numeric_code() {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/boom"))
-            .respond_with(ResponseTemplate::new(500))
+            .respond_with(ResponseTemplate::new(500).set_body_string("upstream exploded"))
             .mount(&server)
             .await;
 
         let transport = build_transport(server.uri());
         let error = transport
-            .get("/boom")
+            .get("/boom", NO_HEADERS, None)
             .await
-            .expect_err("a 500 response must classify as Status");
-        assert_eq!(error.class(), Some(expected_class("server-500")));
+            .expect_err("a 500 response must surface a typed HttpStatus error");
+        match error {
+            TransportError::HttpStatus { status, body } => {
+                assert_eq!(status, 500);
+                assert_eq!(body, "upstream exploded");
+            }
+            other => panic!("expected HttpStatus variant, got {other:?}"),
+        }
     }
 
     #[tokio::test]
@@ -189,7 +196,7 @@ mod native {
 
         let transport = build_transport_with_timeout(server.uri(), Duration::from_millis(100));
         let error = transport
-            .get("/slow")
+            .get("/slow", NO_HEADERS, None)
             .await
             .expect_err("slow response must exceed the configured timeout");
         assert_eq!(error.class(), Some(expected_class("slow-response")));
@@ -210,7 +217,7 @@ mod native {
 
         let transport = build_transport(server.uri());
         let error = transport
-            .get("/truncated")
+            .get("/truncated", NO_HEADERS, None)
             .await
             .expect_err("truncated body must surface a transport error");
         let class = error
@@ -225,9 +232,6 @@ mod native {
             ),
             "body-stream failure must classify within the documented partition, got {class:?}"
         );
-        // Also documented in CROSS_ADAPTER_ERROR_MATRIX as Body; the other
-        // two arms are reqwest-version-specific variants the wasm half
-        // never exposes.
         assert_eq!(expected_class("truncated-body"), TransportErrorClass::Body);
     }
 
@@ -244,7 +248,7 @@ mod native {
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
-    use cow_sdk_core::HttpTransport;
+    use cow_sdk_core::{HttpTransport, TransportError};
     use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
     use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
     use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
@@ -253,6 +257,8 @@ mod wasm {
         CROSS_ADAPTER_ERROR_MATRIX, DELETE_ORDER_FIXTURE, GET_ORDERS_FIXTURE, POST_QUOTE_FIXTURE,
         TransportErrorClass,
     };
+
+    const NO_HEADERS: &[(String, String)] = &[];
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -269,10 +275,10 @@ export function install_fetch_ok_mock(body) {
   return previous;
 }
 
-export function install_fetch_status_mock(status) {
+export function install_fetch_status_mock(status, body) {
   const previous = globalThis.fetch;
   globalThis.fetch = (_input, _init) => {
-    const response = new Response('', { status });
+    const response = new Response(body, { status });
     return Promise.resolve(response);
   };
   return previous;
@@ -295,7 +301,7 @@ export function restore_fetch(previous) {
 ")]
     extern "C" {
         fn install_fetch_ok_mock(body: &str) -> JsValue;
-        fn install_fetch_status_mock(status: u16) -> JsValue;
+        fn install_fetch_status_mock(status: u16, body: &str) -> JsValue;
         fn install_fetch_rejection_mock(name: &str) -> JsValue;
         fn restore_fetch(previous: JsValue);
     }
@@ -318,7 +324,7 @@ export function restore_fetch(previous) {
     async fn fetch_transport_get_returns_fixture_bytes() {
         let previous = install_fetch_ok_mock(GET_ORDERS_FIXTURE);
         let body = transport()
-            .get("/orders")
+            .get("/orders", NO_HEADERS, None)
             .await
             .expect("fetch transport must deliver the mocked fixture body");
         restore_fetch(previous);
@@ -329,7 +335,7 @@ export function restore_fetch(previous) {
     async fn fetch_transport_post_returns_fixture_bytes() {
         let previous = install_fetch_ok_mock(POST_QUOTE_FIXTURE);
         let body = transport()
-            .post("/quote", "{\"kind\":\"sell\"}")
+            .post("/quote", "{\"kind\":\"sell\"}", NO_HEADERS, None)
             .await
             .expect("fetch transport must deliver the mocked fixture body");
         restore_fetch(previous);
@@ -340,7 +346,7 @@ export function restore_fetch(previous) {
     async fn fetch_transport_delete_returns_fixture_bytes() {
         let previous = install_fetch_ok_mock(DELETE_ORDER_FIXTURE);
         let body = transport()
-            .delete("/orders/0x1", "{\"uid\":\"0x1\"}")
+            .delete("/orders/0x1", "{\"uid\":\"0x1\"}", NO_HEADERS, None)
             .await
             .expect("fetch transport must deliver the mocked fixture body");
         restore_fetch(previous);
@@ -348,21 +354,27 @@ export function restore_fetch(previous) {
     }
 
     #[wasm_bindgen_test]
-    async fn server_500_maps_to_status_class_per_matrix() {
-        let previous = install_fetch_status_mock(500);
+    async fn server_500_maps_to_http_status_with_numeric_code() {
+        let previous = install_fetch_status_mock(500, "upstream exploded");
         let error = transport()
-            .get("/boom")
+            .get("/boom", NO_HEADERS, None)
             .await
-            .expect_err("500 response must surface a transport error");
+            .expect_err("500 response must surface a typed HttpStatus error");
         restore_fetch(previous);
-        assert_eq!(error.class(), Some(matrix_class("server-500")));
+        match error {
+            TransportError::HttpStatus { status, body } => {
+                assert_eq!(status, 500);
+                assert_eq!(body, "upstream exploded");
+            }
+            other => panic!("expected HttpStatus variant, got {other:?}"),
+        }
     }
 
     #[wasm_bindgen_test]
     async fn abort_rejection_maps_to_timeout_class_per_matrix() {
         let previous = install_fetch_rejection_mock("AbortError");
         let error = transport()
-            .get("/slow")
+            .get("/slow", NO_HEADERS, None)
             .await
             .expect_err("AbortError rejection must surface as Timeout");
         restore_fetch(previous);
@@ -373,7 +385,7 @@ export function restore_fetch(previous) {
     async fn network_rejection_maps_to_connect_class_per_matrix() {
         let previous = install_fetch_rejection_mock("TypeError");
         let error = transport()
-            .get("/boom")
+            .get("/boom", NO_HEADERS, None)
             .await
             .expect_err("network failure must surface a transport error");
         restore_fetch(previous);

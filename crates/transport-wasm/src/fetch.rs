@@ -8,12 +8,19 @@
 //! consumers that partition telemetry or shape retry policy on the class
 //! value observe identical behavior across runtimes.
 //!
-//! # Timeout path
+//! Non-2xx responses surface through [`TransportError::HttpStatus`] with the
+//! numeric status code and the raw response body so downstream crates
+//! receive the HTTP-status context through the typed error channel instead
+//! of through an `Ok(String)` success path.
 //!
-//! A non-zero [`FetchTransportConfig::with_timeout_ms`] value wires an
-//! [`web_sys::AbortController`] into the in-flight request. When the timeout
-//! elapses the controller aborts the fetch and the resulting
-//! `AbortError` surfaces as [`TransportErrorClass::Timeout`].
+//! # Per-call header and timeout contract
+//!
+//! Per-call headers are merged onto the [`web_sys::Request`] header set
+//! before the browser dispatches the request. An `Option<Duration>` per-call
+//! timeout overrides the transport's constructor-configured default; a
+//! `Some` timeout wires an [`web_sys::AbortController`] into the in-flight
+//! request so the resulting `AbortError` surfaces as
+//! [`TransportErrorClass::Timeout`].
 //!
 //! # URL redaction
 //!
@@ -134,7 +141,10 @@ impl FetchTransport {
     }
 
     fn resolve_url(&self, path: &str) -> String {
-        if path.starts_with("http://") || path.starts_with("https://") {
+        if path.starts_with("http://")
+            || path.starts_with("https://")
+            || self.base_url.as_inner().is_empty()
+        {
             path.to_owned()
         } else if path.starts_with('/') {
             format!("{}{}", self.base_url.as_inner(), path)
@@ -148,11 +158,14 @@ impl FetchTransport {
         method: &str,
         path: &str,
         body: Option<&str>,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
     ) -> Result<String, TransportError> {
         let url = self.resolve_url(path);
         let window = window_or_configuration_error()?;
-        let init = build_request_init(method, body)?;
-        let abort_timeout = if let Some(timeout) = self.timeout {
+        let init = build_request_init(method, body, headers)?;
+        let effective_timeout = timeout.or(self.timeout);
+        let abort_timeout = if let Some(timeout) = effective_timeout {
             Some(install_abort_timeout(&window, &init, timeout)?)
         } else {
             None
@@ -168,31 +181,69 @@ impl FetchTransport {
         let response: Response = response_value
             .dyn_into()
             .map_err(|_| decode_error("fetch returned a value that was not a Response"))?;
-        check_status(&response)?;
+        let status = response.status();
         let text_promise = response
             .text()
             .map_err(|error| body_error("could not read response body", &error))?;
         let text_value = JsFuture::from(text_promise)
             .await
             .map_err(|error| body_error("could not decode response body", &error))?;
-        text_value
+        let body_text = text_value
             .as_string()
-            .ok_or_else(|| decode_error("response body was not a string"))
+            .ok_or_else(|| decode_error("response body was not a string"))?;
+        if (200..300).contains(&status) {
+            Ok(body_text)
+        } else {
+            Err(TransportError::HttpStatus {
+                status,
+                body: body_text,
+            })
+        }
     }
 }
 
 #[async_trait(?Send)]
 impl HttpTransport for FetchTransport {
-    async fn get(&self, path: &str) -> Result<String, TransportError> {
-        self.dispatch("GET", path, None).await
+    async fn get(
+        &self,
+        path: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.dispatch("GET", path, None, headers, timeout).await
     }
 
-    async fn post(&self, path: &str, body: &str) -> Result<String, TransportError> {
-        self.dispatch("POST", path, Some(body)).await
+    async fn post(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.dispatch("POST", path, Some(body), headers, timeout)
+            .await
     }
 
-    async fn delete(&self, path: &str, body: &str) -> Result<String, TransportError> {
-        self.dispatch("DELETE", path, Some(body)).await
+    async fn put(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.dispatch("PUT", path, Some(body), headers, timeout)
+            .await
+    }
+
+    async fn delete(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.dispatch("DELETE", path, Some(body), headers, timeout)
+            .await
     }
 }
 
@@ -202,18 +253,33 @@ fn window_or_configuration_error() -> Result<Window, TransportError> {
     })
 }
 
-fn build_request_init(method: &str, body: Option<&str>) -> Result<RequestInit, TransportError> {
+fn build_request_init(
+    method: &str,
+    body: Option<&str>,
+    headers: &[(String, String)],
+) -> Result<RequestInit, TransportError> {
     let init = RequestInit::new();
     init.set_method(method);
+    let header_object = Headers::new()
+        .map_err(|error| configuration_error("could not build request headers", &error))?;
+    let mut has_content_type = false;
+    for (name, value) in headers {
+        if name.eq_ignore_ascii_case("content-type") {
+            has_content_type = true;
+        }
+        header_object
+            .set(name, value)
+            .map_err(|error| configuration_error("could not set request header", &error))?;
+    }
     if let Some(body) = body {
-        let headers = Headers::new()
-            .map_err(|error| configuration_error("could not build request headers", &error))?;
-        headers
-            .set("Content-Type", "application/json")
-            .map_err(|error| configuration_error("could not set Content-Type", &error))?;
-        init.set_headers(&headers);
+        if !has_content_type {
+            header_object
+                .set("Content-Type", "application/json")
+                .map_err(|error| configuration_error("could not set Content-Type", &error))?;
+        }
         init.set_body(&JsValue::from_str(body));
     }
+    init.set_headers(&header_object);
     Ok(init)
 }
 
@@ -253,18 +319,6 @@ fn install_abort_timeout(
         controller,
         timeout_id,
     })
-}
-
-fn check_status(response: &Response) -> Result<(), TransportError> {
-    let status = response.status();
-    if (200..300).contains(&status) {
-        Ok(())
-    } else {
-        Err(TransportError::Transport {
-            class: TransportErrorClass::Status,
-            detail: format!("HTTP status {status}: {}", response.status_text()),
-        })
-    }
 }
 
 fn classify_fetch_rejection(error: &JsValue) -> TransportError {

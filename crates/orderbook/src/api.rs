@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
 use cow_sdk_core::{HttpClientPolicy, HttpTransport};
-use reqwest::{
-    Client,
-    header::{HeaderMap, HeaderValue},
-};
+use reqwest::header::{HeaderMap, HeaderValue};
 use serde_json::json;
 
 use crate::{
@@ -38,7 +35,6 @@ const API_KEY_HEADER: &str = "X-API-Key";
 /// socket is released promptly rather than waiting for the request deadline.
 #[derive(Debug, Clone)]
 pub struct OrderBookApi {
-    client: Client,
     context: ApiContext,
     transport_policy: OrderBookTransportPolicy,
     rate_limiter: RequestRateLimiter,
@@ -78,7 +74,6 @@ impl OrderBookApi {
     /// Crate-private constructor used by [`OrderBookApiBuilder::build`].
     #[must_use]
     pub(crate) fn from_parts(
-        client: Client,
         context: ApiContext,
         transport_policy: OrderBookTransportPolicy,
         rate_limiter: RequestRateLimiter,
@@ -86,7 +81,6 @@ impl OrderBookApi {
         transport: Arc<dyn HttpTransport + Send + Sync>,
     ) -> Self {
         Self {
-            client,
             context,
             transport_policy,
             rate_limiter,
@@ -107,13 +101,12 @@ impl OrderBookApi {
 
     /// Returns a copy of this client with a new transport policy.
     ///
-    /// Replacing the transport policy rebuilds the underlying HTTP client and
-    /// creates a new instance-scoped rate limiter.
+    /// Replacing the transport policy rebuilds the instance-scoped rate
+    /// limiter; the injected HTTP transport continues to carry every live
+    /// request.
     #[must_use]
     pub fn with_transport_policy(mut self, transport_policy: OrderBookTransportPolicy) -> Self {
-        let (client, rate_limiter) = build_request_runtime(&transport_policy);
-        self.client = client;
-        self.rate_limiter = rate_limiter;
+        self.rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
         self.transport_policy = transport_policy;
         self
     }
@@ -817,12 +810,12 @@ impl OrderBookApi {
         T: serde::de::DeserializeOwned,
     {
         request_json_with_timeout(
-            &self.client,
+            &self.transport,
             &self.resolved_base_url(&self.context)?,
             &params,
             self.transport_policy.request_policy(),
             &self.rate_limiter,
-            self.client_policy().timeout(),
+            self.transport_policy.client_policy().timeout(),
             self.additional_headers()?,
         )
         .await
@@ -830,12 +823,12 @@ impl OrderBookApi {
 
     async fn fetch_empty(&self, params: FetchParams) -> Result<(), OrderbookError> {
         request_empty_with_timeout(
-            &self.client,
+            &self.transport,
             &self.resolved_base_url(&self.context)?,
             &params,
             self.transport_policy.request_policy(),
             &self.rate_limiter,
-            self.client_policy().timeout(),
+            self.transport_policy.client_policy().timeout(),
             self.additional_headers()?,
         )
         .await
@@ -843,12 +836,12 @@ impl OrderBookApi {
 
     async fn fetch_text(&self, params: FetchParams) -> Result<String, OrderbookError> {
         request_text_with_timeout(
-            &self.client,
+            &self.transport,
             &self.resolved_base_url(&self.context)?,
             &params,
             self.transport_policy.request_policy(),
             &self.rate_limiter,
-            self.client_policy().timeout(),
+            self.transport_policy.client_policy().timeout(),
             self.additional_headers()?,
         )
         .await
@@ -888,21 +881,4 @@ fn is_not_found(error: &OrderbookError) -> bool {
         OrderbookError::Rejected { status, .. } => status.as_u16() == 404,
         _ => false,
     }
-}
-
-fn build_client(policy: &HttpClientPolicy) -> Client {
-    let builder = Client::builder().user_agent(policy.user_agent().to_owned());
-
-    builder
-        .build()
-        .expect("validated orderbook client policy must remain buildable")
-}
-
-pub(crate) fn build_request_runtime(
-    transport_policy: &OrderBookTransportPolicy,
-) -> (Client, RequestRateLimiter) {
-    (
-        build_client(transport_policy.client_policy()),
-        RequestRateLimiter::new(transport_policy.request_policy().rate_limit),
-    )
 }

@@ -38,6 +38,7 @@ use std::sync::Arc;
 use cow_sdk_core::{ApiBaseUrls, CowEnv, HttpTransport, Redacted, SupportedChainId};
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
+#[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
 
 use crate::api::OrderBookApi;
@@ -87,7 +88,6 @@ pub struct OrderBookApiBuilder<
     api_key: Option<String>,
     base_urls: Option<ApiBaseUrls>,
     env_base_url_overrides: EnvBaseUrlOverrides,
-    client: Option<Client>,
     _phantom: PhantomData<(ChainState, EnvState, TransportState)>,
 }
 
@@ -109,7 +109,6 @@ impl OrderBookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
             api_key: None,
             base_urls: None,
             env_base_url_overrides: EnvBaseUrlOverrides::default(),
-            client: None,
             _phantom: PhantomData,
         }
     }
@@ -148,7 +147,6 @@ impl<E, T> OrderBookApiBuilder<ChainIdUnset, E, T> {
             api_key: self.api_key,
             base_urls: self.base_urls,
             env_base_url_overrides: self.env_base_url_overrides,
-            client: self.client,
             _phantom: PhantomData,
         }
     }
@@ -168,7 +166,6 @@ impl<C, T> OrderBookApiBuilder<C, EnvUnset, T> {
             api_key: self.api_key,
             base_urls: self.base_urls,
             env_base_url_overrides: self.env_base_url_overrides,
-            client: self.client,
             _phantom: PhantomData,
         }
     }
@@ -195,9 +192,30 @@ impl<C, E> OrderBookApiBuilder<C, E, TransportUnset> {
             api_key: self.api_key,
             base_urls: self.base_urls,
             env_base_url_overrides: self.env_base_url_overrides,
-            client: self.client,
             _phantom: PhantomData,
         }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl<C, E> OrderBookApiBuilder<C, E, TransportUnset> {
+    /// Reuses an externally-built [`reqwest::Client`] as the backing
+    /// transport.
+    ///
+    /// Multi-chain consumers compose one shared [`reqwest::Client`] (with its
+    /// TCP, TLS, and HTTP/2 connection cache) across every
+    /// [`OrderBookApi`] they construct, which is the recommended pattern
+    /// for production bots that issue requests on behalf of several chains
+    /// or trading accounts. The shared client is wrapped into a
+    /// [`ReqwestTransport`] so every live request still flows through the
+    /// single `HttpTransport` dispatch seam; the transport resolves paths
+    /// against the empty base URL so the orderbook request helpers keep
+    /// building full URLs from the API context.
+    #[must_use]
+    pub fn client(self, client: Client) -> OrderBookApiBuilder<C, E, TransportSet> {
+        let transport: Arc<dyn HttpTransport + Send + Sync> =
+            Arc::new(ReqwestTransport::with_client(client, ""));
+        self.transport(transport)
     }
 }
 
@@ -258,22 +276,6 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
         self.env_base_url(env, base_url)
     }
 
-    /// Reuses an externally-built [`reqwest::Client`] for the request
-    /// pipeline.
-    ///
-    /// Multi-chain consumers compose one shared `reqwest::Client` (with its
-    /// TCP, TLS, and HTTP/2 connection cache) across every
-    /// [`OrderBookApi`] they construct, which is the recommended pattern
-    /// for production bots that issue requests on behalf of several chains
-    /// or trading accounts. When no shared client is supplied, the builder
-    /// constructs a fresh one from the active
-    /// [`OrderBookTransportPolicy`].
-    #[must_use]
-    pub fn client(mut self, client: Client) -> Self {
-        self.client = Some(client);
-        self
-    }
-
     fn finish(self, transport: Arc<dyn HttpTransport + Send + Sync>) -> OrderBookApi {
         let chain = self
             .chain
@@ -282,8 +284,7 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
             .env
             .expect("typestate guarantees environment is supplied at build time");
         let transport_policy = self.transport_policy.unwrap_or_default();
-        let (built_client, rate_limiter) = build_request_runtime(&transport_policy);
-        let client = self.client.unwrap_or(built_client);
+        let rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
         let mut context = ApiContext::new(chain, env);
         if let Some(api_key) = self.api_key {
             context.api_key = Some(Redacted::new(api_key));
@@ -292,7 +293,6 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
             context.base_urls = Some(base_urls);
         }
         OrderBookApi::from_parts(
-            client,
             context,
             transport_policy,
             rate_limiter,
@@ -348,23 +348,18 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
                 policy.client_policy().user_agent()
             })
             .to_owned();
-        let config = ReqwestTransportConfig::new(String::new()).with_user_agent(user_agent);
+        let timeout = self
+            .transport_policy
+            .as_ref()
+            .and_then(|policy| policy.client_policy().timeout());
+        let mut config = ReqwestTransportConfig::new(String::new()).with_user_agent(user_agent);
+        if let Some(timeout) = timeout {
+            config = config.with_timeout(timeout);
+        }
         let transport = ReqwestTransport::new(config)
             .expect("default ReqwestTransport must build with the validated user-agent");
         self.finish(Arc::new(transport))
     }
-}
-
-fn build_request_runtime(
-    transport_policy: &OrderBookTransportPolicy,
-) -> (Client, RequestRateLimiter) {
-    let user_agent = transport_policy.client_policy().user_agent().to_owned();
-    let client = Client::builder()
-        .user_agent(user_agent)
-        .build()
-        .expect("validated orderbook client policy must remain buildable");
-    let rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
-    (client, rate_limiter)
 }
 
 fn normalize_base_url(base_url: &str) -> String {

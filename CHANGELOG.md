@@ -434,6 +434,38 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- `HttpTransport` is now the sole live-dispatch surface on the
+  orderbook and subgraph clients. `OrderBookApi` and `SubgraphApi`
+  no longer hold a parallel `reqwest::Client`; every REST and GraphQL
+  call dispatches through the injected
+  `Arc<dyn HttpTransport + Send + Sync>`, and injected transports —
+  including the browser-native `FetchTransport` from
+  `cow-sdk-transport-wasm` — observe every live request. The
+  orderbook preserves its rate-limit gate, retry-and-backoff wrapper,
+  and typed-error classification around the transport call;
+  `OrderBookApi::builder().client(reqwest::Client)` stays on native
+  targets as a shorthand that wraps a caller-supplied `reqwest::Client`
+  into a `ReqwestTransport` so multi-chain consumers keep one shared
+  TCP, TLS, and HTTP/2 connection cache across the clients they
+  construct.
+- `HttpTransport` gains per-call headers and an optional per-call
+  timeout on every method, and `TransportError` gains a typed
+  `HttpStatus { status, body }` variant so non-2xx responses flow
+  through the typed error channel instead of being smuggled into a
+  successful `Result<String, TransportError>::Ok`. The native
+  `ReqwestTransport` and the browser `FetchTransport` honor the new
+  signature by merging per-call headers with any
+  constructor-configured defaults, applying the per-call timeout
+  (through `RequestBuilder::timeout` on native and an
+  `AbortController` hook on the browser) when supplied, and mapping
+  non-2xx responses into `TransportError::HttpStatus`. The trait
+  additionally gains a `put` method to cover the full `OrderBookApi`
+  method set without bypassing the transport seam; downstream crates
+  that implemented the prior trait signature must update their
+  adapters to the new method signatures. The trait futures are
+  `Send` on native targets and `!Send` on `wasm32` targets so the
+  transport composes onto multi-threaded native runtimes while the
+  browser adapter remains viable.
 - Quote-to-post app-data edits now run through a typed merge
   pipeline. `cow_sdk_trading::merge_and_seal_app_data` is the
   canonical merge-and-seal helper: it deserializes the sealed

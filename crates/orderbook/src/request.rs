@@ -1,16 +1,13 @@
 use std::{future::Future, sync::Arc, time::Duration};
 
 use async_lock::Mutex;
-use cow_sdk_core::HttpClientPolicy;
-use reqwest::{
-    Client,
-    header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderValue},
-};
+use cow_sdk_core::{HttpClientPolicy, HttpTransport, TransportError};
+use reqwest::header::{ACCEPT, CONTENT_TYPE, HeaderMap};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use thiserror::Error;
 
-use crate::error::{OrderbookError, classify_reqwest_error};
+use crate::error::OrderbookError;
 
 #[cfg(not(target_arch = "wasm32"))]
 use futures_timer::Delay;
@@ -55,6 +52,10 @@ pub const DEFAULT_INTERVAL_LABEL: &str = "second";
 pub const DEFAULT_ORDERBOOK_USER_AGENT: &str =
     concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
+/// Shared dyn-compatible [`HttpTransport`] handle threaded through orderbook
+/// request helpers.
+pub(crate) type SharedTransport = Arc<dyn HttpTransport + Send + Sync>;
+
 /// HTTP methods used by the orderbook transport helpers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HttpMethod {
@@ -66,17 +67,6 @@ pub enum HttpMethod {
     Delete,
     /// `PUT`.
     Put,
-}
-
-impl From<HttpMethod> for reqwest::Method {
-    fn from(value: HttpMethod) -> Self {
-        match value {
-            HttpMethod::Get => Self::GET,
-            HttpMethod::Post => Self::POST,
-            HttpMethod::Delete => Self::DELETE,
-            HttpMethod::Put => Self::PUT,
-        }
-    }
 }
 
 /// Decoded response body preserved on [`OrderBookApiError`].
@@ -195,14 +185,14 @@ impl RequestPolicy {
 /// Combined client-policy and request-policy surface for the orderbook client.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderBookTransportPolicy {
-    client: HttpClientPolicy,
+    http_policy: HttpClientPolicy,
     request: RequestPolicy,
 }
 
 impl Default for OrderBookTransportPolicy {
     fn default() -> Self {
         Self {
-            client: HttpClientPolicy::new(DEFAULT_ORDERBOOK_USER_AGENT)
+            http_policy: HttpClientPolicy::new(DEFAULT_ORDERBOOK_USER_AGENT)
                 .expect("static orderbook user-agent must remain valid"),
             request: RequestPolicy::default(),
         }
@@ -213,13 +203,16 @@ impl OrderBookTransportPolicy {
     /// Creates a transport policy from explicit shared-client and request policies.
     #[must_use]
     pub const fn new(client: HttpClientPolicy, request: RequestPolicy) -> Self {
-        Self { client, request }
+        Self {
+            http_policy: client,
+            request,
+        }
     }
 
     /// Returns the shared HTTP client policy.
     #[must_use]
     pub const fn client_policy(&self) -> &HttpClientPolicy {
-        &self.client
+        &self.http_policy
     }
 
     /// Returns the request retry and limiter policy.
@@ -231,7 +224,7 @@ impl OrderBookTransportPolicy {
     /// Returns a copy of this transport policy with a new HTTP client policy.
     #[must_use]
     pub fn with_client_policy(mut self, client: HttpClientPolicy) -> Self {
-        self.client = client;
+        self.http_policy = client;
         self
     }
 
@@ -335,25 +328,22 @@ impl ResponseEnvelope {
         }
     }
 
-    fn decoded_body(&self) -> Result<ResponseBody, OrderbookError> {
+    fn decoded_body(&self) -> ResponseBody {
         if self.status == 204 || self.body.is_empty() {
-            return Ok(ResponseBody::Empty);
+            return ResponseBody::Empty;
         }
 
-        match self.content_type.as_deref() {
-            Some(content_type)
-                if content_type
-                    .to_ascii_lowercase()
-                    .starts_with("application/json") =>
-            {
-                serde_json::from_slice::<Value>(&self.body)
-                    .map(ResponseBody::Json)
-                    .map_err(OrderbookError::from)
-            }
-            _ => Ok(ResponseBody::Text(
-                String::from_utf8_lossy(&self.body).into_owned(),
-            )),
+        let prefer_json = self.content_type.as_deref().is_none_or(|content_type| {
+            content_type
+                .to_ascii_lowercase()
+                .starts_with("application/json")
+        });
+
+        if prefer_json && let Ok(value) = serde_json::from_slice::<Value>(&self.body) {
+            return ResponseBody::Json(value);
         }
+
+        ResponseBody::Text(String::from_utf8_lossy(&self.body).into_owned())
     }
 }
 
@@ -365,16 +355,16 @@ enum ResponseKind {
 }
 
 impl ResponseKind {
-    const fn accept_header(self) -> HeaderValue {
+    const fn accept_header(self) -> &'static str {
         match self {
-            Self::Text => HeaderValue::from_static("text/plain, application/json"),
-            Self::Json | Self::Empty => HeaderValue::from_static("application/json"),
+            Self::Text => "text/plain, application/json",
+            Self::Json | Self::Empty => "application/json",
         }
     }
 }
 
 struct RequestExecution<'a> {
-    client: &'a Client,
+    transport: &'a SharedTransport,
     base_url: &'a str,
     params: &'a FetchParams,
     timeout: Option<Duration>,
@@ -445,7 +435,7 @@ impl RequestRateLimiter {
 /// Returns [`OrderbookError`] when request execution fails, the API returns a
 /// non-success response, or the success body cannot be decoded as JSON.
 pub async fn request_json<T>(
-    client: &Client,
+    transport: &SharedTransport,
     base_url: &str,
     params: &FetchParams,
     policy: &RequestPolicy,
@@ -456,7 +446,7 @@ where
     T: DeserializeOwned,
 {
     request_json_with_timeout(
-        client,
+        transport,
         base_url,
         params,
         policy,
@@ -474,7 +464,7 @@ where
 /// Returns [`OrderbookError`] when request execution fails, the API returns a
 /// non-success response, or the success body cannot be decoded as JSON.
 pub async fn request_json_with_timeout<T>(
-    client: &Client,
+    transport: &SharedTransport,
     base_url: &str,
     params: &FetchParams,
     policy: &RequestPolicy,
@@ -487,7 +477,7 @@ where
 {
     request_with(
         RequestExecution {
-            client,
+            transport,
             base_url,
             params,
             timeout,
@@ -508,7 +498,7 @@ where
 /// Returns [`OrderbookError`] when request execution fails, the API returns a
 /// non-success response, or the success body cannot be decoded as UTF-8 text.
 pub async fn request_text(
-    client: &Client,
+    transport: &SharedTransport,
     base_url: &str,
     params: &FetchParams,
     policy: &RequestPolicy,
@@ -516,7 +506,7 @@ pub async fn request_text(
     additional_headers: Option<HeaderMap>,
 ) -> Result<String, OrderbookError> {
     request_text_with_timeout(
-        client,
+        transport,
         base_url,
         params,
         policy,
@@ -534,7 +524,7 @@ pub async fn request_text(
 /// Returns [`OrderbookError`] when request execution fails, the API returns a
 /// non-success response, or the success body cannot be decoded as UTF-8 text.
 pub async fn request_text_with_timeout(
-    client: &Client,
+    transport: &SharedTransport,
     base_url: &str,
     params: &FetchParams,
     policy: &RequestPolicy,
@@ -544,7 +534,7 @@ pub async fn request_text_with_timeout(
 ) -> Result<String, OrderbookError> {
     request_with(
         RequestExecution {
-            client,
+            transport,
             base_url,
             params,
             timeout,
@@ -565,7 +555,7 @@ pub async fn request_text_with_timeout(
 /// Returns [`OrderbookError`] when request execution fails or the API returns a
 /// non-success response.
 pub async fn request_empty(
-    client: &Client,
+    transport: &SharedTransport,
     base_url: &str,
     params: &FetchParams,
     policy: &RequestPolicy,
@@ -573,7 +563,7 @@ pub async fn request_empty(
     additional_headers: Option<HeaderMap>,
 ) -> Result<(), OrderbookError> {
     request_empty_with_timeout(
-        client,
+        transport,
         base_url,
         params,
         policy,
@@ -591,7 +581,7 @@ pub async fn request_empty(
 /// Returns [`OrderbookError`] when request execution fails or the API returns a
 /// non-success response.
 pub async fn request_empty_with_timeout(
-    client: &Client,
+    transport: &SharedTransport,
     base_url: &str,
     params: &FetchParams,
     policy: &RequestPolicy,
@@ -601,7 +591,7 @@ pub async fn request_empty_with_timeout(
 ) -> Result<(), OrderbookError> {
     request_with(
         RequestExecution {
-            client,
+            transport,
             base_url,
             params,
             timeout,
@@ -681,7 +671,7 @@ where
     D: Fn(&ResponseEnvelope) -> Result<T, OrderbookError>,
 {
     let url = format!("{}{}", request.base_url, request.params.path);
-    let client = request.client.clone();
+    let transport = Arc::clone(request.transport);
     let params = request.params.clone();
     let timeout = request.timeout;
     let additional_headers = request.additional_headers;
@@ -691,7 +681,7 @@ where
         rate_limiter,
         || {
             send_request(
-                client.clone(),
+                Arc::clone(&transport),
                 url.clone(),
                 params.clone(),
                 timeout,
@@ -705,68 +695,105 @@ where
 }
 
 async fn send_request(
-    client: Client,
+    transport: SharedTransport,
     url: String,
     params: FetchParams,
     timeout: Option<Duration>,
     response_kind: ResponseKind,
     additional_headers: Option<HeaderMap>,
 ) -> Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)> {
-    let mut request = client
-        .request(params.method.into(), url)
-        .headers(request_headers(response_kind, additional_headers));
+    let full_url = match append_query_string(&url, &params.query) {
+        Ok(url) => url,
+        Err(message) => {
+            return Err((cow_sdk_core::TransportErrorClass::Builder, message));
+        }
+    };
 
-    if !params.query.is_empty() {
-        request = request.query(&params.query);
+    let body_string = match params.body.as_ref() {
+        Some(value) => match serde_json::to_string(value) {
+            Ok(body) => body,
+            Err(error) => {
+                return Err((
+                    cow_sdk_core::TransportErrorClass::Builder,
+                    format!("could not serialize request body: {error}"),
+                ));
+            }
+        },
+        None => String::new(),
+    };
+
+    let header_pairs = request_header_pairs(response_kind, additional_headers);
+
+    let result = match params.method {
+        HttpMethod::Get => transport.get(&full_url, &header_pairs, timeout).await,
+        HttpMethod::Post => {
+            transport
+                .post(&full_url, &body_string, &header_pairs, timeout)
+                .await
+        }
+        HttpMethod::Put => {
+            transport
+                .put(&full_url, &body_string, &header_pairs, timeout)
+                .await
+        }
+        HttpMethod::Delete => {
+            transport
+                .delete(&full_url, &body_string, &header_pairs, timeout)
+                .await
+        }
+    };
+
+    match result {
+        Ok(body) => Ok(ResponseEnvelope {
+            status: 200,
+            status_text: canonical_status_text(200),
+            content_type: None,
+            body: body.into_bytes(),
+        }),
+        Err(TransportError::HttpStatus { status, body }) => Ok(ResponseEnvelope {
+            status,
+            status_text: canonical_status_text(status),
+            content_type: None,
+            body: body.into_bytes(),
+        }),
+        Err(TransportError::Transport { class, detail }) => Err((class, detail)),
+        Err(TransportError::Configuration { message }) => {
+            Err((cow_sdk_core::TransportErrorClass::Builder, message))
+        }
+        Err(other) => Err((cow_sdk_core::TransportErrorClass::Other, other.to_string())),
     }
-
-    if let Some(json_body) = params.body {
-        request = request.json(&json_body);
-    }
-
-    if let Some(timeout) = timeout {
-        request = request.timeout(timeout);
-    }
-
-    let response = request.send().await.map_err(classify_reqwest_error)?;
-
-    let status = response.status();
-    let status_text = status
-        .canonical_reason()
-        .unwrap_or("Unknown Status")
-        .to_owned();
-    let content_type = response
-        .headers()
-        .get(CONTENT_TYPE)
-        .and_then(|value| value.to_str().ok())
-        .map(ToOwned::to_owned);
-    let body = response
-        .bytes()
-        .await
-        .map_err(classify_reqwest_error)?
-        .to_vec();
-
-    Ok(ResponseEnvelope {
-        status: status.as_u16(),
-        status_text,
-        content_type,
-        body,
-    })
 }
 
-fn request_headers(
+fn append_query_string(url: &str, query: &[(String, String)]) -> Result<String, String> {
+    if query.is_empty() {
+        return Ok(url.to_owned());
+    }
+    reqwest::Url::parse_with_params(
+        url,
+        query
+            .iter()
+            .map(|(key, value)| (key.as_str(), value.as_str())),
+    )
+    .map(String::from)
+    .map_err(|error| format!("could not encode query parameters: {error}"))
+}
+
+fn request_header_pairs(
     response_kind: ResponseKind,
     additional_headers: Option<HeaderMap>,
-) -> HeaderMap {
-    let mut headers = HeaderMap::new();
-    headers.insert(ACCEPT, response_kind.accept_header());
-    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-
+) -> Vec<(String, String)> {
+    let mut pairs = Vec::with_capacity(2 + additional_headers.as_ref().map_or(0, HeaderMap::len));
+    pairs.push((ACCEPT.to_string(), response_kind.accept_header().to_owned()));
+    pairs.push((CONTENT_TYPE.to_string(), "application/json".to_owned()));
     if let Some(extra) = additional_headers {
-        headers.extend(extra);
+        for (name, value) in &extra {
+            let Ok(value_str) = value.to_str() else {
+                continue;
+            };
+            pairs.push((name.as_str().to_owned(), value_str.to_owned()));
+        }
     }
-
-    headers
+    pairs
 }
 
 async fn execute_with<T, F, Fut, D>(
@@ -790,7 +817,7 @@ where
                 return decode_success(&response);
             }
             Ok(response) => {
-                let body = response.decoded_body()?;
+                let body = response.decoded_body();
                 let error = OrderBookApiError::new(response.status, response.status_text, body);
                 let should_retry =
                     policy.should_retry_status(error.status) && attempt_index < policy.max_attempts;

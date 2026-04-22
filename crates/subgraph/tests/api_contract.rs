@@ -1092,3 +1092,271 @@ async fn shared_client_fans_queries_across_multiple_subgraph_instances() {
     assert_eq!(first_totals.tokens, "100");
     assert_eq!(second_totals.tokens, "300");
 }
+
+mod recording_transport {
+    use std::collections::VecDeque;
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    use async_trait::async_trait;
+    use cow_sdk_core::{HttpTransport, SupportedChainId, TransportError};
+    use cow_sdk_subgraph::{SubgraphApi, SubgraphApiBaseUrls, SubgraphError, SubgraphQueryRequest};
+    use serde_json::{Value, json};
+
+    #[derive(Debug, Clone)]
+    struct RecordedRequest {
+        method: &'static str,
+        url: String,
+        body: String,
+    }
+
+    #[derive(Debug, Clone)]
+    enum Canned {
+        Ok(String),
+        HttpStatus { status: u16, body: String },
+    }
+
+    #[derive(Debug)]
+    struct RecordingTransport {
+        calls: Mutex<Vec<RecordedRequest>>,
+        responses: Mutex<VecDeque<Canned>>,
+    }
+
+    impl RecordingTransport {
+        fn new(responses: impl IntoIterator<Item = Canned>) -> Arc<Self> {
+            Arc::new(Self {
+                calls: Mutex::new(Vec::new()),
+                responses: Mutex::new(responses.into_iter().collect()),
+            })
+        }
+
+        fn observed(&self) -> Vec<RecordedRequest> {
+            self.calls
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone()
+        }
+
+        fn record(&self, request: RecordedRequest) -> Canned {
+            self.calls
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(request);
+            self.responses
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .pop_front()
+                .expect("recording transport must have a canned response for every call")
+        }
+    }
+
+    #[async_trait]
+    impl HttpTransport for RecordingTransport {
+        async fn get(
+            &self,
+            path: &str,
+            _headers: &[(String, String)],
+            _timeout: Option<Duration>,
+        ) -> Result<String, TransportError> {
+            let canned = self.record(RecordedRequest {
+                method: "GET",
+                url: path.to_owned(),
+                body: String::new(),
+            });
+            transport_result(canned)
+        }
+
+        async fn post(
+            &self,
+            path: &str,
+            body: &str,
+            _headers: &[(String, String)],
+            _timeout: Option<Duration>,
+        ) -> Result<String, TransportError> {
+            let canned = self.record(RecordedRequest {
+                method: "POST",
+                url: path.to_owned(),
+                body: body.to_owned(),
+            });
+            transport_result(canned)
+        }
+
+        async fn put(
+            &self,
+            path: &str,
+            body: &str,
+            _headers: &[(String, String)],
+            _timeout: Option<Duration>,
+        ) -> Result<String, TransportError> {
+            let canned = self.record(RecordedRequest {
+                method: "PUT",
+                url: path.to_owned(),
+                body: body.to_owned(),
+            });
+            transport_result(canned)
+        }
+
+        async fn delete(
+            &self,
+            path: &str,
+            body: &str,
+            _headers: &[(String, String)],
+            _timeout: Option<Duration>,
+        ) -> Result<String, TransportError> {
+            let canned = self.record(RecordedRequest {
+                method: "DELETE",
+                url: path.to_owned(),
+                body: body.to_owned(),
+            });
+            transport_result(canned)
+        }
+    }
+
+    fn transport_result(canned: Canned) -> Result<String, TransportError> {
+        match canned {
+            Canned::Ok(body) => Ok(body),
+            Canned::HttpStatus { status, body } => Err(TransportError::HttpStatus { status, body }),
+        }
+    }
+
+    const RECORDING_BASE_URL: &str = "https://subgraph-recording.example";
+
+    fn api_with_recorder(recorder: Arc<RecordingTransport>) -> SubgraphApi {
+        let base_urls: SubgraphApiBaseUrls = [
+            (
+                SupportedChainId::Mainnet,
+                Some(RECORDING_BASE_URL.to_owned()),
+            ),
+            (SupportedChainId::GnosisChain, None),
+            (SupportedChainId::ArbitrumOne, None),
+            (SupportedChainId::Base, None),
+            (SupportedChainId::Sepolia, None),
+            (SupportedChainId::Polygon, None),
+            (SupportedChainId::Avalanche, None),
+            (SupportedChainId::Bnb, None),
+            (SupportedChainId::Linea, None),
+            (SupportedChainId::Plasma, None),
+            (SupportedChainId::Ink, None),
+        ]
+        .into_iter()
+        .collect();
+        SubgraphApi::builder()
+            .chain(SupportedChainId::Mainnet)
+            .api_key("FakeApiKey")
+            .base_urls(base_urls)
+            .transport(recorder as Arc<dyn HttpTransport + Send + Sync>)
+            .build()
+    }
+
+    #[tokio::test]
+    async fn subgraph_run_query_dispatches_through_injected_transport() {
+        let recorder = RecordingTransport::new([Canned::Ok(
+            json!({
+                "data": {
+                    "tokens": [
+                        { "symbol": "WXDAI" }
+                    ]
+                }
+            })
+            .to_string(),
+        )]);
+        let api = api_with_recorder(recorder.clone());
+        let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
+
+        let response: Value = api
+            .run_query(SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"))
+            .await
+            .expect("the injected transport must deliver the canned response");
+
+        assert_eq!(response["tokens"][0]["symbol"], "WXDAI");
+        let calls = recorder.observed();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].method, "POST");
+        assert!(
+            calls[0].url.starts_with(RECORDING_BASE_URL),
+            "dispatched URL must match the injected base URL: {}",
+            calls[0].url
+        );
+        assert!(
+            calls[0].body.contains("TokensByVolume"),
+            "the POST body must carry the GraphQL envelope: {}",
+            calls[0].body
+        );
+    }
+
+    #[tokio::test]
+    async fn subgraph_errors_field_surfaces_as_graphql_error_through_injected_transport() {
+        let recorder = RecordingTransport::new([Canned::Ok(
+            json!({
+                "errors": [
+                    { "message": "Type `Query` has no field `tokens`" }
+                ],
+                "data": null,
+            })
+            .to_string(),
+        )]);
+        let api = api_with_recorder(recorder.clone());
+        let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
+
+        let error = api
+            .run_query::<Value, _>(
+                SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"),
+            )
+            .await
+            .expect_err("GraphQL errors must surface through the typed error channel");
+
+        match error {
+            SubgraphError::GraphQl { errors, .. } => {
+                assert_eq!(errors.len(), 1);
+                assert!(errors[0].message.contains("no field `tokens`"));
+            }
+            other => panic!("expected GraphQl error, got {other:?}"),
+        }
+        let calls = recorder.observed();
+        assert_eq!(calls.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn subgraph_missing_data_surfaces_as_missing_data_error_through_injected_transport() {
+        let recorder = RecordingTransport::new([Canned::Ok(json!({ "data": null }).to_string())]);
+        let api = api_with_recorder(recorder.clone());
+        let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
+
+        let error = api
+            .run_query::<Value, _>(
+                SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"),
+            )
+            .await
+            .expect_err("missing data must surface as MissingData");
+
+        match error {
+            SubgraphError::MissingData { .. } => {}
+            other => panic!("expected MissingData error, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn subgraph_http_status_error_propagates_through_injected_transport() {
+        let recorder = RecordingTransport::new([Canned::HttpStatus {
+            status: 502,
+            body: "upstream unavailable".to_owned(),
+        }]);
+        let api = api_with_recorder(recorder.clone());
+        let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
+
+        let error = api
+            .run_query::<Value, _>(
+                SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"),
+            )
+            .await
+            .expect_err("a 502 must surface through the typed HttpStatus channel");
+
+        match error {
+            SubgraphError::HttpStatus { status, body, .. } => {
+                assert_eq!(status, 502);
+                assert_eq!(body, "upstream unavailable");
+            }
+            other => panic!("expected HttpStatus error, got {other:?}"),
+        }
+    }
+}

@@ -34,7 +34,7 @@
 //! pub async fn example(
 //!     transport: &FetchTransport,
 //! ) -> Result<String, cow_sdk_core::TransportError> {
-//!     transport.get("/api/v1/version").await
+//!     transport.get("/api/v1/version", &[], None).await
 //! }
 //!
 //! pub fn build_transport() -> FetchTransport {

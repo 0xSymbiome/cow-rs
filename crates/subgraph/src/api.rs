@@ -4,16 +4,16 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::Arc;
 
-use cow_sdk_core::{HttpClientPolicy, HttpTransport, Redacted, SupportedChainId};
-use reqwest::Client;
+use cow_sdk_core::{
+    HttpClientPolicy, HttpTransport, Redacted, SupportedChainId, TransportError,
+    TransportErrorClass,
+};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 
 use crate::{
     builder::{ApiKeyUnset, ChainIdUnset, SubgraphApiBuilder, TransportUnset},
-    error::{
-        SubgraphError, SubgraphGraphQlError, SubgraphRequestErrorContext, classify_reqwest_error,
-    },
+    error::{SubgraphError, SubgraphGraphQlError, SubgraphRequestErrorContext},
     queries::{LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY, TOTALS_QUERY},
     types::{
         LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphQueryRequest, Total,
@@ -93,13 +93,13 @@ impl fmt::Debug for SubgraphConfigOverride {
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubgraphTransportPolicy {
-    client: HttpClientPolicy,
+    http_policy: HttpClientPolicy,
 }
 
 impl Default for SubgraphTransportPolicy {
     fn default() -> Self {
         Self {
-            client: HttpClientPolicy::new(DEFAULT_SUBGRAPH_USER_AGENT)
+            http_policy: HttpClientPolicy::new(DEFAULT_SUBGRAPH_USER_AGENT)
                 .expect("static subgraph user-agent must remain valid"),
         }
     }
@@ -109,19 +109,21 @@ impl SubgraphTransportPolicy {
     /// Creates a transport policy from an explicit HTTP client policy.
     #[must_use]
     pub const fn new(client: HttpClientPolicy) -> Self {
-        Self { client }
+        Self {
+            http_policy: client,
+        }
     }
 
     /// Returns the shared HTTP client policy.
     #[must_use]
     pub const fn client_policy(&self) -> &HttpClientPolicy {
-        &self.client
+        &self.http_policy
     }
 
     /// Returns a copy of this transport policy with a new HTTP client policy.
     #[must_use]
     pub fn with_client_policy(mut self, client: HttpClientPolicy) -> Self {
-        self.client = client;
+        self.http_policy = client;
         self
     }
 }
@@ -134,7 +136,6 @@ impl SubgraphTransportPolicy {
 /// route identity or sanitized override identity.
 #[derive(Clone)]
 pub struct SubgraphApi {
-    client: Client,
     config: SubgraphConfig,
     api_key: Redacted<String>,
     prod_config: SubgraphApiBaseUrls,
@@ -177,7 +178,6 @@ impl SubgraphApi {
     /// Crate-private constructor used by [`SubgraphApiBuilder::build`].
     #[must_use]
     pub(crate) fn from_parts(
-        client: Client,
         config: SubgraphConfig,
         api_key: Redacted<String>,
         prod_config: SubgraphApiBaseUrls,
@@ -185,7 +185,6 @@ impl SubgraphApi {
         transport: Arc<dyn HttpTransport + Send + Sync>,
     ) -> Self {
         Self {
-            client,
             config,
             api_key,
             prod_config,
@@ -240,11 +239,11 @@ impl SubgraphApi {
 
     /// Returns a copy of this client with a different transport policy.
     ///
-    /// Replacing the transport policy rebuilds the underlying `reqwest`
-    /// client.
+    /// The injected HTTP transport continues to carry every live request;
+    /// replacing the policy updates the user-agent and timeout inputs that
+    /// the request helper threads into the transport call.
     #[must_use]
     pub fn with_transport_policy(mut self, transport_policy: SubgraphTransportPolicy) -> Self {
-        self.client = build_client(transport_policy.client_policy());
         self.transport_policy = transport_policy;
         self
     }
@@ -470,40 +469,54 @@ impl SubgraphApi {
             operation_name: request.operation_name(),
         };
 
-        let mut request_builder = self.client.post(&api).json(&graphql_request);
-
-        if let Some(timeout) = self.client_policy().timeout() {
-            request_builder = request_builder.timeout(timeout);
-        }
-
-        let response = request_builder.send().await.map_err(|error| {
-            transport_error(
+        let body = serde_json::to_string(&graphql_request).map_err(|error| {
+            serialization_error(
                 &public_api,
                 resolved_config.chain_id,
                 &request,
-                classify_reqwest_error(error),
+                "",
+                error.to_string(),
             )
         })?;
+        let headers = [("content-type".to_owned(), "application/json".to_owned())];
+        let timeout = self.transport_policy.client_policy().timeout();
 
-        let status = response.status();
-        let body = response.text().await.map_err(|error| {
-            transport_error(
-                &public_api,
-                resolved_config.chain_id,
-                &request,
-                classify_reqwest_error(error),
-            )
-        })?;
-
-        if !status.is_success() {
-            return Err(http_status_error(
-                &public_api,
-                resolved_config.chain_id,
-                &request,
-                status.as_u16(),
-                body,
-            ));
-        }
+        let body = match self.transport.post(&api, &body, &headers, timeout).await {
+            Ok(body) => body,
+            Err(TransportError::HttpStatus { status, body }) => {
+                return Err(http_status_error(
+                    &public_api,
+                    resolved_config.chain_id,
+                    &request,
+                    status,
+                    body,
+                ));
+            }
+            Err(TransportError::Transport { class, detail }) => {
+                return Err(transport_error(
+                    &public_api,
+                    resolved_config.chain_id,
+                    &request,
+                    format_transport_failure(class, &detail),
+                ));
+            }
+            Err(TransportError::Configuration { message }) => {
+                return Err(transport_error(
+                    &public_api,
+                    resolved_config.chain_id,
+                    &request,
+                    message,
+                ));
+            }
+            Err(other) => {
+                return Err(transport_error(
+                    &public_api,
+                    resolved_config.chain_id,
+                    &request,
+                    other.to_string(),
+                ));
+            }
+        };
 
         let response: GraphQlResponse<T> = serde_json::from_str(&body).map_err(|error| {
             serialization_error(
@@ -664,6 +677,10 @@ fn build_prod_gateway_url(api_key: &str, subgraph_id: &str) -> String {
     format!("{SUBGRAPH_BASE_URL}{api_key}/subgraphs/id/{subgraph_id}")
 }
 
+fn format_transport_failure(class: TransportErrorClass, detail: &str) -> String {
+    format!("{class}: {detail}")
+}
+
 fn transport_error(
     api: &str,
     chain_id: SupportedChainId,
@@ -771,12 +788,4 @@ fn sanitized_base_urls(base_urls: Option<&SubgraphApiBaseUrls>) -> Option<Subgra
             })
             .collect()
     })
-}
-
-fn build_client(policy: &HttpClientPolicy) -> Client {
-    let builder = Client::builder().user_agent(policy.user_agent().to_owned());
-
-    builder
-        .build()
-        .expect("validated subgraph client policy must remain buildable")
 }
