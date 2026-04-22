@@ -18,6 +18,39 @@ The committed parity contract lives in:
 - `parity/fixtures/*.json`
 - `crates/app-data/schemas/`
 
+## Provenance Layers
+
+The public parity contract is layered so that authoritative provenance is
+always reproducible from the committed parity record, never from any
+caller-local copy.
+
+1. Authoritative provenance is `parity/source-lock.yaml`. The source-lock
+   pins each upstream producer repository to a specific commit:
+
+   - `https://github.com/cowprotocol/cow-sdk`
+   - `https://github.com/cowprotocol/contracts`
+   - `https://github.com/cowprotocol/services`
+
+   Every committed parity fixture and every embedded schema cites its
+   producer paths under one of those pinned commits, so provenance is
+   anchored in the repository record itself rather than in any local
+   filesystem layout.
+
+2. Parity-sensitive verification materializes each pinned upstream
+   repository as an independent git worktree at the pinned commit, in a
+   directory outside the cow-rs tree. The worktree's git remote and `HEAD`
+   are validated against the pinned upstream repository and commit, so
+   only an authentically reproduced upstream root passes the
+   provenance-sensitive validator.
+
+3. `scripts/fetch-upstream-pins.sh` is the supported provisioning tool
+   for reviewers who want to reproduce the parity verification step
+   locally. The script reads `parity/source-lock.yaml`, clones each
+   pinned upstream repository to a sibling directory of the cow-rs
+   checkout (overridable through `--into <dir>`), checks out the pinned
+   commit detached, and prints the resolved paths so the reviewer can
+   pass them straight into the upstream-root validator command.
+
 ## Validation Modes
 
 Repo-local validation does not require upstream checkouts:
@@ -82,6 +115,17 @@ Repositories that are not listed there are not fixture provenance, source-lock
 inputs, or justification for copied literals or defaults.
 
 ## Maintainer Commands
+
+Materialize each pinned upstream repository as an independent worktree in
+a sibling directory of the cow-rs checkout:
+
+```text
+scripts/fetch-upstream-pins.sh
+```
+
+Pass `--into <dir>` to provision the worktrees under a chosen base
+directory instead of the default sibling layout. The script is
+idempotent: existing destinations are left untouched.
 
 Refresh the vendored app-data schema bundle from an explicit upstream
 `cow-sdk` checkout:
