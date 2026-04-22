@@ -1,10 +1,11 @@
 use std::error::Error;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::json;
 
 use cow_sdk::core::EVM_NATIVE_CURRENCY_ADDRESS;
 use cow_sdk::trading::{
-    PostTradeAdditionalParams, build_app_data, get_eth_flow_transaction,
+    OrderValidityBounds, PostTradeAdditionalParams, build_app_data, get_eth_flow_transaction,
     post_sell_native_currency_order,
 };
 
@@ -24,7 +25,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let trader = sample_trader_parameters();
     let mut params = sample_limit_parameters();
     params.sell_token = cow_sdk::Address::new(EVM_NATIVE_CURRENCY_ADDRESS)?;
-    params.valid_to = Some(1_737_464_594);
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock must be at or after the unix epoch")
+        .as_secs();
+    params.valid_to = Some(u32::try_from(now + 3600).expect("valid_to fits in u32 for the next century"));
 
     let app_data = build_app_data(&trader.app_code, 0, "market", None, None).await?;
     let additional = PostTradeAdditionalParams::default();
@@ -46,6 +51,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         &additional,
         &trader,
         &signer,
+        OrderValidityBounds::SERVICES_DEFAULT,
+        None,
     )
     .await?;
     let state = orderbook.state();
