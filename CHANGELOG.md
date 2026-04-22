@@ -466,6 +466,14 @@ unreleased public contract of the repository.
   the tracked index so the release-gate docs-agreement check and
   the documented upstream-provisioning tool run by their bare
   paths on every contributor platform without a shell prefix.
+- Trading submission seam no longer panics on
+  `wasm32-unknown-unknown` when the typed order-bounds validator
+  reads the current instant. The internal `current_unix_seconds`
+  helper now reads the clock through the same dual-target
+  `std::time` on native and `web_time` on wasm32 shape already
+  used by the order-derivation surface, matching the reviewed
+  cross-runtime contract so browser-wallet-backed submission
+  flows stay live on wasm32 builds.
 - IPFS base-URI preflight now fails closed symmetrically across the
   read and write paths. The `cow_sdk_app_data::pin_json_in_pinata_ipfs`
   helper rejects an empty, whitespace-only, or slash-only `write_uri`
