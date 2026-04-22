@@ -1028,6 +1028,23 @@ pub struct Order {
     /// Executed fee component, when provided.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub executed_fee: Option<String>,
+    /// Deprecated legacy fee value some orderbook responses still emit on
+    /// older order payloads alongside [`executed_fee`].
+    ///
+    /// Surfaced as a read-only sibling so consumers that need the legacy
+    /// summation can compute it explicitly as
+    /// `executed_fee + executed_fee_amount_legacy`. New code should prefer
+    /// [`executed_fee`]; [`total_fee`] intentionally does not fold this
+    /// field in.
+    ///
+    /// [`executed_fee`]: Order::executed_fee
+    /// [`total_fee`]: Order::total_fee
+    #[serde(
+        default,
+        rename = "executedFeeAmount",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub executed_fee_amount_legacy: Option<String>,
     /// Whether the order was invalidated by the protocol.
     #[serde(default)]
     pub invalidated: bool,
@@ -1091,6 +1108,7 @@ impl Order {
             executed_sell_amount_before_fees: None,
             executed_buy_amount: String::new(),
             executed_fee: None,
+            executed_fee_amount_legacy: None,
             invalidated: false,
             status: OrderStatus::default(),
             onchain_user: None,

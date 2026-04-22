@@ -15,6 +15,21 @@ unreleased public contract of the repository.
 
 ### Added
 
+- ADR 0018 (`Narrow Order.total_fee And Read-Only Legacy
+  Executed-Fee Surface`) ships under `docs/adr/`, paired with a
+  new `Order.executed_fee_amount_legacy: Option<String>`
+  read-only sibling on `cow_sdk_orderbook::Order` that
+  deserializes the deprecated `executedFeeAmount` wire field
+  through `#[serde(rename = "executedFeeAmount")]`.
+  `Order.total_fee` continues to equal the canonical
+  executed-fee component normalized through
+  `calculate_total_fee`; the legacy field is never folded into
+  the canonical sum. Consumers that need the legacy summation
+  read both fields and add them at the call site. The
+  `docs/adr/README.md` index lists the new entry in numerical
+  order after `0017`, and `docs/parity-matrix.md` records the
+  `Order.total_fee` divergence under a new `Orderbook DTO
+  defaults` section.
 - `build_app_data` stamps a Rust-identified default
   `metadata.utm` attribution block when the caller does not
   supply `metadata.utm`, carrying `utmSource = "cowmunity"`,

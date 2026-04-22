@@ -33,6 +33,12 @@ Authority order:
 | `OrderToSignParams::new(...)` `apply_costs_slippage_and_fees` | applied on by default (cost, slippage, partner-fee, and protocol-fee adjustments are folded into the unsigned order amounts) | call `.with_apply_costs_slippage_and_fees(false)` to preserve raw caller amounts |
 | `build_app_data` `metadata.utm` | when the caller does not supply `metadata.utm`, the helper stamps a Rust-identified attribution block with `utmSource = "cowmunity"`, `utmMedium = "cow-rs@<crate-version>"`, `utmCampaign = "developer-cohort"`, `utmContent = ""`, and `utmTerm = "rs"` so downstream analytics can attribute traffic to the Rust SDK and its published version | supply any `metadata.utm` key in the advanced app-data parameters — partial or full — and the caller-declared block is carried through byte-identical with no defaults merged on top |
 
+## Orderbook DTO defaults
+
+| Surface | Default | Legacy access |
+| --- | --- | --- |
+| `Order.total_fee` | computed narrowly as the canonical executed-fee component (`calculate_total_fee(executed_fee)`); the deprecated wire field `executedFeeAmount` is never folded into the canonical sum | `Order.executed_fee_amount_legacy: Option<String>` surfaces the deprecated wire value as a typed read-only sibling so consumers that need the legacy summation compute `executed_fee + executed_fee_amount_legacy` explicitly at the call site |
+
 ## Provenance Anchors
 
 - Global source contract: `parity/source-lock.yaml`
