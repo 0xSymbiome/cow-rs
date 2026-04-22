@@ -286,7 +286,10 @@ pub fn approval_transaction_preview_json(
 
 #[wasm_bindgen]
 pub fn trading_defaults_json() -> Result<String, JsValue> {
-    let partner_fee = PartnerFee::from(PartnerFeePolicy::volume(42, sample_owner()));
+    let partner_fee = PartnerFee::from(
+        PartnerFeePolicy::volume(42, sample_owner())
+            .expect("sample partner-fee value is valid"),
+    );
 
     pretty_json(&json!({
         "quoteValiditySeconds": DEFAULT_QUOTE_VALIDITY,
@@ -572,18 +575,27 @@ pub async fn subgraph_last_hours_volume_json(
 }
 
 fn orderbook_api(chain_id: SupportedChainId, env: CowEnv) -> OrderBookApi {
-    use std::sync::Arc;
-
-    use cow_sdk::HttpTransport;
-    use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
-
     let context = api_context(chain_id, env);
-    let base_url = context.resolved_base_url().unwrap_or_default();
-    let transport: Arc<dyn HttpTransport + Send + Sync> =
-        Arc::new(FetchTransport::new(&FetchTransportConfig::new(base_url)));
-    OrderBookApi::builder_from_context(context)
-        .transport(transport)
-        .build()
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        use std::sync::Arc;
+
+        use cow_sdk::HttpTransport;
+        use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
+
+        let base_url = context.resolved_base_url().unwrap_or_default();
+        let transport: Arc<dyn HttpTransport + Send + Sync> =
+            Arc::new(FetchTransport::new(&FetchTransportConfig::new(base_url)));
+        OrderBookApi::builder_from_context(context)
+            .transport(transport)
+            .build()
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        OrderBookApi::builder_from_context(context).build()
+    }
 }
 
 fn api_context(chain_id: SupportedChainId, env: CowEnv) -> ApiContext {
@@ -591,24 +603,35 @@ fn api_context(chain_id: SupportedChainId, env: CowEnv) -> ApiContext {
 }
 
 fn subgraph_api(chain_id: SupportedChainId, api_key: &str) -> Result<SubgraphApi, JsValue> {
-    use std::sync::Arc;
-
-    use cow_sdk::HttpTransport;
-    use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
-
     let api_key = api_key.trim();
     if api_key.is_empty() {
         return Err(to_js_error("subgraph API key is required"));
     }
 
-    let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
-        &FetchTransportConfig::new("https://gateway.thegraph.com/api"),
-    ));
-    Ok(SubgraphApi::builder()
-        .chain(chain_id)
-        .api_key(api_key)
-        .transport(transport)
-        .build())
+    #[cfg(target_arch = "wasm32")]
+    {
+        use std::sync::Arc;
+
+        use cow_sdk::HttpTransport;
+        use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
+
+        let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
+            &FetchTransportConfig::new("https://gateway.thegraph.com/api"),
+        ));
+        Ok(SubgraphApi::builder()
+            .chain(chain_id)
+            .api_key(api_key)
+            .transport(transport)
+            .build())
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        Ok(SubgraphApi::builder()
+            .chain(chain_id)
+            .api_key(api_key)
+            .build())
+    }
 }
 
 fn parse_chain_id(chain_id: u32) -> Result<SupportedChainId, JsValue> {
