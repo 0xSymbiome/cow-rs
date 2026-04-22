@@ -15,28 +15,34 @@ unreleased public contract of the repository.
 
 ### Added
 
-- Five new `cargo-fuzz` targets cover the `alloy::sol!`-generated
-  encoder surface of every contract binding family shipped by
-  `cow-sdk-contracts`: `fuzz_settlement_settle_encode` and
-  `fuzz_settlement_invalidate_order_encode` for
-  `GPv2Settlement`, `fuzz_ethflow_create_order_encode` for
-  `CoWSwapEthFlow`, `fuzz_erc20_permit_typed_data_hash` for the
-  EIP-2612 Permit envelope, and
-  `fuzz_vault_relayer_transfer_from_accounts_encode` for
-  `GPv2VaultRelayer`. The scheduled fuzz lane now enumerates ten
-  targets; each new target ships with a committed happy-path seed
-  corpus under `fuzz/corpus/<target>/seed-happy.bin`.
-- Byte-identity parity fixtures now cover the call-data surface
-  of every `alloy::sol!` binding family shipped by
-  `cow-sdk-contracts`: `GPv2Settlement` (`invalidateOrder`,
-  `setPreSignature`, `freeFilledAmountStorage`,
-  `freePreSignatureStorage`), `GPv2VaultRelayer`
-  (`transferFromAccounts`), `CoWSwapEthFlow` (`createOrder` and
-  `invalidateOrder(EthFlowOrderData)`), `IERC20` (`approve`,
-  `transferFrom`), and the EIP-2612 Permit typed-data digest
-  against the deployed USD Coin domain. Every new case pins the
-  full `0x`-prefixed hex output against the upstream ABI and
-  carries a provenance pointer to the canonical authoring source.
+- Testing depth across `cow-sdk-contracts` now spans every
+  `alloy::sol!` binding family through three reinforcing lanes:
+  ten new byte-identity parity fixtures in
+  `parity/fixtures/contracts.json` pin the call-data output of
+  `GPv2Settlement` (`invalidateOrder`, `setPreSignature`,
+  `freeFilledAmountStorage`, `freePreSignatureStorage`),
+  `GPv2VaultRelayer` (`transferFromAccounts`), `CoWSwapEthFlow`
+  (`createOrder` and `invalidateOrder(EthFlowOrderData)`),
+  `IERC20` (`approve`, `transferFrom`), and the EIP-2612 Permit
+  typed-data digest against the deployed USD Coin domain; five
+  new `cargo-fuzz` targets under `fuzz/fuzz_targets/`
+  (`fuzz_settlement_settle_encode`,
+  `fuzz_settlement_invalidate_order_encode`,
+  `fuzz_ethflow_create_order_encode`,
+  `fuzz_erc20_permit_typed_data_hash`, and
+  `fuzz_vault_relayer_transfer_from_accounts_encode`) drive
+  arbitrary input through the same encoders and assert selector
+  identity, call-data length-consistency, round-trip identity,
+  and the EIP-712 envelope composition invariant, with the
+  scheduled fuzz lane matrix now enumerating ten targets; and
+  the `PROPERTIES.md` registry gains five new invariant rows
+  (`PROP-CORE-008` for the split `SellTokenSource` and
+  `BuyTokenDestination` enums governed by ADR 0016,
+  `PROP-TRD-004` for the client-side submission validator
+  governed by ADR 0015, `PROP-TRD-005` for the `PartnerFee`
+  policy round-trip, `PROP-APP-004` for the `AppDataValidation`
+  size-limit warning threshold, and `PROP-ORD-004` for the
+  typed `OrderbookRejection` parser governed by ADR 0017).
 - ADR 0018 (`Typed App-Data Merge As The Single Canonical
   Quote-To-Post Edit Path`), ADR 0019 (`HTTP Transport Is The
   Sole Live-Dispatch Surface On The Orderbook And Subgraph
@@ -512,19 +518,17 @@ unreleased public contract of the repository.
 
 ### Changed
 
-- The properties registry now distinguishes `Property` rows
-  (backed by real `proptest!` coverage on codec crates) from
-  `Invariant` rows (backed by curated boundary sweeps on
-  orchestration crates). Five new invariants cover the
-  submission validator, the split sell-token / buy-token balance
-  enums, the partner-fee policy round-trip, the app-data
-  size-limit warning threshold, and the typed orderbook
-  rejection parser.
-- Orchestration-crate boundary-sweep test files now live at
-  `tests/invariant_contract.rs`; codec-crate test files continue
-  to live at `tests/property_contract.rs` for real property-based
-  coverage. Evidence citations in `PROPERTIES.md` follow the
-  rename.
+- Test-suite naming and properties-registry classification now
+  match the shipped evidence methodology. Boundary-sweep suites on
+  the orderbook, trading, and subgraph crates live at
+  `tests/invariant_contract.rs`; codec-crate suites on core,
+  contracts, signing, and app-data continue to live at
+  `tests/property_contract.rs` for real property-based coverage;
+  and the `PROPERTIES.md` `Type` column now distinguishes
+  `Property` rows (backed by real `proptest!` coverage on codec
+  crates) from `Invariant` rows (backed by curated boundary
+  sweeps on orchestration crates). Evidence citations in
+  `PROPERTIES.md` follow the rename.
 - ADR 0013 (`HTTP Transport Injection Seam And Typestate
   Construction For Orderbook And Subgraph`) now cross-links to
   ADR 0019 in the `Links` section and its `Proven by` block
