@@ -43,11 +43,13 @@ pub fn pin_json_in_pinata_ipfs(
         .map(|value| value.as_inner().as_str())
         .filter(|value| !value.is_empty())
         .ok_or(AppDataError::MissingIpfsCredentials)?;
-    let write_uri = ipfs_config
-        .write_uri
-        .as_deref()
-        .unwrap_or(DEFAULT_IPFS_WRITE_URI)
-        .trim_end_matches('/');
+    let write_uri = crate::fetch::normalize_ipfs_base_uri(
+        "write",
+        ipfs_config
+            .write_uri
+            .as_deref()
+            .unwrap_or(DEFAULT_IPFS_WRITE_URI),
+    )?;
 
     let payload = serde_json::json!({
         "pinataContent": file,

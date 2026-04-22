@@ -353,6 +353,19 @@ unreleased public contract of the repository.
 
 ### Fixed
 
+- IPFS base-URI preflight now fails closed symmetrically across the
+  read and write paths. The `cow_sdk_app_data::pin_json_in_pinata_ipfs`
+  helper rejects an empty, whitespace-only, or slash-only `write_uri`
+  with a typed `AppDataError::Transport { class:
+  TransportErrorClass::Builder, detail: "ipfs write base uri must
+  not be empty" }` before any bytes cross the upload transport,
+  matching the existing read-side guard that surfaces the
+  corresponding `"ipfs read base uri must not be empty"` detail for
+  a malformed read base URI. Valid inputs are normalized identically
+  on both sides: leading and trailing whitespace is stripped and a
+  single trailing `/` is trimmed, so `https://api.pinata.cloud/` and
+  `https://api.pinata.cloud` build the same
+  `https://api.pinata.cloud/pinning/pinJSONToIPFS` upload URL.
 - Eth-flow submission validation now reads the client-side `from`
   identity from the signer-derived owner carried on
   `cow_sdk_trading::EthFlowTransaction`, not from
