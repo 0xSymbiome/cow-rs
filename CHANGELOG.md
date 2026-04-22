@@ -437,6 +437,35 @@ unreleased public contract of the repository.
 
 ### Fixed
 
+- Native ethflow simulation example now passes the typed
+  order-validity bounds and the optional app-data signer through
+  the native-currency posting seam so the reviewed submission
+  contract is exercised end-to-end on the native evidence
+  surface. The scenario computes its `valid_to` against the
+  current wall clock so the sample stays inside
+  `OrderValidityBounds::SERVICES_DEFAULT` indefinitely without
+  a hard-coded timestamp drift.
+- Browser wallet console and SDK verification console examples
+  now compose the fetch-backed transport inside a wasm32 build
+  branch and fall back to the default reqwest transport on the
+  host target, so both examples build as the `rlib` targets
+  declared in their manifests without referencing the wasm-only
+  transport crate root from host code. A narrow compile-time
+  symbol smoke in each example's test directory names the
+  transport types under a wasm32 gate so future export drift
+  surfaces at build time.
+- SDK verification console now unwraps the validated
+  `PartnerFeePolicy::volume` constructor at the typed-defaults
+  composition site so the demo payload always carries a
+  `PartnerFee` value produced through the typed partner-fee
+  bounds. A narrow regression in the example's test directory
+  locks the typed-defaults round-trip so the validator contract
+  cannot silently drift.
+- `scripts/check-release-docs-agree.sh` and
+  `scripts/fetch-upstream-pins.sh` carry executable file mode in
+  the tracked index so the release-gate docs-agreement check and
+  the documented upstream-provisioning tool run by their bare
+  paths on every contributor platform without a shell prefix.
 - IPFS base-URI preflight now fails closed symmetrically across the
   read and write paths. The `cow_sdk_app_data::pin_json_in_pinata_ipfs`
   helper rejects an empty, whitespace-only, or slash-only `write_uri`
@@ -503,6 +532,20 @@ unreleased public contract of the repository.
 
 ### Security
 
+- Dependency audit gate advances past the reachable
+  certificate-revocation-list parsing panic reported for
+  `rustls-webpki 0.103.12` (RUSTSEC-2026-0104). The reqwest
+  transport chain used by the orderbook and subgraph clients now
+  resolves through `rustls-webpki 0.103.13` without a workspace
+  override. The standing reviewed-upstream ignore contract in the
+  dependency-audit gate additionally records the `core2` yanked
+  and unmaintained posture reachable through `cid 0.11.1`
+  (RUSTSEC-2026-0105) under the same explicit-reason rationale
+  that covers the previously-tracked upstream advisories. The
+  governing dependency-gate and CID audit records refresh to the
+  new posture, and the release-checklist, verification-matrix,
+  and verification-guide surfaces quote the full reviewed
+  audit-gate invocation.
 - Defense-in-depth redaction in transport error paths. `From<reqwest::Error>`
   on the orderbook and subgraph error surfaces now calls
   `reqwest::Error::without_url` and classifies failures through the
