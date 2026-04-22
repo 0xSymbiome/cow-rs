@@ -19,7 +19,7 @@
 //!   transaction value, gas margin, and contract-override precedence.
 //! * [`onchain_cancellation_transaction`] — settlement/EthFlow routing and
 //!   fallback-gas handling.
-//! * [`build_app_data`] / [`merge_app_data_doc`] — partner-fee metadata.
+//! * [`build_app_data`] / [`merge_and_seal_app_data`] — partner-fee metadata.
 //! * [`suggest_slippage_bps`] — bounds clamping and `EthFlow` minimum.
 //! * [`TradingSdk`] — quote-only owner mode, chain-authority requirements,
 //!   and contract-override precedence.
@@ -51,7 +51,7 @@ use cow_sdk_trading::{
     QuoterParameters, SwapAdvancedSettings, TradingError, TradingSdk, TradingSdkOptions,
     build_app_data, default_slippage_bps, get_eth_flow_transaction, get_order_to_sign,
     get_pre_sign_transaction, get_quote_only, get_quote_results, is_ethflow_order,
-    merge_app_data_doc, onchain_cancellation_transaction, post_limit_order,
+    merge_and_seal_app_data, onchain_cancellation_transaction, post_limit_order,
     post_sell_native_currency_order, post_swap_order, suggest_slippage_bps,
 };
 use serde_json::{Value, json};
@@ -735,7 +735,7 @@ async fn assert_partner_fee_in_app_data(case_id: &str, input: &Value, expected: 
         "case {case_id}: metadata.{metadata_path}.recipient must equal the fixture recipient",
     );
 
-    // `merge_app_data_doc` must preserve the partner-fee override when a
+    // The typed merge pipeline must preserve the partner-fee override when a
     // caller-supplied advanced document merges on top of a base document.
     let base = info.doc.clone();
     let override_params = cow_sdk_app_data::AppDataParams {
@@ -751,9 +751,10 @@ async fn assert_partner_fee_in_app_data(case_id: &str, input: &Value, expected: 
         }))
         .expect("partner-fee override metadata must build"),
     };
-    let merged = merge_app_data_doc(&base, &override_params).unwrap_or_else(|error| {
-        panic!("case {case_id}: merge_app_data_doc must succeed, got {error:?}")
-    });
+    let (merged, _merged_params) =
+        merge_and_seal_app_data(&base, &override_params).unwrap_or_else(|error| {
+            panic!("case {case_id}: merge_and_seal_app_data must succeed, got {error:?}")
+        });
     assert_eq!(
         merged
             .doc

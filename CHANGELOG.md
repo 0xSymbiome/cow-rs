@@ -408,6 +408,30 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Quote-to-post app-data edits now run through a typed merge
+  pipeline. `cow_sdk_trading::merge_and_seal_app_data` is the
+  canonical merge-and-seal helper: it deserializes the sealed
+  quote-derived wire document back into typed
+  `cow_sdk_app_data::AppDataParams`, merges the base and override
+  as typed values, and re-emits the canonical wire document
+  through the existing `generate_app_data_doc` plus
+  `get_app_data_info` pipeline. The helper returns both the
+  `TradingAppDataInfo` and the typed merged `AppDataParams`, so
+  the swap-from-quote submission path reads
+  `metadata.signer` directly from the merged typed value rather
+  than from a free-form JSON path or the untyped override. The
+  companion `cow_sdk_trading::params_from_doc` free function
+  exposes the typed re-parse step for consumers that want the
+  typed `AppDataParams` without re-sealing. With the typed merge
+  in place, `metadata.signer`, `metadata.flashloan`, and
+  `metadata.hooks` replacement semantics on the quote-to-post
+  path now match the reviewed upstream SDK byte-identical: a
+  base-doc signer survives into the submitted wire document and
+  feeds the `AppdataFromMismatch` validator, the typed
+  flash-loan hints lift into `metadata.flashloan` through either
+  the base or the override, and an override that carries
+  `metadata.hooks` replaces the base-side hooks envelope in full
+  rather than recursively merging pre/post sibling arrays.
 - Promote both compile-fail witnesses to live `trybuild` harnesses
   that re-prove the captured compile failure on every `cargo test`
   run. The token-balance split witness at
@@ -651,10 +675,10 @@ unreleased public contract of the repository.
   the shipped helpers — `post_swap_order`, `post_limit_order`,
   `post_sell_native_currency_order`, `get_quote_results`, `get_quote_only`,
   `get_order_to_sign`, `get_pre_sign_transaction`, `get_eth_flow_transaction`,
-  `onchain_cancellation_transaction`, `build_app_data`, `merge_app_data_doc`,
-  `suggest_slippage_bps`, `TradingSdk`, and `protocol_options_for_order` —
-  with per-field `assert_eq!` messages that name the fixture case id and
-  the diverging field at once.
+  `onchain_cancellation_transaction`, `build_app_data`,
+  `merge_and_seal_app_data`, `suggest_slippage_bps`, `TradingSdk`, and
+  `protocol_options_for_order` — with per-field `assert_eq!` messages
+  that name the fixture case id and the diverging field at once.
 - A cargo-fuzz harness under a standalone `fuzz/` crate that pins
   `libfuzzer-sys` to an exact version and carries five fuzz targets
   covering the deterministic codec boundaries: `fuzz_order_uid_pack_unpack`

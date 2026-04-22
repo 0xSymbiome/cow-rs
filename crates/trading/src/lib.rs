@@ -60,7 +60,8 @@ pub use post::{
     post_swap_order_from_quote_async,
 };
 pub use quote::{
-    build_app_data, get_quote_only, get_quote_results, get_quote_results_async, merge_app_data_doc,
+    build_app_data, get_quote_only, get_quote_results, get_quote_results_async,
+    merge_and_seal_app_data, params_from_doc,
 };
 pub use sdk::{
     AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, TradingSdk, TradingSdkBuilder,

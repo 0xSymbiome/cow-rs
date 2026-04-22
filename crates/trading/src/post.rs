@@ -17,7 +17,7 @@ use crate::{
     LimitOrderAdvancedSettings, LimitTradeParameters, OrderPostingResult, OrderbookClient,
     QuoteResults, SwapAdvancedSettings, TradeParameters, TraderParameters, TradingAppDataInfo,
     TradingError, adjust_ethflow_limit_parameters, build_app_data, get_order_to_sign,
-    is_ethflow_order, merge_app_data_doc, swap_params_to_limit_order_params,
+    is_ethflow_order, merge_and_seal_app_data, params_from_doc, swap_params_to_limit_order_params,
 };
 
 // Non-suffixed posting functions are async entry points for synchronous Signer implementors.
@@ -264,16 +264,20 @@ where
 {
     validate_quote_orderbook_binding(orderbook, quote_results.orderbook_binding.as_ref())?;
 
-    let app_data_signer = advanced_settings
-        .and_then(|settings| settings.app_data.as_ref())
-        .and_then(|params| params.signer.clone());
-
-    let app_data_info = match advanced_settings.and_then(|settings| settings.app_data.as_ref()) {
-        Some(app_data_override) => {
-            merge_app_data_doc(&quote_results.app_data_info.doc, app_data_override)?
-        }
-        None => quote_results.app_data_info.clone(),
+    let (app_data_info, merged_params) = if let Some(app_data_override) =
+        advanced_settings.and_then(|settings| settings.app_data.as_ref())
+    {
+        merge_and_seal_app_data(&quote_results.app_data_info.doc, app_data_override)?
+    } else {
+        // Even without an override the submission seam reads the typed
+        // `metadata.signer` field for the `AppdataFromMismatch`
+        // invariant, so parse the sealed base doc back into typed
+        // params and surface its signer alongside the existing
+        // `TradingAppDataInfo`.
+        let base_params = params_from_doc(&quote_results.app_data_info.doc)?;
+        (quote_results.app_data_info.clone(), base_params)
     };
+    let app_data_signer = merged_params.signer.clone();
     let params = apply_settings_to_limit_trade_parameters(
         &swap_params_to_limit_order_params(
             &quote_results.trade_parameters,
