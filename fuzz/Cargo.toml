@@ -12,6 +12,8 @@ libfuzzer-sys = "=0.4.12"
 arbitrary = { version = "=1.4.2", features = ["derive"] }
 hex = "=0.4.3"
 serde_json = "=1.0.149"
+alloy-sol-types = "=1.5.7"
+sha3 = "=0.11.0"
 cow-sdk-contracts = { path = "../crates/contracts" }
 cow-sdk-core = { path = "../crates/core" }
 cow-sdk-signing = { path = "../crates/signing" }
@@ -49,6 +51,41 @@ bench = false
 [[bin]]
 name = "fuzz_subgraph_graphql_error_decode"
 path = "fuzz_targets/fuzz_subgraph_graphql_error_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_settlement_settle_encode"
+path = "fuzz_targets/fuzz_settlement_settle_encode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_settlement_invalidate_order_encode"
+path = "fuzz_targets/fuzz_settlement_invalidate_order_encode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_ethflow_create_order_encode"
+path = "fuzz_targets/fuzz_ethflow_create_order_encode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_erc20_permit_typed_data_hash"
+path = "fuzz_targets/fuzz_erc20_permit_typed_data_hash.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_vault_relayer_transfer_from_accounts_encode"
+path = "fuzz_targets/fuzz_vault_relayer_transfer_from_accounts_encode.rs"
 test = false
 doc = false
 bench = false

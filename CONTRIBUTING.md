@@ -68,8 +68,13 @@ cd examples/wasm/browser-wallet-console && wasm-pack build --target web
 
 The `fuzz/` crate ships cargo-fuzz harnesses for the deterministic codec
 boundaries in `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, and
-`cow-sdk-subgraph`. The fuzz crate is a standalone package outside the root
-workspace and requires the Rust nightly channel.
+`cow-sdk-subgraph`. Ten targets are shipped in total: five legacy harnesses
+cover the hand-rolled encoder and decoder paths (order UID pack/unpack,
+typed-data digest, app-data CID round-trip, signature classifier, subgraph
+GraphQL error decode) and five encoder-surface harnesses cover the
+`alloy::sol!` binding families inside `cow-sdk-contracts` (settlement,
+EthFlow, ERC-20 Permit, vault relayer). The fuzz crate is a standalone
+package outside the root workspace and requires the Rust nightly channel.
 
 Install the nightly toolchain and cargo-fuzz once:
 

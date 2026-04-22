@@ -20,8 +20,9 @@ env:
   # across scheduled runs. Bump when the pinned date ages out of cargo-fuzz
   # compatibility.
   RUST_FUZZ_TOOLCHAIN: nightly-2026-04-15
-  # Per-target fuzz duration in seconds. Five targets × five minutes each
-  # fits comfortably under the 60-minute job timeout.
+  # Per-target fuzz duration in seconds. Ten targets × five minutes each
+  # fits within the 60-minute job timeout because the strategy matrix runs
+  # every target in its own parallel job.
   FUZZ_DURATION_SECONDS: '300'
 
 concurrency:
@@ -45,6 +46,11 @@ jobs:
           - fuzz_app_data_cid_roundtrip
           - fuzz_order_signature_classify
           - fuzz_subgraph_graphql_error_decode
+          - fuzz_settlement_settle_encode
+          - fuzz_settlement_invalidate_order_encode
+          - fuzz_ethflow_create_order_encode
+          - fuzz_erc20_permit_typed_data_hash
+          - fuzz_vault_relayer_transfer_from_accounts_encode
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5

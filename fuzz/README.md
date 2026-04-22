@@ -54,9 +54,36 @@ cargo +nightly fuzz run <target> --fuzz-dir fuzz -- -max_total_time=60
 
 Target names follow the pattern `fuzz_<surface>_<action>`. `<surface>`
 is the codec boundary under test (`order_uid`, `typed_data`,
-`app_data_cid`, `order_signature`, `subgraph_graphql_error`) and
-`<action>` is the specific invariant the target asserts
-(`pack_unpack`, `digest`, `roundtrip`, `classify`, `decode`).
+`app_data_cid`, `order_signature`, `subgraph_graphql_error`,
+`settlement_settle`, `settlement_invalidate_order`,
+`ethflow_create_order`, `erc20_permit_typed_data`,
+`vault_relayer_transfer_from_accounts`) and `<action>` is the specific
+invariant the target asserts (`pack_unpack`, `digest`, `roundtrip`,
+`classify`, `decode`, `encode`, `hash`).
+
+## Encoder Fuzz Targets
+
+Five targets exercise the `alloy::sol!`-generated encoder surface for
+every shipped contract binding family in `cow-sdk-contracts`:
+
+- `fuzz_settlement_settle_encode` — asserts `GPv2Settlement.settle(...)`
+  call-data carries the canonical selector and the four dynamic-argument
+  offset words on every well-typed input.
+- `fuzz_settlement_invalidate_order_encode` — asserts
+  `GPv2Settlement.invalidateOrder(bytes)` call-data length matches
+  `selector + offset + length + padded(input)` on every arbitrary
+  payload.
+- `fuzz_ethflow_create_order_encode` — round-trips
+  `CoWSwapEthFlow.createOrder(EthFlowOrderData)` through the matching
+  decoder and asserts every struct field survives the encode/decode
+  cycle.
+- `fuzz_erc20_permit_typed_data_hash` — compares
+  `permit_typed_data_hash(&domain, &permit)` against a hand-computed
+  reference `keccak256(0x19 || 0x01 || domain_separator || struct_hash)`
+  envelope.
+- `fuzz_vault_relayer_transfer_from_accounts_encode` — asserts
+  `GPv2VaultRelayer.transferFromAccounts(Transfer[])` call-data length
+  equals `selector + offset + length + n * 128` for `n` transfers.
 
 ## Input-size convention
 

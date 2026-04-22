@@ -15,6 +15,17 @@ unreleased public contract of the repository.
 
 ### Added
 
+- Five new `cargo-fuzz` targets cover the `alloy::sol!`-generated
+  encoder surface of every contract binding family shipped by
+  `cow-sdk-contracts`: `fuzz_settlement_settle_encode` and
+  `fuzz_settlement_invalidate_order_encode` for
+  `GPv2Settlement`, `fuzz_ethflow_create_order_encode` for
+  `CoWSwapEthFlow`, `fuzz_erc20_permit_typed_data_hash` for the
+  EIP-2612 Permit envelope, and
+  `fuzz_vault_relayer_transfer_from_accounts_encode` for
+  `GPv2VaultRelayer`. The scheduled fuzz lane now enumerates ten
+  targets; each new target ships with a committed happy-path seed
+  corpus under `fuzz/corpus/<target>/seed-happy.bin`.
 - Byte-identity parity fixtures now cover the call-data surface
   of every `alloy::sol!` binding family shipped by
   `cow-sdk-contracts`: `GPv2Settlement` (`invalidateOrder`,
