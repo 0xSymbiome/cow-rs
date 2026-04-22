@@ -7,7 +7,7 @@ use cow_sdk_orderbook::OrderKind;
 use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{
     PartnerFeePolicy, QuoteRequestOverride, QuoterParameters, SwapAdvancedSettings,
-    TradeParameters, get_quote_only, get_quote_results,
+    TradeParameters, build_app_data, get_quote_only, get_quote_results,
 };
 
 use crate::common::{
@@ -485,4 +485,149 @@ async fn quote_results_reject_invalid_partner_fee_metadata_before_quoting() {
         "error text must describe the shape violation, got: {rendered}"
     );
     assert!(orderbook.state().quote_requests.is_empty());
+}
+
+#[tokio::test]
+async fn build_app_data_injects_default_utm_when_override_absent() {
+    let fixture = trading_fixture();
+    let expected = fixture
+        .get("defaults")
+        .and_then(|defaults| defaults.get("metadata_utm"))
+        .and_then(|block| block.get("expected"))
+        .expect("fixture must expose defaults.metadata_utm.expected");
+    let expected_source = expected["utmSource"]
+        .as_str()
+        .expect("fixture utmSource must be a string");
+    let expected_campaign = expected["utmCampaign"]
+        .as_str()
+        .expect("fixture utmCampaign must be a string");
+    let expected_content = expected["utmContent"]
+        .as_str()
+        .expect("fixture utmContent must be a string");
+    let expected_term = expected["utmTerm"]
+        .as_str()
+        .expect("fixture utmTerm must be a string");
+    let expected_medium_prefix = expected["utmMediumPrefix"]
+        .as_str()
+        .expect("fixture utmMediumPrefix must be a string");
+
+    let info = build_app_data("0x007", 50, "market", None, None)
+        .await
+        .expect("default-utm build_app_data must succeed");
+    let doc: serde_json::Value = serde_json::from_str(&info.full_app_data)
+        .expect("sealed app-data document must remain valid json");
+    let utm = doc
+        .get("metadata")
+        .and_then(|metadata| metadata.get("utm"))
+        .expect("default path must stamp a metadata.utm block");
+
+    assert_eq!(
+        utm["utmSource"].as_str(),
+        Some(expected_source),
+        "default utmSource must match the pinned fixture value",
+    );
+    assert_eq!(
+        utm["utmCampaign"].as_str(),
+        Some(expected_campaign),
+        "default utmCampaign must match the pinned fixture value",
+    );
+    assert_eq!(
+        utm["utmContent"].as_str(),
+        Some(expected_content),
+        "default utmContent must match the pinned fixture value",
+    );
+    assert_eq!(
+        utm["utmTerm"].as_str(),
+        Some(expected_term),
+        "default utmTerm must match the pinned fixture value",
+    );
+    let utm_medium = utm["utmMedium"]
+        .as_str()
+        .expect("default utmMedium must be a string");
+    assert!(
+        utm_medium.starts_with(expected_medium_prefix),
+        "default utmMedium must start with {expected_medium_prefix:?}, got {utm_medium:?}",
+    );
+    assert!(
+        utm_medium.len() > expected_medium_prefix.len(),
+        "default utmMedium must embed a non-empty crate version after the prefix, got {utm_medium:?}",
+    );
+}
+
+#[tokio::test]
+async fn build_app_data_respects_full_utm_override() {
+    let override_params = cow_sdk_app_data::AppDataParams {
+        app_code: None,
+        environment: None,
+        signer: None,
+        flashloan: None,
+        metadata: serde_json::from_value(serde_json::json!({
+            "utm": {
+                "utmSource": "custom",
+                "utmMedium": "custom",
+                "utmCampaign": "custom",
+                "utmContent": "custom",
+                "utmTerm": "custom"
+            }
+        }))
+        .expect("full-utm override metadata must deserialize"),
+    };
+
+    let info = build_app_data("0x007", 50, "market", None, Some(&override_params))
+        .await
+        .expect("full-utm-override build_app_data must succeed");
+    let doc: serde_json::Value = serde_json::from_str(&info.full_app_data)
+        .expect("sealed app-data document must remain valid json");
+    let utm = doc
+        .get("metadata")
+        .and_then(|metadata| metadata.get("utm"))
+        .cloned()
+        .expect("override path must preserve the caller-supplied metadata.utm block");
+
+    assert_eq!(
+        utm,
+        serde_json::json!({
+            "utmSource": "custom",
+            "utmMedium": "custom",
+            "utmCampaign": "custom",
+            "utmContent": "custom",
+            "utmTerm": "custom",
+        }),
+        "caller-supplied full metadata.utm must be carried through byte-identical with no Rust-injected defaults",
+    );
+}
+
+#[tokio::test]
+async fn build_app_data_respects_partial_utm_override() {
+    let override_params = cow_sdk_app_data::AppDataParams {
+        app_code: None,
+        environment: None,
+        signer: None,
+        flashloan: None,
+        metadata: serde_json::from_value(serde_json::json!({
+            "utm": {
+                "utmTerm": "xyz"
+            }
+        }))
+        .expect("partial-utm override metadata must deserialize"),
+    };
+
+    let info = build_app_data("0x007", 50, "market", None, Some(&override_params))
+        .await
+        .expect("partial-utm-override build_app_data must succeed");
+    let doc: serde_json::Value = serde_json::from_str(&info.full_app_data)
+        .expect("sealed app-data document must remain valid json");
+    let utm = doc
+        .get("metadata")
+        .and_then(|metadata| metadata.get("utm"))
+        .cloned()
+        .expect("override path must preserve the caller-supplied metadata.utm block");
+
+    assert_eq!(
+        utm,
+        serde_json::json!({
+            "utmTerm": "xyz",
+        }),
+        "partial caller-supplied metadata.utm must stay partial; Rust defaults must not be merged on top",
+    );
 }

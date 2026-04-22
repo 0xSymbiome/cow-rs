@@ -31,6 +31,7 @@ Authority order:
 | Surface | Default | Opt-out / opt-in |
 | --- | --- | --- |
 | `OrderToSignParams::new(...)` `apply_costs_slippage_and_fees` | applied on by default (cost, slippage, partner-fee, and protocol-fee adjustments are folded into the unsigned order amounts) | call `.with_apply_costs_slippage_and_fees(false)` to preserve raw caller amounts |
+| `build_app_data` `metadata.utm` | when the caller does not supply `metadata.utm`, the helper stamps a Rust-identified attribution block with `utmSource = "cowmunity"`, `utmMedium = "cow-rs@<crate-version>"`, `utmCampaign = "developer-cohort"`, `utmContent = ""`, and `utmTerm = "rs"` so downstream analytics can attribute traffic to the Rust SDK and its published version | supply any `metadata.utm` key in the advanced app-data parameters — partial or full — and the caller-declared block is carried through byte-identical with no defaults merged on top |
 
 ## Provenance Anchors
 

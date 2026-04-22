@@ -141,9 +141,44 @@ where
     .await
 }
 
+/// `metadata.utm.utmSource` default stamped when the caller does not supply
+/// an override `metadata.utm` block.
+const UTM_SOURCE: &str = "cowmunity";
+
+/// `metadata.utm.utmCampaign` default stamped when the caller does not supply
+/// an override `metadata.utm` block.
+const UTM_CAMPAIGN: &str = "developer-cohort";
+
+/// `metadata.utm.utmTerm` default that identifies Rust-SDK traffic in
+/// attribution analytics. Intentionally distinct from other SDK identifiers
+/// so Rust-SDK adoption is not mislabelled.
+const UTM_TERM: &str = "rs";
+
+/// Builds the default `metadata.utm` block stamped on app-data documents
+/// when the caller does not supply their own `metadata.utm`.
+///
+/// The block identifies the Rust SDK and its compile-time version so
+/// protocol-side attribution analytics can distinguish Rust-SDK traffic
+/// from other client SDKs. The `utmMedium` value embeds the trading
+/// crate's published version through `env!("CARGO_PKG_VERSION")`.
+fn default_utm() -> Value {
+    json!({
+        "utmSource": UTM_SOURCE,
+        "utmMedium": format!("cow-rs@{}", env!("CARGO_PKG_VERSION")),
+        "utmCampaign": UTM_CAMPAIGN,
+        "utmContent": "",
+        "utmTerm": UTM_TERM,
+    })
+}
+
 /// Builds the trading app-data document and its derived hash.
 ///
 /// The generated base document always includes quote slippage metadata and order class metadata.
+/// When the caller does not supply `metadata.utm`, a Rust-identified default
+/// UTM attribution block is stamped onto the base document so downstream
+/// analytics can attribute the traffic to the Rust SDK. Any caller-supplied
+/// `metadata.utm` — partial or full — disables the default stamp and is
+/// carried through exactly as provided.
 /// `advanced_params` then overrides `appCode`, `environment`, and metadata keys using a deep merge.
 ///
 /// # Errors
@@ -165,6 +200,13 @@ pub async fn build_app_data(
     );
     if let Some(partner_fee) = partner_fee {
         metadata.insert("partnerFee".to_owned(), partner_fee.to_value());
+    }
+
+    let override_has_utm = advanced_params
+        .and_then(|params| params.metadata.get("utm"))
+        .is_some();
+    if !override_has_utm {
+        metadata.insert("utm".to_owned(), default_utm());
     }
 
     let mut params = AppDataParams {

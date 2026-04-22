@@ -15,6 +15,16 @@ unreleased public contract of the repository.
 
 ### Added
 
+- `build_app_data` stamps a Rust-identified default
+  `metadata.utm` attribution block when the caller does not
+  supply `metadata.utm`, carrying `utmSource = "cowmunity"`,
+  `utmMedium = "cow-rs@<crate-version>"`,
+  `utmCampaign = "developer-cohort"`, `utmContent = ""`, and
+  `utmTerm = "rs"` so downstream analytics can attribute
+  traffic to the Rust SDK and its published version. Any
+  caller-supplied `metadata.utm` key — partial or full — fully
+  replaces the default block and is carried through
+  byte-identical.
 - ADR 0015 (`Typed Client-Side Order-Bounds Validator On Every
   Trading Submission Seam`), ADR 0016 (`Split SellTokenSource And
   BuyTokenDestination Into Distinct Side-Specific Enums`), and ADR
