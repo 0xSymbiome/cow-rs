@@ -25,7 +25,10 @@ public and runtime shape of `cow-rs`.
 | [0015](0015-client-side-order-bounds-validator.md) | Accepted | Run the typed `OrderBoundsValidator` as the mandatory pre-transport step on every public trading submission seam and surface failures through `TradingError::ClientRejected(ClientRejection)`. |
 | [0016](0016-split-sell-and-buy-token-balance-enums.md) | Accepted | Split the sell-side allowance path and the buy-side payout path into distinct `SellTokenSource` and `BuyTokenDestination` enums and reject cross-side coercion at the type system. |
 | [0017](0017-typed-orderbook-rejection-parser.md) | Accepted | Classify non-2xx orderbook responses through a typed `OrderbookRejection` enum with a permanent `Unknown { code, message }` fallback and promote the typed payload onto `OrderbookError::Rejected`. |
-| [0018](0018-orderbook-total-fee-policy.md) | Accepted | Define `Order.total_fee` narrowly as the canonical executed-fee component and surface the deprecated `executedFeeAmount` wire field as a typed read-only sibling so consumers compute any legacy summation explicitly. |
+| [0018](0018-typed-app-data-merge.md) | Accepted | Run quote-to-post app-data edits through a single typed merge pipeline and retire the opaque `serde_json::Value`-taking merge helper so the typed `signer`, `flashloan`, and `metadata.hooks` replacement semantics stay enforced end-to-end. |
+| [0019](0019-http-transport-sole-dispatch.md) | Accepted | Make `HttpTransport` in `cow-sdk-core` the sole live-dispatch surface on `OrderBookApi` and `SubgraphApi` and carry non-2xx responses through the typed `TransportError::HttpStatus` channel. |
+| [0020](0020-ethflow-owner-threading.md) | Accepted | Thread the signer-derived owner onto `EthFlowTransaction` and read `tx.from` (not `tx.order_to_sign.receiver`) when building the pre-HTTP validator preview on the native-currency submission seam. |
+| [0021](0021-orderbook-total-fee-policy.md) | Accepted | Define `Order.total_fee` narrowly as the canonical executed-fee component and surface the deprecated `executedFeeAmount` wire field as a typed read-only sibling so consumers compute any legacy summation explicitly. |
 
 ## When To Write An ADR
 

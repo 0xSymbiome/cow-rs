@@ -113,8 +113,12 @@ installed transport.
 - [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 - [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
+- [ADR 0019](0019-http-transport-sole-dispatch.md)
 
 **Proven by:**
 
+- [ADR 0019](0019-http-transport-sole-dispatch.md)
 - [HTTP Transport Contract Audit](../audit/http-transport-contract-audit.md)
 - [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)
+- `crates/orderbook/tests/api_contract.rs`
+- `crates/subgraph/tests/api_contract.rs`

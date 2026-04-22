@@ -6,6 +6,7 @@ Owning surface: `cow-sdk-core::HttpTransport` trait and the `ReqwestTransport` (
 Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the URL-stripping contract on either default adapter; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderBookApi` or `SubgraphApi` bypass `self.transport`
 Related docs:
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
+- [ADR 0019](../adr/0019-http-transport-sole-dispatch.md)
 - [Transport](../transport.md)
 - [Architecture](../architecture.md)
 - [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md)

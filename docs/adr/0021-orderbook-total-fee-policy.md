@@ -1,4 +1,4 @@
-# ADR 0018: Narrow `Order.total_fee` And Read-Only Legacy Executed-Fee Surface
+# ADR 0021: Narrow `Order.total_fee` And Read-Only Legacy Executed-Fee Surface
 
 - Status: Accepted
 - Date: 2026-04-22

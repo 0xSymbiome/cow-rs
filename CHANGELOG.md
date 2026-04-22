@@ -15,6 +15,23 @@ unreleased public contract of the repository.
 
 ### Added
 
+- ADR 0018 (`Typed App-Data Merge As The Single Canonical
+  Quote-To-Post Edit Path`), ADR 0019 (`HTTP Transport Is The
+  Sole Live-Dispatch Surface On The Orderbook And Subgraph
+  Clients`), and ADR 0020 (`EthFlow Transaction Bundle Carries
+  The Signer-Derived Owner For Pre-HTTP Validation`) ship
+  under `docs/adr/` as the governing decision records for the
+  current-state architecture contracts on the trading
+  quote-to-post merge path, the orderbook and subgraph
+  dispatch surface, and the native-currency submission seam.
+  ADR 0018 ships alongside a standing audit at
+  `docs/audit/trading-app-data-merge-audit.md`, and ADR 0020
+  ships alongside
+  `docs/audit/trading-ethflow-owner-identity-audit.md`; both
+  audits' `Related docs` blocks reciprocate the ADR `Proven
+  by` cross-link contract. The `docs/adr/README.md` index
+  lists the three new entries in numerical order after
+  `0017`.
 - `scripts/fetch-upstream-pins.sh` materializes the pinned
   upstream CoW Protocol repositories
   (`https://github.com/cowprotocol/cow-sdk`,
@@ -29,7 +46,7 @@ unreleased public contract of the repository.
   authoritative provenance, the independently-materialized
   upstream worktrees as the verification target, and the
   provisioning script as the supported reviewer path.
-- ADR 0018 (`Narrow Order.total_fee And Read-Only Legacy
+- ADR 0021 (`Narrow Order.total_fee And Read-Only Legacy
   Executed-Fee Surface`) ships under `docs/adr/`, paired with a
   new `Order.executed_fee_amount_legacy: Option<String>`
   read-only sibling on `cow_sdk_orderbook::Order` that
@@ -40,9 +57,9 @@ unreleased public contract of the repository.
   `calculate_total_fee`; the legacy field is never folded into
   the canonical sum. Consumers that need the legacy summation
   read both fields and add them at the call site. The
-  `docs/adr/README.md` index lists the new entry in numerical
-  order after `0017`, and `docs/parity-matrix.md` records the
-  `Order.total_fee` divergence under a new `Orderbook DTO
+  `docs/adr/README.md` index lists the entry in numerical
+  order after `0020`, and `docs/parity-matrix.md` records the
+  `Order.total_fee` divergence under the `Orderbook DTO
   defaults` section.
 - `build_app_data` stamps a Rust-identified default
   `metadata.utm` attribution block when the caller does not
@@ -473,6 +490,21 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- ADR 0013 (`HTTP Transport Injection Seam And Typestate
+  Construction For Orderbook And Subgraph`) now cross-links to
+  ADR 0019 in the `Links` section and its `Proven by` block
+  carries ADR 0019 alongside the HTTP Transport Contract Audit,
+  the Typestate Builder Contract Audit, and the
+  recording-transport regression modules at
+  `crates/orderbook/tests/api_contract.rs` and
+  `crates/subgraph/tests/api_contract.rs`. The HTTP Transport
+  Contract Audit's `Related docs` block reciprocates the
+  cross-link to ADR 0019 so the two-way proof surface between
+  the decision record and the standing audit stays symmetrical.
+- The previously published narrow `Order.total_fee` policy
+  decision record is available under its final public number
+  ADR 0021; the `docs/adr/README.md` index and
+  `docs/parity-matrix.md` cross-links cite that number.
 - The release checklist, the verification matrix, and the
   quality-gate workflow now enforce the
   `cargo tree --invert alloy-provider` invariant over the full
