@@ -177,7 +177,7 @@ test("orderbook network failures surface as visible errors", async ({ page }) =>
 
   await expect(page.locator("#orderbook-output")).toContainText("Error", { timeout: 20_000 });
   await expect(page.locator("#orderbook-output")).toContainText("transport error");
-  await expect(page.locator("#orderbook-output")).toContainText("error sending request");
+  await expect(page.locator("#orderbook-output")).toContainText("mock network failure");
   expect(requestIssues).toEqual([]);
 });
 
