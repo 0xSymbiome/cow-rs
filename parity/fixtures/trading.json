@@ -342,12 +342,28 @@
       }
     },
     {
-      "id": "trading-order-to-sign-disable-adjustments",
+      "id": "trading-order-to-sign-default-applies-adjustments",
       "kind": "behavior-scenario",
-      "description": "When applyCostsSlippageAndFees is false, quote-to-order conversion preserves caller amounts instead of applying slippage or cost adjustments.",
+      "description": "Default-constructed OrderToSignParams applies cost, slippage, partner-fee, and protocol-fee adjustments when converting a quote into the unsigned order, matching the shipped internal quote and submission flows.",
+      "input": {
+        "slippage_bps": 50
+      },
       "expected": {
-        "sell_order_preserves_buy_amount": true,
-        "buy_order_preserves_sell_amount": true
+        "sell_sell_amount": "98646335338956442",
+        "sell_buy_amount": "29850000000000000000",
+        "buy_sell_amount": "1010484066424590552",
+        "buy_buy_amount": "400000000000000000000"
+      }
+    },
+    {
+      "id": "trading-order-to-sign-opt-out-preserves-raw-amounts",
+      "kind": "behavior-scenario",
+      "description": "OrderToSignParams::new(...).with_apply_costs_slippage_and_fees(false) preserves the caller sell and buy amounts instead of folding cost, slippage, or fee adjustments into the unsigned order.",
+      "expected": {
+        "sell_sell_amount": "98646335338956442",
+        "sell_buy_amount": "30000000000000000000",
+        "buy_sell_amount": "1005456782512030400",
+        "buy_buy_amount": "400000000000000000000"
       }
     },
     {

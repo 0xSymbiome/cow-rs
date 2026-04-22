@@ -26,6 +26,12 @@ Authority order:
 | WASM target | `cowprotocol/cow-sdk` sdk package | `cow-sdk`, `cow-sdk-app-data`, WASM examples | `parity/fixtures/sdk.json`, committed workflow definitions, example READMEs | `examples/wasm/sdk-verification-console/tests/deterministic_exports.rs`, `wasm-pack test --headless --chrome`, `bun run --cwd e2e/sdk-verification test` |
 | Browser wallet integration | selected `cowprotocol/cow-sdk` common, provider, trading, and sdk paths | `cow-sdk-browser-wallet`, `cow-sdk` | `examples/wasm/browser-wallet-console/README.md`, `docs/validation-scope.md` | `crates/browser-wallet/tests/provider_contract.rs`, `crates/browser-wallet/tests/wallet_contract.rs`, direct browser-bridge proof, and committed browser-wallet console automation |
 
+## Trading helper defaults
+
+| Surface | Default | Opt-out / opt-in |
+| --- | --- | --- |
+| `OrderToSignParams::new(...)` `apply_costs_slippage_and_fees` | applied on by default (cost, slippage, partner-fee, and protocol-fee adjustments are folded into the unsigned order amounts) | call `.with_apply_costs_slippage_and_fees(false)` to preserve raw caller amounts |
+
 ## Provenance Anchors
 
 - Global source contract: `parity/source-lock.yaml`

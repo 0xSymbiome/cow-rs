@@ -39,6 +39,13 @@ pub struct OrderToSignParams {
 
 impl OrderToSignParams {
     /// Creates an order-signing input with the required identity fields.
+    ///
+    /// `apply_costs_slippage_and_fees` defaults to `true` so the public helper
+    /// folds cost, slippage, partner-fee, and protocol-fee adjustments into the
+    /// unsigned order amounts in the same shape the internal quote and
+    /// submission flows produce. Callers that want raw-amount payloads must
+    /// opt out explicitly by calling
+    /// [`OrderToSignParams::with_apply_costs_slippage_and_fees`] with `false`.
     #[must_use]
     pub const fn new(chain_id: SupportedChainId, from: Address, is_ethflow: bool) -> Self {
         Self {
@@ -46,7 +53,7 @@ impl OrderToSignParams {
             from,
             is_ethflow,
             network_costs_amount: None,
-            apply_costs_slippage_and_fees: false,
+            apply_costs_slippage_and_fees: true,
             protocol_fee_bps: None,
         }
     }

@@ -120,8 +120,11 @@ async fn parity_fixture_cases_hold() {
             "trading-post-override-propagation" => {
                 assert_post_override_propagation(&case_id, &case["input"], &expected).await;
             }
-            "trading-order-to-sign-disable-adjustments" => {
-                assert_order_to_sign_disable_adjustments(&case_id, &expected);
+            "trading-order-to-sign-default-applies-adjustments" => {
+                assert_order_to_sign_default_applies_adjustments(&case_id, &expected);
+            }
+            "trading-order-to-sign-opt-out-preserves-raw-amounts" => {
+                assert_order_to_sign_opt_out_preserves_raw_amounts(&case_id, &expected);
             }
             "trading-limit-order-disable-adjustments" => {
                 assert_limit_order_disable_adjustments(&case_id, &expected).await;
@@ -858,21 +861,21 @@ async fn assert_post_override_propagation(case_id: &str, input: &Value, expected
     );
 }
 
-fn assert_order_to_sign_disable_adjustments(case_id: &str, expected: &Value) {
-    assert!(
-        expected["sell_order_preserves_buy_amount"]
-            .as_bool()
-            .unwrap_or(false),
-        "case {case_id}: expected.sell_order_preserves_buy_amount must be true",
-    );
-    assert!(
-        expected["buy_order_preserves_sell_amount"]
-            .as_bool()
-            .unwrap_or(false),
-        "case {case_id}: expected.buy_order_preserves_sell_amount must be true",
-    );
+fn assert_order_to_sign_default_applies_adjustments(case_id: &str, expected: &Value) {
+    let expected_sell_sell_amount = expected["sell_sell_amount"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {case_id}: expected.sell_sell_amount must be a string"));
+    let expected_sell_buy_amount = expected["sell_buy_amount"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {case_id}: expected.sell_buy_amount must be a string"));
+    let expected_buy_sell_amount = expected["buy_sell_amount"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {case_id}: expected.buy_sell_amount must be a string"));
+    let expected_buy_buy_amount = expected["buy_buy_amount"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {case_id}: expected.buy_buy_amount must be a string"));
 
-    // Sell path: apply_costs_slippage_and_fees=false must keep the caller buy_amount.
+    // Sell path: default construction applies slippage to the caller buy_amount.
     let sell_params = sample_limit_parameters(OrderKind::Sell);
     let sell_order = get_order_to_sign(
         OrderToSignParams::new(SupportedChainId::Sepolia, address(OWNER), false),
@@ -883,15 +886,17 @@ fn assert_order_to_sign_disable_adjustments(case_id: &str, expected: &Value) {
         panic!("case {case_id}: sell order-to-sign must succeed, got {error:?}")
     });
     assert_eq!(
-        sell_order.buy_amount, sell_params.buy_amount,
-        "case {case_id}: sell-order buy_amount must stay equal to the caller buy_amount",
+        sell_order.sell_amount.to_string(),
+        expected_sell_sell_amount,
+        "case {case_id}: sell-order sell_amount must match the pinned adjusted vector",
     );
     assert_eq!(
-        sell_order.sell_amount, sell_params.sell_amount,
-        "case {case_id}: sell-order sell_amount must stay equal to the caller sell_amount",
+        sell_order.buy_amount.to_string(),
+        expected_sell_buy_amount,
+        "case {case_id}: sell-order buy_amount must match the pinned adjusted vector",
     );
 
-    // Buy path: apply_costs_slippage_and_fees=false must keep the caller sell_amount.
+    // Buy path: default construction applies slippage to the caller sell_amount.
     let buy_params = sample_limit_parameters(OrderKind::Buy);
     let buy_order = get_order_to_sign(
         OrderToSignParams::new(SupportedChainId::Sepolia, address(OWNER), false),
@@ -902,13 +907,115 @@ fn assert_order_to_sign_disable_adjustments(case_id: &str, expected: &Value) {
         panic!("case {case_id}: buy order-to-sign must succeed, got {error:?}")
     });
     assert_eq!(
+        buy_order.sell_amount.to_string(),
+        expected_buy_sell_amount,
+        "case {case_id}: buy-order sell_amount must match the pinned adjusted vector",
+    );
+    assert_eq!(
+        buy_order.buy_amount.to_string(),
+        expected_buy_buy_amount,
+        "case {case_id}: buy-order buy_amount must match the pinned adjusted vector",
+    );
+}
+
+fn assert_order_to_sign_opt_out_preserves_raw_amounts(case_id: &str, expected: &Value) {
+    let expected_sell_sell_amount = expected["sell_sell_amount"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {case_id}: expected.sell_sell_amount must be a string"));
+    let expected_sell_buy_amount = expected["sell_buy_amount"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {case_id}: expected.sell_buy_amount must be a string"));
+    let expected_buy_sell_amount = expected["buy_sell_amount"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {case_id}: expected.buy_sell_amount must be a string"));
+    let expected_buy_buy_amount = expected["buy_buy_amount"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {case_id}: expected.buy_buy_amount must be a string"));
+
+    // Sell path: explicit opt-out preserves the caller amounts.
+    let sell_params = sample_limit_parameters(OrderKind::Sell);
+    let sell_order = get_order_to_sign(
+        OrderToSignParams::new(SupportedChainId::Sepolia, address(OWNER), false)
+            .with_apply_costs_slippage_and_fees(false),
+        &sell_params,
+        &app_data_hash(),
+    )
+    .unwrap_or_else(|error| {
+        panic!("case {case_id}: sell order-to-sign must succeed, got {error:?}")
+    });
+    assert_eq!(
+        sell_order.sell_amount.to_string(),
+        expected_sell_sell_amount,
+        "case {case_id}: sell-order sell_amount must equal the raw caller amount",
+    );
+    assert_eq!(
+        sell_order.buy_amount.to_string(),
+        expected_sell_buy_amount,
+        "case {case_id}: sell-order buy_amount must equal the raw caller amount",
+    );
+    assert_eq!(
+        sell_order.sell_amount, sell_params.sell_amount,
+        "case {case_id}: sell-order sell_amount must equal the caller sell_amount",
+    );
+    assert_eq!(
+        sell_order.buy_amount, sell_params.buy_amount,
+        "case {case_id}: sell-order buy_amount must equal the caller buy_amount",
+    );
+
+    // Buy path: explicit opt-out preserves the caller amounts.
+    let buy_params = sample_limit_parameters(OrderKind::Buy);
+    let buy_order = get_order_to_sign(
+        OrderToSignParams::new(SupportedChainId::Sepolia, address(OWNER), false)
+            .with_apply_costs_slippage_and_fees(false),
+        &buy_params,
+        &app_data_hash(),
+    )
+    .unwrap_or_else(|error| {
+        panic!("case {case_id}: buy order-to-sign must succeed, got {error:?}")
+    });
+    assert_eq!(
+        buy_order.sell_amount.to_string(),
+        expected_buy_sell_amount,
+        "case {case_id}: buy-order sell_amount must equal the raw caller amount",
+    );
+    assert_eq!(
+        buy_order.buy_amount.to_string(),
+        expected_buy_buy_amount,
+        "case {case_id}: buy-order buy_amount must equal the raw caller amount",
+    );
+    assert_eq!(
         buy_order.sell_amount, buy_params.sell_amount,
-        "case {case_id}: buy-order sell_amount must stay equal to the caller sell_amount",
+        "case {case_id}: buy-order sell_amount must equal the caller sell_amount",
     );
     assert_eq!(
         buy_order.buy_amount, buy_params.buy_amount,
-        "case {case_id}: buy-order buy_amount must stay equal to the caller buy_amount",
+        "case {case_id}: buy-order buy_amount must equal the caller buy_amount",
     );
+}
+
+/// Dedicated opt-out regression test.
+///
+/// Reads the `trading-order-to-sign-opt-out-preserves-raw-amounts` fixture
+/// case out of `parity/fixtures/trading.json` and re-runs the raw-amount
+/// assertions so a future change to the helper default cannot silently
+/// re-route opt-out callers into the adjusted-amount path.
+#[test]
+fn get_order_to_sign_preserves_raw_amounts_when_flag_disabled() {
+    let fixture: Value = serde_json::from_str(FIXTURE).expect("fixture must parse as JSON");
+    let cases = fixture["cases"]
+        .as_array()
+        .expect("trading fixture must expose a cases array");
+    let case = cases
+        .iter()
+        .find(|entry| {
+            entry["id"].as_str() == Some("trading-order-to-sign-opt-out-preserves-raw-amounts")
+        })
+        .expect("fixture must carry the opt-out raw-amount case");
+    let case_id = case["id"]
+        .as_str()
+        .expect("opt-out case must carry a string id")
+        .to_owned();
+    assert_order_to_sign_opt_out_preserves_raw_amounts(&case_id, &case["expected"]);
 }
 
 async fn assert_limit_order_disable_adjustments(case_id: &str, expected: &Value) {

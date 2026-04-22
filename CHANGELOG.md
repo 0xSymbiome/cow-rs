@@ -434,6 +434,13 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- `OrderToSignParams::new(...)` now defaults
+  `apply_costs_slippage_and_fees` to `true`, aligning the public
+  helper with the internal quote and submission flows that already
+  fold cost, slippage, partner-fee, and protocol-fee adjustments
+  into the unsigned order amounts. Callers that want raw-amount
+  payloads call `.with_apply_costs_slippage_and_fees(false)` to
+  opt out explicitly.
 - `HttpTransport` is now the sole live-dispatch surface on the
   orderbook and subgraph clients. `OrderBookApi` and `SubgraphApi`
   no longer hold a parallel `reqwest::Client`; every REST and GraphQL
