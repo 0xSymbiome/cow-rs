@@ -15,6 +15,20 @@ unreleased public contract of the repository.
 
 ### Added
 
+- `scripts/fetch-upstream-pins.sh` materializes the pinned
+  upstream CoW Protocol repositories
+  (`https://github.com/cowprotocol/cow-sdk`,
+  `https://github.com/cowprotocol/contracts`, and
+  `https://github.com/cowprotocol/services`) at the commits
+  recorded in `parity/source-lock.yaml` as independent git
+  worktrees outside the cow-rs tree. Pass `--into <dir>` to
+  override the default sibling-directory layout; the script is
+  idempotent and leaves existing destinations untouched. The
+  `docs/parity-sources.md` provenance guide now describes the
+  three-layer contract — the committed source-lock as
+  authoritative provenance, the independently-materialized
+  upstream worktrees as the verification target, and the
+  provisioning script as the supported reviewer path.
 - ADR 0018 (`Narrow Order.total_fee And Read-Only Legacy
   Executed-Fee Surface`) ships under `docs/adr/`, paired with a
   new `Order.executed_fee_amount_legacy: Option<String>`
@@ -459,6 +473,29 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- The release checklist, the verification matrix, and the
+  quality-gate workflow now enforce the
+  `cargo tree --invert alloy-provider` invariant over the full
+  nine-crate published family including `cow-sdk-browser-wallet`,
+  closing the prior gap between the broader invariant claims and
+  the enforced commands.
+- The release checklist deterministic browser-wallet lane now
+  mirrors the maintained workflow exactly: a Chromium and Firefox
+  Playwright install, host-side and direct-bridge wasm tests, the
+  WASM build of `cow-sdk` with the `browser-wallet` feature, the
+  browser-wallet console WASM build and host-side tests, the
+  console wasm-bindgen tests under headless Chrome, and the
+  Playwright DOM lane under both engines.
+- A new `scripts/check-release-docs-agree.sh` lint guards against
+  release-doc and CI drift by extracting the cargo-tree
+  alloy-provider package list from the release checklist, the
+  verification matrix, and the quality-gate workflow, the
+  browser-wallet Playwright install line from the release
+  checklist, and the matching install line from the
+  browser-wallet end-to-end workflow, then failing on any
+  disagreement. The lint is wired into the quality-gate workflow
+  as a new `docs-agree-on-release-gates` job so the drift class
+  is closed at the workspace level instead of patched once.
 - `OrderToSignParams::new(...)` now defaults
   `apply_costs_slippage_and_fees` to `true`, aligning the public
   helper with the internal quote and submission flows that already

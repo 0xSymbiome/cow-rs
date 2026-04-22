@@ -14,7 +14,7 @@ cargo nextest run --workspace --all-features --config-file .github/config/nextes
 typos --config .github/config/typos.toml
 cargo deny check bans licenses sources --config .github/config/deny.toml
 cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk
 ```
 
 The `cargo tree --invert alloy-provider` command is the stability-invariant
@@ -263,16 +263,36 @@ wasm-pack test --headless --chrome
 
 ```text
 bun install --cwd e2e/sdk-verification
-bun run --cwd e2e/sdk-verification playwright install chromium
+bun run --cwd e2e/sdk-verification playwright install --with-deps chromium
 bun run --cwd e2e/sdk-verification test
 ```
 
 Deterministic browser-wallet console checks:
 
 ```text
+# 1. Host-side crate
 cargo test -p cow-sdk-browser-wallet
-bun install --cwd e2e/browser-wallet
-bun run --cwd e2e/browser-wallet playwright install chromium
+
+# 2. Direct-bridge wasm (browser-wallet crate)
+cd crates/browser-wallet && wasm-pack test --headless --chrome
+
+# 3. WASM build of the published SDK with the browser-wallet feature
+cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
+
+# 4. Browser-wallet console WASM build
+cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
+
+# 5. Browser-wallet console host-side tests
+cargo test --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
+
+# 6. Browser-wallet console wasm-bindgen tests
+cd examples/wasm/browser-wallet-console \
+  && wasm-pack build --target web \
+  && wasm-pack test --headless --chrome
+
+# 7. Playwright DOM lane under Chromium and Firefox
+bun install --cwd e2e/browser-wallet --frozen-lockfile
+bun run --cwd e2e/browser-wallet playwright install --with-deps chromium firefox
 bun run --cwd e2e/browser-wallet test
 ```
 

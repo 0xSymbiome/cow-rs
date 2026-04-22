@@ -53,7 +53,7 @@ Use it with:
 | `codeql.yml` | Dedicated semantic security-analysis gate for Rust and GitHub Actions |
 | `cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml` | Repo-local parity fixture and source-lock gate for committed publication evidence |
 | `ci-success` | Aggregate routine CI status for branch protection across the required native validation and publication jobs |
-| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk` returns empty | Blocking stability-invariant gate asserting no shipped leaf crate transitively depends on `alloy-provider` |
+| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk` returns empty | Blocking stability-invariant gate asserting no shipped leaf crate transitively depends on `alloy-provider` |
 
 ## Publication Gates
 
