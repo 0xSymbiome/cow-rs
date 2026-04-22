@@ -42,7 +42,7 @@ Use it with:
 | `cargo fmt --all --check` | Formatting gate for consistent public diffs |
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
 | `cargo deny check bans licenses sources --config .github/config/deny.toml` | Blocking license, source, and duplicate-version policy gate |
-| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate |
+| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0105` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo test --workspace --doc` | Explicit doctest gate for rustdoc examples |
 | `cargo test --all-features --workspace --doc` | All-feature doctest gate for the public docs contract |

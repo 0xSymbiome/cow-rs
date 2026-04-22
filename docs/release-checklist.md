@@ -13,7 +13,7 @@ cargo test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
 typos --config .github/config/typos.toml
 cargo deny check bans licenses sources --config .github/config/deny.toml
-cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097
+cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0105
 cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk
 ```
 

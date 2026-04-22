@@ -1,7 +1,7 @@
 # CID Dependency Audit
 
 Status: Current  
-Last reviewed: 2026-04-20  
+Last reviewed: 2026-04-22  
 Owning surface: `cow-sdk-app-data` CID encoding and published dependency boundary  
 Refresh trigger: Changes to CID dependencies, the supported CID encoding, or the published dependency posture for the app-data stack, or a new `cid` or `core2` release that moves the reviewed warning state  
 Related docs:
@@ -64,26 +64,35 @@ an unreleased override.
 
 ### Advisory Posture
 
-RustSec advisory [`RUSTSEC-2026-0097`](https://rustsec.org/advisories/RUSTSEC-2026-0097)
-reaches this workspace only through the published `cid 0.11.1` to `core2 0.4.0`
-chain documented above. The `cargo audit` gate therefore blocks every other
-unsound and unmaintained advisory while explicitly tolerating this single
-identifier through `--ignore RUSTSEC-2026-0097`. The same identifier is
-recorded in `.github/config/deny.toml` under `[advisories].ignore` with a
+Two RustSec advisories reach this workspace only through the published
+`cid 0.11.1` to `core2 0.4.0` chain documented above:
+
+- [`RUSTSEC-2026-0097`](https://rustsec.org/advisories/RUSTSEC-2026-0097) —
+  the prior reviewed identifier tracking the same transitive path.
+- [`RUSTSEC-2026-0105`](https://rustsec.org/advisories/RUSTSEC-2026-0105) —
+  `core2 0.4.0` is now flagged unmaintained with every published version
+  yanked upstream. The advisory reaches this workspace through exactly
+  the same `cow-sdk-app-data` -> `cid 0.11.1` -> `core2 0.4.0` chain that
+  the prior identifier describes.
+
+The `cargo audit` gate therefore blocks every other unsound and unmaintained
+advisory while explicitly tolerating both identifiers through
+`--ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2026-0105`. Each ignore is
+mirrored in `.github/config/deny.toml` under `[advisories].ignore` with a
 matching expiry comment so the policy lives in one reviewable place instead of
 hiding inside a CI command line.
 
-Revisit trigger for this advisory:
+Revisit trigger for these advisories:
 
-- Drop the ignore the first time a published `cid` release no longer reaches
+- Drop both ignores the first time a published `cid` release no longer reaches
   `core2 0.4.0` through any transitive path, or the first time `core2`
   publishes a maintained successor that unblocks the maintained CID path.
-- Calendar floor: re-review the advisory and the upstream state every 90
+- Calendar floor: re-review the advisories and the upstream state every 90
   days even if no upstream movement has occurred, and update
   `Last reviewed` together with the deny.toml comment.
-- If either trigger fires, refresh this audit, remove the `cargo audit
-  --ignore` flag from `.github/workflows/ci.yml` and
-  `.github/workflows/release-readiness.yml`, and remove the matching entry
+- If either trigger fires, refresh this audit, remove the corresponding
+  `cargo audit --ignore` flags from `.github/workflows/ci.yml` and
+  `.github/workflows/release-readiness.yml`, and remove the matching entries
   from `.github/config/deny.toml`.
 
 ## Evidence
@@ -106,7 +115,11 @@ Validation surface:
 ```text
 cargo tree -p cow-sdk-app-data -d
 cargo tree -i core2 -e normal
-cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097
+cargo audit --deny unsound --deny unmaintained \
+  --ignore RUSTSEC-2026-0097 \
+  --ignore RUSTSEC-2024-0388 \
+  --ignore RUSTSEC-2024-0436 \
+  --ignore RUSTSEC-2026-0105
 cargo test -p cow-sdk-app-data
 cargo clippy -p cow-sdk-app-data --all-targets --all-features -- -D warnings
 ```

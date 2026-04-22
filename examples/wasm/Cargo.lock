@@ -830,6 +830,7 @@ dependencies = [
  "cow-sdk-core",
  "futures-timer",
  "gloo-timers",
+ "http",
  "reqwest",
  "serde",
  "serde_json",

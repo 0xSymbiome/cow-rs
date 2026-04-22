@@ -101,8 +101,13 @@ runs, and provenance-sensitive parity checks are part of the published
 crate-family contract. Review publication-policy changes through the release
 docs rather than as local implementation details. Dependency policy is split
 deliberately: `cargo deny` owns bans, licenses, and source policy, while
-`cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097`
+`cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0105`
 blocks RustSec vulnerabilities plus unsound and unmaintained advisories.
+The ignored advisories cover reviewed upstream postures for which no
+direct upgrade path exists; each entry is tracked in
+`docs/audit/dependency-gate-audit.md` and, where the reachability
+flows through a crate family boundary, in the corresponding crate
+dependency audit.
 Yanked crates remain reviewed warnings only when the latest published upstream
 release still provides no clean replacement, and that state must stay recorded
 in public audit evidence.

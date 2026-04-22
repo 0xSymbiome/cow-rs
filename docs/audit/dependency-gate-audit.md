@@ -1,9 +1,9 @@
 # Dependency Gate Audit
 
 Status: Current  
-Last reviewed: 2026-04-21  
+Last reviewed: 2026-04-22  
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces  
-Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, the current published CID warning status, or the alloy proc-macro advisory posture  
+Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, the current published CID warning status, the transport crate advisory posture, or the alloy proc-macro advisory posture  
 Related docs:
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [CID Dependency Audit](cid-dependency-audit.md)
@@ -36,17 +36,20 @@ architecture reviews.
 
 ### Transport Advisory Remediation
 
-The lockfile carries the published `rustls-webpki` patch release that clears
-the current RustSec findings on the reqwest transport chain used by
-`cow-sdk-orderbook` and `cow-sdk-subgraph`.
+The lockfile carries `rustls-webpki 0.103.13` across the reqwest transport
+chain used by `cow-sdk-orderbook` and `cow-sdk-subgraph`, clearing the
+reachable certificate-revocation-list parsing panic reported under
+`RUSTSEC-2026-0104`. The reqwest pull chain into `rustls-platform-verifier`
+resolves through the advisory-clean line without a workspace override.
 
 ### Published CID Warning Treatment
 
 `cow-sdk-app-data` reaches the refreshed published `multihash` path, but the
 remaining `core2 0.4.0` reachability still comes from the latest published
-`cid 0.11.1` release. The repository therefore keeps that state visible as a
-reviewed warning instead of masking it with an unreleased dependency override
-or a local fork.
+`cid 0.11.1` release. That `core2` release is now additionally flagged
+unmaintained and yanked under `RUSTSEC-2026-0105`. The repository keeps that
+state visible as a reviewed warning instead of masking it with an unreleased
+dependency override or a local fork.
 
 ### Gate Contract
 
@@ -54,7 +57,7 @@ Routine CI and release-readiness apply the same split dependency contract:
 `cargo deny check bans licenses sources --config .github/config/deny.toml` owns
 policy on allowed sources, licenses, and curated duplicate-version tolerances,
 while `cargo audit --deny unsound --deny unmaintained` blocks RustSec
-vulnerabilities plus unsound and unmaintained advisories. Three identifiers
+vulnerabilities plus unsound and unmaintained advisories. Four identifiers
 are currently tolerated with documented revisit triggers:
 
 - `RUSTSEC-2026-0097` — covered by
@@ -63,6 +66,8 @@ are currently tolerated with documented revisit triggers:
   [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
 - `RUSTSEC-2024-0436` — covered by
   [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
+- `RUSTSEC-2026-0105` — covered by
+  [CID Dependency Audit](cid-dependency-audit.md)
 
 Each ignore is mirrored in `.github/config/deny.toml` under
 `[advisories].ignore` and in the `cargo audit --ignore ...` arguments in
@@ -89,7 +94,8 @@ cargo deny check bans licenses sources --config .github/config/deny.toml
 cargo audit --deny unsound --deny unmaintained \
   --ignore RUSTSEC-2026-0097 \
   --ignore RUSTSEC-2024-0388 \
-  --ignore RUSTSEC-2024-0436
+  --ignore RUSTSEC-2024-0436 \
+  --ignore RUSTSEC-2026-0105
 cargo test -p cow-sdk-app-data
 cargo test -p cow-sdk-orderbook
 cargo test -p cow-sdk-subgraph
