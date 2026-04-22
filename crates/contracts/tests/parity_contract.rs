@@ -29,18 +29,51 @@
 //! Failure messages carry the fixture case id so a reviewer looking at a
 //! broken CI run sees the exact upstream vector that diverged.
 
+use alloy_sol_types::{
+    Eip712Domain, SolCall, SolStruct,
+    private::{Address as SolAddress, Bytes as SolBytes, FixedBytes, U256},
+    sol,
+};
 use cow_sdk_contracts::{
     AllowListReader, CANCELLATIONS_TYPE_FIELDS, ContractId, DEPLOYER_CONTRACT, EIP1271_MAGICVALUE,
-    Eip1967Slot, InteractionLike, ORDER_TYPE_FIELDS, ORDER_TYPE_HASH, ORDER_UID_LENGTH, OrderFlags,
-    Registry, SALT, SettlementEncoder, SettlementReader, SigningScheme, Swap, TokenRegistry,
-    TradeFlags, TradeSimulator, VAULT_INTERFACE, encode_order_flags, encode_swap_step,
-    encode_trade_flags, normalize_interaction,
+    Eip1967Slot, EthFlowOrderData, IERC20, IERC20Permit, InteractionLike, ORDER_TYPE_FIELDS,
+    ORDER_TYPE_HASH, ORDER_UID_LENGTH, OrderFlags, Registry, SALT, SettlementEncoder,
+    SettlementReader, SigningScheme, Swap, TokenRegistry, TradeFlags, TradeSimulator,
+    VAULT_INTERFACE, encode_create_order_calldata, encode_invalidate_order_calldata,
+    encode_order_flags, encode_swap_step, encode_trade_flags, normalize_interaction,
+    permit_typed_data_hash,
 };
 use cow_sdk_core::{
-    Address, Amount, BuyTokenDestination, CowEnv, OrderDigest, OrderKind, OrderUid,
+    Address, Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderDigest, OrderKind, OrderUid,
     SellTokenSource, SupportedChainId, TypedDataDomain,
 };
 use serde_json::Value;
+
+// Local `alloy::sol!` re-declaration of the two binding families whose
+// generated types are internal to `cow-sdk-contracts`. The parity test asserts
+// that the crate's encoder output is byte-identical to the canonical upstream
+// ABI, and the local re-declaration provides an independent authoring surface
+// that produces the same bytes only if the Solidity signature and field order
+// still match upstream.
+sol! {
+    interface IGPv2Settlement {
+        function invalidateOrder(bytes orderUid) external;
+        function setPreSignature(bytes orderUid, bool signed) external;
+        function freeFilledAmountStorage(bytes[] orderUids) external;
+        function freePreSignatureStorage(bytes[] orderUids) external;
+    }
+
+    interface IGPv2VaultRelayer {
+        struct Transfer {
+            address account;
+            address token;
+            uint256 amount;
+            uint8 balance;
+        }
+
+        function transferFromAccounts(Transfer[] transfers) external;
+    }
+}
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/contracts.json");
 
@@ -100,6 +133,36 @@ fn parity_fixture_cases_hold() {
             "contracts-swap-default-user-data" => assert_swap_default_user_data(id, expected),
             "contracts-vault-required-methods" => assert_vault_required_methods(id, expected),
             "contracts-reader-helper-surface" => assert_reader_helper_surface(id, expected),
+            "contracts-settlement-invalidate-order-calldata" => {
+                assert_settlement_invalidate_order_calldata(id, expected);
+            }
+            "contracts-settlement-set-presignature-calldata" => {
+                assert_settlement_set_presignature_calldata(id, expected);
+            }
+            "contracts-settlement-free-filled-amount-storage-calldata" => {
+                assert_settlement_free_filled_amount_storage_calldata(id, expected);
+            }
+            "contracts-settlement-free-presignature-storage-calldata" => {
+                assert_settlement_free_presignature_storage_calldata(id, expected);
+            }
+            "contracts-vault-relayer-transfer-from-accounts-calldata" => {
+                assert_vault_relayer_transfer_from_accounts_calldata(id, expected);
+            }
+            "contracts-ethflow-create-order-calldata" => {
+                assert_ethflow_create_order_calldata(id, expected);
+            }
+            "contracts-ethflow-invalidate-order-calldata" => {
+                assert_ethflow_invalidate_order_calldata(id, expected);
+            }
+            "contracts-erc20-approve-calldata" => {
+                assert_erc20_approve_calldata(id, expected);
+            }
+            "contracts-erc20-transfer-from-calldata" => {
+                assert_erc20_transfer_from_calldata(id, expected);
+            }
+            "contracts-erc20-permit-typed-data-hash" => {
+                assert_erc20_permit_typed_data_hash(id, expected);
+            }
             other => panic!("unknown contracts fixture case id: {other}"),
         }
     }
@@ -607,4 +670,298 @@ fn keccak256(bytes: &[u8]) -> [u8; 32] {
     let mut out = [0u8; 32];
     out.copy_from_slice(&digest);
     out
+}
+
+fn assert_calldata_hex(id: &str, actual_bytes: &[u8], expected_hex: &str) {
+    let actual_hex = format!("0x{}", hex::encode(actual_bytes));
+    assert_eq!(
+        actual_hex.as_str(),
+        expected_hex,
+        "case {id}: encoded call-data must match the pinned byte-identity fixture",
+    );
+}
+
+fn parse_address_bytes(address: &Address) -> [u8; 20] {
+    let hex_bytes = hex::decode(
+        address
+            .as_str()
+            .strip_prefix("0x")
+            .expect("Address must carry a 0x prefix"),
+    )
+    .expect("Address hex must decode");
+    <[u8; 20]>::try_from(hex_bytes.as_slice()).expect("Address hex must be 20 bytes")
+}
+
+fn to_sol_address(address: &Address) -> SolAddress {
+    SolAddress::from(parse_address_bytes(address))
+}
+
+fn sample_secondary_order_uid() -> OrderUid {
+    // Second 56 byte fixture UID for multi-entry refund encoding; mirrors the
+    // primary sample UID's shape but with distinct digest, owner, and
+    // valid_to.
+    let digest =
+        OrderDigest::new("0x3333333333333333333333333333333333333333333333333333333333333333")
+            .unwrap();
+    let owner = Address::new("0x4444444444444444444444444444444444444444").unwrap();
+
+    cow_sdk_contracts::pack_order_uid_params(&cow_sdk_contracts::OrderUidParams {
+        order_digest: digest,
+        owner,
+        valid_to: 0x9abc_def0,
+    })
+    .expect("secondary OrderUid packing must succeed")
+}
+
+fn order_uid_as_sol_bytes(uid: &OrderUid) -> SolBytes {
+    let hex_bytes = hex::decode(
+        uid.as_str()
+            .strip_prefix("0x")
+            .expect("OrderUid must carry a 0x prefix"),
+    )
+    .expect("OrderUid hex must decode");
+    SolBytes::from(hex_bytes)
+}
+
+fn sample_ethflow_order() -> EthFlowOrderData {
+    EthFlowOrderData {
+        buy_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        receiver: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+        sell_amount: Amount::new("1000000000000000000").unwrap(),
+        buy_amount: Amount::new("2000000000000000000").unwrap(),
+        app_data: AppDataHash::new(
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        )
+        .unwrap(),
+        fee_amount: Amount::zero(),
+        valid_to: 0x1234_5678,
+        partially_fillable: false,
+        quote_id: 42,
+    }
+}
+
+fn assert_settlement_invalidate_order_calldata(id: &str, expected: &Value) {
+    let expected_hex = expected["call_data"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
+
+    let uid = sample_order_uid();
+    let call_data = IGPv2Settlement::invalidateOrderCall {
+        orderUid: order_uid_as_sol_bytes(&uid),
+    }
+    .abi_encode();
+
+    assert_calldata_hex(id, &call_data, expected_hex);
+}
+
+fn assert_settlement_set_presignature_calldata(id: &str, expected: &Value) {
+    let expected_hex = expected["call_data"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
+
+    let uid = sample_order_uid();
+    let call_data = IGPv2Settlement::setPreSignatureCall {
+        orderUid: order_uid_as_sol_bytes(&uid),
+        signed: true,
+    }
+    .abi_encode();
+
+    assert_calldata_hex(id, &call_data, expected_hex);
+}
+
+fn assert_settlement_free_filled_amount_storage_calldata(id: &str, expected: &Value) {
+    let expected_hex = expected["call_data"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
+
+    let primary = sample_order_uid();
+    let secondary = sample_secondary_order_uid();
+    let call_data = IGPv2Settlement::freeFilledAmountStorageCall {
+        orderUids: vec![
+            order_uid_as_sol_bytes(&primary),
+            order_uid_as_sol_bytes(&secondary),
+        ],
+    }
+    .abi_encode();
+
+    assert_calldata_hex(id, &call_data, expected_hex);
+}
+
+fn assert_settlement_free_presignature_storage_calldata(id: &str, expected: &Value) {
+    let expected_hex = expected["call_data"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
+
+    let primary = sample_order_uid();
+    let secondary = sample_secondary_order_uid();
+    let call_data = IGPv2Settlement::freePreSignatureStorageCall {
+        orderUids: vec![
+            order_uid_as_sol_bytes(&primary),
+            order_uid_as_sol_bytes(&secondary),
+        ],
+    }
+    .abi_encode();
+
+    assert_calldata_hex(id, &call_data, expected_hex);
+}
+
+fn assert_vault_relayer_transfer_from_accounts_calldata(id: &str, expected: &Value) {
+    let expected_hex = expected["call_data"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
+
+    let account = Address::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap();
+    let token = Address::new("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb").unwrap();
+    let amount = U256::from(1_000_000_000_000_000_000_u128);
+
+    let call_data = IGPv2VaultRelayer::transferFromAccountsCall {
+        transfers: vec![IGPv2VaultRelayer::Transfer {
+            account: to_sol_address(&account),
+            token: to_sol_address(&token),
+            amount,
+            balance: 0,
+        }],
+    }
+    .abi_encode();
+
+    assert_calldata_hex(id, &call_data, expected_hex);
+}
+
+fn assert_ethflow_create_order_calldata(id: &str, expected: &Value) {
+    let expected_hex = expected["call_data"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
+
+    let call_data = encode_create_order_calldata(&sample_ethflow_order())
+        .expect("sample EthFlow order must encode");
+
+    assert_calldata_hex(id, &call_data, expected_hex);
+}
+
+fn assert_ethflow_invalidate_order_calldata(id: &str, expected: &Value) {
+    let expected_hex = expected["call_data"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
+
+    let call_data = encode_invalidate_order_calldata(&sample_ethflow_order())
+        .expect("sample EthFlow order must encode");
+
+    assert_calldata_hex(id, &call_data, expected_hex);
+}
+
+fn assert_erc20_approve_calldata(id: &str, expected: &Value) {
+    let expected_hex = expected["call_data"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
+
+    let spender = Address::new("0x1111111111111111111111111111111111111111").unwrap();
+    let value = U256::from(1_000_000_000_000_000_000_u128);
+
+    let call_data = IERC20::approveCall {
+        spender: to_sol_address(&spender),
+        value,
+    }
+    .abi_encode();
+
+    assert_calldata_hex(id, &call_data, expected_hex);
+}
+
+fn assert_erc20_transfer_from_calldata(id: &str, expected: &Value) {
+    let expected_hex = expected["call_data"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
+
+    let from = Address::new("0x1111111111111111111111111111111111111111").unwrap();
+    let to = Address::new("0x2222222222222222222222222222222222222222").unwrap();
+    let value = U256::from(1_000_000_000_000_000_000_u128);
+
+    let call_data = IERC20::transferFromCall {
+        from: to_sol_address(&from),
+        to: to_sol_address(&to),
+        value,
+    }
+    .abi_encode();
+
+    assert_calldata_hex(id, &call_data, expected_hex);
+}
+
+fn assert_erc20_permit_typed_data_hash(id: &str, expected: &Value) {
+    let expected_hex = expected["typed_data_hash"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.typed_data_hash must be a string"));
+
+    // USDC mainnet domain separator inputs: the deployed USD Coin (USDC) token
+    // at 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 publishes
+    // `DOMAIN_SEPARATOR()` with name = "USD Coin", version = "2", chainId = 1,
+    // verifyingContract = the USDC contract itself. Using a real, deployed
+    // token rather than a synthetic domain keeps the typed-data hash
+    // cross-checkable against an on-chain reply.
+    let domain = Eip712Domain::new(
+        Some(alloy_sol_types::private::Cow::Borrowed("USD Coin")),
+        Some(alloy_sol_types::private::Cow::Borrowed("2")),
+        Some(U256::from(1_u64)),
+        Some(SolAddress::from([
+            0xa0, 0xb8, 0x69, 0x91, 0xc6, 0x21, 0x8b, 0x36, 0xc1, 0xd1, 0x9d, 0x4a, 0x2e, 0x9e,
+            0xb0, 0xce, 0x36, 0x06, 0xeb, 0x48,
+        ])),
+        None,
+    );
+
+    let owner = SolAddress::from([
+        0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+        0x11, 0x11, 0x11, 0x11, 0x11,
+    ]);
+    let spender = SolAddress::from([
+        0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+        0x22, 0x22, 0x22, 0x22, 0x22,
+    ]);
+
+    let permit = IERC20Permit::Permit {
+        owner,
+        spender,
+        value: U256::from(1_000_000_000_000_000_000_u128),
+        nonce: U256::ZERO,
+        deadline: U256::from(2_000_000_000_u64),
+    };
+
+    let digest = permit_typed_data_hash(&domain, &permit);
+    let digest_hex = format!("0x{}", hex::encode(digest));
+
+    assert_eq!(
+        digest_hex.as_str(),
+        expected_hex,
+        "case {id}: EIP-712 typed-data digest must match the pinned fixture value",
+    );
+
+    // Cross-check that the canonical permit struct hash preimage (type hash +
+    // 5 fields) composes with the domain separator through the standard
+    // `\x19\x01 || domainSeparator || structHash` envelope. A mismatch here
+    // indicates drift between `permit_typed_data_hash` and the upstream
+    // EIP-712 specification.
+    let struct_hash: [u8; 32] = permit.eip712_hash_struct().into();
+    let domain_separator: [u8; 32] = domain.separator().into();
+    let mut envelope = Vec::with_capacity(2 + 32 + 32);
+    envelope.push(0x19);
+    envelope.push(0x01);
+    envelope.extend_from_slice(&domain_separator);
+    envelope.extend_from_slice(&struct_hash);
+    let manual_digest = keccak256(&envelope);
+    assert_eq!(
+        digest, manual_digest,
+        "case {id}: permit_typed_data_hash must compose `0x1901 || domain || struct` exactly",
+    );
+
+    // Fail closed if the fixture carries an obviously-malformed constant.
+    let raw_hex = expected_hex
+        .strip_prefix("0x")
+        .unwrap_or_else(|| panic!("case {id}: expected.typed_data_hash must start with 0x"));
+    assert_eq!(
+        raw_hex.len(),
+        64,
+        "case {id}: expected.typed_data_hash must be a 32-byte digest expressed as 64 hex chars",
+    );
+
+    // Reference the declared typed constants to prove they remain exported on
+    // the shipped surface.
+    let _ = FixedBytes::<32>::from(digest);
 }

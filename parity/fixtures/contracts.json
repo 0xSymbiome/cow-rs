@@ -388,6 +388,171 @@
           "TradeSimulator"
         ]
       }
+    },
+    {
+      "id": "contracts-settlement-invalidate-order-calldata",
+      "kind": "positive",
+      "description": "GPv2Settlement.invalidateOrder(bytes) call-data matches the canonical ABI encoding for a packed 56-byte OrderUid.",
+      "inputs": {
+        "order_uid": "0x1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222212345678"
+      },
+      "@source_ref": "contracts:c94c595a:src/ts/settlement.ts#SettlementEncoder",
+      "expected": {
+        "call_data": "0x15337bc00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003811111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222123456780000000000000000"
+      }
+    },
+    {
+      "id": "contracts-settlement-set-presignature-calldata",
+      "kind": "positive",
+      "description": "GPv2Settlement.setPreSignature(bytes,bool) call-data for a packed 56-byte OrderUid marked as signed.",
+      "inputs": {
+        "order_uid": "0x1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222212345678",
+        "signed": true
+      },
+      "@source_ref": "contracts:c94c595a:src/ts/settlement.ts#SettlementEncoder",
+      "expected": {
+        "call_data": "0xec6cb13f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000003811111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222123456780000000000000000"
+      }
+    },
+    {
+      "id": "contracts-settlement-free-filled-amount-storage-calldata",
+      "kind": "positive",
+      "description": "GPv2Settlement.freeFilledAmountStorage(bytes[]) call-data for two distinct packed OrderUid entries, including the dynamic-array offset and length prefix.",
+      "inputs": {
+        "order_uids": [
+          "0x1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222212345678",
+          "0x3333333333333333333333333333333333333333333333333333333333333333444444444444444444444444444444444444444444449abcdef0"
+        ]
+      },
+      "@source_ref": "contracts:c94c595a:test/GPv2Settlement/OrderRefunds.t.sol#freeFilledAmountStorage",
+      "expected": {
+        "call_data": "0xed9f35ce00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000038111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222221234567800000000000000000000000000000000000000000000000000000000000000000000000000000038333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444449abcdef00000000000000000"
+      }
+    },
+    {
+      "id": "contracts-settlement-free-presignature-storage-calldata",
+      "kind": "positive",
+      "description": "GPv2Settlement.freePreSignatureStorage(bytes[]) call-data for two distinct packed OrderUid entries.",
+      "inputs": {
+        "order_uids": [
+          "0x1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222212345678",
+          "0x3333333333333333333333333333333333333333333333333333333333333333444444444444444444444444444444444444444444449abcdef0"
+        ]
+      },
+      "@source_ref": "contracts:c94c595a:test/GPv2Settlement/OrderRefunds.t.sol#freePreSignatureStorage",
+      "expected": {
+        "call_data": "0xa2a7d51b00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000038111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222221234567800000000000000000000000000000000000000000000000000000000000000000000000000000038333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444449abcdef00000000000000000"
+      }
+    },
+    {
+      "id": "contracts-vault-relayer-transfer-from-accounts-calldata",
+      "kind": "positive",
+      "description": "GPv2VaultRelayer.transferFromAccounts(Transfer[]) call-data for a single Transfer entry using Balancer V2 Vault conventions (balance = 0 marks the erc20 kind).",
+      "inputs": {
+        "transfers": [
+          {
+            "account": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "token": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "amount": "1000000000000000000",
+            "balance": 0
+          }
+        ]
+      },
+      "@source_ref": "cow-sdk:17fcfc59:packages/contracts-ts/tests/vault.test.ts#grantRequiredRoles",
+      "expected": {
+        "call_data": "0x3bfc497c00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "id": "contracts-ethflow-create-order-calldata",
+      "kind": "positive",
+      "description": "CoWSwapEthFlow.createOrder(EthFlowOrderData) call-data for a canonical EthFlow order whose static-tuple encoding takes nine 32-byte head words after the 4-byte selector.",
+      "inputs": {
+        "buy_token": "0x1111111111111111111111111111111111111111",
+        "receiver": "0x2222222222222222222222222222222222222222",
+        "sell_amount": "1000000000000000000",
+        "buy_amount": "2000000000000000000",
+        "app_data": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "fee_amount": "0",
+        "valid_to": 305419896,
+        "partially_fillable": false,
+        "quote_id": 42
+      },
+      "@source_ref": "cow-sdk:17fcfc59:packages/trading/src/getEthFlowTransaction.test.ts#getEthFlowTransaction",
+      "expected": {
+        "call_data": "0x322bba21000000000000000000000000111111111111111111111111111111111111111100000000000000000000000022222222222222222222222222222222222222220000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000001bc16d674ec80000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123456780000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a"
+      }
+    },
+    {
+      "id": "contracts-ethflow-invalidate-order-calldata",
+      "kind": "positive",
+      "description": "CoWSwapEthFlow.invalidateOrder(EthFlowOrderData) call-data for the same canonical EthFlow payload; distinct from GPv2Settlement.invalidateOrder(bytes) which takes a packed UID.",
+      "inputs": {
+        "buy_token": "0x1111111111111111111111111111111111111111",
+        "receiver": "0x2222222222222222222222222222222222222222",
+        "sell_amount": "1000000000000000000",
+        "buy_amount": "2000000000000000000",
+        "app_data": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "fee_amount": "0",
+        "valid_to": 305419896,
+        "partially_fillable": false,
+        "quote_id": 42
+      },
+      "@source_ref": "cow-sdk:17fcfc59:packages/trading/src/onChainCancellation.test.ts#cancelOrderOnChain",
+      "expected": {
+        "call_data": "0x7bc41b96000000000000000000000000111111111111111111111111111111111111111100000000000000000000000022222222222222222222222222222222222222220000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000001bc16d674ec80000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123456780000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a"
+      }
+    },
+    {
+      "id": "contracts-erc20-approve-calldata",
+      "kind": "positive",
+      "description": "ERC-20 approve(address,uint256) call-data: 4-byte selector 0x095ea7b3 plus 32-byte padded spender plus 32-byte padded value.",
+      "inputs": {
+        "spender": "0x1111111111111111111111111111111111111111",
+        "value": "1000000000000000000"
+      },
+      "@source_ref": "eip:eip-20#approve",
+      "expected": {
+        "call_data": "0x095ea7b300000000000000000000000011111111111111111111111111111111111111110000000000000000000000000000000000000000000000000de0b6b3a7640000"
+      }
+    },
+    {
+      "id": "contracts-erc20-transfer-from-calldata",
+      "kind": "positive",
+      "description": "ERC-20 transferFrom(address,address,uint256) call-data: 4-byte selector 0x23b872dd plus three 32-byte padded fields.",
+      "inputs": {
+        "from": "0x1111111111111111111111111111111111111111",
+        "to": "0x2222222222222222222222222222222222222222",
+        "value": "1000000000000000000"
+      },
+      "@source_ref": "eip:eip-20#transferFrom",
+      "expected": {
+        "call_data": "0x23b872dd000000000000000000000000111111111111111111111111111111111111111100000000000000000000000022222222222222222222222222222222222222220000000000000000000000000000000000000000000000000de0b6b3a7640000"
+      }
+    },
+    {
+      "id": "contracts-erc20-permit-typed-data-hash",
+      "kind": "positive",
+      "description": "EIP-712 typed-data digest for an EIP-2612 Permit bound to the deployed USD Coin domain separator (name=\"USD Coin\", version=\"2\", chainId=1, verifyingContract=USDC mainnet address).",
+      "inputs": {
+        "domain": {
+          "name": "USD Coin",
+          "version": "2",
+          "chain_id": 1,
+          "verifying_contract": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+        },
+        "permit": {
+          "owner": "0x1111111111111111111111111111111111111111",
+          "spender": "0x2222222222222222222222222222222222222222",
+          "value": "1000000000000000000",
+          "nonce": "0",
+          "deadline": "2000000000"
+        }
+      },
+      "@source_ref": "eip:eip-2612#Permit",
+      "expected": {
+        "typed_data_hash": "0x127a8458d8805ac3516391bcf4b0a7aafc845c82dff3d7edee1851fcdd79b93e"
+      }
     }
   ]
 }

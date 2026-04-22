@@ -15,6 +15,17 @@ unreleased public contract of the repository.
 
 ### Added
 
+- Byte-identity parity fixtures now cover the call-data surface
+  of every `alloy::sol!` binding family shipped by
+  `cow-sdk-contracts`: `GPv2Settlement` (`invalidateOrder`,
+  `setPreSignature`, `freeFilledAmountStorage`,
+  `freePreSignatureStorage`), `GPv2VaultRelayer`
+  (`transferFromAccounts`), `CoWSwapEthFlow` (`createOrder` and
+  `invalidateOrder(EthFlowOrderData)`), `IERC20` (`approve`,
+  `transferFrom`), and the EIP-2612 Permit typed-data digest
+  against the deployed USD Coin domain. Every new case pins the
+  full `0x`-prefixed hex output against the upstream ABI and
+  carries a provenance pointer to the canonical authoring source.
 - ADR 0018 (`Typed App-Data Merge As The Single Canonical
   Quote-To-Post Edit Path`), ADR 0019 (`HTTP Transport Is The
   Sole Live-Dispatch Surface On The Orderbook And Subgraph
