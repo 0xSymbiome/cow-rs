@@ -553,3 +553,151 @@ async fn order_level_eip1271_verification_surfaces_contract_failures_explicitly(
         )
     ));
 }
+
+// The three tests below pin the eth-flow submission seam's owner-vs-receiver
+// threading: the client-side validator reads `OrderCreation.from` from the
+// signer-derived owner carried on `EthFlowTransaction.from`, not from the
+// payout `receiver`. Owners and receivers may legitimately differ when a
+// caller asks the native-currency payout to land at a separate address; the
+// validator must fire on the owner identity so the `AppdataFromMismatch`
+// check stays bound to the signing authority.
+
+fn ethflow_additional_params(
+    quote: &cow_sdk_orderbook::OrderQuoteResponse,
+) -> PostTradeAdditionalParams {
+    PostTradeAdditionalParams::new()
+        .with_check_eth_flow_order_exists(Arc::new(MockEthFlowChecker {
+            results: Arc::new(Mutex::new(Vec::new())),
+        }))
+        .with_network_costs_amount(
+            Amount::new(quote.quote.network_cost_amount().to_owned())
+                .expect("quote fee amount must be valid"),
+        )
+        .with_custom_eip1271_signature(Arc::new(MockEip1271Provider))
+}
+
+fn ethflow_params_with_receiver(receiver: Option<cow_sdk_core::Address>) -> LimitTradeParameters {
+    let mut params: LimitTradeParameters = sample_limit_parameters(OrderKind::Sell);
+    params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+    params.quote_id = Some(3);
+    params.slippage_bps = Some(50);
+    params.receiver = receiver;
+    params
+}
+
+#[tokio::test]
+async fn ethflow_validation_uses_signer_owner_not_receiver() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    // Signer owner is `OWNER`; caller asks payout to land at `ALT_RECEIVER`,
+    // which differs from the owner. The typed app-data signer matches the
+    // owner, so validation must accept this legitimate receiver override.
+    let signer = MockSigner::default();
+    let app_data = build_app_data("0x007", 50, "market", None, None)
+        .await
+        .expect("app data should build");
+    let params = ethflow_params_with_receiver(Some(address(ALT_RECEIVER)));
+    let additional = ethflow_additional_params(&sell_quote_response());
+
+    let result = post_sell_native_currency_order(
+        &orderbook,
+        &app_data,
+        &params,
+        &additional,
+        &trader,
+        &signer,
+        cow_sdk_trading::OrderValidityBounds::SERVICES_DEFAULT,
+        Some(address(OWNER)),
+    )
+    .await
+    .expect("receiver override with matching owner and app-data signer must pass validation");
+
+    assert!(result.tx_hash.is_some());
+    assert_eq!(orderbook.state().uploads.len(), 1);
+    assert_eq!(signer.state().sent_transactions.len(), 1);
+}
+
+#[tokio::test]
+async fn ethflow_validation_rejects_mismatched_signer() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    // Signer owner is `OWNER`; receiver is a distinct payout address; the
+    // declared app-data signer is a third address that disagrees with the
+    // owner. Validation must reject and the surfaced typed rejection must
+    // carry the owner as `from`, not the receiver.
+    let signer = MockSigner::default();
+    let mismatched_signer =
+        cow_sdk_core::Address::new("0xcccccccccccccccccccccccccccccccccccccccc")
+            .expect("mismatched signer literal must be valid");
+    let app_data = build_app_data("0x007", 50, "market", None, None)
+        .await
+        .expect("app data should build");
+    let params = ethflow_params_with_receiver(Some(address(ALT_RECEIVER)));
+    let additional = ethflow_additional_params(&sell_quote_response());
+
+    let error = post_sell_native_currency_order(
+        &orderbook,
+        &app_data,
+        &params,
+        &additional,
+        &trader,
+        &signer,
+        cow_sdk_trading::OrderValidityBounds::SERVICES_DEFAULT,
+        Some(mismatched_signer.clone()),
+    )
+    .await
+    .expect_err("mismatched app-data signer must trigger a typed rejection");
+
+    match error {
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::AppdataFromMismatch {
+                appdata_signer,
+                from,
+            },
+        ) => {
+            assert_eq!(
+                appdata_signer, mismatched_signer,
+                "rejection must surface the declared app-data signer verbatim"
+            );
+            assert_eq!(
+                from,
+                address(OWNER),
+                "rejection's from must be the signer-derived owner, not the payout receiver"
+            );
+        }
+        other => panic!("expected AppdataFromMismatch, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn ethflow_validation_accepts_matched_signer_with_default_receiver() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    // No explicit receiver: `get_order_to_sign` defaults it to the signer
+    // owner so owner and receiver converge. A matching app-data signer must
+    // pass validation through the same code path the custom-receiver test
+    // exercises.
+    let signer = MockSigner::default();
+    let app_data = build_app_data("0x007", 50, "market", None, None)
+        .await
+        .expect("app data should build");
+    let params = ethflow_params_with_receiver(None);
+    let additional = ethflow_additional_params(&sell_quote_response());
+
+    let result = post_sell_native_currency_order(
+        &orderbook,
+        &app_data,
+        &params,
+        &additional,
+        &trader,
+        &signer,
+        cow_sdk_trading::OrderValidityBounds::SERVICES_DEFAULT,
+        Some(address(OWNER)),
+    )
+    .await
+    .expect("default-receiver eth-flow post with matching signer must succeed");
+
+    assert!(result.tx_hash.is_some());
+    assert_eq!(orderbook.state().uploads.len(), 1);
+    assert_eq!(signer.state().sent_transactions.len(), 1);
+}

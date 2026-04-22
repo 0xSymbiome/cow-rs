@@ -24,20 +24,34 @@ pub struct EthFlowTransaction {
     pub transaction: TransactionRequest,
     /// Unsigned order payload used to derive `order_id` and the transaction body.
     pub order_to_sign: cow_sdk_core::UnsignedOrder,
+    /// Signer-derived owner resolved at transaction construction via
+    /// [`AsyncSigner::get_address`].
+    ///
+    /// Downstream submission uses this value as `OrderCreation.from` for
+    /// pre-HTTP validation — not `order_to_sign.receiver`, which is the
+    /// payout recipient and may legitimately differ from the owner when the
+    /// caller asks the proceeds to land at a separate address.
+    pub from: cow_sdk_core::Address,
 }
 
 impl EthFlowTransaction {
     /// Creates an `EthFlow` transaction bundle from its component pieces.
+    ///
+    /// `from` is the signer-derived owner and is the identity downstream
+    /// submission validates against. `order_to_sign.receiver` remains the
+    /// payout recipient and is preserved unchanged.
     #[must_use]
     pub const fn new(
         order_id: cow_sdk_core::OrderUid,
         transaction: TransactionRequest,
         order_to_sign: cow_sdk_core::UnsignedOrder,
+        from: cow_sdk_core::Address,
     ) -> Self {
         Self {
             order_id,
             transaction,
             order_to_sign,
+            from,
         }
     }
 }
@@ -184,6 +198,7 @@ where
             operation: "get_address",
             message: error.to_string(),
         })?;
+    let owner = from.clone();
     let mut adjusted = crate::adjust_ethflow_limit_parameters(chain_id, params);
     if adjusted.slippage_bps.is_none() {
         adjusted.slippage_bps = Some(crate::default_slippage_bps(chain_id, true));
@@ -258,6 +273,7 @@ where
             gas_limit: Some(gas_limit),
             ..tx
         },
+        from: owner,
     })
 }
 

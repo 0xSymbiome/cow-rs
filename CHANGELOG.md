@@ -353,6 +353,19 @@ unreleased public contract of the repository.
 
 ### Fixed
 
+- Eth-flow submission validation now reads the client-side `from`
+  identity from the signer-derived owner carried on
+  `cow_sdk_trading::EthFlowTransaction`, not from
+  `order_to_sign.receiver`. The typed bundle gains a
+  `from: cow_sdk_core::Address` field populated at transaction
+  construction from the existing signer address resolution, and
+  `post_sell_native_currency_order_async` feeds that owner into the
+  client-side `OrderBoundsValidator` before any transport. Payout
+  receivers that legitimately differ from the owner no longer trip a
+  false `ClientRejection::AppdataFromMismatch`, and the mismatched
+  app-data signer case now reports the owner as the typed rejection's
+  `from` field so downstream diagnostics and pattern-matching stay
+  aligned with the signing authority rather than the payout recipient.
 - Example crates now construct every `#[non_exhaustive]` public DTO
   through the published ergonomic constructors (`::new(required_args)`
   plus chained `with_*` setters) rather than struct-literal syntax, so
