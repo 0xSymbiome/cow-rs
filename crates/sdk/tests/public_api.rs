@@ -26,23 +26,21 @@ fn public_api_reexports_cover_primary_root_surface() {
     assert_eq!(ORDER_PRIMARY_TYPE, "Order");
 
     let owner = Address::new("0x4444444444444444444444444444444444444444").unwrap();
-    let order = UnsignedOrder {
-        sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-        receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        sell_amount: Amount::new("100000000000000000").unwrap(),
-        buy_amount: Amount::new("250000000000000000").unwrap(),
-        valid_to: 1_700_000_000,
-        app_data: AppDataHex::new(
-            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        )
-        .unwrap(),
-        fee_amount: Amount::zero(),
-        kind: OrderKind::Sell,
-        partially_fillable: false,
-        sell_token_balance: SellTokenSource::Erc20,
-        buy_token_balance: BuyTokenDestination::Erc20,
-    };
+    let order = UnsignedOrder::new(
+        Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+        Amount::new("100000000000000000").unwrap(),
+        Amount::new("250000000000000000").unwrap(),
+        1_700_000_000,
+        AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            .unwrap(),
+        Amount::zero(),
+        OrderKind::Sell,
+        false,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
+    );
     let typed = order_typed_data(SupportedChainId::Sepolia, &order, None).unwrap();
     let generated = generate_order_id(SupportedChainId::Sepolia, &order, &owner, None).unwrap();
     let partner_fee = PartnerFee::from(

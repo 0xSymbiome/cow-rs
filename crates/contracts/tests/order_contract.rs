@@ -154,23 +154,21 @@ fn order_hash_and_uid_helpers_are_consistent() {
 
 #[test]
 fn unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit() {
-    let unsigned = UnsignedOrder {
-        sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-        receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        sell_amount: Amount::new("1000").unwrap(),
-        buy_amount: Amount::new("900").unwrap(),
-        valid_to: 1_700_000_000,
-        app_data: AppDataHex::new(
-            "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        )
-        .unwrap(),
-        fee_amount: Amount::new("10").unwrap(),
-        kind: OrderKind::Sell,
-        partially_fillable: true,
-        sell_token_balance: SellTokenSource::External,
-        buy_token_balance: BuyTokenDestination::Internal,
-    };
+    let unsigned = UnsignedOrder::new(
+        Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+        Amount::new("1000").unwrap(),
+        Amount::new("900").unwrap(),
+        1_700_000_000,
+        AppDataHex::new("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+            .unwrap(),
+        Amount::new("10").unwrap(),
+        OrderKind::Sell,
+        true,
+        SellTokenSource::External,
+        BuyTokenDestination::Internal,
+    );
 
     let contract = Order::from(&unsigned);
 

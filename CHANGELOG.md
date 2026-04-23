@@ -1169,6 +1169,16 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- `cow_sdk_core::SupportedChainId`, `cow_sdk_core::CowEnv`, and
+  `cow_sdk_core::UnsignedOrder` are now `#[non_exhaustive]` public
+  surfaces so additive chain, environment, and order-shape evolution
+  remains semver-compatible ahead of `0.1.0`. Downstream crates now
+  construct unsigned orders through `UnsignedOrder::new(...)` and its
+  chainable `with_receiver`, `with_app_data`, `with_fee_amount`,
+  `with_partially_fillable`, `with_sell_token_balance`, and
+  `with_buy_token_balance` setters, while downstream `match` expressions
+  over `SupportedChainId` and `CowEnv` must include wildcard fallback
+  arms.
 - `TradingSdkBuilder::build_ready()` on `wasm32` targets now fails fast with a typed error when no orderbook client has been injected, instead of deferring the failure to the first quote or post call.
 - The release-gate docs-agreement check now guards the `cargo tree` and `cargo audit` invariants across every source-of-truth document and ships with a self-test harness that catches extraction drift in the check itself.
 - Shipped WASM consoles now carry a clear acknowledgement of their current dual-authority posture - the publication authority named in the workspace crate metadata and the hosted-build authority named in the footer links - so reviewers can read the two surfaces consistently until the hosted-build rotation completes.

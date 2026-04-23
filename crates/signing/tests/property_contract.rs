@@ -182,7 +182,7 @@ fn unsigned_order_strategy() -> impl Strategy<Value = UnsignedOrder> {
                     _ => BuyTokenDestination::Internal,
                 };
 
-                UnsignedOrder {
+                UnsignedOrder::new(
                     sell_token,
                     buy_token,
                     receiver,
@@ -191,7 +191,7 @@ fn unsigned_order_strategy() -> impl Strategy<Value = UnsignedOrder> {
                     valid_to,
                     app_data,
                     fee_amount,
-                    kind: if kind_sell {
+                    if kind_sell {
                         OrderKind::Sell
                     } else {
                         OrderKind::Buy
@@ -199,7 +199,7 @@ fn unsigned_order_strategy() -> impl Strategy<Value = UnsignedOrder> {
                     partially_fillable,
                     sell_token_balance,
                     buy_token_balance,
-                }
+                )
             },
         )
 }

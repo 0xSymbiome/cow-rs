@@ -968,6 +968,14 @@ fn known_chain_metadata(chain_id: SupportedChainId) -> (&'static str, WalletNati
                 decimals: 18,
             },
         ),
+        _ => (
+            "Supported CoW Chain",
+            WalletNativeCurrency {
+                name: "Native Currency".to_owned(),
+                symbol: "NATIVE".to_owned(),
+                decimals: 18,
+            },
+        ),
     }
 }
 

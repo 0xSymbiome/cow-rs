@@ -90,23 +90,21 @@ fn canonical_order_and_quote_shapes_are_pinned() {
     assert_eq!(ORDER_TYPE_FIELD_NAMES.to_vec(), expected_fields);
     assert_eq!(QUOTE_AMOUNT_STAGE_NAMES.to_vec(), expected_stages);
 
-    let order = UnsignedOrder {
-        sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-        receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        sell_amount: Amount::new("100").unwrap(),
-        buy_amount: Amount::new("200").unwrap(),
-        valid_to: 1_700_000_000,
-        app_data: AppDataHex::new(
-            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        )
-        .unwrap(),
-        fee_amount: Amount::new("5").unwrap(),
-        kind: OrderKind::Sell,
-        partially_fillable: true,
-        sell_token_balance: SellTokenSource::External,
-        buy_token_balance: BuyTokenDestination::Internal,
-    };
+    let order = UnsignedOrder::new(
+        Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+        Amount::new("100").unwrap(),
+        Amount::new("200").unwrap(),
+        1_700_000_000,
+        AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            .unwrap(),
+        Amount::new("5").unwrap(),
+        OrderKind::Sell,
+        true,
+        SellTokenSource::External,
+        BuyTokenDestination::Internal,
+    );
 
     assert_eq!(order.sell_token_balance, SellTokenSource::External);
     assert_eq!(order.buy_token_balance, BuyTokenDestination::Internal);

@@ -692,6 +692,7 @@ fn chain_label(chain_id: SupportedChainId) -> &'static str {
         SupportedChainId::Ink => "Ink",
         SupportedChainId::Linea => "Linea",
         SupportedChainId::Sepolia => "Sepolia",
+        _ => "Supported CoW Chain",
     }
 }
 
@@ -701,25 +702,22 @@ fn sample_owner() -> Address {
 }
 
 fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
-    cow_sdk::UnsignedOrder {
-        sell_token: wrapped_native_token(chain_id).address,
-        buy_token: Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
+    cow_sdk::UnsignedOrder::new(
+        wrapped_native_token(chain_id).address,
+        Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
             .expect("static example address must remain valid"),
-        receiver: sample_owner(),
-        sell_amount: Amount::new("100000000000000000")
-            .expect("static example sell amount must remain valid"),
-        buy_amount: Amount::new("250000000").expect("static example buy amount must remain valid"),
-        valid_to: 1_900_000_000,
-        app_data: cow_sdk::AppDataHex::new(
-            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        )
-        .expect("static example app-data hex must remain valid"),
-        fee_amount: Amount::zero(),
-        kind: cow_sdk::OrderKind::Sell,
-        partially_fillable: false,
-        sell_token_balance: cow_sdk::SellTokenSource::Erc20,
-        buy_token_balance: cow_sdk::BuyTokenDestination::Erc20,
-    }
+        sample_owner(),
+        Amount::new("100000000000000000").expect("static example sell amount must remain valid"),
+        Amount::new("250000000").expect("static example buy amount must remain valid"),
+        1_900_000_000,
+        cow_sdk::AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            .expect("static example app-data hex must remain valid"),
+        Amount::zero(),
+        cow_sdk::OrderKind::Sell,
+        false,
+        cow_sdk::SellTokenSource::Erc20,
+        cow_sdk::BuyTokenDestination::Erc20,
+    )
 }
 
 fn orderbook_js_error(error: OrderbookError) -> JsValue {

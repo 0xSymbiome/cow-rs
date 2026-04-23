@@ -17,21 +17,20 @@ use tokio::time::timeout;
 use crate::common::{MockEthFlowChecker, OWNER, address, app_data_hash, sample_limit_parameters};
 
 fn sample_ethflow_order(buy_amount: &str) -> UnsignedOrder {
-    UnsignedOrder {
-        sell_token: address("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"),
-        buy_token: address("0x0625aFB445C3B6B7B929342a04A22599fd5dBB59"),
-        receiver: address("0xc8c753Ee51E8Fc80e199AB297fB575634a1aC1d3"),
-        sell_amount: Amount::new("1000000000000000000")
-            .expect("test sell amount literal must be valid"),
-        buy_amount: Amount::new(buy_amount).expect("test buy amount literal must be valid"),
-        valid_to: 1_700_000_000,
-        app_data: app_data_hash(),
-        fee_amount: Amount::zero(),
-        kind: cow_sdk_core::OrderKind::Sell,
-        partially_fillable: false,
-        sell_token_balance: SellTokenSource::Erc20,
-        buy_token_balance: BuyTokenDestination::Erc20,
-    }
+    UnsignedOrder::new(
+        address("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"),
+        address("0x0625aFB445C3B6B7B929342a04A22599fd5dBB59"),
+        address("0xc8c753Ee51E8Fc80e199AB297fB575634a1aC1d3"),
+        Amount::new("1000000000000000000").expect("test sell amount literal must be valid"),
+        Amount::new(buy_amount).expect("test buy amount literal must be valid"),
+        1_700_000_000,
+        app_data_hash(),
+        Amount::zero(),
+        cow_sdk_core::OrderKind::Sell,
+        false,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
+    )
 }
 
 #[tokio::test]

@@ -261,20 +261,20 @@ pub fn get_order_to_sign(
         )
     };
 
-    Ok(UnsignedOrder {
-        sell_token: limit_parameters.sell_token.clone(),
-        buy_token: limit_parameters.buy_token.clone(),
+    Ok(UnsignedOrder::new(
+        limit_parameters.sell_token.clone(),
+        limit_parameters.buy_token.clone(),
         receiver,
-        sell_amount: sell_amount_to_use,
-        buy_amount: buy_amount_to_use,
+        sell_amount_to_use,
+        buy_amount_to_use,
         valid_to,
-        app_data: app_data_keccak256.clone(),
-        fee_amount: Amount::zero(),
-        kind: limit_parameters.kind,
-        partially_fillable: limit_parameters.partially_fillable,
-        sell_token_balance: limit_parameters.sell_token_balance,
-        buy_token_balance: limit_parameters.buy_token_balance,
-    })
+        app_data_keccak256.clone(),
+        Amount::zero(),
+        limit_parameters.kind,
+        limit_parameters.partially_fillable,
+        limit_parameters.sell_token_balance,
+        limit_parameters.buy_token_balance,
+    ))
 }
 
 /// Generates a unique `EthFlow` order id, retrying by decrementing buy amount.

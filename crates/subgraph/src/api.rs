@@ -664,12 +664,7 @@ const fn prod_subgraph_id(chain_id: SupportedChainId) -> Option<&'static str> {
         SupportedChainId::ArbitrumOne => Some("CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc"),
         SupportedChainId::Base => Some("EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg"),
         SupportedChainId::Sepolia => Some("31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y"),
-        SupportedChainId::Polygon
-        | SupportedChainId::Avalanche
-        | SupportedChainId::Bnb
-        | SupportedChainId::Linea
-        | SupportedChainId::Plasma
-        | SupportedChainId::Ink => None,
+        _ => None,
     }
 }
 

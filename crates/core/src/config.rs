@@ -47,6 +47,39 @@ const WRAPPED_NATIVE_LINEA_BYTES: [u8; 20] =
     hex_decode_20("0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f");
 
 /// Supported `CoW` Protocol chain ids with explicit API configuration.
+///
+/// Internal code in this crate can still use exhaustive `match` expressions
+/// when implementing helpers like [`SupportedChainId::api_path`].
+///
+/// ```
+/// use cow_sdk_core::SupportedChainId;
+///
+/// assert_eq!(SupportedChainId::Mainnet.api_path(), "mainnet");
+/// ```
+///
+/// Downstream crates must include a wildcard arm when matching so future chain
+/// additions remain semver-compatible.
+///
+/// ```compile_fail
+/// use cow_sdk_core::SupportedChainId;
+///
+/// fn label(chain_id: SupportedChainId) -> &'static str {
+///     match chain_id {
+///         SupportedChainId::Mainnet => "mainnet",
+///         SupportedChainId::Bnb => "bnb",
+///         SupportedChainId::GnosisChain => "gnosis",
+///         SupportedChainId::Polygon => "polygon",
+///         SupportedChainId::Base => "base",
+///         SupportedChainId::Plasma => "plasma",
+///         SupportedChainId::ArbitrumOne => "arbitrum",
+///         SupportedChainId::Avalanche => "avalanche",
+///         SupportedChainId::Ink => "ink",
+///         SupportedChainId::Linea => "linea",
+///         SupportedChainId::Sepolia => "sepolia",
+///     }
+/// }
+/// ```
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[repr(u64)]
 pub enum SupportedChainId {
@@ -156,6 +189,10 @@ impl<'de> Deserialize<'de> for SupportedChainId {
 }
 
 /// Supported `CoW` deployment environments.
+///
+/// Downstream crates should include a wildcard arm when matching so future
+/// deployment environments remain semver-compatible.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum CowEnv {
@@ -512,4 +549,31 @@ fn validate_user_agent(user_agent: String) -> Result<String, ValidationError> {
 fn validate_header_value(value: &str, field: &'static str) -> Result<(), ValidationError> {
     HeaderValue::from_str(value).map_err(|_| ValidationError::InvalidHttpHeaderValue { field })?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SupportedChainId;
+
+    #[test]
+    fn supported_chain_id_still_matches_exhaustively_inside_core() {
+        fn label(chain_id: SupportedChainId) -> &'static str {
+            match chain_id {
+                SupportedChainId::Mainnet => "mainnet",
+                SupportedChainId::Bnb => "bnb",
+                SupportedChainId::GnosisChain => "gnosis",
+                SupportedChainId::Polygon => "polygon",
+                SupportedChainId::Base => "base",
+                SupportedChainId::Plasma => "plasma",
+                SupportedChainId::ArbitrumOne => "arbitrum",
+                SupportedChainId::Avalanche => "avalanche",
+                SupportedChainId::Ink => "ink",
+                SupportedChainId::Linea => "linea",
+                SupportedChainId::Sepolia => "sepolia",
+            }
+        }
+
+        assert_eq!(label(SupportedChainId::Mainnet), "mainnet");
+        assert_eq!(label(SupportedChainId::Sepolia), "sepolia");
+    }
 }

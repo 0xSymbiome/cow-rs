@@ -850,23 +850,21 @@ fn sample_trade_parameters(chain_id: SupportedChainId) -> TradeParameters {
 }
 
 fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
-    cow_sdk::UnsignedOrder {
-        sell_token: wrapped_native_token(chain_id).address,
-        buy_token: sample_buy_token(),
-        receiver: sample_owner(),
-        sell_amount: Amount::new("10000000000000000").unwrap(),
-        buy_amount: Amount::new("2500000000000000000").unwrap(),
-        valid_to: 1_900_000_000,
-        app_data: cow_sdk::AppDataHex::new(
-            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        )
-        .unwrap(),
-        fee_amount: Amount::new("0").unwrap(),
-        kind: cow_sdk::OrderKind::Sell,
-        partially_fillable: false,
-        sell_token_balance: cow_sdk::SellTokenSource::Erc20,
-        buy_token_balance: cow_sdk::BuyTokenDestination::Erc20,
-    }
+    cow_sdk::UnsignedOrder::new(
+        wrapped_native_token(chain_id).address,
+        sample_buy_token(),
+        sample_owner(),
+        Amount::new("10000000000000000").unwrap(),
+        Amount::new("2500000000000000000").unwrap(),
+        1_900_000_000,
+        cow_sdk::AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            .unwrap(),
+        Amount::new("0").unwrap(),
+        cow_sdk::OrderKind::Sell,
+        false,
+        cow_sdk::SellTokenSource::Erc20,
+        cow_sdk::BuyTokenDestination::Erc20,
+    )
 }
 
 fn sample_approval_parameters(chain_id: SupportedChainId) -> ApprovalParameters {
@@ -904,6 +902,7 @@ fn chain_label(chain_id: SupportedChainId) -> &'static str {
         SupportedChainId::Ink => "Ink",
         SupportedChainId::Linea => "Linea",
         SupportedChainId::Sepolia => "Sepolia",
+        _ => "Supported CoW Chain",
     }
 }
 

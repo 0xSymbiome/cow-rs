@@ -1072,6 +1072,36 @@ pub fn token_id(chain_id: ChainId, address: &Address) -> String {
 /// This is not an orderbook wire DTO or an ABI struct. Contract hashing converts
 /// it into `cow_sdk_contracts::Order`, where receiver and token-balance defaults
 /// are normalized for EIP-712 hashing.
+///
+/// Downstream crates construct orders through [`UnsignedOrder::new`] and the
+/// chainable `with_*` setters rather than a struct literal so additive fields
+/// remain semver-compatible.
+///
+/// ```compile_fail
+/// use cow_sdk_core::{
+///     Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
+///     UnsignedOrder,
+/// };
+///
+/// let _order = UnsignedOrder {
+///     sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+///     buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+///     receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+///     sell_amount: Amount::new("100").unwrap(),
+///     buy_amount: Amount::new("200").unwrap(),
+///     valid_to: 1_700_000_000,
+///     app_data: AppDataHash::new(
+///         "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+///     )
+///     .unwrap(),
+///     fee_amount: Amount::new("5").unwrap(),
+///     kind: OrderKind::Sell,
+///     partially_fillable: true,
+///     sell_token_balance: SellTokenSource::External,
+///     buy_token_balance: BuyTokenDestination::Internal,
+/// };
+/// ```
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UnsignedOrder {
@@ -1105,6 +1135,81 @@ pub struct UnsignedOrder {
 }
 
 impl UnsignedOrder {
+    /// Creates an unsigned order from the canonical EIP-712 field set.
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub const fn new(
+        sell_token: Address,
+        buy_token: Address,
+        receiver: Address,
+        sell_amount: Amount,
+        buy_amount: Amount,
+        valid_to: u32,
+        app_data: AppDataHash,
+        fee_amount: Amount,
+        kind: OrderKind,
+        partially_fillable: bool,
+        sell_token_balance: SellTokenSource,
+        buy_token_balance: BuyTokenDestination,
+    ) -> Self {
+        Self {
+            sell_token,
+            buy_token,
+            receiver,
+            sell_amount,
+            buy_amount,
+            valid_to,
+            app_data,
+            fee_amount,
+            kind,
+            partially_fillable,
+            sell_token_balance,
+            buy_token_balance,
+        }
+    }
+
+    /// Returns a copy of this order with a different receiver.
+    #[must_use]
+    pub fn with_receiver(mut self, receiver: Address) -> Self {
+        self.receiver = receiver;
+        self
+    }
+
+    /// Returns a copy of this order with a different app-data hash.
+    #[must_use]
+    pub fn with_app_data(mut self, app_data: AppDataHash) -> Self {
+        self.app_data = app_data;
+        self
+    }
+
+    /// Returns a copy of this order with a different fee amount.
+    #[must_use]
+    pub fn with_fee_amount(mut self, fee_amount: Amount) -> Self {
+        self.fee_amount = fee_amount;
+        self
+    }
+
+    /// Returns a copy of this order with an updated partial-fill flag.
+    #[must_use]
+    pub const fn with_partially_fillable(mut self, partially_fillable: bool) -> Self {
+        self.partially_fillable = partially_fillable;
+        self
+    }
+
+    /// Returns a copy of this order with a different sell-token balance source.
+    #[must_use]
+    pub const fn with_sell_token_balance(mut self, sell_token_balance: SellTokenSource) -> Self {
+        self.sell_token_balance = sell_token_balance;
+        self
+    }
+
+    /// Returns a copy of this order with a different buy-token balance destination.
+    #[must_use]
+    pub const fn with_buy_token_balance(mut self, buy_token_balance: BuyTokenDestination) -> Self {
+        self.buy_token_balance = buy_token_balance;
+        self
+    }
+
     /// Returns the canonical EIP-712 field ordering for orders.
     #[must_use]
     pub const fn field_names() -> &'static [&'static str; ORDER_TYPE_FIELD_NAMES.len()] {
@@ -1561,4 +1666,67 @@ fn parse_signed_quantity(field: &'static str, value: &str) -> Result<BigInt, Cor
 
     BigInt::parse_bytes(value.as_bytes(), 10)
         .ok_or_else(|| ValidationError::InvalidNumeric { field }.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
+        UnsignedOrder,
+    };
+
+    #[test]
+    fn unsigned_order_builder_serializes_identically_to_internal_literal_construction() {
+        let sell_token = Address::new("0x1111111111111111111111111111111111111111").unwrap();
+        let buy_token = Address::new("0x2222222222222222222222222222222222222222").unwrap();
+        let receiver = Address::new("0x3333333333333333333333333333333333333333").unwrap();
+        let sell_amount = Amount::new("100").unwrap();
+        let buy_amount = Amount::new("200").unwrap();
+        let valid_to = 1_700_000_000;
+        let app_data =
+            AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                .unwrap();
+        let fee_amount = Amount::new("5").unwrap();
+
+        let from_builder = UnsignedOrder::new(
+            sell_token.clone(),
+            buy_token.clone(),
+            receiver.clone(),
+            sell_amount.clone(),
+            buy_amount.clone(),
+            valid_to,
+            app_data.clone(),
+            Amount::zero(),
+            OrderKind::Sell,
+            false,
+            SellTokenSource::Erc20,
+            BuyTokenDestination::Erc20,
+        )
+        .with_receiver(receiver.clone())
+        .with_app_data(app_data.clone())
+        .with_fee_amount(fee_amount.clone())
+        .with_partially_fillable(true)
+        .with_sell_token_balance(SellTokenSource::External)
+        .with_buy_token_balance(BuyTokenDestination::Internal);
+
+        let from_literal = UnsignedOrder {
+            sell_token,
+            buy_token,
+            receiver,
+            sell_amount,
+            buy_amount,
+            valid_to,
+            app_data,
+            fee_amount,
+            kind: OrderKind::Sell,
+            partially_fillable: true,
+            sell_token_balance: SellTokenSource::External,
+            buy_token_balance: BuyTokenDestination::Internal,
+        };
+
+        assert_eq!(
+            serde_json::to_vec(&from_builder).unwrap(),
+            serde_json::to_vec(&from_literal).unwrap()
+        );
+    }
 }

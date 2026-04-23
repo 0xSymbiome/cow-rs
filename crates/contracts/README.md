@@ -38,20 +38,20 @@ let domain = TypedDataDomain {
 };
 let trader_address = Address::new("0x3333333333333333333333333333333333333333").unwrap();
 
-let order = Order::from(&UnsignedOrder {
-    sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-    buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-    receiver: trader_address,
-    sell_amount: Amount::new("1000000000000000000").unwrap(),
-    buy_amount: Amount::new("900000000000000000").unwrap(),
-    valid_to: 0,
-    app_data: AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000").unwrap(),
-    fee_amount: Amount::zero(),
-    kind: OrderKind::Sell,
-    partially_fillable: false,
-    sell_token_balance: SellTokenSource::Erc20,
-    buy_token_balance: BuyTokenDestination::Erc20,
-});
+let order = Order::from(&UnsignedOrder::new(
+    Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+    Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+    trader_address,
+    Amount::new("1000000000000000000").unwrap(),
+    Amount::new("900000000000000000").unwrap(),
+    0,
+    AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000").unwrap(),
+    Amount::zero(),
+    OrderKind::Sell,
+    false,
+    SellTokenSource::Erc20,
+    BuyTokenDestination::Erc20,
+));
 
 let _digest = hash_order(&domain, &order).unwrap();
 ```

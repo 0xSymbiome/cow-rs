@@ -69,25 +69,21 @@ pub fn orderbook_version_response(version: &str) -> ResponseTemplate {
 }
 
 pub fn sample_unsigned_order() -> UnsignedOrder {
-    UnsignedOrder {
-        sell_token: sample_sell_token(),
-        buy_token: sample_buy_token(),
-        receiver: address(ALT_RECEIVER),
-        sell_amount: Amount::new("100000000000000000")
-            .expect("example sell amount must remain valid"),
-        buy_amount: Amount::new("250000000000000000")
-            .expect("example buy amount must remain valid"),
-        valid_to: 1_700_000_000,
-        app_data: AppDataHex::new(
-            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        )
-        .expect("example app-data hex must remain valid"),
-        fee_amount: Amount::zero(),
-        kind: OrderKind::Sell,
-        partially_fillable: false,
-        sell_token_balance: SellTokenSource::Erc20,
-        buy_token_balance: BuyTokenDestination::Erc20,
-    }
+    UnsignedOrder::new(
+        sample_sell_token(),
+        sample_buy_token(),
+        address(ALT_RECEIVER),
+        Amount::new("100000000000000000").expect("example sell amount must remain valid"),
+        Amount::new("250000000000000000").expect("example buy amount must remain valid"),
+        1_700_000_000,
+        AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            .expect("example app-data hex must remain valid"),
+        Amount::zero(),
+        OrderKind::Sell,
+        false,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
+    )
 }
 
 pub fn sample_trade_parameters() -> TradeParameters {

@@ -564,21 +564,19 @@ fn scheme_label_to_rust(id: &str, label: &str) -> SigningScheme {
 }
 
 fn sample_order() -> UnsignedOrder {
-    UnsignedOrder {
-        sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-        receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        sell_amount: Amount::new("1000000000000000000").unwrap(),
-        buy_amount: Amount::new("2000000000000000000").unwrap(),
-        valid_to: 0x6500_0001,
-        app_data: AppDataHash::new(
-            "0x4444444444444444444444444444444444444444444444444444444444444444",
-        )
-        .unwrap(),
-        fee_amount: Amount::new("1000").unwrap(),
-        kind: OrderKind::Sell,
-        partially_fillable: false,
-        sell_token_balance: cow_sdk_core::SellTokenSource::default(),
-        buy_token_balance: cow_sdk_core::BuyTokenDestination::default(),
-    }
+    UnsignedOrder::new(
+        Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+        Amount::new("1000000000000000000").unwrap(),
+        Amount::new("2000000000000000000").unwrap(),
+        0x6500_0001,
+        AppDataHash::new("0x4444444444444444444444444444444444444444444444444444444444444444")
+            .unwrap(),
+        Amount::new("1000").unwrap(),
+        OrderKind::Sell,
+        false,
+        cow_sdk_core::SellTokenSource::default(),
+        cow_sdk_core::BuyTokenDestination::default(),
+    )
 }

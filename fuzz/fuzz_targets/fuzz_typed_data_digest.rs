@@ -53,27 +53,27 @@ struct FuzzInput {
 }
 
 fuzz_target!(|input: FuzzInput| {
-    let unsigned = UnsignedOrder {
-        sell_token: Address::from_bytes(input.sell_token),
-        buy_token: Address::from_bytes(input.buy_token),
-        receiver: Address::from_bytes(input.receiver),
-        sell_amount: Amount::new(input.sell_amount.to_string())
+    let unsigned = UnsignedOrder::new(
+        Address::from_bytes(input.sell_token),
+        Address::from_bytes(input.buy_token),
+        Address::from_bytes(input.receiver),
+        Amount::new(input.sell_amount.to_string())
             .expect("u128-to-string is always a valid uint256 decimal"),
-        buy_amount: Amount::new(input.buy_amount.to_string())
+        Amount::new(input.buy_amount.to_string())
             .expect("u128-to-string is always a valid uint256 decimal"),
-        valid_to: input.valid_to,
-        app_data: AppDataHash::from_bytes(input.app_data),
-        fee_amount: Amount::new(input.fee_amount.to_string())
+        input.valid_to,
+        AppDataHash::from_bytes(input.app_data),
+        Amount::new(input.fee_amount.to_string())
             .expect("u128-to-string is always a valid uint256 decimal"),
-        kind: if input.kind_is_buy {
+        if input.kind_is_buy {
             OrderKind::Buy
         } else {
             OrderKind::Sell
         },
-        partially_fillable: input.partially_fillable,
-        sell_token_balance: balance_from_code(input.sell_token_balance_code),
-        buy_token_balance: balance_from_code(input.buy_token_balance_code),
-    };
+        input.partially_fillable,
+        balance_from_code(input.sell_token_balance_code),
+        balance_from_code(input.buy_token_balance_code),
+    );
     let order: Order = (&unsigned).into();
 
     let domain = TypedDataDomain {
@@ -134,4 +134,3 @@ fn bounded_ascii(seed: u8, len_byte: u8) -> String {
         })
         .collect()
 }
-

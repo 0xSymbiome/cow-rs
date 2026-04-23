@@ -118,6 +118,7 @@ impl EnvBaseUrlOverrides {
         match env {
             CowEnv::Prod => self.prod = Some(base_url.into()),
             CowEnv::Staging => self.staging = Some(base_url.into()),
+            _ => {}
         }
     }
 
@@ -127,6 +128,7 @@ impl EnvBaseUrlOverrides {
         match env {
             CowEnv::Prod => self.prod.as_deref(),
             CowEnv::Staging => self.staging.as_deref(),
+            _ => None,
         }
     }
 }
