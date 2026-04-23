@@ -45,6 +45,7 @@ Use it with:
 | `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0105` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo test --workspace --doc` | Explicit doctest gate for rustdoc examples |
+| Published crate README doctests | Every published crate README is wired into crate rustdoc with a `cfg_attr(doctest, ...)` shim, so `cargo test --workspace --doc` compiles every fenced README example on CI. |
 | `cargo test --all-features --workspace --doc` | All-feature doctest gate for the public docs contract |
 | Windows stable lane (`windows-latest`) | Light native host compatibility gate with `cargo check --workspace --all-features` and `cargo test --workspace --lib --tests` |
 | `cargo doc --workspace --all-features --no-deps` | Public rustdoc build gate |

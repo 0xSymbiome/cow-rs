@@ -1167,6 +1167,12 @@ unreleased public contract of the repository.
   published `cow-sdk` crate family the sequence publishes in dependency
   order.
 
+### Fixed
+
+- Published crate READMEs now compile as doctests on every CI run, and the
+  previously broken orderbook, trading, and contracts examples match the
+  shipped public API.
+
 ### Removed
 
 - Retired the hand-rolled ABI encoder helpers previously maintained inside

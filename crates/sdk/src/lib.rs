@@ -1,3 +1,5 @@
+#![cfg_attr(doctest, doc = include_str!("../README.md"))]
+
 //! Primary Rust SDK facade for `CoW` Protocol.
 //!
 //! This crate re-exports the main public surface for:

@@ -26,10 +26,9 @@ cow-sdk-orderbook = "0.1"
 use cow_sdk_orderbook::{CowEnv, OrderBookApi, SupportedChainId};
 
 let _api = OrderBookApi::builder()
-    .with_chain_id(SupportedChainId::Sepolia)
-    .with_env(CowEnv::Prod)
-    .build()
-    .unwrap();
+    .chain(SupportedChainId::Sepolia)
+    .environment(CowEnv::Prod)
+    .build();
 ```
 
 ## Where to next

@@ -21,25 +21,39 @@ cow-sdk-contracts = "0.1"
 ## Minimal example
 
 ```rust
-use cow_sdk_contracts::hash_order;
-use cow_sdk_core::{Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, UnsignedOrder};
+use cow_sdk_contracts::{ContractId, Order, Registry, hash_order};
+use cow_sdk_core::{
+    Address, Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderKind, SellTokenSource,
+    SupportedChainId, TypedDataDomain, UnsignedOrder,
+};
 
-let order = UnsignedOrder {
+let verifying_contract = Registry::default()
+    .address(ContractId::Settlement, SupportedChainId::Mainnet, CowEnv::Prod)
+    .unwrap();
+let domain = TypedDataDomain {
+    name: "Gnosis Protocol".to_owned(),
+    version: "v2".to_owned(),
+    chain_id: SupportedChainId::Mainnet.into(),
+    verifying_contract,
+};
+let trader_address = Address::new("0x3333333333333333333333333333333333333333").unwrap();
+
+let order = Order::from(&UnsignedOrder {
     sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
     buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-    receiver: Some(Address::new("0x3333333333333333333333333333333333333333").unwrap()),
+    receiver: trader_address,
     sell_amount: Amount::new("1000000000000000000").unwrap(),
     buy_amount: Amount::new("900000000000000000").unwrap(),
     valid_to: 0,
-    app_data: AppDataHex::new("0x0000000000000000000000000000000000000000000000000000000000000000").unwrap(),
+    app_data: AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000").unwrap(),
     fee_amount: Amount::zero(),
     kind: OrderKind::Sell,
     partially_fillable: false,
     sell_token_balance: SellTokenSource::Erc20,
     buy_token_balance: BuyTokenDestination::Erc20,
-};
+});
 
-let _digest = hash_order(&order);
+let _digest = hash_order(&domain, &order).unwrap();
 ```
 
 ## Where to next

@@ -1,3 +1,5 @@
+#![cfg_attr(doctest, doc = include_str!("../README.md"))]
+
 //! Explicit `CoW` Protocol signing helpers.
 //!
 //! The durable typed-data boundary is `cow_sdk_core::TypedDataPayload`.

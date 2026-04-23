@@ -1,3 +1,5 @@
+#![cfg_attr(doctest, doc = include_str!("../README.md"))]
+
 //! Shared `CoW` Protocol core types, validation helpers, configuration, and
 //! runtime-neutral traits used across the `cow-sdk` crate family.
 

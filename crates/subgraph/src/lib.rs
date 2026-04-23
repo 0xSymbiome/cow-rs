@@ -1,3 +1,5 @@
+#![cfg_attr(doctest, doc = include_str!("../README.md"))]
+
 //! Typed `CoW` Protocol subgraph queries.
 //!
 //! `cow-sdk-subgraph` keeps saved query documents, explicit raw-query inputs,

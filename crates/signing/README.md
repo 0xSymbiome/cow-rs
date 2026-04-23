@@ -22,10 +22,11 @@ cow-sdk-signing = "0.1"
 ## Minimal example
 
 ```rust
-use cow_sdk_core::{CowEnv, SupportedChainId};
-use cow_sdk_signing::domain_separator_for;
+use cow_sdk_core::{CowEnv, ProtocolOptions, SupportedChainId};
+use cow_sdk_signing::domain_separator;
 
-let _domain = domain_separator_for(SupportedChainId::Sepolia, CowEnv::Prod);
+let options = ProtocolOptions::new().with_env(CowEnv::Prod);
+let _domain = domain_separator(SupportedChainId::Sepolia, Some(&options)).unwrap();
 ```
 
 ## Where to next

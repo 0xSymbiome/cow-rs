@@ -34,7 +34,7 @@ cow-sdk = { version = "0.1", features = ["browser-wallet"] }
 ```rust
 use cow_sdk_browser_wallet::MockEip1193Transport;
 
-let _transport = MockEip1193Transport::new("example wallet");
+let _transport = MockEip1193Transport::sepolia().with_label("example wallet");
 ```
 
 ## Where to next

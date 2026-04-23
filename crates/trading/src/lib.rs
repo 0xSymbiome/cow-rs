@@ -1,3 +1,5 @@
+#![cfg_attr(doctest, doc = include_str!("../README.md"))]
+
 //! High-level `CoW` Protocol trading workflows for quoting, signing, posting,
 //! allowance management, and on-chain order actions.
 
@@ -5,7 +7,7 @@
 
 pub use cow_sdk_app_data::{PartnerFee, PartnerFeePolicy};
 pub use cow_sdk_contracts::eth_flow;
-pub use cow_sdk_core::DecimalAmount;
+pub use cow_sdk_core::{DecimalAmount, SupportedChainId};
 
 /// Allowance reads, approval transactions, and approval submission helpers.
 pub mod allowance;

@@ -124,6 +124,7 @@ Use deeper evidence only when the change warrants it:
 - optional smoke checks when browser pages or live services must be confirmed
 
 The canonical command set lives in [Release Checklist](release-checklist.md).
+Every shipped `README.md` is wired into crate rustdoc with a `cfg_attr(doctest, doc = include_str!("../README.md"))` shim, so `cargo test --workspace --doc` covers every fenced example.
 
 ## Review Rules
 

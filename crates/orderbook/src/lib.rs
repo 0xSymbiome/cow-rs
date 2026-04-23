@@ -1,3 +1,5 @@
+#![cfg_attr(doctest, doc = include_str!("../README.md"))]
+
 //! Typed `CoW` Protocol orderbook transport models, request policy, and response
 //! transforms.
 //!

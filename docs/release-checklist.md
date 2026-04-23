@@ -32,6 +32,9 @@ evidence until a published replacement exists.
 
 ```text
 cargo test --workspace --doc
+cargo test --doc -p cow-sdk-orderbook
+cargo test --doc -p cow-sdk-trading
+cargo test --doc -p cow-sdk-contracts
 cargo test --all-features --workspace --doc
 cargo doc --workspace --all-features --no-deps
 RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features
