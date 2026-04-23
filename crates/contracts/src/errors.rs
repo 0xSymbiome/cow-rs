@@ -139,4 +139,16 @@ pub enum ContractsError {
     /// Serialization to JSON or ABI-adjacent payloads failed.
     #[error("serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
+    /// Signature byte length is not the required 65.
+    #[error("invalid signature length: expected 65 bytes, got {actual}")]
+    InvalidSignatureLength {
+        /// Observed byte length.
+        actual: usize,
+    },
+    /// Recovery byte is outside the accepted {0, 1, 27, 28} set.
+    #[error("invalid signature recovery byte: expected v in {{0, 1, 27, 28}}, got {value}")]
+    InvalidSignatureRecoveryByte {
+        /// Rejected recovery byte value.
+        value: u8,
+    },
 }

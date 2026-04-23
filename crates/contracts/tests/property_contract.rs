@@ -441,8 +441,10 @@ proptest! {
     /// and payload bytes across any signature body drawn from the
     /// documented boundary lengths; the encoded form is lowercase and
     /// exactly `2 + (20 + byte_len) * 2` characters long.
-    /// [`normalized_ecdsa_signature`] collapses mixed-case hex payloads
-    /// onto the canonical lowercase form with the same underlying bytes.
+    /// [`normalized_ecdsa_signature`] accepts the canonical 65-byte
+    /// ECDSA shape, lowercases the hex payload, and preserves the
+    /// underlying `r || s || v` bytes when `v` is already in the
+    /// legacy `{27, 28}` range.
     #[test]
     fn signature_codecs_preserve_verifier_and_payload_bytes(
         verifier in address_strategy(),
@@ -457,11 +459,21 @@ proptest! {
             .collect();
         let signature = render_mixed_case(&payload_bytes, &casing);
 
-        let normalized = normalized_ecdsa_signature(&signature).unwrap();
+        let mut normalized_payload_bytes: Vec<u8> = (0..65)
+            .map(|index| (seed.wrapping_add(index as u64) as u8) ^ 0x5A)
+            .collect();
+        normalized_payload_bytes[64] = if (seed & 1) == 0 { 27 } else { 28 };
+        let normalized_casing: Vec<bool> = (0..130)
+            .map(|bit| ((seed.rotate_left(17) >> (bit % 64)) & 1) == 1)
+            .collect();
+        let normalized_signature =
+            render_mixed_case(&normalized_payload_bytes, &normalized_casing);
+
+        let normalized = normalized_ecdsa_signature(&normalized_signature).unwrap();
         prop_assert_eq!(normalized.clone(), normalized.to_ascii_lowercase());
         prop_assert_eq!(
             hex::decode(normalized.trim_start_matches("0x")).unwrap(),
-            payload_bytes.clone(),
+            normalized_payload_bytes,
         );
 
         let encoded = encode_eip1271_signature_data(&Eip1271SignatureData {
@@ -472,7 +484,7 @@ proptest! {
         let decoded = decode_eip1271_signature_data(&encoded).unwrap();
 
         prop_assert_eq!(&decoded.verifier, &verifier);
-        prop_assert_eq!(decoded.signature, normalized);
+        prop_assert_eq!(decoded.signature, format!("0x{}", hex::encode(&payload_bytes)));
         prop_assert_eq!(encoded.len(), 2 + ((20 + byte_len) * 2));
 
         let encoded_bytes = hex::decode(encoded.trim_start_matches("0x")).unwrap();

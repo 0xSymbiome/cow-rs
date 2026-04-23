@@ -208,10 +208,10 @@ fn eip1271_signature_payload_keeps_full_bytes32_app_data_and_exact_word_padding(
     let mut order = sample_order();
     order.app_data = cow_sdk_core::AppDataHex::new(format!("0x{}", "ab".repeat(32))).unwrap();
 
-    let signature = format!("0x{}", "cd".repeat(32));
+    let signature = format!("0x{}1b", "cd".repeat(64));
     let payload = eip1271_signature_payload(&order, &signature).unwrap();
     let encoded = hex::decode(payload.trim_start_matches("0x")).unwrap();
-    assert_eq!(encoded.len(), 32 * 15);
+    assert_eq!(encoded.len(), 32 * 17);
 
     let app_data_word_offset = 32 * 6;
     assert_eq!(
@@ -222,11 +222,16 @@ fn eip1271_signature_payload_keeps_full_bytes32_app_data_and_exact_word_padding(
     let dynamic_length_offset = 32 * 13;
     assert_eq!(
         &encoded[dynamic_length_offset..dynamic_length_offset + 32],
-        &encode_usize_word(32)
+        &encode_usize_word(65)
     );
     assert_eq!(
-        &encoded[dynamic_length_offset + 32..dynamic_length_offset + 64],
-        &[0xcd; 32]
+        &encoded[dynamic_length_offset + 32..dynamic_length_offset + 32 + 65],
+        &hex::decode(signature.trim_start_matches("0x")).unwrap()
+    );
+    assert!(
+        encoded[dynamic_length_offset + 32 + 65..]
+            .iter()
+            .all(|byte| *byte == 0)
     );
 }
 

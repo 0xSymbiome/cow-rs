@@ -90,6 +90,13 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "fuzz_ecdsa_v_normalization"
+path = "fuzz_targets/fuzz_ecdsa_v_normalization.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 # The fuzz crate stands alone because cargo-fuzz requires a nightly-only
 # toolchain with unstable RUSTFLAGS. Embedding it in the workspace at the

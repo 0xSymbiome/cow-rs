@@ -25,7 +25,7 @@ mod common;
 
 use std::collections::BTreeMap;
 
-use cow_sdk_contracts::SigningScheme;
+use cow_sdk_contracts::{ContractsError, SigningScheme, normalized_ecdsa_signature};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, ChainId, CowEnv, OrderKind, ProtocolOptions, SupportedChainId,
     UnsignedOrder,
@@ -78,6 +78,7 @@ fn parity_fixture_cases_hold() {
             "signing-unsupported-mode-errors" => assert_unsupported_mode_errors(id, expected),
             "signing-generate-order-id" => assert_generate_order_id(id, expected),
             "signing-eip1271-encoding" => assert_eip1271_encoding(id, expected),
+            "signing-ecdsa-v-normalization" => assert_ecdsa_v_normalization(id, expected),
             other => panic!("unknown signing fixture case id: {other}"),
         }
     }
@@ -422,8 +423,12 @@ fn assert_eip1271_encoding(id: &str, expected: &Value) {
         .collect();
 
     let order = sample_order();
-    let payload = eip1271_signature_payload(&order, "0xaa").expect("EIP-1271 payload must encode");
+    let signature = synthetic_ecdsa_signature(27);
+    let signature_bytes = hex::decode(signature.trim_start_matches("0x")).unwrap();
+    let payload =
+        eip1271_signature_payload(&order, &signature).expect("EIP-1271 payload must encode");
     let payload_hex = payload.trim_start_matches("0x");
+    let payload_bytes = hex::decode(payload_hex).unwrap();
     assert_eq!(
         payload_hex.len() % 2,
         0,
@@ -449,13 +454,32 @@ fn assert_eip1271_encoding(id: &str, expected: &Value) {
         );
     }
 
-    // The dynamic tail carries the caller signature "0xaa" = one byte; confirm
-    // the payload preserves the signature length and payload offset pattern by
-    // asserting the length prefix follows the 32*13 byte head offset.
-    let head_offset_hex = format!("{:064x}", 32u64 * 13);
+    // The dynamic tail carries a canonical 65-byte ECDSA signature. Confirm
+    // the ABI payload preserves the head offset, the tail length word, and the
+    // exact signature bytes with zero padding.
+    let tail_offset = 32 * 13;
+    let head_offset_hex = format!("{:064x}", tail_offset as u64);
+    let mut signature_len_word = [0u8; 32];
+    signature_len_word[24..].copy_from_slice(&(signature_bytes.len() as u64).to_be_bytes());
     assert!(
         payload_hex.contains(&head_offset_hex),
         "case {id}: payload must include the ABI head-offset marker for the signature tail",
+    );
+    assert_eq!(
+        &payload_bytes[tail_offset..tail_offset + 32],
+        &signature_len_word,
+        "case {id}: signature tail must prefix the ECDSA byte length",
+    );
+    assert_eq!(
+        &payload_bytes[tail_offset + 32..tail_offset + 32 + signature_bytes.len()],
+        signature_bytes.as_slice(),
+        "case {id}: signature tail must preserve the normalized ECDSA bytes",
+    );
+    assert!(
+        payload_bytes[tail_offset + 32 + signature_bytes.len()..]
+            .iter()
+            .all(|byte| *byte == 0),
+        "case {id}: signature tail padding must remain zeroed",
     );
 
     // The domain separator must remain sensitive to the typed-data domain,
@@ -468,6 +492,65 @@ fn assert_eip1271_encoding(id: &str, expected: &Value) {
         mainnet_sep, gnosis_sep,
         "case {id}: domain separator must remain sensitive to chain id",
     );
+}
+
+fn synthetic_ecdsa_signature(v: u8) -> String {
+    format!("0x{}{:02x}", "aa".repeat(64), v)
+}
+
+fn assert_ecdsa_v_normalization(id: &str, expected: &Value) {
+    let positive_cases = expected["positive_cases"]
+        .as_array()
+        .unwrap_or_else(|| panic!("case {id}: expected.positive_cases must be an array"));
+    let rejection_cases = expected["rejection_cases"]
+        .as_array()
+        .unwrap_or_else(|| panic!("case {id}: expected.rejection_cases must be an array"));
+
+    for case in positive_cases {
+        let input = case["input"]
+            .as_str()
+            .unwrap_or_else(|| panic!("case {id}: positive case input must be a string"));
+        let normalized = case["normalized"]
+            .as_str()
+            .unwrap_or_else(|| panic!("case {id}: positive case normalized must be a string"));
+        assert_eq!(
+            normalized_ecdsa_signature(input).unwrap(),
+            normalized,
+            "case {id}: normalized ECDSA signature must match the pinned output for {input}",
+        );
+    }
+
+    for case in rejection_cases {
+        let input = case["input"]
+            .as_str()
+            .unwrap_or_else(|| panic!("case {id}: rejection case input must be a string"));
+        let discriminant = case["error_discriminant"].as_str().unwrap_or_else(|| {
+            panic!("case {id}: rejection case error_discriminant must be a string")
+        });
+        let value = u8::try_from(
+            case["value"]
+                .as_u64()
+                .unwrap_or_else(|| panic!("case {id}: rejection case value must be a u64")),
+        )
+        .unwrap_or_else(|_| panic!("case {id}: rejection case value must fit in u8"));
+        let error = normalized_ecdsa_signature(input)
+            .expect_err("rejection case must fail through ContractsError");
+
+        match (discriminant, error) {
+            (
+                "InvalidSignatureRecoveryByte",
+                ContractsError::InvalidSignatureRecoveryByte { value: actual },
+            ) => {
+                assert_eq!(
+                    actual, value,
+                    "case {id}: rejection value must match the pinned fixture for {input}",
+                );
+            }
+            (expected_discriminant, other) => {
+                panic!("case {id}: expected {expected_discriminant} for {input}, got {other:?}");
+            }
+        }
+    }
 }
 
 fn scheme_label_to_rust(id: &str, label: &str) -> SigningScheme {

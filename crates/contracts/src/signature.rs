@@ -175,13 +175,35 @@ pub fn decode_signing_scheme(flags: u8) -> Result<SigningScheme, ContractsError>
     SigningScheme::try_from(flags)
 }
 
-/// Normalizes an ECDSA signature into canonical hex form.
+/// Normalizes an ECDSA signature into canonical hex form with a legacy-range
+/// recovery byte (`v ∈ {27, 28}`).
+///
+/// The canonical on-chain form uses `v = 27` or `v = 28`. Modern EIP-2
+/// signers emit `v = 0` or `v = 1`; this helper maps the modern form onto the
+/// legacy form so on-chain `ecrecover` recovers a valid signer.
+///
+/// Accepts `v ∈ {0, 1, 27, 28}` and rejects every other byte.
 ///
 /// # Errors
 ///
-/// Returns [`ContractsError`] if the signature is not valid hex.
+/// Returns [`ContractsError`] if the signature is not valid hex, is not
+/// exactly 65 bytes, or carries an unsupported recovery byte.
 pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> {
-    normalize_hex_payload(data, "signature")
+    let hex_normalized = normalize_hex_payload(data, "signature")?;
+    let mut bytes = parse_hex(&hex_normalized, "signature")?;
+    if bytes.len() != 65 {
+        return Err(ContractsError::InvalidSignatureLength {
+            actual: bytes.len(),
+        });
+    }
+    bytes[64] = match bytes[64] {
+        0 | 27 => 27,
+        1 | 28 => 28,
+        other => {
+            return Err(ContractsError::InvalidSignatureRecoveryByte { value: other });
+        }
+    };
+    Ok(format!("0x{}", hex::encode(bytes)))
 }
 
 /// Returns the 4-byte function selector for a Solidity signature.

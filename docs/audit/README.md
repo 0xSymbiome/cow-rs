@@ -67,6 +67,12 @@ If the reviewed surface did not change, leave the audit alone.
 | --- | --- | --- | --- | --- | --- |
 | [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md) | Standing audit | `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `Noop` and `InMemory` canonical impls | Trait contract, conservative caching semantics, thread-safety on the in-memory implementation, and its integration with `verify_eip1271_signature_async` | Current | 2026-04-21 |
 
+## Signature Normalization
+
+| Artifact | Type | Owning surface | Scope | Status | Last reviewed |
+| --- | --- | --- | --- | --- | --- |
+| [ECDSA Signature Normalization Audit](ecdsa-signature-normalization-audit.md) | Standing audit | `cow_sdk_contracts::normalized_ecdsa_signature` | 65-byte recoverable-signature normalization, typed failure semantics, downstream signing-path reuse, and parity plus fuzz evidence for the reviewed `27` / `28` contract | Current | 2026-04-23 |
+
 ## Browser Wallet
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |

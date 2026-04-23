@@ -1172,6 +1172,11 @@ unreleased public contract of the repository.
 - Published crate READMEs now compile as doctests on every CI run, and the
   previously broken orderbook, trading, and contracts examples match the
   shipped public API.
+- Every ECDSA signature leaving the contracts crate now carries the
+  Solidity-compatible `27` / `28` marker expected by on-chain
+  verification. Signers that emit modern `0` / `1` markers are
+  normalized automatically, and any other trailing byte now fails with a
+  typed error before downstream `ecrecover` paths can consume it.
 
 ### Removed
 

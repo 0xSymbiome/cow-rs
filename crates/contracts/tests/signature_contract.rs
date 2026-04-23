@@ -30,6 +30,10 @@ fn expected_u8(value: &serde_json::Value) -> u8 {
     u8::try_from(value.as_u64().unwrap()).expect("fixture discriminant must fit in u8")
 }
 
+fn synthetic_signature_with_v(v: u8) -> String {
+    format!("0x{}{:02x}", "a".repeat(128), v)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct AsyncMockProviderError(String);
 
@@ -276,7 +280,7 @@ fn signature_helpers_preserve_public_contract_surface() {
 }
 
 #[test]
-fn normalized_ecdsa_signature_normalizes_hex_and_rejects_invalid_payloads() {
+fn normalized_ecdsa_signature_normalizes_hex_case_and_prefix() {
     let normalized = normalized_ecdsa_signature(
         "0x29A674DFC87F8C78FC2BFBCBE8FFDD435091A6A84BC7761DB72A45DA453D73AC41C5CE28ECEB34BE73FDDC12A5D04AF6E736405E41B613AEEFEED3DB8122420C1B",
     )
@@ -285,12 +289,69 @@ fn normalized_ecdsa_signature_normalizes_hex_and_rejects_invalid_payloads() {
         normalized,
         "0x29a674dfc87f8c78fc2bfbcbe8ffdd435091a6a84bc7761db72a45da453d73ac41c5ce28eceb34be73fddc12a5d04af6e736405e41b613aeefeed3db8122420c1b"
     );
+}
 
-    let invalid = normalized_ecdsa_signature("xyzzy").unwrap_err();
-    match invalid {
-        ContractsError::InvalidHexPrefix { field } => assert_eq!(field, "signature"),
-        other => panic!("expected InvalidHexPrefix variant, got {other:?}"),
-    }
+#[test]
+fn normalized_ecdsa_signature_canonicalizes_v_from_eip2_to_legacy() {
+    let normalized_v0 = normalized_ecdsa_signature(&synthetic_signature_with_v(0)).unwrap();
+    assert_eq!(normalized_v0, synthetic_signature_with_v(27));
+
+    let normalized_v1 = normalized_ecdsa_signature(&synthetic_signature_with_v(1)).unwrap();
+    assert_eq!(normalized_v1, synthetic_signature_with_v(28));
+}
+
+#[test]
+fn normalized_ecdsa_signature_preserves_legacy_v_values() {
+    let normalized_v27 = normalized_ecdsa_signature(&synthetic_signature_with_v(27)).unwrap();
+    assert_eq!(normalized_v27, synthetic_signature_with_v(27));
+
+    let normalized_v28 = normalized_ecdsa_signature(&synthetic_signature_with_v(28)).unwrap();
+    assert_eq!(normalized_v28, synthetic_signature_with_v(28));
+}
+
+#[test]
+fn normalized_ecdsa_signature_rejects_invalid_recovery_byte() {
+    let invalid_two = normalized_ecdsa_signature(&synthetic_signature_with_v(2)).unwrap_err();
+    assert!(matches!(
+        invalid_two,
+        ContractsError::InvalidSignatureRecoveryByte { value: 2 }
+    ));
+
+    let invalid_ff = normalized_ecdsa_signature(&synthetic_signature_with_v(0xff)).unwrap_err();
+    assert!(matches!(
+        invalid_ff,
+        ContractsError::InvalidSignatureRecoveryByte { value: 0xff }
+    ));
+}
+
+#[test]
+fn normalized_ecdsa_signature_rejects_wrong_length() {
+    let four_byte = normalized_ecdsa_signature("0xabababab").unwrap_err();
+    assert!(matches!(
+        four_byte,
+        ContractsError::InvalidSignatureLength { actual: 4 }
+    ));
+
+    let missing_v = normalized_ecdsa_signature(&format!("0x{}", "a".repeat(128))).unwrap_err();
+    assert!(matches!(
+        missing_v,
+        ContractsError::InvalidSignatureLength { actual: 64 }
+    ));
+}
+
+#[test]
+fn normalized_ecdsa_signature_rejects_invalid_hex() {
+    let missing_prefix = normalized_ecdsa_signature("xyzzy").unwrap_err();
+    assert!(matches!(
+        missing_prefix,
+        ContractsError::InvalidHexPrefix { field } if field == "signature"
+    ));
+
+    let invalid_hex = normalized_ecdsa_signature(&format!("0x{}", "z".repeat(130))).unwrap_err();
+    assert!(matches!(
+        invalid_hex,
+        ContractsError::DecodeHex { field, source: _ } if field == "signature"
+    ));
 }
 
 #[test]

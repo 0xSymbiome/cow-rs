@@ -29,6 +29,7 @@ public and runtime shape of `cow-rs`.
 | [0019](0019-http-transport-sole-dispatch.md) | Accepted | Make `HttpTransport` in `cow-sdk-core` the sole live-dispatch surface on `OrderBookApi` and `SubgraphApi` and carry non-2xx responses through the typed `TransportError::HttpStatus` channel. |
 | [0020](0020-ethflow-owner-threading.md) | Accepted | Thread the signer-derived owner onto `EthFlowTransaction` and read `tx.from` (not `tx.order_to_sign.receiver`) when building the pre-HTTP validator preview on the native-currency submission seam. |
 | [0021](0021-orderbook-total-fee-policy.md) | Accepted | Define `Order.total_fee` narrowly as the canonical executed-fee component and surface the deprecated `executedFeeAmount` wire field as a typed read-only sibling so consumers compute any legacy summation explicitly. |
+| [0022](0022-ecdsa-signature-v-normalization.md) | Accepted | Canonicalize recoverable ECDSA signatures at the contracts boundary so every emitted signature carries a Solidity-compatible `27` / `28` recovery byte. |
 
 ## When To Write An ADR
 

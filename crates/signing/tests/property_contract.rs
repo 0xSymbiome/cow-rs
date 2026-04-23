@@ -51,8 +51,6 @@ const REGRESSION_FILE: &str = concat!(
 /// EIP-1271 signature tail lengths from the reviewed ABI boundary set
 /// so the dynamic-tail offset, length, and padding arithmetic is
 /// exercised at every 32-byte transition.
-const EIP1271_SIGNATURE_LENGTHS: [usize; 8] = [0, 1, 31, 32, 33, 64, 65, 96];
-
 /// Strategy that emits an address with a non-zero low byte.
 fn address_strategy() -> impl Strategy<Value = Address> {
     any::<[u8; 20]>().prop_map(|mut bytes| {
@@ -432,21 +430,20 @@ proptest! {
     }
 
     /// [`eip1271_signature_payload`] preserves the reviewed ABI tail
-    /// layout across every signature length in the documented 32-byte
-    /// boundary set: the app-data field lands at word 6, the dynamic
-    /// offset word points at word 13, the length word records the
-    /// unpadded byte count, the signature bytes follow at word 14, and
-    /// the tail is zero-padded to a 32-byte multiple.
+    /// layout for canonical 65-byte recoverable signatures: the
+    /// app-data field lands at word 6, the dynamic offset word points
+    /// at word 13, the length word records the unpadded byte count, the
+    /// signature bytes follow at word 14, and the tail is zero-padded
+    /// to a 32-byte multiple.
     #[test]
     fn eip1271_payloads_preserve_dynamic_tail_boundaries_across_generated_signatures(
         order in unsigned_order_strategy(),
-        len_index in 0usize..EIP1271_SIGNATURE_LENGTHS.len(),
         seed in any::<u64>(),
     ) {
-        let signature_len = EIP1271_SIGNATURE_LENGTHS[len_index];
-        let signature_bytes: Vec<u8> = (0..signature_len)
+        let mut signature_bytes: Vec<u8> = (0..65)
             .map(|index| (seed.wrapping_add(index as u64) as u8) ^ 0x5A)
             .collect();
+        signature_bytes[64] = if (seed & 1) == 0 { 27 } else { 28 };
         let signature = format!("0x{}", hex::encode(&signature_bytes));
         let payload = eip1271_signature_payload(&order, &signature).unwrap();
         let encoded = hex::decode(payload.trim_start_matches("0x")).unwrap();
