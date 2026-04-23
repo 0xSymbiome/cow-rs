@@ -19,33 +19,54 @@
 //! - the signing scheme selected by the trading flow
 //! - the prefix of the signature returned by the example signer
 
+#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{Arc, Mutex};
 
+#[cfg(not(target_arch = "wasm32"))]
 use async_trait::async_trait;
+#[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_core::{
     Address, Amount, ApiContext, BlockInfo, BuyTokenDestination, ContractCall, ContractHandle,
     CowEnv, HexData, OrderKind, Provider, SellTokenSource, Signer, SupportedChainId,
     TransactionHash, TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_orderbook::{
     AppDataHash, AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
     OrderQuoteResponse, OrderUid, OrderbookError,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_trading::{
     OrderbookClient, PartialTraderParameters, TradeParameters, TradingError, TradingSdk,
 };
+#[cfg(not(target_arch = "wasm32"))]
 use serde_json::json;
 
+#[cfg(not(target_arch = "wasm32"))]
 const OWNER: &str = "0xc8c753ee51e8fc80e199ab297fb575634a1ac1d3";
+#[cfg(not(target_arch = "wasm32"))]
 const WETH: &str = "0xfff9976782d46cc05630d1f6ebab18b2324d6b14";
+#[cfg(not(target_arch = "wasm32"))]
 const COW_TOKEN: &str = "0x0625afb445c3b6b7b929342a04a22599fd5dbb59";
+#[cfg(not(target_arch = "wasm32"))]
 const APP_DATA_HASH_HEX: &str =
     "0xe269b09f45b1d3c98d8e4e841b99a0779fbd3b77943d069b91ddc4fd9789e27e";
+#[cfg(not(target_arch = "wasm32"))]
 const ORDER_UID_HEX: &str = "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f42e1a42f0ad0b7795e18767259cc253a2af471dbc4c72b49516ffffffff";
+#[cfg(not(target_arch = "wasm32"))]
 const TYPED_SIGNATURE: &str = "0x1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111b";
 
+#[cfg(not(target_arch = "wasm32"))]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    run().await
+}
+
+#[cfg(target_arch = "wasm32")]
+fn main() {}
+
+#[cfg(not(target_arch = "wasm32"))]
+async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let owner = Address::new(OWNER)?;
 
     let orderbook: Arc<dyn OrderbookClient> = Arc::new(ExampleOrderbook::new(
@@ -90,6 +111,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn sample_trade_parameters(kind: OrderKind, owner: &Address) -> TradeParameters {
     TradeParameters::new(
         kind,
@@ -105,6 +127,7 @@ fn sample_trade_parameters(kind: OrderKind, owner: &Address) -> TradeParameters 
     .with_slippage_bps(50)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn sell_quote_response() -> OrderQuoteResponse {
     serde_json::from_value(json!({
         "quote": {
@@ -129,6 +152,7 @@ fn sell_quote_response() -> OrderQuoteResponse {
     .expect("example quote fixture must deserialize")
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Minimal in-process [`OrderbookClient`] stand-in that returns a fixed
 /// quote, records submitted orders, and hands back a stable order UID so
 /// the example can run end-to-end without a live orderbook.
@@ -138,6 +162,7 @@ struct ExampleOrderbook {
     state: Mutex<OrderbookState>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Default)]
 struct OrderbookState {
     quote_requests: Vec<OrderQuoteRequest>,
@@ -145,6 +170,7 @@ struct OrderbookState {
     uploads: Vec<(AppDataHash, String)>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl ExampleOrderbook {
     fn new(chain_id: SupportedChainId, env: CowEnv, quote_response: OrderQuoteResponse) -> Self {
         Self {
@@ -155,7 +181,9 @@ impl ExampleOrderbook {
     }
 }
 
-#[async_trait]
+#[cfg(not(target_arch = "wasm32"))]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl OrderbookClient for ExampleOrderbook {
     fn context(&self) -> &ApiContext {
         &self.context
@@ -207,6 +235,7 @@ impl OrderbookClient for ExampleOrderbook {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Minimal in-process [`Signer`] that returns a fixed address and a fixed
 /// typed-data signature. Real consumers wire in a hardware wallet, keystore,
 /// or alloy-backed signer through the same trait surface.
@@ -215,12 +244,14 @@ struct ExampleSigner {
     address: Address,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl ExampleSigner {
     const fn new(address: Address) -> Self {
         Self { address }
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Signer for ExampleSigner {
     type Provider = ();
     type Error = ExampleSignerError;
@@ -260,11 +291,13 @@ impl Signer for ExampleSigner {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Optional [`Provider`] implementation kept for completeness; the trading
 /// flow used by this example does not require it.
 #[allow(dead_code)]
 struct ExampleProvider;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[allow(dead_code)]
 impl Provider for ExampleProvider {
     type Signer = ExampleSigner;
@@ -322,31 +355,37 @@ impl Provider for ExampleProvider {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Debug, thiserror::Error)]
 enum ExampleSignerError {
     #[error("example signer does not implement {0}")]
     Unsupported(&'static str),
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// Thin wrapper around [`TradingError`] used to plug the trading error type
 /// into `Box<dyn Error>` without adding an explicit `impl From` on the
 /// upstream type.
 struct TradingErrorReport(String);
 
+#[cfg(not(target_arch = "wasm32"))]
 impl std::fmt::Display for TradingErrorReport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl std::fmt::Debug for TradingErrorReport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl std::error::Error for TradingErrorReport {}
 
+#[cfg(not(target_arch = "wasm32"))]
 impl From<TradingError> for TradingErrorReport {
     fn from(error: TradingError) -> Self {
         Self(error.to_string())

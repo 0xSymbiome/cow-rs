@@ -4,16 +4,27 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use cow_sdk_core::{AddressPerChain, Amount, CowEnv, SupportedChainId};
+#[cfg(target_arch = "wasm32")]
+use cow_sdk_orderbook::OrderBookApi;
+#[cfg(target_arch = "wasm32")]
+use cow_sdk_trading::TradingError;
 use cow_sdk_trading::{
     ApprovalParameters, OrderTraderParameters, PartialTraderParameters, TradingSdk,
-    TradingSdkOptions,
+    TradingSdkBuilder, TradingSdkMode, TradingSdkOptions,
 };
+#[cfg(target_arch = "wasm32")]
+use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 use num_bigint::BigUint;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
 use crate::common::{
     ALT_RECEIVER, COW, CUSTOM_ETHFLOW, CUSTOM_SETTLEMENT, MockOrderbook, MockProvider, MockSigner,
     OWNER, address, ethflow_order, order_uid, sample_trade_parameters, sell_quote_response,
 };
+
+#[cfg(target_arch = "wasm32")]
+wasm_bindgen_test_configure!(run_in_browser);
 
 fn calldata_word(data: &str, index: usize) -> String {
     let stripped = data
@@ -489,23 +500,56 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
     assert_eq!(calldata_word(data.as_str(), 4), app_data_without_prefix);
 }
 
-#[test]
-fn typestate_build_ready_produces_a_ready_mode_sdk_without_runtime_default_checks() {
-    let sdk = cow_sdk_trading::TradingSdkBuilder::new()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("typestate-ready")
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen_test]
+fn build_ready_rejects_missing_injected_orderbook_client_on_wasm32() {
+    let error = TradingSdkBuilder::new()
+        .with_chain_id(SupportedChainId::Mainnet)
+        .with_app_code("test-app")
         .build_ready()
-        .expect("typestate build_ready must succeed when the prerequisites are set");
+        .expect_err("wasm32 build_ready must reject a missing injected orderbook client");
 
-    assert_eq!(sdk.mode(), cow_sdk_trading::TradingSdkMode::Ready);
+    assert!(matches!(
+        error,
+        TradingError::MissingInjectedOrderbookClient
+    ));
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen_test]
+fn build_ready_succeeds_on_wasm32_with_injected_orderbook_client() {
+    let transport = FetchTransport::new(&FetchTransportConfig::new("https://api.cow.fi"));
+    let client = OrderBookApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .environment(CowEnv::Prod)
+        .transport(Arc::new(transport))
+        .build();
+
+    let sdk = TradingSdkBuilder::new()
+        .with_chain_id(SupportedChainId::Mainnet)
+        .with_app_code("test-app")
+        .with_orderbook_client(Arc::new(client))
+        .build_ready()
+        .expect("wasm32 build_ready must accept an injected orderbook client");
+
+    assert_eq!(sdk.mode(), TradingSdkMode::Ready);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[tokio::test]
+async fn build_ready_succeeds_on_native_without_injected_orderbook_client() {
+    let sdk = TradingSdkBuilder::new()
+        .with_chain_id(SupportedChainId::Mainnet)
+        .with_app_code("test-app")
+        .build_ready()
+        .expect("native build_ready must succeed when the typestate prerequisites are set");
+
+    assert_eq!(sdk.mode(), TradingSdkMode::Ready);
     assert_eq!(
         sdk.trader_defaults().chain_id,
-        Some(SupportedChainId::Sepolia)
+        Some(SupportedChainId::Mainnet)
     );
-    assert_eq!(
-        sdk.trader_defaults().app_code.as_deref(),
-        Some("typestate-ready")
-    );
+    assert_eq!(sdk.trader_defaults().app_code.as_deref(), Some("test-app"));
 }
 
 #[test]

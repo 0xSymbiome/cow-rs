@@ -1167,6 +1167,10 @@ unreleased public contract of the repository.
   published `cow-sdk` crate family the sequence publishes in dependency
   order.
 
+### Changed
+
+- `TradingSdkBuilder::build_ready()` on `wasm32` targets now fails fast with a typed error when no orderbook client has been injected, instead of deferring the failure to the first quote or post call.
+
 ### Fixed
 
 - Published crate READMEs now compile as doctests on every CI run, and the

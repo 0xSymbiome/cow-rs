@@ -956,6 +956,7 @@ dependencies = [
  "cow-sdk-core",
  "cow-sdk-orderbook",
  "cow-sdk-signing",
+ "cow-sdk-transport-wasm",
  "criterion",
  "hex",
  "num-bigint",
@@ -965,6 +966,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
+ "wasm-bindgen-test",
  "web-time",
 ]
 

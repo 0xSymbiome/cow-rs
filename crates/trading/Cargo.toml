@@ -43,7 +43,6 @@ tracing = { workspace = true, optional = true }
 [dev-dependencies]
 criterion.workspace = true
 serde_json.workspace = true
-tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }
 
 [[bench]]
 name = "order_build"
@@ -51,3 +50,11 @@ harness = false
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 web-time = "1.1.0"
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+cow-sdk-transport-wasm = { path = "../transport-wasm", version = "0.1.0" }
+tokio = { workspace = true, features = ["macros", "rt", "test-util", "time"] }
+wasm-bindgen-test.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }

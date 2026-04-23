@@ -364,17 +364,24 @@ impl TradingSdkBuilder<ChainIdSet, AppCodeSet> {
     /// Builds a fully-configured ready-state [`TradingSdk`].
     ///
     /// The compile-time typestate guarantees that both chain id and app code
-    /// have been supplied before this terminal runs, so the only remaining
-    /// runtime validation is the injected orderbook binding. Attempting to
-    /// call `build_ready` on a builder that does not own those prerequisites
-    /// is a compile error. Use [`TradingSdkBuilder::build`] for the permissive
-    /// runtime-validated alternative.
+    /// have been supplied before this terminal runs. On native targets the
+    /// default orderbook factory resolves the remaining runtime prerequisite
+    /// for quote and post flows. On `wasm32` targets, the builder requires an
+    /// injected orderbook client through
+    /// [`crate::TradingSdkOptions::with_orderbook_client`] because the browser
+    /// runtime does not ship a default HTTP transport; see ADR 0013.
+    /// Attempting to call `build_ready` on a builder that does not own the
+    /// typestate prerequisites is a compile error. Use
+    /// [`TradingSdkBuilder::build`] for the permissive runtime-validated
+    /// alternative.
     ///
     /// # Errors
     ///
     /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
     /// builder's default chain or environment conflicts with an injected
-    /// orderbook client.
+    /// orderbook client. On `wasm32`, also returns
+    /// [`TradingError::MissingInjectedOrderbookClient`] when no orderbook
+    /// client has been supplied.
     ///
     /// ```compile_fail
     /// use cow_sdk_trading::TradingSdkBuilder;
@@ -392,6 +399,15 @@ impl TradingSdkBuilder<ChainIdSet, AppCodeSet> {
     /// ```
     pub fn build_ready(self) -> Result<TradingSdk, TradingError> {
         self.validate_injected_orderbook_binding()?;
+
+        // On wasm32 targets the default orderbook factory cannot run because
+        // ADR 0013 requires an explicit HTTP transport. Fail at the terminal
+        // instead of deferring the missing-client error to the first
+        // orderbook-bound call.
+        #[cfg(target_arch = "wasm32")]
+        if self.options.orderbook_client().is_none() {
+            return Err(TradingError::MissingInjectedOrderbookClient);
+        }
 
         Ok(TradingSdk {
             trader_defaults: self.trader_defaults,

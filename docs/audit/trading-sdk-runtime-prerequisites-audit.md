@@ -1,9 +1,9 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current  
-Last reviewed: 2026-04-21  
+Last reviewed: 2026-04-23  
 Owning surface: `cow-sdk-trading` ready-state versus partial `TradingSdk` construction and helper-specific prerequisite contract  
-Refresh trigger: Changes to ready-state `TradingSdk` constructors or builders, partial setup entry points, or method-specific prerequisite enforcement  
+Refresh trigger: Changes to ready-state `TradingSdk` constructors or builders, partial setup entry points, method-specific prerequisite enforcement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`  
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
@@ -29,7 +29,8 @@ or unrelated credential-hygiene questions.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Ready-state SDK construction | `TradingSdk::build` and `TradingSdk::new` require `appCode` plus chain authority before exposing the ready quote or post surface | Conforms |
+| Runtime-validated ready construction | `TradingSdk::build` and `TradingSdk::new` require `appCode` plus chain authority before exposing the permissive ready-state construction path | Conforms |
+| wasm32 build_ready() requires injected orderbook client | `build_ready()` returns `TradingError::MissingInjectedOrderbookClient` when `options.orderbook_client().is_none()` on `wasm32` | Conforms |
 | Partial helper construction | Explicit partial constructors keep helper-only setup available without weakening the ready-state contract | Conforms |
 | Chain-bound helper prerequisites | Allowance, approval, pre-sign, and on-chain cancellation no longer require `appCode` when only chain and protocol context are needed | Conforms |
 
@@ -37,12 +38,22 @@ or unrelated credential-hygiene questions.
 
 ### Ready-State Construction
 
-`TradingSdk::build` and `TradingSdk::new` encode the prerequisites of the
-surface they advertise. A ready-state SDK must supply `appCode` and either an
-explicit `chainId` or an injected orderbook client that fixes chain authority.
-Construction therefore fails locally when those prerequisites are absent
-instead of returning an instance that will only fail later during quote or
-post execution.
+`TradingSdk::build` and `TradingSdk::new` keep the permissive runtime-validated
+construction path. A ready-state SDK must supply `appCode` and either an
+explicit `chainId` or an injected orderbook client that fixes chain authority,
+so construction still fails locally when those prerequisites are absent instead
+of returning an instance that will only fail later during quote or post
+execution.
+
+### wasm32 Typestate Ready Terminal
+
+`TradingSdkBuilder::build_ready()` is the stronger typestate terminal. On
+native targets it remains compatible with the default orderbook factory. On
+`wasm32`, the terminal additionally requires an injected orderbook client
+because the browser runtime does not ship a default HTTP transport; the
+terminal now returns `TradingError::MissingInjectedOrderbookClient` instead of
+returning a misleading ready-state handle whose first quote or post call would
+fail in orderbook binding resolution.
 
 ### Explicit Partial Construction
 
@@ -71,7 +82,9 @@ Primary implementation points:
 
 Primary regression coverage:
 
-- `crates/trading/tests/sdk_contract.rs`
+- `crates/trading/tests/sdk_contract.rs::build_ready_rejects_missing_injected_orderbook_client_on_wasm32`
+- `crates/trading/tests/sdk_contract.rs::build_ready_succeeds_on_wasm32_with_injected_orderbook_client`
+- `crates/trading/tests/sdk_contract.rs::build_ready_succeeds_on_native_without_injected_orderbook_client`
 - `crates/sdk/tests/public_api.rs`
 
 Validation surface:
@@ -83,4 +96,5 @@ cargo test -p cow-sdk
 cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo check --workspace --all-features --target wasm32-unknown-unknown
+cd crates/trading && wasm-pack test --headless --chrome
 ```

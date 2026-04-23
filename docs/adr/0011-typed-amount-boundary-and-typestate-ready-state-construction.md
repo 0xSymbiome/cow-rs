@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-04-17
+- Last reviewed: 2026-04-23
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, trading, builders, semver
 - Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
@@ -46,6 +47,10 @@ widening the runtime surface.
   `TradingSdkBuilder` exposes `build_ready` (requires both markers set)
   and `build_helper_only` (requires only the chain-id marker). The
   permissive `build` and `build_partial` terminals remain on every state.
+- On `wasm32` targets, `build_ready()` additionally requires an injected
+  orderbook client through `TradingSdkOptions::with_orderbook_client(...)`.
+  The default orderbook factory does not run on `wasm32` because the
+  browser runtime does not ship a default `HttpTransport` (see ADR 0013).
 - Runtime and support: the wire form of every amount remains the
   canonical base-10 string already defined by the orderbook contract.
   `Amount` serializes to that exact string via a custom serializer;
