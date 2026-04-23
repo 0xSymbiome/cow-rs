@@ -23,10 +23,20 @@ asserting that consumers keep full control of their chain-RPC runtime
 through the `AsyncProvider` seam rather than being forced onto a specific
 provider ecosystem by a transitive dependency.
 
+This command is guarded for drift by `scripts/check-release-docs-agree.sh`;
+any mismatch against `docs/verification-matrix.md`,
+`.github/workflows/_quality-gate.yml`, `CONTRIBUTING.md`, or
+`PROPERTIES.md` fails the `docs-agree-on-release-gates` CI job.
+
 `cargo audit` is the blocking RustSec gate for published advisories. It keeps
 vulnerabilities, unsound advisories, and unmaintained advisories blocking while
 leaving yanked-only published-upstream cases reviewable through public audit
 evidence until a published replacement exists.
+
+This command is guarded for drift by `scripts/check-release-docs-agree.sh`;
+any mismatch against `docs/verification-matrix.md` or
+`.github/workflows/_quality-gate.yml` fails the
+`docs-agree-on-release-gates` CI job.
 
 ## 2. Documentation And Public API Gates
 

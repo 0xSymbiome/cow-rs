@@ -256,3 +256,5 @@ jobs:
           persist-credentials: false
       - name: Verify release-gate commands agree across docs and CI
         run: scripts/check-release-docs-agree.sh
+      - name: Self-test docs-agreement script
+        run: bash scripts/test-check-release-docs-agree.sh

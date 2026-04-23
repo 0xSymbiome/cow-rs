@@ -42,7 +42,7 @@ Use it with:
 | `cargo fmt --all --check` | Formatting gate for consistent public diffs |
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
 | `cargo deny check bans licenses sources --config .github/config/deny.toml` | Blocking license, source, and duplicate-version policy gate |
-| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0105` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate |
+| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0105` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate; `scripts/check-release-docs-agree.sh` keeps the ignore-token list aligned with the release checklist and `_quality-gate.yml`. |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo test --workspace --doc` | Explicit doctest gate for rustdoc examples |
 | Published crate README doctests | Every published crate README is wired into crate rustdoc with a `cfg_attr(doctest, ...)` shim, so `cargo test --workspace --doc` compiles every fenced README example on CI. |
@@ -54,7 +54,7 @@ Use it with:
 | `codeql.yml` | Dedicated semantic security-analysis gate for Rust and GitHub Actions |
 | `cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml` | Repo-local parity fixture and source-lock gate for committed publication evidence |
 | `ci-success` | Aggregate routine CI status for branch protection across the required native validation and publication jobs |
-| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk` returns empty | Blocking stability-invariant gate asserting no shipped leaf crate transitively depends on `alloy-provider` |
+| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk` returns empty | Blocking stability-invariant gate asserting no shipped leaf crate transitively depends on `alloy-provider`; `scripts/check-release-docs-agree.sh` keeps the command copy aligned across the release checklist, `_quality-gate.yml`, `CONTRIBUTING.md`, and `PROPERTIES.md`. |
 
 ## Publication Gates
 
