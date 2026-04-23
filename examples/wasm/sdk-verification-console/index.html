@@ -1,4 +1,26 @@
 <!doctype html>
+<!--
+  dual-authority acknowledgement (CoW-RS WASM console)
+
+  This console's footer links reference the hosted-build
+  authority at `0xSymbiome/cow-rs` where this page
+  currently runs. The workspace `Cargo.toml::repository`
+  field and `SECURITY.md` advisory URL both name the
+  publication authority at `cowdao-grants/cow-rs`.
+  These two owners are distinct on purpose during the
+  current pre-publication posture: the hosted build
+  runs from the working dev-fork while the published
+  crate metadata already names the publication
+  authority. When the Pages deploy rotates to
+  `cowdao-grants/cow-rs`, the footer URLs below will
+  rotate at the same time and this comment will be
+  removed.
+
+  `scripts/check-release-docs-agree.sh` asserts this
+  sentinel is present on every `examples/wasm/*/index.html`
+  so the footer cannot drift away from the documented
+  policy without CI noticing.
+-->
 <html lang="en">
 <head>
   <meta charset="utf-8">

@@ -69,3 +69,30 @@ Published paths:
 https://<owner>.github.io/<repo>/sdk-verification-console/
 https://<owner>.github.io/<repo>/browser-wallet-console/
 ```
+
+## Current publication posture
+
+The WASM consoles in this directory carry footer links that reference the
+hosted-build authority where the current Pages deploy runs. The workspace crate
+metadata in `Cargo.toml::repository` names the publication authority, and
+`SECURITY.md` names the publication authority for private advisory reports.
+These two owners are intentionally distinct during the current
+pre-publication posture:
+
+- Hosted build authority: where the rendered consoles actually run today.
+- Publication authority: where the published crates and the security advisory
+  report live.
+
+When the Pages deploy rotates to the publication authority, both consoles'
+footer URLs will move at the same time and the dual-authority acknowledgement
+comment at the top of each `index.html` will be removed. The direct path to
+that state is rotating the Pages deploy so every surface names the publication
+authority. An alternative future posture is a build-time owner substitution
+through a `{{owner}}` placeholder in the `index.html` template that the
+publishing step resolves before the artifact ships; that path is not currently
+implemented.
+
+`scripts/check-release-docs-agree.sh` asserts the acknowledgement sentinel is
+present on every `examples/wasm/*/index.html` so the dual-authority state
+cannot drift silently. Once the rotation completes and the comments are
+removed, the drift lint drops with them.

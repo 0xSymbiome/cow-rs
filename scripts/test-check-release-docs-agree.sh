@@ -18,4 +18,9 @@ for drift_dir in cargo-tree-disagreement \
   fi
 done
 
+if "$SCRIPT" --root "$FIXTURES/drifted-footer-acknowledgement" > /dev/null 2>&1; then
+  echo "SELF-TEST FAIL: drifted-footer-acknowledgement should exit non-zero"
+  exit 1
+fi
+
 echo "SELF-TEST PASS"

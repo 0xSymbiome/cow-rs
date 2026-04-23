@@ -234,5 +234,15 @@ if [ "$release_checklist_playwright" != "$workflow_playwright" ]; then
   exit 1
 fi
 
+# ---- WASM console dual-authority acknowledgement ----
+for html in "$repo_root/examples/wasm"/*/index.html; do
+  if [ -f "$html" ]; then
+    if ! head -n 40 "$html" | grep -qF "dual-authority acknowledgement"; then
+      echo "error: $html is missing the dual-authority acknowledgement sentinel in its first 40 lines" >&2
+      exit 1
+    fi
+  fi
+done
+
 echo "Release-gate commands agree across docs and CI."
 exit 0
