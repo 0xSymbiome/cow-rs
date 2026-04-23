@@ -474,6 +474,10 @@ unreleased public contract of the repository.
   used by the order-derivation surface, matching the reviewed
   cross-runtime contract so browser-wallet-backed submission
   flows stay live on wasm32 builds.
+- Client-side order validation on the non-native-currency posting
+  path now runs before the app-data document is uploaded and
+  before the signer is prompted, so rejected orders no longer
+  persist pre-submission work.
 - IPFS base-URI preflight now fails closed symmetrically across the
   read and write paths. The `cow_sdk_app_data::pin_json_in_pinata_ipfs`
   helper rejects an empty, whitespace-only, or slash-only `write_uri`

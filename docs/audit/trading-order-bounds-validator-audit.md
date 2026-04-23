@@ -1,7 +1,7 @@
 # Trading Order-Bounds Validator Audit
 
 Status: Current
-Last reviewed: 2026-04-21
+Last reviewed: 2026-04-23
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
 `OrderValidityBounds`, `SubmissionClass`, `ClientRejection`,
 `AmountSide`, and the `TradingError::ClientRejected` lifting variant.
@@ -142,6 +142,9 @@ Primary regression coverage:
 
 - `crates/trading/tests/validation_contract.rs`
 - `crates/trading/tests/post_contract.rs`
+- `crates/trading/tests/post_contract.rs::post_swap_order_appdata_from_mismatch_does_not_upload_or_sign`
+- `crates/trading/tests/post_contract.rs::post_swap_order_same_buy_sell_token_does_not_upload_or_sign`
+- `crates/trading/tests/post_contract.rs::post_swap_order_zero_amount_does_not_upload_or_sign`
 - `crates/trading/tests/parity_contract.rs`
 
 Validation surface:

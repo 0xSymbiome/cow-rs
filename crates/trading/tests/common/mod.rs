@@ -2,16 +2,20 @@
 
 use std::{
     collections::BTreeMap,
-    sync::{Arc, Mutex},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicUsize, Ordering},
+    },
 };
 
 use async_trait::async_trait;
 use serde_json::json;
 
 use cow_sdk_core::{
-    Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, BlockInfo, ContractCall, ContractHandle,
-    CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer, SupportedChainId,
-    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
+    Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, AsyncSigner, BlockInfo, ContractCall,
+    ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer,
+    SupportedChainId, TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
+    TypedDataPayload,
 };
 use cow_sdk_orderbook::{
     AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
@@ -291,6 +295,92 @@ impl OrderbookClient for MockOrderbook {
             .uploads
             .push((app_data_hash.clone(), full_app_data.to_owned()));
         Ok(AppDataObject::new(full_app_data.to_owned()))
+    }
+}
+
+pub struct CountingSigner {
+    address: Address,
+    sign_calls: AtomicUsize,
+}
+
+impl CountingSigner {
+    pub const fn new(address: Address) -> Self {
+        Self {
+            address,
+            sign_calls: AtomicUsize::new(0),
+        }
+    }
+
+    pub fn sign_calls(&self) -> usize {
+        self.sign_calls.load(Ordering::Relaxed)
+    }
+
+    fn record_sign_call(&self) {
+        self.sign_calls.fetch_add(1, Ordering::Relaxed);
+    }
+}
+
+impl AsyncSigner for CountingSigner {
+    type Error = String;
+
+    async fn get_address(&self) -> Result<Address, Self::Error> {
+        Ok(self.address.clone())
+    }
+
+    async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
+        self.record_sign_call();
+        Err(
+            "CountingSigner::sign_message must not be reached under validator-first invariant"
+                .into(),
+        )
+    }
+
+    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+        Err(
+            "CountingSigner::sign_transaction must not be reached under validator-first invariant"
+                .into(),
+        )
+    }
+
+    async fn sign_typed_data_payload(
+        &self,
+        _payload: &TypedDataPayload,
+    ) -> Result<String, Self::Error> {
+        self.record_sign_call();
+        Err(
+            "CountingSigner::sign_typed_data_payload must not be reached under validator-first invariant"
+                .into(),
+        )
+    }
+
+    async fn sign_typed_data(
+        &self,
+        _domain: &TypedDataDomain,
+        _fields: &[TypedDataField],
+        _value_json: &str,
+    ) -> Result<String, Self::Error> {
+        self.record_sign_call();
+        Err(
+            "CountingSigner::sign_typed_data must not be reached under validator-first invariant"
+                .into(),
+        )
+    }
+
+    async fn send_transaction(
+        &self,
+        _tx: &TransactionRequest,
+    ) -> Result<TransactionReceipt, Self::Error> {
+        Err(
+            "CountingSigner::send_transaction must not be reached under validator-first invariant"
+                .into(),
+        )
+    }
+
+    async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
+        Err(
+            "CountingSigner::estimate_gas must not be reached under validator-first invariant"
+                .into(),
+        )
     }
 }
 

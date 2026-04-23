@@ -42,9 +42,9 @@ use cow_sdk_trading::{
 };
 
 use crate::common::{
-    ALT_RECEIVER, MockEip1271Provider, MockEthFlowChecker, MockOrderbook, MockSigner, OWNER,
-    address, buy_quote_response, sample_limit_parameters, sample_trade_parameters,
-    sample_trader_parameters, sell_quote_response, trading_fixture,
+    ALT_RECEIVER, CountingSigner, MockEip1271Provider, MockEthFlowChecker, MockOrderbook,
+    MockSigner, OWNER, address, buy_quote_response, sample_limit_parameters,
+    sample_trade_parameters, sample_trader_parameters, sell_quote_response, trading_fixture,
 };
 
 #[tokio::test]
@@ -387,6 +387,79 @@ async fn recoverable_limit_posting_rejects_owner_signer_mismatch_before_upload_o
     assert!(orderbook.state().uploads.is_empty());
     assert!(orderbook.state().sent_orders.is_empty());
     assert!(signer.state().last_typed_data_domain.is_none());
+}
+
+#[tokio::test]
+async fn post_swap_order_appdata_from_mismatch_does_not_upload_or_sign() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = CountingSigner::new(address(OWNER));
+    let params = sample_limit_parameters(OrderKind::Sell);
+    let advanced =
+        LimitOrderAdvancedSettings::new().with_app_data(cow_sdk_app_data::AppDataParams {
+            signer: Some(address(ALT_RECEIVER)),
+            ..Default::default()
+        });
+
+    let error = post_limit_order_async(&params, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect_err("mismatched app-data signer must reject before upload or signing");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::AppdataFromMismatch { .. },
+        )
+    ));
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert_eq!(signer.sign_calls(), 0);
+}
+
+#[tokio::test]
+async fn post_swap_order_same_buy_sell_token_does_not_upload_or_sign() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = CountingSigner::new(address(OWNER));
+    let mut params = sample_limit_parameters(OrderKind::Sell);
+    params.buy_token = params.sell_token.clone();
+
+    let error = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("same-token limit order must reject before upload or signing");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::SameBuyAndSellToken { .. },
+        )
+    ));
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert_eq!(signer.sign_calls(), 0);
+}
+
+#[tokio::test]
+async fn post_swap_order_zero_amount_does_not_upload_or_sign() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = CountingSigner::new(address(OWNER));
+    let mut params = sample_limit_parameters(OrderKind::Sell);
+    params.sell_amount = Amount::zero();
+
+    let error = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("zero-amount limit order must reject before upload or signing");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::ZeroAmount { side: _ },
+        )
+    ));
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert_eq!(signer.sign_calls(), 0);
 }
 
 #[tokio::test]

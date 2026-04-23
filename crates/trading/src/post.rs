@@ -633,13 +633,44 @@ where
     .await
 }
 
+fn build_order_body(
+    order_to_sign: &cow_sdk_core::UnsignedOrder,
+    app_data: &TradingAppDataInfo,
+    scheme: SigningScheme,
+    signature: String,
+    from: Address,
+    params: &LimitTradeParameters,
+) -> OrderCreation {
+    let mut order_body = OrderCreation::new(
+        order_to_sign.sell_token.clone(),
+        order_to_sign.buy_token.clone(),
+        order_to_sign.sell_amount.to_string(),
+        order_to_sign.buy_amount.to_string(),
+        order_to_sign.valid_to,
+        order_to_sign.kind,
+        scheme,
+        signature,
+        from,
+    )
+    .with_receiver(order_to_sign.receiver.clone())
+    .with_app_data(app_data.full_app_data.clone())
+    .with_app_data_hash(app_data.app_data_keccak256.clone())
+    .with_partially_fillable(order_to_sign.partially_fillable)
+    .with_sell_token_balance(order_to_sign.sell_token_balance)
+    .with_buy_token_balance(order_to_sign.buy_token_balance);
+    if let Some(quote_id) = params.quote_id {
+        order_body = order_body.with_quote_id(quote_id);
+    }
+    order_body
+}
+
 /// Signs and submits a `CoW` Protocol order using an asynchronous signer.
 ///
 /// Any explicit chain or environment must agree with the injected orderbook client, which is then
 /// used as the canonical runtime authority for order construction, signing, and submission.
 /// `EthFlow` sell orders require a quote identifier and are routed to the native-currency
-/// transaction path. Other orders are uploaded to the orderbook after signing with the requested
-/// or default signing scheme.
+/// transaction path. Other orders are validated client-side before app-data upload and signing,
+/// then submitted with the requested or default signing scheme.
 ///
 /// # Errors
 ///
@@ -760,6 +791,27 @@ where
         &app_data.app_data_keccak256,
     )?;
 
+    let preview = build_order_body(
+        &order_to_sign,
+        app_data,
+        requested_scheme,
+        String::new(),
+        from.clone(),
+        &params,
+    );
+    let validator =
+        OrderBoundsValidator::new(order_bounds, crate::validation::SubmissionClass::Limit)
+            .with_weth_address(wrapped_native_address(chain_id));
+    validator
+        .validate(
+            &preview,
+            requested_scheme,
+            app_data_signer,
+            current_unix_seconds(),
+            false,
+        )
+        .map_err(TradingError::ClientRejected)?;
+
     orderbook
         .upload_app_data(&app_data.app_data_keccak256, &app_data.full_app_data)
         .await?;
@@ -775,39 +827,14 @@ where
     )
     .await?;
 
-    let mut order_body = OrderCreation::new(
-        order_to_sign.sell_token.clone(),
-        order_to_sign.buy_token.clone(),
-        order_to_sign.sell_amount.to_string(),
-        order_to_sign.buy_amount.to_string(),
-        order_to_sign.valid_to,
-        order_to_sign.kind,
+    let order_body = build_order_body(
+        &order_to_sign,
+        app_data,
         signing_scheme,
         signature.clone(),
         from,
-    )
-    .with_receiver(order_to_sign.receiver.clone())
-    .with_app_data(app_data.full_app_data.clone())
-    .with_app_data_hash(app_data.app_data_keccak256.clone())
-    .with_partially_fillable(order_to_sign.partially_fillable)
-    .with_sell_token_balance(order_to_sign.sell_token_balance)
-    .with_buy_token_balance(order_to_sign.buy_token_balance);
-    if let Some(quote_id) = params.quote_id {
-        order_body = order_body.with_quote_id(quote_id);
-    }
-
-    let validator =
-        OrderBoundsValidator::new(order_bounds, crate::validation::SubmissionClass::Limit)
-            .with_weth_address(wrapped_native_address(chain_id));
-    validator
-        .validate(
-            &order_body,
-            signing_scheme,
-            app_data_signer,
-            current_unix_seconds(),
-            false,
-        )
-        .map_err(TradingError::ClientRejected)?;
+        &params,
+    );
     let order_id = orderbook.send_order(&order_body).await?;
 
     Ok(OrderPostingResult {
