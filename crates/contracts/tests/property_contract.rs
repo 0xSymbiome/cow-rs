@@ -172,24 +172,24 @@ fn order_strategy() -> impl Strategy<Value = Order> {
                 sell_token_balance,
                 buy_token_balance,
             )| {
-                Order {
+                Order::new(
                     sell_token,
                     buy_token,
-                    receiver: Some(receiver),
+                    Some(receiver),
                     sell_amount,
                     buy_amount,
                     valid_to,
                     app_data,
                     fee_amount,
-                    kind: if kind_sell {
+                    if kind_sell {
                         OrderKind::Sell
                     } else {
                         OrderKind::Buy
                     },
                     partially_fillable,
-                    sell_token_balance: Some(sell_token_balance),
-                    buy_token_balance: Some(buy_token_balance),
-                }
+                    Some(sell_token_balance),
+                    Some(buy_token_balance),
+                )
             },
         )
 }
@@ -254,10 +254,10 @@ fn scheme_and_signature_strategy() -> impl Strategy<Value = (SigningScheme, Sign
                 (
                     scheme,
                     Signature::Eip1271 {
-                        data: Eip1271SignatureData {
+                        data: Eip1271SignatureData::new(
                             verifier,
-                            signature: format!("0x{}", hex::encode(bytes)),
-                        },
+                            format!("0x{}", hex::encode(bytes)),
+                        ),
                     },
                 )
             })
@@ -284,11 +284,7 @@ proptest! {
         owner in address_strategy(),
         valid_to in any::<u32>(),
     ) {
-        let params = OrderUidParams {
-            order_digest: digest.clone(),
-            owner: owner.clone(),
-            valid_to,
-        };
+        let params = OrderUidParams::new(digest.clone(), owner.clone(), valid_to);
         let uid = pack_order_uid_params(&params).unwrap();
         let extracted = extract_order_uid_params(&uid).unwrap();
 
@@ -382,7 +378,7 @@ proptest! {
         (_scheme, signature) in scheme_and_signature_strategy(),
     ) {
         let normalized = normalize_order(&order).unwrap();
-        let execution = TradeExecution { executed_amount };
+        let execution = TradeExecution::new(executed_amount);
         let mut tokens = TokenRegistry::new();
 
         let trade = encode_trade(&mut tokens, &normalized, &signature, &execution).unwrap();
@@ -411,24 +407,15 @@ proptest! {
         scheme in signing_scheme_strategy(),
     ) {
         let kind = if kind_sell { OrderKind::Sell } else { OrderKind::Buy };
-        let order_flags = OrderFlags {
-            kind,
-            partially_fillable,
-            sell_token_balance: sell_balance,
-            buy_token_balance: buy_balance,
-        };
+        let order_flags =
+            OrderFlags::new(kind, partially_fillable, sell_balance, buy_balance);
         let encoded_order = encode_order_flags(&order_flags).unwrap();
         let decoded_order = decode_order_flags(encoded_order).unwrap();
         prop_assert_eq!(&decoded_order, &order_flags);
         prop_assert_eq!(encode_order_flags(&decoded_order).unwrap(), encoded_order);
 
-        let trade_flags = TradeFlags {
-            kind,
-            partially_fillable,
-            sell_token_balance: sell_balance,
-            buy_token_balance: buy_balance,
-            signing_scheme: scheme,
-        };
+        let trade_flags =
+            TradeFlags::new(kind, partially_fillable, sell_balance, buy_balance, scheme);
         let encoded_trade = encode_trade_flags(&trade_flags).unwrap();
         let decoded_trade = decode_trade_flags(encoded_trade).unwrap();
         prop_assert_eq!(encoded_trade & 0b1000_0000, 0);
@@ -476,10 +463,10 @@ proptest! {
             normalized_payload_bytes,
         );
 
-        let encoded = encode_eip1271_signature_data(&Eip1271SignatureData {
-            verifier: verifier.clone(),
-            signature: signature.clone(),
-        })
+        let encoded = encode_eip1271_signature_data(&Eip1271SignatureData::new(
+            verifier.clone(),
+            signature.clone(),
+        ))
         .unwrap();
         let decoded = decode_eip1271_signature_data(&encoded).unwrap();
 

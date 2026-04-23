@@ -14,6 +14,11 @@ pub const SALT: &str = "0x4d61747472657373657320696e204265726c696e21000000000000
 pub const DEPLOYER_CONTRACT: &str = "0x4e59b44847b379578588920ca78fbf26c0b4956c";
 
 /// Supported named `CoW` deployment artifacts.
+///
+/// The enum is `#[non_exhaustive]` so additional deployment artifacts can
+/// extend the public surface without breaking existing consumers. Internal
+/// matches remain exhaustive; downstream matches must include a wildcard arm.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ContractName {
@@ -26,6 +31,7 @@ pub enum ContractName {
 }
 
 /// Core `CoW` deployment addresses for a supported chain.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractAddresses {
@@ -35,6 +41,18 @@ pub struct ContractAddresses {
     pub vault_relayer: Address,
     /// `EthFlow` contract address.
     pub eth_flow: Address,
+}
+
+impl ContractAddresses {
+    /// Creates a set of canonical deployment addresses.
+    #[must_use]
+    pub const fn new(settlement: Address, vault_relayer: Address, eth_flow: Address) -> Self {
+        Self {
+            settlement,
+            vault_relayer,
+            eth_flow,
+        }
+    }
 }
 
 /// Computes a deterministic deployment address from bytecode and constructor arguments.
@@ -84,17 +102,17 @@ pub fn deployment_for_chain(chain_id: u64) -> Result<ContractAddresses, Contract
     let chain = SupportedChainId::try_from(chain_id)
         .map_err(|_| ContractsError::UnsupportedChain(chain_id))?;
     let registry = Registry::default();
-    Ok(ContractAddresses {
-        settlement: registry
+    Ok(ContractAddresses::new(
+        registry
             .address(ContractId::Settlement, chain, CowEnv::Prod)
             .expect("canonical settlement address is registered for every supported chain"),
-        vault_relayer: registry
+        registry
             .address(ContractId::VaultRelayer, chain, CowEnv::Prod)
             .expect("canonical vault-relayer address is registered for every supported chain"),
-        eth_flow: registry
+        registry
             .address(ContractId::EthFlow, chain, CowEnv::Prod)
             .expect("canonical EthFlow address is registered for every supported chain"),
-    })
+    ))
 }
 
 /// Returns the keccak256 hash of the deployment init code.

@@ -24,6 +24,7 @@ pub const ORDER_TYPE_HASH: &str =
 pub const ORDER_UID_LENGTH: usize = ORDER_UID_LENGTH_BYTES;
 
 /// EIP-712 field descriptor used for `CoW` order-type metadata.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OrderTypeField {
     /// Field name.
@@ -33,69 +34,40 @@ pub struct OrderTypeField {
     pub kind: &'static str,
 }
 
+impl OrderTypeField {
+    /// Creates an order-type field descriptor.
+    #[must_use]
+    pub const fn new(name: &'static str, kind: &'static str) -> Self {
+        Self { name, kind }
+    }
+}
+
 /// Canonical order type fields in struct-hash order.
 pub const ORDER_TYPE_FIELDS: [OrderTypeField; 12] = [
-    OrderTypeField {
-        name: "sellToken",
-        kind: "address",
-    },
-    OrderTypeField {
-        name: "buyToken",
-        kind: "address",
-    },
-    OrderTypeField {
-        name: "receiver",
-        kind: "address",
-    },
-    OrderTypeField {
-        name: "sellAmount",
-        kind: "uint256",
-    },
-    OrderTypeField {
-        name: "buyAmount",
-        kind: "uint256",
-    },
-    OrderTypeField {
-        name: "validTo",
-        kind: "uint32",
-    },
-    OrderTypeField {
-        name: "appData",
-        kind: "bytes32",
-    },
-    OrderTypeField {
-        name: "feeAmount",
-        kind: "uint256",
-    },
-    OrderTypeField {
-        name: "kind",
-        kind: "string",
-    },
-    OrderTypeField {
-        name: "partiallyFillable",
-        kind: "bool",
-    },
-    OrderTypeField {
-        name: "sellTokenBalance",
-        kind: "string",
-    },
-    OrderTypeField {
-        name: "buyTokenBalance",
-        kind: "string",
-    },
+    OrderTypeField::new("sellToken", "address"),
+    OrderTypeField::new("buyToken", "address"),
+    OrderTypeField::new("receiver", "address"),
+    OrderTypeField::new("sellAmount", "uint256"),
+    OrderTypeField::new("buyAmount", "uint256"),
+    OrderTypeField::new("validTo", "uint32"),
+    OrderTypeField::new("appData", "bytes32"),
+    OrderTypeField::new("feeAmount", "uint256"),
+    OrderTypeField::new("kind", "string"),
+    OrderTypeField::new("partiallyFillable", "bool"),
+    OrderTypeField::new("sellTokenBalance", "string"),
+    OrderTypeField::new("buyTokenBalance", "string"),
 ];
 
 /// Canonical EIP-712 field descriptor for order-cancellation payloads.
-pub const CANCELLATIONS_TYPE_FIELDS: [OrderTypeField; 1] = [OrderTypeField {
-    name: "orderUids",
-    kind: "bytes[]",
-}];
+pub const CANCELLATIONS_TYPE_FIELDS: [OrderTypeField; 1] =
+    [OrderTypeField::new("orderUids", "bytes[]")];
 
 /// Contract ABI and EIP-712 order payload.
 ///
 /// This type intentionally differs from `cow_sdk_core::UnsignedOrder`: receiver
 /// and token-balance fields are optional here because the contract hashing
 /// boundary applies `CoW` Protocol defaults during normalization.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Order {
@@ -133,6 +105,7 @@ pub struct Order {
 /// `normalize_order` creates this type after applying ABI-level defaults and
 /// rejecting invalid receiver state. It is separate from [`Order`] so hashing code
 /// cannot accidentally skip normalization.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NormalizedOrder {
@@ -163,6 +136,7 @@ pub struct NormalizedOrder {
 }
 
 /// Structured order UID components.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderUidParams {
@@ -175,6 +149,7 @@ pub struct OrderUidParams {
 }
 
 /// EIP-712 message body for order cancellations.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderCancellations {
@@ -183,6 +158,41 @@ pub struct OrderCancellations {
 }
 
 impl Order {
+    /// Creates a contract order payload.
+    #[must_use]
+    // Mirrors the full current public field set so callers can migrate off
+    // struct literals without losing explicit control over any wire field.
+    #[allow(clippy::too_many_arguments)]
+    pub const fn new(
+        sell_token: Address,
+        buy_token: Address,
+        receiver: Option<Address>,
+        sell_amount: Amount,
+        buy_amount: Amount,
+        valid_to: u32,
+        app_data: AppDataHash,
+        fee_amount: Amount,
+        kind: OrderKind,
+        partially_fillable: bool,
+        sell_token_balance: Option<SellTokenSource>,
+        buy_token_balance: Option<BuyTokenDestination>,
+    ) -> Self {
+        Self {
+            sell_token,
+            buy_token,
+            receiver,
+            sell_amount,
+            buy_amount,
+            valid_to,
+            app_data,
+            fee_amount,
+            kind,
+            partially_fillable,
+            sell_token_balance,
+            buy_token_balance,
+        }
+    }
+
     /// Returns the normalized contract order used for hashing and encoding.
     ///
     /// # Errors
@@ -194,22 +204,79 @@ impl Order {
     }
 }
 
+impl NormalizedOrder {
+    /// Creates a normalized contract order payload.
+    #[must_use]
+    // Mirrors the full current public field set so callers can migrate off
+    // struct literals without losing explicit control over any wire field.
+    #[allow(clippy::too_many_arguments)]
+    pub const fn new(
+        sell_token: Address,
+        buy_token: Address,
+        receiver: Address,
+        sell_amount: Amount,
+        buy_amount: Amount,
+        valid_to: u32,
+        app_data: AppDataHash,
+        fee_amount: Amount,
+        kind: OrderKind,
+        partially_fillable: bool,
+        sell_token_balance: SellTokenSource,
+        buy_token_balance: BuyTokenDestination,
+    ) -> Self {
+        Self {
+            sell_token,
+            buy_token,
+            receiver,
+            sell_amount,
+            buy_amount,
+            valid_to,
+            app_data,
+            fee_amount,
+            kind,
+            partially_fillable,
+            sell_token_balance,
+            buy_token_balance,
+        }
+    }
+}
+
+impl OrderUidParams {
+    /// Creates structured order UID components.
+    #[must_use]
+    pub const fn new(order_digest: OrderDigest, owner: Address, valid_to: u32) -> Self {
+        Self {
+            order_digest,
+            owner,
+            valid_to,
+        }
+    }
+}
+
+impl OrderCancellations {
+    /// Creates an order-cancellation payload.
+    #[must_use]
+    pub const fn new(order_uids: Vec<OrderUid>) -> Self {
+        Self { order_uids }
+    }
+}
+
 impl From<&cow_sdk_core::UnsignedOrder> for Order {
     fn from(order: &cow_sdk_core::UnsignedOrder) -> Self {
-        Self {
-            sell_token: order.sell_token.clone(),
-            buy_token: order.buy_token.clone(),
-            receiver: Some(order.receiver.clone()),
-            sell_amount: order.sell_amount.clone(),
-            buy_amount: order.buy_amount.clone(),
-            valid_to: order.valid_to,
-            app_data: order.app_data.clone(),
-            fee_amount: order.fee_amount.clone(),
-            kind: order.kind,
-            partially_fillable: order.partially_fillable,
-            sell_token_balance: Some(order.sell_token_balance),
-            buy_token_balance: Some(order.buy_token_balance),
-        }
+        Self::new(
+            order.sell_token.clone(),
+            order.buy_token.clone(),
+            Some(order.receiver.clone()),
+            order.sell_amount.clone(),
+            order.buy_amount.clone(),
+            order.valid_to,
+            order.app_data.clone(),
+            order.fee_amount.clone(),
+            order.kind,
+            order.partially_fillable,
+            Some(order.sell_token_balance),
+            Some(order.buy_token_balance),
+        )
     }
 }
 
@@ -231,20 +298,20 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
         return Err(ContractsError::ZeroReceiver);
     }
 
-    Ok(NormalizedOrder {
-        sell_token: order.sell_token.clone(),
-        buy_token: order.buy_token.clone(),
-        receiver: order.receiver.clone().unwrap_or_else(zero_address),
-        sell_amount: order.sell_amount.clone(),
-        buy_amount: order.buy_amount.clone(),
-        valid_to: order.valid_to,
-        app_data: order.app_data.clone(),
-        fee_amount: order.fee_amount.clone(),
-        kind: order.kind,
-        partially_fillable: order.partially_fillable,
-        sell_token_balance: order.sell_token_balance.unwrap_or_default(),
-        buy_token_balance: order.buy_token_balance.unwrap_or_default(),
-    })
+    Ok(NormalizedOrder::new(
+        order.sell_token.clone(),
+        order.buy_token.clone(),
+        order.receiver.clone().unwrap_or_else(zero_address),
+        order.sell_amount.clone(),
+        order.buy_amount.clone(),
+        order.valid_to,
+        order.app_data.clone(),
+        order.fee_amount.clone(),
+        order.kind,
+        order.partially_fillable,
+        order.sell_token_balance.unwrap_or_default(),
+        order.buy_token_balance.unwrap_or_default(),
+    ))
 }
 
 /// Computes the EIP-712 digest for an order.
@@ -266,12 +333,7 @@ pub fn hash_order_cancellation(
     domain: &TypedDataDomain,
     order_uid: &OrderUid,
 ) -> Result<Hash32, ContractsError> {
-    hash_order_cancellations(
-        domain,
-        &OrderCancellations {
-            order_uids: vec![order_uid.clone()],
-        },
-    )
+    hash_order_cancellations(domain, &OrderCancellations::new(vec![order_uid.clone()]))
 }
 
 /// Computes the EIP-712 digest for a batch order cancellation payload.
@@ -309,11 +371,11 @@ pub fn compute_order_uid(
     order: &Order,
     owner: &Address,
 ) -> Result<OrderUid, ContractsError> {
-    pack_order_uid_params(&OrderUidParams {
-        order_digest: hash_order(domain, order)?,
-        owner: owner.clone(),
-        valid_to: order.valid_to,
-    })
+    pack_order_uid_params(&OrderUidParams::new(
+        hash_order(domain, order)?,
+        owner.clone(),
+        order.valid_to,
+    ))
 }
 
 /// Packs structured order UID components into the compact UID string.
@@ -357,11 +419,7 @@ pub fn extract_order_uid_params(order_uid: &OrderUid) -> Result<OrderUidParams, 
             })?;
     let valid_to = u32::from_be_bytes(valid_to_bytes);
 
-    Ok(OrderUidParams {
-        order_digest,
-        owner,
-        valid_to,
-    })
+    Ok(OrderUidParams::new(order_digest, owner, valid_to))
 }
 
 /// Computes the low-level order digest for the compatibility [`OrderModel`] shape.
@@ -408,28 +466,28 @@ pub fn uid_for_contract(
     valid_to: u32,
 ) -> Result<OrderUid, ContractsError> {
     let digest = hash_order_for_contract(order, chain_id)?;
-    pack_order_uid_params(&OrderUidParams {
-        order_digest: OrderDigest::new(format!("0x{}", hex::encode(digest)))?,
-        owner: Address::new(format!("0x{}", hex::encode(owner)))?,
+    pack_order_uid_params(&OrderUidParams::new(
+        OrderDigest::new(format!("0x{}", hex::encode(digest)))?,
+        Address::new(format!("0x{}", hex::encode(owner)))?,
         valid_to,
-    })
+    ))
 }
 
 fn compatibility_order(order: &OrderModel) -> Order {
-    Order {
-        sell_token: order.sell_token.clone(),
-        buy_token: order.buy_token.clone(),
-        receiver: Some(order.receiver.clone()),
-        sell_amount: Amount::zero(),
-        buy_amount: Amount::zero(),
-        valid_to: 0,
-        app_data: order.app_data_hex.clone(),
-        fee_amount: Amount::zero(),
-        kind: order.kind,
-        partially_fillable: false,
-        sell_token_balance: None,
-        buy_token_balance: None,
-    }
+    Order::new(
+        order.sell_token.clone(),
+        order.buy_token.clone(),
+        Some(order.receiver.clone()),
+        Amount::zero(),
+        Amount::zero(),
+        0,
+        order.app_data_hex.clone(),
+        Amount::zero(),
+        order.kind,
+        false,
+        None,
+        None,
+    )
 }
 
 fn order_struct_hash(order: &NormalizedOrder) -> Result<[u8; 32], ContractsError> {
@@ -478,23 +536,21 @@ mod tests {
     }
 
     fn sample_order() -> Order {
-        Order {
-            sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-            buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-            receiver: None,
-            sell_amount: Amount::new("1000").unwrap(),
-            buy_amount: Amount::new("900").unwrap(),
-            valid_to: 1_700_000_000,
-            app_data: AppDataHash::new(
-                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            )
-            .unwrap(),
-            fee_amount: Amount::new("10").unwrap(),
-            kind: OrderKind::Sell,
-            partially_fillable: true,
-            sell_token_balance: Some(SellTokenSource::External),
-            buy_token_balance: Some(BuyTokenDestination::Internal),
-        }
+        Order::new(
+            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+            None,
+            Amount::new("1000").unwrap(),
+            Amount::new("900").unwrap(),
+            1_700_000_000,
+            AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                .unwrap(),
+            Amount::new("10").unwrap(),
+            OrderKind::Sell,
+            true,
+            Some(SellTokenSource::External),
+            Some(BuyTokenDestination::Internal),
+        )
     }
 
     fn encode_address_word(address: &Address) -> [u8; 32] {

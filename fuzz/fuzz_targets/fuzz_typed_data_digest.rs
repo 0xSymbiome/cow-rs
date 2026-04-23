@@ -95,15 +95,13 @@ fuzz_target!(|input: FuzzInput| {
     // Exercise the second public typed-data digest helper in the same
     // module with a single-UID cancellation payload built from the
     // just-packed order UID.
-    let uid = pack_order_uid_params(&OrderUidParams {
-        order_digest: OrderDigest::from_bytes(input.app_data),
-        owner: Address::from_bytes(input.receiver),
-        valid_to: input.valid_to,
-    })
+    let uid = pack_order_uid_params(&OrderUidParams::new(
+        OrderDigest::from_bytes(input.app_data),
+        Address::from_bytes(input.receiver),
+        input.valid_to,
+    ))
     .expect("pack_order_uid_params must accept hex-typed components from from_bytes");
-    let cancellations = OrderCancellations {
-        order_uids: vec![uid],
-    };
+    let cancellations = OrderCancellations::new(vec![uid]);
     let _ = hash_order_cancellations(&domain, &cancellations)
         .expect("hash_order_cancellations must accept a just-packed UID");
 });

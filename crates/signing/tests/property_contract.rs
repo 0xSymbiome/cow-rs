@@ -349,9 +349,7 @@ proptest! {
             order_cancellations_typed_data_payload(&order_uids, chain, None).unwrap();
         let expected_digest = hash_order_cancellations(
             &get_domain(chain, None).unwrap(),
-            &OrderCancellations {
-                order_uids: order_uids.clone(),
-            },
+            &OrderCancellations::new(order_uids.clone()),
         )
         .unwrap();
 

@@ -110,18 +110,18 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
     );
 
     provider.set_response(
-        &serde_json::to_string(&TradeSimulationResult {
-            gas_used: Amount::new("21000").unwrap(),
-            executed_buy_amount: Amount::new("1980").unwrap(),
-            contract_balance: TradeSimulationBalanceDelta {
-                sell_token_delta: SignedAmount::new("100").unwrap(),
-                buy_token_delta: SignedAmount::new("-1980").unwrap(),
-            },
-            owner_balance: TradeSimulationBalanceDelta {
-                sell_token_delta: SignedAmount::new("-100").unwrap(),
-                buy_token_delta: SignedAmount::new("1980").unwrap(),
-            },
-        })
+        &serde_json::to_string(&TradeSimulationResult::new(
+            Amount::new("21000").unwrap(),
+            Amount::new("1980").unwrap(),
+            TradeSimulationBalanceDelta::new(
+                SignedAmount::new("100").unwrap(),
+                SignedAmount::new("-1980").unwrap(),
+            ),
+            TradeSimulationBalanceDelta::new(
+                SignedAmount::new("-100").unwrap(),
+                SignedAmount::new("1980").unwrap(),
+            ),
+        ))
         .unwrap(),
     );
 
@@ -133,26 +133,26 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
             .unwrap(),
         provider: provider.clone(),
     };
-    let trade = TradeSimulation {
-        sell_token: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
-        buy_token: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        receiver: None,
-        sell_amount: Amount::new("100").unwrap(),
-        buy_amount: Amount::new("200").unwrap(),
-        sell_token_balance: None,
-        buy_token_balance: Some(BuyTokenDestination::Internal),
-        owner: Address::new("0x7777777777777777777777777777777777777777").unwrap(),
-    };
+    let trade = TradeSimulation::new(
+        Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
+        Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
+        None,
+        Amount::new("100").unwrap(),
+        Amount::new("200").unwrap(),
+        None,
+        Some(BuyTokenDestination::Internal),
+        Address::new("0x7777777777777777777777777777777777777777").unwrap(),
+    );
     let result = simulator
         .simulate_trade(
             &trade,
             &[(
                 InteractionStage::Pre,
-                vec![cow_sdk_contracts::InteractionLike {
-                    target: Address::new("0x8888888888888888888888888888888888888888").unwrap(),
-                    value: None,
-                    call_data: Some(Bytes::from_static(&[0x12, 0x34])),
-                }],
+                vec![cow_sdk_contracts::InteractionLike::new(
+                    Address::new("0x8888888888888888888888888888888888888888").unwrap(),
+                    None,
+                    Some(Bytes::from_static(&[0x12, 0x34])),
+                )],
             )],
         )
         .unwrap();

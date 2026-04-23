@@ -85,6 +85,7 @@ enum OrderRefundKind {
 }
 
 /// Compact order-flag inputs.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderFlags {
@@ -99,6 +100,7 @@ pub struct OrderFlags {
 }
 
 /// Compact trade-flag inputs.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeFlags {
@@ -115,6 +117,7 @@ pub struct TradeFlags {
 }
 
 /// Trade execution override used while encoding settlements.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeExecution {
@@ -123,6 +126,7 @@ pub struct TradeExecution {
 }
 
 /// Order-refund payload used for settlement post-interactions.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderRefunds {
@@ -136,6 +140,7 @@ pub struct OrderRefunds {
 pub type Prices = BTreeMap<Address, Amount>;
 
 /// Encoded settlement trade payload.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Trade {
@@ -161,6 +166,98 @@ pub struct Trade {
     pub executed_amount: Amount,
     /// Encoded signature payload.
     pub signature: String,
+}
+
+impl OrderFlags {
+    /// Creates compact order-flag inputs.
+    #[must_use]
+    pub const fn new(
+        kind: OrderKind,
+        partially_fillable: bool,
+        sell_token_balance: SellTokenSource,
+        buy_token_balance: BuyTokenDestination,
+    ) -> Self {
+        Self {
+            kind,
+            partially_fillable,
+            sell_token_balance,
+            buy_token_balance,
+        }
+    }
+}
+
+impl TradeFlags {
+    /// Creates compact trade-flag inputs.
+    #[must_use]
+    pub const fn new(
+        kind: OrderKind,
+        partially_fillable: bool,
+        sell_token_balance: SellTokenSource,
+        buy_token_balance: BuyTokenDestination,
+        signing_scheme: SigningScheme,
+    ) -> Self {
+        Self {
+            kind,
+            partially_fillable,
+            sell_token_balance,
+            buy_token_balance,
+            signing_scheme,
+        }
+    }
+}
+
+impl TradeExecution {
+    /// Creates a trade execution override.
+    #[must_use]
+    pub const fn new(executed_amount: Amount) -> Self {
+        Self { executed_amount }
+    }
+}
+
+impl OrderRefunds {
+    /// Creates an order-refund payload.
+    #[must_use]
+    pub const fn new(filled_amounts: Vec<OrderUid>, pre_signatures: Vec<OrderUid>) -> Self {
+        Self {
+            filled_amounts,
+            pre_signatures,
+        }
+    }
+}
+
+impl Trade {
+    /// Creates an encoded settlement trade payload.
+    #[must_use]
+    // Mirrors the full current public field set so callers can migrate off
+    // struct literals without losing explicit control over any wire field.
+    #[allow(clippy::too_many_arguments)]
+    pub const fn new(
+        sell_token_index: usize,
+        buy_token_index: usize,
+        receiver: Address,
+        sell_amount: Amount,
+        buy_amount: Amount,
+        valid_to: u32,
+        app_data: AppDataHash,
+        fee_amount: Amount,
+        flags: u8,
+        executed_amount: Amount,
+        signature: String,
+    ) -> Self {
+        Self {
+            sell_token_index,
+            buy_token_index,
+            receiver,
+            sell_amount,
+            buy_amount,
+            valid_to,
+            app_data,
+            fee_amount,
+            flags,
+            executed_amount,
+            signature,
+        }
+    }
 }
 
 /// Fully encoded settlement payload.
@@ -219,10 +316,7 @@ impl SettlementEncoder {
             tokens: TokenRegistry::new(),
             trades: Vec::new(),
             interactions: [Vec::new(), Vec::new(), Vec::new()],
-            order_refunds: OrderRefunds {
-                filled_amounts: Vec::new(),
-                pre_signatures: Vec::new(),
-            },
+            order_refunds: OrderRefunds::new(Vec::new(), Vec::new()),
         }
     }
 
@@ -297,11 +391,11 @@ impl SettlementEncoder {
                 }
                 .abi_encode(),
             };
-            interactions.push(Interaction {
-                target: self.domain.verifying_contract.clone(),
-                value: Amount::zero(),
-                call_data: Bytes::from(call_data),
-            });
+            interactions.push(Interaction::new(
+                self.domain.verifying_contract.clone(),
+                Amount::zero(),
+                Bytes::from(call_data),
+            ));
         }
         Ok(interactions)
     }
@@ -348,9 +442,7 @@ impl SettlementEncoder {
         let execution = match execution {
             Some(execution) => execution,
             None if order.partially_fillable => return Err(ContractsError::MissingExecutedAmount),
-            None => TradeExecution {
-                executed_amount: Amount::zero(),
-            },
+            None => TradeExecution::new(Amount::zero()),
         };
         self.trades.push(encode_trade(
             &mut self.tokens,
@@ -493,16 +585,16 @@ pub fn decode_order_flags(encoded: u8) -> Result<OrderFlags, ContractsError> {
         _ => unreachable!(),
     };
 
-    Ok(OrderFlags {
-        kind: if encoded & 0b1 == 0 {
+    Ok(OrderFlags::new(
+        if encoded & 0b1 == 0 {
             OrderKind::Sell
         } else {
             OrderKind::Buy
         },
-        partially_fillable: encoded & 0b10 != 0,
+        encoded & 0b10 != 0,
         sell_token_balance,
         buy_token_balance,
-    })
+    ))
 }
 
 /// Encodes trade flags into the compact settlement bitfield.
@@ -511,12 +603,12 @@ pub fn decode_order_flags(encoded: u8) -> Result<OrderFlags, ContractsError> {
 ///
 /// Returns any error from [`encode_order_flags`].
 pub fn encode_trade_flags(flags: &TradeFlags) -> Result<u8, ContractsError> {
-    let order_flags = encode_order_flags(&OrderFlags {
-        kind: flags.kind,
-        partially_fillable: flags.partially_fillable,
-        sell_token_balance: flags.sell_token_balance,
-        buy_token_balance: flags.buy_token_balance,
-    })?;
+    let order_flags = encode_order_flags(&OrderFlags::new(
+        flags.kind,
+        flags.partially_fillable,
+        flags.sell_token_balance,
+        flags.buy_token_balance,
+    ))?;
     let signing_scheme = flags.signing_scheme.as_u8() << 5;
     // Keep trade encoding aligned with the order codec: each field owns a disjoint bit range.
     Ok(order_flags + signing_scheme)
@@ -530,13 +622,13 @@ pub fn encode_trade_flags(flags: &TradeFlags) -> Result<u8, ContractsError> {
 pub fn decode_trade_flags(encoded: u8) -> Result<TradeFlags, ContractsError> {
     let order = decode_order_flags(encoded)?;
     let signing_scheme = decode_signing_scheme((encoded >> 5) & 0b11)?;
-    Ok(TradeFlags {
-        kind: order.kind,
-        partially_fillable: order.partially_fillable,
-        sell_token_balance: order.sell_token_balance,
-        buy_token_balance: order.buy_token_balance,
+    Ok(TradeFlags::new(
+        order.kind,
+        order.partially_fillable,
+        order.sell_token_balance,
+        order.buy_token_balance,
         signing_scheme,
-    })
+    ))
 }
 
 /// Encodes a signature into the settlement wire representation.
@@ -563,25 +655,25 @@ pub fn encode_trade(
     signature: &Signature,
     execution: &TradeExecution,
 ) -> Result<Trade, ContractsError> {
-    Ok(Trade {
-        sell_token_index: tokens.index(&order.sell_token),
-        buy_token_index: tokens.index(&order.buy_token),
-        receiver: order.receiver.clone(),
-        sell_amount: order.sell_amount.clone(),
-        buy_amount: order.buy_amount.clone(),
-        valid_to: order.valid_to,
-        app_data: order.app_data.clone(),
-        fee_amount: order.fee_amount.clone(),
-        flags: encode_trade_flags(&TradeFlags {
-            kind: order.kind,
-            partially_fillable: order.partially_fillable,
-            sell_token_balance: order.sell_token_balance,
-            buy_token_balance: order.buy_token_balance,
-            signing_scheme: signature.scheme(),
-        })?,
-        executed_amount: execution.executed_amount.clone(),
-        signature: encode_signature_data(signature)?,
-    })
+    Ok(Trade::new(
+        tokens.index(&order.sell_token),
+        tokens.index(&order.buy_token),
+        order.receiver.clone(),
+        order.sell_amount.clone(),
+        order.buy_amount.clone(),
+        order.valid_to,
+        order.app_data.clone(),
+        order.fee_amount.clone(),
+        encode_trade_flags(&TradeFlags::new(
+            order.kind,
+            order.partially_fillable,
+            order.sell_token_balance,
+            order.buy_token_balance,
+            signature.scheme(),
+        ))?,
+        execution.executed_amount.clone(),
+        encode_signature_data(signature)?,
+    ))
 }
 
 fn encode_settle_call(
@@ -688,20 +780,20 @@ pub fn decode_order(trade: &Trade, tokens: &[Address]) -> Result<Order, Contract
         });
     }
     let flags = decode_order_flags(trade.flags)?;
-    Ok(Order {
-        sell_token: tokens[trade.sell_token_index].clone(),
-        buy_token: tokens[trade.buy_token_index].clone(),
-        receiver: Some(trade.receiver.clone()),
-        sell_amount: trade.sell_amount.clone(),
-        buy_amount: trade.buy_amount.clone(),
-        valid_to: trade.valid_to,
-        app_data: trade.app_data.clone(),
-        fee_amount: trade.fee_amount.clone(),
-        kind: flags.kind,
-        partially_fillable: flags.partially_fillable,
-        sell_token_balance: Some(flags.sell_token_balance),
-        buy_token_balance: Some(flags.buy_token_balance),
-    })
+    Ok(Order::new(
+        tokens[trade.sell_token_index].clone(),
+        tokens[trade.buy_token_index].clone(),
+        Some(trade.receiver.clone()),
+        trade.sell_amount.clone(),
+        trade.buy_amount.clone(),
+        trade.valid_to,
+        trade.app_data.clone(),
+        trade.fee_amount.clone(),
+        flags.kind,
+        flags.partially_fillable,
+        Some(flags.sell_token_balance),
+        Some(flags.buy_token_balance),
+    ))
 }
 
 #[cfg(test)]
@@ -709,23 +801,21 @@ mod tests {
     use super::*;
 
     fn sample_order(partially_fillable: bool) -> Order {
-        Order {
-            sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-            buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-            receiver: Some(Address::new("0x3333333333333333333333333333333333333333").unwrap()),
-            sell_amount: Amount::new("10").unwrap(),
-            buy_amount: Amount::new("20").unwrap(),
-            valid_to: 123,
-            app_data: AppDataHash::new(
-                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            )
-            .unwrap(),
-            fee_amount: Amount::new("1").unwrap(),
-            kind: OrderKind::Buy,
+        Order::new(
+            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+            Some(Address::new("0x3333333333333333333333333333333333333333").unwrap()),
+            Amount::new("10").unwrap(),
+            Amount::new("20").unwrap(),
+            123,
+            AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                .unwrap(),
+            Amount::new("1").unwrap(),
+            OrderKind::Buy,
             partially_fillable,
-            sell_token_balance: Some(SellTokenSource::Internal),
-            buy_token_balance: Some(BuyTokenDestination::Internal),
-        }
+            Some(SellTokenSource::Internal),
+            Some(BuyTokenDestination::Internal),
+        )
     }
 
     fn sample_signature() -> Signature {
@@ -766,12 +856,12 @@ mod tests {
                     for buy_token_balance in
                         [BuyTokenDestination::Erc20, BuyTokenDestination::Internal]
                     {
-                        let order_flags = OrderFlags {
+                        let order_flags = OrderFlags::new(
                             kind,
                             partially_fillable,
                             sell_token_balance,
                             buy_token_balance,
-                        };
+                        );
                         let encoded = encode_order_flags(&order_flags).unwrap();
 
                         assert_eq!(encoded, manual_order_flags(&order_flags));
@@ -783,13 +873,13 @@ mod tests {
                             SigningScheme::Eip1271,
                             SigningScheme::PreSign,
                         ] {
-                            let trade_flags = TradeFlags {
+                            let trade_flags = TradeFlags::new(
                                 kind,
                                 partially_fillable,
                                 sell_token_balance,
                                 buy_token_balance,
                                 signing_scheme,
-                            };
+                            );
                             let encoded_trade = encode_trade_flags(&trade_flags).unwrap();
                             assert_eq!(
                                 encoded_trade,
@@ -822,22 +912,20 @@ mod tests {
 
     #[test]
     fn decode_order_rejects_each_invalid_index_independently() {
-        let trade = Trade {
-            sell_token_index: 0,
-            buy_token_index: 1,
-            receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-            sell_amount: Amount::new("10").unwrap(),
-            buy_amount: Amount::new("20").unwrap(),
-            valid_to: 123,
-            app_data: AppDataHash::new(
-                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            )
-            .unwrap(),
-            fee_amount: Amount::new("1").unwrap(),
-            flags: 0,
-            executed_amount: Amount::zero(),
-            signature: "0x".to_owned(),
-        };
+        let trade = Trade::new(
+            0,
+            1,
+            Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+            Amount::new("10").unwrap(),
+            Amount::new("20").unwrap(),
+            123,
+            AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                .unwrap(),
+            Amount::new("1").unwrap(),
+            0,
+            Amount::zero(),
+            "0x".to_owned(),
+        );
         let tokens = vec![
             Address::new("0x1111111111111111111111111111111111111111").unwrap(),
             Address::new("0x2222222222222222222222222222222222222222").unwrap(),
@@ -859,10 +947,10 @@ mod tests {
             data: "0xABCD".to_owned(),
         };
         let eip1271 = Signature::Eip1271 {
-            data: crate::signature::Eip1271SignatureData {
-                verifier: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
-                signature: "0x1234".to_owned(),
-            },
+            data: crate::signature::Eip1271SignatureData::new(
+                Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
+                "0x1234".to_owned(),
+            ),
         };
         let presign = sample_signature();
 

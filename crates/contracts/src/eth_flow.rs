@@ -53,6 +53,7 @@ sol! {
 /// [`encode_create_order_calldata`] and [`encode_invalidate_order_calldata`].
 ///
 /// Field order mirrors the upstream on-chain `EthFlowOrder.Data` struct.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EthFlowOrderData {
     /// Buy-token address.
@@ -76,21 +77,50 @@ pub struct EthFlowOrderData {
 }
 
 impl EthFlowOrderData {
+    /// Creates an `EthFlowOrderData` payload.
+    #[must_use]
+    // Mirrors the full current public field set so callers can migrate off
+    // struct literals without losing explicit control over any wire field.
+    #[allow(clippy::too_many_arguments)]
+    pub const fn new(
+        buy_token: Address,
+        receiver: Address,
+        sell_amount: Amount,
+        buy_amount: Amount,
+        app_data: AppDataHash,
+        fee_amount: Amount,
+        valid_to: u32,
+        partially_fillable: bool,
+        quote_id: i64,
+    ) -> Self {
+        Self {
+            buy_token,
+            receiver,
+            sell_amount,
+            buy_amount,
+            app_data,
+            fee_amount,
+            valid_to,
+            partially_fillable,
+            quote_id,
+        }
+    }
+
     /// Builds an `EthFlowOrderData` payload from a pre-signature unsigned order
     /// and the originating quote id.
     #[must_use]
     pub fn from_unsigned_order(order: &UnsignedOrder, quote_id: i64) -> Self {
-        Self {
-            buy_token: order.buy_token.clone(),
-            receiver: order.receiver.clone(),
-            sell_amount: order.sell_amount.clone(),
-            buy_amount: order.buy_amount.clone(),
-            app_data: order.app_data.clone(),
-            fee_amount: order.fee_amount.clone(),
-            valid_to: order.valid_to,
-            partially_fillable: order.partially_fillable,
+        Self::new(
+            order.buy_token.clone(),
+            order.receiver.clone(),
+            order.sell_amount.clone(),
+            order.buy_amount.clone(),
+            order.app_data.clone(),
+            order.fee_amount.clone(),
+            order.valid_to,
+            order.partially_fillable,
             quote_id,
-        }
+        )
     }
 }
 
@@ -165,20 +195,18 @@ mod tests {
     use sha3::{Digest, Keccak256};
 
     fn sample_order() -> EthFlowOrderData {
-        EthFlowOrderData {
-            buy_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-            receiver: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-            sell_amount: Amount::new("1000000000000000000").unwrap(),
-            buy_amount: Amount::new("2000000000000000000").unwrap(),
-            app_data: AppDataHash::new(
-                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            )
-            .unwrap(),
-            fee_amount: Amount::zero(),
-            valid_to: 0x1234_5678,
-            partially_fillable: false,
-            quote_id: 42,
-        }
+        EthFlowOrderData::new(
+            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+            Amount::new("1000000000000000000").unwrap(),
+            Amount::new("2000000000000000000").unwrap(),
+            AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                .unwrap(),
+            Amount::zero(),
+            0x1234_5678,
+            false,
+            42,
+        )
     }
 
     fn canonical_create_order_selector() -> [u8; 4] {

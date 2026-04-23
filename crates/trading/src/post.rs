@@ -985,11 +985,11 @@ pub fn eip1271_order_verification_request(
     let digest =
         cow_sdk_contracts::hash_order(&domain, &cow_sdk_contracts::Order::from(order_to_sign))?;
 
-    Ok(cow_sdk_contracts::Eip1271VerificationRequest {
-        verifier: verification.verifier.clone(),
+    Ok(cow_sdk_contracts::Eip1271VerificationRequest::new(
+        verification.verifier.clone(),
         digest,
-        signature: verification.signature.clone(),
-    })
+        verification.signature.clone(),
+    ))
 }
 
 /// Verifies an EIP-1271 order signature with a synchronous provider.

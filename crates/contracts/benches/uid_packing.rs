@@ -4,14 +4,12 @@ use cow_sdk_contracts::{OrderUidParams, extract_order_uid_params, pack_order_uid
 use cow_sdk_core::{Address, OrderDigest};
 
 fn sample_params() -> OrderUidParams {
-    OrderUidParams {
-        order_digest: OrderDigest::new(
-            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        )
-        .unwrap(),
-        owner: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        valid_to: 1_709_990_000,
-    }
+    OrderUidParams::new(
+        OrderDigest::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            .unwrap(),
+        Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        1_709_990_000,
+    )
 }
 
 fn bench_pack_order_uid_params(c: &mut Criterion) {

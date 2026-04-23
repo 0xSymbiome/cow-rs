@@ -380,11 +380,11 @@ fn assert_interaction_defaults(id: &str, expected: &Value) {
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
 
-    let normalized = normalize_interaction(&InteractionLike {
-        target: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        value: None,
-        call_data: None,
-    });
+    let normalized = normalize_interaction(&InteractionLike::new(
+        Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        None,
+        None,
+    ));
 
     assert_eq!(
         normalized.value.to_string(),
@@ -445,12 +445,12 @@ fn assert_order_flags_default_sell(id: &str, expected: &Value) {
         .as_u64()
         .unwrap_or_else(|| panic!("case {id}: expected.encoded_flags must be a u64"));
 
-    let encoded = encode_order_flags(&OrderFlags {
-        kind: OrderKind::Sell,
-        partially_fillable: false,
-        sell_token_balance: SellTokenSource::Erc20,
-        buy_token_balance: BuyTokenDestination::Erc20,
-    })
+    let encoded = encode_order_flags(&OrderFlags::new(
+        OrderKind::Sell,
+        false,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
+    ))
     .expect("default sell-erc20 order flags must encode");
 
     assert_eq!(
@@ -465,12 +465,12 @@ fn assert_order_flags_buy_partial_internal(id: &str, expected: &Value) {
         .as_u64()
         .unwrap_or_else(|| panic!("case {id}: expected.encoded_flags must be a u64"));
 
-    let encoded = encode_order_flags(&OrderFlags {
-        kind: OrderKind::Buy,
-        partially_fillable: true,
-        sell_token_balance: SellTokenSource::Internal,
-        buy_token_balance: BuyTokenDestination::Internal,
-    })
+    let encoded = encode_order_flags(&OrderFlags::new(
+        OrderKind::Buy,
+        true,
+        SellTokenSource::Internal,
+        BuyTokenDestination::Internal,
+    ))
     .expect("buy-partial-internal order flags must encode");
 
     assert_eq!(
@@ -485,13 +485,13 @@ fn assert_trade_flags_presign(id: &str, expected: &Value) {
         .as_u64()
         .unwrap_or_else(|| panic!("case {id}: expected.encoded_flags must be a u64"));
 
-    let encoded = encode_trade_flags(&TradeFlags {
-        kind: OrderKind::Sell,
-        partially_fillable: false,
-        sell_token_balance: SellTokenSource::Erc20,
-        buy_token_balance: BuyTokenDestination::Erc20,
-        signing_scheme: SigningScheme::PreSign,
-    })
+    let encoded = encode_trade_flags(&TradeFlags::new(
+        OrderKind::Sell,
+        false,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
+        SigningScheme::PreSign,
+    ))
     .expect("presign trade flags must encode");
 
     assert_eq!(
@@ -516,10 +516,10 @@ fn assert_order_refund_method_names(id: &str, expected: &Value) {
     let domain = sample_domain();
     let mut encoder = SettlementEncoder::new(domain);
     encoder
-        .encode_order_refunds(&cow_sdk_contracts::OrderRefunds {
-            filled_amounts: vec![sample_order_uid()],
-            pre_signatures: vec![sample_order_uid()],
-        })
+        .encode_order_refunds(&cow_sdk_contracts::OrderRefunds::new(
+            vec![sample_order_uid()],
+            vec![sample_order_uid()],
+        ))
         .expect("sample order refunds must encode");
 
     let interactions = encoder
@@ -561,14 +561,13 @@ fn assert_swap_default_user_data(id: &str, expected: &Value) {
     let mut tokens = TokenRegistry::default();
     let step = encode_swap_step(
         &mut tokens,
-        &Swap {
-            pool_id: "0x0000000000000000000000000000000000000000000000000000000000000001"
-                .to_owned(),
-            asset_in: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-            asset_out: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-            amount: Amount::new("1").unwrap(),
-            user_data: None,
-        },
+        &Swap::new(
+            "0x0000000000000000000000000000000000000000000000000000000000000001".to_owned(),
+            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+            Amount::new("1").unwrap(),
+            None,
+        ),
     );
 
     assert_eq!(
@@ -656,11 +655,11 @@ fn sample_order_uid() -> OrderUid {
             .unwrap();
     let owner = Address::new("0x2222222222222222222222222222222222222222").unwrap();
 
-    cow_sdk_contracts::pack_order_uid_params(&cow_sdk_contracts::OrderUidParams {
-        order_digest: digest,
+    cow_sdk_contracts::pack_order_uid_params(&cow_sdk_contracts::OrderUidParams::new(
+        digest,
         owner,
-        valid_to: 0x1234_5678,
-    })
+        0x1234_5678,
+    ))
     .expect("sample OrderUid packing must succeed")
 }
 
@@ -705,11 +704,11 @@ fn sample_secondary_order_uid() -> OrderUid {
             .unwrap();
     let owner = Address::new("0x4444444444444444444444444444444444444444").unwrap();
 
-    cow_sdk_contracts::pack_order_uid_params(&cow_sdk_contracts::OrderUidParams {
-        order_digest: digest,
+    cow_sdk_contracts::pack_order_uid_params(&cow_sdk_contracts::OrderUidParams::new(
+        digest,
         owner,
-        valid_to: 0x9abc_def0,
-    })
+        0x9abc_def0,
+    ))
     .expect("secondary OrderUid packing must succeed")
 }
 
@@ -724,20 +723,18 @@ fn order_uid_as_sol_bytes(uid: &OrderUid) -> SolBytes {
 }
 
 fn sample_ethflow_order() -> EthFlowOrderData {
-    EthFlowOrderData {
-        buy_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        receiver: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-        sell_amount: Amount::new("1000000000000000000").unwrap(),
-        buy_amount: Amount::new("2000000000000000000").unwrap(),
-        app_data: AppDataHash::new(
-            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        )
-        .unwrap(),
-        fee_amount: Amount::zero(),
-        valid_to: 0x1234_5678,
-        partially_fillable: false,
-        quote_id: 42,
-    }
+    EthFlowOrderData::new(
+        Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+        Amount::new("1000000000000000000").unwrap(),
+        Amount::new("2000000000000000000").unwrap(),
+        AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            .unwrap(),
+        Amount::zero(),
+        0x1234_5678,
+        false,
+        42,
+    )
 }
 
 fn assert_settlement_invalidate_order_calldata(id: &str, expected: &Value) {

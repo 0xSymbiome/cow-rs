@@ -57,6 +57,7 @@ pub struct TradeSimulator<P> {
 }
 
 /// Input shape for settlement trade simulation.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeSimulation {
@@ -82,6 +83,7 @@ pub struct TradeSimulation {
 }
 
 /// Token-balance delta pair returned by simulation.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeSimulationBalanceDelta {
@@ -92,6 +94,7 @@ pub struct TradeSimulationBalanceDelta {
 }
 
 /// Result contract returned by trade simulation.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeSimulationResult {
@@ -103,6 +106,64 @@ pub struct TradeSimulationResult {
     pub contract_balance: TradeSimulationBalanceDelta,
     /// Owner-side balance deltas.
     pub owner_balance: TradeSimulationBalanceDelta,
+}
+
+impl TradeSimulation {
+    /// Creates a settlement trade-simulation input.
+    #[must_use]
+    // Mirrors the full current public field set so callers can migrate off
+    // struct literals without losing explicit control over any wire field.
+    #[allow(clippy::too_many_arguments)]
+    pub const fn new(
+        sell_token: Address,
+        buy_token: Address,
+        receiver: Option<Address>,
+        sell_amount: Amount,
+        buy_amount: Amount,
+        sell_token_balance: Option<SellTokenSource>,
+        buy_token_balance: Option<BuyTokenDestination>,
+        owner: Address,
+    ) -> Self {
+        Self {
+            sell_token,
+            buy_token,
+            receiver,
+            sell_amount,
+            buy_amount,
+            sell_token_balance,
+            buy_token_balance,
+            owner,
+        }
+    }
+}
+
+impl TradeSimulationBalanceDelta {
+    /// Creates a trade-simulation balance delta pair.
+    #[must_use]
+    pub const fn new(sell_token_delta: SignedAmount, buy_token_delta: SignedAmount) -> Self {
+        Self {
+            sell_token_delta,
+            buy_token_delta,
+        }
+    }
+}
+
+impl TradeSimulationResult {
+    /// Creates a trade-simulation result.
+    #[must_use]
+    pub const fn new(
+        gas_used: Amount,
+        executed_buy_amount: Amount,
+        contract_balance: TradeSimulationBalanceDelta,
+        owner_balance: TradeSimulationBalanceDelta,
+    ) -> Self {
+        Self {
+            gas_used,
+            executed_buy_amount,
+            contract_balance,
+            owner_balance,
+        }
+    }
 }
 
 impl<P> AllowListReader<P>

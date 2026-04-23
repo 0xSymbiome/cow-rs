@@ -11,6 +11,7 @@ use crate::{
 };
 
 /// Single Balancer batch-swap step input.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Swap {
@@ -37,6 +38,7 @@ pub struct Swap {
 /// evaluate multiple swap candidates share a single backing allocation through
 /// reference-counted clones. The JSON wire form remains the `0x`-prefixed
 /// hexadecimal string accepted by downstream consumers.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BatchSwapStep {
@@ -54,11 +56,60 @@ pub struct BatchSwapStep {
 }
 
 /// Optional trade-execution override for swap encoding.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SwapExecution {
     /// Limit amount that should be used as the executed amount.
     pub limit_amount: Amount,
+}
+
+impl Swap {
+    /// Creates a Balancer batch-swap step input.
+    #[must_use]
+    pub const fn new(
+        pool_id: String,
+        asset_in: Address,
+        asset_out: Address,
+        amount: Amount,
+        user_data: Option<Bytes>,
+    ) -> Self {
+        Self {
+            pool_id,
+            asset_in,
+            asset_out,
+            amount,
+            user_data,
+        }
+    }
+}
+
+impl BatchSwapStep {
+    /// Creates an encoded Balancer batch-swap step.
+    #[must_use]
+    pub const fn new(
+        pool_id: String,
+        asset_in_index: usize,
+        asset_out_index: usize,
+        amount: Amount,
+        user_data: Bytes,
+    ) -> Self {
+        Self {
+            pool_id,
+            asset_in_index,
+            asset_out_index,
+            amount,
+            user_data,
+        }
+    }
+}
+
+impl SwapExecution {
+    /// Creates a swap execution override.
+    #[must_use]
+    pub const fn new(limit_amount: Amount) -> Self {
+        Self { limit_amount }
+    }
 }
 
 /// Fully encoded swap output.
@@ -139,9 +190,7 @@ impl SwapEncoder {
             &mut self.tokens,
             &order,
             signature,
-            &TradeExecution {
-                executed_amount: limit_amount,
-            },
+            &TradeExecution::new(limit_amount),
         )?);
         Ok(())
     }
@@ -159,11 +208,11 @@ impl SwapEncoder {
 /// Encodes a single swap step using the shared token registry.
 #[must_use]
 pub fn encode_swap_step(tokens: &mut TokenRegistry, swap: &Swap) -> BatchSwapStep {
-    BatchSwapStep {
-        pool_id: swap.pool_id.clone(),
-        asset_in_index: tokens.index(&swap.asset_in),
-        asset_out_index: tokens.index(&swap.asset_out),
-        amount: swap.amount.clone(),
-        user_data: swap.user_data.clone().unwrap_or_default(),
-    }
+    BatchSwapStep::new(
+        swap.pool_id.clone(),
+        tokens.index(&swap.asset_in),
+        tokens.index(&swap.asset_out),
+        swap.amount.clone(),
+        swap.user_data.clone().unwrap_or_default(),
+    )
 }

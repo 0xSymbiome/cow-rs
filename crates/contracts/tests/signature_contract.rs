@@ -234,10 +234,7 @@ fn eip1271_signature_payloads_roundtrip_with_variable_lengths() {
         "0x1234",
         "0x29a674dfc87f8c78fc2bfbcbe8ffdd435091a6a84bc7761db72a45da453d73ac41c5ce28eceb34be73fddc12a5d04af6e736405e41b613aeefeed3db8122420c1b",
     ] {
-        let data = Eip1271SignatureData {
-            verifier: verifier.clone(),
-            signature: signature.to_owned(),
-        };
+        let data = Eip1271SignatureData::new(verifier.clone(), signature.to_owned());
 
         let encoded = encode_eip1271_signature_data(&data).unwrap();
         let decoded = decode_eip1271_signature_data(&encoded).unwrap();
@@ -265,10 +262,7 @@ fn signature_helpers_preserve_public_contract_surface() {
         owner: signer.clone(),
     };
     let eip1271 = Signature::Eip1271 {
-        data: Eip1271SignatureData {
-            verifier: signer,
-            signature: "0x1234".to_owned(),
-        },
+        data: Eip1271SignatureData::new(signer, "0x1234".to_owned()),
     };
 
     assert_eq!(ecdsa.scheme(), SigningScheme::Eip712);
@@ -363,11 +357,11 @@ fn eip1271_verification_reads_contract_code_and_magic_value() {
 
     verify_eip1271_signature(
         &provider,
-        &Eip1271VerificationRequest {
-            verifier: verifier.clone(),
-            digest: Hash32::new(format!("0x{}", "11".repeat(32))).unwrap(),
-            signature: HexData::new("0x1234").unwrap(),
-        },
+        &Eip1271VerificationRequest::new(
+            verifier.clone(),
+            Hash32::new(format!("0x{}", "11".repeat(32))).unwrap(),
+            HexData::new("0x1234").unwrap(),
+        ),
     )
     .unwrap();
 
@@ -387,11 +381,11 @@ fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
 
     let missing = verify_eip1271_signature(
         &provider,
-        &Eip1271VerificationRequest {
-            verifier: verifier.clone(),
-            digest: Hash32::new(format!("0x{}", "22".repeat(32))).unwrap(),
-            signature: HexData::new("0x").unwrap(),
-        },
+        &Eip1271VerificationRequest::new(
+            verifier.clone(),
+            Hash32::new(format!("0x{}", "22".repeat(32))).unwrap(),
+            HexData::new("0x").unwrap(),
+        ),
     )
     .unwrap_err();
     match &missing {
@@ -405,11 +399,11 @@ fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
     provider.set_response_error(Some("rpc unavailable"));
     let transport = verify_eip1271_signature(
         &provider,
-        &Eip1271VerificationRequest {
+        &Eip1271VerificationRequest::new(
             verifier,
-            digest: Hash32::new(format!("0x{}", "33".repeat(32))).unwrap(),
-            signature: HexData::new("0x1234").unwrap(),
-        },
+            Hash32::new(format!("0x{}", "33".repeat(32))).unwrap(),
+            HexData::new("0x1234").unwrap(),
+        ),
     )
     .unwrap_err();
     match transport {
@@ -430,11 +424,11 @@ fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
     provider.set_response("{\"unexpected\":true}");
     let malformed = verify_eip1271_signature(
         &provider,
-        &Eip1271VerificationRequest {
-            verifier: verifier.clone(),
-            digest: Hash32::new(format!("0x{}", "44".repeat(32))).unwrap(),
-            signature: HexData::new("0x1234").unwrap(),
-        },
+        &Eip1271VerificationRequest::new(
+            verifier.clone(),
+            Hash32::new(format!("0x{}", "44".repeat(32))).unwrap(),
+            HexData::new("0x1234").unwrap(),
+        ),
     )
     .unwrap_err();
     match &malformed {
@@ -447,11 +441,11 @@ fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
     provider.set_response("\"0xffffffff\"");
     let mismatch = verify_eip1271_signature(
         &provider,
-        &Eip1271VerificationRequest {
+        &Eip1271VerificationRequest::new(
             verifier,
-            digest: Hash32::new(format!("0x{}", "55".repeat(32))).unwrap(),
-            signature: HexData::new("0x1234").unwrap(),
-        },
+            Hash32::new(format!("0x{}", "55".repeat(32))).unwrap(),
+            HexData::new("0x1234").unwrap(),
+        ),
     )
     .unwrap_err();
     match &mismatch {
@@ -477,11 +471,11 @@ async fn async_eip1271_verification_reads_contract_code_and_magic_value() {
 
     verify_eip1271_signature_async(
         &provider,
-        &Eip1271VerificationRequest {
-            verifier: verifier.clone(),
-            digest: Hash32::new(format!("0x{}", "11".repeat(32))).unwrap(),
-            signature: HexData::new("0x1234").unwrap(),
-        },
+        &Eip1271VerificationRequest::new(
+            verifier.clone(),
+            Hash32::new(format!("0x{}", "11".repeat(32))).unwrap(),
+            HexData::new("0x1234").unwrap(),
+        ),
         &NoCache,
     )
     .await
@@ -499,11 +493,11 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
 
     let missing = verify_eip1271_signature_async(
         &provider,
-        &Eip1271VerificationRequest {
-            verifier: verifier.clone(),
-            digest: Hash32::new(format!("0x{}", "22".repeat(32))).unwrap(),
-            signature: HexData::new("0x1234").unwrap(),
-        },
+        &Eip1271VerificationRequest::new(
+            verifier.clone(),
+            Hash32::new(format!("0x{}", "22".repeat(32))).unwrap(),
+            HexData::new("0x1234").unwrap(),
+        ),
         &NoCache,
     )
     .await
@@ -519,11 +513,11 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
     provider.set_response_error(Some("rpc unavailable"));
     let transport = verify_eip1271_signature_async(
         &provider,
-        &Eip1271VerificationRequest {
-            verifier: verifier.clone(),
-            digest: Hash32::new(format!("0x{}", "33".repeat(32))).unwrap(),
-            signature: HexData::new("0x1234").unwrap(),
-        },
+        &Eip1271VerificationRequest::new(
+            verifier.clone(),
+            Hash32::new(format!("0x{}", "33".repeat(32))).unwrap(),
+            HexData::new("0x1234").unwrap(),
+        ),
         &NoCache,
     )
     .await
@@ -540,11 +534,11 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
     provider.set_code_error(Some("code lookup unavailable"));
     let code_error = verify_eip1271_signature_async(
         &provider,
-        &Eip1271VerificationRequest {
+        &Eip1271VerificationRequest::new(
             verifier,
-            digest: Hash32::new(format!("0x{}", "44".repeat(32))).unwrap(),
-            signature: HexData::new("0x1234").unwrap(),
-        },
+            Hash32::new(format!("0x{}", "44".repeat(32))).unwrap(),
+            HexData::new("0x1234").unwrap(),
+        ),
         &NoCache,
     )
     .await

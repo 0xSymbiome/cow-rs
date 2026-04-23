@@ -22,23 +22,21 @@ fn sample_domain() -> TypedDataDomain {
 }
 
 fn sample_order() -> Order {
-    Order {
-        sell_token: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
-        buy_token: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        receiver: Some(Address::new("0x3333333333333333333333333333333333333333").unwrap()),
-        sell_amount: Amount::new("1000000000000000000").unwrap(),
-        buy_amount: Amount::new("2000000000000000000000").unwrap(),
-        valid_to: 1_709_990_000,
-        app_data: AppDataHash::new(
-            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        )
-        .unwrap(),
-        fee_amount: Amount::new("5000000000000000").unwrap(),
-        kind: OrderKind::Sell,
-        partially_fillable: false,
-        sell_token_balance: Some(SellTokenSource::Erc20),
-        buy_token_balance: Some(BuyTokenDestination::Erc20),
-    }
+    Order::new(
+        Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
+        Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
+        Some(Address::new("0x3333333333333333333333333333333333333333").unwrap()),
+        Amount::new("1000000000000000000").unwrap(),
+        Amount::new("2000000000000000000000").unwrap(),
+        1_709_990_000,
+        AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            .unwrap(),
+        Amount::new("5000000000000000").unwrap(),
+        OrderKind::Sell,
+        false,
+        Some(SellTokenSource::Erc20),
+        Some(BuyTokenDestination::Erc20),
+    )
 }
 
 fn bench_hash_order(c: &mut Criterion) {

@@ -89,9 +89,7 @@ fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
 
     let expected_digest = hash_order_cancellations(
         &get_domain(SupportedChainId::Sepolia, None).unwrap(),
-        &OrderCancellations {
-            order_uids: batch_uids,
-        },
+        &OrderCancellations::new(batch_uids),
     )
     .unwrap();
     assert_eq!(

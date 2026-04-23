@@ -10,6 +10,7 @@ use cow_sdk_core::{Address, Amount};
 /// backing allocation through reference-counted clones. The JSON wire form
 /// remains the `0x`-prefixed hexadecimal string accepted by downstream
 /// consumers.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Interaction {
@@ -27,6 +28,7 @@ pub struct Interaction {
 /// Optional calldata is carried as [`Option`] over [`bytes::Bytes`] so callers
 /// can build interaction proposals without materializing empty-buffer
 /// placeholders and without losing the cheap-clone property during encoding.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InteractionLike {
@@ -44,14 +46,38 @@ pub struct InteractionLike {
     pub call_data: Option<Bytes>,
 }
 
+impl Interaction {
+    /// Creates a normalized settlement interaction.
+    #[must_use]
+    pub const fn new(target: Address, value: Amount, call_data: Bytes) -> Self {
+        Self {
+            target,
+            value,
+            call_data,
+        }
+    }
+}
+
+impl InteractionLike {
+    /// Creates a partially specified interaction.
+    #[must_use]
+    pub const fn new(target: Address, value: Option<Amount>, call_data: Option<Bytes>) -> Self {
+        Self {
+            target,
+            value,
+            call_data,
+        }
+    }
+}
+
 /// Normalizes an interaction by filling default value and calldata fields.
 #[must_use]
 pub fn normalize_interaction(interaction: &InteractionLike) -> Interaction {
-    Interaction {
-        target: interaction.target.clone(),
-        value: interaction.value.clone().unwrap_or_else(Amount::zero),
-        call_data: interaction.call_data.clone().unwrap_or_default(),
-    }
+    Interaction::new(
+        interaction.target.clone(),
+        interaction.value.clone().unwrap_or_else(Amount::zero),
+        interaction.call_data.clone().unwrap_or_default(),
+    )
 }
 
 /// Normalizes a slice of interaction-like values.

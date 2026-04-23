@@ -66,6 +66,7 @@ impl TryFrom<u8> for SigningScheme {
 }
 
 /// Decoded EIP-1271 verifier payload.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Eip1271SignatureData {
@@ -76,6 +77,7 @@ pub struct Eip1271SignatureData {
 }
 
 /// Input contract for EIP-1271 verification helpers.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Eip1271VerificationRequest {
@@ -88,6 +90,11 @@ pub struct Eip1271VerificationRequest {
 }
 
 /// `CoW` signature union.
+///
+/// The enum is `#[non_exhaustive]` so future protocol-side signature forms can
+/// extend the public surface without breaking existing consumers. Internal
+/// matches remain exhaustive; downstream matches must include a wildcard arm.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Signature {
@@ -108,6 +115,29 @@ pub enum Signature {
         /// Owner address that pre-signed the order on-chain.
         owner: Address,
     },
+}
+
+impl Eip1271SignatureData {
+    /// Creates an EIP-1271 verifier payload.
+    #[must_use]
+    pub const fn new(verifier: Address, signature: String) -> Self {
+        Self {
+            verifier,
+            signature,
+        }
+    }
+}
+
+impl Eip1271VerificationRequest {
+    /// Creates an EIP-1271 verification request.
+    #[must_use]
+    pub const fn new(verifier: Address, digest: Hash32, signature: HexData) -> Self {
+        Self {
+            verifier,
+            digest,
+            signature,
+        }
+    }
 }
 
 impl Signature {
@@ -152,10 +182,7 @@ pub fn decode_eip1271_signature_data(
     }
     let verifier = Address::new(format!("0x{}", hex::encode(&bytes[..20])))?;
     let signature = format!("0x{}", hex::encode(&bytes[20..]));
-    Ok(Eip1271SignatureData {
-        verifier,
-        signature,
-    })
+    Ok(Eip1271SignatureData::new(verifier, signature))
 }
 
 /// Encodes a signing scheme into the compact trade-flag representation.

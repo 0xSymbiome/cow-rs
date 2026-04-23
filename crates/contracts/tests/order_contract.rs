@@ -37,23 +37,21 @@ fn sample_domain() -> TypedDataDomain {
 }
 
 fn sample_order() -> Order {
-    Order {
-        sell_token: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
-        buy_token: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        receiver: None,
-        sell_amount: Amount::new("1000000000000000000").unwrap(),
-        buy_amount: Amount::new("2000000000000000000000").unwrap(),
-        valid_to: 1_709_990_000,
-        app_data: AppDataHex::new(
-            "0x0000000000000000000000000000000000000000000000000000000000000000",
-        )
-        .unwrap(),
-        fee_amount: Amount::new("5000000000000000").unwrap(),
-        kind: OrderKind::Sell,
-        partially_fillable: false,
-        sell_token_balance: None,
-        buy_token_balance: Some(BuyTokenDestination::Internal),
-    }
+    Order::new(
+        Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
+        Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
+        None,
+        Amount::new("1000000000000000000").unwrap(),
+        Amount::new("2000000000000000000000").unwrap(),
+        1_709_990_000,
+        AppDataHex::new("0x0000000000000000000000000000000000000000000000000000000000000000")
+            .unwrap(),
+        Amount::new("5000000000000000").unwrap(),
+        OrderKind::Sell,
+        false,
+        None,
+        Some(BuyTokenDestination::Internal),
+    )
 }
 
 #[test]
@@ -131,20 +129,18 @@ fn order_hash_and_uid_helpers_are_consistent() {
     assert_eq!(extracted.valid_to, order.valid_to);
     assert_eq!(extracted.order_digest, order_hash);
 
-    let roundtrip = pack_order_uid_params(&OrderUidParams {
-        order_digest: order_hash.clone(),
-        owner: owner.clone(),
-        valid_to: order.valid_to,
-    })
+    let roundtrip = pack_order_uid_params(&OrderUidParams::new(
+        order_hash.clone(),
+        owner.clone(),
+        order.valid_to,
+    ))
     .unwrap();
     assert_eq!(roundtrip, uid);
 
     let cancellation = hash_order_cancellation(&domain, &uid).unwrap();
     let batch = hash_order_cancellations(
         &domain,
-        &OrderCancellations {
-            order_uids: vec![uid.clone(), roundtrip.clone()],
-        },
+        &OrderCancellations::new(vec![uid.clone(), roundtrip.clone()]),
     )
     .unwrap();
     assert_eq!(cancellation.as_str().len(), 66);

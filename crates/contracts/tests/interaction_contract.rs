@@ -34,11 +34,7 @@ fn interaction_normalization_applies_zero_value_call_defaults() {
     let fixture = fixture_case("contracts-interaction-defaults");
     let target = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
 
-    let normalized = normalize_interaction(&InteractionLike {
-        target: target.clone(),
-        value: None,
-        call_data: None,
-    });
+    let normalized = normalize_interaction(&InteractionLike::new(target.clone(), None, None));
     assert_eq!(normalized.target, target);
     assert_eq!(
         normalized.value.to_string(),
@@ -53,11 +49,11 @@ fn interaction_normalization_applies_zero_value_call_defaults() {
         "default calldata must be an empty byte buffer"
     );
 
-    let explicit = normalize_interaction(&InteractionLike {
-        target: normalized.target.clone(),
-        value: Some(Amount::new("42").unwrap()),
-        call_data: Some(bytes_from_hex_literal("0x12345678")),
-    });
+    let explicit = normalize_interaction(&InteractionLike::new(
+        normalized.target.clone(),
+        Some(Amount::new("42").unwrap()),
+        Some(bytes_from_hex_literal("0x12345678")),
+    ));
     assert_eq!(explicit.value.to_string(), "42");
     assert_eq!(
         explicit.call_data.as_ref(),
@@ -69,16 +65,16 @@ fn interaction_normalization_applies_zero_value_call_defaults() {
 #[test]
 fn batch_interaction_normalization_preserves_order() {
     let interactions = vec![
-        InteractionLike {
-            target: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-            value: None,
-            call_data: None,
-        },
-        InteractionLike {
-            target: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-            value: Some(Amount::new("7").unwrap()),
-            call_data: Some(bytes_from_hex_literal("0x01020304")),
-        },
+        InteractionLike::new(
+            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            None,
+            None,
+        ),
+        InteractionLike::new(
+            Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+            Some(Amount::new("7").unwrap()),
+            Some(bytes_from_hex_literal("0x01020304")),
+        ),
     ];
 
     let normalized = normalize_interactions(&interactions);
@@ -99,11 +95,11 @@ fn batch_interaction_normalization_preserves_order() {
 
 #[test]
 fn interaction_calldata_clone_shares_backing_allocation() {
-    let interaction = normalize_interaction(&InteractionLike {
-        target: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        value: None,
-        call_data: Some(bytes_from_hex_literal("0xdeadbeefcafef00d")),
-    });
+    let interaction = normalize_interaction(&InteractionLike::new(
+        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+        None,
+        Some(bytes_from_hex_literal("0xdeadbeefcafef00d")),
+    ));
 
     let cloned = interaction.call_data.clone();
     assert_eq!(

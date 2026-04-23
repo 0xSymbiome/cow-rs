@@ -109,6 +109,7 @@ const VAULT_ROLE_SOURCES: [(&str, [u8; 4]); 2] = [
 ];
 
 /// Derived vault role metadata for a specific method selector.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RequiredVaultRole {
@@ -121,6 +122,7 @@ pub struct RequiredVaultRole {
 }
 
 /// Prepared `grantRole` call for a vault relayer authorization flow.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GrantRoleCall {
@@ -132,6 +134,36 @@ pub struct GrantRoleCall {
     pub method: String,
     /// JSON-encoded arguments for the method call.
     pub args_json: String,
+}
+
+impl RequiredVaultRole {
+    /// Creates derived vault role metadata.
+    #[must_use]
+    pub const fn new(method: String, selector: String, role: String) -> Self {
+        Self {
+            method,
+            selector,
+            role,
+        }
+    }
+}
+
+impl GrantRoleCall {
+    /// Creates a prepared `grantRole` call.
+    #[must_use]
+    pub const fn new(
+        authorizer_address: Address,
+        authorizer_abi_json: String,
+        method: String,
+        args_json: String,
+    ) -> Self {
+        Self {
+            authorizer_address,
+            authorizer_abi_json,
+            method,
+            args_json,
+        }
+    }
 }
 
 /// Returns the required vault role hashes for the supported vault methods.
@@ -146,11 +178,11 @@ pub fn required_vault_roles(
         .iter()
         .map(|(method, selector)| {
             let role = role_hash(vault_address, *selector)?;
-            Ok(RequiredVaultRole {
-                method: (*method).to_owned(),
-                selector: format!("0x{}", hex::encode(selector)),
+            Ok(RequiredVaultRole::new(
+                (*method).to_owned(),
+                format!("0x{}", hex::encode(selector)),
                 role,
-            })
+            ))
         })
         .collect()
 }
@@ -169,12 +201,12 @@ pub fn required_vault_role_calls(
     required_vault_roles(vault_address)?
         .into_iter()
         .map(|role| {
-            Ok(GrantRoleCall {
-                authorizer_address: authorizer_address.clone(),
-                authorizer_abi_json: authorizer_abi_json.to_owned(),
-                method: "grantRole".to_owned(),
-                args_json: serde_json::to_string(&(role.role, vault_relayer.clone()))?,
-            })
+            Ok(GrantRoleCall::new(
+                authorizer_address.clone(),
+                authorizer_abi_json.to_owned(),
+                "grantRole".to_owned(),
+                serde_json::to_string(&(role.role, vault_relayer.clone()))?,
+            ))
         })
         .collect()
 }

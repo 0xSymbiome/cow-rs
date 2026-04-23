@@ -542,17 +542,17 @@ fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError
         .unwrap_or_else(|| order.owner.clone());
     let sell_amount = Amount::new(order.sell_amount.clone())?;
     let buy_amount = Amount::new(order.buy_amount.clone())?;
-    let payload = EthFlowOrderData {
-        buy_token: order.buy_token.clone(),
+    let payload = EthFlowOrderData::new(
+        order.buy_token.clone(),
         receiver,
         sell_amount,
         buy_amount,
-        app_data: order.app_data.clone(),
-        fee_amount: Amount::zero(),
-        valid_to: order.valid_to,
-        partially_fillable: false,
-        quote_id: 0,
-    };
+        order.app_data.clone(),
+        Amount::zero(),
+        order.valid_to,
+        false,
+        0,
+    );
     let encoded = encode_invalidate_order_calldata(&payload)?;
     Ok(format!("0x{}", hex::encode(encoded)))
 }

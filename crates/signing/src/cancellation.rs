@@ -269,9 +269,7 @@ pub fn order_cancellations_typed_data_payload(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
 ) -> Result<TypedDataPayload, SigningError> {
-    let cancellations = OrderCancellations {
-        order_uids: order_uids.to_vec(),
-    };
+    let cancellations = OrderCancellations::new(order_uids.to_vec());
 
     Ok(TypedDataPayload {
         domain: get_domain(chain_id, options)?,
@@ -287,9 +285,7 @@ fn cancellation_signing_payload(
     options: Option<&ProtocolOptions>,
 ) -> Result<CancellationSigningPayload, SigningError> {
     let payload = order_cancellations_typed_data_payload(order_uids, chain_id, options)?;
-    let cancellations = OrderCancellations {
-        order_uids: order_uids.to_vec(),
-    };
+    let cancellations = OrderCancellations::new(order_uids.to_vec());
     let digest = cow_sdk_contracts::hash_order_cancellations(&payload.domain, &cancellations)?;
 
     Ok(CancellationSigningPayload {

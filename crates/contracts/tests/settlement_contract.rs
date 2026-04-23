@@ -43,23 +43,21 @@ fn sample_domain() -> TypedDataDomain {
 }
 
 fn sample_order(kind: OrderKind, partially_fillable: bool) -> Order {
-    Order {
-        sell_token: Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
-        buy_token: Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        receiver: None,
-        sell_amount: Amount::new("1000000000000000000").unwrap(),
-        buy_amount: Amount::new("2000000000000000000000").unwrap(),
-        valid_to: 1_709_990_000,
-        app_data: AppDataHex::new(
-            "0x0000000000000000000000000000000000000000000000000000000000000000",
-        )
-        .unwrap(),
-        fee_amount: Amount::new("5000000000000000").unwrap(),
+    Order::new(
+        Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
+        Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
+        None,
+        Amount::new("1000000000000000000").unwrap(),
+        Amount::new("2000000000000000000000").unwrap(),
+        1_709_990_000,
+        AppDataHex::new("0x0000000000000000000000000000000000000000000000000000000000000000")
+            .unwrap(),
+        Amount::new("5000000000000000").unwrap(),
         kind,
         partially_fillable,
-        sell_token_balance: Some(SellTokenSource::Internal),
-        buy_token_balance: Some(BuyTokenDestination::Internal),
-    }
+        Some(SellTokenSource::Internal),
+        Some(BuyTokenDestination::Internal),
+    )
 }
 
 fn sample_signature() -> Signature {
@@ -108,23 +106,23 @@ fn expected_bytes_array_call_data(selector_signature: &str, uid: &[u8; 56]) -> V
 fn settlement_flag_encoding_matches_fixture_values() {
     let default_flags = fixture_case("contracts-order-flags-default-sell");
     assert_eq!(
-        encode_order_flags(&OrderFlags {
-            kind: OrderKind::Sell,
-            partially_fillable: false,
-            sell_token_balance: SellTokenSource::Erc20,
-            buy_token_balance: BuyTokenDestination::Erc20,
-        })
+        encode_order_flags(&OrderFlags::new(
+            OrderKind::Sell,
+            false,
+            SellTokenSource::Erc20,
+            BuyTokenDestination::Erc20,
+        ))
         .unwrap(),
         expected_u8(&default_flags["expected"]["encoded_flags"])
     );
 
     let buy_partial_internal = fixture_case("contracts-order-flags-buy-partial-internal");
-    let encoded_buy_partial = encode_order_flags(&OrderFlags {
-        kind: OrderKind::Buy,
-        partially_fillable: true,
-        sell_token_balance: SellTokenSource::Internal,
-        buy_token_balance: BuyTokenDestination::Internal,
-    })
+    let encoded_buy_partial = encode_order_flags(&OrderFlags::new(
+        OrderKind::Buy,
+        true,
+        SellTokenSource::Internal,
+        BuyTokenDestination::Internal,
+    ))
     .unwrap();
     assert_eq!(
         encoded_buy_partial,
@@ -132,13 +130,13 @@ fn settlement_flag_encoding_matches_fixture_values() {
     );
 
     let presign = fixture_case("contracts-trade-flags-presign");
-    let encoded_trade = encode_trade_flags(&TradeFlags {
-        kind: OrderKind::Sell,
-        partially_fillable: false,
-        sell_token_balance: SellTokenSource::Erc20,
-        buy_token_balance: BuyTokenDestination::Erc20,
-        signing_scheme: SigningScheme::PreSign,
-    })
+    let encoded_trade = encode_trade_flags(&TradeFlags::new(
+        OrderKind::Sell,
+        false,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
+        SigningScheme::PreSign,
+    ))
     .unwrap();
     assert_eq!(
         encoded_trade,
@@ -164,12 +162,12 @@ fn settlement_flag_encoding_matches_fixture_values() {
 
 #[test]
 fn trade_flag_encoding_keeps_order_and_signing_bits_partitioned() {
-    let order_flags = OrderFlags {
-        kind: OrderKind::Buy,
-        partially_fillable: true,
-        sell_token_balance: SellTokenSource::Internal,
-        buy_token_balance: BuyTokenDestination::Internal,
-    };
+    let order_flags = OrderFlags::new(
+        OrderKind::Buy,
+        true,
+        SellTokenSource::Internal,
+        BuyTokenDestination::Internal,
+    );
     let encoded_order = encode_order_flags(&order_flags).unwrap();
     assert_eq!(encoded_order & 0b1110_0000, 0);
 
@@ -179,13 +177,13 @@ fn trade_flag_encoding_keeps_order_and_signing_bits_partitioned() {
         SigningScheme::Eip1271,
         SigningScheme::PreSign,
     ] {
-        let encoded_trade = encode_trade_flags(&TradeFlags {
-            kind: order_flags.kind,
-            partially_fillable: order_flags.partially_fillable,
-            sell_token_balance: order_flags.sell_token_balance,
-            buy_token_balance: order_flags.buy_token_balance,
+        let encoded_trade = encode_trade_flags(&TradeFlags::new(
+            order_flags.kind,
+            order_flags.partially_fillable,
+            order_flags.sell_token_balance,
+            order_flags.buy_token_balance,
             signing_scheme,
-        })
+        ))
         .unwrap();
 
         assert_eq!(encoded_trade & 0b1_1111, encoded_order);
@@ -201,20 +199,20 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
     let mut encoder = SettlementEncoder::new(domain.clone());
 
     encoder.encode_interaction(
-        &InteractionLike {
-            target: Address::new("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(),
-            value: None,
-            call_data: Some(bytes_from_hex_literal("0x12345678")),
-        },
+        &InteractionLike::new(
+            Address::new("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(),
+            None,
+            Some(bytes_from_hex_literal("0x12345678")),
+        ),
         InteractionStage::Pre,
     );
     encoder
         .encode_trade(
             &order,
             &sample_signature(),
-            Some(TradeExecution {
-                executed_amount: Amount::new("1000000000000000000").unwrap(),
-            }),
+            Some(TradeExecution::new(
+                Amount::new("1000000000000000000").unwrap(),
+            )),
         )
         .unwrap();
 
@@ -245,16 +243,16 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
     assert!(encoder.clearing_prices(&missing).is_err());
 
     let setup = SettlementEncoder::encoded_setup(&[
-        InteractionLike {
-            target: Address::new("0x1234567890123456789012345678901234567890").unwrap(),
-            value: None,
-            call_data: Some(bytes_from_hex_literal("0x87654321")),
-        },
-        InteractionLike {
-            target: Address::new("0xabcdef0123456789abcdef0123456789abcdef01").unwrap(),
-            value: Some(Amount::new("1").unwrap()),
-            call_data: None,
-        },
+        InteractionLike::new(
+            Address::new("0x1234567890123456789012345678901234567890").unwrap(),
+            None,
+            Some(bytes_from_hex_literal("0x87654321")),
+        ),
+        InteractionLike::new(
+            Address::new("0xabcdef0123456789abcdef0123456789abcdef01").unwrap(),
+            Some(Amount::new("1").unwrap()),
+            None,
+        ),
     ]);
     assert!(setup.0.is_empty());
     assert!(setup.1.is_empty());
@@ -287,10 +285,10 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
     ];
 
     encoder
-        .encode_order_refunds(&OrderRefunds {
-            filled_amounts: vec![uids[0].clone()],
-            pre_signatures: vec![uids[1].clone()],
-        })
+        .encode_order_refunds(&OrderRefunds::new(
+            vec![uids[0].clone()],
+            vec![uids[1].clone()],
+        ))
         .unwrap();
 
     let post = encoder.interactions().unwrap()[InteractionStage::Post as usize].clone();
@@ -326,28 +324,26 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
     let second = tokens.index(&Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap());
     assert_eq!(first, second);
 
-    let trade = Trade {
-        sell_token_index: 0,
-        buy_token_index: 1,
-        receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        sell_amount: Amount::new("10").unwrap(),
-        buy_amount: Amount::new("20").unwrap(),
-        valid_to: 123,
-        app_data: AppDataHex::new(
-            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        )
+    let trade = Trade::new(
+        0,
+        1,
+        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+        Amount::new("10").unwrap(),
+        Amount::new("20").unwrap(),
+        123,
+        AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            .unwrap(),
+        Amount::new("1").unwrap(),
+        encode_order_flags(&OrderFlags::new(
+            OrderKind::Sell,
+            false,
+            SellTokenSource::Erc20,
+            BuyTokenDestination::Erc20,
+        ))
         .unwrap(),
-        fee_amount: Amount::new("1").unwrap(),
-        flags: encode_order_flags(&OrderFlags {
-            kind: OrderKind::Sell,
-            partially_fillable: false,
-            sell_token_balance: SellTokenSource::Erc20,
-            buy_token_balance: BuyTokenDestination::Erc20,
-        })
-        .unwrap(),
-        executed_amount: Amount::zero(),
-        signature: "0x".to_owned(),
-    };
+        Amount::zero(),
+        "0x".to_owned(),
+    );
     let decoded = decode_order(
         &trade,
         &[
@@ -390,10 +386,7 @@ fn order_refund_call_data_matches_the_canonical_abi_byte_layout() {
 
     let mut encoder = SettlementEncoder::new(sample_domain());
     encoder
-        .encode_order_refunds(&OrderRefunds {
-            filled_amounts: vec![uid.clone()],
-            pre_signatures: vec![uid.clone()],
-        })
+        .encode_order_refunds(&OrderRefunds::new(vec![uid.clone()], vec![uid.clone()]))
         .unwrap();
 
     let post = encoder.interactions().unwrap()[InteractionStage::Post as usize].clone();
@@ -425,17 +418,17 @@ fn encoded_settlement_calldata_starts_with_the_settle_selector() {
         .encode_trade(
             &sample_order(OrderKind::Sell, false),
             &sample_signature(),
-            Some(TradeExecution {
-                executed_amount: Amount::new("1000000000000000000").unwrap(),
-            }),
+            Some(TradeExecution::new(
+                Amount::new("1000000000000000000").unwrap(),
+            )),
         )
         .unwrap();
     encoder.encode_interaction(
-        &InteractionLike {
-            target: Address::new("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(),
-            value: None,
-            call_data: Some(bytes_from_hex_literal("0xdeadbeef")),
-        },
+        &InteractionLike::new(
+            Address::new("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(),
+            None,
+            Some(bytes_from_hex_literal("0xdeadbeef")),
+        ),
         InteractionStage::Intra,
     );
 

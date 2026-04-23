@@ -573,6 +573,7 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Public protocol DTOs in the contracts crate are now marked non-exhaustive and ship with explicit constructors so future protocol field additions land additively.
 - Test-suite naming and properties-registry classification now
   match the shipped evidence methodology. Boundary-sweep suites on
   the orderbook, trading, and subgraph crates live at

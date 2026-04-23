@@ -36,11 +36,7 @@ fuzz_target!(|data: &[u8]| {
     let order_digest = OrderDigest::from_bytes(digest_bytes);
     let owner = Address::from_bytes(owner_bytes);
 
-    let params = OrderUidParams {
-        order_digest: order_digest.clone(),
-        owner: owner.clone(),
-        valid_to,
-    };
+    let params = OrderUidParams::new(order_digest.clone(), owner.clone(), valid_to);
 
     let uid = pack_order_uid_params(&params)
         .expect("pack_order_uid_params must accept hex-typed inputs from `from_bytes`");

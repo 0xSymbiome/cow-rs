@@ -151,11 +151,11 @@ fn generate_order_id_reuses_contract_hashing_and_uid_packing() {
         &contracts_order(&order),
     )
     .unwrap();
-    let expected_uid = cow_sdk_contracts::pack_order_uid_params(&OrderUidParams {
-        order_digest: expected_digest.clone(),
-        owner: owner.clone(),
-        valid_to: order.valid_to,
-    })
+    let expected_uid = cow_sdk_contracts::pack_order_uid_params(&OrderUidParams::new(
+        expected_digest.clone(),
+        owner.clone(),
+        order.valid_to,
+    ))
     .unwrap();
 
     assert_eq!(
@@ -236,20 +236,20 @@ fn eip1271_signature_payload_keeps_full_bytes32_app_data_and_exact_word_padding(
 }
 
 fn contracts_order(order: &cow_sdk_core::UnsignedOrder) -> ContractsOrder {
-    ContractsOrder {
-        sell_token: order.sell_token.clone(),
-        buy_token: order.buy_token.clone(),
-        receiver: Some(order.receiver.clone()),
-        sell_amount: order.sell_amount.clone(),
-        buy_amount: order.buy_amount.clone(),
-        valid_to: order.valid_to,
-        app_data: order.app_data.clone(),
-        fee_amount: order.fee_amount.clone(),
-        kind: order.kind,
-        partially_fillable: order.partially_fillable,
-        sell_token_balance: Some(order.sell_token_balance),
-        buy_token_balance: Some(order.buy_token_balance),
-    }
+    ContractsOrder::new(
+        order.sell_token.clone(),
+        order.buy_token.clone(),
+        Some(order.receiver.clone()),
+        order.sell_amount.clone(),
+        order.buy_amount.clone(),
+        order.valid_to,
+        order.app_data.clone(),
+        order.fee_amount.clone(),
+        order.kind,
+        order.partially_fillable,
+        Some(order.sell_token_balance),
+        Some(order.buy_token_balance),
+    )
 }
 
 fn parse_hex_word(value: &str, expected_len: usize) -> Vec<u8> {
