@@ -150,19 +150,17 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
                 .with_valid_to(override_valid_to)
                 .with_signing_scheme(cow_sdk_orderbook::SigningScheme::Eip1271),
         )
-        .with_app_data(cow_sdk_app_data::AppDataParams {
-            app_code: None,
-            environment: None,
-            signer: None,
-            flashloan: None,
-            metadata: serde_json::from_value(json!({
-                "partnerFee": {
-                    "volumeBps": 50,
-                    "recipient": ALT_RECEIVER
-                }
-            }))
-            .expect("partner fee metadata should build"),
-        });
+        .with_app_data(
+            cow_sdk_app_data::AppDataParams::default().with_metadata(
+                serde_json::from_value(json!({
+                    "partnerFee": {
+                        "volumeBps": 50,
+                        "recipient": ALT_RECEIVER
+                    }
+                }))
+                .expect("partner fee metadata should build"),
+            ),
+        );
 
     let result = post_swap_order(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
@@ -395,11 +393,9 @@ async fn post_swap_order_appdata_from_mismatch_does_not_upload_or_sign() {
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = CountingSigner::new(address(OWNER));
     let params = sample_limit_parameters(OrderKind::Sell);
-    let advanced =
-        LimitOrderAdvancedSettings::new().with_app_data(cow_sdk_app_data::AppDataParams {
-            signer: Some(address(ALT_RECEIVER)),
-            ..Default::default()
-        });
+    let advanced = LimitOrderAdvancedSettings::new().with_app_data(
+        cow_sdk_app_data::AppDataParams::default().with_signer(address(ALT_RECEIVER)),
+    );
 
     let error = post_limit_order_async(&params, &trader, &signer, Some(&advanced), &orderbook)
         .await
@@ -570,10 +566,10 @@ async fn async_order_level_eip1271_verification_is_explicit_and_reuses_contract_
         &provider,
         &order_to_sign,
         trader.chain_id,
-        &cow_sdk_trading::types::Eip1271VerificationParameters {
-            verifier: verifier.clone(),
-            signature: HexData::new("0x7e57c0de").unwrap(),
-        },
+        &cow_sdk_trading::types::Eip1271VerificationParameters::new(
+            verifier.clone(),
+            HexData::new("0x7e57c0de").unwrap(),
+        ),
         Some(&protocol_options_from_trader(&trader)),
     )
     .await
@@ -610,10 +606,10 @@ async fn order_level_eip1271_verification_surfaces_contract_failures_explicitly(
         &provider,
         &order_to_sign,
         trader.chain_id,
-        &cow_sdk_trading::types::Eip1271VerificationParameters {
+        &cow_sdk_trading::types::Eip1271VerificationParameters::new(
             verifier,
-            signature: HexData::new("0x7e57c0de").unwrap(),
-        },
+            HexData::new("0x7e57c0de").unwrap(),
+        ),
         Some(&protocol_options_from_trader(&trader)),
     )
     .await

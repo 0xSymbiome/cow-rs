@@ -307,10 +307,7 @@ fn assert_custom_base_url_override(id: &str, expected: &Value) {
         SupportedChainId::Mainnet,
         Some("https://custom-subgraph.example/graphql".to_owned()),
     );
-    let config = SubgraphConfig {
-        chain_id: SupportedChainId::Mainnet,
-        base_urls: Some(urls),
-    };
+    let config = SubgraphConfig::new(SupportedChainId::Mainnet, Some(urls));
     assert!(
         config.base_urls.is_some(),
         "case {id}: baseUrls override must be recorded in SubgraphConfig",
@@ -415,17 +412,17 @@ fn assert_invalid_query_error(id: &str, expected: &Value) {
     // SubgraphRequestErrorContext and a list of SubgraphGraphQlError entries.
     // Construct a minimal fixture-shape error and assert the typed surface
     // preserves both the operation-name context and the GraphQL error text.
-    let context = cow_sdk_subgraph::SubgraphRequestErrorContext {
-        chain_id: u64::from(SupportedChainId::Mainnet),
-        api: "CoW Protocol Subgraph".to_owned(),
-        document: "query InvalidQuery { tokens { id } }".to_owned(),
-        operation_name: Some("InvalidQuery".to_owned()),
-        variables: None,
-    };
-    let errors = vec![cow_sdk_subgraph::SubgraphGraphQlError {
-        message: "Error running query: InvalidQuery".to_owned(),
-        locations: Vec::new(),
-    }];
+    let context = cow_sdk_subgraph::SubgraphRequestErrorContext::new(
+        u64::from(SupportedChainId::Mainnet),
+        "CoW Protocol Subgraph",
+        "query InvalidQuery { tokens { id } }",
+        Some("InvalidQuery".to_owned()),
+        None,
+    );
+    let errors = vec![cow_sdk_subgraph::SubgraphGraphQlError::new(
+        "Error running query: InvalidQuery",
+        Vec::new(),
+    )];
     let error = cow_sdk_subgraph::SubgraphError::GraphQl {
         context: Box::new(context),
         errors: errors.clone(),

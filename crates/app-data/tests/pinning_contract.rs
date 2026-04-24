@@ -65,10 +65,10 @@ fn credentialed_config_with_write_uri(write_uri: Option<&str>) -> IpfsConfig {
 }
 
 fn pinata_success_transport() -> RecordingUploadTransport {
-    RecordingUploadTransport::default().with_response(TransportResponse {
-        status: 200,
-        body: format!("{{\"IpfsHash\":\"{PINATA_IPFS_HASH}\"}}"),
-    })
+    RecordingUploadTransport::default().with_response(TransportResponse::new(
+        200,
+        format!("{{\"IpfsHash\":\"{PINATA_IPFS_HASH}\"}}"),
+    ))
 }
 
 fn assert_write_uri_rejected_with_builder_error(write_uri: &str) {
@@ -104,17 +104,18 @@ fn pinning_requires_explicit_credentials() {
 
 #[test]
 fn pinning_uses_deterministic_body_and_surfaces_the_returned_cid() {
-    let transport = RecordingUploadTransport::default().with_response(TransportResponse {
-        status: 200,
-        body: format!("{{\"IpfsHash\":\"{PINATA_IPFS_HASH}\"}}"),
-    });
-    let document = generate_app_data_doc(AppDataParams {
-        metadata: serde_json::from_value(json!({
-            "referrer": { "code": "COWREF1" }
-        }))
-        .unwrap(),
-        ..AppDataParams::default()
-    });
+    let transport = RecordingUploadTransport::default().with_response(TransportResponse::new(
+        200,
+        format!("{{\"IpfsHash\":\"{PINATA_IPFS_HASH}\"}}"),
+    ));
+    let document = generate_app_data_doc(
+        AppDataParams::default().with_metadata(
+            serde_json::from_value(json!({
+                "referrer": { "code": "COWREF1" }
+            }))
+            .unwrap(),
+        ),
+    );
     let config = IpfsConfig {
         pinata_api_key: Some("apikey".to_string().into()),
         pinata_api_secret: Some("apiSecret".to_string().into()),

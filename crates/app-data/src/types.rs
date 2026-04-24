@@ -106,6 +106,7 @@ impl FromStr for SchemaVersion {
     reason = "the `metadata: MetadataMap` field is a `serde_json::Map<String, serde_json::Value>` alias, and `serde_json::Value` does not implement `Eq`"
 )]
 #[derive(Debug, Clone, PartialEq, Default)]
+#[non_exhaustive]
 pub struct AppDataParams {
     /// Optional application name written to the `appCode` field.
     pub app_code: Option<String>,
@@ -191,6 +192,59 @@ impl<'de> Deserialize<'de> for AppDataParams {
 }
 
 impl AppDataParams {
+    /// Creates app-data parameters with the current full field shape.
+    #[must_use]
+    pub const fn new(
+        app_code: Option<String>,
+        environment: Option<String>,
+        signer: Option<Address>,
+        flashloan: Option<crate::metadata::FlashloanHints>,
+        metadata: MetadataMap,
+    ) -> Self {
+        Self {
+            app_code,
+            environment,
+            signer,
+            flashloan,
+            metadata,
+        }
+    }
+
+    /// Returns a copy with an explicit `appCode` value.
+    #[must_use]
+    pub fn with_app_code(mut self, app_code: impl Into<String>) -> Self {
+        self.app_code = Some(app_code.into());
+        self
+    }
+
+    /// Returns a copy with an explicit environment label.
+    #[must_use]
+    pub fn with_environment(mut self, environment: impl Into<String>) -> Self {
+        self.environment = Some(environment.into());
+        self
+    }
+
+    /// Returns a copy with a typed signer metadata value.
+    #[must_use]
+    pub fn with_signer(mut self, signer: Address) -> Self {
+        self.signer = Some(signer);
+        self
+    }
+
+    /// Returns a copy with typed flash-loan hint metadata.
+    #[must_use]
+    pub fn with_flashloan(mut self, flashloan: crate::metadata::FlashloanHints) -> Self {
+        self.flashloan = Some(flashloan);
+        self
+    }
+
+    /// Returns a copy with explicit open-ended metadata.
+    #[must_use]
+    pub fn with_metadata(mut self, metadata: MetadataMap) -> Self {
+        self.metadata = metadata;
+        self
+    }
+
     /// Returns the canonical metadata [`Value`] merged from the typed
     /// sub-fields and the open-ended [`MetadataMap`] slot.
     ///
@@ -219,6 +273,7 @@ impl AppDataParams {
 
 /// Derived identifiers for a validated app-data document.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct AppDataInfo {
     /// CID representation of the document.
     pub cid: String,
@@ -230,14 +285,39 @@ pub struct AppDataInfo {
     pub app_data_hex: String,
 }
 
+impl AppDataInfo {
+    /// Creates derived identifiers for a validated app-data document.
+    #[must_use]
+    pub fn new(
+        cid: impl Into<String>,
+        app_data_content: impl Into<String>,
+        app_data_hex: impl Into<String>,
+    ) -> Self {
+        Self {
+            cid: cid.into(),
+            app_data_content: app_data_content.into(),
+            app_data_hex: app_data_hex.into(),
+        }
+    }
+}
+
 /// Schema validation result returned by [`crate::validate_app_data_doc`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct ValidationResult {
     /// Whether validation succeeded.
     pub success: bool,
     /// Rendered validation errors when `success` is `false`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub errors: Option<String>,
+}
+
+impl ValidationResult {
+    /// Creates a schema validation result.
+    #[must_use]
+    pub const fn new(success: bool, errors: Option<String>) -> Self {
+        Self { success, errors }
+    }
 }
 
 /// Typed partner-fee metadata accepted by app-data and trading helpers.
@@ -652,6 +732,7 @@ impl Serialize for IpfsConfig {
 
 /// Raw HTTP response returned by app-data transport seams.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct TransportResponse {
     /// HTTP status code.
     pub status: u16,
@@ -659,14 +740,37 @@ pub struct TransportResponse {
     pub body: String,
 }
 
+impl TransportResponse {
+    /// Creates a raw HTTP response for app-data transport seams.
+    #[must_use]
+    pub fn new(status: u16, body: impl Into<String>) -> Self {
+        Self {
+            status,
+            body: body.into(),
+        }
+    }
+}
+
 /// Result returned by Pinata upload helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct IpfsUploadResult {
     /// `0x`-prefixed app-data digest derived from the returned CID.
     #[serde(rename = "appData")]
     pub app_data: String,
     /// CID returned by the upload backend.
     pub cid: String,
+}
+
+impl IpfsUploadResult {
+    /// Creates a Pinata upload result.
+    #[must_use]
+    pub fn new(app_data: impl Into<String>, cid: impl Into<String>) -> Self {
+        Self {
+            app_data: app_data.into(),
+            cid: cid.into(),
+        }
+    }
 }
 
 fn is_semver(version: &str) -> bool {

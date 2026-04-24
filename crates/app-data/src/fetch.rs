@@ -14,6 +14,7 @@ pub trait IpfsFetchTransport {
 
 /// Fetch policy for IPFS reads.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct IpfsFetchPolicy {
     read_base_uri: String,
 }

@@ -8,11 +8,11 @@ use cow_sdk::{
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let document = generate_app_data_doc(AppDataParams {
-        app_code: Some("cow-rs/app-data-roundtrip".to_owned()),
-        environment: Some("example".to_owned()),
-        ..Default::default()
-    });
+    let document = generate_app_data_doc(
+        AppDataParams::default()
+            .with_app_code("cow-rs/app-data-roundtrip")
+            .with_environment("example"),
+    );
     let validation = validate_app_data_doc(&document);
     let info = get_app_data_info(&document)?;
     let derived_cid = app_data_hex_to_cid(&info.app_data_hex)?;

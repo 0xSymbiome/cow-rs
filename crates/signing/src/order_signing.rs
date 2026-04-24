@@ -20,6 +20,7 @@ use crate::{
 /// Result of a local signing operation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct SigningResult {
     /// Encoded signature string.
     pub signature: String,
@@ -27,14 +28,37 @@ pub struct SigningResult {
     pub signing_scheme: SigningScheme,
 }
 
+impl SigningResult {
+    /// Creates the result of a local signing operation.
+    #[must_use]
+    pub fn new(signature: impl Into<String>, signing_scheme: SigningScheme) -> Self {
+        Self {
+            signature: signature.into(),
+            signing_scheme,
+        }
+    }
+}
+
 /// Generated compact order identifier plus underlying digest.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct GeneratedOrderId {
     /// Compact order UID.
     pub order_id: OrderUid,
     /// Underlying order digest.
     pub order_digest: OrderDigest,
+}
+
+impl GeneratedOrderId {
+    /// Creates a generated compact order identifier plus underlying digest.
+    #[must_use]
+    pub const fn new(order_id: OrderUid, order_digest: OrderDigest) -> Self {
+        Self {
+            order_id,
+            order_digest,
+        }
+    }
 }
 
 struct OrderSigningPayload {

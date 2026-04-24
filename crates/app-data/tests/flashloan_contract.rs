@@ -173,11 +173,9 @@ fn zero_token_is_rejected_as_bad_shape() {
 
 #[test]
 fn flashloan_hint_appears_inside_metadata_of_generated_document() {
-    let params = AppDataParams {
-        app_code: Some("aave-v3-flashloan".to_owned()),
-        flashloan: Some(sample_hints()),
-        ..Default::default()
-    };
+    let params = AppDataParams::default()
+        .with_app_code("aave-v3-flashloan")
+        .with_flashloan(sample_hints());
 
     let doc = generate_app_data_doc(params);
     let flashloan = doc
@@ -195,11 +193,9 @@ fn flashloan_hint_appears_inside_metadata_of_generated_document() {
 
 #[test]
 fn bundled_schema_accepts_documents_carrying_the_typed_flashloan_hint() {
-    let params = AppDataParams {
-        app_code: Some("aave-v3-flashloan".to_owned()),
-        flashloan: Some(sample_hints()),
-        ..Default::default()
-    };
+    let params = AppDataParams::default()
+        .with_app_code("aave-v3-flashloan")
+        .with_flashloan(sample_hints());
 
     let mut doc = generate_app_data_doc(params);
     if let Value::Object(map) = &mut doc {
@@ -216,10 +212,7 @@ fn bundled_schema_accepts_documents_carrying_the_typed_flashloan_hint() {
 
 #[test]
 fn typed_flashloan_field_survives_appdataparams_roundtrip() {
-    let params = AppDataParams {
-        flashloan: Some(sample_hints()),
-        ..Default::default()
-    };
+    let params = AppDataParams::default().with_flashloan(sample_hints());
 
     let json_value =
         serde_json::to_value(&params).expect("AppDataParams with typed flashloan must serialize");

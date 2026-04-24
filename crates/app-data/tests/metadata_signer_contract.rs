@@ -26,10 +26,7 @@ fn address(hex: &str) -> Address {
 
 #[test]
 fn typed_signer_field_emits_into_metadata_of_generated_document() {
-    let params = AppDataParams {
-        signer: Some(address(SIGNER_ADDRESS)),
-        ..Default::default()
-    };
+    let params = AppDataParams::default().with_signer(address(SIGNER_ADDRESS));
 
     let doc = generate_app_data_doc(params);
     let reparsed: AppDataParams =

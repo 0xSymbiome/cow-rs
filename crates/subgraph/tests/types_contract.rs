@@ -95,10 +95,10 @@ fn graphql_error_payload_preserves_message_and_locations() {
 
     assert_eq!(
         error,
-        SubgraphGraphQlError {
-            message: "Type `Query` has no field `invalidQuery`".to_owned(),
-            locations: vec![SubgraphGraphQlErrorLocation { line: 2, column: 9 }],
-        }
+        SubgraphGraphQlError::new(
+            "Type `Query` has no field `invalidQuery`",
+            vec![SubgraphGraphQlErrorLocation::new(2, 9)],
+        )
     );
 }
 

@@ -385,22 +385,20 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
                 .with_valid_to(5_600_000)
                 .with_partially_fillable(true),
         )
-        .with_app_data(cow_sdk_app_data::AppDataParams {
-            app_code: None,
-            environment: None,
-            signer: None,
-            flashloan: None,
-            metadata: serde_json::from_value(serde_json::json!({
-                "quote": {
-                    "slippageBips": 77
-                },
-                "partnerFee": {
-                    "volumeBps": 42,
-                    "recipient": crate::common::ALT_RECEIVER
-                }
-            }))
-            .expect("advanced app-data metadata must deserialize"),
-        });
+        .with_app_data(
+            cow_sdk_app_data::AppDataParams::default().with_metadata(
+                serde_json::from_value(serde_json::json!({
+                    "quote": {
+                        "slippageBips": 77
+                    },
+                    "partnerFee": {
+                        "volumeBps": 42,
+                        "recipient": crate::common::ALT_RECEIVER
+                    }
+                }))
+                .expect("advanced app-data metadata must deserialize"),
+            ),
+        );
 
     let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
@@ -458,18 +456,16 @@ async fn quote_results_reject_invalid_partner_fee_metadata_before_quoting() {
         cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
             .with_env(CowEnv::Prod);
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
-    let advanced = SwapAdvancedSettings::new().with_app_data(cow_sdk_app_data::AppDataParams {
-        app_code: None,
-        environment: None,
-        signer: None,
-        flashloan: None,
-        metadata: serde_json::from_value(serde_json::json!({
-            "partnerFee": {
-                "unexpected": true
-            }
-        }))
-        .expect("invalid metadata shape should still deserialize as json"),
-    });
+    let advanced = SwapAdvancedSettings::new().with_app_data(
+        cow_sdk_app_data::AppDataParams::default().with_metadata(
+            serde_json::from_value(serde_json::json!({
+                "partnerFee": {
+                    "unexpected": true
+                }
+            }))
+            .expect("invalid metadata shape should still deserialize as json"),
+        ),
+    );
 
     let error = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
@@ -556,12 +552,8 @@ async fn build_app_data_injects_default_utm_when_override_absent() {
 
 #[tokio::test]
 async fn build_app_data_respects_full_utm_override() {
-    let override_params = cow_sdk_app_data::AppDataParams {
-        app_code: None,
-        environment: None,
-        signer: None,
-        flashloan: None,
-        metadata: serde_json::from_value(serde_json::json!({
+    let override_params = cow_sdk_app_data::AppDataParams::default().with_metadata(
+        serde_json::from_value(serde_json::json!({
             "utm": {
                 "utmSource": "custom",
                 "utmMedium": "custom",
@@ -571,7 +563,7 @@ async fn build_app_data_respects_full_utm_override() {
             }
         }))
         .expect("full-utm override metadata must deserialize"),
-    };
+    );
 
     let info = build_app_data("0x007", 50, "market", None, Some(&override_params))
         .await
@@ -599,18 +591,14 @@ async fn build_app_data_respects_full_utm_override() {
 
 #[tokio::test]
 async fn build_app_data_respects_partial_utm_override() {
-    let override_params = cow_sdk_app_data::AppDataParams {
-        app_code: None,
-        environment: None,
-        signer: None,
-        flashloan: None,
-        metadata: serde_json::from_value(serde_json::json!({
+    let override_params = cow_sdk_app_data::AppDataParams::default().with_metadata(
+        serde_json::from_value(serde_json::json!({
             "utm": {
                 "utmTerm": "xyz"
             }
         }))
         .expect("partial-utm override metadata must deserialize"),
-    };
+    );
 
     let info = build_app_data("0x007", 50, "market", None, Some(&override_params))
         .await

@@ -33,11 +33,20 @@ pub const APP_DATA_APPROACHING_LIMIT_RATIO: f64 = 0.75;
 /// without code change. Destructure `validated.info` when moving the
 /// underlying [`AppDataInfo`] out of the wrapper.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct AppDataValidated {
     /// Canonical [`AppDataInfo`] for the validated document.
     pub info: AppDataInfo,
     /// Validation metadata captured alongside the canonical result.
     pub validation: AppDataValidation,
+}
+
+impl AppDataValidated {
+    /// Creates a validated app-data result from canonical info and validation metadata.
+    #[must_use]
+    pub const fn new(info: AppDataInfo, validation: AppDataValidation) -> Self {
+        Self { info, validation }
+    }
 }
 
 impl Deref for AppDataValidated {

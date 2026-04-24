@@ -100,11 +100,9 @@ fn schema_regression_families_are_supported() {
         Amount::new("2000000000000000000").unwrap(),
     )
     .expect("typed flashloan hints must validate");
-    let params = AppDataParams {
-        app_code: Some("aave-v3-flashloan".to_owned()),
-        flashloan: Some(hints),
-        ..Default::default()
-    };
+    let params = AppDataParams::default()
+        .with_app_code("aave-v3-flashloan")
+        .with_flashloan(hints);
     let mut generated = generate_app_data_doc(params);
     if let Value::Object(map) = &mut generated {
         map.insert("version".to_owned(), Value::String("1.7.0".to_owned()));

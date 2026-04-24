@@ -51,6 +51,7 @@ use crate::QuoteResults;
 /// implementations backed by Redis or other shared caches can share entries
 /// across processes deterministically.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct QuoteCacheKey {
     /// Numeric chain id of the quote request.
     pub chain_id: u64,

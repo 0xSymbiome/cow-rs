@@ -209,13 +209,7 @@ pub async fn build_app_data(
         metadata.insert("utm".to_owned(), default_utm());
     }
 
-    let mut params = AppDataParams {
-        app_code: Some(app_code.to_owned()),
-        environment: None,
-        signer: None,
-        flashloan: None,
-        metadata,
-    };
+    let mut params = AppDataParams::new(Some(app_code.to_owned()), None, None, None, metadata);
     if let Some(advanced_params) = advanced_params {
         params = merge_app_data_params(&params, advanced_params);
     }
@@ -641,25 +635,25 @@ pub(crate) fn merge_app_data_params(
         _ => Map::new(),
     };
 
-    AppDataParams {
-        app_code: override_params
+    AppDataParams::new(
+        override_params
             .app_code
             .clone()
             .or_else(|| base.app_code.clone()),
-        environment: override_params
+        override_params
             .environment
             .clone()
             .or_else(|| base.environment.clone()),
-        signer: override_params
+        override_params
             .signer
             .clone()
             .or_else(|| base.signer.clone()),
-        flashloan: override_params
+        override_params
             .flashloan
             .clone()
             .or_else(|| base.flashloan.clone()),
         metadata,
-    }
+    )
 }
 
 fn deep_merge_values(base: Value, override_value: Value) -> Value {

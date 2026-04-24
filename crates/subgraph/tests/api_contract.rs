@@ -329,21 +329,20 @@ async fn multi_operation_document_without_operation_name_surfaces_typed_graphql_
         SubgraphError::GraphQl { context, errors } => {
             assert_eq!(
                 *context,
-                SubgraphRequestErrorContext {
-                    chain_id: u64::from(SupportedChainId::Mainnet),
-                    api: server.uri(),
-                    document: document.to_owned(),
-                    operation_name: None,
-                    variables: None,
-                }
+                SubgraphRequestErrorContext::new(
+                    u64::from(SupportedChainId::Mainnet),
+                    server.uri(),
+                    document,
+                    None,
+                    None,
+                )
             );
             assert_eq!(
                 errors,
-                vec![SubgraphGraphQlError {
-                    message: "Must provide operation name if query contains multiple operations."
-                        .to_owned(),
-                    locations: vec![],
-                }]
+                vec![SubgraphGraphQlError::new(
+                    "Must provide operation name if query contains multiple operations.",
+                    vec![],
+                )]
             );
         }
         other => panic!("expected GraphQl error, got {other:?}"),
@@ -423,10 +422,10 @@ async fn run_query_with_config_honors_chain_override_for_generic_queries() {
     let response: Value = api
         .run_query_with_config(
             SubgraphQueryRequest::new(query).with_operation_name("TotalsForAudit"),
-            cow_sdk_subgraph::SubgraphConfigOverride {
-                chain_id: Some(SupportedChainId::GnosisChain),
-                base_urls: None,
-            },
+            cow_sdk_subgraph::SubgraphConfigOverride::new(
+                Some(SupportedChainId::GnosisChain),
+                None,
+            ),
         )
         .await
         .expect("chain override should drive generic-query transport resolution");
@@ -617,20 +616,20 @@ async fn invalid_graphql_query_surfaces_typed_context() {
         SubgraphError::GraphQl { context, errors } => {
             assert_eq!(
                 *context,
-                SubgraphRequestErrorContext {
-                    chain_id: u64::from(SupportedChainId::Mainnet),
-                    api: server.uri(),
-                    document: query.to_owned(),
-                    operation_name: Some("InvalidQuery".to_owned()),
-                    variables: None,
-                }
+                SubgraphRequestErrorContext::new(
+                    u64::from(SupportedChainId::Mainnet),
+                    server.uri(),
+                    query,
+                    Some("InvalidQuery".to_owned()),
+                    None,
+                )
             );
             assert_eq!(
                 errors,
-                vec![SubgraphGraphQlError {
-                    message: "Type `Query` has no field `invalidQuery`".to_owned(),
-                    locations: vec![SubgraphGraphQlErrorLocation { line: 2, column: 9 }],
-                }]
+                vec![SubgraphGraphQlError::new(
+                    "Type `Query` has no field `invalidQuery`",
+                    vec![SubgraphGraphQlErrorLocation::new(2, 9)],
+                )]
             );
         }
         other => panic!("expected GraphQl error, got {other:?}"),
@@ -675,21 +674,20 @@ async fn graphql_error_preserves_variables_in_typed_context() {
         SubgraphError::GraphQl { context, errors } => {
             assert_eq!(
                 *context,
-                SubgraphRequestErrorContext {
-                    chain_id: u64::from(SupportedChainId::Mainnet),
-                    api: server.uri(),
-                    document: query.to_owned(),
-                    operation_name: Some("TokensByVolume".to_owned()),
-                    variables: Some(json!({ "limit": 5 })),
-                }
+                SubgraphRequestErrorContext::new(
+                    u64::from(SupportedChainId::Mainnet),
+                    server.uri(),
+                    query,
+                    Some("TokensByVolume".to_owned()),
+                    Some(json!({ "limit": 5 })),
+                )
             );
             assert_eq!(
                 errors,
-                vec![SubgraphGraphQlError {
-                    message: "Field `tokens` is unavailable for the requested arguments."
-                        .to_owned(),
-                    locations: vec![],
-                }]
+                vec![SubgraphGraphQlError::new(
+                    "Field `tokens` is unavailable for the requested arguments.",
+                    vec![],
+                )]
             );
         }
         other => panic!("expected GraphQl error, got {other:?}"),
@@ -720,13 +718,13 @@ async fn malformed_success_response_surfaces_serialization_error() {
         } => {
             assert_eq!(
                 *context,
-                SubgraphRequestErrorContext {
-                    chain_id: u64::from(SupportedChainId::Mainnet),
-                    api: server.uri(),
-                    document: TOTALS_QUERY.to_owned(),
-                    operation_name: Some("Totals".to_owned()),
-                    variables: None,
-                }
+                SubgraphRequestErrorContext::new(
+                    u64::from(SupportedChainId::Mainnet),
+                    server.uri(),
+                    TOTALS_QUERY,
+                    Some("Totals".to_owned()),
+                    None,
+                )
             );
             assert_eq!(body, "not-json");
             assert!(!details.is_empty());
@@ -762,13 +760,13 @@ async fn non_success_status_surfaces_http_status_error() {
         } => {
             assert_eq!(
                 *context,
-                SubgraphRequestErrorContext {
-                    chain_id: u64::from(SupportedChainId::Mainnet),
-                    api: server.uri(),
-                    document: query.to_owned(),
-                    operation_name: Some("TokensByVolume".to_owned()),
-                    variables: None,
-                }
+                SubgraphRequestErrorContext::new(
+                    u64::from(SupportedChainId::Mainnet),
+                    server.uri(),
+                    query,
+                    Some("TokensByVolume".to_owned()),
+                    None,
+                )
             );
             assert_eq!(status, 500);
             assert_eq!(body, "upstream exploded");
@@ -801,13 +799,13 @@ async fn missing_data_surfaces_typed_missing_data_error_for_generic_queries() {
         SubgraphError::MissingData { context } => {
             assert_eq!(
                 *context,
-                SubgraphRequestErrorContext {
-                    chain_id: u64::from(SupportedChainId::Mainnet),
-                    api: server.uri(),
-                    document: query.to_owned(),
-                    operation_name: Some("TokensByVolume".to_owned()),
-                    variables: Some(json!({ "limit": 5 })),
-                }
+                SubgraphRequestErrorContext::new(
+                    u64::from(SupportedChainId::Mainnet),
+                    server.uri(),
+                    query,
+                    Some("TokensByVolume".to_owned()),
+                    Some(json!({ "limit": 5 })),
+                )
             );
         }
         other => panic!("expected MissingData error, got {other:?}"),
@@ -860,13 +858,13 @@ async fn transport_failures_surface_typed_context() {
         SubgraphError::Transport { context, details } => {
             assert_eq!(
                 *context,
-                SubgraphRequestErrorContext {
-                    chain_id: u64::from(SupportedChainId::Mainnet),
-                    api: endpoint_origin,
-                    document: query.to_owned(),
-                    operation_name: Some("TokensByVolume".to_owned()),
-                    variables: None,
-                }
+                SubgraphRequestErrorContext::new(
+                    u64::from(SupportedChainId::Mainnet),
+                    endpoint_origin,
+                    query,
+                    Some("TokensByVolume".to_owned()),
+                    None,
+                )
             );
             assert!(!details.is_empty());
         }

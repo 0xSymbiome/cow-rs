@@ -66,10 +66,9 @@ fn public_api_reexports_cover_primary_root_surface() {
 
 #[test]
 fn module_reexports_cover_expected_leaf_crates() {
-    let doc = cow_sdk::app_data::generate_app_data_doc(cow_sdk::app_data::AppDataParams {
-        app_code: Some("cow-rs".to_owned()),
-        ..Default::default()
-    });
+    let doc = cow_sdk::app_data::generate_app_data_doc(
+        cow_sdk::app_data::AppDataParams::default().with_app_code("cow-rs"),
+    );
     let validation = cow_sdk::app_data::validate_app_data_doc(&doc);
     let schema =
         cow_sdk::app_data::get_app_data_schema(cow_sdk::app_data::SchemaVersion::latest().as_str())

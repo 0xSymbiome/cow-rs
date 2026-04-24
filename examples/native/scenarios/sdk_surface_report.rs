@@ -17,11 +17,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         PartialTraderParameters::default(),
         TradingSdkOptions::default(),
     )?;
-    let app_data_doc = generate_app_data_doc(AppDataParams {
-        app_code: Some("cow-rs/native-capability-report".to_owned()),
-        environment: Some("review".to_owned()),
-        ..Default::default()
-    });
+    let app_data_doc = generate_app_data_doc(
+        AppDataParams::default()
+            .with_app_code("cow-rs/native-capability-report")
+            .with_environment("review"),
+    );
     let app_data_validation = validate_app_data_doc(&app_data_doc);
     let app_data_info = get_app_data_info(&app_data_doc)?;
     let unsigned_order = sample_unsigned_order();

@@ -741,19 +741,15 @@ async fn assert_partner_fee_in_app_data(case_id: &str, input: &Value, expected: 
     // The typed merge pipeline must preserve the partner-fee override when a
     // caller-supplied advanced document merges on top of a base document.
     let base = info.doc.clone();
-    let override_params = cow_sdk_app_data::AppDataParams {
-        app_code: None,
-        environment: None,
-        signer: None,
-        flashloan: None,
-        metadata: serde_json::from_value(json!({
+    let override_params = cow_sdk_app_data::AppDataParams::default().with_metadata(
+        serde_json::from_value(json!({
             "partnerFee": {
                 "volumeBps": volume_bps,
                 "recipient": ALT_RECEIVER,
             }
         }))
         .expect("partner-fee override metadata must build"),
-    };
+    );
     let (merged, _merged_params) =
         merge_and_seal_app_data(&base, &override_params).unwrap_or_else(|error| {
             panic!("case {case_id}: merge_and_seal_app_data must succeed, got {error:?}")

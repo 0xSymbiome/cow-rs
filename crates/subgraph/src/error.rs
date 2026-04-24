@@ -7,6 +7,7 @@ use thiserror::Error;
 
 /// A GraphQL error returned in the `errors` array.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct SubgraphGraphQlError {
     /// Human-readable error message returned by the GraphQL service.
     pub message: String,
@@ -15,8 +16,20 @@ pub struct SubgraphGraphQlError {
     pub locations: Vec<SubgraphGraphQlErrorLocation>,
 }
 
+impl SubgraphGraphQlError {
+    /// Creates a typed GraphQL error entry.
+    #[must_use]
+    pub fn new(message: impl Into<String>, locations: Vec<SubgraphGraphQlErrorLocation>) -> Self {
+        Self {
+            message: message.into(),
+            locations,
+        }
+    }
+}
+
 /// A single GraphQL error location.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct SubgraphGraphQlErrorLocation {
     /// One-based line number within the submitted document.
     pub line: u32,
@@ -24,8 +37,17 @@ pub struct SubgraphGraphQlErrorLocation {
     pub column: u32,
 }
 
+impl SubgraphGraphQlErrorLocation {
+    /// Creates a one-based GraphQL source location.
+    #[must_use]
+    pub const fn new(line: u32, column: u32) -> Self {
+        Self { line, column }
+    }
+}
+
 /// Request metadata captured in typed subgraph errors.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct SubgraphRequestErrorContext {
     /// Numeric chain id selected for the request.
     pub chain_id: u64,
@@ -41,6 +63,26 @@ pub struct SubgraphRequestErrorContext {
     pub operation_name: Option<String>,
     /// Optional GraphQL variables sent with the request.
     pub variables: Option<Value>,
+}
+
+impl SubgraphRequestErrorContext {
+    /// Creates request metadata captured in typed subgraph errors.
+    #[must_use]
+    pub fn new(
+        chain_id: u64,
+        api: impl Into<String>,
+        document: impl Into<String>,
+        operation_name: Option<String>,
+        variables: Option<Value>,
+    ) -> Self {
+        Self {
+            chain_id,
+            api: api.into(),
+            document: document.into(),
+            operation_name,
+            variables,
+        }
+    }
 }
 
 /// Typed failure boundary for subgraph helper and raw-query operations.

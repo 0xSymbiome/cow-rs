@@ -161,10 +161,7 @@ fn generate_order_id_reuses_contract_hashing_and_uid_packing() {
 
     assert_eq!(
         generated,
-        GeneratedOrderId {
-            order_id: expected_uid,
-            order_digest: expected_digest,
-        }
+        GeneratedOrderId::new(expected_uid, expected_digest)
     );
 }
 

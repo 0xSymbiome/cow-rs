@@ -65,13 +65,13 @@ fn base_params_with_quote_metadata() -> AppDataParams {
         "orderClass": { "orderClass": "market" }
     }))
     .expect("base metadata fixture must build");
-    AppDataParams {
-        app_code: Some("CoW Swap".to_owned()),
-        environment: Some("production".to_owned()),
-        signer: None,
-        flashloan: None,
+    AppDataParams::new(
+        Some("CoW Swap".to_owned()),
+        Some("production".to_owned()),
+        None,
+        None,
         metadata,
-    }
+    )
 }
 
 fn hooks_pre_value() -> Value {
@@ -109,10 +109,7 @@ fn override_with_only_signer_survives_into_wire_doc() {
     let base_doc = sealed_base_doc(base_params_with_quote_metadata());
     let signer = address(OWNER);
 
-    let override_params = AppDataParams {
-        signer: Some(signer.clone()),
-        ..AppDataParams::default()
-    };
+    let override_params = AppDataParams::default().with_signer(signer.clone());
 
     let (info, merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
         .expect("typed merge must succeed with signer-only override");
@@ -150,10 +147,7 @@ fn override_with_only_flashloan_survives_into_wire_doc() {
     let base_doc = sealed_base_doc(base_params_with_quote_metadata());
     let hints = sample_flashloan();
 
-    let override_params = AppDataParams {
-        flashloan: Some(hints.clone()),
-        ..AppDataParams::default()
-    };
+    let override_params = AppDataParams::default().with_flashloan(hints.clone());
 
     let (info, merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
         .expect("typed merge must succeed with flashloan-only override");
@@ -181,11 +175,9 @@ fn override_with_both_signer_and_flashloan_survives() {
     let signer = address(OWNER);
     let hints = sample_flashloan();
 
-    let override_params = AppDataParams {
-        signer: Some(signer.clone()),
-        flashloan: Some(hints.clone()),
-        ..AppDataParams::default()
-    };
+    let override_params = AppDataParams::default()
+        .with_signer(signer.clone())
+        .with_flashloan(hints.clone());
 
     let (info, merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
         .expect("typed merge must succeed with signer and flashloan override");
@@ -210,18 +202,12 @@ fn override_with_both_signer_and_flashloan_survives() {
 fn base_hooks_cleared_when_override_contains_hooks() {
     let mut base_metadata = base_params_with_quote_metadata().metadata;
     base_metadata.insert("hooks".to_owned(), hooks_pre_value());
-    let base = AppDataParams {
-        metadata: base_metadata,
-        ..base_params_with_quote_metadata()
-    };
+    let base = base_params_with_quote_metadata().with_metadata(base_metadata);
     let base_doc = sealed_base_doc(base);
 
     let mut override_metadata = MetadataMap::new();
     override_metadata.insert("hooks".to_owned(), hooks_post_value());
-    let override_params = AppDataParams {
-        metadata: override_metadata,
-        ..AppDataParams::default()
-    };
+    let override_params = AppDataParams::default().with_metadata(override_metadata);
 
     let (info, _merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
         .expect("typed merge must succeed with hooks replacement");
@@ -252,10 +238,7 @@ fn base_hooks_cleared_when_override_contains_hooks() {
 fn base_hooks_preserved_when_override_has_no_hooks() {
     let mut base_metadata = base_params_with_quote_metadata().metadata;
     base_metadata.insert("hooks".to_owned(), hooks_pre_value());
-    let base = AppDataParams {
-        metadata: base_metadata,
-        ..base_params_with_quote_metadata()
-    };
+    let base = base_params_with_quote_metadata().with_metadata(base_metadata);
     let base_doc = sealed_base_doc(base);
 
     let override_params = AppDataParams::default();
@@ -286,10 +269,8 @@ async fn base_doc_signer_triggers_appdata_from_mismatch_when_from_differs() {
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.owner = Some(submission_owner.clone());
 
-    let advanced_at_quote = SwapAdvancedSettings::new().with_app_data(AppDataParams {
-        signer: Some(base_signer.clone()),
-        ..AppDataParams::default()
-    });
+    let advanced_at_quote = SwapAdvancedSettings::new()
+        .with_app_data(AppDataParams::default().with_signer(base_signer.clone()));
 
     let quote_results = get_quote_results(
         &trade,
@@ -336,10 +317,8 @@ async fn base_doc_signer_matches_from_passes_validation() {
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.owner = Some(base_signer.clone());
 
-    let advanced_at_quote = SwapAdvancedSettings::new().with_app_data(AppDataParams {
-        signer: Some(base_signer.clone()),
-        ..AppDataParams::default()
-    });
+    let advanced_at_quote = SwapAdvancedSettings::new()
+        .with_app_data(AppDataParams::default().with_signer(base_signer.clone()));
 
     let quote_results = get_quote_results(
         &trade,
@@ -369,14 +348,10 @@ async fn override_signer_supersedes_base_signer() {
     let mut trade_c = sample_trade_parameters(OrderKind::Sell);
     trade_c.owner = Some(override_signer.clone());
 
-    let advanced_at_quote = SwapAdvancedSettings::new().with_app_data(AppDataParams {
-        signer: Some(address(OWNER)),
-        ..AppDataParams::default()
-    });
-    let advanced_at_post = SwapAdvancedSettings::new().with_app_data(AppDataParams {
-        signer: Some(override_signer.clone()),
-        ..AppDataParams::default()
-    });
+    let advanced_at_quote = SwapAdvancedSettings::new()
+        .with_app_data(AppDataParams::default().with_signer(address(OWNER)));
+    let advanced_at_post = SwapAdvancedSettings::new()
+        .with_app_data(AppDataParams::default().with_signer(override_signer.clone()));
 
     let quote_results_c = get_quote_results(
         &trade_c,
@@ -456,13 +431,13 @@ fn round_trip_idempotency() {
         "utm".to_owned(),
         json!({ "utmSource": "cow-rs", "utmMedium": "test" }),
     );
-    let original = AppDataParams {
-        app_code: Some("CoW Swap".to_owned()),
-        environment: Some("production".to_owned()),
-        signer: Some(signer),
-        flashloan: Some(hints),
+    let original = AppDataParams::new(
+        Some("CoW Swap".to_owned()),
+        Some("production".to_owned()),
+        Some(signer),
+        Some(hints),
         metadata,
-    };
+    );
 
     let doc = generate_app_data_doc(original.clone());
     let recovered = params_from_doc(&doc).expect("round-trip through params_from_doc must succeed");
@@ -488,10 +463,7 @@ fn user_consents_array_replaced_not_concatenated() {
             { "terms": "QmBaseTermsHashBBBBBBBBBBBBBBBBBBBBBBBBBBBB", "acceptedDate": "2025-11-11T23:10:00Z" },
         ]),
     );
-    let base = AppDataParams {
-        metadata: base_metadata,
-        ..base_params_with_quote_metadata()
-    };
+    let base = base_params_with_quote_metadata().with_metadata(base_metadata);
     let base_doc = sealed_base_doc(base);
 
     let mut override_metadata = MetadataMap::new();
@@ -501,10 +473,7 @@ fn user_consents_array_replaced_not_concatenated() {
             { "terms": "QmOverrideTermsHashCCCCCCCCCCCCCCCCCCCCCCCC", "acceptedDate": "2025-11-12T08:30:00Z" },
         ]),
     );
-    let override_params = AppDataParams {
-        metadata: override_metadata,
-        ..AppDataParams::default()
-    };
+    let override_params = AppDataParams::default().with_metadata(override_metadata);
 
     let (info, _merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
         .expect("typed merge must succeed with userConsents replacement");

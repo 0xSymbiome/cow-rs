@@ -15,13 +15,13 @@ fn sample_app_data() -> cow_sdk_app_data::AppDataDoc {
         serde_json::json!({ "slippageBips": 50 }),
     );
 
-    generate_app_data_doc(AppDataParams {
-        app_code: Some("cow-sdk-bench".to_owned()),
-        environment: Some("production".to_owned()),
-        signer: None,
-        flashloan: None,
+    generate_app_data_doc(AppDataParams::new(
+        Some("cow-sdk-bench".to_owned()),
+        Some("production".to_owned()),
+        None,
+        None,
         metadata,
-    })
+    ))
 }
 
 fn bench_stringify_deterministic(c: &mut Criterion) {

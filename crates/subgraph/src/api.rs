@@ -42,6 +42,7 @@ pub type SubgraphApiBaseUrls = BTreeMap<SupportedChainId, Option<String>>;
 /// The default configuration targets mainnet production routes derived from the
 /// API key supplied when constructing [`SubgraphApi`].
 #[derive(Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct SubgraphConfig {
     /// Active chain id used for helper methods and generic queries.
     pub chain_id: SupportedChainId,
@@ -51,6 +52,17 @@ pub struct SubgraphConfig {
     /// routing map internally and exposes only redacted route identity through
     /// its stable public metadata.
     pub base_urls: Option<SubgraphApiBaseUrls>,
+}
+
+impl SubgraphConfig {
+    /// Creates a static subgraph client configuration.
+    #[must_use]
+    pub const fn new(chain_id: SupportedChainId, base_urls: Option<SubgraphApiBaseUrls>) -> Self {
+        Self {
+            chain_id,
+            base_urls,
+        }
+    }
 }
 
 impl fmt::Debug for SubgraphConfig {
@@ -73,11 +85,26 @@ impl Default for SubgraphConfig {
 
 /// Per-call overrides for [`SubgraphConfig`].
 #[derive(Clone, Default, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct SubgraphConfigOverride {
     /// Optional chain override for a single request.
     pub chain_id: Option<SupportedChainId>,
     /// Optional base-URL map override for a single request.
     pub base_urls: Option<SubgraphApiBaseUrls>,
+}
+
+impl SubgraphConfigOverride {
+    /// Creates per-call subgraph configuration overrides.
+    #[must_use]
+    pub const fn new(
+        chain_id: Option<SupportedChainId>,
+        base_urls: Option<SubgraphApiBaseUrls>,
+    ) -> Self {
+        Self {
+            chain_id,
+            base_urls,
+        }
+    }
 }
 
 impl fmt::Debug for SubgraphConfigOverride {
