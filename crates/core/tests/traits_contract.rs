@@ -1,7 +1,8 @@
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle,
-    GraphTransport, Hash32, HexData, PinningTransport, Provider, Signer, TransactionReceipt,
-    TransactionRequest, TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
+    Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo, ContractCall,
+    ContractHandle, GraphTransport, Hash32, HexData, PinningTransport, Provider, Signer,
+    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField, TypedDataPayload,
+    TypedDataTypes,
 };
 
 #[derive(Clone)]
@@ -382,7 +383,7 @@ async fn sync_runtime_contracts_gain_async_compatibility_through_blanket_impls()
         gas_limit: Some(Amount::from(21_000u32)),
     };
 
-    let async_signer = AsyncProvider::create_signer(&provider, "blanket")
+    let async_signer = AsyncSigningProvider::create_signer(&provider, "blanket")
         .await
         .unwrap();
     assert_eq!(

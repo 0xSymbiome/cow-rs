@@ -12,8 +12,8 @@ Use it when you want to connect the SDK to:
 The stable extension seam is owned by `cow-sdk-core`.
 
 The root `cow-sdk` facade re-exports the traits for convenience, but the
-contract itself lives in `cow-sdk-core::{Signer, AsyncSigner, Provider,
-AsyncProvider}`.
+contract itself lives in `cow-sdk-core::{Signer, AsyncSigner,
+AsyncSigningProvider, Provider, AsyncProvider}`.
 
 ## Why This Guide Exists
 
@@ -33,7 +33,9 @@ that adapter in a leaf crate that implements the core traits.
 Import the owning traits from `cow-sdk-core`:
 
 ```rust
-use cow_sdk_core::{AsyncProvider, AsyncSigner, HttpTransport, Provider, Signer};
+use cow_sdk_core::{
+    AsyncProvider, AsyncSigner, AsyncSigningProvider, HttpTransport, Provider, Signer,
+};
 ```
 
 Their roles are:
@@ -54,6 +56,10 @@ Their roles are:
 `AsyncProvider`
 
 - asynchronous chain reads and contract reads for browser or async runtimes
+
+`AsyncSigningProvider`
+
+- signer creation for async providers that can create wallet or hosted signers
 
 `HttpTransport`
 
@@ -108,18 +114,26 @@ A sync provider owns:
 
 An async provider owns the read-side operations from `Provider` in async form.
 
-It does not expose `set_signer` or `set_provider`.
+It does not expose signer creation, `set_signer`, or `set_provider`.
+
+### `AsyncSigningProvider`
+
+An async signing provider extends `AsyncProvider` with signer creation for
+providers that can create wallet, hosted, or locally managed signers.
+
+Read-only async providers do not implement this extension.
 
 Those mutating hooks remain part of the sync provider seam.
 
 ## Important Compatibility Rule
 
-You do **not** always need to implement all four traits separately.
+You do **not** always need to implement all runtime traits separately.
 
 `cow-sdk-core` already provides blanket implementations:
 
 - any `T: Signer` also implements `AsyncSigner`
-- any `T: Provider` also implements `AsyncProvider` when `T::Signer` satisfies
+- any `T: Provider` also implements `AsyncProvider`
+- any `T: Provider` also implements `AsyncSigningProvider` when `T::Signer` satisfies
   `AsyncSigner<Error = T::Error>`
 
 That means a synchronous native adapter can often implement only:
@@ -281,14 +295,15 @@ integration contract:
 Because `StaticSigner` implements `Signer`, it also satisfies `AsyncSigner`
 through the blanket implementation.
 
-Because `StaticProvider` implements `Provider` and exposes a signer that
-satisfies `AsyncSigner`, it also satisfies `AsyncProvider`.
+Because `StaticProvider` implements `Provider`, it also satisfies
+`AsyncProvider`. Because its signer satisfies `AsyncSigner`, it also satisfies
+`AsyncSigningProvider`.
 
 ## Using The Adapter With Downstream Helpers
 
 Once your adapter implements the traits, you can pass it into downstream
 helpers that are generic over `Provider`, `AsyncProvider`, `Signer`, or
-`AsyncSigner`.
+`AsyncSigningProvider`, or `AsyncSigner`.
 
 For example, the trading crate exposes allowance helpers over the provider seam:
 

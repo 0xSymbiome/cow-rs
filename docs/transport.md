@@ -15,10 +15,13 @@ concrete backend.
   REST and GraphQL traffic. The native default is `ReqwestTransport`
   in `cow-sdk-core`; the browser default is `FetchTransport` in the
   dedicated `cow-sdk-transport-wasm` crate.
-- **`AsyncProvider`** in `cow-sdk-core` is the chain-RPC seam used by
+- **`AsyncProvider`** in `cow-sdk-core` is the read-only chain-RPC seam used by
   on-chain helpers (allowance reads, EIP-1271 verification, on-chain
   cancellation). Consumers bring their own provider through the
   `docs/providers/` adapter guide.
+- **`AsyncSigningProvider`** in `cow-sdk-core` extends `AsyncProvider` for
+  async providers that can create signers. Read-only provider adapters do not
+  implement this extension.
 
 `alloy-provider` is intentionally not pulled by any shipped leaf
 crate. `cargo tree --invert alloy-provider` returns empty for
@@ -214,8 +217,8 @@ not called.
 - [Architecture](architecture.md) — how `HttpTransport` fits into the
   nine-crate workspace
 - [Integrations](integrations.md) — broader runtime-adapter guide
-  covering `Signer`, `AsyncSigner`, `Provider`, `AsyncProvider`, and
-  `HttpTransport`
+  covering `Signer`, `AsyncSigner`, `Provider`, `AsyncProvider`,
+  `AsyncSigningProvider`, and `HttpTransport`
 - [Performance](performance.md) — shared-client pooling recipes and
   default-transport policy
 - [Observability](observability.md) — tracing boundary and the

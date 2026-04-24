@@ -46,7 +46,7 @@ Every input and output type the traits use
 `TypedDataField`) is defined in `cow_sdk_core::types` and
 `cow_sdk_core::traits`.
 
-## Implementing `AsyncProvider`
+## Implementing `AsyncProvider` And `AsyncSigningProvider`
 
 The adapter wraps a single alloy provider handle and converts typed
 inputs from `cow-sdk-core` into the alloy call shape, then converts
@@ -56,8 +56,8 @@ results back into the `cow-sdk-core` types the SDK expects.
 use std::sync::Arc;
 
 use cow_sdk_core::traits::{
-    AsyncProvider, BlockInfo, ContractCall, ContractHandle, TransactionReceipt,
-    TransactionRequest,
+    AsyncProvider, AsyncSigningProvider, BlockInfo, ContractCall, ContractHandle,
+    TransactionReceipt, TransactionRequest,
 };
 use cow_sdk_core::types::{Address, Amount, BlockHash, ChainId, HexData, TransactionHash};
 
@@ -87,7 +87,6 @@ impl<P> AsyncProvider for AlloyProviderAdapter<P>
 where
     P: Send + Sync,
 {
-    type Signer = AlloySignerAdapter<()>; // replace `()` with your signer handle
     type Error = AlloyAdapterError;
 
     async fn get_chain_id(&self) -> Result<ChainId, Self::Error> {
@@ -109,11 +108,6 @@ where
         // let receipt = self.provider.get_transaction_receipt(transaction_hash.into_alloy()).await.map_err(...)?;
         // Ok(receipt.map(|r| TransactionReceipt { transaction_hash: TransactionHash::from(r.transaction_hash) }))
         unimplemented!("wire alloy get_transaction_receipt and map to TransactionReceipt")
-    }
-
-    async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        // Parse `signer_hint` (for example a private-key hex or keystore path) using your signer factory.
-        unimplemented!("build the signer handle the adapter needs from signer_hint")
     }
 
     async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
@@ -150,12 +144,26 @@ where
         unimplemented!("construct the alloy contract handle and return a ContractHandle wrapper")
     }
 }
+
+#[allow(unused_variables)]
+impl<P> AsyncSigningProvider for AlloyProviderAdapter<P>
+where
+    P: Send + Sync,
+{
+    type Signer = AlloySignerAdapter<()>; // replace `()` with your signer handle
+
+    async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error> {
+        // Parse `signer_hint` (for example a private-key hex or keystore path) using your signer factory.
+        unimplemented!("build the signer handle the adapter needs from signer_hint")
+    }
+}
 ```
 
 The `unimplemented!` bodies mark the lines where a real adapter crate
-would call into alloy. The method signatures are fixed by the trait;
-the adapter just provides the conversion between `cow-sdk-core` types
-and the alloy equivalents.
+would call into alloy. The `AsyncProvider` method signatures are fixed
+by the read-only trait; the adapter just provides the conversion between
+`cow-sdk-core` types and the alloy equivalents. Implement
+`AsyncSigningProvider` only when the same adapter can create a signer.
 
 ## Implementing `AsyncSigner`
 
@@ -228,7 +236,7 @@ where
 
 ## Consumption Example
 
-Once the adapter implements `AsyncProvider` and `AsyncSigner`, the
+Once the adapter implements `AsyncProvider`, `AsyncSigningProvider`, and `AsyncSigner`, the
 consumer wires it into the higher-level SDK surfaces the same way any
 other adapter does:
 
@@ -247,9 +255,9 @@ let provider = AlloyProviderAdapter {
 let signer = build_alloy_signer();
 
 // Hand the provider or signer to any cow-sdk surface that takes an
-// `AsyncProvider` or `AsyncSigner`. Crates such as cow-sdk-trading,
-// cow-sdk-signing, and cow-sdk-browser-wallet accept trait objects or
-// generic parameters bound to these traits.
+// `AsyncProvider`, `AsyncSigningProvider`, or `AsyncSigner`. Crates such
+// as cow-sdk-trading, cow-sdk-signing, and cow-sdk-browser-wallet accept
+// trait objects or generic parameters bound to these traits.
 ```
 
 The exact call shape of the SDK entry points that accept the adapter

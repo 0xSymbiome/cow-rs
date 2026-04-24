@@ -578,6 +578,11 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- The async provider surface now separates read-only chain RPC from signer
+  creation. `AsyncProvider` carries only read methods, while the new
+  `AsyncSigningProvider: AsyncProvider` extension owns `type Signer` and
+  `create_signer`; wallet-capable providers implement both traits and read-only
+  adapters implement only the read-only half.
 - Two critical codec fuzz targets — covering the canonical order-uid
   pack-unpack pipeline and the EIP-712 typed-data digest pipeline — now
   ship with non-empty corpora seeded from the parity fixture set, so

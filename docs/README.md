@@ -27,7 +27,7 @@ families.
   [Architecture](architecture.md#facade-and-adapter-faq) and
   [ADR 0003](adr/0003-separate-read-only-subgraph-crate.md).
 - Where do native runtime integrations fit? `cow-sdk-core::{Signer,
-  AsyncSigner, Provider, AsyncProvider}` defines the stable extension contract
+  AsyncSigner, AsyncSigningProvider, Provider, AsyncProvider}` defines the stable extension contract
   for signer and RPC adapters. Provider-specific integrations remain additive
   leaf crates rather than widening the default facade. See
   [Integrations](integrations.md) and

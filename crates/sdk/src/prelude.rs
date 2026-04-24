@@ -22,11 +22,11 @@ pub use cow_sdk_contracts::{
     compute_order_uid, deployment_for_chain,
 };
 pub use cow_sdk_core::{
-    Address, Amount, ApiBaseUrls, AppDataHash, AppDataHex, AsyncProvider, AsyncSigner, BlockHash,
-    BuyTokenDestination, Cancellable, Cancelled, CoreError, CowEnv, Hash32, HexData, HttpTransport,
-    OrderDigest, OrderKind, OrderUid, ProtocolOptions, SellTokenSource, SignedAmount,
-    SupportedChainId, TradeModel, TransactionHash, TransportError, UnsignedOrder, ValidationError,
-    ValidationReason,
+    Address, Amount, ApiBaseUrls, AppDataHash, AppDataHex, AsyncProvider, AsyncSigner,
+    AsyncSigningProvider, BlockHash, BuyTokenDestination, Cancellable, Cancelled, CoreError,
+    CowEnv, Hash32, HexData, HttpTransport, OrderDigest, OrderKind, OrderUid, ProtocolOptions,
+    SellTokenSource, SignedAmount, SupportedChainId, TradeModel, TransactionHash, TransportError,
+    UnsignedOrder, ValidationError, ValidationReason,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};

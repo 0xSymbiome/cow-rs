@@ -31,6 +31,7 @@ public and runtime shape of `cow-rs`.
 | [0021](0021-orderbook-total-fee-policy.md) | Accepted | Define `Order.total_fee` narrowly as the canonical executed-fee component and surface the deprecated `executedFeeAmount` wire field as a typed read-only sibling so consumers compute any legacy summation explicitly. |
 | [0022](0022-ecdsa-signature-v-normalization.md) | Accepted | Canonicalize recoverable ECDSA signatures at the contracts boundary so every emitted signature carries a Solidity-compatible `27` / `28` recovery byte. |
 | [0023](0023-legacy-compatibility-shim-removal.md) | Accepted | Remove the legacy compatibility order helpers and models so contract digests flow only through the canonical `UnsignedOrder` to `Order` path. |
+| [0024](0024-asyncprovider-asyncsigningprovider-capability-split.md) | Accepted | Split `AsyncProvider` into a read-only chain-RPC trait and an `AsyncSigningProvider` extension that owns signer creation. |
 
 ## When To Write An ADR
 

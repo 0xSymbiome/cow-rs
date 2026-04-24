@@ -10,8 +10,8 @@ use cow_sdk_contracts::{
     verify_eip1271_signature_async,
 };
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle, Hash32,
-    HexData, TransactionReceipt, TransactionRequest,
+    Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo, ContractCall,
+    ContractHandle, Hash32, HexData, TransactionReceipt, TransactionRequest,
 };
 
 #[derive(Default)]
@@ -123,7 +123,6 @@ impl AsyncMockProvider {
 }
 
 impl AsyncProvider for AsyncMockProvider {
-    type Signer = DummyAsyncSigner;
     type Error = AsyncMockProviderError;
 
     async fn get_chain_id(&self) -> Result<u64, Self::Error> {
@@ -142,10 +141,6 @@ impl AsyncProvider for AsyncMockProvider {
         _transaction_hash: &cow_sdk_core::TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
         Ok(None)
-    }
-
-    async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        Ok(DummyAsyncSigner)
     }
 
     async fn get_storage_at(
@@ -184,6 +179,14 @@ impl AsyncProvider for AsyncMockProvider {
             address: address.clone(),
             abi_json: abi_json.to_owned(),
         })
+    }
+}
+
+impl AsyncSigningProvider for AsyncMockProvider {
+    type Signer = DummyAsyncSigner;
+
+    async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
+        Ok(DummyAsyncSigner)
     }
 }
 

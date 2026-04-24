@@ -91,7 +91,7 @@ Every console ships with:
   deterministic mocks or explicit transport surfaces rather than coupling the
   examples to one provider-specific adapter.
 - Native runtime integrations plug into
-  `cow-sdk-core::{Signer, AsyncSigner, Provider, AsyncProvider}`. That keeps
+  `cow-sdk-core::{Signer, AsyncSigner, AsyncSigningProvider, Provider, AsyncProvider}`. That keeps
   provider-specific choices outside the default facade while preserving one
   stable seam for downstream adapters. See [Integrations](integrations.md) when
   you are ready to wire a custom runtime.

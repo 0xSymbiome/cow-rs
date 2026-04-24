@@ -82,15 +82,16 @@ Native runtime integrations plug in through the stable traits owned by
 `cow-sdk-core`:
 
 ```rust
-use cow_sdk_core::{AsyncProvider, AsyncSigner, Provider, Signer};
+use cow_sdk_core::{AsyncProvider, AsyncSigner, AsyncSigningProvider, Provider, Signer};
 ```
 
 For most native integrations, implement `Provider` and `Signer` on the adapter
 type that owns your RPC or signer backend. The blanket implementations then let
-that same adapter satisfy the async-first surfaces through `AsyncProvider` and
-`AsyncSigner` when the signer supports the async contract. Browser-wallet
-support is the shipped async runtime adapter today, so `cow-sdk-browser-wallet`
-implements the async side directly without widening the native facade.
+that same adapter satisfy the read-only async surface through `AsyncProvider`,
+and the signing-capable async surface through `AsyncSigningProvider` when the
+signer supports the async contract. Browser-wallet support is the shipped async
+runtime adapter today, so `cow-sdk-browser-wallet` implements the async side
+directly without widening the native facade.
 
 The stable public contract is the trait seam itself. Native signer and RPC
 integrations remain additive leaf crates so the workspace does not freeze one
@@ -128,10 +129,11 @@ by `cow-sdk-orderbook` and `cow-sdk-subgraph` for REST and GraphQL
 dispatch; native consumers get `ReqwestTransport` from `cow-sdk-core`, and
 browser consumers get `FetchTransport` from the dedicated
 `cow-sdk-transport-wasm` leaf crate. The `AsyncProvider` trait (also in
-`cow-sdk-core`) is the chain-RPC seam used by on-chain helpers such as
-allowance reads, EIP-1271 verification, and on-chain cancellation; no
-provider implementation ships by default, so consumers bring their own
-through the [Providers](providers/README.md) adapter guide.
+`cow-sdk-core`) is the read-only chain-RPC seam used by on-chain helpers such
+as allowance reads, EIP-1271 verification, and on-chain cancellation. Signer
+creation for async-capable providers lives in `AsyncSigningProvider`; no
+provider implementation ships by default, so consumers bring their own through
+the [Providers](providers/README.md) adapter guide.
 
 The trait is dyn-compatible, so consumers compose transports behind
 `Arc<dyn HttpTransport>`. Typed failures flow through a single

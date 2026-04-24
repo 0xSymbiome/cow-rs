@@ -59,4 +59,4 @@ pub use wallet::{
     WalletChainParameters, WalletNativeCurrency,
 };
 
-pub use cow_sdk_core::{AsyncProvider, AsyncSigner};
+pub use cow_sdk_core::{AsyncProvider, AsyncSigner, AsyncSigningProvider};

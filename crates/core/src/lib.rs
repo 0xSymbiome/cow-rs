@@ -39,9 +39,9 @@ pub use redaction::{REDACTED_PLACEHOLDER, Redacted};
 /// consumer.
 pub use tokio_util::sync::CancellationToken;
 pub use traits::{
-    AsyncProvider, AsyncSigner, BlockInfo, ContractCall, ContractHandle, GraphTransport,
-    PinningTransport, Provider, Signer, TransactionReceipt, TransactionRequest, TypedDataDomain,
-    TypedDataEnvelope, TypedDataField, TypedDataPayload, TypedDataTypes,
+    AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo, ContractCall, ContractHandle,
+    GraphTransport, PinningTransport, Provider, Signer, TransactionReceipt, TransactionRequest,
+    TypedDataDomain, TypedDataEnvelope, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
 pub use transport::{HttpTransport, TransportError};
 #[cfg(not(target_arch = "wasm32"))]

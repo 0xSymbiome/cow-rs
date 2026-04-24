@@ -14,8 +14,8 @@ use num_bigint::BigUint;
 use serde_json::{Map, Value, json};
 
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, BlockInfo, ChainId, ContractCall, ContractHandle, HexData,
-    TransactionHash, TransactionReceipt, TransactionRequest,
+    Address, Amount, AsyncProvider, AsyncSigningProvider, BlockInfo, ChainId, ContractCall,
+    ContractHandle, HexData, TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
 use crate::{
@@ -56,7 +56,8 @@ pub trait Eip1193Transport {
     }
 }
 
-/// Typed browser-wallet provider that implements [`cow_sdk_core::AsyncProvider`].
+/// Typed browser-wallet provider that implements [`cow_sdk_core::AsyncProvider`]
+/// and [`cow_sdk_core::AsyncSigningProvider`].
 #[derive(Clone)]
 pub struct Eip1193Provider {
     transport: Rc<dyn Eip1193Transport>,
@@ -193,7 +194,6 @@ impl Eip1193Provider {
 
 #[allow(async_fn_in_trait)]
 impl AsyncProvider for Eip1193Provider {
-    type Signer = Eip1193Signer;
     type Error = BrowserWalletError;
 
     async fn get_chain_id(&self) -> Result<ChainId, Self::Error> {
@@ -237,31 +237,6 @@ impl AsyncProvider for Eip1193Provider {
         Ok(Some(TransactionReceipt {
             transaction_hash: TransactionHash::new(hash)?,
         }))
-    }
-
-    async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        let account_hint = if signer_hint.trim().is_empty() {
-            None
-        } else {
-            Some(Address::new(signer_hint.trim())?)
-        };
-        if let Some(expected) = &account_hint {
-            let accounts = if self.session.borrow().accounts.is_empty() {
-                self.query_accounts(false).await?
-            } else {
-                self.session.borrow().accounts.clone()
-            };
-            if !accounts
-                .iter()
-                .any(|candidate| candidate.normalized_key() == expected.normalized_key())
-            {
-                return Err(BrowserWalletError::malformed_response(
-                    "create_signer",
-                    format!("wallet does not expose account {}", expected.as_str()),
-                ));
-            }
-        }
-        Ok(Eip1193Signer::new(self.clone(), account_hint))
     }
 
     async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
@@ -349,6 +324,36 @@ impl AsyncProvider for Eip1193Provider {
             address: address.clone(),
             abi_json: abi_json.to_owned(),
         })
+    }
+}
+
+#[allow(async_fn_in_trait)]
+impl AsyncSigningProvider for Eip1193Provider {
+    type Signer = Eip1193Signer;
+
+    async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error> {
+        let account_hint = if signer_hint.trim().is_empty() {
+            None
+        } else {
+            Some(Address::new(signer_hint.trim())?)
+        };
+        if let Some(expected) = &account_hint {
+            let accounts = if self.session.borrow().accounts.is_empty() {
+                self.query_accounts(false).await?
+            } else {
+                self.session.borrow().accounts.clone()
+            };
+            if !accounts
+                .iter()
+                .any(|candidate| candidate.normalized_key() == expected.normalized_key())
+            {
+                return Err(BrowserWalletError::malformed_response(
+                    "create_signer",
+                    format!("wallet does not expose account {}", expected.as_str()),
+                ));
+            }
+        }
+        Ok(Eip1193Signer::new(self.clone(), account_hint))
     }
 }
 

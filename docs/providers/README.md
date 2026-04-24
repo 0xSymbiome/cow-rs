@@ -1,6 +1,6 @@
 # Provider Adapters
 
-`cow-sdk-core` exposes four public traits that describe the runtime
+`cow-sdk-core` exposes five public traits that describe the runtime
 boundary between the SDK and a caller-supplied signer or RPC backend:
 
 - [`Signer`](https://docs.rs/cow-sdk-core/latest/cow_sdk_core/traits/trait.Signer.html)
@@ -10,7 +10,9 @@ boundary between the SDK and a caller-supplied signer or RPC backend:
 - [`Provider`](https://docs.rs/cow-sdk-core/latest/cow_sdk_core/traits/trait.Provider.html)
   for synchronous native RPC providers.
 - [`AsyncProvider`](https://docs.rs/cow-sdk-core/latest/cow_sdk_core/traits/trait.AsyncProvider.html)
-  for async-first RPC providers such as browser-hosted runtimes.
+  for read-only async-first RPC providers such as browser-hosted runtimes.
+- [`AsyncSigningProvider`](https://docs.rs/cow-sdk-core/latest/cow_sdk_core/traits/trait.AsyncSigningProvider.html)
+  for async-first providers that can create signers.
 
 This directory holds worked examples showing how to adapt an external
 provider or signer library to those trait surfaces. The examples are
@@ -20,8 +22,8 @@ see what an idiomatic implementation looks like against the
 
 ## Available Worked Examples
 
-- [Adapting alloy](adapting-alloy.md) — implementing `AsyncProvider`
-  and `AsyncSigner` against `alloy::providers::Provider` and
+- [Adapting alloy](adapting-alloy.md) — implementing `AsyncProvider`,
+  `AsyncSigningProvider`, and `AsyncSigner` against `alloy::providers::Provider` and
   `alloy::signers::Signer`.
 
 ## Design: Trait Seams Over Concrete Adapters
