@@ -82,7 +82,7 @@ pub struct SubgraphApiBuilder<
     TransportState = TransportUnset,
 > {
     chain: Option<SupportedChainId>,
-    api_key: Option<String>,
+    api_key: Option<Redacted<String>>,
     transport: Option<Arc<dyn HttpTransport + Send + Sync>>,
     transport_policy: Option<SubgraphTransportPolicy>,
     base_urls: Option<SubgraphApiBaseUrls>,
@@ -138,7 +138,7 @@ impl<C, T> SubgraphApiBuilder<C, ApiKeyUnset, T> {
     pub fn api_key(self, api_key: impl Into<String>) -> SubgraphApiBuilder<C, ApiKeySet, T> {
         SubgraphApiBuilder {
             chain: self.chain,
-            api_key: Some(api_key.into()),
+            api_key: Some(Redacted::new(api_key.into())),
             transport: self.transport,
             transport_policy: self.transport_policy,
             base_urls: self.base_urls,
@@ -220,7 +220,6 @@ impl<C, A, T> SubgraphApiBuilder<C, A, T> {
             .api_key
             .expect("typestate guarantees api key is supplied at build time");
         let transport_policy = self.transport_policy.unwrap_or_default();
-        let api_key = Redacted::new(api_key);
         let prod_config = build_prod_config();
         let config = SubgraphConfig {
             chain_id: chain,

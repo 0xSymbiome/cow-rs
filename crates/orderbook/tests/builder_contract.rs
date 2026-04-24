@@ -13,8 +13,8 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use cow_sdk_core::{
-    ApiContext, CowEnv, HttpTransport, ReqwestTransport, ReqwestTransportConfig, SupportedChainId,
-    TransportError,
+    ApiContext, CowEnv, HttpTransport, REDACTED_PLACEHOLDER, ReqwestTransport,
+    ReqwestTransportConfig, SupportedChainId, TransportError,
 };
 use cow_sdk_orderbook::{OrderBookApi, OrderBookTransportPolicy, RequestPolicy};
 
@@ -106,6 +106,19 @@ fn builder_from_context_propagates_chain_environment_api_key_and_base_urls() {
         Some("partner-key".to_owned()),
     );
     assert_eq!(api.context().base_urls.as_ref(), Some(&base_urls));
+}
+
+#[test]
+fn builder_debug_redacts_partner_api_key() {
+    let builder = OrderBookApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .environment(CowEnv::Prod)
+        .api_key("partner-key");
+
+    let debug = format!("{builder:?}");
+
+    assert!(debug.contains(REDACTED_PLACEHOLDER));
+    assert!(!debug.contains("partner-key"));
 }
 
 #[test]

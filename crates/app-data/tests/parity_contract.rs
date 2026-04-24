@@ -458,7 +458,7 @@ impl cow_sdk_app_data::IpfsUploadTransport for PanicUploadTransport {
         &self,
         _uri: &str,
         _body: &str,
-        _headers: &[(String, String)],
+        _headers: &[(String, cow_sdk_core::Redacted<String>)],
     ) -> Result<cow_sdk_app_data::TransportResponse, AppDataError> {
         panic!("PanicUploadTransport must never be invoked; credentials must fail-closed earlier")
     }

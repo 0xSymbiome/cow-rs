@@ -85,7 +85,7 @@ pub struct OrderBookApiBuilder<
     env: Option<CowEnv>,
     transport: Option<Arc<dyn HttpTransport + Send + Sync>>,
     transport_policy: Option<OrderBookTransportPolicy>,
-    api_key: Option<String>,
+    api_key: Option<Redacted<String>>,
     base_urls: Option<ApiBaseUrls>,
     env_base_url_overrides: EnvBaseUrlOverrides,
     _phantom: PhantomData<(ChainState, EnvState, TransportState)>,
@@ -124,7 +124,7 @@ impl OrderBookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
     ) -> OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
         let mut builder = Self::new().chain(context.chain_id).environment(context.env);
         if let Some(api_key) = context.api_key {
-            builder = builder.api_key(api_key.into_inner());
+            builder.api_key = Some(api_key);
         }
         if let Some(base_urls) = context.base_urls {
             builder = builder.base_urls(base_urls);
@@ -234,7 +234,7 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
     /// Attaches a partner-route API key forwarded as the `X-API-Key` header.
     #[must_use]
     pub fn api_key(mut self, api_key: impl Into<String>) -> Self {
-        self.api_key = Some(api_key.into());
+        self.api_key = Some(Redacted::new(api_key.into()));
         self
     }
 
@@ -287,7 +287,7 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
         let rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
         let mut context = ApiContext::new(chain, env);
         if let Some(api_key) = self.api_key {
-            context.api_key = Some(Redacted::new(api_key));
+            context.api_key = Some(api_key);
         }
         if let Some(base_urls) = self.base_urls {
             context.base_urls = Some(base_urls);

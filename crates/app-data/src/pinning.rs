@@ -4,10 +4,11 @@ use crate::{
     AppDataDoc, AppDataError, DEFAULT_IPFS_WRITE_URI, IpfsConfig, TransportResponse,
     stringify_deterministic,
 };
+use cow_sdk_core::Redacted;
 
 /// Upload transport seam for JSON pinning backends.
 pub trait IpfsUploadTransport {
-    /// Sends a JSON body plus headers to the supplied URI.
+    /// Sends a JSON body plus typed-redacted headers to the supplied URI.
     ///
     /// # Errors
     ///
@@ -16,7 +17,7 @@ pub trait IpfsUploadTransport {
         &self,
         uri: &str,
         body: &str,
-        headers: &[(String, String)],
+        headers: &[(String, Redacted<String>)],
     ) -> Result<TransportResponse, AppDataError>;
 }
 
@@ -33,15 +34,13 @@ pub fn pin_json_in_pinata_ipfs(
 ) -> Result<Value, AppDataError> {
     let pinata_api_key = ipfs_config
         .pinata_api_key
-        .as_ref()
-        .map(|value| value.as_inner().as_str())
-        .filter(|value| !value.is_empty())
+        .clone()
+        .filter(|value| !value.as_inner().is_empty())
         .ok_or(AppDataError::MissingIpfsCredentials)?;
     let pinata_api_secret = ipfs_config
         .pinata_api_secret
-        .as_ref()
-        .map(|value| value.as_inner().as_str())
-        .filter(|value| !value.is_empty())
+        .clone()
+        .filter(|value| !value.as_inner().is_empty())
         .ok_or(AppDataError::MissingIpfsCredentials)?;
     let write_uri = crate::fetch::normalize_ipfs_base_uri(
         "write",
@@ -57,12 +56,12 @@ pub fn pin_json_in_pinata_ipfs(
     });
     let body = stringify_deterministic(&payload)?;
     let headers = vec![
-        ("Content-Type".to_string(), "application/json".to_string()),
-        ("pinata_api_key".to_string(), pinata_api_key.to_string()),
         (
-            "pinata_secret_api_key".to_string(),
-            pinata_api_secret.to_string(),
+            "Content-Type".to_string(),
+            Redacted::new("application/json".to_string()),
         ),
+        ("pinata_api_key".to_string(), pinata_api_key),
+        ("pinata_secret_api_key".to_string(), pinata_api_secret),
     ];
 
     let response = transport.post_json(

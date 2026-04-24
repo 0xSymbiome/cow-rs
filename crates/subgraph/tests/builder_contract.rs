@@ -13,7 +13,8 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use cow_sdk_core::{
-    HttpTransport, ReqwestTransport, ReqwestTransportConfig, SupportedChainId, TransportError,
+    HttpTransport, REDACTED_PLACEHOLDER, ReqwestTransport, ReqwestTransportConfig,
+    SupportedChainId, TransportError,
 };
 use cow_sdk_subgraph::{SubgraphApi, SubgraphApiBaseUrls};
 
@@ -100,6 +101,18 @@ fn base_urls_override_propagates_to_the_built_client() {
         .build();
 
     assert_eq!(api.config().base_urls.as_ref(), Some(&base_urls));
+}
+
+#[test]
+fn builder_debug_redacts_partner_api_key() {
+    let builder = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("partner-key");
+
+    let debug = format!("{builder:?}");
+
+    assert!(debug.contains(REDACTED_PLACEHOLDER));
+    assert!(!debug.contains("partner-key"));
 }
 
 #[test]

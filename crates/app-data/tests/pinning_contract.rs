@@ -6,11 +6,12 @@ use cow_sdk_app_data::{
     AppDataError, AppDataParams, IpfsConfig, IpfsUploadTransport, TransportResponse,
     generate_app_data_doc, pin_json_in_pinata_ipfs,
 };
+use cow_sdk_core::{REDACTED_PLACEHOLDER, Redacted};
 use serde_json::json;
 
 use crate::common::PINATA_IPFS_HASH;
 
-type UploadHeaders = Vec<(String, String)>;
+type UploadHeaders = Vec<(String, Redacted<String>)>;
 type UploadRequest = (String, String, UploadHeaders);
 
 #[derive(Default)]
@@ -39,7 +40,7 @@ impl IpfsUploadTransport for RecordingUploadTransport {
         &self,
         uri: &str,
         body: &str,
-        headers: &[(String, String)],
+        headers: &[(String, Redacted<String>)],
     ) -> Result<TransportResponse, AppDataError> {
         self.requests
             .borrow_mut()
@@ -130,9 +131,37 @@ fn pinning_uses_deterministic_body_and_surfaces_the_returned_cid() {
         body,
         "{\"pinataContent\":{\"appCode\":\"CoW Swap\",\"metadata\":{\"referrer\":{\"code\":\"COWREF1\"}},\"version\":\"1.14.0\"},\"pinataMetadata\":{\"name\":\"appData\"}}"
     );
-    assert!(headers.contains(&("Content-Type".to_string(), "application/json".to_string())));
-    assert!(headers.contains(&("pinata_api_key".to_string(), "apikey".to_string())));
-    assert!(headers.contains(&("pinata_secret_api_key".to_string(), "apiSecret".to_string())));
+    assert!(
+        headers
+            .iter()
+            .any(|(name, value)| name == "Content-Type" && value.as_inner() == "application/json")
+    );
+    assert!(
+        headers
+            .iter()
+            .any(|(name, value)| name == "pinata_api_key" && value.as_inner() == "apikey")
+    );
+    assert!(headers.iter().any(
+        |(name, value)| name == "pinata_secret_api_key" && value.as_inner() == "apiSecret"
+    ));
+}
+
+#[test]
+fn pinning_headers_debug_redacts_secret_bytes() {
+    let transport = pinata_success_transport();
+    let document = generate_app_data_doc(AppDataParams::default());
+    let config = credentialed_config_with_write_uri(None);
+
+    pin_json_in_pinata_ipfs(&document, &transport, &config).expect("upload succeeds");
+
+    let (_, _, headers) = transport
+        .request()
+        .expect("transport is called exactly once");
+    let debug = format!("{headers:?}");
+
+    assert!(debug.contains(REDACTED_PLACEHOLDER));
+    assert!(!debug.contains("apikey"));
+    assert!(!debug.contains("apiSecret"));
 }
 
 #[test]

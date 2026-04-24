@@ -1170,6 +1170,14 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Partner API keys on `OrderBookApiBuilder` and
+  `SubgraphApiBuilder`, plus IPFS pinning header values at the
+  `IpfsUploadTransport::post_json` boundary, now flow through
+  `Redacted<String>` wrappers. Builder debug output and Pinata
+  upload-header debug formatting no longer expose secret bytes.
+  `IpfsUploadTransport::post_json` now receives header values as
+  `&[(String, Redacted<String>)]`; transport implementations call
+  `.into_inner()` when they need the raw header bytes.
 - Public wallet session, event, error payload, discovery, and
   chain-management types in `cow-sdk-browser-wallet` are now
   `#[non_exhaustive]`, and the constructor-backed structs expose

@@ -53,7 +53,7 @@ impl IpfsUploadTransport for PanicUploadTransport {
         &self,
         _uri: &str,
         _body: &str,
-        _headers: &[(String, String)],
+        _headers: &[(String, cow_sdk_core::Redacted<String>)],
     ) -> Result<TransportResponse, AppDataError> {
         panic!("invalid credential inputs must fail before transport is called");
     }
