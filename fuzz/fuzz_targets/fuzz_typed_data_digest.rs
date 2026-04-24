@@ -8,6 +8,9 @@
 //! [`hash_order`]. The target asserts:
 //!
 //! * [`hash_order`] is panic-free on every arbitrary input.
+//!   Inputs rejected by the typed order normalizer return early because
+//!   they exercise the documented validation path rather than a digest
+//!   contract.
 //! * [`hash_order`] is deterministic: hashing the same input twice
 //!   produces the same digest.
 //! * [`hash_order_cancellations`] is panic-free on every arbitrary
@@ -23,8 +26,8 @@
 use cow_sdk_contracts::order::{Order, hash_order, hash_order_cancellations};
 use cow_sdk_contracts::{OrderCancellations, OrderUidParams, pack_order_uid_params};
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, ChainId, OrderBalance, OrderDigest, OrderKind,
-    TypedDataDomain, UnsignedOrder,
+    Address, Amount, AppDataHash, BuyTokenDestination, ChainId, OrderDigest, OrderKind,
+    SellTokenSource, TypedDataDomain, UnsignedOrder,
 };
 use libfuzzer_sys::{arbitrary::Arbitrary, fuzz_target};
 
@@ -71,8 +74,8 @@ fuzz_target!(|input: FuzzInput| {
             OrderKind::Sell
         },
         input.partially_fillable,
-        balance_from_code(input.sell_token_balance_code),
-        balance_from_code(input.buy_token_balance_code),
+        sell_token_source_from_code(input.sell_token_balance_code),
+        buy_token_destination_from_code(input.buy_token_balance_code),
     );
     let order: Order = (&unsigned).into();
 
@@ -83,9 +86,13 @@ fuzz_target!(|input: FuzzInput| {
         verifying_contract: Address::from_bytes(input.verifying_contract),
     };
 
-    // `hash_order` is deterministic for a fixed input. Hashing twice
-    // must yield identical digests.
-    let first = hash_order(&domain, &order).expect("hash_order must accept arbitrary-derived orders");
+    // `hash_order` is deterministic for a fixed accepted input. Rejected
+    // orders are valid typed failures for the normalizer and are not
+    // crashes for this digest target.
+    let first = match hash_order(&domain, &order) {
+        Ok(digest) => digest,
+        Err(_) => return,
+    };
     let second = hash_order(&domain, &order).expect("hash_order must remain deterministic");
     assert_eq!(
         first, second,
@@ -106,11 +113,18 @@ fuzz_target!(|input: FuzzInput| {
         .expect("hash_order_cancellations must accept a just-packed UID");
 });
 
-fn balance_from_code(code: u8) -> OrderBalance {
+fn sell_token_source_from_code(code: u8) -> SellTokenSource {
     match code % 3 {
-        0 => OrderBalance::Erc20,
-        1 => OrderBalance::External,
-        _ => OrderBalance::Internal,
+        0 => SellTokenSource::Erc20,
+        1 => SellTokenSource::External,
+        _ => SellTokenSource::Internal,
+    }
+}
+
+fn buy_token_destination_from_code(code: u8) -> BuyTokenDestination {
+    match code % 2 {
+        0 => BuyTokenDestination::Erc20,
+        _ => BuyTokenDestination::Internal,
     }
 }
 

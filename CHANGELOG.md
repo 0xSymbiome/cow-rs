@@ -578,6 +578,10 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Two critical codec fuzz targets — covering the canonical order-uid
+  pack-unpack pipeline and the EIP-712 typed-data digest pipeline — now
+  ship with non-empty corpora seeded from the parity fixture set, so
+  weekly fuzz runs no longer start from libFuzzer random initial inputs.
 - Public protocol DTOs in the contracts crate are now marked non-exhaustive and ship with explicit constructors so future protocol field additions land additively.
 - Test-suite naming and properties-registry classification now
   match the shipped evidence methodology. Boundary-sweep suites on
