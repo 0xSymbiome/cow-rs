@@ -1,4 +1,7 @@
-use std::fmt;
+use std::{
+    fmt,
+    ops::{Add, AddAssign, Sub, SubAssign},
+};
 
 use num_bigint::{BigInt, BigUint};
 use serde::{Deserialize, Serialize};
@@ -914,10 +917,12 @@ impl DecimalAmount {
     }
 }
 
-/// Canonical signed integer rendered as a base-10 string.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(try_from = "String", into = "String")]
-pub struct SignedAmount(String);
+/// Canonical signed integer with typed [`BigInt`] storage and a decimal-string wire form.
+#[derive(Debug, Clone)]
+pub struct SignedAmount {
+    value: BigInt,
+    canonical: Box<str>,
+}
 
 impl SignedAmount {
     /// Creates a canonical signed integer quantity.
@@ -927,20 +932,69 @@ impl SignedAmount {
     /// Returns [`CoreError`] when the input is empty or cannot be parsed as a
     /// base-10 signed integer.
     pub fn new(value: impl Into<String>) -> Result<Self, CoreError> {
-        let parsed = parse_signed_quantity("signed_amount", &value.into())?;
-        Ok(Self(parsed.to_string()))
+        let value = value.into();
+        let parsed = parse_signed_quantity("signed_amount", &value)?;
+        Ok(Self::from_bigint(parsed))
+    }
+
+    /// Creates a signed amount from its raw arbitrary-precision integer value.
+    #[must_use]
+    pub fn from_bigint(value: BigInt) -> Self {
+        Self {
+            canonical: value.to_string().into_boxed_str(),
+            value,
+        }
     }
 
     /// Returns the zero quantity.
     #[must_use]
     pub fn zero() -> Self {
-        Self("0".to_owned())
+        Self::from_bigint(BigInt::from(0u32))
+    }
+
+    /// Returns a borrow of the raw `BigInt` quantity.
+    #[inline]
+    #[must_use]
+    pub const fn as_bigint(&self) -> &BigInt {
+        &self.value
+    }
+
+    /// Consumes the signed amount and returns the raw `BigInt` quantity.
+    #[inline]
+    #[must_use]
+    pub fn into_bigint(self) -> BigInt {
+        self.value
     }
 
     /// Returns the canonical decimal string.
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.0
+        &self.canonical
+    }
+
+    /// Returns the sum of two signed amounts when the underlying `BigInt`
+    /// implementation accepts the operation.
+    #[must_use]
+    pub fn checked_add(&self, other: &Self) -> Option<Self> {
+        self.value.checked_add(&other.value).map(Self::from_bigint)
+    }
+
+    /// Returns the difference of two signed amounts when the underlying `BigInt`
+    /// implementation accepts the operation.
+    #[must_use]
+    pub fn checked_sub(&self, other: &Self) -> Option<Self> {
+        self.value.checked_sub(&other.value).map(Self::from_bigint)
+    }
+
+    /// Returns the product of two signed amounts when the underlying `BigInt`
+    /// implementation accepts the operation.
+    #[must_use]
+    pub fn checked_mul(&self, other: &Self) -> Option<Self> {
+        self.value.checked_mul(&other.value).map(Self::from_bigint)
+    }
+
+    fn refresh_canonical(&mut self) {
+        self.canonical = self.value.to_string().into_boxed_str();
     }
 }
 
@@ -968,7 +1022,7 @@ impl TryFrom<&str> for SignedAmount {
 
 impl From<SignedAmount> for String {
     fn from(value: SignedAmount) -> Self {
-        value.0
+        value.canonical.into()
     }
 }
 
@@ -981,6 +1035,81 @@ impl AsRef<str> for SignedAmount {
 impl fmt::Display for SignedAmount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
+    }
+}
+
+impl PartialEq for SignedAmount {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+
+impl Eq for SignedAmount {}
+
+impl PartialOrd for SignedAmount {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for SignedAmount {
+    #[inline]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.value.cmp(&other.value)
+    }
+}
+
+impl std::hash::Hash for SignedAmount {
+    #[inline]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.value.hash(state);
+    }
+}
+
+impl Serialize for SignedAmount {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for SignedAmount {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = String::deserialize(deserializer)?;
+        parse_signed_quantity("signed_amount", &value)
+            .map(Self::from_bigint)
+            .map_err(|err| serde::de::Error::custom(err.to_string()))
+    }
+}
+
+impl Add<Self> for SignedAmount {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::from_bigint(self.value + rhs.value)
+    }
+}
+
+impl Sub<Self> for SignedAmount {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::from_bigint(self.value - rhs.value)
+    }
+}
+
+impl AddAssign<Self> for SignedAmount {
+    fn add_assign(&mut self, rhs: Self) {
+        self.value += rhs.value;
+        self.refresh_canonical();
+    }
+}
+
+impl SubAssign<Self> for SignedAmount {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.value -= rhs.value;
+        self.refresh_canonical();
     }
 }
 

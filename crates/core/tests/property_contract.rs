@@ -22,11 +22,11 @@
 use std::collections::{HashMap, HashSet};
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, ChainId, DecimalAmount, Hash32, HexData, OrderUid,
+    Address, Amount, AppDataHex, ChainId, DecimalAmount, Hash32, HexData, OrderUid, SignedAmount,
     SupportedChainId, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
     addresses_equal, token_id,
 };
-use num_bigint::BigUint;
+use num_bigint::{BigInt, BigUint, Sign};
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
 
@@ -77,6 +77,51 @@ fn address_bytes() -> impl Strategy<Value = [u8; 20]> {
 /// fits in 256 bits.
 fn atom_amount_bytes() -> impl Strategy<Value = [u8; 32]> {
     any::<[u8; 32]>()
+}
+
+/// Strategy that emits arbitrary signed 256-bit-class values for
+/// [`SignedAmount`] coverage.
+fn signed_amount_value_strategy() -> impl Strategy<Value = BigInt> {
+    (atom_amount_bytes(), any::<bool>()).prop_map(|(bytes, is_negative)| {
+        let sign = if is_negative { Sign::Minus } else { Sign::Plus };
+        BigInt::from_bytes_be(sign, &bytes)
+    })
+}
+
+/// Strategy that emits valid signed-decimal strings including redundant
+/// leading zeroes so [`SignedAmount::new`] normalization is exercised.
+fn signed_amount_input_strategy() -> impl Strategy<Value = String> {
+    (signed_amount_value_strategy(), 0usize..=4usize).prop_map(|(value, leading_zeroes)| {
+        let canonical = value.to_str_radix(10);
+        let (prefix, digits) = canonical
+            .strip_prefix('-')
+            .map_or(("", canonical.as_str()), |digits| ("-", digits));
+        format!("{prefix}{}{digits}", "0".repeat(leading_zeroes))
+    })
+}
+
+/// Curated signed-amount literals that pin the historical decimal-string
+/// wire form across zero, sign, `i128`, and 256-bit-class boundaries.
+fn curated_signed_amount_inputs() -> Vec<String> {
+    let positive_255 = (BigInt::from(1u8) << 255usize) - BigInt::from(1u8);
+    let negative_255 = -(BigInt::from(1u8) << 255usize);
+    let positive_256 = (BigInt::from(1u8) << 256usize) + BigInt::from(12_345u32);
+    let negative_256 = -positive_256.clone();
+
+    vec![
+        "0".to_owned(),
+        "-0".to_owned(),
+        "1".to_owned(),
+        "-1".to_owned(),
+        "00042".to_owned(),
+        "-00042".to_owned(),
+        i128::MAX.to_string(),
+        i128::MIN.to_string(),
+        positive_255.to_str_radix(10),
+        negative_255.to_str_radix(10),
+        positive_256.to_str_radix(10),
+        negative_256.to_str_radix(10),
+    ]
 }
 
 /// Strategy that emits an arbitrary 56-byte order-UID payload.
@@ -363,6 +408,38 @@ proptest! {
 
         let from_new = Amount::new(canonical.clone()).unwrap();
         prop_assert_eq!(from_new, amount);
+    }
+
+    /// [`SignedAmount::new`] canonicalizes valid decimal inputs while
+    /// preserving the typed `BigInt` storage and remaining idempotent
+    /// across its own string form.
+    #[test]
+    fn signed_amount_roundtrip_is_idempotent(input in signed_amount_input_strategy()) {
+        let amount = SignedAmount::new(&input).unwrap();
+        let canonical = amount.to_string();
+
+        prop_assert_eq!(amount.as_bigint().to_str_radix(10), canonical.as_str());
+        prop_assert_eq!(amount.as_str(), canonical.as_str());
+
+        let rebuilt = SignedAmount::new(canonical.clone()).unwrap();
+        prop_assert_eq!(rebuilt.clone(), amount);
+        prop_assert_eq!(rebuilt.to_string(), canonical);
+    }
+
+    /// [`SignedAmount`] keeps the pre-promotion decimal-string JSON shape
+    /// byte-identical across the reviewed boundary literals.
+    #[test]
+    fn signed_amount_wire_serde_matches_legacy_decimal_string_shape(
+        input in prop::sample::select(curated_signed_amount_inputs()),
+    ) {
+        let amount = SignedAmount::new(&input).unwrap();
+        let expected = serde_json::to_vec(&amount.to_string()).unwrap();
+        let actual = serde_json::to_vec(&amount).unwrap();
+
+        prop_assert_eq!(actual.as_slice(), expected.as_slice());
+
+        let rebuilt: SignedAmount = serde_json::from_slice(&actual).unwrap();
+        prop_assert_eq!(rebuilt, amount);
     }
 
     /// [`DecimalAmount::new`] preserves atoms and decimals across any

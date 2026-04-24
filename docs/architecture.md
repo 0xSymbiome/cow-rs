@@ -108,6 +108,18 @@ config stays explicit as input, but the default diagnostic and serialized
 surfaces owned by `cow-sdk-core`, `cow-sdk-orderbook`, and `cow-sdk-app-data`
 redact secret material instead of treating it as routine log data.
 
+### Typed Amounts
+
+`cow-sdk-core` keeps three distinct amount roles at the typed boundary.
+`Amount` stores unsigned atomic quantities as `BigUint` while preserving
+the decimal-string wire form, `DecimalAmount` pairs atoms with a decimals
+scale for display and user-input flows, and `SignedAmount` stores signed
+deltas as `BigInt` while keeping that same decimal-string wire shape for
+serialization. The signed type exposes typed `BigInt` accessors and
+delegates addition, subtraction, and checked arithmetic directly to the
+underlying integer, following the same typed-boundary discipline that
+already governs `Amount`.
+
 ### Transport Seams
 
 `cow-sdk` exposes two orthogonal runtime seams that never share a concrete

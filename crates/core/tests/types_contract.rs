@@ -5,7 +5,7 @@ use cow_sdk_core::{
     UnsignedOrder, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
     ValidationError, addresses_equal, token_id,
 };
-use num_bigint::BigUint;
+use num_bigint::{BigInt, BigUint};
 
 fn core_fixture() -> serde_json::Value {
     serde_json::from_str(include_str!("../../../parity/fixtures/core.json"))
@@ -347,4 +347,67 @@ fn typed_primitives_normalize_and_fail_closed() {
     let hash = Hash32::new(format!("0x{}", "ab".repeat(32))).unwrap();
     assert_eq!(hash.as_str().len(), 66);
     assert!(Hash32::new("0x1234").is_err());
+}
+
+#[test]
+fn signed_amount_typed_accessors_preserve_bigint_storage() {
+    let big_value = (BigInt::from(1u8) << 255usize) + BigInt::from(7u8);
+    let canonical = big_value.to_str_radix(10);
+    let amount = SignedAmount::from_bigint(big_value.clone());
+
+    assert_eq!(amount.as_bigint(), &big_value);
+    assert_eq!(amount.as_str(), canonical);
+    assert_eq!(amount.to_string(), canonical);
+    assert_eq!(amount.into_bigint(), big_value);
+}
+
+#[test]
+fn signed_amount_add_and_sub_delegate_to_bigint() {
+    let a = SignedAmount::new("7").unwrap();
+    let b = SignedAmount::new("-3").unwrap();
+    let c = SignedAmount::new("12").unwrap();
+
+    assert_eq!(a.clone() + b.clone(), SignedAmount::new("4").unwrap());
+    assert_eq!(b.clone() + a.clone(), SignedAmount::new("4").unwrap());
+    assert_eq!(
+        (a.clone() + b.clone()) + c.clone(),
+        a.clone() + (b.clone() + c.clone())
+    );
+    assert_eq!(
+        a.clone() + SignedAmount::zero(),
+        SignedAmount::new("7").unwrap()
+    );
+    assert_eq!(a.clone() - a.clone(), SignedAmount::zero());
+
+    let mut total = a;
+    total += b;
+    assert_eq!(total, SignedAmount::new("4").unwrap());
+
+    total -= c;
+    assert_eq!(total, SignedAmount::new("-8").unwrap());
+}
+
+#[test]
+fn signed_amount_checked_arithmetic_returns_bigint_results() {
+    let lhs = SignedAmount::new("-12345678901234567890").unwrap();
+    let rhs = SignedAmount::new("9876543210").unwrap();
+    let multiplier = SignedAmount::from_bigint((BigInt::from(1u8) << 256usize) + BigInt::from(9u8));
+
+    let sum = lhs.checked_add(&rhs).unwrap();
+    assert_eq!(
+        sum.into_bigint(),
+        lhs.as_bigint().checked_add(rhs.as_bigint()).unwrap()
+    );
+
+    let difference = lhs.checked_sub(&rhs).unwrap();
+    assert_eq!(
+        difference.into_bigint(),
+        lhs.as_bigint().checked_sub(rhs.as_bigint()).unwrap()
+    );
+
+    let product = rhs.checked_mul(&multiplier).unwrap();
+    assert_eq!(
+        product.into_bigint(),
+        rhs.as_bigint().checked_mul(multiplier.as_bigint()).unwrap()
+    );
 }

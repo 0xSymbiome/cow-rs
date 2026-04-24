@@ -1170,6 +1170,11 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- The `SignedAmount` type on `cow-sdk-core` now stores its
+  value as an arbitrary-precision integer internally and
+  exposes typed accessors and arithmetic delegation. The
+  decimal-string wire serde shape is preserved, so wire DTOs
+  that carry signed amounts are unchanged on the wire.
 - Three additional services-emitted rejection tags now flow
   through typed orderbook variants instead of the generic
   unknown-fallback shape: app-data invalid, app-data mismatch
