@@ -82,6 +82,9 @@ where
 
         // Biased: observe cancellation before polling the inner future.
         if this.cancel.poll(cx).is_ready() {
+            #[cfg(feature = "tracing")]
+            // Keep the subscriber-facing field spelling stable: cancelled=true.
+            tracing::warn!(target: "cow_sdk::cancel", cancelled = true);
             return Poll::Ready(Err(E::from(Cancelled)));
         }
 

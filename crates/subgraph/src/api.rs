@@ -524,7 +524,8 @@ impl SubgraphApi {
                     &public_api,
                     resolved_config.chain_id,
                     &request,
-                    format_transport_failure(class, &detail),
+                    class,
+                    detail,
                 ));
             }
             Err(TransportError::Configuration { message }) => {
@@ -532,6 +533,7 @@ impl SubgraphApi {
                     &public_api,
                     resolved_config.chain_id,
                     &request,
+                    TransportErrorClass::Builder,
                     message,
                 ));
             }
@@ -540,6 +542,7 @@ impl SubgraphApi {
                     &public_api,
                     resolved_config.chain_id,
                     &request,
+                    TransportErrorClass::Other,
                     other.to_string(),
                 ));
             }
@@ -699,18 +702,16 @@ fn build_prod_gateway_url(api_key: &str, subgraph_id: &str) -> String {
     format!("{SUBGRAPH_BASE_URL}{api_key}/subgraphs/id/{subgraph_id}")
 }
 
-fn format_transport_failure(class: TransportErrorClass, detail: &str) -> String {
-    format!("{class}: {detail}")
-}
-
 fn transport_error(
     api: &str,
     chain_id: SupportedChainId,
     request: &SubgraphQueryRequest,
+    class: TransportErrorClass,
     details: String,
 ) -> SubgraphError {
     SubgraphError::Transport {
         context: Box::new(request_error_context(api, chain_id, request)),
+        class,
         details,
     }
 }

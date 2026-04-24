@@ -93,3 +93,164 @@ async fn blanket_impl_composes_generic_futures() {
         .expect_err("fired token must short-circuit through the generic adapter");
     assert!(matches!(error, CoreError::Cancelled));
 }
+
+#[cfg(feature = "tracing")]
+mod tracing_contract {
+    use std::{
+        collections::BTreeMap,
+        sync::{
+            Arc, Mutex,
+            atomic::{AtomicU64, Ordering},
+        },
+    };
+
+    use super::*;
+    use tracing::{
+        Event, Id, Level, Metadata, Subscriber,
+        field::{Field, Visit},
+        span::{Attributes, Record},
+        subscriber::Interest,
+    };
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn cancellation_branch_emits_warn_event_with_target_and_field() {
+        let capture = TraceCapture::install();
+        let token = CancellationToken::new();
+        token.cancel();
+
+        let error = async { Ok::<(), CoreError>(()) }
+            .cancel_with(&token)
+            .await
+            .expect_err("fired token must produce a cancellation error");
+
+        assert!(matches!(error, CoreError::Cancelled));
+        let events = capture.events();
+        assert!(
+            events.iter().any(|event| {
+                event.level == Level::WARN
+                    && event.target == "cow_sdk::cancel"
+                    && event.field("cancelled") == Some("true")
+            }),
+            "cancellation must emit a warn event with target and cancelled field: {events:#?}",
+        );
+    }
+
+    struct TraceCapture {
+        state: Arc<CaptureState>,
+        _guard: tracing::dispatcher::DefaultGuard,
+    }
+
+    impl TraceCapture {
+        fn install() -> Self {
+            let state = Arc::new(CaptureState::default());
+            let subscriber = CapturingSubscriber {
+                state: state.clone(),
+                next_id: AtomicU64::new(1),
+            };
+            let dispatch = tracing::Dispatch::new(subscriber);
+            let guard = tracing::dispatcher::set_default(&dispatch);
+            Self {
+                state,
+                _guard: guard,
+            }
+        }
+
+        fn events(&self) -> Vec<CapturedEvent> {
+            self.state
+                .events
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone()
+        }
+    }
+
+    #[derive(Default)]
+    struct CaptureState {
+        events: Mutex<Vec<CapturedEvent>>,
+    }
+
+    struct CapturingSubscriber {
+        state: Arc<CaptureState>,
+        next_id: AtomicU64,
+    }
+
+    impl Subscriber for CapturingSubscriber {
+        fn enabled(&self, _metadata: &Metadata<'_>) -> bool {
+            true
+        }
+
+        fn register_callsite(&self, _metadata: &'static Metadata<'static>) -> Interest {
+            Interest::always()
+        }
+
+        fn new_span(&self, _attributes: &Attributes<'_>) -> Id {
+            Id::from_u64(self.next_id.fetch_add(1, Ordering::SeqCst))
+        }
+
+        fn record(&self, _span: &Id, _values: &Record<'_>) {}
+
+        fn record_follows_from(&self, _span: &Id, _follows: &Id) {}
+
+        fn event(&self, event: &Event<'_>) {
+            let mut fields = FieldMap::default();
+            event.record(&mut fields);
+            self.state
+                .events
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(CapturedEvent {
+                    level: *event.metadata().level(),
+                    target: event.metadata().target(),
+                    fields: fields.0,
+                });
+        }
+
+        fn enter(&self, _span: &Id) {}
+
+        fn exit(&self, _span: &Id) {}
+    }
+
+    #[derive(Clone, Debug)]
+    struct CapturedEvent {
+        level: Level,
+        target: &'static str,
+        fields: BTreeMap<String, String>,
+    }
+
+    impl CapturedEvent {
+        fn field(&self, name: &str) -> Option<&str> {
+            self.fields.get(name).map(String::as_str)
+        }
+    }
+
+    #[derive(Default)]
+    struct FieldMap(BTreeMap<String, String>);
+
+    impl FieldMap {
+        fn record_value(&mut self, field: &Field, value: String) {
+            self.0.insert(field.name().to_owned(), value);
+        }
+    }
+
+    impl Visit for FieldMap {
+        fn record_i64(&mut self, field: &Field, value: i64) {
+            self.record_value(field, value.to_string());
+        }
+
+        fn record_u64(&mut self, field: &Field, value: u64) {
+            self.record_value(field, value.to_string());
+        }
+
+        fn record_bool(&mut self, field: &Field, value: bool) {
+            self.record_value(field, value.to_string());
+        }
+
+        fn record_str(&mut self, field: &Field, value: &str) {
+            self.record_value(field, value.to_owned());
+        }
+
+        fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
+            self.record_value(field, format!("{value:?}"));
+        }
+    }
+}

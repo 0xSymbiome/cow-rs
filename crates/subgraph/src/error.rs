@@ -1,6 +1,6 @@
 //! Typed error surface for subgraph requests.
 
-use cow_sdk_core::Cancelled;
+use cow_sdk_core::{Cancelled, TransportErrorClass};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -103,6 +103,8 @@ pub enum SubgraphError {
     Transport {
         /// Resolved request metadata captured at the failure boundary.
         context: Box<SubgraphRequestErrorContext>,
+        /// Classification of the underlying transport failure.
+        class: TransportErrorClass,
         /// Transport-layer error details from the HTTP client.
         details: String,
     },
@@ -151,7 +153,8 @@ impl From<Cancelled> for SubgraphError {
     }
 }
 
-/// Classifies a `reqwest::Error`, strips any attached URL, and returns a sanitized message.
+/// Classifies a `reqwest::Error`, strips any attached URL, and returns a typed
+/// `(class, detail)` pair.
 ///
 /// The transport error is partitioned through `is_timeout`, `is_connect`,
 /// `is_redirect`, `is_decode`, `is_body`, `is_builder`, `is_request`, and
@@ -159,36 +162,36 @@ impl From<Cancelled> for SubgraphError {
 /// [`std::fmt::Display`] implementation runs so gateway URLs and their
 /// query-string API keys cannot leak through error text.
 #[must_use]
-pub fn classify_reqwest_error(error: reqwest::Error) -> String {
+pub fn classify_reqwest_error(error: reqwest::Error) -> (TransportErrorClass, String) {
     let sanitized = error.without_url();
     let class = reqwest_error_class(&sanitized);
-    format!("{class}: {sanitized}")
+    (class, sanitized.to_string())
 }
 
-fn reqwest_error_class(error: &reqwest::Error) -> &'static str {
+fn reqwest_error_class(error: &reqwest::Error) -> TransportErrorClass {
     if error.is_timeout() {
-        return "timeout";
+        return TransportErrorClass::Timeout;
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
         if error.is_connect() {
-            return "connect";
+            return TransportErrorClass::Connect;
         }
         if error.is_redirect() {
-            return "redirect";
+            return TransportErrorClass::Redirect;
         }
     }
     if error.is_decode() {
-        "decode"
+        TransportErrorClass::Decode
     } else if error.is_body() {
-        "body"
+        TransportErrorClass::Body
     } else if error.is_builder() {
-        "builder"
+        TransportErrorClass::Builder
     } else if error.is_request() {
-        "request"
+        TransportErrorClass::Request
     } else if error.is_status() {
-        "status"
+        TransportErrorClass::Status
     } else {
-        "other"
+        TransportErrorClass::Other
     }
 }

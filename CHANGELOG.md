@@ -592,6 +592,10 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Subgraph transport errors now carry a typed class alongside the details
+  string, matching the order-book error model. Cancellation events are now
+  distinguishable from normal completion via a dedicated `cancelled = true`
+  tracing warning when the `tracing` feature is enabled.
 - Order-book wire DTO amount fields are now typed; the JSON wire shape is
   unchanged but malformed amount strings now surface as typed deserialization
   failures with the wire-shape error context.

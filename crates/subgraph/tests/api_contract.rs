@@ -1,4 +1,4 @@
-use cow_sdk_core::{DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, SupportedChainId};
+use cow_sdk_core::{DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, SupportedChainId, TransportErrorClass};
 use cow_sdk_subgraph::{
     DEFAULT_SUBGRAPH_USER_AGENT, DailyTotal, HourlyTotal, LAST_DAYS_VOLUME_QUERY,
     LAST_HOURS_VOLUME_QUERY, LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi,
@@ -855,7 +855,11 @@ async fn transport_failures_surface_typed_context() {
         .expect_err("connection failure should surface typed transport context");
 
     match error {
-        SubgraphError::Transport { context, details } => {
+        SubgraphError::Transport {
+            context,
+            class,
+            details,
+        } => {
             assert_eq!(
                 *context,
                 SubgraphRequestErrorContext::new(
@@ -866,6 +870,7 @@ async fn transport_failures_surface_typed_context() {
                     None,
                 )
             );
+            assert_eq!(class, TransportErrorClass::Connect);
             assert!(!details.is_empty());
         }
         other => panic!("expected Transport error, got {other:?}"),
