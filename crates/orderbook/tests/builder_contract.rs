@@ -110,10 +110,10 @@ fn builder_from_context_propagates_chain_environment_api_key_and_base_urls() {
 
 #[test]
 fn policy_override_replaces_default_request_policy() {
-    let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy {
-        max_attempts: 1,
-        ..RequestPolicy::default()
-    });
+    let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy::new(
+        1,
+        cow_sdk_orderbook::request::RateLimitSettings::default(),
+    ));
     let api = OrderBookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)

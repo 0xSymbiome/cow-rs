@@ -164,6 +164,10 @@ pub enum SigningScheme {
 }
 
 /// ECDSA signing schemes accepted by order-cancellation payloads.
+///
+/// Closed internally so SDK matches remain exhaustive; open externally so
+/// future signing schemes land additively.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum EcdsaSigningScheme {
@@ -1360,8 +1364,12 @@ impl AppDataObject {
 }
 
 /// Order entry inside an auction snapshot.
+///
+/// Closed internally so the SDK can add auction-side fields additively while
+/// external consumers avoid exhaustive destructuring.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct AuctionOrder {
     /// Order UID.
     pub uid: OrderUid,

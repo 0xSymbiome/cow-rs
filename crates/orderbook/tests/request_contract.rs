@@ -118,10 +118,7 @@ async fn request_json_retries_429_and_preserves_headers_on_each_attempt() {
         .mount(&server)
         .await;
 
-    let policy = RequestPolicy {
-        max_attempts: 3,
-        ..RequestPolicy::default()
-    };
+    let policy = RequestPolicy::new(3, RateLimitSettings::default());
     let limiter = RequestRateLimiter::new(policy.rate_limit);
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -283,14 +280,7 @@ async fn request_text_and_empty_share_the_request_builder_and_success_path() {
 #[tokio::test]
 async fn rate_limiter_spaces_requests_after_token_budget_is_consumed() {
     let interval = Duration::from_millis(40);
-    let policy = RequestPolicy {
-        max_attempts: 1,
-        rate_limit: RateLimitSettings {
-            tokens_per_interval: 1,
-            interval,
-            interval_label: "test",
-        },
-    };
+    let policy = RequestPolicy::new(1, RateLimitSettings::new(1, interval, "test"));
     let limiter = RequestRateLimiter::new(policy.rate_limit);
 
     execute_empty_with(&policy, &limiter, || async {
@@ -315,14 +305,7 @@ async fn rate_limiter_spaces_requests_after_token_budget_is_consumed() {
 #[tokio::test]
 async fn concurrent_attempts_share_limiter_state_across_clones() {
     let interval = Duration::from_millis(60);
-    let policy = RequestPolicy {
-        max_attempts: 1,
-        rate_limit: RateLimitSettings {
-            tokens_per_interval: 1,
-            interval,
-            interval_label: "test",
-        },
-    };
+    let policy = RequestPolicy::new(1, RateLimitSettings::new(1, interval, "test"));
     let limiter = RequestRateLimiter::new(policy.rate_limit);
     let arrivals = Arc::new(Mutex::new(Vec::new()));
 
@@ -369,14 +352,7 @@ async fn concurrent_attempts_share_limiter_state_across_clones() {
 #[tokio::test]
 async fn cancelling_waiting_attempt_keeps_limiter_reusable() {
     let interval = Duration::from_millis(60);
-    let policy = RequestPolicy {
-        max_attempts: 1,
-        rate_limit: RateLimitSettings {
-            tokens_per_interval: 1,
-            interval,
-            interval_label: "test",
-        },
-    };
+    let policy = RequestPolicy::new(1, RateLimitSettings::new(1, interval, "test"));
     let limiter = RequestRateLimiter::new(policy.rate_limit);
 
     execute_empty_with(&policy, &limiter, || async {
@@ -500,10 +476,7 @@ async fn request_json_surfaces_malformed_success_payloads() {
         .mount(&server)
         .await;
 
-    let policy = RequestPolicy {
-        max_attempts: 1,
-        ..RequestPolicy::default()
-    };
+    let policy = RequestPolicy::new(1, RateLimitSettings::default());
     let limiter = RequestRateLimiter::new(policy.rate_limit);
 
     let error = request_json::<serde_json::Value>(
@@ -527,10 +500,7 @@ async fn request_json_surfaces_malformed_success_payloads() {
 
 #[tokio::test]
 async fn retryable_api_error_does_not_retry_past_the_final_attempt() {
-    let policy = RequestPolicy {
-        max_attempts: 1,
-        ..RequestPolicy::default()
-    };
+    let policy = RequestPolicy::new(1, RateLimitSettings::default());
     let limiter = RequestRateLimiter::new(policy.rate_limit);
     let attempts = Arc::new(AtomicUsize::new(0));
 
@@ -574,10 +544,7 @@ async fn retryable_api_error_does_not_retry_past_the_final_attempt() {
 
 #[tokio::test]
 async fn transport_errors_delay_between_retryable_attempts() {
-    let policy = RequestPolicy {
-        max_attempts: 2,
-        ..RequestPolicy::default()
-    };
+    let policy = RequestPolicy::new(2, RateLimitSettings::default());
     let limiter = RequestRateLimiter::new(policy.rate_limit);
     let attempts = Arc::new(AtomicUsize::new(0));
     let attempt_times = Arc::new(Mutex::new(Vec::new()));
@@ -623,10 +590,7 @@ async fn transport_errors_delay_between_retryable_attempts() {
 
 #[tokio::test]
 async fn final_transport_error_returns_without_sleeping_again() {
-    let policy = RequestPolicy {
-        max_attempts: 1,
-        ..RequestPolicy::default()
-    };
+    let policy = RequestPolicy::new(1, RateLimitSettings::default());
     let limiter = RequestRateLimiter::new(policy.rate_limit);
 
     timeout(
@@ -645,10 +609,7 @@ async fn final_transport_error_returns_without_sleeping_again() {
 
 #[tokio::test]
 async fn api_errors_keep_empty_bodies_empty_even_outside_204_successes() {
-    let policy = RequestPolicy {
-        max_attempts: 1,
-        ..RequestPolicy::default()
-    };
+    let policy = RequestPolicy::new(1, RateLimitSettings::default());
     let limiter = RequestRateLimiter::new(policy.rate_limit);
 
     let error = execute_json_with::<serde_json::Value, _, _>(&policy, &limiter, || async {
@@ -668,10 +629,7 @@ async fn api_errors_keep_empty_bodies_empty_even_outside_204_successes() {
 
 #[tokio::test]
 async fn api_errors_keep_plain_text_payloads_out_of_the_json_decoder() {
-    let policy = RequestPolicy {
-        max_attempts: 1,
-        ..RequestPolicy::default()
-    };
+    let policy = RequestPolicy::new(1, RateLimitSettings::default());
     let limiter = RequestRateLimiter::new(policy.rate_limit);
 
     let error = execute_json_with::<serde_json::Value, _, _>(&policy, &limiter, || async {

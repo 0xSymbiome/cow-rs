@@ -123,6 +123,10 @@ impl OrderBookApiError {
 }
 
 /// Token-bucket settings for the shared request limiter.
+///
+/// Closed internally so the SDK can add limiter knobs additively; external
+/// callers should construct through [`new`](Self::new).
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RateLimitSettings {
     /// Number of requests allowed per limiter interval.
@@ -133,17 +137,37 @@ pub struct RateLimitSettings {
     pub interval_label: &'static str,
 }
 
-impl Default for RateLimitSettings {
-    fn default() -> Self {
+impl RateLimitSettings {
+    /// Creates token-bucket settings from an explicit budget and interval.
+    #[must_use]
+    pub const fn new(
+        tokens_per_interval: u32,
+        interval: Duration,
+        interval_label: &'static str,
+    ) -> Self {
         Self {
-            tokens_per_interval: DEFAULT_TOKENS_PER_INTERVAL,
-            interval: Duration::from_secs(1),
-            interval_label: DEFAULT_INTERVAL_LABEL,
+            tokens_per_interval,
+            interval,
+            interval_label,
         }
     }
 }
 
+impl Default for RateLimitSettings {
+    fn default() -> Self {
+        Self::new(
+            DEFAULT_TOKENS_PER_INTERVAL,
+            Duration::from_secs(1),
+            DEFAULT_INTERVAL_LABEL,
+        )
+    }
+}
+
 /// Retry and rate-limit policy for orderbook HTTP requests.
+///
+/// Closed internally so the SDK can add policy fields additively; external
+/// callers should construct through [`new`](Self::new).
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RequestPolicy {
     /// Maximum number of attempts before surfacing an error.
@@ -154,14 +178,20 @@ pub struct RequestPolicy {
 
 impl Default for RequestPolicy {
     fn default() -> Self {
-        Self {
-            max_attempts: DEFAULT_MAX_ATTEMPTS,
-            rate_limit: RateLimitSettings::default(),
-        }
+        Self::new(DEFAULT_MAX_ATTEMPTS, RateLimitSettings::default())
     }
 }
 
 impl RequestPolicy {
+    /// Creates a retry policy from explicit attempt and rate-limit settings.
+    #[must_use]
+    pub const fn new(max_attempts: usize, rate_limit: RateLimitSettings) -> Self {
+        Self {
+            max_attempts,
+            rate_limit,
+        }
+    }
+
     /// Returns `true` when `status` should be retried under this policy.
     #[must_use]
     pub fn should_retry_status(&self, status: u16) -> bool {
@@ -183,6 +213,10 @@ impl RequestPolicy {
 }
 
 /// Combined client-policy and request-policy surface for the orderbook client.
+///
+/// Closed internally so the SDK can add transport knobs additively while
+/// external callers use [`new`](Self::new) and the `with_*` setters.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderBookTransportPolicy {
     http_policy: HttpClientPolicy,

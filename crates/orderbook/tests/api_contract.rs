@@ -156,10 +156,10 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
                 .expect("custom header must be valid")
                 .without_timeout(),
         )
-        .with_request_policy(RequestPolicy {
-            max_attempts: 1,
-            ..RequestPolicy::default()
-        });
+        .with_request_policy(RequestPolicy::new(
+            1,
+            cow_sdk_orderbook::request::RateLimitSettings::default(),
+        ));
     let api = build_orderbook_api_with_policy(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         transport_policy,
@@ -197,14 +197,15 @@ async fn cloned_clients_share_the_same_instance_scoped_rate_limiter() {
         .mount(&server)
         .await;
 
-    let transport_policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy {
-        max_attempts: 1,
-        rate_limit: cow_sdk_orderbook::request::RateLimitSettings {
-            tokens_per_interval: 1,
-            interval: Duration::from_millis(60),
-            interval_label: "test",
-        },
-    });
+    let transport_policy =
+        OrderBookTransportPolicy::default().with_request_policy(RequestPolicy::new(
+            1,
+            cow_sdk_orderbook::request::RateLimitSettings::new(
+                1,
+                Duration::from_millis(60),
+                "test",
+            ),
+        ));
     let api = build_orderbook_api_with_policy(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         transport_policy,
@@ -985,10 +986,10 @@ mod recording_transport {
             },
             Canned::Ok("v1.2.3".to_owned()),
         ]);
-        let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy {
-            max_attempts: 5,
-            ..RequestPolicy::default()
-        });
+        let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy::new(
+            5,
+            cow_sdk_orderbook::request::RateLimitSettings::default(),
+        ));
         let api = api_with_recorder_and_policy(recorder.clone(), policy);
 
         let version = api
@@ -1012,10 +1013,10 @@ mod recording_transport {
             body: "{\"errorType\":\"DuplicatedOrder\",\"description\":\"order already exists\"}"
                 .to_owned(),
         }]);
-        let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy {
-            max_attempts: 1,
-            ..RequestPolicy::default()
-        });
+        let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy::new(
+            1,
+            cow_sdk_orderbook::request::RateLimitSettings::default(),
+        ));
         let api = api_with_recorder_and_policy(recorder.clone(), policy);
 
         let error = api

@@ -1185,6 +1185,11 @@ unreleased public contract of the repository.
   `with_buy_token_balance` setters, while downstream `match` expressions
   over `SupportedChainId` and `CowEnv` must include wildcard fallback
   arms.
+- The orderbook crate's ECDSA signing-scheme enum, auction order
+  envelope, and request-policy structs are now marked non-exhaustive,
+  and the request-policy surface exposes explicit constructors so
+  future signing schemes, auction-side fields, and policy settings land
+  additively.
 - `TradingSdkBuilder::build_ready()` on `wasm32` targets now fails fast with a typed error when no orderbook client has been injected, instead of deferring the failure to the first quote or post call.
 - The release-gate docs-agreement check now guards the `cargo tree` and `cargo audit` invariants across every source-of-truth document and ships with a self-test harness that catches extraction drift in the check itself.
 - Shipped WASM consoles now carry a clear acknowledgement of their current dual-authority posture - the publication authority named in the workspace crate metadata and the hosted-build authority named in the footer links - so reviewers can read the two surfaces consistently until the hosted-build rotation completes.
