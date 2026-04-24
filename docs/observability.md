@@ -77,9 +77,12 @@ downstream dashboards can pivot on the same names across every SDK call.
 | `method` | string | HTTP method (`GET`, `POST`, `DELETE`) for transport calls, or JSON-RPC-like operation name for wallet-mediated calls |
 | `status` | numeric | HTTP status code once a response is received |
 | `attempts` | numeric | Attempt index on retry-bearing paths |
+| `attempt_index` | numeric | Attempt index on retry events |
+| `backoff_ms` | numeric | Retry wait duration in milliseconds |
+| `transport_error_class` | string | Transport failure class on retry events without an HTTP response |
 | `duration_ms` | numeric | Elapsed time in milliseconds for the span |
 | `order_uid` | string | Order UID of the target order |
-| `quote_id` | numeric | Orderbook quote id returned by the service |
+| `quote_id` | numeric | Orderbook quote id returned by a quote or attached to an order submission |
 | `owner` | string | Owner address exposed on the request parameters |
 | `scheme` | string | Signing scheme (`eip712`, `eth_sign`, `eip1271`, `pre_sign`) |
 
@@ -97,8 +100,11 @@ instrumentation.
 ### `cow-sdk-orderbook`
 
 Every public async method on `OrderBookApi` emits one span. Spans carry
-`chain`, `env`, `endpoint`, and `method`; `order_uid` and `owner` are added
-where the input parameters expose them.
+`chain`, `env`, `endpoint`, and `method`; retry-bearing spans populate
+`attempts` and `status`, and `quote_id`, `order_uid`, and `owner` are added
+where the request or response exposes them. When the `tracing` feature is
+enabled, retry decisions also emit events with `attempt_index`, `backoff_ms`,
+and either `status` or `transport_error_class`.
 
 - `get_version`
 - `get_quote`
@@ -202,11 +208,15 @@ host application before emitting it through the tracing subscriber.
 `503 Service Unavailable` responses when the transport surfaces response
 headers through `TransportError::HttpStatus`. The retry loop accepts both
 delta-seconds and HTTP-date values and waits for the larger of the local
-backoff schedule and the server-provided cooldown before retrying. The
-native contract is exercised by
+backoff schedule and the server-provided cooldown before retrying. The local
+backoff supports jitter strategies through `RequestPolicy::with_jitter`, with
+a decorrelated default seeded from the operating-system random source and
+an explicit no-jitter strategy for deterministic tests. The native cooldown
+contract is exercised by
 `crates/orderbook/tests/api_contract.rs::service_unavailable_retry_after_header_delays_retry_for_at_least_server_cooldown`,
-and the parser boundary is covered by the `crates/orderbook/src/request.rs`
-unit tests.
+the parser boundary is covered by the `crates/orderbook/src/request.rs` unit
+tests, and the retry-event contract is covered by
+`crates/orderbook/tests/request_contract.rs::tracing_contract::execute_with_emits_retry_events_with_status_and_transport_error_fields`.
 
 ## Error Classification
 

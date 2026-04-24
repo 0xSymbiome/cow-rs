@@ -15,6 +15,12 @@ unreleased public contract of the repository.
 
 ### Added
 
+- The order-book retry orchestrator now emits per-attempt tracing events with
+  attempt index, response status or transport error class, and backoff
+  duration when the `tracing` feature is enabled, and supports jitter
+  strategies for production deployments. The advertised `quote_id`,
+  `attempts`, and `status` tracing fields are now populated on the request
+  spans they document.
 - Typed-amount arithmetic now lives on `cow_sdk_core::Amount` directly,
   with Add, Sub, AddAssign, SubAssign, checked_add, checked_sub, and
   checked_mul operators that delegate to the underlying integer storage.

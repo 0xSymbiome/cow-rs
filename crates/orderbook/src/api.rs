@@ -236,6 +236,9 @@ impl OrderBookApi {
                 env = ?self.context().env,
                 endpoint = "/api/v1/quote",
                 method = "POST",
+                quote_id = tracing::field::Empty,
+                attempts = tracing::field::Empty,
+                status = tracing::field::Empty,
             ),
         ),
     )]
@@ -255,7 +258,12 @@ impl OrderBookApi {
         let body = serde_json::to_value(request)?;
         let params = FetchParams::new("/api/v1/quote", HttpMethod::Post).with_body(body);
 
-        self.fetch_json(params).await
+        let response: OrderQuoteResponse = self.fetch_json(params).await?;
+        #[cfg(feature = "tracing")]
+        if let Some(quote_id) = response.id {
+            tracing::Span::current().record("quote_id", quote_id);
+        }
+        Ok(response)
     }
 
     /// Submits a signed order to the orderbook.
@@ -278,6 +286,9 @@ impl OrderBookApi {
                 env = ?self.context().env,
                 endpoint = "/api/v1/orders",
                 method = "POST",
+                quote_id = request.quote_id.unwrap_or_default(),
+                attempts = tracing::field::Empty,
+                status = tracing::field::Empty,
             ),
         ),
     )]

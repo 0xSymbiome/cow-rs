@@ -1,21 +1,27 @@
+mod common;
+
 use std::sync::{
     Arc, Mutex,
     atomic::{AtomicUsize, Ordering},
 };
 use std::time::{Duration, Instant};
 
-use cow_sdk_core::{HttpClientPolicy, HttpTransport, ReqwestTransport, ReqwestTransportConfig};
+use cow_sdk_core::{
+    Amount, HttpClientPolicy, HttpTransport, ReqwestTransport, ReqwestTransportConfig,
+};
 use cow_sdk_orderbook::error::classify_reqwest_error;
 use cow_sdk_orderbook::request::{
-    DEFAULT_ORDERBOOK_USER_AGENT, FetchParams, HttpMethod, OrderBookApiError,
+    DEFAULT_ORDERBOOK_USER_AGENT, FetchParams, HttpMethod, JitterStrategy, OrderBookApiError,
     OrderBookTransportPolicy, RateLimitSettings, RequestPolicy, RequestRateLimiter, ResponseBody,
     ResponseEnvelope, execute_empty_with, execute_json_with, request_empty, request_json,
     request_text,
 };
 use cow_sdk_orderbook::{
-    DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_TOKENS_PER_INTERVAL,
-    INTERNAL_SERVER_ERROR, OrderbookError, RETRYABLE_STATUS_CODES, TOO_MANY_REQUESTS,
+    CowEnv, DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_TOKENS_PER_INTERVAL,
+    INTERNAL_SERVER_ERROR, OrderCreation, OrderQuoteRequest, OrderbookError, QuoteSide,
+    RETRYABLE_STATUS_CODES, SigningScheme, SupportedChainId, TOO_MANY_REQUESTS,
 };
+use proptest::prelude::*;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 fn build_shared_transport() -> Arc<dyn HttpTransport + Send + Sync> {
@@ -31,6 +37,11 @@ use tokio::time::{sleep, timeout};
 use wiremock::{
     Mock, MockServer, Request, ResponseTemplate,
     matchers::{header, method, path},
+};
+
+use crate::common::{
+    build_orderbook_api_with_base_url, default_context, sample_buy_token, sample_order_uid,
+    sample_owner, sample_quote_response_json, sample_signature,
 };
 
 #[tokio::test]
@@ -50,13 +61,35 @@ async fn request_policy_defaults_match_fixture_contract() {
 
 #[test]
 fn request_policy_backoff_is_exponential_and_caps_growth() {
-    let policy = RequestPolicy::default();
+    let policy = RequestPolicy::default().with_jitter(JitterStrategy::none());
 
     assert_eq!(policy.backoff_delay(1), Duration::from_millis(50));
     assert_eq!(policy.backoff_delay(2), Duration::from_millis(100));
     assert_eq!(policy.backoff_delay(3), Duration::from_millis(200));
     assert_eq!(policy.backoff_delay(7), Duration::from_millis(3200));
     assert_eq!(policy.backoff_delay(8), Duration::from_millis(3200));
+}
+
+proptest! {
+    #[test]
+    fn seeded_jitter_decorrelates_parallel_retry_waits(seed in any::<u64>(), attempt_index in 1usize..=7) {
+        let base_policy = RequestPolicy::new(3, RateLimitSettings::default())
+            .with_jitter(JitterStrategy::none());
+        let base = base_policy.backoff_delay(attempt_index);
+        let policy = RequestPolicy::new(3, RateLimitSettings::default())
+            .with_jitter(JitterStrategy::decorrelated_from_seed(seed));
+        let first_policy = policy.clone();
+        let second_policy = policy;
+
+        let first = first_policy.backoff_delay(attempt_index);
+        let second = second_policy.backoff_delay(attempt_index);
+
+        prop_assert_ne!(first, second);
+        prop_assert!(first >= base);
+        prop_assert!(second >= base);
+        prop_assert!(first <= base.saturating_add(base / 2));
+        prop_assert!(second <= base.saturating_add(base / 2));
+    }
 }
 
 #[tokio::test]
@@ -728,5 +761,374 @@ fn orderbook_transport_error_from_conversion_classifies_without_url_exposure() {
             );
         }
         other => panic!("expected Transport or Serialization variant, got {other:?}"),
+    }
+}
+
+#[cfg(feature = "tracing")]
+mod tracing_contract {
+    use std::{
+        collections::BTreeMap,
+        sync::{
+            Arc, Mutex,
+            atomic::{AtomicU64, Ordering},
+        },
+    };
+
+    use super::*;
+    use tracing::{
+        Event, Id, Level, Metadata, Subscriber,
+        field::{Field, Visit},
+        span::{Attributes, Record},
+        subscriber::Interest,
+    };
+    use tracing_core::span::Current;
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn execute_with_emits_retry_events_with_status_and_transport_error_fields() {
+        let capture = TraceCapture::install();
+        let policy =
+            RequestPolicy::new(2, RateLimitSettings::default()).with_jitter(JitterStrategy::none());
+        let limiter = RequestRateLimiter::new(policy.rate_limit);
+        let attempts = Arc::new(AtomicUsize::new(0));
+
+        let result: serde_json::Value = execute_json_with(&policy, &limiter, {
+            let attempts = attempts.clone();
+            move || {
+                let attempts = attempts.clone();
+                async move {
+                    let current = attempts.fetch_add(1, Ordering::SeqCst);
+                    if current == 0 {
+                        Ok(ResponseEnvelope::json(
+                            INTERNAL_SERVER_ERROR,
+                            &json!({
+                                "errorType": "InternalServerError",
+                                "description": "retry me"
+                            }),
+                        ))
+                    } else {
+                        Ok(ResponseEnvelope::json(200, &json!({ "ok": true })))
+                    }
+                }
+            }
+        })
+        .await
+        .expect("second attempt should succeed");
+
+        assert_eq!(result["ok"], json!(true));
+
+        let transport_limiter = RequestRateLimiter::new(policy.rate_limit);
+        let _ = execute_empty_with(&policy, &transport_limiter, || async {
+            Err((
+                cow_sdk_core::TransportErrorClass::Other,
+                "temporary transport failure".to_owned(),
+            ))
+        })
+        .await
+        .expect_err("transport errors should exhaust attempts");
+
+        let events = capture.events();
+        assert!(
+            events.iter().any(|event| {
+                event.level == Level::DEBUG
+                    && event.field("attempt_index") == Some("1")
+                    && event.field("status") == Some("500")
+                    && event.field("backoff_ms") == Some("50")
+            }),
+            "retry event must carry status and backoff fields: {events:#?}"
+        );
+        assert!(
+            events.iter().any(|event| {
+                event.level == Level::DEBUG
+                    && event.field("attempt_index") == Some("1")
+                    && event.field("transport_error_class") == Some("other")
+                    && event.field("backoff_ms") == Some("50")
+            }),
+            "retry event must carry transport error class and backoff fields: {events:#?}"
+        );
+        assert!(
+            events.iter().any(|event| {
+                event.level == Level::WARN
+                    && event.field("attempt_index") == Some("2")
+                    && event.field("transport_error_class") == Some("other")
+                    && event.field("backoff_ms") == Some("0")
+            }),
+            "final retry failure must warn with terminal attempt fields: {events:#?}"
+        );
+    }
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn send_order_span_records_quote_id_attempts_and_status() {
+        let capture = TraceCapture::install();
+        let server = MockServer::start().await;
+
+        Mock::given(method("POST"))
+            .and(path("/api/v1/quote"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(sample_quote_response_json()))
+            .mount(&server)
+            .await;
+        Mock::given(method("POST"))
+            .and(path("/api/v1/orders"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(sample_order_uid().as_str()))
+            .mount(&server)
+            .await;
+
+        let api = build_orderbook_api_with_base_url(
+            default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+            server.uri(),
+        );
+        let quote = api
+            .get_quote(&OrderQuoteRequest::new(
+                sample_owner(),
+                sample_buy_token(),
+                sample_owner(),
+                QuoteSide::sell(Amount::new("1000000").expect("test amount literal is valid")),
+            ))
+            .await
+            .expect("quote should succeed");
+        let quote_id = quote.id.expect("fixture carries a quote id");
+        let order = OrderCreation::from_quote(
+            &quote.quote,
+            sample_owner(),
+            None,
+            SigningScheme::Eip712,
+            sample_signature(),
+        )
+        .with_quote_id(quote_id);
+
+        let uid = api
+            .send_order(&order)
+            .await
+            .expect("order submission should succeed");
+
+        assert_eq!(uid.as_str(), sample_order_uid().as_str());
+        let spans = capture.spans();
+        assert!(
+            spans.iter().any(|span| {
+                span.name == "send_order"
+                    && span.field("quote_id") == Some("42")
+                    && span.field("attempts") == Some("1")
+                    && span.field("status") == Some("200")
+            }),
+            "send_order span must carry populated quote_id, attempts, and status fields: {spans:#?}"
+        );
+        assert!(
+            spans.iter().any(|span| {
+                span.name == "get_quote"
+                    && span.field("quote_id") == Some("42")
+                    && span.field("attempts") == Some("1")
+                    && span.field("status") == Some("200")
+            }),
+            "quote span must carry populated quote_id, attempts, and status fields: {spans:#?}"
+        );
+    }
+
+    struct TraceCapture {
+        state: Arc<CaptureState>,
+        _guard: tracing::dispatcher::DefaultGuard,
+    }
+
+    impl TraceCapture {
+        fn install() -> Self {
+            let state = Arc::new(CaptureState::default());
+            let subscriber = CapturingSubscriber {
+                state: state.clone(),
+                next_id: AtomicU64::new(1),
+            };
+            let dispatch = tracing::Dispatch::new(subscriber);
+            let guard = tracing::dispatcher::set_default(&dispatch);
+            Self {
+                state,
+                _guard: guard,
+            }
+        }
+
+        fn events(&self) -> Vec<CapturedEvent> {
+            self.state
+                .events
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone()
+        }
+
+        fn spans(&self) -> Vec<CapturedSpan> {
+            self.state
+                .spans
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .values()
+                .cloned()
+                .collect()
+        }
+    }
+
+    #[derive(Default)]
+    struct CaptureState {
+        events: Mutex<Vec<CapturedEvent>>,
+        spans: Mutex<BTreeMap<u64, CapturedSpan>>,
+        span_metadata: Mutex<BTreeMap<u64, &'static Metadata<'static>>>,
+        stack: Mutex<Vec<(Id, &'static Metadata<'static>)>>,
+    }
+
+    struct CapturingSubscriber {
+        state: Arc<CaptureState>,
+        next_id: AtomicU64,
+    }
+
+    impl Subscriber for CapturingSubscriber {
+        fn enabled(&self, _metadata: &Metadata<'_>) -> bool {
+            true
+        }
+
+        fn register_callsite(&self, _metadata: &'static Metadata<'static>) -> Interest {
+            Interest::always()
+        }
+
+        fn new_span(&self, attributes: &Attributes<'_>) -> Id {
+            let id = self.next_id.fetch_add(1, Ordering::SeqCst);
+            let mut fields = FieldMap::default();
+            attributes.record(&mut fields);
+            self.state
+                .spans
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .insert(
+                    id,
+                    CapturedSpan {
+                        name: attributes.metadata().name().to_owned(),
+                        fields: fields.0,
+                    },
+                );
+            self.state
+                .span_metadata
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .insert(id, attributes.metadata());
+            Id::from_u64(id)
+        }
+
+        fn record(&self, span: &Id, values: &Record<'_>) {
+            let mut fields = FieldMap::default();
+            values.record(&mut fields);
+            let mut spans = self
+                .state
+                .spans
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(span) = spans.get_mut(&span.clone().into_u64()) {
+                span.fields.extend(fields.0);
+            }
+        }
+
+        fn record_follows_from(&self, _span: &Id, _follows: &Id) {}
+
+        fn event(&self, event: &Event<'_>) {
+            let mut fields = FieldMap::default();
+            event.record(&mut fields);
+            self.state
+                .events
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(CapturedEvent {
+                    level: *event.metadata().level(),
+                    fields: fields.0,
+                });
+        }
+
+        fn enter(&self, span: &Id) {
+            let metadata = self
+                .state
+                .span_metadata
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .get(&span.clone().into_u64())
+                .copied();
+            let Some(metadata) = metadata else {
+                return;
+            };
+            self.state
+                .stack
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push((span.clone(), metadata));
+        }
+
+        fn exit(&self, span: &Id) {
+            let mut stack = self
+                .state
+                .stack
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if stack.last().map(|(candidate, _)| candidate) == Some(span) {
+                stack.pop();
+            } else if let Some(index) = stack.iter().rposition(|(candidate, _)| candidate == span) {
+                stack.remove(index);
+            }
+        }
+
+        fn current_span(&self) -> Current {
+            self.state
+                .stack
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .last()
+                .map_or_else(Current::none, |(id, metadata)| {
+                    Current::new(id.clone(), metadata)
+                })
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    struct CapturedEvent {
+        level: Level,
+        fields: BTreeMap<String, String>,
+    }
+
+    impl CapturedEvent {
+        fn field(&self, name: &str) -> Option<&str> {
+            self.fields.get(name).map(String::as_str)
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    struct CapturedSpan {
+        name: String,
+        fields: BTreeMap<String, String>,
+    }
+
+    impl CapturedSpan {
+        fn field(&self, name: &str) -> Option<&str> {
+            self.fields.get(name).map(String::as_str)
+        }
+    }
+
+    #[derive(Default)]
+    struct FieldMap(BTreeMap<String, String>);
+
+    impl FieldMap {
+        fn record_value(&mut self, field: &Field, value: String) {
+            self.0.insert(field.name().to_owned(), value);
+        }
+    }
+
+    impl Visit for FieldMap {
+        fn record_i64(&mut self, field: &Field, value: i64) {
+            self.record_value(field, value.to_string());
+        }
+
+        fn record_u64(&mut self, field: &Field, value: u64) {
+            self.record_value(field, value.to_string());
+        }
+
+        fn record_bool(&mut self, field: &Field, value: bool) {
+            self.record_value(field, value.to_string());
+        }
+
+        fn record_str(&mut self, field: &Field, value: &str) {
+            self.record_value(field, value.to_owned());
+        }
+
+        fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
+            self.record_value(field, format!("{value:?}"));
+        }
     }
 }

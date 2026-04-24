@@ -1,6 +1,7 @@
 use std::{
+    fmt,
     future::Future,
-    sync::Arc,
+    sync::{Arc, Mutex as StdMutex},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -56,6 +57,7 @@ pub const DEFAULT_INTERVAL_LABEL: &str = "second";
 /// Default orderbook user-agent string embedded in [`OrderBookTransportPolicy`].
 pub const DEFAULT_ORDERBOOK_USER_AGENT: &str =
     concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
+const DEFAULT_JITTER_WINDOW_DIVISOR: u128 = 2;
 
 /// Shared dyn-compatible [`HttpTransport`] handle threaded through orderbook
 /// request helpers.
@@ -168,6 +170,108 @@ impl Default for RateLimitSettings {
     }
 }
 
+/// Jitter policy applied to retry backoff delays.
+///
+/// The default decorrelated strategy seeds its first offset from the operating
+/// system random source and then advances an internal sequence so cloned retry
+/// policies do not schedule identical waits for parallel retrying calls.
+#[derive(Clone)]
+pub struct JitterStrategy {
+    kind: JitterStrategyKind,
+    sequence: Arc<StdMutex<u64>>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum JitterStrategyKind {
+    None,
+    Decorrelated { seed: u64 },
+}
+
+impl JitterStrategy {
+    /// Returns a strategy that leaves retry delays unchanged.
+    #[must_use]
+    pub fn none() -> Self {
+        Self::from_kind(JitterStrategyKind::None)
+    }
+
+    /// Returns the default decorrelated retry jitter strategy.
+    ///
+    /// The seed is read from `getrandom` when available. If the platform
+    /// entropy source is temporarily unavailable, the strategy falls back to a
+    /// time-derived seed because retry jitter is operational desynchronization,
+    /// not cryptographic randomness.
+    #[must_use]
+    pub fn decorrelated() -> Self {
+        Self::decorrelated_from_seed(random_jitter_seed())
+    }
+
+    /// Returns a decorrelated strategy with a caller-supplied seed.
+    ///
+    /// This is primarily useful for deterministic tests and controlled
+    /// deployments that need reproducible retry schedules.
+    #[must_use]
+    pub fn decorrelated_from_seed(seed: u64) -> Self {
+        Self::from_kind(JitterStrategyKind::Decorrelated { seed })
+    }
+
+    fn from_kind(kind: JitterStrategyKind) -> Self {
+        Self {
+            kind,
+            sequence: Arc::new(StdMutex::new(0)),
+        }
+    }
+
+    fn delay_for(&self, base: Duration) -> Duration {
+        let JitterStrategyKind::Decorrelated { seed } = self.kind else {
+            return Duration::ZERO;
+        };
+
+        let window_ms = base.as_millis() / DEFAULT_JITTER_WINDOW_DIVISOR;
+        if window_ms == 0 {
+            return Duration::ZERO;
+        }
+
+        let sequence = self.next_sequence();
+        let window = window_ms.saturating_add(1).min(u128::from(u64::MAX));
+        let offset = (u128::from(splitmix64(seed)) + u128::from(sequence)) % window;
+        let offset = u64::try_from(offset).expect("jitter offset is capped to `u64::MAX`");
+        Duration::from_millis(offset)
+    }
+
+    fn next_sequence(&self) -> u64 {
+        let mut sequence = self
+            .sequence
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let current = *sequence;
+        *sequence = current.wrapping_add(1);
+        current
+    }
+}
+
+impl Default for JitterStrategy {
+    fn default() -> Self {
+        Self::decorrelated()
+    }
+}
+
+impl fmt::Debug for JitterStrategy {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("JitterStrategy")
+            .field("kind", &self.kind)
+            .finish_non_exhaustive()
+    }
+}
+
+impl PartialEq for JitterStrategy {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+    }
+}
+
+impl Eq for JitterStrategy {}
+
 /// Retry and rate-limit policy for orderbook HTTP requests.
 ///
 /// Closed internally so the SDK can add policy fields additively; external
@@ -179,6 +283,8 @@ pub struct RequestPolicy {
     pub max_attempts: usize,
     /// Shared limiter settings applied before every attempt.
     pub rate_limit: RateLimitSettings,
+    /// Retry jitter strategy applied to exponential backoff delays.
+    pub jitter: JitterStrategy,
 }
 
 impl Default for RequestPolicy {
@@ -190,11 +296,19 @@ impl Default for RequestPolicy {
 impl RequestPolicy {
     /// Creates a retry policy from explicit attempt and rate-limit settings.
     #[must_use]
-    pub const fn new(max_attempts: usize, rate_limit: RateLimitSettings) -> Self {
+    pub fn new(max_attempts: usize, rate_limit: RateLimitSettings) -> Self {
         Self {
             max_attempts,
             rate_limit,
+            jitter: JitterStrategy::default(),
         }
+    }
+
+    /// Returns this policy with an explicit retry jitter strategy.
+    #[must_use]
+    pub fn with_jitter(mut self, jitter: JitterStrategy) -> Self {
+        self.jitter = jitter;
+        self
     }
 
     /// Returns `true` when `status` should be retried under this policy.
@@ -203,7 +317,7 @@ impl RequestPolicy {
         RETRYABLE_STATUS_CODES.contains(&status)
     }
 
-    /// Returns the exponential backoff delay for `attempt_index`.
+    /// Returns the jittered exponential backoff delay for `attempt_index`.
     ///
     /// # Panics
     ///
@@ -211,6 +325,11 @@ impl RequestPolicy {
     /// The implementation clamps it to a `u32`-safe range before conversion.
     #[must_use]
     pub fn backoff_delay(&self, attempt_index: usize) -> Duration {
+        let base = Self::base_backoff_delay(attempt_index);
+        base.saturating_add(self.jitter.delay_for(base))
+    }
+
+    fn base_backoff_delay(attempt_index: usize) -> Duration {
         let exponent = u32::try_from(attempt_index.saturating_sub(1).min(6))
             .expect("backoff exponent is clamped to a `u32`-safe range");
         Duration::from_millis(50 * (1u64 << exponent))
@@ -230,6 +349,26 @@ impl RequestPolicy {
 
         retry_after_delay(headers, now).map_or(backoff, |retry_after| backoff.max(retry_after))
     }
+}
+
+fn random_jitter_seed() -> u64 {
+    let mut seed = [0_u8; 8];
+    if getrandom::fill(&mut seed).is_ok() {
+        return u64::from_le_bytes(seed);
+    }
+
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0x9E37_79B9_7F4A_7C15, |duration| {
+            duration.as_secs().rotate_left(32) ^ u64::from(duration.subsec_nanos())
+        })
+}
+
+const fn splitmix64(mut value: u64) -> u64 {
+    value = value.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    value = (value ^ (value >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    value = (value ^ (value >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    value ^ (value >> 31)
 }
 
 /// Combined client-policy and request-policy surface for the orderbook client.
@@ -284,7 +423,7 @@ impl OrderBookTransportPolicy {
 
     /// Returns a copy of this transport policy with a new request policy.
     #[must_use]
-    pub const fn with_request_policy(mut self, request: RequestPolicy) -> Self {
+    pub fn with_request_policy(mut self, request: RequestPolicy) -> Self {
         self.request = request;
         self
     }
@@ -907,9 +1046,13 @@ where
 
     for attempt_index in 1..=policy.max_attempts {
         rate_limiter.acquire().await;
+        #[cfg(feature = "tracing")]
+        record_span_attempts(attempt_index);
 
         match attempt().await {
             Ok(AttemptOutcome::Response(response)) if (200..300).contains(&response.status) => {
+                #[cfg(feature = "tracing")]
+                record_span_status(response.status);
                 return decode_success(&response);
             }
             Ok(outcome) => {
@@ -917,6 +1060,8 @@ where
                     AttemptOutcome::Response(response) => (response, None),
                     AttemptOutcome::HttpError { response, headers } => (response, Some(headers)),
                 };
+                #[cfg(feature = "tracing")]
+                record_span_status(response.status);
                 let body = response.decoded_body();
                 let error = OrderBookApiError::new(response.status, response.status_text, body);
                 let should_retry =
@@ -934,17 +1079,31 @@ where
                             )
                         },
                     );
+                    #[cfg(feature = "tracing")]
+                    emit_retry_status_event(attempt_index, error.status, delay);
                     delay_for(delay).await;
                     continue;
                 }
 
+                #[cfg(feature = "tracing")]
+                if policy.should_retry_status(error.status) {
+                    emit_final_status_event(attempt_index, error.status);
+                }
                 return Err(error.into());
             }
             Err(error) => {
+                #[cfg(feature = "tracing")]
+                let error_class = error.0;
                 last_transport_error = Some(error);
 
                 if attempt_index < policy.max_attempts {
-                    delay_for(policy.backoff_delay(attempt_index)).await;
+                    let delay = policy.backoff_delay(attempt_index);
+                    #[cfg(feature = "tracing")]
+                    emit_retry_transport_event(attempt_index, error_class, delay);
+                    delay_for(delay).await;
+                } else {
+                    #[cfg(feature = "tracing")]
+                    emit_final_transport_event(attempt_index, error_class);
                 }
             }
         }
@@ -957,6 +1116,66 @@ where
         )
     });
     Err(OrderbookError::Transport { class, detail })
+}
+
+#[cfg(feature = "tracing")]
+fn record_span_attempts(attempt_index: usize) {
+    let attempts = u64::try_from(attempt_index).unwrap_or(u64::MAX);
+    tracing::Span::current().record("attempts", attempts);
+}
+
+#[cfg(feature = "tracing")]
+fn record_span_status(status: u16) {
+    tracing::Span::current().record("status", u64::from(status));
+}
+
+#[cfg(feature = "tracing")]
+fn emit_retry_status_event(attempt_index: usize, status: u16, delay: Duration) {
+    tracing::debug!(
+        attempt_index = u64::try_from(attempt_index).unwrap_or(u64::MAX),
+        status = u64::from(status),
+        backoff_ms = duration_millis(delay),
+        "orderbook retry scheduled after status response"
+    );
+}
+
+#[cfg(feature = "tracing")]
+fn emit_final_status_event(attempt_index: usize, status: u16) {
+    tracing::warn!(
+        attempt_index = u64::try_from(attempt_index).unwrap_or(u64::MAX),
+        status = u64::from(status),
+        backoff_ms = 0_u64,
+        "orderbook retry attempts exhausted after status response"
+    );
+}
+
+#[cfg(feature = "tracing")]
+fn emit_retry_transport_event(
+    attempt_index: usize,
+    class: cow_sdk_core::TransportErrorClass,
+    delay: Duration,
+) {
+    tracing::debug!(
+        attempt_index = u64::try_from(attempt_index).unwrap_or(u64::MAX),
+        transport_error_class = class.as_str(),
+        backoff_ms = duration_millis(delay),
+        "orderbook retry scheduled after transport error"
+    );
+}
+
+#[cfg(feature = "tracing")]
+fn emit_final_transport_event(attempt_index: usize, class: cow_sdk_core::TransportErrorClass) {
+    tracing::warn!(
+        attempt_index = u64::try_from(attempt_index).unwrap_or(u64::MAX),
+        transport_error_class = class.as_str(),
+        backoff_ms = 0_u64,
+        "orderbook retry attempts exhausted after transport error"
+    );
+}
+
+#[cfg(feature = "tracing")]
+fn duration_millis(duration: Duration) -> u64 {
+    u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
 }
 
 async fn delay_for(duration: Duration) {
@@ -1112,7 +1331,7 @@ fn unix_timestamp(time: SystemTime) -> Option<i64> {
 #[cfg(test)]
 mod tests {
     use super::{
-        INTERNAL_SERVER_ERROR, REQUEST_TIMEOUT, RateLimitSettings, RequestPolicy,
+        INTERNAL_SERVER_ERROR, JitterStrategy, REQUEST_TIMEOUT, RateLimitSettings, RequestPolicy,
         SERVICE_UNAVAILABLE, TOO_MANY_REQUESTS, parse_retry_after,
     };
     use std::time::{Duration, UNIX_EPOCH};
@@ -1152,7 +1371,8 @@ mod tests {
 
     #[test]
     fn retry_delay_uses_retry_after_only_for_429_and_503_and_picks_the_larger_wait() {
-        let policy = RequestPolicy::new(10, RateLimitSettings::default());
+        let policy = RequestPolicy::new(10, RateLimitSettings::default())
+            .with_jitter(JitterStrategy::none());
         let long_retry_after = vec![("Retry-After".to_owned(), "5".to_owned())];
         let short_retry_after = vec![("Retry-After".to_owned(), "1".to_owned())];
         let now = UNIX_EPOCH;
