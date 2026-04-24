@@ -19,7 +19,7 @@
 //! # Feature flags
 //!
 //! - `default` — no features enabled.
-//! - `tracing` — emits span-level tracing events around each request when
+//! - `tracing` — emits one transport-layer span around each request when
 //!   the downstream application wires the [`tracing`](https://docs.rs/tracing)
 //!   subscriber; unchanged public surface otherwise.
 //!

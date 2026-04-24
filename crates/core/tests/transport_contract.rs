@@ -2,6 +2,7 @@
 
 use std::time::Duration;
 
+use cow_sdk_core::config::{DEFAULT_TCP_KEEPALIVE, DEFAULT_USER_AGENT};
 use cow_sdk_core::transport::classify_reqwest_error;
 use cow_sdk_core::{
     HttpTransport, ReqwestTransport, ReqwestTransportConfig, TransportError, TransportErrorClass,
@@ -24,6 +25,34 @@ fn build_transport_with_timeout(base_url: String, timeout: Duration) -> ReqwestT
             .with_timeout(timeout),
     )
     .expect("reqwest client construction must succeed with a validated user agent")
+}
+
+#[test]
+fn reqwest_transport_config_defaults_match_services_aligned_policy() {
+    let config = ReqwestTransportConfig::new("https://transport.example");
+
+    assert_eq!(config.user_agent(), DEFAULT_USER_AGENT);
+    assert_eq!(config.tcp_keepalive(), DEFAULT_TCP_KEEPALIVE);
+}
+
+#[tokio::test]
+async fn default_config_sends_services_aligned_user_agent() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/headers"))
+        .and(wiremock::matchers::header("user-agent", DEFAULT_USER_AGENT))
+        .respond_with(ResponseTemplate::new(200).set_body_string("ok"))
+        .mount(&server)
+        .await;
+
+    let transport = ReqwestTransport::new(ReqwestTransportConfig::new(server.uri()))
+        .expect("default reqwest transport must build with the SDK user-agent");
+    let body = transport
+        .get("/headers", NO_HEADERS, None)
+        .await
+        .expect("default user-agent must be sent on requests");
+
+    assert_eq!(body, "ok");
 }
 
 #[tokio::test]
@@ -365,4 +394,230 @@ fn transport_error_class_labels_cover_every_documented_variant() {
     assert_eq!(TransportErrorClass::Request.as_str(), "request");
     assert_eq!(TransportErrorClass::Status.as_str(), "status");
     assert_eq!(TransportErrorClass::Other.as_str(), "other");
+}
+
+#[cfg(feature = "tracing")]
+mod tracing_contract {
+    use std::{
+        collections::BTreeMap,
+        sync::{Arc, Mutex},
+    };
+
+    use super::*;
+    use tracing::{
+        Event, Id, Metadata, Subscriber,
+        field::{Field, Visit},
+        span::{Attributes, Record},
+        subscriber::Interest,
+    };
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn reqwest_dispatch_emits_one_path_only_transport_span_with_body_sizes() {
+        let capture = TraceCapture::install();
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/quote"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("quoted"))
+            .mount(&server)
+            .await;
+
+        let transport = ReqwestTransport::new(ReqwestTransportConfig::new(String::new()))
+            .expect("default reqwest transport must build");
+        let body = "{\"kind\":\"sell\"}";
+        let server_uri = server.uri();
+        let server_authority = server_uri.trim_start_matches("http://");
+        let url_with_userinfo = format!("{server_uri}/quote?api_key=secret").replacen(
+            "http://",
+            "http://user:pass@",
+            1,
+        );
+        let response = transport
+            .post(&url_with_userinfo, body, NO_HEADERS, None)
+            .await
+            .expect("mocked POST must succeed");
+
+        assert_eq!(response, "quoted");
+
+        let spans = capture.spans();
+        let expected_bytes_sent = body.len().to_string();
+        let expected_bytes_received = "quoted".len().to_string();
+        let transport_spans: Vec<_> = spans
+            .iter()
+            .filter(|span| {
+                span.name == "transport.dispatch"
+                    && span.field("method") == Some("POST")
+                    && span.field("endpoint") == Some("/quote")
+                    && span.field("bytes_sent") == Some(expected_bytes_sent.as_str())
+                    && span.field("bytes_received") == Some(expected_bytes_received.as_str())
+            })
+            .collect();
+        assert_eq!(
+            transport_spans.len(),
+            1,
+            "one matching transport span must be emitted for this dispatch: {spans:#?}"
+        );
+        let span = transport_spans[0];
+        assert_eq!(span.field("method"), Some("POST"));
+        assert_eq!(span.field("endpoint"), Some("/quote"));
+        assert_eq!(span.field("bytes_sent"), Some(expected_bytes_sent.as_str()));
+        assert_eq!(
+            span.field("bytes_received"),
+            Some(expected_bytes_received.as_str())
+        );
+
+        let endpoint = span
+            .field("endpoint")
+            .expect("endpoint field must be present");
+        assert!(!endpoint.contains("user"));
+        assert!(!endpoint.contains("pass"));
+        assert!(!endpoint.contains("api_key"));
+        assert!(!endpoint.contains(server_authority));
+    }
+
+    struct TraceCapture {
+        state: Arc<CaptureState>,
+    }
+
+    impl TraceCapture {
+        fn install() -> Self {
+            let state = Arc::new(CaptureState::default());
+            let subscriber = CapturingSubscriber {
+                state: state.clone(),
+            };
+            let dispatch = tracing::Dispatch::new(subscriber);
+            tracing::dispatcher::set_global_default(dispatch)
+                .expect("transport tracing contract installs one subscriber per test binary");
+            Self { state }
+        }
+
+        fn spans(&self) -> Vec<CapturedSpan> {
+            self.state
+                .spans
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .values()
+                .cloned()
+                .collect()
+        }
+    }
+
+    struct CaptureState {
+        next_id: Mutex<u64>,
+        spans: Mutex<BTreeMap<u64, CapturedSpan>>,
+    }
+
+    impl Default for CaptureState {
+        fn default() -> Self {
+            Self {
+                next_id: Mutex::new(1),
+                spans: Mutex::default(),
+            }
+        }
+    }
+
+    struct CapturingSubscriber {
+        state: Arc<CaptureState>,
+    }
+
+    impl Subscriber for CapturingSubscriber {
+        fn enabled(&self, _metadata: &Metadata<'_>) -> bool {
+            true
+        }
+
+        fn register_callsite(&self, _metadata: &'static Metadata<'static>) -> Interest {
+            Interest::always()
+        }
+
+        fn new_span(&self, attributes: &Attributes<'_>) -> Id {
+            let id = next_span_id(&self.state);
+            let mut fields = FieldMap::default();
+            attributes.record(&mut fields);
+            self.state
+                .spans
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .insert(
+                    id,
+                    CapturedSpan {
+                        name: attributes.metadata().name().to_owned(),
+                        fields: fields.0,
+                    },
+                );
+            Id::from_u64(id)
+        }
+
+        fn record(&self, span: &Id, values: &Record<'_>) {
+            let mut fields = FieldMap::default();
+            values.record(&mut fields);
+            let mut spans = self
+                .state
+                .spans
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(span) = spans.get_mut(&span.clone().into_u64()) {
+                span.fields.extend(fields.0);
+            }
+        }
+
+        fn record_follows_from(&self, _span: &Id, _follows: &Id) {}
+
+        fn event(&self, _event: &Event<'_>) {}
+
+        fn enter(&self, _span: &Id) {}
+
+        fn exit(&self, _span: &Id) {}
+    }
+
+    fn next_span_id(state: &CaptureState) -> u64 {
+        let mut next_id = state
+            .next_id
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let id = *next_id;
+        *next_id += 1;
+        id
+    }
+
+    #[derive(Clone, Debug)]
+    struct CapturedSpan {
+        name: String,
+        fields: BTreeMap<String, String>,
+    }
+
+    impl CapturedSpan {
+        fn field(&self, name: &str) -> Option<&str> {
+            self.fields.get(name).map(String::as_str)
+        }
+    }
+
+    #[derive(Default)]
+    struct FieldMap(BTreeMap<String, String>);
+
+    impl FieldMap {
+        fn record_value(&mut self, field: &Field, value: String) {
+            self.0.insert(field.name().to_owned(), value);
+        }
+    }
+
+    impl Visit for FieldMap {
+        fn record_i64(&mut self, field: &Field, value: i64) {
+            self.record_value(field, value.to_string());
+        }
+
+        fn record_u64(&mut self, field: &Field, value: u64) {
+            self.record_value(field, value.to_string());
+        }
+
+        fn record_bool(&mut self, field: &Field, value: bool) {
+            self.record_value(field, value.to_string());
+        }
+
+        fn record_str(&mut self, field: &Field, value: &str) {
+            self.record_value(field, value.to_owned());
+        }
+
+        fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
+            self.record_value(field, format!("{value:?}"));
+        }
+    }
 }

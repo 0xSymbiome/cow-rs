@@ -15,6 +15,11 @@ unreleased public contract of the repository.
 
 ### Added
 
+- The lowest-level transport seam on both the native and browser adapters now
+  emits one tracing span per request with method, endpoint (path-only, never
+  the full URL), and byte counts when the `tracing` feature is enabled.
+  Default-constructed transports now apply a `cow-sdk/<version>` user-agent
+  and a 60-second TCP keepalive aligned with the upstream services defaults.
 - The order-book retry orchestrator now emits per-attempt tracing events with
   attempt index, response status or transport error class, and backoff
   duration when the `tracing` feature is enabled, and supports jitter

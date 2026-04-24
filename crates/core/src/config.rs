@@ -16,6 +16,10 @@ pub const ENVS_LIST: [CowEnv; 2] = [CowEnv::Prod, CowEnv::Staging];
 pub const EVM_NATIVE_CURRENCY_ADDRESS: &str = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 /// Default timeout applied to HTTP-backed SDK clients.
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(10);
+/// Default user-agent applied by the native HTTP transport.
+pub const DEFAULT_USER_AGENT: &str = concat!("cow-sdk/", env!("CARGO_PKG_VERSION"));
+/// Default TCP keepalive applied by the native HTTP transport.
+pub const DEFAULT_TCP_KEEPALIVE: Duration = Duration::from_secs(60);
 /// Maximum valid-to timestamp accepted by the protocol `uint32` field.
 pub const MAX_VALID_TO_EPOCH: u32 = 4_294_967_295;
 

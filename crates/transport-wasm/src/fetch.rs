@@ -38,6 +38,8 @@
 //! contract. Callers that need manual redirect inspection run the request
 //! through their own fetch bridge rather than through this default adapter.
 
+#[cfg(feature = "tracing")]
+use std::borrow::Cow;
 use std::time::Duration;
 
 use async_trait::async_trait;
@@ -161,6 +163,49 @@ impl FetchTransport {
         headers: &[(String, String)],
         timeout: Option<Duration>,
     ) -> Result<String, TransportError> {
+        #[cfg(feature = "tracing")]
+        {
+            use tracing::Instrument as _;
+
+            let endpoint = span_endpoint(path);
+            let bytes_sent = body.map_or(0, str::len);
+            let span = tracing::info_span!(
+                "transport.dispatch",
+                chain = "wasm32",
+                method = method,
+                endpoint = endpoint.as_ref(),
+                bytes_sent = bytes_sent as u64,
+                bytes_received = tracing::field::Empty,
+            );
+            let recorder = span.clone();
+            async move {
+                let result = self
+                    .dispatch_request(method, path, body, headers, timeout)
+                    .await;
+                if let Some(bytes_received) = bytes_received(&result) {
+                    recorder.record("bytes_received", bytes_received as u64);
+                }
+                result
+            }
+            .instrument(span)
+            .await
+        }
+
+        #[cfg(not(feature = "tracing"))]
+        {
+            self.dispatch_request(method, path, body, headers, timeout)
+                .await
+        }
+    }
+
+    async fn dispatch_request(
+        &self,
+        method: &str,
+        path: &str,
+        body: Option<&str>,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
         let url = self.resolve_url(path);
         let window = window_or_configuration_error()?;
         let init = build_request_init(method, body, headers)?;
@@ -201,6 +246,32 @@ impl FetchTransport {
                 body: body_text,
             })
         }
+    }
+}
+
+#[cfg(feature = "tracing")]
+const fn bytes_received(result: &Result<String, TransportError>) -> Option<usize> {
+    match result {
+        Ok(body) | Err(TransportError::HttpStatus { body, .. }) => Some(body.len()),
+        Err(_) => None,
+    }
+}
+
+#[cfg(feature = "tracing")]
+fn span_endpoint(path: &str) -> Cow<'_, str> {
+    let has_authority = path.contains("://");
+    let endpoint = path.find("://").map_or(path, |scheme_end| {
+        let after_authority = &path[scheme_end + 3..];
+        after_authority
+            .find('/')
+            .map_or("/", |path_start| &after_authority[path_start..])
+    });
+    let end = endpoint.find(['?', '#']).unwrap_or(endpoint.len());
+    let endpoint = &endpoint[..end];
+    if endpoint.is_empty() && has_authority {
+        Cow::Borrowed("/")
+    } else {
+        Cow::Borrowed(endpoint)
     }
 }
 

@@ -19,6 +19,7 @@ cow-sdk-orderbook = { version = "0.1", features = ["tracing"] }
 cow-sdk-subgraph = { version = "0.1", features = ["tracing"] }
 cow-sdk-signing = { version = "0.1", features = ["tracing"] }
 cow-sdk-browser-wallet = { version = "0.1", features = ["tracing"] }
+cow-sdk-transport-wasm = { version = "0.1", features = ["tracing"] }
 ```
 
 With the feature off the SDK emits zero spans and zero events, and none of
@@ -71,10 +72,12 @@ downstream dashboards can pivot on the same names across every SDK call.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `chain` | numeric or debug | Active chain id or `SupportedChainId` variant |
+| `chain` | numeric or string/debug | Active chain id, `SupportedChainId` variant, or platform label such as `wasm32` |
 | `env` | string | Environment label (`prod` / `staging`) |
-| `endpoint` | string | Stable route identity or GraphQL operation name |
+| `endpoint` | string | Stable route identity, GraphQL operation name, or path-only transport endpoint with scheme, authority, query, and fragment stripped |
 | `method` | string | HTTP method (`GET`, `POST`, `DELETE`) for transport calls, or JSON-RPC-like operation name for wallet-mediated calls |
+| `bytes_sent` | numeric | Request body byte length on transport-layer spans |
+| `bytes_received` | numeric | Response body byte length on transport-layer spans after a response body is read |
 | `status` | numeric | HTTP status code once a response is received |
 | `attempts` | numeric | Attempt index on retry-bearing paths |
 | `attempt_index` | numeric | Attempt index on retry events |
@@ -96,6 +99,16 @@ per call. Callers that need cooperative cancellation wrap the returned
 future through [`cow_sdk_core::Cancellable::cancel_with`] at the call
 site; the span is emitted through the wrapped future without additional
 instrumentation.
+
+### Transport Layer
+
+When the `tracing` feature is enabled, the native
+`cow_sdk_core::ReqwestTransport` and browser
+`cow_sdk_transport_wasm::FetchTransport` emit one `info` span named
+`transport.dispatch` for each low-level dispatch. Both adapters record
+`method`, path-only `endpoint`, `bytes_sent`, and `bytes_received`; the
+browser adapter also records `chain = "wasm32"`. The endpoint field never
+contains the URL scheme, host, credentials, query string, or fragment.
 
 ### `cow-sdk-orderbook`
 

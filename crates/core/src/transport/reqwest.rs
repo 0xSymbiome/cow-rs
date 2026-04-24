@@ -23,7 +23,7 @@
 //! need to observe the configured URL for audit or telemetry purposes unwrap
 //! it explicitly through [`Redacted::as_inner`].
 
-use std::time::Duration;
+use std::{borrow::Cow, time::Duration};
 
 use ::reqwest::{
     Client, RequestBuilder,
@@ -32,6 +32,7 @@ use ::reqwest::{
 use async_trait::async_trait;
 
 use crate::{
+    config::{DEFAULT_TCP_KEEPALIVE, DEFAULT_USER_AGENT},
     redaction::Redacted,
     transport::{error::TransportError, http::HttpTransport},
     validation::TransportErrorClass,
@@ -44,18 +45,23 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct ReqwestTransportConfig {
     base_url: Redacted<String>,
-    user_agent: Option<String>,
+    user_agent: String,
+    tcp_keepalive: Duration,
     timeout: Option<Duration>,
 }
 
 impl ReqwestTransportConfig {
     /// Creates a configuration with the supplied base URL and default
-    /// transport policy (no explicit timeout, no explicit user-agent).
+    /// transport policy.
+    ///
+    /// The default policy applies [`DEFAULT_USER_AGENT`],
+    /// [`DEFAULT_TCP_KEEPALIVE`], and no explicit request timeout.
     #[must_use]
     pub fn new(base_url: impl Into<String>) -> Self {
         Self {
             base_url: Redacted::new(base_url.into()),
-            user_agent: None,
+            user_agent: DEFAULT_USER_AGENT.to_owned(),
+            tcp_keepalive: DEFAULT_TCP_KEEPALIVE,
             timeout: None,
         }
     }
@@ -63,7 +69,14 @@ impl ReqwestTransportConfig {
     /// Returns a copy of the configuration with a validated user-agent.
     #[must_use]
     pub fn with_user_agent(mut self, user_agent: impl Into<String>) -> Self {
-        self.user_agent = Some(user_agent.into());
+        self.user_agent = user_agent.into();
+        self
+    }
+
+    /// Returns a copy of the configuration with an explicit TCP keepalive.
+    #[must_use]
+    pub const fn with_tcp_keepalive(mut self, tcp_keepalive: Duration) -> Self {
+        self.tcp_keepalive = tcp_keepalive;
         self
     }
 
@@ -78,6 +91,18 @@ impl ReqwestTransportConfig {
     #[must_use]
     pub fn base_url(&self) -> &str {
         self.base_url.as_inner()
+    }
+
+    /// Returns the configured user-agent header value.
+    #[must_use]
+    pub fn user_agent(&self) -> &str {
+        &self.user_agent
+    }
+
+    /// Returns the configured TCP keepalive duration.
+    #[must_use]
+    pub const fn tcp_keepalive(&self) -> Duration {
+        self.tcp_keepalive
     }
 }
 
@@ -101,10 +126,9 @@ impl ReqwestTransport {
         let trimmed = base_url.as_inner().trim_end_matches('/').to_owned();
         let base_url = Redacted::new(trimmed);
 
-        let mut builder = Client::builder();
-        if let Some(user_agent) = config.user_agent {
-            builder = builder.user_agent(user_agent);
-        }
+        let mut builder = Client::builder()
+            .user_agent(config.user_agent)
+            .tcp_keepalive(config.tcp_keepalive);
         if let Some(timeout) = config.timeout {
             builder = builder.timeout(timeout);
         }
@@ -172,24 +196,41 @@ impl ReqwestTransport {
         Ok(builder)
     }
 
-    async fn dispatch(&self, builder: RequestBuilder) -> Result<String, TransportError> {
-        let response = builder.send().await.map_err(map_reqwest_error)?;
-        let status = response.status();
-        if status.is_success() {
-            return response.text().await.map_err(map_reqwest_error);
+    async fn dispatch(
+        &self,
+        builder: RequestBuilder,
+        method: &str,
+        endpoint: &str,
+        bytes_sent: usize,
+    ) -> Result<String, TransportError> {
+        #[cfg(feature = "tracing")]
+        {
+            use tracing::Instrument as _;
+
+            let span = tracing::info_span!(
+                "transport.dispatch",
+                method = method,
+                endpoint = endpoint,
+                bytes_sent = bytes_sent as u64,
+                bytes_received = tracing::field::Empty,
+            );
+            let recorder = span.clone();
+            async move {
+                let result = dispatch_request(builder).await;
+                if let Some(bytes_received) = bytes_received(&result) {
+                    recorder.record("bytes_received", bytes_received as u64);
+                }
+                result
+            }
+            .instrument(span)
+            .await
         }
 
-        let status_code = status.as_u16();
-        let headers = response_headers(&response);
-        let body = response
-            .text()
-            .await
-            .unwrap_or_else(|error| format!("<body unavailable: {error}>"));
-        Err(TransportError::HttpStatus {
-            status: status_code,
-            headers,
-            body,
-        })
+        #[cfg(not(feature = "tracing"))]
+        {
+            let _ = (method, endpoint, bytes_sent);
+            dispatch_request(builder).await
+        }
     }
 }
 
@@ -203,7 +244,8 @@ impl HttpTransport for ReqwestTransport {
     ) -> Result<String, TransportError> {
         let url = self.resolve_url(path);
         let builder = Self::apply_call_overrides(self.client.get(&url), headers, timeout)?;
-        self.dispatch(builder).await
+        let endpoint = span_endpoint(path);
+        self.dispatch(builder, "GET", endpoint.as_ref(), 0).await
     }
 
     async fn post(
@@ -216,7 +258,9 @@ impl HttpTransport for ReqwestTransport {
         let url = self.resolve_url(path);
         let builder = self.client.post(&url).body(body.to_owned());
         let builder = Self::apply_call_overrides(builder, headers, timeout)?;
-        self.dispatch(builder).await
+        let endpoint = span_endpoint(path);
+        self.dispatch(builder, "POST", endpoint.as_ref(), body.len())
+            .await
     }
 
     async fn put(
@@ -229,7 +273,9 @@ impl HttpTransport for ReqwestTransport {
         let url = self.resolve_url(path);
         let builder = self.client.put(&url).body(body.to_owned());
         let builder = Self::apply_call_overrides(builder, headers, timeout)?;
-        self.dispatch(builder).await
+        let endpoint = span_endpoint(path);
+        self.dispatch(builder, "PUT", endpoint.as_ref(), body.len())
+            .await
     }
 
     async fn delete(
@@ -242,7 +288,54 @@ impl HttpTransport for ReqwestTransport {
         let url = self.resolve_url(path);
         let builder = self.client.delete(&url).body(body.to_owned());
         let builder = Self::apply_call_overrides(builder, headers, timeout)?;
-        self.dispatch(builder).await
+        let endpoint = span_endpoint(path);
+        self.dispatch(builder, "DELETE", endpoint.as_ref(), body.len())
+            .await
+    }
+}
+
+async fn dispatch_request(builder: RequestBuilder) -> Result<String, TransportError> {
+    let response = builder.send().await.map_err(map_reqwest_error)?;
+    let status = response.status();
+    if status.is_success() {
+        return response.text().await.map_err(map_reqwest_error);
+    }
+
+    let status_code = status.as_u16();
+    let headers = response_headers(&response);
+    let body = response
+        .text()
+        .await
+        .unwrap_or_else(|error| format!("<body unavailable: {error}>"));
+    Err(TransportError::HttpStatus {
+        status: status_code,
+        headers,
+        body,
+    })
+}
+
+#[cfg(feature = "tracing")]
+const fn bytes_received(result: &Result<String, TransportError>) -> Option<usize> {
+    match result {
+        Ok(body) | Err(TransportError::HttpStatus { body, .. }) => Some(body.len()),
+        Err(_) => None,
+    }
+}
+
+fn span_endpoint(path: &str) -> Cow<'_, str> {
+    let has_authority = path.contains("://");
+    let endpoint = path.find("://").map_or(path, |scheme_end| {
+        let after_authority = &path[scheme_end + 3..];
+        after_authority
+            .find('/')
+            .map_or("/", |path_start| &after_authority[path_start..])
+    });
+    let end = endpoint.find(['?', '#']).unwrap_or(endpoint.len());
+    let endpoint = &endpoint[..end];
+    if endpoint.is_empty() && has_authority {
+        Cow::Borrowed("/")
+    } else {
+        Cow::Borrowed(endpoint)
     }
 }
 
