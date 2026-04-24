@@ -25,7 +25,13 @@
 //! state of the on-chain verifier.
 
 use std::collections::HashMap;
+
+#[cfg(target_arch = "wasm32")]
+use std::time::Duration;
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::{Duration, Instant};
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
 
 use cow_sdk_core::Address;
 use parking_lot::RwLock;

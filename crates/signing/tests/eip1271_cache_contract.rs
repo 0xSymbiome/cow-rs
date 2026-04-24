@@ -1,3 +1,4 @@
+#![cfg(not(target_arch = "wasm32"))]
 //! Public-surface contract assertions for the EIP-1271 verification
 //! cache trait and the two default implementations shipped from the
 //! signing crate.

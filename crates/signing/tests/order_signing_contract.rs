@@ -1,3 +1,4 @@
+#![cfg(not(target_arch = "wasm32"))]
 #![allow(
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,

@@ -1,9 +1,9 @@
 # EIP-1271 Verification Cache Audit
 
 Status: Current  
-Last reviewed: 2026-04-21  
+Last reviewed: 2026-04-24  
 Owning surface: `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `NoopEip1271VerificationCache` and `InMemoryEip1271VerificationCache` default implementations shipped from `cow-sdk-signing::cache`  
-Refresh trigger: Changes to the trait signature, the caching semantics (what is cached and what is not), the `verify_eip1271_signature_async` call shape, the default TTL or capacity on the in-memory implementation, or the thread-safety posture; a new canonical implementation that ships in the workspace  
+Refresh trigger: Changes to the trait signature, the caching semantics (what is cached and what is not), the `verify_eip1271_signature_async` call shape, the default TTL or capacity on the in-memory implementation, the platform time-source selection, or the thread-safety posture; a new canonical implementation that ships in the workspace  
 Related docs:
 - [ADR 0014](../adr/0014-eip1271-verification-cache.md)
 - [Verification Guide](../verification-guide.md)
@@ -33,6 +33,7 @@ covered by its own contract).
 | Trait contract | `get(verifier, digest) -> Option<bool>` and `put(verifier, digest, result)` with `Send + Sync + 'static` | Conforms |
 | Conservative caching | Only `Ok(())` (magic-value match) and `Eip1271MagicValueMismatch` outcomes are cached; every other error class re-hits the chain | Conforms |
 | Shipped implementations | `NoopEip1271VerificationCache` (zero-sized, always miss) and `InMemoryEip1271VerificationCache` (bounded capacity, TTL-expiring) | Conforms |
+| Platform time source | `InMemoryEip1271VerificationCache` uses `web_time::Instant` on `wasm32` and `std::time::Instant` elsewhere so cache probes do not panic on browser targets | Conforms |
 | Thread-safety | `InMemoryEip1271VerificationCache` sustains concurrent inserts against the same key space without losing writes | Conforms |
 
 ## Current Contract
@@ -84,6 +85,16 @@ capacity keeps the scan cheap. Consumers with much larger key spaces
 are expected to compose a proper LRU-backed implementation of the trait
 rather than scale the capacity on this struct.
 
+### Platform Time Source
+
+The in-memory cache timestamps entries with `Instant::now()` on both the
+miss path (`get`) and the write path (`put`). On native targets the
+implementation uses `std::time::Instant`. On `wasm32-unknown-unknown`
+the implementation switches to `web_time::Instant`, matching the rest of
+the workspace's time-bearing cache modules. This keeps the documented
+wasm32 support posture honest: constructing the cache, probing a miss,
+and writing a hit all stay non-panicking in browser runtimes.
+
 ### Thread-Safety
 
 A hammer regression drives concurrent `put` calls across many tokio
@@ -102,10 +113,12 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/signing/tests/eip1271_cache_contract.rs`
+- `crates/signing/tests/wasm_cache_contract.rs`
 
 Validation surface:
 
 ```text
 cargo test -p cow-sdk-contracts -p cow-sdk-signing --all-features
-cargo clippy -p cow-sdk-contracts -p cow-sdk-signing --all-targets --all-features -- -D warnings
+cargo check -p cow-sdk-signing --target wasm32-unknown-unknown
+wasm-pack test --headless --chrome crates/signing
 ```

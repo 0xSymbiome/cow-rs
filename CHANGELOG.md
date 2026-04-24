@@ -1211,6 +1211,11 @@ unreleased public contract of the repository.
   cooldown. Both the native `reqwest` adapter and the browser
   `fetch` adapter now surface non-success response headers
   through the typed transport error variant.
+- The EIP-1271 verification cache no longer panics on browser
+  targets. The cache time source now uses `web_time::Instant`
+  on `wasm32-unknown-unknown` and `std::time::Instant` on
+  native builds, matching the time-source pattern used across
+  the rest of the SDK.
 - Published crate READMEs now compile as doctests on every CI run, and the
   previously broken orderbook, trading, and contracts examples match the
   shipped public API.

@@ -1,3 +1,4 @@
+#![cfg(not(target_arch = "wasm32"))]
 //! Fixture-driven parity contract for `cow-sdk-signing`.
 //!
 //! Loads `parity/fixtures/signing.json` (schema version 1) at compile time,

@@ -1,3 +1,4 @@
+#![cfg(not(target_arch = "wasm32"))]
 //! Property-based coverage for the deterministic `cow-sdk-signing` boundary.
 //!
 //! Each `proptest!` case exercises a named invariant on one of the

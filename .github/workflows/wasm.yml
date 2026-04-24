@@ -60,6 +60,8 @@ jobs:
         run: cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
       - name: Build browser-wallet crate for wasm
         run: cargo build --target wasm32-unknown-unknown -p cow-sdk-browser-wallet
+      - name: Check signing crate for wasm
+        run: cargo check --target wasm32-unknown-unknown -p cow-sdk-signing
       - name: Build app-data for wasm
         run: cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
       - name: Check SDK examples for wasm
@@ -75,6 +77,9 @@ jobs:
         run: wasm-pack test --headless --chrome
       - name: Test trading crate wasm32 contract in headless Chrome
         working-directory: crates/trading
+        run: wasm-pack test --headless --chrome
+      - name: Test signing crate wasm32 contract in headless Chrome
+        working-directory: crates/signing
         run: wasm-pack test --headless --chrome
       - name: Test sdk verification console exports in headless Chrome
         working-directory: examples/wasm/sdk-verification-console

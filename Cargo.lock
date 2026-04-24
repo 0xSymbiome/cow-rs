@@ -927,6 +927,8 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+ "wasm-bindgen-test",
+ "web-time",
 ]
 
 [[package]]
