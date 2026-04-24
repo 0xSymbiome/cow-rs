@@ -1170,6 +1170,11 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Public wallet session, event, error payload, discovery, and
+  chain-management types in `cow-sdk-browser-wallet` are now
+  `#[non_exhaustive]`, and the constructor-backed structs expose
+  explicit `new(...)` entry points so future EIP-1193 amendments
+  and wallet-side capabilities land additively.
 - `cow_sdk_core::SupportedChainId`, `cow_sdk_core::CowEnv`, and
   `cow_sdk_core::UnsignedOrder` are now `#[non_exhaustive]` public
   surfaces so additive chain, environment, and order-shape evolution

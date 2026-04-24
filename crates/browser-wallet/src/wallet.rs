@@ -17,6 +17,11 @@ use crate::{
 };
 
 /// Source used to discover one injected wallet candidate.
+///
+/// The enum is `#[non_exhaustive]` so new browser discovery channels can land
+/// additively without breaking downstream consumers. In-crate matches may stay
+/// exhaustive; external matches must include a wildcard arm.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum InjectedWalletDiscoverySource {
@@ -28,6 +33,7 @@ pub enum InjectedWalletDiscoverySource {
 }
 
 /// Options that bound injected-wallet discovery behavior.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InjectedWalletDetectionOptions {
@@ -59,6 +65,7 @@ impl Default for InjectedWalletDetectionOptions {
 }
 
 /// Metadata describing one discovered injected wallet candidate.
+#[non_exhaustive]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InjectedWalletInfo {
@@ -84,7 +91,38 @@ pub struct InjectedWalletInfo {
     pub is_rabby: bool,
 }
 
+impl InjectedWalletInfo {
+    /// Creates injected-wallet metadata from the current public field set.
+    #[must_use]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the constructor intentionally mirrors the public field set so downstream callers can stop using struct literals"
+    )]
+    pub fn new(
+        provider_label: impl Into<String>,
+        discovery_source: InjectedWalletDiscoverySource,
+        provider_uuid: Option<String>,
+        provider_rdns: Option<String>,
+        provider_icon: Option<String>,
+        is_meta_mask: bool,
+        is_coinbase_wallet: bool,
+        is_rabby: bool,
+    ) -> Self {
+        Self {
+            provider_label: provider_label.into(),
+            discovery_source,
+            provider_uuid,
+            provider_rdns,
+            provider_icon,
+            is_meta_mask,
+            is_coinbase_wallet,
+            is_rabby,
+        }
+    }
+}
+
 /// Native-currency metadata for typed add-chain requests.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletNativeCurrency {
@@ -118,6 +156,7 @@ impl WalletNativeCurrency {
 }
 
 /// Typed chain parameters for `wallet_addEthereumChain`.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletChainParameters {
@@ -161,17 +200,16 @@ impl WalletChainParameters {
     }
 
     /// Returns the built-in metadata for one supported chain.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the crate's built-in chain metadata stops satisfying the
+    /// same validation rules enforced for user-supplied chain parameters.
     #[must_use]
     pub fn for_supported_chain(chain_id: SupportedChainId) -> Self {
         let (chain_name, native_currency) = known_chain_metadata(chain_id);
-        Self {
-            chain_id,
-            chain_name: chain_name.to_owned(),
-            native_currency,
-            rpc_urls: Vec::new(),
-            block_explorer_urls: Vec::new(),
-            icon_urls: Vec::new(),
-        }
+        Self::new(chain_id, chain_name, native_currency)
+            .expect("built-in chain metadata must stay valid")
     }
 
     /// Adds one validated RPC URL to the chain parameters.
@@ -289,6 +327,11 @@ impl WalletChainParameters {
 }
 
 /// Result kind returned by typed chain-management helpers.
+///
+/// The enum is `#[non_exhaustive]` so additional wallet-side chain-management
+/// outcomes can land additively without breaking downstream consumers. In-crate
+/// matches may stay exhaustive; external matches must include a wildcard arm.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum WalletChainChangeKind {
@@ -301,6 +344,7 @@ pub enum WalletChainChangeKind {
 }
 
 /// Result returned by typed add-chain and switch-chain helpers.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletChainChange {
@@ -310,6 +354,22 @@ pub struct WalletChainChange {
     pub kind: WalletChainChangeKind,
     /// Session snapshot after the helper completed.
     pub session: WalletSession,
+}
+
+impl WalletChainChange {
+    /// Creates a typed chain-management result from the current public field set.
+    #[must_use]
+    pub const fn new(
+        requested_chain_id: SupportedChainId,
+        kind: WalletChainChangeKind,
+        session: WalletSession,
+    ) -> Self {
+        Self {
+            requested_chain_id,
+            kind,
+            session,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -629,11 +689,11 @@ impl BrowserWallet {
     ) -> Result<WalletChainChange, BrowserWalletError> {
         self.add_chain_request(parameters).await?;
         let session = self.refresh_session().await?;
-        Ok(WalletChainChange {
-            requested_chain_id: parameters.chain_id,
-            kind: WalletChainChangeKind::Added,
+        Ok(WalletChainChange::new(
+            parameters.chain_id,
+            WalletChainChangeKind::Added,
             session,
-        })
+        ))
     }
 
     /// Switches to a chain, or adds it first when the wallet reports it is not present.
@@ -665,11 +725,11 @@ impl BrowserWallet {
                 let session = self
                     .refresh_session_and_ensure_chain(parameters.chain_id)
                     .await?;
-                Ok(WalletChainChange {
-                    requested_chain_id: parameters.chain_id,
-                    kind: WalletChainChangeKind::Switched,
+                Ok(WalletChainChange::new(
+                    parameters.chain_id,
+                    WalletChainChangeKind::Switched,
                     session,
-                })
+                ))
             }
             Err(BrowserWalletError::ChainNotAdded { chain_id, .. })
                 if chain_id == u64::from(parameters.chain_id) =>
@@ -679,11 +739,11 @@ impl BrowserWallet {
                 let session = self
                     .refresh_session_and_ensure_chain(parameters.chain_id)
                     .await?;
-                Ok(WalletChainChange {
-                    requested_chain_id: parameters.chain_id,
-                    kind: WalletChainChangeKind::AddedThenSwitched,
+                Ok(WalletChainChange::new(
+                    parameters.chain_id,
+                    WalletChainChangeKind::AddedThenSwitched,
                     session,
-                })
+                ))
             }
             Err(error) => Err(error),
         }
@@ -829,10 +889,13 @@ impl BrowserWallet {
         injected_info: Option<InjectedWalletInfo>,
     ) -> Self {
         let events = EventLog::default();
-        let session = Rc::new(RefCell::new(WalletSession {
-            wallet_label: transport.label().to_owned(),
-            ..WalletSession::default()
-        }));
+        let session = Rc::new(RefCell::new(WalletSession::new(
+            false,
+            None,
+            Vec::new(),
+            None,
+            transport.label().to_owned(),
+        )));
         let provider = ProviderImpl::new(transport, session, events);
         Self {
             provider,
@@ -878,103 +941,42 @@ fn validate_wallet_url(
     Ok(trimmed.to_owned())
 }
 
+fn known_wallet_native_currency(name: &str, symbol: &str, decimals: u8) -> WalletNativeCurrency {
+    WalletNativeCurrency::new(name, symbol, decimals)
+        .expect("built-in native-currency metadata must stay valid")
+}
+
 fn known_chain_metadata(chain_id: SupportedChainId) -> (&'static str, WalletNativeCurrency) {
     match chain_id {
         SupportedChainId::Mainnet => (
             "Ethereum Mainnet",
-            WalletNativeCurrency {
-                name: "Ether".to_owned(),
-                symbol: "ETH".to_owned(),
-                decimals: 18,
-            },
+            known_wallet_native_currency("Ether", "ETH", 18),
         ),
         SupportedChainId::Bnb => (
             "BNB Smart Chain",
-            WalletNativeCurrency {
-                name: "BNB".to_owned(),
-                symbol: "BNB".to_owned(),
-                decimals: 18,
-            },
+            known_wallet_native_currency("BNB", "BNB", 18),
         ),
         SupportedChainId::GnosisChain => (
             "Gnosis Chain",
-            WalletNativeCurrency {
-                name: "xDAI".to_owned(),
-                symbol: "xDAI".to_owned(),
-                decimals: 18,
-            },
+            known_wallet_native_currency("xDAI", "xDAI", 18),
         ),
-        SupportedChainId::Polygon => (
-            "Polygon",
-            WalletNativeCurrency {
-                name: "POL".to_owned(),
-                symbol: "POL".to_owned(),
-                decimals: 18,
-            },
-        ),
-        SupportedChainId::Base => (
-            "Base",
-            WalletNativeCurrency {
-                name: "Ether".to_owned(),
-                symbol: "ETH".to_owned(),
-                decimals: 18,
-            },
-        ),
-        SupportedChainId::Plasma => (
-            "Plasma",
-            WalletNativeCurrency {
-                name: "Plasma".to_owned(),
-                symbol: "XPL".to_owned(),
-                decimals: 18,
-            },
-        ),
+        SupportedChainId::Polygon => ("Polygon", known_wallet_native_currency("POL", "POL", 18)),
+        SupportedChainId::Base => ("Base", known_wallet_native_currency("Ether", "ETH", 18)),
+        SupportedChainId::Plasma => ("Plasma", known_wallet_native_currency("Plasma", "XPL", 18)),
         SupportedChainId::ArbitrumOne => (
             "Arbitrum One",
-            WalletNativeCurrency {
-                name: "Ether".to_owned(),
-                symbol: "ETH".to_owned(),
-                decimals: 18,
-            },
+            known_wallet_native_currency("Ether", "ETH", 18),
         ),
         SupportedChainId::Avalanche => (
             "Avalanche C-Chain",
-            WalletNativeCurrency {
-                name: "Avalanche".to_owned(),
-                symbol: "AVAX".to_owned(),
-                decimals: 18,
-            },
+            known_wallet_native_currency("Avalanche", "AVAX", 18),
         ),
-        SupportedChainId::Ink => (
-            "Ink",
-            WalletNativeCurrency {
-                name: "Ether".to_owned(),
-                symbol: "ETH".to_owned(),
-                decimals: 18,
-            },
-        ),
-        SupportedChainId::Linea => (
-            "Linea",
-            WalletNativeCurrency {
-                name: "Ether".to_owned(),
-                symbol: "ETH".to_owned(),
-                decimals: 18,
-            },
-        ),
-        SupportedChainId::Sepolia => (
-            "Sepolia",
-            WalletNativeCurrency {
-                name: "Ether".to_owned(),
-                symbol: "ETH".to_owned(),
-                decimals: 18,
-            },
-        ),
+        SupportedChainId::Ink => ("Ink", known_wallet_native_currency("Ether", "ETH", 18)),
+        SupportedChainId::Linea => ("Linea", known_wallet_native_currency("Ether", "ETH", 18)),
+        SupportedChainId::Sepolia => ("Sepolia", known_wallet_native_currency("Ether", "ETH", 18)),
         _ => (
             "Supported CoW Chain",
-            WalletNativeCurrency {
-                name: "Native Currency".to_owned(),
-                symbol: "NATIVE".to_owned(),
-                decimals: 18,
-            },
+            known_wallet_native_currency("Native Currency", "NATIVE", 18),
         ),
     }
 }
@@ -996,11 +998,16 @@ mod tests {
                     Rc::new(MockEip1193Transport::sepolia().with_label(*label));
                 (
                     transport,
-                    InjectedWalletInfo {
-                        provider_label: (*label).to_owned(),
-                        discovery_source: *source,
-                        ..InjectedWalletInfo::default()
-                    },
+                    InjectedWalletInfo::new(
+                        (*label).to_owned(),
+                        *source,
+                        None,
+                        None,
+                        None,
+                        false,
+                        false,
+                        false,
+                    ),
                 )
             })
             .collect();

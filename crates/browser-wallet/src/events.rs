@@ -6,6 +6,7 @@ use cow_sdk_core::{Address, ChainId};
 use serde::{Deserialize, Serialize};
 
 /// Current wallet session state tracked by the browser-wallet integration.
+#[non_exhaustive]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletSession {
@@ -24,7 +25,32 @@ pub struct WalletSession {
     pub wallet_label: String,
 }
 
+impl WalletSession {
+    /// Creates a wallet session snapshot from the current typed field set.
+    #[must_use]
+    pub fn new(
+        connected: bool,
+        chain_id: Option<ChainId>,
+        accounts: Vec<Address>,
+        selected_account: Option<Address>,
+        wallet_label: impl Into<String>,
+    ) -> Self {
+        Self {
+            connected,
+            chain_id,
+            accounts,
+            selected_account,
+            wallet_label: wallet_label.into(),
+        }
+    }
+}
+
 /// Typed wallet events emitted by provider requests and provider-driven session updates.
+///
+/// The enum is `#[non_exhaustive]` so future wallet lifecycle and request events can
+/// land additively without breaking downstream consumers. In-crate matches may stay
+/// exhaustive; external matches must include a wildcard arm.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum WalletEvent {

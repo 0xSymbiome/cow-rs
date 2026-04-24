@@ -502,11 +502,11 @@ impl Eip1193Transport for MockEip1193Transport {
             "web3_clientVersion" => Ok(Value::String(format!("{} / deterministic", self.label))),
             _ => Err(Self::rpc_error(
                 method,
-                RpcErrorPayload {
-                    code: -32601,
-                    message: format!("mock wallet does not implement `{method}`"),
-                    data: None,
-                },
+                RpcErrorPayload::new(
+                    -32601,
+                    format!("mock wallet does not implement `{method}`"),
+                    None,
+                ),
             )),
         }
     }

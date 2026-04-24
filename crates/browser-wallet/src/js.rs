@@ -447,16 +447,16 @@ fn detect_wallet_info(
         .and_then(|info| get_string(info, "name"))
         .unwrap_or_else(|| provider_label_from_flags(is_meta_mask, is_coinbase_wallet, is_rabby));
 
-    InjectedWalletInfo {
+    InjectedWalletInfo::new(
         provider_label,
         discovery_source,
-        provider_uuid: announced_info.and_then(|info| get_string(info, "uuid")),
-        provider_rdns: announced_info.and_then(|info| get_string(info, "rdns")),
-        provider_icon: announced_info.and_then(|info| get_string(info, "icon")),
+        announced_info.and_then(|info| get_string(info, "uuid")),
+        announced_info.and_then(|info| get_string(info, "rdns")),
+        announced_info.and_then(|info| get_string(info, "icon")),
         is_meta_mask,
         is_coinbase_wallet,
         is_rabby,
-    }
+    )
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -552,11 +552,7 @@ fn map_js_error(method: &str, error: JsValue, requested_chain: Option<u64>) -> B
     if let Some(code) = code {
         return BrowserWalletError::from_rpc(
             method,
-            RpcErrorPayload {
-                code,
-                message,
-                data,
-            },
+            RpcErrorPayload::new(code, message, data),
             requested_chain,
         );
     }

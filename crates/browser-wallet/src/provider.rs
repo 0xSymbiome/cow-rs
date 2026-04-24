@@ -110,11 +110,8 @@ impl Eip1193Provider {
     #[must_use]
     pub fn reset_session(&self) -> WalletSession {
         let wallet_label = self.session.borrow().wallet_label.clone();
-        self.update_session(|session| {
-            *session = WalletSession {
-                wallet_label,
-                ..WalletSession::default()
-            };
+        self.update_session(move |session| {
+            *session = WalletSession::new(false, None, Vec::new(), None, wallet_label);
         });
         self.session()
     }

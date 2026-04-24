@@ -13,6 +13,7 @@ use thiserror::Error;
     clippy::derive_partial_eq_without_eq,
     reason = "the `data: Option<serde_json::Value>` field cannot participate in `Eq` because `serde_json::Value` does not implement `Eq`"
 )]
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RpcErrorPayload {
@@ -23,6 +24,18 @@ pub struct RpcErrorPayload {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Optional provider-specific error data.
     pub data: Option<Value>,
+}
+
+impl RpcErrorPayload {
+    /// Creates a typed JSON-RPC error payload from the current public field set.
+    #[must_use]
+    pub fn new(code: i32, message: impl Into<String>, data: Option<Value>) -> Self {
+        Self {
+            code,
+            message: message.into(),
+            data,
+        }
+    }
 }
 
 /// Errors produced by typed browser-wallet discovery, session, provider, and signer flows.
@@ -318,11 +331,7 @@ mod tests {
         for (code, requested_chain, expected) in cases {
             let error = BrowserWalletError::from_rpc(
                 "eth_requestAccounts",
-                RpcErrorPayload {
-                    code,
-                    message: format!("code-{code}"),
-                    data: None,
-                },
+                RpcErrorPayload::new(code, format!("code-{code}"), None),
                 requested_chain,
             );
 
@@ -334,11 +343,11 @@ mod tests {
     fn unknown_rpc_codes_preserve_the_raw_rpc_payload_shape() {
         let error = BrowserWalletError::from_rpc(
             "wallet_switchEthereumChain",
-            RpcErrorPayload {
-                code: -32_000,
-                message: "generic rpc error".to_owned(),
-                data: Some(json!({ "detail": "kept" })),
-            },
+            RpcErrorPayload::new(
+                -32_000,
+                "generic rpc error",
+                Some(json!({ "detail": "kept" })),
+            ),
             Some(u64::from(cow_sdk_core::SupportedChainId::Mainnet)),
         );
 

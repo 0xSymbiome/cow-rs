@@ -154,19 +154,19 @@ fn cached_wallet(
 ) -> (BrowserWallet, Option<InjectedWalletInfo>) {
     (
         seeded_wallet(label),
-        Some(InjectedWalletInfo {
-            provider_label: label.to_owned(),
+        Some(InjectedWalletInfo::new(
+            label.to_owned(),
             discovery_source,
-            provider_uuid: Some(format!("uuid-{label}")),
-            provider_rdns: Some(format!(
+            Some(format!("uuid-{label}")),
+            Some(format!(
                 "{}.wallet",
                 label.to_ascii_lowercase().replace(' ', "-")
             )),
-            provider_icon: None,
-            is_meta_mask: label == "MetaMask",
-            is_coinbase_wallet: label == "Coinbase Wallet",
-            is_rabby: label == "Rabby",
-        }),
+            None,
+            label == "MetaMask",
+            label == "Coinbase Wallet",
+            label == "Rabby",
+        )),
     )
 }
 
