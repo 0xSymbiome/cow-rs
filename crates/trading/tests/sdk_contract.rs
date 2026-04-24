@@ -448,8 +448,9 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
     let high_sell: BigUint = BigUint::from(1u8) << 255u32;
     let high_buy = &high_sell + BigUint::from(1u8);
     let mut order = ethflow_order();
-    order.sell_amount = high_sell.to_str_radix(10);
-    order.buy_amount = high_buy.to_str_radix(10);
+    order.sell_amount =
+        Amount::new(high_sell.to_str_radix(10)).expect("high sell amount must parse");
+    order.buy_amount = Amount::new(high_buy.to_str_radix(10)).expect("high buy amount must parse");
     orderbook.push_order(order);
 
     let signer = MockSigner::default();

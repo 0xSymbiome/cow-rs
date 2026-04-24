@@ -74,13 +74,13 @@ fn slippage_bps_clamps_to_expected_bounds() {
     let zero_quote_data = QuoteData::new(
         address(WETH),
         address(COW),
-        "1",
-        "1",
+        Amount::new("1").expect("test amount literal must be valid"),
+        Amount::new("1").expect("test amount literal must be valid"),
         1,
         crate::common::app_data_hash(),
         OrderKind::Sell,
     )
-    .with_network_cost_amount("0")
+    .with_network_cost_amount(Amount::zero())
     .with_receiver(address(OWNER));
     let zero_quote = cow_sdk_orderbook::OrderQuoteResponse::new(
         zero_quote_data,
@@ -92,13 +92,15 @@ fn slippage_bps_clamps_to_expected_bounds() {
     let huge_fee_quote_data = QuoteData::new(
         address(WETH),
         address(COW),
-        "1",
-        "1",
+        Amount::new("1").expect("test amount literal must be valid"),
+        Amount::new("1").expect("test amount literal must be valid"),
         1,
         crate::common::app_data_hash(),
         OrderKind::Sell,
     )
-    .with_network_cost_amount("1000000000000000000000")
+    .with_network_cost_amount(
+        Amount::new("1000000000000000000000").expect("test amount literal must be valid"),
+    )
     .with_receiver(address(OWNER));
     let huge_fee_quote = cow_sdk_orderbook::OrderQuoteResponse::new(
         huge_fee_quote_data,

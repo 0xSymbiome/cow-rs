@@ -534,13 +534,11 @@ fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError
         .receiver
         .clone()
         .unwrap_or_else(|| order.owner.clone());
-    let sell_amount = Amount::new(order.sell_amount.clone())?;
-    let buy_amount = Amount::new(order.buy_amount.clone())?;
     let payload = EthFlowOrderData::new(
         order.buy_token.clone(),
         receiver,
-        sell_amount,
-        buy_amount,
+        order.sell_amount.clone(),
+        order.buy_amount.clone(),
         order.app_data.clone(),
         Amount::zero(),
         order.valid_to,

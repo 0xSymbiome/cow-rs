@@ -13,7 +13,7 @@
 
 use std::time::Duration;
 
-use cow_sdk_core::{Address, EVM_NATIVE_CURRENCY_ADDRESS};
+use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use serde::{Deserialize, Serialize};
 
@@ -332,21 +332,12 @@ impl Default for OrderBoundsValidator {
 fn validate_amount(
     _field: &'static str,
     side: AmountSide,
-    value: &str,
+    value: &Amount,
 ) -> Result<(), ClientRejection> {
-    if amount_is_zero_or_empty(value) {
+    if value.is_zero() {
         return Err(ClientRejection::ZeroAmount { side });
     }
     Ok(())
-}
-
-fn amount_is_zero_or_empty(value: &str) -> bool {
-    let trimmed = value.trim();
-    let trimmed = trimmed.strip_prefix('+').unwrap_or(trimmed);
-    if trimmed.is_empty() {
-        return true;
-    }
-    trimmed.chars().all(|ch| ch == '0')
 }
 
 fn native_sentinel() -> Address {

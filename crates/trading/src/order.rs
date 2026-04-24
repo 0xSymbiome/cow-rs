@@ -156,8 +156,8 @@ pub fn swap_params_to_limit_order_params(
         sell_token_decimals: trade_parameters.sell_token_decimals,
         buy_token: trade_parameters.buy_token.clone(),
         buy_token_decimals: trade_parameters.buy_token_decimals,
-        sell_amount: Amount::new(quote_response.quote.sell_amount.clone())?,
-        buy_amount: Amount::new(quote_response.quote.buy_amount.clone())?,
+        sell_amount: quote_response.quote.sell_amount.clone(),
+        buy_amount: quote_response.quote.buy_amount.clone(),
         quote_id: quote_response.id,
         env: trade_parameters.env,
         settlement_contract_override: trade_parameters.settlement_contract_override.clone(),
@@ -226,13 +226,13 @@ pub fn get_order_to_sign(
         let quote = cow_sdk_orderbook::QuoteData::new(
             limit_parameters.sell_token.clone(),
             limit_parameters.buy_token.clone(),
-            limit_parameters.sell_amount.to_string(),
-            limit_parameters.buy_amount.to_string(),
+            limit_parameters.sell_amount.clone(),
+            limit_parameters.buy_amount.clone(),
             valid_to,
             app_data_keccak256.clone(),
             limit_parameters.kind,
         )
-        .with_network_cost_amount(network_costs_amount.to_string())
+        .with_network_cost_amount(network_costs_amount)
         .with_receiver(receiver.clone())
         .with_partially_fillable(limit_parameters.partially_fillable)
         .with_sell_token_balance(limit_parameters.sell_token_balance)

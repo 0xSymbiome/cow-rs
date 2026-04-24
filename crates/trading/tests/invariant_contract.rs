@@ -89,9 +89,13 @@ fn generated_quote(kind: OrderKind, rng: &mut CaseRng) -> cow_sdk_orderbook::Ord
     let buy_amount = 1_000_000u64 + (rng.next_u64() % 10_000_000_000);
     let fee_amount = 1 + (rng.next_u64() % (sell_amount / 10).max(1));
 
-    quote.quote.sell_amount = sell_amount.to_string();
-    quote.quote.buy_amount = buy_amount.to_string();
-    quote.quote.set_network_cost_amount(fee_amount.to_string());
+    quote.quote.sell_amount =
+        Amount::new(sell_amount.to_string()).expect("generated sell amount must parse");
+    quote.quote.buy_amount =
+        Amount::new(buy_amount.to_string()).expect("generated buy amount must parse");
+    quote.quote.set_network_cost_amount(
+        Amount::new(fee_amount.to_string()).expect("generated fee amount must parse"),
+    );
     quote.protocol_fee_bps = None;
     quote
 }
@@ -213,8 +217,8 @@ fn swap_params_to_limit_order_params_preserves_generated_quote_to_limit_shape() 
         assert_eq!(limit.buy_token, trade.buy_token);
         assert_eq!(limit.sell_token_decimals, trade.sell_token_decimals);
         assert_eq!(limit.buy_token_decimals, trade.buy_token_decimals);
-        assert_eq!(limit.sell_amount.to_string(), quote.quote.sell_amount);
-        assert_eq!(limit.buy_amount.to_string(), quote.quote.buy_amount);
+        assert_eq!(limit.sell_amount, quote.quote.sell_amount);
+        assert_eq!(limit.buy_amount, quote.quote.buy_amount);
         assert_eq!(limit.quote_id, quote.id);
         assert_eq!(limit.env, trade.env);
         assert_eq!(limit.partially_fillable, trade.partially_fillable);
@@ -399,14 +403,8 @@ async fn quote_results_preserve_generated_override_shape_across_request_and_orde
         assert_eq!(limit.owner, result.trade_parameters.owner);
         assert_eq!(limit.sell_token, result.trade_parameters.sell_token);
         assert_eq!(limit.buy_token, result.trade_parameters.buy_token);
-        assert_eq!(
-            limit.sell_amount.to_string(),
-            result.quote_response.quote.sell_amount
-        );
-        assert_eq!(
-            limit.buy_amount.to_string(),
-            result.quote_response.quote.buy_amount
-        );
+        assert_eq!(limit.sell_amount, result.quote_response.quote.sell_amount);
+        assert_eq!(limit.buy_amount, result.quote_response.quote.buy_amount);
         assert_eq!(limit.quote_id, result.quote_response.id);
         assert_eq!(limit.env, result.trade_parameters.env);
         assert_eq!(

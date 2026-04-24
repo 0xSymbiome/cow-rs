@@ -1,6 +1,4 @@
-use cow_sdk_core::{
-    Address, Amount, AsyncProvider, AsyncSigner, ProtocolOptions, Provider, Signer,
-};
+use cow_sdk_core::{Address, AsyncProvider, AsyncSigner, ProtocolOptions, Provider, Signer};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use cow_sdk_signing::{
     SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order_async,
@@ -291,13 +289,13 @@ where
         signing_scheme: advanced_settings
             .and_then(|settings| settings.quote_request.as_ref())
             .and_then(|request| request.signing_scheme),
-        network_costs_amount: Some(Amount::new(
+        network_costs_amount: Some(
             quote_results
                 .quote_response
                 .quote
                 .network_cost_amount()
-                .to_owned(),
-        )?),
+                .clone(),
+        ),
         ..additional
     };
 
@@ -550,8 +548,8 @@ where
     let preview = OrderCreation::new(
         tx.order_to_sign.sell_token.clone(),
         tx.order_to_sign.buy_token.clone(),
-        tx.order_to_sign.sell_amount.to_string(),
-        tx.order_to_sign.buy_amount.to_string(),
+        tx.order_to_sign.sell_amount.clone(),
+        tx.order_to_sign.buy_amount.clone(),
         tx.order_to_sign.valid_to,
         tx.order_to_sign.kind,
         SigningScheme::Eip1271,
@@ -644,8 +642,8 @@ fn build_order_body(
     let mut order_body = OrderCreation::new(
         order_to_sign.sell_token.clone(),
         order_to_sign.buy_token.clone(),
-        order_to_sign.sell_amount.to_string(),
-        order_to_sign.buy_amount.to_string(),
+        order_to_sign.sell_amount.clone(),
+        order_to_sign.buy_amount.clone(),
         order_to_sign.valid_to,
         order_to_sign.kind,
         scheme,

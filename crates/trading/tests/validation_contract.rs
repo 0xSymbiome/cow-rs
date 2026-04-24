@@ -14,7 +14,7 @@
     reason = "pedantic lint group acceptable inside integration test code"
 )]
 
-use cow_sdk_core::{Address, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
+use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use cow_sdk_trading::{
     AmountSide, ClientRejection, LimitTradeParameters, OrderBoundsValidator, OrderValidityBounds,
@@ -38,8 +38,8 @@ fn order() -> OrderCreation {
     OrderCreation::new(
         address(SELL_TOKEN),
         address(BUY_TOKEN),
-        "1000000000000000000",
-        "1000000",
+        Amount::new("1000000000000000000").expect("test amount literal must be valid"),
+        Amount::new("1000000").expect("test amount literal must be valid"),
         VALID_TO,
         OrderKind::Sell,
         SigningScheme::Eip712,
@@ -205,7 +205,7 @@ fn eth_flow_path_accepts_native_sell_token_but_still_enforces_zero_amount() {
         .validate(&order, SigningScheme::Eip1271, None, NOW, true)
         .expect("eth-flow path must admit the native sentinel as sell token");
 
-    order.sell_amount = "0".to_owned();
+    order.sell_amount = Amount::zero();
     let error = validator
         .validate(&order, SigningScheme::Eip1271, None, NOW, true)
         .expect_err("eth-flow path must still reject zero amounts");
@@ -264,7 +264,7 @@ fn paired_weth_native_guard_requires_configured_weth_to_engage() {
 fn zero_sell_amount_rejects_as_zero_sell_side() {
     let validator = OrderBoundsValidator::services_default();
     let mut order = order();
-    order.sell_amount = "0".to_owned();
+    order.sell_amount = Amount::zero();
     let error = validator
         .validate(&order, SigningScheme::Eip712, None, NOW, false)
         .expect_err("zero sell amount must reject");
@@ -280,7 +280,7 @@ fn zero_sell_amount_rejects_as_zero_sell_side() {
 fn zero_buy_amount_rejects_as_zero_buy_side() {
     let validator = OrderBoundsValidator::services_default();
     let mut order = order();
-    order.buy_amount = "0".to_owned();
+    order.buy_amount = Amount::zero();
     let error = validator
         .validate(&order, SigningScheme::Eip712, None, NOW, false)
         .expect_err("zero buy amount must reject");

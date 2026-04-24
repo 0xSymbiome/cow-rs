@@ -11,8 +11,12 @@
 //! order-response wire shapes stay aligned with the retained EIP-712
 //! struct-hash contract.
 
-use cow_sdk_core::{Address, AppDataHash, OrderKind};
+use cow_sdk_core::{Address, Amount, AppDataHash, OrderKind};
 use cow_sdk_orderbook::{OrderCreation, QuoteData, SigningScheme};
+
+fn amount(value: &str) -> Amount {
+    Amount::new(value).expect("test amount literal must be valid")
+}
 
 #[test]
 fn order_creation_wire_emits_fee_amount_zero_exactly_once() {
@@ -22,8 +26,8 @@ fn order_creation_wire_emits_fee_amount_zero_exactly_once() {
     let order = OrderCreation::new(
         address.clone(),
         address.clone(),
-        "1000",
-        "900",
+        amount("1000"),
+        amount("900"),
         1_700_000_000,
         OrderKind::Sell,
         SigningScheme::Eip712,
@@ -57,17 +61,17 @@ fn order_creation_from_quote_zeroes_fee_amount_on_submission() {
     let quote = QuoteData::new(
         address.clone(),
         address.clone(),
-        "1000",
-        "900",
+        amount("1000"),
+        amount("900"),
         1_700_000_000,
         app_data,
         OrderKind::Sell,
     )
-    .with_network_cost_amount("12345");
+    .with_network_cost_amount(amount("12345"));
 
     assert_eq!(
         quote.network_cost_amount(),
-        "12345",
+        &amount("12345"),
         "QuoteData must surface the configured network-cost amount through its accessor",
     );
 

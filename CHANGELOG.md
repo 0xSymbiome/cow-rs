@@ -581,6 +581,9 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Order-book wire DTO amount fields are now typed; the JSON wire shape is
+  unchanged but malformed amount strings now surface as typed deserialization
+  failures with the wire-shape error context.
 - Public-field types in `cow-sdk-core` are now marked non-exhaustive so
   future protocol-driven field additions ship as additive minor changes.
 - The pre-release stability sweep is now consolidated across

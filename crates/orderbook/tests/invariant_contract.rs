@@ -12,10 +12,10 @@
 
 mod common;
 
+use cow_sdk_core::Amount;
 use cow_sdk_orderbook::{
-    BuyTokenDestination, GetOrdersRequest, GetTradesRequest, Order, OrderQuoteRequest,
-    OrderQuoteResponse, PriceQuality, QuoteSide, SellTokenSource, SigningScheme,
-    calculate_total_fee, transform_order,
+    BuyTokenDestination, GetOrdersRequest, GetTradesRequest, OrderQuoteRequest, OrderQuoteResponse,
+    PriceQuality, QuoteSide, SellTokenSource, SigningScheme, calculate_total_fee,
 };
 
 use crate::common::{
@@ -65,6 +65,10 @@ fn generated_decimal(rng: &mut CaseRng) -> String {
     digits.chars().rev().collect()
 }
 
+fn generated_amount(rng: &mut CaseRng) -> Amount {
+    Amount::new(generated_decimal(rng)).expect("generated amount must parse")
+}
+
 fn generated_price_quality(rng: &mut CaseRng) -> PriceQuality {
     match rng.next_u32() % 3 {
         0 => PriceQuality::Fast,
@@ -111,9 +115,9 @@ fn quote_request_shape_roundtrips_without_side_coercion() {
         let mut rng = CaseRng::new(seed + 1);
         let is_sell = rng.next_bool();
         let side = if is_sell {
-            QuoteSide::sell(generated_decimal(&mut rng))
+            QuoteSide::sell(generated_amount(&mut rng))
         } else {
-            QuoteSide::buy(generated_decimal(&mut rng))
+            QuoteSide::buy(generated_amount(&mut rng))
         };
         let mut request =
             OrderQuoteRequest::new(sample_owner(), sample_buy_token(), sample_owner(), side)
@@ -198,9 +202,9 @@ fn quote_request_app_data_and_pagination_shape_roundtrip_without_normalization()
             sample_buy_token(),
             sample_owner(),
             if rng.next_bool() {
-                QuoteSide::sell(generated_decimal(&mut rng))
+                QuoteSide::sell(generated_amount(&mut rng))
             } else {
-                QuoteSide::buy(generated_decimal(&mut rng))
+                QuoteSide::buy(generated_amount(&mut rng))
             },
         );
 
@@ -303,27 +307,17 @@ fn malformed_payloads_fail_closed_in_decoding_and_transforms() {
                 let mut order_json = sample_order_json(&sample_order_uid());
                 order_json["executedFee"] = serde_json::json!("abc");
 
-                let order: Order =
-                    serde_json::from_value(order_json).expect("order fixture must deserialize");
-                let error =
-                    transform_order(order).expect_err("invalid executedFee must fail closed");
-                assert!(matches!(
-                    error,
-                    cow_sdk_orderbook::OrderbookError::InvalidTransform { .. }
-                ));
+                let error = serde_json::from_value::<cow_sdk_orderbook::Order>(order_json)
+                    .expect_err("invalid executedFee must fail at typed wire boundary");
+                assert!(error.to_string().contains("amount"));
             }
             _ => {
                 let mut order_json = sample_order_json(&sample_order_uid());
                 order_json["executedFee"] = serde_json::json!("12z");
 
-                let order: Order =
-                    serde_json::from_value(order_json).expect("order fixture must deserialize");
-                let error =
-                    transform_order(order).expect_err("invalid executedFee must fail closed");
-                assert!(matches!(
-                    error,
-                    cow_sdk_orderbook::OrderbookError::InvalidTransform { .. }
-                ));
+                let error = serde_json::from_value::<cow_sdk_orderbook::Order>(order_json)
+                    .expect_err("invalid executedFee must fail at typed wire boundary");
+                assert!(error.to_string().contains("amount"));
             }
         }
     }
@@ -343,6 +337,9 @@ fn fee_normalization_trims_leading_zeroes_across_generated_decimal_inputs() {
         let total_fee = calculate_total_fee(Some(&padded))
             .expect("generated decimal normalization must remain valid");
 
-        assert_eq!(total_fee, expected);
+        assert_eq!(
+            total_fee,
+            Amount::new(expected).expect("expected amount must parse")
+        );
     }
 }

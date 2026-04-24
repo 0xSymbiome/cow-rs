@@ -1,4 +1,4 @@
-use cow_sdk_core::{Address, EVM_NATIVE_CURRENCY_ADDRESS};
+use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS};
 
 use crate::{
     error::OrderbookError,
@@ -15,7 +15,8 @@ use crate::{
 /// Returns [`OrderbookError::InvalidTransform`] when the executed-fee field
 /// cannot be normalized as an unsigned decimal string.
 pub fn transform_order(mut order: Order) -> Result<Order, OrderbookError> {
-    order.total_fee = calculate_total_fee(order.executed_fee.as_deref())?;
+    let executed_fee = order.executed_fee.as_ref().map(ToString::to_string);
+    order.total_fee = calculate_total_fee(executed_fee.as_deref())?;
 
     if let Some(ethflow_data) = &order.ethflow_data {
         order.valid_to = ethflow_data.user_valid_to;
@@ -47,10 +48,15 @@ pub fn transform_orders(orders: Vec<Order>) -> Result<Vec<Order>, OrderbookError
 ///
 /// Returns [`OrderbookError::InvalidTransform`] when the input is not an
 /// unsigned decimal string.
-pub fn calculate_total_fee(executed_fee: Option<&str>) -> Result<String, OrderbookError> {
+pub fn calculate_total_fee(executed_fee: Option<&str>) -> Result<Amount, OrderbookError> {
     let value = executed_fee.unwrap_or("0");
     validate_decimal(value)?;
-    Ok(trim_leading_zeroes(value))
+    Amount::new(trim_leading_zeroes(value)).map_err(|_| OrderbookError::InvalidTransform {
+        field: "executedFee",
+        reason: cow_sdk_core::ValidationReason::BadShape {
+            details: "expected unsigned decimal string",
+        },
+    })
 }
 
 /// Returns the order UID as a string slice for transport-layer interpolation.

@@ -4,7 +4,7 @@ use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError};
 
 pub use cow_sdk_core::{
-    Address, ApiBaseUrls, ApiContext, AppDataHash, BuyTokenDestination, CowEnv, ENVS_LIST,
+    Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, BuyTokenDestination, CowEnv, ENVS_LIST,
     EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, OrderUid, QuoteAmountsAndCosts, REDACTED_PLACEHOLDER,
     Redacted, SellTokenSource, SupportedChainId,
 };
@@ -219,30 +219,30 @@ pub struct QuoteSide {
     pub kind: OrderKind,
     /// Sell amount before fee for sell quotes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sell_amount_before_fee: Option<String>,
+    pub sell_amount_before_fee: Option<Amount>,
     /// Buy amount after fee for buy quotes.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub buy_amount_after_fee: Option<String>,
+    pub buy_amount_after_fee: Option<Amount>,
 }
 
 impl QuoteSide {
     /// Creates a sell-side quote request amount.
     #[must_use]
-    pub fn sell(amount: impl Into<String>) -> Self {
+    pub const fn sell(amount: Amount) -> Self {
         Self {
             kind: OrderKind::Sell,
-            sell_amount_before_fee: Some(amount.into()),
+            sell_amount_before_fee: Some(amount),
             buy_amount_after_fee: None,
         }
     }
 
     /// Creates a buy-side quote request amount.
     #[must_use]
-    pub fn buy(amount: impl Into<String>) -> Self {
+    pub const fn buy(amount: Amount) -> Self {
         Self {
             kind: OrderKind::Buy,
             sell_amount_before_fee: None,
-            buy_amount_after_fee: Some(amount.into()),
+            buy_amount_after_fee: Some(amount),
         }
     }
 
@@ -481,10 +481,10 @@ pub struct QuoteData {
     /// Optional receiver override.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub receiver: Option<Address>,
-    /// Sell amount as an upstream decimal string.
-    pub sell_amount: String,
-    /// Buy amount as an upstream decimal string.
-    pub buy_amount: String,
+    /// Sell amount in the upstream decimal-string wire shape.
+    pub sell_amount: Amount,
+    /// Buy amount in the upstream decimal-string wire shape.
+    pub buy_amount: Amount,
     /// Absolute UNIX expiry timestamp.
     pub valid_to: u32,
     /// Effective app-data hash derived from the orderbook response.
@@ -495,7 +495,7 @@ pub struct QuoteData {
     /// JSON schema stays aligned with the services contract; consumers read
     /// the value through [`QuoteData::network_cost_amount`] and configure it
     /// through [`QuoteData::with_network_cost_amount`].
-    fee_amount: String,
+    fee_amount: Amount,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.
@@ -520,13 +520,13 @@ impl<'de> Deserialize<'de> for QuoteData {
             sell_token: Address,
             buy_token: Address,
             receiver: Option<Address>,
-            sell_amount: String,
-            buy_amount: String,
+            sell_amount: Amount,
+            buy_amount: Amount,
             valid_to: u32,
             app_data: String,
             #[serde(default)]
             app_data_hash: Option<AppDataHash>,
-            fee_amount: String,
+            fee_amount: Amount,
             kind: OrderKind,
             #[serde(default)]
             partially_fillable: bool,
@@ -571,8 +571,8 @@ impl QuoteData {
     pub fn new(
         sell_token: Address,
         buy_token: Address,
-        sell_amount: impl Into<String>,
-        buy_amount: impl Into<String>,
+        sell_amount: Amount,
+        buy_amount: Amount,
         valid_to: u32,
         app_data: AppDataHash,
         kind: OrderKind,
@@ -581,11 +581,11 @@ impl QuoteData {
             sell_token,
             buy_token,
             receiver: None,
-            sell_amount: sell_amount.into(),
-            buy_amount: buy_amount.into(),
+            sell_amount,
+            buy_amount,
             valid_to,
             app_data,
-            fee_amount: "0".to_owned(),
+            fee_amount: Amount::zero(),
             kind,
             partially_fillable: false,
             sell_token_balance: SellTokenSource::Erc20,
@@ -596,21 +596,21 @@ impl QuoteData {
     /// Returns the network-cost amount echoed by the orderbook `/quote`
     /// response.
     #[must_use]
-    pub fn network_cost_amount(&self) -> &str {
+    pub const fn network_cost_amount(&self) -> &Amount {
         &self.fee_amount
     }
 
     /// Returns a copy of this payload with an explicit network-cost amount.
     #[must_use]
-    pub fn with_network_cost_amount(mut self, value: impl Into<String>) -> Self {
-        self.fee_amount = value.into();
+    pub fn with_network_cost_amount(mut self, value: Amount) -> Self {
+        self.fee_amount = value;
         self
     }
 
     /// Sets the network-cost amount echoed by the orderbook `/quote`
     /// response, mutating the payload in place.
-    pub fn set_network_cost_amount(&mut self, value: impl Into<String>) {
-        self.fee_amount = value.into();
+    pub fn set_network_cost_amount(&mut self, value: Amount) {
+        self.fee_amount = value;
     }
 
     /// Returns a copy of this payload with an explicit receiver.
@@ -716,10 +716,10 @@ pub struct OrderCreation {
     /// Optional receiver override.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub receiver: Option<Address>,
-    /// Sell amount as an upstream decimal string.
-    pub sell_amount: String,
-    /// Buy amount as an upstream decimal string.
-    pub buy_amount: String,
+    /// Sell amount in the upstream decimal-string wire shape.
+    pub sell_amount: Amount,
+    /// Buy amount in the upstream decimal-string wire shape.
+    pub buy_amount: Amount,
     /// Absolute UNIX expiry timestamp.
     pub valid_to: u32,
     /// Inline app-data payload when supplied instead of an app-data hash.
@@ -735,7 +735,7 @@ pub struct OrderCreation {
     /// always wires this component as `"0"` and preserves the EIP-712
     /// struct-hash contract that hashes it as `uint256(0)`.
     #[serde(default = "order_creation_zero_fee_amount")]
-    fee_amount: String,
+    fee_amount: Amount,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.
@@ -759,8 +759,8 @@ pub struct OrderCreation {
     pub quote_id: Option<i64>,
 }
 
-fn order_creation_zero_fee_amount() -> String {
-    "0".to_owned()
+fn order_creation_zero_fee_amount() -> Amount {
+    Amount::zero()
 }
 
 impl OrderCreation {
@@ -776,8 +776,8 @@ impl OrderCreation {
     pub fn new(
         sell_token: Address,
         buy_token: Address,
-        sell_amount: impl Into<String>,
-        buy_amount: impl Into<String>,
+        sell_amount: Amount,
+        buy_amount: Amount,
         valid_to: u32,
         kind: OrderKind,
         signing_scheme: SigningScheme,
@@ -788,8 +788,8 @@ impl OrderCreation {
             sell_token,
             buy_token,
             receiver: None,
-            sell_amount: sell_amount.into(),
-            buy_amount: buy_amount.into(),
+            sell_amount,
+            buy_amount,
             valid_to,
             app_data: None,
             app_data_hash: None,
@@ -971,10 +971,10 @@ pub struct Order {
     /// Optional receiver override.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub receiver: Option<Address>,
-    /// Sell amount as an upstream decimal string.
-    pub sell_amount: String,
-    /// Buy amount as an upstream decimal string.
-    pub buy_amount: String,
+    /// Sell amount in the upstream decimal-string wire shape.
+    pub sell_amount: Amount,
+    /// Buy amount in the upstream decimal-string wire shape.
+    pub buy_amount: Amount,
     /// Absolute UNIX expiry timestamp.
     pub valid_to: u32,
     /// App-data hash attached to the order.
@@ -986,7 +986,7 @@ pub struct Order {
     /// preserves services-schema parity; the value is not exposed on the
     /// public Rust surface.
     #[serde(default = "order_creation_zero_fee_amount")]
-    fee_amount: String,
+    fee_amount: Amount,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.
@@ -1021,19 +1021,19 @@ pub struct Order {
     pub creation_date: Option<String>,
     /// Available remaining balance, when returned by the API.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub available_balance: Option<String>,
+    pub available_balance: Option<Amount>,
     /// Executed sell amount.
     #[serde(default)]
-    pub executed_sell_amount: String,
+    pub executed_sell_amount: Amount,
     /// Executed sell amount before fees, when returned separately.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub executed_sell_amount_before_fees: Option<String>,
+    pub executed_sell_amount_before_fees: Option<Amount>,
     /// Executed buy amount.
     #[serde(default)]
-    pub executed_buy_amount: String,
+    pub executed_buy_amount: Amount,
     /// Executed fee component, when provided.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub executed_fee: Option<String>,
+    pub executed_fee: Option<Amount>,
     /// Deprecated legacy fee value some orderbook responses still emit on
     /// older order payloads alongside [`executed_fee`].
     ///
@@ -1050,7 +1050,7 @@ pub struct Order {
         rename = "executedFeeAmount",
         skip_serializing_if = "Option::is_none"
     )]
-    pub executed_fee_amount_legacy: Option<String>,
+    pub executed_fee_amount_legacy: Option<Amount>,
     /// Whether the order was invalidated by the protocol.
     #[serde(default)]
     pub invalidated: bool,
@@ -1065,7 +1065,7 @@ pub struct Order {
     pub ethflow_data: Option<EthflowData>,
     /// Total fee normalized by the SDK transform layer.
     #[serde(default)]
-    pub total_fee: String,
+    pub total_fee: Amount,
 }
 
 impl Order {
@@ -1079,8 +1079,8 @@ impl Order {
     pub fn new(
         sell_token: Address,
         buy_token: Address,
-        sell_amount: impl Into<String>,
-        buy_amount: impl Into<String>,
+        sell_amount: Amount,
+        buy_amount: Amount,
         valid_to: u32,
         app_data: AppDataHash,
         kind: OrderKind,
@@ -1092,8 +1092,8 @@ impl Order {
             sell_token,
             buy_token,
             receiver: None,
-            sell_amount: sell_amount.into(),
-            buy_amount: buy_amount.into(),
+            sell_amount,
+            buy_amount,
             valid_to,
             app_data,
             fee_amount: order_creation_zero_fee_amount(),
@@ -1110,16 +1110,16 @@ impl Order {
             uid,
             creation_date: None,
             available_balance: None,
-            executed_sell_amount: String::new(),
+            executed_sell_amount: Amount::zero(),
             executed_sell_amount_before_fees: None,
-            executed_buy_amount: String::new(),
+            executed_buy_amount: Amount::zero(),
             executed_fee: None,
             executed_fee_amount_legacy: None,
             invalidated: false,
             status: OrderStatus::default(),
             onchain_user: None,
             ethflow_data: None,
-            total_fee: String::new(),
+            total_fee: Amount::zero(),
         }
     }
 }
@@ -1259,13 +1259,13 @@ pub struct Trade {
     pub sell_token: Address,
     /// Buy-token address.
     pub buy_token: Address,
-    /// Executed sell amount as an upstream decimal string.
-    pub sell_amount: String,
+    /// Executed sell amount in the upstream decimal-string wire shape.
+    pub sell_amount: Amount,
     /// Executed sell amount before fees, when returned separately.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub sell_amount_before_fees: Option<String>,
-    /// Executed buy amount as an upstream decimal string.
-    pub buy_amount: String,
+    pub sell_amount_before_fees: Option<Amount>,
+    /// Executed buy amount in the upstream decimal-string wire shape.
+    pub buy_amount: Amount,
     /// Settlement transaction hash.
     #[serde(alias = "txHash")]
     pub transaction_hash: String,
@@ -1282,8 +1282,8 @@ impl Trade {
         owner: Address,
         sell_token: Address,
         buy_token: Address,
-        sell_amount: impl Into<String>,
-        buy_amount: impl Into<String>,
+        sell_amount: Amount,
+        buy_amount: Amount,
         transaction_hash: impl Into<String>,
     ) -> Self {
         Self {
@@ -1293,17 +1293,17 @@ impl Trade {
             owner,
             sell_token,
             buy_token,
-            sell_amount: sell_amount.into(),
+            sell_amount,
             sell_amount_before_fees: None,
-            buy_amount: buy_amount.into(),
+            buy_amount,
             transaction_hash: transaction_hash.into(),
         }
     }
 
     /// Returns a copy of this trade with an explicit pre-fee sell amount.
     #[must_use]
-    pub fn with_sell_amount_before_fees(mut self, amount: impl Into<String>) -> Self {
-        self.sell_amount_before_fees = Some(amount.into());
+    pub fn with_sell_amount_before_fees(mut self, amount: Amount) -> Self {
+        self.sell_amount_before_fees = Some(amount);
         self
     }
 }
@@ -1330,17 +1330,15 @@ impl NativePriceResponse {
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct TotalSurplus {
-    /// Total surplus value as an upstream decimal string.
-    pub total_surplus: String,
+    /// Total surplus value in the upstream decimal-string wire shape.
+    pub total_surplus: Amount,
 }
 
 impl TotalSurplus {
-    /// Creates a total-surplus response from an upstream decimal string.
+    /// Creates a total-surplus response from a typed amount.
     #[must_use]
-    pub fn new(total_surplus: impl Into<String>) -> Self {
-        Self {
-            total_surplus: total_surplus.into(),
-        }
+    pub const fn new(total_surplus: Amount) -> Self {
+        Self { total_surplus }
     }
 }
 
@@ -1380,10 +1378,10 @@ pub struct AuctionOrder {
     /// Optional receiver override.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub receiver: Option<Address>,
-    /// Sell amount as an upstream decimal string.
-    pub sell_amount: String,
-    /// Buy amount as an upstream decimal string.
-    pub buy_amount: String,
+    /// Sell amount in the upstream decimal-string wire shape.
+    pub sell_amount: Amount,
+    /// Buy amount in the upstream decimal-string wire shape.
+    pub buy_amount: Amount,
     /// Absolute UNIX expiry timestamp.
     pub valid_to: u32,
     /// App-data hash.
@@ -1391,7 +1389,7 @@ pub struct AuctionOrder {
     /// Order-level fee echoed by the auction snapshot; always `"0"` in
     /// practice because services rejects non-zero order-level fees.
     #[serde(default = "order_creation_zero_fee_amount")]
-    fee_amount: String,
+    fee_amount: Amount,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.
@@ -1497,10 +1495,10 @@ pub struct SolverExecution {
     pub solver: String,
     /// Executed sell amount for this solver path, when present.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub executed_sell_amount: Option<String>,
+    pub executed_sell_amount: Option<Amount>,
     /// Executed buy amount for this solver path, when present.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub executed_buy_amount: Option<String>,
+    pub executed_buy_amount: Option<Amount>,
 }
 
 impl SolverExecution {
@@ -1516,15 +1514,15 @@ impl SolverExecution {
 
     /// Returns a copy with an explicit executed sell amount.
     #[must_use]
-    pub fn with_executed_sell_amount(mut self, amount: impl Into<String>) -> Self {
-        self.executed_sell_amount = Some(amount.into());
+    pub fn with_executed_sell_amount(mut self, amount: Amount) -> Self {
+        self.executed_sell_amount = Some(amount);
         self
     }
 
     /// Returns a copy with an explicit executed buy amount.
     #[must_use]
-    pub fn with_executed_buy_amount(mut self, amount: impl Into<String>) -> Self {
-        self.executed_buy_amount = Some(amount.into());
+    pub fn with_executed_buy_amount(mut self, amount: Amount) -> Self {
+        self.executed_buy_amount = Some(amount);
         self
     }
 }

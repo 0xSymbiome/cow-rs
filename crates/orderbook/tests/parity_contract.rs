@@ -26,7 +26,7 @@
 //! Failure messages carry the fixture case id so a reviewer looking at a
 //! broken CI run sees the exact upstream vector that diverged.
 
-use cow_sdk_core::{ApiContext, CowEnv, Redacted, SupportedChainId, default_api_base_urls};
+use cow_sdk_core::{Amount, ApiContext, CowEnv, Redacted, SupportedChainId, default_api_base_urls};
 use cow_sdk_orderbook::{
     DEFAULT_INTERVAL_LABEL, DEFAULT_TOKENS_PER_INTERVAL, EVM_NATIVE_CURRENCY_ADDRESS,
     GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderBookApiError, RETRYABLE_STATUS_CODES,
@@ -546,12 +546,14 @@ fn assert_total_fee_transform(id: &str, expected: &Value) {
     let total = calculate_total_fee(Some("150"))
         .expect("normalization must succeed for pinned integer inputs");
     assert_eq!(
-        total, "150",
+        total,
+        Amount::new("150").expect("test amount literal must be valid"),
         "case {id}: total fee must surface the executedFee value",
     );
     let total_missing = calculate_total_fee(None).expect("missing executed fee path must succeed");
     assert_eq!(
-        total_missing, "0",
+        total_missing,
+        Amount::new("0").expect("test amount literal must be valid"),
         "case {id}: missing executedFee must default to the canonical zero string",
     );
 }

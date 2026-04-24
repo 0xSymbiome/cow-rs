@@ -1,7 +1,7 @@
 mod common;
 
 use cow_sdk_orderbook::{
-    ApiContextOverride, BuyTokenDestination, CowEnv, GetOrdersRequest, GetTradesRequest,
+    Amount, ApiContextOverride, BuyTokenDestination, CowEnv, GetOrdersRequest, GetTradesRequest,
     OrderCreation, OrderKind, OrderQuoteRequest, PriceQuality, QuoteSide, SellTokenSource,
     SigningScheme, SupportedChainId,
 };
@@ -12,13 +12,17 @@ use crate::common::{
     sample_quote_response_json, sample_signature,
 };
 
+fn amount(value: &str) -> Amount {
+    Amount::new(value).expect("test amount literal must be valid")
+}
+
 #[test]
 fn quote_request_defaults_match_transport_contract() {
     let request = OrderQuoteRequest::new(
         sample_owner(),
         sample_buy_token(),
         sample_owner(),
-        QuoteSide::sell("1000000"),
+        QuoteSide::sell(amount("1000000")),
     );
 
     let value = serde_json::to_value(&request).expect("quote request must serialize");
@@ -47,7 +51,7 @@ fn quote_request_supports_buy_side_and_context_overrides() {
         sample_owner(),
         sample_buy_token(),
         sample_owner(),
-        QuoteSide::buy("900000"),
+        QuoteSide::buy(amount("900000")),
     )
     .with_app_data_hash(sample_app_data_hash())
     .with_valid_for(1_800)

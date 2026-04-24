@@ -135,9 +135,9 @@ pub fn calculate_quote_amounts_and_costs(
     protocol_fee_bps: Option<f64>,
 ) -> Result<QuoteAmountsAndCosts, TradingError> {
     let is_sell = quote.kind == OrderKind::Sell;
-    let sell_amount = parse_integer("sellAmount", &quote.sell_amount)?;
-    let buy_amount = parse_integer("buyAmount", &quote.buy_amount)?;
-    let network_cost_amount = parse_integer("feeAmount", quote.network_cost_amount())?;
+    let sell_amount = parse_integer("sellAmount", &quote.sell_amount.to_string())?;
+    let buy_amount = parse_integer("buyAmount", &quote.buy_amount.to_string())?;
+    let network_cost_amount = parse_integer("feeAmount", &quote.network_cost_amount().to_string())?;
 
     if sell_amount <= BigInt::from(0) {
         return Err(TradingError::InvalidInput {
@@ -200,7 +200,7 @@ pub fn suggest_slippage_bps(
         sanitize_protocol_fee_bps(quote.protocol_fee_bps.as_deref()),
     )?;
     let fee_amount = suggest_slippage_from_fee(
-        quote.quote.network_cost_amount(),
+        &quote.quote.network_cost_amount().to_string(),
         SLIPPAGE_FEE_MULTIPLIER_PERCENT,
     )?;
     let volume_amount = suggest_slippage_from_volume(
@@ -390,9 +390,9 @@ fn get_protocol_fee_amount(
         return Ok(BigInt::from(0));
     }
 
-    let sell_amount = parse_integer("sellAmount", &quote.sell_amount)?;
-    let buy_amount = parse_integer("buyAmount", &quote.buy_amount)?;
-    let fee_amount = parse_integer("feeAmount", quote.network_cost_amount())?;
+    let sell_amount = parse_integer("sellAmount", &quote.sell_amount.to_string())?;
+    let buy_amount = parse_integer("buyAmount", &quote.buy_amount.to_string())?;
+    let fee_amount = parse_integer("feeAmount", &quote.network_cost_amount().to_string())?;
     let denominator_base = BigInt::from(ONE_HUNDRED_BPS * PROTOCOL_FEE_BPS_SCALE);
 
     if quote.kind == OrderKind::Sell {

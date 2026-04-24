@@ -181,11 +181,13 @@ async fn assert_sell_order_amount_adjustment(case_id: &str, expected: &Value) {
         .unwrap_or_else(|| panic!("case {case_id}: sell swap posting must record a sent order"));
 
     assert_eq!(
-        sent.sell_amount, expected_sell_amount,
+        sent.sell_amount.to_string(),
+        expected_sell_amount,
         "case {case_id}: sent order sell_amount must match the pinned vector",
     );
     assert_eq!(
-        sent.buy_amount, expected_buy_amount,
+        sent.buy_amount.to_string(),
+        expected_buy_amount,
         "case {case_id}: sent order buy_amount must match the pinned vector",
     );
     assert_eq!(
@@ -231,11 +233,13 @@ async fn assert_buy_order_amount_adjustment(case_id: &str, expected: &Value) {
         .unwrap_or_else(|| panic!("case {case_id}: buy swap posting must record a sent order"));
 
     assert_eq!(
-        sent.sell_amount, expected_sell_amount,
+        sent.sell_amount.to_string(),
+        expected_sell_amount,
         "case {case_id}: sent order sell_amount must match the pinned vector",
     );
     assert_eq!(
-        sent.buy_amount, expected_buy_amount,
+        sent.buy_amount.to_string(),
+        expected_buy_amount,
         "case {case_id}: sent order buy_amount must match the pinned vector",
     );
     assert_eq!(
@@ -629,13 +633,13 @@ fn assert_slippage_helper_bounds(case_id: &str, expected: &Value) {
     let zero_quote_data = cow_sdk_orderbook::QuoteData::new(
         address(crate::common::WETH),
         address(crate::common::COW),
-        "1",
-        "1",
+        Amount::new("1").expect("test amount literal must be valid"),
+        Amount::new("1").expect("test amount literal must be valid"),
         1,
         app_data_hash(),
         OrderKind::Sell,
     )
-    .with_network_cost_amount("0")
+    .with_network_cost_amount(Amount::zero())
     .with_receiver(address(OWNER));
     let zero_quote = cow_sdk_orderbook::OrderQuoteResponse::new(
         zero_quote_data,
@@ -667,13 +671,15 @@ fn assert_slippage_helper_bounds(case_id: &str, expected: &Value) {
     let huge_quote_data = cow_sdk_orderbook::QuoteData::new(
         address(crate::common::WETH),
         address(crate::common::COW),
-        "1",
-        "1",
+        Amount::new("1").expect("test amount literal must be valid"),
+        Amount::new("1").expect("test amount literal must be valid"),
         1,
         app_data_hash(),
         OrderKind::Sell,
     )
-    .with_network_cost_amount("1000000000000000000000")
+    .with_network_cost_amount(
+        Amount::new("1000000000000000000000").expect("test amount literal must be valid"),
+    )
     .with_receiver(address(OWNER));
     let huge_quote = cow_sdk_orderbook::OrderQuoteResponse::new(
         huge_quote_data,
@@ -1046,13 +1052,11 @@ async fn assert_limit_order_disable_adjustments(case_id: &str, expected: &Value)
         "case {case_id}: sell limit order_to_sign.buy_amount must stay unchanged",
     );
     assert_eq!(
-        sell_sent.buy_amount,
-        sell_params.buy_amount.to_string(),
+        sell_sent.buy_amount, sell_params.buy_amount,
         "case {case_id}: sent sell limit order.buy_amount must stay unchanged",
     );
     assert_eq!(
-        sell_sent.sell_amount,
-        sell_params.sell_amount.to_string(),
+        sell_sent.sell_amount, sell_params.sell_amount,
         "case {case_id}: sent sell limit order.sell_amount must stay unchanged",
     );
 
@@ -1074,13 +1078,11 @@ async fn assert_limit_order_disable_adjustments(case_id: &str, expected: &Value)
         "case {case_id}: buy limit order_to_sign.sell_amount must stay unchanged",
     );
     assert_eq!(
-        buy_sent.sell_amount,
-        buy_params.sell_amount.to_string(),
+        buy_sent.sell_amount, buy_params.sell_amount,
         "case {case_id}: sent buy limit order.sell_amount must stay unchanged",
     );
     assert_eq!(
-        buy_sent.buy_amount,
-        buy_params.buy_amount.to_string(),
+        buy_sent.buy_amount, buy_params.buy_amount,
         "case {case_id}: sent buy limit order.buy_amount must stay unchanged",
     );
 }

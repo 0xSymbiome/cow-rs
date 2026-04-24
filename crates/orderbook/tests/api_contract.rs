@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use cow_sdk_core::{CoreError, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError};
+use cow_sdk_core::{Amount, CoreError, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError};
 use cow_sdk_orderbook::{
     ApiContextOverride, AppDataObject, CowEnv, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
     GetOrdersRequest, GetTradesRequest, OrderBookTransportPolicy, OrderCancellations,
@@ -343,7 +343,10 @@ async fn get_orders_uses_default_pagination_and_transforms_orders() {
 
     assert_eq!(orders.len(), 1);
     assert_eq!(orders[0].uid, uid);
-    assert_eq!(orders[0].total_fee, "20");
+    assert_eq!(
+        orders[0].total_fee,
+        Amount::new("20").expect("test amount literal must be valid")
+    );
 }
 
 #[tokio::test]
@@ -412,7 +415,7 @@ async fn get_quote_and_send_order_cover_quote_and_duplicate_order_paths() {
             sample_owner(),
             crate::common::sample_buy_token(),
             sample_owner(),
-            QuoteSide::sell("1000000"),
+            QuoteSide::sell(Amount::new("1000000").expect("test amount literal must be valid")),
         ))
         .await
         .expect("quote should succeed");
@@ -620,7 +623,10 @@ async fn native_price_surplus_solver_competition_and_auction_routes_are_covered(
         .expect("auction request should succeed");
 
     assert!((native_price.price - 0.0004).abs() < 1.0e-12);
-    assert_eq!(surplus.total_surplus, "100000000");
+    assert_eq!(
+        surplus.total_surplus,
+        Amount::new("100000000").expect("test amount literal must be valid")
+    );
     assert_eq!(by_auction.auction_id, Some(7));
     assert_eq!(by_tx.auction_id, Some(8));
     assert_eq!(auction.id, Some(1));
@@ -794,7 +800,7 @@ mod recording_transport {
 
     use async_trait::async_trait;
     use cow_sdk_core::{
-        ApiContext, HttpTransport, SupportedChainId, TransportError, TransportErrorClass,
+        Amount, ApiContext, HttpTransport, SupportedChainId, TransportError, TransportErrorClass,
     };
     use cow_sdk_orderbook::{
         CowEnv, OrderBookApi, OrderBookTransportPolicy, OrderCancellations, OrderCreation,
@@ -988,7 +994,7 @@ mod recording_transport {
                 sample_owner(),
                 sample_buy_token(),
                 sample_owner(),
-                QuoteSide::sell("1000000"),
+                QuoteSide::sell(Amount::new("1000000").expect("test amount literal must be valid")),
             ))
             .await
             .expect("quote request must succeed through the injected transport");

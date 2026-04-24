@@ -127,10 +127,8 @@ pub fn sample_limit_parameters(kind: OrderKind) -> cow_sdk_trading::LimitTradePa
         buy_quote_response()
     };
 
-    let sell_amount = Amount::new(quote.quote.sell_amount.clone())
-        .expect("quote sell amount literal must be valid");
-    let buy_amount = Amount::new(quote.quote.buy_amount.clone())
-        .expect("quote buy amount literal must be valid");
+    let sell_amount = quote.quote.sell_amount.clone();
+    let buy_amount = quote.quote.buy_amount.clone();
     let mut params = cow_sdk_trading::LimitTradeParameters::new(
         kind,
         address(WETH),

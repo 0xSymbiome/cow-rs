@@ -13,7 +13,7 @@
 //! compiles, the intentional parity-scope divergence has regressed.
 //!
 //! ```compile_fail
-//! use cow_sdk_core::{Address, AppDataHash, OrderKind};
+//! use cow_sdk_core::{Address, Amount, AppDataHash, OrderKind};
 //! use cow_sdk_orderbook::QuoteData;
 //!
 //! let address = Address::new("0x0000000000000000000000000000000000000001").unwrap();
@@ -24,8 +24,8 @@
 //! let _quote = QuoteData::new(
 //!     address.clone(),
 //!     address,
-//!     "1",
-//!     "1",
+//!     Amount::new("1").unwrap(),
+//!     Amount::new("1").unwrap(),
 //!     1,
 //!     app_data,
 //!     OrderKind::Sell,
@@ -34,15 +34,15 @@
 //! ```
 //!
 //! ```compile_fail
-//! use cow_sdk_core::{Address, OrderKind};
+//! use cow_sdk_core::{Address, Amount, OrderKind};
 //! use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 //!
 //! let address = Address::new("0x0000000000000000000000000000000000000001").unwrap();
 //! let _order = OrderCreation::new(
 //!     address.clone(),
 //!     address.clone(),
-//!     "1",
-//!     "1",
+//!     Amount::new("1").unwrap(),
+//!     Amount::new("1").unwrap(),
 //!     1,
 //!     OrderKind::Sell,
 //!     SigningScheme::Eip712,
@@ -84,11 +84,11 @@ pub use request::{
 };
 pub use transform::{calculate_total_fee, transform_order, transform_orders};
 pub use types::{
-    Address, ApiBaseUrls, ApiContext, ApiContextOverride, AppDataHash, AppDataObject, Auction,
-    BuyTokenDestination, CompetitionAuction, CompetitionOrderStatus, CompetitionOrderStatusKind,
-    CowEnv, ENVS_LIST, EVM_NATIVE_CURRENCY_ADDRESS, EcdsaSigningScheme, EnvBaseUrlOverrides,
-    EthflowData, GetOrdersRequest, GetTradesRequest, NativePriceResponse, Order,
-    OrderCancellations, OrderClass, OrderCreation, OrderKind, OrderQuoteRequest,
+    Address, Amount, ApiBaseUrls, ApiContext, ApiContextOverride, AppDataHash, AppDataObject,
+    Auction, BuyTokenDestination, CompetitionAuction, CompetitionOrderStatus,
+    CompetitionOrderStatusKind, CowEnv, ENVS_LIST, EVM_NATIVE_CURRENCY_ADDRESS, EcdsaSigningScheme,
+    EnvBaseUrlOverrides, EthflowData, GetOrdersRequest, GetTradesRequest, NativePriceResponse,
+    Order, OrderCancellations, OrderClass, OrderCreation, OrderKind, OrderQuoteRequest,
     OrderQuoteResponse, OrderStatus, OrderUid, PriceQuality, QuoteAmountsAndCosts, QuoteData,
     QuoteSide, SellTokenSource, SigningScheme, SolverCompetitionResponse, SolverExecution,
     SolverSettlement, SupportedChainId, TotalSurplus, Trade,

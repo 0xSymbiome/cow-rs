@@ -79,21 +79,18 @@ async fn swap_posting_matches_pinned_sell_and_buy_adjustment_vectors() {
         .expect("sell order must be recorded");
 
     assert_eq!(
-        sell_order.sell_amount,
+        sell_order.sell_amount.to_string(),
         sell_case["expected"]["sell_amount"].as_str().unwrap()
     );
     assert_eq!(
-        sell_order.buy_amount,
+        sell_order.buy_amount.to_string(),
         sell_case["expected"]["buy_amount"].as_str().unwrap()
     );
     assert_eq!(
         sell_result.order_to_sign.sell_amount,
-        Amount::new(sell_order.sell_amount.clone()).expect("sell order amount must be valid")
+        sell_order.sell_amount
     );
-    assert_eq!(
-        sell_result.order_to_sign.buy_amount,
-        Amount::new(sell_order.buy_amount.clone()).expect("buy order amount must be valid")
-    );
+    assert_eq!(sell_result.order_to_sign.buy_amount, sell_order.buy_amount);
 
     let buy_orderbook = MockOrderbook::new(trader.chain_id, buy_quote_response());
     let buy_trade = sample_trade_parameters(OrderKind::Buy);
@@ -108,21 +105,15 @@ async fn swap_posting_matches_pinned_sell_and_buy_adjustment_vectors() {
         .expect("buy order must be recorded");
 
     assert_eq!(
-        buy_order.sell_amount,
+        buy_order.sell_amount.to_string(),
         buy_case["expected"]["sell_amount"].as_str().unwrap()
     );
     assert_eq!(
-        buy_order.buy_amount,
+        buy_order.buy_amount.to_string(),
         buy_case["expected"]["buy_amount"].as_str().unwrap()
     );
-    assert_eq!(
-        buy_result.order_to_sign.sell_amount,
-        Amount::new(buy_order.sell_amount.clone()).expect("sell order amount must be valid")
-    );
-    assert_eq!(
-        buy_result.order_to_sign.buy_amount,
-        Amount::new(buy_order.buy_amount.clone()).expect("buy order amount must be valid")
-    );
+    assert_eq!(buy_result.order_to_sign.sell_amount, buy_order.sell_amount);
+    assert_eq!(buy_result.order_to_sign.buy_amount, buy_order.buy_amount);
 }
 
 #[tokio::test]
@@ -245,7 +236,7 @@ async fn limit_posting_disables_cost_slippage_adjustments_for_sell_and_buy_order
         .expect("sell limit order must be sent");
 
     assert_eq!(sell_result.order_to_sign.buy_amount, sell_params.buy_amount);
-    assert_eq!(sell_sent.buy_amount, sell_params.buy_amount.to_string());
+    assert_eq!(sell_sent.buy_amount, sell_params.buy_amount);
 
     let buy_orderbook = MockOrderbook::new(trader.chain_id, buy_quote_response());
     let buy_params = sample_limit_parameters(OrderKind::Buy);
@@ -260,7 +251,7 @@ async fn limit_posting_disables_cost_slippage_adjustments_for_sell_and_buy_order
         .expect("buy limit order must be sent");
 
     assert_eq!(buy_result.order_to_sign.sell_amount, buy_params.sell_amount);
-    assert_eq!(buy_sent.sell_amount, buy_params.sell_amount.to_string());
+    assert_eq!(buy_sent.sell_amount, buy_params.sell_amount);
 }
 
 #[tokio::test]
@@ -310,10 +301,7 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
         .with_check_eth_flow_order_exists(Arc::new(MockEthFlowChecker {
             results: collision_results.clone(),
         }))
-        .with_network_costs_amount(
-            Amount::new(sell_quote_response().quote.network_cost_amount().to_owned())
-                .expect("quote fee amount must be valid"),
-        )
+        .with_network_costs_amount(sell_quote_response().quote.network_cost_amount().clone())
         .with_custom_eip1271_signature(Arc::new(MockEip1271Provider));
 
     let result = post_sell_native_currency_order(
@@ -638,10 +626,7 @@ fn ethflow_additional_params(
         .with_check_eth_flow_order_exists(Arc::new(MockEthFlowChecker {
             results: Arc::new(Mutex::new(Vec::new())),
         }))
-        .with_network_costs_amount(
-            Amount::new(quote.quote.network_cost_amount().to_owned())
-                .expect("quote fee amount must be valid"),
-        )
+        .with_network_costs_amount(quote.quote.network_cost_amount().clone())
         .with_custom_eip1271_signature(Arc::new(MockEip1271Provider))
 }
 
