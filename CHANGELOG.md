@@ -1170,6 +1170,12 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Three additional services-emitted rejection tags now flow
+  through typed orderbook variants instead of the generic
+  unknown-fallback shape: app-data invalid, app-data mismatch
+  on registration, and lookup-path not-found responses are each
+  routed to a dedicated variant with a documented distinction
+  from the cancel-path not-found case.
 - Partner API keys on `OrderBookApiBuilder` and
   `SubgraphApiBuilder`, plus IPFS pinning header values at the
   `IpfsUploadTransport::post_json` boundary, now flow through

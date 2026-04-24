@@ -78,7 +78,10 @@ fn parity_fixture_cases_hold() {
             "orderbook-signed-cancellation-route" => {
                 assert_signed_cancellation_route(id, expected);
             }
-            "orderbook-duplicate-order-error" => assert_duplicate_order_error(id, expected),
+            "orderbook-duplicate-order-error"
+            | "orderbook-app-data-invalid-error"
+            | "orderbook-app-data-mismatch-error"
+            | "orderbook-not-found-error" => assert_rejection_error(id, expected),
             "orderbook-app-data-transport" => assert_app_data_transport(id, expected),
             "orderbook-native-price-and-surplus-endpoints" => {
                 assert_native_price_and_surplus_endpoints(id, expected);
@@ -369,42 +372,65 @@ fn assert_signed_cancellation_route(id: &str, expected: &Value) {
     );
 }
 
-fn assert_duplicate_order_error(id: &str, expected: &Value) {
-    let status = expected["status"]
+fn assert_rejection_error(id: &str, expected: &Value) {
+    let expected_status = expected["status"]
         .as_u64()
         .unwrap_or_else(|| panic!("case {id}: expected.status must be a u64"));
     let error_type = expected["errorType"]
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.errorType must be a string"));
+    let description = expected["description"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.description must be a string"));
+    let display = expected["display"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.display must be a string"));
 
-    assert_eq!(status, 400, "case {id}: duplicate-order status must be 400");
     let api_error = OrderBookApiError::new(
-        status.try_into().unwrap(),
-        "Bad Request",
+        expected_status.try_into().unwrap(),
+        "Error",
         ResponseBody::Json(json!({
             "errorType": error_type,
-            "description": "order already exists",
+            "description": description,
         })),
     );
 
     match cow_sdk_orderbook::OrderbookError::from(api_error) {
         cow_sdk_orderbook::OrderbookError::Rejected {
-            status,
+            status: actual_status,
             rejection,
             source,
         } => {
             assert_eq!(
-                u64::from(status.as_u16()),
-                400,
+                u64::from(actual_status.as_u16()),
+                expected_status,
                 "case {id}: typed rejection must preserve the services status",
             );
+            let expected_rejection = match error_type {
+                "DuplicatedOrder" => cow_sdk_orderbook::OrderbookRejection::DuplicatedOrder,
+                "AppDataInvalid" => cow_sdk_orderbook::OrderbookRejection::AppDataInvalid {
+                    message: description.to_owned(),
+                },
+                "AppDataMismatch" => cow_sdk_orderbook::OrderbookRejection::AppDataMismatch {
+                    message: description.to_owned(),
+                },
+                "NotFound" => cow_sdk_orderbook::OrderbookRejection::NotFound {
+                    message: description.to_owned(),
+                },
+                other => panic!("case {id}: unsupported rejection fixture errorType {other}"),
+            };
             assert_eq!(
-                rejection,
-                cow_sdk_orderbook::OrderbookRejection::DuplicatedOrder,
-                "case {id}: rejection envelope must classify to DuplicatedOrder",
+                rejection, expected_rejection,
+                "case {id}: rejection envelope must classify to the pinned typed variant",
             );
             assert_eq!(
-                source.status, 400,
+                rejection.to_string(),
+                display,
+                "case {id}: rejection Display output must match the fixture",
+            );
+            assert_eq!(
+                u64::from(source.status),
+                expected_status,
                 "case {id}: source envelope must preserve the raw status",
             );
         }

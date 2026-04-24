@@ -47,6 +47,28 @@ fn envelope_with_data(error_type: &str, description: &str, data: &serde_json::Va
     .expect("envelope with data must serialize")
 }
 
+fn assert_message_carrying_rejection_contract(
+    tag: &str,
+    status: StatusCode,
+    description: &str,
+    expected: &OrderbookRejection,
+    expected_display: &str,
+) {
+    let body = envelope_bytes(tag, description);
+    let rejection = parse_rejection(status, &body)
+        .unwrap_or_else(|| panic!("tag {tag} must classify through the typed parser"));
+
+    assert_eq!(
+        &rejection, expected,
+        "tag {tag} must preserve the services description in its typed variant",
+    );
+    assert_eq!(
+        rejection.to_string(),
+        expected_display,
+        "tag {tag} must preserve the reviewed Display contract",
+    );
+}
+
 #[test]
 fn every_known_services_tag_parses_to_its_typed_variant() {
     let cases: &[(&str, StatusCode, OrderbookRejection)] = &[
@@ -176,6 +198,13 @@ fn every_known_services_tag_parses_to_its_typed_variant() {
             OrderbookRejection::UnsupportedOrderType,
         ),
         (
+            "AppDataInvalid",
+            StatusCode::BAD_REQUEST,
+            OrderbookRejection::AppDataInvalid {
+                message: "services-authoritative description".to_owned(),
+            },
+        ),
+        (
             "InvalidAppData",
             StatusCode::BAD_REQUEST,
             OrderbookRejection::InvalidAppData,
@@ -184,6 +213,13 @@ fn every_known_services_tag_parses_to_its_typed_variant() {
             "AppDataHashMismatch",
             StatusCode::BAD_REQUEST,
             OrderbookRejection::AppDataHashMismatch,
+        ),
+        (
+            "AppDataMismatch",
+            StatusCode::BAD_REQUEST,
+            OrderbookRejection::AppDataMismatch {
+                message: "services-authoritative description".to_owned(),
+            },
         ),
         (
             "AppdataFromMismatch",
@@ -241,6 +277,13 @@ fn every_known_services_tag_parses_to_its_typed_variant() {
             OrderbookRejection::OrderNotFound,
         ),
         (
+            "NotFound",
+            StatusCode::NOT_FOUND,
+            OrderbookRejection::NotFound {
+                message: "services-authoritative description".to_owned(),
+            },
+        ),
+        (
             "OnChainOrder",
             StatusCode::BAD_REQUEST,
             OrderbookRejection::OnChainOrder,
@@ -267,6 +310,49 @@ fn every_known_services_tag_parses_to_its_typed_variant() {
             "tag {tag} must classify to its typed variant",
         );
     }
+}
+
+#[test]
+fn app_data_invalid_tag_preserves_typed_message_and_display() {
+    let description = "appData is invalid: missing protocol metadata";
+    assert_message_carrying_rejection_contract(
+        "AppDataInvalid",
+        StatusCode::BAD_REQUEST,
+        description,
+        &OrderbookRejection::AppDataInvalid {
+            message: description.to_owned(),
+        },
+        "AppDataInvalid: appData is invalid: missing protocol metadata",
+    );
+}
+
+#[test]
+fn app_data_mismatch_tag_preserves_typed_message_and_display() {
+    let description =
+        "stored appData \"{\\\"version\\\":\\\"1.0.0\\\"}\" is different than the specified data";
+    assert_message_carrying_rejection_contract(
+        "AppDataMismatch",
+        StatusCode::BAD_REQUEST,
+        description,
+        &OrderbookRejection::AppDataMismatch {
+            message: description.to_owned(),
+        },
+        "AppDataMismatch: stored appData \"{\\\"version\\\":\\\"1.0.0\\\"}\" is different than the specified data",
+    );
+}
+
+#[test]
+fn not_found_tag_preserves_typed_message_and_display() {
+    let description = "Order was not found";
+    assert_message_carrying_rejection_contract(
+        "NotFound",
+        StatusCode::NOT_FOUND,
+        description,
+        &OrderbookRejection::NotFound {
+            message: description.to_owned(),
+        },
+        "NotFound: Order was not found",
+    );
 }
 
 #[test]

@@ -12,12 +12,12 @@
 //! a default placeholder, but the SDK can still surface the wire code
 //! and description for diagnostics.
 //!
-//! The wire shape is authoritative: services encodes its sell-side
-//! allowance path (`SellTokenSource`), its buy-side payout path
-//! (`BuyTokenDestination`), its cancellation flows, its quote-only
-//! failures, and its price-estimation outcomes through the same
-//! envelope. The per-variant list below is the union of every
-//! `errorType` tag emitted across `POST /orders`, `POST /quote`,
+//! The wire shape is authoritative: services encodes order-creation,
+//! quote, cancellation, lookup, app-data registration, and
+//! solver-competition failures through the same envelope. The
+//! per-variant list below is the union of every `errorType` tag
+//! emitted across `POST /orders`, `POST /quote`, `PUT /app_data`,
+//! `GET /orders/{uid}`, `GET /solver_competition/{...}`,
 //! `DELETE /orders`, and `DELETE /orders/{uid}`, grouped by their
 //! upstream handler families for reviewability.
 
@@ -137,12 +137,29 @@ pub enum OrderbookRejection {
     UnsupportedOrderType,
 
     // --- AppData ---
+    /// App-data registration rejected the supplied document and
+    /// preserved the validator message in the wire `description`
+    /// field.
+    #[error("AppDataInvalid: {message}")]
+    AppDataInvalid {
+        /// Services-authored `description` string carried on the
+        /// rejection envelope.
+        message: String,
+    },
     /// App-data document failed validation.
     #[error("invalid app data")]
     InvalidAppData,
     /// Declared app-data hash does not match the supplied document.
     #[error("app-data hash mismatch")]
     AppDataHashMismatch,
+    /// A previously-registered full app-data document for the same
+    /// hash differs from the supplied bytes.
+    #[error("AppDataMismatch: {message}")]
+    AppDataMismatch {
+        /// Services-authored `description` string carried on the
+        /// rejection envelope.
+        message: String,
+    },
     /// App-data `metadata.signer` must match the declared `from`
     /// address.
     #[error("app-data from mismatch")]
@@ -195,6 +212,17 @@ pub enum OrderbookRejection {
     /// Order UID is not known to this deployment.
     #[error("order not found")]
     OrderNotFound,
+    /// Lookup-path 404 emitted by `GET /orders/{uid}` and
+    /// `GET /solver_competition/{...}`.
+    ///
+    /// Distinct from [`OrderbookRejection::OrderNotFound`], which is
+    /// the cancel-path 404 emitted by `DELETE /orders/{uid}`.
+    #[error("NotFound: {message}")]
+    NotFound {
+        /// Services-authored `description` string carried on the
+        /// rejection envelope.
+        message: String,
+    },
     /// On-chain orders must be cancelled through the on-chain flow.
     #[error("on-chain order")]
     OnChainOrder,
@@ -246,10 +274,13 @@ struct RejectionEnvelope {
 /// the `errorType` string) and maps every services-authoritative tag
 /// to the matching variant. Variants whose wire payload includes
 /// machine-readable data (the quote-only
-/// [`OrderbookRejection::SellAmountDoesNotCoverFee`]) consume the
-/// structured `data` field on the envelope; all other variants carry
-/// no payload because the matching `description` string is free-form
-/// debug output on the services side.
+/// [`OrderbookRejection::SellAmountDoesNotCoverFee`]) or a
+/// services-authored message that callers may need to preserve
+/// ([`OrderbookRejection::AppDataInvalid`],
+/// [`OrderbookRejection::AppDataMismatch`], and
+/// [`OrderbookRejection::NotFound`]) consume the structured envelope
+/// fields; the remaining variants stay unit-like because the matching
+/// `description` string is only diagnostic.
 ///
 /// The parser returns `None` when the supplied `body` is not a JSON
 /// object with a string `errorType` field. Callers treat that case as
@@ -297,8 +328,14 @@ fn classify(envelope: RejectionEnvelope) -> OrderbookRejection {
         "UnsupportedBuyTokenDestination" => OrderbookRejection::UnsupportedBuyTokenDestination,
         "UnsupportedSellTokenSource" => OrderbookRejection::UnsupportedSellTokenSource,
         "UnsupportedOrderType" => OrderbookRejection::UnsupportedOrderType,
+        "AppDataInvalid" => message_variant(envelope, |message| {
+            OrderbookRejection::AppDataInvalid { message }
+        }),
         "InvalidAppData" => OrderbookRejection::InvalidAppData,
         "AppDataHashMismatch" => OrderbookRejection::AppDataHashMismatch,
+        "AppDataMismatch" => message_variant(envelope, |message| {
+            OrderbookRejection::AppDataMismatch { message }
+        }),
         "AppdataFromMismatch" => OrderbookRejection::AppdataFromMismatch,
         "MetadataSerializationFailed" => OrderbookRejection::MetadataSerializationFailed,
         "NoLiquidity" => OrderbookRejection::NoLiquidity,
@@ -313,11 +350,19 @@ fn classify(envelope: RejectionEnvelope) -> OrderbookRejection {
         "OrderFullyExecuted" => OrderbookRejection::OrderFullyExecuted,
         "OrderExpired" => OrderbookRejection::OrderExpired,
         "OrderNotFound" => OrderbookRejection::OrderNotFound,
+        "NotFound" => message_variant(envelope, |message| OrderbookRejection::NotFound { message }),
         "OnChainOrder" => OrderbookRejection::OnChainOrder,
         "Forbidden" => OrderbookRejection::Forbidden,
         "InternalServerError" => OrderbookRejection::InternalServerError,
         _ => unknown(envelope),
     }
+}
+
+fn message_variant(
+    envelope: RejectionEnvelope,
+    constructor: impl FnOnce(String) -> OrderbookRejection,
+) -> OrderbookRejection {
+    constructor(envelope.description)
 }
 
 fn parse_sell_amount_does_not_cover_fee(
