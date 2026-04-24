@@ -1203,6 +1203,11 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- The `cow-sdk` prelude now exposes a curated first-touch surface for common
+  quote, sign, post, app-data validation, transport/provider wiring, and
+  primary error-handling workflows; reach specialized APIs through the
+  named-module re-exports. Workspace MSRV bump policy is now documented with
+  explicit cadence and notice window.
 - The `SignedAmount` type on `cow-sdk-core` now stores its
   value as an arbitrary-precision integer internally and
   exposes typed accessors and arithmetic delegation. The

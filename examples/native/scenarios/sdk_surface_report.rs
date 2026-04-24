@@ -2,12 +2,14 @@ use std::error::Error;
 
 use serde_json::json;
 
-use cow_sdk::core::wrapped_native_token;
-use cow_sdk::{
-    AppDataParams, PartialTraderParameters, SupportedChainId, TradingSdk, TradingSdkOptions,
-    deployment_for_chain, generate_app_data_doc, generate_order_id, get_app_data_info,
-    order_typed_data, validate_app_data_doc,
+use cow_sdk::app_data::{
+    AppDataParams, generate_app_data_doc, get_app_data_info, validate_app_data_doc,
 };
+use cow_sdk::contracts::deployment_for_chain;
+use cow_sdk::core::wrapped_native_token;
+use cow_sdk::prelude::{SupportedChainId, TradingSdk};
+use cow_sdk::signing::{generate_order_id, order_typed_data};
+use cow_sdk::trading::{PartialTraderParameters, TradingSdkOptions};
 
 use cow_sdk_examples_native::support::{sample_owner, sample_unsigned_order};
 

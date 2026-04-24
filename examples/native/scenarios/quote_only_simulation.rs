@@ -2,7 +2,8 @@ use std::{error::Error, sync::Arc};
 
 use serde_json::json;
 
-use cow_sdk::{PartialTraderParameters, SupportedChainId, TradingSdk, TradingSdkOptions};
+use cow_sdk::prelude::{SupportedChainId, TradingSdk};
+use cow_sdk::trading::{PartialTraderParameters, TradingSdkOptions};
 
 use cow_sdk_examples_native::support::{
     MockOrderbook, sample_quote_response, sample_trade_parameters,

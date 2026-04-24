@@ -117,3 +117,7 @@ parity, audit, and ADR map.
 - Public MSRV: Rust `1.94.0`
 - Contributor toolchain pin: Rust `1.94.1`
 - Surface-to-proof mapping lives in [Validation Scope](docs/validation-scope.md)
+
+The [MSRV policy](docs/msrv-policy.md) defines when the workspace may raise
+the public Rust floor, including the minor-release cadence, 30-day notice
+window, and dependency, language-feature, or security-advisory triggers.

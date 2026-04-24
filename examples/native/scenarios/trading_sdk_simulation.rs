@@ -3,9 +3,10 @@ use std::{error::Error, sync::Arc};
 use serde_json::json;
 
 use cow_sdk::core::{Amount, Provider};
-use cow_sdk::{
+use cow_sdk::prelude::{SupportedChainId, TradingSdk};
+use cow_sdk::trading::{
     AllowanceParameters, ApprovalParameters, OrderTraderParameters, PartialTraderParameters,
-    SupportedChainId, TradingSdk, TradingSdkOptions,
+    TradingSdkOptions,
 };
 
 use cow_sdk_examples_native::support::{

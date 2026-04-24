@@ -3,7 +3,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::json;
 
-use cow_sdk::core::EVM_NATIVE_CURRENCY_ADDRESS;
+use cow_sdk::core::{Address, EVM_NATIVE_CURRENCY_ADDRESS, HexData};
+use cow_sdk::prelude::SupportedChainId;
 use cow_sdk::trading::{
     OrderValidityBounds, PostTradeAdditionalParams, build_app_data, get_eth_flow_transaction,
     post_sell_native_currency_order,
@@ -14,17 +15,17 @@ use cow_sdk_examples_native::support::{
     sample_trader_parameters, text_preview,
 };
 
-fn call_data_prefix(data: &cow_sdk::HexData) -> &str {
+fn call_data_prefix(data: &HexData) -> &str {
     text_preview(data.as_str(), 10)
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let orderbook = MockOrderbook::new(cow_sdk::SupportedChainId::Sepolia, sample_quote_response());
+    let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
     let signer = MockSigner::default();
     let trader = sample_trader_parameters();
     let mut params = sample_limit_parameters();
-    params.sell_token = cow_sdk::Address::new(EVM_NATIVE_CURRENCY_ADDRESS)?;
+    params.sell_token = Address::new(EVM_NATIVE_CURRENCY_ADDRESS)?;
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("system clock must be at or after the unix epoch")

@@ -6,11 +6,11 @@ use wiremock::{
     matchers::{method, path},
 };
 
-use cow_sdk::orderbook::SigningScheme as OrderbookSigningScheme;
-use cow_sdk::{
-    ApiContext, CowEnv, OrderBookApi, OrderCreation, OrderQuoteRequest, PriceQuality, QuoteSide,
-    SupportedChainId,
+use cow_sdk::orderbook::{
+    ApiContext, OrderCreation, OrderQuoteRequest, PriceQuality, QuoteSide,
+    SigningScheme as OrderbookSigningScheme,
 };
+use cow_sdk::prelude::{Amount, CowEnv, OrderBookApi, SupportedChainId};
 
 use cow_sdk_examples_native::support::{
     orderbook_version_response, sample_buy_token, sample_order_uid, sample_owner,
@@ -63,7 +63,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         sample_sell_token(),
         sample_buy_token(),
         sample_owner(),
-        QuoteSide::sell("100000000000000000"),
+        QuoteSide::sell(
+            Amount::new("100000000000000000").expect("example quote amount must remain valid"),
+        ),
     )
     .with_price_quality(PriceQuality::Optimal);
     let quote = api.get_quote(&quote_request).await?;

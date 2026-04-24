@@ -23,6 +23,10 @@ rustup component add clippy rustfmt
 `rustup show` picks up the pinned toolchain from `rust-toolchain.toml`,
 which keeps the local toolchain version aligned with the CI contract.
 
+- The public Rust floor and bump rules are documented in the
+  [MSRV policy](docs/msrv-policy.md), including the 30-day notice window and
+  the dependency, stable-feature, and security-advisory triggers for a bump.
+
 ## Baseline Validation
 
 Run these checks before opening a pull request:

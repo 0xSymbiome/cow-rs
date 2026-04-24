@@ -10,7 +10,8 @@ Every deployed-address lookup in the workspace routes through one
 typed registry:
 
 ```rust,ignore
-use cow_sdk::{ContractId, CowEnv, Registry, SupportedChainId};
+use cow_sdk::contracts::{ContractId, Registry};
+use cow_sdk::prelude::{CowEnv, SupportedChainId};
 
 let registry = Registry::default();
 let settlement = registry
@@ -88,7 +89,8 @@ Consumers that want to drive the registry from their own TOML pipe the
 raw string into `Registry::from_toml_str`:
 
 ```rust,ignore
-use cow_sdk::{ContractId, CowEnv, Registry, SupportedChainId};
+use cow_sdk::contracts::{ContractId, Registry};
+use cow_sdk::prelude::{CowEnv, SupportedChainId};
 
 let raw = std::fs::read_to_string("my-registry.toml")?;
 let registry = Registry::from_toml_str(&raw)?;
@@ -112,7 +114,8 @@ integration-test fixture), compose an override on top of
 `Registry::default()`:
 
 ```rust,ignore
-use cow_sdk::{Address, ContractId, CowEnv, Registry, SupportedChainId};
+use cow_sdk::contracts::{ContractId, Registry};
+use cow_sdk::prelude::{Address, CowEnv, SupportedChainId};
 
 let local = "0x1111111111111111111111111111111111111111"
     .parse::<Address>()?;

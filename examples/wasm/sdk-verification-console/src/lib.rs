@@ -2,19 +2,31 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 use wasm_bindgen::prelude::*;
 
-use cow_sdk::core::wrapped_native_token;
-use cow_sdk::orderbook::AppDataHash;
-use cow_sdk::{
-    Address, Amount, ApiContext, ApprovalParameters, CowEnv, DEFAULT_QUOTE_VALIDITY,
-    DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT, GetOrdersRequest,
-    GetTradesRequest, MAX_SLIPPAGE_BPS, ORDER_PRIMARY_TYPE, OrderBookApi, OrderQuoteRequest,
-    OrderUid, OrderbookError, PartialTraderParameters, PartnerFee, PartnerFeePolicy,
-    SupportedChainId, TradingSdk, TradingSdkOptions, app_data_hex_to_cid, approval_transaction,
-    cid_to_app_data_hex, default_slippage_bps, deployment_for_chain, eip1271_signature_payload,
-    generate_order_id, get_app_data_info, get_app_data_schema, is_ethflow_order,
-    order_typed_data, partner_fee_bps,
-    sanitize_protocol_fee_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
-    swap_params_to_limit_order_params, validate_app_data_doc,
+use cow_sdk::app_data::{
+    app_data_hex_to_cid, cid_to_app_data_hex, get_app_data_info, get_app_data_schema,
+    validate_app_data_doc,
+};
+use cow_sdk::contracts::deployment_for_chain;
+use cow_sdk::core::{
+    AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, UnsignedOrder,
+    wrapped_native_token,
+};
+use cow_sdk::orderbook::{
+    ApiContext, AppDataHash, GetOrdersRequest, GetTradesRequest, OrderQuoteRequest,
+};
+use cow_sdk::prelude::{
+    Address, Amount, CowEnv, OrderBookApi, OrderUid, OrderbookError, SupportedChainId, TradingSdk,
+};
+use cow_sdk::signing::{
+    ORDER_PRIMARY_TYPE, domain_separator, eip1271_signature_payload, generate_order_id,
+    order_typed_data,
+};
+use cow_sdk::trading::{
+    ApprovalParameters, DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT,
+    GAS_MARGIN_PERCENT, MAX_SLIPPAGE_BPS, PartialTraderParameters, PartnerFee, PartnerFeePolicy,
+    TradingSdkOptions, approval_transaction, default_slippage_bps, is_ethflow_order,
+    partner_fee_bps, sanitize_protocol_fee_bps, suggest_slippage_from_fee,
+    suggest_slippage_from_volume, swap_params_to_limit_order_params,
 };
 use cow_sdk_subgraph::SubgraphApi;
 
@@ -226,7 +238,7 @@ pub fn order_envelope_preview_json(
     let owner = parse_address(owner, "owner")?;
     let typed = order_typed_data(chain_id, &order, None).map_err(js_string_error)?;
     let generated = generate_order_id(chain_id, &order, &owner, None).map_err(js_string_error)?;
-    let domain_separator = cow_sdk::domain_separator(chain_id, None)
+    let domain_separator = domain_separator(chain_id, None)
         .map_err(|error| to_js_error(error.to_string()))?;
 
     pretty_json(&json!({
@@ -581,7 +593,7 @@ fn orderbook_api(chain_id: SupportedChainId, env: CowEnv) -> OrderBookApi {
     {
         use std::sync::Arc;
 
-        use cow_sdk::HttpTransport;
+        use cow_sdk::core::HttpTransport;
         use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
         let base_url = context.resolved_base_url().unwrap_or_default();
@@ -612,7 +624,7 @@ fn subgraph_api(chain_id: SupportedChainId, api_key: &str) -> Result<SubgraphApi
     {
         use std::sync::Arc;
 
-        use cow_sdk::HttpTransport;
+        use cow_sdk::core::HttpTransport;
         use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
         let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
@@ -656,7 +668,7 @@ fn parse_order_uid(value: &str) -> Result<OrderUid, JsValue> {
     OrderUid::new(value).map_err(|error| to_js_error(error.to_string()))
 }
 
-fn parse_order(order_json: &str) -> Result<cow_sdk::UnsignedOrder, JsValue> {
+fn parse_order(order_json: &str) -> Result<UnsignedOrder, JsValue> {
     parse_json(order_json, "unsignedOrder")
 }
 
@@ -701,8 +713,8 @@ fn sample_owner() -> Address {
         .expect("static example owner must remain valid")
 }
 
-fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
-    cow_sdk::UnsignedOrder::new(
+fn sample_unsigned_order(chain_id: SupportedChainId) -> UnsignedOrder {
+    UnsignedOrder::new(
         wrapped_native_token(chain_id).address,
         Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
             .expect("static example address must remain valid"),
@@ -710,13 +722,13 @@ fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
         Amount::new("100000000000000000").expect("static example sell amount must remain valid"),
         Amount::new("250000000").expect("static example buy amount must remain valid"),
         1_900_000_000,
-        cow_sdk::AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             .expect("static example app-data hex must remain valid"),
         Amount::zero(),
-        cow_sdk::OrderKind::Sell,
+        OrderKind::Sell,
         false,
-        cow_sdk::SellTokenSource::Erc20,
-        cow_sdk::BuyTokenDestination::Erc20,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
     )
 }
 

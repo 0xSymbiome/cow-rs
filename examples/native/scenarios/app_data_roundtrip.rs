@@ -2,7 +2,7 @@ use std::error::Error;
 
 use serde_json::json;
 
-use cow_sdk::{
+use cow_sdk::app_data::{
     AppDataParams, SchemaVersion, app_data_hex_to_cid, cid_to_app_data_hex, generate_app_data_doc,
     get_app_data_info, get_app_data_schema, validate_app_data_doc,
 };

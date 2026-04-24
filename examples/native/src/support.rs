@@ -4,18 +4,16 @@ use async_trait::async_trait;
 use serde_json::json;
 
 use cow_sdk::core::{
-    Amount, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider, Signer,
-    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
+    Amount, AppDataHex, BlockInfo, BuyTokenDestination, ContractCall, ContractHandle, Hash32,
+    HexData, OrderKind, Provider, SellTokenSource, Signer, TransactionReceipt,
+    TransactionRequest, TypedDataDomain, TypedDataField, UnsignedOrder,
 };
 use cow_sdk::orderbook::{
     ApiContext, AppDataHash, AppDataObject, Order, OrderCancellations, OrderCreation,
     OrderQuoteRequest, OrderQuoteResponse, OrderbookError,
 };
-use cow_sdk::trading::OrderbookClient;
-use cow_sdk::{
-    Address, AppDataHex, BuyTokenDestination, CowEnv, OrderKind, OrderUid, SellTokenSource,
-    SupportedChainId, TradeParameters, TraderParameters, UnsignedOrder,
-};
+use cow_sdk::prelude::{Address, CowEnv, OrderUid, SupportedChainId, TradeParameters};
+use cow_sdk::trading::{LimitTradeParameters, OrderbookClient, TraderParameters};
 use wiremock::ResponseTemplate;
 
 pub const WETH: &str = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
@@ -99,20 +97,20 @@ pub fn sample_trade_parameters() -> TradeParameters {
     .with_slippage_bps(50)
 }
 
-pub fn sample_limit_parameters() -> cow_sdk::LimitTradeParameters {
+pub fn sample_limit_parameters() -> LimitTradeParameters {
     let quote = sample_quote_response();
     let sell_token_balance = quote.quote.sell_token_balance;
     let buy_token_balance = quote.quote.buy_token_balance;
     let quote_id = quote.id;
 
-    let mut params = cow_sdk::LimitTradeParameters::new(
+    let mut params = LimitTradeParameters::new(
         OrderKind::Sell,
         sample_sell_token(),
         18,
         sample_buy_token(),
         18,
-        Amount::new(quote.quote.sell_amount).expect("example quote sell amount must remain valid"),
-        Amount::new(quote.quote.buy_amount).expect("example quote buy amount must remain valid"),
+        quote.quote.sell_amount.clone(),
+        quote.quote.buy_amount.clone(),
     )
     .with_owner(sample_owner())
     .with_sell_token_balance(sell_token_balance)

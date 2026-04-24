@@ -18,7 +18,7 @@ cow-sdk = "0.1"
 ## Minimal example
 
 ```rust
-use cow_sdk::{SupportedChainId, TradingSdk};
+use cow_sdk::prelude::{SupportedChainId, TradingSdk};
 
 let _sdk = TradingSdk::builder()
     .with_chain_id(SupportedChainId::Sepolia)

@@ -2,15 +2,19 @@ use std::{error::Error, sync::Arc};
 
 use serde_json::json;
 
-use cow_sdk::trading::{get_pre_sign_transaction, onchain_cancellation_transaction};
-use cow_sdk::{OrderTraderParameters, PartialTraderParameters, TradingSdk, TradingSdkOptions};
+use cow_sdk::core::HexData;
+use cow_sdk::prelude::{SupportedChainId, TradingSdk};
+use cow_sdk::trading::{
+    OrderTraderParameters, PartialTraderParameters, TradingSdkOptions, get_pre_sign_transaction,
+    onchain_cancellation_transaction,
+};
 
 use cow_sdk_examples_native::support::{
     MockOrderbook, MockSigner, sample_open_order, sample_order_uid, sample_owner,
     sample_quote_response, sample_trader_parameters, text_preview,
 };
 
-fn call_data_prefix(data: &cow_sdk::HexData) -> &str {
+fn call_data_prefix(data: &HexData) -> &str {
     text_preview(data.as_str(), 10)
 }
 
@@ -39,7 +43,7 @@ fn trading_sdk(orderbook: MockOrderbook) -> TradingSdk {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let chain_id = cow_sdk::SupportedChainId::Sepolia;
+    let chain_id = SupportedChainId::Sepolia;
     let preview_signer = MockSigner::default();
     let order_uid = sample_order_uid();
     let params = OrderTraderParameters::new(order_uid.clone()).with_chain_id(chain_id);

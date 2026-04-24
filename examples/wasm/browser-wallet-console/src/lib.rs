@@ -7,18 +7,26 @@ use wasm_bindgen::prelude::*;
 
 use cow_sdk::browser_wallet::{
     BrowserWallet, BrowserWalletError, InjectedWalletDiscovery, InjectedWalletInfo,
-    MockEip1193Transport,
+    MockEip1193Transport, WalletEvent, WalletSession,
 };
-use cow_sdk::core::{AppDataHash, wrapped_native_token};
-use cow_sdk::orderbook::AppDataObject;
+use cow_sdk::core::{
+    AppDataHash, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, UnsignedOrder,
+    wrapped_native_token,
+};
+use cow_sdk::orderbook::{
+    ApiContext, AppDataObject, OrderCancellations, OrderCreation, OrderQuoteRequest,
+    OrderQuoteResponse,
+};
+use cow_sdk::prelude::{
+    Address, Amount, AsyncSigner, CowEnv, OrderBookApi, OrderUid, SupportedChainId,
+    TradeParameters, TradingSdk,
+};
+use cow_sdk::signing::{generate_order_id, sign_order_async};
+use cow_sdk::trading::{
+    ApprovalParameters, OrderTraderParameters, PartialTraderParameters, TradingSdkOptions,
+    approval_transaction,
+};
 use cow_sdk::trading::OrderbookClient;
-use cow_sdk::{
-    Address, Amount, ApiContext, ApprovalParameters, AsyncSigner, CowEnv, OrderBookApi,
-    OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
-    OrderTraderParameters, OrderUid, PartialTraderParameters, SupportedChainId, TradeParameters,
-    TradingSdk, TradingSdkOptions, WalletEvent, WalletSession, approval_transaction,
-    generate_order_id, sign_order_async,
-};
 
 #[wasm_bindgen(start)]
 pub fn start() {
@@ -765,7 +773,7 @@ fn live_sdk(chain_id: SupportedChainId, env: CowEnv, app_code: &str) -> TradingS
 
     #[cfg(target_arch = "wasm32")]
     let orderbook_client = {
-        use cow_sdk::HttpTransport;
+        use cow_sdk::core::HttpTransport;
         use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
         let base_url = context.resolved_base_url().unwrap_or_default();
@@ -796,19 +804,19 @@ fn mock_quote_response(request: &OrderQuoteRequest) -> OrderQuoteResponse {
                 .side
                 .sell_amount_before_fee
                 .clone()
-                .unwrap_or_else(|| "10000000000000000".to_owned()),
-            "2500000000000000000".to_owned(),
-            cow_sdk::OrderKind::Sell,
+                .unwrap_or_else(|| Amount::new("10000000000000000").unwrap()),
+            Amount::new("2500000000000000000").unwrap(),
+            OrderKind::Sell,
         )
     } else {
         (
-            "10000000000000000".to_owned(),
+            Amount::new("10000000000000000").unwrap(),
             request
                 .side
                 .buy_amount_after_fee
                 .clone()
-                .unwrap_or_else(|| "2500000000000000000".to_owned()),
-            cow_sdk::OrderKind::Buy,
+                .unwrap_or_else(|| Amount::new("2500000000000000000").unwrap()),
+            OrderKind::Buy,
         )
     };
 
@@ -838,7 +846,7 @@ fn mock_quote_response(request: &OrderQuoteRequest) -> OrderQuoteResponse {
 
 fn sample_trade_parameters(chain_id: SupportedChainId) -> TradeParameters {
     TradeParameters::new(
-        cow_sdk::OrderKind::Sell,
+        OrderKind::Sell,
         wrapped_native_token(chain_id).address,
         18,
         sample_buy_token(),
@@ -849,21 +857,21 @@ fn sample_trade_parameters(chain_id: SupportedChainId) -> TradeParameters {
     .with_valid_for(1800)
 }
 
-fn sample_unsigned_order(chain_id: SupportedChainId) -> cow_sdk::UnsignedOrder {
-    cow_sdk::UnsignedOrder::new(
+fn sample_unsigned_order(chain_id: SupportedChainId) -> UnsignedOrder {
+    UnsignedOrder::new(
         wrapped_native_token(chain_id).address,
         sample_buy_token(),
         sample_owner(),
         Amount::new("10000000000000000").unwrap(),
         Amount::new("2500000000000000000").unwrap(),
         1_900_000_000,
-        cow_sdk::AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             .unwrap(),
         Amount::new("0").unwrap(),
-        cow_sdk::OrderKind::Sell,
+        OrderKind::Sell,
         false,
-        cow_sdk::SellTokenSource::Erc20,
-        cow_sdk::BuyTokenDestination::Erc20,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
     )
 }
 
@@ -920,7 +928,7 @@ fn parse_order_uid(value: &str) -> Result<OrderUid, JsValue> {
     OrderUid::new(value).map_err(|error| to_js_error(error.to_string()))
 }
 
-fn parse_order(order_json: &str) -> Result<cow_sdk::UnsignedOrder, JsValue> {
+fn parse_order(order_json: &str) -> Result<UnsignedOrder, JsValue> {
     parse_json(order_json, "unsignedOrder")
 }
 

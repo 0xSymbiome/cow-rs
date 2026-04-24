@@ -6,7 +6,7 @@ use wiremock::{
     matchers::{body_partial_json, method, path},
 };
 
-use cow_sdk::SupportedChainId;
+use cow_sdk::prelude::SupportedChainId;
 use cow_sdk_subgraph::SubgraphApi;
 
 #[tokio::main]

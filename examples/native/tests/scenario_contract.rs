@@ -1,6 +1,6 @@
-use cow_sdk::orderbook::OrderbookError;
+use cow_sdk::orderbook::{ApiContext, OrderbookError};
+use cow_sdk::prelude::{CowEnv, OrderBookApi, OrderUid, SupportedChainId};
 use cow_sdk::trading::OrderbookClient;
-use cow_sdk::{ApiContext, CowEnv, OrderBookApi, OrderUid, SupportedChainId};
 use cow_sdk_examples_native::support::{
     MockOrderbook, orderbook_version_response, sample_open_order, sample_order_uid,
     sample_quote_response, text_preview,
