@@ -11,8 +11,9 @@
 //! `is_status`, fallthrough partition.
 //!
 //! Non-2xx responses are captured as [`TransportError::HttpStatus`] with the
-//! numeric status code and raw body so the calling layer receives the
-//! response through the typed error channel instead of through `Ok(String)`.
+//! numeric status code, response headers, and raw body so the calling layer
+//! receives the response through the typed error channel instead of through
+//! `Ok(String)`.
 //! Per-call headers merge with any constructor-configured defaults, and the
 //! optional per-call timeout overrides the transport's default timeout when
 //! supplied.
@@ -179,12 +180,14 @@ impl ReqwestTransport {
         }
 
         let status_code = status.as_u16();
+        let headers = response_headers(&response);
         let body = response
             .text()
             .await
             .unwrap_or_else(|error| format!("<body unavailable: {error}>"));
         Err(TransportError::HttpStatus {
             status: status_code,
+            headers,
             body,
         })
     }
@@ -258,6 +261,19 @@ fn build_header_map(headers: &[(String, String)]) -> Result<HeaderMap, Transport
         header_map.append(header_name, header_value);
     }
     Ok(header_map)
+}
+
+fn response_headers(response: &::reqwest::Response) -> Vec<(String, String)> {
+    response
+        .headers()
+        .iter()
+        .map(|(name, value)| {
+            (
+                name.as_str().to_owned(),
+                String::from_utf8_lossy(value.as_bytes()).into_owned(),
+            )
+        })
+        .collect()
 }
 
 /// Converts a `reqwest::Error` into the typed [`TransportError::Transport`]

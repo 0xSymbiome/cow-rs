@@ -85,7 +85,11 @@ async fn status_error_maps_to_http_status_variant_without_exposing_url() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/boom"))
-        .respond_with(ResponseTemplate::new(500).set_body_string("upstream exploded"))
+        .respond_with(
+            ResponseTemplate::new(500)
+                .insert_header("Retry-After", "5")
+                .set_body_string("upstream exploded"),
+        )
         .mount(&server)
         .await;
 
@@ -96,8 +100,17 @@ async fn status_error_maps_to_http_status_variant_without_exposing_url() {
         .expect_err("non-2xx response must surface as a TransportError");
 
     match &error {
-        TransportError::HttpStatus { status, body } => {
+        TransportError::HttpStatus {
+            status,
+            headers,
+            body,
+        } => {
             assert_eq!(*status, 500);
+            assert!(
+                headers.iter().any(|(name, value)| {
+                    name.eq_ignore_ascii_case("retry-after") && value == "5"
+                })
+            );
             assert_eq!(body, "upstream exploded");
         }
         other => panic!("expected HttpStatus variant, got {other:?}"),
@@ -290,12 +303,18 @@ fn configuration_error_surfaces_without_class() {
 fn http_status_error_surfaces_without_class_but_preserves_status_and_body() {
     let error = TransportError::HttpStatus {
         status: 418,
+        headers: vec![("Retry-After".to_owned(), "5".to_owned())],
         body: "I am a teapot".to_owned(),
     };
     assert!(error.class().is_none());
     match error {
-        TransportError::HttpStatus { status, body } => {
+        TransportError::HttpStatus {
+            status,
+            headers,
+            body,
+        } => {
             assert_eq!(status, 418);
+            assert_eq!(headers, vec![("Retry-After".to_owned(), "5".to_owned())]);
             assert_eq!(body, "I am a teapot");
         }
         _ => panic!("constructed variant must survive the round-trip"),

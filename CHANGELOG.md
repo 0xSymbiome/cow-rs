@@ -1204,6 +1204,13 @@ unreleased public contract of the repository.
 
 ### Fixed
 
+- The orderbook retry orchestrator now honors the `Retry-After`
+  header on `429 Too Many Requests` and `503 Service
+  Unavailable` responses, waiting for the larger of its
+  exponential backoff schedule and the server-provided
+  cooldown. Both the native `reqwest` adapter and the browser
+  `fetch` adapter now surface non-success response headers
+  through the typed transport error variant.
 - Published crate READMEs now compile as doctests on every CI run, and the
   previously broken orderbook, trading, and contracts examples match the
   shipped public API.

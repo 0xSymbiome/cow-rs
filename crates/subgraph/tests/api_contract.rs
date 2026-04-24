@@ -1113,7 +1113,11 @@ mod recording_transport {
     #[derive(Debug, Clone)]
     enum Canned {
         Ok(String),
-        HttpStatus { status: u16, body: String },
+        HttpStatus {
+            status: u16,
+            headers: Vec<(String, String)>,
+            body: String,
+        },
     }
 
     #[derive(Debug)]
@@ -1215,7 +1219,15 @@ mod recording_transport {
     fn transport_result(canned: Canned) -> Result<String, TransportError> {
         match canned {
             Canned::Ok(body) => Ok(body),
-            Canned::HttpStatus { status, body } => Err(TransportError::HttpStatus { status, body }),
+            Canned::HttpStatus {
+                status,
+                headers,
+                body,
+            } => Err(TransportError::HttpStatus {
+                status,
+                headers,
+                body,
+            }),
         }
     }
 
@@ -1339,6 +1351,7 @@ mod recording_transport {
     async fn subgraph_http_status_error_propagates_through_injected_transport() {
         let recorder = RecordingTransport::new([Canned::HttpStatus {
             status: 502,
+            headers: Vec::new(),
             body: "upstream unavailable".to_owned(),
         }]);
         let api = api_with_recorder(recorder.clone());

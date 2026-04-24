@@ -1,9 +1,9 @@
 # HTTP Transport Contract Audit
 
 Status: Current
-Last reviewed: 2026-04-22
+Last reviewed: 2026-04-24
 Owning surface: `cow-sdk-core::HttpTransport` trait and the `ReqwestTransport` (native) and `FetchTransport` (browser) default adapters, including the sole-dispatch contract that binds every live REST or GraphQL call from `cow-sdk-orderbook` and `cow-sdk-subgraph` to the injected transport
-Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the URL-stripping contract on either default adapter; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderBookApi` or `SubgraphApi` bypass `self.transport`
+Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the orderbook retry-orchestrator backoff schedule or its `Retry-After` honor contract; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderBookApi` or `SubgraphApi` bypass `self.transport`
 Related docs:
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0019](../adr/0019-http-transport-sole-dispatch.md)
@@ -23,14 +23,15 @@ This audit covers:
   `cow-sdk-transport-wasm`
 - the typed `TransportError` enum and the `TransportErrorClass` partition
   every adapter is expected to populate
+- the orderbook retry orchestrator's use of transport-surfaced
+  `Retry-After` headers on `429` and `503` responses
 - the sole-dispatch invariant that every live REST or GraphQL call from
   `OrderBookApi` or `SubgraphApi` flows through `self.transport` rather
   than a parallel HTTP client held inside those structs
 
-It does not cover transport-policy retry, rate-limit, or user-agent
-layering built on top of the trait by `cow-sdk-orderbook` and
-`cow-sdk-subgraph`, and it does not cover the `AsyncProvider` chain-RPC
-seam (a separate runtime contract).
+It does not cover user-agent layering, non-transport retry heuristics
+beyond the documented `Retry-After` honor contract, or the
+`AsyncProvider` chain-RPC seam (a separate runtime contract).
 
 ## Outcome Summary
 
@@ -38,9 +39,10 @@ seam (a separate runtime contract).
 | --- | --- | --- |
 | Trait seam | `HttpTransport` is the sole production HTTP injection point and is dyn-compatible through `async-trait` with target-aware `Send` bounds | Conforms |
 | Per-call controls | Every trait method carries per-call headers and an optional per-call timeout; adapters merge with constructor defaults and apply the deadline when supplied | Conforms |
-| Typed failures | Every failure routes through `TransportError::Transport { class, detail }`, `TransportError::Configuration { message }`, or `TransportError::HttpStatus { status, body }` | Conforms |
+| Typed failures | Every failure routes through `TransportError::Transport { class, detail }`, `TransportError::Configuration { message }`, or `TransportError::HttpStatus { status, headers, body }` | Conforms |
 | URL redaction | Both defaults strip URLs before wrapping so credential-bearing query strings never surface through `Debug` or `Display` | Conforms |
 | Adapter parity | The native and browser adapters report the same `TransportErrorClass` for the same failure class on matching fixtures, and both surface non-2xx responses through `TransportError::HttpStatus` with the numeric status code preserved | Conforms |
+| Retry cooldowns | The orderbook retry orchestrator honors `Retry-After` on `429` and `503`, waiting for the larger of the local backoff and the server cooldown | Conforms |
 | Sole-dispatch invariant | `OrderBookApi` and `SubgraphApi` hold only an `Arc<dyn HttpTransport + Send + Sync>` as their HTTP surface; every live REST and GraphQL call dispatches through that handle, and injected transports observe every request | Conforms |
 
 ## Current Contract
@@ -65,10 +67,11 @@ consumer-facing clients.
 `Body`, `Builder`, `Request`, `Status`, `Other`) with a redacted
 detail string. `TransportError::Configuration { message }` captures
 builder-time failures that prevent a request from dispatching.
-`TransportError::HttpStatus { status, body }` captures a non-2xx
-response so the calling layer receives the numeric status and raw
-response body through the typed error channel rather than through an
-`Ok(String)` success path. Downstream error aggregates
+`TransportError::HttpStatus { status, headers, body }` captures a
+non-2xx response so the calling layer receives the numeric status,
+response headers, and raw response body through the typed error channel
+rather than through an `Ok(String)` success path. Downstream error
+aggregates
 (`OrderbookError::Transport`, `SubgraphError::Transport`,
 `SubgraphError::HttpStatus`, `AppDataError::Transport`) carry the same
 partition.
@@ -100,9 +103,21 @@ contract that exercises `Connect`, `Timeout`, and `Body` partitions
 against matching synthetic errors and asserts both adapters map to the
 same `TransportErrorClass`. Non-2xx responses surface through the
 typed `TransportError::HttpStatus` variant on both runtimes with the
-numeric status code and raw response body preserved. The `Redirect`
-variant is documented as unreachable in the browser adapter (default
-`fetch` auto-follows redirects), so parity there is empty by design.
+numeric status code, surfaced response headers, and raw response body
+preserved. The `Redirect` variant is documented as unreachable in the
+browser adapter (default `fetch` auto-follows redirects), so parity
+there is empty by design.
+
+### Retry Cooldowns
+
+The orderbook request pipeline reads `Retry-After` from
+`TransportError::HttpStatus.headers` on `429 Too Many Requests` and
+`503 Service Unavailable` responses. The parser accepts both
+delta-seconds and HTTP-date forms, parse failures fall back to the
+existing exponential backoff schedule, and successful parses hold the
+retry loop for the larger of the local backoff and the server-supplied
+cooldown. The retry loop continues to honor the existing `max_attempts`
+limit and per-attempt timeout contract.
 
 ### Sole-Dispatch Invariant
 
@@ -141,6 +156,8 @@ Primary regression coverage:
 
 - `crates/core/tests/transport_contract.rs`
 - `crates/transport-wasm/tests/parity_contract.rs`
+- `crates/orderbook/src/request.rs` (`tests::parse_retry_after_covers_documented_boundary_matrix`)
+- `crates/orderbook/tests/api_contract.rs::service_unavailable_retry_after_header_delays_retry_for_at_least_server_cooldown`
 - `crates/orderbook/tests/api_contract.rs::recording_transport::orderbook_get_order_dispatches_through_injected_transport`
 - `crates/orderbook/tests/api_contract.rs::recording_transport::orderbook_send_order_dispatches_through_injected_transport`
 - `crates/orderbook/tests/api_contract.rs::recording_transport::orderbook_delete_cancellation_dispatches_through_injected_transport`
@@ -159,7 +176,9 @@ Validation surface:
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace --all-features
+cargo test -p cow-sdk-core --test transport_contract
 cargo test -p cow-sdk-orderbook --test api_contract
+cargo test -p cow-sdk-orderbook --test request_contract
 cargo test -p cow-sdk-subgraph --test api_contract
 cargo check --workspace --all-features --target wasm32-unknown-unknown
 ```

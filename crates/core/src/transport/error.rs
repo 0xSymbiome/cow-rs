@@ -23,8 +23,9 @@ use crate::validation::TransportErrorClass;
 /// variant captures builder-time or input-validation failures that happen
 /// before a network request is dispatched; the
 /// [`HttpStatus`](Self::HttpStatus) variant captures a non-2xx response so
-/// the orderbook and subgraph layers receive the numeric status and body
-/// together without rebuilding them from free-form error strings.
+/// the orderbook and subgraph layers receive the numeric status, response
+/// headers, and body together without rebuilding them from free-form error
+/// strings.
 #[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum TransportError {
@@ -49,12 +50,15 @@ pub enum TransportError {
     /// Non-2xx HTTP response returned by the remote endpoint.
     ///
     /// Adapters surface the numeric status code and the raw response body
-    /// through this variant so downstream orchestration can classify the
-    /// outcome without re-reading the transport's rendered error text.
+    /// together with the response headers through this variant so downstream
+    /// orchestration can classify the outcome without re-reading the
+    /// transport's rendered error text.
     #[error("http status error ({status}): {body}")]
     HttpStatus {
         /// Numeric HTTP status code returned by the remote endpoint.
         status: u16,
+        /// Response headers returned alongside the non-success status code.
+        headers: Vec<(String, String)>,
         /// Raw response body returned alongside the status code.
         body: String,
     },

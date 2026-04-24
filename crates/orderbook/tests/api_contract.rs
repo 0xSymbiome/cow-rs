@@ -235,6 +235,65 @@ async fn cloned_clients_share_the_same_instance_scoped_rate_limiter() {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+#[tokio::test]
+async fn service_unavailable_retry_after_header_delays_retry_for_at_least_server_cooldown() {
+    let server = MockServer::start().await;
+    let arrivals = Arc::new(Mutex::new(Vec::new()));
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/version"))
+        .respond_with({
+            let arrivals = arrivals.clone();
+            move |_request: &wiremock::Request| {
+                let mut arrivals = arrivals
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                arrivals.push(Instant::now());
+
+                if arrivals.len() == 1 {
+                    ResponseTemplate::new(503)
+                        .insert_header("Retry-After", "5")
+                        .set_body_json(json!({
+                            "errorType": "InternalServerError",
+                            "description": "retry after cooldown",
+                        }))
+                } else {
+                    ResponseTemplate::new(200).set_body_string("v1.2.3")
+                }
+            }
+        })
+        .expect(2)
+        .mount(&server)
+        .await;
+
+    let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy::new(
+        2,
+        cow_sdk_orderbook::request::RateLimitSettings::default(),
+    ));
+    let api = build_orderbook_api_with_policy(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        policy,
+    )
+    .with_env_base_url(CowEnv::Prod, server.uri());
+
+    let version = api
+        .get_version()
+        .await
+        .expect("retry-after response should be retried after the server cooldown");
+
+    assert_eq!(version, "v1.2.3");
+    let arrivals = arrivals
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .clone();
+    assert_eq!(arrivals.len(), 2);
+    assert!(
+        arrivals[1].duration_since(arrivals[0]) >= Duration::from_secs(5),
+        "Retry-After: 5 must delay the next attempt by at least five seconds"
+    );
+}
+
 #[test]
 fn order_link_uses_chain_aware_urls_for_gnosis_and_mainnet() {
     let uid = sample_order_uid();
@@ -758,7 +817,11 @@ mod recording_transport {
     #[derive(Debug, Clone)]
     enum Canned {
         Ok(String),
-        HttpStatus { status: u16, body: String },
+        HttpStatus {
+            status: u16,
+            headers: Vec<(String, String)>,
+            body: String,
+        },
     }
 
     #[derive(Debug)]
@@ -864,7 +927,15 @@ mod recording_transport {
     fn canned_into_transport_result(canned: Canned) -> Result<String, TransportError> {
         match canned {
             Canned::Ok(body) => Ok(body),
-            Canned::HttpStatus { status, body } => Err(TransportError::HttpStatus { status, body }),
+            Canned::HttpStatus {
+                status,
+                headers,
+                body,
+            } => Err(TransportError::HttpStatus {
+                status,
+                headers,
+                body,
+            }),
         }
     }
 
@@ -976,11 +1047,13 @@ mod recording_transport {
         let recorder = RecordingTransport::new([
             Canned::HttpStatus {
                 status: 503,
+                headers: Vec::new(),
                 body: "{\"errorType\":\"InternalServerError\",\"description\":\"try again\"}"
                     .to_owned(),
             },
             Canned::HttpStatus {
                 status: 503,
+                headers: Vec::new(),
                 body: "{\"errorType\":\"InternalServerError\",\"description\":\"try again\"}"
                     .to_owned(),
             },
@@ -1010,6 +1083,7 @@ mod recording_transport {
     async fn orderbook_non_2xx_surfaces_as_http_status_error_through_injected_transport() {
         let recorder = RecordingTransport::new([Canned::HttpStatus {
             status: 400,
+            headers: Vec::new(),
             body: "{\"errorType\":\"DuplicatedOrder\",\"description\":\"order already exists\"}"
                 .to_owned(),
         }]);

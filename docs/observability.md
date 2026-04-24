@@ -196,6 +196,18 @@ If a future call site needs to record an identifier that is derived from
 secret material, the convention is to hash or prefix-truncate it in the
 host application before emitting it through the tracing subscriber.
 
+## Retry Cooldowns
+
+`cow-sdk-orderbook` honors `Retry-After` on `429 Too Many Requests` and
+`503 Service Unavailable` responses when the transport surfaces response
+headers through `TransportError::HttpStatus`. The retry loop accepts both
+delta-seconds and HTTP-date values and waits for the larger of the local
+backoff schedule and the server-provided cooldown before retrying. The
+native contract is exercised by
+`crates/orderbook/tests/api_contract.rs::service_unavailable_retry_after_header_delays_retry_for_at_least_server_cooldown`,
+and the parser boundary is covered by the `crates/orderbook/src/request.rs`
+unit tests.
+
 ## Error Classification
 
 `cow_sdk::SdkError::class()` returns an `ErrorClass` so telemetry layers

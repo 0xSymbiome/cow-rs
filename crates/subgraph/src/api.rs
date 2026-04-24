@@ -483,7 +483,7 @@ impl SubgraphApi {
 
         let body = match self.transport.post(&api, &body, &headers, timeout).await {
             Ok(body) => body,
-            Err(TransportError::HttpStatus { status, body }) => {
+            Err(TransportError::HttpStatus { status, body, .. }) => {
                 return Err(http_status_error(
                     &public_api,
                     resolved_config.chain_id,

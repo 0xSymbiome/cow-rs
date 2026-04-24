@@ -19,8 +19,8 @@ use crate::transport::error::TransportError;
 /// constructor-configured defaults, honor the per-call timeout when `Some`,
 /// and map non-2xx responses into
 /// [`TransportError::HttpStatus`](crate::transport::TransportError::HttpStatus)
-/// so the calling layer receives the numeric status and raw body through
-/// the typed error channel instead of through `Ok(String)`.
+/// so the calling layer receives the numeric status, response headers, and
+/// raw body through the typed error channel instead of through `Ok(String)`.
 ///
 /// The trait uses [`macro@async_trait`] so downstream clients can hold the
 /// transport behind `Arc<dyn HttpTransport>` without reaching for a

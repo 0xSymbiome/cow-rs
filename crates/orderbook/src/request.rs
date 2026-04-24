@@ -1,4 +1,8 @@
-use std::{future::Future, sync::Arc, time::Duration};
+use std::{
+    future::Future,
+    sync::Arc,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use async_lock::Mutex;
 use cow_sdk_core::{HttpClientPolicy, HttpTransport, TransportError};
@@ -32,6 +36,7 @@ pub const BAD_GATEWAY: u16 = 502;
 pub const SERVICE_UNAVAILABLE: u16 = 503;
 /// HTTP `504 Gateway Timeout`.
 pub const GATEWAY_TIMEOUT: u16 = 504;
+const RETRY_AFTER_HEADER: &str = "retry-after";
 /// Status codes treated as retryable by the default orderbook request policy.
 pub const RETRYABLE_STATUS_CODES: [u16; 7] = [
     REQUEST_TIMEOUT,
@@ -209,6 +214,21 @@ impl RequestPolicy {
         let exponent = u32::try_from(attempt_index.saturating_sub(1).min(6))
             .expect("backoff exponent is clamped to a `u32`-safe range");
         Duration::from_millis(50 * (1u64 << exponent))
+    }
+
+    fn retry_delay(
+        &self,
+        attempt_index: usize,
+        status: u16,
+        headers: &[(String, String)],
+        now: SystemTime,
+    ) -> Duration {
+        let backoff = self.backoff_delay(attempt_index);
+        if !matches!(status, TOO_MANY_REQUESTS | SERVICE_UNAVAILABLE) {
+            return backoff;
+        }
+
+        retry_after_delay(headers, now).map_or(backoff, |retry_after| backoff.max(retry_after))
     }
 }
 
@@ -395,6 +415,14 @@ impl ResponseKind {
             Self::Json | Self::Empty => "application/json",
         }
     }
+}
+
+enum AttemptOutcome {
+    Response(ResponseEnvelope),
+    HttpError {
+        response: ResponseEnvelope,
+        headers: Vec<(String, String)>,
+    },
 }
 
 struct RequestExecution<'a> {
@@ -648,14 +676,23 @@ pub async fn request_empty_with_timeout(
 pub async fn execute_json_with<T, F, Fut>(
     policy: &RequestPolicy,
     rate_limiter: &RequestRateLimiter,
-    attempt: F,
+    mut attempt: F,
 ) -> Result<T, OrderbookError>
 where
     T: DeserializeOwned,
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)>>,
 {
-    execute_with(policy, rate_limiter, attempt, decode_success_body::<T>).await
+    execute_with(
+        policy,
+        rate_limiter,
+        move || {
+            let future = attempt();
+            async move { future.await.map(AttemptOutcome::Response) }
+        },
+        decode_success_body::<T>,
+    )
+    .await
 }
 
 /// Executes an abstract text-producing attempt with retry and rate-limit policy.
@@ -667,13 +704,22 @@ where
 pub async fn execute_text_with<F, Fut>(
     policy: &RequestPolicy,
     rate_limiter: &RequestRateLimiter,
-    attempt: F,
+    mut attempt: F,
 ) -> Result<String, OrderbookError>
 where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)>>,
 {
-    execute_with(policy, rate_limiter, attempt, decode_text_body).await
+    execute_with(
+        policy,
+        rate_limiter,
+        move || {
+            let future = attempt();
+            async move { future.await.map(AttemptOutcome::Response) }
+        },
+        decode_text_body,
+    )
+    .await
 }
 
 /// Executes an abstract empty-body attempt with retry and rate-limit policy.
@@ -685,13 +731,22 @@ where
 pub async fn execute_empty_with<F, Fut>(
     policy: &RequestPolicy,
     rate_limiter: &RequestRateLimiter,
-    attempt: F,
+    mut attempt: F,
 ) -> Result<(), OrderbookError>
 where
     F: FnMut() -> Fut,
     Fut: Future<Output = Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)>>,
 {
-    execute_with(policy, rate_limiter, attempt, |_| Ok(())).await
+    execute_with(
+        policy,
+        rate_limiter,
+        move || {
+            let future = attempt();
+            async move { future.await.map(AttemptOutcome::Response) }
+        },
+        |_| Ok(()),
+    )
+    .await
 }
 
 async fn request_with<T, D>(
@@ -735,7 +790,7 @@ async fn send_request(
     timeout: Option<Duration>,
     response_kind: ResponseKind,
     additional_headers: Option<HeaderMap>,
-) -> Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)> {
+) -> Result<AttemptOutcome, (cow_sdk_core::TransportErrorClass, String)> {
     let full_url = match append_query_string(&url, &params.query) {
         Ok(url) => url,
         Err(message) => {
@@ -778,17 +833,24 @@ async fn send_request(
     };
 
     match result {
-        Ok(body) => Ok(ResponseEnvelope {
+        Ok(body) => Ok(AttemptOutcome::Response(ResponseEnvelope {
             status: 200,
             status_text: canonical_status_text(200),
             content_type: None,
             body: body.into_bytes(),
-        }),
-        Err(TransportError::HttpStatus { status, body }) => Ok(ResponseEnvelope {
+        })),
+        Err(TransportError::HttpStatus {
             status,
-            status_text: canonical_status_text(status),
-            content_type: None,
-            body: body.into_bytes(),
+            headers,
+            body,
+        }) => Ok(AttemptOutcome::HttpError {
+            response: ResponseEnvelope {
+                status,
+                status_text: canonical_status_text(status),
+                content_type: None,
+                body: body.into_bytes(),
+            },
+            headers,
         }),
         Err(TransportError::Transport { class, detail }) => Err((class, detail)),
         Err(TransportError::Configuration { message }) => {
@@ -838,7 +900,7 @@ async fn execute_with<T, F, Fut, D>(
 ) -> Result<T, OrderbookError>
 where
     F: FnMut() -> Fut,
-    Fut: Future<Output = Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)>>,
+    Fut: Future<Output = Result<AttemptOutcome, (cow_sdk_core::TransportErrorClass, String)>>,
     D: Fn(&ResponseEnvelope) -> Result<T, OrderbookError>,
 {
     let mut last_transport_error = None;
@@ -847,17 +909,32 @@ where
         rate_limiter.acquire().await;
 
         match attempt().await {
-            Ok(response) if (200..300).contains(&response.status) => {
+            Ok(AttemptOutcome::Response(response)) if (200..300).contains(&response.status) => {
                 return decode_success(&response);
             }
-            Ok(response) => {
+            Ok(outcome) => {
+                let (response, headers) = match outcome {
+                    AttemptOutcome::Response(response) => (response, None),
+                    AttemptOutcome::HttpError { response, headers } => (response, Some(headers)),
+                };
                 let body = response.decoded_body();
                 let error = OrderBookApiError::new(response.status, response.status_text, body);
                 let should_retry =
                     policy.should_retry_status(error.status) && attempt_index < policy.max_attempts;
 
                 if should_retry {
-                    delay_for(policy.backoff_delay(attempt_index)).await;
+                    let delay = headers.as_ref().map_or_else(
+                        || policy.backoff_delay(attempt_index),
+                        |headers| {
+                            policy.retry_delay(
+                                attempt_index,
+                                error.status,
+                                headers,
+                                SystemTime::now(),
+                            )
+                        },
+                    );
+                    delay_for(delay).await;
                     continue;
                 }
 
@@ -917,4 +994,188 @@ fn canonical_status_text(status: u16) -> String {
         .ok()
         .and_then(|status| status.canonical_reason().map(ToOwned::to_owned))
         .unwrap_or_else(|| "Unknown Status".to_owned())
+}
+
+fn retry_after_delay(headers: &[(String, String)], now: SystemTime) -> Option<Duration> {
+    headers
+        .iter()
+        .find(|(name, _)| name.eq_ignore_ascii_case(RETRY_AFTER_HEADER))
+        .and_then(|(_, value)| parse_retry_after(value, now))
+}
+
+fn parse_retry_after(value: &str, now: SystemTime) -> Option<Duration> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    if trimmed.chars().all(|character| character.is_ascii_digit()) {
+        return trimmed.parse::<u64>().ok().map(Duration::from_secs);
+    }
+
+    let retry_at = parse_http_date(trimmed)?;
+    let now = unix_timestamp(now)?;
+    if retry_at <= now {
+        return Some(Duration::from_secs(0));
+    }
+    Some(Duration::from_secs((retry_at - now).cast_unsigned()))
+}
+
+fn parse_http_date(value: &str) -> Option<i64> {
+    let mut parts = value.split_ascii_whitespace();
+    let weekday = parts.next()?;
+    let day = parts.next()?.parse::<u32>().ok()?;
+    let month = parse_http_month(parts.next()?)?;
+    let year = parts.next()?.parse::<i32>().ok()?;
+    let (hour, minute, second) = parse_http_time(parts.next()?)?;
+    let timezone = parts.next()?;
+
+    if !weekday.ends_with(',') || timezone != "GMT" || parts.next().is_some() {
+        return None;
+    }
+
+    let days = days_from_civil(year, month, day)?;
+    let seconds = i64::from(hour) * 3_600 + i64::from(minute) * 60 + i64::from(second);
+    days.checked_mul(86_400)?.checked_add(seconds)
+}
+
+fn parse_http_month(value: &str) -> Option<u32> {
+    match value {
+        "Jan" => Some(1),
+        "Feb" => Some(2),
+        "Mar" => Some(3),
+        "Apr" => Some(4),
+        "May" => Some(5),
+        "Jun" => Some(6),
+        "Jul" => Some(7),
+        "Aug" => Some(8),
+        "Sep" => Some(9),
+        "Oct" => Some(10),
+        "Nov" => Some(11),
+        "Dec" => Some(12),
+        _ => None,
+    }
+}
+
+fn parse_http_time(value: &str) -> Option<(u32, u32, u32)> {
+    let mut parts = value.split(':');
+    let hour = parts.next()?.parse::<u32>().ok()?;
+    let minute = parts.next()?.parse::<u32>().ok()?;
+    let second = parts.next()?.parse::<u32>().ok()?;
+    if parts.next().is_some() || hour > 23 || minute > 59 || second > 59 {
+        return None;
+    }
+    Some((hour, minute, second))
+}
+
+fn days_from_civil(year: i32, month: u32, day: u32) -> Option<i64> {
+    if !(1..=12).contains(&month) || day == 0 || day > days_in_month(year, month) {
+        return None;
+    }
+
+    let adjusted_year = year - i32::from(month <= 2);
+    let era = if adjusted_year >= 0 {
+        adjusted_year
+    } else {
+        adjusted_year - 399
+    } / 400;
+    let year_of_era = adjusted_year - era * 400;
+    let month_prime = month.cast_signed() + if month > 2 { -3 } else { 9 };
+    let day_of_year = (153 * month_prime + 2) / 5 + day.cast_signed() - 1;
+    let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+
+    Some(i64::from(era * 146_097 + day_of_era - 719_468))
+}
+
+const fn days_in_month(year: i32, month: u32) -> u32 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if is_leap_year(year) => 29,
+        2 => 28,
+        _ => 0,
+    }
+}
+
+const fn is_leap_year(year: i32) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
+}
+
+fn unix_timestamp(time: SystemTime) -> Option<i64> {
+    time.duration_since(UNIX_EPOCH)
+        .ok()?
+        .as_secs()
+        .try_into()
+        .ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        INTERNAL_SERVER_ERROR, REQUEST_TIMEOUT, RateLimitSettings, RequestPolicy,
+        SERVICE_UNAVAILABLE, TOO_MANY_REQUESTS, parse_retry_after,
+    };
+    use std::time::{Duration, UNIX_EPOCH};
+
+    #[test]
+    fn parse_retry_after_covers_documented_boundary_matrix() {
+        assert_eq!(
+            parse_retry_after("0", UNIX_EPOCH),
+            Some(Duration::from_secs(0))
+        );
+        assert_eq!(
+            parse_retry_after("1", UNIX_EPOCH),
+            Some(Duration::from_secs(1))
+        );
+        assert_eq!(
+            parse_retry_after("60", UNIX_EPOCH),
+            Some(Duration::from_secs(60))
+        );
+        assert_eq!(
+            parse_retry_after("3600", UNIX_EPOCH),
+            Some(Duration::from_secs(3_600))
+        );
+        assert_eq!(
+            parse_retry_after("Thu, 01 Jan 1970 00:00:10 GMT", UNIX_EPOCH),
+            Some(Duration::from_secs(10))
+        );
+        assert_eq!(
+            parse_retry_after(
+                "Thu, 01 Jan 1970 00:00:00 GMT",
+                UNIX_EPOCH + Duration::from_secs(1),
+            ),
+            Some(Duration::from_secs(0))
+        );
+        assert_eq!(parse_retry_after("not-a-date", UNIX_EPOCH), None);
+        assert_eq!(parse_retry_after("", UNIX_EPOCH), None);
+    }
+
+    #[test]
+    fn retry_delay_uses_retry_after_only_for_429_and_503_and_picks_the_larger_wait() {
+        let policy = RequestPolicy::new(10, RateLimitSettings::default());
+        let long_retry_after = vec![("Retry-After".to_owned(), "5".to_owned())];
+        let short_retry_after = vec![("Retry-After".to_owned(), "1".to_owned())];
+        let now = UNIX_EPOCH;
+
+        assert_eq!(
+            policy.retry_delay(1, TOO_MANY_REQUESTS, &long_retry_after, now),
+            Duration::from_secs(5)
+        );
+        assert_eq!(
+            policy.retry_delay(1, SERVICE_UNAVAILABLE, &long_retry_after, now),
+            Duration::from_secs(5)
+        );
+        assert_eq!(
+            policy.retry_delay(7, TOO_MANY_REQUESTS, &short_retry_after, now),
+            Duration::from_millis(3_200)
+        );
+        assert_eq!(
+            policy.retry_delay(1, INTERNAL_SERVER_ERROR, &long_retry_after, now),
+            Duration::from_millis(50)
+        );
+        assert_eq!(
+            policy.retry_delay(1, REQUEST_TIMEOUT, &long_retry_after, now),
+            Duration::from_millis(50)
+        );
+    }
 }

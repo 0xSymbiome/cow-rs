@@ -167,7 +167,11 @@ mod native {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/boom"))
-            .respond_with(ResponseTemplate::new(500).set_body_string("upstream exploded"))
+            .respond_with(
+                ResponseTemplate::new(500)
+                    .insert_header("Retry-After", "5")
+                    .set_body_string("upstream exploded"),
+            )
             .mount(&server)
             .await;
 
@@ -177,8 +181,15 @@ mod native {
             .await
             .expect_err("a 500 response must surface a typed HttpStatus error");
         match error {
-            TransportError::HttpStatus { status, body } => {
+            TransportError::HttpStatus {
+                status,
+                headers,
+                body,
+            } => {
                 assert_eq!(status, 500);
+                assert!(headers.iter().any(|(name, value)| {
+                    name.eq_ignore_ascii_case("retry-after") && value == "5"
+                }));
                 assert_eq!(body, "upstream exploded");
             }
             other => panic!("expected HttpStatus variant, got {other:?}"),
@@ -278,7 +289,10 @@ export function install_fetch_ok_mock(body) {
 export function install_fetch_status_mock(status, body) {
   const previous = globalThis.fetch;
   globalThis.fetch = (_input, _init) => {
-    const response = new Response(body, { status });
+    const response = new Response(body, {
+      status,
+      headers: { 'Retry-After': '5' },
+    });
     return Promise.resolve(response);
   };
   return previous;
@@ -362,8 +376,15 @@ export function restore_fetch(previous) {
             .expect_err("500 response must surface a typed HttpStatus error");
         restore_fetch(previous);
         match error {
-            TransportError::HttpStatus { status, body } => {
+            TransportError::HttpStatus {
+                status,
+                headers,
+                body,
+            } => {
                 assert_eq!(status, 500);
+                assert!(headers.iter().any(|(name, value)| {
+                    name.eq_ignore_ascii_case("retry-after") && value == "5"
+                }));
                 assert_eq!(body, "upstream exploded");
             }
             other => panic!("expected HttpStatus variant, got {other:?}"),

@@ -9,9 +9,9 @@
 //! value observe identical behavior across runtimes.
 //!
 //! Non-2xx responses surface through [`TransportError::HttpStatus`] with the
-//! numeric status code and the raw response body so downstream crates
-//! receive the HTTP-status context through the typed error channel instead
-//! of through an `Ok(String)` success path.
+//! numeric status code, response headers, and raw response body so
+//! downstream crates receive the HTTP-status context through the typed error
+//! channel instead of through an `Ok(String)` success path.
 //!
 //! # Per-call header and timeout contract
 //!
@@ -42,7 +42,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use cow_sdk_core::{HttpTransport, Redacted, TransportError, TransportErrorClass};
-use js_sys::{Object, Reflect};
+use js_sys::{Array, Object, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{AbortController, Headers, Request, RequestInit, Response, Window};
@@ -182,6 +182,7 @@ impl FetchTransport {
             .dyn_into()
             .map_err(|_| decode_error("fetch returned a value that was not a Response"))?;
         let status = response.status();
+        let headers = response_headers(&response.headers());
         let text_promise = response
             .text()
             .map_err(|error| body_error("could not read response body", &error))?;
@@ -196,6 +197,7 @@ impl FetchTransport {
         } else {
             Err(TransportError::HttpStatus {
                 status,
+                headers,
                 body: body_text,
             })
         }
@@ -380,4 +382,22 @@ fn reflect_string(source: &JsValue, key: &str) -> Option<String> {
                 .and_then(|object| Reflect::get(object, &key_value).ok())
                 .and_then(|value| value.as_string())
         })
+}
+
+fn response_headers(headers: &Headers) -> Vec<(String, String)> {
+    let entries = Array::from(headers.as_ref());
+    let mut collected = Vec::with_capacity(entries.length() as usize);
+
+    for index in 0..entries.length() {
+        let pair = Array::from(&entries.get(index));
+        let Some(name) = pair.get(0).as_string() else {
+            continue;
+        };
+        let Some(value) = pair.get(1).as_string() else {
+            continue;
+        };
+        collected.push((name, value));
+    }
+
+    collected
 }

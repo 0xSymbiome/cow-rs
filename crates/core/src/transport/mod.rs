@@ -10,8 +10,8 @@
 //! timeout so typed consumers compose one injection point without holding a
 //! parallel HTTP client for header or deadline overrides. Adapters surface
 //! non-2xx responses through [`TransportError::HttpStatus`] so the calling
-//! layer receives the numeric status and raw response body together through
-//! the typed error channel.
+//! layer receives the numeric status, response headers, and raw response body
+//! together through the typed error channel.
 //!
 //! The companion [`TransportError`] enum is the typed failure surface for
 //! transport adapters. Native adapters that bridge `reqwest::Error` classify
