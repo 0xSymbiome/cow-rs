@@ -487,22 +487,20 @@ struct QuoteAmountStages {
 
 impl QuoteFeeBreakdown {
     fn into_costs(self) -> Result<cow_sdk_core::Costs<Amount>, TradingError> {
-        Ok(cow_sdk_core::Costs {
-            network_fee: cow_sdk_core::NetworkFee {
-                amount_in_sell_currency: Amount::new(self.network_cost_amount.to_string())?,
-                amount_in_buy_currency: Amount::new(
-                    self.network_cost_amount_in_buy_currency.to_string(),
-                )?,
-            },
-            partner_fee: cow_sdk_core::FeeComponent {
-                amount: Amount::new(self.partner_fee_amount.to_string())?,
-                bps: self.partner_fee_bps,
-            },
-            protocol_fee: cow_sdk_core::FeeComponent {
-                amount: Amount::new(self.protocol_fee_amount.to_string())?,
-                bps: rounded_nonnegative_f64_to_u32(self.protocol_fee_bps, "protocolFeeBps")?,
-            },
-        })
+        Ok(cow_sdk_core::Costs::new(
+            cow_sdk_core::NetworkFee::new(
+                Amount::new(self.network_cost_amount.to_string())?,
+                Amount::new(self.network_cost_amount_in_buy_currency.to_string())?,
+            ),
+            cow_sdk_core::FeeComponent::new(
+                Amount::new(self.partner_fee_amount.to_string())?,
+                self.partner_fee_bps,
+            ),
+            cow_sdk_core::FeeComponent::new(
+                Amount::new(self.protocol_fee_amount.to_string())?,
+                rounded_nonnegative_f64_to_u32(self.protocol_fee_bps, "protocolFeeBps")?,
+            ),
+        ))
     }
 }
 
@@ -645,10 +643,10 @@ fn build_quote_amount_stages(inputs: &QuoteStageInputs<'_>) -> (QuoteAmountStage
 
 impl AmountsBig {
     fn into_amounts(self) -> Result<cow_sdk_core::Amounts<Amount>, TradingError> {
-        Ok(cow_sdk_core::Amounts {
-            sell_amount: Amount::new(self.sell_amount.to_string())?,
-            buy_amount: Amount::new(self.buy_amount.to_string())?,
-        })
+        Ok(cow_sdk_core::Amounts::new(
+            Amount::new(self.sell_amount.to_string())?,
+            Amount::new(self.buy_amount.to_string())?,
+        ))
     }
 }
 

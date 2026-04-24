@@ -75,12 +75,12 @@ where
     S::Error: std::fmt::Display,
 {
     let settlement = resolve_settlement_address(chain_id, options);
-    let tx = TransactionRequest {
-        to: Some(settlement),
-        data: Some(HexData::new(encode_set_pre_signature(order_uid, true)?)?),
-        value: Some(Amount::zero()),
-        gas_limit: None,
-    };
+    let mut tx = TransactionRequest::new(
+        Some(settlement),
+        Some(HexData::new(encode_set_pre_signature(order_uid, true)?)?),
+        Some(Amount::zero()),
+        None,
+    );
     let gas = signer
         .estimate_gas(&tx)
         .map_err(|error| TradingError::Signer {
@@ -92,10 +92,8 @@ where
         Err(_) => default_gas_limit(),
     };
 
-    Ok(TransactionRequest {
-        gas_limit: Some(gas_limit),
-        ..tx
-    })
+    tx.gas_limit = Some(gas_limit);
+    Ok(tx)
 }
 
 /// Builds a pre-sign transaction using an async signer.
@@ -117,12 +115,12 @@ where
     S::Error: std::fmt::Display,
 {
     let settlement = resolve_settlement_address(chain_id, options);
-    let tx = TransactionRequest {
-        to: Some(settlement),
-        data: Some(HexData::new(encode_set_pre_signature(order_uid, true)?)?),
-        value: Some(Amount::zero()),
-        gas_limit: None,
-    };
+    let mut tx = TransactionRequest::new(
+        Some(settlement),
+        Some(HexData::new(encode_set_pre_signature(order_uid, true)?)?),
+        Some(Amount::zero()),
+        None,
+    );
     let gas = signer
         .estimate_gas(&tx)
         .await
@@ -135,10 +133,8 @@ where
         Err(_) => default_gas_limit(),
     };
 
-    Ok(TransactionRequest {
-        gas_limit: Some(gas_limit),
-        ..tx
-    })
+    tx.gas_limit = Some(gas_limit);
+    Ok(tx)
 }
 
 /// Builds an `EthFlow` order-creation transaction using a sync signer.
@@ -243,17 +239,17 @@ where
         Some(&options),
     )
     .await?;
-    let tx = TransactionRequest {
-        to: Some(resolve_eth_flow_address(chain_id, Some(&options))),
-        data: Some(HexData::new(encode_ethflow_create_order(
+    let mut tx = TransactionRequest::new(
+        Some(resolve_eth_flow_address(chain_id, Some(&options))),
+        Some(HexData::new(encode_ethflow_create_order(
             &order_to_sign,
             adjusted
                 .quote_id
                 .ok_or(TradingError::MissingQuoteId("EthFlow transaction"))?,
         )?)?),
-        value: Some(order_to_sign.sell_amount.clone()),
-        gas_limit: None,
-    };
+        Some(order_to_sign.sell_amount.clone()),
+        None,
+    );
     let gas = signer
         .estimate_gas(&tx)
         .await
@@ -266,13 +262,11 @@ where
         Err(_) => default_gas_limit(),
     };
 
+    tx.gas_limit = Some(gas_limit);
     Ok(EthFlowTransaction {
         order_id: generated.order_id,
         order_to_sign,
-        transaction: TransactionRequest {
-            gas_limit: Some(gas_limit),
-            ..tx
-        },
+        transaction: tx,
         from: owner,
     })
 }
@@ -297,19 +291,19 @@ where
     S::Error: std::fmt::Display,
 {
     let mut tx = if order.ethflow_data.is_some() {
-        TransactionRequest {
-            to: Some(resolve_eth_flow_address(chain_id, options)),
-            data: Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
-            value: Some(Amount::zero()),
-            gas_limit: None,
-        }
+        TransactionRequest::new(
+            Some(resolve_eth_flow_address(chain_id, options)),
+            Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
+            Some(Amount::zero()),
+            None,
+        )
     } else {
-        TransactionRequest {
-            to: Some(resolve_settlement_address(chain_id, options)),
-            data: Some(HexData::new(encode_invalidate_order_uid(&order.uid)?)?),
-            value: Some(Amount::zero()),
-            gas_limit: None,
-        }
+        TransactionRequest::new(
+            Some(resolve_settlement_address(chain_id, options)),
+            Some(HexData::new(encode_invalidate_order_uid(&order.uid)?)?),
+            Some(Amount::zero()),
+            None,
+        )
     };
     let gas = signer
         .estimate_gas(&tx)
@@ -344,19 +338,19 @@ where
     S::Error: std::fmt::Display,
 {
     let mut tx = if order.ethflow_data.is_some() {
-        TransactionRequest {
-            to: Some(resolve_eth_flow_address(chain_id, options)),
-            data: Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
-            value: Some(Amount::zero()),
-            gas_limit: None,
-        }
+        TransactionRequest::new(
+            Some(resolve_eth_flow_address(chain_id, options)),
+            Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
+            Some(Amount::zero()),
+            None,
+        )
     } else {
-        TransactionRequest {
-            to: Some(resolve_settlement_address(chain_id, options)),
-            data: Some(HexData::new(encode_invalidate_order_uid(&order.uid)?)?),
-            value: Some(Amount::zero()),
-            gas_limit: None,
-        }
+        TransactionRequest::new(
+            Some(resolve_settlement_address(chain_id, options)),
+            Some(HexData::new(encode_invalidate_order_uid(&order.uid)?)?),
+            Some(Amount::zero()),
+            None,
+        )
     };
     let gas = signer
         .estimate_gas(&tx)

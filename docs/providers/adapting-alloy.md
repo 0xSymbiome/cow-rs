@@ -106,7 +106,7 @@ where
         transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
         // let receipt = self.provider.get_transaction_receipt(transaction_hash.into_alloy()).await.map_err(...)?;
-        // Ok(receipt.map(|r| TransactionReceipt { transaction_hash: TransactionHash::from(r.transaction_hash) }))
+        // Ok(receipt.map(|r| TransactionReceipt::new(TransactionHash::from(r.transaction_hash))))
         unimplemented!("wire alloy get_transaction_receipt and map to TransactionReceipt")
     }
 
@@ -131,7 +131,7 @@ where
     async fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error> {
         // let tag = parse_tag(block_tag)?;
         // let block = self.provider.get_block(tag).await.map_err(...)?.ok_or(AlloyAdapterError::MissingField("block"))?;
-        // Ok(BlockInfo { number: block.number, hash: block.hash.map(BlockHash::from) })
+        // Ok(BlockInfo::new(block.number, block.hash.map(BlockHash::from)))
         unimplemented!("map the alloy block response to cow_sdk_core::traits::BlockInfo")
     }
 

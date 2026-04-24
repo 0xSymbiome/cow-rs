@@ -74,9 +74,9 @@ impl AsyncSigner for DummyAsyncSigner {
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionReceipt, Self::Error> {
-        Ok(TransactionReceipt {
-            transaction_hash: Hash32::new(format!("0x{}", "aa".repeat(32))).unwrap(),
-        })
+        Ok(TransactionReceipt::new(
+            Hash32::new(format!("0x{}", "aa".repeat(32))).unwrap(),
+        ))
     }
 
     async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
@@ -164,10 +164,7 @@ impl AsyncProvider for AsyncMockProvider {
     }
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
-        Ok(BlockInfo {
-            number: 0,
-            hash: None,
-        })
+        Ok(BlockInfo::new(0, None))
     }
 
     async fn get_contract(
@@ -175,10 +172,7 @@ impl AsyncProvider for AsyncMockProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle {
-            address: address.clone(),
-            abi_json: abi_json.to_owned(),
-        })
+        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
     }
 }
 

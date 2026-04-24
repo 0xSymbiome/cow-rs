@@ -92,9 +92,9 @@ impl Signer for MockSigner {
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionReceipt, Self::Error> {
-        Ok(TransactionReceipt {
-            transaction_hash: Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap(),
-        })
+        Ok(TransactionReceipt::new(
+            Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap(),
+        ))
     }
 
     fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {

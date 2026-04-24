@@ -741,6 +741,31 @@ impl Amount {
     pub fn is_zero(&self) -> bool {
         self.0 == BigUint::from(0u32)
     }
+
+    /// Returns the sum of two typed amounts.
+    #[inline]
+    #[must_use]
+    pub fn checked_add(&self, other: &Self) -> Option<Self> {
+        Some(Self(&self.0 + &other.0))
+    }
+
+    /// Returns the difference of two typed amounts, or `None` on underflow.
+    #[inline]
+    #[must_use]
+    pub fn checked_sub(&self, other: &Self) -> Option<Self> {
+        if self.0 < other.0 {
+            return None;
+        }
+
+        Some(Self(&self.0 - &other.0))
+    }
+
+    /// Returns the product of two typed amounts.
+    #[inline]
+    #[must_use]
+    pub fn checked_mul(&self, other: &Self) -> Option<Self> {
+        Some(Self(&self.0 * &other.0))
+    }
 }
 
 impl Default for Amount {
@@ -825,6 +850,34 @@ impl<'de> Deserialize<'de> for Amount {
         parse_u256_quantity("amount", &value)
             .map(Self)
             .map_err(|err| serde::de::Error::custom(err.to_string()))
+    }
+}
+
+impl Add<Self> for Amount {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0)
+    }
+}
+
+impl Sub<Self> for Amount {
+    type Output = Option<Self>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.checked_sub(&rhs)
+    }
+}
+
+impl AddAssign<Self> for Amount {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0;
+    }
+}
+
+impl SubAssign<Self> for Amount {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0 -= rhs.0;
     }
 }
 
@@ -1161,6 +1214,7 @@ pub enum BuyTokenDestination {
 }
 
 /// Token metadata used by user-domain SDK surfaces.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TokenInfo {
@@ -1177,6 +1231,29 @@ pub struct TokenInfo {
     /// Optional logo URL.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo_url: Option<String>,
+}
+
+impl TokenInfo {
+    /// Creates token metadata from the canonical display fields.
+    #[inline]
+    #[must_use]
+    pub const fn new(
+        chain_id: ChainId,
+        address: Address,
+        decimals: u8,
+        symbol: String,
+        name: String,
+        logo_url: Option<String>,
+    ) -> Self {
+        Self {
+            chain_id,
+            address,
+            decimals,
+            symbol,
+            name,
+            logo_url,
+        }
+    }
 }
 
 /// Compares two addresses using case-insensitive normalization.
@@ -1348,6 +1425,7 @@ impl UnsignedOrder {
 
 /// Optional order envelope used by SDK consumers that need owner or uid context
 /// alongside the user-domain unsigned order.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Order {
@@ -1362,7 +1440,25 @@ pub struct Order {
     pub uid: Option<OrderUid>,
 }
 
+impl Order {
+    /// Creates an optional order envelope around an unsigned order.
+    #[inline]
+    #[must_use]
+    pub const fn new(
+        unsigned: UnsignedOrder,
+        owner: Option<Address>,
+        uid: Option<OrderUid>,
+    ) -> Self {
+        Self {
+            unsigned,
+            owner,
+            uid,
+        }
+    }
+}
+
 /// Simplified trade execution view used by SDK consumers.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Trade {
@@ -1374,6 +1470,23 @@ pub struct Trade {
     pub executed_buy_amount: Amount,
 }
 
+impl Trade {
+    /// Creates a simplified trade execution view.
+    #[inline]
+    #[must_use]
+    pub const fn new(
+        order_uid: OrderUid,
+        executed_sell_amount: Amount,
+        executed_buy_amount: Amount,
+    ) -> Self {
+        Self {
+            order_uid,
+            executed_sell_amount,
+            executed_buy_amount,
+        }
+    }
+}
+
 /// Backward-compatible alias for the user-domain trade model.
 pub type TradeModel = Trade;
 
@@ -1381,6 +1494,7 @@ pub type TradeModel = Trade;
 ///
 /// This is not the orderbook HTTP wire DTO. The orderbook crate keeps the upstream
 /// string-based transport contract explicit.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuoteRequest {
@@ -1418,7 +1532,41 @@ pub struct QuoteRequest {
     pub valid_to: Option<u32>,
 }
 
+impl QuoteRequest {
+    /// Creates a user-domain quote request from its optional input fields.
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub const fn new(
+        kind: OrderKind,
+        sell_token: Option<Address>,
+        buy_token: Option<Address>,
+        receiver: Option<Address>,
+        from: Option<Address>,
+        sell_amount: Option<Amount>,
+        buy_amount: Option<Amount>,
+        fee_amount: Option<Amount>,
+        app_data_hash: Option<AppDataHash>,
+        app_data: Option<String>,
+        valid_to: Option<u32>,
+    ) -> Self {
+        Self {
+            kind,
+            sell_token,
+            buy_token,
+            receiver,
+            from,
+            sell_amount,
+            buy_amount,
+            fee_amount,
+            app_data_hash,
+            app_data,
+            valid_to,
+        }
+    }
+}
+
 /// User-domain quote response with validated quantities.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QuoteResponse {
@@ -1444,7 +1592,35 @@ pub struct QuoteResponse {
     pub amounts_and_costs: Option<QuoteAmountsAndCosts>,
 }
 
+impl QuoteResponse {
+    /// Creates a user-domain quote response from the canonical amount fields.
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub const fn new(
+        kind: OrderKind,
+        sell_amount: Amount,
+        buy_amount: Amount,
+        fee_amount: Amount,
+        order_uid: Option<OrderUid>,
+        price: Option<String>,
+        quote_id: Option<String>,
+        amounts_and_costs: Option<QuoteAmountsAndCosts>,
+    ) -> Self {
+        Self {
+            kind,
+            sell_amount,
+            buy_amount,
+            fee_amount,
+            order_uid,
+            price,
+            quote_id,
+            amounts_and_costs,
+        }
+    }
+}
+
 /// Generic sell/buy amount pair.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Amounts<T> {
@@ -1454,7 +1630,20 @@ pub struct Amounts<T> {
     pub buy_amount: T,
 }
 
+impl<T> Amounts<T> {
+    /// Creates a sell/buy amount pair.
+    #[inline]
+    #[must_use]
+    pub const fn new(sell_amount: T, buy_amount: T) -> Self {
+        Self {
+            sell_amount,
+            buy_amount,
+        }
+    }
+}
+
 /// Network-fee amounts expressed in both quote currencies.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkFee<T> {
@@ -1464,7 +1653,20 @@ pub struct NetworkFee<T> {
     pub amount_in_buy_currency: T,
 }
 
+impl<T> NetworkFee<T> {
+    /// Creates network-fee amounts in both quote currencies.
+    #[inline]
+    #[must_use]
+    pub const fn new(amount_in_sell_currency: T, amount_in_buy_currency: T) -> Self {
+        Self {
+            amount_in_sell_currency,
+            amount_in_buy_currency,
+        }
+    }
+}
+
 /// Generic fee component represented by amount and basis points.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FeeComponent<T> {
@@ -1474,7 +1676,17 @@ pub struct FeeComponent<T> {
     pub bps: u32,
 }
 
+impl<T> FeeComponent<T> {
+    /// Creates a fee component from an amount and basis-point value.
+    #[inline]
+    #[must_use]
+    pub const fn new(amount: T, bps: u32) -> Self {
+        Self { amount, bps }
+    }
+}
+
 /// Full quote cost breakdown.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Costs<T> {
@@ -1484,6 +1696,23 @@ pub struct Costs<T> {
     pub partner_fee: FeeComponent<T>,
     /// Protocol fee component.
     pub protocol_fee: FeeComponent<T>,
+}
+
+impl<T> Costs<T> {
+    /// Creates a full quote cost breakdown.
+    #[inline]
+    #[must_use]
+    pub const fn new(
+        network_fee: NetworkFee<T>,
+        partner_fee: FeeComponent<T>,
+        protocol_fee: FeeComponent<T>,
+    ) -> Self {
+        Self {
+            network_fee,
+            partner_fee,
+            protocol_fee,
+        }
+    }
 }
 
 /// Stepwise quote amounts and cost components across the quote lifecycle.

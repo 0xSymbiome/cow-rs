@@ -275,18 +275,18 @@ where
     P::Error: std::fmt::Display,
 {
     provider
-        .read_contract(&ContractCall {
-            address: reader_address.clone(),
-            method: method.to_owned(),
-            abi_json: reader_abi_json.to_owned(),
-            args_json: serde_json::json!({
+        .read_contract(&ContractCall::new(
+            reader_address.clone(),
+            method.to_owned(),
+            reader_abi_json.to_owned(),
+            serde_json::json!({
                 "baseAddress": base_address,
                 "baseAbi": base_abi_json,
                 "method": method,
                 "parameters": parameters_json,
             })
             .to_string(),
-        })
+        ))
         .map_err(|error| ContractsError::Provider {
             operation: "read_contract",
             message: error.to_string(),

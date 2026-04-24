@@ -234,9 +234,7 @@ impl AsyncProvider for Eip1193Provider {
                     "receipt must include `transactionHash`",
                 )
             })?;
-        Ok(Some(TransactionReceipt {
-            transaction_hash: TransactionHash::new(hash)?,
-        }))
+        Ok(Some(TransactionReceipt::new(TransactionHash::new(hash)?)))
     }
 
     async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
@@ -312,7 +310,7 @@ impl AsyncProvider for Eip1193Provider {
             .and_then(Value::as_str)
             .map(cow_sdk_core::BlockHash::new)
             .transpose()?;
-        Ok(BlockInfo { number, hash })
+        Ok(BlockInfo::new(number, hash))
     }
 
     async fn get_contract(
@@ -320,10 +318,7 @@ impl AsyncProvider for Eip1193Provider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle {
-            address: address.clone(),
-            abi_json: abi_json.to_owned(),
-        })
+        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
     }
 }
 
@@ -810,12 +805,12 @@ mod tests {
     fn rpc_transaction_shape_keeps_present_fields_explicit_and_hex_encoded() {
         let from = Address::new("0x4444444444444444444444444444444444444444").unwrap();
         let to = Address::new("0x1111111111111111111111111111111111111111").unwrap();
-        let tx = TransactionRequest {
-            to: Some(to.clone()),
-            data: Some(HexData::new("0x1234").unwrap()),
-            value: Some(Amount::new("21").unwrap()),
-            gas_limit: Some(Amount::new("21000").unwrap()),
-        };
+        let tx = TransactionRequest::new(
+            Some(to.clone()),
+            Some(HexData::new("0x1234").unwrap()),
+            Some(Amount::new("21").unwrap()),
+            Some(Amount::new("21000").unwrap()),
+        );
 
         assert_eq!(
             transaction_to_rpc(&tx, Some(&from)).unwrap(),

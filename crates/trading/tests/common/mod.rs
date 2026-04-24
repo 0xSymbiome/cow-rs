@@ -468,9 +468,7 @@ impl Signer for MockSigner {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.sent_transactions.push(tx.clone());
-        Ok(TransactionReceipt {
-            transaction_hash: state.tx_hash.clone(),
-        })
+        Ok(TransactionReceipt::new(state.tx_hash.clone()))
     }
 
     fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
@@ -622,10 +620,7 @@ impl Provider for MockProvider {
     }
 
     fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
-        Ok(BlockInfo {
-            number: 0,
-            hash: None,
-        })
+        Ok(BlockInfo::new(0, None))
     }
 
     fn set_signer(&mut self, signer: Self::Signer) {
@@ -639,10 +634,7 @@ impl Provider for MockProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle {
-            address: address.clone(),
-            abi_json: abi_json.to_owned(),
-        })
+        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
     }
 }
 

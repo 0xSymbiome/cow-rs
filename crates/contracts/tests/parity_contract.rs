@@ -634,18 +634,18 @@ fn assert_reader_helper_surface(id: &str, expected: &Value) {
 }
 
 fn sample_domain() -> TypedDataDomain {
-    TypedDataDomain {
-        name: "Gnosis Protocol".to_owned(),
-        version: "v2".to_owned(),
-        chain_id: u64::from(SupportedChainId::Mainnet),
-        verifying_contract: Registry::default()
+    TypedDataDomain::new(
+        "Gnosis Protocol".to_owned(),
+        "v2".to_owned(),
+        u64::from(SupportedChainId::Mainnet),
+        Registry::default()
             .address(
                 ContractId::Settlement,
                 SupportedChainId::Mainnet,
                 CowEnv::Prod,
             )
             .expect("canonical settlement address is registered on mainnet"),
-    }
+    )
 }
 
 fn sample_order_uid() -> OrderUid {

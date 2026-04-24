@@ -30,12 +30,12 @@ use cow_sdk_core::{
 let verifying_contract = Registry::default()
     .address(ContractId::Settlement, SupportedChainId::Mainnet, CowEnv::Prod)
     .unwrap();
-let domain = TypedDataDomain {
-    name: "Gnosis Protocol".to_owned(),
-    version: "v2".to_owned(),
-    chain_id: SupportedChainId::Mainnet.into(),
+let domain = TypedDataDomain::new(
+    "Gnosis Protocol".to_owned(),
+    "v2".to_owned(),
+    SupportedChainId::Mainnet.into(),
     verifying_contract,
-};
+);
 let trader_address = Address::new("0x3333333333333333333333333333333333333333").unwrap();
 
 let order = Order::from(&UnsignedOrder::new(

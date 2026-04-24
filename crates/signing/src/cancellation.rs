@@ -271,12 +271,12 @@ pub fn order_cancellations_typed_data_payload(
 ) -> Result<TypedDataPayload, SigningError> {
     let cancellations = OrderCancellations::new(order_uids.to_vec());
 
-    Ok(TypedDataPayload {
-        domain: get_domain(chain_id, options)?,
-        primary_type: ORDER_CANCELLATIONS_PRIMARY_TYPE.to_owned(),
-        types: typed_data_types(ORDER_CANCELLATIONS_PRIMARY_TYPE, cancellation_fields()),
-        message: serialize_message(&cancellations)?,
-    })
+    Ok(TypedDataPayload::new(
+        get_domain(chain_id, options)?,
+        ORDER_CANCELLATIONS_PRIMARY_TYPE.to_owned(),
+        typed_data_types(ORDER_CANCELLATIONS_PRIMARY_TYPE, cancellation_fields()),
+        serialize_message(&cancellations)?,
+    ))
 }
 
 fn cancellation_signing_payload(

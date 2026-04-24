@@ -15,6 +15,9 @@ unreleased public contract of the repository.
 
 ### Added
 
+- Typed-amount arithmetic now lives on `cow_sdk_core::Amount` directly,
+  with Add, Sub, AddAssign, SubAssign, checked_add, checked_sub, and
+  checked_mul operators that delegate to the underlying integer storage.
 - Testing depth across `cow-sdk-contracts` now spans every
   `alloy::sol!` binding family through three reinforcing lanes:
   ten new byte-identity parity fixtures in
@@ -578,6 +581,19 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Public-field types in `cow-sdk-core` are now marked non-exhaustive so
+  future protocol-driven field additions ship as additive minor changes.
+- The pre-release stability sweep is now consolidated across
+  core, contracts, orderbook, browser-wallet, signing, app-data,
+  and async-provider surfaces: public DTOs and enum heads use
+  forward-compatible constructors where needed, credential-bearing
+  builder and IPFS upload boundaries redact secret material,
+  signed amounts use arbitrary-precision storage behind the existing
+  wire shape, reviewed orderbook rejection tags and retry cooldowns
+  have typed handling, browser EIP-1271 cache timing is wasm-safe,
+  legacy digest shims are removed, codec fuzz targets start from
+  committed corpora, and read-only async providers are separated from
+  signer-capable providers.
 - The async provider surface now separates read-only chain RPC from signer
   creation. `AsyncProvider` carries only read methods, while the new
   `AsyncSigningProvider: AsyncProvider` extension owns `type Signer` and

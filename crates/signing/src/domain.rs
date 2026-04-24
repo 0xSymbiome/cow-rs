@@ -36,16 +36,16 @@ pub fn get_domain(
         .and_then(|options| options.settlement_contract_override.as_ref())
         .and_then(|addresses| addresses.get(&u64::from(chain_id)).cloned());
 
-    Ok(TypedDataDomain {
-        name: "Gnosis Protocol".to_owned(),
-        version: "v2".to_owned(),
-        chain_id: chain_id.into(),
-        verifying_contract: override_address.unwrap_or_else(|| {
+    Ok(TypedDataDomain::new(
+        "Gnosis Protocol".to_owned(),
+        "v2".to_owned(),
+        chain_id.into(),
+        override_address.unwrap_or_else(|| {
             Registry::default()
                 .address(ContractId::Settlement, chain_id, env)
                 .expect("canonical settlement address is registered for every supported chain/env")
         }),
-    })
+    ))
 }
 
 /// Computes the domain separator for a chain and optional protocol overrides.
@@ -102,12 +102,12 @@ pub fn order_typed_data_payload(
     order: &UnsignedOrder,
     options: Option<&ProtocolOptions>,
 ) -> Result<TypedDataPayload, SigningError> {
-    Ok(TypedDataPayload {
-        domain: get_domain(chain_id, options)?,
-        primary_type: ORDER_PRIMARY_TYPE.to_owned(),
-        types: typed_data_types(ORDER_PRIMARY_TYPE, order_fields()),
-        message: serialize_message(order)?,
-    })
+    Ok(TypedDataPayload::new(
+        get_domain(chain_id, options)?,
+        ORDER_PRIMARY_TYPE.to_owned(),
+        typed_data_types(ORDER_PRIMARY_TYPE, order_fields()),
+        serialize_message(order)?,
+    ))
 }
 
 /// Returns `CoW` order fields as core typed-data field descriptors.
@@ -115,10 +115,7 @@ pub fn order_typed_data_payload(
 pub fn order_fields() -> Vec<TypedDataField> {
     ORDER_TYPE_FIELDS
         .iter()
-        .map(|field| TypedDataField {
-            name: field.name.to_owned(),
-            kind: field.kind.to_owned(),
-        })
+        .map(|field| TypedDataField::new(field.name.to_owned(), field.kind.to_owned()))
         .collect()
 }
 
@@ -127,10 +124,7 @@ pub fn order_fields() -> Vec<TypedDataField> {
 pub fn cancellation_fields() -> Vec<TypedDataField> {
     CANCELLATIONS_TYPE_FIELDS
         .iter()
-        .map(|field| TypedDataField {
-            name: field.name.to_owned(),
-            kind: field.kind.to_owned(),
-        })
+        .map(|field| TypedDataField::new(field.name.to_owned(), field.kind.to_owned()))
         .collect()
 }
 
@@ -144,10 +138,7 @@ pub fn domain_fields() -> Vec<TypedDataField> {
         ("verifyingContract", "address"),
     ]
     .into_iter()
-    .map(|(name, kind)| TypedDataField {
-        name: name.to_owned(),
-        kind: kind.to_owned(),
-    })
+    .map(|(name, kind)| TypedDataField::new(name.to_owned(), kind.to_owned()))
     .collect()
 }
 

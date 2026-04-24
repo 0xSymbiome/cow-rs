@@ -109,11 +109,13 @@ fn domain_strategy() -> impl Strategy<Value = TypedDataDomain> {
         address_strategy(),
     )
         .prop_map(
-            |(name, (major, minor, patch), chain_id, verifying_contract)| TypedDataDomain {
-                name,
-                version: format!("{major}.{minor}.{patch}"),
-                chain_id,
-                verifying_contract,
+            |(name, (major, minor, patch), chain_id, verifying_contract)| {
+                TypedDataDomain::new(
+                    name,
+                    format!("{major}.{minor}.{patch}"),
+                    chain_id,
+                    verifying_contract,
+                )
             },
         )
 }

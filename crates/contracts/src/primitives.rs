@@ -279,12 +279,12 @@ mod tests {
 
     #[test]
     fn domain_separator_and_typed_data_digest_match_manual_eip712_encoding() {
-        let domain = TypedDataDomain {
-            name: "Gnosis Protocol".to_owned(),
-            version: "v2".to_owned(),
-            chain_id: 1,
-            verifying_contract: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
-        };
+        let domain = TypedDataDomain::new(
+            "Gnosis Protocol".to_owned(),
+            "v2".to_owned(),
+            1,
+            Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
+        );
         let struct_hash = [0x55; 32];
 
         let mut encoded = Vec::new();

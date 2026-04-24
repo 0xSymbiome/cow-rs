@@ -33,9 +33,7 @@ impl AsyncProvider for ReadOnlyProvider {
         &self,
         transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
-        Ok(Some(TransactionReceipt {
-            transaction_hash: transaction_hash.clone(),
-        }))
+        Ok(Some(TransactionReceipt::new(transaction_hash.clone())))
     }
 
     async fn get_storage_at(
@@ -55,10 +53,7 @@ impl AsyncProvider for ReadOnlyProvider {
     }
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
-        Ok(BlockInfo {
-            number: 42,
-            hash: None,
-        })
+        Ok(BlockInfo::new(42, None))
     }
 
     async fn get_contract(
@@ -66,10 +61,7 @@ impl AsyncProvider for ReadOnlyProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle {
-            address: address.clone(),
-            abi_json: abi_json.to_owned(),
-        })
+        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
     }
 }
 
@@ -111,9 +103,9 @@ impl AsyncSigner for DirectAsyncSigner {
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionReceipt, Self::Error> {
-        Ok(TransactionReceipt {
-            transaction_hash: Hash32::new(format!("0x{}", "aa".repeat(32))).unwrap(),
-        })
+        Ok(TransactionReceipt::new(
+            Hash32::new(format!("0x{}", "aa".repeat(32))).unwrap(),
+        ))
     }
 
     async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
@@ -222,9 +214,9 @@ impl Signer for SyncSigner {
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionReceipt, Self::Error> {
-        Ok(TransactionReceipt {
-            transaction_hash: Hash32::new(format!("0x{}", "bb".repeat(32))).unwrap(),
-        })
+        Ok(TransactionReceipt::new(
+            Hash32::new(format!("0x{}", "bb".repeat(32))).unwrap(),
+        ))
     }
 
     fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
@@ -256,9 +248,7 @@ impl Provider for SyncProvider {
         &self,
         transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
-        Ok(Some(TransactionReceipt {
-            transaction_hash: transaction_hash.clone(),
-        }))
+        Ok(Some(TransactionReceipt::new(transaction_hash.clone())))
     }
 
     fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
@@ -278,10 +268,7 @@ impl Provider for SyncProvider {
     }
 
     fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
-        Ok(BlockInfo {
-            number: 42,
-            hash: None,
-        })
+        Ok(BlockInfo::new(42, None))
     }
 
     fn set_signer(&mut self, signer: Self::Signer) {
@@ -297,10 +284,7 @@ impl Provider for SyncProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle {
-            address: address.clone(),
-            abi_json: abi_json.to_owned(),
-        })
+        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
     }
 }
 
@@ -313,21 +297,21 @@ fn sample_hash() -> TransactionHash {
 }
 
 fn sample_transaction() -> TransactionRequest {
-    TransactionRequest {
-        to: Some(sample_address()),
-        data: Some(HexData::new("0x1234").unwrap()),
-        value: Some(Amount::zero()),
-        gas_limit: Some(Amount::from(21_000u32)),
-    }
+    TransactionRequest::new(
+        Some(sample_address()),
+        Some(HexData::new("0x1234").unwrap()),
+        Some(Amount::zero()),
+        Some(Amount::from(21_000u32)),
+    )
 }
 
 fn sample_contract_call() -> ContractCall {
-    ContractCall {
-        address: sample_address(),
-        method: "balanceOf".to_owned(),
-        abi_json: "[]".to_owned(),
-        args_json: "[]".to_owned(),
-    }
+    ContractCall::new(
+        sample_address(),
+        "balanceOf".to_owned(),
+        "[]".to_owned(),
+        "[]".to_owned(),
+    )
 }
 
 async fn assert_read_methods<P>(provider: &P)

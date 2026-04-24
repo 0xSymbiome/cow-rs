@@ -24,89 +24,48 @@ use cow_sdk_core::{
 };
 
 fn supported_domain(chain_id: SupportedChainId) -> TypedDataDomain {
-    TypedDataDomain {
-        name: "Gnosis Protocol".to_owned(),
-        version: "v2".to_owned(),
-        chain_id: u64::from(chain_id),
-        verifying_contract: cow_sdk_core::Address::new(
-            "0x9008D19f58AAbD9eD0D60971565AA8510560ab41",
-        )
-        .unwrap(),
-    }
+    TypedDataDomain::new(
+        "Gnosis Protocol".to_owned(),
+        "v2".to_owned(),
+        u64::from(chain_id),
+        cow_sdk_core::Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
+    )
+}
+
+fn typed_field(name: &str, kind: &str) -> TypedDataField {
+    TypedDataField::new(name.to_owned(), kind.to_owned())
 }
 
 fn order_typed_fields() -> Vec<TypedDataField> {
-    vec![
-        TypedDataField {
-            name: "sellToken".to_owned(),
-            kind: "address".to_owned(),
-        },
-        TypedDataField {
-            name: "buyToken".to_owned(),
-            kind: "address".to_owned(),
-        },
-        TypedDataField {
-            name: "receiver".to_owned(),
-            kind: "address".to_owned(),
-        },
-        TypedDataField {
-            name: "sellAmount".to_owned(),
-            kind: "uint256".to_owned(),
-        },
-        TypedDataField {
-            name: "buyAmount".to_owned(),
-            kind: "uint256".to_owned(),
-        },
-        TypedDataField {
-            name: "validTo".to_owned(),
-            kind: "uint32".to_owned(),
-        },
-        TypedDataField {
-            name: "appData".to_owned(),
-            kind: "bytes32".to_owned(),
-        },
-        TypedDataField {
-            name: "feeAmount".to_owned(),
-            kind: "uint256".to_owned(),
-        },
-        TypedDataField {
-            name: "kind".to_owned(),
-            kind: "string".to_owned(),
-        },
-        TypedDataField {
-            name: "partiallyFillable".to_owned(),
-            kind: "bool".to_owned(),
-        },
-        TypedDataField {
-            name: "sellTokenBalance".to_owned(),
-            kind: "string".to_owned(),
-        },
-        TypedDataField {
-            name: "buyTokenBalance".to_owned(),
-            kind: "string".to_owned(),
-        },
+    [
+        ("sellToken", "address"),
+        ("buyToken", "address"),
+        ("receiver", "address"),
+        ("sellAmount", "uint256"),
+        ("buyAmount", "uint256"),
+        ("validTo", "uint32"),
+        ("appData", "bytes32"),
+        ("feeAmount", "uint256"),
+        ("kind", "string"),
+        ("partiallyFillable", "bool"),
+        ("sellTokenBalance", "string"),
+        ("buyTokenBalance", "string"),
     ]
+    .into_iter()
+    .map(|(name, kind)| typed_field(name, kind))
+    .collect()
 }
 
 fn eip712_domain_fields() -> Vec<TypedDataField> {
-    vec![
-        TypedDataField {
-            name: "name".to_owned(),
-            kind: "string".to_owned(),
-        },
-        TypedDataField {
-            name: "version".to_owned(),
-            kind: "string".to_owned(),
-        },
-        TypedDataField {
-            name: "chainId".to_owned(),
-            kind: "uint256".to_owned(),
-        },
-        TypedDataField {
-            name: "verifyingContract".to_owned(),
-            kind: "address".to_owned(),
-        },
+    [
+        ("name", "string"),
+        ("version", "string"),
+        ("chainId", "uint256"),
+        ("verifyingContract", "address"),
     ]
+    .into_iter()
+    .map(|(name, kind)| typed_field(name, kind))
+    .collect()
 }
 
 fn legacy_order_message() -> &'static str {
@@ -114,10 +73,7 @@ fn legacy_order_message() -> &'static str {
 }
 
 fn legacy_cancellation_fields() -> Vec<TypedDataField> {
-    vec![TypedDataField {
-        name: "orderUids".to_owned(),
-        kind: "bytes[]".to_owned(),
-    }]
+    vec![typed_field("orderUids", "bytes[]")]
 }
 
 fn legacy_cancellation_message() -> &'static str {
@@ -129,12 +85,12 @@ fn order_payload(chain_id: SupportedChainId) -> TypedDataPayload {
     order_types.insert("Order".to_owned(), order_typed_fields());
     order_types.insert("EIP712Domain".to_owned(), eip712_domain_fields());
 
-    TypedDataPayload {
-        domain: supported_domain(chain_id),
-        primary_type: "Order".to_owned(),
-        types: order_types,
-        message: legacy_order_message().to_owned(),
-    }
+    TypedDataPayload::new(
+        supported_domain(chain_id),
+        "Order".to_owned(),
+        order_types,
+        legacy_order_message().to_owned(),
+    )
 }
 
 fn smart_hook_payload(chain_id: SupportedChainId) -> TypedDataPayload {
@@ -142,33 +98,23 @@ fn smart_hook_payload(chain_id: SupportedChainId) -> TypedDataPayload {
     types.insert(
         "SmartHookAction".to_owned(),
         vec![
-            TypedDataField {
-                name: "actor".to_owned(),
-                kind: "address".to_owned(),
-            },
-            TypedDataField {
-                name: "config".to_owned(),
-                kind: "HookConfig".to_owned(),
-            },
+            typed_field("actor", "address"),
+            typed_field("config", "HookConfig"),
         ],
     );
     types.insert(
         "HookConfig".to_owned(),
-        vec![TypedDataField {
-            name: "salt".to_owned(),
-            kind: "bytes32".to_owned(),
-        }],
+        vec![typed_field("salt", "bytes32")],
     );
     types.insert("EIP712Domain".to_owned(), eip712_domain_fields());
 
-    TypedDataPayload {
-        domain: supported_domain(chain_id),
-        primary_type: "SmartHookAction".to_owned(),
+    TypedDataPayload::new(
+        supported_domain(chain_id),
+        "SmartHookAction".to_owned(),
         types,
-        message:
             r#"{"actor":"0x1111111111111111111111111111111111111111","config":{"salt":"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}"#
                 .to_owned(),
-    }
+    )
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -364,19 +310,8 @@ async fn legacy_typed_data_compatibility_rejects_unknown_primary_type_shapes() {
 
     let error = signer
         .sign_typed_data(
-            &TypedDataDomain {
-                name: "Gnosis Protocol".to_owned(),
-                version: "v2".to_owned(),
-                chain_id: u64::from(SupportedChainId::Sepolia),
-                verifying_contract: cow_sdk_core::Address::new(
-                    "0x9008D19f58AAbD9eD0D60971565AA8510560ab41",
-                )
-                .unwrap(),
-            },
-            &[TypedDataField {
-                name: "actor".to_owned(),
-                kind: "address".to_owned(),
-            }],
+            &supported_domain(SupportedChainId::Sepolia),
+            &[typed_field("actor", "address")],
             r#"{"actor":"0x1111111111111111111111111111111111111111"}"#,
         )
         .await
@@ -633,12 +568,12 @@ async fn chain_bound_signer_rejects_chain_drift_before_address_and_transaction_c
     );
 
     let transaction_error = signer
-        .send_transaction(&TransactionRequest {
-            to: Some(
-                cow_sdk_core::Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-            ),
-            ..Default::default()
-        })
+        .send_transaction(&TransactionRequest::new(
+            Some(cow_sdk_core::Address::new("0x1111111111111111111111111111111111111111").unwrap()),
+            None,
+            None,
+            None,
+        ))
         .await
         .unwrap_err();
     assert_eq!(

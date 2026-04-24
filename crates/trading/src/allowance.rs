@@ -42,12 +42,12 @@ where
             TradingError::Contracts(cow_sdk_contracts::ContractsError::Serialization(error))
         })?;
     let raw = provider
-        .read_contract(&ContractCall {
-            address: token_address.clone(),
-            method: "allowance".to_owned(),
-            abi_json: ERC20_ALLOWANCE_ABI_JSON.to_owned(),
+        .read_contract(&ContractCall::new(
+            token_address.clone(),
+            "allowance".to_owned(),
+            ERC20_ALLOWANCE_ABI_JSON.to_owned(),
             args_json,
-        })
+        ))
         .map_err(|error| TradingError::Provider {
             operation: "read_contract",
             message: error.to_string(),
@@ -82,12 +82,12 @@ where
             TradingError::Contracts(cow_sdk_contracts::ContractsError::Serialization(error))
         })?;
     let raw = provider
-        .read_contract(&ContractCall {
-            address: token_address.clone(),
-            method: "allowance".to_owned(),
-            abi_json: ERC20_ALLOWANCE_ABI_JSON.to_owned(),
+        .read_contract(&ContractCall::new(
+            token_address.clone(),
+            "allowance".to_owned(),
+            ERC20_ALLOWANCE_ABI_JSON.to_owned(),
             args_json,
-        })
+        ))
         .await
         .map_err(|error| TradingError::Provider {
             operation: "read_contract",
@@ -114,15 +114,15 @@ pub fn approval_transaction(
         .vault_relayer_override
         .clone()
         .unwrap_or_else(|| resolve_vault_relayer(chain_id, env));
-    Ok(TransactionRequest {
-        to: Some(params.token_address.clone()),
-        data: Some(cow_sdk_core::HexData::new(encode_approve_call(
+    Ok(TransactionRequest::new(
+        Some(params.token_address.clone()),
+        Some(cow_sdk_core::HexData::new(encode_approve_call(
             &spender,
             &params.amount,
         )?)?),
-        value: Some(Amount::zero()),
-        gas_limit: None,
-    })
+        Some(Amount::zero()),
+        None,
+    ))
 }
 
 /// Sends the approval transaction using a sync signer.

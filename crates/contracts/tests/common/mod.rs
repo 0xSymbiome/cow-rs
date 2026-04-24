@@ -143,10 +143,7 @@ impl Provider for MockProvider {
     }
 
     fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
-        Ok(BlockInfo {
-            number: 0,
-            hash: None,
-        })
+        Ok(BlockInfo::new(0, None))
     }
 
     fn set_signer(&mut self, _signer: Self::Signer) {}
@@ -158,9 +155,6 @@ impl Provider for MockProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle {
-            address: address.clone(),
-            abi_json: abi_json.to_owned(),
-        })
+        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
     }
 }

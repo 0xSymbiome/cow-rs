@@ -199,9 +199,7 @@ impl Signer for StaticSigner {
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionReceipt, Self::Error> {
-        Ok(TransactionReceipt {
-            transaction_hash: self.receipt_hash.clone(),
-        })
+        Ok(TransactionReceipt::new(self.receipt_hash.clone()))
     }
 
     fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
@@ -256,10 +254,7 @@ impl Provider for StaticProvider {
     }
 
     fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
-        Ok(BlockInfo {
-            number: 1,
-            hash: None,
-        })
+        Ok(BlockInfo::new(1, None))
     }
 
     fn set_signer(&mut self, signer: Self::Signer) {
@@ -273,10 +268,7 @@ impl Provider for StaticProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle {
-            address: address.clone(),
-            abi_json: abi_json.to_owned(),
-        })
+        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
     }
 }
 ```

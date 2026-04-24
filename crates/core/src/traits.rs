@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::types::{Address, Amount, BlockHash, ChainId, HexData, TransactionHash};
 
 /// Typed-data domain metadata used for EIP-712 signing.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TypedDataDomain {
@@ -18,7 +19,27 @@ pub struct TypedDataDomain {
     pub verifying_contract: Address,
 }
 
+impl TypedDataDomain {
+    /// Creates typed-data domain metadata for EIP-712 signing.
+    #[inline]
+    #[must_use]
+    pub const fn new(
+        name: String,
+        version: String,
+        chain_id: ChainId,
+        verifying_contract: Address,
+    ) -> Self {
+        Self {
+            name,
+            version,
+            chain_id,
+            verifying_contract,
+        }
+    }
+}
+
 /// A single EIP-712 typed-data field descriptor.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TypedDataField {
     /// Field name as it appears in the typed-data schema.
@@ -26,6 +47,15 @@ pub struct TypedDataField {
     #[serde(rename = "type")]
     /// Solidity type name for the field.
     pub kind: String,
+}
+
+impl TypedDataField {
+    /// Creates an EIP-712 typed-data field descriptor.
+    #[inline]
+    #[must_use]
+    pub const fn new(name: String, kind: String) -> Self {
+        Self { name, kind }
+    }
 }
 
 /// EIP-712 type map keyed by type name.
@@ -37,6 +67,7 @@ pub type TypedDataTypes = BTreeMap<String, Vec<TypedDataField>>;
 /// existing `Signer` implementors can keep the legacy `sign_typed_data`
 /// method and still gain additive compatibility through the default
 /// `sign_typed_data_payload` implementation.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TypedDataEnvelope<M> {
@@ -54,6 +85,23 @@ pub struct TypedDataEnvelope<M> {
 pub type TypedDataPayload = TypedDataEnvelope<String>;
 
 impl<M> TypedDataEnvelope<M> {
+    /// Creates an EIP-712 typed-data envelope.
+    #[inline]
+    #[must_use]
+    pub const fn new(
+        domain: TypedDataDomain,
+        primary_type: String,
+        types: TypedDataTypes,
+        message: M,
+    ) -> Self {
+        Self {
+            domain,
+            primary_type,
+            types,
+            message,
+        }
+    }
+
     /// Returns the field list for the current primary type, if present.
     #[must_use]
     pub fn primary_type_fields(&self) -> Option<&[TypedDataField]> {
@@ -81,6 +129,7 @@ impl TypedDataPayload {
 }
 
 /// Transaction request shape used across signer and provider traits.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionRequest {
@@ -98,7 +147,27 @@ pub struct TransactionRequest {
     pub gas_limit: Option<Amount>,
 }
 
+impl TransactionRequest {
+    /// Creates a transaction request shape.
+    #[inline]
+    #[must_use]
+    pub const fn new(
+        to: Option<Address>,
+        data: Option<HexData>,
+        value: Option<Amount>,
+        gas_limit: Option<Amount>,
+    ) -> Self {
+        Self {
+            to,
+            data,
+            value,
+            gas_limit,
+        }
+    }
+}
+
 /// Minimal transaction receipt contract used by the SDK surface.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionReceipt {
@@ -106,7 +175,17 @@ pub struct TransactionReceipt {
     pub transaction_hash: TransactionHash,
 }
 
+impl TransactionReceipt {
+    /// Creates a minimal transaction receipt.
+    #[inline]
+    #[must_use]
+    pub const fn new(transaction_hash: TransactionHash) -> Self {
+        Self { transaction_hash }
+    }
+}
+
 /// Minimal block information contract used by provider traits.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BlockInfo {
@@ -117,7 +196,17 @@ pub struct BlockInfo {
     pub hash: Option<BlockHash>,
 }
 
+impl BlockInfo {
+    /// Creates minimal block information.
+    #[inline]
+    #[must_use]
+    pub const fn new(number: u64, hash: Option<BlockHash>) -> Self {
+        Self { number, hash }
+    }
+}
+
 /// Typed contract-read request used by runtime-neutral providers.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractCall {
@@ -131,7 +220,27 @@ pub struct ContractCall {
     pub args_json: String,
 }
 
+impl ContractCall {
+    /// Creates a typed contract-read request.
+    #[inline]
+    #[must_use]
+    pub const fn new(
+        address: Address,
+        method: String,
+        abi_json: String,
+        args_json: String,
+    ) -> Self {
+        Self {
+            address,
+            method,
+            abi_json,
+            args_json,
+        }
+    }
+}
+
 /// Contract handle returned by providers that support typed contract creation.
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractHandle {
@@ -139,6 +248,15 @@ pub struct ContractHandle {
     pub address: Address,
     /// JSON ABI for the contract handle.
     pub abi_json: String,
+}
+
+impl ContractHandle {
+    /// Creates a typed contract handle.
+    #[inline]
+    #[must_use]
+    pub const fn new(address: Address, abi_json: String) -> Self {
+        Self { address, abi_json }
+    }
 }
 
 /// Synchronous signing boundary for native or test signers.
@@ -448,14 +566,14 @@ pub trait Provider {
 /// #       Ok("null".to_owned())
 /// #   }
 /// #   async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
-/// #       Ok(BlockInfo { number: 1, hash: None })
+/// #       Ok(BlockInfo::new(1, None))
 /// #   }
 /// #   async fn get_contract(
 /// #       &self,
 /// #       address: &Address,
 /// #       abi_json: &str,
 /// #   ) -> Result<ContractHandle, Self::Error> {
-/// #       Ok(ContractHandle { address: address.clone(), abi_json: abi_json.to_owned() })
+/// #       Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
 /// #   }
 /// }
 ///
@@ -490,13 +608,13 @@ pub trait Provider {
 /// #     ) -> Result<HexData, Self::Error> { Ok(HexData::new("0x").unwrap()) }
 /// #     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> { Ok(HexData::new("0x").unwrap()) }
 /// #     async fn read_contract(&self, _request: &ContractCall) -> Result<String, Self::Error> { Ok("null".to_owned()) }
-/// #     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> { Ok(BlockInfo { number: 1, hash: None }) }
+/// #     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> { Ok(BlockInfo::new(1, None)) }
 /// #     async fn get_contract(
 /// #         &self,
 /// #         address: &Address,
 /// #         abi_json: &str,
 /// #     ) -> Result<ContractHandle, Self::Error> {
-/// #         Ok(ContractHandle { address: address.clone(), abi_json: abi_json.to_owned() })
+/// #         Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
 /// #     }
 /// # }
 /// fn requires_signing<P: AsyncSigningProvider>(_provider: &P) {}
@@ -656,9 +774,7 @@ where
 /// #       &self,
 /// #       _tx: &TransactionRequest,
 /// #   ) -> Result<TransactionReceipt, Self::Error> {
-/// #       Ok(TransactionReceipt {
-/// #           transaction_hash: Hash32::new(format!("0x{}", "11".repeat(32))).unwrap(),
-/// #       })
+/// #       Ok(TransactionReceipt::new(Hash32::new(format!("0x{}", "11".repeat(32))).unwrap()))
 /// #   }
 /// #   async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
 /// #       Ok(Amount::from(21_000u32))
@@ -697,14 +813,14 @@ where
 /// #       Ok("null".to_owned())
 /// #   }
 /// #   async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
-/// #       Ok(BlockInfo { number: 1, hash: None })
+/// #       Ok(BlockInfo::new(1, None))
 /// #   }
 /// #   async fn get_contract(
 /// #       &self,
 /// #       address: &Address,
 /// #       abi_json: &str,
 /// #   ) -> Result<ContractHandle, Self::Error> {
-/// #       Ok(ContractHandle { address: address.clone(), abi_json: abi_json.to_owned() })
+/// #       Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
 /// #   }
 /// }
 ///

@@ -513,12 +513,12 @@ impl SettlementEncoder {
     /// Returns an interaction-only settlement setup payload.
     #[must_use]
     pub fn encoded_setup(interactions: &[InteractionLike]) -> EncodedSettlement {
-        let mut encoder = Self::new(TypedDataDomain {
-            name: "unused".to_owned(),
-            version: "unused".to_owned(),
-            chain_id: 0,
-            verifying_contract: zero_address(),
-        });
+        let mut encoder = Self::new(TypedDataDomain::new(
+            "unused".to_owned(),
+            "unused".to_owned(),
+            0,
+            zero_address(),
+        ));
         for interaction in interactions {
             encoder.encode_interaction(interaction, InteractionStage::Intra);
         }
@@ -895,12 +895,12 @@ mod tests {
 
     #[test]
     fn fill_or_kill_orders_default_the_executed_amount_to_zero() {
-        let domain = TypedDataDomain {
-            name: "Gnosis Protocol".to_owned(),
-            version: "v2".to_owned(),
-            chain_id: 1,
-            verifying_contract: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
-        };
+        let domain = TypedDataDomain::new(
+            "Gnosis Protocol".to_owned(),
+            "v2".to_owned(),
+            1,
+            Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
+        );
         let mut encoder = SettlementEncoder::new(domain);
 
         encoder

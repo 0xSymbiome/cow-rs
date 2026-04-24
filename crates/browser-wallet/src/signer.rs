@@ -218,9 +218,9 @@ impl AsyncSigner for Eip1193Signer {
                 "wallet must return a transaction hash",
             )
         })?;
-        Ok(TransactionReceipt {
-            transaction_hash: cow_sdk_core::TransactionHash::new(hash)?,
-        })
+        Ok(TransactionReceipt::new(cow_sdk_core::TransactionHash::new(
+            hash,
+        )?))
     }
 
     async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error> {
@@ -269,12 +269,12 @@ fn compatibility_typed_data_payload(
     types.insert(primary_type.to_owned(), fields.to_vec());
     types.insert("EIP712Domain".to_owned(), domain_type_fields());
 
-    Ok(TypedDataPayload {
-        domain: domain.clone(),
-        primary_type: primary_type.to_owned(),
+    Ok(TypedDataPayload::new(
+        domain.clone(),
+        primary_type.to_owned(),
         types,
-        message: value_json.to_owned(),
-    })
+        value_json.to_owned(),
+    ))
 }
 
 fn compatibility_primary_type(
@@ -324,9 +324,6 @@ fn domain_type_fields() -> Vec<TypedDataField> {
         ("verifyingContract", "address"),
     ]
     .into_iter()
-    .map(|(name, kind)| TypedDataField {
-        name: name.to_owned(),
-        kind: kind.to_owned(),
-    })
+    .map(|(name, kind)| TypedDataField::new(name.to_owned(), kind.to_owned()))
     .collect()
 }

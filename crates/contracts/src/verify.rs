@@ -85,15 +85,12 @@ where
 
     ensure_contract_code_async(provider, &request.verifier).await?;
     let raw = provider
-        .read_contract(&cow_sdk_core::ContractCall {
-            address: request.verifier.clone(),
-            method: "isValidSignature".to_owned(),
-            abi_json: EIP1271_IS_VALID_SIGNATURE_ABI_JSON.to_owned(),
-            args_json: serde_json::to_string(&(
-                request.digest.as_str(),
-                request.signature.as_str(),
-            ))?,
-        })
+        .read_contract(&cow_sdk_core::ContractCall::new(
+            request.verifier.clone(),
+            "isValidSignature".to_owned(),
+            EIP1271_IS_VALID_SIGNATURE_ABI_JSON.to_owned(),
+            serde_json::to_string(&(request.digest.as_str(), request.signature.as_str()))?,
+        ))
         .await
         .map_err(|error| ContractsError::Eip1271Provider {
             operation: "read_contract",

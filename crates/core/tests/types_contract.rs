@@ -121,48 +121,18 @@ fn canonical_order_and_quote_shapes_are_pinned() {
 fn quote_amount_breakdown_serializes_canonical_stage_names() {
     let amounts = QuoteAmountsAndCosts::new(
         true,
-        Costs {
-            network_fee: NetworkFee {
-                amount_in_sell_currency: Amount::new("1").unwrap(),
-                amount_in_buy_currency: Amount::new("2").unwrap(),
-            },
-            partner_fee: FeeComponent {
-                amount: Amount::new("3").unwrap(),
-                bps: 4,
-            },
-            protocol_fee: FeeComponent {
-                amount: Amount::new("5").unwrap(),
-                bps: 6,
-            },
-        },
-        Amounts {
-            sell_amount: Amount::new("10").unwrap(),
-            buy_amount: Amount::new("20").unwrap(),
-        },
-        Amounts {
-            sell_amount: Amount::new("11").unwrap(),
-            buy_amount: Amount::new("21").unwrap(),
-        },
-        Amounts {
-            sell_amount: Amount::new("12").unwrap(),
-            buy_amount: Amount::new("22").unwrap(),
-        },
-        Amounts {
-            sell_amount: Amount::new("13").unwrap(),
-            buy_amount: Amount::new("23").unwrap(),
-        },
-        Amounts {
-            sell_amount: Amount::new("14").unwrap(),
-            buy_amount: Amount::new("24").unwrap(),
-        },
-        Amounts {
-            sell_amount: Amount::new("15").unwrap(),
-            buy_amount: Amount::new("25").unwrap(),
-        },
-        Amounts {
-            sell_amount: Amount::new("16").unwrap(),
-            buy_amount: Amount::new("26").unwrap(),
-        },
+        Costs::new(
+            NetworkFee::new(Amount::new("1").unwrap(), Amount::new("2").unwrap()),
+            FeeComponent::new(Amount::new("3").unwrap(), 4),
+            FeeComponent::new(Amount::new("5").unwrap(), 6),
+        ),
+        Amounts::new(Amount::new("10").unwrap(), Amount::new("20").unwrap()),
+        Amounts::new(Amount::new("11").unwrap(), Amount::new("21").unwrap()),
+        Amounts::new(Amount::new("12").unwrap(), Amount::new("22").unwrap()),
+        Amounts::new(Amount::new("13").unwrap(), Amount::new("23").unwrap()),
+        Amounts::new(Amount::new("14").unwrap(), Amount::new("24").unwrap()),
+        Amounts::new(Amount::new("15").unwrap(), Amount::new("25").unwrap()),
+        Amounts::new(Amount::new("16").unwrap(), Amount::new("26").unwrap()),
     );
     let encoded = serde_json::to_value(amounts).unwrap();
     assert!(encoded.as_object().unwrap().contains_key("amountsToSign"));
@@ -244,6 +214,79 @@ fn typed_amount_and_decimal_amount_expose_semantic_accessors() {
 
     let clamped = DecimalAmount::from_whole_approx(-0.5, 18);
     assert_eq!(clamped.atoms(), &BigUint::from(0u32));
+}
+
+#[test]
+fn amount_addition_is_commutative_across_curated_boundaries() {
+    let boundaries = [
+        Amount::zero(),
+        Amount::from(1u32),
+        Amount::from(u64::MAX),
+        Amount::from(u128::MAX),
+        Amount::from_atoms(BigUint::from(1u8) << 256usize),
+    ];
+
+    for left in &boundaries {
+        for right in &boundaries {
+            assert_eq!(
+                left.clone() + right.clone(),
+                right.clone() + left.clone(),
+                "Amount addition must be commutative for {left} and {right}"
+            );
+        }
+    }
+}
+
+#[test]
+fn amount_addition_is_associative_for_curated_triple() {
+    let a = Amount::from_atoms((BigUint::from(1u8) << 128usize) + BigUint::from(7u32));
+    let b = Amount::from_atoms((BigUint::from(1u8) << 192usize) + BigUint::from(11u32));
+    let c = Amount::from_atoms((BigUint::from(1u8) << 255usize) + BigUint::from(13u32));
+
+    assert_eq!(
+        (a.clone() + b.clone()) + c.clone(),
+        a + (b + c),
+        "Amount addition must delegate to associative BigUint addition"
+    );
+}
+
+#[test]
+fn amount_checked_arithmetic_preserves_option_shape() {
+    let small = Amount::from(7u32);
+    let large = Amount::from(11u32);
+    let factor = Amount::from(3u32);
+
+    assert_eq!(
+        small.checked_add(&large),
+        Some(Amount::from(18u32)),
+        "checked_add must return Some for regular BigUint inputs"
+    );
+    assert_eq!(
+        large.clone() - small.clone(),
+        Some(Amount::from(4u32)),
+        "Sub must return Some when the result is non-negative"
+    );
+    assert_eq!(
+        small.clone() - large.clone(),
+        None,
+        "Sub must return None instead of underflowing"
+    );
+    assert_eq!(
+        small.checked_sub(&large),
+        None,
+        "checked_sub must expose underflow through the Option boundary"
+    );
+    assert_eq!(
+        large.checked_mul(&factor),
+        Some(Amount::from(33u32)),
+        "checked_mul must return Some for normal BigUint inputs"
+    );
+
+    let mut running = small;
+    running += large;
+    assert_eq!(running, Amount::from(18u32));
+    running -= Amount::from(8u32);
+    assert_eq!(running, Amount::from(10u32));
 }
 
 #[test]
