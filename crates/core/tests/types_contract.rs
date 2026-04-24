@@ -1,9 +1,9 @@
 use cow_sdk_core::{
     Address, Amount, Amounts, AppDataHex, BuyTokenDestination, Costs, DecimalAmount, FeeComponent,
-    Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderKind, OrderModel, OrderUid,
-    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteModel, SellTokenSource, SignedAmount,
-    UnsignedOrder, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
-    ValidationError, addresses_equal, token_id,
+    Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderKind, OrderUid,
+    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, SellTokenSource, SignedAmount, UnsignedOrder,
+    VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
+    addresses_equal, token_id,
 };
 use num_bigint::{BigInt, BigUint};
 
@@ -118,35 +118,7 @@ fn canonical_order_and_quote_shapes_are_pinned() {
 }
 
 #[test]
-fn compatibility_models_remain_stable_for_current_workspace_consumers() {
-    let order = OrderModel {
-        kind: OrderKind::Sell,
-        sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-        receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        owner: Address::new("0x4444444444444444444444444444444444444444").unwrap(),
-        app_data_hex: AppDataHex::new(
-            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        )
-        .unwrap(),
-    };
-
-    let round_trip: OrderModel = serde_json::from_str(&serde_json::to_string(&order).unwrap())
-        .expect("compatibility order model should remain serializable");
-    assert_eq!(round_trip, order);
-
-    let quote = QuoteModel {
-        kind: OrderKind::Buy,
-        sell_amount: "1".to_owned(),
-        buy_amount: "2".to_owned(),
-        fee_amount: "0".to_owned(),
-        order_uid: Some(OrderUid::new(format!("0x{}", "b".repeat(112))).unwrap()),
-    };
-
-    let parsed: QuoteModel = serde_json::from_str(&serde_json::to_string(&quote).unwrap())
-        .expect("compatibility quote model should remain serializable");
-    assert_eq!(parsed, quote);
-
+fn quote_amount_breakdown_serializes_canonical_stage_names() {
     let amounts = QuoteAmountsAndCosts::new(
         true,
         Costs {

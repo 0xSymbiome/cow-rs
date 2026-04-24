@@ -15,17 +15,22 @@
 mod common;
 
 use cow_sdk_contracts::{
-    BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, ORDER_TYPE_FIELDS, ORDER_TYPE_HASH, Order,
-    OrderCancellations, OrderUidParams, compute_order_uid, extract_order_uid_params, hash_order,
-    hash_order_cancellation, hash_order_cancellations, hash_order_for_contract, normalize_order,
-    pack_order_uid_params, uid_for_contract,
+    BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, ContractId, ORDER_TYPE_FIELDS, ORDER_TYPE_HASH,
+    Order, OrderCancellations, OrderUidParams, Registry, compute_order_uid,
+    extract_order_uid_params, hash_order, hash_order_cancellation, hash_order_cancellations,
+    normalize_order, pack_order_uid_params,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, OrderModel, SellTokenSource,
-    TypedDataDomain, UnsignedOrder,
+    Address, Amount, AppDataHex, BuyTokenDestination, CowEnv, OrderKind, SellTokenSource,
+    SupportedChainId, TypedDataDomain, UnsignedOrder,
 };
 
 use common::fixture_case;
+
+const UPSTREAM_SEPOLIA_ORDER_DIGEST: &str =
+    "0xc95c0093ac625698d627b6a16b20ea16a8a735493b6f9c7b72d996de978eb823";
+const UPSTREAM_SEPOLIA_ORDER_UID: &str = "0xc95c0093ac625698d627b6a16b20ea16a8a735493b6f9c7b72d996de978eb823fb3c7eb936caa12b5a884d612393969a557d4307004c4c1e";
+const UPSTREAM_SEPOLIA_ORDER_OWNER: &str = "0xfb3c7eb936caa12b5a884d612393969a557d4307";
 
 fn sample_domain() -> TypedDataDomain {
     TypedDataDomain {
@@ -52,6 +57,50 @@ fn sample_order() -> Order {
         None,
         Some(BuyTokenDestination::Internal),
     )
+}
+
+fn signing_fixture_case(id: &str) -> serde_json::Value {
+    serde_json::from_str::<serde_json::Value>(include_str!("../../../parity/fixtures/signing.json"))
+        .expect("signing fixture must remain valid json")["cases"]
+        .as_array()
+        .expect("signing fixture cases must be an array")
+        .iter()
+        .find(|case| case["id"] == id)
+        .cloned()
+        .unwrap_or_else(|| panic!("missing signing fixture case {id}"))
+}
+
+fn upstream_signing_sample_order() -> UnsignedOrder {
+    UnsignedOrder::new(
+        Address::new("0xd057b63f5e69cf1b929b356b579cba08d7688048").unwrap(),
+        Address::new("0x7b878668cd1a3adf89764d3a331e0a7bb832192d").unwrap(),
+        Address::new("0xa6ddbd0de6b310819b49f680f65871bee85f517e").unwrap(),
+        Amount::new("500000000000000").unwrap(),
+        Amount::new("23000020000").unwrap(),
+        5_000_222,
+        AppDataHex::new("0x0000000000000000000000000000000000000000000000000000000000000000")
+            .unwrap(),
+        Amount::new("2300000").unwrap(),
+        OrderKind::Sell,
+        true,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
+    )
+}
+
+fn upstream_signing_domain() -> TypedDataDomain {
+    TypedDataDomain {
+        name: "Gnosis Protocol".to_owned(),
+        version: "v2".to_owned(),
+        chain_id: u64::from(SupportedChainId::Sepolia),
+        verifying_contract: Registry::default()
+            .address(
+                ContractId::Settlement,
+                SupportedChainId::Sepolia,
+                CowEnv::Prod,
+            )
+            .expect("canonical settlement address is registered for sepolia"),
+    }
 }
 
 #[test]
@@ -191,22 +240,39 @@ fn unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit(
 }
 
 #[test]
-fn compatibility_wrappers_remain_available_for_current_workspace() {
-    let order = OrderModel {
-        kind: OrderKind::Sell,
-        sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-        receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        owner: Address::new("0x4444444444444444444444444444444444444444").unwrap(),
-        app_data_hex: AppDataHex::new(
-            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        )
-        .unwrap(),
-    };
+fn canonical_unsigned_order_path_matches_upstream_signing_fixture_digest_and_uid() {
+    let fixture = signing_fixture_case("signing-generate-order-id");
+    assert_eq!(
+        fixture["expected"]["returns"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|value| value.as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec!["orderId", "orderDigest"]
+    );
+    assert!(fixture["expected"]["owner_required"].as_bool().unwrap());
+    assert_eq!(
+        fixture["expected"]["uid_valid_to_source"].as_str().unwrap(),
+        "order.validTo"
+    );
 
-    let hash = hash_order_for_contract(&order, 1).unwrap();
-    assert_eq!(hash.len(), 32);
+    let unsigned = upstream_signing_sample_order();
+    let order = Order::from(&unsigned);
+    let domain = upstream_signing_domain();
+    let owner = Address::new(UPSTREAM_SEPOLIA_ORDER_OWNER).unwrap();
 
-    let uid = uid_for_contract(&order, 1, [0x44; 20], 1_700_000_000).unwrap();
-    assert_eq!(uid.as_str().trim_start_matches("0x").len(), 112);
+    let digest = hash_order(&domain, &order).unwrap();
+    assert_eq!(digest.as_str(), UPSTREAM_SEPOLIA_ORDER_DIGEST);
+
+    let uid = compute_order_uid(&domain, &order, &owner).unwrap();
+    assert_eq!(uid.as_str(), UPSTREAM_SEPOLIA_ORDER_UID);
+
+    let unpacked = extract_order_uid_params(&uid).unwrap();
+    assert_eq!(unpacked.owner, owner);
+    assert_eq!(unpacked.valid_to, unsigned.valid_to);
+    assert_eq!(
+        unpacked.order_digest.as_str(),
+        UPSTREAM_SEPOLIA_ORDER_DIGEST
+    );
 }

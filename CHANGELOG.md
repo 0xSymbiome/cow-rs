@@ -437,6 +437,11 @@ unreleased public contract of the repository.
 
 ### Fixed
 
+- Legacy compatibility helpers in the contracts crate that produced
+  protocol-incorrect digests by zeroing amounts before hashing have
+  been removed. Order digest computation now flows exclusively through
+  the canonical unsigned-order to order path, which produces
+  byte-identical output to the upstream service for the same input.
 - Native ethflow simulation example now passes the typed
   order-validity bounds and the optional app-data signer through
   the native-currency posting seam so the reviewed submission

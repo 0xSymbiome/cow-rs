@@ -1,13 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, Hash32, OrderDigest, OrderKind, OrderModel,
-    OrderUid, SellTokenSource, SupportedChainId, TypedDataDomain,
+    Address, Amount, AppDataHash, BuyTokenDestination, Hash32, OrderDigest, OrderKind, OrderUid,
+    SellTokenSource, TypedDataDomain,
 };
 
 use crate::{
     ContractsError,
-    deployments::{ContractId, Registry},
     primitives::{
         ORDER_UID_LENGTH_BYTES, buy_balance_name, encode_address, encode_bool, encode_string_hash,
         encode_u32, encode_u256_biguint, keccak256, order_kind_name, parse_bytes32_hash,
@@ -67,6 +66,47 @@ pub const CANCELLATIONS_TYPE_FIELDS: [OrderTypeField; 1] =
 /// This type intentionally differs from `cow_sdk_core::UnsignedOrder`: receiver
 /// and token-balance fields are optional here because the contract hashing
 /// boundary applies `CoW` Protocol defaults during normalization.
+///
+/// Convert user-domain orders into this type through the canonical
+/// [`cow_sdk_core::UnsignedOrder`] boundary.
+///
+/// ```
+/// use cow_sdk_contracts::Order;
+/// use cow_sdk_core::{
+///     Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
+///     UnsignedOrder,
+/// };
+///
+/// let unsigned = UnsignedOrder::new(
+///     Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+///     Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+///     Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+///     Amount::new("100").unwrap(),
+///     Amount::new("200").unwrap(),
+///     1_700_000_000,
+///     AppDataHash::new(
+///         "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+///     )
+///     .unwrap(),
+///     Amount::new("5").unwrap(),
+///     OrderKind::Sell,
+///     false,
+///     SellTokenSource::External,
+///     BuyTokenDestination::Internal,
+/// );
+///
+/// let order = Order::from(&unsigned);
+/// assert_eq!(order.valid_to, unsigned.valid_to);
+/// assert_eq!(order.fee_amount, unsigned.fee_amount);
+/// ```
+#[doc = concat!(
+    "```compile_fail\n",
+    "use cow_sdk_contracts::{hash_order_for_", "contract, uid_for_", "contract};\n",
+    "use cow_sdk_core::{Order", "Model, Quote", "Model};\n",
+    "\n",
+    "fn main() {}\n",
+    "```\n",
+)]
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -422,74 +462,6 @@ pub fn extract_order_uid_params(order_uid: &OrderUid) -> Result<OrderUidParams, 
     Ok(OrderUidParams::new(order_digest, owner, valid_to))
 }
 
-/// Computes the low-level order digest for the compatibility [`OrderModel`] shape.
-///
-/// # Errors
-///
-/// Returns [`ContractsError`] if the chain is unsupported or if order hashing fails.
-///
-/// # Panics
-///
-/// Panics if the embedded deployment registry is missing the canonical
-/// settlement-contract entry for the resolved chain. The shipped registry
-/// manifest is validated at compile time, so this panic cannot be reached
-/// from an unmodified binary.
-#[inline]
-pub fn hash_order_for_contract(
-    order: &OrderModel,
-    chain_id: u64,
-) -> Result<[u8; 32], ContractsError> {
-    let chain = SupportedChainId::try_from(chain_id)
-        .map_err(|_| ContractsError::UnsupportedChain(chain_id))?;
-    let domain = TypedDataDomain {
-        name: "Gnosis Protocol".to_owned(),
-        version: "v2".to_owned(),
-        chain_id,
-        verifying_contract: Registry::default()
-            .address(ContractId::Settlement, chain, cow_sdk_core::CowEnv::Prod)
-            .expect("canonical settlement address is registered for every supported chain"),
-    };
-    let order = compatibility_order(order);
-    let digest = hash_order(&domain, &order)?;
-    parse_hex32(digest.as_str(), "orderDigest")
-}
-
-/// Computes the compact order UID for the compatibility [`OrderModel`] shape.
-///
-/// # Errors
-///
-/// Returns [`ContractsError`] if order hashing or UID packing fails.
-pub fn uid_for_contract(
-    order: &OrderModel,
-    chain_id: u64,
-    owner: [u8; 20],
-    valid_to: u32,
-) -> Result<OrderUid, ContractsError> {
-    let digest = hash_order_for_contract(order, chain_id)?;
-    pack_order_uid_params(&OrderUidParams::new(
-        OrderDigest::new(format!("0x{}", hex::encode(digest)))?,
-        Address::new(format!("0x{}", hex::encode(owner)))?,
-        valid_to,
-    ))
-}
-
-fn compatibility_order(order: &OrderModel) -> Order {
-    Order::new(
-        order.sell_token.clone(),
-        order.buy_token.clone(),
-        Some(order.receiver.clone()),
-        Amount::zero(),
-        Amount::zero(),
-        0,
-        order.app_data_hex.clone(),
-        Amount::zero(),
-        order.kind,
-        false,
-        None,
-        None,
-    )
-}
-
 fn order_struct_hash(order: &NormalizedOrder) -> Result<[u8; 32], ContractsError> {
     let mut encoded = Vec::with_capacity(32 * 13);
     encoded.extend_from_slice(&parse_hex32(ORDER_TYPE_HASH, "orderTypeHash")?);
@@ -517,6 +489,8 @@ const ZERO_ADDRESS_LOWER: &str = "0x0000000000000000000000000000000000000000";
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::deployments::{ContractId, Registry};
+    use cow_sdk_core::{CowEnv, SupportedChainId};
     use num_bigint::BigUint;
     use sha3::{Digest, Keccak256};
 
@@ -529,7 +503,7 @@ mod tests {
                 .address(
                     ContractId::Settlement,
                     SupportedChainId::Mainnet,
-                    cow_sdk_core::CowEnv::Prod,
+                    CowEnv::Prod,
                 )
                 .expect("canonical settlement address is registered for every supported chain"),
         }
@@ -641,28 +615,6 @@ mod tests {
         assert_eq!(
             hash_order(&domain, &order).unwrap().as_str(),
             format!("0x{}", hex::encode(expected_digest))
-        );
-    }
-
-    #[test]
-    fn compatibility_hash_for_contract_uses_the_current_domain_and_model_shape() {
-        let order = OrderModel {
-            kind: OrderKind::Sell,
-            sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-            buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-            receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-            owner: Address::new("0x4444444444444444444444444444444444444444").unwrap(),
-            app_data_hex: AppDataHash::new(
-                "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            )
-            .unwrap(),
-        };
-        let domain = sample_domain();
-        let expected = hash_order(&domain, &compatibility_order(&order)).unwrap();
-
-        assert_eq!(
-            hash_order_for_contract(&order, 1).unwrap(),
-            parse_hex32(expected.as_str(), "orderDigest").unwrap()
         );
     }
 }

@@ -1377,23 +1377,6 @@ pub struct Trade {
 /// Backward-compatible alias for the user-domain trade model.
 pub type TradeModel = Trade;
 
-/// Compatibility order shape consumed by some lower-level contract helpers.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct OrderModel {
-    /// Order side.
-    pub kind: OrderKind,
-    /// Sell token address.
-    pub sell_token: Address,
-    /// Buy token address.
-    pub buy_token: Address,
-    /// Receiver address.
-    pub receiver: Address,
-    /// Owner address.
-    pub owner: Address,
-    /// App-data hash hex string.
-    pub app_data_hex: AppDataHash,
-}
-
 /// User-domain quote request shape with validated quantities.
 ///
 /// This is not the orderbook HTTP wire DTO. The orderbook crate keeps the upstream
@@ -1459,21 +1442,6 @@ pub struct QuoteResponse {
     /// Optional stepwise amounts-and-costs breakdown.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub amounts_and_costs: Option<QuoteAmountsAndCosts>,
-}
-
-/// Legacy serialized compatibility quote model retained for current workspace consumers.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct QuoteModel {
-    /// Quote side.
-    pub kind: OrderKind,
-    /// Sell amount as a stringly typed compatibility value.
-    pub sell_amount: String,
-    /// Buy amount as a stringly typed compatibility value.
-    pub buy_amount: String,
-    /// Fee amount as a stringly typed compatibility value.
-    pub fee_amount: String,
-    /// Optional order UID when present in compatibility paths.
-    pub order_uid: Option<OrderUid>,
 }
 
 /// Generic sell/buy amount pair.
