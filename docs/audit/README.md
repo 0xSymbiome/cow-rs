@@ -116,6 +116,14 @@ If the reviewed surface did not change, leave the audit alone.
 | [Trading App-Data Merge Audit](trading-app-data-merge-audit.md) | Standing audit | `cow-sdk-trading` quote-to-post app-data edit path | Typed app-data merge, hooks replacement semantics, typed signer derivation, and `merge_and_seal_app_data` / `params_from_doc` public helpers | Current | 2026-04-22 |
 | [Trading EthFlow Owner Identity Audit](trading-ethflow-owner-identity-audit.md) | Standing audit | `cow-sdk-trading` EthFlow submission seam | `EthFlowTransaction.from` owner threading, preview identity selection, and EthFlow-aware validator invocation | Current | 2026-04-22 |
 
+## Workspace-Wide Safety And Workflow Security
+
+| Artifact | Type | Owning surface | Scope | Status | Last reviewed |
+| --- | --- | --- | --- | --- | --- |
+| [Unsafe-Code Policy Audit](unsafe-code-policy-audit.md) | Standing audit | Workspace `unsafe_code = deny` lint declared in `Cargo.toml` workspace lint section | Workspace unsafe-code deny lint, crate lint adoption, public-path source posture, and clippy enforcement | Current | 2026-04-23 |
+| [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site | Current | 2026-04-23 |
+| [Workflow Security Audit](workflow-security-audit.md) | Standing audit | Every `.github/workflows/*.yml` file | SHA-pinned third-party actions, explicit permissions, reviewed action source refs, and `pull_request_target` zero-tolerance | Current | 2026-04-23 |
+
 ## Cross-Cutting Reviewability And Contract Hygiene
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |

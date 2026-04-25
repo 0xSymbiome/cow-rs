@@ -449,6 +449,13 @@ unreleased public contract of the repository.
   `docs/architecture.md` records the cancellation contract under a
   dedicated Cancellation subsection.
 
+### Documentation
+
+- Three new standing audits cover the workspace `unsafe_code = deny`
+  lint posture, the panic-free public surface contract, and the
+  workflow security posture (CI action pinning, permissions
+  discipline, and `pull_request_target` zero-tolerance).
+
 ### Fixed
 
 - Legacy compatibility helpers in the contracts crate that produced

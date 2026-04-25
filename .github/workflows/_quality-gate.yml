@@ -22,6 +22,35 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  workflow-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Assert workflow action refs are SHA-pinned
+        shell: bash
+        run: |
+          set -euo pipefail
+          failures=0
+          while IFS= read -r hit; do
+            file="${hit%%:*}"
+            rest="${hit#*:}"
+            line="${rest%%:*}"
+            text="${rest#*:}"
+            ref="$(printf '%s\n' "$text" | sed -E 's/^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*//; s/[[:space:]]+#.*$//; s/[[:space:]]+$//')"
+            if [[ "$ref" == ./* ]]; then
+              continue
+            fi
+            if [[ ! "$ref" =~ @[0-9a-f]{40}$ ]]; then
+              echo "::error file=${file},line=${line}::GitHub Action ref must be pinned to a 40-character commit SHA: ${ref}" >&2
+              failures=1
+            fi
+          done < <(grep -RInE '^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]#]+' .github/workflows/*.yml || true)
+          exit "$failures"
+
   fmt:
     runs-on: ubuntu-latest
     timeout-minutes: 15
