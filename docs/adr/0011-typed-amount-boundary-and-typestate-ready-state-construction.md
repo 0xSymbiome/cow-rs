@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-04-17
-- Last reviewed: 2026-04-23
+- Last reviewed: 2026-04-25
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, trading, builders, semver
 - Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
@@ -22,8 +22,8 @@ wrapper no longer exists. The builder carries two marker type
 parameters that track whether `chain_id` and `app_code` have been
 supplied, and the `build_ready` terminal is only reachable from the
 fully-set state. `build_helper_only` is only reachable once the chain-id
-marker is set. Permissive runtime-validated `build` and `build_partial`
-terminals stay available on every state for runtime-driven construction.
+marker is set. The permissive runtime-validated builder terminals have been
+removed so construction flows through those two typestate-gated terminals.
 
 ## Why
 
@@ -44,9 +44,9 @@ widening the runtime surface.
   `TryFrom<&str>` conversions keep atomic interop ergonomic, and
   `Amount::as_biguint` / `Amount::into_biguint` expose the inner value
   for typed arithmetic without reparsing a decimal string.
-  `TradingSdkBuilder` exposes `build_ready` (requires both markers set)
-  and `build_helper_only` (requires only the chain-id marker). The
-  permissive `build` and `build_partial` terminals remain on every state.
+  `TradingSdkBuilder` exposes exactly two terminals: `build_ready`
+  (requires both markers set) and `build_helper_only` (requires only the
+  chain-id marker).
 - On `wasm32` targets, `build_ready()` additionally requires an injected
   orderbook client through `TradingSdkOptions::with_orderbook_client(...)`.
   The default orderbook factory does not run on `wasm32` because the
@@ -66,7 +66,7 @@ widening the runtime surface.
   observable as a compile error, not a runtime panic. The new terminal
   names never regress to a single overloaded `build` that silently
   produces a helper-only instance.
-- Cost: two public amount types and four builder terminals in place of
+- Cost: two public amount types and two builder terminals in place of
   one each. The single canonical `Amount(BigUint)` newtype replaces the
   retired wire-string wrapper, so every amount-adjacent surface carries
   one accessor shape instead of two.

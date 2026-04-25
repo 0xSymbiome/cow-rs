@@ -152,7 +152,7 @@ async fn trading_sdk_builder_accepts_an_injected_quote_cache_instance() {
         .with_app_code("cache-injection")
         .with_owner(address(common::OWNER))
         .with_quote_cache(cache.clone())
-        .build()
+        .build_ready()
         .expect("builder configured with a quote cache must build successfully");
 
     let configured = sdk

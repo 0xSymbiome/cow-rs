@@ -1441,8 +1441,8 @@ async fn assert_sdk_quote_only_owner_mode(case_id: &str, expected: &Value) {
         "case {case_id}: quote-only must return the mocked upstream quote id",
     );
 
-    // Missing chainId: the typestate builder rejects build() before reaching
-    // the ready terminal; TradingSdk::new surfaces a typed MissingTraderParameters.
+    // Missing chainId: the typestate builder cannot reach build_ready(); the
+    // dynamic TradingSdk::new constructor surfaces a typed MissingTraderParameters.
     let missing_chain = TradingSdk::new(
         PartialTraderParameters::new().with_app_code("0x007".to_owned()),
         TradingSdkOptions::default(),

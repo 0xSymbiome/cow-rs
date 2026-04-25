@@ -34,7 +34,7 @@ use cow_sdk::{SupportedChainId, TradingSdk};
 let _sdk = TradingSdk::builder()
     .with_chain_id(SupportedChainId::Sepolia)
     .with_app_code("your-app-code")
-    .build()
+    .build_ready()
     .unwrap();
 ```
 

@@ -26,7 +26,19 @@
 //! let _sdk = TradingSdk::builder()
 //!     .with_chain_id(SupportedChainId::Sepolia)
 //!     .with_app_code("your-app-code")
-//!     .build()
+//!     .build_ready()
+//!     .unwrap();
+//! ```
+//!
+//! For allowance, approval, pre-sign, or on-chain cancellation helpers that do
+//! not need quote or submission flows, construct a helper-only SDK:
+//!
+//! ```rust
+//! use cow_sdk::{SupportedChainId, TradingSdk};
+//!
+//! let _sdk = TradingSdk::builder()
+//!     .with_chain_id(SupportedChainId::Sepolia)
+//!     .build_helper_only()
 //!     .unwrap();
 //! ```
 //!

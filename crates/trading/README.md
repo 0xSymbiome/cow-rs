@@ -26,9 +26,25 @@ use cow_sdk_trading::{SupportedChainId, TradingSdk};
 let _sdk = TradingSdk::builder()
     .with_chain_id(SupportedChainId::Sepolia)
     .with_app_code("your-app-code")
-    .build()
+    .build_ready()
     .unwrap();
 ```
+
+Use `build_helper_only()` for chain-bound helper workflows that do not need
+quote, post, or off-chain cancellation submission through the SDK:
+
+```rust
+use cow_sdk_trading::{SupportedChainId, TradingSdk};
+
+let _sdk = TradingSdk::builder()
+    .with_chain_id(SupportedChainId::Sepolia)
+    .build_helper_only()
+    .unwrap();
+```
+
+Helper-only SDKs support allowance reads, approval submission, pre-sign
+transaction construction, and on-chain cancellation. Quote, post, and
+off-chain cancellation methods return `TradingError::HelperOnlyMode`.
 
 ## Where to next
 

@@ -5,7 +5,7 @@ use cow_sdk::trading::{PartialTraderParameters, TradingSdkOptions};
 
 pub fn smoke_hash_and_uid() -> Result<String, Box<dyn std::error::Error>> {
     let _sdk = TradingSdk::new_partial(
-        PartialTraderParameters::default(),
+        PartialTraderParameters::new().with_chain_id(SupportedChainId::Sepolia),
         TradingSdkOptions::default(),
     )?;
     let owner = Address::new("0x4444444444444444444444444444444444444444")?;

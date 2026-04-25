@@ -363,10 +363,9 @@ unreleased public contract of the repository.
   been supplied through the explicit `with_chain_id` and `with_app_code`
   setters. The compile-time-checked `build_ready` terminal is only
   available once both markers reach the `Set` state, and `build_helper_only`
-  is only available once the chain-id marker is `Set`. The permissive
-  runtime-validated `build` and `build_partial` terminals remain on every
-  state for the migration window. A `TradingSdkMode` enum (`Ready` or
-  `HelperOnly`) plus the new `TradingError::HelperOnlyMode` variant fail
+  is only available once the chain-id marker is `Set`. A `TradingSdkMode`
+  enum (`Ready` or `HelperOnly`) plus the new
+  `TradingError::HelperOnlyMode` variant fail
   quote, post, and off-chain cancellation flows closed when the sdk was
   constructed through the helper-only terminal, while chain-bound helpers
   (pre-sign transaction construction, allowance reads, approval submission,
@@ -457,6 +456,10 @@ unreleased public contract of the repository.
 
 ### Documentation
 
+- Getting Started, the facade crate README, and the trading crate README now
+  document helper-only `TradingSdk` construction for allowance, approval,
+  pre-sign, and on-chain cancellation workflows that do not need quote or
+  submission flows.
 - EIP-1271 verification helpers now document the
   no-pre-interaction-simulation caveat for watchtower consumers.
 - Three new standing audits cover the workspace `unsafe_code = deny`
@@ -610,6 +613,13 @@ unreleased public contract of the repository.
 - Repository security reporting now has an explicit private disclosure path and
   a protocol-level escalation note for issues that could affect deployed CoW
   Protocol infrastructure or user funds.
+
+### Removed
+
+- Removed the permissive runtime-validated `TradingSdkBuilder::build` and
+  `TradingSdkBuilder::build_partial` terminals; the typestate-gated
+  `build_ready` and `build_helper_only` terminals are now the only
+  construction paths. Pre-release surface; zero migration cost.
 
 ### Changed
 

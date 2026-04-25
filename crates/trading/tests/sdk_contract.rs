@@ -72,19 +72,21 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
 
 #[test]
 fn sdk_ready_construction_requires_chain_authority_and_app_code() {
-    let missing_chain = TradingSdk::builder()
-        .with_app_code("0x007")
-        .build()
-        .expect_err("ready builder must reject missing chain authority");
+    let missing_chain = TradingSdk::new(
+        PartialTraderParameters::new().with_app_code("0x007".to_owned()),
+        TradingSdkOptions::default(),
+    )
+    .expect_err("ready builder must reject missing chain authority");
     assert!(matches!(
         missing_chain,
         cow_sdk_trading::TradingError::MissingTraderParameters(ref fields) if fields == "chainId"
     ));
 
-    let missing_app = TradingSdk::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .build()
-        .expect_err("ready builder must reject missing appCode");
+    let missing_app = TradingSdk::new(
+        PartialTraderParameters::new().with_chain_id(SupportedChainId::Sepolia),
+        TradingSdkOptions::default(),
+    )
+    .expect_err("ready builder must reject missing appCode");
     assert!(matches!(
         missing_app,
         cow_sdk_trading::TradingError::MissingTraderParameters(ref fields) if fields == "appCode"
@@ -113,7 +115,7 @@ async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can
         .with_chain_id(SupportedChainId::Mainnet)
         .with_app_code("0x007")
         .with_orderbook_client(orderbook.clone())
-        .build()
+        .build_ready()
         .expect_err("mismatched injected orderbook chain must fail validation");
     assert!(matches!(
         error,
@@ -124,9 +126,10 @@ async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can
     ));
 
     let sdk = TradingSdk::builder()
+        .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("0x007")
         .with_orderbook_client(orderbook)
-        .build()
+        .build_ready()
         .expect("builder should accept injected client when defaults do not conflict");
     let mut trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
     trade.env = Some(CowEnv::Staging);
@@ -183,9 +186,10 @@ async fn sdk_orderbook_bound_calls_reject_env_conflicts_with_injected_client_con
         sell_quote_response(),
     ));
     let sdk = TradingSdk::builder()
+        .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("0x007")
         .with_orderbook_client(orderbook)
-        .build()
+        .build_ready()
         .expect("builder should accept compatible config");
     let mut trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
     trade.env = Some(CowEnv::Staging);
@@ -202,32 +206,33 @@ async fn sdk_orderbook_bound_calls_reject_env_conflicts_with_injected_client_con
 }
 
 #[tokio::test]
-async fn sdk_partial_construction_still_reports_missing_chainid_and_appcode_for_quote_only() {
+async fn sdk_partial_construction_requires_chain_and_helper_only_refuses_quote_only() {
     let trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
 
     let missing_chain = TradingSdk::new_partial(
         PartialTraderParameters::new().with_app_code("0x007".to_owned()),
         TradingSdkOptions::default(),
     )
-    .expect("partial sdk construction without injected orderbook should succeed");
-    let chain_error = missing_chain
-        .get_quote_only(trade.clone(), None)
-        .await
-        .expect_err("missing chainId must fail")
-        .to_string();
-    assert!(chain_error.contains("Missing quoter parameters: chainId"));
+    .expect_err("partial sdk construction must reject missing chainId");
+    assert!(matches!(
+        missing_chain,
+        cow_sdk_trading::TradingError::MissingTraderParameters(ref fields) if fields == "chainId"
+    ));
 
-    let missing_app = TradingSdk::new_partial(
+    let helper_only = TradingSdk::new_partial(
         PartialTraderParameters::new().with_chain_id(SupportedChainId::Sepolia),
         TradingSdkOptions::default(),
     )
-    .expect("partial sdk construction without injected orderbook should succeed");
-    let app_error = missing_app
+    .expect("partial sdk construction with chainId should succeed");
+    assert_eq!(helper_only.mode(), TradingSdkMode::HelperOnly);
+    let quote_error = helper_only
         .get_quote_only(trade, None)
         .await
-        .expect_err("missing appCode must fail")
-        .to_string();
-    assert!(app_error.contains("Missing quoter parameters: appCode"));
+        .expect_err("helper-only construction must refuse quote-only flows");
+    assert!(matches!(
+        quote_error,
+        cow_sdk_trading::TradingError::HelperOnlyMode
+    ));
 }
 
 #[test]

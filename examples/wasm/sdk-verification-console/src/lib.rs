@@ -59,15 +59,18 @@ pub fn supported_chains_json() -> Result<String, JsValue> {
 
 #[wasm_bindgen]
 pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValue> {
+    use std::sync::Arc;
+
     let chain_id = parse_chain_id(chain_id)?;
     let env = parse_env(env)?;
+    let orderbook_client = orderbook_api(chain_id, env);
     let sdk = TradingSdk::new(
         PartialTraderParameters::new()
             .with_chain_id(chain_id)
             .with_app_code("cow-rs/wasm-console".to_owned())
             .with_owner(sample_owner())
             .with_env(env),
-        TradingSdkOptions::default(),
+        TradingSdkOptions::default().with_orderbook_client(Arc::new(orderbook_client)),
     )
     .map_err(js_string_error)?;
     let api_context = api_context(chain_id, env);

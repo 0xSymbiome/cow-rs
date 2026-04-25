@@ -78,15 +78,16 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let signer = ExampleSigner::new(owner.clone());
 
     // Builder path: every builder method shown below is public. Calling
-    // `.build()` validates that the `appCode` + chain authority are set and
-    // that the injected orderbook runtime agrees with the trader defaults.
+    // `.build_ready()` is only possible after `appCode` and chain authority
+    // are set, then validates that the injected orderbook runtime agrees
+    // with the trader defaults.
     let sdk: TradingSdk = TradingSdk::builder()
         .with_trader_defaults(PartialTraderParameters::default())
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cow-rs-signed-order-example")
         .with_owner(owner.clone())
         .with_orderbook_client(orderbook)
-        .build()
+        .build_ready()
         .map_err(TradingErrorReport::from)?;
 
     // Full journey: quote fetch, order signing, and order submission all run

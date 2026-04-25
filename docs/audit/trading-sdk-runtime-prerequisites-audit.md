@@ -1,7 +1,7 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current  
-Last reviewed: 2026-04-23  
+Last reviewed: 2026-04-25  
 Owning surface: `cow-sdk-trading` ready-state versus partial `TradingSdk` construction and helper-specific prerequisite contract  
 Refresh trigger: Changes to ready-state `TradingSdk` constructors or builders, partial setup entry points, method-specific prerequisite enforcement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`  
 Related docs:
@@ -29,7 +29,7 @@ or unrelated credential-hygiene questions.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Runtime-validated ready construction | `TradingSdk::build` and `TradingSdk::new` require `appCode` plus chain authority before exposing the permissive ready-state construction path | Conforms |
+| Typestate ready construction | `TradingSdkBuilder::build_ready` is the only ready-state builder terminal and requires chain id plus `appCode` before construction | Conforms |
 | wasm32 build_ready() requires injected orderbook client | `build_ready()` returns `TradingError::MissingInjectedOrderbookClient` when `options.orderbook_client().is_none()` on `wasm32` | Conforms |
 | Partial helper construction | Explicit partial constructors keep helper-only setup available without weakening the ready-state contract | Conforms |
 | Chain-bound helper prerequisites | Allowance, approval, pre-sign, and on-chain cancellation no longer require `appCode` when only chain and protocol context are needed | Conforms |
@@ -38,12 +38,12 @@ or unrelated credential-hygiene questions.
 
 ### Ready-State Construction
 
-`TradingSdk::build` and `TradingSdk::new` keep the permissive runtime-validated
-construction path. A ready-state SDK must supply `appCode` and either an
-explicit `chainId` or an injected orderbook client that fixes chain authority,
-so construction still fails locally when those prerequisites are absent instead
-of returning an instance that will only fail later during quote or post
-execution.
+`TradingSdkBuilder::build_ready` is the only ready-state builder terminal. It
+is available only after the builder has both chain id and `appCode` typestate
+markers set, so missing ready-state prerequisites are rejected at compile time
+for builder callers. `TradingSdk::new` remains the dynamic constructor for
+runtime defaults and surfaces a typed `TradingError::MissingTraderParameters`
+when `chainId` or `appCode` is absent.
 
 ### wasm32 Typestate Ready Terminal
 
@@ -57,11 +57,12 @@ fail in orderbook binding resolution.
 
 ### Explicit Partial Construction
 
-`TradingSdk::build_partial` and `TradingSdk::new_partial` keep the narrower
-helper-only contract explicit. They are intended for workflows such as
+`TradingSdkBuilder::build_helper_only` and `TradingSdk::new_partial` keep the
+narrower helper-only contract explicit. They are intended for workflows such as
 allowance reads, approval submission, pre-sign transaction construction, and
 on-chain cancellation, where chain and protocol context matter but quote or
-submission attribution does not.
+submission attribution does not. Both construction paths require a chain id and
+produce `TradingSdkMode::HelperOnly`.
 
 ### Helper-Specific Prerequisites
 

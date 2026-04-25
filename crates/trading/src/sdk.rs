@@ -73,11 +73,6 @@ pub struct TradingSdk {
 /// [`TradingSdkBuilder::build_helper_only`] returns a helper-mode sdk that
 /// can still drive chain-bound helpers but fails closed on quote, post, and
 /// off-chain cancellation flows with [`TradingError::HelperOnlyMode`].
-///
-/// The permissive [`TradingSdkBuilder::build`] and
-/// [`TradingSdkBuilder::build_partial`] methods remain available on every
-/// state and preserve the runtime-validated construction path for the
-/// migration window.
 #[derive(Debug, Clone)]
 pub struct TradingSdkBuilder<C = ChainIdUnset, A = AppCodeUnset> {
     trader_defaults: PartialTraderParameters,
@@ -280,69 +275,6 @@ impl<C, A> TradingSdkBuilder<C, A> {
 
         Ok(())
     }
-
-    fn validate_ready_defaults(&self) -> Result<(), TradingError> {
-        let mut missing = Vec::new();
-
-        if self.options.orderbook_client().is_none() && self.trader_defaults.chain_id.is_none() {
-            missing.push("chainId");
-        }
-        if self.trader_defaults.app_code.is_none() {
-            missing.push("appCode");
-        }
-
-        if missing.is_empty() {
-            Ok(())
-        } else {
-            Err(TradingError::MissingTraderParameters(missing.join(", ")))
-        }
-    }
-
-    /// Builds a partially configured [`TradingSdk`] and validates any injected
-    /// orderbook binding.
-    ///
-    /// Use this when the SDK is only being prepared for chain-bound helper
-    /// flows such as allowance, approval, pre-sign, or on-chain cancellation.
-    /// Quote, post, and off-chain cancellation helpers still validate
-    /// `appCode` when those workflows are used. The returned SDK reports
-    /// [`TradingSdkMode::Ready`] so runtime gating stays opt-in through
-    /// [`TradingSdkBuilder::build_helper_only`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
-    /// builder's default chain or environment conflicts with an injected
-    /// orderbook client.
-    pub fn build_partial(self) -> Result<TradingSdk, TradingError> {
-        self.validate_injected_orderbook_binding()?;
-
-        Ok(TradingSdk {
-            trader_defaults: self.trader_defaults,
-            options: self.options,
-            mode: TradingSdkMode::Ready,
-            order_bounds: self.order_bounds,
-        })
-    }
-
-    /// Builds a ready-state [`TradingSdk`] with runtime validation of the
-    /// trader defaults.
-    ///
-    /// This is the permissive construction path preserved for the migration
-    /// window and is available on every builder state. New code should prefer
-    /// the compile-time-checked [`TradingSdkBuilder::build_ready`] instead.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
-    /// builder's default chain or environment conflicts with an injected
-    /// orderbook client, or [`TradingError::MissingTraderParameters`] when the
-    /// defaults do not provide `appCode` plus either a default `chainId` or an
-    /// injected orderbook client that fixes chain authority.
-    pub fn build(self) -> Result<TradingSdk, TradingError> {
-        self.validate_injected_orderbook_binding()?;
-        self.validate_ready_defaults()?;
-        self.build_partial()
-    }
 }
 
 impl<A> TradingSdkBuilder<ChainIdSet, A> {
@@ -386,9 +318,7 @@ impl TradingSdkBuilder<ChainIdSet, AppCodeSet> {
     /// [`crate::TradingSdkOptions::with_orderbook_client`] because the browser
     /// runtime does not ship a default HTTP transport; see ADR 0013.
     /// Attempting to call `build_ready` on a builder that does not own the
-    /// typestate prerequisites is a compile error. Use
-    /// [`TradingSdkBuilder::build`] for the permissive runtime-validated
-    /// alternative.
+    /// typestate prerequisites is a compile error.
     ///
     /// # Errors
     ///
@@ -468,19 +398,27 @@ impl TradingSdk {
     /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
     /// supplied defaults conflict with an injected orderbook client, or
     /// [`TradingError::MissingTraderParameters`] when the defaults do not
-    /// provide `appCode` plus either a default `chainId` or an injected
-    /// orderbook client that fixes chain authority.
+    /// provide both `chainId` and `appCode`.
     pub fn new(
         trader_defaults: PartialTraderParameters,
         options: TradingSdkOptions,
     ) -> Result<Self, TradingError> {
-        TradingSdkBuilder::new()
-            .with_trader_defaults(trader_defaults)
-            .with_options(options)
-            .build()
+        match (trader_defaults.chain_id, trader_defaults.app_code.clone()) {
+            (Some(chain_id), Some(app_code)) => TradingSdkBuilder::new()
+                .with_trader_defaults(trader_defaults)
+                .with_options(options)
+                .with_chain_id(chain_id)
+                .with_app_code(app_code)
+                .build_ready(),
+            (None, Some(_)) => Err(TradingError::MissingTraderParameters("chainId".to_owned())),
+            (Some(_), None) => Err(TradingError::MissingTraderParameters("appCode".to_owned())),
+            (None, None) => Err(TradingError::MissingTraderParameters(
+                "chainId, appCode".to_owned(),
+            )),
+        }
     }
 
-    /// Creates a partially configured SDK directly from defaults and options.
+    /// Creates a helper-only SDK directly from defaults and options.
     ///
     /// This constructor is intended for chain-bound helper flows that do not
     /// require quote or submission attribution, such as allowance reads,
@@ -490,15 +428,22 @@ impl TradingSdk {
     /// # Errors
     ///
     /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
-    /// supplied defaults conflict with an injected orderbook client.
+    /// supplied defaults conflict with an injected orderbook client, or
+    /// [`TradingError::MissingTraderParameters`] when the defaults do not
+    /// provide `chainId`.
     pub fn new_partial(
         trader_defaults: PartialTraderParameters,
         options: TradingSdkOptions,
     ) -> Result<Self, TradingError> {
+        let Some(chain_id) = trader_defaults.chain_id else {
+            return Err(TradingError::MissingTraderParameters("chainId".to_owned()));
+        };
+
         TradingSdkBuilder::new()
             .with_trader_defaults(trader_defaults)
             .with_options(options)
-            .build_partial()
+            .with_chain_id(chain_id)
+            .build_helper_only()
     }
 
     /// Returns the stored trader defaults.

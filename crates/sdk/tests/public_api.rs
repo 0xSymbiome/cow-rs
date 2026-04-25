@@ -15,13 +15,14 @@ fn public_api_reexports_cover_primary_root_surface() {
     )
     .expect("ready trading sdk construction should succeed");
     let _partial_sdk = TradingSdk::new_partial(
-        PartialTraderParameters::default(),
+        PartialTraderParameters::new().with_chain_id(SupportedChainId::Sepolia),
         TradingSdkOptions::default(),
     )
     .expect("partial trading sdk construction should succeed");
     let _builder = TradingSdkBuilder::new()
         .with_trader_defaults(PartialTraderParameters::default())
-        .build_partial()
+        .with_chain_id(SupportedChainId::Sepolia)
+        .build_helper_only()
         .expect("partial builder construction should succeed");
     assert_eq!(ORDER_PRIMARY_TYPE, "Order");
 
@@ -79,7 +80,8 @@ fn module_reexports_cover_expected_leaf_crates() {
     )
     .build();
     let _sdk = cow_sdk::trading::TradingSdk::new_partial(
-        cow_sdk::trading::PartialTraderParameters::default(),
+        cow_sdk::trading::PartialTraderParameters::new()
+            .with_chain_id(cow_sdk::core::SupportedChainId::Sepolia),
         cow_sdk::trading::TradingSdkOptions::default(),
     )
     .expect("default facade partial trading sdk construction should succeed");

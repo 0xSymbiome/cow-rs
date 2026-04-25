@@ -92,10 +92,9 @@ native target.
 
 The ready-state builder contract is intentionally small.
 
-`TradingSdk::builder().build()` validates:
+`TradingSdk::builder().build_ready()` is only reachable after:
 
-- a default `chainId`, unless an injected orderbook client already fixes chain
-  authority
+- a default `chainId`
 - a stable `appCode`
 
 A default `owner` is optional at build time.
@@ -122,7 +121,7 @@ fn build_ready_sdk() -> Result<TradingSdk, Box<dyn std::error::Error>> {
     let sdk = TradingSdk::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("your-app-code")
-        .build()?;
+        .build_ready()?;
 
     Ok(sdk)
 }
@@ -140,7 +139,7 @@ fn build_ready_sdk_with_owner() -> Result<TradingSdk, Box<dyn std::error::Error>
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("your-app-code")
         .with_owner(owner)
-        .build()?;
+        .build_ready()?;
 
     Ok(sdk)
 }
@@ -152,6 +151,30 @@ quote and post helpers.
 Use the minimal builder when you want to keep ownership outside SDK defaults
 and inject it explicitly at the call site.
 
+### Helper-Only Builder
+
+Use the helper-only terminal when an integration needs chain-bound helpers but
+does not need to quote, post, or submit off-chain cancellations through the
+SDK. Common examples are allowance and approval screens, pre-sign transaction
+tools, and on-chain cancellation tools.
+
+```rust
+use cow_sdk::{SupportedChainId, TradingSdk};
+
+fn build_helper_only_sdk() -> Result<TradingSdk, Box<dyn std::error::Error>> {
+    let sdk = TradingSdk::builder()
+        .with_chain_id(SupportedChainId::Sepolia)
+        .build_helper_only()?;
+
+    Ok(sdk)
+}
+```
+
+A helper-only SDK can drive allowance reads, approval submission, pre-sign
+transaction construction, and on-chain cancellation. Quote, post, and
+off-chain cancellation methods return `TradingError::HelperOnlyMode`; choose
+`build_ready()` when those flows are needed.
+
 ### What This Step Proves
 
 This builder step proves the top-level SDK contract:
@@ -160,6 +183,8 @@ This builder step proves the top-level SDK contract:
 - `SupportedChainId` is the public chain selector type
 - `appCode` is a required ready-state default and a stable integration
   identifier
+- `build_ready()` and `build_helper_only()` are separate terminal contracts
+  for full trading flows versus chain-bound helper flows
 - `Address::new(...)` is the public validated address constructor
 - `CoreError` is the canonical shared validation and configuration error type
 
