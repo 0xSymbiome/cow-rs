@@ -242,6 +242,19 @@ pub fn function_magic_value(signature: &str) -> String {
 
 /// Verifies an EIP-1271 signature using a synchronous provider.
 ///
+/// ## Note
+///
+/// This verifier does NOT simulate the order's pre-interactions before
+/// checking the EIP-1271 signature. Upstream services perform the signature
+/// check against a simulated state where the order's pre-interactions have
+/// been executed, so a watchtower or off-chain re-verifier built on this
+/// helper may see results diverge from services for orders whose verification
+/// depends on a pre-interaction (for example, a smart-account that grants the
+/// verifier access via a pre-interaction).
+///
+/// Consumers that need pre-interaction-aware verification should run the
+/// pre-interaction simulation at their own RPC seam before calling this helper.
+///
 /// # Errors
 ///
 /// Returns [`ContractsError`] if the verifier has no code, the provider call

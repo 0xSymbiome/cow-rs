@@ -457,6 +457,8 @@ unreleased public contract of the repository.
 
 ### Documentation
 
+- EIP-1271 verification helpers now document the
+  no-pre-interaction-simulation caveat for watchtower consumers.
 - Three new standing audits cover the workspace `unsafe_code = deny`
   lint posture, the panic-free public surface contract, and the
   workflow security posture (CI action pinning, permissions
@@ -611,6 +613,8 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Typestate marker structs across the workspace are now sealed against
+  external construction.
 - Partner-fee policies now reject the zero address as the recipient through
   app-data validation and trading quote construction before quote transport.
   The client-side order-bounds validator documentation now explicitly frames

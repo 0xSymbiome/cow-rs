@@ -38,20 +38,20 @@ pub enum TradingSdkMode {
 }
 
 /// Typestate marker for a builder that has not yet been given a chain id.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct ChainIdUnset;
+#[derive(Debug, Clone, Copy)]
+pub struct ChainIdUnset(());
 
 /// Typestate marker for a builder that has been given a chain id.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct ChainIdSet;
+#[derive(Debug, Clone, Copy)]
+pub struct ChainIdSet(());
 
 /// Typestate marker for a builder that has not yet been given an `appCode`.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct AppCodeUnset;
+#[derive(Debug, Clone, Copy)]
+pub struct AppCodeUnset(());
 
 /// Typestate marker for a builder that has been given an `appCode`.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct AppCodeSet;
+#[derive(Debug, Clone, Copy)]
+pub struct AppCodeSet(());
 
 /// High-level trading facade that stores trader defaults plus optional injected services.
 #[derive(Debug, Clone, Default)]
@@ -94,6 +94,21 @@ impl Default for TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
             order_bounds: crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
             _state: PhantomData,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn typestate_markers_are_sealed_against_external_construction() {
+        // These constructors are visible only inside this module because the
+        // tuple field is private; external callers cannot write `Marker(())`.
+        let _ = ChainIdUnset(());
+        let _ = ChainIdSet(());
+        let _ = AppCodeUnset(());
+        let _ = AppCodeSet(());
     }
 }
 

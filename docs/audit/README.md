@@ -59,13 +59,13 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [HTTP Transport Contract Audit](http-transport-contract-audit.md) | Standing audit | `cow-sdk-core::HttpTransport` trait and its native and browser default adapters | Trait shape, typed `TransportError`, additive response-header surface, orderbook `Retry-After` cooldown honor, URL-redaction contract, and cross-adapter classification parity | Current | 2026-04-24 |
-| [Typestate Builder Contract Audit](typestate-builder-contract-audit.md) | Standing audit | `cow-sdk-orderbook::OrderBookApiBuilder` and `cow-sdk-subgraph::SubgraphApiBuilder` construction seams | Required-input typestate, native default-transport convenience, wasm32 transport-required invariant, and retirement of legacy free-function constructors | Current | 2026-04-21 |
+| [Typestate Builder Contract Audit](typestate-builder-contract-audit.md) | Standing audit | `cow-sdk-orderbook::OrderBookApiBuilder` and `cow-sdk-subgraph::SubgraphApiBuilder` construction seams | Required-input typestate, marker sealing, native default-transport convenience, wasm32 transport-required invariant, and retirement of legacy free-function constructors | Current | 2026-04-25 |
 
 ## Signature Verification Caching
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md) | Standing audit | `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `Noop` and `InMemory` canonical impls | Trait contract, conservative caching semantics, thread-safety on the in-memory implementation, and its integration with `verify_eip1271_signature_async` | Current | 2026-04-21 |
+| [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md) | Standing audit | `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `Noop` and `InMemory` canonical impls | Trait contract, conservative caching semantics, pre-interaction scope, thread-safety on the in-memory implementation, and its integration with `verify_eip1271_signature_async` | Current | 2026-04-25 |
 
 ## Signature Normalization
 

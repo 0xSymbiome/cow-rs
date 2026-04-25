@@ -49,24 +49,24 @@ use crate::types::{ApiContext, EnvBaseUrlOverrides};
 
 /// Typestate marker — chain id has not been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct ChainIdUnset;
+pub struct ChainIdUnset(());
 /// Typestate marker — chain id has been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct ChainIdSet;
+pub struct ChainIdSet(());
 
 /// Typestate marker — environment has not been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct EnvUnset;
+pub struct EnvUnset(());
 /// Typestate marker — environment has been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct EnvSet;
+pub struct EnvSet(());
 
 /// Typestate marker — transport has not been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct TransportUnset;
+pub struct TransportUnset(());
 /// Typestate marker — transport has been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct TransportSet;
+pub struct TransportSet(());
 
 /// Typestate-checked builder for [`OrderBookApi`].
 ///
@@ -364,4 +364,21 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
 
 fn normalize_base_url(base_url: &str) -> String {
     base_url.trim_end_matches('/').to_owned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn typestate_markers_are_sealed_against_external_construction() {
+        // These constructors are visible only inside this module because the
+        // tuple field is private; external callers cannot write `Marker(())`.
+        let _ = ChainIdUnset(());
+        let _ = ChainIdSet(());
+        let _ = EnvUnset(());
+        let _ = EnvSet(());
+        let _ = TransportUnset(());
+        let _ = TransportSet(());
+    }
 }

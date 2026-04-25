@@ -1,9 +1,9 @@
 # Typestate Builder Contract Audit
 
-Status: Current  
-Last reviewed: 2026-04-21  
-Owning surface: `cow-sdk-orderbook::OrderBookApiBuilder` and `cow-sdk-subgraph::SubgraphApiBuilder` construction seams  
-Refresh trigger: Type-parameter changes on either builder, a change to the set of required inputs (chain, environment or API key, transport), a change to the native default-transport convenience impl, a change to the wasm32 transport-required invariant, or a new `trybuild` witness replacing the current compile-fail coverage  
+Status: Current
+Last reviewed: 2026-04-25
+Owning surface: `cow-sdk-orderbook::OrderBookApiBuilder` and `cow-sdk-subgraph::SubgraphApiBuilder` construction seams
+Refresh trigger: Type-parameter or marker visibility changes on either builder, a change to the set of required inputs (chain, environment or API key, transport), a change to the native default-transport convenience impl, a change to the wasm32 transport-required invariant, or a new `trybuild` witness replacing the current compile-fail coverage
 Related docs:
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
 - [Transport](../transport.md)
@@ -21,6 +21,8 @@ This audit covers:
   `.build()` path
 - the native default-transport convenience on both builders and its
   `#[cfg(not(target_arch = "wasm32"))]` gate
+- the sealed marker structs that prevent direct external construction of
+  typestate witnesses
 - the wasm32 transport-required invariant proven by a `trybuild`
   compile-fail witness
 - the retirement of the legacy free-function constructors on
@@ -37,6 +39,7 @@ typestate (covered by the trading-sdk runtime prerequisites audit).
 | --- | --- | --- |
 | OrderBookApi construction | `OrderBookApi::builder()` is the only production construction path; every required input is encoded as a compile-time marker | Conforms |
 | SubgraphApi construction | `SubgraphApi::builder()` is the only production construction path; every required input is encoded as a compile-time marker | Conforms |
+| Marker sealing | Public marker types use private tuple fields, so external callers cannot construct typestate witnesses directly | Conforms |
 | Native convenience | Both builders carry a default-transport `.build()` impl gated on `#[cfg(not(target_arch = "wasm32"))]` that installs a `ReqwestTransport` | Conforms |
 | wasm32 invariant | `trybuild` compile-fail coverage asserts `.build()` without `.transport(...)` does not compile on `wasm32` | Conforms |
 
@@ -54,6 +57,11 @@ layer additionally exposes optional setters for transport policy,
 shared `reqwest::Client` reuse on native targets, and per-chain base-URL
 overrides.
 
+The public marker types are tuple structs with private unit fields. The
+type names remain available in builder type signatures and diagnostics,
+but callers outside the defining module cannot construct `Marker(())`
+values directly.
+
 ### SubgraphApi Construction
 
 `SubgraphApiBuilder<ChainState, ApiKeyState, TransportState>` lives at
@@ -62,6 +70,10 @@ with `ApiKey` in place of `Environment`. The partner API key is
 wrapped in the `Redacted<T>` newtype at the setter boundary so debug,
 display, and serialized output of the configuration never emit the
 raw key.
+
+The subgraph markers use the same private-field tuple shape, keeping
+external construction closed while preserving the public type names used
+by the builder state machine.
 
 ### Native Convenience And wasm32 Invariant
 

@@ -49,24 +49,24 @@ use crate::api::{
 
 /// Typestate marker — chain id has not been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct ChainIdUnset;
+pub struct ChainIdUnset(());
 /// Typestate marker — chain id has been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct ChainIdSet;
+pub struct ChainIdSet(());
 
 /// Typestate marker — API key has not been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct ApiKeyUnset;
+pub struct ApiKeyUnset(());
 /// Typestate marker — API key has been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct ApiKeySet;
+pub struct ApiKeySet(());
 
 /// Typestate marker — transport has not been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct TransportUnset;
+pub struct TransportUnset(());
 /// Typestate marker — transport has been supplied.
 #[derive(Debug, Clone, Copy)]
-pub struct TransportSet;
+pub struct TransportSet(());
 
 /// Typestate-checked builder for [`SubgraphApi`].
 ///
@@ -286,5 +286,22 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset> {
         let transport = ReqwestTransport::new(config)
             .expect("default ReqwestTransport must build with the validated user-agent");
         self.finish(Arc::new(transport))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn typestate_markers_are_sealed_against_external_construction() {
+        // These constructors are visible only inside this module because the
+        // tuple field is private; external callers cannot write `Marker(())`.
+        let _ = ChainIdUnset(());
+        let _ = ChainIdSet(());
+        let _ = ApiKeyUnset(());
+        let _ = ApiKeySet(());
+        let _ = TransportUnset(());
+        let _ = TransportSet(());
     }
 }
