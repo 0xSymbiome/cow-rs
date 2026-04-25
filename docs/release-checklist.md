@@ -259,6 +259,10 @@ Rules:
 - same-checkout directory copies are not valid provenance evidence
 - `release-readiness.yml` owns the routine automated provenance-sensitive lane
 
+The `services-drift.yml` workflow runs weekly against the upstream services
+repository and records newly-added error tags plus request or response shape
+changes as a tracked report before they reach the release window.
+
 ## 8. WASM And Browser Surfaces
 
 Build the WASM surfaces:

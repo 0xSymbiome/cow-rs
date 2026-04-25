@@ -127,6 +127,7 @@ Use deeper evidence only when the change warrants it:
 
 The canonical command set lives in [Release Checklist](release-checklist.md).
 Every shipped `README.md` is wired into crate rustdoc with a `cfg_attr(doctest, doc = include_str!("../README.md"))` shim, so `cargo test --workspace --doc` covers every fenced example.
+The `services-drift.yml` workflow compares the upstream services repository's error tags and request or response shapes against the typed orderbook surface each week and records drift as a tracked report.
 
 ## Review Rules
 

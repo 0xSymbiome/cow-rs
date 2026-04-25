@@ -15,6 +15,10 @@ unreleased public contract of the repository.
 
 ### Added
 
+- Continuous integration now runs a weekly drift detection lane against the
+  upstream CoW services repository so newly-added error tags and request or
+  response shapes surface as a tracked report before they reach the release
+  window.
 - App-data metadata now exposes a typed `HookList` slot on `AppDataParams`
   for hook-bearing documents (cow-shed, flash-loans, bridging). The
   `OrderbookClient` trait is now reachable from `cow-sdk-orderbook` so
@@ -23,14 +27,12 @@ unreleased public contract of the repository.
 - Order quote requests now pre-validate the `(signingScheme,
   onchainOrder)` pair locally so incompatible ECDSA/on-chain
   combinations fail with a typed error before the HTTP call.
-  `OrderCreation` also carries an opt-in
+- `OrderCreation` carries an opt-in
   `with_full_balance_check(bool)` builder method matching the upstream
   services policy while preserving the existing wire shape when unset.
 - The lowest-level transport seam on both the native and browser adapters now
   emits one tracing span per request with method, endpoint (path-only, never
   the full URL), and byte counts when the `tracing` feature is enabled.
-  Default-constructed transports now apply a `cow-sdk/<version>` user-agent
-  and a 60-second TCP keepalive aligned with the upstream services defaults.
 - The order-book retry orchestrator now emits per-attempt tracing events with
   attempt index, response status or transport error class, and backoff
   duration when the `tracing` feature is enabled, and supports jitter
@@ -197,7 +199,7 @@ unreleased public contract of the repository.
   services `data.fee_amount` payload through a typed `fee_amount:
   Amount` field. The tail variant `Unknown { code, message }`
   preserves forward compatibility so a newly-introduced services
-  tag never silently coerces to a default placeholder, and the
+  tag never silently coerces to a generic default, and the
   accompanying free function
   `cow_sdk_orderbook::parse_rejection(status, body)` exposes the
   same classification at the byte-slice level for consumers that
@@ -272,7 +274,7 @@ unreleased public contract of the repository.
   struct used to derive the typed-data hash. A pinned `PERMIT_TYPE_HASH`
   constant and a `permit_typed_data_hash(domain, permit)` helper compose the
   EIP-712 envelope so off-chain signers produce a digest every EIP-2612
-  deployment will accept, and the committed Solidity excerpts under
+  deployment accepts, and the committed Solidity excerpts under
   `crates/contracts/abi/erc20/` preserve upstream provenance for reviewers.
 - Deterministic native example scenarios plus browser-hosted WASM verification
   surfaces for the supported SDK and browser-wallet flows.
@@ -309,7 +311,7 @@ unreleased public contract of the repository.
   network round trip, matching the orderbook's documented 8192-byte ceiling
   through the exported `APP_DATA_MAX_BYTES` constant.
 - `Redacted<T>` newtype in `cow-sdk-core` with `Debug`, `Display`, and
-  `Serialize` emitting the literal `[redacted]` placeholder and an
+  `Serialize` emitting the literal `[redacted]` marker and an
   `into_inner` escape for deliberate access. Secret-bearing configuration
   fields migrated to `Redacted<T>`: `ApiContext::api_key`,
   `ApiContextOverride::api_key`, `IpfsConfig::pinata_api_key`,
@@ -389,7 +391,7 @@ unreleased public contract of the repository.
   `ApiContextOverride::new` plus `with_chain_id`/`with_env`/`with_base_urls`/`with_api_key`)
   replace struct-literal construction for downstream callers.
 - Broadened `#[non_exhaustive]` coverage across every public DTO family in
-  the trading-first surface so future additive fields no longer require a
+  the trading-first surface so later additive fields no longer require a
   major version bump. `cow-sdk-orderbook` now annotates `OrderCreation`,
   `OrderQuoteRequest`, `OrderQuoteResponse`, the wire `Order` and `Trade`
   DTOs, `EthflowData`, `QuoteSide`, `QuoteData`, `GetOrdersRequest`,
@@ -437,7 +439,7 @@ unreleased public contract of the repository.
 - Cooperative cancellation on long-running SDK operations via the
   `cow_sdk_core::Cancellable::cancel_with(&token)` extension-trait
   combinator. `cow-sdk-core` defines the `Cancellable` trait, the
-  `WithCancellation<'t, F>` future wrapper, and the `Cancelled`
+  `WithCancellation<'t, F>` async wrapper, and the `Cancelled`
   marker error; the `cow-sdk` prelude re-exports `Cancellable` and
   `Cancelled` so `use cow_sdk::prelude::*` reaches the combinator.
   `cow-sdk-core` also re-exports
@@ -446,10 +448,10 @@ unreleased public contract of the repository.
   cancellation through a single typed import. Every public
   long-running async method on `OrderBookApi`, `SubgraphApi`, and
   `TradingSdk` composes with `.cancel_with(&token)` at the call
-  site; the combinator's `Future::poll` performs a biased check
-  against `token.is_cancelled()` before polling the inner future,
+  site; the combinator's poll implementation performs a biased check
+  against `token.is_cancelled()` before polling the inner operation,
   so cancellation is observed before the next `.await` and the
-  in-flight request future is dropped promptly rather than waiting
+  in-flight request handle is dropped promptly rather than waiting
   for the request deadline. `CoreError`, `OrderbookError`,
   `TradingError`, `SubgraphError`, `SigningError`, and
   `BrowserWalletError` each carry a typed `Cancelled` variant and
@@ -471,10 +473,11 @@ unreleased public contract of the repository.
   submission flows.
 - EIP-1271 verification helpers now document the
   no-pre-interaction-simulation caveat for watchtower consumers.
-- Three new standing audits cover the workspace `unsafe_code = deny`
-  lint posture, the panic-free public surface contract, and the
-  workflow security posture (CI action pinning, permissions
-  discipline, and `pull_request_target` zero-tolerance).
+- Partner fee policies now document and enforce zero-address recipient
+  rejection through the typed validation paths.
+- Order-book retry instrumentation now emits the documented `quote_id`,
+  `attempts`, and `status` tracing fields at the call sites advertised by
+  the field registry.
 
 ### Fixed
 
@@ -498,7 +501,7 @@ unreleased public contract of the repository.
   declared in their manifests without referencing the wasm-only
   transport crate root from host code. A narrow compile-time
   symbol smoke in each example's test directory names the
-  transport types under a wasm32 gate so future export drift
+  transport types under a wasm32 gate so later export drift
   surfaces at build time.
 - SDK verification console now unwraps the validated
   `PartnerFeePolicy::volume` constructor at the typed-defaults
@@ -596,6 +599,13 @@ unreleased public contract of the repository.
   longer surface in diagnostic output. A new `sanitize_public_base_url` helper
   in `cow-sdk-core` strips path, query, and fragment from URLs before they
   cross any logging or tracing boundary.
+- Both shipped WASM consoles now declare a `Content-Security-Policy` meta tag
+  with explicit `script-src` and `connect-src` allowlists.
+- Operator-side base-URL override and browser-wallet trust threat surfaces are
+  now documented in `SECURITY.md` with explicit consumer-side mitigations.
+- Three new standing audits cover the workspace `unsafe_code = deny`
+  lint posture, the panic-free public surface contract, and the
+  workflow security posture.
 - Dependency audit gate advances past the reachable
   certificate-revocation-list parsing panic reported for
   `rustls-webpki 0.103.12` (RUSTSEC-2026-0104). The reqwest
@@ -629,18 +639,37 @@ unreleased public contract of the repository.
   `TradingSdkBuilder::build_partial` terminals; the typestate-gated
   `build_ready` and `build_helper_only` terminals are now the only
   construction paths. Pre-release surface; zero migration cost.
+- Stale WASM build artifacts have been removed from the verification console
+  package directory; the per-package gitignore now tracks only the canonical
+  wasm-pack outputs.
 
 ### Changed
 
 - Typestate marker structs across the workspace are now sealed against
   external construction.
+- Public-field types across `cow-sdk-core`, `cow-sdk-app-data`,
+  `cow-sdk-subgraph`, `cow-sdk-signing`, and `cow-sdk-trading` are now marked
+  non-exhaustive so later protocol-driven field additions ship as additive
+  minor changes.
+- The `cow-sdk` prelude now exposes a curated first-touch surface for common
+  quote, sign, post, app-data validation, transport/provider wiring, and
+  primary error-handling workflows; reach specialized APIs through the
+  named-module re-exports. Workspace MSRV bump policy is now documented with
+  explicit cadence and notice window.
+- Default-constructed transports now apply a `cow-sdk/<version>` user-agent
+  and a 60-second TCP keepalive aligned with the upstream services defaults.
+- Continuous integration now enforces an `alloy-*` workspace-pin same-minor
+  invariant on every PR, and an inner-workspace WASM pin diff against the
+  workspace pins so the example consoles cannot drift away from the workspace
+  lock-step.
+- The `cow-sdk-browser-wallet-console` crate name no longer carries the
+  redundant `-wasm` suffix, matching the `cow-sdk-<capability>-console`
+  naming convention.
 - Partner-fee policies now reject the zero address as the recipient through
   app-data validation and trading quote construction before quote transport.
   The client-side order-bounds validator documentation now explicitly frames
   the validator as defence-in-depth and names broader services rejection
   classes that the SDK does not pre-cover.
-- Operator-side base-URL override and browser-wallet trust threat surfaces are
-  now documented in `SECURITY.md` with explicit consumer-side mitigations.
 - Subgraph transport errors now carry a typed class alongside the details
   string, matching the order-book error model. Cancellation events are now
   distinguishable from normal completion via a dedicated `cancelled = true`
@@ -648,8 +677,6 @@ unreleased public contract of the repository.
 - Order-book wire DTO amount fields are now typed; the JSON wire shape is
   unchanged but malformed amount strings now surface as typed deserialization
   failures with the wire-shape error context.
-- Public-field types in `cow-sdk-core` are now marked non-exhaustive so
-  future protocol-driven field additions ship as additive minor changes.
 - The pre-release stability sweep is now consolidated across
   core, contracts, orderbook, browser-wallet, signing, app-data,
   and async-provider surfaces: public DTOs and enum heads use
@@ -670,7 +697,7 @@ unreleased public contract of the repository.
   pack-unpack pipeline and the EIP-712 typed-data digest pipeline — now
   ship with non-empty corpora seeded from the parity fixture set, so
   weekly fuzz runs no longer start from libFuzzer random initial inputs.
-- Public protocol DTOs in the contracts crate are now marked non-exhaustive and ship with explicit constructors so future protocol field additions land additively.
+- Public protocol DTOs in the contracts crate are now marked non-exhaustive and ship with explicit constructors so later protocol field additions land additively.
 - Test-suite naming and properties-registry classification now
   match the shipped evidence methodology. Boundary-sweep suites on
   the orderbook, trading, and subgraph crates live at
@@ -847,7 +874,7 @@ unreleased public contract of the repository.
   `cow_sdk_app_data::PartnerFeePolicy` narrows from `u32` to `u16`, so
   values outside the published partner-fee range are rejected at the
   compiler rather than at the wire, and both enums gain
-  `#[non_exhaustive]` so future wire shapes may be introduced as a
+  `#[non_exhaustive]` so additional wire shapes can be introduced as a
   minor change without breaking downstream exhaustive matches. A new
   `PartnerFee::validate` / `PartnerFeePolicy::validate` surface
   enforces the published basis-point ranges (`volumeBps` and
@@ -1155,7 +1182,7 @@ unreleased public contract of the repository.
   `[workspace.dependencies]` table pinned at `1.5.7` alongside the existing
   `alloy-primitives`, `alloy-dyn-abi`, and `alloy-json-abi` declarations.
   No crate consumes the new dependencies in this release yet; the workspace
-  table pin ensures every future consumer of the `alloy::sol!` macro idiom
+  table pin ensures every later consumer of the `alloy::sol!` macro idiom
   resolves against a single authoritative version, keeping the Ethereum
   primitives stack consistent across the published surface.
 - `cow-sdk-contracts` now derives its `GPv2Settlement` call-data bindings from
@@ -1257,7 +1284,7 @@ unreleased public contract of the repository.
   operation on `OrderBookApi`, `SubgraphApi`, and `TradingSdk`, the typed
   `Cancelled` variants on each crate-level error enum, the `From<Cancelled>`
   bridges, and the biased `tokio::select!` semantics that the combinator
-  delivers inside its `Future::poll`.
+  delivers inside its poll implementation.
 - The Credential Surface Contract Hygiene Audit is refreshed to cover the
   `Redacted<T>` wrapper and the transport-level error redaction path.
 - `docs/release-checklist.md` now describes the functional `0.1.0` crates.io
@@ -1301,7 +1328,7 @@ unreleased public contract of the repository.
 - Public wallet session, event, error payload, discovery, and
   chain-management types in `cow-sdk-browser-wallet` are now
   `#[non_exhaustive]`, and the constructor-backed structs expose
-  explicit `new(...)` entry points so future EIP-1193 amendments
+  explicit `new(...)` entry points so later EIP-1193 amendments
   and wallet-side capabilities land additively.
 - `cow_sdk_core::SupportedChainId`, `cow_sdk_core::CowEnv`, and
   `cow_sdk_core::UnsignedOrder` are now `#[non_exhaustive]` public
@@ -1316,11 +1343,11 @@ unreleased public contract of the repository.
 - The orderbook crate's ECDSA signing-scheme enum, auction order
   envelope, and request-policy structs are now marked non-exhaustive,
   and the request-policy surface exposes explicit constructors so
-  future signing schemes, auction-side fields, and policy settings land
+  later signing schemes, auction-side fields, and policy settings land
   additively.
 - Public-field types in `cow-sdk-app-data`, `cow-sdk-subgraph`,
   `cow-sdk-signing`, and `cow-sdk-trading` are now marked non-exhaustive
-  so future protocol-driven field additions ship as additive minor
+  so later protocol-driven field additions ship as additive minor
   changes.
 - `TradingSdkBuilder::build_ready()` on `wasm32` targets now fails fast with a typed error when no orderbook client has been injected, instead of deferring the failure to the first quote or post call.
 - The release-gate docs-agreement check now guards the `cargo tree` and `cargo audit` invariants across every source-of-truth document and ships with a self-test harness that catches extraction drift in the check itself.
@@ -1416,7 +1443,7 @@ unreleased public contract of the repository.
 
 ### Notes
 
-- `0.1.0` will be recorded here when the first functional crates.io release is
+- `0.1.0` is recorded here once the first functional crates.io release is
   live.
 
 ## [0.1.0] - TBD
