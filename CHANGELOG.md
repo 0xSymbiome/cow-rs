@@ -15,6 +15,12 @@ unreleased public contract of the repository.
 
 ### Added
 
+- Order quote requests now pre-validate the `(signingScheme,
+  onchainOrder)` pair locally so incompatible ECDSA/on-chain
+  combinations fail with a typed error before the HTTP call.
+  `OrderCreation` also carries an opt-in
+  `with_full_balance_check(bool)` builder method matching the upstream
+  services policy while preserving the existing wire shape when unset.
 - The lowest-level transport seam on both the native and browser adapters now
   emits one tracing span per request with method, endpoint (path-only, never
   the full URL), and byte counts when the `tracing` feature is enabled.
@@ -605,6 +611,11 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Partner-fee policies now reject the zero address as the recipient through
+  app-data validation and trading quote construction before quote transport.
+  The client-side order-bounds validator documentation now explicitly frames
+  the validator as defence-in-depth and names broader services rejection
+  classes that the SDK does not pre-cover.
 - Operator-side base-URL override and browser-wallet trust threat surfaces are
   now documented in `SECURITY.md` with explicit consumer-side mitigations.
 - Subgraph transport errors now carry a typed class alongside the details

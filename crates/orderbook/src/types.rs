@@ -3,6 +3,8 @@ use std::fmt;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError};
 
+use crate::error::OrderbookError;
+
 pub use cow_sdk_core::{
     Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, BuyTokenDestination, CowEnv, ENVS_LIST,
     EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, OrderUid, QuoteAmountsAndCosts, REDACTED_PLACEHOLDER,
@@ -469,6 +471,50 @@ impl OrderQuoteRequest {
     pub const fn is_valid(&self) -> bool {
         self.side.is_valid()
     }
+
+    /// Validates local quote preconditions before dispatching the HTTP request.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::InvalidQuoteRequest`] when the quote side is
+    /// not well-formed or `verificationGasLimit` is paired with a non-EIP-1271
+    /// scheme. Returns [`OrderbookError::IncompatibleSigningScheme`] when an
+    /// ECDSA signing scheme is marked as an on-chain order.
+    pub fn validate(&self) -> Result<(), OrderbookError> {
+        if !self.is_valid() {
+            return Err(OrderbookError::InvalidQuoteRequest {
+                field: "side",
+                reason: cow_sdk_core::ValidationReason::Precondition {
+                    details: "exactly one of sellAmountBeforeFee or buyAmountAfterFee must be set",
+                },
+            });
+        }
+
+        if self.verification_gas_limit.is_some() && self.signing_scheme != SigningScheme::Eip1271 {
+            return Err(OrderbookError::InvalidQuoteRequest {
+                field: "verificationGasLimit",
+                reason: cow_sdk_core::ValidationReason::Precondition {
+                    details: "only eip1271 quote signing supports verificationGasLimit",
+                },
+            });
+        }
+
+        match (self.signing_scheme, self.onchain_order) {
+            (SigningScheme::Eip712 | SigningScheme::EthSign, true) => {
+                Err(OrderbookError::IncompatibleSigningScheme {
+                    signing_scheme: self.signing_scheme,
+                    onchain_order: self.onchain_order,
+                })
+            }
+            (
+                SigningScheme::Eip712
+                | SigningScheme::EthSign
+                | SigningScheme::Eip1271
+                | SigningScheme::PreSign,
+                _,
+            ) => Ok(()),
+        }
+    }
 }
 
 /// Quote order data returned by the orderbook API.
@@ -742,6 +788,9 @@ pub struct OrderCreation {
     /// struct-hash contract that hashes it as `uint256(0)`.
     #[serde(default = "order_creation_zero_fee_amount")]
     fee_amount: Amount,
+    /// Opt-in strict balance check flag accepted by the orderbook services.
+    #[serde(default, skip_serializing_if = "is_false")]
+    full_balance_check: bool,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.
@@ -767,6 +816,14 @@ pub struct OrderCreation {
 
 fn order_creation_zero_fee_amount() -> Amount {
     Amount::zero()
+}
+
+#[expect(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "serde skip_serializing_if predicates receive a field reference"
+)]
+const fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 impl OrderCreation {
@@ -800,6 +857,7 @@ impl OrderCreation {
             app_data: None,
             app_data_hash: None,
             fee_amount: order_creation_zero_fee_amount(),
+            full_balance_check: false,
             kind,
             partially_fillable: false,
             sell_token_balance: SellTokenSource::Erc20,
@@ -834,6 +892,7 @@ impl OrderCreation {
             app_data: None,
             app_data_hash: Some(quote.app_data.clone()),
             fee_amount: order_creation_zero_fee_amount(),
+            full_balance_check: false,
             kind: quote.kind,
             partially_fillable: quote.partially_fillable,
             sell_token_balance: quote.sell_token_balance,
@@ -870,6 +929,13 @@ impl OrderCreation {
     #[must_use]
     pub const fn with_partially_fillable(mut self, partially_fillable: bool) -> Self {
         self.partially_fillable = partially_fillable;
+        self
+    }
+
+    /// Returns a copy of this submission payload with the strict full-balance check flag.
+    #[must_use]
+    pub const fn with_full_balance_check(mut self, full_balance_check: bool) -> Self {
+        self.full_balance_check = full_balance_check;
         self
     }
 

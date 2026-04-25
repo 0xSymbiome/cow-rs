@@ -2,8 +2,8 @@ mod common;
 
 use cow_sdk_orderbook::{
     Amount, ApiContextOverride, BuyTokenDestination, CowEnv, GetOrdersRequest, GetTradesRequest,
-    OrderCreation, OrderKind, OrderQuoteRequest, PriceQuality, QuoteSide, SellTokenSource,
-    SigningScheme, SupportedChainId,
+    OrderCreation, OrderKind, OrderQuoteRequest, OrderbookError, PriceQuality, QuoteSide,
+    SellTokenSource, SigningScheme, SupportedChainId,
 };
 use serde_json::json;
 
@@ -89,6 +89,78 @@ fn quote_request_supports_buy_side_and_context_overrides() {
 }
 
 #[test]
+fn quote_request_validate_rejects_incompatible_onchain_ecdsa_signing_pairs() {
+    for signing_scheme in [SigningScheme::Eip712, SigningScheme::EthSign] {
+        let error = OrderQuoteRequest::new(
+            sample_owner(),
+            sample_buy_token(),
+            sample_owner(),
+            QuoteSide::sell(amount("1000000")),
+        )
+        .with_signing_scheme(signing_scheme)
+        .with_onchain_order()
+        .validate()
+        .expect_err("ECDSA on-chain quote request must reject locally");
+
+        assert!(matches!(
+            error,
+            OrderbookError::IncompatibleSigningScheme {
+                signing_scheme: rejected_scheme,
+                onchain_order: true,
+            } if rejected_scheme == signing_scheme
+        ));
+    }
+}
+
+#[test]
+fn quote_request_validate_accepts_services_signing_scheme_pairs() {
+    for (signing_scheme, onchain_order) in [
+        (SigningScheme::Eip712, false),
+        (SigningScheme::EthSign, false),
+        (SigningScheme::Eip1271, false),
+        (SigningScheme::Eip1271, true),
+        (SigningScheme::PreSign, false),
+        (SigningScheme::PreSign, true),
+    ] {
+        let mut request = OrderQuoteRequest::new(
+            sample_owner(),
+            sample_buy_token(),
+            sample_owner(),
+            QuoteSide::sell(amount("1000000")),
+        )
+        .with_signing_scheme(signing_scheme);
+        if onchain_order {
+            request = request.with_onchain_order();
+        }
+
+        request
+            .validate()
+            .expect("services-compatible signing pair must validate locally");
+    }
+}
+
+#[test]
+fn quote_request_validate_rejects_verification_gas_limit_without_eip1271() {
+    let error = OrderQuoteRequest::new(
+        sample_owner(),
+        sample_buy_token(),
+        sample_owner(),
+        QuoteSide::sell(amount("1000000")),
+    )
+    .with_verification_gas_limit(27_000)
+    .validate()
+    .expect_err("verificationGasLimit must be reserved for eip1271");
+
+    assert!(matches!(
+        error,
+        OrderbookError::InvalidQuoteRequest {
+            field: "verificationGasLimit",
+            ..
+        }
+    ));
+}
+
+#[test]
 fn orders_and_trades_requests_keep_upstream_defaults() {
     let owner = sample_owner();
     let orders = GetOrdersRequest::new(owner.clone());
@@ -139,6 +211,32 @@ fn order_creation_from_quote_keeps_quote_shape_and_quote_id() {
     assert!(quote_value.get("from").is_none());
     assert_eq!(order_value["signature"], json!(sample_signature()));
     assert_eq!(order_value["from"], json!(sample_owner().as_str()));
+}
+
+#[test]
+fn order_creation_full_balance_check_is_opt_in_on_the_wire() {
+    let order = OrderCreation::new(
+        sample_owner(),
+        sample_buy_token(),
+        amount("1000000"),
+        amount("900000"),
+        1_700_000_000,
+        OrderKind::Sell,
+        SigningScheme::Eip712,
+        sample_signature(),
+        sample_owner(),
+    );
+
+    let default_value = serde_json::to_value(&order).expect("order creation serializes");
+    assert!(default_value.get("fullBalanceCheck").is_none());
+
+    let checked_value = serde_json::to_value(order.clone().with_full_balance_check(true))
+        .expect("checked order creation serializes");
+    assert_eq!(checked_value["fullBalanceCheck"], json!(true));
+
+    let false_value = serde_json::to_value(order.with_full_balance_check(false))
+        .expect("unchecked order creation serializes");
+    assert!(false_value.get("fullBalanceCheck").is_none());
 }
 
 #[test]

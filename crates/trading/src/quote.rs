@@ -199,6 +199,7 @@ pub async fn build_app_data(
         json!({ "orderClass": order_class }),
     );
     if let Some(partner_fee) = partner_fee {
+        partner_fee.validate()?;
         metadata.insert("partnerFee".to_owned(), partner_fee.to_value());
     }
 
@@ -529,6 +530,7 @@ fn build_quote_request(
     }
 
     apply_quote_request_override(&mut request, request_override);
+    request.validate()?;
 
     if request.valid_for.is_some() && request.valid_to.is_some() {
         return Err(TradingError::QuoteValidityConflict);

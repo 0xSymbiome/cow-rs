@@ -4,6 +4,7 @@ use thiserror::Error;
 
 use crate::rejection::{OrderbookRejection, parse_rejection};
 use crate::request::{OrderBookApiError, ResponseBody};
+use crate::types::SigningScheme;
 
 /// Errors returned by the typed orderbook client and transport helpers.
 #[non_exhaustive]
@@ -54,6 +55,16 @@ pub enum OrderbookError {
         field: &'static str,
         /// Canonical validation-failure mode.
         reason: ValidationReason,
+    },
+    /// Quote signing-scheme and on-chain-order flags are incompatible before transport.
+    #[error(
+        "incompatible signing scheme `{signing_scheme:?}` for on-chain order flag `{onchain_order}`"
+    )]
+    IncompatibleSigningScheme {
+        /// Signing scheme supplied for the quote request.
+        signing_scheme: SigningScheme,
+        /// Whether the eventual order is expected to be on-chain.
+        onchain_order: bool,
     },
     /// Invalid normalized orderbook data encountered after a successful HTTP response.
     #[error("invalid transform for field `{field}`: {reason}")]

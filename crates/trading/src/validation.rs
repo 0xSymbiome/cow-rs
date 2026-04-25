@@ -1,10 +1,14 @@
 //! Typed client-side validator for every public trading submission seam.
 //!
-//! The validator enforces the reviewed services protocol-invariant matrix
-//! and runs as the mandatory pre-transport step between order construction
-//! and the HTTP call so every rejection mode services enforces fires
-//! locally with a typed error instead of as an opaque `422` response from
-//! the orderbook.
+//! The validator is client-side defence-in-depth for orders before
+//! submission. It covers eight reviewed protocol invariants (zero-amount,
+//! same-token, app-data-from mismatch, and others) and is not a replacement
+//! for the broader services-side rejection set. Services may still reject for
+//! reasons the SDK cannot pre-check, including deny-list, transferability,
+//! gas budget, banned-users, market-class classification, and
+//! signing-scheme/onchain pairings. A passing local validation only means the
+//! order does not violate any of the eight reviewed invariants; it does not
+//! guarantee services will accept the order.
 //!
 //! The public entry point is [`OrderBoundsValidator::validate`]. The helper
 //! is pure: `now` is a caller-supplied UNIX-seconds timestamp and no
@@ -18,13 +22,14 @@ use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use serde::{Deserialize, Serialize};
 
 /// Typed client-side rejection variants produced by
-/// [`OrderBoundsValidator::validate`].
+/// [`OrderBoundsValidator::validate`] and offline trade-parameter validation.
 ///
 /// The enum is `#[non_exhaustive]` so future additions to the reviewed
 /// rejection surface may be introduced as a minor change without breaking
-/// downstream exhaustive matches. Every variant reflects a condition the
-/// reviewed services validator enforces so the client-side reject fires
-/// before any bytes cross the wire.
+/// downstream exhaustive matches. The order-bounds variants reflect
+/// conditions the reviewed services validator enforces so client-side
+/// rejection fires before any bytes cross the wire; parameter-level variants
+/// cover SDK policy preconditions enforced before app-data construction.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum ClientRejection {
@@ -85,6 +90,14 @@ pub enum ClientRejection {
         expected: Address,
         /// Owner address recovered from the signing backend.
         recovered: Address,
+    },
+    /// Partner-fee metadata failed the app-data policy preconditions.
+    #[error("invalid partner-fee field `{field}`: {reason}")]
+    InvalidPartnerFee {
+        /// Public field name that failed validation.
+        field: &'static str,
+        /// Canonical validation-failure mode.
+        reason: cow_sdk_core::ValidationReason,
     },
 }
 

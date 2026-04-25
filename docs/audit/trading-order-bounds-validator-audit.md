@@ -1,7 +1,7 @@
 # Trading Order-Bounds Validator Audit
 
 Status: Current
-Last reviewed: 2026-04-23
+Last reviewed: 2026-04-25
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
 `OrderValidityBounds`, `SubmissionClass`, `ClientRejection`,
 `AmountSide`, and the `TradingError::ClientRejected` lifting variant.
@@ -54,6 +54,7 @@ encoder.
 | EthFlow skip rule | `is_eth_flow: true` skips the native-currency-sentinel sell-token check and runs every other invariant | Conforms |
 | WETH-paired guard | A WETH-bound validator rejects `sell_token = WETH` paired with `buy_token = native sentinel` as `SameBuyAndSellToken { token: weth }` | Conforms |
 | Purity | The validator reads no system clock or environment, performs no I/O, and is idempotent for a given input tuple | Conforms |
+| Scope framing | The public validator documentation frames the local checks as defence-in-depth and names services-side rejection classes outside SDK pre-check coverage | Conforms |
 
 ## Current Contract
 
@@ -66,6 +67,16 @@ encoder.
 metadata envelope, the caller-supplied UNIX-seconds `now`, and the
 `is_eth_flow` flag. Returning `Result<(), ClientRejection>` keeps
 the typed error channel observable for pattern matching.
+
+### Scope Framing
+
+The `OrderBoundsValidator` documentation describes the validator as a
+client-side defence-in-depth guard. A successful local validation means
+the order does not violate the reviewed SDK-side invariants; it does
+not guarantee services acceptance. The documentation explicitly leaves
+deny-list, transferability, gas budget, banned-users, market-class
+classification, signing-scheme/onchain pairings, and other services-side
+rejection classes to the authoritative orderbook services surface.
 
 ### Default Policy And Submission Class
 

@@ -2,12 +2,12 @@ mod common;
 
 use std::sync::Arc;
 
-use cow_sdk_core::{BuyTokenDestination, CowEnv, SellTokenSource};
-use cow_sdk_orderbook::OrderKind;
+use cow_sdk_core::{BuyTokenDestination, CowEnv, SellTokenSource, ValidationReason};
+use cow_sdk_orderbook::{OrderKind, SigningScheme};
 use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{
-    PartnerFeePolicy, QuoteRequestOverride, QuoterParameters, SwapAdvancedSettings,
-    TradeParameters, build_app_data, get_quote_only, get_quote_results,
+    ClientRejection, PartnerFeePolicy, QuoteRequestOverride, QuoterParameters,
+    SwapAdvancedSettings, TradeParameters, build_app_data, get_quote_only, get_quote_results,
 };
 
 use crate::common::{
@@ -480,6 +480,94 @@ async fn quote_results_reject_invalid_partner_fee_metadata_before_quoting() {
         rendered.contains("partner-fee schema"),
         "error text must describe the shape violation, got: {rendered}"
     );
+    assert!(orderbook.state().quote_requests.is_empty());
+}
+
+#[tokio::test]
+async fn quote_request_validation_runs_before_orderbook_transport() {
+    let orderbook = MockOrderbook::new(
+        cow_sdk_core::SupportedChainId::Sepolia,
+        sell_quote_response(),
+    );
+    let signer = MockSigner::default();
+    let trader =
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .with_env(CowEnv::Prod);
+    let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
+    let advanced = SwapAdvancedSettings::new().with_quote_request(
+        QuoteRequestOverride::new()
+            .with_signing_scheme(SigningScheme::Eip712)
+            .with_onchain_order(true),
+    );
+
+    let error = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect_err("incompatible quote signing pair must fail before transport");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::Orderbook(
+            cow_sdk_orderbook::OrderbookError::IncompatibleSigningScheme {
+                signing_scheme: SigningScheme::Eip712,
+                onchain_order: true,
+            }
+        )
+    ));
+    assert!(orderbook.state().quote_requests.is_empty());
+}
+
+#[test]
+fn trade_parameters_validate_rejects_zero_address_partner_fee_recipient() {
+    let trade = sample_trade_parameters(OrderKind::Sell).with_partner_fee(
+        PartnerFeePolicy::Volume {
+            volume_bps: 42,
+            recipient: address("0x0000000000000000000000000000000000000000"),
+        }
+        .into(),
+    );
+
+    let error = trade
+        .validate()
+        .expect_err("zero-address partner fee recipient must fail locally");
+
+    assert!(matches!(
+        error,
+        ClientRejection::InvalidPartnerFee {
+            field: "partnerFee.recipient",
+            reason: ValidationReason::Precondition { .. },
+        }
+    ));
+}
+
+#[tokio::test]
+async fn quote_results_reject_zero_address_partner_fee_before_quoting() {
+    let orderbook = MockOrderbook::new(
+        cow_sdk_core::SupportedChainId::Sepolia,
+        sell_quote_response(),
+    );
+    let signer = MockSigner::default();
+    let trader =
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .with_env(CowEnv::Prod);
+    let trade = sample_trade_parameters(OrderKind::Sell).with_partner_fee(
+        PartnerFeePolicy::Volume {
+            volume_bps: 42,
+            recipient: address("0x0000000000000000000000000000000000000000"),
+        }
+        .into(),
+    );
+
+    let error = get_quote_results(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("zero-address partner fee recipient must fail before quote transport");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::AppData(cow_sdk_app_data::AppDataError::InvalidPartnerFee {
+            field: "partnerFee.recipient",
+            reason: ValidationReason::Precondition { .. },
+        })
+    ));
     assert!(orderbook.state().quote_requests.is_empty());
 }
 

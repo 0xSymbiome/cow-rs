@@ -8,7 +8,8 @@
 //! [`crate::validation::OrderBoundsValidator::validate`], which is the
 //! mandatory pre-transport step on every submission seam.
 
-use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS};
+use cow_sdk_app_data::{AppDataError, PartnerFee};
+use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, ValidationReason};
 
 use crate::{
     LimitTradeParameters, TradeParameters,
@@ -46,6 +47,24 @@ fn validate_non_zero_amount(side: AmountSide, amount: &Amount) -> Result<(), Cli
     Ok(())
 }
 
+fn validate_partner_fee(partner_fee: Option<&PartnerFee>) -> Result<(), ClientRejection> {
+    let Some(partner_fee) = partner_fee else {
+        return Ok(());
+    };
+
+    partner_fee.validate().map_err(|error| match error {
+        AppDataError::InvalidPartnerFee { field, reason } => {
+            ClientRejection::InvalidPartnerFee { field, reason }
+        }
+        _ => ClientRejection::InvalidPartnerFee {
+            field: "partnerFee",
+            reason: ValidationReason::Precondition {
+                details: "partner fee metadata must satisfy the app-data policy",
+            },
+        },
+    })
+}
+
 impl TradeParameters {
     /// Validates the builder-level subset of the reviewed protocol-invariant
     /// matrix that can be enforced without a full `OrderCreation`.
@@ -56,6 +75,7 @@ impl TradeParameters {
     /// * non-zero sell amount
     /// * non-sentinel sell token (the native-currency sentinel belongs on
     ///   the eth-flow submission path)
+    /// * valid partner-fee recipient when a partner-fee policy is present
     ///
     /// # Errors
     ///
@@ -64,6 +84,7 @@ impl TradeParameters {
         validate_non_native_sell_token(&self.sell_token)?;
         validate_distinct_tokens(&self.sell_token, &self.buy_token)?;
         validate_non_zero_amount(AmountSide::Sell, &self.amount)?;
+        validate_partner_fee(self.partner_fee.as_ref())?;
         Ok(())
     }
 }
@@ -78,6 +99,7 @@ impl LimitTradeParameters {
     /// * non-zero sell and buy amounts
     /// * non-sentinel sell token (the native-currency sentinel belongs on
     ///   the eth-flow submission path)
+    /// * valid partner-fee recipient when a partner-fee policy is present
     ///
     /// # Errors
     ///
@@ -87,6 +109,7 @@ impl LimitTradeParameters {
         validate_distinct_tokens(&self.sell_token, &self.buy_token)?;
         validate_non_zero_amount(AmountSide::Sell, &self.sell_amount)?;
         validate_non_zero_amount(AmountSide::Buy, &self.buy_amount)?;
+        validate_partner_fee(self.partner_fee.as_ref())?;
         Ok(())
     }
 }
