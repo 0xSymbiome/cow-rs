@@ -7,13 +7,14 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Canonical contract identifier used as the registry key component.
+/// Canonical contract identifiers.
 ///
-/// The enum is `#[non_exhaustive]` so additional capability crates can
-/// extend the key space (for example, flash-loan or bridging contracts)
-/// without breaking existing consumers. `serde` deserialization fails
-/// closed on any identifier that is not one of the canonical variants
-/// enumerated below.
+/// Variants follow the **Pascal-case** convention. Variants without a
+/// version suffix track the currently deployed canonical version of the
+/// underlying contract; new versions land as new variants with an explicit
+/// version suffix (for example, `EthFlowV2`), and this convention is fixed
+/// before composable or cow-shed registry expansion; do not introduce
+/// kebab-case or numbered prefix styles for new variants.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum ContractId {

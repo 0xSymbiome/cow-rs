@@ -461,6 +461,10 @@ unreleased public contract of the repository.
 
 ### Documentation
 
+- The `cow-sdk-transport-wasm` crate now ships a per-crate README that
+  renders on docs.rs alongside the inline `lib.rs` doc comments. The
+  `ContractId` enum documentation now names the Pascal-case convention and
+  the version-suffix style for new variants.
 - Getting Started, the facade crate README, and the trading crate README now
   document helper-only `TradingSdk` construction for allowance, approval,
   pre-sign, and on-chain cancellation workflows that do not need quote or
@@ -1263,6 +1267,13 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Continuous integration now enforces an `alloy-*` workspace-pin
+  same-minor invariant on every PR, and an inner-workspace WASM pin diff
+  against the workspace pins so the example consoles cannot drift away
+  from the workspace lock-step.
+- The `cow-sdk-browser-wallet-console` crate name no longer carries the
+  redundant `-wasm` suffix, matching the `cow-sdk-<capability>-console`
+  naming convention.
 - The `cow-sdk` prelude now exposes a curated first-touch surface for common
   quote, sign, post, app-data validation, transport/provider wiring, and
   primary error-handling workflows; reach specialized APIs through the
@@ -1340,6 +1351,9 @@ unreleased public contract of the repository.
 
 ### Removed
 
+- Stale WASM build artifacts have been removed from the verification console
+  package directory; the per-pkg gitignore now tracks only the canonical
+  wasm-pack outputs.
 - Retired the hand-rolled ABI encoder helpers previously maintained inside
   `cow-sdk-contracts`. Every encoded call-data payload the SDK emits now
   flows through the `alloy::sol!`-generated typed bindings for
@@ -1394,6 +1408,11 @@ unreleased public contract of the repository.
   line with the current services schema. `cow_sdk_orderbook::calculate_total_fee`
   now takes a single `executed_fee` argument and normalizes it into the
   `total_fee` value surfaced on the transformed order.
+
+### Security
+
+- Both shipped WASM consoles now declare a `Content-Security-Policy` meta tag
+  with explicit `script-src` and `connect-src` allowlists.
 
 ### Notes
 

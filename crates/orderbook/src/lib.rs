@@ -110,9 +110,12 @@ impl OrderbookRuntimeBinding {
     }
 }
 
-// A literal `pub use cow_sdk_trading::OrderbookClient` trampoline would make
-// the current orderbook/trading crate graph cyclic, so the shared trait is
-// owned by the orderbook crate and re-exported from trading for compatibility.
+// The shared `OrderbookClient` trait is owned by `cow-sdk-orderbook` because
+// it abstracts the orderbook concept itself; placing it on the trading crate
+// would also make the orderbook/trading crate graph cyclic if orderbook tried
+// to re-export it back. `cow-sdk-trading` re-exports the trait as an additive
+// convenience so trading-crate consumers can compose against it without an
+// explicit orderbook-crate import.
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 /// Minimal orderbook capability required by trading and composable consumers.
