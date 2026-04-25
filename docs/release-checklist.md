@@ -28,6 +28,10 @@ any mismatch against `docs/verification-matrix.md`,
 `.github/workflows/_quality-gate.yml`, `CONTRIBUTING.md`, or
 `PROPERTIES.md` fails the `docs-agree-on-release-gates` CI job.
 
+- The `_quality-gate.yml` lane enforces an `alloy-*` workspace-pin
+  same-minor invariant; the `wasm.yml` lane enforces an inner-workspace
+  WASM pin diff against the workspace pins.
+
 `cargo audit` is the blocking RustSec gate for published advisories. It keeps
 vulnerabilities, unsound advisories, and unmaintained advisories blocking while
 leaving yanked-only published-upstream cases reviewable through public audit

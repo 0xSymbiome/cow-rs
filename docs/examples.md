@@ -31,7 +31,7 @@ Use the WASM examples when you need browser-facing verification surfaces.
 | Surface | Package | Purpose |
 | --- | --- | --- |
 | [`sdk-verification-console`](../examples/wasm/sdk-verification-console/README.md) | `cow-sdk-verification-console` | Deterministic SDK verification and browser inspection for WASM-compatible surfaces |
-| [`browser-wallet-console`](../examples/wasm/browser-wallet-console/README.md) | `cow-sdk-browser-wallet-console-wasm` | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
+| [`browser-wallet-console`](../examples/wasm/browser-wallet-console/README.md) | `cow-sdk-browser-wallet-console` | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
 
 For the two-tier browser-runtime proof posture these consoles follow, see
 [Browser-runtime proof posture](browser-runtime-proof-posture.md).

@@ -12,11 +12,17 @@ specifically need browser-hosted verification.
 | Console | Package | Purpose |
 | --- | --- | --- |
 | `sdk-verification-console/` | `cow-sdk-verification-console` | Deterministic SDK verification and browser inspection for WASM-compatible surfaces |
-| `browser-wallet-console/` | `cow-sdk-browser-wallet-console-wasm` | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
+| `browser-wallet-console/` | `cow-sdk-browser-wallet-console` | Mock-wallet proof plus explicit injected-wallet flows for browser-runtime support |
 
 `cow-sdk` remains the default facade for pure SDK flows. Browser-wallet support
 is additive behind the `browser-wallet` feature and is intentionally separated
 from the deterministic native onboarding path.
+
+The browser-wallet console crate is named `cow-sdk-browser-wallet-console` to
+match the `cow-sdk-<capability>-console` naming convention. Both shipped WASM
+consoles declare a `Content-Security-Policy` meta tag with the canonical
+`script-src` and `connect-src` allowlists for same-origin WASM loading, CoW API
+calls, and The Graph requests.
 
 Each console is self-contained and served from its own directory. The palette,
 layout, and polish primitives live inline in each console's `index.html` behind

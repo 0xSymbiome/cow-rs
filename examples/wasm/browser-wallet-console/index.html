@@ -25,6 +25,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self';
+             script-src 'self' 'wasm-unsafe-eval' 'sha256-DPcaousqZXWH6HG2h1pEaPvnx3NwfA+hV/4d1xcS32Q=';
+             connect-src 'self'
+                         https://api.cow.fi
+                         https://barn.api.cow.fi
+                         https://api.thegraph.com
+                         https://gateway.thegraph.com;
+             style-src 'self' 'unsafe-inline';
+             img-src 'self' data:;
+             object-src 'none';
+             base-uri 'self';
+             form-action 'none'">
   <link rel="icon" href="data:,">
   <title>cow-rs Browser Wallet Console</title>
   <style>
@@ -1436,7 +1449,7 @@
 
     let wasm;
     try {
-      wasm = await import("./pkg/cow_sdk_browser_wallet_console_wasm.js");
+      wasm = await import("./pkg/cow_sdk_browser_wallet_console.js");
       await wasm.default();
     } catch (error) {
       warningEl.style.display = "block";

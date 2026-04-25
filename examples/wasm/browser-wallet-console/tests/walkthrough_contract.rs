@@ -4,7 +4,7 @@ use std::{
     task::{Context, Poll, RawWaker, RawWakerVTable, Waker},
 };
 
-use cow_sdk_browser_wallet_console_wasm::BrowserWalletConsole;
+use cow_sdk_browser_wallet_console::BrowserWalletConsole;
 use serde_json::Value;
 
 #[test]

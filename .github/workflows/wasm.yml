@@ -54,6 +54,41 @@ jobs:
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Install wasm target
         run: rustup target add wasm32-unknown-unknown
+      - name: Verify inner-workspace WASM pins match workspace pins
+        shell: bash
+        run: |
+          set -euo pipefail
+          extract_pin() {
+            local manifest="$1"
+            local dependency="$2"
+            (grep -E "^${dependency}[[:space:]]*=" "$manifest" || true) | \
+              sed -nE 's/^[^=]+=[[:space:]]*(\{[[:space:]]*version[[:space:]]*=[[:space:]]*)?"([^"]+)".*/\2/p'
+          }
+
+          dependencies=(wasm-bindgen web-sys wasm-bindgen-futures)
+          for dependency in "${dependencies[@]}"; do
+            ws_pin="$(extract_pin Cargo.toml "$dependency")"
+            inner_pin="$(extract_pin examples/wasm/Cargo.toml "$dependency")"
+            if [ -z "$ws_pin" ] || [ -z "$inner_pin" ] || [ "$inner_pin" != "$ws_pin" ]; then
+              echo "::error::${dependency} pin in examples/wasm/Cargo.toml (${inner_pin:-missing}) does not match workspace (${ws_pin:-missing})" >&2
+              exit 1
+            fi
+
+            for manifest in examples/wasm/*/Cargo.toml; do
+              if grep -Eq "^${dependency}\.workspace[[:space:]]*=[[:space:]]*true" "$manifest"; then
+                continue
+              fi
+              if grep -Eq "^${dependency}[[:space:]]*=[[:space:]]*\{[^}]*workspace[[:space:]]*=[[:space:]]*true" "$manifest"; then
+                continue
+              fi
+              member_pin="$(extract_pin "$manifest" "$dependency")"
+              if [ -n "$member_pin" ] && [ "$member_pin" != "$ws_pin" ]; then
+                echo "::error::${dependency} pin in ${manifest} (${member_pin}) does not match workspace (${ws_pin})" >&2
+                exit 1
+              fi
+            done
+          done
+          echo "All inner-workspace WASM pins match"
       - name: Build SDK for wasm
         run: cargo build --target wasm32-unknown-unknown -p cow-sdk
       - name: Build SDK for wasm with browser wallet

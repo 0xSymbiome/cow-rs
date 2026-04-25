@@ -5,7 +5,7 @@ use std::{
 };
 
 use cow_sdk::browser_wallet::{BrowserWallet, MockEip1193Transport};
-use cow_sdk_browser_wallet_console_wasm::BrowserWalletConsole;
+use cow_sdk_browser_wallet_console::BrowserWalletConsole;
 use serde_json::Value;
 
 #[test]

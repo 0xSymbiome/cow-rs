@@ -129,11 +129,11 @@ export async function installInjectedWalletFixtures(
 
     function signatureFor(label: string, kind: string): string {
       const seed = `${label}:${kind}`.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const hex = Array.from({ length: 130 }, (_, index) => {
+      const body = Array.from({ length: 128 }, (_, index) => {
         const charCode = seed.charCodeAt(index % seed.length);
         return (charCode % 16).toString(16);
       }).join("");
-      return `0x${hex}`;
+      return `0x${body}1b`;
     }
 
     function requestedChainId(params: unknown): string | null {

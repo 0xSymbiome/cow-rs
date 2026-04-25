@@ -1,7 +1,7 @@
 use cow_sdk::browser_wallet::{
     BrowserWallet, InjectedWalletDiscoverySource, InjectedWalletInfo, MockEip1193Transport,
 };
-use cow_sdk_browser_wallet_console_wasm::BrowserWalletConsole;
+use cow_sdk_browser_wallet_console::BrowserWalletConsole;
 use serde_json::Value;
 use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
