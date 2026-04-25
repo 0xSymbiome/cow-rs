@@ -55,6 +55,7 @@ Use it with:
 | `cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml` | Repo-local parity fixture and source-lock gate for committed publication evidence |
 | `ci-success` | Aggregate routine CI status for branch protection across the required native validation and publication jobs |
 | `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk` returns empty | Blocking stability-invariant gate asserting no shipped leaf crate transitively depends on `alloy-provider`; `scripts/check-release-docs-agree.sh` keeps the command copy aligned across the release checklist, `_quality-gate.yml`, `CONTRIBUTING.md`, and `PROPERTIES.md`. |
+| Release reproducibility posture | Reproducible-build posture documented across the release checklist with explicit source-and-lockfile guarantees and a documented future extension for WebAssembly artifact byte-reproducibility. |
 
 ## Publication Gates
 

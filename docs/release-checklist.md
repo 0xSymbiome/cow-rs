@@ -122,7 +122,8 @@ cargo package -p cow-sdk-app-data --allow-dirty --config "patch.crates-io.cow-sd
 cargo package -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-signing --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
 cargo package -p cow-sdk-subgraph --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-cargo package -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'"
+cargo package -p cow-sdk-transport-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo package -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
 cargo package -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
 ```
@@ -263,6 +264,17 @@ The `services-drift.yml` workflow runs weekly against the upstream services
 repository and records newly-added error tags plus request or response shape
 changes as a tracked report before they reach the release window.
 
+Continuous integration runs `cargo-semver-checks` on every pull request that
+touches a published crate's `src/` tree. The lane is informational through
+the pre-1.0 cycle; the workflow summary reports each crate's compatibility
+status against the most-recently-published version on the public registry,
+but a non-zero report does not block the merge. At the 1.0 release boundary,
+remove `continue-on-error: true` from the `cargo-semver-checks` step in
+`.github/workflows/_quality-gate.yml` to promote the lane from informational
+to gating; from that point a breaking change against the prior published
+version requires a deliberate major version bump in the workspace
+`Cargo.toml`.
+
 ## 8. WASM And Browser Surfaces
 
 Build the WASM surfaces:
@@ -358,3 +370,33 @@ the combined output as a workflow artifact.
 
 The SBOM artifact surfaces component provenance for reviewers and
 downstream consumers on each release-readiness workflow run.
+
+The same publication dry-run now generates a SLSA provenance attestation for
+the crate tarballs and uploads it as `cow-rs-build-provenance` with 90-day
+retention. Download it from the same release-readiness workflow run page when
+reviewing provenance for a candidate publication.
+
+## 12. Reproducible builds
+
+The release artifacts produced by the release-readiness automation are
+reproducible at two tiers.
+
+**Tier one: source and lockfile reproducibility.** The workspace commits
+`Cargo.lock` so every dependency resolves to the same version on every build,
+and the Rust toolchain version is pinned via `rust-toolchain.toml`. A consumer
+who checks out the tagged release commit and builds with the pinned toolchain
+produces a build whose dependency tree matches the release-readiness build
+byte-for-byte.
+
+**Tier two: binary reproducibility (planned).** The WebAssembly artifacts
+produced by `wasm-pack build` in `examples/wasm/*/pkg/` are not currently
+asserted to be byte-reproducible. A future extension to the
+release-readiness automation will pin the `wasm-pack` toolchain version,
+capture the build environment provenance through the existing attestation
+lane, and add a binary-reproducibility check that compares two independent
+builds of the same source commit.
+
+Provenance attestations for every published crate tarball ship as the
+`cow-rs-build-provenance` artifact alongside the software-bill-of-materials
+artifact. Consumers verify the attestation chain using any tool that supports
+the in-toto attestation format.

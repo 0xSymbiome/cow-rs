@@ -15,6 +15,12 @@ unreleased public contract of the repository.
 
 ### Added
 
+- Release readiness automation now generates a SLSA provenance attestation
+  alongside the existing software-bill-of-materials artifact so downstream
+  consumers can verify the provenance of every published crate tarball.
+- Continuous integration now reports semantic-versioning compatibility against
+  the most recent published version of every workspace crate so accidental
+  public-API regressions surface during code review.
 - Continuous integration now runs a weekly drift detection lane against the
   upstream CoW services repository so newly-added error tags and request or
   response shapes surface as a tracked report before they reach the release
@@ -463,6 +469,8 @@ unreleased public contract of the repository.
 
 ### Documentation
 
+- Release documentation now describes the reproducible-build posture and the
+  path to binary reproducibility for the WebAssembly artifacts.
 - The `cow-sdk-transport-wasm` crate now ships a per-crate README that
   renders on docs.rs alongside the inline `lib.rs` doc comments. The
   `ContractId` enum documentation now names the Pascal-case convention and
@@ -645,6 +653,8 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- The project now tracks a register of post-1.0 type-system improvements
+  queued for a future major release.
 - Typestate marker structs across the workspace are now sealed against
   external construction.
 - Public-field types across `cow-sdk-core`, `cow-sdk-app-data`,

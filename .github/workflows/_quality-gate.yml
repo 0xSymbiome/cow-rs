@@ -294,6 +294,52 @@ jobs:
           fi
           echo "alloy-provider invariant holds for the first-release crate set."
 
+  cargo-semver-checks:
+    name: cargo-semver-checks (informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [test]
+    steps:
+      # Source ref: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: stable
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Install cargo-semver-checks
+        run: |
+          cargo install --locked \
+            cargo-semver-checks --version 0.47.0
+      - name: Run cargo-semver-checks
+        id: semver
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          cargo semver-checks \
+            --workspace \
+            --exclude cow-sdk-transport-wasm \
+            --color=always \
+            2>&1 | tee /tmp/semver-checks.log
+      - name: Post report to step summary
+        if: always()
+        run: |
+          echo '## cargo-semver-checks report' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo 'informational pre-1.0; this report does not block the merge' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo 'cow-sdk-transport-wasm is skipped until it has a published registry baseline.' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tail -200 /tmp/semver-checks.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
   docs-agree-on-release-gates:
     runs-on: ubuntu-latest
     timeout-minutes: 5

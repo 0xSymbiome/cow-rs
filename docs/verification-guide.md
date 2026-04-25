@@ -111,6 +111,9 @@ dependency audit.
 Yanked crates remain reviewed warnings only when the latest published upstream
 release still provides no clean replacement, and that state must stay recorded
 in public audit evidence.
+Release artifacts ship reproducible at the source and lockfile level today;
+the release checklist records the two-tier reproducibility posture and the path
+to binary reproducibility for the WebAssembly artifacts.
 
 The `cargo tree --invert alloy-provider` invariant, the `cargo audit --deny ... --ignore RUSTSEC-...` ignore-token list, and the browser-wallet Playwright install browser set are each guarded across their source-of-truth files by `scripts/check-release-docs-agree.sh`.
 
