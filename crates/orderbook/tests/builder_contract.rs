@@ -16,7 +16,9 @@ use cow_sdk_core::{
     ApiContext, CowEnv, HttpTransport, REDACTED_PLACEHOLDER, ReqwestTransport,
     ReqwestTransportConfig, SupportedChainId, TransportError,
 };
-use cow_sdk_orderbook::{OrderBookApi, OrderBookTransportPolicy, RequestPolicy};
+use cow_sdk_orderbook::{
+    EnvBaseUrlOverrides, OrderBookApi, OrderBookTransportPolicy, RequestPolicy,
+};
 
 #[derive(Debug, Default)]
 struct StubTransport;
@@ -119,6 +121,20 @@ fn builder_debug_redacts_partner_api_key() {
 
     assert!(debug.contains(REDACTED_PLACEHOLDER));
     assert!(!debug.contains("partner-key"));
+}
+
+#[test]
+fn env_base_url_overrides_debug_redacts_embedded_credentials() {
+    let mut overrides = EnvBaseUrlOverrides::default();
+    overrides.set(CowEnv::Prod, "https://u:p@example.com/");
+    overrides.set(CowEnv::Staging, "https://s:t@staging.example.com/path");
+
+    let debug = format!("{overrides:?}");
+
+    assert!(debug.contains(REDACTED_PLACEHOLDER));
+    assert!(!debug.contains("u:p"));
+    assert!(!debug.contains("s:t"));
+    assert!(!debug.contains("example.com"));
 }
 
 #[test]

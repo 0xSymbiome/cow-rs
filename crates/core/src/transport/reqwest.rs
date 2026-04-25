@@ -34,7 +34,10 @@ use async_trait::async_trait;
 use crate::{
     config::{DEFAULT_TCP_KEEPALIVE, DEFAULT_USER_AGENT},
     redaction::Redacted,
-    transport::{error::TransportError, http::HttpTransport},
+    transport::{
+        CUSTOM_OVERRIDE_ROUTE_IDENTITY, error::TransportError, http::HttpTransport,
+        sanitize_public_base_url,
+    },
     validation::TransportErrorClass,
 };
 
@@ -324,6 +327,10 @@ const fn bytes_received(result: &Result<String, TransportError>) -> Option<usize
 
 fn span_endpoint(path: &str) -> Cow<'_, str> {
     let has_authority = path.contains("://");
+    if has_authority && sanitize_public_base_url(path) == CUSTOM_OVERRIDE_ROUTE_IDENTITY {
+        return Cow::Borrowed("/");
+    }
+
     let endpoint = path.find("://").map_or(path, |scheme_end| {
         let after_authority = &path[scheme_end + 3..];
         after_authority

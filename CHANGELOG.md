@@ -563,6 +563,12 @@ unreleased public contract of the repository.
 
 ### Security
 
+- API-key validation paths now fail with a typed error variant rather than a
+  panic that could include the offending bytes. Base-URL override fields are
+  redacted from `Debug` formatting so credentials embedded in override URLs no
+  longer surface in diagnostic output. A new `sanitize_public_base_url` helper
+  in `cow-sdk-core` strips path, query, and fragment from URLs before they
+  cross any logging or tracing boundary.
 - Dependency audit gate advances past the reachable
   certificate-revocation-list parsing panic reported for
   `rustls-webpki 0.103.12` (RUSTSEC-2026-0104). The reqwest

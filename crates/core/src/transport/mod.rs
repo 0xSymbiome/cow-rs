@@ -36,3 +36,70 @@ pub use http::HttpTransport;
 pub use self::reqwest::{ReqwestTransport, ReqwestTransportConfig, classify_reqwest_error};
 
 pub use crate::validation::TransportErrorClass;
+
+const CUSTOM_OVERRIDE_ROUTE_IDENTITY: &str = "<custom override>";
+
+/// Returns the public origin for a base URL without path, query, fragment, or credentials.
+///
+/// The helper is intended for diagnostic and telemetry surfaces that need to
+/// identify a configured endpoint without echoing credential-bearing path or
+/// query material. Invalid URLs and URL forms without a public origin return a
+/// stable custom-override marker.
+#[cfg(not(target_arch = "wasm32"))]
+#[must_use]
+#[allow(
+    clippy::option_if_let_else,
+    reason = "the Ok arm binds an intermediate origin and carries a nested conditional; the combinator form would collapse that multi-statement body into a closure and obscure the two-branch parallel structure"
+)]
+pub fn sanitize_public_base_url(base_url: &str) -> String {
+    match ::reqwest::Url::parse(base_url) {
+        Ok(url) => {
+            let origin = url.origin().ascii_serialization();
+            if origin == "null" {
+                CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned()
+            } else {
+                origin.trim_end_matches('/').to_owned()
+            }
+        }
+        Err(_) => CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned(),
+    }
+}
+
+/// Returns the public origin for a base URL without path, query, fragment, or credentials.
+///
+/// The helper is intended for diagnostic and telemetry surfaces that need to
+/// identify a configured endpoint without echoing credential-bearing path or
+/// query material. Invalid URLs and URL forms without a public origin return a
+/// stable custom-override marker.
+#[cfg(target_arch = "wasm32")]
+#[must_use]
+pub fn sanitize_public_base_url(base_url: &str) -> String {
+    let Some((scheme, after_scheme)) = base_url.split_once("://") else {
+        return CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned();
+    };
+    if !is_supported_public_scheme(scheme) {
+        return CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned();
+    }
+
+    let authority = after_scheme
+        .split(['/', '?', '#'])
+        .next()
+        .unwrap_or_default();
+    let public_authority = authority
+        .rsplit_once('@')
+        .map_or(authority, |(_, public_authority)| public_authority);
+    if public_authority.is_empty() || public_authority.starts_with(':') {
+        return CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned();
+    }
+
+    format!(
+        "{}://{}",
+        scheme.to_ascii_lowercase(),
+        public_authority.to_ascii_lowercase()
+    )
+}
+
+#[cfg(target_arch = "wasm32")]
+fn is_supported_public_scheme(scheme: &str) -> bool {
+    scheme.eq_ignore_ascii_case("http") || scheme.eq_ignore_ascii_case("https")
+}

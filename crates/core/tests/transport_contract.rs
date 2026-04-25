@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use cow_sdk_core::config::{DEFAULT_TCP_KEEPALIVE, DEFAULT_USER_AGENT};
-use cow_sdk_core::transport::classify_reqwest_error;
+use cow_sdk_core::transport::{classify_reqwest_error, sanitize_public_base_url};
 use cow_sdk_core::{
     HttpTransport, ReqwestTransport, ReqwestTransportConfig, TransportError, TransportErrorClass,
 };
@@ -33,6 +33,27 @@ fn reqwest_transport_config_defaults_match_services_aligned_policy() {
 
     assert_eq!(config.user_agent(), DEFAULT_USER_AGENT);
     assert_eq!(config.tcp_keepalive(), DEFAULT_TCP_KEEPALIVE);
+}
+
+#[test]
+fn sanitize_public_base_url_strips_private_url_parts() {
+    let sanitized =
+        sanitize_public_base_url("https://api.example.com/path/to/resource?api_key=secret#frag");
+
+    assert_eq!(sanitized, "https://api.example.com");
+    assert!(!sanitized.contains("path"));
+    assert!(!sanitized.contains("api_key"));
+    assert!(!sanitized.contains("secret"));
+    assert!(!sanitized.contains("frag"));
+}
+
+#[test]
+fn sanitize_public_base_url_strips_userinfo_credentials() {
+    let sanitized = sanitize_public_base_url("https://user:pass@api.example.com/orders");
+
+    assert_eq!(sanitized, "https://api.example.com");
+    assert!(!sanitized.contains("user"));
+    assert!(!sanitized.contains("pass"));
 }
 
 #[tokio::test]

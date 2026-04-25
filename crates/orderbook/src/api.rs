@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use cow_sdk_core::{HttpClientPolicy, HttpTransport};
+use cow_sdk_core::{CoreError, HttpClientPolicy, HttpTransport, ValidationError};
 use reqwest::header::{HeaderMap, HeaderValue};
 use serde_json::json;
 
@@ -868,17 +868,18 @@ impl OrderBookApi {
     }
 
     fn additional_headers(&self) -> Result<Option<HeaderMap>, OrderbookError> {
-        self.context
-            .validated_api_key()
-            .map_err(cow_sdk_core::CoreError::from)?
-            .map(|api_key| {
-                let header_value = HeaderValue::from_str(api_key)
-                    .expect("validated API keys must remain valid header values");
-                let mut headers = HeaderMap::new();
-                headers.insert(API_KEY_HEADER, header_value);
-                headers
-            })
-            .map_or(Ok(None), |headers| Ok(Some(headers)))
+        let Some(api_key) = self.context.validated_api_key().map_err(CoreError::from)? else {
+            return Ok(None);
+        };
+
+        let header_value = HeaderValue::from_str(api_key).map_err(|_| {
+            OrderbookError::Core(CoreError::Validation(
+                ValidationError::InvalidHttpHeaderValue { field: "api_key" },
+            ))
+        })?;
+        let mut headers = HeaderMap::new();
+        headers.insert(API_KEY_HEADER, header_value);
+        Ok(Some(headers))
     }
 }
 

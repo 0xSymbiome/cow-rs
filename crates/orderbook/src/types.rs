@@ -107,17 +107,17 @@ impl Serialize for ApiContextOverride {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct EnvBaseUrlOverrides {
     /// Explicit production base URL.
-    pub prod: Option<String>,
+    pub prod: Option<Redacted<String>>,
     /// Explicit staging base URL.
-    pub staging: Option<String>,
+    pub staging: Option<Redacted<String>>,
 }
 
 impl EnvBaseUrlOverrides {
     /// Sets the explicit base URL for `env`.
     pub fn set(&mut self, env: CowEnv, base_url: impl Into<String>) {
         match env {
-            CowEnv::Prod => self.prod = Some(base_url.into()),
-            CowEnv::Staging => self.staging = Some(base_url.into()),
+            CowEnv::Prod => self.prod = Some(Redacted::new(base_url.into())),
+            CowEnv::Staging => self.staging = Some(Redacted::new(base_url.into())),
             _ => {}
         }
     }
@@ -126,8 +126,14 @@ impl EnvBaseUrlOverrides {
     #[must_use]
     pub fn get(&self, env: CowEnv) -> Option<&str> {
         match env {
-            CowEnv::Prod => self.prod.as_deref(),
-            CowEnv::Staging => self.staging.as_deref(),
+            CowEnv::Prod => self
+                .prod
+                .as_ref()
+                .map(|base_url| base_url.as_inner().as_str()),
+            CowEnv::Staging => self
+                .staging
+                .as_ref()
+                .map(|base_url| base_url.as_inner().as_str()),
             _ => None,
         }
     }
