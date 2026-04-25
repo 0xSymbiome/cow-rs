@@ -6,16 +6,16 @@ use cow_sdk_orderbook::{OrderQuoteRequest, PriceQuality, QuoteSide, SigningSchem
 use cow_sdk_signing::order_typed_data;
 
 use crate::types::{
-    OrderbookRuntimeBinding, QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
+    QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
     apply_quote_request_parameter_overrides, validate_orderbook_context,
     validate_orderbook_env_context,
 };
 use crate::{
-    DEFAULT_QUOTE_VALIDITY, OrderbookClient, QuoteRequestOverride, QuoteResults, QuoterParameters,
-    SwapAdvancedSettings, TradeParameters, TraderParameters, TradingAppDataInfo, TradingError,
-    adjust_ethflow_trade_parameters, calculate_quote_amounts_and_costs, default_slippage_bps,
-    get_order_to_sign, is_ethflow_order, partner_fee_bps, resolve_slippage_suggestion,
-    sanitize_protocol_fee_bps,
+    DEFAULT_QUOTE_VALIDITY, OrderbookClient, OrderbookRuntimeBinding, QuoteRequestOverride,
+    QuoteResults, QuoterParameters, SwapAdvancedSettings, TradeParameters, TraderParameters,
+    TradingAppDataInfo, TradingError, adjust_ethflow_trade_parameters,
+    calculate_quote_amounts_and_costs, default_slippage_bps, get_order_to_sign, is_ethflow_order,
+    partner_fee_bps, resolve_slippage_suggestion, sanitize_protocol_fee_bps,
 };
 
 /// Builds a quote and signing payload without requiring a signer.
@@ -228,18 +228,19 @@ pub async fn build_app_data(
 /// Parses an already-sealed app-data wire document back into typed
 /// [`AppDataParams`].
 ///
-/// The existing [`AppDataParams`] deserializer lifts `metadata.signer` and
-/// `metadata.flashloan` out of the wire shape into their typed fields so
-/// the returned value is ready to drive the typed merge pipeline without
-/// any additional coercion.
+/// The existing [`AppDataParams`] deserializer lifts `metadata.signer`,
+/// `metadata.flashloan`, and `metadata.hooks` out of the wire shape into
+/// their typed fields so the returned value is ready to drive the typed
+/// merge pipeline without any additional coercion.
 ///
 /// # Errors
 ///
 /// Returns [`TradingError::AppData`] when the supplied document does not
 /// conform to the [`AppDataParams`] wire shape — for example when
-/// `metadata.signer` carries a value that is not a valid address, or when
+/// `metadata.signer` carries a value that is not a valid address, when
 /// `metadata.flashloan` carries an object that fails the typed flash-loan
-/// hints validation.
+/// hints validation, or when `metadata.hooks` carries malformed hook
+/// metadata.
 pub fn params_from_doc(base_doc: &Value) -> Result<AppDataParams, TradingError> {
     serde_json::from_value::<AppDataParams>(base_doc.clone())
         .map_err(|error| TradingError::AppData(cow_sdk_app_data::AppDataError::from(error)))
@@ -250,8 +251,8 @@ pub fn params_from_doc(base_doc: &Value) -> Result<AppDataParams, TradingError> 
 ///
 /// The base document is deserialized through the existing
 /// [`AppDataParams`] deserializer so the typed `signer` and `flashloan`
-/// fields on the base side participate in the merge on equal footing
-/// with the override, and the resulting typed value drives
+/// fields on the base side participate in the merge on equal footing with
+/// the override, and the resulting typed value drives
 /// [`generate_app_data_doc`] and [`get_app_data_info`] to re-derive the
 /// wire document and its digest from one authoritative typed shape.
 ///
@@ -261,10 +262,9 @@ pub fn params_from_doc(base_doc: &Value) -> Result<AppDataParams, TradingError> 
 /// final `signer` field directly from the same merged value that
 /// produced the wire document rather than re-reading the override.
 ///
-/// The merge applies the reviewed hooks-replacement rule so
-/// override-supplied `metadata.hooks` replace the base-side hooks
-/// envelope in full instead of recursively merging pre/post
-/// sibling arrays.
+/// The merge applies the reviewed hooks-replacement rule so override-supplied
+/// typed hooks or `metadata.hooks` replace the base-side hooks envelope in
+/// full instead of recursively merging pre/post sibling arrays.
 ///
 /// # Errors
 ///
@@ -597,16 +597,16 @@ fn apply_quote_request_override(
 /// [`AppDataParams`] and returns the typed merged value.
 ///
 /// Scalar and optional top-level fields (`app_code`, `environment`,
-/// `signer`, `flashloan`) follow override-wins semantics with a
+/// `signer`, `flashloan`, `hooks`) follow override-wins semantics with a
 /// base-value fallback. The nested `metadata` map is recursively deep
-/// merged, with one carve-out: when the override contains a `hooks`
-/// entry the base side's `hooks` envelope is dropped before the merge
-/// so override-supplied hooks fully replace the base-side hooks envelope
-/// instead of recursively merging into it. This keeps the metadata
+/// merged, with one carve-out: when the override contains typed hooks or a
+/// `hooks` metadata entry the base side's `hooks` envelope is dropped before
+/// the merge so override-supplied hooks fully replace the base-side hooks
+/// envelope instead of recursively merging into it. This keeps the metadata
 /// merge shape aligned with the reviewed upstream SDK, where a caller
-/// supplying a new `metadata.hooks` object means "use these hooks and
-/// nothing else" rather than "merge these hooks on top of whatever
-/// pre/post arrays the base doc happens to have".
+/// supplying a new hooks object means "use these hooks and nothing else"
+/// rather than "merge these hooks on top of whatever pre/post arrays the base
+/// doc happens to have".
 ///
 /// Non-`hooks` metadata entries continue to follow standard recursive
 /// deep-merge semantics. Arrays fall through to the override value in
@@ -619,11 +619,12 @@ pub(crate) fn merge_app_data_params(
     override_params: &AppDataParams,
 ) -> AppDataParams {
     let mut base_metadata = base.metadata.clone();
+    let override_has_metadata_hooks = override_params.metadata.contains_key("hooks");
     // The reviewed upstream SDK replaces rather than recursively merges
     // `metadata.hooks` — when the override supplies any hooks envelope,
     // pre/post sibling arrays from the base side are dropped before the
     // deep merge so the override's hooks envelope is the final shape.
-    if override_params.metadata.contains_key("hooks") {
+    if override_params.hooks.is_some() || override_has_metadata_hooks {
         base_metadata.remove("hooks");
     }
 
@@ -635,7 +636,7 @@ pub(crate) fn merge_app_data_params(
         _ => Map::new(),
     };
 
-    AppDataParams::new(
+    let mut params = AppDataParams::new(
         override_params
             .app_code
             .clone()
@@ -653,7 +654,15 @@ pub(crate) fn merge_app_data_params(
             .clone()
             .or_else(|| base.flashloan.clone()),
         metadata,
-    )
+    );
+    params.hooks = if override_params.hooks.is_some() {
+        override_params.hooks.clone()
+    } else if override_has_metadata_hooks {
+        None
+    } else {
+        base.hooks.clone()
+    };
+    params
 }
 
 fn deep_merge_values(base: Value, override_value: Value) -> Value {

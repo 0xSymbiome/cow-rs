@@ -6,13 +6,12 @@ use serde_json::Value;
 
 use cow_sdk_app_data::{AppDataDoc, AppDataParams, PartnerFee};
 use cow_sdk_core::{
-    Address, AddressPerChain, Amount, ApiContext, AppDataHash, BuyTokenDestination, CowEnv,
-    HexData, OrderDigest, OrderKind, OrderUid, QuoteAmountsAndCosts, SellTokenSource,
-    SupportedChainId, TransactionHash, TransactionRequest, UnsignedOrder,
+    Address, AddressPerChain, Amount, AppDataHash, BuyTokenDestination, CowEnv, HexData,
+    OrderDigest, OrderKind, OrderUid, QuoteAmountsAndCosts, SellTokenSource, SupportedChainId,
+    TransactionHash, TransactionRequest, UnsignedOrder,
 };
 use cow_sdk_orderbook::{
-    AppDataObject, Order, OrderBookApi, OrderCancellations, OrderCreation, OrderQuoteRequest,
-    OrderQuoteResponse, OrderbookError, PriceQuality, SigningScheme,
+    OrderQuoteResponse, OrderbookClient, OrderbookRuntimeBinding, PriceQuality, SigningScheme,
 };
 use cow_sdk_signing::OrderTypedData;
 
@@ -683,39 +682,6 @@ impl QuoteResults {
     #[must_use]
     pub fn with_orderbook_binding(mut self, binding: OrderbookRuntimeBinding) -> Self {
         self.orderbook_binding = Some(binding);
-        self
-    }
-}
-
-/// Runtime binding captured from an orderbook client for quote-derived workflows.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-#[non_exhaustive]
-pub struct OrderbookRuntimeBinding {
-    /// Chain id fixed by the orderbook client.
-    pub chain_id: SupportedChainId,
-    /// Environment fixed by the orderbook client.
-    pub env: CowEnv,
-    /// Resolved base URL used by the orderbook client when it is available.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub resolved_base_url: Option<String>,
-}
-
-impl OrderbookRuntimeBinding {
-    /// Creates a runtime binding with the required chain and environment identifiers.
-    #[must_use]
-    pub const fn new(chain_id: SupportedChainId, env: CowEnv) -> Self {
-        Self {
-            chain_id,
-            env,
-            resolved_base_url: None,
-        }
-    }
-
-    /// Returns a copy of this binding with an explicit resolved base URL.
-    #[must_use]
-    pub fn with_resolved_base_url(mut self, url: impl Into<String>) -> Self {
-        self.resolved_base_url = Some(url.into());
         self
     }
 }
@@ -1586,72 +1552,6 @@ pub(crate) fn apply_quote_request_parameter_overrides(
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-/// Minimal orderbook capability required by the trading crate.
-pub trait OrderbookClient: Send + Sync {
-    /// Returns the effective orderbook API context.
-    fn context(&self) -> &ApiContext;
-
-    /// Returns the runtime binding used by this orderbook client.
-    ///
-    /// Implementations that apply additional endpoint overrides should override
-    /// this method so quote-derived posting can validate the originating
-    /// runtime authority precisely.
-    fn runtime_binding(&self) -> OrderbookRuntimeBinding {
-        OrderbookRuntimeBinding {
-            chain_id: self.context().chain_id,
-            env: self.context().env,
-            resolved_base_url: self.context().resolved_base_url().ok(),
-        }
-    }
-
-    /// Requests a quote from the orderbook.
-    ///
-    /// # Errors
-    ///
-    /// Returns the underlying orderbook error from the implementation.
-    async fn get_quote(
-        &self,
-        request: &OrderQuoteRequest,
-    ) -> Result<OrderQuoteResponse, OrderbookError>;
-
-    /// Submits an order to the orderbook.
-    ///
-    /// # Errors
-    ///
-    /// Returns the underlying orderbook error from the implementation.
-    async fn send_order(&self, request: &OrderCreation) -> Result<OrderUid, OrderbookError>;
-
-    /// Submits signed order cancellations to the orderbook.
-    ///
-    /// # Errors
-    ///
-    /// Returns the underlying orderbook error from the implementation.
-    async fn send_signed_order_cancellations(
-        &self,
-        request: &OrderCancellations,
-    ) -> Result<(), OrderbookError>;
-
-    /// Fetches an order by UID.
-    ///
-    /// # Errors
-    ///
-    /// Returns the underlying orderbook error from the implementation.
-    async fn get_order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError>;
-
-    /// Uploads full app-data for a specific app-data hash.
-    ///
-    /// # Errors
-    ///
-    /// Returns the underlying orderbook error from the implementation.
-    async fn upload_app_data(
-        &self,
-        app_data_hash: &AppDataHash,
-        full_app_data: &str,
-    ) -> Result<AppDataObject, OrderbookError>;
-}
-
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 /// External slippage-suggestion provider used by advanced swap settings.
 pub trait SlippageSuggestionProvider: Send + Sync {
     /// Returns an optional slippage suggestion for the supplied request.
@@ -1691,50 +1591,4 @@ pub trait Eip1271SignatureProvider: Send + Sync {
     ///
     /// Returns [`TradingError`] when signing fails.
     async fn sign(&self, order_to_sign: &UnsignedOrder) -> Result<String, TradingError>;
-}
-
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-impl OrderbookClient for OrderBookApi {
-    fn context(&self) -> &ApiContext {
-        self.context()
-    }
-
-    fn runtime_binding(&self) -> OrderbookRuntimeBinding {
-        OrderbookRuntimeBinding {
-            chain_id: self.context().chain_id,
-            env: self.context().env,
-            resolved_base_url: self.effective_base_url().ok(),
-        }
-    }
-
-    async fn get_quote(
-        &self,
-        request: &OrderQuoteRequest,
-    ) -> Result<OrderQuoteResponse, OrderbookError> {
-        Self::get_quote(self, request).await
-    }
-
-    async fn send_order(&self, request: &OrderCreation) -> Result<OrderUid, OrderbookError> {
-        Self::send_order(self, request).await
-    }
-
-    async fn send_signed_order_cancellations(
-        &self,
-        request: &OrderCancellations,
-    ) -> Result<(), OrderbookError> {
-        Self::send_signed_order_cancellations(self, request).await
-    }
-
-    async fn get_order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
-        Self::get_order(self, order_uid).await
-    }
-
-    async fn upload_app_data(
-        &self,
-        app_data_hash: &AppDataHash,
-        full_app_data: &str,
-    ) -> Result<AppDataObject, OrderbookError> {
-        Self::upload_app_data(self, app_data_hash, full_app_data).await
-    }
 }

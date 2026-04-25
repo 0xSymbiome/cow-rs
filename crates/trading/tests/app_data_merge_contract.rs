@@ -24,9 +24,10 @@
 mod common;
 
 use cow_sdk_app_data::{
-    AppDataParams, FlashloanHints, MetadataMap, generate_app_data_doc, get_app_data_info,
+    AppDataParams, FlashloanHints, Hook, HookList, MetadataMap, generate_app_data_doc,
+    get_app_data_info,
 };
-use cow_sdk_core::{Amount, OrderKind};
+use cow_sdk_core::{Amount, HexData, OrderKind};
 use cow_sdk_trading::{
     ClientRejection, SwapAdvancedSettings, TradingError, get_quote_results,
     merge_and_seal_app_data, params_from_doc, post_swap_order_from_quote,
@@ -94,6 +95,20 @@ fn hooks_post_value() -> Value {
             "gasLimit": HOOK_GAS_LIMIT,
         }]
     })
+}
+
+fn typed_post_hooks() -> HookList {
+    HookList::new(
+        Vec::new(),
+        vec![Hook::new(
+            address(HOOK_TARGET_POST),
+            HexData::new("0x02").expect("fixture hook calldata must be valid"),
+            HOOK_GAS_LIMIT
+                .parse::<u64>()
+                .expect("fixture gas limit must be valid"),
+        )],
+    )
+    .with_version("0.2.0")
 }
 
 fn sealed_base_doc(params: AppDataParams) -> Value {
@@ -256,6 +271,36 @@ fn base_hooks_preserved_when_override_has_no_hooks() {
         hooks,
         &hooks_pre_value(),
         "base metadata.hooks must survive byte-identical when the override has no hooks key",
+    );
+}
+
+#[test]
+fn typed_hooks_override_replaces_base_hooks_and_survives_merge() {
+    let mut base_metadata = base_params_with_quote_metadata().metadata;
+    base_metadata.insert("hooks".to_owned(), hooks_pre_value());
+    let base = base_params_with_quote_metadata().with_metadata(base_metadata);
+    let base_doc = sealed_base_doc(base);
+
+    let hooks = typed_post_hooks();
+    let override_params = AppDataParams::default().with_hooks(hooks.clone());
+
+    let (info, merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
+        .expect("typed merge must succeed with typed hooks replacement");
+
+    assert_eq!(
+        merged_params.hooks,
+        Some(hooks.clone()),
+        "typed hooks must survive the app-data merge result",
+    );
+
+    let hooks_value = serde_json::to_value(&hooks).expect("typed hooks must serialize");
+    assert_eq!(
+        info.doc["metadata"]["hooks"], hooks_value,
+        "wire doc must carry the typed hooks override byte-identical",
+    );
+    assert!(
+        info.doc["metadata"]["hooks"].get("pre").is_none(),
+        "base hook pre-array must be dropped when typed override hooks are supplied",
     );
 }
 

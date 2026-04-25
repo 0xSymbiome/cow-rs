@@ -8,5 +8,8 @@
 
 /// Flash-loan hints consumed by the app-data metadata envelope.
 pub mod flashloan;
+/// Pre- and post-interaction hooks consumed by the app-data metadata envelope.
+pub mod hooks;
 
 pub use flashloan::FlashloanHints;
+pub use hooks::{Hook, HookList};

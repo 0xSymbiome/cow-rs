@@ -96,11 +96,12 @@ impl FromStr for SchemaVersion {
 
 /// Inputs used to build an app-data document.
 ///
-/// The two typed sub-metadata fields `signer` and `flashloan` sit alongside
-/// the open-ended `metadata` slot. On the wire both typed fields land inside
-/// the nested `metadata` object in their reviewed camelCase positions, and
-/// any key other than `signer` or `flashloan` continues to flow through the
-/// untyped [`MetadataMap`] slot so open-ended sub-objects remain supported.
+/// The typed sub-metadata fields `signer`, `flashloan`, and `hooks` sit
+/// alongside the open-ended `metadata` slot. On the wire each typed field
+/// lands inside the nested `metadata` object in its reviewed camelCase
+/// position. The `hooks` value also remains readable through
+/// `metadata["hooks"]` after deserialization so existing open-ended metadata
+/// consumers can migrate to the typed slot on their own schedule.
 #[allow(
     clippy::derive_partial_eq_without_eq,
     reason = "the `metadata: MetadataMap` field is a `serde_json::Map<String, serde_json::Value>` alias, and `serde_json::Value` does not implement `Eq`"
@@ -118,9 +119,13 @@ pub struct AppDataParams {
     pub signer: Option<Address>,
     /// Typed flash-loan hint carried as `metadata.flashloan` on the wire.
     pub flashloan: Option<crate::metadata::FlashloanHints>,
+    /// Typed hooks envelope carried as `metadata.hooks` on the wire while
+    /// preserving open-ended `metadata["hooks"]` access.
+    pub hooks: Option<crate::metadata::HookList>,
     /// Arbitrary application metadata merged into the document. The two
-    /// typed sub-metadata fields above leave this slot; every other
-    /// open-ended sub-object continues to live inside the map.
+    /// signer and flash-loan fields above leave this slot; hooks remain in
+    /// the map for compatibility, and every other open-ended sub-object
+    /// continues to live inside the map.
     pub metadata: MetadataMap,
 }
 
@@ -180,19 +185,27 @@ impl<'de> Deserialize<'de> for AppDataParams {
             ),
             None => None,
         };
+        let hooks = match metadata.get("hooks").cloned() {
+            Some(value) => Some(
+                serde_json::from_value::<crate::metadata::HookList>(value)
+                    .map_err(serde::de::Error::custom)?,
+            ),
+            None => None,
+        };
 
         Ok(Self {
             app_code,
             environment,
             signer,
             flashloan,
+            hooks,
             metadata,
         })
     }
 }
 
 impl AppDataParams {
-    /// Creates app-data parameters with the current full field shape.
+    /// Creates app-data parameters with the source-compatible constructor shape.
     #[must_use]
     pub const fn new(
         app_code: Option<String>,
@@ -206,6 +219,7 @@ impl AppDataParams {
             environment,
             signer,
             flashloan,
+            hooks: None,
             metadata,
         }
     }
@@ -238,6 +252,13 @@ impl AppDataParams {
         self
     }
 
+    /// Returns a copy with typed hooks metadata.
+    #[must_use]
+    pub fn with_hooks(mut self, hooks: crate::metadata::HookList) -> Self {
+        self.hooks = Some(hooks);
+        self
+    }
+
     /// Returns a copy with explicit open-ended metadata.
     #[must_use]
     pub fn with_metadata(mut self, metadata: MetadataMap) -> Self {
@@ -250,9 +271,10 @@ impl AppDataParams {
     ///
     /// # Errors
     ///
-    /// Returns [`AppDataError::Json`] when the typed `flashloan` sub-field
-    /// fails to serialize — which cannot happen for values produced through
-    /// the public constructors and is surfaced only for the defensive path.
+    /// Returns [`AppDataError::Json`] when a typed `flashloan` or `hooks`
+    /// sub-field fails to serialize — which cannot happen for values produced
+    /// through the public constructors and is surfaced only for the defensive
+    /// path.
     pub fn metadata_wire_value(&self) -> Result<Value, AppDataError> {
         let mut metadata = self.metadata.clone();
         if let Some(signer) = &self.signer {
@@ -265,6 +287,12 @@ impl AppDataParams {
             metadata.insert(
                 "flashloan".to_owned(),
                 serde_json::to_value(flashloan).map_err(AppDataError::from)?,
+            );
+        }
+        if let Some(hooks) = &self.hooks {
+            metadata.insert(
+                "hooks".to_owned(),
+                serde_json::to_value(hooks).map_err(AppDataError::from)?,
             );
         }
         Ok(Value::Object(metadata))

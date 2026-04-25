@@ -15,6 +15,11 @@ unreleased public contract of the repository.
 
 ### Added
 
+- App-data metadata now exposes a typed `HookList` slot on `AppDataParams`
+  for hook-bearing documents (cow-shed, flash-loans, bridging). The
+  `OrderbookClient` trait is now reachable from `cow-sdk-orderbook` so
+  capability consumers can compose against the trait without the trading-crate
+  dependency.
 - Order quote requests now pre-validate the `(signingScheme,
   onchainOrder)` pair locally so incompatible ECDSA/on-chain
   combinations fail with a typed error before the HTTP call.

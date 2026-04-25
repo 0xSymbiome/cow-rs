@@ -8,6 +8,7 @@
 pub use cow_sdk_app_data::{PartnerFee, PartnerFeePolicy};
 pub use cow_sdk_contracts::eth_flow;
 pub use cow_sdk_core::{DecimalAmount, SupportedChainId};
+pub use cow_sdk_orderbook::{OrderbookClient, OrderbookRuntimeBinding};
 
 /// Allowance reads, approval transactions, and approval submission helpers.
 pub mod allowance;
@@ -78,11 +79,10 @@ pub use slippage::{
 pub use types::{
     AllowanceParameters, ApprovalParameters, Eip1271SignatureProvider, EthFlowOrderExistsChecker,
     LimitOrderAdvancedSettings, LimitTradeParameters, LimitTradeParametersFromQuote,
-    OrderPostingResult, OrderTraderParameters, OrderbookClient, OrderbookRuntimeBinding,
-    PartialTraderParameters, PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults,
-    QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
-    SlippageToleranceResponse, SwapAdvancedSettings, TradeParameters, TraderParameters,
-    TradingAppDataInfo, TradingSdkOptions, TradingTransactionParams,
+    OrderPostingResult, OrderTraderParameters, PartialTraderParameters, PostTradeAdditionalParams,
+    QuoteRequestOverride, QuoteResults, QuoterParameters, SlippageSuggestionProvider,
+    SlippageToleranceRequest, SlippageToleranceResponse, SwapAdvancedSettings, TradeParameters,
+    TraderParameters, TradingAppDataInfo, TradingSdkOptions, TradingTransactionParams,
 };
 pub use validation::{
     AmountSide, ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass,

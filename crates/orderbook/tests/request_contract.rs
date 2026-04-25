@@ -6,9 +6,9 @@ use std::sync::{
 };
 use std::time::{Duration, Instant};
 
-use cow_sdk_core::{
-    Amount, HttpClientPolicy, HttpTransport, ReqwestTransport, ReqwestTransportConfig,
-};
+#[cfg(feature = "tracing")]
+use cow_sdk_core::Amount;
+use cow_sdk_core::{HttpClientPolicy, HttpTransport, ReqwestTransport, ReqwestTransportConfig};
 use cow_sdk_orderbook::error::classify_reqwest_error;
 use cow_sdk_orderbook::request::{
     DEFAULT_ORDERBOOK_USER_AGENT, FetchParams, HttpMethod, JitterStrategy, OrderBookApiError,
@@ -16,10 +16,13 @@ use cow_sdk_orderbook::request::{
     ResponseEnvelope, execute_empty_with, execute_json_with, request_empty, request_json,
     request_text,
 };
+#[cfg(feature = "tracing")]
 use cow_sdk_orderbook::{
-    CowEnv, DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_TOKENS_PER_INTERVAL,
-    INTERNAL_SERVER_ERROR, OrderCreation, OrderQuoteRequest, OrderbookError, QuoteSide,
-    RETRYABLE_STATUS_CODES, SigningScheme, SupportedChainId, TOO_MANY_REQUESTS,
+    CowEnv, OrderCreation, OrderQuoteRequest, QuoteSide, SigningScheme, SupportedChainId,
+};
+use cow_sdk_orderbook::{
+    DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_TOKENS_PER_INTERVAL,
+    INTERNAL_SERVER_ERROR, OrderbookError, RETRYABLE_STATUS_CODES, TOO_MANY_REQUESTS,
 };
 use proptest::prelude::*;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
@@ -39,6 +42,7 @@ use wiremock::{
     matchers::{header, method, path},
 };
 
+#[cfg(feature = "tracing")]
 use crate::common::{
     build_orderbook_api_with_base_url, default_context, sample_buy_token, sample_order_uid,
     sample_owner, sample_quote_response_json, sample_signature,
