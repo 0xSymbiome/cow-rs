@@ -598,6 +598,8 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- Operator-side base-URL override and browser-wallet trust threat surfaces are
+  now documented in `SECURITY.md` with explicit consumer-side mitigations.
 - Subgraph transport errors now carry a typed class alongside the details
   string, matching the order-book error model. Cancellation events are now
   distinguishable from normal completion via a dedicated `cancelled = true`

@@ -94,3 +94,29 @@ that the initial message appears to have been missed.
 - Avoid publishing proof-of-concept details before coordinated disclosure.
 - Use the normal changelog and release notes to announce fixes after the
   mitigation is ready for public consumption.
+
+## Base-URL override risk
+
+Custom `base_url` overrides bypass any host whitelist that the SDK could
+enforce. A signed order sent to a non-`api.cow.fi` host can be exfiltrated by
+the host operator.
+
+Operator recommendation: use the canonical
+`OrderBookApi::builder().environment(CowEnv::Prod)` default for production
+bots that do not need partner-relay support. Reserve `base_url` overrides for
+partner-relay integrations and in-house staging environments. For
+partner-relay use, prefer treaty-bound partner identities over ad-hoc URL
+overrides.
+
+## Browser-wallet trust posture
+
+The browser-wallet integration trusts the injected wallet provider's reported
+`eth_accounts` response without re-deriving the owner from the signature. A
+buggy or malicious wallet provider could report an owner address that does not
+control the signing key.
+
+Operator recommendation: wrap third-party wallet integrations with a defensive
+`ecrecover` step at the consumer layer that asserts the recovered address
+matches the wallet-reported address before submitting the order. The cow-sdk
+`Signature::recover_owner` helper in `cow-sdk-contracts` is the canonical entry
+point for the defensive recovery.
