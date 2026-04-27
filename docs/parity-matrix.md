@@ -27,6 +27,19 @@ Authority order:
 | WASM target | `cowprotocol/cow-sdk` sdk package | `cow-sdk`, `cow-sdk-app-data`, WASM examples | `parity/fixtures/sdk.json`, committed workflow definitions, example READMEs | `examples/wasm/sdk-verification-console/tests/deterministic_exports.rs`, `wasm-pack test --headless --chrome`, `bun run --cwd e2e/sdk-verification test` |
 | Browser wallet integration | selected `cowprotocol/cow-sdk` common, provider, trading, and sdk paths | `cow-sdk-browser-wallet`, `cow-sdk` | `examples/wasm/browser-wallet-console/README.md`, `docs/validation-scope.md` | `crates/browser-wallet/tests/provider_contract.rs`, `crates/browser-wallet/tests/wallet_contract.rs`, direct browser-bridge proof, and committed browser-wallet console automation |
 
+## Orderbook Rejection Tags
+
+`OrderbookRejection` models 49 variants including the
+forward-compatible `Unknown` fallback. The GET-side trade-filter and
+pagination tags below are represented directly and preserve services wire
+spelling.
+
+| Services wire tag | Rust variant | Primary upstream producer | Primary evidence |
+| --- | --- | --- | --- |
+| `InvalidTradeFilter` | `OrderbookRejection::InvalidTradeFilter` | `cowprotocol/services` orderbook trade lookup filters | `crates/orderbook/tests/rejection_contract.rs::every_known_services_tag_parses_to_its_typed_variant` |
+| `InvalidLimit` | `OrderbookRejection::InvalidLimit` | `cowprotocol/services` orderbook trade pagination limits | `crates/orderbook/tests/rejection_contract.rs::every_known_services_tag_parses_to_its_typed_variant` |
+| `LIMIT_OUT_OF_BOUNDS` | `OrderbookRejection::LimitOutOfBounds` | `cowprotocol/services` user-order lookup pagination limits | `crates/orderbook/tests/rejection_contract.rs::every_known_services_tag_parses_to_its_typed_variant` |
+
 ## Trading helper defaults
 
 | Surface | Default | Opt-out / opt-in |
@@ -38,7 +51,7 @@ Authority order:
 
 | Surface | Default | Legacy access |
 | --- | --- | --- |
-| `Order.total_fee` | computed narrowly as the canonical executed-fee component (`calculate_total_fee(executed_fee)`); the deprecated wire field `executedFeeAmount` is never folded into the canonical sum | `Order.executed_fee_amount_legacy: Option<String>` surfaces the deprecated wire value as a typed read-only sibling so consumers that need the legacy summation compute `executed_fee + executed_fee_amount_legacy` explicitly at the call site |
+| `Order.total_fee` | computed narrowly as the canonical executed-fee component (`calculate_total_fee(executed_fee)`); the legacy wire field `executedFeeAmount` is never folded into the canonical sum | `Order.executed_fee_amount_legacy: Option<String>` surfaces the legacy wire value as a typed read-only sibling so consumers that need the legacy summation compute `executed_fee + executed_fee_amount_legacy` explicitly at the call site |
 
 ## Provenance Anchors
 

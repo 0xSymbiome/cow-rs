@@ -10,7 +10,7 @@ import {
 } from "../fixtures/cow-api";
 
 const ORDER_UID = `0x${"11".repeat(56)}`;
-const SIGNATURE = `0x${"22".repeat(65)}`;
+const SIGNATURE = `0x${"22".repeat(64)}1b`;
 const ORDERBOOK_LATEST_COMPETITION_URL =
   "https://barn.api.cow.fi/mainnet/api/v1/solver_competition/latest";
 const ORDERBOOK_ORDER_URL = `https://barn.api.cow.fi/mainnet/api/v1/orders/${ORDER_UID}`;

@@ -25,6 +25,32 @@ unreleased public contract of the repository.
   upstream CoW services repository so newly-added error tags and request or
   response shapes surface as a tracked report before they reach the release
   window.
+- Core redaction primitives cover credential-bearing URL maps,
+  optional URL maps, and response-body snippets before those values reach
+  public `Debug`, `Display`, `Serialize`, or error text. Dispatch paths
+  retain explicit raw-value accessors, while diagnostic paths emit the
+  stable `[redacted]` marker or a bounded sanitized response body.
+- `cow_sdk_orderbook::OrderbookRejection` represents the services
+  `InvalidTradeFilter`, `InvalidLimit`, and `LIMIT_OUT_OF_BOUNDS` wire
+  tags as dedicated typed variants. The modeled rejection surface contains
+  49 enum variants including the forward-compatible `Unknown` fallback.
+- Contracts and signing domain-separator helpers are pinned to the same
+  shared EIP-712 parity fixture so the order digest boundary cannot drift
+  between the two crates.
+- EIP-1271 asynchronous verification emits a tracing span plus cache-hit,
+  cache-store, cache-skip, and completion events without
+  recording verifier addresses, digests, signatures, or response bytes.
+- Orderbook and subgraph base-URL overrides enforce canonical-host
+  guard rails by default, with explicit opt-in policies for reviewed
+  external hosts and loopback test routes.
+- Browser wallet EIP-1193 provider construction is origin-aware: detected
+  wallet origins are accepted, anonymous transports must supply an
+  explicitly reviewed trusted origin, and rejected anonymous origins fail
+  closed with a typed error.
+- `cow_sdk_contracts::Signature` exposes scheme-aware ownership helpers:
+  `recover_ecdsa_address` recovers EIP-712 and EthSign ECDSA signers from
+  the supplied digest, while `declared_address` returns the declared owner
+  for PreSign and EIP-1271 signatures.
 - App-data metadata now exposes a typed `HookList` slot on `AppDataParams`
   for hook-bearing documents (cow-shed, flash-loans, bridging). The
   `OrderbookClient` trait is now reachable from `cow-sdk-orderbook` so
