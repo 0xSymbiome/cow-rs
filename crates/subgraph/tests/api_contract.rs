@@ -3,11 +3,11 @@ use cow_sdk_core::{
     TransportErrorClass,
 };
 use cow_sdk_subgraph::{
-    DEFAULT_SUBGRAPH_USER_AGENT, DailyTotal, HourlyTotal, LAST_DAYS_VOLUME_QUERY,
-    LAST_HOURS_VOLUME_QUERY, LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi,
-    SubgraphApiBaseUrls, SubgraphError, SubgraphGraphQlError, SubgraphGraphQlErrorLocation,
-    SubgraphQueryRequest, SubgraphRequestErrorContext, SubgraphTransportPolicy, TOTALS_QUERY,
-    Total,
+    DEFAULT_SUBGRAPH_USER_AGENT, DailyTotal, ExternalHostPolicy, HourlyTotal,
+    LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY, LastDaysVolumeResponse,
+    LastHoursVolumeResponse, SubgraphApi, SubgraphApiBaseUrls, SubgraphError, SubgraphGraphQlError,
+    SubgraphGraphQlErrorLocation, SubgraphQueryRequest, SubgraphRequestErrorContext,
+    SubgraphTransportPolicy, TOTALS_QUERY, Total,
 };
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
@@ -24,7 +24,8 @@ async fn prod_url_map_matches_pinned_supported_and_unsupported_chains() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
-        .build();
+        .build()
+        .expect("default subgraph client must build");
     let prod_config = api.prod_config();
 
     assert_eq!(
@@ -87,7 +88,8 @@ fn default_transport_policy_is_explicit_and_reviewable() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
-        .build();
+        .build()
+        .expect("default subgraph client must build");
 
     assert_eq!(api.client_policy().timeout(), Some(DEFAULT_HTTP_TIMEOUT));
     assert_eq!(
@@ -101,7 +103,8 @@ fn debug_output_keeps_subgraph_contract_visible_without_printing_prod_urls() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
-        .build();
+        .build()
+        .expect("default subgraph client must build");
     let debug = format!("{api:?}");
 
     assert!(debug.contains("SubgraphApi"));
@@ -430,8 +433,10 @@ async fn run_query_with_config_honors_chain_override_for_generic_queries() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
-        .build();
+        .build()
+        .expect("subgraph test client with loopback override must build");
     let query = "query TotalsForAudit { totals { orders } }";
 
     Mock::given(method("POST"))
@@ -488,8 +493,10 @@ async fn run_query_uses_custom_base_url_overrides() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
+        .with_external_host_policy(ExternalHostPolicy::AllowAny)
         .base_urls(custom_urls)
-        .build();
+        .build()
+        .expect("subgraph test client with custom overrides must build");
 
     Mock::given(method("POST"))
         .and(path("/"))
@@ -563,9 +570,11 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
         .policy(transport_policy)
-        .build();
+        .build()
+        .expect("subgraph test client with loopback override must build");
 
     let totals = api.get_totals().await.expect("custom policy should work");
 
@@ -578,7 +587,8 @@ async fn unsupported_network_rejects_before_transport() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Polygon)
         .api_key("FakeApiKey")
-        .build();
+        .build()
+        .expect("default subgraph client must build");
 
     let error = api.get_totals().await.unwrap_err();
 
@@ -872,8 +882,10 @@ async fn transport_failures_surface_typed_context() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
-        .build();
+        .build()
+        .expect("subgraph test client with loopback override must build");
     let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
 
     let error = api
@@ -926,8 +938,10 @@ fn api_with_override(server: &MockServer) -> SubgraphApi {
     SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
         .build()
+        .expect("subgraph test client with loopback override must build")
 }
 
 async fn only_request(server: &MockServer) -> Request {
@@ -977,7 +991,8 @@ async fn get_totals_returns_cancelled_when_combinator_token_fires_before_send() 
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
-        .build();
+        .build()
+        .expect("default subgraph client must build");
     let token = cow_sdk_core::CancellationToken::new();
     token.cancel();
 
@@ -1099,18 +1114,22 @@ async fn shared_client_fans_queries_across_multiple_subgraph_instances() {
     let first_api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(first_base_urls)
         .client(shared.clone())
-        .build();
+        .build()
+        .expect("first subgraph client with loopback override must build");
 
     let second_base_urls: SubgraphApiBaseUrls =
         std::iter::once((SupportedChainId::GnosisChain, Some(second.uri()))).collect();
     let second_api = SubgraphApi::builder()
         .chain(SupportedChainId::GnosisChain)
         .api_key("FakeApiKey")
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(second_base_urls)
         .client(shared)
-        .build();
+        .build()
+        .expect("second subgraph client with loopback override must build");
 
     let first_totals = first_api
         .get_totals()
@@ -1132,7 +1151,9 @@ mod recording_transport {
 
     use async_trait::async_trait;
     use cow_sdk_core::{HttpTransport, SupportedChainId, TransportError};
-    use cow_sdk_subgraph::{SubgraphApi, SubgraphApiBaseUrls, SubgraphError, SubgraphQueryRequest};
+    use cow_sdk_subgraph::{
+        ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls, SubgraphError, SubgraphQueryRequest,
+    };
     use serde_json::{Value, json};
 
     #[derive(Debug, Clone)]
@@ -1287,9 +1308,13 @@ mod recording_transport {
         SubgraphApi::builder()
             .chain(SupportedChainId::Mainnet)
             .api_key("FakeApiKey")
+            .with_external_host_policy(ExternalHostPolicy::Allow(vec![
+                "subgraph-recording.example".to_owned(),
+            ]))
             .base_urls(base_urls)
             .transport(recorder as Arc<dyn HttpTransport + Send + Sync>)
             .build()
+            .expect("subgraph client with recording transport override must build")
     }
 
     #[tokio::test]

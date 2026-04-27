@@ -2,7 +2,7 @@
 
 use cow_sdk_browser_wallet::{
     BrowserWallet, BrowserWalletError, InjectedWalletDetectionOptions,
-    InjectedWalletDiscoverySource, MockRequestRecord, WalletEvent,
+    InjectedWalletDiscoverySource, MockRequestRecord, Origin, WalletEvent,
 };
 use cow_sdk_core::{
     AsyncSigner, SupportedChainId, TypedDataDomain, TypedDataField, TypedDataPayload,
@@ -319,9 +319,11 @@ async fn legacy_detect_connect_and_signer_requests_cross_the_typed_promise_bridg
         "typedDataSignature": repeated_signature("22", "1c"),
     }));
 
-    let wallet = BrowserWallet::detect()
-        .expect("legacy provider detection should succeed")
-        .expect("legacy provider should be present");
+    let wallet = BrowserWallet::detect_with_trusted_origin(
+        Origin::new("test://window.ethereum").expect("test origin should parse"),
+    )
+    .expect("legacy provider detection should succeed")
+    .expect("legacy provider should be present");
     let info = wallet
         .injected_info()
         .expect("detected wallet should include injected metadata");
@@ -410,9 +412,11 @@ async fn provider_events_keep_session_synchronized_and_listener_cleanup_tracks_r
         },
     }));
 
-    let wallet = BrowserWallet::detect()
-        .expect("legacy provider detection should succeed")
-        .expect("legacy provider should be present");
+    let wallet = BrowserWallet::detect_with_trusted_origin(
+        Origin::new("test://window.ethereum").expect("test origin should parse"),
+    )
+    .expect("legacy provider detection should succeed")
+    .expect("legacy provider should be present");
     assert_eq!(fixture.listener_count("accountsChanged"), 1);
     assert_eq!(fixture.listener_count("chainChanged"), 1);
     assert_eq!(fixture.listener_count("connect"), 1);
@@ -532,9 +536,11 @@ async fn rejected_chain_switch_requests_map_to_typed_browser_wallet_errors() {
         },
     }));
 
-    let wallet = BrowserWallet::detect()
-        .expect("legacy provider detection should succeed")
-        .expect("legacy provider should be present");
+    let wallet = BrowserWallet::detect_with_trusted_origin(
+        Origin::new("test://window.ethereum").expect("test origin should parse"),
+    )
+    .expect("legacy provider detection should succeed")
+    .expect("legacy provider should be present");
     let error = wallet
         .switch_chain(SupportedChainId::Base)
         .await
@@ -571,9 +577,11 @@ async fn successful_switch_requests_fail_when_the_refreshed_session_stays_on_a_d
         "switchKeepsChain": true,
     }));
 
-    let wallet = BrowserWallet::detect()
-        .expect("legacy provider detection should succeed")
-        .expect("legacy provider should be present");
+    let wallet = BrowserWallet::detect_with_trusted_origin(
+        Origin::new("test://window.ethereum").expect("test origin should parse"),
+    )
+    .expect("legacy provider detection should succeed")
+    .expect("legacy provider should be present");
     wallet.connect().await.expect("connect should succeed");
 
     let error = wallet

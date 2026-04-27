@@ -605,11 +605,14 @@ fn orderbook_api(chain_id: SupportedChainId, env: CowEnv) -> OrderBookApi {
         OrderBookApi::builder_from_context(context)
             .transport(transport)
             .build()
+            .expect("verification console orderbook client must build")
     }
 
     #[cfg(not(target_arch = "wasm32"))]
     {
-        OrderBookApi::builder_from_context(context).build()
+        OrderBookApi::builder_from_context(context)
+            .build()
+            .expect("verification console orderbook client must build")
     }
 }
 
@@ -637,7 +640,8 @@ fn subgraph_api(chain_id: SupportedChainId, api_key: &str) -> Result<SubgraphApi
             .chain(chain_id)
             .api_key(api_key)
             .transport(transport)
-            .build())
+            .build()
+            .map_err(|error| to_js_error(error.to_string()))?)
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -645,7 +649,8 @@ fn subgraph_api(chain_id: SupportedChainId, api_key: &str) -> Result<SubgraphApi
         Ok(SubgraphApi::builder()
             .chain(chain_id)
             .api_key(api_key)
-            .build())
+            .build()
+            .map_err(|error| to_js_error(error.to_string()))?)
     }
 }
 

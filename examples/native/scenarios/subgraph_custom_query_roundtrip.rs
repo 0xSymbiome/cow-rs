@@ -8,7 +8,7 @@ use wiremock::{
 };
 
 use cow_sdk::prelude::SupportedChainId;
-use cow_sdk_subgraph::{SubgraphApi, SubgraphQueryRequest};
+use cow_sdk_subgraph::{ExternalHostPolicy, SubgraphApi, SubgraphQueryRequest};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -64,8 +64,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("review-key")
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
-        .build();
+        .build()?;
 
     let response: TokensByVolumeResponse = api.run_query(request).await?;
 

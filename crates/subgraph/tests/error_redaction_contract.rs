@@ -2,7 +2,9 @@ use cow_sdk_core::{
     REDACTED_PLACEHOLDER, REDACTED_RESPONSE_BODY_MAX_BYTES, RESPONSE_BODY_TRUNCATION_MARKER,
     SupportedChainId,
 };
-use cow_sdk_subgraph::{SubgraphApi, SubgraphApiBaseUrls, SubgraphError, SubgraphQueryRequest};
+use cow_sdk_subgraph::{
+    ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls, SubgraphError, SubgraphQueryRequest,
+};
 use serde_json::json;
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
@@ -79,8 +81,10 @@ fn api_with_override(server: &MockServer) -> SubgraphApi {
     SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
         .build()
+        .expect("subgraph test client with loopback override must build")
 }
 
 fn assert_sanitized_storage(stored: &str) {

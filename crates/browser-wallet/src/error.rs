@@ -3,7 +3,7 @@
 //! Browser runtime failures are normalized before they cross the public Rust boundary so callers
 //! receive typed wallet and transport errors rather than raw JS values.
 
-use cow_sdk_core::{Cancelled, ChainId, CoreError};
+use cow_sdk_core::{Cancelled, ChainId, CoreError, Redacted};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -62,6 +62,18 @@ pub enum BrowserWalletError {
         index: usize,
         /// Number of available discovery candidates.
         candidates: usize,
+    },
+    /// A provider origin label failed local validation before provider construction.
+    #[error("wallet provider origin is invalid: {message}")]
+    InvalidProviderOrigin {
+        /// Sanitized validation failure description.
+        message: String,
+    },
+    /// An EIP-1193 provider did not have discovery metadata or an explicit trusted origin.
+    #[error("wallet provider origin is not trusted: {origin}")]
+    UntrustedProviderOrigin {
+        /// Redacted provider origin label.
+        origin: Redacted<String>,
     },
     /// The wallet explicitly rejected a user-authorized request.
     #[error("wallet request `{method}` was rejected by the user ({code}): {message}")]

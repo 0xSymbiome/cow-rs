@@ -16,7 +16,7 @@ use cow_sdk_core::{
     HttpTransport, REDACTED_PLACEHOLDER, ReqwestTransport, ReqwestTransportConfig,
     SupportedChainId, TransportError,
 };
-use cow_sdk_subgraph::{SubgraphApi, SubgraphApiBaseUrls};
+use cow_sdk_subgraph::{ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls};
 
 #[derive(Debug, Default)]
 struct StubTransport;
@@ -66,7 +66,8 @@ fn build_with_required_inputs_yields_a_typed_api() {
         .chain(SupportedChainId::Mainnet)
         .api_key("partner-key")
         .transport(Arc::new(StubTransport))
-        .build();
+        .build()
+        .expect("subgraph client with explicit transport must build");
 
     assert_eq!(api.config().chain_id, SupportedChainId::Mainnet);
     assert_eq!(api.api_name(), "CoW Protocol Subgraph");
@@ -77,7 +78,8 @@ fn native_default_build_path_supplies_a_reqwest_transport() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::GnosisChain)
         .api_key("partner-key")
-        .build();
+        .build()
+        .expect("default subgraph client must build");
 
     assert_eq!(api.config().chain_id, SupportedChainId::GnosisChain);
 }
@@ -97,8 +99,12 @@ fn base_urls_override_propagates_to_the_built_client() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("partner-key")
+        .with_external_host_policy(ExternalHostPolicy::Allow(vec![
+            "subgraph.example".to_owned(),
+        ]))
         .base_urls(base_urls.clone())
-        .build();
+        .build()
+        .expect("subgraph client with allowed custom host must build");
 
     assert_eq!(api.config().base_urls.as_ref(), Some(&base_urls));
 }
@@ -154,7 +160,8 @@ fn explicit_transport_overrides_default_native_handle() {
         .chain(SupportedChainId::Mainnet)
         .api_key("partner-key")
         .transport(transport.clone())
-        .build();
+        .build()
+        .expect("subgraph client with explicit transport must build");
 
     assert!(Arc::ptr_eq(api.transport(), &transport));
 }
@@ -266,9 +273,13 @@ async fn injected_transport_observes_every_live_request_from_the_built_client() 
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("partner-key")
+        .with_external_host_policy(ExternalHostPolicy::Allow(vec![
+            "builder-recording.example".to_owned(),
+        ]))
         .base_urls(overrides)
         .transport(transport.clone())
-        .build();
+        .build()
+        .expect("subgraph client with injected transport must build");
 
     assert!(Arc::ptr_eq(api.transport(), &transport));
 
@@ -307,12 +318,14 @@ fn shared_client_override_reuses_caller_built_reqwest_client() {
         .chain(SupportedChainId::Mainnet)
         .api_key("partner-key")
         .client(shared.clone())
-        .build();
+        .build()
+        .expect("first shared-client subgraph handle must build");
     let _ = SubgraphApi::builder()
         .chain(SupportedChainId::GnosisChain)
         .api_key("partner-key")
         .client(shared)
-        .build();
+        .build()
+        .expect("second shared-client subgraph handle must build");
 }
 
 /// Compile-time assertion: `.build()` is unreachable when the chain id is

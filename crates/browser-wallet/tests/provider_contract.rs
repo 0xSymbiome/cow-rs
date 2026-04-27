@@ -1,6 +1,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use cow_sdk_browser_wallet::{BrowserWallet, MockEip1193Transport};
+use cow_sdk_browser_wallet::{
+    BrowserWallet, BrowserWalletError, Eip1193ProviderBuilder, MockEip1193Transport, Origin,
+};
 use cow_sdk_core::AsyncProvider;
 use cow_sdk_core::{Address, Amount, ContractCall, HexData, SupportedChainId, TransactionRequest};
 
@@ -43,5 +45,34 @@ async fn mock_provider_satisfies_async_provider_contracts() {
             .await
             .unwrap(),
         HexData::new(format!("0x{}2a", "0".repeat(62))).unwrap()
+    );
+}
+
+#[test]
+fn anonymous_provider_builder_requires_trusted_origin() {
+    let error = Eip1193ProviderBuilder::new(MockEip1193Transport::sepolia())
+        .build()
+        .unwrap_err();
+
+    assert!(matches!(
+        error,
+        BrowserWalletError::UntrustedProviderOrigin { .. }
+    ));
+    let rendered = error.to_string();
+    assert!(rendered.contains("[redacted]"));
+    assert!(!rendered.contains("sepolia"));
+}
+
+#[test]
+fn provider_builder_accepts_explicit_trusted_origin() {
+    let provider = Eip1193ProviderBuilder::new(MockEip1193Transport::sepolia())
+        .with_trusted_origin(Origin::new("test://wallet/sepolia").unwrap())
+        .build()
+        .unwrap();
+
+    assert_eq!(provider.session().wallet_label, "Mock Wallet");
+    assert_eq!(
+        provider.origin().map(Origin::as_str),
+        Some("test://wallet/sepolia")
     );
 }

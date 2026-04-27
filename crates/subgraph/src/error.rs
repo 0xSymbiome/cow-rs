@@ -1,6 +1,6 @@
 //! Typed error surface for subgraph requests.
 
-use cow_sdk_core::{Cancelled, Redacted, TransportErrorClass};
+use cow_sdk_core::{Cancelled, HostPolicyError, Redacted, TransportErrorClass};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
@@ -109,6 +109,9 @@ pub enum SubgraphError {
         /// Transport-layer error details from the HTTP client.
         details: String,
     },
+    /// Explicit service endpoint override failed host-policy validation.
+    #[error(transparent)]
+    HostPolicy(#[from] HostPolicyError),
     /// The endpoint returned a non-success HTTP status code.
     #[error("subgraph http status error for {}: {status}: {body}", context.api)]
     HttpStatus {
@@ -175,6 +178,10 @@ impl Serialize for SubgraphError {
                 map.serialize_entry("context", context)?;
                 map.serialize_entry("class", &class.to_string())?;
                 map.serialize_entry("details", details)?;
+            }
+            Self::HostPolicy(error) => {
+                map.serialize_entry("type", "HostPolicy")?;
+                map.serialize_entry("error", error)?;
             }
             Self::HttpStatus {
                 context,

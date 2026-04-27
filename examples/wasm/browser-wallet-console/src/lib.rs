@@ -782,10 +782,13 @@ fn live_sdk(chain_id: SupportedChainId, env: CowEnv, app_code: &str) -> TradingS
         OrderBookApi::builder_from_context(context)
             .transport(transport)
             .build()
+            .expect("browser wallet console orderbook client must build")
     };
 
     #[cfg(not(target_arch = "wasm32"))]
-    let orderbook_client = OrderBookApi::builder_from_context(context).build();
+    let orderbook_client = OrderBookApi::builder_from_context(context)
+        .build()
+        .expect("browser wallet console orderbook client must build");
 
     TradingSdk::new(
         PartialTraderParameters::new()

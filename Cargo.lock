@@ -856,12 +856,14 @@ dependencies = [
 name = "cow-sdk-contracts"
 version = "0.1.0"
 dependencies = [
+ "alloy-primitives",
  "alloy-sol-macro",
  "alloy-sol-types",
  "bytes",
  "cow-sdk-core",
  "criterion",
  "hex",
+ "k256",
  "num-bigint",
  "proptest",
  "serde",
@@ -891,6 +893,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "trybuild",
+ "url",
  "wiremock",
 ]
 

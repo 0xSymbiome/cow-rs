@@ -2,8 +2,8 @@
 
 Status: Current
 Last reviewed: 2026-04-27
-Owning surface: Credential-bearing builder storage, URL configuration, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, and app-data
-Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without a redacting storage type
+Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, and app-data
+Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without a redacting storage type
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
@@ -18,6 +18,7 @@ This audit covers:
 - `cow-sdk-orderbook::OrderBookApiBuilder` partner API-key storage
 - `cow-sdk-subgraph::SubgraphApiBuilder` partner API-key storage
 - credential-bearing URL fields in core, orderbook, subgraph, browser-wallet, and app-data
+- sanitized host-policy failures for orderbook and subgraph endpoint overrides
 - `cow-sdk-app-data::IpfsUploadTransport::post_json` header typing and the Pinata header assembly path
 
 It does not cover unrelated transport error redaction or credential handling outside these named boundaries.
@@ -29,6 +30,7 @@ It does not cover unrelated transport error redaction or credential handling out
 | Orderbook builder | `OrderBookApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
 | Subgraph builder | `SubgraphApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
 | URL configuration | Credential-bearing URL values use redacting storage types and unwrap only at dispatch seams | Conforms |
+| Host-policy errors | Orderbook and subgraph host-policy failures retain only a redacted host component and never serialize raw URL credentials, paths, queries, or fragments | Conforms |
 | Pinata upload trait | `IpfsUploadTransport::post_json` carries `Redacted<String>` header values and the Pinata header vector stays redacted under `Debug` | Conforms |
 
 ## Current Contract
@@ -56,6 +58,16 @@ credential-bearing URL values in redacting wrappers. Public debug and
 serialized output emits `[redacted]` for configured URL values while routing,
 wallet payload construction, and IPFS read/write policies use explicit raw
 access at the dispatch boundary.
+
+### Host-Policy Failures
+
+`crates/core/src/config.rs` owns `ExternalHostPolicy` and
+`HostPolicyError`. Orderbook and subgraph builders validate explicit service
+endpoint overrides against canonical hosts by default. Rejections retain only
+the host component wrapped in `Redacted<String>`, while parse failures collapse
+to a `UrlParseFailureClass` and unsupported schemes use sanitized static
+labels. Error debug, display, and serialized output therefore cannot echo URL
+credentials, paths, query strings, or fragments.
 
 ### Pinata Upload Boundary
 
@@ -87,6 +99,9 @@ Primary regression coverage:
 - `crates/browser-wallet/tests/wallet_contract.rs::chain_parameters_public_debug_and_serialize_redact_url_credentials`
 - `crates/app-data/tests/ipfs_config_redaction_contract.rs`
 - `crates/app-data/tests/pinning_contract.rs::pinning_headers_debug_redacts_secret_bytes`
+- `crates/core/tests/config_contract.rs::external_host_policy_accepts_canonical_and_explicit_hosts_only`
+- `crates/orderbook/tests/host_policy_contract.rs`
+- `crates/subgraph/tests/host_policy_contract.rs`
 
 Validation surface:
 
@@ -96,6 +111,9 @@ cargo test -p cow-sdk-orderbook --test builder_contract
 cargo test -p cow-sdk-orderbook --test api_contract
 cargo test -p cow-sdk-subgraph --test builder_contract
 cargo test -p cow-sdk-subgraph --test api_contract
+cargo test -p cow-sdk-core --test config_contract
+cargo test -p cow-sdk-orderbook --test host_policy_contract
+cargo test -p cow-sdk-subgraph --test host_policy_contract
 cargo test -p cow-sdk-browser-wallet --test wallet_contract
 cargo test -p cow-sdk-app-data --test ipfs_config_redaction_contract
 cargo test -p cow-sdk-app-data --test pinning_contract

@@ -1,12 +1,13 @@
 use std::fmt;
 
+use alloy_primitives::{B256, Signature as AlloySignature};
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, AsyncProvider, Hash32, HexData, Provider};
 
 use crate::{
     ContractsError,
-    primitives::{function_selector, normalize_hex_payload, parse_hex, parse_hex_exact},
+    primitives::{function_selector, keccak256, normalize_hex_payload, parse_hex, parse_hex_exact},
 };
 
 /// EIP-1271 success magic value as the canonical `0x`-prefixed hex string
@@ -149,6 +150,80 @@ impl Signature {
             Self::Eip1271 { .. } => SigningScheme::Eip1271,
             Self::PreSign { .. } => SigningScheme::PreSign,
         }
+    }
+
+    /// Returns the address declared directly by non-ECDSA signature variants.
+    ///
+    /// EIP-1271 signatures declare the verifier contract, and pre-sign
+    /// signatures declare the owner. ECDSA variants return `None` because the
+    /// owner is recovered cryptographically with
+    /// [`Signature::recover_ecdsa_address`].
+    #[must_use]
+    pub const fn declared_address(&self) -> Option<&Address> {
+        match self {
+            Self::Ecdsa { .. } => None,
+            Self::Eip1271 { data } => Some(&data.verifier),
+            Self::PreSign { owner } => Some(owner),
+        }
+    }
+
+    /// Recovers the signer address for an ECDSA signature and 32-byte digest.
+    ///
+    /// For [`SigningScheme::Eip712`], `digest` is the exact prehash supplied
+    /// to the recovery backend. For [`SigningScheme::EthSign`], recovery uses
+    /// the EIP-191 prehash `keccak256("\x19Ethereum Signed Message:\n32" ||
+    /// digest_bytes)` because `CoW Protocol` signs the 32-byte order digest as
+    /// the message body. Recovery is delegated to the `alloy-primitives` 1.5
+    /// secp256k1 recovery API.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError::SignatureSchemeNotEcdsa`] for EIP-1271 and
+    /// pre-sign variants, and another [`ContractsError`] when the signature or
+    /// digest cannot be decoded or recovered.
+    pub fn recover_ecdsa_address(&self, digest: &Hash32) -> Result<Address, ContractsError> {
+        let Self::Ecdsa { scheme, data } = self else {
+            return Err(ContractsError::SignatureSchemeNotEcdsa);
+        };
+
+        let normalized = normalized_ecdsa_signature(data)?;
+        let signature_bytes = parse_hex_exact(&normalized, "signature", 65)?;
+        let signature = AlloySignature::from_raw(&signature_bytes)
+            .map_err(|error| signature_recovery_error(&error))?;
+        let prehash = match scheme {
+            SigningScheme::Eip712 => hash32_bytes(digest)?,
+            SigningScheme::EthSign => eth_sign_digest_prehash(digest)?,
+            _ => return Err(ContractsError::SignatureSchemeNotEcdsa),
+        };
+        let recovered = signature
+            .recover_address_from_prehash(&B256::from(prehash))
+            .map_err(|error| signature_recovery_error(&error))?;
+        Ok(Address::new(recovered.to_string())?)
+    }
+}
+
+fn hash32_bytes(digest: &Hash32) -> Result<[u8; 32], ContractsError> {
+    let bytes = parse_hex_exact(digest.as_str(), "digest", 32)?;
+    bytes
+        .try_into()
+        .map_err(|bytes: Vec<u8>| ContractsError::InvalidDecodedLength {
+            field: "digest",
+            expected: 32,
+            actual: bytes.len(),
+        })
+}
+
+fn eth_sign_digest_prehash(digest: &Hash32) -> Result<[u8; 32], ContractsError> {
+    let digest_bytes = hash32_bytes(digest)?;
+    let mut payload = Vec::with_capacity(60);
+    payload.extend_from_slice(b"\x19Ethereum Signed Message:\n32");
+    payload.extend_from_slice(&digest_bytes);
+    Ok(keccak256(payload))
+}
+
+fn signature_recovery_error(error: &alloy_primitives::SignatureError) -> ContractsError {
+    ContractsError::SignatureRecovery {
+        message: error.to_string(),
     }
 }
 

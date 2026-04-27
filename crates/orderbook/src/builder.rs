@@ -27,7 +27,8 @@
 //! let api = OrderBookApi::builder()
 //!     .chain(SupportedChainId::Mainnet)
 //!     .environment(CowEnv::Prod)
-//!     .build();
+//!     .build()
+//!     .expect("orderbook client builds with canonical defaults");
 //! let _ = api;
 //! # }
 //! ```
@@ -35,13 +36,17 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use cow_sdk_core::{ApiBaseUrls, CowEnv, HttpTransport, Redacted, SupportedChainId};
+use cow_sdk_core::{
+    ApiBaseUrls, CowEnv, ExternalHostPolicy, HttpTransport, Redacted, SupportedChainId,
+    canonical_orderbook_hosts, validate_external_service_url,
+};
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
 
 use crate::api::OrderBookApi;
+use crate::error::OrderbookError;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::request::DEFAULT_ORDERBOOK_USER_AGENT;
 use crate::request::{OrderBookTransportPolicy, RequestRateLimiter};
@@ -88,6 +93,7 @@ pub struct OrderBookApiBuilder<
     api_key: Option<Redacted<String>>,
     base_urls: Option<ApiBaseUrls>,
     env_base_url_overrides: EnvBaseUrlOverrides,
+    host_policy: ExternalHostPolicy,
     _phantom: PhantomData<(ChainState, EnvState, TransportState)>,
 }
 
@@ -109,6 +115,7 @@ impl OrderBookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
             api_key: None,
             base_urls: None,
             env_base_url_overrides: EnvBaseUrlOverrides::default(),
+            host_policy: ExternalHostPolicy::Default,
             _phantom: PhantomData,
         }
     }
@@ -147,6 +154,7 @@ impl<E, T> OrderBookApiBuilder<ChainIdUnset, E, T> {
             api_key: self.api_key,
             base_urls: self.base_urls,
             env_base_url_overrides: self.env_base_url_overrides,
+            host_policy: self.host_policy,
             _phantom: PhantomData,
         }
     }
@@ -166,6 +174,7 @@ impl<C, T> OrderBookApiBuilder<C, EnvUnset, T> {
             api_key: self.api_key,
             base_urls: self.base_urls,
             env_base_url_overrides: self.env_base_url_overrides,
+            host_policy: self.host_policy,
             _phantom: PhantomData,
         }
     }
@@ -192,6 +201,7 @@ impl<C, E> OrderBookApiBuilder<C, E, TransportUnset> {
             api_key: self.api_key,
             base_urls: self.base_urls,
             env_base_url_overrides: self.env_base_url_overrides,
+            host_policy: self.host_policy,
             _phantom: PhantomData,
         }
     }
@@ -238,6 +248,19 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
         self
     }
 
+    /// Sets the external host policy used to validate explicit orderbook
+    /// service endpoint overrides.
+    ///
+    /// The default accepts only the SDK's canonical `CoW Protocol` orderbook
+    /// hosts. Local fixtures should use [`ExternalHostPolicy::Test`], and
+    /// private mirrors should use [`ExternalHostPolicy::Allow`] with the
+    /// mirror host.
+    #[must_use]
+    pub fn with_external_host_policy(mut self, policy: ExternalHostPolicy) -> Self {
+        self.host_policy = policy;
+        self
+    }
+
     /// Supplies an explicit per-chain base-URL map for the resolved API
     /// context.
     #[must_use]
@@ -276,7 +299,16 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
         self.env_base_url(env, base_url)
     }
 
-    fn finish(self, transport: Arc<dyn HttpTransport + Send + Sync>) -> OrderBookApi {
+    fn finish(
+        self,
+        transport: Arc<dyn HttpTransport + Send + Sync>,
+    ) -> Result<OrderBookApi, OrderbookError> {
+        validate_orderbook_base_urls(
+            self.base_urls.as_ref(),
+            &self.env_base_url_overrides,
+            &self.host_policy,
+        )?;
+
         let chain = self
             .chain
             .expect("typestate guarantees chain id is supplied at build time");
@@ -292,13 +324,13 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
         if let Some(base_urls) = self.base_urls {
             context.base_urls = Some(base_urls);
         }
-        OrderBookApi::from_parts(
+        Ok(OrderBookApi::from_parts(
             context,
             transport_policy,
             rate_limiter,
             self.env_base_url_overrides,
             transport,
-        )
+        ))
     }
 }
 
@@ -306,15 +338,16 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportSet> {
     /// Builds the [`OrderBookApi`] with the supplied chain, environment, and
     /// transport.
     ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when explicit base-URL overrides fail the
+    /// configured external host policy.
+    ///
     /// # Panics
     ///
-    /// Panics only if the typestate invariant is violated by an
-    /// unsupported transmute of the builder's marker types; the typestate
-    /// guarantees the transport, chain id, and environment are all
-    /// populated by the time this method is reachable, so the panic is
-    /// not reachable from safe code.
-    #[must_use]
-    pub fn build(self) -> OrderBookApi {
+    /// Panics only if the typestate marker is bypassed and the required
+    /// transport is missing at build time.
+    pub fn build(self) -> Result<OrderBookApi, OrderbookError> {
         let transport = self
             .transport
             .clone()
@@ -333,14 +366,18 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
     /// [`OrderBookApiBuilder::transport`] with a `FetchTransport` before
     /// reaching `build`.
     ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when explicit base-URL overrides fail the
+    /// configured external host policy.
+    ///
     /// # Panics
     ///
     /// Panics only if the validated user-agent for the default native
     /// [`ReqwestTransport`] cannot be encoded as an HTTP header value;
     /// the workspace-shipped default carries a header-safe user-agent
     /// literal so the panic is not reachable from safe code.
-    #[must_use]
-    pub fn build(self) -> OrderBookApi {
+    pub fn build(self) -> Result<OrderBookApi, OrderbookError> {
         let user_agent = self
             .transport_policy
             .as_ref()
@@ -360,6 +397,30 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
             .expect("default ReqwestTransport must build with the validated user-agent");
         self.finish(Arc::new(transport))
     }
+}
+
+fn validate_orderbook_base_urls(
+    base_urls: Option<&ApiBaseUrls>,
+    env_base_url_overrides: &EnvBaseUrlOverrides,
+    policy: &ExternalHostPolicy,
+) -> Result<(), OrderbookError> {
+    if let Some(base_urls) = base_urls {
+        for base_url in base_urls.as_inner().values() {
+            validate_external_service_url(base_url, canonical_orderbook_hosts(), policy)?;
+        }
+    }
+
+    for base_url in [
+        env_base_url_overrides.prod.as_ref(),
+        env_base_url_overrides.staging.as_ref(),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        validate_external_service_url(base_url.as_inner(), canonical_orderbook_hosts(), policy)?;
+    }
+
+    Ok(())
 }
 
 fn normalize_base_url(base_url: &str) -> String {

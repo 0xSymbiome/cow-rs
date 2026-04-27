@@ -51,7 +51,7 @@ pub mod wallet;
 pub use error::{BrowserWalletError, RpcErrorPayload};
 pub use events::{EventLog, WalletEvent, WalletSession};
 pub use mock::{MockEip1193Transport, MockRequestRecord};
-pub use provider::{Eip1193Provider, Eip1193Transport};
+pub use provider::{Eip1193Provider, Eip1193ProviderBuilder, Eip1193Transport, Origin};
 pub use signer::Eip1193Signer;
 pub use wallet::{
     BrowserWallet, InjectedWalletDetectionOptions, InjectedWalletDiscovery,

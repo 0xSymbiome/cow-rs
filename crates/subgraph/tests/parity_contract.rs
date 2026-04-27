@@ -89,7 +89,8 @@ fn assert_prod_url_resolution(id: &str, expected: &Value) {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("redacted-for-test")
-        .build();
+        .build()
+        .expect("default subgraph client must build");
     let prod_config = api.prod_config();
 
     let supported = expected["supported_urls"]
@@ -358,7 +359,8 @@ fn assert_unsupported_network_error(id: &str, expected: &Value) {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("redacted-for-test")
-        .build();
+        .build()
+        .expect("default subgraph client must build");
     let prod_config = api.prod_config();
     let polygon = prod_config
         .get(&SupportedChainId::Polygon)

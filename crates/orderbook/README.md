@@ -28,7 +28,8 @@ use cow_sdk_orderbook::{CowEnv, OrderBookApi, SupportedChainId};
 let _api = OrderBookApi::builder()
     .chain(SupportedChainId::Sepolia)
     .environment(CowEnv::Prod)
-    .build();
+    .build()
+    .expect("orderbook client builds with canonical defaults");
 ```
 
 ## Where to next

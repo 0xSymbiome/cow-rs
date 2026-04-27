@@ -27,7 +27,8 @@
 //! let api = SubgraphApi::builder()
 //!     .chain(SupportedChainId::Mainnet)
 //!     .api_key("partner-graph-api-key")
-//!     .build();
+//!     .build()
+//!     .expect("subgraph client builds with canonical defaults");
 //! let _ = api;
 //! # }
 //! ```
@@ -35,7 +36,10 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use cow_sdk_core::{HttpTransport, Redacted, SupportedChainId};
+use cow_sdk_core::{
+    ExternalHostPolicy, HttpTransport, Redacted, SupportedChainId, canonical_subgraph_hosts,
+    validate_external_service_url,
+};
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
 #[cfg(not(target_arch = "wasm32"))]
@@ -46,6 +50,7 @@ use crate::api::DEFAULT_SUBGRAPH_USER_AGENT;
 use crate::api::{
     SubgraphApi, SubgraphApiBaseUrls, SubgraphConfig, SubgraphTransportPolicy, build_prod_config,
 };
+use crate::error::SubgraphError;
 
 /// Typestate marker — chain id has not been supplied.
 #[derive(Debug, Clone, Copy)]
@@ -86,6 +91,7 @@ pub struct SubgraphApiBuilder<
     transport: Option<Arc<dyn HttpTransport + Send + Sync>>,
     transport_policy: Option<SubgraphTransportPolicy>,
     base_urls: Option<SubgraphApiBaseUrls>,
+    host_policy: ExternalHostPolicy,
     _phantom: PhantomData<(ChainState, ApiKeyState, TransportState)>,
 }
 
@@ -105,6 +111,7 @@ impl SubgraphApiBuilder<ChainIdUnset, ApiKeyUnset, TransportUnset> {
             transport: None,
             transport_policy: None,
             base_urls: None,
+            host_policy: ExternalHostPolicy::Default,
             _phantom: PhantomData,
         }
     }
@@ -122,6 +129,7 @@ impl<A, T> SubgraphApiBuilder<ChainIdUnset, A, T> {
             transport: self.transport,
             transport_policy: self.transport_policy,
             base_urls: self.base_urls,
+            host_policy: self.host_policy,
             _phantom: PhantomData,
         }
     }
@@ -142,6 +150,7 @@ impl<C, T> SubgraphApiBuilder<C, ApiKeyUnset, T> {
             transport: self.transport,
             transport_policy: self.transport_policy,
             base_urls: self.base_urls,
+            host_policy: self.host_policy,
             _phantom: PhantomData,
         }
     }
@@ -164,6 +173,7 @@ impl<C, A> SubgraphApiBuilder<C, A, TransportUnset> {
             transport: Some(transport),
             transport_policy: self.transport_policy,
             base_urls: self.base_urls,
+            host_policy: self.host_policy,
             _phantom: PhantomData,
         }
     }
@@ -201,6 +211,18 @@ impl<C, A, T> SubgraphApiBuilder<C, A, T> {
         self
     }
 
+    /// Sets the external host policy used to validate explicit subgraph
+    /// service endpoint overrides.
+    ///
+    /// The default accepts only the SDK's canonical The Graph gateway host.
+    /// Local fixtures should use [`ExternalHostPolicy::Test`], and private
+    /// mirrors should use [`ExternalHostPolicy::Allow`] with the mirror host.
+    #[must_use]
+    pub fn with_external_host_policy(mut self, policy: ExternalHostPolicy) -> Self {
+        self.host_policy = policy;
+        self
+    }
+
     /// Supplies an explicit per-chain base-URL map.
     ///
     /// Each entry overrides the production routing derived from the
@@ -212,7 +234,12 @@ impl<C, A, T> SubgraphApiBuilder<C, A, T> {
         self
     }
 
-    fn finish(self, transport: Arc<dyn HttpTransport + Send + Sync>) -> SubgraphApi {
+    fn finish(
+        self,
+        transport: Arc<dyn HttpTransport + Send + Sync>,
+    ) -> Result<SubgraphApi, SubgraphError> {
+        validate_subgraph_base_urls(self.base_urls.as_ref(), &self.host_policy)?;
+
         let chain = self
             .chain
             .expect("typestate guarantees chain id is supplied at build time");
@@ -225,7 +252,13 @@ impl<C, A, T> SubgraphApiBuilder<C, A, T> {
             chain_id: chain,
             base_urls: self.base_urls,
         };
-        SubgraphApi::from_parts(config, api_key, prod_config, transport_policy, transport)
+        Ok(SubgraphApi::from_parts(
+            config,
+            api_key,
+            prod_config,
+            transport_policy,
+            transport,
+        ))
     }
 }
 
@@ -233,15 +266,16 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportSet> {
     /// Builds the [`SubgraphApi`] with the supplied chain, API key, and
     /// transport.
     ///
+    /// # Errors
+    ///
+    /// Returns [`SubgraphError`] when explicit base-URL overrides fail the
+    /// configured external host policy.
+    ///
     /// # Panics
     ///
-    /// Panics only if the typestate invariant is violated by an
-    /// unsupported transmute of the builder's marker types; the
-    /// typestate guarantees the transport, chain id, and API key are
-    /// all populated by the time this method is reachable, so the panic
-    /// is not reachable from safe code.
-    #[must_use]
-    pub fn build(self) -> SubgraphApi {
+    /// Panics only if the typestate marker is bypassed and the required
+    /// transport is missing at build time.
+    pub fn build(self) -> Result<SubgraphApi, SubgraphError> {
         let transport = self
             .transport
             .clone()
@@ -260,14 +294,18 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset> {
     /// [`SubgraphApiBuilder::transport`] with a `FetchTransport` before
     /// reaching `build`.
     ///
+    /// # Errors
+    ///
+    /// Returns [`SubgraphError`] when explicit base-URL overrides fail the
+    /// configured external host policy.
+    ///
     /// # Panics
     ///
     /// Panics only if the validated user-agent for the default native
     /// [`ReqwestTransport`] cannot be encoded as an HTTP header value;
     /// the workspace-shipped default carries a header-safe user-agent
     /// literal so the panic is not reachable from safe code.
-    #[must_use]
-    pub fn build(self) -> SubgraphApi {
+    pub fn build(self) -> Result<SubgraphApi, SubgraphError> {
         let user_agent = self
             .transport_policy
             .as_ref()
@@ -287,6 +325,19 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset> {
             .expect("default ReqwestTransport must build with the validated user-agent");
         self.finish(Arc::new(transport))
     }
+}
+
+fn validate_subgraph_base_urls(
+    base_urls: Option<&SubgraphApiBaseUrls>,
+    policy: &ExternalHostPolicy,
+) -> Result<(), SubgraphError> {
+    if let Some(base_urls) = base_urls {
+        for base_url in base_urls.as_inner().values().flatten() {
+            validate_external_service_url(base_url, canonical_subgraph_hosts(), policy)?;
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

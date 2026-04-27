@@ -7,7 +7,7 @@ use wiremock::{
 };
 
 use cow_sdk::orderbook::{
-    ApiContext, OrderCreation, OrderQuoteRequest, PriceQuality, QuoteSide,
+    ApiContext, ExternalHostPolicy, OrderCreation, OrderQuoteRequest, PriceQuality, QuoteSide,
     SigningScheme as OrderbookSigningScheme,
 };
 use cow_sdk::prelude::{Amount, CowEnv, OrderBookApi, SupportedChainId};
@@ -55,8 +55,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let api = OrderBookApi::builder_from_context(
         ApiContext::new(SupportedChainId::Sepolia, CowEnv::Prod),
     )
+    .with_external_host_policy(ExternalHostPolicy::Test)
     .base_url(server.uri())
-    .build();
+    .build()?;
 
     let version = api.get_version().await?;
     let quote_request = OrderQuoteRequest::new(

@@ -154,6 +154,15 @@ pub enum ContractsError {
         /// Rejected recovery byte value.
         value: u8,
     },
+    /// A non-ECDSA signature variant was passed to an ECDSA-only helper.
+    #[error("signature scheme is not ECDSA")]
+    SignatureSchemeNotEcdsa,
+    /// ECDSA public-key recovery failed.
+    #[error("ECDSA signature recovery failed: {message}")]
+    SignatureRecovery {
+        /// Sanitized recovery failure description from the backend.
+        message: String,
+    },
 }
 
 impl From<Cancelled> for ContractsError {

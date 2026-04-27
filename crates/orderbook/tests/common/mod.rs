@@ -14,8 +14,8 @@
 use serde_json::{Value, json};
 
 use cow_sdk_orderbook::{
-    Address, ApiContext, AppDataHash, CowEnv, OrderBookApi, OrderBookTransportPolicy, OrderUid,
-    SupportedChainId,
+    Address, ApiContext, AppDataHash, CowEnv, ExternalHostPolicy, OrderBookApi,
+    OrderBookTransportPolicy, OrderUid, SupportedChainId,
 };
 
 pub fn address(value: &str) -> Address {
@@ -35,7 +35,9 @@ pub fn default_context(chain_id: SupportedChainId, env: CowEnv) -> ApiContext {
 }
 
 pub fn build_orderbook_api(context: ApiContext) -> OrderBookApi {
-    OrderBookApi::builder_from_context(context).build()
+    OrderBookApi::builder_from_context(context)
+        .build()
+        .expect("default orderbook test client must build")
 }
 
 pub fn build_orderbook_api_with_base_url(
@@ -43,8 +45,10 @@ pub fn build_orderbook_api_with_base_url(
     base_url: impl Into<String>,
 ) -> OrderBookApi {
     OrderBookApi::builder_from_context(context)
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .base_url(base_url)
         .build()
+        .expect("orderbook test client with loopback base URL must build")
 }
 
 pub fn build_orderbook_api_with_policy(
@@ -54,6 +58,7 @@ pub fn build_orderbook_api_with_policy(
     OrderBookApi::builder_from_context(context)
         .policy(policy)
         .build()
+        .expect("orderbook test client with custom policy must build")
 }
 
 pub fn build_orderbook_api_with_shared_client(
@@ -61,8 +66,10 @@ pub fn build_orderbook_api_with_shared_client(
     context: ApiContext,
 ) -> OrderBookApi {
     OrderBookApi::builder_from_context(context)
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .client(client)
         .build()
+        .expect("orderbook test client with shared client must build")
 }
 
 pub fn sample_order_uid() -> OrderUid {

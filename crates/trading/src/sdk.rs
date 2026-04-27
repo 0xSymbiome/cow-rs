@@ -1346,7 +1346,7 @@ impl TradingSdk {
             let client = OrderBookApi::builder()
                 .chain(chain_id)
                 .environment(env)
-                .build();
+                .build()?;
             Ok(ResolvedOrderbookBinding {
                 client: Arc::new(client),
                 chain_id,

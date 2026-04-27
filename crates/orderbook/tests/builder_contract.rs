@@ -17,7 +17,7 @@ use cow_sdk_core::{
     ReqwestTransportConfig, SupportedChainId, TransportError,
 };
 use cow_sdk_orderbook::{
-    EnvBaseUrlOverrides, OrderBookApi, OrderBookTransportPolicy, RequestPolicy,
+    EnvBaseUrlOverrides, ExternalHostPolicy, OrderBookApi, OrderBookTransportPolicy, RequestPolicy,
 };
 
 #[derive(Debug, Default)]
@@ -68,7 +68,8 @@ fn build_with_required_inputs_yields_a_typed_api() {
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .transport(Arc::new(StubTransport))
-        .build();
+        .build()
+        .expect("orderbook client with explicit transport must build");
 
     assert_eq!(api.context().chain_id, SupportedChainId::Mainnet);
     assert_eq!(api.context().env, CowEnv::Prod);
@@ -79,7 +80,8 @@ fn native_default_build_path_supplies_a_reqwest_transport() {
     let api = OrderBookApi::builder()
         .chain(SupportedChainId::Sepolia)
         .environment(CowEnv::Staging)
-        .build();
+        .build()
+        .expect("default orderbook client must build");
 
     assert_eq!(api.context().chain_id, SupportedChainId::Sepolia);
     assert_eq!(api.context().env, CowEnv::Staging);
@@ -96,7 +98,12 @@ fn builder_from_context_propagates_chain_environment_api_key_and_base_urls() {
         .with_api_key(cow_sdk_core::Redacted::new("partner-key".to_owned()))
         .with_base_urls(base_urls.clone());
 
-    let api = OrderBookApi::builder_from_context(context).build();
+    let api = OrderBookApi::builder_from_context(context)
+        .with_external_host_policy(ExternalHostPolicy::Allow(vec![
+            "shipped.example".to_owned(),
+        ]))
+        .build()
+        .expect("orderbook client with allowed custom host must build");
 
     assert_eq!(api.context().chain_id, SupportedChainId::Mainnet);
     assert_eq!(api.context().env, CowEnv::Prod);
@@ -173,7 +180,8 @@ fn policy_override_replaces_default_request_policy() {
         .environment(CowEnv::Prod)
         .policy(policy)
         .transport(Arc::new(StubTransport))
-        .build();
+        .build()
+        .expect("orderbook client with policy override must build");
 
     assert_eq!(api.request_policy().max_attempts, 1);
 }
@@ -192,7 +200,8 @@ fn explicit_transport_overrides_default_native_handle() {
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .transport(transport.clone())
-        .build();
+        .build()
+        .expect("orderbook client with explicit transport must build");
 
     assert!(Arc::ptr_eq(api.transport(), &transport));
 }
@@ -298,7 +307,8 @@ async fn injected_transport_observes_every_live_request_from_the_built_client() 
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .transport(transport.clone())
-        .build();
+        .build()
+        .expect("orderbook client with injected transport must build");
 
     assert!(Arc::ptr_eq(api.transport(), &transport));
 
@@ -339,12 +349,14 @@ fn shared_client_override_reuses_caller_built_reqwest_client() {
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .client(shared.clone())
-        .build();
+        .build()
+        .expect("first shared-client orderbook handle must build");
     let _ = OrderBookApi::builder()
         .chain(SupportedChainId::GnosisChain)
         .environment(CowEnv::Prod)
         .client(shared)
-        .build();
+        .build()
+        .expect("second shared-client orderbook handle must build");
 }
 
 /// Compile-time assertion: `.build()` is unreachable when the chain id is

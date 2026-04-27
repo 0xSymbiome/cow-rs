@@ -35,3 +35,5 @@ pub use types::{
     DailyTotal, HourlyTotal, LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphQueryRequest,
     Total, TotalsResponse,
 };
+
+pub use cow_sdk_core::{ExternalHostPolicy, HostPolicyError};

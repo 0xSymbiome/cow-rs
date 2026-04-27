@@ -56,6 +56,18 @@ pub const QUOTE_AMOUNT_STAGE_NAMES: [&str; 7] = [
 /// same address are treated as equal. [`Address::as_str`] preserves the original
 /// input casing exactly, while [`Address::normalized_key`] exposes the lowercase
 /// form used for those comparisons.
+///
+/// ```compile_fail
+/// use cow_sdk_core::Address;
+///
+/// let _: Address = String::from("0x0000000000000000000000000000000000000001").into();
+/// ```
+///
+/// ```compile_fail
+/// use cow_sdk_core::Address;
+///
+/// let _: Address = "0x0000000000000000000000000000000000000001".into();
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct Address(String);
@@ -196,6 +208,18 @@ impl fmt::Display for Address {
 }
 
 /// Validated hex payload used for calldata and byte blobs.
+///
+/// ```compile_fail
+/// use cow_sdk_core::HexData;
+///
+/// let _: HexData = String::from("0x1234").into();
+/// ```
+///
+/// ```compile_fail
+/// use cow_sdk_core::HexData;
+///
+/// let _: HexData = "0x1234".into();
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct HexData(String);
@@ -284,6 +308,21 @@ impl fmt::Display for HexData {
 }
 
 /// Validated 32-byte app-data hash string.
+///
+/// ```compile_fail
+/// use cow_sdk_core::AppDataHash;
+///
+/// let _: AppDataHash =
+///     String::from("0x0000000000000000000000000000000000000000000000000000000000000000")
+///         .into();
+/// ```
+///
+/// ```compile_fail
+/// use cow_sdk_core::AppDataHash;
+///
+/// let _: AppDataHash =
+///     "0x0000000000000000000000000000000000000000000000000000000000000000".into();
+/// ```
 #[doc(alias = "app-data")]
 #[doc(alias = "AppData")]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -384,6 +423,21 @@ impl fmt::Display for AppDataHash {
 pub type AppDataHex = AppDataHash;
 
 /// Generic validated 32-byte hash wrapper for user-domain and contract surfaces.
+///
+/// ```compile_fail
+/// use cow_sdk_core::Hash32;
+///
+/// let _: Hash32 =
+///     String::from("0x0000000000000000000000000000000000000000000000000000000000000000")
+///         .into();
+/// ```
+///
+/// ```compile_fail
+/// use cow_sdk_core::Hash32;
+///
+/// let _: Hash32 =
+///     "0x0000000000000000000000000000000000000000000000000000000000000000".into();
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct Hash32(String);
@@ -486,6 +540,23 @@ pub type BlockHash = Hash32;
 pub type OrderDigest = Hash32;
 
 /// Validated `CoW` order UID string.
+///
+/// ```compile_fail
+/// use cow_sdk_core::OrderUid;
+///
+/// let _: OrderUid = String::from(
+///     "0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710",
+/// )
+/// .into();
+/// ```
+///
+/// ```compile_fail
+/// use cow_sdk_core::OrderUid;
+///
+/// let _: OrderUid =
+///     "0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710"
+///         .into();
+/// ```
 #[doc(alias = "UID")]
 #[doc(alias = "Uid")]
 #[doc(alias = "order-id")]
@@ -692,6 +763,18 @@ impl fmt::Display for ValidTo {
 ///
 /// For decimal-aware values that also carry a scale, see
 /// [`DecimalAmount`]. For signed quantities, see [`SignedAmount`].
+///
+/// ```compile_fail
+/// use cow_sdk_core::Amount;
+///
+/// let _: Amount = String::from("1").into();
+/// ```
+///
+/// ```compile_fail
+/// use cow_sdk_core::Amount;
+///
+/// let _: Amount = "1".into();
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Amount(BigUint);
 

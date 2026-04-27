@@ -19,7 +19,9 @@
 //! ```
 
 use cow_sdk_core::SupportedChainId;
-use cow_sdk_subgraph::{SubgraphApi, SubgraphApiBaseUrls, SubgraphQueryRequest, Total};
+use cow_sdk_subgraph::{
+    ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls, SubgraphQueryRequest, Total,
+};
 use serde_json::{Value, json};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -126,6 +128,8 @@ fn api_pointed_at(server: &MockServer) -> SubgraphApi {
     SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("example-api-key")
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
         .build()
+        .expect("subgraph example client with local mock endpoint must build")
 }

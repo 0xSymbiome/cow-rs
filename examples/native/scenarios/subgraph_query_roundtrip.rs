@@ -7,7 +7,7 @@ use wiremock::{
 };
 
 use cow_sdk::prelude::SupportedChainId;
-use cow_sdk_subgraph::SubgraphApi;
+use cow_sdk_subgraph::{ExternalHostPolicy, SubgraphApi};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -69,8 +69,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("review-key")
+        .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
-        .build();
+        .build()?;
 
     let totals = api.get_totals().await?;
     let last_days = api.get_last_days_volume(7).await?;

@@ -61,7 +61,7 @@ use cow_sdk::{OrderBookApi, SupportedChainId};
 let orderbook = OrderBookApi::builder()
     .chain(SupportedChainId::Mainnet)
     .environment(/* prod | staging */)
-    .build();
+    .build()?;
 ```
 
 For explicit control, build a `ReqwestTransport` from a configuration:
@@ -99,7 +99,7 @@ let orderbook = OrderBookApi::builder()
     .chain(SupportedChainId::Mainnet)
     .environment(/* prod | staging */)
     .transport(transport)
-    .build();
+    .build()?;
 ```
 
 `FetchTransport` uses the default fetch redirect policy (auto-follow),
@@ -197,7 +197,7 @@ let orderbook = OrderBookApi::builder()
     .chain(SupportedChainId::Mainnet)
     .environment(/* prod | staging */)
     .transport(transport)
-    .build();
+    .build()?;
 ```
 
 The same pattern works for bridging deployments, custom retry layers,

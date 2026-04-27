@@ -160,8 +160,12 @@ fn assert_base_url_resolution(id: &str, expected: &Value) {
     let ctx_no_key = ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod);
     let ctx_with_key = ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod)
         .with_api_key(Redacted::new("partner-key".to_owned()));
-    let api_no_key = OrderBookApi::builder_from_context(ctx_no_key).build();
-    let api_with_key = OrderBookApi::builder_from_context(ctx_with_key).build();
+    let api_no_key = OrderBookApi::builder_from_context(ctx_no_key)
+        .build()
+        .expect("default orderbook client must build");
+    let api_with_key = OrderBookApi::builder_from_context(ctx_with_key)
+        .build()
+        .expect("partner orderbook client must build");
     let base_no_key = api_no_key
         .effective_base_url()
         .expect("prod mainnet without API key must resolve");
@@ -202,12 +206,14 @@ fn assert_get_order_endpoints(id: &str, case: &Value, expected: &Value) {
         SupportedChainId::GnosisChain,
         CowEnv::Prod,
     ))
-    .build();
+    .build()
+    .expect("default orderbook client must build");
     let mainnet_api = OrderBookApi::builder_from_context(ApiContext::new(
         SupportedChainId::Mainnet,
         CowEnv::Prod,
     ))
-    .build();
+    .build()
+    .expect("default orderbook client must build");
     let gnosis_uid = cow_sdk_core::OrderUid::new(uid).expect("fixture UID must round-trip");
     let mainnet_uid = cow_sdk_core::OrderUid::new(uid).expect("fixture UID must round-trip");
 
@@ -249,7 +255,8 @@ fn assert_get_order_multi_env_fallback(id: &str, expected: &Value) {
         SupportedChainId::Mainnet,
         CowEnv::Prod,
     ))
-    .build();
+    .build()
+    .expect("default orderbook client must build");
 }
 
 fn assert_get_orders_pagination(id: &str, expected: &Value) {

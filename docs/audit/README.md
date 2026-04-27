@@ -59,7 +59,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [HTTP Transport Contract Audit](http-transport-contract-audit.md) | Standing audit | `cow-sdk-core::HttpTransport` trait and its native and browser default adapters | Trait shape, typed `TransportError`, additive response-header surface, orderbook `Retry-After` cooldown honor, URL-redaction contract, and cross-adapter classification parity | Current | 2026-04-24 |
-| [Typestate Builder Contract Audit](typestate-builder-contract-audit.md) | Standing audit | `cow-sdk-orderbook::OrderBookApiBuilder` and `cow-sdk-subgraph::SubgraphApiBuilder` construction seams | Required-input typestate, marker sealing, native default-transport convenience, wasm32 transport-required invariant, and retirement of legacy free-function constructors | Current | 2026-04-25 |
+| [Typestate Builder Contract Audit](typestate-builder-contract-audit.md) | Standing audit | `cow-sdk-orderbook::OrderBookApiBuilder` and `cow-sdk-subgraph::SubgraphApiBuilder` construction seams | Required-input typestate, marker sealing, host-policy validation, native default-transport convenience, wasm32 transport-required invariant, and retirement of legacy free-function constructors | Current | 2026-04-27 |
 
 ## Signature Verification Caching
 
@@ -71,13 +71,14 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [ECDSA Signature Normalization Audit](ecdsa-signature-normalization-audit.md) | Standing audit | `cow_sdk_contracts::normalized_ecdsa_signature` | 65-byte recoverable-signature normalization, typed failure semantics, downstream signing-path reuse, and parity plus fuzz evidence for the reviewed `27` / `28` contract | Current | 2026-04-23 |
+| [ECDSA Signature Normalization Audit](ecdsa-signature-normalization-audit.md) | Standing audit | `cow_sdk_contracts::normalized_ecdsa_signature` and `Signature::recover_ecdsa_address` | 65-byte recoverable-signature normalization, typed failure semantics, ECDSA address recovery, declared-address extraction, and parity plus fuzz evidence for the reviewed `27` / `28` contract | Current | 2026-04-27 |
 
 ## Browser Wallet
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Browser Wallet Chain Coherence Audit](browser-wallet-chain-coherence-audit.md) | Standing audit | `cow-sdk-browser-wallet` chain-bound signer and typed chain-management contract | Wallet-session chain coherence for browser-wallet-backed flows | Current | 2026-04-21 |
+| [Browser Wallet Trust Posture Audit](browser-wallet-trust-posture-audit.md) | Standing audit | `cow-sdk-browser-wallet` EIP-1193 provider construction and wallet chain-management URL payloads | EIP-6963 provider metadata trust, explicit origin opt-in for anonymous providers, redacted trust failures, and wallet URL payload boundaries | Current | 2026-04-27 |
 | [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md) | Standing audit | `cow-sdk-browser-wallet` ABI helper family and reachable alloy proc-macro advisories | Adoption of `alloy-primitives`, `alloy-dyn-abi`, and `alloy-json-abi` with revisit triggers for the two proc-macro advisories they transit | Current | 2026-04-21 |
 
 ## WASM Example Proof Posture
@@ -129,7 +130,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, `Redacted<T>` wrapper, transport error redaction, and typed user policy | Current | 2026-04-21 |
-| [Credential Surface Audit](credential-surface-audit.md) | Standing audit | Credential-bearing builder storage and Pinata upload-trait headers across orderbook, subgraph, and app-data | `Redacted<String>` storage on orderbook and subgraph builders plus typed-redacted header values at the Pinata upload boundary | Current | 2026-04-23 |
+| [Credential Surface Audit](credential-surface-audit.md) | Standing audit | Credential-bearing builder storage, URL configuration, host-policy errors, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, and app-data | Redacted credential storage plus sanitized host-policy failures and typed-redacted header values at the Pinata upload boundary | Current | 2026-04-27 |
 | [URL Credential Redaction Audit](url-credential-redaction-audit.md) | Standing audit | URL-bearing public configuration across core, orderbook, subgraph, browser-wallet, and app-data | Redacting URL map and URL value wrappers for public diagnostics with explicit raw dispatch access at HTTP and wallet payload seams | Current | 2026-04-27 |
 | [Shared Logic Reviewability Audit](shared-logic-reviewability-audit.md) | Standing audit | Orderbook, signing, and trading shared-logic reviewability boundary | Shared request execution, signing payload preparation, thin posting wrappers, and justified DTO separation | Current | 2026-04-21 |
 | [Cooperative Cancellation Contract Audit](cooperative-cancellation-contract-audit.md) | Standing audit | Cross-cutting cooperative cancellation across core, orderbook, subgraph, and trading | Shared `CancellationToken` re-export, the `Cancellable` extension-trait combinator composed at the call site on every long-running public operation of `OrderBookApi`, `SubgraphApi`, and `TradingSdk`, typed `Cancelled` variants with `From<Cancelled>` bridges on every affected error aggregate, and biased-poll drop semantics | Current | 2026-04-21 |

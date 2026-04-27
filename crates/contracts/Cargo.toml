@@ -25,6 +25,7 @@ default = []
 tracing = ["dep:tracing"]
 
 [dependencies]
+alloy-primitives = { workspace = true, features = ["k256"] }
 alloy-sol-macro.workspace = true
 alloy-sol-types.workspace = true
 bytes.workspace = true
@@ -44,6 +45,7 @@ toml.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true
+k256 = { version = "0.13.4", default-features = false, features = ["ecdsa"] }
 proptest.workspace = true
 serde_json.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

@@ -174,12 +174,14 @@ fn assemble_sdk_clients(
         .chain(chain)
         .environment(environment)
         .client(shared.clone())
-        .build();
+        .build()
+        .expect("orderbook client builds with canonical defaults");
     let subgraph = SubgraphApi::builder()
         .chain(chain)
         .api_key(subgraph_api_key)
         .client(shared)
-        .build();
+        .build()
+        .expect("subgraph client builds with canonical defaults");
     (orderbook, subgraph)
 }
 ```

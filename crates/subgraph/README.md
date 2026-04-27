@@ -26,7 +26,8 @@ use cow_sdk_subgraph::SubgraphApi;
 let _api = SubgraphApi::builder()
     .chain(SupportedChainId::Mainnet)
     .api_key("your-subgraph-api-key")
-    .build();
+    .build()
+    .expect("subgraph client builds with canonical defaults");
 ```
 
 ## Where to next

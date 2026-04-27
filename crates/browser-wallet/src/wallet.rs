@@ -12,8 +12,8 @@ use serde_json::{Value, json};
 use cow_sdk_core::{Address, ChainId, Redacted, SupportedChainId};
 
 use crate::{
-    BrowserWalletError, Eip1193Provider, Eip1193Signer, Eip1193Transport, EventLog, WalletSession,
-    provider::{Eip1193Provider as ProviderImpl, hex_quantity},
+    BrowserWalletError, Eip1193Provider, Eip1193ProviderBuilder, Eip1193Signer, Eip1193Transport,
+    EventLog, Origin, WalletSession, provider::hex_quantity,
 };
 
 /// Source used to discover one injected wallet candidate.
@@ -474,10 +474,7 @@ impl InjectedWalletDiscovery {
         let wallet = self.wallets.get(index).ok_or_else(|| {
             BrowserWalletError::discovery_selection_out_of_range(index, self.wallets.len())
         })?;
-        Ok(BrowserWallet::from_parts(
-            wallet.transport.clone(),
-            Some(wallet.info.clone()),
-        ))
+        BrowserWallet::from_parts(wallet.transport.clone(), Some(wallet.info.clone()))
     }
 
     /// Returns the only discovered wallet when exactly one candidate exists.
@@ -519,12 +516,55 @@ pub struct BrowserWallet {
 
 impl BrowserWallet {
     /// Creates a browser-wallet handle from one typed EIP-1193 transport.
+    ///
+    /// This compatibility constructor is intended for deterministic test and
+    /// review transports supplied directly by Rust code. Browser-injected
+    /// providers should use discovery or [`Eip1193ProviderBuilder`] so the
+    /// provider origin is explicit.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the transport label cannot be represented as a local origin
+    /// label, or if the explicitly trusted transport cannot construct a
+    /// provider. Use [`Self::from_trusted_transport`] to handle construction
+    /// errors explicitly.
     #[must_use]
     pub fn from_transport<T>(transport: T) -> Self
     where
         T: Eip1193Transport + 'static,
     {
-        Self::from_parts(Rc::new(transport), None)
+        let origin = Origin::new(format!("transport:{}", transport.label()))
+            .expect("transport label must produce a valid local origin label");
+        Self::from_trusted_transport(transport, origin)
+            .expect("explicitly trusted Rust transport must build")
+    }
+
+    /// Creates a browser-wallet handle from a non-discovered provider origin
+    /// that has been reviewed by the caller.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`BrowserWalletError`] when provider construction fails.
+    pub fn from_trusted_transport<T>(
+        transport: T,
+        origin: Origin,
+    ) -> Result<Self, BrowserWalletError>
+    where
+        T: Eip1193Transport + 'static,
+    {
+        Self::from_provider_builder(
+            Eip1193ProviderBuilder::new(transport).with_trusted_origin(origin),
+            None,
+        )
+    }
+
+    /// Returns a trust-aware provider builder for custom EIP-1193 transports.
+    #[must_use]
+    pub fn provider_builder<T>(transport: T) -> Eip1193ProviderBuilder
+    where
+        T: Eip1193Transport + 'static,
+    {
+        Eip1193ProviderBuilder::new(transport)
     }
 
     /// Returns injected-wallet metadata when this wallet originated from discovery or detection.
@@ -881,16 +921,39 @@ impl BrowserWallet {
     /// Detects the legacy `window.ethereum` provider directly.
     ///
     /// This is a compatibility helper and is not the preferred multi-wallet discovery contract.
+    /// Legacy direct detection does not provide EIP-6963 origin metadata, so callers that accept
+    /// the result should use [`Self::detect_with_trusted_origin`] unless their runtime has been
+    /// upgraded to EIP-6963 discovery.
     ///
     /// # Errors
     ///
-    /// Returns an error when the browser runtime cannot read the provider binding.
+    /// Returns an error when the browser runtime cannot read the provider binding or when the
+    /// detected provider lacks EIP-6963 trust metadata.
     pub fn detect() -> Result<Option<Self>, BrowserWalletError> {
         let Some(transport) = crate::js::InjectedProviderTransport::detect_legacy()? else {
             return Ok(None);
         };
         let info = transport.info();
-        Ok(Some(Self::from_parts(Rc::new(transport), Some(info))))
+        Self::from_parts(Rc::new(transport), Some(info)).map(Some)
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    /// Detects the legacy `window.ethereum` provider with an explicitly reviewed origin.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the browser runtime cannot read the provider binding or provider
+    /// construction fails.
+    pub fn detect_with_trusted_origin(origin: Origin) -> Result<Option<Self>, BrowserWalletError> {
+        let Some(transport) = crate::js::InjectedProviderTransport::detect_legacy()? else {
+            return Ok(None);
+        };
+        let info = transport.info();
+        Self::from_provider_builder(
+            Eip1193ProviderBuilder::from_shared(Rc::new(transport)).with_trusted_origin(origin),
+            Some(info),
+        )
+        .map(Some)
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -909,21 +972,43 @@ impl BrowserWallet {
     fn from_parts(
         transport: Rc<dyn Eip1193Transport>,
         injected_info: Option<InjectedWalletInfo>,
-    ) -> Self {
+    ) -> Result<Self, BrowserWalletError> {
+        let builder = provider_builder_for_injected_info(transport, injected_info.as_ref())?;
+        Self::from_provider_builder(builder, injected_info)
+    }
+
+    fn from_provider_builder(
+        builder: Eip1193ProviderBuilder,
+        injected_info: Option<InjectedWalletInfo>,
+    ) -> Result<Self, BrowserWalletError> {
         let events = EventLog::default();
         let session = Rc::new(RefCell::new(WalletSession::new(
             false,
             None,
             Vec::new(),
             None,
-            transport.label().to_owned(),
+            "unknown wallet".to_owned(),
         )));
-        let provider = ProviderImpl::new(transport, session, events);
-        Self {
+        let provider = builder.build_with_session(session, events)?;
+        Ok(Self {
             provider,
             injected_info,
-        }
+        })
     }
+}
+
+fn provider_builder_for_injected_info(
+    transport: Rc<dyn Eip1193Transport>,
+    injected_info: Option<&InjectedWalletInfo>,
+) -> Result<Eip1193ProviderBuilder, BrowserWalletError> {
+    let mut builder = Eip1193ProviderBuilder::from_shared(transport);
+    if let Some(info) = injected_info
+        && info.discovery_source == InjectedWalletDiscoverySource::Eip6963
+        && let Some(rdns) = &info.provider_rdns
+    {
+        builder = builder.with_detected_origin(Origin::new(rdns.clone())?);
+    }
+    Ok(builder)
 }
 
 fn validate_wallet_text(
@@ -1018,13 +1103,20 @@ mod tests {
             .map(|(label, source)| {
                 let transport: Rc<dyn Eip1193Transport> =
                     Rc::new(MockEip1193Transport::sepolia().with_label(*label));
+                let provider_rdns =
+                    (*source == InjectedWalletDiscoverySource::Eip6963).then(|| {
+                        format!(
+                            "{}.wallet.test",
+                            label.to_ascii_lowercase().replace(' ', "-")
+                        )
+                    });
                 (
                     transport,
                     InjectedWalletInfo::new(
                         (*label).to_owned(),
                         *source,
                         None,
-                        None,
+                        provider_rdns,
                         None,
                         false,
                         false,

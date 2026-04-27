@@ -1,4 +1,4 @@
-use cow_sdk_core::{Cancelled, CoreError, TransportErrorClass, ValidationReason};
+use cow_sdk_core::{Cancelled, CoreError, HostPolicyError, TransportErrorClass, ValidationReason};
 use http::StatusCode;
 use thiserror::Error;
 
@@ -37,6 +37,9 @@ pub enum OrderbookError {
         /// Redacted detail message sourced from the transport layer.
         detail: String,
     },
+    /// Explicit service endpoint override failed host-policy validation.
+    #[error(transparent)]
+    HostPolicy(#[from] HostPolicyError),
     /// JSON or text decoding failure while parsing a successful or error response.
     #[error("serialization error: {0}")]
     Serialization(#[from] serde_json::Error),

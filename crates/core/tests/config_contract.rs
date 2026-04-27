@@ -1,8 +1,10 @@
 use std::collections::BTreeMap;
 
 use cow_sdk_core::{
-    Address, ApiContext, CoreError, CowEnv, ENVS_LIST, ProtocolOptions, SupportedChainId,
-    ValidationError, default_api_base_urls, wrapped_native_token,
+    Address, ApiContext, CoreError, CowEnv, ENVS_LIST, ExternalHostPolicy, HostPolicyError,
+    ProtocolOptions, SupportedChainId, UrlParseFailureClass, ValidationError,
+    canonical_orderbook_hosts, default_api_base_urls, validate_external_service_url,
+    wrapped_native_token,
 };
 
 fn core_fixture() -> serde_json::Value {
@@ -166,4 +168,97 @@ fn protocol_constants_surface_byte_equivalent_addresses_across_every_accessor() 
     // address registry at `crates/contracts/tests/registry.rs`; the
     // legacy `(SupportedChainId, CowEnv)` accessors in this crate have
     // been retired in favour of the typed `Registry` surface.
+}
+
+#[test]
+fn external_host_policy_accepts_canonical_and_explicit_hosts_only() {
+    let canonical = canonical_orderbook_hosts();
+
+    validate_external_service_url(
+        "https://api.cow.fi/mainnet",
+        canonical,
+        &ExternalHostPolicy::Default,
+    )
+    .unwrap();
+
+    let blocked = validate_external_service_url(
+        "https://user:pass@mirror.example/mainnet?token=secret",
+        canonical,
+        &ExternalHostPolicy::Default,
+    )
+    .unwrap_err();
+    assert!(matches!(blocked, HostPolicyError::HostNotAllowed { .. }));
+
+    let display = blocked.to_string();
+    let debug = format!("{blocked:?}");
+    let json = serde_json::to_string(&blocked).unwrap();
+    for rendered in [display, debug, json] {
+        assert!(rendered.contains("[redacted]"));
+        assert!(!rendered.contains("user:pass"));
+        assert!(!rendered.contains("token=secret"));
+        assert!(!rendered.contains("mirror.example"));
+    }
+
+    validate_external_service_url(
+        "https://mirror.example/mainnet",
+        canonical,
+        &ExternalHostPolicy::Allow(vec!["mirror.example".to_owned()]),
+    )
+    .unwrap();
+    validate_external_service_url(
+        "https://arbitrary.example/mainnet",
+        canonical,
+        &ExternalHostPolicy::AllowAny,
+    )
+    .unwrap();
+}
+
+#[test]
+fn external_host_policy_classifies_parse_scheme_and_loopback_cases() {
+    let canonical = canonical_orderbook_hosts();
+
+    let parse_error = validate_external_service_url(
+        "api.cow.fi/mainnet",
+        canonical,
+        &ExternalHostPolicy::Default,
+    )
+    .unwrap_err();
+    assert!(matches!(
+        parse_error,
+        HostPolicyError::UnparseableUrl {
+            class: UrlParseFailureClass::MalformedScheme
+        }
+    ));
+
+    let port_error = validate_external_service_url(
+        "https://api.cow.fi:abc/mainnet",
+        canonical,
+        &ExternalHostPolicy::Default,
+    )
+    .unwrap_err();
+    assert!(matches!(
+        port_error,
+        HostPolicyError::UnparseableUrl {
+            class: UrlParseFailureClass::InvalidPort
+        }
+    ));
+
+    let scheme_error = validate_external_service_url(
+        "ftp://api.cow.fi/mainnet",
+        canonical,
+        &ExternalHostPolicy::Default,
+    )
+    .unwrap_err();
+    assert!(matches!(
+        scheme_error,
+        HostPolicyError::UnsupportedScheme { scheme: "ftp" }
+    ));
+
+    for url in [
+        "http://127.0.0.1:39111/mainnet",
+        "http://localhost:39111/mainnet",
+        "http://[::1]:39111/mainnet",
+    ] {
+        validate_external_service_url(url, canonical, &ExternalHostPolicy::Test).unwrap();
+    }
 }

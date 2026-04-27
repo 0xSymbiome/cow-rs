@@ -97,6 +97,13 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "fuzz_recover_ecdsa_address"
+path = "fuzz_targets/fuzz_recover_ecdsa_address.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 # The fuzz crate stands alone because cargo-fuzz requires a nightly-only
 # toolchain with unstable RUSTFLAGS. Embedding it in the workspace at the

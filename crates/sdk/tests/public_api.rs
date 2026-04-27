@@ -104,7 +104,8 @@ fn module_reexports_cover_expected_leaf_crates() {
     let api = cow_sdk::orderbook::OrderBookApi::builder_from_context(
         cow_sdk::core::ApiContext::default(),
     )
-    .build();
+    .build()
+    .expect("default facade orderbook client must build");
     let _sdk = cow_sdk::trading::TradingSdk::new_partial(
         cow_sdk::trading::PartialTraderParameters::new()
             .with_chain_id(cow_sdk::core::SupportedChainId::Sepolia),

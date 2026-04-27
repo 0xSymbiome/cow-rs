@@ -22,7 +22,8 @@
 //! - a final summary with the total orders aggregated across pages
 
 use cow_sdk_orderbook::{
-    ApiContext, CowEnv, GetOrdersRequest, OrderBookApi, OrderUid, SupportedChainId, types::Address,
+    ApiContext, CowEnv, ExternalHostPolicy, GetOrdersRequest, OrderBookApi, OrderUid,
+    SupportedChainId, types::Address,
 };
 use serde_json::json;
 use wiremock::matchers::{method, path, query_param};
@@ -68,8 +69,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         SupportedChainId::GnosisChain,
         CowEnv::Prod,
     ))
+    .with_external_host_policy(ExternalHostPolicy::Test)
     .base_url(server.uri())
-    .build();
+    .build()?;
 
     let mut total_orders = 0_usize;
     let mut offset = 0_u32;

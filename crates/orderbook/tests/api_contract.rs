@@ -975,6 +975,7 @@ mod recording_transport {
             .policy(policy)
             .transport(recorder as Arc<dyn HttpTransport + Send + Sync>)
             .build()
+            .expect("orderbook client with injected transport must build")
     }
 
     #[tokio::test]

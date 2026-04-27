@@ -1,4 +1,4 @@
-use cow_sdk::orderbook::{ApiContext, OrderbookError};
+use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy, OrderbookError};
 use cow_sdk::prelude::{CowEnv, OrderBookApi, OrderUid, SupportedChainId};
 use cow_sdk::trading::OrderbookClient;
 use cow_sdk_examples_native::support::{
@@ -34,8 +34,10 @@ async fn version_fixture_is_plain_text() {
     let api = OrderBookApi::builder_from_context(
         ApiContext::new(SupportedChainId::Sepolia, CowEnv::Prod),
     )
+    .with_external_host_policy(ExternalHostPolicy::Test)
     .base_url(server.uri())
-    .build();
+    .build()
+    .expect("test orderbook client with local mock endpoint must build");
 
     let version = api
         .get_version()

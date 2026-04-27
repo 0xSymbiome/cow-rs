@@ -97,26 +97,34 @@ that the initial message appears to have been missed.
 
 ## Base-URL override risk
 
-Custom `base_url` overrides bypass any host whitelist that the SDK could
-enforce. A signed order sent to a non-`api.cow.fi` host can be exfiltrated by
-the host operator.
+Custom orderbook and subgraph endpoint overrides are rejected by default unless
+their hosts match the SDK's canonical service hosts. The
+`ExternalHostPolicy` builder setting is the explicit opt-in for private
+mirrors, open-ended routing, or local loopback fixtures. Host-policy failures
+surface through sanitized `HostPolicyError` variants that do not retain raw
+URL credentials, paths, queries, or fragments.
 
 Operator recommendation: use the canonical
 `OrderBookApi::builder().environment(CowEnv::Prod)` default for production
-bots that do not need partner-relay support. Reserve `base_url` overrides for
-partner-relay integrations and in-house staging environments. For
-partner-relay use, prefer treaty-bound partner identities over ad-hoc URL
-overrides.
+bots that do not need partner-relay support. Use
+`ExternalHostPolicy::Allow` only for reviewed private endpoints, and keep
+`ExternalHostPolicy::Test` limited to loopback test fixtures.
 
 ## Browser-wallet trust posture
 
-The browser-wallet integration trusts the injected wallet provider's reported
-`eth_accounts` response without re-deriving the owner from the signature. A
-buggy or malicious wallet provider could report an owner address that does not
-control the signing key.
+The browser-wallet integration treats provider identity as an explicit trust
+boundary. EIP-6963-discovered providers carry discovery metadata into the typed
+provider builder. Anonymous providers require
+`Eip1193ProviderBuilder::with_trusted_origin(...)` before construction
+succeeds. Wallet chain-management URLs such as `rpc_urls`,
+`block_explorer_urls`, and `icon_urls` are wallet payload data and are not
+validated with `ExternalHostPolicy`.
 
 Operator recommendation: wrap third-party wallet integrations with a defensive
 `ecrecover` step at the consumer layer that asserts the recovered address
 matches the wallet-reported address before submitting the order. The cow-sdk
-`Signature::recover_owner` helper in `cow-sdk-contracts` is the canonical entry
-point for the defensive recovery.
+`Signature::recover_ecdsa_address` helper in `cow-sdk-contracts` is the
+canonical entry point for ECDSA recovery. Use `Signature::declared_address` for
+non-ECDSA variants that declare an address directly, and
+`cow_sdk_contracts::verify::verify_eip1271_signature_async` for on-chain
+EIP-1271 smart-account verification.

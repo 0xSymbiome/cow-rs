@@ -2,6 +2,7 @@ mod common;
 
 use std::{cell::RefCell, fmt, rc::Rc};
 
+use alloy_primitives::Address as AlloyAddress;
 use cow_sdk_contracts::{
     ContractsError, EIP1271_MAGICVALUE, Eip1271SignatureData, Eip1271VerificationCache,
     Eip1271VerificationRequest, Signature, SigningScheme, decode_eip1271_signature_data,
@@ -13,6 +14,8 @@ use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo, ContractCall,
     ContractHandle, Hash32, HexData, TransactionReceipt, TransactionRequest,
 };
+use k256::ecdsa::SigningKey;
+use sha3::{Digest, Keccak256};
 
 #[derive(Default)]
 struct NoCache;
@@ -32,6 +35,33 @@ fn expected_u8(value: &serde_json::Value) -> u8 {
 
 fn synthetic_signature_with_v(v: u8) -> String {
     format!("0x{}{:02x}", "a".repeat(128), v)
+}
+
+fn deterministic_signing_key() -> SigningKey {
+    SigningKey::from_slice(
+        &hex::decode("4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318").unwrap(),
+    )
+    .unwrap()
+}
+
+fn expected_address_for_key(signing_key: &SigningKey) -> Address {
+    Address::new(AlloyAddress::from_private_key(signing_key).to_string()).unwrap()
+}
+
+fn ecdsa_signature_for_prehash(signing_key: &SigningKey, prehash: &[u8; 32]) -> String {
+    let (signature, recovery_id) = signing_key.sign_prehash_recoverable(prehash).unwrap();
+    let mut bytes = [0_u8; 65];
+    bytes[..64].copy_from_slice(signature.to_bytes().as_slice());
+    bytes[64] = recovery_id.to_byte() + 27;
+    format!("0x{}", hex::encode(bytes))
+}
+
+fn cow_eth_sign_prehash(digest: &Hash32) -> [u8; 32] {
+    let digest_bytes = hex::decode(digest.as_str().trim_start_matches("0x")).unwrap();
+    let mut payload = Vec::with_capacity(60);
+    payload.extend_from_slice(b"\x19Ethereum Signed Message:\n32");
+    payload.extend_from_slice(&digest_bytes);
+    Keccak256::digest(payload).into()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -259,15 +289,67 @@ fn signature_helpers_preserve_public_contract_surface() {
         owner: signer.clone(),
     };
     let eip1271 = Signature::Eip1271 {
-        data: Eip1271SignatureData::new(signer, "0x1234".to_owned()),
+        data: Eip1271SignatureData::new(signer.clone(), "0x1234".to_owned()),
     };
 
     assert_eq!(ecdsa.scheme(), SigningScheme::Eip712);
     assert_eq!(pre_sign.scheme(), SigningScheme::PreSign);
     assert_eq!(eip1271.scheme(), SigningScheme::Eip1271);
+    assert_eq!(ecdsa.declared_address(), None);
+    assert_eq!(pre_sign.declared_address(), Some(&signer));
+    assert_eq!(eip1271.declared_address(), Some(&signer));
     assert!(SigningScheme::Eip712.is_ecdsa());
     assert!(SigningScheme::EthSign.is_ecdsa());
     assert!(!SigningScheme::Eip1271.is_ecdsa());
+}
+
+#[test]
+fn recover_ecdsa_address_recovers_eip712_prehash_signer() {
+    let digest =
+        Hash32::new("0x5eb4f5a33c621f32a8622d5f943b6b102994dfe4e5aebbefe69bb1b2aa0fc93e").unwrap();
+    let signature = Signature::Ecdsa {
+        scheme: SigningScheme::Eip712,
+        data: "0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353efffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c8041b".to_owned(),
+    };
+
+    let recovered = signature.recover_ecdsa_address(&digest).unwrap();
+
+    assert_eq!(
+        recovered,
+        Address::new("0x0f65fe9276bc9a24ae7083ae28e2660ef72df99e").unwrap()
+    );
+}
+
+#[test]
+fn recover_ecdsa_address_recovers_eth_sign_digest_signer() {
+    let signing_key = deterministic_signing_key();
+    let digest =
+        Hash32::new("0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20").unwrap();
+    let prehash = cow_eth_sign_prehash(&digest);
+    let expected = expected_address_for_key(&signing_key);
+    let signature = Signature::Ecdsa {
+        scheme: SigningScheme::EthSign,
+        data: ecdsa_signature_for_prehash(&signing_key, &prehash),
+    };
+
+    let recovered = signature.recover_ecdsa_address(&digest).unwrap();
+
+    assert_eq!(recovered, expected);
+}
+
+#[test]
+fn recover_ecdsa_address_rejects_non_ecdsa_variants() {
+    let digest = Hash32::new(format!("0x{}", "11".repeat(32))).unwrap();
+    let verifier = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
+    let eip1271 = Signature::Eip1271 {
+        data: Eip1271SignatureData::new(verifier.clone(), "0x1234".to_owned()),
+    };
+    let pre_sign = Signature::PreSign { owner: verifier };
+
+    for signature in [eip1271, pre_sign] {
+        let error = signature.recover_ecdsa_address(&digest).unwrap_err();
+        assert!(matches!(error, ContractsError::SignatureSchemeNotEcdsa));
+    }
 }
 
 #[test]
