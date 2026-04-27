@@ -1,9 +1,9 @@
 # CID Dependency Audit
 
-Status: Current  
-Last reviewed: 2026-04-22  
-Owning surface: `cow-sdk-app-data` CID encoding and published dependency boundary  
-Refresh trigger: Changes to CID dependencies, the supported CID encoding, or the published dependency posture for the app-data stack, or a new `cid` or `core2` release that moves the reviewed warning state  
+Status: Current
+Last reviewed: 2026-04-27
+Owning surface: `cow-sdk-app-data` CID encoding and published dependency boundary
+Refresh trigger: Changes to CID dependencies, the supported CID encoding, or the published dependency posture for the app-data stack
 Related docs:
 - [Dependency Gate Audit](dependency-gate-audit.md)
 - [Verification Guide](../verification-guide.md)
@@ -27,7 +27,7 @@ outside the app-data boundary.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Supported CID conversion | Keep `cid`, `multihash`, and `multibase` as the maintained path | Conforms |
-| Published upstream dependency posture | Carry the current `cid 0.11.1` to `core2 0.4.0` yanked reachability as an explicit reviewed warning until a published replacement exists | Reviewed warning |
+| Published upstream dependency posture | `cid 0.11.3` no longer reaches the yanked `core2` dependency path | Conforms |
 | Unsupported CID encodings | Reject malformed or unsupported inputs, including CIDv0 (`Qm...` / dag-pb / sha2-256), through typed errors | Conforms |
 
 ## Current Contract
@@ -56,44 +56,27 @@ boundary).
 
 ### Published Upstream Dependency Posture
 
-The refreshed published dependency path now carries the current `multihash`
-release, but the remaining `core2 0.4.0` reachability still comes from the
-latest published `cid 0.11.1` release. The repository therefore records that
-state as a reviewed warning instead of replacing the published dependency with
-an unreleased override.
+The app-data crate now carries `cid 0.11.3`, which removes the prior
+`cid 0.11.1` to `core2 0.4.0` transitive path. The CID boundary remains on
+published crates and no longer needs a reviewed yanked-upstream exception for
+the CID stack.
 
 ### Advisory Posture
 
-Two RustSec advisories reach this workspace only through the published
-`cid 0.11.1` to `core2 0.4.0` chain documented above:
+The `cargo-deny` advisory gate denies yanked crates, and the canonical RustSec
+ignore register no longer includes the prior CID-chain exceptions. The remaining
+`cargo audit` ignores belong to the browser-wallet alloy helper posture and are
+tracked in [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md).
+`RUSTSEC-2026-0105` is no longer tolerated because `core2` is no longer
+reachable from the app-data dependency graph.
+The workspace-wide RustSec command is recorded in
+[Dependency Gate Audit](dependency-gate-audit.md); this CID audit does not own
+any `cargo audit --ignore` entry.
 
-- [`RUSTSEC-2026-0097`](https://rustsec.org/advisories/RUSTSEC-2026-0097) —
-  the prior reviewed identifier tracking the same transitive path.
-- [`RUSTSEC-2026-0105`](https://rustsec.org/advisories/RUSTSEC-2026-0105) —
-  `core2 0.4.0` is now flagged unmaintained with every published version
-  yanked upstream. The advisory reaches this workspace through exactly
-  the same `cow-sdk-app-data` -> `cid 0.11.1` -> `core2 0.4.0` chain that
-  the prior identifier describes.
+Revisit trigger:
 
-The `cargo audit` gate therefore blocks every other unsound and unmaintained
-advisory while explicitly tolerating both identifiers through
-`--ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2026-0105`. Each ignore is
-mirrored in `.github/config/deny.toml` under `[advisories].ignore` with a
-matching expiry comment so the policy lives in one reviewable place instead of
-hiding inside a CI command line.
-
-Revisit trigger for these advisories:
-
-- Drop both ignores the first time a published `cid` release no longer reaches
-  `core2 0.4.0` through any transitive path, or the first time `core2`
-  publishes a maintained successor that unblocks the maintained CID path.
-- Calendar floor: re-review the advisories and the upstream state every 90
-  days even if no upstream movement has occurred, and update
-  `Last reviewed` together with the deny.toml comment.
-- If either trigger fires, refresh this audit, remove the corresponding
-  `cargo audit --ignore` flags from `.github/workflows/ci.yml` and
-  `.github/workflows/release-readiness.yml`, and remove the matching entries
-  from `.github/config/deny.toml`.
+- Refresh this audit whenever `cid`, `multihash`, or `multibase` move again, or
+  if a new advisory reaches the supported CID conversion path.
 
 ## Evidence
 
@@ -114,12 +97,8 @@ Validation surface:
 
 ```text
 cargo tree -p cow-sdk-app-data -d
-cargo tree -i core2 -e normal
-cargo audit --deny unsound --deny unmaintained \
-  --ignore RUSTSEC-2026-0097 \
-  --ignore RUSTSEC-2024-0388 \
-  --ignore RUSTSEC-2024-0436 \
-  --ignore RUSTSEC-2026-0105
+cargo tree -p cow-sdk-app-data -e normal
+cargo deny check --config .github/config/deny.toml
 cargo test -p cow-sdk-app-data
 cargo clippy -p cow-sdk-app-data --all-targets --all-features -- -D warnings
 ```

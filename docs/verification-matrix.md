@@ -41,8 +41,8 @@ Use it with:
 | --- | --- |
 | `cargo fmt --all --check` | Formatting gate for consistent public diffs |
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
-| `cargo deny check bans licenses sources --config .github/config/deny.toml` | Blocking license, source, and duplicate-version policy gate |
-| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0105` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate; `scripts/check-release-docs-agree.sh` keeps the ignore-token list aligned with the release checklist and `_quality-gate.yml`. |
+| `cargo deny check --config .github/config/deny.toml` | Blocking advisory, license, source, and duplicate-version policy gate |
+| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate; `scripts/check-release-docs-agree.sh` keeps the ignore-token list aligned with the release checklist and `.github/config/deny.toml`. |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo test --workspace --doc` | Explicit doctest gate for rustdoc examples |
 | Published crate README doctests | Every published crate README is wired into crate rustdoc with a `cfg_attr(doctest, ...)` shim, so `cargo test --workspace --doc` compiles every fenced README example on CI. |
@@ -54,12 +54,13 @@ Use it with:
 | `codeql.yml` | Dedicated semantic security-analysis gate for Rust and GitHub Actions |
 | `cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml` | Repo-local parity fixture and source-lock gate for committed publication evidence |
 | `ci-success` | Aggregate routine CI status for branch protection across the required native validation and publication jobs |
+| Release-readiness alloy canary | Non-blocking scheduled and manual check against `ALLOY_CANARY_REF`, with a pinned SHA fallback when the repository variable is unset |
 | `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk` returns empty | Blocking stability-invariant gate asserting no shipped leaf crate transitively depends on `alloy-provider`; `scripts/check-release-docs-agree.sh` keeps the command copy aligned across the release checklist, `_quality-gate.yml`, `CONTRIBUTING.md`, and `PROPERTIES.md`. |
 | Release reproducibility posture | Reproducible-build posture documented across the release checklist with explicit source-and-lockfile guarantees and a documented future extension for WebAssembly artifact byte-reproducibility. |
 
 ## Publication Gates
 
-- `ci.yml` runs the repo-local publication contract: `parity/source-lock.yaml` validation plus the full published package-family dry-run from the current workspace.
+- `ci.yml` runs the repo-local publication contract: `parity/source-lock.yaml` validation, locked dependency fetch, `cargo build --frozen`, and the full published package-family package and publish dry-runs from the current workspace.
 - `release-readiness.yml` reruns that repo-local contract and then provisions pinned independent upstream clones from `parity/source-lock.yaml` before explicit-root provenance validation.
 - Same-checkout copies are not treated as provenance evidence for upstream parity sources.
 
@@ -70,7 +71,7 @@ Use it with:
 - The nightly docs-quality lane stays documentation-only. It exercises docs.rs-style rustdoc flags and all-feature doctests without widening validation into browser-extension, live-network, or host-sensitive behavior.
 - The Windows stable lane stays intentionally narrow and does not absorb browser-target, WASM, or publication-only validation.
 - CodeQL complements dependency policy by scanning Rust and GitHub Actions semantics; it does not replace `cargo-deny` or `cargo-audit`.
-- Dependency policy is intentionally split: `cargo-deny` owns bans, licenses, and sources, while `cargo-audit` blocks vulnerabilities plus unsound and unmaintained advisories. Yanked published-upstream cases require explicit audit evidence instead of widened ignore lists or hidden unreleased overrides.
+- Dependency policy is intentionally split: `cargo-deny` owns bans, licenses, sources, and yanked advisory policy, while `cargo-audit` blocks vulnerabilities plus unsound and unmaintained advisories. Yanked published-upstream cases require explicit audit evidence instead of widened ignore lists or hidden unreleased overrides.
 - Routine native validation workflows and the dedicated WASM workflows disable checkout credential persistence and use explicit timeout budgets per job. `wasm-pages.yml` scopes elevated Pages permissions to the deployment job.
 - Mocked transports should assert request shape and failure behavior where those paths are part of the validated surface.
 - WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible.

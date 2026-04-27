@@ -100,22 +100,23 @@ MSRV, docs.rs posture, public rustc lints, dependency policy, publication dry
 runs, and provenance-sensitive parity checks are part of the published
 crate-family contract. Review publication-policy changes through the release
 docs rather than as local implementation details. Dependency policy is split
-deliberately: `cargo deny` owns bans, licenses, and source policy, while
-`cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0105`
+deliberately: `cargo deny` owns bans, licenses, source policy, and yanked
+advisory policy, while
+`cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436`
 blocks RustSec vulnerabilities plus unsound and unmaintained advisories.
-The ignored advisories cover reviewed upstream postures for which no
-direct upgrade path exists; each entry is tracked in
+The ignored advisories are derived from `.github/config/deny.toml` in CI and
+cover reviewed upstream postures for which no direct upgrade path exists; each
+entry is tracked in
 `docs/audit/dependency-gate-audit.md` and, where the reachability
 flows through a crate family boundary, in the corresponding crate
 dependency audit.
-Yanked crates remain reviewed warnings only when the latest published upstream
-release still provides no clean replacement, and that state must stay recorded
-in public audit evidence.
+Yanked crates are denied by the cargo-deny advisory gate unless the current
+published upstream state is covered by an explicit public audit exception.
 Release artifacts ship reproducible at the source and lockfile level today;
 the release checklist records the two-tier reproducibility posture and the path
 to binary reproducibility for the WebAssembly artifacts.
 
-The `cargo tree --invert alloy-provider` invariant, the `cargo audit --deny ... --ignore RUSTSEC-...` ignore-token list, and the browser-wallet Playwright install browser set are each guarded across their source-of-truth files by `scripts/check-release-docs-agree.sh`.
+The `cargo tree --invert alloy-provider` invariant, the `cargo audit --deny ... --ignore RUSTSEC-...` ignore-token list, and the browser-wallet Playwright install browser set are each guarded against their source-of-truth files by `scripts/check-release-docs-agree.sh`.
 
 ## Going Deeper
 

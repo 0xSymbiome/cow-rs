@@ -50,6 +50,18 @@ jobs:
             fi
           done < <(grep -RInE '^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]#]+' .github/workflows/*.yml || true)
           exit "$failures"
+      - name: Assert pull_request_target triggers are reviewed
+        shell: bash
+        run: |
+          set -euo pipefail
+          failures=0
+          while IFS= read -r file; do
+            if ! grep -qE '#[[:space:]]*allow-pull-request-target:[[:space:]]*.+' "$file"; then
+              echo "::error file=${file}::pull_request_target requires an explicit '# allow-pull-request-target: <review rationale>' comment." >&2
+              failures=1
+            fi
+          done < <(grep -RIlE '^[[:space:]]*(-[[:space:]]*)?pull_request_target[[:space:]]*:|^[[:space:]]*on:[^#]*pull_request_target' .github/workflows/*.yml || true)
+          exit "$failures"
 
   fmt:
     runs-on: ubuntu-latest
@@ -198,15 +210,50 @@ jobs:
             exit 1
           fi
           echo "alloy-* pins all on $pins"
+      - name: Verify WASM inner workspace pins match root
+        shell: bash
+        run: |
+          set -euo pipefail
+          extract_version() {
+            local manifest="$1"
+            local dependency="$2"
+            { grep -E "^${dependency}[[:space:]]*=" "$manifest" || true; } \
+              | sed -nE 's/^'"${dependency}"'[[:space:]]*=[[:space:]]*(\{[[:space:]]*version[[:space:]]*=[[:space:]]*)?"([^"]+)".*/\2/p' \
+              | head -n 1
+          }
+          failures=0
+          for dependency in wasm-bindgen wasm-bindgen-futures wasm-bindgen-test web-sys; do
+            root_version="$(extract_version Cargo.toml "$dependency")"
+            inner_version="$(extract_version examples/wasm/Cargo.toml "$dependency")"
+            if [ -z "$root_version" ] || [ -z "$inner_version" ]; then
+              echo "::error::could not parse ${dependency} version from Cargo.toml and examples/wasm/Cargo.toml" >&2
+              failures=1
+              continue
+            fi
+            if [ "$root_version" != "$inner_version" ]; then
+              echo "::error::${dependency} pin drift: root=${root_version}, examples/wasm=${inner_version}" >&2
+              failures=1
+            fi
+          done
+          exit "$failures"
       - name: Check dependency policy
-        run: cargo deny check bans licenses sources --config .github/config/deny.toml
+        run: cargo deny check --config .github/config/deny.toml
       - name: Check RustSec advisories
-        # Ignore list rationale (each entry tracked in docs/audit/dependency-gate-audit.md):
-        #   RUSTSEC-2026-0097 — reviewed upstream posture; no direct upgrade path
-        #   RUSTSEC-2024-0388 — reviewed upstream posture; no direct upgrade path
-        #   RUSTSEC-2024-0436 — reviewed upstream posture; no direct upgrade path
-        #   RUSTSEC-2026-0105 — core2 yanked upstream reached transitively through cid; see docs/audit/cid-dependency-audit.md
-        run: cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0105
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t audit_ignore_args < <(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          config = tomllib.loads(Path(".github/config/deny.toml").read_text(encoding="utf-8"))
+          for entry in config.get("advisories", {}).get("ignore", []):
+              advisory_id = entry["id"] if isinstance(entry, dict) else entry
+              print("--ignore")
+              print(advisory_id)
+          PY
+          )
+          cargo audit --deny unsound --deny unmaintained "${audit_ignore_args[@]}"
 
   feature-matrix:
     runs-on: ubuntu-latest

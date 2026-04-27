@@ -12,8 +12,8 @@ cargo clippy --workspace --all-targets --all-features --message-format short -- 
 cargo test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
 typos --config .github/config/typos.toml
-cargo deny check bans licenses sources --config .github/config/deny.toml
-cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0105
+cargo deny check --config .github/config/deny.toml
+cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436
 cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk
 ```
 
@@ -28,18 +28,20 @@ any mismatch against `docs/verification-matrix.md`,
 `.github/workflows/_quality-gate.yml`, `CONTRIBUTING.md`, or
 `PROPERTIES.md` fails the `docs-agree-on-release-gates` CI job.
 
-- The `_quality-gate.yml` lane enforces an `alloy-*` workspace-pin
-  same-minor invariant; the `wasm.yml` lane enforces an inner-workspace
-  WASM pin diff against the workspace pins.
+- The `_quality-gate.yml` lane enforces both the `alloy-*` workspace-pin
+  same-minor invariant and the inner-workspace WASM pin diff against the
+  root workspace pins.
 
 `cargo audit` is the blocking RustSec gate for published advisories. It keeps
 vulnerabilities, unsound advisories, and unmaintained advisories blocking while
-leaving yanked-only published-upstream cases reviewable through public audit
-evidence until a published replacement exists.
+deriving its reviewed ignore arguments from `.github/config/deny.toml`.
+`cargo deny` also runs with yanked advisory policy set to deny, so yanked
+published-upstream cases must stay explicit in the public audit evidence until
+a published replacement exists.
 
 This command is guarded for drift by `scripts/check-release-docs-agree.sh`;
-any mismatch against `docs/verification-matrix.md` or
-`.github/workflows/_quality-gate.yml` fails the
+any mismatch against `docs/verification-matrix.md` or the advisory tolerance
+register in `.github/config/deny.toml` fails the
 `docs-agree-on-release-gates` CI job.
 
 ## 2. Documentation And Public API Gates
@@ -116,6 +118,8 @@ cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --sou
 Then run the published package-family dry-run in release order:
 
 ```text
+cargo fetch --locked
+cargo build --frozen --workspace --all-features
 cargo package -p cow-sdk-core --allow-dirty
 cargo package -p cow-sdk-contracts --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-app-data --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
@@ -126,6 +130,21 @@ cargo package -p cow-sdk-transport-wasm --allow-dirty --config "patch.crates-io.
 cargo package -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
 cargo package -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
+```
+
+Then run the registry-validation dry-run in the same order:
+
+```text
+cargo publish --dry-run -p cow-sdk-core --allow-dirty
+cargo publish --dry-run -p cow-sdk-contracts --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo publish --dry-run -p cow-sdk-app-data --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo publish --dry-run -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo publish --dry-run -p cow-sdk-signing --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
+cargo publish --dry-run -p cow-sdk-subgraph --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo publish --dry-run -p cow-sdk-transport-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo publish --dry-run -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
+cargo publish --dry-run -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo publish --dry-run -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
 ```
 
 ## 6. Manual Publish Sequence
@@ -156,6 +175,7 @@ cargo publish -p cow-sdk-app-data
 cargo publish -p cow-sdk-orderbook
 cargo publish -p cow-sdk-signing
 cargo publish -p cow-sdk-subgraph
+cargo publish -p cow-sdk-transport-wasm
 cargo publish -p cow-sdk-trading
 cargo publish -p cow-sdk-browser-wallet
 cargo publish -p cow-sdk
@@ -263,6 +283,11 @@ Rules:
 The `services-drift.yml` workflow runs weekly against the upstream services
 repository and records newly-added error tags plus request or response shape
 changes as a tracked report before they reach the release window.
+
+The `release-readiness.yml` workflow also runs a non-blocking alloy canary on
+scheduled and manually-dispatched runs. Set the `ALLOY_CANARY_REF` repository
+variable to test a specific upstream ref; otherwise the workflow uses its
+pinned SHA fallback.
 
 Continuous integration runs `cargo-semver-checks` on every pull request that
 touches a published crate's `src/` tree. The lane is informational through

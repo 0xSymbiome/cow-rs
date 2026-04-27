@@ -15,11 +15,13 @@
 #        - CONTRIBUTING.md
 #        - PROPERTIES.md
 #
-#   2. The cargo audit RustSec `--ignore RUSTSEC-...` token list must be
-#      identical across:
+#   2. The cargo audit RustSec `--ignore RUSTSEC-...` token list in docs
+#      must match the canonical advisory tolerance register in:
+#        - .github/config/deny.toml
+#
+#      Documentation sites checked:
 #        - docs/release-checklist.md
 #        - docs/verification-matrix.md
-#        - .github/workflows/_quality-gate.yml
 #
 #   3. The Playwright install browser arguments for the browser-wallet
 #      lane must be identical across:
@@ -52,12 +54,13 @@ done
 release_checklist="$repo_root/docs/release-checklist.md"
 verification_matrix="$repo_root/docs/verification-matrix.md"
 quality_gate="$repo_root/.github/workflows/_quality-gate.yml"
+deny_config="$repo_root/.github/config/deny.toml"
 browser_wallet_workflow="$repo_root/.github/workflows/browser-wallet-e2e.yml"
 contributing_md="$repo_root/CONTRIBUTING.md"
 properties_md="$repo_root/PROPERTIES.md"
 
 for file in "$release_checklist" "$verification_matrix" \
-            "$quality_gate" "$browser_wallet_workflow" \
+            "$quality_gate" "$deny_config" "$browser_wallet_workflow" \
             "$contributing_md" "$properties_md"; do
   if [ ! -f "$file" ]; then
     echo "error: required source file missing: $file" >&2
@@ -158,13 +161,29 @@ extract_cargo_audit_cmd() {
   ' "$1" \
     | grep -oE -- '--ignore RUSTSEC-[0-9]{4}-[0-9]{4}' \
     | awk '{ print $2 }' \
+    | tr -d '\r' \
     | sort -u \
     || true
 }
 
+extract_canonical_audit_ignores() {
+  python - "$1" <<'PY' | tr -d '\r'
+import sys
+import tomllib
+from pathlib import Path
+
+config = tomllib.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+ids = []
+for entry in config.get("advisories", {}).get("ignore", []):
+    ids.append(entry["id"] if isinstance(entry, dict) else entry)
+for advisory_id in sorted(set(ids)):
+    print(advisory_id)
+PY
+}
+
 audit_checklist_tokens="$(extract_cargo_audit_cmd "$release_checklist")"
 audit_matrix_tokens="$(extract_cargo_audit_cmd "$verification_matrix")"
-audit_workflow_tokens="$(extract_cargo_audit_cmd "$quality_gate")"
+audit_canonical_tokens="$(extract_canonical_audit_ignores "$deny_config")"
 
 if [ -z "$audit_checklist_tokens" ]; then
   echo "error: docs/release-checklist.md does not declare the cargo audit ignore-token list" >&2
@@ -174,8 +193,8 @@ if [ -z "$audit_matrix_tokens" ]; then
   echo "error: docs/verification-matrix.md does not declare the cargo audit ignore-token list" >&2
   exit 1
 fi
-if [ -z "$audit_workflow_tokens" ]; then
-  echo "error: .github/workflows/_quality-gate.yml does not declare the cargo audit ignore-token list" >&2
+if [ -z "$audit_canonical_tokens" ]; then
+  echo "error: .github/config/deny.toml does not declare the canonical cargo audit ignore-token list" >&2
   exit 1
 fi
 
@@ -195,11 +214,11 @@ diff_audit_or_fail() {
 diff_audit_or_fail "docs/release-checklist.md" "docs/verification-matrix.md" \
   "$audit_checklist_tokens" "$audit_matrix_tokens"
 
-diff_audit_or_fail "docs/release-checklist.md" ".github/workflows/_quality-gate.yml" \
-  "$audit_checklist_tokens" "$audit_workflow_tokens"
+diff_audit_or_fail "docs/release-checklist.md" ".github/config/deny.toml" \
+  "$audit_checklist_tokens" "$audit_canonical_tokens"
 
-diff_audit_or_fail "docs/verification-matrix.md" ".github/workflows/_quality-gate.yml" \
-  "$audit_matrix_tokens" "$audit_workflow_tokens"
+diff_audit_or_fail "docs/verification-matrix.md" ".github/config/deny.toml" \
+  "$audit_matrix_tokens" "$audit_canonical_tokens"
 
 extract_browser_wallet_playwright_browsers() {
   # Capture the trailing browser-set arguments from the playwright install

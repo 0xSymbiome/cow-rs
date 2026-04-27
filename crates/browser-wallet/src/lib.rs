@@ -26,7 +26,7 @@
 //!
 //! The typed EIP-1193 contract-call bridge inside [`provider`] uses the
 //! `alloy-primitives`, `alloy-dyn-abi`, and `alloy-json-abi` family for ABI encoding
-//! and decoding. That dependency choice, including the two proc-macro advisories the alloy
+//! and decoding. That dependency choice, including the reviewed advisories the alloy
 //! toolchain transits, is tracked publicly in
 //! [docs/audit/browser-wallet-alloy-dependency-audit.md](https://github.com/cowdao-grants/cow-rs/blob/main/docs/audit/browser-wallet-alloy-dependency-audit.md).
 //! No `alloy_*` type appears in any `pub fn` signature across the workspace.

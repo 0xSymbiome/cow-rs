@@ -1,9 +1,9 @@
 # Browser-Wallet Alloy Dependency Audit
 
-Status: Current  
-Last reviewed: 2026-04-21  
-Owning surface: `cow-sdk-browser-wallet` typed EIP-1193 contract-call bridge and its `alloy-primitives` / `alloy-dyn-abi` / `alloy-json-abi` ABI helpers  
-Refresh trigger: Upstream movement in the alloy family (new major, dropped transitive dependency), a new reviewed warning surfacing through the alloy toolchain, or a new maintained successor to the affected proc-macro deps  
+Status: Current
+Last reviewed: 2026-04-27
+Owning surface: `cow-sdk-browser-wallet` typed EIP-1193 contract-call bridge and its `alloy-primitives` / `alloy-dyn-abi` / `alloy-json-abi` ABI helpers
+Refresh trigger: Upstream movement in the alloy family (new major, dropped transitive dependency), a new reviewed warning surfacing through the alloy toolchain, or a new maintained successor to the affected proc-macro deps
 Related docs:
 - [Dependency Gate Audit](dependency-gate-audit.md)
 - [CID Dependency Audit](cid-dependency-audit.md)
@@ -17,8 +17,10 @@ This audit covers:
   family used by `cow-sdk-browser-wallet` for typed EIP-1193 contract-call
   encoding and response decoding
 - the reachable-only-through-alloy RustSec advisories this adoption brings,
-  namely the `derivative` and `paste` proc-macro advisories
-- the build-time-only scope of those advisories
+  namely the `rand` unsoundness warning plus the `derivative` and `paste`
+  proc-macro advisories
+- the first-party non-use of `rand::rng()` and the build-time-only scope of
+  the proc-macro advisories
 - fail-closed handling of unsupported or malformed ABI inputs at the
   contract-call bridge
 
@@ -32,8 +34,8 @@ from the browser-wallet contract-call bridge.
 | --- | --- | --- |
 | Maintained ABI family | `alloy-primitives`, `alloy-dyn-abi`, and `alloy-json-abi` replace the previously unmaintained `ethabi` dependency at the browser-wallet contract-call bridge | Conforms |
 | Public API exposure | No `alloy_*` type appears in any `pub fn` signature across the workspace; the bridge stays typed in `cow-sdk` public wrappers | Conforms |
-| Reachable advisories | `RUSTSEC-2024-0388` (derivative unmaintained) and `RUSTSEC-2024-0436` (paste unmaintained) reach this workspace only through the alloy toolchain | Reviewed warning |
-| Proc-macro scope | Both advisories apply to build-time proc-macro crates only; no runtime code path is affected | Conforms |
+| Reachable advisories | `RUSTSEC-2026-0097` (rand unsound warning), `RUSTSEC-2024-0388` (derivative unmaintained), and `RUSTSEC-2024-0436` (paste unmaintained) reach this workspace only through the alloy toolchain | Reviewed warning |
+| Proc-macro scope | The derivative and paste advisories apply to build-time proc-macro crates only; no runtime code path is affected | Conforms |
 
 ## Current Contract
 
@@ -63,8 +65,12 @@ without pulling alloy into their own surfaces.
 
 ### Reachable Advisories
 
-Two RustSec advisories reach this workspace transitively through alloy:
+Three RustSec advisories reach this workspace transitively through alloy:
 
+- `RUSTSEC-2026-0097`: `rand 0.8.5` carries an unsoundness warning involving
+  custom logger interaction with `rand::rng()`. It is reachable through the
+  `alloy-primitives -> ruint` subtree; first-party code does not call
+  `rand::rng()` directly.
 - `RUSTSEC-2024-0388`: `derivative 2.2.0` is unmaintained. Reachable
   through `alloy-primitives -> ruint -> ark-ff -> derivative`. `derivative`
   is a proc-macro crate; no runtime code from it is compiled into any
@@ -74,22 +80,29 @@ Two RustSec advisories reach this workspace transitively through alloy:
   -> ruint -> ark-ff -> paste`. `paste` is also a proc-macro crate with no
   runtime footprint.
 
-Neither advisory is a known security vulnerability. Both are lifecycle
-status records on upstream crates that are widely used across the Rust
-ecosystem.
+The derivative and paste advisories are lifecycle status records on upstream
+crates that are widely used across the Rust ecosystem. The rand advisory is
+kept as an explicit reviewed warning until the pinned alloy family removes the
+reachable rand 0.8 path.
 
 ### Gate Posture
 
 The `cargo audit` gate continues to block every other unsound and
-unmaintained advisory while explicitly tolerating these two identifiers
-plus the unrelated `RUSTSEC-2026-0097` covered by the
-[CID Dependency Audit](cid-dependency-audit.md). The ignore list lives in
+unmaintained advisory while explicitly tolerating these three identifiers.
+The ignore list lives in
 `.github/config/deny.toml` under `[advisories].ignore` with per-entry
-revisit comments, and the same ignores are mirrored on the `cargo audit`
-command line in `.github/workflows/ci.yml` and
-`.github/workflows/release-readiness.yml`.
+revisit comments; CI derives the `cargo audit` ignore arguments from that
+canonical register.
 
 ### Advisory Posture
+
+Revisit trigger for `RUSTSEC-2026-0097`:
+
+- Drop the ignore when `alloy-primitives`, `ruint`, or an intermediate
+  upstream release no longer reaches `rand 0.8.5`, or when the advisory is
+  withdrawn upstream.
+- Calendar floor: re-review every 90 days and update both
+  `.github/config/deny.toml` and this audit's `Last reviewed`.
 
 Revisit trigger for `RUSTSEC-2024-0388`:
 
@@ -107,9 +120,9 @@ Revisit trigger for `RUSTSEC-2024-0436`:
 - Calendar floor: same 90-day re-review rhythm as
   `RUSTSEC-2024-0388`.
 
-If either trigger fires, refresh this audit, remove the matching ignore
-from `.github/config/deny.toml`, and remove the `--ignore` flags from
-`.github/workflows/ci.yml` and `.github/workflows/release-readiness.yml`.
+If any trigger fires, refresh this audit, remove the matching ignore
+from `.github/config/deny.toml`, and let CI derive the updated `cargo audit`
+arguments from that change.
 
 ## Evidence
 
@@ -131,7 +144,7 @@ Validation surface:
 
 ```text
 cargo tree -p cow-sdk-browser-wallet -d
-cargo deny check bans licenses sources --config .github/config/deny.toml
+cargo deny check --config .github/config/deny.toml
 cargo audit --deny unsound --deny unmaintained \
   --ignore RUSTSEC-2026-0097 \
   --ignore RUSTSEC-2024-0388 \
