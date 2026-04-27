@@ -110,11 +110,17 @@ jobs:
       - name: Test browser-wallet direct bridge in headless Chrome
         working-directory: crates/browser-wallet
         run: wasm-pack test --headless --chrome
+      - name: Test transport-wasm fetch adapter in headless Chrome
+        working-directory: crates/transport-wasm
+        run: wasm-pack test --headless --chrome --features tracing
       - name: Test trading crate wasm32 contract in headless Chrome
         working-directory: crates/trading
         run: wasm-pack test --headless --chrome
       - name: Test signing crate wasm32 contract in headless Chrome
         working-directory: crates/signing
+        run: wasm-pack test --headless --chrome
+      - name: Test browser wallet console in headless Chrome
+        working-directory: examples/wasm/browser-wallet-console
         run: wasm-pack test --headless --chrome
       - name: Test sdk verification console exports in headless Chrome
         working-directory: examples/wasm/sdk-verification-console

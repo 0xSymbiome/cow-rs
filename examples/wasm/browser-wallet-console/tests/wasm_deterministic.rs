@@ -1,5 +1,6 @@
 use cow_sdk::browser_wallet::{
-    BrowserWallet, InjectedWalletDiscoverySource, InjectedWalletInfo, MockEip1193Transport,
+    BrowserWallet, BrowserWalletError, Eip1193ProviderBuilder, InjectedWalletDiscoverySource,
+    InjectedWalletInfo, MockEip1193Transport, Origin,
 };
 use cow_sdk_browser_wallet_console::BrowserWalletConsole;
 use serde_json::Value;
@@ -55,6 +56,31 @@ fn sample_approval_json_returns_valid_json_with_expected_top_level_keys() {
             "sample approval must expose `{key}`"
         );
     }
+}
+
+#[wasm_bindgen_test]
+fn eip1193_trust_wrapper_rejects_anonymous_provider_and_accepts_explicit_origin() {
+    let error = Eip1193ProviderBuilder::new(MockEip1193Transport::sepolia())
+        .build()
+        .expect_err("anonymous EIP-1193 providers must require an explicit origin");
+
+    assert!(matches!(
+        error,
+        BrowserWalletError::UntrustedProviderOrigin { .. }
+    ));
+    let rendered = error.to_string();
+    assert!(rendered.contains("[redacted]"));
+    assert!(!rendered.contains("sepolia"));
+
+    let provider = Eip1193ProviderBuilder::new(MockEip1193Transport::sepolia())
+        .with_trusted_origin(Origin::new("test://browser-wallet-console/smoke").unwrap())
+        .build()
+        .expect("explicitly trusted EIP-1193 provider must build");
+
+    assert_eq!(
+        provider.origin().map(Origin::as_str),
+        Some("test://browser-wallet-console/smoke")
+    );
 }
 
 #[wasm_bindgen_test]

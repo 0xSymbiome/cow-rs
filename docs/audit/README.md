@@ -85,7 +85,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [WASM Example Proof-Posture Audit](wasm-example-proof-posture-audit.md) | Standing audit | WASM verification consoles and their two-tier proof posture | Deterministic console proof, mock-versus-injected separation, staging-versus-proxy posture, and the shipped Playwright and wasm-bindgen-test evidence set | Current | 2026-04-21 |
+| [WASM Example Proof-Posture Audit](wasm-example-proof-posture-audit.md) | Standing audit | WASM verification consoles and their two-tier proof posture | Deterministic console proof, mock-versus-injected separation, staging-versus-proxy posture, and the shipped Playwright and wasm-bindgen-test evidence set | Current | 2026-04-27 |
 
 ## App-Data And Dependencies
 
