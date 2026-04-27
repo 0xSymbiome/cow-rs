@@ -66,6 +66,32 @@ fn public_api_reexports_cover_primary_root_surface() {
 }
 
 #[test]
+fn cancelled_errors_project_to_the_facade_cancelled_class() {
+    assert_eq!(
+        cow_sdk::SdkError::AppData(cow_sdk::app_data::AppDataError::Cancelled).class(),
+        cow_sdk::ErrorClass::Cancelled,
+    );
+    assert_eq!(
+        cow_sdk::SdkError::Contracts(cow_sdk::contracts::ContractsError::Cancelled).class(),
+        cow_sdk::ErrorClass::Cancelled,
+    );
+    assert_eq!(
+        cow_sdk::SdkError::Trading(cow_sdk::trading::TradingError::AppData(
+            cow_sdk::app_data::AppDataError::Cancelled,
+        ))
+        .class(),
+        cow_sdk::ErrorClass::Cancelled,
+    );
+    assert_eq!(
+        cow_sdk::SdkError::Trading(cow_sdk::trading::TradingError::Contracts(
+            cow_sdk::contracts::ContractsError::Cancelled,
+        ))
+        .class(),
+        cow_sdk::ErrorClass::Cancelled,
+    );
+}
+
+#[test]
 fn module_reexports_cover_expected_leaf_crates() {
     let doc = cow_sdk::app_data::generate_app_data_doc(
         cow_sdk::app_data::AppDataParams::default().with_app_code("cow-rs"),

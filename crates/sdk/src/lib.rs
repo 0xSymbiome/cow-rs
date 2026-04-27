@@ -169,7 +169,7 @@ impl SdkError {
             Self::Types(error) => classify_core(error),
             Self::Signing(error) => classify_signing(error),
             Self::AppData(error) => classify_app_data(error),
-            Self::Contracts(_) => ErrorClass::Signing,
+            Self::Contracts(error) => classify_contracts(error),
             Self::Orderbook(error) => classify_orderbook(error),
             Self::Trading(error) => classify_trading(error),
             #[cfg(feature = "browser-wallet")]
@@ -209,6 +209,7 @@ const fn classify_app_data(error: &cow_sdk_app_data::AppDataError) -> ErrorClass
         | cow_sdk_app_data::AppDataError::TooLarge { .. } => ErrorClass::Validation,
         cow_sdk_app_data::AppDataError::Transport { .. }
         | cow_sdk_app_data::AppDataError::Pinning { .. } => ErrorClass::Transport,
+        cow_sdk_app_data::AppDataError::Cancelled => ErrorClass::Cancelled,
         // Json, Schema, Calculation failures plus any future additive
         // variants signal invariant violations and classify as internal.
         _ => ErrorClass::Internal,
@@ -238,8 +239,10 @@ const fn classify_trading(error: &cow_sdk_trading::TradingError) -> ErrorClass {
             classify_orderbook(orderbook_error)
         }
         cow_sdk_trading::TradingError::Signing(signing_error) => classify_signing(signing_error),
-        cow_sdk_trading::TradingError::Contracts(_)
-        | cow_sdk_trading::TradingError::Signer { .. }
+        cow_sdk_trading::TradingError::Contracts(contracts_error) => {
+            classify_contracts(contracts_error)
+        }
+        cow_sdk_trading::TradingError::Signer { .. }
         | cow_sdk_trading::TradingError::Provider { .. } => ErrorClass::Signing,
         cow_sdk_trading::TradingError::Cancelled => ErrorClass::Cancelled,
         // Every remaining variant represents a caller-side input failure
@@ -256,6 +259,16 @@ const fn classify_signing(error: &cow_sdk_signing::SigningError) -> ErrorClass {
         cow_sdk_signing::SigningError::Cancelled => ErrorClass::Cancelled,
         // Contracts, Serialization, Signer, and UnsupportedSignerGeneratedScheme
         // failures plus any future additive variants classify as signing.
+        _ => ErrorClass::Signing,
+    }
+}
+
+const fn classify_contracts(error: &cow_sdk_contracts::ContractsError) -> ErrorClass {
+    match error {
+        cow_sdk_contracts::ContractsError::Core(core_error) => classify_core(core_error),
+        cow_sdk_contracts::ContractsError::Cancelled => ErrorClass::Cancelled,
+        // Contract encoding, ABI, provider, signature, and EIP-1271 failures
+        // plus future additive variants classify as signing-edge failures.
         _ => ErrorClass::Signing,
     }
 }

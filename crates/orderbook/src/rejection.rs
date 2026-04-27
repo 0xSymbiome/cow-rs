@@ -23,7 +23,7 @@
 
 use cow_sdk_core::Amount;
 use http::StatusCode;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Structured rejection code returned by the `CoW` Protocol orderbook.
@@ -35,7 +35,7 @@ use thiserror::Error;
 /// compatible with new services codes without silently discarding
 /// them.
 #[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Error, Serialize)]
 pub enum OrderbookRejection {
     // --- Order-creation: structural / duplicate ---
     /// Order with the same UID already exists on this deployment.
@@ -186,6 +186,24 @@ pub enum OrderbookRejection {
     /// Custom error surfaced by an upstream solver.
     #[error("custom solver error")]
     CustomSolverError,
+
+    // --- GET-side filters / pagination ---
+    /// Trade lookup rejected because the query did not specify exactly
+    /// one of `owner` or `orderUid`.
+    #[error("invalid trade filter")]
+    InvalidTradeFilter,
+    /// Paginated trade lookup rejected because the requested limit was
+    /// outside the services-supported range.
+    #[error("invalid limit")]
+    InvalidLimit,
+    /// User-order lookup rejected because the requested pagination
+    /// limit was outside the services-supported range.
+    ///
+    /// Services intentionally emits the `LIMIT_OUT_OF_BOUNDS` wire tag
+    /// in `SCREAMING_SNAKE_CASE`; do not casing-fix this tag to `PascalCase`.
+    #[serde(rename = "LIMIT_OUT_OF_BOUNDS")]
+    #[error("limit out of bounds")]
+    LimitOutOfBounds,
 
     // --- Quote-only ---
     /// Quote rejected because the supplied sell amount does not cover
@@ -343,6 +361,9 @@ fn classify(envelope: RejectionEnvelope) -> OrderbookRejection {
         "TokenTemporarilySuspended" => OrderbookRejection::TokenTemporarilySuspended,
         "InsufficientLiquidity" => OrderbookRejection::InsufficientLiquidity,
         "CustomSolverError" => OrderbookRejection::CustomSolverError,
+        "InvalidTradeFilter" => OrderbookRejection::InvalidTradeFilter,
+        "InvalidLimit" => OrderbookRejection::InvalidLimit,
+        "LIMIT_OUT_OF_BOUNDS" => OrderbookRejection::LimitOutOfBounds,
         "SellAmountDoesNotCoverFee" => {
             parse_sell_amount_does_not_cover_fee(&envelope).unwrap_or_else(|| unknown(envelope))
         }

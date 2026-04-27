@@ -1,4 +1,4 @@
-use cow_sdk_core::{Address, CoreError};
+use cow_sdk_core::{Address, Cancelled, CoreError};
 use thiserror::Error;
 
 /// Errors returned by low-level `CoW` contract helpers.
@@ -8,6 +8,9 @@ pub enum ContractsError {
     /// Core validation failed for an input value.
     #[error("core validation error: {0}")]
     Core(#[from] CoreError),
+    /// A long-running contracts operation was cancelled through a cooperative cancellation token.
+    #[error("contracts operation was cancelled")]
+    Cancelled,
     /// A chain id is outside the supported `CoW` deployment set.
     #[error("unsupported chain id: {0}")]
     UnsupportedChain(u64),
@@ -151,4 +154,10 @@ pub enum ContractsError {
         /// Rejected recovery byte value.
         value: u8,
     },
+}
+
+impl From<Cancelled> for ContractsError {
+    fn from(_: Cancelled) -> Self {
+        Self::Cancelled
+    }
 }

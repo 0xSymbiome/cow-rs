@@ -185,3 +185,52 @@ fn encode_address(address: &Address) -> Result<[u8; 32], SigningError> {
     out[12..].copy_from_slice(&bytes);
     Ok(out)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn domain_separator_matches_shared_parity_fixture() {
+        let (domain, expected_separator) = domain_separator_parity_fixture();
+        let actual_separator = domain_separator_for(&domain).unwrap();
+
+        assert_eq!(actual_separator, expected_separator);
+    }
+
+    fn domain_separator_parity_fixture() -> (TypedDataDomain, String) {
+        const FIXTURE: &str = include_str!("../tests/fixtures/domain_separator_parity.json");
+
+        let fixture: serde_json::Value =
+            serde_json::from_str(FIXTURE).expect("domain separator fixture must parse");
+        assert_eq!(fixture["schema_version"].as_u64(), Some(1));
+
+        let case = &fixture["case"];
+        let name = case["name"]
+            .as_str()
+            .expect("fixture case must carry name")
+            .to_owned();
+        let version = case["version"]
+            .as_str()
+            .expect("fixture case must carry version")
+            .to_owned();
+        let chain_id = case["chain_id"]
+            .as_u64()
+            .expect("fixture case must carry chain_id");
+        let verifying_contract = Address::new(
+            case["verifying_contract"]
+                .as_str()
+                .expect("fixture case must carry verifying_contract"),
+        )
+        .expect("fixture verifying_contract must be a valid address");
+        let expected_separator = case["domain_separator"]
+            .as_str()
+            .expect("fixture case must carry domain_separator")
+            .to_owned();
+
+        (
+            TypedDataDomain::new(name, version, chain_id, verifying_contract),
+            expected_separator,
+        )
+    }
+}

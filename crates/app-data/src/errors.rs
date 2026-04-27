@@ -1,4 +1,4 @@
-use cow_sdk_core::{TransportErrorClass, ValidationReason};
+use cow_sdk_core::{Cancelled, TransportErrorClass, ValidationReason};
 use thiserror::Error;
 
 /// Errors returned by app-data generation, validation, transport, and CID helpers.
@@ -85,6 +85,9 @@ pub enum AppDataError {
         /// Redacted detail message sourced from the transport layer.
         detail: String,
     },
+    /// A long-running app-data operation was cancelled through a cooperative cancellation token.
+    #[error("app-data operation was cancelled")]
+    Cancelled,
     /// Upload helpers were called without the required credentials.
     #[error("You need to pass IPFS api credentials.")]
     MissingIpfsCredentials,
@@ -104,4 +107,10 @@ pub enum AppDataError {
         /// Configured size ceiling in bytes.
         max_bytes: usize,
     },
+}
+
+impl From<Cancelled> for AppDataError {
+    fn from(_: Cancelled) -> Self {
+        Self::Cancelled
+    }
 }

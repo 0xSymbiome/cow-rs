@@ -257,6 +257,21 @@ fn every_known_services_tag_parses_to_its_typed_variant() {
             OrderbookRejection::CustomSolverError,
         ),
         (
+            "InvalidTradeFilter",
+            StatusCode::BAD_REQUEST,
+            OrderbookRejection::InvalidTradeFilter,
+        ),
+        (
+            "InvalidLimit",
+            StatusCode::BAD_REQUEST,
+            OrderbookRejection::InvalidLimit,
+        ),
+        (
+            "LIMIT_OUT_OF_BOUNDS",
+            StatusCode::BAD_REQUEST,
+            OrderbookRejection::LimitOutOfBounds,
+        ),
+        (
             "AlreadyCancelled",
             StatusCode::BAD_REQUEST,
             OrderbookRejection::AlreadyCancelled,
