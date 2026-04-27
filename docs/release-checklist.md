@@ -284,10 +284,11 @@ The `services-drift.yml` workflow runs weekly against the upstream services
 repository and records newly-added error tags plus request or response shape
 changes as a tracked report before they reach the release window.
 
-The `release-readiness.yml` workflow also runs a non-blocking alloy canary on
-scheduled and manually-dispatched runs. Set the `ALLOY_CANARY_REF` repository
-variable to test a specific upstream ref; otherwise the workflow uses its
-pinned SHA fallback.
+The `alloy-release-candidate.yml` workflow owns the alloy forward-compat
+canary on scheduled and manually-dispatched runs. Set the `ALLOY_CANARY_REF`
+repository variable to test a specific upstream ref; otherwise the workflow
+uses its pinned SHA fallback. The workflow has no pull-request trigger, so
+candidate drift is reported without changing routine PR gates.
 
 Continuous integration runs `cargo-semver-checks` on every pull request that
 touches a published crate's `src/` tree. The lane is informational through

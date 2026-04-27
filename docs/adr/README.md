@@ -32,6 +32,10 @@ public and runtime shape of `cow-rs`.
 | [0022](0022-ecdsa-signature-v-normalization.md) | Accepted | Canonicalize recoverable ECDSA signatures at the contracts boundary so every emitted signature carries a Solidity-compatible `27` / `28` recovery byte. |
 | [0023](0023-legacy-compatibility-shim-removal.md) | Accepted | Remove the legacy compatibility order helpers and models so contract digests flow only through the canonical `UnsignedOrder` to `Order` path. |
 | [0024](0024-asyncprovider-asyncsigningprovider-capability-split.md) | Accepted | Split `AsyncProvider` into a read-only chain-RPC trait and an `AsyncSigningProvider` extension that owns signer creation. |
+| [0025](0025-workspace-url-redaction-convention.md) | Accepted | Store credential-bearing URL fields in redacting types before they become public SDK state. |
+| [0026](0026-alloy-major-release-absorption-plan.md) | Accepted | Bound alloy major releases behind SDK-owned types and a configurable scheduled canary lane. |
+| [0027](0027-post-quantum-signing-absorption-plan.md) | Accepted | Add future signing schemes through non-exhaustive signature boundaries without widening ECDSA semantics. |
+| [0028](0028-account-abstraction-integration-plan.md) | Accepted | Integrate account abstraction through provider capability traits and EIP-1271-compatible signing surfaces. |
 
 ## When To Write An ADR
 

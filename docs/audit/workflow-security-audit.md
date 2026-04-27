@@ -4,6 +4,8 @@ Status: Current
 Last reviewed: 2026-04-27
 Owning surface: every `.github/workflows/*.yml` file
 Refresh trigger: any new workflow file; any unpinned action; any addition of `pull_request_target`; any third-party action new to the workspace
+Related docs:
+- [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
 
 ## Scope
 
@@ -33,6 +35,7 @@ Workflow snapshot:
 | Workflow | Permissions posture | Action pin status | `pull_request_target` |
 | --- | --- | --- | --- |
 | `_quality-gate.yml` | `contents: read` | SHA-pinned; includes pinning guard | Absent |
+| `alloy-release-candidate.yml` | `contents: read` | SHA-pinned | Absent |
 | `benchmarks.yml` | `contents: read` | SHA-pinned | Absent |
 | `browser-wallet-e2e.yml` | `contents: read` | SHA-pinned | Absent |
 | `ci.yml` | `contents: read`; aggregate job uses `{}` | SHA-pinned or same-repo reusable workflow | Absent |
@@ -88,6 +91,7 @@ future privileged-trigger lane cannot be introduced silently.
 Primary implementation points:
 
 - `.github/workflows/_quality-gate.yml`
+- `.github/workflows/alloy-release-candidate.yml`
 - `.github/workflows/benchmarks.yml`
 - `.github/workflows/browser-wallet-e2e.yml`
 - `.github/workflows/ci.yml`

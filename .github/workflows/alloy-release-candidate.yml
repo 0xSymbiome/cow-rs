@@ -1,0 +1,79 @@
+name: alloy-release-candidate
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 6 * * 1'
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_CI_TOOLCHAIN: 1.94.1
+  ALLOY_CANARY_REF: ${{ vars.ALLOY_CANARY_REF || '83de021b1bf6f00ab1b38532460a387697ad25a7' }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  alloy-forward-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Resolve configurable alloy canary ref
+        id: alloy-ref
+        shell: bash
+        run: |
+          set -euo pipefail
+          remote="https://github.com/alloy-rs/alloy"
+          ref="${ALLOY_CANARY_REF}"
+          resolved="$(git ls-remote "$remote" "$ref" "refs/heads/$ref" "refs/tags/$ref" | awk 'NR == 1 { print $1 }')"
+          if [ -z "$resolved" ]; then
+            if [[ "$ref" =~ ^[0-9a-fA-F]{40}$ ]]; then
+              resolved="$ref"
+            else
+              echo "::error::ALLOY_CANARY_REF did not resolve to a branch, tag, or full commit SHA"
+              exit 1
+            fi
+          fi
+          echo "resolved=$resolved" >> "$GITHUB_OUTPUT"
+          {
+            echo "# Alloy forward-compat canary"
+            echo
+            echo "- Requested ref: \`$ref\`"
+            echo "- Resolved commit: \`$resolved\`"
+            echo "- Mode: scheduled/manual drift report; no pull-request trigger"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Report forward-compat drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          resolved="${{ steps.alloy-ref.outputs.resolved }}"
+          mkdir -p .cargo
+          {
+            echo '[patch.crates-io]'
+            echo "alloy-dyn-abi = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-json-abi = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-primitives = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-sol-macro = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-sol-types = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+          } >> .cargo/config.toml
+          cargo update \
+            -p alloy-dyn-abi \
+            -p alloy-json-abi \
+            -p alloy-primitives \
+            -p alloy-sol-macro \
+            -p alloy-sol-types
+          cargo check --workspace --all-features
