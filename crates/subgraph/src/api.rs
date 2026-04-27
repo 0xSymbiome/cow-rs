@@ -1,12 +1,11 @@
 //! Typed subgraph client configuration and query execution.
 
-use std::collections::BTreeMap;
 use std::fmt;
 use std::sync::Arc;
 
 use cow_sdk_core::{
-    HttpClientPolicy, HttpTransport, Redacted, SupportedChainId, TransportError,
-    TransportErrorClass,
+    HttpClientPolicy, HttpTransport, Redacted, RedactedOptionalUrlMap, SupportedChainId,
+    TransportError, TransportErrorClass,
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
@@ -31,17 +30,18 @@ pub const API_NAME: &str = "CoW Protocol Subgraph";
 pub const DEFAULT_SUBGRAPH_USER_AGENT: &str =
     concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
-/// Base-URL overrides keyed by chain id.
+/// Redacting base-URL overrides keyed by chain id.
 ///
 /// A `Some(url)` entry enables that chain and routes requests to `url`. A
 /// `None` entry marks the chain as unsupported for the current configuration.
-pub type SubgraphApiBaseUrls = BTreeMap<SupportedChainId, Option<String>>;
+pub type SubgraphApiBaseUrls = RedactedOptionalUrlMap<SupportedChainId>;
 
 /// Static subgraph client configuration.
 ///
 /// The default configuration targets mainnet production routes derived from the
 /// API key supplied when constructing [`SubgraphApi`].
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct SubgraphConfig {
     /// Active chain id used for helper methods and generic queries.
@@ -51,6 +51,7 @@ pub struct SubgraphConfig {
     /// When this is `None`, [`SubgraphApi`] uses its API-key-derived production
     /// routing map internally and exposes only redacted route identity through
     /// its stable public metadata.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub base_urls: Option<SubgraphApiBaseUrls>,
 }
 
@@ -65,15 +66,6 @@ impl SubgraphConfig {
     }
 }
 
-impl fmt::Debug for SubgraphConfig {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("SubgraphConfig")
-            .field("chain_id", &self.chain_id)
-            .field("base_urls", &sanitized_base_urls(self.base_urls.as_ref()))
-            .finish()
-    }
-}
-
 impl Default for SubgraphConfig {
     fn default() -> Self {
         Self {
@@ -84,12 +76,15 @@ impl Default for SubgraphConfig {
 }
 
 /// Per-call overrides for [`SubgraphConfig`].
-#[derive(Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct SubgraphConfigOverride {
     /// Optional chain override for a single request.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub chain_id: Option<SupportedChainId>,
     /// Optional base-URL map override for a single request.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub base_urls: Option<SubgraphApiBaseUrls>,
 }
 
@@ -104,15 +99,6 @@ impl SubgraphConfigOverride {
             chain_id,
             base_urls,
         }
-    }
-}
-
-impl fmt::Debug for SubgraphConfigOverride {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("SubgraphConfigOverride")
-            .field("chain_id", &self.chain_id)
-            .field("base_urls", &sanitized_base_urls(self.base_urls.as_ref()))
-            .finish()
     }
 }
 
@@ -174,6 +160,7 @@ impl fmt::Debug for SubgraphApi {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let supported_prod_chains = self
             .prod_config
+            .as_inner()
             .iter()
             .filter_map(|(chain_id, base_url)| base_url.as_ref().map(|_| chain_id))
             .collect::<Vec<_>>();
@@ -588,11 +575,14 @@ impl SubgraphApi {
 
     fn base_url_for(&self, config: &SubgraphConfig) -> Result<String, SubgraphError> {
         if let Some(base_urls) = &config.base_urls {
-            return base_urls.get(&config.chain_id).cloned().flatten().ok_or(
-                SubgraphError::UnsupportedNetwork {
+            return base_urls
+                .as_inner()
+                .get(&config.chain_id)
+                .cloned()
+                .flatten()
+                .ok_or(SubgraphError::UnsupportedNetwork {
                     chain_id: config.chain_id as u64,
-                },
-            );
+                });
         }
 
         prod_subgraph_id(config.chain_id)
@@ -605,6 +595,7 @@ impl SubgraphApi {
     fn public_base_url_for(&self, config: &SubgraphConfig) -> Result<String, SubgraphError> {
         if let Some(base_urls) = &config.base_urls {
             return base_urls
+                .as_inner()
                 .get(&config.chain_id)
                 .cloned()
                 .flatten()
@@ -615,6 +606,7 @@ impl SubgraphApi {
         }
 
         self.prod_config
+            .as_inner()
             .get(&config.chain_id)
             .cloned()
             .flatten()
@@ -642,7 +634,7 @@ struct GraphQlResponse<T> {
 }
 
 pub(crate) fn build_prod_config() -> SubgraphApiBaseUrls {
-    BTreeMap::from([
+    [
         (
             SupportedChainId::Mainnet,
             Some(build_prod_gateway_url(
@@ -684,7 +676,9 @@ pub(crate) fn build_prod_config() -> SubgraphApiBaseUrls {
         (SupportedChainId::Linea, None),
         (SupportedChainId::Plasma, None),
         (SupportedChainId::Ink, None),
-    ])
+    ]
+    .into_iter()
+    .collect()
 }
 
 const fn prod_subgraph_id(chain_id: SupportedChainId) -> Option<&'static str> {
@@ -796,19 +790,4 @@ fn sanitize_public_base_url(base_url: &str) -> String {
         }
         Err(_) => CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned(),
     }
-}
-
-#[allow(
-    clippy::single_option_map,
-    reason = "the Option mapping preserves explicit Option<SubgraphApiBaseUrls> semantics for the public sanitization helper"
-)]
-fn sanitized_base_urls(base_urls: Option<&SubgraphApiBaseUrls>) -> Option<SubgraphApiBaseUrls> {
-    base_urls.map(|base_urls| {
-        base_urls
-            .iter()
-            .map(|(chain_id, base_url)| {
-                (*chain_id, base_url.as_deref().map(sanitize_public_base_url))
-            })
-            .collect()
-    })
 }

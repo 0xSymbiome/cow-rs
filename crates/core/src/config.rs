@@ -1,12 +1,11 @@
-use std::{collections::BTreeMap, fmt, time::Duration};
+use std::{collections::BTreeMap, time::Duration};
 
 use http::HeaderValue;
-use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
     errors::{CoreError, ValidationError},
-    redaction::{REDACTED_PLACEHOLDER, Redacted},
+    redaction::{Redacted, RedactedUrlMap},
     types::{Address, ChainId, TokenInfo, hex_decode_20},
 };
 
@@ -217,8 +216,8 @@ impl CowEnv {
     }
 }
 
-/// Mapping from numeric chain id to API base URL.
-pub type ApiBaseUrls = BTreeMap<ChainId, String>;
+/// Redacting mapping from numeric chain id to API base URL.
+pub type ApiBaseUrls = RedactedUrlMap<ChainId>;
 /// Mapping from numeric chain id to deployment address override.
 pub type AddressPerChain = BTreeMap<ChainId, Address>;
 
@@ -351,7 +350,7 @@ impl ProtocolOptions {
 
 /// API routing context used by transport-owning crates.
 #[non_exhaustive]
-#[derive(Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiContext {
     /// Target chain id for endpoint resolution.
@@ -364,40 +363,6 @@ pub struct ApiContext {
     #[serde(skip_serializing_if = "Option::is_none")]
     /// Optional partner API key that switches resolution to partner endpoints.
     pub api_key: Option<Redacted<String>>,
-}
-
-impl fmt::Debug for ApiContext {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ApiContext")
-            .field("chain_id", &self.chain_id)
-            .field("env", &self.env)
-            .field("base_urls", &self.base_urls)
-            .field(
-                "api_key",
-                &self.api_key.as_ref().map(|_| REDACTED_PLACEHOLDER),
-            )
-            .finish()
-    }
-}
-
-impl Serialize for ApiContext {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut state = serializer.serialize_struct("ApiContext", 4)?;
-        state.serialize_field("chainId", &self.chain_id)?;
-        state.serialize_field("env", &self.env)?;
-
-        if let Some(base_urls) = &self.base_urls {
-            state.serialize_field("baseUrls", base_urls)?;
-        }
-        if self.api_key.is_some() {
-            state.serialize_field("apiKey", REDACTED_PLACEHOLDER)?;
-        }
-
-        state.end()
-    }
 }
 
 impl Default for ApiContext {
@@ -429,8 +394,8 @@ impl ApiContext {
 
     /// Returns a copy of this context with an explicit base-URL override map.
     #[must_use]
-    pub fn with_base_urls(mut self, base_urls: ApiBaseUrls) -> Self {
-        self.base_urls = Some(base_urls);
+    pub fn with_base_urls(mut self, base_urls: impl Into<ApiBaseUrls>) -> Self {
+        self.base_urls = Some(base_urls.into());
         self
     }
 
@@ -473,6 +438,7 @@ impl ApiContext {
         let base_urls = self.base_urls.as_ref().unwrap_or(&default_urls);
 
         base_urls
+            .as_inner()
             .get(&chain_id)
             .cloned()
             .ok_or_else(|| CoreError::MissingBaseUrl {

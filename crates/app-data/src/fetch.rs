@@ -50,8 +50,9 @@ impl IpfsFetchPolicy {
     pub fn from_config(config: &IpfsConfig) -> Result<Self, AppDataError> {
         let read_base_uri = config
             .read_uri
-            .as_deref()
-            .or(config.uri.as_deref())
+            .as_ref()
+            .map(|uri| uri.as_inner().as_str())
+            .or_else(|| config.uri.as_ref().map(|uri| uri.as_inner().as_str()))
             .unwrap_or(DEFAULT_IPFS_READ_URI);
 
         Self::new(read_base_uri)

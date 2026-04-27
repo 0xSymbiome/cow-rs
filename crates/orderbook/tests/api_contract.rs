@@ -137,6 +137,23 @@ fn explicit_env_base_url_override_precedes_context_base_urls() {
     );
 }
 
+#[test]
+fn api_debug_redacts_context_base_url_credentials() {
+    let base_urls = std::collections::BTreeMap::from([(
+        u64::from(SupportedChainId::GnosisChain),
+        "https://user:pass@example.test/path?apiKey=secret-token".to_owned(),
+    )]);
+    let api = build_orderbook_api(default_context(SupportedChainId::GnosisChain, CowEnv::Prod))
+        .with_context_override(ApiContextOverride::new().with_base_urls(base_urls));
+
+    let debug = format!("{api:#?}");
+
+    assert!(debug.contains(cow_sdk_core::REDACTED_PLACEHOLDER));
+    assert!(!debug.contains("user:pass"));
+    assert!(!debug.contains("apiKey=secret-token"));
+    assert!(!debug.contains("example.test"));
+}
+
 #[tokio::test]
 async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
     let server = MockServer::start().await;

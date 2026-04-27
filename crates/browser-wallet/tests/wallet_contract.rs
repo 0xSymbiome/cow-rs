@@ -699,3 +699,33 @@ fn chain_configuration_validation_rejects_invalid_inputs_before_rpc() {
         }
     );
 }
+
+#[test]
+fn chain_parameters_public_debug_and_serialize_redact_url_credentials() {
+    let parameters = WalletChainParameters::for_supported_chain(SupportedChainId::Base)
+        .try_with_rpc_url("https://user:pass@base.example.invalid/rpc?apiKey=secret")
+        .unwrap()
+        .try_with_block_explorer_url("https://explorer.example.invalid/path?token=secret")
+        .unwrap()
+        .try_with_icon_url("https://cdn.example.invalid/icon.svg?key=secret")
+        .unwrap();
+
+    let debug = format!("{parameters:#?}");
+    let json = serde_json::to_value(&parameters).expect("parameters serialize");
+
+    assert!(debug.contains(cow_sdk_core::REDACTED_PLACEHOLDER));
+    assert_eq!(json["rpcUrls"][0], cow_sdk_core::REDACTED_PLACEHOLDER);
+    assert_eq!(
+        json["blockExplorerUrls"][0],
+        cow_sdk_core::REDACTED_PLACEHOLDER
+    );
+    assert_eq!(json["iconUrls"][0], cow_sdk_core::REDACTED_PLACEHOLDER);
+
+    for rendered in [debug, json.to_string()] {
+        assert!(!rendered.contains("user:pass"));
+        assert!(!rendered.contains("apiKey=secret"));
+        assert!(!rendered.contains("token=secret"));
+        assert!(!rendered.contains("key=secret"));
+        assert!(!rendered.contains("base.example.invalid"));
+    }
+}

@@ -13,7 +13,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use cow_sdk_core::{
-    ApiContext, CowEnv, HttpTransport, REDACTED_PLACEHOLDER, ReqwestTransport,
+    ApiContext, CowEnv, HttpTransport, REDACTED_PLACEHOLDER, RedactedUrlMap, ReqwestTransport,
     ReqwestTransportConfig, SupportedChainId, TransportError,
 };
 use cow_sdk_orderbook::{
@@ -107,7 +107,13 @@ fn builder_from_context_propagates_chain_environment_api_key_and_base_urls() {
             .map(|value| value.as_inner().clone()),
         Some("partner-key".to_owned()),
     );
-    assert_eq!(api.context().base_urls.as_ref(), Some(&base_urls));
+    assert_eq!(
+        api.context()
+            .base_urls
+            .as_ref()
+            .map(RedactedUrlMap::as_inner),
+        Some(&base_urls),
+    );
 }
 
 #[test]
@@ -121,6 +127,25 @@ fn builder_debug_redacts_partner_api_key() {
 
     assert!(debug.contains(REDACTED_PLACEHOLDER));
     assert!(!debug.contains("partner-key"));
+}
+
+#[test]
+fn builder_debug_redacts_base_url_credentials() {
+    let base_urls = std::collections::BTreeMap::from([(
+        u64::from(SupportedChainId::Mainnet),
+        "https://user:pass@example.test/path?apiKey=secret-token".to_owned(),
+    )]);
+    let builder = OrderBookApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .environment(CowEnv::Prod)
+        .base_urls(base_urls);
+
+    let debug = format!("{builder:#?}");
+
+    assert!(debug.contains(REDACTED_PLACEHOLDER));
+    assert!(!debug.contains("user:pass"));
+    assert!(!debug.contains("apiKey=secret-token"));
+    assert!(!debug.contains("example.test"));
 }
 
 #[test]

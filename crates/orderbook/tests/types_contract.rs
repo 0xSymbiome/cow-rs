@@ -45,6 +45,10 @@ fn quote_request_supports_buy_side_and_context_overrides() {
     let override_context = ApiContextOverride::new()
         .with_chain_id(SupportedChainId::Mainnet)
         .with_env(CowEnv::Staging)
+        .with_base_urls(std::collections::BTreeMap::from([(
+            u64::from(SupportedChainId::Mainnet),
+            "https://user:pass@example.test/path?apiKey=secret-token".to_owned(),
+        )]))
         .with_api_key("partner-key".to_owned().into());
 
     let request = OrderQuoteRequest::new(
@@ -82,10 +86,14 @@ fn quote_request_supports_buy_side_and_context_overrides() {
     assert!(debug.contains("ApiContextOverride"));
     assert!(debug.contains("[redacted]"));
     assert!(!debug.contains("partner-key"));
+    assert!(!debug.contains("user:pass"));
+    assert!(!debug.contains("apiKey=secret-token"));
+    assert!(!debug.contains("example.test"));
 
     let override_value =
         serde_json::to_value(&override_context).expect("context override must serialize");
     assert_eq!(override_value["apiKey"], json!("[redacted]"));
+    assert_eq!(override_value["baseUrls"]["1"], json!("[redacted]"));
 }
 
 #[test]

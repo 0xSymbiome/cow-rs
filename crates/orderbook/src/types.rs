@@ -1,19 +1,16 @@
-use std::fmt;
-
-use serde::ser::SerializeStruct;
 use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError};
 
 use crate::error::OrderbookError;
 
 pub use cow_sdk_core::{
     Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, BuyTokenDestination, CowEnv, ENVS_LIST,
-    EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, OrderUid, QuoteAmountsAndCosts, REDACTED_PLACEHOLDER,
-    Redacted, SellTokenSource, SupportedChainId,
+    EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, OrderUid, QuoteAmountsAndCosts, Redacted,
+    SellTokenSource, SupportedChainId,
 };
 
 /// Partial override applied to an [`ApiContext`] when cloning an orderbook client.
 #[non_exhaustive]
-#[derive(Clone, PartialEq, Eq, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiContextOverride {
     /// Replacement chain id for endpoint resolution.
@@ -53,8 +50,8 @@ impl ApiContextOverride {
 
     /// Returns a copy of this override with an explicit base-URL override map.
     #[must_use]
-    pub fn with_base_urls(mut self, base_urls: ApiBaseUrls) -> Self {
-        self.base_urls = Some(base_urls);
+    pub fn with_base_urls(mut self, base_urls: impl Into<ApiBaseUrls>) -> Self {
+        self.base_urls = Some(base_urls.into());
         self
     }
 
@@ -63,44 +60,6 @@ impl ApiContextOverride {
     pub fn with_api_key(mut self, api_key: Redacted<String>) -> Self {
         self.api_key = Some(api_key);
         self
-    }
-}
-
-impl fmt::Debug for ApiContextOverride {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ApiContextOverride")
-            .field("chain_id", &self.chain_id)
-            .field("env", &self.env)
-            .field("base_urls", &self.base_urls)
-            .field(
-                "api_key",
-                &self.api_key.as_ref().map(|_| REDACTED_PLACEHOLDER),
-            )
-            .finish()
-    }
-}
-
-impl Serialize for ApiContextOverride {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut state = serializer.serialize_struct("ApiContextOverride", 4)?;
-
-        if let Some(chain_id) = &self.chain_id {
-            state.serialize_field("chainId", chain_id)?;
-        }
-        if let Some(env) = &self.env {
-            state.serialize_field("env", env)?;
-        }
-        if let Some(base_urls) = &self.base_urls {
-            state.serialize_field("baseUrls", base_urls)?;
-        }
-        if self.api_key.is_some() {
-            state.serialize_field("apiKey", REDACTED_PLACEHOLDER)?;
-        }
-
-        state.end()
     }
 }
 

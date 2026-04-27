@@ -1,10 +1,12 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-04-23
-Owning surface: Credential-bearing builder storage and Pinata upload-trait headers across orderbook, subgraph, and app-data
-Refresh trigger: Changes to orderbook or subgraph builder API-key storage, changes to `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without `Redacted<String>` wrapping
+Last reviewed: 2026-04-27
+Owning surface: Credential-bearing builder storage, URL configuration, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, and app-data
+Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without a redacting storage type
 Related docs:
+- [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
+- [URL Credential Redaction Audit](url-credential-redaction-audit.md)
 - [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md)
 - [Typestate Builder Contract Audit](typestate-builder-contract-audit.md)
 - [Verification Matrix](../verification-matrix.md)
@@ -15,9 +17,10 @@ This audit covers:
 
 - `cow-sdk-orderbook::OrderBookApiBuilder` partner API-key storage
 - `cow-sdk-subgraph::SubgraphApiBuilder` partner API-key storage
+- credential-bearing URL fields in core, orderbook, subgraph, browser-wallet, and app-data
 - `cow-sdk-app-data::IpfsUploadTransport::post_json` header typing and the Pinata header assembly path
 
-It does not cover unrelated config redaction, transport error redaction, or credential handling outside these three named boundaries.
+It does not cover unrelated transport error redaction or credential handling outside these named boundaries.
 
 ## Outcome Summary
 
@@ -25,6 +28,7 @@ It does not cover unrelated config redaction, transport error redaction, or cred
 | --- | --- | --- |
 | Orderbook builder | `OrderBookApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
 | Subgraph builder | `SubgraphApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
+| URL configuration | Credential-bearing URL values use redacting storage types and unwrap only at dispatch seams | Conforms |
 | Pinata upload trait | `IpfsUploadTransport::post_json` carries `Redacted<String>` header values and the Pinata header vector stays redacted under `Debug` | Conforms |
 
 ## Current Contract
@@ -43,6 +47,16 @@ configured builder emits the workspace redaction marker instead of the secret.
 storage, so `Debug` on the typestate builder preserves the current redaction
 contract while keeping the key available for deliberate downstream use.
 
+### URL Configuration
+
+`crates/core/src/redaction.rs` owns the shared URL-map redaction types.
+`ApiContext`, `ApiContextOverride`, `SubgraphConfig`,
+`SubgraphApiBuilder`, `WalletChainParameters`, and `IpfsConfig` store
+credential-bearing URL values in redacting wrappers. Public debug and
+serialized output emits `[redacted]` for configured URL values while routing,
+wallet payload construction, and IPFS read/write policies use explicit raw
+access at the dispatch boundary.
+
 ### Pinata Upload Boundary
 
 `crates/app-data/src/pinning.rs` widens
@@ -57,20 +71,33 @@ needs the raw bytes must opt in to unwrap them and the boundary's default
 Primary implementation points:
 
 - `crates/orderbook/src/builder.rs`
+- `crates/core/src/config.rs`
+- `crates/core/src/redaction.rs`
 - `crates/subgraph/src/builder.rs`
+- `crates/subgraph/src/api.rs`
+- `crates/browser-wallet/src/wallet.rs`
+- `crates/app-data/src/types.rs`
 - `crates/app-data/src/pinning.rs`
 
 Primary regression coverage:
 
 - `crates/orderbook/tests/builder_contract.rs::builder_debug_redacts_partner_api_key`
+- `crates/core/tests/redaction_contract.rs`
 - `crates/subgraph/tests/builder_contract.rs::builder_debug_redacts_partner_api_key`
+- `crates/browser-wallet/tests/wallet_contract.rs::chain_parameters_public_debug_and_serialize_redact_url_credentials`
+- `crates/app-data/tests/ipfs_config_redaction_contract.rs`
 - `crates/app-data/tests/pinning_contract.rs::pinning_headers_debug_redacts_secret_bytes`
 
 Validation surface:
 
 ```text
+cargo test -p cow-sdk-core --test redaction_contract
 cargo test -p cow-sdk-orderbook --test builder_contract
+cargo test -p cow-sdk-orderbook --test api_contract
 cargo test -p cow-sdk-subgraph --test builder_contract
+cargo test -p cow-sdk-subgraph --test api_contract
+cargo test -p cow-sdk-browser-wallet --test wallet_contract
+cargo test -p cow-sdk-app-data --test ipfs_config_redaction_contract
 cargo test -p cow-sdk-app-data --test pinning_contract
 cargo test --workspace --all-features
 ```

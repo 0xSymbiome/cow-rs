@@ -207,8 +207,8 @@ impl<C, A, T> SubgraphApiBuilder<C, A, T> {
     /// supplied API key for the corresponding chain. A `None` value
     /// marks the chain as unsupported on the resulting client.
     #[must_use]
-    pub fn base_urls(mut self, base_urls: SubgraphApiBaseUrls) -> Self {
-        self.base_urls = Some(base_urls);
+    pub fn base_urls(mut self, base_urls: impl Into<SubgraphApiBaseUrls>) -> Self {
+        self.base_urls = Some(base_urls.into());
         self
     }
 

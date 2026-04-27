@@ -46,8 +46,8 @@ pub fn pin_json_in_pinata_ipfs(
         "write",
         ipfs_config
             .write_uri
-            .as_deref()
-            .unwrap_or(DEFAULT_IPFS_WRITE_URI),
+            .as_ref()
+            .map_or(DEFAULT_IPFS_WRITE_URI, |uri| uri.as_inner().as_str()),
     )?;
 
     let payload = serde_json::json!({

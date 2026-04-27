@@ -108,7 +108,7 @@ fn wallet_native_currency_new_preserves_wire_shape() {
 }
 
 #[test]
-fn wallet_chain_parameters_new_preserves_wire_shape() {
+fn wallet_chain_parameters_public_serialize_redacts_url_values() {
     let native_currency =
         WalletNativeCurrency::new("Ether", "ETH", 18).expect("native currency must validate");
     let parameters =
@@ -123,8 +123,14 @@ fn wallet_chain_parameters_new_preserves_wire_shape() {
 
     assert_json_bytes(
         &parameters,
-        r#"{"chainId":11155111,"chainName":"Sepolia","nativeCurrency":{"name":"Ether","symbol":"ETH","decimals":18},"rpcUrls":["https://rpc.sepolia.example"],"blockExplorerUrls":["https://explorer.sepolia.example"],"iconUrls":["https://cdn.example/icon.svg"]}"#,
+        r#"{"chainId":11155111,"chainName":"Sepolia","nativeCurrency":{"name":"Ether","symbol":"ETH","decimals":18},"rpcUrls":["[redacted]"],"blockExplorerUrls":["[redacted]"],"iconUrls":["[redacted]"]}"#,
     );
+
+    let debug = format!("{parameters:?}");
+    assert!(debug.contains(cow_sdk_core::REDACTED_PLACEHOLDER));
+    assert!(!debug.contains("rpc.sepolia.example"));
+    assert!(!debug.contains("explorer.sepolia.example"));
+    assert!(!debug.contains("cdn.example"));
 }
 
 #[test]

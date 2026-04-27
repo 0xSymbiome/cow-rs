@@ -1,4 +1,7 @@
-use cow_sdk_core::{DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, SupportedChainId, TransportErrorClass};
+use cow_sdk_core::{
+    DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, REDACTED_PLACEHOLDER, SupportedChainId,
+    TransportErrorClass,
+};
 use cow_sdk_subgraph::{
     DEFAULT_SUBGRAPH_USER_AGENT, DailyTotal, HourlyTotal, LAST_DAYS_VOLUME_QUERY,
     LAST_HOURS_VOLUME_QUERY, LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi,
@@ -105,6 +108,32 @@ fn debug_output_keeps_subgraph_contract_visible_without_printing_prod_urls() {
     assert!(debug.contains("supported_prod_chains"));
     assert!(!debug.contains("FakeApiKey"));
     assert!(!debug.contains("gateway.thegraph.com"));
+}
+
+#[test]
+fn config_debug_and_serialize_redact_custom_base_url_credentials() {
+    let base_urls: SubgraphApiBaseUrls = [
+        (
+            SupportedChainId::Mainnet,
+            Some("https://user:pass@example.test/path?apiKey=secret-token".to_owned()),
+        ),
+        (SupportedChainId::GnosisChain, None),
+    ]
+    .into_iter()
+    .collect();
+    let config = cow_sdk_subgraph::SubgraphConfig::new(SupportedChainId::Mainnet, Some(base_urls));
+
+    let debug = format!("{config:#?}");
+    let json = serde_json::to_value(&config).expect("subgraph config serializes");
+
+    assert!(debug.contains(REDACTED_PLACEHOLDER));
+    assert_eq!(json["baseUrls"]["1"], REDACTED_PLACEHOLDER);
+    assert_eq!(json["baseUrls"]["100"], serde_json::Value::Null);
+    for rendered in [debug, json.to_string()] {
+        assert!(!rendered.contains("user:pass"));
+        assert!(!rendered.contains("apiKey=secret-token"));
+        assert!(!rendered.contains("example.test"));
+    }
 }
 
 #[tokio::test]

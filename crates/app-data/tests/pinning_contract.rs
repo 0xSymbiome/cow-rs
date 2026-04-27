@@ -57,7 +57,7 @@ impl IpfsUploadTransport for RecordingUploadTransport {
 
 fn credentialed_config_with_write_uri(write_uri: Option<&str>) -> IpfsConfig {
     IpfsConfig {
-        write_uri: write_uri.map(str::to_owned),
+        write_uri: write_uri.map(|value| value.to_owned().into()),
         pinata_api_key: Some("apikey".to_string().into()),
         pinata_api_secret: Some("apiSecret".to_string().into()),
         ..IpfsConfig::default()

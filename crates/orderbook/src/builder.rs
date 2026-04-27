@@ -241,8 +241,8 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
     /// Supplies an explicit per-chain base-URL map for the resolved API
     /// context.
     #[must_use]
-    pub fn base_urls(mut self, base_urls: ApiBaseUrls) -> Self {
-        self.base_urls = Some(base_urls);
+    pub fn base_urls(mut self, base_urls: impl Into<ApiBaseUrls>) -> Self {
+        self.base_urls = Some(base_urls.into());
         self
     }
 

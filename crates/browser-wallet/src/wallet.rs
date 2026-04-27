@@ -9,7 +9,7 @@ use std::{cell::RefCell, fmt, rc::Rc};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use cow_sdk_core::{Address, ChainId, SupportedChainId};
+use cow_sdk_core::{Address, ChainId, Redacted, SupportedChainId};
 
 use crate::{
     BrowserWalletError, Eip1193Provider, Eip1193Signer, Eip1193Transport, EventLog, WalletSession,
@@ -168,13 +168,13 @@ pub struct WalletChainParameters {
     pub native_currency: WalletNativeCurrency,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     /// RPC URLs supplied to the wallet.
-    pub rpc_urls: Vec<String>,
+    pub rpc_urls: Vec<Redacted<String>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     /// Block explorer URLs supplied to the wallet.
-    pub block_explorer_urls: Vec<String>,
+    pub block_explorer_urls: Vec<Redacted<String>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     /// Icon URLs supplied to the wallet.
-    pub icon_urls: Vec<String>,
+    pub icon_urls: Vec<Redacted<String>>,
 }
 
 impl WalletChainParameters {
@@ -222,11 +222,11 @@ impl WalletChainParameters {
         rpc_url: impl Into<String>,
     ) -> Result<Self, BrowserWalletError> {
         let rpc_url = rpc_url.into();
-        self.rpc_urls.push(validate_wallet_url(
+        self.rpc_urls.push(Redacted::new(validate_wallet_url(
             &rpc_url,
             "RPC URL",
             u64::from(self.chain_id),
-        )?);
+        )?));
         Ok(self)
     }
 
@@ -240,11 +240,12 @@ impl WalletChainParameters {
         block_explorer_url: impl Into<String>,
     ) -> Result<Self, BrowserWalletError> {
         let block_explorer_url = block_explorer_url.into();
-        self.block_explorer_urls.push(validate_wallet_url(
-            &block_explorer_url,
-            "block explorer URL",
-            u64::from(self.chain_id),
-        )?);
+        self.block_explorer_urls
+            .push(Redacted::new(validate_wallet_url(
+                &block_explorer_url,
+                "block explorer URL",
+                u64::from(self.chain_id),
+            )?));
         Ok(self)
     }
 
@@ -258,11 +259,11 @@ impl WalletChainParameters {
         icon_url: impl Into<String>,
     ) -> Result<Self, BrowserWalletError> {
         let icon_url = icon_url.into();
-        self.icon_urls.push(validate_wallet_url(
+        self.icon_urls.push(Redacted::new(validate_wallet_url(
             &icon_url,
             "icon URL",
             u64::from(self.chain_id),
-        )?);
+        )?));
         Ok(self)
     }
 
@@ -291,39 +292,60 @@ impl WalletChainParameters {
             ));
         }
         for url in &self.rpc_urls {
-            let _ = validate_wallet_url(url, "RPC URL", chain_id)?;
+            let _ = validate_wallet_url(url.as_inner(), "RPC URL", chain_id)?;
         }
         for url in &self.block_explorer_urls {
-            let _ = validate_wallet_url(url, "block explorer URL", chain_id)?;
+            let _ = validate_wallet_url(url.as_inner(), "block explorer URL", chain_id)?;
         }
         for url in &self.icon_urls {
-            let _ = validate_wallet_url(url, "icon URL", chain_id)?;
+            let _ = validate_wallet_url(url.as_inner(), "icon URL", chain_id)?;
         }
         Ok(())
     }
 
-    fn rpc_payload(&self) -> Result<Value, BrowserWalletError> {
+    pub(crate) fn for_wallet_payload(
+        &self,
+    ) -> Result<WalletChainParametersPayload<'_>, BrowserWalletError> {
         self.validate()?;
-        let mut payload = json!({
-            "chainId": hex_quantity(&u64::from(self.chain_id).to_string())?,
-            "chainName": self.chain_name,
-            "nativeCurrency": {
-                "name": self.native_currency.name,
-                "symbol": self.native_currency.symbol,
-                "decimals": self.native_currency.decimals,
-            },
-            "rpcUrls": self.rpc_urls,
-        });
-        if !self.block_explorer_urls.is_empty() {
-            payload["blockExplorerUrls"] = serde_json::to_value(&self.block_explorer_urls)
-                .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
-        }
-        if !self.icon_urls.is_empty() {
-            payload["iconUrls"] = serde_json::to_value(&self.icon_urls)
-                .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
-        }
-        Ok(payload)
+        Ok(WalletChainParametersPayload {
+            chain_id: hex_quantity(&u64::from(self.chain_id).to_string())?,
+            chain_name: &self.chain_name,
+            native_currency: &self.native_currency,
+            rpc_urls: self
+                .rpc_urls
+                .iter()
+                .map(|url| url.as_inner().as_str())
+                .collect(),
+            block_explorer_urls: self
+                .block_explorer_urls
+                .iter()
+                .map(|url| url.as_inner().as_str())
+                .collect(),
+            icon_urls: self
+                .icon_urls
+                .iter()
+                .map(|url| url.as_inner().as_str())
+                .collect(),
+        })
     }
+
+    fn rpc_payload(&self) -> Result<Value, BrowserWalletError> {
+        serde_json::to_value(self.for_wallet_payload()?)
+            .map_err(|error| BrowserWalletError::serialization(error.to_string()))
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct WalletChainParametersPayload<'a> {
+    chain_id: String,
+    chain_name: &'a str,
+    native_currency: &'a WalletNativeCurrency,
+    rpc_urls: Vec<&'a str>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    block_explorer_urls: Vec<&'a str>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    icon_urls: Vec<&'a str>,
 }
 
 /// Result kind returned by typed chain-management helpers.
