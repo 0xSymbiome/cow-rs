@@ -85,7 +85,7 @@ where
         if this.cancel.poll(cx).is_ready() {
             #[cfg(feature = "tracing")]
             // Keep the subscriber-facing field spelling stable: cancelled=true.
-            tracing::warn!(target: "cow_sdk::cancel", cancelled = true);
+            tracing::debug!(target: "cow_sdk::cancel", cancelled = true);
             return Poll::Ready(Err(E::from(Cancelled)));
         }
 

@@ -1032,12 +1032,22 @@ where
 {
     let request =
         eip1271_order_verification_request(order_to_sign, chain_id, verification, options)?;
-    cow_sdk_contracts::verify_eip1271_signature_async(
+    let verification = cow_sdk_contracts::verify_eip1271_signature_async(
         provider,
         &request,
         &cow_sdk_signing::NoopEip1271VerificationCache,
-    )
-    .await?;
+    );
+    #[cfg(feature = "tracing")]
+    let verification = {
+        use tracing::Instrument as _;
+
+        verification.instrument(tracing::debug_span!(
+            "trading.verify_eip1271_caller",
+            chain_id = ?chain_id,
+            verifier = %request.verifier,
+        ))
+    };
+    verification.await?;
     Ok(())
 }
 

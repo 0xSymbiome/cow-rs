@@ -15,6 +15,7 @@ single facade feature on `cow-sdk` that activates them all in one step:
 cow-sdk = { version = "0.1", features = ["tracing"] }
 # or, reaching individual crates directly:
 cow-sdk-trading = { version = "0.1", features = ["tracing"] }
+cow-sdk-contracts = { version = "0.1", features = ["tracing"] }
 cow-sdk-orderbook = { version = "0.1", features = ["tracing"] }
 cow-sdk-subgraph = { version = "0.1", features = ["tracing"] }
 cow-sdk-signing = { version = "0.1", features = ["tracing"] }
@@ -73,6 +74,7 @@ downstream dashboards can pivot on the same names across every SDK call.
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `chain` | numeric or string/debug | Active chain id, `SupportedChainId` variant, or platform label such as `wasm32` |
+| `chain_id` | debug | Active chain id on caller spans that wrap lower-level contract helpers |
 | `env` | string | Environment label (`prod` / `staging`) |
 | `endpoint` | string | Stable route identity, GraphQL operation name, or path-only transport endpoint with scheme, authority, query, and fragment stripped |
 | `method` | string | HTTP method (`GET`, `POST`, `DELETE`) for transport calls, or JSON-RPC-like operation name for wallet-mediated calls |
@@ -87,7 +89,11 @@ downstream dashboards can pivot on the same names across every SDK call.
 | `order_uid` | string | Order UID of the target order |
 | `quote_id` | numeric | Orderbook quote id returned by a quote or attached to an order submission |
 | `owner` | string | Owner address exposed on the request parameters |
+| `verifier` | string | Public on-chain verifier address for EIP-1271 verification |
 | `scheme` | string | Signing scheme (`eip712`, `eth_sign`, `eip1271`, `pre_sign`) |
+| `cache_status` | string | EIP-1271 verification cache state: `hit`, `miss`, `store`, or `skip` |
+| `verification_result` | string | EIP-1271 verification result when known: `valid`, `invalid`, or `error` |
+| `cancelled` | boolean | Cooperative cancellation event marker |
 
 ## Coverage
 
@@ -153,7 +159,9 @@ protocol `env` axis.
 
 Every public async method on `TradingSdk` plus the module-level async
 helpers emit one span each. Spans carry `chain`, `env`, and `endpoint`;
-`order_uid` is added on order-bound helpers.
+`order_uid` is added on order-bound helpers. The EIP-1271 order verifier
+also wraps its lower-level contract call in a
+`trading.verify_eip1271_caller` span carrying `chain_id` and `verifier`.
 
 - `get_quote_only`
 - `get_quote_results`
@@ -174,6 +182,18 @@ helpers emit one span each. Spans carry `chain`, `env`, and `endpoint`;
 - `approve_cow_protocol_async`
 - `post_swap_order_from_quote_async` (module-level)
 - `post_sell_native_currency_order_async` (module-level)
+
+### `cow-sdk-contracts`
+
+`verify_eip1271_signature_async` emits one span named `verify.eip1271`
+with target `cow_sdk::verify_eip1271`. The contracts-layer span records
+only `verifier`; it does not record `chain_id`, signature bytes, raw
+digest content, provider URLs, or response bodies.
+
+The same target emits `debug` events for cache and verification outcomes.
+`cache_status` is one of `hit`, `miss`, `store`, or `skip`.
+`verification_result` is present when the result is known and is one of
+`valid`, `invalid`, or `error`.
 
 ### `cow-sdk-signing`
 
@@ -210,10 +230,21 @@ No traced span or event must ever carry a secret. Concretely:
 - Wallet signatures, recovered public keys, and private-key material are
   never logged by the SDK. Downstream instrumentation that wants to record
   a signature should do so explicitly in host code.
+- EIP-1271 verification telemetry records the verifier address and
+  low-cardinality cache/result labels only; it never records signature
+  bytes, raw digest content, provider URLs, or response bodies.
 
 If a future call site needs to record an identifier that is derived from
 secret material, the convention is to hash or prefix-truncate it in the
 host application before emitting it through the tracing subscriber.
+
+## Cooperative Cancellation
+
+`cow_sdk_core::Cancellable::cancel_with` emits a `debug` event with target
+`cow_sdk::cancel` and `cancelled = true` when a cancellation token wins the
+biased poll. The level is intentionally below `warn` because user
+interfaces may cancel and replace in-flight requests at high frequency
+during normal operation.
 
 ## Retry Cooldowns
 

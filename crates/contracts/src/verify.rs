@@ -80,6 +80,15 @@ pub trait Eip1271VerificationCache: Send + Sync + 'static {
 /// Returns [`ContractsError`] if the digest cannot be decoded, the
 /// verifier has no code, the provider call fails, or the verifier
 /// response is malformed or does not match the expected magic value.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        skip_all,
+        name = "verify.eip1271",
+        target = "cow_sdk::verify_eip1271",
+        fields(verifier = %request.verifier),
+    ),
+)]
 pub async fn verify_eip1271_signature_async<P, C>(
     provider: &P,
     request: &Eip1271VerificationRequest,
@@ -93,32 +102,88 @@ where
     let digest_key = decode_digest_key(&request.digest)?;
 
     if let Some(cached) = cache.get(request.verifier.clone(), digest_key) {
+        #[cfg(feature = "tracing")]
+        tracing::debug!(
+            target: "cow_sdk::verify_eip1271",
+            cache_status = "hit",
+            verification_result = if cached { "valid" } else { "invalid" },
+        );
         return cache_hit_to_result(cached);
     }
 
-    ensure_contract_code_async(provider, &request.verifier).await?;
+    #[cfg(feature = "tracing")]
+    tracing::debug!(
+        target: "cow_sdk::verify_eip1271",
+        cache_status = "miss",
+    );
+
+    if let Err(error) = ensure_contract_code_async(provider, &request.verifier).await {
+        #[cfg(feature = "tracing")]
+        emit_cache_skip_event();
+        return Err(error);
+    }
+
+    let args_json =
+        match serde_json::to_string(&(request.digest.as_str(), request.signature.as_str())) {
+            Ok(args_json) => args_json,
+            Err(error) => {
+                #[cfg(feature = "tracing")]
+                emit_cache_skip_event();
+                return Err(ContractsError::from(error));
+            }
+        };
     let raw = provider
         .read_contract(&cow_sdk_core::ContractCall::new(
             request.verifier.clone(),
             "isValidSignature".to_owned(),
             EIP1271_IS_VALID_SIGNATURE_ABI_JSON.to_owned(),
-            serde_json::to_string(&(request.digest.as_str(), request.signature.as_str()))?,
+            args_json,
         ))
         .await
-        .map_err(|error| ContractsError::Eip1271Provider {
-            operation: "read_contract",
-            message: error.to_string(),
+        .map_err(|error| {
+            #[cfg(feature = "tracing")]
+            emit_cache_skip_event();
+            ContractsError::Eip1271Provider {
+                operation: "read_contract",
+                message: error.to_string(),
+            }
         })?;
 
     let outcome = ensure_magic_value(&raw);
     match &outcome {
-        Ok(()) => cache.put(request.verifier.clone(), digest_key, true),
+        Ok(()) => {
+            cache.put(request.verifier.clone(), digest_key, true);
+            #[cfg(feature = "tracing")]
+            tracing::debug!(
+                target: "cow_sdk::verify_eip1271",
+                cache_status = "store",
+                verification_result = "valid",
+            );
+        }
         Err(ContractsError::Eip1271MagicValueMismatch { .. }) => {
             cache.put(request.verifier.clone(), digest_key, false);
+            #[cfg(feature = "tracing")]
+            tracing::debug!(
+                target: "cow_sdk::verify_eip1271",
+                cache_status = "store",
+                verification_result = "invalid",
+            );
         }
-        Err(_) => {}
+        Err(_) => {
+            #[cfg(feature = "tracing")]
+            emit_cache_skip_event();
+        }
     }
     outcome
+}
+
+#[cfg(feature = "tracing")]
+fn emit_cache_skip_event() {
+    tracing::debug!(
+        target: "cow_sdk::verify_eip1271",
+        cache_status = "skip",
+        verification_result = "error",
+    );
 }
 
 const fn cache_hit_to_result(cached: bool) -> Result<(), ContractsError> {

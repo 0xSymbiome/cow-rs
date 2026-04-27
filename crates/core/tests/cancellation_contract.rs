@@ -113,7 +113,7 @@ mod tracing_contract {
     };
 
     #[tokio::test(flavor = "current_thread")]
-    async fn cancellation_branch_emits_warn_event_with_target_and_field() {
+    async fn cancellation_branch_emits_debug_event_with_target_and_field() {
         let capture = TraceCapture::install();
         let token = CancellationToken::new();
         token.cancel();
@@ -127,11 +127,11 @@ mod tracing_contract {
         let events = capture.events();
         assert!(
             events.iter().any(|event| {
-                event.level == Level::WARN
+                event.level == Level::DEBUG
                     && event.target == "cow_sdk::cancel"
                     && event.field("cancelled") == Some("true")
             }),
-            "cancellation must emit a warn event with target and cancelled field: {events:#?}",
+            "cancellation must emit a debug event with target and cancelled field: {events:#?}",
         );
     }
 

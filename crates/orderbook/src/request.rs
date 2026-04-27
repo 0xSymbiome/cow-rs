@@ -1188,9 +1188,8 @@ async fn delay_for(duration: Duration) {
     {
         let millis = u32::try_from(duration.as_millis().min(u128::from(u32::MAX)))
             .expect("millisecond delay is clamped to `u32::MAX`");
-        if millis > 0 {
-            TimeoutFuture::new(millis).await;
-        }
+        // TimeoutFuture::new(0) yields on wasm32, matching native zero-delay semantics.
+        TimeoutFuture::new(millis).await;
     }
 }
 
