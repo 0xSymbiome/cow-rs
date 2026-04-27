@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use cow_sdk_core::{
     HttpClientPolicy, HttpTransport, Redacted, RedactedOptionalUrlMap, SupportedChainId,
-    TransportError, TransportErrorClass,
+    TransportError, TransportErrorClass, redact_response_body,
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
@@ -503,7 +503,7 @@ impl SubgraphApi {
                     resolved_config.chain_id,
                     &request,
                     status,
-                    body,
+                    &body,
                 ));
             }
             Err(TransportError::Transport { class, detail }) => {
@@ -715,12 +715,12 @@ fn http_status_error(
     chain_id: SupportedChainId,
     request: &SubgraphQueryRequest,
     status: u16,
-    body: String,
+    body: &str,
 ) -> SubgraphError {
     SubgraphError::HttpStatus {
         context: Box::new(request_error_context(api, chain_id, request)),
         status,
-        body,
+        body: Redacted::new(redact_response_body(body)),
     }
 }
 
@@ -733,7 +733,7 @@ fn serialization_error(
 ) -> SubgraphError {
     SubgraphError::Serialization {
         context: Box::new(request_error_context(api, chain_id, request)),
-        body: body.to_owned(),
+        body: Redacted::new(redact_response_body(body)),
         details,
     }
 }

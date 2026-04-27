@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
 use cow_sdk_core::{
-    ApiContext, CowEnv, REDACTED_PLACEHOLDER, RedactedOptionalUrlMap, RedactedUrlMap,
-    SupportedChainId,
+    ApiContext, CowEnv, REDACTED_PLACEHOLDER, REDACTED_RESPONSE_BODY_MAX_BYTES,
+    RESPONSE_BODY_TRUNCATION_MARKER, RedactedOptionalUrlMap, RedactedUrlMap, SupportedChainId,
+    redact_response_body,
 };
 
 const CREDENTIAL_URL: &str = "https://user:pass@example.test/path?apiKey=secret-token";
@@ -99,4 +100,53 @@ fn api_context_redacts_base_urls_in_debug_and_serialize_but_resolves_raw_url() {
     for rendered in [compact_debug, pretty_debug, json.to_string()] {
         assert_no_credential_bytes(&rendered);
     }
+}
+
+#[test]
+fn response_body_redaction_strips_credential_shapes_without_regex_dependency() {
+    let jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJjb3cifQ.signature";
+    let raw = format!(
+        "aUtHoRiZaTiOn: bEaReR bearer-secret-123\n\
+         X-API-KEY: header-secret-456\n\
+         /pin?api-key=query-secret&api_key=query-secret-2\n\
+         {{\"api_key\":\"json-secret\",\"token\":\"token-secret\",\"secret\":\"secret-value\"}}\n\
+         jwt={jwt}"
+    );
+
+    let redacted = redact_response_body(&raw);
+
+    assert!(redacted.contains(REDACTED_PLACEHOLDER));
+    assert!(redacted.contains("aUtHoRiZaTiOn: bEaReR [redacted]"));
+    for forbidden in [
+        "bearer-secret-123",
+        "header-secret-456",
+        "query-secret",
+        "query-secret-2",
+        "json-secret",
+        "token-secret",
+        "secret-value",
+        jwt,
+    ] {
+        assert!(
+            !redacted.contains(forbidden),
+            "sanitized response body leaked {forbidden}: {redacted}"
+        );
+    }
+}
+
+#[test]
+fn response_body_redaction_strips_before_utf8_safe_truncation() {
+    let raw = format!(
+        "{} token=secret-after-wide-prefix",
+        "€".repeat(REDACTED_RESPONSE_BODY_MAX_BYTES)
+    );
+
+    let redacted = redact_response_body(&raw);
+    let retained = redacted
+        .strip_suffix(RESPONSE_BODY_TRUNCATION_MARKER)
+        .expect("overflowing response bodies must carry the truncation marker");
+
+    assert!(retained.len() <= REDACTED_RESPONSE_BODY_MAX_BYTES);
+    assert!(!redacted.contains("secret-after-wide-prefix"));
+    assert!(redacted.ends_with(RESPONSE_BODY_TRUNCATION_MARKER));
 }

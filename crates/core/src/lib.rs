@@ -29,7 +29,10 @@ pub use config::{
     SupportedChainId, default_api_base_urls, wrapped_native_token,
 };
 pub use errors::{CoreError, ValidationError};
-pub use redaction::{REDACTED_PLACEHOLDER, Redacted, RedactedOptionalUrlMap, RedactedUrlMap};
+pub use redaction::{
+    REDACTED_PLACEHOLDER, REDACTED_RESPONSE_BODY_MAX_BYTES, RESPONSE_BODY_TRUNCATION_MARKER,
+    Redacted, RedactedOptionalUrlMap, RedactedUrlMap, redact_response_body,
+};
 
 /// Cooperative cancellation token propagated through SDK long-running operations.
 ///

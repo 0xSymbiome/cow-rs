@@ -16,6 +16,11 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// The placeholder emitted in every redacted representation.
 pub const REDACTED_PLACEHOLDER: &str = "[redacted]";
+/// Maximum number of sanitized response-body bytes retained before appending
+/// [`RESPONSE_BODY_TRUNCATION_MARKER`].
+pub const REDACTED_RESPONSE_BODY_MAX_BYTES: usize = 256;
+/// Marker appended when [`redact_response_body`] truncates a sanitized body.
+pub const RESPONSE_BODY_TRUNCATION_MARKER: &str = "...[truncated]";
 
 /// Newtype wrapper that redacts the inner value in every non-explicit representation.
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -76,6 +81,243 @@ impl<T> From<T> for Redacted<T> {
     fn from(value: T) -> Self {
         Self::new(value)
     }
+}
+
+/// Strips credential-shaped tokens from a partner response body and bounds the
+/// retained diagnostic text.
+///
+/// Redaction runs before truncation so credentials after the byte cap cannot be
+/// preserved by a too-early slice. The scanner is dependency-free and covers
+/// common header, URL-query, JSON-string, and JWT-shaped credential echoes.
+#[must_use]
+pub fn redact_response_body(input: &str) -> String {
+    truncate_sanitized_body(&strip_credential_tokens(input))
+}
+
+fn truncate_sanitized_body(input: &str) -> String {
+    if input.len() <= REDACTED_RESPONSE_BODY_MAX_BYTES {
+        return input.to_owned();
+    }
+
+    let mut boundary = REDACTED_RESPONSE_BODY_MAX_BYTES;
+    while !input.is_char_boundary(boundary) {
+        boundary -= 1;
+    }
+
+    let mut output = input[..boundary].to_owned();
+    output.push_str(RESPONSE_BODY_TRUNCATION_MARKER);
+    output
+}
+
+fn strip_credential_tokens(input: &str) -> String {
+    let mut output = String::with_capacity(input.len());
+    let mut offset = 0;
+
+    while offset < input.len() {
+        if let Some(end) = jwt_token_end(input, offset) {
+            output.push_str(REDACTED_PLACEHOLDER);
+            offset = end;
+            continue;
+        }
+
+        if let Some(redaction) = credential_value_span(input, offset) {
+            output.push_str(&input[offset..redaction.value_start]);
+            output.push_str(REDACTED_PLACEHOLDER);
+            offset = redaction.value_end;
+            continue;
+        }
+
+        let next = input[offset..]
+            .chars()
+            .next()
+            .expect("offset is always within the string");
+        output.push(next);
+        offset += next.len_utf8();
+    }
+
+    output
+}
+
+struct ValueRedaction {
+    value_start: usize,
+    value_end: usize,
+}
+
+fn credential_value_span(input: &str, offset: usize) -> Option<ValueRedaction> {
+    let parsed = parse_key(input, offset)?;
+    if !is_credential_key(parsed.key) {
+        return None;
+    }
+
+    let delimiter = skip_ascii_whitespace(input, parsed.after_key);
+    let delimiter_byte = *input.as_bytes().get(delimiter)?;
+    if !matches!(delimiter_byte, b':' | b'=') {
+        return None;
+    }
+
+    let value_prefix = skip_ascii_whitespace(input, delimiter + 1);
+    let value_start = if normalized_key(parsed.key) == "authorization" {
+        skip_authorization_scheme(input, value_prefix)
+    } else {
+        value_prefix
+    };
+    let (value_start, value_end) = value_span(input, value_start)?;
+
+    Some(ValueRedaction {
+        value_start,
+        value_end,
+    })
+}
+
+struct ParsedKey<'a> {
+    key: &'a str,
+    after_key: usize,
+}
+
+fn parse_key(input: &str, offset: usize) -> Option<ParsedKey<'_>> {
+    let first = *input.as_bytes().get(offset)?;
+    if matches!(first, b'"' | b'\'') {
+        let quote = first;
+        let key_start = offset + 1;
+        let key_end = find_unescaped_byte(input, key_start, quote)?;
+        return Some(ParsedKey {
+            key: &input[key_start..key_end],
+            after_key: key_end + 1,
+        });
+    }
+
+    if offset > 0 && is_key_char(input.as_bytes()[offset - 1]) {
+        return None;
+    }
+
+    let mut end = offset;
+    while let Some(byte) = input.as_bytes().get(end).copied() {
+        if !is_key_char(byte) {
+            break;
+        }
+        end += 1;
+    }
+
+    if end == offset {
+        return None;
+    }
+
+    Some(ParsedKey {
+        key: &input[offset..end],
+        after_key: end,
+    })
+}
+
+fn is_credential_key(key: &str) -> bool {
+    let normalized = normalized_key(key);
+    normalized == "authorization"
+        || normalized == "apikey"
+        || normalized == "xapikey"
+        || normalized == "token"
+        || normalized == "secret"
+        || normalized.contains("apikey")
+        || normalized.contains("token")
+        || normalized.contains("secret")
+}
+
+fn normalized_key(key: &str) -> String {
+    key.bytes()
+        .filter(|byte| !matches!(byte, b'-' | b'_'))
+        .map(|byte| byte.to_ascii_lowercase() as char)
+        .collect()
+}
+
+fn value_span(input: &str, offset: usize) -> Option<(usize, usize)> {
+    let quote = input.as_bytes().get(offset).copied();
+    if matches!(quote, Some(b'"' | b'\'')) {
+        let value_start = offset + 1;
+        let value_end = find_unescaped_byte(input, value_start, quote?)?;
+        return Some((value_start, value_end));
+    }
+
+    let mut end = offset;
+    while let Some(byte) = input.as_bytes().get(end).copied() {
+        if !is_credential_value_char(byte) {
+            break;
+        }
+        end += 1;
+    }
+
+    (end > offset).then_some((offset, end))
+}
+
+fn skip_authorization_scheme(input: &str, offset: usize) -> usize {
+    let Some(after_bearer) = advance_ascii_case_insensitive(input, offset, "bearer") else {
+        return offset;
+    };
+
+    let after_spaces = skip_ascii_whitespace(input, after_bearer);
+    if after_spaces == after_bearer {
+        offset
+    } else {
+        after_spaces
+    }
+}
+
+fn jwt_token_end(input: &str, offset: usize) -> Option<usize> {
+    if offset > 0 && is_credential_value_char(input.as_bytes()[offset - 1]) {
+        return None;
+    }
+    if !input[offset..].starts_with("eyJ") {
+        return None;
+    }
+
+    let mut end = offset;
+    while let Some(byte) = input.as_bytes().get(end).copied() {
+        if !is_credential_value_char(byte) {
+            break;
+        }
+        end += 1;
+    }
+
+    (end - offset >= 23).then_some(end)
+}
+
+fn find_unescaped_byte(input: &str, offset: usize, target: u8) -> Option<usize> {
+    let mut current = offset;
+    let mut escaped = false;
+
+    while let Some(byte) = input.as_bytes().get(current).copied() {
+        if escaped {
+            escaped = false;
+        } else if byte == b'\\' {
+            escaped = true;
+        } else if byte == target {
+            return Some(current);
+        }
+        current += 1;
+    }
+
+    None
+}
+
+fn advance_ascii_case_insensitive(input: &str, offset: usize, needle: &str) -> Option<usize> {
+    let end = offset.checked_add(needle.len())?;
+    let candidate = input.get(offset..end)?;
+    candidate.eq_ignore_ascii_case(needle).then_some(end)
+}
+
+fn skip_ascii_whitespace(input: &str, mut offset: usize) -> usize {
+    while let Some(byte) = input.as_bytes().get(offset).copied() {
+        if !byte.is_ascii_whitespace() {
+            break;
+        }
+        offset += 1;
+    }
+    offset
+}
+
+const fn is_key_char(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_')
+}
+
+const fn is_credential_value_char(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-')
 }
 
 /// Redacting wrapper for chain or environment keyed URL maps.

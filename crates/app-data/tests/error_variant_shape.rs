@@ -104,18 +104,18 @@ fn transport_variant_carries_typed_class_and_detail() {
 fn pinning_variant_carries_optional_status_and_message() {
     let error = AppDataError::Pinning {
         status: Some(401),
-        message: "unauthorized".to_owned(),
+        message: "unauthorized".to_owned().into(),
     };
 
     let AppDataError::Pinning { status, message } = &error else {
         panic!("expected Pinning variant, got {error:?}");
     };
     assert_eq!(*status, Some(401));
-    assert_eq!(message, "unauthorized");
+    assert_eq!(message.as_inner(), "unauthorized");
 
     let error_without_status = AppDataError::Pinning {
         status: None,
-        message: "pinning backend unreachable".to_owned(),
+        message: "pinning backend unreachable".to_owned().into(),
     };
     let AppDataError::Pinning { status, .. } = &error_without_status else {
         panic!("expected Pinning variant, got {error_without_status:?}");

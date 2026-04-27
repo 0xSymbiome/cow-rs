@@ -4,7 +4,7 @@ use crate::{
     AppDataDoc, AppDataError, DEFAULT_IPFS_WRITE_URI, IpfsConfig, TransportResponse,
     stringify_deterministic,
 };
-use cow_sdk_core::Redacted;
+use cow_sdk_core::{Redacted, redact_response_body};
 
 /// Upload transport seam for JSON pinning backends.
 pub trait IpfsUploadTransport {
@@ -79,7 +79,7 @@ pub fn pin_json_in_pinata_ipfs(
             .unwrap_or("IPFS upload failed");
         return Err(AppDataError::Pinning {
             status: Some(response.status),
-            message: details.to_string(),
+            message: Redacted::new(redact_response_body(details)),
         });
     }
 

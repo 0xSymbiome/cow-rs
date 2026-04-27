@@ -755,7 +755,7 @@ async fn malformed_success_response_surfaces_serialization_error() {
                     None,
                 )
             );
-            assert_eq!(body, "not-json");
+            assert_eq!(body.as_inner(), "not-json");
             assert!(!details.is_empty());
         }
         other => panic!("expected serialization error, got {other:?}"),
@@ -798,7 +798,7 @@ async fn non_success_status_surfaces_http_status_error() {
                 )
             );
             assert_eq!(status, 500);
-            assert_eq!(body, "upstream exploded");
+            assert_eq!(body.as_inner(), "upstream exploded");
         }
         other => panic!("expected HttpStatus error, got {other:?}"),
     }
@@ -1399,7 +1399,7 @@ mod recording_transport {
         match error {
             SubgraphError::HttpStatus { status, body, .. } => {
                 assert_eq!(status, 502);
-                assert_eq!(body, "upstream unavailable");
+                assert_eq!(body.as_inner(), "upstream unavailable");
             }
             other => panic!("expected HttpStatus error, got {other:?}"),
         }

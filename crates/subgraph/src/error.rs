@@ -1,7 +1,8 @@
 //! Typed error surface for subgraph requests.
 
-use cow_sdk_core::{Cancelled, TransportErrorClass};
-use serde::{Deserialize, Serialize};
+use cow_sdk_core::{Cancelled, Redacted, TransportErrorClass};
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 use thiserror::Error;
 
@@ -109,22 +110,22 @@ pub enum SubgraphError {
         details: String,
     },
     /// The endpoint returned a non-success HTTP status code.
-    #[error("subgraph http status error for {}: {status}", context.api)]
+    #[error("subgraph http status error for {}: {status}: {body}", context.api)]
     HttpStatus {
         /// Resolved request metadata captured at the failure boundary.
         context: Box<SubgraphRequestErrorContext>,
         /// Numeric HTTP status code.
         status: u16,
-        /// Raw response body returned with the status code.
-        body: String,
+        /// Redacted and bounded response body returned with the status code.
+        body: Redacted<String>,
     },
     /// The endpoint returned a success status with a body that could not be decoded.
-    #[error("subgraph serialization error for {}: {details}", context.api)]
+    #[error("subgraph serialization error for {}: {details}: {body}", context.api)]
     Serialization {
         /// Resolved request metadata captured at the failure boundary.
         context: Box<SubgraphRequestErrorContext>,
-        /// Raw response body that failed to decode.
-        body: String,
+        /// Redacted and bounded response body that failed to decode.
+        body: Redacted<String>,
         /// Serde decoding error details.
         details: String,
     },
@@ -150,6 +151,66 @@ pub enum SubgraphError {
 impl From<Cancelled> for SubgraphError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled
+    }
+}
+
+impl Serialize for SubgraphError {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut map = serializer.serialize_map(None)?;
+
+        match self {
+            Self::UnsupportedNetwork { chain_id } => {
+                map.serialize_entry("type", "UnsupportedNetwork")?;
+                map.serialize_entry("chainId", chain_id)?;
+            }
+            Self::NoTotalsFound => {
+                map.serialize_entry("type", "NoTotalsFound")?;
+            }
+            Self::Transport {
+                context,
+                class,
+                details,
+            } => {
+                map.serialize_entry("type", "Transport")?;
+                map.serialize_entry("context", context)?;
+                map.serialize_entry("class", &class.to_string())?;
+                map.serialize_entry("details", details)?;
+            }
+            Self::HttpStatus {
+                context,
+                status,
+                body,
+            } => {
+                map.serialize_entry("type", "HttpStatus")?;
+                map.serialize_entry("context", context)?;
+                map.serialize_entry("status", status)?;
+                map.serialize_entry("body", body)?;
+            }
+            Self::Serialization {
+                context,
+                body,
+                details,
+            } => {
+                map.serialize_entry("type", "Serialization")?;
+                map.serialize_entry("context", context)?;
+                map.serialize_entry("body", body)?;
+                map.serialize_entry("details", details)?;
+            }
+            Self::GraphQl { context, errors } => {
+                map.serialize_entry("type", "GraphQl")?;
+                map.serialize_entry("context", context)?;
+                map.serialize_entry("errors", errors)?;
+            }
+            Self::MissingData { context } => {
+                map.serialize_entry("type", "MissingData")?;
+                map.serialize_entry("context", context)?;
+            }
+            Self::Cancelled => {
+                map.serialize_entry("type", "Cancelled")?;
+            }
+        }
+
+        map.end()
     }
 }
 
