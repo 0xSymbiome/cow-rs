@@ -53,3 +53,7 @@ separate capability bound.
 - [Architecture](../architecture.md)
 - [Providers](../providers/README.md)
 - [Adapting alloy providers](../providers/adapting-alloy.md)
+
+**Proven by:**
+
+- [Browser Wallet Trust Posture Audit](../audit/browser-wallet-trust-posture-audit.md)

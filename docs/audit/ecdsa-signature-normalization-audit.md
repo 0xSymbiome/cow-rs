@@ -10,8 +10,7 @@ helpers and recovery helpers that route recoverable signatures through
 this normalizer
 Related docs:
 - [ADR 0022](../adr/0022-ecdsa-signature-v-normalization.md)
-- [ADR 0015](../adr/0015-client-side-order-bounds-validator.md)
-- [ADR 0017](../adr/0017-typed-orderbook-rejection-parser.md)
+- [ADR 0027](../adr/0027-post-quantum-signing-absorption-plan.md)
 
 ## Scope
 

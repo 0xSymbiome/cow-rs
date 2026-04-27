@@ -167,7 +167,7 @@ fn trading_defaults_expose_reviewed_slippage_and_quote_validity_bounds() {
 #[wasm_bindgen_test]
 fn eip1271_payload_preview_captures_signature_payload_for_reviewed_order() {
     let order = reviewed_order_json();
-    let sample_signature = format!("0x{}", "02".repeat(65));
+    let sample_signature = format!("0x{}1b", "02".repeat(64));
     let preview = parse_json(eip1271_payload_preview_json(order, &sample_signature));
 
     let payload = preview["payload"]

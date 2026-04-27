@@ -4,7 +4,7 @@
 - Date: 2026-04-27
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, signatures, compatibility, eip1271, eip7212
-- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ECDSA Signature Normalization Audit](../audit/ecdsa-signature-normalization-audit.md), [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)
+- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
 
 ## Decision
 
@@ -59,3 +59,8 @@ breaking match exhaustiveness change for downstream code.
 - [Contracts signature boundary](../../crates/contracts/src/signature.rs)
 - [Orderbook signing scheme boundary](../../crates/orderbook/src/types.rs)
 - [Trading EIP-1271 signature provider](../../crates/trading/src/types.rs)
+
+**Proven by:**
+
+- [ECDSA Signature Normalization Audit](../audit/ecdsa-signature-normalization-audit.md)
+- [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)

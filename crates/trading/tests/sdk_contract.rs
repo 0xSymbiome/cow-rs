@@ -529,7 +529,8 @@ fn build_ready_succeeds_on_wasm32_with_injected_orderbook_client() {
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .transport(Arc::new(transport))
-        .build();
+        .build()
+        .expect("wasm32 injected orderbook client must build with explicit transport");
 
     let sdk = TradingSdkBuilder::new()
         .with_chain_id(SupportedChainId::Mainnet)

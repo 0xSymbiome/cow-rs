@@ -4,7 +4,7 @@
 - Date: 2026-04-27
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy, dependencies, provider, compatibility, ci
-- Related: [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [Contract Bindings Parity Audit](../audit/contract-bindings-parity-audit.md), [Browser-Wallet Alloy Dependency Audit](../audit/browser-wallet-alloy-dependency-audit.md), [Workflow Security Audit](../audit/workflow-security-audit.md)
+- Related: [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
 
 ## Decision
 
@@ -62,3 +62,9 @@ change.
 - [Parity scope surface boundaries](../parity-scope.md#surface-boundaries)
 - [Verification matrix workspace gates](../verification-matrix.md#workspace-gates)
 - [Alloy release-candidate workflow](../../.github/workflows/alloy-release-candidate.yml)
+
+**Proven by:**
+
+- [Contract Bindings Parity Audit](../audit/contract-bindings-parity-audit.md)
+- [Browser-Wallet Alloy Dependency Audit](../audit/browser-wallet-alloy-dependency-audit.md)
+- [Workflow Security Audit](../audit/workflow-security-audit.md)

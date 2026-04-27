@@ -4,7 +4,7 @@
 - Date: 2026-04-27
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: security, redaction, configuration, diagnostics
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [URL Credential Redaction Audit](../audit/url-credential-redaction-audit.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 
 ## Decision
 
@@ -46,7 +46,11 @@ requires raw URL access to happen through explicit accessors at dispatch seams.
 
 ## Links
 
-- [URL Credential Redaction Audit](../audit/url-credential-redaction-audit.md)
-- [Credential Surface Audit](../audit/credential-surface-audit.md)
 - [Core redaction wrappers](../../crates/core/src/redaction.rs)
 - [Browser wallet chain parameters](../../crates/browser-wallet/src/wallet.rs)
+
+**Proven by:**
+
+- [URL Credential Redaction Audit](../audit/url-credential-redaction-audit.md)
+- [Credential Surface Audit](../audit/credential-surface-audit.md)
+- [Credential Surface Contract Hygiene Audit](../audit/credential-surface-contract-hygiene-audit.md)

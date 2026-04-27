@@ -5,6 +5,7 @@ Last reviewed: 2026-04-27
 Owning surface: `cow-sdk-browser-wallet` typed EIP-1193 contract-call bridge and its `alloy-primitives` / `alloy-dyn-abi` / `alloy-json-abi` ABI helpers
 Refresh trigger: Upstream movement in the alloy family (new major, dropped transitive dependency), a new reviewed warning surfacing through the alloy toolchain, or a new maintained successor to the affected proc-macro deps
 Related docs:
+- [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
 - [Dependency Gate Audit](dependency-gate-audit.md)
 - [CID Dependency Audit](cid-dependency-audit.md)
 - [ADR 0007](../adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)

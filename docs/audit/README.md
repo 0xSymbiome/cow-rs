@@ -51,7 +51,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) | Standing audit | `cow-sdk-contracts` `alloy::sol!`-generated binding surfaces | Byte-identity parity on the shipped settlement, vault-relayer, EthFlow, EIP-1967 proxy, and ERC-20 / ERC-20 Permit bindings | Current | 2026-04-21 |
+| [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) | Standing audit | `cow-sdk-contracts` `alloy::sol!`-generated binding surfaces | Byte-identity parity on the shipped settlement, vault-relayer, EthFlow, EIP-1967 proxy, ERC-20 / ERC-20 Permit bindings, and the shared EIP-712 domain-separator fixture | Current | 2026-04-27 |
 | [Deployment Registry Audit](deployment-registry-audit.md) | Standing audit | `cow-sdk-contracts::Registry` typed deployment authority | Typed `(ContractId, SupportedChainId, CowEnv)` key, embedded TOML manifest, compile-time validation, and override composition | Current | 2026-04-21 |
 
 ## HTTP Transport And Construction
@@ -65,7 +65,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md) | Standing audit | `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `Noop` and `InMemory` canonical impls | Trait contract, conservative caching semantics, pre-interaction scope, thread-safety on the in-memory implementation, and its integration with `verify_eip1271_signature_async` | Current | 2026-04-25 |
+| [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md) | Standing audit | `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `Noop` and `InMemory` canonical impls | Trait contract, conservative caching semantics, verification telemetry, pre-interaction scope, thread-safety on the in-memory implementation, and its integration with `verify_eip1271_signature_async` | Current | 2026-04-27 |
 
 ## Signature Normalization
 
@@ -129,7 +129,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, `Redacted<T>` wrapper, transport error redaction, and typed user policy | Current | 2026-04-21 |
+| [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, URL-bearing config redaction, host-policy failures, `Redacted<T>` wrapper, transport error redaction, and typed user policy | Current | 2026-04-27 |
 | [Credential Surface Audit](credential-surface-audit.md) | Standing audit | Credential-bearing builder storage, URL configuration, host-policy errors, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, and app-data | Redacted credential storage plus sanitized host-policy failures and typed-redacted header values at the Pinata upload boundary | Current | 2026-04-27 |
 | [URL Credential Redaction Audit](url-credential-redaction-audit.md) | Standing audit | URL-bearing public configuration across core, orderbook, subgraph, browser-wallet, and app-data | Redacting URL map and URL value wrappers for public diagnostics with explicit raw dispatch access at HTTP and wallet payload seams | Current | 2026-04-27 |
 | [Shared Logic Reviewability Audit](shared-logic-reviewability-audit.md) | Standing audit | Orderbook, signing, and trading shared-logic reviewability boundary | Shared request execution, signing payload preparation, thin posting wrappers, and justified DTO separation | Current | 2026-04-21 |

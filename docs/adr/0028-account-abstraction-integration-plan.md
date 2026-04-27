@@ -4,7 +4,7 @@
 - Date: 2026-04-27
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: account-abstraction, provider, signing, eip1271, eip4337, eip7702, eip7212
-- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md), [Browser Wallet Trust Posture Audit](../audit/browser-wallet-trust-posture-audit.md), [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)
+- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
 
 ## Decision
 
@@ -61,3 +61,9 @@ dependencies in read-only flows and keeps order ownership reviewable.
 - [Verification matrix crate contracts](../verification-matrix.md#crate-contracts)
 - [Core provider traits](../../crates/core/src/traits.rs)
 - [Trading EIP-1271 signature provider](../../crates/trading/src/types.rs)
+
+**Proven by:**
+
+- [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)
+- [Browser Wallet Trust Posture Audit](../audit/browser-wallet-trust-posture-audit.md)
+- [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)

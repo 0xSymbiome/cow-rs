@@ -1,11 +1,13 @@
 # EIP-1271 Verification Cache Audit
 
 Status: Current
-Last reviewed: 2026-04-25
+Last reviewed: 2026-04-27
 Owning surface: `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `NoopEip1271VerificationCache` and `InMemoryEip1271VerificationCache` default implementations shipped from `cow-sdk-signing::cache`
-Refresh trigger: Changes to the trait signature, the caching semantics (what is cached and what is not), the `verify_eip1271_signature_async` call shape, the default TTL or capacity on the in-memory implementation, the platform time-source selection, or the thread-safety posture; a new canonical implementation that ships in the workspace
+Refresh trigger: Changes to the trait signature, the caching semantics (what is cached and what is not), the `verify_eip1271_signature_async` call shape, the verification tracing fields, the default TTL or capacity on the in-memory implementation, the platform time-source selection, or the thread-safety posture; a new canonical implementation that ships in the workspace
 Related docs:
 - [ADR 0014](../adr/0014-eip1271-verification-cache.md)
+- [ADR 0027](../adr/0027-post-quantum-signing-absorption-plan.md)
+- [ADR 0028](../adr/0028-account-abstraction-integration-plan.md)
 - [Verification Guide](../verification-guide.md)
 - [Architecture](../architecture.md)
 
@@ -20,6 +22,8 @@ This audit covers:
 - the conservative caching semantics on
   `verify_eip1271_signature_async` — which outcomes are cached and
   which are not
+- the `verify.eip1271` tracing span and event fields emitted by the
+  verification path
 - the thread-safety contract on the in-memory implementation
 
 It does not cover the ECDSA signing surface, EIP-712 typed-data
@@ -33,6 +37,7 @@ covered by its own contract).
 | Trait contract | `get(verifier, digest) -> Option<bool>` and `put(verifier, digest, result)` with `Send + Sync + 'static` | Conforms |
 | Conservative caching | Only `Ok(())` (magic-value match) and `Eip1271MagicValueMismatch` outcomes are cached; every other error class re-hits the chain | Conforms |
 | Pre-interaction scope | The sync and async verification helpers document that they do not simulate order pre-interactions before checking EIP-1271 signatures | Conforms |
+| Verification telemetry | `verify_eip1271_signature_async` emits `verify.eip1271` tracing with cache, RPC, and final magic-value outcome fields | Conforms |
 | Shipped implementations | `NoopEip1271VerificationCache` (zero-sized, always miss) and `InMemoryEip1271VerificationCache` (bounded capacity, TTL-expiring) | Conforms |
 | Platform time source | `InMemoryEip1271VerificationCache` uses `web_time::Instant` on `wasm32` and `std::time::Instant` elsewhere so cache probes do not panic on browser targets | Conforms |
 | Thread-safety | `InMemoryEip1271VerificationCache` sustains concurrent inserts against the same key space without losing writes | Conforms |
@@ -79,6 +84,13 @@ same pre-interaction-aware state used by the upstream order-placement
 service run that simulation at their own RPC seam before calling the
 helper.
 
+### Verification Telemetry
+
+`verify_eip1271_signature_async` carries a `verify.eip1271` tracing span under
+the `cow_sdk::verify_eip1271` target. The contracts-layer span records cache
+hit or miss state, chain-RPC dispatch outcome, and final magic-value match
+state without recording signature payload bytes or provider internals.
+
 ### Shipped Implementations
 
 `NoopEip1271VerificationCache` is a zero-sized `Default + Clone + Copy`
@@ -121,12 +133,14 @@ Primary implementation points:
 
 Primary regression coverage:
 
+- `crates/contracts/tests/verify_telemetry_contract.rs`
 - `crates/signing/tests/eip1271_cache_contract.rs`
 - `crates/signing/tests/wasm_cache_contract.rs`
 
 Validation surface:
 
 ```text
+cargo test -p cow-sdk-contracts --test verify_telemetry_contract --features tracing
 cargo test -p cow-sdk-contracts -p cow-sdk-signing --all-features
 cargo check -p cow-sdk-signing --target wasm32-unknown-unknown
 wasm-pack test --headless --chrome crates/signing

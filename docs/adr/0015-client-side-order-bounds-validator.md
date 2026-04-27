@@ -105,3 +105,5 @@ under replay.
 **Proven by:**
 
 - [Trading Order-Bounds Validator Audit](../audit/trading-order-bounds-validator-audit.md)
+- [Trading App-Data Merge Audit](../audit/trading-app-data-merge-audit.md)
+- [Trading EthFlow Owner Identity Audit](../audit/trading-ethflow-owner-identity-audit.md)

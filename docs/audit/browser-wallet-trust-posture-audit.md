@@ -5,6 +5,9 @@ Last reviewed: 2026-04-27
 Owning surface: `cow-sdk-browser-wallet` EIP-1193 provider construction and wallet chain-management URL payloads
 Refresh trigger: Changes to EIP-1193 provider construction, EIP-6963 discovery metadata, wallet origin handling, chain-management URL validation, or browser-wallet error redaction
 Related docs:
+- [ADR 0007](../adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
+- [ADR 0024](../adr/0024-asyncprovider-asyncsigningprovider-capability-split.md)
+- [ADR 0028](../adr/0028-account-abstraction-integration-plan.md)
 - [Browser Wallet Chain Coherence Audit](browser-wallet-chain-coherence-audit.md)
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
 - [Verification Matrix](../verification-matrix.md)
