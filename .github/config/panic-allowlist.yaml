@@ -1,0 +1,137 @@
+version: 1
+allowed:
+  - file: crates/app-data/src/schema.rs
+    item: generate_app_data_doc
+    reason: Typed metadata serialization is guaranteed by the public constructors feeding this path.
+  - file: crates/app-data/src/schema.rs
+    item: root_schemas
+    reason: Embedded schema resource URIs are constructed from the static SCHEMA_BASE_URI prefix.
+  - file: crates/app-data/src/schema.rs
+    item: collect_files
+    reason: include_dir! embedded directories always have file names.
+  - file: crates/app-data/src/schema.rs
+    item: collect_file
+    reason: include_dir! embedded files have names and committed schema JSON is validated at build and test time.
+  - file: crates/app-data/src/types.rs
+    item: PartnerFee::to_value
+    reason: Partner fee schema enums serialize through derived serde for SDK-owned values.
+  - file: crates/browser-wallet/src/mock.rs
+    item: MockState::default
+    reason: Static mock account literals are repository-owned validated EVM addresses.
+  - file: crates/browser-wallet/src/wallet.rs
+    item: WalletChainParameters::for_supported_chain
+    reason: Built-in chain metadata is static and shares the same validator as user-supplied metadata.
+  - file: crates/browser-wallet/src/wallet.rs
+    item: BrowserWallet::from_transport
+    reason: Compatibility constructor is documented as panic-on-invalid for explicitly trusted Rust transports.
+  - file: crates/browser-wallet/src/wallet.rs
+    item: known_wallet_native_currency
+    reason: Built-in native-currency metadata is static and validated by construction.
+  - file: crates/contracts/src/deploy.rs
+    item: deployment_for_chain
+    reason: The embedded registry is compile-time validated to include canonical contracts for every supported chain.
+  - file: crates/contracts/src/deployments/registry.rs
+    item: Registry::default
+    reason: The embedded registry manifest is validated by build.rs before runtime use.
+  - file: crates/contracts/src/primitives.rs
+    item: zero_address
+    reason: The zero address literal is static and validated by the Address constructor.
+  - file: crates/contracts/src/primitives.rs
+    item: sell_balance_name
+    reason: In-crate balance mapping covers every currently representable settlement sell-balance variant.
+  - file: crates/contracts/src/primitives.rs
+    item: buy_balance_name
+    reason: In-crate balance mapping covers every currently representable settlement buy-balance variant.
+  - file: crates/contracts/src/settlement.rs
+    item: encode_order_flags
+    reason: Flag encoding masks only the currently supported typed balance variants.
+  - file: crates/contracts/src/settlement.rs
+    item: decode_order_flags
+    reason: Bit masks are constrained before reaching unreachable arms.
+  - file: crates/core/src/redaction.rs
+    item: strip_credential_tokens
+    reason: Redaction offsets are computed from in-bounds string match indices.
+  - file: crates/core/src/types.rs
+    item: Address::from_bytes
+    reason: Hex encoder only emits ASCII hex plus the 0x prefix.
+  - file: crates/core/src/types.rs
+    item: AppDataHash::from_bytes
+    reason: Hex encoder only emits ASCII hex plus the 0x prefix.
+  - file: crates/core/src/types.rs
+    item: Hash32::from_bytes
+    reason: Hex encoder only emits ASCII hex plus the 0x prefix.
+  - file: crates/core/src/types.rs
+    item: OrderUid::from_bytes
+    reason: Hex encoder only emits ASCII hex plus the 0x prefix.
+  - file: crates/core/src/types.rs
+    item: decode_nibble
+    reason: decode_nibble is only called after hex validation constrains each byte to a valid nibble.
+  - file: crates/orderbook/src/builder.rs
+    item: OrderBookApiBuilder::base_url
+    reason: The convenience method is documented as requiring environment to be set before use.
+  - file: crates/orderbook/src/builder.rs
+    item: OrderBookApiBuilder::finish
+    reason: Typestate terminal methods guarantee chain and environment markers are present before finish.
+  - file: crates/orderbook/src/builder.rs
+    item: OrderBookApiBuilder::build
+    reason: Typestate terminal methods guarantee required transport or validated default transport inputs.
+  - file: crates/orderbook/src/request.rs
+    item: JitterStrategy::delay_for
+    reason: Jitter offset is explicitly capped to u64::MAX before conversion.
+  - file: crates/orderbook/src/request.rs
+    item: RequestPolicy::base_backoff_delay
+    reason: Retry exponent is clamped to a u32-safe range before conversion.
+  - file: crates/orderbook/src/request.rs
+    item: OrderBookTransportPolicy::default
+    reason: Static orderbook user-agent is a repository-owned valid header literal.
+  - file: crates/orderbook/src/request.rs
+    item: ResponseEnvelope::json
+    reason: Test-only response envelope helper serializes serde_json::Value fixtures.
+  - file: crates/orderbook/src/request.rs
+    item: delay_for
+    reason: Millisecond delay is clamped to u32::MAX before conversion.
+  - file: crates/orderbook/src/transform.rs
+    item: native_token_address
+    reason: Native token sentinel literal is static and validated by the Address constructor.
+  - file: crates/signing/src/domain.rs
+    item: get_domain
+    reason: Canonical settlement address is guaranteed by the validated deployment registry.
+  - file: crates/signing/src/order_signing.rs
+    item: sell_balance_name
+    reason: Signing balance mapping covers every currently representable sell-balance variant.
+  - file: crates/signing/src/order_signing.rs
+    item: buy_balance_name
+    reason: Signing balance mapping covers every currently representable buy-balance variant.
+  - file: crates/subgraph/src/api.rs
+    item: SubgraphTransportPolicy::default
+    reason: Static subgraph user-agent is a repository-owned valid header literal.
+  - file: crates/subgraph/src/builder.rs
+    item: SubgraphApiBuilder::finish
+    reason: Typestate terminal methods guarantee chain and API key markers are present before finish.
+  - file: crates/subgraph/src/builder.rs
+    item: SubgraphApiBuilder::build
+    reason: Typestate terminal methods guarantee required transport or validated default transport inputs.
+  - file: crates/trading/src/allowance.rs
+    item: resolve_vault_relayer
+    reason: Canonical vault-relayer address is guaranteed by the validated deployment registry.
+  - file: crates/trading/src/onchain.rs
+    item: resolve_settlement_address
+    reason: Canonical settlement address is guaranteed by the validated deployment registry.
+  - file: crates/trading/src/onchain.rs
+    item: resolve_eth_flow_address
+    reason: Canonical EthFlow address is guaranteed by the validated deployment registry.
+  - file: crates/trading/src/onchain.rs
+    item: default_gas_limit
+    reason: Static gas limit literal is within the validated amount range.
+  - file: crates/trading/src/order.rs
+    item: get_order_to_sign
+    reason: Validity timestamp is clamped to the supported u32 range before conversion.
+  - file: crates/trading/src/order.rs
+    item: calculate_unique_order_id
+    reason: Canonical EthFlow address is guaranteed by the validated deployment registry.
+  - file: crates/trading/src/parameters.rs
+    item: native_sentinel
+    reason: Native currency sentinel is a repository-owned valid EVM address literal.
+  - file: crates/trading/src/validation.rs
+    item: native_sentinel
+    reason: Native currency sentinel is a repository-owned valid EVM address literal.

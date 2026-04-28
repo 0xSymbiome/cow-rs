@@ -1,0 +1,290 @@
+version: 1
+enums:
+  - name: SdkError
+    file: crates/sdk/src/lib.rs
+    line: 110
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Facade error aggregation can grow as leaf crate capabilities are added.
+  - name: ErrorClass
+    file: crates/sdk/src/lib.rs
+    line: 144
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Public diagnostic partition can grow with new facade error classes.
+  - name: InjectedWalletDiscoverySource
+    file: crates/browser-wallet/src/wallet.rs
+    line: 27
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Browser wallet discovery channels are controlled by evolving browser wallet standards.
+  - name: WalletChainChangeKind
+    file: crates/browser-wallet/src/wallet.rs
+    line: 359
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Wallet chain-management outcomes can grow with EIP-1193 wallet behavior.
+  - name: WalletEvent
+    file: crates/browser-wallet/src/events.rs
+    line: 56
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Browser wallet provider events can add new event families over time.
+  - name: BrowserWalletError
+    file: crates/browser-wallet/src/error.rs
+    line: 44
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Public browser-wallet diagnostics can grow as runtime checks are added.
+  - name: ClientRejection
+    file: crates/trading/src/validation.rs
+    line: 35
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Services-authority rejection coverage can grow with new validation preconditions.
+  - name: AmountSide
+    file: crates/trading/src/validation.rs
+    line: 108
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Public diagnostic enum surfaced through ClientRejection may extend.
+  - name: SubmissionClass
+    file: crates/trading/src/validation.rs
+    line: 157
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Submission classes mirror services-owned order submission semantics.
+  - name: TradingSdkMode
+    file: crates/trading/src/sdk.rs
+    line: 31
+    category: sdk-local-state
+    expected_marker: exhaustive
+    reason: Builder-state discriminator is SDK-owned and closed to the two runtime modes.
+  - name: TradingError
+    file: crates/trading/src/error.rs
+    line: 13
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Trading orchestration diagnostics can grow as typed workflows are added.
+  - name: ValidationReason
+    file: crates/core/src/validation.rs
+    line: 26
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Validation reason taxonomy can grow with new typed boundary checks.
+  - name: TransportErrorClass
+    file: crates/core/src/validation.rs
+    line: 59
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Transport classification can grow as adapters surface new failure classes.
+  - name: OrderKind
+    file: crates/core/src/types.rs
+    line: 1255
+    category: protocol-fixed-exhaustive
+    expected_marker: exhaustive
+    reason: Encoded as keccak256("buy") and keccak256("sell") in the EIP-712 order type.
+  - name: SellTokenSource
+    file: crates/core/src/types.rs
+    line: 1270
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Token balance sources are protocol-facing and may grow with upstream settlement semantics.
+  - name: BuyTokenDestination
+    file: crates/core/src/types.rs
+    line: 1291
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Token balance destinations are protocol-facing and may grow with upstream settlement semantics.
+  - name: SubgraphError
+    file: crates/subgraph/src/error.rs
+    line: 92
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Subgraph diagnostic surface can grow as transport and GraphQL checks expand.
+  - name: PriceQuality
+    file: crates/orderbook/src/types.rs
+    line: 107
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Orderbook quote quality labels are services-controlled.
+  - name: SigningScheme
+    file: crates/orderbook/src/types.rs
+    line: 121
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Orderbook signing schemes track protocol and services-supported signature families.
+  - name: EcdsaSigningScheme
+    file: crates/orderbook/src/types.rs
+    line: 140
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: ECDSA signing scheme variants track upstream orderbook wire tags.
+  - name: OrderClass
+    file: crates/orderbook/src/types.rs
+    line: 152
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Order class tags are services-owned wire values.
+  - name: OrderStatus
+    file: crates/orderbook/src/types.rs
+    line: 166
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Order status tags are services-owned wire values.
+  - name: CompetitionOrderStatusKind
+    file: crates/orderbook/src/types.rs
+    line: 1503
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Competition order status tags are controlled by upstream auction services.
+  - name: HttpMethod
+    file: crates/orderbook/src/request.rs
+    line: 68
+    category: sdk-local-state
+    expected_marker: exhaustive
+    reason: Internal transport helper uses an SDK-defined verb set.
+  - name: ResponseBody
+    file: crates/orderbook/src/request.rs
+    line: 85
+    category: sdk-local-state
+    expected_marker: exhaustive
+    reason: Internal response wrapper is SDK-owned and closed to decoded JSON or raw bytes.
+  - name: OrderbookRejection
+    file: crates/orderbook/src/rejection.rs
+    line: 39
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Services can add new orderbook rejection tags; Unknown preserves forward compatibility.
+  - name: OrderbookError
+    file: crates/orderbook/src/error.rs
+    line: 12
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Orderbook diagnostics can grow as typed transport and rejection handling expands.
+  - name: SigningError
+    file: crates/signing/src/errors.rs
+    line: 8
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Signing diagnostics can grow with new signer and verification flows.
+  - name: SigningScheme
+    file: crates/contracts/src/signature.rs
+    line: 28
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Grown by future protocol signing schemes such as post-quantum or EIP-7212 families.
+  - name: Signature
+    file: crates/contracts/src/signature.rs
+    line: 101
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Protocol signature payload families can grow without breaking downstream matches.
+  - name: InteractionStage
+    file: crates/contracts/src/settlement.rs
+    line: 72
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Settlement interaction stages are protocol-facing and may grow with upstream contracts.
+  - name: Eip1967Slot
+    file: crates/contracts/src/proxy.rs
+    line: 33
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Proxy slot helpers can grow with additional reviewed EIP-1967 slots.
+  - name: ContractsError
+    file: crates/contracts/src/errors.rs
+    line: 7
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Contract binding diagnostics can grow with new typed codecs and registry checks.
+  - name: TransportError
+    file: crates/core/src/transport/error.rs
+    line: 31
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Transport diagnostics can grow as native and browser adapters add failure classes.
+  - name: ValidationError
+    file: crates/core/src/errors.rs
+    line: 8
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Core validation diagnostics can grow with new typed input contracts.
+  - name: CoreError
+    file: crates/core/src/errors.rs
+    line: 76
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Core error aggregation can grow with new shared primitives.
+  - name: SupportedChainId
+    file: crates/core/src/config.rs
+    line: 97
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Supported chains grow as upstream deployment authority expands.
+  - name: CowEnv
+    file: crates/core/src/config.rs
+    line: 210
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Environment tags are protocol and services deployment concepts.
+  - name: ExternalHostPolicy
+    file: crates/core/src/config.rs
+    line: 242
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: SDK host policy modes can grow as reviewed runtime trust modes are added.
+  - name: UrlParseFailureClass
+    file: crates/core/src/config.rs
+    line: 269
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: URL parse failure partitions can grow with new redaction and validation checks.
+  - name: HostPolicyError
+    file: crates/core/src/config.rs
+    line: 307
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Host policy diagnostics can grow as external routing validation expands.
+  - name: ContractName
+    file: crates/contracts/src/deploy.rs
+    line: 24
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Named deployment artifacts can grow with upstream contract deployments.
+  - name: AppDataWarning
+    file: crates/app-data/src/info.rs
+    line: 89
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: App-data warning classes can grow with new validation and sizing checks.
+  - name: AppDataError
+    file: crates/app-data/src/errors.rs
+    line: 9
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: App-data diagnostics can grow as schema and transport validation expands.
+  - name: PartnerFee
+    file: crates/app-data/src/types.rs
+    line: 354
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Partner fee wire families are services-facing and may grow additively.
+  - name: PartnerFeePolicy
+    file: crates/app-data/src/types.rs
+    line: 433
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Partner fee policy variants can grow with upstream partner fee semantics.
+  - name: RegistryError
+    file: crates/contracts/src/deployments/registry.rs
+    line: 204
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Registry parser diagnostics can grow as manifest validation expands.
+  - name: ContractId
+    file: crates/contracts/src/deployments/contract_id.rs
+    line: 20
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Deployed contract identifiers can grow with upstream deployment authority.

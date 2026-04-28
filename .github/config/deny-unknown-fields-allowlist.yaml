@@ -1,0 +1,17 @@
+version: 1
+allowed:
+  - file: crates/app-data/src/metadata/flashloan.rs
+    item: FlashloanHints
+    reason: SDK-owned app-data metadata schema; unknown fields are contributor mistakes.
+  - file: crates/app-data/src/metadata/hooks.rs
+    item: HookList
+    reason: SDK-owned app-data metadata schema with a closed request shape.
+  - file: crates/app-data/src/metadata/hooks.rs
+    item: Hook
+    reason: SDK-owned app-data metadata schema with a closed hook entry shape.
+  - file: crates/contracts/src/deployments/registry.rs
+    item: ManifestSchema
+    reason: Build-time TOML manifest; unknown fields indicate a repository bug.
+  - file: crates/contracts/src/deployments/registry.rs
+    item: ManifestEntry
+    reason: Build-time TOML manifest entry; unknown fields indicate a repository bug.
