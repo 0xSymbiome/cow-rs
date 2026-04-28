@@ -1,0 +1,37 @@
+version: 1
+dtos:
+  - schema: components.schemas.Order
+    rust_type: cow_sdk_orderbook::Order
+    inventory: parity/openapi/order-inventory.yaml
+    fixtures:
+      - parity/fixtures/orderbook/order_with_full_metadata.json
+
+  - schema: components.schemas.AuctionOrder
+    rust_type: cow_sdk_orderbook::AuctionOrder
+    inventory: parity/openapi/auction-order-inventory.yaml
+    fixtures:
+      - parity/fixtures/orderbook/auction_order_with_protocol_fees.json
+
+  - schema: components.schemas.OrderQuoteResponse
+    rust_type: cow_sdk_orderbook::OrderQuoteResponse
+    inventory: parity/openapi/order-quote-response-inventory.yaml
+    fixtures:
+      - parity/fixtures/orderbook/order_quote_response.json
+
+  - schema: components.schemas.Trade
+    rust_type: cow_sdk_orderbook::Trade
+    inventory: parity/openapi/trade-inventory.yaml
+    fixtures:
+      - parity/fixtures/orderbook/trade.json
+
+  - schema: components.schemas.StoredOrderQuote
+    rust_type: cow_sdk_orderbook::StoredOrderQuote
+    inventory: parity/openapi/stored-order-quote-inventory.yaml
+    fixtures:
+      - parity/fixtures/orderbook/stored_order_quote.json
+
+  - schema: components.schemas.OnchainOrderData
+    rust_type: cow_sdk_orderbook::OnchainOrderData
+    inventory: parity/openapi/onchain-order-data-inventory.yaml
+    fixtures:
+      - parity/fixtures/orderbook/onchain_order_data.json

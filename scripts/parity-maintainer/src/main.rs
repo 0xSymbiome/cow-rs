@@ -1,12 +1,18 @@
 use std::{
     collections::BTreeMap,
-    env, fs,
+    fs,
     path::{Path, PathBuf},
     process::Command,
 };
 
 use anyhow::{Context, Result, bail};
+use clap::{Args, Parser, Subcommand};
 use serde::{Deserialize, Serialize};
+
+mod check_freshness;
+mod diff_upstreams;
+mod openapi_coverage;
+mod vendor_openapi;
 
 const GENERATED_AT_UTC: &str = "2026-04-08T00:00:00Z";
 const DEFAULT_SOURCE_LOCK: &str = "parity/source-lock.yaml";
@@ -240,69 +246,119 @@ struct CliOptions {
     services_root: Option<PathBuf>,
 }
 
+#[derive(Debug, Parser)]
+#[command(name = "parity-maintainer")]
+#[command(about = "Maintains source-lock, parity provenance, and OpenAPI coverage artifacts")]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Debug, Subcommand)]
+enum Commands {
+    /// Snapshot pinned upstream commits into parity/source-lock.yaml.
+    Snapshot(UpstreamRootsArgs),
+    /// Validate source-lock and committed parity fixture provenance.
+    Validate(ValidateArgs),
+    /// Provision source-lock-pinned upstream checkouts.
+    ProvisionUpstreams(ProvisionUpstreamsArgs),
+    /// Vendor app-data schemas from a pinned cow-sdk checkout.
+    VendorAppDataSchemas(VendorAppDataSchemasArgs),
+    /// Vendor the source-lock-pinned services orderbook OpenAPI document.
+    VendorOpenapi(vendor_openapi::VendorOpenApiArgs),
+    /// Generate or validate OpenAPI DTO coverage inventories.
+    OpenapiCoverage(openapi_coverage::OpenApiCoverageArgs),
+    /// Diff source-lock-pinned producer paths against upstream HEAD.
+    DiffUpstreams(diff_upstreams::DiffUpstreamsArgs),
+    /// Report source-lock freshness against current GitHub upstream HEADs.
+    CheckFreshness(check_freshness::CheckFreshnessArgs),
+}
+
+#[derive(Debug, Args)]
+struct SourceLockArg {
+    #[arg(long, default_value = DEFAULT_SOURCE_LOCK)]
+    source_lock: PathBuf,
+}
+
+#[derive(Debug, Args)]
+struct UpstreamRootsArgs {
+    #[arg(long, default_value = DEFAULT_SOURCE_LOCK)]
+    output: PathBuf,
+    #[arg(long)]
+    cow_sdk_root: PathBuf,
+    #[arg(long)]
+    contracts_root: PathBuf,
+    #[arg(long)]
+    services_root: PathBuf,
+}
+
+#[derive(Debug, Args)]
+struct ValidateArgs {
+    #[command(flatten)]
+    source: SourceLockArg,
+    #[arg(long)]
+    cow_sdk_root: Option<PathBuf>,
+    #[arg(long)]
+    contracts_root: Option<PathBuf>,
+    #[arg(long)]
+    services_root: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+struct ProvisionUpstreamsArgs {
+    #[command(flatten)]
+    source: SourceLockArg,
+    #[arg(long)]
+    output_root: PathBuf,
+}
+
+#[derive(Debug, Args)]
+struct VendorAppDataSchemasArgs {
+    #[command(flatten)]
+    source: SourceLockArg,
+    #[arg(long)]
+    cow_sdk_root: PathBuf,
+}
+
 fn main() -> Result<()> {
-    let mut args = env::args().skip(1);
-    let Some(command) = args.next() else {
-        print_usage();
-        bail!("missing command");
-    };
-
-    let options = parse_options(args.collect())?;
-
-    match command.as_str() {
-        "snapshot" => snapshot(&options),
-        "validate" => validate(&options),
-        "provision-upstreams" => provision_upstreams(&options),
-        "vendor-app-data-schemas" => vendor_app_data_schemas(&options),
-        _ => {
-            print_usage();
-            bail!("unknown command: {command}");
-        }
+    match Cli::parse().command {
+        Commands::Snapshot(args) => snapshot(&CliOptions {
+            source_lock: args.output.clone(),
+            output: args.output,
+            output_root: None,
+            cow_sdk_root: Some(args.cow_sdk_root),
+            contracts_root: Some(args.contracts_root),
+            services_root: Some(args.services_root),
+        }),
+        Commands::Validate(args) => validate(&CliOptions {
+            source_lock: args.source.source_lock,
+            output: PathBuf::from(DEFAULT_SOURCE_LOCK),
+            output_root: None,
+            cow_sdk_root: args.cow_sdk_root,
+            contracts_root: args.contracts_root,
+            services_root: args.services_root,
+        }),
+        Commands::ProvisionUpstreams(args) => provision_upstreams(&CliOptions {
+            source_lock: args.source.source_lock,
+            output: PathBuf::from(DEFAULT_SOURCE_LOCK),
+            output_root: Some(args.output_root),
+            cow_sdk_root: None,
+            contracts_root: None,
+            services_root: None,
+        }),
+        Commands::VendorAppDataSchemas(args) => vendor_app_data_schemas(&CliOptions {
+            source_lock: args.source.source_lock,
+            output: PathBuf::from(DEFAULT_SOURCE_LOCK),
+            output_root: None,
+            cow_sdk_root: Some(args.cow_sdk_root),
+            contracts_root: None,
+            services_root: None,
+        }),
+        Commands::VendorOpenapi(args) => vendor_openapi::run(args),
+        Commands::OpenapiCoverage(args) => openapi_coverage::run(args),
+        Commands::DiffUpstreams(args) => diff_upstreams::run(args),
+        Commands::CheckFreshness(args) => check_freshness::run(args),
     }
-}
-
-fn print_usage() {
-    eprintln!(
-        "usage:\n  cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot --cow-sdk-root <path> --contracts-root <path> --services-root <path> [--output parity/source-lock.yaml]\n  cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate [--source-lock parity/source-lock.yaml] [--cow-sdk-root <path>] [--contracts-root <path>] [--services-root <path>]\n  cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams [--source-lock parity/source-lock.yaml] --output-root <path>\n  cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-app-data-schemas [--source-lock parity/source-lock.yaml] --cow-sdk-root <real-cow-sdk-clone>"
-    );
-}
-
-fn parse_options(args: Vec<String>) -> Result<CliOptions> {
-    let mut source_lock = PathBuf::from(DEFAULT_SOURCE_LOCK);
-    let mut output = PathBuf::from(DEFAULT_SOURCE_LOCK);
-    let mut output_root = None;
-    let mut cow_sdk_root = None;
-    let mut contracts_root = None;
-    let mut services_root = None;
-
-    let mut i = 0;
-    while i < args.len() {
-        let key = args[i].as_str();
-        let value = args
-            .get(i + 1)
-            .with_context(|| format!("missing value for {key}"))?;
-
-        match key {
-            "--source-lock" => source_lock = PathBuf::from(value),
-            "--output" => output = PathBuf::from(value),
-            "--output-root" => output_root = Some(PathBuf::from(value)),
-            "--cow-sdk-root" => cow_sdk_root = Some(PathBuf::from(value)),
-            "--contracts-root" => contracts_root = Some(PathBuf::from(value)),
-            "--services-root" => services_root = Some(PathBuf::from(value)),
-            _ => bail!("unknown option: {key}"),
-        }
-
-        i += 2;
-    }
-
-    Ok(CliOptions {
-        source_lock,
-        output,
-        output_root,
-        cow_sdk_root,
-        contracts_root,
-        services_root,
-    })
 }
 
 fn snapshot(options: &CliOptions) -> Result<()> {
@@ -991,8 +1047,7 @@ fn provision_repository_checkout(repo: &RepositoryEntry, checkout_root: &Path) -
     ) {
         eprintln!(
             "shallow fetch failed for {} at {}: {error:#}; retrying with a full commit fetch",
-            repo.id,
-            repo.commit
+            repo.id, repo.commit
         );
         run_git_command(checkout_root, &["fetch", "origin", repo.commit.as_str()])?;
     }
@@ -1636,6 +1691,7 @@ fn fixture_contracts() -> Vec<FixtureEntry> {
 mod tests {
     use super::*;
     use std::{
+        env,
         sync::{Mutex, OnceLock},
         time::{SystemTime, UNIX_EPOCH},
     };
