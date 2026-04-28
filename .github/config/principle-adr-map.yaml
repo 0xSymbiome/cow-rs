@@ -1,0 +1,84 @@
+---
+# Primary and supporting ADR coverage for cow-rs principles.
+# Every principle has exactly one primary ADR. Supporting ADRs are optional.
+# Every accepted ADR is referenced under at least one principle or listed in
+# out_of_scope_adrs with a written rationale.
+#
+# ADRs 0029-0033 are referenced before their accepted ADR files land. The
+# informational ADR coverage CI lane reports those gaps without blocking until
+# the ADR 0029-0033 acceptance PR flips that lane to blocking mode.
+
+version: 1
+
+principles:
+  - id: 1
+    name: Deterministic Protocol Transforms
+    primary_adr: "0012"
+    supporting_adrs: ["0011", "0022", "0023"]
+
+  - id: 2
+    name: Explicit Runtime Boundaries
+    primary_adr: "0010"
+    supporting_adrs: ["0019"]
+
+  - id: 3
+    name: Thin Facade, Real Crate Boundaries
+    primary_adr: "0001"
+    supporting_adrs: ["0002", "0003", "0008"]
+
+  - id: 4
+    name: Instance-Scoped Configuration
+    primary_adr: "0006"
+    supporting_adrs: []
+
+  - id: 5
+    name: Strong Typed Public Surfaces
+    primary_adr: "0011"
+    supporting_adrs: ["0005", "0015", "0016", "0017", "0018", "0021"]
+
+  - id: 6
+    name: Additive Optional Ecosystems
+    primary_adr: "0008"
+    supporting_adrs: ["0004", "0007", "0009"]
+
+  - id: 7
+    name: Sole Construction Seam
+    primary_adr: "0013"
+    supporting_adrs: ["0011"]
+
+  - id: 8
+    name: Chain-RPC Runtime Neutrality
+    primary_adr: "0024"
+    supporting_adrs: ["0010", "0014", "0028"]
+
+  - id: 9
+    name: Canonical Contract Bindings
+    primary_adr: "0012"
+    supporting_adrs: ["0020", "0022", "0023"]
+
+  - id: 10
+    name: Evidence-Backed Public Claims
+    primary_adr: "0026"
+    supporting_adrs: ["0025", "0030", "0032"]
+
+  - id: 11
+    name: Forward-Compatible Public Surfaces
+    primary_adr: "0031"
+    supporting_adrs: ["0027", "0029"]
+
+  - id: 12
+    name: Credential Redaction by Construction
+    primary_adr: "0025"
+    supporting_adrs: ["0005", "0010"]
+
+  - id: 13
+    name: Cooperative Cancellation Coverage
+    primary_adr: "0010"
+    supporting_adrs: ["0006"]
+
+  - id: 14
+    name: Minimum-Viable Panic Surface
+    primary_adr: "0033"
+    supporting_adrs: []
+
+out_of_scope_adrs: []

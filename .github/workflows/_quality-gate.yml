@@ -341,6 +341,28 @@ jobs:
           fi
           echo "alloy-provider invariant holds for the first-release crate set."
 
+  adr-coverage:
+    name: ADR coverage (informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+      - name: Check principle ADR coverage
+        continue-on-error: true
+        run: |
+          # TODO(ADR 0029-0033 acceptance PR): flip --mode informational
+          # to --mode blocking in the same PR that adds those ADR files
+          # with Status: Accepted.
+          cargo run --manifest-path scripts/policy-maintainer/Cargo.toml \
+            -- check-adr-coverage --mode informational
+
   cargo-semver-checks:
     name: cargo-semver-checks (informational)
     runs-on: ubuntu-latest
