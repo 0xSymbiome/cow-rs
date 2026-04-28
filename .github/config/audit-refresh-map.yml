@@ -1,0 +1,13 @@
+version: 1
+audits:
+  - audit: docs/audit/source-lock-provenance-audit.md
+    owning_surface: source-lock provenance and lifecycle preflight authority
+    refresh_triggers:
+      paths:
+        - parity/source-lock.yaml
+      policies:
+        - lifecycle-preflight-exclusion-policy
+      upstreams:
+        - https://github.com/cowprotocol/cow-sdk
+        - https://github.com/cowprotocol/contracts
+        - https://github.com/cowprotocol/services

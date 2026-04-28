@@ -94,6 +94,12 @@ If the reviewed surface did not change, leave the audit alone.
 | [CID Dependency Audit](cid-dependency-audit.md) | Standing audit | `cow-sdk-app-data` CID encoding and published dependency boundary | Supported CID paths, fail-closed encoding, and clean published-upstream posture | Current | 2026-04-27 |
 | [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, canonical advisory tolerance, and source whitelist | Current | 2026-04-27 |
 
+## Source Provenance
+
+| Artifact | Type | Owning surface | Scope | Status | Last reviewed |
+| --- | --- | --- | --- | --- | --- |
+| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and lifecycle preflight authority | Source-lock commit pins, upstream freshness disclosure, historical snapshot scope, and refresh ownership | Current | 2026-04-28 |
+
 ## Transport And Routing
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
