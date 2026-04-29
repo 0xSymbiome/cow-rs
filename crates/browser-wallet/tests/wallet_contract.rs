@@ -120,7 +120,7 @@ fn smart_hook_payload(chain_id: SupportedChainId) -> TypedDataPayload {
 #[tokio::test(flavor = "current_thread")]
 async fn mock_wallet_connects_switches_chain_and_signs() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
 
     let session = wallet.connect().await.unwrap();
     assert!(session.connected);
@@ -165,7 +165,7 @@ async fn mock_wallet_connects_switches_chain_and_signs() {
 #[tokio::test(flavor = "current_thread")]
 async fn switch_chain_rejects_success_when_the_refreshed_session_stays_on_a_different_chain() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
 
     wallet.connect().await.unwrap();
     transport.set_switch_chain_updates_active_chain(false);
@@ -204,7 +204,7 @@ async fn switch_chain_rejects_success_when_the_refreshed_session_stays_on_a_diff
 #[tokio::test(flavor = "current_thread")]
 async fn explicit_typed_data_payloads_preserve_custom_primary_types_and_nested_types() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
 
     wallet.connect().await.unwrap();
     let signer = wallet.signer();
@@ -247,7 +247,7 @@ async fn explicit_typed_data_payloads_preserve_custom_primary_types_and_nested_t
 #[tokio::test(flavor = "current_thread")]
 async fn legacy_typed_data_compatibility_is_limited_to_order_and_cancellation_shapes() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
     wallet.connect().await.unwrap();
     let signer = wallet.signer();
     let domain = supported_domain(SupportedChainId::Sepolia);
@@ -304,7 +304,7 @@ async fn legacy_typed_data_compatibility_is_limited_to_order_and_cancellation_sh
 #[tokio::test(flavor = "current_thread")]
 async fn legacy_typed_data_compatibility_rejects_unknown_primary_type_shapes() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport);
+    let wallet = BrowserWallet::from_transport_or_panic(transport);
     wallet.connect().await.unwrap();
     let signer = wallet.signer();
 
@@ -340,7 +340,7 @@ async fn injected_discovery_keeps_bounded_timeout_contract_off_wasm() {
 #[tokio::test(flavor = "current_thread")]
 async fn transport_events_keep_wallet_session_synchronized() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
     let alternate =
         cow_sdk_core::Address::new("0x5555555555555555555555555555555555555555").unwrap();
 
@@ -382,7 +382,7 @@ async fn listener_lifetime_follows_wallet_and_provider_values() {
     let transport = MockEip1193Transport::sepolia();
     assert_eq!(transport.listener_count(), 0);
 
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
     assert_eq!(transport.listener_count(), 1);
 
     let provider = wallet.provider();
@@ -401,7 +401,7 @@ async fn listener_lifetime_follows_wallet_and_provider_values() {
 #[tokio::test(flavor = "current_thread")]
 async fn add_chain_uses_typed_chain_parameters_and_keeps_request_shape_explicit() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
     wallet.connect().await.unwrap();
 
     let chain = WalletChainParameters::for_supported_chain(SupportedChainId::Base)
@@ -446,7 +446,7 @@ async fn add_chain_uses_typed_chain_parameters_and_keeps_request_shape_explicit(
 async fn switch_or_add_chain_adds_then_switches_when_chain_is_not_present() {
     let transport = MockEip1193Transport::sepolia();
     transport.set_added_chains(vec![SupportedChainId::Sepolia]);
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
     wallet.connect().await.unwrap();
 
     let chain = WalletChainParameters::for_supported_chain(SupportedChainId::Base)
@@ -488,7 +488,7 @@ async fn switch_or_add_chain_rejects_success_when_the_refreshed_session_stays_on
     let transport = MockEip1193Transport::sepolia();
     transport.set_added_chains(vec![SupportedChainId::Sepolia]);
     transport.set_switch_chain_updates_active_chain(false);
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
     wallet.connect().await.unwrap();
 
     let chain = WalletChainParameters::for_supported_chain(SupportedChainId::Base)
@@ -529,7 +529,7 @@ async fn switch_or_add_chain_rejects_success_when_the_refreshed_session_stays_on
 async fn signer_for_chain_rejects_wallet_session_mismatches_before_returning_signer() {
     let transport = MockEip1193Transport::sepolia();
     transport.set_chain_id(SupportedChainId::Mainnet);
-    let wallet = BrowserWallet::from_transport(transport);
+    let wallet = BrowserWallet::from_transport_or_panic(transport);
     wallet.connect().await.unwrap();
 
     let error = wallet
@@ -549,7 +549,7 @@ async fn signer_for_chain_rejects_wallet_session_mismatches_before_returning_sig
 #[tokio::test(flavor = "current_thread")]
 async fn chain_bound_signer_rejects_chain_drift_before_address_and_transaction_calls() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
 
     wallet.connect().await.unwrap();
     let signer = wallet
@@ -595,7 +595,7 @@ async fn chain_bound_signer_rejects_chain_drift_before_address_and_transaction_c
 #[tokio::test(flavor = "current_thread")]
 async fn chain_bound_signer_rejects_typed_data_payloads_for_a_different_chain() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
 
     wallet.connect().await.unwrap();
     let signer = wallet
@@ -626,7 +626,7 @@ async fn chain_bound_signer_rejects_typed_data_payloads_for_a_different_chain() 
 #[tokio::test(flavor = "current_thread")]
 async fn switch_or_add_chain_does_not_add_when_chain_not_added_targets_a_different_chain() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
     wallet.connect().await.unwrap();
     transport.fail_method(
         "wallet_switchEthereumChain",

@@ -1,9 +1,9 @@
 # Trading Order Construction Integrity Audit
 
-Status: Current  
-Last reviewed: 2026-04-21  
-Owning surface: `cow-sdk-trading` order assembly, injected-orderbook constructor parity, and recoverable-signature posting boundary  
-Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` construction with injected orderbooks, or recoverable-signature posting validation  
+Status: Current
+Last reviewed: 2026-04-29
+Owning surface: `cow-sdk-trading` order assembly, injected-orderbook builder terminal parity, and recoverable-signature posting boundary
+Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` builder terminals with injected orderbooks, or recoverable-signature posting validation
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [Architecture](../architecture.md)
@@ -16,7 +16,7 @@ This audit covers:
 
 - order construction and submission helpers in `cow-sdk-trading`
 - quote-derived order assembly and direct posting flows
-- `TradingSdk` construction paths that accept injected orderbook context
+- `TradingSdk` builder terminals that accept injected orderbook context
 - local signature validation before orderbook submission
 
 It does not cover browser-wallet session management, approval flows, or
@@ -27,7 +27,7 @@ unrelated leaf-crate transport policy.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Order construction balance semantics | Preserve reviewed `sellTokenBalance` and `buyTokenBalance` values end to end | Conforms |
-| `TradingSdk` injected-orderbook constructors | Builder and direct constructors enforce one fail-fast authority contract | Conforms |
+| `TradingSdk` injected-orderbook terminals | Typestate and total-input builder terminals enforce one fail-fast authority contract | Conforms |
 | Recoverable signature posting | Reject explicit owner or signer mismatch before submission | Conforms |
 
 ## Current Contract
@@ -40,12 +40,12 @@ assembly, direct order construction, signing payload generation, and final
 submission. Non-default balance selections remain part of the signed order
 contract rather than being normalized during helper composition.
 
-### Constructor Parity
+### Builder Terminal Parity
 
-Builder-created and directly constructed `TradingSdk` instances share the same
+Typestate and total-input builder terminals for `TradingSdk` share the same
 injected-orderbook validation boundary. If explicit trader or quoter defaults
-conflict with the injected orderbook context, SDK construction fails before
-the surface is exposed.
+conflict with the injected orderbook context, SDK construction fails before the
+surface is exposed.
 
 ### Recoverable Signature Boundary
 

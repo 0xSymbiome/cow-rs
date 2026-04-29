@@ -89,14 +89,14 @@ mod gas_limit_serde {
         clippy::trivially_copy_pass_by_ref,
         reason = "serde with-module serializers receive a reference to the field value"
     )]
-    pub fn serialize<S>(gas_limit: &u64, serializer: S) -> Result<S::Ok, S::Error>
+    pub(super) fn serialize<S>(gas_limit: &u64, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_str(&gas_limit.to_string())
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
+    pub(super) fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
     where
         D: Deserializer<'de>,
     {

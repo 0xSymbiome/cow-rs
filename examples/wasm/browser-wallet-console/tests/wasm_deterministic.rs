@@ -148,7 +148,7 @@ async fn cached_wallet(
 async fn seeded_wallet(label: &str) -> BrowserWallet {
     let transport = MockEip1193Transport::sepolia().with_label(label);
     transport.set_connected(true);
-    let wallet = BrowserWallet::from_transport(transport);
+    let wallet = BrowserWallet::from_transport_or_panic(transport);
     wallet
         .refresh_session()
         .await

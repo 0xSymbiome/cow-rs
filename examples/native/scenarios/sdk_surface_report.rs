@@ -7,18 +7,16 @@ use cow_sdk::app_data::{
 };
 use cow_sdk::contracts::deployment_for_chain;
 use cow_sdk::core::wrapped_native_token;
-use cow_sdk::prelude::{SupportedChainId, TradingSdk};
+use cow_sdk::prelude::{SupportedChainId, TraderParameters, TradingSdkBuilder};
 use cow_sdk::signing::{generate_order_id, order_typed_data};
-use cow_sdk::trading::{PartialTraderParameters, TradingSdkOptions};
+use cow_sdk::trading::TradingSdkOptions;
 
 use cow_sdk_examples_native::support::{sample_owner, sample_unsigned_order};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
-    let sdk = TradingSdk::new(
-        PartialTraderParameters::new()
-            .with_chain_id(chain_id)
-            .with_app_code("cow-rs/native-capability-report".to_owned()),
+    let sdk = TradingSdkBuilder::ready(
+        TraderParameters::new(chain_id, "cow-rs/native-capability-report"),
         TradingSdkOptions::default(),
     )?;
     let app_data_doc = generate_app_data_doc(

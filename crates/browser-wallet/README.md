@@ -32,9 +32,12 @@ cow-sdk = { version = "0.1", features = ["browser-wallet"] }
 ## Minimal example
 
 ```rust
-use cow_sdk_browser_wallet::MockEip1193Transport;
+use cow_sdk_browser_wallet::{BrowserWallet, MockEip1193Transport, Origin};
 
-let _transport = MockEip1193Transport::sepolia().with_label("example wallet");
+let transport = MockEip1193Transport::sepolia().with_label("example wallet");
+let origin = Origin::new("test://example-wallet").expect("example origin must be valid");
+let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
+    .expect("trusted example transport must build");
 ```
 
 ## Where to next

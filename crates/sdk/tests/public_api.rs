@@ -1,29 +1,25 @@
 use cow_sdk::core::{AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, UnsignedOrder};
 use cow_sdk::prelude::{
-    Address, Amount, SupportedChainId, TradeParameters, TradingSdk, TradingSdkBuilder,
+    Address, Amount, SupportedChainId, TradeParameters, TraderParameters, TradingSdkBuilder,
 };
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, generate_order_id, order_typed_data};
 use cow_sdk::trading::{PartialTraderParameters, PartnerFee, PartnerFeePolicy, TradingSdkOptions};
 
 #[test]
 fn public_api_reexports_cover_primary_root_surface() {
-    let _ready_sdk = TradingSdk::new(
-        PartialTraderParameters::new()
-            .with_chain_id(SupportedChainId::Sepolia)
-            .with_app_code("cow-rs/public-api".to_owned()),
+    let _ready_sdk = TradingSdkBuilder::ready(
+        TraderParameters::new(SupportedChainId::Sepolia, "cow-rs/public-api"),
         TradingSdkOptions::default(),
     )
     .expect("ready trading sdk construction should succeed");
-    let _partial_sdk = TradingSdk::new_partial(
-        PartialTraderParameters::new().with_chain_id(SupportedChainId::Sepolia),
-        TradingSdkOptions::default(),
-    )
-    .expect("partial trading sdk construction should succeed");
+    let _helper_only_sdk =
+        TradingSdkBuilder::helper_only(SupportedChainId::Sepolia, TradingSdkOptions::default())
+            .expect("helper-only trading sdk construction should succeed");
     let _builder = TradingSdkBuilder::new()
         .with_trader_defaults(PartialTraderParameters::default())
         .with_chain_id(SupportedChainId::Sepolia)
         .build_helper_only()
-        .expect("partial builder construction should succeed");
+        .expect("helper-only builder construction should succeed");
     assert_eq!(ORDER_PRIMARY_TYPE, "Order");
 
     let owner = Address::new("0x4444444444444444444444444444444444444444").unwrap();
@@ -106,12 +102,11 @@ fn module_reexports_cover_expected_leaf_crates() {
     )
     .build()
     .expect("default facade orderbook client must build");
-    let _sdk = cow_sdk::trading::TradingSdk::new_partial(
-        cow_sdk::trading::PartialTraderParameters::new()
-            .with_chain_id(cow_sdk::core::SupportedChainId::Sepolia),
+    let _sdk = cow_sdk::trading::TradingSdkBuilder::helper_only(
+        cow_sdk::core::SupportedChainId::Sepolia,
         cow_sdk::trading::TradingSdkOptions::default(),
     )
-    .expect("default facade partial trading sdk construction should succeed");
+    .expect("default facade helper-only trading sdk construction should succeed");
 
     assert!(validation.success);
     assert!(schema.is_object());

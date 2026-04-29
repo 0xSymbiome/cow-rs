@@ -1,9 +1,9 @@
 # Trading SDK Runtime Prerequisites Audit
 
-Status: Current  
-Last reviewed: 2026-04-25  
-Owning surface: `cow-sdk-trading` ready-state versus partial `TradingSdk` construction and helper-specific prerequisite contract  
-Refresh trigger: Changes to ready-state `TradingSdk` constructors or builders, partial setup entry points, method-specific prerequisite enforcement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`  
+Status: Current
+Last reviewed: 2026-04-29
+Owning surface: `cow-sdk-trading` ready-state versus helper-only `TradingSdk` construction and helper-specific prerequisite contract
+Refresh trigger: Changes to ready-state `TradingSdk` builder terminals, helper-only setup entry points, method-specific prerequisite enforcement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
@@ -16,7 +16,7 @@ Related docs:
 
 This audit covers:
 
-- ready-state and partial `TradingSdk` construction
+- ready-state and helper-only `TradingSdk` construction
 - method-specific prerequisites across quote, post, cancellation, allowance,
   approval, and pre-sign helper flows
 - the boundary between trading attribution requirements and chain-bound helper
@@ -29,21 +29,20 @@ or unrelated credential-hygiene questions.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Typestate ready construction | `TradingSdkBuilder::build_ready` is the only ready-state builder terminal and requires chain id plus `appCode` before construction | Conforms |
+| Typestate ready construction | `TradingSdkBuilder::build_ready` and `TradingSdkBuilder::ready` require total chain id plus `appCode` inputs before ready-state construction | Conforms |
 | wasm32 build_ready() requires injected orderbook client | `build_ready()` returns `TradingError::MissingInjectedOrderbookClient` when `options.orderbook_client().is_none()` on `wasm32` | Conforms |
-| Partial helper construction | Explicit partial constructors keep helper-only setup available without weakening the ready-state contract | Conforms |
+| Helper-only construction | `TradingSdkBuilder::build_helper_only` and `TradingSdkBuilder::helper_only` keep helper-only setup available without weakening the ready-state contract | Conforms |
 | Chain-bound helper prerequisites | Allowance, approval, pre-sign, and on-chain cancellation no longer require `appCode` when only chain and protocol context are needed | Conforms |
 
 ## Current Contract
 
 ### Ready-State Construction
 
-`TradingSdkBuilder::build_ready` is the only ready-state builder terminal. It
-is available only after the builder has both chain id and `appCode` typestate
-markers set, so missing ready-state prerequisites are rejected at compile time
-for builder callers. `TradingSdk::new` remains the dynamic constructor for
-runtime defaults and surfaces a typed `TradingError::MissingTraderParameters`
-when `chainId` or `appCode` is absent.
+`TradingSdkBuilder::build_ready` is available only after the builder has both
+chain id and `appCode` typestate markers set, so missing ready-state
+prerequisites are rejected at compile time for fluent builder callers.
+`TradingSdkBuilder::ready` is the one-call ready-state shortcut for callers
+that already hold total `TraderParameters`; it does not accept partial defaults.
 
 ### wasm32 Typestate Ready Terminal
 
@@ -55,14 +54,14 @@ terminal now returns `TradingError::MissingInjectedOrderbookClient` instead of
 returning a misleading ready-state handle whose first quote or post call would
 fail in orderbook binding resolution.
 
-### Explicit Partial Construction
+### Helper-Only Construction
 
-`TradingSdkBuilder::build_helper_only` and `TradingSdk::new_partial` keep the
-narrower helper-only contract explicit. They are intended for workflows such as
-allowance reads, approval submission, pre-sign transaction construction, and
-on-chain cancellation, where chain and protocol context matter but quote or
-submission attribution does not. Both construction paths require a chain id and
-produce `TradingSdkMode::HelperOnly`.
+`TradingSdkBuilder::build_helper_only` and `TradingSdkBuilder::helper_only`
+keep the narrower helper-only contract explicit. They are intended for
+workflows such as allowance reads, approval submission, pre-sign transaction
+construction, and on-chain cancellation, where chain and protocol context
+matter but quote or submission attribution does not. Both construction paths
+require a chain id and produce `TradingSdkMode::HelperOnly`.
 
 ### Helper-Specific Prerequisites
 
@@ -86,6 +85,8 @@ Primary regression coverage:
 - `crates/trading/tests/sdk_contract.rs::build_ready_rejects_missing_injected_orderbook_client_on_wasm32`
 - `crates/trading/tests/sdk_contract.rs::build_ready_succeeds_on_wasm32_with_injected_orderbook_client`
 - `crates/trading/tests/sdk_contract.rs::build_ready_succeeds_on_native_without_injected_orderbook_client`
+- `crates/trading/tests/sdk_contract.rs::sdk_ready_shortcut_accepts_total_trader_parameters`
+- `crates/trading/tests/sdk_contract.rs::sdk_helper_only_shortcut_builds_helper_mode_and_refuses_quote_only`
 - `crates/sdk/tests/public_api.rs`
 
 Validation surface:

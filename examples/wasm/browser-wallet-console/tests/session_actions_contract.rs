@@ -79,7 +79,7 @@ fn forget_wallet_clears_selection_and_post_forget_actions_fail_closed() {
 fn seeded_wallet() -> BrowserWallet {
     let transport = MockEip1193Transport::sepolia();
     transport.set_connected(true);
-    let wallet = BrowserWallet::from_transport(transport);
+    let wallet = BrowserWallet::from_transport_or_panic(transport);
     let _ = block_on(wallet.refresh_session()).expect("mock wallet refresh must succeed");
     let _ = wallet.take_events();
     wallet

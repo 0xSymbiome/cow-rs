@@ -23,8 +23,7 @@ use cow_sdk::prelude::{
 };
 use cow_sdk::signing::{generate_order_id, sign_order_async};
 use cow_sdk::trading::{
-    ApprovalParameters, OrderTraderParameters, PartialTraderParameters, TradingSdkOptions,
-    approval_transaction,
+    ApprovalParameters, OrderTraderParameters, TradingSdkOptions, approval_transaction,
 };
 use cow_sdk::trading::OrderbookClient;
 
@@ -117,7 +116,7 @@ impl BrowserWalletConsole {
     #[wasm_bindgen(constructor)]
     pub fn new() -> BrowserWalletConsole {
         let mock_transport = MockEip1193Transport::sepolia();
-        let mock_wallet = BrowserWallet::from_transport(mock_transport.clone());
+        let mock_wallet = BrowserWallet::from_transport_or_panic(mock_transport.clone());
         Self {
             mock_transport,
             mock_wallet,
@@ -202,13 +201,12 @@ impl BrowserWalletConsole {
 
         let trade = parse_trade_parameters(&trade_json)?;
         let mock_orderbook = Arc::new(MockBrowserOrderbook::new(chain_id, env));
-        let sdk = TradingSdk::new(
-            PartialTraderParameters::new()
-                .with_chain_id(chain_id)
-                .with_app_code(app_code.to_owned())
-                .with_env(env),
-            TradingSdkOptions::new().with_orderbook_client(mock_orderbook.clone()),
-        )
+        let sdk = TradingSdk::builder()
+            .with_chain_id(chain_id)
+            .with_app_code(app_code)
+            .with_env(env)
+            .with_options(TradingSdkOptions::new().with_orderbook_client(mock_orderbook.clone()))
+            .build_ready()
         .map_err(js_string_error)?;
         let posting = sdk
             .post_swap_order_async(trade, &signer, None)
@@ -313,13 +311,12 @@ impl BrowserWalletConsole {
         let env = parse_env(env)?;
         let trade = parse_trade_parameters(trade_json)?;
         let mock_orderbook = Arc::new(MockBrowserOrderbook::new(chain_id, env));
-        let sdk = TradingSdk::new(
-            PartialTraderParameters::new()
-                .with_chain_id(chain_id)
-                .with_app_code(app_code.trim().to_owned())
-                .with_env(env),
-            TradingSdkOptions::new().with_orderbook_client(mock_orderbook.clone()),
-        )
+        let sdk = TradingSdk::builder()
+            .with_chain_id(chain_id)
+            .with_app_code(app_code.trim())
+            .with_env(env)
+            .with_options(TradingSdkOptions::new().with_orderbook_client(mock_orderbook.clone()))
+            .build_ready()
         .map_err(js_string_error)?;
         let signer = self.mock_wallet.signer();
         let posting = sdk
@@ -790,14 +787,15 @@ fn live_sdk(chain_id: SupportedChainId, env: CowEnv, app_code: &str) -> TradingS
         .build()
         .expect("browser wallet console orderbook client must build");
 
-    TradingSdk::new(
-        PartialTraderParameters::new()
-            .with_chain_id(chain_id)
-            .with_app_code(app_code.to_owned())
-            .with_env(env),
-        TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook_client)),
-    )
-    .expect("browser wallet console sdk construction should succeed")
+    TradingSdk::builder()
+        .with_chain_id(chain_id)
+        .with_app_code(app_code)
+        .with_env(env)
+        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(
+            orderbook_client,
+        )))
+        .build_ready()
+        .expect("browser wallet console sdk construction should succeed")
 }
 
 fn mock_quote_response(request: &OrderQuoteRequest) -> OrderQuoteResponse {

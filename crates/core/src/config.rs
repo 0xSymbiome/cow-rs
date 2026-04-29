@@ -307,7 +307,7 @@ impl From<ParseError> for UrlParseFailureClass {
 pub enum HostPolicyError {
     /// The URL could not be parsed into an absolute service endpoint.
     #[error("external service URL could not be parsed: {class}")]
-    UnparseableUrl {
+    UnparsableUrl {
         /// Sanitized parse-failure class.
         class: UrlParseFailureClass,
     },
@@ -349,7 +349,7 @@ pub fn validate_external_service_url(
     canonical_hosts: &[&str],
     policy: &ExternalHostPolicy,
 ) -> Result<(), HostPolicyError> {
-    let parsed = Url::parse(base_url.trim()).map_err(|error| HostPolicyError::UnparseableUrl {
+    let parsed = Url::parse(base_url.trim()).map_err(|error| HostPolicyError::UnparsableUrl {
         class: error.into(),
     })?;
 
@@ -361,7 +361,7 @@ pub fn validate_external_service_url(
 
     let host = parsed
         .host_str()
-        .ok_or(HostPolicyError::UnparseableUrl {
+        .ok_or(HostPolicyError::UnparsableUrl {
             class: UrlParseFailureClass::MissingHost,
         })?
         .to_ascii_lowercase();

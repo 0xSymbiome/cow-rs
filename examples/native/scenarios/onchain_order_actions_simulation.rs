@@ -5,7 +5,7 @@ use serde_json::json;
 use cow_sdk::core::HexData;
 use cow_sdk::prelude::{SupportedChainId, TradingSdk};
 use cow_sdk::trading::{
-    OrderTraderParameters, PartialTraderParameters, TradingSdkOptions, get_pre_sign_transaction,
+    OrderTraderParameters, TradingSdkOptions, get_pre_sign_transaction,
     onchain_cancellation_transaction,
 };
 
@@ -26,19 +26,20 @@ fn sample_ethflow_order() -> cow_sdk::orderbook::Order {
 
 fn trading_sdk(orderbook: MockOrderbook) -> TradingSdk {
     let trader = sample_trader_parameters();
-    let mut partial = PartialTraderParameters::new()
+    let mut builder = TradingSdk::builder()
         .with_chain_id(trader.chain_id)
         .with_app_code(trader.app_code)
         .with_owner(sample_owner());
     if let Some(env) = trader.env {
-        partial = partial.with_env(env);
+        builder = builder.with_env(env);
     }
 
-    TradingSdk::new(
-        partial,
-        TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook)),
-    )
-    .expect("example trading sdk construction should succeed")
+    builder
+        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(
+            orderbook,
+        )))
+        .build_ready()
+        .expect("example trading sdk construction should succeed")
 }
 
 #[tokio::main]

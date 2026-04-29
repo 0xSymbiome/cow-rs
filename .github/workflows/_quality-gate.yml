@@ -445,7 +445,7 @@ jobs:
       - name: Check published crate public API lints
         run: cargo check --workspace --all-features
         env:
-          RUSTFLAGS: -Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types
+          RUSTFLAGS: -Dmissing-docs -Dmissing-debug-implementations -Dunreachable-pub -Dunnameable-types
 
   alloy-provider-invariant:
     runs-on: ubuntu-latest

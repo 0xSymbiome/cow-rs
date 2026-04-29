@@ -28,4 +28,6 @@ pub use cow_sdk_orderbook::{OrderBookApi, OrderBookApiBuilder, OrderbookError};
 // signing
 pub use cow_sdk_core::{AsyncSigner, Signer};
 // trading
-pub use cow_sdk_trading::{TradeParameters, TradingError, TradingSdk, TradingSdkBuilder};
+pub use cow_sdk_trading::{
+    TradeParameters, TraderParameters, TradingError, TradingSdk, TradingSdkBuilder,
+};

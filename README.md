@@ -41,6 +41,18 @@ let _sdk = TradingSdk::builder()
 Use `appCode` as the stable identifier for the application or integration
 surface that originates the order flow.
 
+Browser-wallet integrations that wrap a reviewed local transport should keep
+the trusted origin explicit:
+
+```rust
+use cow_sdk::browser_wallet::{BrowserWallet, MockEip1193Transport, Origin};
+
+let transport = MockEip1193Transport::sepolia().with_label("example wallet");
+let origin = Origin::new("test://example-wallet").expect("example origin must be valid");
+let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
+    .expect("trusted example transport must build");
+```
+
 ## Crate Guide
 
 | Need | Crate |

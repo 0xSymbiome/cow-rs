@@ -27,6 +27,10 @@ use crate::{
 /// sdk can only drive chain-bound helpers such as pre-sign transaction
 /// construction, allowance reads, approval submission, and on-chain
 /// cancellation.
+///
+/// Classified as `sdk-local-state` in the workspace enum policy manifest: the
+/// SDK owns this closed discriminator and the only valid runtime modes are
+/// ready-state execution and helper-only execution.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TradingSdkMode {
     /// Full quote, post, and off-chain cancellation flows are enabled.
@@ -125,6 +129,70 @@ impl TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Builds a ready-state [`TradingSdk`] from total trader parameters.
+    ///
+    /// This one-call terminal is for callers that already hold the complete
+    /// [`TraderParameters`] shape. It intentionally does not accept
+    /// [`PartialTraderParameters`], so chain id and `appCode` stay present
+    /// before construction reaches the ready-state terminal.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
+    /// trader parameters conflict with an injected orderbook client. On
+    /// `wasm32`, also returns [`TradingError::MissingInjectedOrderbookClient`]
+    /// when no orderbook client has been supplied.
+    pub fn ready(
+        params: TraderParameters,
+        options: TradingSdkOptions,
+    ) -> Result<TradingSdk, TradingError> {
+        let TraderParameters {
+            chain_id,
+            app_code,
+            env,
+            settlement_contract_override,
+            eth_flow_contract_override,
+        } = params;
+
+        let mut builder = Self::new()
+            .with_options(options)
+            .with_chain_id(chain_id)
+            .with_app_code(app_code);
+
+        if let Some(env) = env {
+            builder = builder.with_env(env);
+        }
+        if let Some(overrides) = settlement_contract_override {
+            builder = builder.with_settlement_contract_override(overrides);
+        }
+        if let Some(overrides) = eth_flow_contract_override {
+            builder = builder.with_eth_flow_contract_override(overrides);
+        }
+
+        builder.build_ready()
+    }
+
+    /// Builds a helper-only [`TradingSdk`] from total chain authority.
+    ///
+    /// This one-call terminal is for chain-bound helper workflows that need no
+    /// quote or submission attribution. Quote, post, and off-chain
+    /// cancellation methods on the returned SDK fail closed with
+    /// [`TradingError::HelperOnlyMode`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
+    /// chain id conflicts with an injected orderbook client.
+    pub fn helper_only(
+        chain_id: SupportedChainId,
+        options: TradingSdkOptions,
+    ) -> Result<TradingSdk, TradingError> {
+        Self::new()
+            .with_options(options)
+            .with_chain_id(chain_id)
+            .build_helper_only()
     }
 }
 
@@ -389,61 +457,6 @@ impl TradingSdk {
             TradingSdkMode::Ready => Ok(()),
             TradingSdkMode::HelperOnly => Err(TradingError::HelperOnlyMode),
         }
-    }
-
-    /// Creates a ready-state SDK directly from defaults and options.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
-    /// supplied defaults conflict with an injected orderbook client, or
-    /// [`TradingError::MissingTraderParameters`] when the defaults do not
-    /// provide both `chainId` and `appCode`.
-    pub fn new(
-        trader_defaults: PartialTraderParameters,
-        options: TradingSdkOptions,
-    ) -> Result<Self, TradingError> {
-        match (trader_defaults.chain_id, trader_defaults.app_code.clone()) {
-            (Some(chain_id), Some(app_code)) => TradingSdkBuilder::new()
-                .with_trader_defaults(trader_defaults)
-                .with_options(options)
-                .with_chain_id(chain_id)
-                .with_app_code(app_code)
-                .build_ready(),
-            (None, Some(_)) => Err(TradingError::MissingTraderParameters("chainId".to_owned())),
-            (Some(_), None) => Err(TradingError::MissingTraderParameters("appCode".to_owned())),
-            (None, None) => Err(TradingError::MissingTraderParameters(
-                "chainId, appCode".to_owned(),
-            )),
-        }
-    }
-
-    /// Creates a helper-only SDK directly from defaults and options.
-    ///
-    /// This constructor is intended for chain-bound helper flows that do not
-    /// require quote or submission attribution, such as allowance reads,
-    /// approval submission, pre-sign transaction construction, or on-chain
-    /// cancellation.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
-    /// supplied defaults conflict with an injected orderbook client, or
-    /// [`TradingError::MissingTraderParameters`] when the defaults do not
-    /// provide `chainId`.
-    pub fn new_partial(
-        trader_defaults: PartialTraderParameters,
-        options: TradingSdkOptions,
-    ) -> Result<Self, TradingError> {
-        let Some(chain_id) = trader_defaults.chain_id else {
-            return Err(TradingError::MissingTraderParameters("chainId".to_owned()));
-        };
-
-        TradingSdkBuilder::new()
-            .with_trader_defaults(trader_defaults)
-            .with_options(options)
-            .with_chain_id(chain_id)
-            .build_helper_only()
     }
 
     /// Returns the stored trader defaults.

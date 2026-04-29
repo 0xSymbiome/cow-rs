@@ -6,7 +6,7 @@ use cow_sdk_core::{Address, SupportedChainId};
 #[tokio::test(flavor = "current_thread")]
 async fn wallet_session_state_machine_keeps_reset_and_refresh_boundaries_explicit() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport);
+    let wallet = BrowserWallet::from_transport_or_panic(transport);
 
     let initial = wallet.session();
     assert!(!initial.connected);
@@ -64,7 +64,7 @@ async fn wallet_session_state_machine_keeps_reset_and_refresh_boundaries_explici
 #[tokio::test(flavor = "current_thread")]
 async fn wallet_event_state_machine_tracks_disconnect_and_explicit_reconnect() {
     let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
     let alternate = Address::new("0x5555555555555555555555555555555555555555").unwrap();
 
     wallet

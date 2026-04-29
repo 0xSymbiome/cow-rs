@@ -53,7 +53,7 @@ cargo test --doc -p cow-sdk-trading
 cargo test --doc -p cow-sdk-contracts
 cargo test --all-features --workspace --doc
 cargo doc --workspace --all-features --no-deps
-RUSTFLAGS="-Wmissing-docs -Wmissing-debug-implementations -Wunreachable-pub -Wunnameable-types" cargo check --workspace --all-features
+RUSTFLAGS="-Dmissing-docs -Dmissing-debug-implementations -Dunreachable-pub -Dunnameable-types" cargo check --workspace --all-features
 ```
 
 Nightly docs.rs-style lane:

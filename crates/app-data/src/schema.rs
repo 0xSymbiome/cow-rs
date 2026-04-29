@@ -27,6 +27,8 @@ const SCHEMA_BASE_URI: &str = "https://cowswap.exchange/schemas/app-data/";
 /// constructors.
 #[must_use]
 pub fn generate_app_data_doc(params: AppDataParams) -> AppDataDoc {
+    // SAFETY: typed metadata values are SDK-owned serde shapes; serialization
+    // failure means a broken crate invariant rather than caller input.
     let metadata = params
         .metadata_wire_value()
         .expect("typed flashloan metadata must remain serializable");
@@ -53,6 +55,11 @@ pub fn generate_app_data_doc(params: AppDataParams) -> AppDataDoc {
 /// Returns [`AppDataError::InvalidSchemaVersion`] when `version` is not
 /// `<major>.<minor>.<patch>`, or [`AppDataError::UnknownSchemaVersion`] when
 /// the version is valid but no bundled schema exists for it.
+///
+/// # Panics
+///
+/// Panics only if the embedded schema bundle stops following the committed
+/// URI, file-name, and JSON-validity invariants validated with the crate.
 pub fn get_app_data_schema(version: &str) -> Result<AppDataDoc, AppDataError> {
     validate_schema_version(version)?;
     root_schemas()
@@ -62,6 +69,11 @@ pub fn get_app_data_schema(version: &str) -> Result<AppDataDoc, AppDataError> {
 }
 
 /// Validates an app-data document against the bundled JSON schema set.
+///
+/// # Panics
+///
+/// Panics only if the embedded schema bundle stops following the committed
+/// URI, file-name, and JSON-validity invariants validated with the crate.
 #[must_use]
 pub fn validate_app_data_doc(app_data_doc: &AppDataDoc) -> ValidationResult {
     match validate_app_data_doc_inner(app_data_doc) {
@@ -145,6 +157,8 @@ fn root_schemas() -> &'static BTreeMap<String, Value> {
         for (uri, resource) in schema_resources() {
             let relative = uri
                 .strip_prefix(SCHEMA_BASE_URI)
+                // SAFETY: every schema resource URI is assembled from
+                // SCHEMA_BASE_URI inside collect_file.
                 .expect("schema URIs are always rooted under SCHEMA_BASE_URI");
             if let Some(version) = relative
                 .strip_prefix('v')
@@ -169,6 +183,8 @@ fn collect_files(dir: &Dir<'_>, prefix: &str, resources: &mut BTreeMap<String, V
                         child
                             .path()
                             .file_name()
+                            // SAFETY: include_dir! only yields directory entries
+                            // with stable embedded names from the crate bundle.
                             .expect("embedded dir has file name")
                             .to_string_lossy()
                     )
@@ -184,6 +200,8 @@ fn collect_file(file: &File<'_>, prefix: &str, resources: &mut BTreeMap<String, 
     let file_name = file
         .path()
         .file_name()
+        // SAFETY: include_dir! only yields file entries with stable embedded
+        // names from the crate bundle.
         .expect("embedded file has file name")
         .to_string_lossy();
     let relative = if prefix.is_empty() {
@@ -192,6 +210,8 @@ fn collect_file(file: &File<'_>, prefix: &str, resources: &mut BTreeMap<String, 
         format!("{prefix}/{file_name}")
     };
     let uri = format!("{SCHEMA_BASE_URI}{relative}");
+    // SAFETY: committed schema files are validated as JSON by tests and by the
+    // policy-maintainer panic allowlist gate.
     let resource: Value =
         serde_json::from_slice(file.contents()).expect("embedded schema json is valid");
     resources.insert(uri, resource);

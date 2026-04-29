@@ -15,6 +15,9 @@ unreleased public contract of the repository.
 
 ### Added
 
+- `TradingSdkBuilder::ready` and `TradingSdkBuilder::helper_only` provide
+  ergonomic construction terminals for total ready-state trader parameters and
+  helper-only chain authority.
 - Release readiness automation now generates a SLSA provenance attestation
   alongside the existing software-bill-of-materials artifact so downstream
   consumers can verify the provenance of every published crate tarball.
@@ -515,6 +518,10 @@ unreleased public contract of the repository.
 
 ### Fixed
 
+- `HostPolicyError::UnparsableUrl` corrects the public variant spelling before
+  the first functional release. App-data schema panic sites now carry explicit
+  invariant rationales and rustdoc panic documentation, and internal hook gas
+  limit serde helpers no longer widen the public API surface.
 - Legacy compatibility helpers in the contracts crate that produced
   protocol-incorrect digests by zeroing amounts before hashing have
   been removed. Order digest computation now flows exclusively through
@@ -669,6 +676,9 @@ unreleased public contract of the repository.
 
 ### Removed
 
+- `TradingSdk::new` and `TradingSdk::new_partial` have been removed before the
+  first functional release. Consumers should use `TradingSdkBuilder::ready`,
+  `TradingSdkBuilder::helper_only`, or the fluent typestate builder terminals.
 - Removed the permissive runtime-validated `TradingSdkBuilder::build` and
   `TradingSdkBuilder::build_partial` terminals; the typestate-gated
   `build_ready` and `build_helper_only` terminals are now the only
@@ -679,6 +689,12 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- `BrowserWallet::from_transport` has been renamed to
+  `BrowserWallet::from_transport_or_panic`, while README examples now use
+  `BrowserWallet::from_trusted_transport` as the canonical fallible
+  constructor for reviewed local transports. The public API lint gate now
+  treats missing docs, missing debug implementations, unreachable public items,
+  and unnameable types as hard errors.
 - The project now tracks a register of post-1.0 type-system improvements
   queued for a future major release.
 - Typestate marker structs across the workspace are now sealed against

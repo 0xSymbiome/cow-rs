@@ -10,7 +10,7 @@ use cow_sdk_core::{Address, Amount, ContractCall, HexData, SupportedChainId, Tra
 async fn mock_provider_satisfies_async_provider_contracts() {
     let transport = MockEip1193Transport::sepolia();
     transport.set_connected(true);
-    let wallet = BrowserWallet::from_transport(transport.clone());
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
     wallet.connect().await.unwrap();
 
     let provider = wallet.provider();

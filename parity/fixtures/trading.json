@@ -431,12 +431,12 @@
     {
       "id": "trading-sdk-quote-only-owner-mode",
       "kind": "behavior-scenario",
-      "description": "TradingSdk quote-only mode works without a signer when owner is explicit, uses owner as from, and raises explicit errors when chainId or appCode are missing.",
+      "description": "TradingSdk quote-only mode works without a signer when owner is explicit, uses owner as from, and keeps construction on total ready parameters or helper-only chain authority.",
       "expected": {
         "signer_optional_for_quote_only": true,
         "owner_used_as_from": true,
-        "missing_chainid_error": true,
-        "missing_appcode_error": true
+        "ready_shortcut_uses_total_trader_parameters": true,
+        "helper_only_refuses_quote_only": true
       }
     },
     {

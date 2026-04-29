@@ -47,8 +47,8 @@ use cow_sdk_core::{
 use cow_sdk_orderbook::{PriceQuality, SigningScheme};
 use cow_sdk_trading::{
     GAS_LIMIT_DEFAULT, MAX_SLIPPAGE_BPS, OrderToSignParams, OrderTraderParameters,
-    PartialTraderParameters, PartnerFeePolicy, PostTradeAdditionalParams, QuoteRequestOverride,
-    QuoterParameters, SwapAdvancedSettings, TradingError, TradingSdk, TradingSdkOptions,
+    PartnerFeePolicy, PostTradeAdditionalParams, QuoteRequestOverride, QuoterParameters,
+    SwapAdvancedSettings, TraderParameters, TradingError, TradingSdkBuilder, TradingSdkOptions,
     build_app_data, default_slippage_bps, get_eth_flow_transaction, get_order_to_sign,
     get_pre_sign_transaction, get_quote_only, get_quote_results, is_ethflow_order,
     merge_and_seal_app_data, onchain_cancellation_transaction, post_limit_order,
@@ -1395,12 +1395,16 @@ async fn assert_sdk_quote_only_owner_mode(case_id: &str, expected: &Value) {
         "case {case_id}: expected.owner_used_as_from must be true",
     );
     assert!(
-        expected["missing_chainid_error"].as_bool().unwrap_or(false),
-        "case {case_id}: expected.missing_chainid_error must be true",
+        expected["ready_shortcut_uses_total_trader_parameters"]
+            .as_bool()
+            .unwrap_or(false),
+        "case {case_id}: expected.ready_shortcut_uses_total_trader_parameters must be true",
     );
     assert!(
-        expected["missing_appcode_error"].as_bool().unwrap_or(false),
-        "case {case_id}: expected.missing_appcode_error must be true",
+        expected["helper_only_refuses_quote_only"]
+            .as_bool()
+            .unwrap_or(false),
+        "case {case_id}: expected.helper_only_refuses_quote_only must be true",
     );
 
     // Quote-only path: owner explicit, no signer required.
@@ -1408,11 +1412,8 @@ async fn assert_sdk_quote_only_owner_mode(case_id: &str, expected: &Value) {
         SupportedChainId::Sepolia,
         sell_quote_response(),
     ));
-    let sdk = TradingSdk::new(
-        PartialTraderParameters::new()
-            .with_chain_id(SupportedChainId::Sepolia)
-            .with_app_code("0x007".to_owned())
-            .with_env(CowEnv::Prod),
+    let sdk = TradingSdkBuilder::ready(
+        TraderParameters::new(SupportedChainId::Sepolia, "0x007").with_env(CowEnv::Prod),
         TradingSdkOptions::new().with_orderbook_client(orderbook.clone()),
     )
     .unwrap_or_else(|error| panic!("case {case_id}: sdk construction must succeed, got {error:?}"));
@@ -1441,37 +1442,20 @@ async fn assert_sdk_quote_only_owner_mode(case_id: &str, expected: &Value) {
         "case {case_id}: quote-only must return the mocked upstream quote id",
     );
 
-    // Missing chainId: the typestate builder cannot reach build_ready(); the
-    // dynamic TradingSdk::new constructor surfaces a typed MissingTraderParameters.
-    let missing_chain = TradingSdk::new(
-        PartialTraderParameters::new().with_app_code("0x007".to_owned()),
-        TradingSdkOptions::default(),
-    );
-    let chain_error = missing_chain.expect_err(&format!(
-        "case {case_id}: missing chainId must surface a typed error",
-    ));
+    let helper_only =
+        TradingSdkBuilder::helper_only(SupportedChainId::Sepolia, TradingSdkOptions::default())
+            .unwrap_or_else(|error| {
+                panic!("case {case_id}: helper-only construction must succeed, got {error:?}")
+            });
+    let Err(quote_error) = helper_only
+        .get_quote_only(sample_trade_parameters(OrderKind::Sell), None)
+        .await
+    else {
+        panic!("case {case_id}: helper-only quote must fail with a typed error");
+    };
     assert!(
-        matches!(
-            chain_error,
-            TradingError::MissingTraderParameters(ref fields) if fields == "chainId"
-        ),
-        "case {case_id}: missing chainId must surface MissingTraderParameters",
-    );
-
-    // Missing appCode: surfaces the same typed rejection naming the missing field.
-    let missing_app = TradingSdk::new(
-        PartialTraderParameters::new().with_chain_id(SupportedChainId::Sepolia),
-        TradingSdkOptions::default(),
-    );
-    let app_error = missing_app.expect_err(&format!(
-        "case {case_id}: missing appCode must surface a typed error",
-    ));
-    assert!(
-        matches!(
-            app_error,
-            TradingError::MissingTraderParameters(ref fields) if fields == "appCode"
-        ),
-        "case {case_id}: missing appCode must surface MissingTraderParameters",
+        matches!(quote_error, TradingError::HelperOnlyMode),
+        "case {case_id}: helper-only quote flow must fail closed",
     );
 }
 

@@ -225,7 +225,7 @@ fn external_host_policy_classifies_parse_scheme_and_loopback_cases() {
     .unwrap_err();
     assert!(matches!(
         parse_error,
-        HostPolicyError::UnparseableUrl {
+        HostPolicyError::UnparsableUrl {
             class: UrlParseFailureClass::MalformedScheme
         }
     ));
@@ -238,7 +238,7 @@ fn external_host_policy_classifies_parse_scheme_and_loopback_cases() {
     .unwrap_err();
     assert!(matches!(
         port_error,
-        HostPolicyError::UnparseableUrl {
+        HostPolicyError::UnparsableUrl {
             class: UrlParseFailureClass::InvalidPort
         }
     ));

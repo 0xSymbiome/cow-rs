@@ -63,7 +63,10 @@ const DEFAULT_JITTER_WINDOW_DIVISOR: u128 = 2;
 /// request helpers.
 pub(crate) type SharedTransport = Arc<dyn HttpTransport + Send + Sync>;
 
-/// HTTP methods used by the orderbook transport helpers.
+/// HTTP verb used by the typed orderbook transport.
+///
+/// Internal helper; the SDK chooses the method per request shape. Classified
+/// as `sdk-local-state` in the workspace enum policy manifest.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HttpMethod {
     /// `GET`.
@@ -76,7 +79,10 @@ pub enum HttpMethod {
     Put,
 }
 
-/// Decoded response body preserved on [`OrderBookApiError`].
+/// Decoded transport response body.
+///
+/// Internal wrapper around payloads decoded by the typed transport. Classified
+/// as `sdk-local-state` in the workspace enum policy manifest.
 #[allow(
     clippy::derive_partial_eq_without_eq,
     reason = "the `Json(serde_json::Value)` variant cannot implement `Eq` because `serde_json::Value` does not implement `Eq`"

@@ -2,8 +2,8 @@ use std::{error::Error, sync::Arc};
 
 use serde_json::json;
 
-use cow_sdk::prelude::{SupportedChainId, TradingSdk};
-use cow_sdk::trading::{PartialTraderParameters, TradingSdkOptions};
+use cow_sdk::prelude::{SupportedChainId, TraderParameters, TradingSdkBuilder};
+use cow_sdk::trading::TradingSdkOptions;
 
 use cow_sdk_examples_native::support::{
     MockOrderbook, sample_quote_response, sample_trade_parameters,
@@ -12,10 +12,8 @@ use cow_sdk_examples_native::support::{
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
-    let sdk = TradingSdk::new(
-        PartialTraderParameters::new()
-            .with_chain_id(SupportedChainId::Sepolia)
-            .with_app_code("cow-rs-quote-only".to_owned()),
+    let sdk = TradingSdkBuilder::ready(
+        TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-quote-only"),
         TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     )?;
 

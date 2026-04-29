@@ -3,7 +3,7 @@ use std::{error::Error, sync::Arc};
 use serde_json::json;
 
 use cow_sdk::prelude::{SupportedChainId, TradingSdk};
-use cow_sdk::trading::{PartialTraderParameters, TradingSdkOptions};
+use cow_sdk::trading::TradingSdkOptions;
 
 use cow_sdk_examples_native::support::{
     MockOrderbook, MockSigner, sample_limit_parameters, sample_owner, sample_quote_response,
@@ -13,13 +13,14 @@ use cow_sdk_examples_native::support::{
 async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
     let signer = MockSigner::default();
-    let sdk = TradingSdk::new(
-        PartialTraderParameters::new()
-            .with_chain_id(SupportedChainId::Sepolia)
-            .with_app_code("cow-rs-limit-order".to_owned())
-            .with_owner(sample_owner()),
-        TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
-    )?;
+    let sdk = TradingSdk::builder()
+        .with_chain_id(SupportedChainId::Sepolia)
+        .with_app_code("cow-rs-limit-order")
+        .with_owner(sample_owner())
+        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(
+            orderbook.clone(),
+        )))
+        .build_ready()?;
 
     let posted = sdk
         .post_limit_order(sample_limit_parameters(), &signer, None)

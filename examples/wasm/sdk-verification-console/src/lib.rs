@@ -23,10 +23,10 @@ use cow_sdk::signing::{
 };
 use cow_sdk::trading::{
     ApprovalParameters, DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT,
-    GAS_MARGIN_PERCENT, MAX_SLIPPAGE_BPS, PartialTraderParameters, PartnerFee, PartnerFeePolicy,
-    TradingSdkOptions, approval_transaction, default_slippage_bps, is_ethflow_order,
-    partner_fee_bps, sanitize_protocol_fee_bps, suggest_slippage_from_fee,
-    suggest_slippage_from_volume, swap_params_to_limit_order_params,
+    GAS_MARGIN_PERCENT, MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy, TradingSdkOptions,
+    approval_transaction, default_slippage_bps, is_ethflow_order, partner_fee_bps,
+    sanitize_protocol_fee_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
+    swap_params_to_limit_order_params,
 };
 use cow_sdk_subgraph::SubgraphApi;
 
@@ -64,14 +64,15 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
     let chain_id = parse_chain_id(chain_id)?;
     let env = parse_env(env)?;
     let orderbook_client = orderbook_api(chain_id, env);
-    let sdk = TradingSdk::new(
-        PartialTraderParameters::new()
-            .with_chain_id(chain_id)
-            .with_app_code("cow-rs/wasm-console".to_owned())
-            .with_owner(sample_owner())
-            .with_env(env),
-        TradingSdkOptions::default().with_orderbook_client(Arc::new(orderbook_client)),
-    )
+    let sdk = TradingSdk::builder()
+        .with_chain_id(chain_id)
+        .with_app_code("cow-rs/wasm-console")
+        .with_owner(sample_owner())
+        .with_env(env)
+        .with_options(TradingSdkOptions::default().with_orderbook_client(Arc::new(
+            orderbook_client,
+        )))
+        .build_ready()
     .map_err(js_string_error)?;
     let api_context = api_context(chain_id, env);
     let deployment = deployment_for_chain(u64::from(chain_id))
@@ -344,14 +345,15 @@ pub async fn trading_quote_preview_json(
     params.env = params.env.or(Some(env));
 
     let orderbook_client = orderbook_api(chain_id, env);
-    let sdk = TradingSdk::new(
-        PartialTraderParameters::new()
-            .with_chain_id(chain_id)
-            .with_app_code(app_code.trim().to_owned())
-            .with_owner(owner)
-            .with_env(env),
-        TradingSdkOptions::default().with_orderbook_client(Arc::new(orderbook_client)),
-    )
+    let sdk = TradingSdk::builder()
+        .with_chain_id(chain_id)
+        .with_app_code(app_code.trim())
+        .with_owner(owner)
+        .with_env(env)
+        .with_options(TradingSdkOptions::default().with_orderbook_client(Arc::new(
+            orderbook_client,
+        )))
+        .build_ready()
     .map_err(js_string_error)?;
     let results = sdk
         .get_quote_only(params, None)

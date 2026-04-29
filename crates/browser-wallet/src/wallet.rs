@@ -515,12 +515,13 @@ pub struct BrowserWallet {
 }
 
 impl BrowserWallet {
-    /// Creates a browser-wallet handle from one typed EIP-1193 transport.
+    /// Creates a browser-wallet handle from one typed EIP-1193 transport and
+    /// panics if the trusted local-origin wrapper cannot be built.
     ///
     /// This compatibility constructor is intended for deterministic test and
-    /// review transports supplied directly by Rust code. Browser-injected
-    /// providers should use discovery or [`Eip1193ProviderBuilder`] so the
-    /// provider origin is explicit.
+    /// review transports supplied directly by Rust code. Prefer
+    /// [`Self::from_trusted_transport`] when construction errors should be
+    /// handled explicitly.
     ///
     /// # Panics
     ///
@@ -529,7 +530,7 @@ impl BrowserWallet {
     /// provider. Use [`Self::from_trusted_transport`] to handle construction
     /// errors explicitly.
     #[must_use]
-    pub fn from_transport<T>(transport: T) -> Self
+    pub fn from_transport_or_panic<T>(transport: T) -> Self
     where
         T: Eip1193Transport + 'static,
     {

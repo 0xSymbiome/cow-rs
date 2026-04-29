@@ -1249,7 +1249,12 @@ impl SubAssign<Self> for SignedAmount {
     }
 }
 
-/// Side of an order relative to the sell token.
+/// Sell or buy side of a trade.
+///
+/// Encoded as `keccak256("buy")` / `keccak256("sell")` in the EIP-712
+/// `Order` type. The set of variants is fixed by the protocol; adding a third
+/// variant would change the protocol, not the SDK. Classified as
+/// `protocol-fixed-exhaustive` in the workspace enum policy manifest.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum OrderKind {
