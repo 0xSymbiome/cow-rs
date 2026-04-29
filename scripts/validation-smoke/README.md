@@ -8,6 +8,8 @@ Use it when you want a disciplined manual confirmation pass for:
 - live subgraph reachability through the SDK surface
 - injected-wallet confirmation in the browser-wallet console
 - deployed WASM page inspection for the browser-wallet and SDK verification consoles
+- deployment-registry bytecode confirmation against configured RPC endpoints
+- pinned Chrome-for-Testing setup for WASM browser tests
 
 This kit is intentionally separate from routine deterministic validation. It does not belong in branch protection and it does not replace the maintained deterministic proof surfaces documented in the repository root and validation docs.
 
@@ -18,6 +20,9 @@ cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- orderbook-live
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- subgraph-live
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- browser-wallet-live --url http://127.0.0.1:8081
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-pages --sdk-verification-url https://<owner>.github.io/<repo>/sdk-verification-console/ --browser-wallet-url https://<owner>.github.io/<repo>/browser-wallet-console/
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- registry-confirm --mode local --check --chain-ids 1,100
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-runner-refresh --source fallback --fallback-path scripts/validation-smoke/data/cft-fallback.json
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-runner-setup --webdriver-json target/wasm-runner/webdriver.json
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
 ```
 
@@ -64,6 +69,23 @@ cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
   - optional deployed browser-wallet console URL
 - `COW_SMOKE_SDK_VERIFICATION_PAGES_URL`
   - optional deployed SDK verification console URL
+
+### Deployment Registry Confirmation
+
+- `RPC_<chain_id>`
+  - required for each selected production chain in `registry-confirm --mode release`
+  - optional in `registry-confirm --mode local`; missing RPC endpoints are reported as skipped
+- `RPC_MAINNET`, `RPC_GNOSIS`, `RPC_ARBITRUM`, `RPC_BASE`, `RPC_POLYGON`, `RPC_AVALANCHE`, `RPC_BNB`, `RPC_SEPOLIA`, `RPC_PLASMA`, `RPC_LINEA`, `RPC_INK`
+  - accepted aliases for the corresponding supported chain ids
+
+Use `--check` for read-only confirmation. Use `--write` only when intentionally refreshing committed deployment evidence.
+
+### WASM Browser Runner
+
+- `WEBDRIVER_JSON`
+  - fallback output path for `wasm-runner-setup` when `--webdriver-json` is not supplied
+
+`wasm-runner-refresh --source fallback` is offline-deterministic and uses the committed Chrome-for-Testing snapshot. `--source online` reads the live Chrome-for-Testing Stable metadata and hashes downloaded archives when a matching checksum is not already present in the pinned YAML.
 
 ## Interpretation
 

@@ -7,6 +7,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use reqwest::blocking::Client;
 use serde::Serialize;
 use serde_json::{Map, Value, json};
+use validation_smoke::{registry_confirm, wasm_runner};
 
 const STATUS_PASS: &str = "pass";
 const STATUS_FAIL: &str = "fail";
@@ -94,6 +95,12 @@ enum SmokeCommand {
     },
     #[command(about = "Run every smoke surface in sequence")]
     All,
+    #[command(about = "Confirm deployment provenance against live chain bytecode")]
+    RegistryConfirm(registry_confirm::RegistryConfirmArgs),
+    #[command(about = "Install the pinned Chrome-for-Testing WASM browser runner")]
+    WasmRunnerSetup(wasm_runner::WasmRunnerSetupArgs),
+    #[command(about = "Refresh the pinned Chrome-for-Testing WASM browser versions")]
+    WasmRunnerRefresh(wasm_runner::WasmRunnerRefreshArgs),
 }
 
 fn repo_root() -> PathBuf {
@@ -328,13 +335,12 @@ fn run_subgraph_live() -> SmokeResult {
     };
 
     let mut env_updates = BTreeMap::from([("THE_GRAPH_API_KEY".to_owned(), api_key)]);
-    if env::var_os("COW_SUBGRAPH_CHAIN_ID").is_none() {
-        if let Some(chain_id) = env::var("COW_SMOKE_SUBGRAPH_CHAIN_ID")
+    if env::var_os("COW_SUBGRAPH_CHAIN_ID").is_none()
+        && let Some(chain_id) = env::var("COW_SMOKE_SUBGRAPH_CHAIN_ID")
             .ok()
             .filter(|value| !value.is_empty())
-        {
-            env_updates.insert("COW_SUBGRAPH_CHAIN_ID".to_owned(), chain_id);
-        }
+    {
+        env_updates.insert("COW_SUBGRAPH_CHAIN_ID".to_owned(), chain_id);
     }
 
     run_checked_command(
@@ -478,8 +484,79 @@ fn exit_code_for(results: &[SmokeResult]) -> i32 {
     0
 }
 
+fn emit_command_error(format: OutputFormat, code: &str, message: &str) {
+    match format {
+        OutputFormat::Text => eprintln!("error {code}: {message}"),
+        OutputFormat::Json => eprintln!(
+            "{}",
+            serde_json::to_string(&json!({
+                "level": "error",
+                "code": code,
+                "message": message,
+            }))
+            .expect("error diagnostic should serialize")
+        ),
+    }
+}
+
 fn main() {
     let cli = Cli::parse();
+
+    match &cli.command {
+        SmokeCommand::RegistryConfirm(args) => match registry_confirm::run(args) {
+            Ok(report) => {
+                match cli.format {
+                    OutputFormat::Text => println!("{}", report.render_text()),
+                    OutputFormat::Json => println!(
+                        "{}",
+                        serde_json::to_string_pretty(&report)
+                            .expect("registry-confirm report should serialize")
+                    ),
+                }
+                std::process::exit(report.exit_code());
+            }
+            Err(error) => {
+                emit_command_error(cli.format, "VS10001", &error.to_string());
+                std::process::exit(1);
+            }
+        },
+        SmokeCommand::WasmRunnerSetup(args) => match wasm_runner::run_setup(args) {
+            Ok(report) => {
+                match cli.format {
+                    OutputFormat::Text => println!("{}", report.render_text()),
+                    OutputFormat::Json => println!(
+                        "{}",
+                        serde_json::to_string_pretty(&report)
+                            .expect("wasm-runner-setup report should serialize")
+                    ),
+                }
+                std::process::exit(0);
+            }
+            Err(error) => {
+                emit_command_error(cli.format, "VS10002", &error.to_string());
+                std::process::exit(1);
+            }
+        },
+        SmokeCommand::WasmRunnerRefresh(args) => match wasm_runner::run_refresh(args) {
+            Ok(report) => {
+                match cli.format {
+                    OutputFormat::Text => println!("{}", report.render_text()),
+                    OutputFormat::Json => println!(
+                        "{}",
+                        serde_json::to_string_pretty(&report)
+                            .expect("wasm-runner-refresh report should serialize")
+                    ),
+                }
+                std::process::exit(0);
+            }
+            Err(error) => {
+                emit_command_error(cli.format, "VS10003", &error.to_string());
+                std::process::exit(1);
+            }
+        },
+        _ => {}
+    }
+
     let client = Client::builder()
         .user_agent("cow-rs-validation-smoke/1")
         .timeout(std::time::Duration::from_secs(10))
@@ -528,6 +605,11 @@ fn main() {
                 sdk_verification_pages_url.as_deref(),
             ));
             results
+        }
+        SmokeCommand::RegistryConfirm(_)
+        | SmokeCommand::WasmRunnerSetup(_)
+        | SmokeCommand::WasmRunnerRefresh(_) => {
+            unreachable!("subcommand handled before smoke flow")
         }
     };
 
