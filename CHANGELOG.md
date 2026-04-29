@@ -65,6 +65,12 @@ unreleased public contract of the repository.
 - `OrderCreation` carries an opt-in
   `with_full_balance_check(bool)` builder method matching the upstream
   services policy while preserving the existing wire shape when unset.
+- `cow_sdk_orderbook` response DTOs now carry OpenAPI-inventory coverage for
+  order, auction-order, quote-response, trade, stored-quote, and on-chain
+  order-data shapes. The source-lock-pinned services OpenAPI is vendored under
+  `parity/openapi/`, six per-schema inventories and fixtures pin the modeled
+  fields, and `transform_contract` asserts field-level round-trips for every
+  covered DTO.
 - The lowest-level transport seam on both the native and browser adapters now
   emits one tracing span per request with method, endpoint (path-only, never
   the full URL), and byte counts when the `tracing` feature is enabled.
@@ -138,10 +144,10 @@ unreleased public contract of the repository.
   provisioning script as the supported reviewer path.
 - ADR 0021 (`Narrow Order.total_fee And Read-Only Legacy
   Executed-Fee Surface`) ships under `docs/adr/`, paired with a
-  new `Order.executed_fee_amount_legacy: Option<String>`
+  new `Order.executed_fee_amount: Amount`
   read-only sibling on `cow_sdk_orderbook::Order` that
   deserializes the deprecated `executedFeeAmount` wire field
-  through `#[serde(rename = "executedFeeAmount")]`.
+  through the standard camelCase DTO mapping.
   `Order.total_fee` continues to equal the canonical
   executed-fee component normalized through
   `calculate_total_fee`; the legacy field is never folded into
@@ -1480,10 +1486,12 @@ unreleased public contract of the repository.
   network-cost amount returned by `/api/v1/quote` is now accessed through
   the typed `QuoteData::network_cost_amount` getter and the
   `with_network_cost_amount` / `set_network_cost_amount` setters.
-- The retired `executedFeeAmount` and `fullFeeAmount` descriptors have been
-  removed from the orderbook order-response DTO. Fee exposure on the
-  response flows through the canonical `executedFee` component, and
-  quote-response fee descriptors flow through `protocolFeeBps` only, in
+- The retired `fullFeeAmount` descriptor has been removed from the orderbook
+  order-response DTO. Fee exposure on the response flows through the
+  canonical `executedFee` component, while the deprecated
+  `executedFeeAmount` wire field is retained as the read-only
+  `Order.executed_fee_amount` sibling for historical records.
+  Quote-response fee descriptors flow through `protocolFeeBps` only, in
   line with the current services schema. `cow_sdk_orderbook::calculate_total_fee`
   now takes a single `executed_fee` argument and normalizes it into the
   `total_fee` value surfaced on the transformed order.

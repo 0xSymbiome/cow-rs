@@ -1,0 +1,186 @@
+schema: components.schemas.AuctionOrder
+allOf: []
+oneOf: []
+expanded_required:
+- appData
+- buyAmount
+- buyToken
+- buyTokenBalance
+- class
+- created
+- executed
+- kind
+- owner
+- partiallyFillable
+- postInteractions
+- preInteractions
+- protocolFees
+- receiver
+- sellAmount
+- sellToken
+- sellTokenBalance
+- signature
+- uid
+- validTo
+expanded_fields:
+- name: appData
+  rust_name: app_data
+  type: !ref
+    ref_path: components.schemas.AppDataHash
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: buyAmount
+  rust_name: buy_amount
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: buyToken
+  rust_name: buy_token
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: buyTokenBalance
+  rust_name: buy_token_balance
+  type: object
+  required: true
+  nullable: false
+  default: erc20
+  source: components.schemas.AuctionOrder
+- name: class
+  rust_name: class
+  type: !ref
+    ref_path: components.schemas.OrderClass
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: created
+  rust_name: created
+  type: !scalar
+    scalar: string
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: executed
+  rust_name: executed
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: kind
+  rust_name: kind
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: owner
+  rust_name: owner
+  type: !ref
+    ref_path: components.schemas.Address
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: partiallyFillable
+  rust_name: partially_fillable
+  type: !scalar
+    scalar: boolean
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: postInteractions
+  rust_name: post_interactions
+  type: !array
+    items: !ref
+      ref_path: components.schemas.InteractionData
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: preInteractions
+  rust_name: pre_interactions
+  type: !array
+    items: !ref
+      ref_path: components.schemas.InteractionData
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: protocolFees
+  rust_name: protocol_fees
+  type: !array
+    items: !ref
+      ref_path: components.schemas.FeePolicy
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: quote
+  rust_name: quote
+  type: object
+  required: false
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: receiver
+  rust_name: receiver
+  type: object
+  required: true
+  nullable: true
+  default: null
+  source: components.schemas.AuctionOrder
+- name: sellAmount
+  rust_name: sell_amount
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: sellToken
+  rust_name: sell_token
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: sellTokenBalance
+  rust_name: sell_token_balance
+  type: object
+  required: true
+  nullable: false
+  default: erc20
+  source: components.schemas.AuctionOrder
+- name: signature
+  rust_name: signature
+  type: !ref
+    ref_path: components.schemas.Signature
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: uid
+  rust_name: uid
+  type: !ref
+    ref_path: components.schemas.UID
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder
+- name: validTo
+  rust_name: valid_to
+  type: !scalar
+    scalar: integer
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.AuctionOrder

@@ -1,0 +1,313 @@
+schema: components.schemas.Order
+allOf:
+- components.schemas.OrderCreation
+- components.schemas.OrderMetaData
+- components.schemas.Order.inline
+oneOf: []
+expanded_required:
+- appData
+- buyAmount
+- buyToken
+- class
+- creationDate
+- executedBuyAmount
+- executedFeeAmount
+- executedSellAmount
+- executedSellAmountBeforeFees
+- feeAmount
+- invalidated
+- kind
+- owner
+- partiallyFillable
+- sellAmount
+- sellToken
+- settlementContract
+- signature
+- signingScheme
+- status
+- uid
+- validTo
+expanded_fields:
+- name: appData
+  rust_name: app_data
+  type: unknown
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderCreation
+- name: appDataHash
+  rust_name: app_data_hash
+  type: object
+  required: false
+  nullable: true
+  default: null
+  source: components.schemas.OrderCreation
+- name: availableBalance
+  rust_name: available_balance
+  type: object
+  required: false
+  nullable: true
+  default: null
+  source: components.schemas.OrderMetaData
+- name: buyAmount
+  rust_name: buy_amount
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderCreation
+- name: buyToken
+  rust_name: buy_token
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderCreation
+- name: buyTokenBalance
+  rust_name: buy_token_balance
+  type: object
+  required: false
+  nullable: false
+  default: erc20
+  source: components.schemas.OrderCreation
+- name: class
+  rust_name: class
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: creationDate
+  rust_name: creation_date
+  type: !scalar
+    scalar: string
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: ethflowData
+  rust_name: ethflow_data
+  type: object
+  required: false
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: executedBuyAmount
+  rust_name: executed_buy_amount
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: executedFee
+  rust_name: executed_fee
+  type: object
+  required: false
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: executedFeeAmount
+  rust_name: executed_fee_amount
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: executedFeeToken
+  rust_name: executed_fee_token
+  type: object
+  required: false
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: executedSellAmount
+  rust_name: executed_sell_amount
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: executedSellAmountBeforeFees
+  rust_name: executed_sell_amount_before_fees
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: feeAmount
+  rust_name: fee_amount
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderCreation
+- name: from
+  rust_name: from
+  type: object
+  required: false
+  nullable: true
+  default: null
+  source: components.schemas.OrderCreation
+- name: fullAppData
+  rust_name: full_app_data
+  type: !scalar
+    scalar: string
+  required: false
+  nullable: true
+  default: null
+  source: components.schemas.OrderMetaData
+- name: fullBalanceCheck
+  rust_name: full_balance_check
+  type: !scalar
+    scalar: boolean
+  required: false
+  nullable: false
+  default: false
+  source: components.schemas.OrderCreation
+- name: interactions
+  rust_name: interactions
+  type: object
+  required: false
+  nullable: false
+  default: null
+  source: components.schemas.Order.inline
+- name: invalidated
+  rust_name: invalidated
+  type: !scalar
+    scalar: boolean
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: isLiquidityOrder
+  rust_name: is_liquidity_order
+  type: !scalar
+    scalar: boolean
+  required: false
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: kind
+  rust_name: kind
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderCreation
+- name: onchainOrderData
+  rust_name: onchain_order_data
+  type: object
+  required: false
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: onchainUser
+  rust_name: onchain_user
+  type: object
+  required: false
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: owner
+  rust_name: owner
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: partiallyFillable
+  rust_name: partially_fillable
+  type: !scalar
+    scalar: boolean
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderCreation
+- name: quote
+  rust_name: quote
+  type: object
+  required: false
+  nullable: true
+  default: null
+  source: components.schemas.OrderMetaData
+- name: quoteId
+  rust_name: quote_id
+  type: !scalar
+    scalar: integer
+  required: false
+  nullable: true
+  default: null
+  source: components.schemas.OrderCreation
+- name: receiver
+  rust_name: receiver
+  type: object
+  required: false
+  nullable: true
+  default: null
+  source: components.schemas.OrderCreation
+- name: sellAmount
+  rust_name: sell_amount
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderCreation
+- name: sellToken
+  rust_name: sell_token
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderCreation
+- name: sellTokenBalance
+  rust_name: sell_token_balance
+  type: object
+  required: false
+  nullable: false
+  default: erc20
+  source: components.schemas.OrderCreation
+- name: settlementContract
+  rust_name: settlement_contract
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: signature
+  rust_name: signature
+  type: !ref
+    ref_path: components.schemas.Signature
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderCreation
+- name: signingScheme
+  rust_name: signing_scheme
+  type: !ref
+    ref_path: components.schemas.SigningScheme
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderCreation
+- name: status
+  rust_name: status
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: uid
+  rust_name: uid
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderMetaData
+- name: validTo
+  rust_name: valid_to
+  type: !scalar
+    scalar: integer
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.OrderCreation

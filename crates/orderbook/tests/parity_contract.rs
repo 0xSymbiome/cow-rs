@@ -600,6 +600,12 @@ fn assert_ethflow_transform(id: &str, expected: &Value) {
         "creationDate": "2024-01-01T00:00:00Z",
         "status": "open",
         "class": "market",
+        "executedSellAmount": "0",
+        "executedSellAmountBeforeFees": "0",
+        "executedBuyAmount": "0",
+        "executedFeeAmount": "0",
+        "invalidated": false,
+        "settlementContract": "0x1111111111111111111111111111111111111111",
         "onchainUser": "0x8888888888888888888888888888888888888888",
         "ethflowData": { "userValidTo": 42u32 }
     });

@@ -13,13 +13,13 @@ defines `total_fee` narrowly as the normalised executed-fee
 component sourced from the wire `executedFee` field. The DTO also
 surfaces the deprecated wire field `executedFeeAmount` as a typed
 read-only sibling
-`executed_fee_amount_legacy: Option<String>`, deserialized through
-`#[serde(default, rename = "executedFeeAmount", skip_serializing_if = "Option::is_none")]`
-so its presence on the wire is preserved without re-emitting the
-legacy descriptor when the field is absent. `calculate_total_fee`
+`executed_fee_amount: Amount`, deserialized through the standard
+camelCase DTO mapping and skipped on serialization when it is zero so
+absence on the wire does not re-emit the legacy descriptor.
+`calculate_total_fee`
 remains pure and continues to define `total_fee` as
 `executed_fee` only — the helper does not fold
-`executed_fee_amount_legacy` into the canonical sum. Consumers
+`executed_fee_amount` into the canonical sum. Consumers
 that need the legacy summation compute it explicitly from the two
 typed fields.
 
@@ -44,24 +44,24 @@ order-level fees on submission.
 
 ## Must Remain True
 
-- Public surface: `Order.total_fee: String` is the canonical
+- Public surface: `Order.total_fee: Amount` is the canonical
   executed-fee exposure and is defined as the normalised
   `executedFee` value through `calculate_total_fee`. The
-  `Order.executed_fee_amount_legacy: Option<String>` field is
+  `Order.executed_fee_amount: Amount` field is
   read-only on the public surface — it is populated only by
   deserialization of the legacy `executedFeeAmount` wire field
   and there is no public builder setter for it. The pre-existing
-  `Order::new` constructor initialises the field to `None`. The
-  serializer skips the field when the value is `None` so an
+  `Order::new` constructor initialises the field to zero. The
+  serializer skips the field when the value is zero so an
   `Order` round-tripped from a payload that did not carry
   `executedFeeAmount` does not re-emit the legacy descriptor.
 - Runtime and support: `calculate_total_fee` is pure, treats a
   missing `executed_fee` as zero, validates the value as an
   unsigned decimal string, and never reads
-  `executed_fee_amount_legacy`. `transform_order` only writes
+  `executed_fee_amount`. `transform_order` only writes
   `total_fee` from the canonical `executed_fee`; it never
   silently sums the two fee fields. Consumers that want the
-  legacy summation perform `executed_fee + executed_fee_amount_legacy`
+  legacy summation perform `executed_fee + executed_fee_amount`
   themselves at the call site.
 - Validation and review: regression tests in
   `crates/orderbook/tests/transform_contract.rs` cover the four
@@ -72,9 +72,9 @@ order-level fees on submission.
   `crates/orderbook/tests/fee_amount_is_not_a_public_builder_setter.rs`
   continues to assert that no public builder setter exposes a
   fee-amount write path.
-- Cost: one new optional field on the `Order` DTO, one default
+- Cost: one legacy field on the `Order` DTO, one default
   initialiser update inside `Order::new`, and the documented
-  serde rename. No change to `calculate_total_fee` or
+  serde emission rule. No change to `calculate_total_fee` or
   `transform_order`. No change to the public write surface.
 
 ## Alternatives Rejected
@@ -89,7 +89,7 @@ order-level fees on submission.
   but loses information for orders whose backing records still
   carry the legacy field and forces consumers that need the
   legacy summation to bypass the typed surface.
-- Expose `executed_fee_amount_legacy` as a public builder field:
+- Expose `executed_fee_amount` as a public builder field:
   matches the read/write symmetry of other DTO fields, but
   re-opens a fee-amount write path that the orderbook-services
   contract rejects today and that the negative builder test

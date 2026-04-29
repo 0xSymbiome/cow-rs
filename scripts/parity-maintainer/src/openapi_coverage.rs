@@ -497,17 +497,22 @@ fn validate_inventory_fields(
             });
         }
 
-        if let Some(expected_type) = expected_rust_type(&inventory_field.field_type) {
+        let expected_types = expected_rust_types(&inventory_field.field_type);
+        if !expected_types.is_empty() {
             let rust_type = comparable_type(&rust_field.ty);
-            if rust_type.as_deref() != Some(expected_type.as_str()) {
+            if !rust_type
+                .as_deref()
+                .is_some_and(|rust_type| expected_types.iter().any(|expected| expected == rust_type))
+            {
                 diagnostics.push(Diagnostic {
                     schema: entry.schema.clone(),
                     rust_type: entry.rust_type.clone(),
                     field: Some(inventory_field.name.clone()),
                     kind: "type_mismatch",
                     message: format!(
-                        "OpenAPI field `{}` expects Rust type `{expected_type}`, found `{}`",
+                        "OpenAPI field `{}` expects Rust type `{}`, found `{}`",
                         inventory_field.name,
+                        expected_types.join(" | "),
                         rust_type.unwrap_or_else(|| "<unsupported>".to_string())
                     ),
                 });
@@ -530,20 +535,49 @@ fn expects_serde_default_skip(field: &InventoryField) -> bool {
     !field.required && !field.nullable && field.default.is_none()
 }
 
-fn expected_rust_type(field_type: &InventoryType) -> Option<String> {
+fn expected_rust_types(field_type: &InventoryType) -> Vec<String> {
     match field_type {
         InventoryType::Scalar { scalar } => match scalar.as_str() {
-            "string" => Some("String".to_string()),
-            "boolean" => Some("bool".to_string()),
-            "integer" => Some("i64".to_string()),
-            "number" => Some("f64".to_string()),
-            _ => None,
+            "string" => vec!["String".to_string()],
+            "boolean" => vec!["bool".to_string()],
+            "integer" => [
+                "i8", "i16", "i32", "i64", "isize", "u8", "u16", "u32", "u64", "usize",
+            ]
+            .into_iter()
+            .map(str::to_string)
+            .collect(),
+            "number" => vec!["f32".to_string(), "f64".to_string()],
+            _ => Vec::new(),
         },
-        InventoryType::Ref { ref_path } => ref_path.rsplit('.').next().map(ToOwned::to_owned),
-        InventoryType::Array { items } => {
-            expected_rust_type(items).map(|item| format!("Vec<{item}>"))
+        InventoryType::Ref { ref_path } => ref_path
+            .rsplit('.')
+            .next()
+            .map(openapi_ref_rust_types)
+            .unwrap_or_default(),
+        InventoryType::Array { items } => expected_rust_types(items)
+            .into_iter()
+            .map(|item| format!("Vec<{item}>"))
+            .collect(),
+        InventoryType::Object | InventoryType::Unknown => Vec::new(),
+    }
+}
+
+fn openapi_ref_rust_types(schema_name: &str) -> Vec<String> {
+    match schema_name {
+        "Address" => vec!["Address".to_string()],
+        "AppDataHash" => vec!["AppDataHash".to_string()],
+        "BigUint" | "TokenAmount" => vec!["Amount".to_string()],
+        "BuyTokenDestination" => vec!["BuyTokenDestination".to_string()],
+        "CallData" | "EcdsaSignature" | "PreSignature" | "Signature" => {
+            vec!["String".to_string()]
         }
-        InventoryType::Object | InventoryType::Unknown => None,
+        "OrderClass" => vec!["OrderClass".to_string()],
+        "OrderKind" => vec!["OrderKind".to_string()],
+        "SellTokenSource" => vec!["SellTokenSource".to_string()],
+        "SigningScheme" => vec!["SigningScheme".to_string()],
+        "TransactionHash" => vec!["TransactionHash".to_string(), "String".to_string()],
+        "UID" => vec!["OrderUid".to_string()],
+        other => vec![other.to_string()],
     }
 }
 

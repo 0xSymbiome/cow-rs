@@ -100,6 +100,12 @@ If the reviewed surface did not change, leave the audit alone.
 | --- | --- | --- | --- | --- | --- |
 | [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and lifecycle preflight authority | Source-lock commit pins, upstream freshness disclosure, historical snapshot scope, and refresh ownership | Current | 2026-04-28 |
 
+## Orderbook Wire DTO Coverage
+
+| Artifact | Type | Owning surface | Scope | Status | Last reviewed |
+| --- | --- | --- | --- | --- | --- |
+| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | OpenAPI-vendored orderbook response DTO inventories, fixtures, field-level round trips, and response forward compatibility | Current | 2026-04-29 |
+
 ## Transport And Routing
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |

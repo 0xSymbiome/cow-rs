@@ -265,12 +265,13 @@ pub use request::{
 pub use transform::{calculate_total_fee, transform_order, transform_orders};
 pub use types::{
     Address, Amount, ApiBaseUrls, ApiContext, ApiContextOverride, AppDataHash, AppDataObject,
-    Auction, BuyTokenDestination, CompetitionAuction, CompetitionOrderStatus,
+    Auction, AuctionOrder, BuyTokenDestination, CompetitionAuction, CompetitionOrderStatus,
     CompetitionOrderStatusKind, CowEnv, ENVS_LIST, EVM_NATIVE_CURRENCY_ADDRESS, EcdsaSigningScheme,
-    EnvBaseUrlOverrides, EthflowData, ExternalHostPolicy, GetOrdersRequest, GetTradesRequest,
-    HostPolicyError, NativePriceResponse, Order, OrderCancellations, OrderClass, OrderCreation,
-    OrderKind, OrderQuoteRequest, OrderQuoteResponse, OrderStatus, OrderUid, PriceQuality,
+    EnvBaseUrlOverrides, EthflowData, ExecutedProtocolFee, ExternalHostPolicy, FeePolicy,
+    GetOrdersRequest, GetTradesRequest, HostPolicyError, InteractionData, NativePriceResponse,
+    OnchainOrderData, Order, OrderCancellations, OrderClass, OrderCreation, OrderInteractions,
+    OrderKind, OrderQuoteRequest, OrderQuoteResponse, OrderStatus, OrderUid, PriceQuality, Quote,
     QuoteAmountsAndCosts, QuoteData, QuoteSide, SellTokenSource, SigningScheme,
-    SolverCompetitionResponse, SolverExecution, SolverSettlement, SupportedChainId, TotalSurplus,
-    Trade,
+    SolverCompetitionResponse, SolverExecution, SolverSettlement, StoredOrderQuote,
+    SupportedChainId, TotalSurplus, Trade, TransactionHash,
 };

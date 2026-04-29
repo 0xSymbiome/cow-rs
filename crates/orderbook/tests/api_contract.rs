@@ -388,7 +388,14 @@ async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() 
         .expect("trade request should succeed");
 
     assert_eq!(trades.len(), 1);
-    assert_eq!(trades[0].transaction_hash, sample_tx_hash());
+    assert_eq!(
+        trades[0]
+            .tx_hash
+            .as_ref()
+            .map(ToString::to_string)
+            .as_deref(),
+        Some(sample_tx_hash())
+    );
 
     let invalid = api
         .get_trades(&GetTradesRequest::new(

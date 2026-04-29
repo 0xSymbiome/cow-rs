@@ -1,0 +1,75 @@
+{
+  "sellToken": "0x0000000000000000000000000000000000000001",
+  "buyToken": "0x0000000000000000000000000000000000000002",
+  "receiver": "0x0000000000000000000000000000000000000003",
+  "sellAmount": "1000000000000000000",
+  "buyAmount": "2000000000000000000",
+  "validTo": 1700000000,
+  "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "appDataHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "feeAmount": "0",
+  "fullBalanceCheck": true,
+  "kind": "sell",
+  "partiallyFillable": true,
+  "sellTokenBalance": "internal",
+  "buyTokenBalance": "erc20",
+  "signingScheme": "eip712",
+  "signature": "0x1234",
+  "from": "0x0000000000000000000000000000000000000004",
+  "quoteId": 42,
+  "class": "limit",
+  "owner": "0x0000000000000000000000000000000000000004",
+  "uid": "0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710",
+  "creationDate": "2020-12-03T18:35:18.814523Z",
+  "availableBalance": "999999999999999999",
+  "executedSellAmount": "100000000000000000",
+  "executedSellAmountBeforeFees": "90000000000000000",
+  "executedBuyAmount": "200000000000000000",
+  "executedFee": "3000000000000000",
+  "executedFeeAmount": "4000000000000000",
+  "executedFeeToken": "0x0000000000000000000000000000000000000001",
+  "invalidated": false,
+  "status": "fulfilled",
+  "isLiquidityOrder": false,
+  "onchainUser": "0x0000000000000000000000000000000000000005",
+  "ethflowData": {
+    "refundTxHash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+    "userValidTo": 1700000100
+  },
+  "onchainOrderData": {
+    "sender": "0x0000000000000000000000000000000000000005",
+    "placementError": "none"
+  },
+  "fullAppData": "{\"version\":\"1.0.0\",\"metadata\":{}}",
+  "settlementContract": "0x0000000000000000000000000000000000000006",
+  "quote": {
+    "gasAmount": "150000",
+    "gasPrice": "15000000000",
+    "sellTokenPrice": "1000000000",
+    "sellAmount": "1000000000000000000",
+    "buyAmount": "2000000000000000000",
+    "feeAmount": "3000000000000000",
+    "solver": "0x0000000000000000000000000000000000000007",
+    "verified": true,
+    "metadata": {
+      "route": "direct"
+    }
+  },
+  "interactions": {
+    "pre": [
+      {
+        "target": "0x0000000000000000000000000000000000000008",
+        "value": "0",
+        "callData": "0x"
+      }
+    ],
+    "post": [
+      {
+        "target": "0x0000000000000000000000000000000000000009",
+        "value": "1",
+        "callData": "0x1234"
+      }
+    ]
+  },
+  "totalFee": "3000000000000000"
+}

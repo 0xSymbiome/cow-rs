@@ -85,12 +85,12 @@ fn order_creation_from_quote_zeroes_fee_amount_on_submission() {
 }
 
 #[test]
-fn order_response_wire_form_excludes_legacy_executed_fee_amount_and_full_fee_amount() {
+fn order_response_wire_form_excludes_zero_legacy_executed_fee_amount_and_full_fee_amount() {
     use serde_json::json;
 
-    // The current services schema retains `executedFee` and `protocolFeeBps`;
-    // the legacy `executedFeeAmount` / `fullFeeAmount` descriptors are out of
-    // scope for the cow-rs Rust surface.
+    // The current services schema retains `executedFee`; the legacy
+    // `executedFeeAmount` value stays read-only and is not re-emitted when it
+    // was absent or zero on the wire.
     let payload = json!({
         "sellToken": "0x0000000000000000000000000000000000000002",
         "buyToken": "0x0000000000000000000000000000000000000003",
@@ -111,8 +111,11 @@ fn order_response_wire_form_excludes_legacy_executed_fee_amount_and_full_fee_amo
         "status": "open",
         "class": "market",
         "executedSellAmount": "0",
+        "executedSellAmountBeforeFees": "0",
         "executedBuyAmount": "0",
-        "executedFee": "0"
+        "executedFee": "0",
+        "executedFeeAmount": "0",
+        "settlementContract": "0x0000000000000000000000000000000000000004"
     });
     let order: cow_sdk_orderbook::Order =
         serde_json::from_value(payload).expect("order response must deserialize");
@@ -121,7 +124,7 @@ fn order_response_wire_form_excludes_legacy_executed_fee_amount_and_full_fee_amo
 
     assert!(
         roundtrip.get("executedFeeAmount").is_none(),
-        "Order responses must not re-emit the retired executedFeeAmount descriptor",
+        "Order responses must not re-emit a zero legacy executedFeeAmount descriptor",
     );
     assert!(
         roundtrip.get("fullFeeAmount").is_none(),

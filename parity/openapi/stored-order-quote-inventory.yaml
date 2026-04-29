@@ -1,0 +1,80 @@
+schema: components.schemas.StoredOrderQuote
+allOf: []
+oneOf: []
+expanded_required:
+- buyAmount
+- feeAmount
+- gasAmount
+- gasPrice
+- sellAmount
+- sellTokenPrice
+- solver
+- verified
+expanded_fields:
+- name: buyAmount
+  rust_name: buy_amount
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.StoredOrderQuote
+- name: feeAmount
+  rust_name: fee_amount
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.StoredOrderQuote
+- name: gasAmount
+  rust_name: gas_amount
+  type: !scalar
+    scalar: string
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.StoredOrderQuote
+- name: gasPrice
+  rust_name: gas_price
+  type: !scalar
+    scalar: string
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.StoredOrderQuote
+- name: metadata
+  rust_name: metadata
+  type: object
+  required: false
+  nullable: false
+  default: null
+  source: components.schemas.StoredOrderQuote
+- name: sellAmount
+  rust_name: sell_amount
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.StoredOrderQuote
+- name: sellTokenPrice
+  rust_name: sell_token_price
+  type: !scalar
+    scalar: string
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.StoredOrderQuote
+- name: solver
+  rust_name: solver
+  type: object
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.StoredOrderQuote
+- name: verified
+  rust_name: verified
+  type: !scalar
+    scalar: boolean
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.StoredOrderQuote

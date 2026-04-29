@@ -5,7 +5,7 @@ use crate::error::OrderbookError;
 pub use cow_sdk_core::{
     Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, BuyTokenDestination, CowEnv, ENVS_LIST,
     EVM_NATIVE_CURRENCY_ADDRESS, ExternalHostPolicy, HostPolicyError, OrderKind, OrderUid,
-    QuoteAmountsAndCosts, Redacted, SellTokenSource, SupportedChainId,
+    QuoteAmountsAndCosts, Redacted, SellTokenSource, SupportedChainId, TransactionHash,
 };
 
 /// Partial override applied to an [`ApiContext`] when cloning an orderbook client.
@@ -661,17 +661,17 @@ pub struct OrderQuoteResponse {
     /// Resolved quote payload.
     pub quote: QuoteData,
     /// Effective owner used for the quote, when returned by the API.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub from: Option<Address>,
     /// Quote expiration timestamp rendered by the orderbook.
     pub expiration: String,
     /// Quote identifier used when submitting the corresponding order.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
     /// Whether the quote was verified by the orderbook.
     pub verified: bool,
     /// Optional protocol fee basis points for the quote.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub protocol_fee_bps: Option<String>,
 }
 
@@ -986,6 +986,254 @@ impl EthflowData {
     }
 }
 
+/// On-chain order placement metadata returned by the orderbook for orders that
+/// originated from an on-chain submission path.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+pub struct OnchainOrderData {
+    /// Sender address associated with the on-chain placement.
+    pub sender: Address,
+    /// Placement error emitted by services, when on-chain placement failed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub placement_error: Option<String>,
+}
+
+impl OnchainOrderData {
+    /// Creates on-chain order metadata for the required sender address.
+    #[must_use]
+    pub const fn new(sender: Address) -> Self {
+        Self {
+            sender,
+            placement_error: None,
+        }
+    }
+
+    /// Returns a copy carrying the placement error reported by services.
+    #[must_use]
+    pub fn with_placement_error(mut self, placement_error: impl Into<String>) -> Self {
+        self.placement_error = Some(placement_error.into());
+        self
+    }
+}
+
+/// Smart-contract interaction payload used by order pre and post hooks.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+pub struct InteractionData {
+    /// Contract address targeted by the interaction.
+    pub target: Address,
+    /// Native token value sent with the interaction.
+    pub value: Amount,
+    /// Hex-encoded calldata forwarded to `target`.
+    pub call_data: String,
+}
+
+impl InteractionData {
+    /// Creates an interaction payload from its required wire fields.
+    #[must_use]
+    pub fn new(target: Address, value: Amount, call_data: impl Into<String>) -> Self {
+        Self {
+            target,
+            value,
+            call_data: call_data.into(),
+        }
+    }
+}
+
+/// Optional pre and post interactions attached to an order response.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+pub struct OrderInteractions {
+    /// Interactions executed before the order's trade.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pre: Option<Vec<InteractionData>>,
+    /// Interactions executed after the order's trade.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub post: Option<Vec<InteractionData>>,
+}
+
+impl OrderInteractions {
+    /// Creates an empty interaction envelope.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns a copy carrying pre-trade interactions.
+    #[must_use]
+    pub fn with_pre(mut self, pre: Vec<InteractionData>) -> Self {
+        self.pre = Some(pre);
+        self
+    }
+
+    /// Returns a copy carrying post-trade interactions.
+    #[must_use]
+    pub fn with_post(mut self, post: Vec<InteractionData>) -> Self {
+        self.post = Some(post);
+        self
+    }
+}
+
+/// Quote metadata stored with an order response when an order was created from
+/// a quote.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+pub struct StoredOrderQuote {
+    /// Estimated gas units required to execute the quoted trade.
+    pub gas_amount: String,
+    /// Estimated gas price at quote time, in wei per gas unit.
+    pub gas_price: String,
+    /// Sell-token price in native-token atoms per sell-token atom.
+    pub sell_token_price: String,
+    /// Quoted sell amount.
+    pub sell_amount: Amount,
+    /// Quoted buy amount.
+    pub buy_amount: Amount,
+    /// Estimated network fee in sell-token atoms.
+    pub fee_amount: Amount,
+    /// Solver address that provided the quote.
+    pub solver: Address,
+    /// Whether the quote was verified through simulation.
+    pub verified: bool,
+    /// Additional services-provided quote metadata, when present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<serde_json::Value>,
+}
+
+impl StoredOrderQuote {
+    /// Creates stored quote metadata from every required `OpenAPI` field.
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        gas_amount: impl Into<String>,
+        gas_price: impl Into<String>,
+        sell_token_price: impl Into<String>,
+        sell_amount: Amount,
+        buy_amount: Amount,
+        fee_amount: Amount,
+        solver: Address,
+        verified: bool,
+    ) -> Self {
+        Self {
+            gas_amount: gas_amount.into(),
+            gas_price: gas_price.into(),
+            sell_token_price: sell_token_price.into(),
+            sell_amount,
+            buy_amount,
+            fee_amount,
+            solver,
+            verified,
+            metadata: None,
+        }
+    }
+
+    /// Returns a copy carrying services-provided quote metadata.
+    #[must_use]
+    pub fn with_metadata(mut self, metadata: serde_json::Value) -> Self {
+        self.metadata = Some(metadata);
+        self
+    }
+}
+
+/// Auction-side quote payload referenced by auction orders.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+pub struct Quote {
+    /// Quoted sell amount, when present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sell_amount: Option<Amount>,
+    /// Quoted buy amount, when present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub buy_amount: Option<Amount>,
+    /// Quoted fee amount, when present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fee: Option<Amount>,
+}
+
+impl Quote {
+    /// Creates an empty auction-side quote payload.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns a copy carrying a sell amount.
+    #[must_use]
+    pub fn with_sell_amount(mut self, sell_amount: Amount) -> Self {
+        self.sell_amount = Some(sell_amount);
+        self
+    }
+
+    /// Returns a copy carrying a buy amount.
+    #[must_use]
+    pub fn with_buy_amount(mut self, buy_amount: Amount) -> Self {
+        self.buy_amount = Some(buy_amount);
+        self
+    }
+
+    /// Returns a copy carrying a fee amount.
+    #[must_use]
+    pub fn with_fee(mut self, fee: Amount) -> Self {
+        self.fee = Some(fee);
+        self
+    }
+}
+
+/// Protocol-fee policy returned by the auction endpoint.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct FeePolicy(pub serde_json::Value);
+
+/// Executed protocol-fee metadata returned on trade records.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+pub struct ExecutedProtocolFee {
+    /// Fee policy that produced this fee, when services returns it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub policy: Option<FeePolicy>,
+    /// Fee amount taken.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub amount: Option<Amount>,
+    /// Token in which the fee was taken.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub token: Option<Address>,
+}
+
+impl ExecutedProtocolFee {
+    /// Creates an empty executed protocol-fee payload.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns a copy carrying the fee policy.
+    #[must_use]
+    pub fn with_policy(mut self, policy: FeePolicy) -> Self {
+        self.policy = Some(policy);
+        self
+    }
+
+    /// Returns a copy carrying the fee amount.
+    #[must_use]
+    pub fn with_amount(mut self, amount: Amount) -> Self {
+        self.amount = Some(amount);
+        self
+    }
+
+    /// Returns a copy carrying the fee token.
+    #[must_use]
+    pub fn with_token(mut self, token: Address) -> Self {
+        self.token = Some(token);
+        self
+    }
+}
+
 /// Orderbook order response DTO.
 ///
 /// This response includes status, owner, uid, execution totals, and `EthFlow`
@@ -1000,7 +1248,7 @@ pub struct Order {
     /// Buy-token address.
     pub buy_token: Address,
     /// Optional receiver override.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub receiver: Option<Address>,
     /// Sell amount in the upstream decimal-string wire shape.
     pub sell_amount: Amount,
@@ -1010,6 +1258,9 @@ pub struct Order {
     pub valid_to: u32,
     /// App-data hash attached to the order.
     pub app_data: AppDataHash,
+    /// Optional app-data hash echoed for debugging by the orderbook.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app_data_hash: Option<AppDataHash>,
     /// Order-level fee echoed on the orderbook response; always `"0"` in
     /// practice because services rejects non-zero order-level fees.
     ///
@@ -1018,6 +1269,9 @@ pub struct Order {
     /// public Rust surface.
     #[serde(default = "order_creation_zero_fee_amount")]
     fee_amount: Amount,
+    /// Strict balance-check flag accepted by services when the order was created.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub full_balance_check: bool,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.
@@ -1035,10 +1289,10 @@ pub struct Order {
     /// Raw signature string.
     pub signature: String,
     /// Effective owner field returned by the API, when present.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub from: Option<Address>,
     /// Quote id used when the order originated from a quote.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quote_id: Option<i64>,
     /// Order class.
     #[serde(default)]
@@ -1048,52 +1302,68 @@ pub struct Order {
     /// Order UID.
     pub uid: OrderUid,
     /// Creation timestamp string returned by the API.
-    #[serde(skip_serializing_if = "Option::is_none", alias = "creationTime")]
-    pub creation_date: Option<String>,
+    #[serde(default, alias = "creationTime")]
+    pub creation_date: String,
     /// Available remaining balance, when returned by the API.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub available_balance: Option<Amount>,
     /// Executed sell amount.
     #[serde(default)]
     pub executed_sell_amount: Amount,
-    /// Executed sell amount before fees, when returned separately.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub executed_sell_amount_before_fees: Option<Amount>,
+    /// Executed sell amount before fees.
+    #[serde(default)]
+    pub executed_sell_amount_before_fees: Amount,
     /// Executed buy amount.
     #[serde(default)]
     pub executed_buy_amount: Amount,
     /// Executed fee component, when provided.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub executed_fee: Option<Amount>,
     /// Deprecated legacy fee value some orderbook responses still emit on
     /// older order payloads alongside [`executed_fee`].
     ///
     /// Surfaced as a read-only sibling so consumers that need the legacy
     /// summation can compute it explicitly as
-    /// `executed_fee + executed_fee_amount_legacy`. New code should prefer
+    /// `executed_fee + executed_fee_amount`. New code should prefer
     /// [`executed_fee`]; [`total_fee`] intentionally does not fold this
     /// field in.
     ///
     /// [`executed_fee`]: Order::executed_fee
     /// [`total_fee`]: Order::total_fee
-    #[serde(
-        default,
-        rename = "executedFeeAmount",
-        skip_serializing_if = "Option::is_none"
-    )]
-    pub executed_fee_amount_legacy: Option<Amount>,
+    #[serde(default, skip_serializing_if = "Amount::is_zero")]
+    pub executed_fee_amount: Amount,
+    /// Token in which the executed fee was captured, when returned.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub executed_fee_token: Option<Address>,
     /// Whether the order was invalidated by the protocol.
     #[serde(default)]
     pub invalidated: bool,
     /// Order lifecycle status.
     #[serde(default)]
     pub status: OrderStatus,
+    /// Whether services classified the order as a liquidity order.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_liquidity_order: Option<bool>,
     /// On-chain user for `EthFlow`-style orders.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub onchain_user: Option<Address>,
     /// `EthFlow`-specific metadata.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ethflow_data: Option<EthflowData>,
+    /// On-chain placement metadata, when services returns it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub onchain_order_data: Option<OnchainOrderData>,
+    /// Full app-data payload, when services returns it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub full_app_data: Option<String>,
+    /// Settlement contract address against which the order was signed.
+    pub settlement_contract: Address,
+    /// Stored quote metadata for quote-linked orders.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quote: Option<StoredOrderQuote>,
+    /// Optional pre and post interactions associated with the order.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interactions: Option<OrderInteractions>,
     /// Total fee normalized by the SDK transform layer.
     #[serde(default)]
     pub total_fee: Amount,
@@ -1116,6 +1386,7 @@ impl Order {
         app_data: AppDataHash,
         kind: OrderKind,
         signature: impl Into<String>,
+        settlement_contract: Address,
         owner: Address,
         uid: OrderUid,
     ) -> Self {
@@ -1127,7 +1398,9 @@ impl Order {
             buy_amount,
             valid_to,
             app_data,
+            app_data_hash: None,
             fee_amount: order_creation_zero_fee_amount(),
+            full_balance_check: false,
             kind,
             partially_fillable: false,
             sell_token_balance: SellTokenSource::Erc20,
@@ -1139,17 +1412,24 @@ impl Order {
             class: OrderClass::default(),
             owner,
             uid,
-            creation_date: None,
+            creation_date: String::new(),
             available_balance: None,
             executed_sell_amount: Amount::zero(),
-            executed_sell_amount_before_fees: None,
+            executed_sell_amount_before_fees: Amount::zero(),
             executed_buy_amount: Amount::zero(),
             executed_fee: None,
-            executed_fee_amount_legacy: None,
+            executed_fee_amount: Amount::zero(),
+            executed_fee_token: None,
             invalidated: false,
             status: OrderStatus::default(),
+            is_liquidity_order: None,
             onchain_user: None,
             ethflow_data: None,
+            onchain_order_data: None,
+            full_app_data: None,
+            settlement_contract,
+            quote: None,
+            interactions: None,
             total_fee: Amount::zero(),
         }
     }
@@ -1292,21 +1572,23 @@ pub struct Trade {
     pub buy_token: Address,
     /// Executed sell amount in the upstream decimal-string wire shape.
     pub sell_amount: Amount,
-    /// Executed sell amount before fees, when returned separately.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sell_amount_before_fees: Option<Amount>,
+    /// Executed sell amount before fees.
+    #[serde(default)]
+    pub sell_amount_before_fees: Amount,
     /// Executed buy amount in the upstream decimal-string wire shape.
     pub buy_amount: Amount,
+    /// Protocol fees executed as part of the trade, when services returns them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub executed_protocol_fees: Option<Vec<ExecutedProtocolFee>>,
     /// Settlement transaction hash.
-    #[serde(alias = "txHash")]
-    pub transaction_hash: String,
+    pub tx_hash: Option<TransactionHash>,
 }
 
 impl Trade {
     /// Creates a trade DTO with the required identity and execution fields.
     #[must_use]
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    pub const fn new(
         block_number: u64,
         log_index: u64,
         order_uid: OrderUid,
@@ -1314,8 +1596,9 @@ impl Trade {
         sell_token: Address,
         buy_token: Address,
         sell_amount: Amount,
+        sell_amount_before_fees: Amount,
         buy_amount: Amount,
-        transaction_hash: impl Into<String>,
+        tx_hash: Option<TransactionHash>,
     ) -> Self {
         Self {
             block_number,
@@ -1325,16 +1608,17 @@ impl Trade {
             sell_token,
             buy_token,
             sell_amount,
-            sell_amount_before_fees: None,
+            sell_amount_before_fees,
             buy_amount,
-            transaction_hash: transaction_hash.into(),
+            executed_protocol_fees: None,
+            tx_hash,
         }
     }
 
-    /// Returns a copy of this trade with an explicit pre-fee sell amount.
+    /// Returns a copy of this trade with explicit executed protocol fees.
     #[must_use]
-    pub fn with_sell_amount_before_fees(mut self, amount: Amount) -> Self {
-        self.sell_amount_before_fees = Some(amount);
+    pub fn with_executed_protocol_fees(mut self, fees: Vec<ExecutedProtocolFee>) -> Self {
+        self.executed_protocol_fees = Some(fees);
         self
     }
 }
@@ -1406,8 +1690,7 @@ pub struct AuctionOrder {
     pub sell_token: Address,
     /// Buy-token address.
     pub buy_token: Address,
-    /// Optional receiver override.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Receiver override, nullable on the wire.
     pub receiver: Option<Address>,
     /// Sell amount in the upstream decimal-string wire shape.
     pub sell_amount: Amount,
@@ -1417,18 +1700,35 @@ pub struct AuctionOrder {
     pub valid_to: u32,
     /// App-data hash.
     pub app_data: AppDataHash,
-    /// Order-level fee echoed by the auction snapshot; always `"0"` in
-    /// practice because services rejects non-zero order-level fees.
-    #[serde(default = "order_creation_zero_fee_amount")]
-    fee_amount: Amount,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.
-    #[serde(default)]
     pub partially_fillable: bool,
-    /// Optional owner value when provided by the auction endpoint.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub owner: Option<Address>,
+    /// Owner address of the auction order.
+    pub owner: Address,
+    /// Currently executed amount of the sell or buy token depending on order kind.
+    pub executed: Amount,
+    /// Interactions executed before the first execution of the order.
+    pub pre_interactions: Vec<InteractionData>,
+    /// Interactions executed after execution of the order.
+    pub post_interactions: Vec<InteractionData>,
+    /// Sell-token balance source.
+    #[serde(default)]
+    pub sell_token_balance: SellTokenSource,
+    /// Buy-token balance destination.
+    #[serde(default)]
+    pub buy_token_balance: BuyTokenDestination,
+    /// Auction order class.
+    pub class: OrderClass,
+    /// Raw signature string.
+    pub signature: String,
+    /// Protocol-fee policies used for this order.
+    pub protocol_fees: Vec<FeePolicy>,
+    /// Creation time denominated in epoch seconds.
+    pub created: String,
+    /// Winning auction-side quote, when present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quote: Option<Quote>,
 }
 
 /// Auction snapshot returned by the orderbook.

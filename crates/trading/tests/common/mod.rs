@@ -713,6 +713,7 @@ pub fn regular_order() -> Order {
         "uid": ORDER_UID,
         "executedSellAmount": "0",
         "executedBuyAmount": "0",
+        "settlementContract": CUSTOM_SETTLEMENT,
         "invalidated": false,
         "status": "open",
         "totalFee": "0"

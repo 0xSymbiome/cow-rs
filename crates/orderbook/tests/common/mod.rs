@@ -107,7 +107,9 @@ pub fn sample_order_json(uid: &OrderUid) -> Value {
         "buyAmount": "1200000000",
         "validTo": 1_700_000_000,
         "appData": sample_app_data_hash().as_str(),
+        "appDataHash": sample_app_data_hash().as_str(),
         "feeAmount": "0",
+        "fullBalanceCheck": true,
         "kind": "buy",
         "partiallyFillable": true,
         "sellTokenBalance": "erc20",
@@ -121,9 +123,13 @@ pub fn sample_order_json(uid: &OrderUid) -> Value {
         "executedSellAmountBeforeFees": "99",
         "executedBuyAmount": "90",
         "executedFee": "20",
+        "executedFeeAmount": "0",
+        "executedFeeToken": sample_owner().as_str(),
         "invalidated": false,
         "status": "open",
-        "class": "market"
+        "class": "market",
+        "isLiquidityOrder": false,
+        "settlementContract": sample_owner().as_str()
     })
 }
 
@@ -145,6 +151,10 @@ pub fn sample_ethflow_order_json(uid: &OrderUid) -> Value {
         "signature": "0x1234",
         "owner": "0xba3cb449bd2b4adddbc894d8697f5170800eadec",
         "uid": uid.as_str(),
+        "creationDate": "2020-12-03T18:35:18.814523Z",
+        "executedSellAmountBeforeFees": "100",
+        "executedFeeAmount": "0",
+        "settlementContract": sample_owner().as_str(),
         "executedSellAmount": "100",
         "executedBuyAmount": "90",
         "executedFee": "10",
@@ -193,6 +203,6 @@ pub fn sample_trade_json() -> Value {
         "sellAmount": "1000",
         "sellAmountBeforeFees": "990",
         "buyAmount": "900",
-        "transactionHash": sample_tx_hash()
+        "txHash": sample_tx_hash()
     })
 }
