@@ -1,8 +1,8 @@
 # ADR 0011: Typed Amount Boundary And Typestate Ready-State Construction
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-17
-- Last reviewed: 2026-04-25
+- Last reviewed: 2026-04-29
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, trading, builders, semver
 - Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
@@ -47,6 +47,13 @@ widening the runtime surface.
   `TradingSdkBuilder` exposes exactly two terminals: `build_ready`
   (requires both markers set) and `build_helper_only` (requires only the
   chain-id marker).
+- `TradingSdk` and `TradingSdkBuilder` expose ready-state and helper-only
+  construction exclusively through typestate-builder terminal methods.
+  **Inherent associated constructors** (`TradingSdk::new`,
+  `TradingSdk::new_partial`, or any future equivalent) are forbidden in
+  shipped crates. One-call ergonomic shortcuts (e.g.,
+  `TradingSdkBuilder::ready(...)`) are typestate terminals consuming
+  *total* typed inputs and never `Partial*` shapes.
 - On `wasm32` targets, `build_ready()` additionally requires an injected
   orderbook client through `TradingSdkOptions::with_orderbook_client(...)`.
   The default orderbook factory does not run on `wasm32` because the
@@ -110,3 +117,4 @@ architecture record.
 **Proven by:**
 
 - [Trading SDK Runtime Prerequisites Audit](../audit/trading-sdk-runtime-prerequisites-audit.md)
+- [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)

@@ -146,7 +146,7 @@ pub fn validate_coverage(map: &PrincipleAdrMap, statuses: &[AdrStatus]) -> Vec<S
     }
 
     for status in statuses {
-        if status.status == "Accepted"
+        if is_accepted_status(&status.status)
             && !cited.contains(&status.id)
             && !out_of_scope.contains(&status.id)
         {
@@ -172,12 +172,16 @@ fn check_cited_adr(
         errors.push(format!("{context} references missing ADR {adr}"));
         return;
     };
-    if status.status != "Accepted" {
+    if !is_accepted_status(&status.status) {
         errors.push(format!(
             "{context} references ADR {} with status `{}` instead of `Accepted`",
             status.id, status.status
         ));
     }
+}
+
+fn is_accepted_status(status: &str) -> bool {
+    matches!(status.trim(), "Accepted" | "Accepted (amended)")
 }
 
 fn read_adr_statuses(repo_root: &Path) -> anyhow::Result<Vec<AdrStatus>> {

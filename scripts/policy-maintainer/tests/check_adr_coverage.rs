@@ -21,7 +21,7 @@ fn adr_coverage_accepts_mapped_accepted_adrs() {
         AdrStatus {
             id: "0001".to_owned(),
             path: "docs/adr/0001.md".to_owned(),
-            status: "Accepted".to_owned(),
+            status: "Accepted (amended)".to_owned(),
         },
         AdrStatus {
             id: "0002".to_owned(),

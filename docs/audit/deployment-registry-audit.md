@@ -1,11 +1,12 @@
 # Deployment Registry Audit
 
-Status: Current  
-Last reviewed: 2026-04-21  
-Owning surface: `cow-sdk-contracts::Registry` typed deployment authority and its embedded TOML manifest  
-Refresh trigger: Changes to the `(ContractId, SupportedChainId, CowEnv)` key shape, the `registry.toml` schema, the embedded manifest, the compile-time validator in `build.rs`, or the runtime parser in `Registry::from_toml_str`; a new deployed address or a new supported chain  
+Status: Current
+Last reviewed: 2026-04-29
+Owning surface: `cow-sdk-contracts::Registry` typed deployment authority and its embedded TOML manifest
+Refresh trigger: Changes to the `(ContractId, SupportedChainId, CowEnv)` key shape, the `registry.toml` schema, the embedded manifest, the compile-time validator in `build.rs`, or the runtime parser in `Registry::from_toml_str`; a new deployed address or a new supported chain
 Related docs:
 - [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md)
+- [ADR 0032](../adr/0032-deployment-authority-machine-readable-provenance.md)
 - [Deployments](../deployments.md)
 - [Architecture](../architecture.md)
 - [Parity Matrix](../parity-matrix.md)

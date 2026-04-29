@@ -112,7 +112,7 @@ Deployment authority claims are backed by structured provenance entries in
 confirmation that records `code_hash` and (where ABI permits) selector probes.
 Skipped live checks are never silently allowed in release mode.
 
-**Anchored by**: [ADR 0026](adr/0026-alloy-major-release-absorption-plan.md) (primary). Supporting: [ADR 0025](adr/0025-workspace-url-redaction-convention.md), ADR 0030, ADR 0032.
+**Anchored by**: [ADR 0026](adr/0026-alloy-major-release-absorption-plan.md) (primary). Supporting: [ADR 0025](adr/0025-workspace-url-redaction-convention.md), [ADR 0030](adr/0030-workspace-locked-versioning-tag-baseline.md), [ADR 0032](adr/0032-deployment-authority-machine-readable-provenance.md).
 
 ## Forward-Compatible Public Surfaces
 
@@ -125,6 +125,8 @@ Public traits evolve through extension traits (the `*Ext` pattern) rather than
 silently adding methods. Adding `#[must_use]` and `# Errors` doc sections to
 fallible public APIs is a release-gating lint.
 
+**Anchored by**: [ADR 0031](adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md) (primary). Supporting: [ADR 0027](adr/0027-post-quantum-signing-absorption-plan.md), [ADR 0029](adr/0029-trait-evolution-extension-traits.md).
+
 ## Credential Redaction by Construction
 
 Credential-bearing types use the workspace `Redacted<T>` wrapper. Their
@@ -133,6 +135,8 @@ identity information. Transport errors strip credential-bearing query strings
 before wrapping URL strings; orderbook and subgraph diagnostics expose only
 redacted route identity. No code path bypasses redaction through `Deref` or
 transparent re-exports of the inner string.
+
+**Anchored by**: [ADR 0025](adr/0025-workspace-url-redaction-convention.md) (primary). Supporting: [ADR 0005](adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md).
 
 ## Cooperative Cancellation Coverage
 
@@ -143,6 +147,8 @@ public API lifts `Cancelled` through `From`. Cancellation is cooperative —
 callers own the token, and the SDK never installs hidden global cancellation
 state.
 
+**Anchored by**: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md) (primary). Supporting: [ADR 0006](adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md).
+
 ## Minimum-Viable Panic Surface
 
 Production code in shipped crates does not contain
@@ -152,3 +158,5 @@ site carries a `# Panics` rustdoc section on its public function and an inline
 `// SAFETY:` comment naming the build-time invariant. The file
 `.github/config/panic-allowlist.yaml` keys allowed sites by item path; the
 regression contract fails on uncommented additions.
+
+**Anchored by**: [ADR 0033](adr/0033-minimum-viable-panic-surface.md) (primary). Supporting: none.

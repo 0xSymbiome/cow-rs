@@ -4,9 +4,7 @@
 # Every accepted ADR is referenced under at least one principle or listed in
 # out_of_scope_adrs with a written rationale.
 #
-# ADRs 0029-0033 are referenced before their accepted ADR files land. The
-# informational ADR coverage CI lane reports those gaps without blocking until
-# the ADR 0029-0033 acceptance PR flips that lane to blocking mode.
+# ADRs 0029-0033 are accepted and covered by the blocking ADR coverage lane.
 
 version: 1
 

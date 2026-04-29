@@ -1,7 +1,7 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-04-27
+Last reviewed: 2026-04-29
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a drift in the committed Solidity excerpt under `crates/contracts/abi/**/*.sol`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:

@@ -18,9 +18,9 @@ public and runtime shape of `cow-rs`.
 | [0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md) | Accepted | Grow new capability surfaces through additive leaf crates and owned sidecars. |
 | [0009](0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md) | Accepted | Keep WASM examples as named verification consoles with one naming shape, one ship checklist, a two-tier proof posture, and a hybrid extensibility rule. |
 | [0010](0010-runtime-neutral-async-and-transport-posture.md) | Accepted (superseded in part by [0013](0013-http-transport-injection-and-typestate-builders.md)) | Keep the async surface runtime-neutral with a `CancellationToken` contract, typed transport-error classification that strips the URL, and opt-in `tracing` instrumentation. |
-| [0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md) | Accepted | Distinguish atomic and decimal-scaled amounts through dedicated newtypes and advertise `TradingSdkBuilder` prerequisites through typestate terminals. |
+| [0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md) | Accepted (amended) | Distinguish atomic and decimal-scaled amounts through dedicated newtypes and advertise `TradingSdkBuilder` prerequisites through typestate terminals. |
 | [0012](0012-alloy-sol-bindings-and-registry-authority.md) | Accepted | Generate every ABI binding through `alloy::sol!` and resolve every deployed address through a single typed `Registry` authority. |
-| [0013](0013-http-transport-injection-and-typestate-builders.md) | Accepted | Route orderbook and subgraph dispatch through the typed `HttpTransport` seam in `cow-sdk-core`, and construct both public clients through typestate builders. |
+| [0013](0013-http-transport-injection-and-typestate-builders.md) | Accepted (amended) | Route orderbook and subgraph dispatch through the typed `HttpTransport` seam in `cow-sdk-core`, and construct both public clients through typestate builders. |
 | [0014](0014-eip1271-verification-cache.md) | Accepted | Thread a pluggable `Eip1271VerificationCache` through `verify_eip1271_signature_async` and cache only magic-value-match and explicit mismatch outcomes. |
 | [0015](0015-client-side-order-bounds-validator.md) | Accepted | Run the typed `OrderBoundsValidator` as the mandatory pre-transport step on every public trading submission seam and surface failures through `TradingError::ClientRejected(ClientRejection)`. |
 | [0016](0016-split-sell-and-buy-token-balance-enums.md) | Accepted | Split the sell-side allowance path and the buy-side payout path into distinct `SellTokenSource` and `BuyTokenDestination` enums and reject cross-side coercion at the type system. |
@@ -34,8 +34,13 @@ public and runtime shape of `cow-rs`.
 | [0024](0024-asyncprovider-asyncsigningprovider-capability-split.md) | Accepted | Split `AsyncProvider` into a read-only chain-RPC trait and an `AsyncSigningProvider` extension that owns signer creation. |
 | [0025](0025-workspace-url-redaction-convention.md) | Accepted | Store credential-bearing URL fields in redacting types before they become public SDK state. |
 | [0026](0026-alloy-major-release-absorption-plan.md) | Accepted | Bound alloy major releases behind SDK-owned types and a configurable scheduled canary lane. |
-| [0027](0027-post-quantum-signing-absorption-plan.md) | Accepted | Add future signing schemes through non-exhaustive signature boundaries without widening ECDSA semantics. |
+| [0027](0027-post-quantum-signing-absorption-plan.md) | Accepted (amended) | Add future signing schemes through non-exhaustive signature boundaries without widening ECDSA semantics. |
 | [0028](0028-account-abstraction-integration-plan.md) | Accepted | Integrate account abstraction through provider capability traits and EIP-1271-compatible signing surfaces. |
+| [0029](0029-trait-evolution-extension-traits.md) | Accepted | Evolve provider traits through opt-in extension traits rather than adding methods to frozen core trait shapes. |
+| [0030](0030-workspace-locked-versioning-tag-baseline.md) | Accepted | Keep workspace crate versions locked through `0.x` and run patch semver checks against the previous release tag. |
+| [0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md) | Accepted | Drive orderbook response DTO coverage from OpenAPI with separate `Order` and `AuctionOrder` Rust types. |
+| [0032](0032-deployment-authority-machine-readable-provenance.md) | Accepted | Back deployment-address authority with machine-readable provenance and dual-mode live confirmation. |
+| [0033](0033-minimum-viable-panic-surface.md) | Accepted | Keep production panic sites allowlisted, documented, and limited to static invariants. |
 
 ## When To Write An ADR
 
@@ -109,13 +114,16 @@ public and runtime shape of `cow-rs`.
   `[0xSymbiotic](https://github.com/0xSymbiotic)`.
 - `Tags`, `Related`, `Supersedes`, and `Superseded by` are optional. Omit them
   when empty.
-- Allowed statuses are `Proposed`, `Accepted`, `Rejected`, and `Superseded`.
+- Allowed statuses are `Proposed`, `Accepted`, `Accepted (amended)`,
+  `Rejected`, and `Superseded`.
 - Use four-digit numbering and kebab-case filenames.
 
 ## Status Semantics
 
 - `Proposed`: under discussion and not yet binding.
 - `Accepted`: active architectural record that later work must respect.
+- `Accepted (amended)`: active architectural record that has received an
+  in-place pre-release precision amendment without being superseded.
 - `Rejected`: considered seriously and explicitly not chosen.
 - `Superseded`: previously accepted, now replaced by a later ADR.
 

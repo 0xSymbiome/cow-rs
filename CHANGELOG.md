@@ -18,6 +18,9 @@ unreleased public contract of the repository.
 - The public principle charter now includes Forward-Compatible Public
   Surfaces, Credential Redaction by Construction, Cooperative Cancellation
   Coverage, and Minimum-Viable Panic Surface.
+- ADRs 0029 through 0033 now publish the accepted decisions for extension-trait
+  evolution, workspace-locked versioning, OpenAPI-driven wire DTO coverage,
+  machine-readable deployment provenance, and the minimum-viable panic surface.
 - `TradingSdkBuilder::ready` and `TradingSdkBuilder::helper_only` provide
   ergonomic construction terminals for total ready-state trader parameters and
   helper-only chain authority.

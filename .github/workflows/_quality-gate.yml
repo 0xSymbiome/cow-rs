@@ -496,7 +496,7 @@ jobs:
           echo "alloy-provider invariant holds for the first-release crate set."
 
   adr-coverage:
-    name: ADR coverage (informational)
+    name: ADR coverage (blocking)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -510,10 +510,7 @@ jobs:
           toolchain: ${{ inputs.rust_toolchain }}
       - name: Check principle ADR coverage
         run: |
-          # TODO(ADR 0029-0033 acceptance PR): flip --mode informational
-          # to --mode blocking in the same PR that adds those ADR files
-          # with Status: Accepted.
-          cargo check-adr-coverage --mode informational
+          cargo check-adr-coverage --mode blocking
 
   cargo-semver-checks:
     name: cargo-semver-checks

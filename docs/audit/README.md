@@ -51,21 +51,21 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) | Standing audit | `cow-sdk-contracts` `alloy::sol!`-generated binding surfaces | Byte-identity parity on the shipped settlement, vault-relayer, EthFlow, EIP-1967 proxy, ERC-20 / ERC-20 Permit bindings, and the shared EIP-712 domain-separator fixture | Current | 2026-04-27 |
-| [Deployment Registry Audit](deployment-registry-audit.md) | Standing audit | `cow-sdk-contracts::Registry` typed deployment authority | Typed `(ContractId, SupportedChainId, CowEnv)` key, embedded TOML manifest, compile-time validation, and override composition | Current | 2026-04-21 |
+| [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) | Standing audit | `cow-sdk-contracts` `alloy::sol!`-generated binding surfaces | Byte-identity parity on the shipped settlement, vault-relayer, EthFlow, EIP-1967 proxy, ERC-20 / ERC-20 Permit bindings, and the shared EIP-712 domain-separator fixture | Current | 2026-04-29 |
+| [Deployment Registry Audit](deployment-registry-audit.md) | Standing audit | `cow-sdk-contracts::Registry` typed deployment authority | Typed `(ContractId, SupportedChainId, CowEnv)` key, embedded TOML manifest, compile-time validation, and override composition | Current | 2026-04-29 |
 
 ## HTTP Transport And Construction
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [HTTP Transport Contract Audit](http-transport-contract-audit.md) | Standing audit | `cow-sdk-core::HttpTransport` trait and its native and browser default adapters | Trait shape, typed `TransportError`, additive response-header surface, orderbook `Retry-After` cooldown honor, URL-redaction contract, and cross-adapter classification parity | Current | 2026-04-24 |
-| [Typestate Builder Contract Audit](typestate-builder-contract-audit.md) | Standing audit | `cow-sdk-orderbook::OrderBookApiBuilder` and `cow-sdk-subgraph::SubgraphApiBuilder` construction seams | Required-input typestate, marker sealing, host-policy validation, native default-transport convenience, wasm32 transport-required invariant, and retirement of legacy free-function constructors | Current | 2026-04-27 |
+| [HTTP Transport Contract Audit](http-transport-contract-audit.md) | Standing audit | `cow-sdk-core::HttpTransport` trait and its native and browser default adapters | Trait shape, typed `TransportError`, additive response-header surface, orderbook `Retry-After` cooldown honor, URL-redaction contract, and cross-adapter classification parity | Current | 2026-04-29 |
+| [Typestate Builder Contract Audit](typestate-builder-contract-audit.md) | Standing audit | `cow-sdk-orderbook::OrderBookApiBuilder` and `cow-sdk-subgraph::SubgraphApiBuilder` construction seams | Required-input typestate, marker sealing, host-policy validation, native default-transport convenience, wasm32 transport-required invariant, and retirement of legacy free-function constructors | Current | 2026-04-29 |
 
 ## Signature Verification Caching
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md) | Standing audit | `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `Noop` and `InMemory` canonical impls | Trait contract, conservative caching semantics, verification telemetry, pre-interaction scope, thread-safety on the in-memory implementation, and its integration with `verify_eip1271_signature_async` | Current | 2026-04-27 |
+| [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md) | Standing audit | `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `Noop` and `InMemory` canonical impls | Trait contract, conservative caching semantics, verification telemetry, pre-interaction scope, thread-safety on the in-memory implementation, and its integration with `verify_eip1271_signature_async` | Current | 2026-04-29 |
 
 ## Signature Normalization
 
@@ -98,7 +98,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and lifecycle preflight authority | Source-lock commit pins, upstream freshness disclosure, historical snapshot scope, and refresh ownership | Current | 2026-04-28 |
+| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and lifecycle preflight authority | Source-lock commit pins, upstream freshness disclosure, historical snapshot scope, and refresh ownership | Current | 2026-04-29 |
 
 ## Orderbook Wire DTO Coverage
 
@@ -134,7 +134,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Unsafe-Code Policy Audit](unsafe-code-policy-audit.md) | Standing audit | Workspace `unsafe_code = deny` lint declared in `Cargo.toml` workspace lint section | Workspace unsafe-code deny lint, crate lint adoption, public-path source posture, and clippy enforcement | Current | 2026-04-23 |
-| [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site | Current | 2026-04-23 |
+| [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site and allowlist coverage | Current | 2026-04-29 |
 | [Workflow Security Audit](workflow-security-audit.md) | Standing audit | Every `.github/workflows/*.yml` file | SHA-pinned third-party actions, explicit permissions, reviewed action source refs, and guarded `pull_request_target` use | Current | 2026-04-27 |
 
 ## Cross-Cutting Reviewability And Contract Hygiene

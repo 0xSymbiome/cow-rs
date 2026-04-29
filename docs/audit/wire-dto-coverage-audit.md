@@ -4,6 +4,8 @@ Status: Current
 Last reviewed: 2026-04-29
 Owning surface: cow-sdk-orderbook DTO coverage
 Refresh trigger: changes to `parity/openapi/services-orderbook.yml`, changes to `parity/openapi/coverage.yaml`, source-lock refreshes for the services OpenAPI, or public field changes on covered orderbook response DTOs
+Related docs:
+- [ADR 0031](../adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md)
 
 ## Scope
 

@@ -1,9 +1,12 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-04-28
+Last reviewed: 2026-04-29
 Owning surface: source-lock provenance and lifecycle preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
+Related docs:
+- [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
+- [ADR 0030](../adr/0030-workspace-locked-versioning-tag-baseline.md)
 
 ## Scope
 
@@ -46,7 +49,7 @@ upstream repositories before treating the evidence as current.
 
 ### Freshness State
 
-Upstream HEADs were checked on 2026-04-28:
+Upstream HEADs were checked on 2026-04-29:
 
 | Repository | Source-lock pin | Upstream HEAD | State |
 | --- | --- | --- | --- |

@@ -67,4 +67,5 @@ change.
 
 - [Contract Bindings Parity Audit](../audit/contract-bindings-parity-audit.md)
 - [Browser-Wallet Alloy Dependency Audit](../audit/browser-wallet-alloy-dependency-audit.md)
+- [Source-Lock Provenance Audit](../audit/source-lock-provenance-audit.md)
 - [Workflow Security Audit](../audit/workflow-security-audit.md)

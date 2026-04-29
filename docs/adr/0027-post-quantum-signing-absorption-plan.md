@@ -1,7 +1,8 @@
 # ADR 0027: Add New Signing Schemes Through Non-Exhaustive Signature Boundaries
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-27
+- Last reviewed: 2026-04-29
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, signatures, compatibility, eip1271, eip7212
 - Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
@@ -64,3 +65,8 @@ breaking match exhaustiveness change for downstream code.
 
 - [ECDSA Signature Normalization Audit](../audit/ecdsa-signature-normalization-audit.md)
 - [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)
+- `crates/contracts/tests/non_exhaustive_dto_contract.rs::adr_0027_signature_family_non_exhaustive`
+- `crates/contracts/tests/ui/non_exhaustive_external_match.rs`
+- `.github/config/enum-policy.yaml` entries classifying the contracts
+  `SigningScheme`, contracts `Signature`, and orderbook `SigningScheme`
+  enums as `upstream-growing`

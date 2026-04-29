@@ -1,7 +1,7 @@
 # EIP-1271 Verification Cache Audit
 
 Status: Current
-Last reviewed: 2026-04-27
+Last reviewed: 2026-04-29
 Owning surface: `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `NoopEip1271VerificationCache` and `InMemoryEip1271VerificationCache` default implementations shipped from `cow-sdk-signing::cache`
 Refresh trigger: Changes to the trait signature, the caching semantics (what is cached and what is not), the `verify_eip1271_signature_async` call shape, the verification tracing fields, the default TTL or capacity on the in-memory implementation, the platform time-source selection, or the thread-safety posture; a new canonical implementation that ships in the workspace
 Related docs:

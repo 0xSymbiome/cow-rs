@@ -1,10 +1,11 @@
 # Typestate Builder Contract Audit
 
 Status: Current
-Last reviewed: 2026-04-27
+Last reviewed: 2026-04-29
 Owning surface: `cow-sdk-orderbook::OrderBookApiBuilder` and `cow-sdk-subgraph::SubgraphApiBuilder` construction seams
 Refresh trigger: Type-parameter or marker visibility changes on either builder, a change to the set of required inputs (chain, environment or API key, transport), a change to host-policy validation, a change to the native default-transport convenience impl, a change to the wasm32 transport-required invariant, or a new `trybuild` witness replacing the current compile-fail coverage
 Related docs:
+- [ADR 0011](../adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0028](../adr/0028-account-abstraction-integration-plan.md)
 - [Transport](../transport.md)

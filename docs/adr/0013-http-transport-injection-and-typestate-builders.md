@@ -1,7 +1,8 @@
 # ADR 0013: HTTP Transport Injection Seam And Typestate Construction For Orderbook And Subgraph
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-21
+- Last reviewed: 2026-04-29
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, typestate, builders, wasm, async
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
@@ -53,6 +54,9 @@ installed transport.
   `.client(reqwest_client)` remains available on native targets as a
   convenience over `ReqwestTransport` for multi-chain connection-pool
   reuse.
+- Typestate marker types use private tuple fields so external crates
+  cannot construct them. A `trybuild` `compile_fail` fixture under
+  `crates/<crate>/tests/ui/` proves the sealing for every typed client.
 - Runtime and support: `TransportError` is a typed enum with a
   `Transport { class: TransportErrorClass, detail: String }` variant
   partitioned across `Timeout`, `Connect`, `Redirect`, `Decode`, `Body`,
