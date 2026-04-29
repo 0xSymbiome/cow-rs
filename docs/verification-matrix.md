@@ -54,7 +54,7 @@ Use it with:
 | `cargo fmt --all --check` | Formatting gate for consistent public diffs |
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
 | `cargo deny check --config .github/config/deny.toml` | Blocking advisory, license, source, and duplicate-version policy gate |
-| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate; `scripts/check-release-docs-agree.sh` keeps the ignore-token list aligned with the release checklist and `.github/config/deny.toml`. |
+| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate; `scripts/check-release-docs-agree.sh` keeps the ignore-token list aligned with the release checklist and `.github/config/deny.toml`. |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo test --workspace --doc` | Explicit doctest gate for rustdoc examples |
 | Published crate README doctests | Every published crate README is wired into crate rustdoc with a `cfg_attr(doctest, ...)` shim, so `cargo test --workspace --doc` compiles every fenced README example on CI. |

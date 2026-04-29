@@ -14,4 +14,5 @@ pub mod check_workspace_versions;
 pub mod classify_release;
 pub mod diagnostics;
 pub mod fixtures;
+pub mod generate_validation_evidence;
 pub mod workspace;

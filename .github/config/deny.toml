@@ -8,8 +8,6 @@ unused-ignored-advisory = "allow"
 # cargo-deny and cargo-audit. CI derives the cargo-audit ignore arguments from
 # this list so advisory tolerances cannot drift between tools.
 ignore = [
-  { id = "RUSTSEC-2026-0097", reason = "Unsound `rand 0.8.5` is reachable through the alloy-primitives -> ruint subtree and no direct upgrade path is available from the pinned alloy family; tracked in docs/audit/browser-wallet-alloy-dependency-audit.md with a 90-day re-review floor." },
-  { id = "RUSTSEC-2024-0388", reason = "Unmaintained `derivative` is reachable only through the alloy-primitives -> ruint -> ark-ff proc-macro subtree and does not compile runtime code; tracked in docs/audit/browser-wallet-alloy-dependency-audit.md with a 90-day re-review floor." },
   { id = "RUSTSEC-2024-0436", reason = "Unmaintained `paste` is reachable only through the alloy-sol-macro and alloy-primitives proc-macro subtrees and does not compile runtime code; tracked in docs/audit/browser-wallet-alloy-dependency-audit.md with a 90-day re-review floor." },
 ]
 

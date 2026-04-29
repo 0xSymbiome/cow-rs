@@ -22,6 +22,9 @@ pub struct Args {
     /// Enforce the 30-day failure behavior outside release-readiness CI.
     #[arg(long)]
     pub enforce: bool,
+    /// Treat the current rust-version as the initial public release floor.
+    #[arg(long)]
+    pub initial_release: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -29,6 +32,7 @@ pub struct MsrvNotice {
     pub rust_version: String,
     pub age_days: Option<u64>,
     pub enforce: bool,
+    pub initial_release: bool,
 }
 
 pub fn run(args: Args, output_mode: OutputMode) -> anyhow::Result<()> {
@@ -53,6 +57,7 @@ pub fn run_with_writer(
         rust_version,
         age_days,
         enforce,
+        initial_release: args.initial_release,
     };
     let errors = validate_notice(&notice);
 
@@ -74,6 +79,9 @@ pub fn run_with_writer(
 }
 
 pub fn validate_notice(notice: &MsrvNotice) -> Vec<String> {
+    if notice.initial_release {
+        return Vec::new();
+    }
     let Some(age_days) = notice.age_days else {
         return Vec::new();
     };
@@ -88,6 +96,12 @@ pub fn validate_notice(notice: &MsrvNotice) -> Vec<String> {
 }
 
 fn render_notice_message(notice: &MsrvNotice) -> String {
+    if notice.initial_release {
+        return format!(
+            "rust-version {} establishes the initial public release floor; no MSRV bump notice failure emitted",
+            notice.rust_version
+        );
+    }
     match notice.age_days {
         Some(age_days) => format!(
             "rust-version {} last changed {age_days} day(s) ago{}",

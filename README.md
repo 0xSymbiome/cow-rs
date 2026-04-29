@@ -31,13 +31,13 @@ facade and trading flow end to end.
 Ready-state facade setup:
 
 ```rust
-use cow_sdk::{SupportedChainId, TradingSdk};
+use cow_sdk::{SupportedChainId, TraderParameters, TradingSdkBuilder, TradingSdkOptions};
 
-let _sdk = TradingSdk::builder()
-    .with_chain_id(SupportedChainId::Sepolia)
-    .with_app_code("your-app-code")
-    .build_ready()
-    .unwrap();
+let _sdk = TradingSdkBuilder::ready(
+    TraderParameters::new(SupportedChainId::Sepolia, "your-app-code"),
+    TradingSdkOptions::default(),
+)
+.unwrap();
 ```
 
 Use `appCode` as the stable identifier for the application or integration
@@ -77,6 +77,11 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 - Pure transform crates do not hide network I/O.
 - Public claims are backed by repository-visible tests, fixtures, and release
   documentation.
+- Public evolution follows the [Forward-Compatible Public Surfaces](docs/principles.md#forward-compatible-public-surfaces),
+  [Credential Redaction by Construction](docs/principles.md#credential-redaction-by-construction),
+  [Cooperative Cancellation Coverage](docs/principles.md#cooperative-cancellation-coverage),
+  and [Minimum-Viable Panic Surface](docs/principles.md#minimum-viable-panic-surface)
+  principles.
 
 ## Trust And Maintenance
 

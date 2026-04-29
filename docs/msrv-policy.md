@@ -8,6 +8,9 @@ for the published `cow-sdk` crate family.
 MSRV bumps are minor releases. Patch releases keep the existing floor unless a
 security advisory cannot be closed without raising the compiler floor.
 
+The first public release establishes the initial MSRV floor; it is not treated
+as an MSRV bump because no earlier published floor exists.
+
 The project announces an MSRV bump at least 30 days before the release that
 raises the floor. The notice names the new Rust version, the reason for the
 bump, and the first release expected to require it.

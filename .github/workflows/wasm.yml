@@ -111,11 +111,23 @@ jobs:
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         run: cargo wasm-runner-setup --webdriver-json "$WEBDRIVER_JSON"
+      - name: Export pinned WASM browser runner paths
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
+        run: |
+          python - <<'PY' >> "$GITHUB_ENV"
+          import json
+          import os
+          with open(os.environ["WEBDRIVER_JSON"], encoding="utf-8") as handle:
+              webdriver = json.load(handle)
+          print(f"WASM_BINDGEN_TEST_WEBDRIVER_JSON={os.environ['WEBDRIVER_JSON']}")
+          print(f"WASM_BINDGEN_TEST_CHROMEDRIVER={webdriver['cow:wasmRunner']['chromedriver']}")
+          PY
       - name: Test browser-wallet direct bridge in headless Chrome
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: crates/browser-wallet
-        run: wasm-pack test --headless --chrome
+        run: wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
       - name: Set up pinned WASM browser runner
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
@@ -124,7 +136,7 @@ jobs:
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: crates/transport-wasm
-        run: wasm-pack test --headless --chrome --features tracing
+        run: wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER" --features tracing
       - name: Set up pinned WASM browser runner
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
@@ -133,7 +145,7 @@ jobs:
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: crates/trading
-        run: wasm-pack test --headless --chrome
+        run: wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
       - name: Set up pinned WASM browser runner
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
@@ -142,7 +154,7 @@ jobs:
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: crates/signing
-        run: wasm-pack test --headless --chrome
+        run: wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
       - name: Set up pinned WASM browser runner
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
@@ -151,7 +163,7 @@ jobs:
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: examples/wasm/browser-wallet-console
-        run: wasm-pack test --headless --chrome
+        run: wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
       - name: Set up pinned WASM browser runner
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
@@ -160,7 +172,7 @@ jobs:
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: examples/wasm/sdk-verification-console
-        run: wasm-pack test --headless --chrome
+        run: wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
       - name: Build sdk verification console web package
         working-directory: examples/wasm/sdk-verification-console
         run: wasm-pack build --target web

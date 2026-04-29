@@ -55,8 +55,9 @@ resolves through the advisory-clean line without a workspace override.
 `multihash 0.19.5` path. That published path removes the prior yanked
 `core2 0.4.0` reachability, so the CID stack no longer owns any RustSec
 ignore entries. The retired `core2` advisory `RUSTSEC-2026-0105` is not
-tolerated by the current gate, and the remaining `RUSTSEC-2026-0097`
-tolerance is scoped to the browser-wallet alloy dependency chain.
+tolerated by the current gate, and the former `RUSTSEC-2026-0097` `rand`
+tolerance is retired because the lockfile resolves the affected path through
+`rand 0.8.6`.
 
 ### Gate Contract
 
@@ -64,13 +65,9 @@ Routine CI and release-readiness apply the same split dependency contract:
 `cargo deny check --config .github/config/deny.toml` owns policy on allowed
 sources, licenses, curated duplicate-version tolerances, and yanked advisory
 handling, while `cargo audit --deny unsound --deny unmaintained` blocks RustSec
-vulnerabilities plus unsound and unmaintained advisories. Three identifiers are
-currently tolerated with documented revisit triggers:
+vulnerabilities plus unsound and unmaintained advisories. One identifier is
+currently tolerated with a documented revisit trigger:
 
-- `RUSTSEC-2026-0097` — covered by
-  [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
-- `RUSTSEC-2024-0388` — covered by
-  [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
 - `RUSTSEC-2024-0436` — covered by
   [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
 
@@ -155,8 +152,6 @@ Validation surface:
 ```text
 cargo deny check --config .github/config/deny.toml
 cargo audit --deny unsound --deny unmaintained \
-  --ignore RUSTSEC-2026-0097 \
-  --ignore RUSTSEC-2024-0388 \
   --ignore RUSTSEC-2024-0436
 cargo tree --workspace --invert thiserror:1.0.69 -e no-build
 cargo build --workspace --all-features

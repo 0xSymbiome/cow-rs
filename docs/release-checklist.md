@@ -13,7 +13,7 @@ cargo test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
 typos --config .github/config/typos.toml
 cargo deny check --config .github/config/deny.toml
-cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436
+cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436
 cargo check-alloy-provider-invariant
 cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk
 ```
@@ -123,7 +123,7 @@ Then run the published package-family dry-run in release order:
 cargo fetch --locked
 cargo build --frozen --workspace --all-features
 cargo package -p cow-sdk-core --allow-dirty
-cargo package -p cow-sdk-contracts --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo package -p cow-sdk-contracts --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'"
 cargo package -p cow-sdk-app-data --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-signing --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
@@ -138,7 +138,7 @@ Then run the registry-validation dry-run in the same order:
 
 ```text
 cargo publish --dry-run -p cow-sdk-core --allow-dirty
-cargo publish --dry-run -p cow-sdk-contracts --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo publish --dry-run -p cow-sdk-contracts --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'"
 cargo publish --dry-run -p cow-sdk-app-data --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-signing --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
@@ -315,11 +315,26 @@ cargo build --target wasm32-unknown-unknown -p cow-sdk-transport-wasm
 cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
 ```
 
+Set up the pinned browser runner before every `wasm-pack` browser lane:
+
+```text
+mkdir -p target/wasm-runner
+cargo wasm-runner-setup --webdriver-json target/wasm-runner/webdriver.json
+export WASM_BINDGEN_TEST_WEBDRIVER_JSON="$(pwd)/target/wasm-runner/webdriver.json"
+export WASM_BINDGEN_TEST_CHROMEDRIVER="$(python - <<'PY'
+import json
+import os
+with open(os.environ["WASM_BINDGEN_TEST_WEBDRIVER_JSON"], encoding="utf-8") as handle:
+    print(json.load(handle)["cow:wasmRunner"]["chromedriver"])
+PY
+)"
+```
+
 Deterministic SDK verification console checks:
 
 ```text
 cd examples/wasm/sdk-verification-console
-wasm-pack test --headless --chrome
+wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
 ```
 
 ```text
@@ -335,7 +350,7 @@ Deterministic browser-wallet console checks:
 cargo test -p cow-sdk-browser-wallet
 
 # 2. Direct-bridge wasm (browser-wallet crate)
-cd crates/browser-wallet && wasm-pack test --headless --chrome
+cd crates/browser-wallet && wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
 
 # 3. WASM build of the published SDK with the browser-wallet feature
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
@@ -349,7 +364,7 @@ cargo test --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
 # 6. Browser-wallet console wasm-bindgen tests
 cd examples/wasm/browser-wallet-console \
   && wasm-pack build --target web \
-  && wasm-pack test --headless --chrome
+  && wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
 
 # 7. Playwright DOM lane under Chromium and Firefox
 bun install --cwd e2e/browser-wallet --frozen-lockfile

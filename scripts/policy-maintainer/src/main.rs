@@ -3,7 +3,7 @@ use policy_maintainer::{
     check_adr_coverage, check_alloy_provider_invariant, check_chain_patch_eligibility,
     check_deny_unknown_fields, check_enum_policy, check_msrv_notice, check_panic_allowlist,
     check_property_citations, check_stub, check_wasm_runner_freshness, check_workspace_versions,
-    classify_release, diagnostics::OutputMode,
+    classify_release, diagnostics::OutputMode, generate_validation_evidence,
 };
 
 #[derive(Debug, Parser)]
@@ -56,6 +56,9 @@ enum Command {
     /// Verify property registry citations resolve to real test functions.
     #[command(name = "check-property-citations")]
     CheckPropertyCitations(check_property_citations::Args),
+    /// Generate or check the release validation evidence artefact.
+    #[command(name = "generate-validation-evidence")]
+    GenerateValidationEvidence(generate_validation_evidence::Args),
     /// Run the policy-maintainer skeleton smoke check.
     #[command(name = "check-stub")]
     CheckStub(check_stub::Args),
@@ -83,6 +86,9 @@ fn main() -> anyhow::Result<()> {
             check_wasm_runner_freshness::run(args, output_mode)
         }
         Command::CheckPropertyCitations(args) => check_property_citations::run(args, output_mode),
+        Command::GenerateValidationEvidence(args) => {
+            generate_validation_evidence::run(args, output_mode)
+        }
         Command::CheckStub(args) => check_stub::run(args, output_mode),
     }
 }

@@ -106,7 +106,7 @@ crate-family contract. Review publication-policy changes through the release
 docs rather than as local implementation details. Dependency policy is split
 deliberately: `cargo deny` owns bans, licenses, source policy, and yanked
 advisory policy, while
-`cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436`
+`cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436`
 blocks RustSec vulnerabilities plus unsound and unmaintained advisories.
 The ignored advisories are derived from `.github/config/deny.toml` in CI and
 cover reviewed upstream postures for which no direct upgrade path exists; each

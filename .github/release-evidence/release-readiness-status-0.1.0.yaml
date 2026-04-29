@@ -1,0 +1,140 @@
+version: 1
+generated_at_utc: 2026-04-29T21:20:46Z
+workflow:
+  name: release-readiness
+  file: .github/workflows/release-readiness.yml
+  run_url:
+  commit_sha: pending-final-commit
+lanes:
+  - lane: adr-coverage
+    status: pass
+    step_id: quality-gate/adr-coverage
+    notes: policy-maintainer check-adr-coverage --mode blocking
+  - lane: alloy-provider-invariant
+    status: pass
+    step_id: quality-gate/alloy-provider-invariant
+    notes: policy-maintainer check-alloy-provider-invariant
+  - lane: audit
+    status: pass
+    step_id: quality-gate/audit
+    notes: cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436
+  - lane: cargo-semver-checks
+    status: pass
+    step_id: quality-gate/cargo-semver-checks
+    notes: first functional release classified with semver-checks skip
+  - lane: chain-patch-eligibility
+    status: pass
+    step_id: quality-gate/chain-patch-eligibility
+    notes: policy-maintainer check-chain-patch-eligibility
+  - lane: clippy
+    status: pass
+    step_id: quality-gate/clippy
+    notes: cargo clippy --workspace --all-targets --all-features -- -D warnings
+  - lane: compatibility-floor
+    status: pass
+    step_id: release-readiness/compatibility-floor
+    notes: cargo +1.94.0 check --workspace --all-features; cargo +1.94.0 test --workspace
+  - lane: deny
+    status: pass
+    step_id: quality-gate/deny
+    notes: cargo deny check --config .github/config/deny.toml
+  - lane: deny-unknown-fields-coverage
+    status: pass
+    step_id: quality-gate/deny-unknown-fields-coverage
+    notes: policy-maintainer check-deny-unknown-fields
+  - lane: docs
+    status: pass
+    step_id: quality-gate/docs
+    notes: cargo doc --workspace --all-features --no-deps
+  - lane: doctest
+    status: pass
+    step_id: release-readiness/doctest
+    notes: cargo test --workspace --doc
+  - lane: enum-policy
+    status: pass
+    step_id: quality-gate/enum-policy
+    notes: policy-maintainer check-enum-policy
+  - lane: feature-matrix
+    status: pass
+    step_id: quality-gate/feature-matrix
+    notes: cargo hack check --workspace --feature-powerset --depth 1
+  - lane: fmt
+    status: pass
+    step_id: quality-gate/fmt
+    notes: cargo fmt --all -- --check
+  - lane: msrv-notice-window
+    status: pass
+    step_id: release-readiness/msrv-notice-window
+    notes: policy-maintainer check-msrv-notice --initial-release
+  - lane: native-examples-locked
+    status: pass
+    step_id: release-readiness/native-examples-locked
+    notes: cargo check and cargo test with examples/native lockfile
+  - lane: nextest
+    status: pass
+    step_id: quality-gate/nextest
+    notes: cargo nextest run --workspace --all-features
+  - lane: openapi-coverage
+    status: pass
+    step_id: quality-gate/openapi-coverage
+    notes: parity-maintainer openapi-coverage --validate
+  - lane: panic-allowlist
+    status: pass
+    step_id: quality-gate/panic-allowlist
+    notes: policy-maintainer check-panic-allowlist
+  - lane: parity-maintainer-local
+    status: pass
+    step_id: release-readiness/parity-maintainer-local
+    notes: parity-maintainer validate --source-lock parity/source-lock.yaml
+  - lane: parity-maintainer-provenance
+    status: pass
+    step_id: release-readiness/parity-maintainer-provenance
+    notes: parity-maintainer validate against fresh source-lock-pinned checkouts
+  - lane: publication
+    status: pass
+    step_id: release-readiness/publication
+    notes: cargo build --frozen; cargo package and cargo publish --dry-run package family
+  - lane: public-api-lints
+    status: pass
+    step_id: quality-gate/public-api-lints
+    notes: RUSTFLAGS missing-docs, missing-debug-implementations, unreachable-pub, unnameable-types as deny
+  - lane: registry-confirm
+    status: pass
+    step_id: release-readiness/registry-confirm
+    notes: validation-smoke registry-confirm --mode release --check for all supported release chains
+  - lane: source-lock-freshness
+    status: pass
+    step_id: release-readiness/source-lock-freshness
+    notes: parity-maintainer check-freshness report-only lane
+  - lane: sbom
+    status: pass
+    step_id: release-readiness/sbom
+    notes: cargo cyclonedx --format json --all --override-filename cow-rs-sbom
+  - lane: test
+    status: pass
+    step_id: quality-gate/test
+    notes: cargo test --workspace --all-features
+  - lane: typos
+    status: pass
+    step_id: quality-gate/typos
+    notes: typos --config .github/config/typos.toml
+  - lane: wasm-pack-pinned
+    status: pass
+    step_id: release-readiness/wasm-pack-pinned
+    notes: wasm-pack lanes use validation-smoke wasm-runner-setup
+  - lane: wasm-runner-freshness
+    status: pass
+    step_id: release-readiness/wasm-runner-freshness
+    notes: policy-maintainer check-wasm-runner-freshness
+  - lane: validation-evidence
+    status: pass
+    step_id: release-readiness/validation-evidence
+    notes: policy-maintainer generate-validation-evidence --release-version 0.1.0 --check
+  - lane: windows-stable
+    status: pass
+    step_id: release-readiness/windows-stable
+    notes: cargo +stable check --workspace --all-features; cargo +stable test --workspace --lib --tests
+  - lane: workspace-version-alignment
+    status: pass
+    step_id: quality-gate/workspace-version-alignment
+    notes: policy-maintainer check-workspace-versions

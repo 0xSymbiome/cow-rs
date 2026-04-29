@@ -8,10 +8,9 @@ Semantic versioning begins with the first functional crate release.
 Reserved-placeholder `0.0.1-reserved.0` name-reservation publishes are
 excluded from this version history.
 
-Until that first functional publication is live, this file tracks the current
-unreleased public contract of the repository.
+The first functional crate-family release begins at `0.1.0`.
 
-## [Unreleased]
+## [0.1.0] — 2026-04-29
 
 ### Added
 
@@ -517,7 +516,7 @@ unreleased public contract of the repository.
   `docs/architecture.md` records the cancellation contract under a
   dedicated Cancellation subsection.
 
-### Documentation
+### Changed
 
 - Release documentation now describes the reproducible-build posture and the
   path to binary reproducibility for the WebAssembly artifacts.
@@ -631,7 +630,7 @@ unreleased public contract of the repository.
   the `examples/native`, `examples/wasm/sdk-verification-console`, and
   `examples/wasm/browser-wallet-console` build surfaces stay green
   under the broadened `#[non_exhaustive]` coverage shipped in the same
-  `[Unreleased]` cycle. The `cow-sdk-core::cancellation` rustdoc also
+  `0.1.0` cycle. The `cow-sdk-core::cancellation` rustdoc also
   corrects a spelling drift in the `Cancelled` marker's documentation.
 - Example-crate browser-hosted tests now align with the current public
   contract. The `sdk-verification-console` deterministic-export suite
@@ -711,9 +710,6 @@ unreleased public contract of the repository.
 
 ### Removed
 
-- `TradingSdk::new` and `TradingSdk::new_partial` have been removed before the
-  first functional release. Consumers should use `TradingSdkBuilder::ready`,
-  `TradingSdkBuilder::helper_only`, or the fluent typestate builder terminals.
 - Removed the permissive runtime-validated `TradingSdkBuilder::build` and
   `TradingSdkBuilder::build_partial` terminals; the typestate-gated
   `build_ready` and `build_helper_only` terminals are now the only
@@ -1484,8 +1480,11 @@ unreleased public contract of the repository.
 
 ### Deployment provenance refreshed
 
-- No deployment provenance rows changed in this update; registry confirmation
-  remains the release-readiness gate for chain deployment availability.
+- Release provenance records `code_hash` confirmation for `Settlement`,
+  `VaultRelayer`, and `EthFlow` rows on chain IDs `1`, `56`, `100`, `137`,
+  `8453`, `9745`, `42161`, `43114`, `57073`, `59144`, and `11155111`;
+  registry confirmation remains the release-readiness gate for chain
+  deployment availability.
 
 ### Audits refreshed
 
@@ -1566,13 +1565,20 @@ unreleased public contract of the repository.
 
 - Both shipped WASM consoles now declare a `Content-Security-Policy` meta tag
   with explicit `script-src` and `connect-src` allowlists.
+- The RustSec audit posture now resolves the prior `rand 0.8.5` warning
+  through `rand 0.8.6`; the reviewed advisory tolerance register retains only
+  the current Alloy `paste` proc-macro exception.
 
-### Notes
+### Deprecated
 
-- `0.1.0` is recorded here once the first functional crates.io release is
-  live.
+- No public APIs are deprecated in `0.1.0`.
 
-## [0.1.0] - TBD
+### Breaking
 
-Placeholder for the first functional crates.io release of the `cow-rs` crate
-family. This section will be populated when that release is published.
+- `TradingSdk::new` and `TradingSdk::new_partial` have been removed before the
+  first functional release. Consumers must use `TradingSdkBuilder::ready`,
+  `TradingSdkBuilder::helper_only`, or the fluent typestate builder terminals.
+
+### MSRV
+
+- Public MSRV remains Rust `1.94.0`.
