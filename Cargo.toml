@@ -55,6 +55,7 @@ bytes = { version = "1.9", default-features = false, features = ["std"] }
 criterion = { version = "0.5", default-features = false, features = ["html_reports"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
+serde_yaml = "0.9.34"
 thiserror = "2.0.18"
 toml = "1.1.2"
 hex = "0.4.3"

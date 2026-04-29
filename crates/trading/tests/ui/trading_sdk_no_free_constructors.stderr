@@ -1,0 +1,5 @@
+error[E0599]: no function or associated item named `new` found for struct `TradingSdk` in the current scope
+ --> tests/ui/trading_sdk_no_free_constructors.rs:8:28
+  |
+8 |     let _sdk = TradingSdk::new(params, TradingSdkOptions::default());
+  |                            ^^^ function or associated item not found in `TradingSdk`

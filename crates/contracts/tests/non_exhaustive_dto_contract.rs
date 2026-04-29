@@ -18,6 +18,9 @@ use cow_sdk_core::{
 };
 use serde::Serialize;
 
+const CONTRACT_SIGNATURE_SOURCE: &str = include_str!("../src/signature.rs");
+const ORDERBOOK_TYPES_SOURCE: &str = include_str!("../../orderbook/src/types.rs");
+
 const ADDR1: &str = "0x1111111111111111111111111111111111111111";
 const ADDR2: &str = "0x2222222222222222222222222222222222222222";
 const ADDR3: &str = "0x3333333333333333333333333333333333333333";
@@ -452,4 +455,28 @@ fn contract_name_enum_preserves_wire_shape() {
     let name = ContractName::TradeSimulator;
 
     assert_json_bytes(&name, r#""tradeSimulator""#);
+}
+
+#[test]
+fn adr_0027_signature_family_non_exhaustive() {
+    assert_enum_has_non_exhaustive(CONTRACT_SIGNATURE_SOURCE, "SigningScheme");
+    assert_enum_has_non_exhaustive(CONTRACT_SIGNATURE_SOURCE, "Signature");
+    assert_enum_has_non_exhaustive(ORDERBOOK_TYPES_SOURCE, "SigningScheme");
+}
+
+fn assert_enum_has_non_exhaustive(source: &str, enum_name: &str) {
+    let enum_start = source
+        .find(&format!("pub enum {enum_name}"))
+        .unwrap_or_else(|| panic!("public enum `{enum_name}` must exist"));
+    let preceding = &source[..enum_start];
+    let item_header_start = preceding
+        .rfind("\n///")
+        .or_else(|| preceding.rfind("\n#["))
+        .map_or(0, |position| position + 1);
+    let item_header = &preceding[item_header_start..];
+
+    assert!(
+        item_header.contains("#[non_exhaustive]"),
+        "public enum `{enum_name}` must carry #[non_exhaustive]",
+    );
 }
