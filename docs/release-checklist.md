@@ -14,14 +14,16 @@ cargo nextest run --workspace --all-features --config-file .github/config/nextes
 typos --config .github/config/typos.toml
 cargo deny check --config .github/config/deny.toml
 cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2026-0097 --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436
+cargo check-alloy-provider-invariant
 cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk
 ```
 
-The `cargo tree --invert alloy-provider` command is the stability-invariant
-gate: it must emit no lines for the published `cow-sdk` crate family,
-asserting that consumers keep full control of their chain-RPC runtime
-through the `AsyncProvider` seam rather than being forced onto a specific
-provider ecosystem by a transitive dependency.
+The `cargo tree --invert alloy-provider -p ...` invariant succeeds when no
+shipped crate transitively depends on `alloy-provider`. In the success case,
+Cargo emits `error: package ID specification alloy-provider did not match any
+packages`. CI normalises this output via `cargo check-alloy-provider-invariant`.
+Contributors running the check locally should use the wrapper rather than
+reading the raw Cargo error as a failure.
 
 This command is guarded for drift by `scripts/check-release-docs-agree.sh`;
 any mismatch against `docs/verification-matrix.md`,

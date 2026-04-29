@@ -143,7 +143,10 @@ where
 
 /// `metadata.utm.utmSource` default stamped when the caller does not supply
 /// an override `metadata.utm` block.
-const UTM_SOURCE: &str = "cowmunity";
+///
+/// The source groups traffic under the wider CoW SDK family. The Rust crate
+/// and version stay visible through `utmMedium`.
+const UTM_SOURCE: &str = "cow-sdk";
 
 /// `metadata.utm.utmCampaign` default stamped when the caller does not supply
 /// an override `metadata.utm` block.
@@ -157,10 +160,11 @@ const UTM_TERM: &str = "rs";
 /// Builds the default `metadata.utm` block stamped on app-data documents
 /// when the caller does not supply their own `metadata.utm`.
 ///
-/// The block identifies the Rust SDK and its compile-time version so
-/// protocol-side attribution analytics can distinguish Rust-SDK traffic
-/// from other client SDKs. The `utmMedium` value embeds the trading
-/// crate's published version through `env!("CARGO_PKG_VERSION")`.
+/// The block identifies the CoW SDK family, Rust SDK, and compile-time version
+/// so protocol-side attribution analytics can group SDK traffic while still
+/// distinguishing this crate from other client SDKs. The `utmMedium` value
+/// embeds the trading crate's published version through
+/// `env!("CARGO_PKG_VERSION")`.
 fn default_utm() -> Value {
     json!({
         "utmSource": UTM_SOURCE,
@@ -174,11 +178,11 @@ fn default_utm() -> Value {
 /// Builds the trading app-data document and its derived hash.
 ///
 /// The generated base document always includes quote slippage metadata and order class metadata.
-/// When the caller does not supply `metadata.utm`, a Rust-identified default
+/// When the caller does not supply `metadata.utm`, an SDK-family default
 /// UTM attribution block is stamped onto the base document so downstream
-/// analytics can attribute the traffic to the Rust SDK. Any caller-supplied
-/// `metadata.utm` — partial or full — disables the default stamp and is
-/// carried through exactly as provided.
+/// analytics can group CoW SDK traffic while preserving Rust-specific
+/// attribution. Any caller-supplied `metadata.utm` — partial or full —
+/// disables the default stamp and is carried through exactly as provided.
 /// `advanced_params` then overrides `appCode`, `environment`, and metadata keys using a deep merge.
 ///
 /// # Errors

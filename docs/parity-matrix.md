@@ -42,10 +42,15 @@ spelling.
 
 ## Trading helper defaults
 
+The `metadata.utm` row below is a local Rust SDK attribution policy rather
+than an upstream fixture vector. It is intentionally asserted in
+`crates/trading/tests/quote_contract.rs` and not carried in
+`parity/fixtures/trading.json`.
+
 | Surface | Default | Opt-out / opt-in |
 | --- | --- | --- |
 | `OrderToSignParams::new(...)` `apply_costs_slippage_and_fees` | applied on by default (cost, slippage, partner-fee, and protocol-fee adjustments are folded into the unsigned order amounts) | call `.with_apply_costs_slippage_and_fees(false)` to preserve raw caller amounts |
-| `build_app_data` `metadata.utm` | when the caller does not supply `metadata.utm`, the helper stamps a Rust-identified attribution block with `utmSource = "cowmunity"`, `utmMedium = "cow-rs@<crate-version>"`, `utmCampaign = "developer-cohort"`, `utmContent = ""`, and `utmTerm = "rs"` so downstream analytics can attribute traffic to the Rust SDK and its published version | supply any `metadata.utm` key in the advanced app-data parameters — partial or full — and the caller-declared block is carried through byte-identical with no defaults merged on top |
+| `build_app_data` `metadata.utm` | when the caller does not supply `metadata.utm`, the helper stamps an SDK-family attribution block with `utmSource = "cow-sdk"`, `utmMedium = "cow-rs@<crate-version>"`, `utmCampaign = "developer-cohort"`, `utmContent = ""`, and `utmTerm = "rs"` so downstream analytics can group CoW SDK traffic while distinguishing the Rust SDK and its published version | supply any `metadata.utm` key in the advanced app-data parameters — partial or full — and the caller-declared block is carried through byte-identical with no defaults merged on top |
 
 ## Orderbook DTO defaults
 
@@ -57,6 +62,8 @@ spelling.
 
 - Global source contract: `parity/source-lock.yaml`
 - Surface ownership and upstream paths: [Parity Sources](parity-sources.md)
+- First-release shipped and deferred surfaces:
+  [Parity Scope](parity-scope.md#first-release-scope)
 - Scope-to-proof mapping: [Validation Scope](validation-scope.md)
 - Packaging and release verification: [Release Checklist](release-checklist.md)
 

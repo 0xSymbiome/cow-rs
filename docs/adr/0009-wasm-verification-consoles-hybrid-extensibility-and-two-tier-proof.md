@@ -75,4 +75,5 @@ grows.
 **Proven by:**
 
 - [WASM Example Proof-Posture Audit](../audit/wasm-example-proof-posture-audit.md)
+- [WASM Browser Runner Determinism Audit](../audit/wasm-browser-runner-determinism-audit.md)
 - [Browser Wallet Chain Coherence Audit](../audit/browser-wallet-chain-coherence-audit.md)

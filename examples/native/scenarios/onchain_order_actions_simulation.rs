@@ -35,9 +35,7 @@ fn trading_sdk(orderbook: MockOrderbook) -> TradingSdk {
     }
 
     builder
-        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(
-            orderbook,
-        )))
+        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook)))
         .build_ready()
         .expect("example trading sdk construction should succeed")
 }

@@ -15,6 +15,15 @@ unreleased public contract of the repository.
 
 ### Added
 
+- The public parity scope now carries a first-release scope section that names
+  the crate families, DTO shapes, browser runtime surfaces, and explicitly
+  deferred upstream packages covered by the first functional release.
+- A standing WASM browser-runner determinism audit documents the pinned
+  Chrome-for-Testing runner, setup command, freshness gate, and workflow
+  evidence used by browser-targeted `wasm-pack` lanes.
+- Release-readiness now includes blocking registry confirmation,
+  parity-maintainer provenance, and CI-success aggregation lanes; routine
+  quality gates include a locked native-examples lane.
 - The public principle charter now includes Forward-Compatible Public
   Surfaces, Credential Redaction by Construction, Cooperative Cancellation
   Coverage, and Minimum-Viable Panic Surface.
@@ -530,6 +539,16 @@ unreleased public contract of the repository.
 
 ### Fixed
 
+- Direct wasm32 `getrandom` consumers now use the workspace `0.4.2` pin with
+  `wasm_js`, `async-lock` is promoted to a workspace dependency, Alloy
+  workspace pins stop enabling `std` globally so the contracts `k256` path
+  stays wasm-compatible, the stale `tiny-keccak` license exception is removed,
+  and the duplicate-version register documents the remaining upstream-owned
+  roots.
+- The alloy-provider invariant documentation now describes Cargo's success
+  case accurately through the `cargo check-alloy-provider-invariant` wrapper,
+  and the alloy provider adaptation guide replaces a placeholder
+  `unimplemented!()` with a concrete `chain_id` example.
 - `HostPolicyError::UnparsableUrl` corrects the public variant spelling before
   the first functional release. App-data schema panic sites now carry explicit
   invariant rationales and rustdoc panic documentation, and internal hook gas
@@ -646,6 +665,10 @@ unreleased public contract of the repository.
 
 ### Security
 
+- Dependency gate documentation now records the refreshed RustSec tolerance
+  posture, direct WASM randomness alignment, legacy `thiserror` codegen
+  reachability, and warning-free `cargo-deny` configuration after regenerating
+  both workspace and native-example lockfiles.
 - API-key validation paths now fail with a typed error variant rather than a
   panic that could include the offending bytes. Base-URL override fields are
   redacted from `Debug` formatting so credentials embedded in override URLs no
@@ -1453,6 +1476,29 @@ unreleased public contract of the repository.
 - Refreshed the source-lock to `cow-sdk @ 00c3dbd4`,
   `contracts @ c94c595a`, and `services @ bf405486`; re-vendored the
   services OpenAPI, whose covered DTO inventory remained unchanged.
+
+### OpenAPI vendoring
+
+- The vendored services OpenAPI remains pinned to `services @ bf405486` and
+  the covered orderbook DTO inventory remains unchanged.
+
+### Deployment provenance refreshed
+
+- No deployment provenance rows changed in this update; registry confirmation
+  remains the release-readiness gate for chain deployment availability.
+
+### Audits refreshed
+
+- Refreshed `docs/audit/dependency-gate-audit.md` for the lockfile,
+  `cargo-deny`, `cargo-audit`, and duplicate-version posture.
+- Added `docs/audit/wasm-browser-runner-determinism-audit.md` for the pinned
+  browser runner contract used by WASM validation.
+
+### WASM runner
+
+- The browser-targeted WASM lanes use the committed Chrome-for-Testing Stable
+  pin `148.0.7778.56` released on `2026-04-28`, with
+  `cargo check-wasm-runner-freshness` blocking stale release candidates.
 
 ### Removed
 

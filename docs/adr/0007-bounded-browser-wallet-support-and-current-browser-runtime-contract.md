@@ -56,4 +56,5 @@ carrying compatibility-era behavior indefinitely.
 - [Browser Wallet Alloy Dependency Audit](../audit/browser-wallet-alloy-dependency-audit.md)
 - [Browser Wallet Chain Coherence Audit](../audit/browser-wallet-chain-coherence-audit.md)
 - [Browser Wallet Trust Posture Audit](../audit/browser-wallet-trust-posture-audit.md)
+- [WASM Browser Runner Determinism Audit](../audit/wasm-browser-runner-determinism-audit.md)
 - [WASM Example Proof-Posture Audit](../audit/wasm-example-proof-posture-audit.md)

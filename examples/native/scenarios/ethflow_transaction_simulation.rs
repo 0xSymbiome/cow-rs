@@ -30,7 +30,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .duration_since(UNIX_EPOCH)
         .expect("system clock must be at or after the unix epoch")
         .as_secs();
-    params.valid_to = Some(u32::try_from(now + 3600).expect("valid_to fits in u32 for the next century"));
+    params.valid_to =
+        Some(u32::try_from(now + 3600).expect("valid_to fits in u32 for the next century"));
 
     let app_data = build_app_data(&trader.app_code, 0, "market", None, None).await?;
     let additional = PostTradeAdditionalParams::default();

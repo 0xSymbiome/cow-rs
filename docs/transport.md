@@ -24,11 +24,12 @@ concrete backend.
   implement this extension.
 
 `alloy-provider` is intentionally not pulled by any shipped leaf
-crate. `cargo tree --invert alloy-provider` returns empty for
-`cow-sdk`, `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`,
-`cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`,
-`cow-sdk-subgraph`, and `cow-sdk-browser-wallet`, so consumers keep
-full control of their chain-RPC runtime.
+crate. The `cargo tree --invert alloy-provider -p ...` invariant succeeds
+when no shipped crate transitively depends on `alloy-provider`. In the
+success case, Cargo emits `error: package ID specification alloy-provider
+did not match any packages`. CI normalises this output via
+`cargo check-alloy-provider-invariant`, so consumers keep full control of
+their chain-RPC runtime.
 
 ## The `HttpTransport` Trait
 

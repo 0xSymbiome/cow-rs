@@ -217,19 +217,6 @@
       ]
     }
   ],
-  "defaults": {
-    "metadata_utm": {
-      "kind": "attribution-defaults",
-      "description": "Default metadata.utm attribution block stamped by build_app_data when the caller does not supply metadata.utm. Caller-supplied metadata.utm (partial or full) fully replaces the default so downstream analytics receive the caller-declared attribution byte-identical.",
-      "expected": {
-        "utmSource": "cowmunity",
-        "utmCampaign": "developer-cohort",
-        "utmContent": "",
-        "utmTerm": "rs",
-        "utmMediumPrefix": "cow-rs@"
-      }
-    }
-  },
   "cases": [
     {
       "id": "trading-sell-order-amount-adjustment",

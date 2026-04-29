@@ -5,8 +5,8 @@ use serde_json::json;
 
 use cow_sdk::core::{
     Amount, AppDataHex, BlockInfo, BuyTokenDestination, ContractCall, ContractHandle, Hash32,
-    HexData, OrderKind, Provider, SellTokenSource, Signer, TransactionReceipt,
-    TransactionRequest, TypedDataDomain, TypedDataField, UnsignedOrder,
+    HexData, OrderKind, Provider, SellTokenSource, Signer, TransactionReceipt, TransactionRequest,
+    TypedDataDomain, TypedDataField, UnsignedOrder,
 };
 use cow_sdk::orderbook::{
     ApiContext, AppDataHash, AppDataObject, Order, OrderCancellations, OrderCreation,
@@ -20,6 +20,7 @@ pub const WETH: &str = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
 pub const COW: &str = "0x0625aFB445C3B6B7B929342a04A22599fd5dBB59";
 pub const OWNER: &str = "0xc8c753Ee51E8Fc80e199AB297fB575634a1aC1d3";
 pub const ALT_RECEIVER: &str = "0x974cAa59E49682CdA0aD2BbE82983419A2ECC400";
+pub const SETTLEMENT: &str = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41";
 pub const ORDER_UID: &str = "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f42e1a42f0ad0b7795e18767259cc253a2af471dbc4c72b49516ffffffff";
 pub const APP_DATA_HASH: &str =
     "0xe269b09f45b1d3c98d8e4e841b99a0779fbd3b77943d069b91ddc4fd9789e27e";
@@ -178,6 +179,7 @@ pub fn sample_open_order() -> Order {
         "class": "market",
         "owner": OWNER,
         "uid": ORDER_UID,
+        "settlementContract": SETTLEMENT,
         "executedSellAmount": "0",
         "executedBuyAmount": "0",
         "invalidated": false,

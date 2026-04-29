@@ -86,13 +86,14 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [WASM Example Proof-Posture Audit](wasm-example-proof-posture-audit.md) | Standing audit | WASM verification consoles and their two-tier proof posture | Deterministic console proof, mock-versus-injected separation, staging-versus-proxy posture, and the shipped Playwright and wasm-bindgen-test evidence set | Current | 2026-04-27 |
+| [WASM Browser Runner Determinism Audit](wasm-browser-runner-determinism-audit.md) | Standing audit | Pinned Chrome-for-Testing runner used by browser-targeted WASM validation lanes | Committed browser-runner pin, setup command, freshness gate, and workflow use of pinned Chrome/chromedriver for wasm-pack tests | Current | 2026-04-29 |
 
 ## App-Data And Dependencies
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [CID Dependency Audit](cid-dependency-audit.md) | Standing audit | `cow-sdk-app-data` CID encoding and published dependency boundary | Supported CID paths, fail-closed encoding, and clean published-upstream posture | Current | 2026-04-27 |
-| [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, canonical advisory tolerance, and source whitelist | Current | 2026-04-27 |
+| [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, direct WASM randomness alignment, canonical advisory tolerance, and source whitelist | Current | 2026-04-29 |
 
 ## Source Provenance
 

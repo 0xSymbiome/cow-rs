@@ -45,14 +45,16 @@ must_use_candidate = "warn"
 unreadable_literal = "warn"
 
 [workspace.dependencies]
-alloy-dyn-abi = { version = "1.5.7", default-features = false, features = ["std"] }
-alloy-json-abi = { version = "1.5.7", default-features = false, features = ["std", "serde_json"] }
-alloy-primitives = { version = "1.5.7", default-features = false, features = ["std"] }
+alloy-dyn-abi = { version = "1.5.7", default-features = false }
+alloy-json-abi = { version = "1.5.7", default-features = false, features = ["serde_json"] }
+alloy-primitives = { version = "1.5.7", default-features = false }
 alloy-sol-macro = "1.5.7"
-alloy-sol-types = "1.5.7"
+alloy-sol-types = { version = "1.5.7", default-features = false }
+async-lock = "3.4.2"
 async-trait = "0.1.89"
 bytes = { version = "1.9", default-features = false, features = ["std"] }
 criterion = { version = "0.5", default-features = false, features = ["html_reports"] }
+getrandom = { version = "0.4.2", features = ["wasm_js"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 serde_yaml = "0.9.34"

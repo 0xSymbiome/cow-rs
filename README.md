@@ -13,6 +13,8 @@ registry, and an optional EIP-1271 signature-verification cache.
 ## Start Here
 
 The canonical first-touch path is [Getting Started](docs/getting-started.md).
+The shipped crate family and deferred capability boundaries are listed in the
+[First-Release Scope](docs/parity-scope.md#first-release-scope).
 
 The functional published install surface will be:
 

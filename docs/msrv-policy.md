@@ -12,6 +12,11 @@ The project announces an MSRV bump at least 30 days before the release that
 raises the floor. The notice names the new Rust version, the reason for the
 bump, and the first release expected to require it.
 
+The 30-day notice window is measured from the first public changelog or pull
+request note that names the new Rust floor to the UTC calendar date of the
+release tag that raises `workspace.package.rust-version`. A release may not
+raise the floor if fewer than 30 complete calendar days have elapsed.
+
 ## Trigger Criteria
 
 The workspace raises its MSRV only when at least one of these conditions holds:

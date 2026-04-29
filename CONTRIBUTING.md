@@ -37,13 +37,16 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
 cargo check -p cow-sdk --examples
 cargo check --manifest-path examples/native/Cargo.toml --examples
+cargo check-alloy-provider-invariant
 cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk
 ```
 
-The `cargo tree --invert alloy-provider` command must emit no lines for
-the published `cow-sdk` crate family. The invariant asserts that
-consumers keep full control of their chain-RPC runtime through the
-`AsyncProvider` seam; CI enforces the same check on every pull request.
+The `cargo tree --invert alloy-provider -p ...` invariant succeeds when no
+shipped crate transitively depends on `alloy-provider`. In the success case,
+Cargo emits `error: package ID specification alloy-provider did not match any
+packages`. CI normalises this output via `cargo check-alloy-provider-invariant`.
+Contributors running the check locally should use the wrapper rather than
+reading the raw Cargo error as a failure.
 
 ## Cargo Aliases
 

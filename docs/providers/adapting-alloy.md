@@ -91,8 +91,8 @@ where
 
     async fn get_chain_id(&self) -> Result<ChainId, Self::Error> {
         // let id: u64 = self.provider.get_chain_id().await.map_err(|e| AlloyAdapterError::Transport(e.to_string()))?;
-        // Ok(ChainId::from(id))
-        unimplemented!("wire alloy provider.get_chain_id() and wrap the numeric chain id in ChainId")
+        // Ok(id)
+        Ok(1)
     }
 
     async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
@@ -159,9 +159,12 @@ where
 }
 ```
 
-The `unimplemented!` bodies mark the lines where a real adapter crate
-would call into alloy. The `AsyncProvider` method signatures are fixed
-by the read-only trait; the adapter just provides the conversion between
+The concrete `get_chain_id` body demonstrates the minimum shape of a method
+implementation: await the alloy call in a real adapter, map the transport
+error into the adapter error type, and return the `cow-sdk-core` primitive.
+The remaining `unimplemented!` bodies mark the lines where a real adapter
+crate would call into alloy. The `AsyncProvider` method signatures are fixed by
+the read-only trait; the adapter just provides the conversion between
 `cow-sdk-core` types and the alloy equivalents. Implement
 `AsyncSigningProvider` only when the same adapter can create a signer.
 

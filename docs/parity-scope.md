@@ -19,6 +19,11 @@ Local upstream checkout paths are optional validation inputs. When they are
 used, they must be independent git checkouts or worktrees at the pinned
 commits.
 
+Local development snapshots are reference-only and are not commit provenance.
+Release validation uses fresh git checkouts at the source-lock-pinned commits,
+produced by the `parity-maintainer provision-upstreams` flow whenever
+provenance is required.
+
 ## Surface Boundaries
 
 | Surface | Rust crate | Pinned evidence |
@@ -54,6 +59,76 @@ No generated or schema-derived Rust mirrors are part of the public SDK API.
   tests, and source-lock references
 - subgraph evidence is committed as saved query documents, test-only schema
   snapshots, contract tests, and source-lock references
+
+## First-Release Scope
+
+The Rust SDK ships in scope:
+
+- core domain types and runtime traits (`cow-sdk-core`)
+- `alloy::sol!`-generated contract bindings and Registry
+  (`cow-sdk-contracts`)
+- order signing and EIP-1271 verification (`cow-sdk-signing`)
+- app-data encoding and schema (`cow-sdk-app-data`)
+- typed orderbook transport (`cow-sdk-orderbook`)
+  - `Order` covers the orderbook OpenAPI `Order` schema
+    (`OrderCreation` + `OrderMetaData` + `interactions`)
+  - `AuctionOrder` covers the orderbook OpenAPI `AuctionOrder` schema as a
+    separate Rust type
+  - `OrderQuoteResponse`, `Trade`, `StoredOrderQuote`, and
+    `OnchainOrderData` cover their OpenAPI schemas as separate typed mirrors
+- typed subgraph transport (`cow-sdk-subgraph`)
+- quote-to-order trading workflows (`cow-sdk-trading`)
+- browser-runtime wallet integration (`cow-sdk-browser-wallet`)
+- browser-target HTTP transport (`cow-sdk-transport-wasm`)
+
+The first release does **not** ship the capability families below. Each is a
+candidate for additive follow-up under ADR 0008 (additive optional
+ecosystems). The release target for each is opportunity-driven and is not
+committed in this scope statement.
+
+### Bridging
+
+Cross-chain order construction equivalent to the upstream TypeScript
+`bridging` capability. Deferred; not in scope for the first release. A future
+leaf crate `cow-sdk-bridging` is a candidate when the upstream contract and
+API surface stabilises.
+
+### Composable orders
+
+Composable-CoW order construction. Deferred; not in scope for the first
+release. Implementation depends on `cowprotocol/composable-cow` contract
+maturity.
+
+### Cow-shed
+
+Delegated proxy account management. Deferred; not in scope for the first
+release. Tracked alongside account abstraction work governed by ADR 0028.
+
+### Flash loans
+
+The flashloan metadata sub-field is supported in `cow-sdk-app-data`. A
+flashloan helper utility surface is deferred; not in scope for the first
+release.
+
+### Weiroll
+
+Hook-trampoline bytecode chaining. Deferred; not in scope for the first
+release.
+
+### Provider adapters
+
+The first release ships only the `AsyncProvider` and `AsyncSigningProvider`
+trait seams in `cow-sdk-core`. No provider implementation is published by
+default. A planned native adapter crate `cow-sdk-alloy-provider` is a
+candidate for additive follow-up. The `docs/providers/adapting-alloy.md` guide
+explains how a consumer wires an alloy-backed provider through the trait seam
+in the meantime.
+
+### TypeScript-tooling-only packages
+
+The upstream TypeScript SDK includes packages that exist to manage TypeScript
+build orchestration (for example `typescript-config`, `config`). These have no
+Rust analogue and are not in scope.
 
 ## Intentionally Out-of-Scope
 

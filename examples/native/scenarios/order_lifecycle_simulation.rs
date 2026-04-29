@@ -19,9 +19,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cow-rs-order-lifecycle")
         .with_owner(sample_owner())
-        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(
-            orderbook.clone(),
-        )))
+        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())))
         .build_ready()?;
 
     let params = OrderTraderParameters::new(sample_order_uid());

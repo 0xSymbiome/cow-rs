@@ -573,27 +573,11 @@ async fn quote_results_reject_zero_address_partner_fee_before_quoting() {
 
 #[tokio::test]
 async fn build_app_data_injects_default_utm_when_override_absent() {
-    let fixture = trading_fixture();
-    let expected = fixture
-        .get("defaults")
-        .and_then(|defaults| defaults.get("metadata_utm"))
-        .and_then(|block| block.get("expected"))
-        .expect("fixture must expose defaults.metadata_utm.expected");
-    let expected_source = expected["utmSource"]
-        .as_str()
-        .expect("fixture utmSource must be a string");
-    let expected_campaign = expected["utmCampaign"]
-        .as_str()
-        .expect("fixture utmCampaign must be a string");
-    let expected_content = expected["utmContent"]
-        .as_str()
-        .expect("fixture utmContent must be a string");
-    let expected_term = expected["utmTerm"]
-        .as_str()
-        .expect("fixture utmTerm must be a string");
-    let expected_medium_prefix = expected["utmMediumPrefix"]
-        .as_str()
-        .expect("fixture utmMediumPrefix must be a string");
+    const EXPECTED_UTM_SOURCE: &str = "cow-sdk";
+    const EXPECTED_UTM_CAMPAIGN: &str = "developer-cohort";
+    const EXPECTED_UTM_CONTENT: &str = "";
+    const EXPECTED_UTM_TERM: &str = "rs";
+    const EXPECTED_UTM_MEDIUM_PREFIX: &str = "cow-rs@";
 
     let info = build_app_data("0x007", 50, "market", None, None)
         .await
@@ -607,33 +591,33 @@ async fn build_app_data_injects_default_utm_when_override_absent() {
 
     assert_eq!(
         utm["utmSource"].as_str(),
-        Some(expected_source),
-        "default utmSource must match the pinned fixture value",
+        Some(EXPECTED_UTM_SOURCE),
+        "default utmSource must match the local attribution policy",
     );
     assert_eq!(
         utm["utmCampaign"].as_str(),
-        Some(expected_campaign),
-        "default utmCampaign must match the pinned fixture value",
+        Some(EXPECTED_UTM_CAMPAIGN),
+        "default utmCampaign must match the local attribution policy",
     );
     assert_eq!(
         utm["utmContent"].as_str(),
-        Some(expected_content),
-        "default utmContent must match the pinned fixture value",
+        Some(EXPECTED_UTM_CONTENT),
+        "default utmContent must match the local attribution policy",
     );
     assert_eq!(
         utm["utmTerm"].as_str(),
-        Some(expected_term),
-        "default utmTerm must match the pinned fixture value",
+        Some(EXPECTED_UTM_TERM),
+        "default utmTerm must match the local attribution policy",
     );
     let utm_medium = utm["utmMedium"]
         .as_str()
         .expect("default utmMedium must be a string");
     assert!(
-        utm_medium.starts_with(expected_medium_prefix),
-        "default utmMedium must start with {expected_medium_prefix:?}, got {utm_medium:?}",
+        utm_medium.starts_with(EXPECTED_UTM_MEDIUM_PREFIX),
+        "default utmMedium must start with {EXPECTED_UTM_MEDIUM_PREFIX:?}, got {utm_medium:?}",
     );
     assert!(
-        utm_medium.len() > expected_medium_prefix.len(),
+        utm_medium.len() > EXPECTED_UTM_MEDIUM_PREFIX.len(),
         "default utmMedium must embed a non-empty crate version after the prefix, got {utm_medium:?}",
     );
 }

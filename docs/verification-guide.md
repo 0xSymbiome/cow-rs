@@ -66,8 +66,12 @@ The published `cow-sdk` crate family (`cow-sdk`, `cow-sdk-core`,
 `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`,
 `cow-sdk-browser-wallet`) does not transitively depend on
 `alloy-provider`. Review every dependency change against this invariant;
-the release-gating `cargo tree --invert alloy-provider` command returns
-empty on the shipped workspace.
+the `cargo tree --invert alloy-provider -p ...` invariant succeeds when no
+shipped crate transitively depends on `alloy-provider`. In the success case,
+Cargo emits `error: package ID specification alloy-provider did not match any
+packages`. CI normalises this output via `cargo check-alloy-provider-invariant`.
+Contributors running the check locally should use the wrapper rather than
+reading the raw Cargo error as a failure.
 
 ### Workflow Ownership
 

@@ -52,9 +52,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::builder_from_context(
-        ApiContext::new(SupportedChainId::Sepolia, CowEnv::Prod),
-    )
+    let api = OrderBookApi::builder_from_context(ApiContext::new(
+        SupportedChainId::Sepolia,
+        CowEnv::Prod,
+    ))
     .with_external_host_policy(ExternalHostPolicy::Test)
     .base_url(server.uri())
     .build()?;

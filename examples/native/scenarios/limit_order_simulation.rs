@@ -17,9 +17,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cow-rs-limit-order")
         .with_owner(sample_owner())
-        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(
-            orderbook.clone(),
-        )))
+        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())))
         .build_ready()?;
 
     let posted = sdk
