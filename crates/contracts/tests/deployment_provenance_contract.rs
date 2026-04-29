@@ -5,21 +5,23 @@ use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{Address, CowEnv, SupportedChainId};
 use serde::Deserialize;
 
+const RELEASE_PROVENANCE: &str = include_str!("../deployment-provenance.yaml");
 const HAPPY_PROVENANCE: &str = include_str!("fixtures/deployment-provenance-happy.yaml");
 const MISSING_ROW_PROVENANCE: &str =
     include_str!("fixtures/deployment-provenance-missing-row.yaml");
 const SKIPPED_PROVENANCE: &str = include_str!("fixtures/deployment-provenance-skipped.yaml");
+const ZERO_CODE_HASH: &str = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 #[test]
 fn every_registry_row_has_provenance() {
-    validate_registry_rows_have_provenance(HAPPY_PROVENANCE)
-        .expect("happy-path provenance fixture must cover every registry row");
+    validate_registry_rows_have_provenance(RELEASE_PROVENANCE)
+        .expect("release provenance manifest must cover every registry row");
 }
 
 #[test]
 fn every_provenance_chain_id_is_supported() {
-    let entries = provenance_entries_by_key(HAPPY_PROVENANCE)
-        .expect("happy-path provenance fixture must parse");
+    let entries = provenance_entries_by_key(RELEASE_PROVENANCE)
+        .expect("release provenance manifest must parse");
 
     for key in entries.keys() {
         SupportedChainId::try_from(key.chain_id)
@@ -29,8 +31,50 @@ fn every_provenance_chain_id_is_supported() {
 
 #[test]
 fn live_confirmation_kind_is_code_hash() {
-    validate_release_live_confirmation(HAPPY_PROVENANCE)
-        .expect("happy-path release fixture must use code_hash confirmations");
+    validate_release_live_confirmation(RELEASE_PROVENANCE)
+        .expect("release provenance manifest must use confirmed code_hash evidence");
+}
+
+#[test]
+fn source_provenance_fields_are_complete() {
+    let entries = provenance_entries_by_key(RELEASE_PROVENANCE)
+        .expect("release provenance manifest must parse");
+
+    for (key, entry) in entries {
+        assert!(
+            matches!(
+                entry.authority.as_str(),
+                "primary" | "secondary" | "release-smoke"
+            ),
+            "{key} has invalid authority {}",
+            entry.authority,
+        );
+        assert!(
+            !entry.source_repo.trim().is_empty(),
+            "{key} must carry source_repo",
+        );
+        assert!(
+            is_40_byte_hex_without_prefix(&entry.source_commit),
+            "{key} must carry a pinned 40-character source commit",
+        );
+        assert!(
+            !entry.source_path.trim().is_empty(),
+            "{key} must carry source_path",
+        );
+        assert!(
+            entry
+                .source_symbol
+                .as_deref()
+                .is_some_and(|source_symbol| !source_symbol.trim().is_empty()),
+            "{key} must carry source_symbol",
+        );
+    }
+}
+
+#[test]
+fn happy_fixture_still_covers_registry_shape() {
+    validate_registry_rows_have_provenance(HAPPY_PROVENANCE)
+        .expect("happy-path provenance fixture must cover every registry row");
 }
 
 #[test]
@@ -96,6 +140,17 @@ fn validate_release_live_confirmation(source: &str) -> Result<(), String> {
                 "RELEASE-INVALID: {key} has malformed code_hash `{code_hash}`",
             ));
         }
+        if code_hash == ZERO_CODE_HASH {
+            return Err(format!(
+                "RELEASE-INVALID: {key} still has the all-zero code_hash sentinel",
+            ));
+        }
+        if entry.live_confirmation.confirmed_at.trim().is_empty() {
+            return Err(format!("RELEASE-INVALID: {key} has empty confirmed_at"));
+        }
+        if entry.live_confirmation.confirmer.trim().is_empty() {
+            return Err(format!("RELEASE-INVALID: {key} has empty confirmer"));
+        }
     }
 
     Ok(())
@@ -143,6 +198,10 @@ fn is_32_byte_hex(value: &str) -> bool {
     body.len() == 64 && body.chars().all(|ch| ch.is_ascii_hexdigit())
 }
 
+fn is_40_byte_hex_without_prefix(value: &str) -> bool {
+    value.len() == 40 && value.chars().all(|ch| ch.is_ascii_hexdigit())
+}
+
 #[derive(Debug, Deserialize)]
 struct ProvenanceManifest {
     version: u32,
@@ -156,6 +215,11 @@ struct ProvenanceEntry {
     chain_id: u64,
     env: CowEnv,
     address: Address,
+    authority: String,
+    source_repo: String,
+    source_commit: String,
+    source_path: String,
+    source_symbol: Option<String>,
     live_confirmation: LiveConfirmation,
 }
 
@@ -164,6 +228,8 @@ struct LiveConfirmation {
     kind: String,
     code_hash: Option<String>,
     rpc_chain_id: u64,
+    confirmed_at: String,
+    confirmer: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]

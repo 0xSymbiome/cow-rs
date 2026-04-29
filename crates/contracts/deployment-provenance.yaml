@@ -1,0 +1,1141 @@
+version: 1
+generated_at_utc: 2026-04-29T00:00:00Z
+provenance:
+- contract_id: Settlement
+  chain_id: 1
+  env: prod
+  address: 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2Settlement.1
+  source_symbol: GPv2Settlement
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x744d58584e38d214eb190629f131d5cf8b8703bd68e04452f9692177c37c4bc9
+    selector_check:
+      enabled: false
+    rpc_chain_id: 1
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 1
+  env: staging
+  address: 0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xb9da0b79eac25fa06600d4f5cdd99ecea6c56c40fec47756323e607a72d9d7bd
+    selector_check:
+      enabled: false
+    rpc_chain_id: 1
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 56
+  env: prod
+  address: 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2Settlement.56
+  source_symbol: GPv2Settlement
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x681b39b3355153c3f8ff25d44d73abeca42b51e499d9c54d7354121405a004c4
+    selector_check:
+      enabled: false
+    rpc_chain_id: 56
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 56
+  env: staging
+  address: 0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x4be734a4feee4d8bf57b59e540101d18e1e9449fc8cafe57fb5288aee29079e6
+    selector_check:
+      enabled: false
+    rpc_chain_id: 56
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 100
+  env: prod
+  address: 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2Settlement.100
+  source_symbol: GPv2Settlement
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x68963e5b27aadd4ee70ecd933fac9312fe5f527390b88ae6092c68937b80f5e2
+    selector_check:
+      enabled: false
+    rpc_chain_id: 100
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 100
+  env: staging
+  address: 0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xe49c7157f6cc80593dfc7c57ac5cbac68cd89f2365f2841b4e368316d07dcce7
+    selector_check:
+      enabled: false
+    rpc_chain_id: 100
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 137
+  env: prod
+  address: 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2Settlement.137
+  source_symbol: GPv2Settlement
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xe264ecc678de6464b9365ff73e07858e2c2b07adcd5c8209cb04ebe0e9ef2c14
+    selector_check:
+      enabled: false
+    rpc_chain_id: 137
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 137
+  env: staging
+  address: 0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x74b2d81d7c3fc31f19781b41803f716f9c752a96b9ed835a68747953a0541324
+    selector_check:
+      enabled: false
+    rpc_chain_id: 137
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 8453
+  env: prod
+  address: 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2Settlement.8453
+  source_symbol: GPv2Settlement
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x851476c2307a7c011d2435d5e5aaae3a41c517f52461b5abefe2a4e42114cbf6
+    selector_check:
+      enabled: false
+    rpc_chain_id: 8453
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 8453
+  env: staging
+  address: 0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x3f480b4e35da45d472e0d931df9dc492fc5644f1346e02a7c9cc4cf3072820a0
+    selector_check:
+      enabled: false
+    rpc_chain_id: 8453
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 9745
+  env: prod
+  address: 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x0f867891bddf9798e580617b4e4b04a7cc8010aca4b5240c07eb7823c8b7e16f
+    selector_check:
+      enabled: false
+    rpc_chain_id: 9745
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 9745
+  env: staging
+  address: 0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc6faa5ddc6413bff877c947fc8c7897a1b793e650fa47773b221e5e855defd99
+    selector_check:
+      enabled: false
+    rpc_chain_id: 9745
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 42161
+  env: prod
+  address: 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2Settlement.42161
+  source_symbol: GPv2Settlement
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc5d94a317d3c8f717d4238b1a4bee2bc9cec18697c82e1d63865833ebdbd523c
+    selector_check:
+      enabled: false
+    rpc_chain_id: 42161
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 42161
+  env: staging
+  address: 0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc7b79b602e144a539497c7f27662bd1c365d0a454bc9ca3dc9ba4f50b29540d4
+    selector_check:
+      enabled: false
+    rpc_chain_id: 42161
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 43114
+  env: prod
+  address: 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2Settlement.43114
+  source_symbol: GPv2Settlement
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc5b8516d7e501ef4c79c135ba4a55b674211f5b2add786f00c89bfd2ad250f5b
+    selector_check:
+      enabled: false
+    rpc_chain_id: 43114
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 43114
+  env: staging
+  address: 0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x864cc1450450e7ecb079c24aa168015279895908ca7cd02834d02d5d9d87c2b9
+    selector_check:
+      enabled: false
+    rpc_chain_id: 43114
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 57073
+  env: prod
+  address: 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xf00e931b6bf28069ba1c67e93a561e5ffefed30a13ea6b48ca98f39a7803d2a3
+    selector_check:
+      enabled: false
+    rpc_chain_id: 57073
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 57073
+  env: staging
+  address: 0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xd3fa8e1f9e2fe03e6a85bfd634b6c2c9b80a57b62c04666a86f1a07545f9ab0a
+    selector_check:
+      enabled: false
+    rpc_chain_id: 57073
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 59144
+  env: prod
+  address: 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x7462bb78e289d0aeaad6346fd60740a631496d033d2d606ce0d489c340dad3f3
+    selector_check:
+      enabled: false
+    rpc_chain_id: 59144
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 59144
+  env: staging
+  address: 0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x00824780e6b65d5779cfb7ae062b7cf2287088347e9f71bd0d43f6bed2570208
+    selector_check:
+      enabled: false
+    rpc_chain_id: 59144
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 11155111
+  env: prod
+  address: 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2Settlement.11155111
+  source_symbol: GPv2Settlement
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x9fbace363dc778e25fecb202c12981d916faea80c9aab8167aeeedcaed84df53
+    selector_check:
+      enabled: false
+    rpc_chain_id: 11155111
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: Settlement
+  chain_id: 11155111
+  env: staging
+  address: 0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_SETTLEMENT_CONTRACT_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x2bd5287a0e8ee6859ac371fac032caf3e193c8785a476913bc017325f83ac2aa
+    selector_check:
+      enabled: false
+    rpc_chain_id: 11155111
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 1
+  env: prod
+  address: 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2VaultRelayer.1
+  source_symbol: GPv2VaultRelayer
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x500097799c1379a3728ed70b17de4132de2c07f6937b041c361deaade22b6a5e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 1
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 1
+  env: staging
+  address: 0xC7242d167563352E2BCA4d71C043fbe542DB8FB2
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc310eb15f864d09fc8854b390574d0d9433da110c019d91dd44d1096d83a1f55
+    selector_check:
+      enabled: false
+    rpc_chain_id: 1
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 56
+  env: prod
+  address: 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2VaultRelayer.56
+  source_symbol: GPv2VaultRelayer
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x500097799c1379a3728ed70b17de4132de2c07f6937b041c361deaade22b6a5e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 56
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 56
+  env: staging
+  address: 0xC7242d167563352E2BCA4d71C043fbe542DB8FB2
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc310eb15f864d09fc8854b390574d0d9433da110c019d91dd44d1096d83a1f55
+    selector_check:
+      enabled: false
+    rpc_chain_id: 56
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 100
+  env: prod
+  address: 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2VaultRelayer.100
+  source_symbol: GPv2VaultRelayer
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x500097799c1379a3728ed70b17de4132de2c07f6937b041c361deaade22b6a5e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 100
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 100
+  env: staging
+  address: 0xC7242d167563352E2BCA4d71C043fbe542DB8FB2
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc310eb15f864d09fc8854b390574d0d9433da110c019d91dd44d1096d83a1f55
+    selector_check:
+      enabled: false
+    rpc_chain_id: 100
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 137
+  env: prod
+  address: 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2VaultRelayer.137
+  source_symbol: GPv2VaultRelayer
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x500097799c1379a3728ed70b17de4132de2c07f6937b041c361deaade22b6a5e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 137
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 137
+  env: staging
+  address: 0xC7242d167563352E2BCA4d71C043fbe542DB8FB2
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc310eb15f864d09fc8854b390574d0d9433da110c019d91dd44d1096d83a1f55
+    selector_check:
+      enabled: false
+    rpc_chain_id: 137
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 8453
+  env: prod
+  address: 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2VaultRelayer.8453
+  source_symbol: GPv2VaultRelayer
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x500097799c1379a3728ed70b17de4132de2c07f6937b041c361deaade22b6a5e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 8453
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 8453
+  env: staging
+  address: 0xC7242d167563352E2BCA4d71C043fbe542DB8FB2
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc310eb15f864d09fc8854b390574d0d9433da110c019d91dd44d1096d83a1f55
+    selector_check:
+      enabled: false
+    rpc_chain_id: 8453
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 9745
+  env: prod
+  address: 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x500097799c1379a3728ed70b17de4132de2c07f6937b041c361deaade22b6a5e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 9745
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 9745
+  env: staging
+  address: 0xC7242d167563352E2BCA4d71C043fbe542DB8FB2
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc310eb15f864d09fc8854b390574d0d9433da110c019d91dd44d1096d83a1f55
+    selector_check:
+      enabled: false
+    rpc_chain_id: 9745
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 42161
+  env: prod
+  address: 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2VaultRelayer.42161
+  source_symbol: GPv2VaultRelayer
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x500097799c1379a3728ed70b17de4132de2c07f6937b041c361deaade22b6a5e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 42161
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 42161
+  env: staging
+  address: 0xC7242d167563352E2BCA4d71C043fbe542DB8FB2
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc310eb15f864d09fc8854b390574d0d9433da110c019d91dd44d1096d83a1f55
+    selector_check:
+      enabled: false
+    rpc_chain_id: 42161
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 43114
+  env: prod
+  address: 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2VaultRelayer.43114
+  source_symbol: GPv2VaultRelayer
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x500097799c1379a3728ed70b17de4132de2c07f6937b041c361deaade22b6a5e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 43114
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 43114
+  env: staging
+  address: 0xC7242d167563352E2BCA4d71C043fbe542DB8FB2
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc310eb15f864d09fc8854b390574d0d9433da110c019d91dd44d1096d83a1f55
+    selector_check:
+      enabled: false
+    rpc_chain_id: 43114
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 57073
+  env: prod
+  address: 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x500097799c1379a3728ed70b17de4132de2c07f6937b041c361deaade22b6a5e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 57073
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 57073
+  env: staging
+  address: 0xC7242d167563352E2BCA4d71C043fbe542DB8FB2
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc310eb15f864d09fc8854b390574d0d9433da110c019d91dd44d1096d83a1f55
+    selector_check:
+      enabled: false
+    rpc_chain_id: 57073
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 59144
+  env: prod
+  address: 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x500097799c1379a3728ed70b17de4132de2c07f6937b041c361deaade22b6a5e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 59144
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 59144
+  env: staging
+  address: 0xC7242d167563352E2BCA4d71C043fbe542DB8FB2
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc310eb15f864d09fc8854b390574d0d9433da110c019d91dd44d1096d83a1f55
+    selector_check:
+      enabled: false
+    rpc_chain_id: 59144
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 11155111
+  env: prod
+  address: 0xC92E8bdf79f0507f65a392b0ab4667716BFE0110
+  authority: primary
+  source_repo: cowprotocol/contracts
+  source_commit: c94c595a791681cf8ba7495117dcde397b932885
+  source_path: networks.json
+  source_key: GPv2VaultRelayer.11155111
+  source_symbol: GPv2VaultRelayer
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x500097799c1379a3728ed70b17de4132de2c07f6937b041c361deaade22b6a5e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 11155111
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: VaultRelayer
+  chain_id: 11155111
+  env: staging
+  address: 0xC7242d167563352E2BCA4d71C043fbe542DB8FB2
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: COW_PROTOCOL_VAULT_RELAYER_ADDRESS_STAGING
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc310eb15f864d09fc8854b390574d0d9433da110c019d91dd44d1096d83a1f55
+    selector_check:
+      enabled: false
+    rpc_chain_id: 11155111
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 1
+  env: prod
+  address: 0xba3cb449bd2b4adddbc894d8697f5170800eadec
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x875c543737c0bc49033a5c35b0c84ce8f8d40e636e54753eab74093fe1802f68
+    selector_check:
+      enabled: false
+    rpc_chain_id: 1
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 1
+  env: staging
+  address: 0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: BARN_ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x7c11bcb168b80a1aecdcf02f59c62833680953da66983e3976ed029fc94a5514
+    selector_check:
+      enabled: false
+    rpc_chain_id: 1
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 56
+  env: prod
+  address: 0xba3cb449bd2b4adddbc894d8697f5170800eadec
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x2eb86ed732e0891f77facc91c96b7a2e51ee4f640498ecb3e36cf84ef37b7923
+    selector_check:
+      enabled: false
+    rpc_chain_id: 56
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 56
+  env: staging
+  address: 0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: BARN_ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x59a1af5881bb00519f8d758cbe64d291017aff4f244c18de665856a95e0ec5db
+    selector_check:
+      enabled: false
+    rpc_chain_id: 56
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 100
+  env: prod
+  address: 0xba3cb449bd2b4adddbc894d8697f5170800eadec
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x900da705b73ba6d9563531dff170bc2ca21f6105114014f54e0fdb88a8e0baae
+    selector_check:
+      enabled: false
+    rpc_chain_id: 100
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 100
+  env: staging
+  address: 0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: BARN_ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xe10b269faaef98fabe6d490cfea008fc65cb6e981514770671061bd26b3289d4
+    selector_check:
+      enabled: false
+    rpc_chain_id: 100
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 137
+  env: prod
+  address: 0xba3cb449bd2b4adddbc894d8697f5170800eadec
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xbed50afd8aed8367eca302bc10348ed26ab860c4aab6b8776b34b4fea283804e
+    selector_check:
+      enabled: false
+    rpc_chain_id: 137
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 137
+  env: staging
+  address: 0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: BARN_ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xe21e06906be5e488a73440efdb79bb0a6e6abb1c41d986b83283c69c8c7aad2c
+    selector_check:
+      enabled: false
+    rpc_chain_id: 137
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 8453
+  env: prod
+  address: 0xba3cb449bd2b4adddbc894d8697f5170800eadec
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xcf69f4ef2e68552be7168f0772f26f9edad8d680f83d6053cec64874cab1a538
+    selector_check:
+      enabled: false
+    rpc_chain_id: 8453
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 8453
+  env: staging
+  address: 0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: BARN_ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x943ab77836221a02a7a94927b7d2ae29d8af605e6f05440f416105e2d5fc190b
+    selector_check:
+      enabled: false
+    rpc_chain_id: 8453
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 9745
+  env: prod
+  address: 0xba3cb449bd2b4adddbc894d8697f5170800eadec
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xd6a42f593076cc49b4bd61e11d4a1053ffaff28df4ac57a1c18b99b8d172c583
+    selector_check:
+      enabled: false
+    rpc_chain_id: 9745
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 9745
+  env: staging
+  address: 0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: BARN_ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xccceb467fc2f1bc1f84cacdace6d2372c329ae860e825e8a3e32b0179a615a2d
+    selector_check:
+      enabled: false
+    rpc_chain_id: 9745
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 42161
+  env: prod
+  address: 0xba3cb449bd2b4adddbc894d8697f5170800eadec
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x0f2dff362284a851efe1e467f5456ce11e8eb23e74364a17d73c6e4c7b5f32b8
+    selector_check:
+      enabled: false
+    rpc_chain_id: 42161
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 42161
+  env: staging
+  address: 0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: BARN_ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xdfaacd6ea51ac9f3b3d99acea4ed1af536892ed4345db1ccfa1d7513c14cc303
+    selector_check:
+      enabled: false
+    rpc_chain_id: 42161
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 43114
+  env: prod
+  address: 0xba3cb449bd2b4adddbc894d8697f5170800eadec
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x72f239a7a05b8b4d9a875eb26fb1d7400a6ad0778861d79a81c91a72e14edbf0
+    selector_check:
+      enabled: false
+    rpc_chain_id: 43114
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 43114
+  env: staging
+  address: 0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: BARN_ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x82262ad5aaa42776aa470273ce09bbddb05296fa9c44b129828742b8d0660286
+    selector_check:
+      enabled: false
+    rpc_chain_id: 43114
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 57073
+  env: prod
+  address: 0xba3cb449bd2b4adddbc894d8697f5170800eadec
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x9bc4c4f9de7b6c566a67b32d96d7b36fa3bc6a65bf1c0838530cb78a25fec787
+    selector_check:
+      enabled: false
+    rpc_chain_id: 57073
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 57073
+  env: staging
+  address: 0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: BARN_ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xfd715c6df0966a922331daf40fc57e5c4f4d052a4722cae2a1bea79205be9397
+    selector_check:
+      enabled: false
+    rpc_chain_id: 57073
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 59144
+  env: prod
+  address: 0xba3cb449bd2b4adddbc894d8697f5170800eadec
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xbe858a5a5d014ab3b0c1dfc209bc6e9be31c79d210c6882d7ef186a7457f8765
+    selector_check:
+      enabled: false
+    rpc_chain_id: 59144
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 59144
+  env: staging
+  address: 0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: BARN_ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0xc1d4b86edeb28de980e8114924eeb4d041f39fd3a07be2e074fc2b65b653ecf8
+    selector_check:
+      enabled: false
+    rpc_chain_id: 59144
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 11155111
+  env: prod
+  address: 0xba3cb449bd2b4adddbc894d8697f5170800eadec
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x775e133373822a18a1ff4530c3391399d8cbc067fa31a7abd67991cfca61afbd
+    selector_check:
+      enabled: false
+    rpc_chain_id: 11155111
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29
+- contract_id: EthFlow
+  chain_id: 11155111
+  env: staging
+  address: 0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC
+  authority: secondary
+  source_repo: cowprotocol/cow-sdk
+  source_commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
+  source_path: packages/config/src/chains/const/contracts.ts
+  source_symbol: BARN_ETH_FLOW_ADDRESSES
+  live_confirmation:
+    kind: code_hash
+    code_hash: 0x80cc0f6a7ebf4385b1ecdd101b10dd0f8b745650276c3ab139c7e9ab85f0319d
+    selector_check:
+      enabled: false
+    rpc_chain_id: 11155111
+    confirmed_at: 2026-04-29T17:26:25Z
+    confirmer: maintainer-local/registry-confirm@2026-04-29

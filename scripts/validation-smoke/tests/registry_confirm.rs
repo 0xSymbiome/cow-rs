@@ -198,6 +198,33 @@ fn release_check_fails_when_prod_rpc_is_missing() {
 }
 
 #[test]
+fn release_check_rejects_zero_code_hash_sentinel_before_rpc() {
+    let temp = tempdir().unwrap();
+    let provenance = temp.path().join("deployment-provenance.yaml");
+    write_provenance(
+        &provenance,
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
+    );
+
+    let output = command()
+        .args([
+            "registry-confirm",
+            "--mode",
+            "release",
+            "--check",
+            "--chain-ids",
+            "1",
+            "--provenance-yaml",
+            provenance.to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+
+    assert!(!output.status.success(), "{}", output_text(&output));
+    assert!(output_text(&output).contains("all-zero code_hash sentinel"));
+}
+
+#[test]
 fn release_write_refreshes_live_code_hash_from_rpc() {
     let temp = tempdir().unwrap();
     let provenance = temp.path().join("deployment-provenance.yaml");

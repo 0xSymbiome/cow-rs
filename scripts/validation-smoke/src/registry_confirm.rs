@@ -8,6 +8,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha3::{Digest, Keccak256};
 
+const ZERO_CODE_HASH: &str =
+    "0x0000000000000000000000000000000000000000000000000000000000000000";
+
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize, ValueEnum)]
 #[serde(rename_all = "lowercase")]
 pub enum RegistryMode {
@@ -254,6 +257,17 @@ pub fn run(args: &RegistryConfirmArgs) -> Result<RegistryConfirmReport> {
         }
         matched += 1;
         let row = RegistryRowKey::from_entry(entry);
+        if args.mode == RegistryMode::Release
+            && action == RegistryAction::Check
+            && entry.env == "prod"
+            && let Err(error) = validate_committed_release_confirmation(entry)
+        {
+            report.failures.push(RegistryConfirmationFailure {
+                row,
+                message: error.to_string(),
+            });
+            continue;
+        }
         match confirm_entry(
             &client,
             entry,
@@ -336,6 +350,39 @@ fn action_from_flags(check: bool, write: bool) -> Result<RegistryAction> {
         (false, false) => bail!("registry-confirm requires exactly one of --check or --write"),
         (true, true) => bail!("registry-confirm accepts only one of --check or --write"),
     }
+}
+
+fn validate_committed_release_confirmation(entry: &ProvenanceEntry) -> Result<()> {
+    let Some(confirmation) = &entry.live_confirmation else {
+        bail!("RELEASE-INVALID: production row has no live_confirmation");
+    };
+    if confirmation.kind != "code_hash" {
+        bail!(
+            "RELEASE-INVALID: production row has live_confirmation.kind `{}`",
+            confirmation.kind
+        );
+    }
+
+    let Some(code_hash) = confirmation.code_hash.as_deref() else {
+        bail!("RELEASE-INVALID: production row has no code_hash");
+    };
+    if code_hash == ZERO_CODE_HASH {
+        bail!("RELEASE-INVALID: production row still has the all-zero code_hash sentinel");
+    }
+    if !is_32_byte_hex(code_hash) {
+        bail!("RELEASE-INVALID: production row has malformed code_hash `{code_hash}`");
+    }
+    if confirmation
+        .confirmed_at
+        .as_deref()
+        .is_none_or(str::is_empty)
+    {
+        bail!("RELEASE-INVALID: production row has empty confirmed_at");
+    }
+    if confirmation.confirmer.as_deref().is_none_or(str::is_empty) {
+        bail!("RELEASE-INVALID: production row has empty confirmer");
+    }
+    Ok(())
 }
 
 enum EntryConfirmation {
@@ -563,6 +610,13 @@ fn parse_hex_u64(raw: &str) -> Result<u64> {
         .or_else(|| raw.strip_prefix("0X"))
         .unwrap_or(raw);
     Ok(u64::from_str_radix(value, 16)?)
+}
+
+fn is_32_byte_hex(value: &str) -> bool {
+    let Some(body) = value.strip_prefix("0x") else {
+        return false;
+    };
+    body.len() == 64 && body.chars().all(|ch| ch.is_ascii_hexdigit())
 }
 
 fn keccak256_hex(bytes: &[u8]) -> String {
