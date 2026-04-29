@@ -263,5 +263,10 @@ for html in "$repo_root/examples/wasm"/*/index.html; do
   fi
 done
 
+if [ -f "$repo_root/scripts/policy-maintainer/Cargo.toml" ]; then
+  cargo run --quiet --manifest-path "$repo_root/scripts/policy-maintainer/Cargo.toml" -- \
+    check-property-citations --repo-root "$repo_root"
+fi
+
 echo "Release-gate commands agree across docs and CI."
 exit 0

@@ -95,5 +95,5 @@ Validation surface:
 git ls-remote https://github.com/cowprotocol/services HEAD
 git ls-remote https://github.com/cowprotocol/contracts HEAD
 git ls-remote https://github.com/cowprotocol/cow-sdk HEAD
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
+cargo parity-validate --source-lock parity/source-lock.yaml
 ```

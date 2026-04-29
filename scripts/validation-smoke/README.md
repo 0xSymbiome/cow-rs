@@ -20,9 +20,9 @@ cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- orderbook-live
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- subgraph-live
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- browser-wallet-live --url http://127.0.0.1:8081
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-pages --sdk-verification-url https://<owner>.github.io/<repo>/sdk-verification-console/ --browser-wallet-url https://<owner>.github.io/<repo>/browser-wallet-console/
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- registry-confirm --mode local --check --chain-ids 1,100
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-runner-refresh --source fallback --fallback-path scripts/validation-smoke/data/cft-fallback.json
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-runner-setup --webdriver-json target/wasm-runner/webdriver.json
+cargo registry-confirm --mode local --check --chain-ids 1,100
+cargo wasm-runner-refresh --source fallback --fallback-path scripts/validation-smoke/data/cft-fallback.json
+cargo wasm-runner-setup --webdriver-json target/wasm-runner/webdriver.json
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
 ```
 

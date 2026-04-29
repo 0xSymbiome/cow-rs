@@ -387,7 +387,7 @@ fn snapshot(options: &CliOptions) -> Result<()> {
                 "cargo test --workspace".to_string(),
             ],
             repo_local_publication_contract: vec![
-                "cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml".to_string(),
+                "cargo parity-validate --source-lock parity/source-lock.yaml".to_string(),
                 "cargo package -p cow-sdk-core --allow-dirty".to_string(),
                 "cargo package -p cow-sdk-contracts --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
                 "cargo package -p cow-sdk-app-data --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
@@ -399,12 +399,12 @@ fn snapshot(options: &CliOptions) -> Result<()> {
                 "cargo package -p cow-sdk --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-trading.path='crates/trading'\" --config \"patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'\"".to_string(),
             ],
             pinned_upstream_provenance_contract: vec![
-                "cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>".to_string(),
-                "cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services".to_string(),
+                "cargo parity-provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>".to_string(),
+                "cargo parity-validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services".to_string(),
             ],
             maintainer_refresh_contract: vec![
-                "cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot --output parity/source-lock.yaml --cow-sdk-root <path> --contracts-root <path> --services-root <path>".to_string(),
-                "cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-app-data-schemas --source-lock parity/source-lock.yaml --cow-sdk-root <path>".to_string(),
+                "cargo parity-snapshot --output parity/source-lock.yaml --cow-sdk-root <path> --contracts-root <path> --services-root <path>".to_string(),
+                "cargo parity-vendor-app-data-schemas --source-lock parity/source-lock.yaml --cow-sdk-root <path>".to_string(),
             ],
         },
     };

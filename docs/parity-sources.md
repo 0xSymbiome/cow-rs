@@ -56,7 +56,7 @@ caller-local copy.
 Repo-local validation does not require upstream checkouts:
 
 ```text
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
+cargo parity-validate --source-lock parity/source-lock.yaml
 ```
 
 Upstream-root validation is stricter and is only meaningful when the supplied
@@ -64,7 +64,7 @@ paths are independent git checkouts or worktrees of the pinned producer
 repositories:
 
 ```text
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
+cargo parity-validate --source-lock parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
 ```
 
 For each supplied root, the validator requires:
@@ -131,13 +131,13 @@ Refresh the vendored app-data schema bundle from an explicit upstream
 `cow-sdk` checkout:
 
 ```text
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-app-data-schemas --source-lock parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout>
+cargo parity-vendor-app-data-schemas --source-lock parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout>
 ```
 
 Refresh the source lock from explicit upstream roots:
 
 ```text
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot --output parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
+cargo parity-snapshot --output parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
 ```
 
 ## Maintenance Rules

@@ -210,7 +210,7 @@ jobs:
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Validate parity fixtures and source lock
-        run: cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
+        run: cargo parity-validate --source-lock parity/source-lock.yaml
       - name: Fetch locked dependency graph
         run: cargo fetch --locked
       - name: Build workspace with frozen lockfile

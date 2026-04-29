@@ -45,6 +45,19 @@ the published `cow-sdk` crate family. The invariant asserts that
 consumers keep full control of their chain-RPC runtime through the
 `AsyncProvider` seam; CI enforces the same check on every pull request.
 
+## Cargo Aliases
+
+The repository exposes maintainer tooling through Cargo aliases in
+`.cargo/config.toml`. Use `cargo --list` to see the available aliases.
+
+Common examples:
+
+```text
+cargo parity-validate --source-lock parity/source-lock.yaml
+cargo check-property-citations
+cargo wasm-runner-setup --webdriver-json target/wasm-runner/webdriver.json
+```
+
 The clippy gate runs under the workspace lint posture declared in the root
 `Cargo.toml`, which enables both the `pedantic` and `nursery` groups at warn
 level and treats warnings as errors. Contributors should expect the gate to

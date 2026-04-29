@@ -107,22 +107,58 @@ jobs:
         run: cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.14.0 --locked
+      - name: Set up pinned WASM browser runner
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
+        run: cargo wasm-runner-setup --webdriver-json "$WEBDRIVER_JSON"
       - name: Test browser-wallet direct bridge in headless Chrome
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: crates/browser-wallet
         run: wasm-pack test --headless --chrome
+      - name: Set up pinned WASM browser runner
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
+        run: cargo wasm-runner-setup --webdriver-json "$WEBDRIVER_JSON"
       - name: Test transport-wasm fetch adapter in headless Chrome
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: crates/transport-wasm
         run: wasm-pack test --headless --chrome --features tracing
+      - name: Set up pinned WASM browser runner
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
+        run: cargo wasm-runner-setup --webdriver-json "$WEBDRIVER_JSON"
       - name: Test trading crate wasm32 contract in headless Chrome
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: crates/trading
         run: wasm-pack test --headless --chrome
+      - name: Set up pinned WASM browser runner
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
+        run: cargo wasm-runner-setup --webdriver-json "$WEBDRIVER_JSON"
       - name: Test signing crate wasm32 contract in headless Chrome
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: crates/signing
         run: wasm-pack test --headless --chrome
+      - name: Set up pinned WASM browser runner
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
+        run: cargo wasm-runner-setup --webdriver-json "$WEBDRIVER_JSON"
       - name: Test browser wallet console in headless Chrome
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: examples/wasm/browser-wallet-console
         run: wasm-pack test --headless --chrome
+      - name: Set up pinned WASM browser runner
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
+        run: cargo wasm-runner-setup --webdriver-json "$WEBDRIVER_JSON"
       - name: Test sdk verification console exports in headless Chrome
+        env:
+          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: examples/wasm/sdk-verification-console
         run: wasm-pack test --headless --chrome
       - name: Build sdk verification console web package

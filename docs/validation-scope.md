@@ -49,7 +49,7 @@ cargo doc --workspace --all-features --no-deps
 cd crates/browser-wallet && wasm-pack test --headless --chrome
 cd examples/wasm/sdk-verification-console && wasm-pack test --headless --chrome
 bun run --cwd e2e/browser-wallet test
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
+cargo parity-validate --source-lock parity/source-lock.yaml
 ```
 
 ## Explicit Boundaries

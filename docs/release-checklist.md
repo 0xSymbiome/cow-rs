@@ -112,7 +112,7 @@ contract described in this checklist.
 Validate the committed parity contract from the current checkout:
 
 ```text
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
+cargo parity-validate --source-lock parity/source-lock.yaml
 ```
 
 Then run the published package-family dry-run in release order:
@@ -265,13 +265,13 @@ If you prefer the parity maintainer to create the sibling checkouts from the
 pinned source lock, run:
 
 ```text
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
+cargo parity-provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
 ```
 
 Then validate against those independent roots:
 
 ```text
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
+cargo parity-validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
 ```
 
 Rules:
