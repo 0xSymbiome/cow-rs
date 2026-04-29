@@ -15,6 +15,9 @@ unreleased public contract of the repository.
 
 ### Added
 
+- The public principle charter now includes Forward-Compatible Public
+  Surfaces, Credential Redaction by Construction, Cooperative Cancellation
+  Coverage, and Minimum-Viable Panic Surface.
 - `TradingSdkBuilder::ready` and `TradingSdkBuilder::helper_only` provide
   ergonomic construction terminals for total ready-state trader parameters and
   helper-only chain authority.
@@ -1352,6 +1355,9 @@ unreleased public contract of the repository.
 
 ### Changed
 
+- The public principle charter now records the amended Strong Typed Public
+  Surfaces, Sole Construction Seam, and Evidence-Backed Public Claims
+  contracts.
 - Continuous integration now enforces an `alloy-*` workspace-pin
   same-minor invariant on every PR, and an inner-workspace WASM pin diff
   against the workspace pins so the example consoles cannot drift away
