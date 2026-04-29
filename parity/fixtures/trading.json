@@ -6,7 +6,7 @@
   "source_refs": [
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/index.ts",
       "anchors": [
         "trading public surface",
@@ -15,7 +15,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/types.ts",
       "anchors": [
         "TradeBaseParameters",
@@ -26,7 +26,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/appDataUtils.test.ts",
       "anchors": [
         "build app data",
@@ -35,7 +35,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/getQuote.ts",
       "anchors": [
         "ETH_FLOW_AUX_QUOTE_PARAMS",
@@ -45,7 +45,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/getQuote.test.ts",
       "anchors": [
         "Should add slippageBps and appCode from parameters",
@@ -59,7 +59,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/getOrderToSign.test.ts",
       "anchors": [
         "When validTo is not set, then should use validFor parameter instead",
@@ -69,7 +69,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/postSwapOrder.test.ts",
       "anchors": [
         "Sell order amounts should take fees and slippage into account",
@@ -80,7 +80,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/postCoWProtocolTrade.test.ts",
       "anchors": [
         "should use owner address as from parameter in sendOrder",
@@ -91,7 +91,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/postLimitOrder.test.ts",
       "anchors": [
         "Should call order posting with all specified parameters",
@@ -100,7 +100,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/postSellNativeCurrencyOrder.test.ts",
       "anchors": [
         "Should call checkEthFlowOrderExists if it is set",
@@ -110,7 +110,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/getOrderTypedData.test.ts",
       "anchors": [
         "should return domain with default production settlement contract address",
@@ -119,7 +119,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/getPreSignTransaction.test.ts",
       "anchors": [
         "Should call gas estimation and return estimated value + 20%",
@@ -129,7 +129,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/getEthFlowTransaction.test.ts",
       "anchors": [
         "Should always override sell token with wrapped native token",
@@ -139,7 +139,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/getSettlementContract.test.ts",
       "anchors": [
         "should use default production address when no options provided",
@@ -148,7 +148,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/onChainCancellation.test.ts",
       "anchors": [
         "should return cancellation with estimated gas when estimation succeeds",
@@ -158,7 +158,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/resolveSlippageSuggestion.test.ts",
       "anchors": [
         "When priceQuality defaults to OPTIMAL",
@@ -168,7 +168,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/suggestSlippageBps.test.ts",
       "anchors": [
         "Lower bound clamping",
@@ -177,7 +177,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/suggestSlippageFromFee.test.ts",
       "anchors": [
         "handle different factors",
@@ -186,7 +186,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/suggestSlippageFromVolume.test.ts",
       "anchors": [
         "Sell orders",
@@ -196,7 +196,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/tradingSdk.test.ts",
       "anchors": [
         "getQuoteOnly",
@@ -209,7 +209,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/trading/src/calculateUniqueOrderId.test.ts",
       "anchors": [
         "Should always set validTo to the maximum value",

@@ -133,7 +133,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/contracts-ts/tests/order.test.ts",
       "anchors": [
         "hashOrder",
@@ -147,7 +147,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/contracts-ts/tests/order-processing.test.ts",
       "anchors": [
         "normalizeOrder",
@@ -161,7 +161,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/contracts-ts/tests/settlement.test.ts",
       "anchors": [
         "SettlementEncoder",
@@ -171,7 +171,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/contracts-ts/tests/signature.test.ts",
       "anchors": [
         "normalizeInteraction",
@@ -183,7 +183,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/contracts-ts/tests/deployment.test.ts",
       "anchors": [
         "deterministicDeploymentAddress",
@@ -193,7 +193,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/contracts-ts/tests/vault.test.ts",
       "anchors": [
         "grantRequiredRoles"
@@ -201,7 +201,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "17fcfc590be8529dc4fe05b1c472fef1b07b47f4",
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
       "path": "packages/contracts-ts/tests/reader.test.ts",
       "anchors": [
         "AllowListReader",

@@ -1,6 +1,6 @@
-# Vendored from cowprotocol/services @ cfbec985dfe476bf7ef42750435f7d5a12223a85
+# Vendored from cowprotocol/services @ bf40548684828ad72c1e10fbe8fe3467c90eba45
 # Path: crates/orderbook/openapi.yml
-# Generated: 2026-04-29T14:25:38Z
+# Generated: 2026-04-29T16:55:47Z
 # DO NOT EDIT - regenerate via `parity-maintainer vendor-openapi`.
 openapi: 3.0.3
 info:
@@ -769,7 +769,7 @@ paths:
                 $ref: "#/components/schemas/TotalSurplus"
         "400":
           description: Invalid address.
-  "/api/v1/debug/simulation":
+  "/restricted/api/v1/debug/simulation":
     post:
       operationId: debugSimulationPost
       summary: Simulate an arbitrary order.
@@ -801,7 +801,7 @@ paths:
             wrong field type, zero `sellAmount`, or unrecognised `kind` value.
         "500":
           description: Internal error.
-  "/api/v1/debug/simulation/{uid}":
+  "/restricted/api/v1/debug/simulation/{uid}":
     get:
       operationId: debugSimulation
       summary: Get Tenderly simulation request for an order.
@@ -840,7 +840,7 @@ paths:
           description: Order simulation endpoint is not enabled.
         "500":
           description: Internal error.
-  "/api/v1/debug/order/{uid}":
+  "/restricted/api/v1/debug/order/{uid}":
     get:
       operationId: debugOrder
       summary: Debug an order's lifecycle.

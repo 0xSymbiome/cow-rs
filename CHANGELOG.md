@@ -1443,6 +1443,17 @@ unreleased public contract of the repository.
   normalized automatically, and any other trailing byte now fails with a
   typed error before downstream `ecrecover` paths can consume it.
 
+### Source-lock
+
+- Upstream-diff triage compared the source-lock-pinned commits against
+  current upstream `services`, `contracts`, and `cow-sdk` HEADs on
+  2026-04-29. `cow-sdk` had seven producer-path updates requiring a parity
+  refresh plus three test-only changes, `services` had two producer-path
+  updates requiring a parity refresh, and `contracts` had no drift.
+- Refreshed the source-lock to `cow-sdk @ 00c3dbd4`,
+  `contracts @ c94c595a`, and `services @ bf405486`; re-vendored the
+  services OpenAPI, whose covered DTO inventory remained unchanged.
+
 ### Removed
 
 - Stale WASM build artifacts have been removed from the verification console

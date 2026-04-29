@@ -77,9 +77,9 @@ For each supplied root, the validator requires:
 
 ## Pinned Revisions
 
-- `cow-sdk`: `17fcfc590be8529dc4fe05b1c472fef1b07b47f4`
+- `cow-sdk`: `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d`
 - `contracts`: `c94c595a791681cf8ba7495117dcde397b932885`
-- `services`: `cfbec985dfe476bf7ef42750435f7d5a12223a85`
+- `services`: `bf40548684828ad72c1e10fbe8fe3467c90eba45`
 
 ## Source Ownership
 

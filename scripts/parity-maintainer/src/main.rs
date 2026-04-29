@@ -14,7 +14,7 @@ mod diff_upstreams;
 mod openapi_coverage;
 mod vendor_openapi;
 
-const GENERATED_AT_UTC: &str = "2026-04-08T00:00:00Z";
+const GENERATED_AT_UTC: &str = "2026-04-29T00:00:00Z";
 const DEFAULT_SOURCE_LOCK: &str = "parity/source-lock.yaml";
 const APP_DATA_SCHEMA_SOURCE_DIR: &str = "packages/app-data/src/schemas";
 const APP_DATA_SCHEMA_VENDOR_DIR: &str = "crates/app-data/schemas";

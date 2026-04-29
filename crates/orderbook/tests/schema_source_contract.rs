@@ -5,7 +5,7 @@ fn orderbook_schema_sources_are_pinned_and_test_only() {
 
     for source in [
         "remote: https://github.com/cowprotocol/services.git",
-        "commit: cfbec985dfe476bf7ef42750435f7d5a12223a85",
+        "commit: bf40548684828ad72c1e10fbe8fe3467c90eba45",
         "crates/orderbook/openapi.yml",
         "crates/shared/src/order_validation.rs",
         "crates/orderbook/src/app_data.rs",
