@@ -53,10 +53,14 @@ Use the private GitHub advisory flow for this repository:
 - [Privately report a vulnerability](https://github.com/cowdao-grants/cow-rs/security/advisories/new)
 
 If the issue can affect deployed CoW Protocol contracts, settlement flows,
-protocol infrastructure, or user funds beyond this repository, also follow the
-CoW Protocol bug bounty program:
+protocol infrastructure, or user funds beyond this repository, also raise it
+with the upstream protocol maintainers in the CoW Protocol Discord:
 
-- [CoW Protocol bug bounty on Immunefi](https://immunefi.com/bug-bounty/cowprotocol/information/)
+- [CoW Protocol Discord](https://discord.com/invite/cowprotocol)
+
+The `cow-rs` SDK is not currently in scope of the CoW Protocol bug bounty
+program; the upstream protocol maintainers triage protocol-affecting reports
+and route them through their own disclosure channels.
 
 Include as much of the following as you can:
 

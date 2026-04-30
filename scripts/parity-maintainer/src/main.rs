@@ -167,6 +167,22 @@ const SERVICES_PATHS: &[&str] = &[
     "crates/orderbook/src/app_data.rs",
 ];
 
+fn repo_local_publication_contract() -> Vec<String> {
+    vec![
+        "cargo parity-validate --source-lock parity/source-lock.yaml".to_string(),
+        "cargo package -p cow-sdk-core --allow-dirty".to_string(),
+        "cargo package -p cow-sdk-contracts --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'\"".to_string(),
+        "cargo package -p cow-sdk-app-data --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
+        "cargo package -p cow-sdk-orderbook --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
+        "cargo package -p cow-sdk-signing --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\"".to_string(),
+        "cargo package -p cow-sdk-subgraph --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
+        "cargo package -p cow-sdk-transport-wasm --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
+        "cargo package -p cow-sdk-trading --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'\"".to_string(),
+        "cargo package -p cow-sdk-browser-wallet --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
+        "cargo package -p cow-sdk --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-trading.path='crates/trading'\" --config \"patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'\"".to_string(),
+    ]
+}
+
 const REPO_TEMPLATES: &[RepoTemplate] = &[
     RepoTemplate {
         id: "cow-sdk",
@@ -386,18 +402,7 @@ fn snapshot(options: &CliOptions) -> Result<()> {
                 "cargo build --workspace".to_string(),
                 "cargo test --workspace".to_string(),
             ],
-            repo_local_publication_contract: vec![
-                "cargo parity-validate --source-lock parity/source-lock.yaml".to_string(),
-                "cargo package -p cow-sdk-core --allow-dirty".to_string(),
-                "cargo package -p cow-sdk-contracts --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-                "cargo package -p cow-sdk-app-data --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-                "cargo package -p cow-sdk-orderbook --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-                "cargo package -p cow-sdk-signing --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\"".to_string(),
-                "cargo package -p cow-sdk-subgraph --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-                "cargo package -p cow-sdk-trading --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\"".to_string(),
-                "cargo package -p cow-sdk-browser-wallet --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-                "cargo package -p cow-sdk --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-trading.path='crates/trading'\" --config \"patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'\"".to_string(),
-            ],
+            repo_local_publication_contract: repo_local_publication_contract(),
             pinned_upstream_provenance_contract: vec![
                 "cargo parity-provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>".to_string(),
                 "cargo parity-validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services".to_string(),
@@ -1940,6 +1945,31 @@ mod tests {
         validate(&options)?;
 
         Ok(())
+    }
+
+    #[test]
+    fn publication_contract_covers_all_publishable_crates_and_local_patches() {
+        let contract = repo_local_publication_contract();
+
+        assert!(
+            contract.iter().any(|command| command.contains(
+                "cargo package -p cow-sdk-contracts --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'\""
+            )),
+            "contracts package command must patch unpublished local dev-dependencies"
+        );
+        assert!(
+            contract
+                .iter()
+                .any(|command| command.starts_with("cargo package -p cow-sdk-transport-wasm ")),
+            "transport-wasm must remain in source-lock publication evidence"
+        );
+        assert!(
+            contract.iter().any(|command| {
+                command.starts_with("cargo package -p cow-sdk-trading ")
+                    && command.contains("patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'")
+            }),
+            "trading package command must patch transport-wasm until the family is published"
+        );
     }
 
     #[test]

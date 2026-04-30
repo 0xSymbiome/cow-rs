@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   APP_DATA_HASH,
+  MAINNET_SETTLEMENT,
   MAINNET_USDC,
   MAINNET_WETH,
   OWNER,
@@ -180,6 +181,7 @@ async function routeOrder(page: Page, issues: string[]): Promise<void> {
       buyTokenBalance: "erc20",
       signingScheme: "eip712",
       signature: "0x1234",
+      settlementContract: MAINNET_SETTLEMENT,
       owner: OWNER,
       uid: ORDER_UID,
       creationDate: "2020-12-03T18:35:18.814523Z",

@@ -1,7 +1,7 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-04-29
+Last reviewed: 2026-04-30
 Owning surface: source-lock provenance and lifecycle preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
@@ -17,6 +17,8 @@ This audit covers:
 - the current upstream HEAD comparison used to make source-lock freshness
   explicit before release evidence relies on it
 - the source-lock refresh outcome for the first functional release evidence
+- the repo-local package dry-run command contract embedded in source-lock
+  validation metadata
 - the exclusion-list rule that keeps historical progress snapshots readable but
   outside active preflight path-normalization authority
 - the audit-refresh mapping that points provenance changes back to this record
@@ -31,6 +33,7 @@ or changing SDK behavior.
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
 | Refresh outcome | Source-lock pins are aligned with current upstream commits after the 2026-04-29 refresh | Conforms |
+| Publication preflight | Source-lock validation metadata lists the complete package-family dry-run contract with local patches for unpublished intra-family crates | Conforms |
 | Historical snapshot scope | Historical progress snapshots stay readable and unmodified while active preflight authority skips them by directory-prefix policy | Conforms |
 | Refresh mapping | The public audit-refresh map points source-lock changes and exclusion-policy changes back to this audit | Conforms |
 
@@ -70,6 +73,17 @@ refreshed instead of retained at the older pins, fixture provenance was aligned
 to the refreshed commits, and the services OpenAPI was re-vendored. The covered
 orderbook DTO inventory remained unchanged after the OpenAPI refresh.
 
+### Publication Preflight Metadata
+
+The validation metadata in `parity/source-lock.yaml` records the repo-local
+package dry-run contract used before release evidence relies on the committed
+parity fixtures. The contract covers the full published crate family, including
+`cow-sdk-transport-wasm`, and patches unpublished local crate dependencies for
+pre-publication dry-runs. In particular, `cow-sdk-contracts` patches
+`cow-sdk-orderbook` and `cow-sdk-subgraph` because they are dev-dependencies of
+the contracts crate, and `cow-sdk-trading` patches `cow-sdk-transport-wasm`
+until the first package family has been published.
+
 ### Historical Snapshot Scope
 
 Historical progress snapshots are review history, not active lifecycle
@@ -93,6 +107,7 @@ contract without exposing maintainer-only path names.
 Primary implementation points:
 
 - `parity/source-lock.yaml`
+- `scripts/parity-maintainer/src/main.rs`
 - `.github/config/audit-refresh-map.yml`
 - `docs/audit/source-lock-provenance-audit.md`
 
@@ -108,4 +123,5 @@ git ls-remote https://github.com/cowprotocol/services HEAD
 git ls-remote https://github.com/cowprotocol/contracts HEAD
 git ls-remote https://github.com/cowprotocol/cow-sdk HEAD
 cargo parity-validate --source-lock parity/source-lock.yaml
+cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
 ```

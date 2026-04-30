@@ -14,6 +14,7 @@ export const SUBGRAPH_URL_GLOB = "https://gateway.thegraph.com/api/mock-key/subg
 export const OWNER = "0x4444444444444444444444444444444444444444";
 export const MAINNET_WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 export const MAINNET_USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+export const MAINNET_SETTLEMENT = "0x9008d19f58aabd9ed0d60971565aa8510560ab41";
 export const APP_DATA_HASH =
   "0x6caf30d0b35e6523444e6a6eb9c5562ba5480cdab16e00cb46963f1dc6cda0e1";
 export const DEFAULT_ORDER_UID = `0x${"11".repeat(56)}`;
@@ -253,6 +254,7 @@ export function defaultOrderPayload(): JsonRecord {
     class: "limit",
     signingScheme: "eip712",
     signature: `0x${"02".repeat(65)}`,
+    settlementContract: MAINNET_SETTLEMENT,
     executedSellAmount: "0",
     executedBuyAmount: "0",
     executedFeeAmount: "0",
