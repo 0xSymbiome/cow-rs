@@ -1,7 +1,7 @@
 # WASM Example Proof-Posture Audit
 
 Status: Current  
-Last reviewed: 2026-04-27
+Last reviewed: 2026-04-30
 Owning surface: WASM verification consoles and their two-tier proof posture  
 Refresh trigger: Any change to the console proof lanes, the mock-versus-injected separation, the staging-versus-proxy posture on static pages, or the shipped deterministic and environment-sensitive evidence set  
 Related docs:
@@ -105,6 +105,7 @@ Primary regression coverage:
 - `examples/wasm/browser-wallet-console/tests/selection_confirmation_contract.rs`
 - `examples/wasm/browser-wallet-console/tests/selection_reconnect_contract.rs`
 - `examples/wasm/browser-wallet-console/tests/session_actions_contract.rs`
+- `examples/wasm/browser-wallet-console/src/lib.rs::tests::mock_order_lookup_payload_matches_order_wire_shape`
 - `examples/wasm/browser-wallet-console/tests/wasm_deterministic.rs::eip1193_trust_wrapper_rejects_anonymous_provider_and_accepts_explicit_origin`
 - `examples/wasm/sdk-verification-console/tests/deterministic_exports.rs`
 - `e2e/browser-wallet/tests/browser-wallet-console.spec.ts`

@@ -135,8 +135,8 @@ creation for async-capable providers lives in `AsyncSigningProvider`; no
 provider implementation ships by default, so consumers bring their own through
 the [Providers](providers/README.md) adapter guide.
 
-The trait is dyn-compatible, so consumers compose transports behind
-`Arc<dyn HttpTransport>`. Typed failures flow through a single
+The trait is dyn-compatible, so injected clients compose transports behind
+`Arc<dyn HttpTransport + Send + Sync>`. Typed failures flow through a single
 `TransportError` enum and its `TransportErrorClass` partition, both of
 which strip URLs before wrapping so credential-bearing query strings never
 surface through `Debug` or `Display`. The full transport story lives in

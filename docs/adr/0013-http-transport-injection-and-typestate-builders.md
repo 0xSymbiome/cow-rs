@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-04-29
+- Last reviewed: 2026-04-30
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, typestate, builders, wasm, async
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
@@ -12,7 +12,7 @@
 HTTP dispatch for the orderbook and subgraph surfaces flows through a
 single typed `HttpTransport` trait in `cow-sdk-core`. The trait is
 `dyn`-compatible through `async-trait` so consumers can hold transports
-behind `Arc<dyn HttpTransport>`. The native default is `ReqwestTransport`
+behind `Arc<dyn HttpTransport + Send + Sync>`. The native default is `ReqwestTransport`
 in `cow-sdk-core`; the browser default is `FetchTransport` shipped from
 the dedicated `cow-sdk-transport-wasm` leaf crate. Construction of
 `OrderBookApi` and `SubgraphApi` is exclusively through the
@@ -42,9 +42,11 @@ installed transport.
 - Public surface: `HttpTransport` in `cow-sdk-core` is the production
   injection point for every REST or GraphQL call the orderbook and
   subgraph clients issue. Implementations carry `Debug` and declare the
-  `get`, `post`, and `delete` methods; the trait is `#[async_trait(?Send)]`
-  so `Arc<dyn HttpTransport>` composes cleanly across native and browser
-  callers. `OrderBookApi::builder()` returns
+  `get`, `post`, `put`, and `delete` methods, each with per-call headers
+  and timeout inputs; the trait is target-aware through `async-trait` so
+  injected client builders compose `Arc<dyn HttpTransport + Send + Sync>`
+  across native and browser callers while browser futures can drop the
+  `Send` bound. `OrderBookApi::builder()` returns
   `OrderBookApiBuilder<ChainIdUnset, EnvironmentUnset, TransportUnset>`
   and `SubgraphApi::builder()` returns the analogous three-marker
   builder; `.build()` is reachable only from the fully-set state on
@@ -99,9 +101,9 @@ installed transport.
   shared client, base-URL override) that callers actually use.
 - Keep the HTTP seam as a plain `async fn in trait` and rely on
   specialized generics instead of `dyn` compatibility: workable for
-  a single callsite, but makes `Arc<dyn HttpTransport>` composition
-  (the shape capability crates and the transport-wasm adapter both
-  reach for) either impossible or `Box<dyn ...>`-heavy.
+  a single callsite, but makes `Arc<dyn HttpTransport + Send + Sync>`
+  composition (the shape capability crates and the transport-wasm adapter
+  both reach for) either impossible or `Box<dyn ...>`-heavy.
 - Ship the browser transport inside `cow-sdk-core` behind a cfg flag:
   smaller surface area, but pins every native consumer to a
   wasm-bindgen dependency graph they never run, and makes the browser

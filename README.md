@@ -28,7 +28,7 @@ functional SDK release. Until `0.1.0` is live, use the getting-started guide
 and the maintained native scenarios in this repository to evaluate the same
 facade and trading flow end to end.
 
-Ready-state facade setup:
+Ready-state facade setup on the native/default transport path:
 
 ```rust
 use cow_sdk::{SupportedChainId, TraderParameters, TradingSdkBuilder, TradingSdkOptions};

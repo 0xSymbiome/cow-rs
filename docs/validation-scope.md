@@ -24,7 +24,7 @@ committed in the repository.
 
 | Surface | Crates | Deterministic proof | Environment-sensitive or manual boundary |
 | --- | --- | --- | --- |
-| Order creation, signing, and submission | `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk` | Crate contract tests for signing, DTO conversion, post flows, and facade exports | Optional live API calls remain outside the routine blocking contract |
+| Order creation, signing, and submission | `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk` | Crate contract tests for signing, DTO conversion, post flows, facade exports, and deterministic example execution | Optional live API calls remain outside the routine blocking contract |
 | Contracts parity | `cow-sdk-contracts`, `cow-sdk-signing` | Hashing, settlement, signature, reader, and EIP-1271 tests | Live chain-backed spot checks are optional |
 | App-data parity | `cow-sdk-app-data`, `cow-sdk-trading` | CID conversion, schema handling, fetch, pinning seams, and fail-closed encoding tests | Live IPFS or pinning services remain optional integration checks |
 | Subgraph support | `cow-sdk-subgraph` | Typed query construction, decode, and deterministic native scenarios | Live subgraph access depends on external endpoint configuration |
@@ -45,6 +45,7 @@ cargo test --workspace
 cargo test --workspace --doc
 cargo test --all-features --workspace --doc
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
+cargo run-deterministic-examples --locked
 cargo doc --workspace --all-features --no-deps
 cd crates/browser-wallet && wasm-pack test --headless --chrome
 cd examples/wasm/sdk-verification-console && wasm-pack test --headless --chrome

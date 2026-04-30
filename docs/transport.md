@@ -36,19 +36,43 @@ their chain-RPC runtime.
 ```rust,ignore
 #[async_trait(?Send)]
 pub trait HttpTransport: std::fmt::Debug {
-    async fn get(&self, path: &str) -> Result<String, TransportError>;
-    async fn post(&self, path: &str, body: &str) -> Result<String, TransportError>;
-    async fn delete(&self, path: &str, body: &str) -> Result<String, TransportError>;
+    async fn get(
+        &self,
+        path: &str,
+        headers: &[(String, String)],
+        timeout: Option<std::time::Duration>,
+    ) -> Result<String, TransportError>;
+    async fn post(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<std::time::Duration>,
+    ) -> Result<String, TransportError>;
+    async fn put(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<std::time::Duration>,
+    ) -> Result<String, TransportError>;
+    async fn delete(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<std::time::Duration>,
+    ) -> Result<String, TransportError>;
 }
 ```
 
 Implementations return the raw response body as a `String` on success
 or a typed `TransportError` on failure. The trait is dyn-compatible
-through `async-trait`, so `Arc<dyn HttpTransport>` composes cleanly
-across native and browser callers. The returned futures are `!Send`
-to keep the browser implementation viable; native consumers that
-need `Send` wrap the transport in an `Arc<dyn HttpTransport + Send + Sync>`
-newtype when required.
+through `async-trait`, so injected clients can share a transport handle
+across native and browser callers. Native futures are `Send`; browser
+futures drop that bound so the `FetchTransport` implementation remains
+viable. Callers that install a transport on the orderbook or subgraph
+builders wrap it in an `Arc<dyn HttpTransport + Send + Sync>`.
 
 ## The Native Default: `ReqwestTransport`
 
@@ -57,11 +81,11 @@ default. `OrderBookApi::builder()` and `SubgraphApi::builder()` install
 it automatically when the caller does not supply `.transport(...)`.
 
 ```rust,ignore
-use cow_sdk::{OrderBookApi, SupportedChainId};
+use cow_sdk::{CowEnv, OrderBookApi, SupportedChainId};
 
 let orderbook = OrderBookApi::builder()
     .chain(SupportedChainId::Mainnet)
-    .environment(/* prod | staging */)
+    .environment(CowEnv::Prod)
     .build()?;
 ```
 
@@ -73,7 +97,8 @@ use cow_sdk::{HttpTransport, ReqwestTransport, ReqwestTransportConfig};
 
 let config = ReqwestTransportConfig::new("https://api.cow.fi")
     .with_user_agent("my-bot/1.0");
-let transport: Arc<dyn HttpTransport> = Arc::new(ReqwestTransport::new(config)?);
+let transport: Arc<dyn HttpTransport + Send + Sync> =
+    Arc::new(ReqwestTransport::new(config)?);
 ```
 
 Multi-chain consumers reuse a single `reqwest::Client` across every
@@ -92,13 +117,15 @@ browser consumers supply the transport explicitly:
 
 ```rust,ignore
 use std::sync::Arc;
-use cow_sdk::{HttpTransport, OrderBookApi, SupportedChainId};
-use cow_sdk_transport_wasm::FetchTransport;
+use cow_sdk::{CowEnv, HttpTransport, OrderBookApi, SupportedChainId};
+use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
-let transport: Arc<dyn HttpTransport> = Arc::new(FetchTransport::default());
+let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
+    &FetchTransportConfig::new("https://api.cow.fi"),
+));
 let orderbook = OrderBookApi::builder()
     .chain(SupportedChainId::Mainnet)
-    .environment(/* prod | staging */)
+    .environment(CowEnv::Prod)
     .transport(transport)
     .build()?;
 ```

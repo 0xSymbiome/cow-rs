@@ -1,7 +1,7 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current
-Last reviewed: 2026-04-29
+Last reviewed: 2026-04-30
 Owning surface: `cow-sdk-trading` ready-state versus helper-only `TradingSdk` construction and helper-specific prerequisite contract
 Refresh trigger: Changes to ready-state `TradingSdk` builder terminals, helper-only setup entry points, method-specific prerequisite enforcement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`
 Related docs:
@@ -54,6 +54,10 @@ terminal now returns `TradingError::MissingInjectedOrderbookClient` instead of
 returning a misleading ready-state handle whose first quote or post call would
 fail in orderbook binding resolution.
 
+The root `cow-sdk` facade re-exports `TradingSdkOptions` so consumers can
+inject the browser orderbook client from the same first-touch import surface
+used by native ready-state construction.
+
 ### Helper-Only Construction
 
 `TradingSdkBuilder::build_helper_only` and `TradingSdkBuilder::helper_only`
@@ -77,6 +81,7 @@ Primary implementation points:
 
 - `crates/trading/src/sdk.rs`
 - `crates/trading/src/onchain.rs`
+- `crates/sdk/src/prelude.rs`
 - `crates/sdk/src/lib.rs`
 - `README.md`
 

@@ -15,4 +15,5 @@ pub mod classify_release;
 pub mod diagnostics;
 pub mod fixtures;
 pub mod generate_validation_evidence;
+pub mod run_deterministic_examples;
 pub mod workspace;

@@ -574,9 +574,9 @@ jobs:
         run: scripts/check-release-docs-agree.sh
 
   native-examples-locked:
-    name: native examples locked
+    name: deterministic examples locked
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -592,6 +592,8 @@ jobs:
         run: cargo check --locked --manifest-path examples/native/Cargo.toml --examples
       - name: Test native examples with locked dependencies
         run: cargo test --locked --manifest-path examples/native/Cargo.toml
+      - name: Run deterministic examples with locked dependencies
+        run: cargo run-deterministic-examples --locked
       - name: Assert native examples lockfile was not rewritten
         run: git diff --exit-code -- examples/native/Cargo.lock
 

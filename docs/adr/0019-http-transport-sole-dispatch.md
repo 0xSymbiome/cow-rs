@@ -27,7 +27,7 @@ bytes-out.
 ## Why
 
 ADR 0013 committed the crate family to transport injection as the
-production seam, and consumers reach for `Arc<dyn HttpTransport>`
+production seam, and consumers reach for `Arc<dyn HttpTransport + Send + Sync>`
 to compose recording, mocking, authentication, retry, and routing
 layers around the live clients. Holding the trait object alongside
 a parallel `reqwest::Client` on the client struct produced a
@@ -57,11 +57,12 @@ typed-error classification unchanged.
   timeout: Option<Duration>) -> Result<String, TransportError>`
   (the `body` slot is absent on `get` and present on the other
   three methods in the reviewed signature). The
-  `TransportError::HttpStatus { status, body }` variant ships on
-  the `#[non_exhaustive]` error enum. Non-2xx responses surface
-  through that variant on both `ReqwestTransport` and
-  `FetchTransport`; the numeric status code and raw response body
-  are preserved through the typed channel.
+  `TransportError::HttpStatus { status, headers, body }` variant
+  ships on the `#[non_exhaustive]` error enum. Non-2xx responses
+  surface through that variant on both `ReqwestTransport` and
+  `FetchTransport`; the numeric status code, surfaced response
+  headers, and raw response body are preserved through the typed
+  channel.
 - Runtime and support: the orderbook and subgraph request
   pipelines preserve their existing orchestration — rate-limit
   acquire, backoff wrapper, user-agent and `Content-Type`

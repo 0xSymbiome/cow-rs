@@ -15,7 +15,13 @@ and feature-gated behind `browser-wallet`.
 cow-sdk = "0.1"
 ```
 
-## Minimal example
+## Native default example
+
+The shortest ready-state path uses the native default orderbook transport.
+Browser targets use the same trading API but must inject a browser transport;
+see the workspace
+[Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
+guide for that wiring.
 
 ```rust
 use cow_sdk::prelude::{SupportedChainId, TradingSdk};

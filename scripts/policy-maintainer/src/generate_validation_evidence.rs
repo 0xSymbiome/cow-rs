@@ -251,10 +251,7 @@ pub fn generate_markdown(args: &Args) -> anyhow::Result<String> {
     }
     let workflow_run =
         optional_text(lane_status.workflow.run_url.as_deref()).unwrap_or("pending final run");
-    push_line(
-        &mut markdown,
-        &format!("Workflow run: {workflow_run}"),
-    );
+    push_line(&mut markdown, &format!("Workflow run: {workflow_run}"));
     push_line(
         &mut markdown,
         &format!("Candidate commit: {}", lane_status.workflow.commit_sha),

@@ -83,7 +83,8 @@ That split matters when you choose where to start:
 - use `cow-sdk-transport-wasm` when you build for
   `wasm32-unknown-unknown` and need the shipped browser-target HTTP
   transport (`FetchTransport`); install it on the orderbook and
-  subgraph builders through `.transport(Arc::new(FetchTransport::default()))`
+  subgraph builders through `.transport(...)` as
+  `Arc<dyn HttpTransport + Send + Sync>`
 
 For the rest of this guide, stay on the default `cow-sdk` facade on a
 native target.
@@ -150,6 +151,42 @@ quote and post helpers.
 
 Use the minimal builder when you want to keep ownership outside SDK defaults
 and inject it explicitly at the call site.
+
+### Browser Ready-State Wiring
+
+On `wasm32-unknown-unknown`, the ready-state trading API is the same, but
+the browser cannot use the native default HTTP transport. Build an orderbook
+client with `cow-sdk-transport-wasm::FetchTransport` and inject it once
+through `TradingSdkOptions`:
+
+```rust,ignore
+use std::sync::Arc;
+
+use cow_sdk::{
+    CowEnv, HttpTransport, OrderBookApi, SupportedChainId, TradingSdk, TradingSdkOptions,
+};
+use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
+
+fn build_browser_ready_sdk() -> Result<TradingSdk, Box<dyn std::error::Error>> {
+    let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
+        &FetchTransportConfig::new("https://api.cow.fi"),
+    ));
+    let orderbook = OrderBookApi::builder()
+        .chain(SupportedChainId::Sepolia)
+        .environment(CowEnv::Prod)
+        .transport(transport)
+        .build()?;
+
+    let options = TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook));
+    let sdk = TradingSdk::builder()
+        .with_chain_id(SupportedChainId::Sepolia)
+        .with_app_code("your-browser-app-code")
+        .with_options(options)
+        .build_ready()?;
+
+    Ok(sdk)
+}
+```
 
 ### Helper-Only Builder
 

@@ -23,7 +23,7 @@ use crate::transport::error::TransportError;
 /// raw body through the typed error channel instead of through `Ok(String)`.
 ///
 /// The trait uses [`macro@async_trait`] so downstream clients can hold the
-/// transport behind `Arc<dyn HttpTransport>` without reaching for a
+/// transport behind `Arc<dyn HttpTransport + Send + Sync>` without reaching for a
 /// bespoke adapter trait. Implementations carry [`std::fmt::Debug`] so
 /// trait objects render in derived `Debug` output of consumer-facing
 /// clients without bespoke formatters. On native targets the returned

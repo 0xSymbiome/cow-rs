@@ -55,6 +55,7 @@ facade.
 ```text
 cargo check --manifest-path examples/native/Cargo.toml --examples
 cargo test --manifest-path examples/native/Cargo.toml
+cargo run-deterministic-examples
 ```
 
 ## Running Examples
@@ -103,6 +104,7 @@ examples compile under the pinned MSRV and require no RPC credentials.
 | Crate | Example | Primary user journey |
 | --- | --- | --- |
 | `cow-sdk-trading` | `signed_order_end_to_end` | full quote → sign → post flow through `TradingSdk::builder()` against an injected in-process orderbook and signer |
+| `cow-sdk-trading` | `typestate_builder_example` | ready versus helper-only builder terminals and their fail-closed mode boundary |
 | `cow-sdk-orderbook` | `paginated_orders_fetch` | paginated `GetOrdersRequest` loop through `OrderBookApi::builder_from_context(...).base_url(...).build()` against a `wiremock::MockServer` |
 | `cow-sdk-subgraph` | `typed_query_with_escape_hatch` | canonical `TOTALS_QUERY` typed path plus the explicit `run_query` raw-document escape hatch, both against a `wiremock::MockServer` |
 
@@ -110,6 +112,7 @@ Run them with:
 
 ```text
 cargo run -p cow-sdk-trading --example signed_order_end_to_end
+cargo run -p cow-sdk-trading --example typestate_builder_example
 cargo run -p cow-sdk-orderbook --example paginated_orders_fetch
 cargo run -p cow-sdk-subgraph --example typed_query_with_escape_hatch
 ```

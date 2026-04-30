@@ -2,8 +2,8 @@ use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy, OrderbookError};
 use cow_sdk::prelude::{CowEnv, OrderBookApi, OrderUid, SupportedChainId};
 use cow_sdk::trading::OrderbookClient;
 use cow_sdk_examples_native::support::{
-    MockOrderbook, orderbook_version_response, sample_open_order, sample_order_uid,
-    sample_quote_response, text_preview,
+    MESSAGE_SIGNATURE, MockOrderbook, TYPED_SIGNATURE, orderbook_version_response,
+    sample_open_order, sample_order_uid, sample_quote_response, text_preview,
 };
 use wiremock::{
     Mock, MockServer,
@@ -19,6 +19,23 @@ fn text_preview_is_length_safe() {
     );
     assert_eq!(text_preview("abc", 0), "");
     assert_eq!(text_preview("ééé", 2), "éé");
+}
+
+#[test]
+fn signature_fixtures_have_recoverable_ecdsa_shape() {
+    for (name, signature) in [
+        ("typed signature", TYPED_SIGNATURE),
+        ("message signature", MESSAGE_SIGNATURE),
+    ] {
+        let without_prefix = signature
+            .strip_prefix("0x")
+            .expect("signature fixture must keep a hex prefix");
+        assert_eq!(
+            without_prefix.len(),
+            130,
+            "{name} fixture must be 65 bytes of hex"
+        );
+    }
 }
 
 #[tokio::test]

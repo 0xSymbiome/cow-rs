@@ -12,6 +12,7 @@ check-chain-patch-eligibility = "run --quiet --manifest-path scripts/policy-main
 check-wasm-runner-freshness = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-wasm-runner-freshness"
 check-property-citations = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-property-citations"
 classify-release = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- classify-release"
+run-deterministic-examples = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- run-deterministic-examples"
 
 # Parity-maintainer subcommands.
 parity-snapshot = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot"

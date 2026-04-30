@@ -22,10 +22,10 @@ use cow_sdk::prelude::{
     TradeParameters, TradingSdk,
 };
 use cow_sdk::signing::{generate_order_id, sign_order_async};
+use cow_sdk::trading::OrderbookClient;
 use cow_sdk::trading::{
     ApprovalParameters, OrderTraderParameters, TradingSdkOptions, approval_transaction,
 };
-use cow_sdk::trading::OrderbookClient;
 
 #[wasm_bindgen(start)]
 pub fn start() {
@@ -207,7 +207,7 @@ impl BrowserWalletConsole {
             .with_env(env)
             .with_options(TradingSdkOptions::new().with_orderbook_client(mock_orderbook.clone()))
             .build_ready()
-        .map_err(js_string_error)?;
+            .map_err(js_string_error)?;
         let posting = sdk
             .post_swap_order_async(trade, &signer, None)
             .await
@@ -317,7 +317,7 @@ impl BrowserWalletConsole {
             .with_env(env)
             .with_options(TradingSdkOptions::new().with_orderbook_client(mock_orderbook.clone()))
             .build_ready()
-        .map_err(js_string_error)?;
+            .map_err(js_string_error)?;
         let signer = self.mock_wallet.signer();
         let posting = sdk
             .post_swap_order_async(trade, &signer, None)
@@ -719,36 +719,7 @@ impl OrderbookClient for MockBrowserOrderbook {
         &self,
         order_uid: &OrderUid,
     ) -> Result<cow_sdk::orderbook::Order, cow_sdk::OrderbookError> {
-        Ok(serde_json::from_value(json!({
-            "sellToken": wrapped_native_token(self.context.chain_id).address,
-            "buyToken": sample_buy_token(),
-            "receiver": sample_owner(),
-            "sellAmount": "10000000000000000",
-            "buyAmount": "2500000000000000000",
-            "validTo": 1900000000u32,
-            "appData": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            "feeAmount": "1000000000000000",
-            "kind": "sell",
-            "partiallyFillable": false,
-            "sellTokenBalance": "erc20",
-            "buyTokenBalance": "erc20",
-            "signingScheme": "eip712",
-            "signature": format!("0x{}1c", "22".repeat(64)),
-            "class": "market",
-            "owner": sample_owner(),
-            "uid": order_uid,
-            "executedSellAmount": "0",
-            "executedBuyAmount": "0",
-            "invalidated": false,
-            "status": "open",
-            "totalFee": "0"
-        }))
-        .map_err(|_error| cow_sdk::OrderbookError::InvalidTransform {
-            field: "order",
-            reason: cow_sdk::core::ValidationReason::BadShape {
-                details: "mock order payload failed deserialization",
-            },
-        })?)
+        mock_order_response(&self.context, order_uid)
     }
 
     async fn upload_app_data(
@@ -791,9 +762,7 @@ fn live_sdk(chain_id: SupportedChainId, env: CowEnv, app_code: &str) -> TradingS
         .with_chain_id(chain_id)
         .with_app_code(app_code)
         .with_env(env)
-        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(
-            orderbook_client,
-        )))
+        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook_client)))
         .build_ready()
         .expect("browser wallet console sdk construction should succeed")
 }
@@ -845,6 +814,43 @@ fn mock_quote_response(request: &OrderQuoteRequest) -> OrderQuoteResponse {
     .expect("mock quote response must remain valid")
 }
 
+fn mock_order_response(
+    context: &ApiContext,
+    order_uid: &OrderUid,
+) -> Result<cow_sdk::orderbook::Order, cow_sdk::OrderbookError> {
+    serde_json::from_value(json!({
+        "sellToken": wrapped_native_token(context.chain_id).address,
+        "buyToken": sample_buy_token(),
+        "receiver": sample_owner(),
+        "sellAmount": "10000000000000000",
+        "buyAmount": "2500000000000000000",
+        "validTo": 1900000000u32,
+        "appData": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "feeAmount": "1000000000000000",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20",
+        "signingScheme": "eip712",
+        "signature": format!("0x{}1c", "22".repeat(64)),
+        "class": "market",
+        "owner": sample_owner(),
+        "uid": order_uid,
+        "settlementContract": sample_settlement_contract(),
+        "executedSellAmount": "0",
+        "executedBuyAmount": "0",
+        "invalidated": false,
+        "status": "open",
+        "totalFee": "0"
+    }))
+    .map_err(|_error| cow_sdk::OrderbookError::InvalidTransform {
+        field: "order",
+        reason: cow_sdk::core::ValidationReason::BadShape {
+            details: "mock order payload failed deserialization",
+        },
+    })
+}
+
 fn sample_trade_parameters(chain_id: SupportedChainId) -> TradeParameters {
     TradeParameters::new(
         OrderKind::Sell,
@@ -892,6 +898,11 @@ fn sample_owner() -> Address {
 fn sample_buy_token() -> Address {
     Address::new("0x0625aFB445C3B6B7B929342a04A22599fd5dBB59")
         .expect("static example token must remain valid")
+}
+
+fn sample_settlement_contract() -> Address {
+    Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
+        .expect("static settlement contract must remain valid")
 }
 
 fn parse_chain_id(chain_id: u32) -> Result<SupportedChainId, JsValue> {
@@ -1149,7 +1160,7 @@ impl BrowserWalletConsole {
         })?;
 
         if session_chain_id != requested_chain_id {
-            return Err(to_js_error(&format!(
+            return Err(to_js_error(format!(
                 "connected wallet chain {session_chain_id} does not match the selected console chain {requested_chain_id}; use Switch Chain before live quote, signing, submission, or cancellation"
             )));
         }
@@ -1406,5 +1417,31 @@ fn injected_wallet_identity_matches(
             left == right
         }
         _ => false,
+    }
+}
+
+impl Default for BrowserWalletConsole {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mock_order_lookup_payload_matches_order_wire_shape() {
+        let context = ApiContext::new(SupportedChainId::Sepolia, CowEnv::Prod);
+        let order_uid = OrderUid::new(
+            "0x9f0c29bfbafde4cf5f43f67ff6be7277e5a103ce3be3d05a02f3f42e1a42f0ad44444444444444444444444444444444444444446ff1d400",
+        )
+        .expect("mock order uid must remain valid");
+
+        let order = mock_order_response(&context, &order_uid)
+            .expect("mock order lookup must deserialize into the public order DTO");
+
+        assert_eq!(order.uid, order_uid);
+        assert_eq!(order.settlement_contract, sample_settlement_contract());
     }
 }

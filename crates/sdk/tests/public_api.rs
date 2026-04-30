@@ -1,9 +1,10 @@
 use cow_sdk::core::{AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, UnsignedOrder};
 use cow_sdk::prelude::{
     Address, Amount, SupportedChainId, TradeParameters, TraderParameters, TradingSdkBuilder,
+    TradingSdkOptions,
 };
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, generate_order_id, order_typed_data};
-use cow_sdk::trading::{PartialTraderParameters, PartnerFee, PartnerFeePolicy, TradingSdkOptions};
+use cow_sdk::trading::{PartialTraderParameters, PartnerFee, PartnerFeePolicy};
 
 #[test]
 fn public_api_reexports_cover_primary_root_surface() {

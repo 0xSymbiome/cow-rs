@@ -19,6 +19,8 @@
 //! Read-only subgraph access is a separate crate surface that lives in
 //! `cow-sdk-subgraph` and is not re-exported from this root package.
 //!
+//! Native/default ready-state setup:
+//!
 //! ```rust
 //! use cow_sdk::{Address, SupportedChainId, TradingSdk};
 //!

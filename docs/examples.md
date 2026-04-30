@@ -24,6 +24,13 @@ the main SDK surfaces.
 See [Native examples](../examples/native/README.md) for commands and
 environment notes.
 
+The deterministic non-live native and per-crate example binaries share one
+smoke command:
+
+```text
+cargo run-deterministic-examples
+```
+
 ## WASM
 
 Use the WASM examples when you need browser-facing verification surfaces.

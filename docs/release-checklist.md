@@ -11,6 +11,7 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo clippy --workspace --all-targets --all-features --message-format short -- -W clippy::pedantic -W clippy::cargo -A clippy::multiple_crate_versions
 cargo test --workspace
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
+cargo run-deterministic-examples --locked
 typos --config .github/config/typos.toml
 cargo deny check --config .github/config/deny.toml
 cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436

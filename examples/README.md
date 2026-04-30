@@ -20,6 +20,12 @@ The native gallery includes dedicated scenarios for
 
 See [Native examples](native/README.md) for the full scenario list.
 
+Run every deterministic non-live binary with:
+
+```text
+cargo run-deterministic-examples
+```
+
 ## WASM
 
 `examples/wasm/` contains browser-facing verification surfaces for the SDK

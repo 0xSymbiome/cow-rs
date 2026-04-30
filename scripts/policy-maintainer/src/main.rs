@@ -4,6 +4,7 @@ use policy_maintainer::{
     check_deny_unknown_fields, check_enum_policy, check_msrv_notice, check_panic_allowlist,
     check_property_citations, check_stub, check_wasm_runner_freshness, check_workspace_versions,
     classify_release, diagnostics::OutputMode, generate_validation_evidence,
+    run_deterministic_examples,
 };
 
 #[derive(Debug, Parser)]
@@ -59,6 +60,9 @@ enum Command {
     /// Generate or check the release validation evidence artefact.
     #[command(name = "generate-validation-evidence")]
     GenerateValidationEvidence(generate_validation_evidence::Args),
+    /// Execute every deterministic non-live example binary.
+    #[command(name = "run-deterministic-examples")]
+    RunDeterministicExamples(run_deterministic_examples::Args),
     /// Run the policy-maintainer skeleton smoke check.
     #[command(name = "check-stub")]
     CheckStub(check_stub::Args),
@@ -88,6 +92,9 @@ fn main() -> anyhow::Result<()> {
         Command::CheckPropertyCitations(args) => check_property_citations::run(args, output_mode),
         Command::GenerateValidationEvidence(args) => {
             generate_validation_evidence::run(args, output_mode)
+        }
+        Command::RunDeterministicExamples(args) => {
+            run_deterministic_examples::run(args, output_mode)
         }
         Command::CheckStub(args) => check_stub::run(args, output_mode),
     }

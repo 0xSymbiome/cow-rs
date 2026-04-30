@@ -13,8 +13,8 @@
 //! The crate root is gated with `#![cfg(target_arch = "wasm32")]` so every
 //! non-wasm32 target sees an empty compilation unit. Consumers compose the
 //! transport into typed clients without opting into the native `reqwest`
-//! stack; publishing an `Arc<dyn HttpTransport>` built from
-//! `FetchTransport` keeps the surface runtime-neutral.
+//! stack; publishing an `Arc<dyn HttpTransport + Send + Sync>` built
+//! from `FetchTransport` keeps the surface runtime-neutral.
 //!
 //! # Feature flags
 //!
