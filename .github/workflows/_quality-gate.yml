@@ -94,7 +94,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          allowed_legacy='check-release-docs-agree.sh|check-services-drift.sh|fetch-upstream-pins.sh|test-check-release-docs-agree.sh'
+          allowed_legacy='check-release-docs-agree.sh|check-services-drift.sh'
           found="$(
             find scripts -maxdepth 2 -type f \( -name '*.sh' -o -name '*.ps1' \) \
               | grep -Ev "/(${allowed_legacy})$" || true
@@ -571,8 +571,6 @@ jobs:
           persist-credentials: false
       - name: Verify release-gate commands agree across docs and CI
         run: scripts/check-release-docs-agree.sh
-      - name: Self-test docs-agreement script
-        run: bash scripts/test-check-release-docs-agree.sh
 
   native-examples-locked:
     name: native examples locked

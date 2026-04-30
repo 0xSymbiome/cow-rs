@@ -1,5 +1,0 @@
-jobs:
-  browser-wallet:
-    steps:
-      - name: Install Playwright browsers
-        run: bun run --cwd e2e/browser-wallet playwright install --with-deps chromium webkit

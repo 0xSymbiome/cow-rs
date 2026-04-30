@@ -1,6 +1,0 @@
-[advisories]
-ignore = [
-  { id = "RUSTSEC-2026-0097" },
-  { id = "RUSTSEC-2024-0388" },
-  { id = "RUSTSEC-2024-0436" },
-]

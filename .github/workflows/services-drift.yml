@@ -22,14 +22,20 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Materialize upstream services worktree
-        run: bash scripts/fetch-upstream-pins.sh --into /tmp
+      # Source ref: dtolnay/rust-toolchain@stable
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: stable
+
+      - name: Materialize upstream parity worktrees
+        run: cargo parity-provision-upstreams --output-root /tmp/upstreams
 
       - name: Run drift detection
         id: drift
         run: |
           bash scripts/check-services-drift.sh \
-            --upstream /tmp/services \
+            --upstream /tmp/upstreams/services \
             --summary-output /tmp/services-drift-report.md
           cat /tmp/services-drift-report.md >> "$GITHUB_STEP_SUMMARY"
 

@@ -43,13 +43,14 @@ caller-local copy.
    only an authentically reproduced upstream root passes the
    provenance-sensitive validator.
 
-3. `scripts/fetch-upstream-pins.sh` is the supported provisioning tool
-   for reviewers who want to reproduce the parity verification step
-   locally. The script reads `parity/source-lock.yaml`, clones each
-   pinned upstream repository to a sibling directory of the cow-rs
-   checkout (overridable through `--into <dir>`), checks out the pinned
-   commit detached, and prints the resolved paths so the reviewer can
-   pass them straight into the upstream-root validator command.
+3. `cargo parity-provision-upstreams --output-root <dir>` is the
+   supported provisioning command for reviewers who want to reproduce
+   the parity verification step locally. The Cargo alias dispatches to
+   the canonical Rust subcommand under `scripts/parity-maintainer/`,
+   which reads `parity/source-lock.yaml`, clones each pinned upstream
+   repository under `<output-root>/<id>`, checks out the pinned commit
+   detached, and reports the resolved paths so the reviewer can pass
+   them straight into the upstream-root validator command.
 
 ## Validation Modes
 
@@ -116,16 +117,16 @@ inputs, or justification for copied literals or defaults.
 
 ## Maintainer Commands
 
-Materialize each pinned upstream repository as an independent worktree in
-a sibling directory of the cow-rs checkout:
+Materialize each pinned upstream repository as an independent worktree
+under a chosen output root:
 
 ```text
-scripts/fetch-upstream-pins.sh
+cargo parity-provision-upstreams --output-root <dir>
 ```
 
-Pass `--into <dir>` to provision the worktrees under a chosen base
-directory instead of the default sibling layout. The script is
-idempotent: existing destinations are left untouched.
+The command reads `parity/source-lock.yaml`, writes each repository to
+`<dir>/<id>` (e.g., `<dir>/services`, `<dir>/contracts`,
+`<dir>/cow-sdk`), and reports the resolved paths.
 
 Refresh the vendored app-data schema bundle from an explicit upstream
 `cow-sdk` checkout:
