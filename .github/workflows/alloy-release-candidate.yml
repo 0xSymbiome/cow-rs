@@ -9,6 +9,7 @@ permissions:
   contents: read
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   CARGO_TERM_COLOR: always
   RUST_CI_TOOLCHAIN: 1.94.1
   ALLOY_CANARY_REF: ${{ vars.ALLOY_CANARY_REF || '83de021b1bf6f00ab1b38532460a387697ad25a7' }}

@@ -16,6 +16,7 @@ permissions:
   contents: read
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   # Pin the nightly toolchain date so libFuzzer behaviour stays reproducible
   # across scheduled runs. Bump when the pinned date ages out of cargo-fuzz
   # compatibility.

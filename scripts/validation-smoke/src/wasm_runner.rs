@@ -561,7 +561,18 @@ fn write_webdriver_json(
     let value = serde_json::json!({
         "goog:chromeOptions": {
             "binary": chrome_binary,
-            "args": ["--headless=new", "--disable-gpu", "--no-sandbox"]
+            "args": [
+                "--headless=new",
+                "--disable-gpu",
+                "--no-sandbox",
+                // ChromeDriver 132+ blocks the local wasm-bindgen-test web
+                // server (a different loopback port) from talking to the
+                // browser unless the runner explicitly allow-lists its
+                // origin. The wildcard is appropriate here because the
+                // browser only ever runs against an ephemeral
+                // wasm-bindgen-test session on localhost.
+                "--remote-allow-origins=*"
+            ]
         },
         "cow:wasmRunner": {
             "chrome": chrome_binary,
