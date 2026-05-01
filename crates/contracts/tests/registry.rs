@@ -230,3 +230,50 @@ address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
         }
     ));
 }
+
+#[test]
+fn registry_address_lookup_matrix_is_exhaustive() {
+    let registry = Registry::default();
+    let contracts = [
+        ContractId::Settlement,
+        ContractId::VaultRelayer,
+        ContractId::EthFlow,
+    ];
+    let envs = [CowEnv::Prod, CowEnv::Staging];
+
+    let entry_keys = registry
+        .entries()
+        .map(|(contract_id, chain_id, env, address)| {
+            assert_eq!(
+                registry.address(contract_id, chain_id, env),
+                Some(address.clone()),
+                "{contract_id} / {chain_id:?} / {env:?} lookup must return the manifest address",
+            );
+            (contract_id, chain_id, env)
+        })
+        .collect::<Vec<_>>();
+
+    let matrix_keys = contracts
+        .into_iter()
+        .flat_map(|contract_id| {
+            SupportedChainId::ALL.into_iter().flat_map(move |chain_id| {
+                envs.into_iter()
+                    .map(move |env| (contract_id, chain_id, env))
+            })
+        })
+        .collect::<Vec<_>>();
+
+    assert!(
+        entry_keys.iter().all(|entry| matrix_keys.contains(entry)),
+        "every embedded registry entry must be covered by the typed lookup matrix",
+    );
+
+    for (contract_id, chain_id, env) in matrix_keys {
+        let lookup = registry.address(contract_id, chain_id, env);
+        assert_eq!(
+            lookup.is_some(),
+            entry_keys.contains(&(contract_id, chain_id, env)),
+            "{contract_id} / {chain_id:?} / {env:?} lookup presence must match the manifest",
+        );
+    }
+}

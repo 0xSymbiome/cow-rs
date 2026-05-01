@@ -126,3 +126,30 @@ fn open_ended_metadata_keys_other_than_signer_and_flashloan_survive_roundtrip() 
         "open-ended metadata keys must survive a roundtrip through AppDataParams",
     );
 }
+
+#[test]
+fn metadata_signer_typed_slot_and_open_map_path_yield_same_value() {
+    let input = json!({
+        "appCode": "cow-sdk",
+        "metadata": {
+            SIGNER_KEY: SIGNER_ADDRESS,
+            QUOTE_KEY: {
+                "slippageBips": "50",
+            },
+        }
+    });
+
+    let typed: AppDataParams = serde_json::from_value(input.clone())
+        .expect("AppDataParams must parse typed signer from metadata.signer");
+    let open_map_value = input
+        .get("metadata")
+        .and_then(Value::as_object)
+        .and_then(|metadata| metadata.get(SIGNER_KEY))
+        .and_then(Value::as_str);
+
+    assert_eq!(typed.signer.as_ref().map(Address::as_str), open_map_value);
+    assert!(
+        !typed.metadata.contains_key(SIGNER_KEY),
+        "typed signer must move out of the open metadata map after parse",
+    );
+}

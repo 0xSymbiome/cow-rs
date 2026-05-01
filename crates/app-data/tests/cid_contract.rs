@@ -10,6 +10,8 @@ const RAW_CODEC: u64 = 0x55;
 const DAG_PB_CODEC: u64 = 0x70;
 const KECCAK_256_CODE: u64 = 0x1b;
 const SHA2_256_CODE: u64 = 0x12;
+const SHA3_512_CODE: u64 = 0x14;
+const BLAKE2B_256_CODE: u64 = 0xb220;
 
 #[test]
 fn cid_surface_matches_fixture_contract() {
@@ -83,6 +85,26 @@ fn unsupported_and_malformed_cids_are_rejected() {
         assert!(
             cid_to_app_data_hex(&cid).is_err(),
             "cid_to_app_data_hex should reject {label}: {cid}"
+        );
+    }
+}
+
+#[test]
+fn cid_rejects_non_keccak256_multihash_codecs() {
+    for (label, code, digest) in [
+        ("sha2-256", SHA2_256_CODE, [0x11; 32]),
+        ("sha3-512", SHA3_512_CODE, [0x22; 32]),
+        ("blake2b-256", BLAKE2B_256_CODE, [0x33; 32]),
+    ] {
+        let cid = Cid::new_v1(
+            RAW_CODEC,
+            Multihash::<64>::wrap(code, &digest).expect("test multihash must be well-formed"),
+        )
+        .to_string();
+
+        assert!(
+            cid_to_app_data_hex(&cid).is_err(),
+            "cid_to_app_data_hex should reject unsupported {label} multihash code {code:#x}",
         );
     }
 }

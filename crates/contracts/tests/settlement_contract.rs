@@ -454,3 +454,44 @@ fn encoded_settlement_calldata_starts_with_the_settle_selector() {
         "encoded settle calldata must carry ABI arguments beyond the selector",
     );
 }
+
+#[test]
+fn settlement_encoder_stage_order_pre_intra_post() {
+    let mut encoder = SettlementEncoder::new(sample_domain());
+
+    for (target, stage) in [
+        (
+            "0x3333333333333333333333333333333333333333",
+            InteractionStage::Post,
+        ),
+        (
+            "0x1111111111111111111111111111111111111111",
+            InteractionStage::Pre,
+        ),
+        (
+            "0x2222222222222222222222222222222222222222",
+            InteractionStage::Intra,
+        ),
+    ] {
+        encoder
+            .encode_interaction(
+                &InteractionLike::new(Address::new(target).unwrap(), None, None),
+                stage,
+            )
+            .unwrap();
+    }
+
+    let grouped = encoder.interactions().unwrap();
+    assert_eq!(
+        grouped[InteractionStage::Pre as usize][0].target.as_str(),
+        "0x1111111111111111111111111111111111111111"
+    );
+    assert_eq!(
+        grouped[InteractionStage::Intra as usize][0].target.as_str(),
+        "0x2222222222222222222222222222222222222222"
+    );
+    assert_eq!(
+        grouped[InteractionStage::Post as usize][0].target.as_str(),
+        "0x3333333333333333333333333333333333333333"
+    );
+}

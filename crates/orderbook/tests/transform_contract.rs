@@ -411,3 +411,29 @@ fn total_fee_is_zero_when_neither_field_populated() {
         "transform must keep the default legacy value at zero when neither fee field is populated",
     );
 }
+
+#[test]
+fn total_fee_x_executed_fee_amount_matrix_holds_for_zero_legacy_zero_canonical_legacy_only_canonical_only()
+ {
+    for (label, executed_fee, executed_fee_amount, expected_total_fee, expected_legacy) in [
+        ("zero legacy", Some("0"), Some("20"), "0", "20"),
+        ("zero canonical", Some("10"), Some("0"), "10", "0"),
+        ("legacy only", None, Some("20"), "0", "20"),
+        ("canonical only", Some("10"), None, "10", "0"),
+    ] {
+        let order = order_with_fee_fields(executed_fee, executed_fee_amount);
+        let transformed = transform_order(order)
+            .unwrap_or_else(|error| panic!("{label} must transform: {error}"));
+
+        assert_eq!(
+            transformed.total_fee,
+            amount(expected_total_fee),
+            "{label}: total_fee must follow canonical executedFee only",
+        );
+        assert_eq!(
+            transformed.executed_fee_amount,
+            amount(expected_legacy),
+            "{label}: legacy executedFeeAmount must remain preserved",
+        );
+    }
+}

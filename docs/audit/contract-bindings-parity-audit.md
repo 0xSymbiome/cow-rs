@@ -42,6 +42,8 @@ provider.
 | Committed provenance | The Solidity excerpt used to author each binding is committed under `crates/contracts/abi/<family>/` | Conforms |
 | Byte-identity parity | Encoded call-data and hashed payloads match the TypeScript-SDK-derived golden fixtures on every binding | Conforms |
 | Domain separator parity | `cow-sdk-contracts` and `cow-sdk-signing` pin the same EIP-712 domain-separator fixture value | Conforms |
+| Boundary matrices | Compact order flags, settlement reader returns, settlement encoder stages, mixed-balance transfers, and multi-trade clearing prices have deterministic regression coverage | Conforms |
+| EIP-1967 derivation | Proxy storage slots match the canonical `keccak256(label) - 1` formula as well as the golden byte payloads | Conforms |
 | Vault role hash parity | Vault-relayer role helpers emit the same packed role hashes as the upstream TypeScript role-grant helpers | Conforms |
 | WASM compatibility | The `alloy-primitives` `k256` path enables the browser `getrandom` backend for `wasm32-unknown-unknown` builds | Conforms |
 | Scope discipline | The shipped set is the five families named above; any new family follows the same provenance and parity contract before it lands | Conforms |
@@ -67,6 +69,8 @@ order UID.
 
 The EIP-1967 surface (`crates/contracts/src/proxy.rs`) carries the
 `ADMIN_SLOT` and `IMPLEMENTATION_SLOT` storage-slot helpers.
+The regression suite verifies both the canonical hex payloads and the
+formula-derived values from `keccak256("eip1967.proxy.<label>") - 1`.
 
 The ERC-20 surface (`crates/contracts/src/erc20.rs`) carries `IERC20`
 and `IERC20Permit` (EIP-2612) for the subset of methods the SDK emits
@@ -90,7 +94,13 @@ bit. The same contract covers:
 
 - EIP-712 domain separators (chain-id and verifying-contract swept)
 - Order hash, UID, and signing-scheme payload bytes
+- Compact order flag decoding across every supported kind/source/destination
+  combination
 - Settlement call-data for multi-trade batches
+- Settlement reader `filledAmountsForOrders` typed return decoding
+- Settlement encoder PRE, INTRA, POST interaction ordering
+- Vault relayer mixed ERC-20, external, and internal balance transfer batches
+- Multi-trade settlement clearing-price ordering
 - Encoded trade flags (kind, partial fill, balance source, balance
   destination, signing scheme)
 
@@ -175,6 +185,10 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/contracts/tests/parity_contract.rs`
+- `crates/contracts/tests/order_contract.rs::order_flag_matrix_enumerates_all_twelve_combinations`
+- `crates/contracts/tests/reader_contract.rs::settlement_reader_filled_amounts_decodes_known_payload`
+- `crates/contracts/tests/settlement_contract.rs::settlement_encoder_stage_order_pre_intra_post`
+- `crates/contracts/tests/proxy_contract.rs::eip1967_slot_constants_match_canonical_keccak_minus_one`
 - `crates/contracts/tests/property_contract.rs::decode_trade_flags_accepts_0b00_and_0b01_as_erc20`
 - `crates/contracts/tests/property_contract.rs::decode_order_rejects_out_of_bounds_token_indices`
 - `crates/contracts/tests/interaction_contract.rs::interaction_encoder_rejects_vault_relayer_target_for_canonical_settlement_domain`

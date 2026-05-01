@@ -709,6 +709,18 @@ pub struct IpfsConfig {
     pub pinata_api_secret: Option<Redacted<String>>,
 }
 
+impl fmt::Display for IpfsConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IpfsConfig")
+            .field("uri", &self.uri)
+            .field("write_uri", &self.write_uri)
+            .field("read_uri", &self.read_uri)
+            .field("pinata_api_key", &self.pinata_api_key)
+            .field("pinata_api_secret", &self.pinata_api_secret)
+            .finish()
+    }
+}
+
 /// Raw HTTP response returned by app-data transport seams.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]

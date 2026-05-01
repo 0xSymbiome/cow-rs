@@ -166,6 +166,27 @@ fn pinning_headers_debug_redacts_secret_bytes() {
 }
 
 #[test]
+fn pinning_config_display_redacts_secret_bytes() {
+    let config = IpfsConfig {
+        uri: Some("https://ipfs.example/private".to_owned().into()),
+        write_uri: Some("https://pinata.example/write".to_owned().into()),
+        read_uri: Some("https://read.example/private".to_owned().into()),
+        pinata_api_key: Some("apikey".to_owned().into()),
+        pinata_api_secret: Some("apiSecret".to_owned().into()),
+    };
+
+    let display = config.to_string();
+
+    assert!(display.contains("IpfsConfig"));
+    assert!(display.contains(REDACTED_PLACEHOLDER));
+    assert!(!display.contains("ipfs.example"));
+    assert!(!display.contains("pinata.example"));
+    assert!(!display.contains("read.example"));
+    assert!(!display.contains("apikey"));
+    assert!(!display.contains("apiSecret"));
+}
+
+#[test]
 fn write_uri_empty_returns_typed_builder_error() {
     assert_write_uri_rejected_with_builder_error("");
 }

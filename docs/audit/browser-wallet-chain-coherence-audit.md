@@ -1,7 +1,7 @@
 # Browser Wallet Chain Coherence Audit
 
 Status: Current  
-Last reviewed: 2026-04-21  
+Last reviewed: 2026-05-01
 Owning surface: `cow-sdk-browser-wallet` chain-bound signer and typed chain-management contract  
 Refresh trigger: Changes to `BrowserWallet::signer_for_chain`, typed-data chain validation, chain-switch helpers, or shipped browser-wallet proof surfaces  
 Related docs:
@@ -37,7 +37,7 @@ environment-sensitive extension prompts beyond the chain-coherence boundary.
 | Runtime validation | Address, signature, gas, and transaction operations revalidate the active session chain before they proceed | Conforms |
 | Chain management | Typed switch helpers treat wallet RPC acknowledgement as provisional until the refreshed session confirms the requested chain | Conforms |
 | Typed-data signing | Typed-data payloads fail when the domain chain does not match the expected workflow chain | Conforms |
-| Example behavior | Console gating remains a user-facing affordance, not the only protection layer | Conforms |
+| Example behavior | Console gating, partial-state revalidation, and connect/disconnect flaps remain user-facing affordances backed by crate-level protections | Conforms |
 
 ## Current Contract
 
@@ -66,6 +66,9 @@ that the requested chain is now active.
 This keeps browser-wallet-backed quote, signing, and submission flows aligned
 with one reviewed chain authority without widening `cow-sdk-trading` into a
 browser-specific crate or relying on example-only guards.
+The browser e2e suite also revalidates partial-state console behavior and
+connect/disconnect flaps so stale session state does not become the proof
+source for live actions.
 
 ## Evidence
 
@@ -87,6 +90,7 @@ Primary regression coverage:
 - `crates/browser-wallet/tests/wallet_contract.rs::switch_or_add_chain_rejects_success_when_the_refreshed_session_stays_on_a_different_chain`
 - `crates/browser-wallet/tests/wasm_bridge_contract.rs::successful_switch_requests_fail_when_the_refreshed_session_stays_on_a_different_chain`
 - `e2e/browser-wallet/tests/injected-chain-coherence.spec.ts`
+- `e2e/browser-wallet/tests/browser-wallet-console.spec.ts` (includes `connect disconnect flap does not leak session state`)
 
 Validation surface:
 
@@ -97,4 +101,5 @@ cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo build --target wasm32-unknown-unknown -p cow-sdk-browser-wallet
 cd crates/browser-wallet && wasm-pack test --headless --chrome
+bun run --cwd e2e/browser-wallet test
 ```

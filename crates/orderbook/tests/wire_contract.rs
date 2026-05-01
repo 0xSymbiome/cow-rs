@@ -7,8 +7,8 @@
 use serde::{Serialize, de::DeserializeOwned};
 
 use cow_sdk_orderbook::{
-    Amount, Auction, CompetitionOrderStatus, Order, OrderCreation, OrderKind, QuoteData, QuoteSide,
-    SigningScheme, TotalSurplus, Trade,
+    Amount, Auction, CompetitionOrderStatus, Order, OrderCreation, OrderKind, OrderQuoteResponse,
+    QuoteData, QuoteSide, SigningScheme, TotalSurplus, Trade,
 };
 
 mod common;
@@ -140,4 +140,24 @@ fn typed_amount_builders_keep_decimal_string_wire_shape() {
     assert_eq!(order_value["buyAmount"], "2000000000000000000");
     assert_eq!(order_value["feeAmount"], "0");
     assert!(order_value["buyAmount"].is_string());
+}
+
+#[test]
+fn order_quote_response_amount_fields_deserialize_through_typed_amount() {
+    let response: OrderQuoteResponse = serde_json::from_str(include_str!(
+        "../../../parity/fixtures/orderbook/order_quote_response.json"
+    ))
+    .expect("quote response fixture must deserialize");
+
+    assert_eq!(response.quote.sell_amount, amount("1000000000000000000"));
+    assert_eq!(response.quote.buy_amount, amount("2000000000000000000"));
+    assert_eq!(
+        response.quote.network_cost_amount(),
+        &amount("3000000000000000")
+    );
+
+    let value = serde_json::to_value(&response).expect("quote response must serialize");
+    assert_eq!(value["quote"]["sellAmount"], "1000000000000000000");
+    assert_eq!(value["quote"]["buyAmount"], "2000000000000000000");
+    assert_eq!(value["quote"]["feeAmount"], "3000000000000000");
 }

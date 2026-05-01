@@ -1,7 +1,7 @@
 # Credential Surface Contract Hygiene Audit
 
 Status: Current
-Last reviewed: 2026-04-27
+Last reviewed: 2026-05-01
 Owning surface: Cross-cutting credential redaction and typed partner-fee public boundary across core, app-data, orderbook, subgraph, and trading
 Refresh trigger: Changes to public credential-bearing configs, URL-bearing public configuration fields, subgraph route identity or request-failure context, the `Redacted<T>` newtype contract, external host-policy validation, the transport `From<reqwest::Error>` conversion classifiers, or typed partner-fee request boundaries
 Related docs:
@@ -35,7 +35,7 @@ surface.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Subgraph route identity | Keep Graph API credentials out of stable metadata and typed failure context | Conforms |
-| Credential-bearing config diagnostics | Redact secret material in default `Debug` and serialized forms while preserving explicit inputs | Conforms |
+| Credential-bearing config diagnostics | Redact secret material in default `Debug`, `Display`, and serialized forms while preserving explicit inputs | Conforms |
 | URL-bearing configuration | Store configured endpoint URLs in redacting wrappers and unwrap only at dispatch seams | Conforms |
 | Host-policy failures | Fail closed on non-canonical orderbook and subgraph hosts without echoing raw URL credentials | Conforms |
 | `Redacted<T>` secret wrapper | Type-level redaction in `Debug`, `Display`, and `Serialize` with an explicit `into_inner` escape | Conforms |
@@ -58,7 +58,8 @@ marker instead of echoing a credential-bearing URL.
 explicit credential input, but their default `Debug` and serialized forms now
 redact secret material. This keeps routine diagnostics and generic
 serialization from turning partner API keys or Pinata credentials into
-ordinary log output.
+ordinary log output. `IpfsConfig` display output follows the same redaction
+rule.
 
 ### URL-Bearing Configuration
 
@@ -67,7 +68,9 @@ ordinary log output.
 credential-bearing URLs in redacting wrappers. Map keys and unsupported-chain
 markers remain reviewable, while configured endpoint bytes serialize and format
 as `[redacted]`. Raw URL access stays confined to orderbook, subgraph,
-wallet-chain, and IPFS dispatch seams.
+wallet-chain, and IPFS dispatch seams. Custom orderbook and subgraph endpoint
+debug output redacts userinfo-bearing URLs before they cross a diagnostic
+boundary.
 
 ### Host-Policy Failures
 
@@ -129,11 +132,14 @@ Primary regression coverage:
 - `crates/core/tests/redaction_contract.rs`
 - `crates/orderbook/tests/types_contract.rs`
 - `crates/orderbook/tests/builder_contract.rs`
+- `crates/orderbook/tests/builder_contract.rs::builder_debug_redacts_userinfo_in_custom_base_url_overrides`
 - `crates/orderbook/tests/host_policy_contract.rs`
 - `crates/subgraph/tests/api_contract.rs`
 - `crates/subgraph/tests/builder_contract.rs`
+- `crates/subgraph/tests/builder_contract.rs::builder_debug_redacts_userinfo_in_custom_endpoint_url`
 - `crates/subgraph/tests/host_policy_contract.rs`
 - `crates/browser-wallet/tests/wallet_contract.rs`
+- `crates/app-data/tests/pinning_contract.rs::pinning_config_display_redacts_secret_bytes`
 - `crates/trading/tests/quote_contract.rs`
 - `crates/trading/tests/post_contract.rs`
 - `crates/trading/tests/property_contract.rs`

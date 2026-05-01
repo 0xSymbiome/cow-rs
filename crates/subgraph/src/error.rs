@@ -15,6 +15,9 @@ pub struct SubgraphGraphQlError {
     /// Optional source locations within the submitted document.
     #[serde(default)]
     pub locations: Vec<SubgraphGraphQlErrorLocation>,
+    /// Optional GraphQL extension metadata returned by the endpoint.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub extensions: Option<Value>,
 }
 
 impl SubgraphGraphQlError {
@@ -24,6 +27,7 @@ impl SubgraphGraphQlError {
         Self {
             message: message.into(),
             locations,
+            extensions: None,
         }
     }
 }

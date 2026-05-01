@@ -242,3 +242,75 @@ fn typed_flashloan_field_survives_appdataparams_roundtrip() {
         "typed flashloan sub-field must leave the open-ended metadata map on deserialization",
     );
 }
+
+fn flashloan_v1_7_0_document() -> Value {
+    json!({
+        "version": "1.7.0",
+        "appCode": "aave-v3-flashloan",
+        "metadata": {
+            "flashloan": {
+                "amount": AMOUNT,
+                "liquidityProvider": LIQUIDITY_PROVIDER,
+                "protocolAdapter": PROTOCOL_ADAPTER,
+                "receiver": RECEIVER,
+                "token": TOKEN
+            }
+        }
+    })
+}
+
+#[test]
+fn flashloan_v1_7_0_rejects_invalid_address() {
+    let mut doc = flashloan_v1_7_0_document();
+    doc["metadata"]["flashloan"]["liquidityProvider"] = json!("not-an-address");
+
+    let validation = validate_app_data_doc(&doc);
+    assert!(!validation.success);
+    assert!(
+        validation
+            .errors
+            .as_deref()
+            .is_some_and(|errors| errors.contains("liquidityProvider")),
+        "schema error must identify the invalid address field, got {:?}",
+        validation.errors,
+    );
+}
+
+#[test]
+fn flashloan_v1_7_0_rejects_zero_amount() {
+    let error = FlashloanHints::new(
+        address(LIQUIDITY_PROVIDER),
+        address(PROTOCOL_ADAPTER),
+        address(RECEIVER),
+        address(TOKEN),
+        Amount::zero(),
+    )
+    .expect_err("zero amount must fail validation");
+    assert!(matches!(
+        error,
+        AppDataError::InvalidFlashloanHints {
+            field: "amount",
+            reason: ValidationReason::OutOfRange { .. },
+        }
+    ));
+}
+
+#[test]
+fn flashloan_v1_7_0_rejects_missing_field() {
+    let mut doc = flashloan_v1_7_0_document();
+    doc["metadata"]["flashloan"]
+        .as_object_mut()
+        .expect("flashloan fixture is an object")
+        .remove("receiver");
+
+    let validation = validate_app_data_doc(&doc);
+    assert!(!validation.success);
+    assert!(
+        validation
+            .errors
+            .as_deref()
+            .is_some_and(|errors| errors.contains("receiver") || errors.contains("required")),
+        "schema error must identify the missing field, got {:?}",
+        validation.errors,
+    );
+}

@@ -156,6 +156,21 @@ fn builder_debug_redacts_base_url_credentials() {
 }
 
 #[test]
+fn builder_debug_redacts_userinfo_in_custom_base_url_overrides() {
+    let builder = OrderBookApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .environment(CowEnv::Prod)
+        .base_url("https://user:pass@custom.example/mainnet?apiKey=secret");
+
+    let debug = format!("{builder:#?}");
+
+    assert!(debug.contains(REDACTED_PLACEHOLDER));
+    assert!(!debug.contains("user:pass"));
+    assert!(!debug.contains("apiKey=secret"));
+    assert!(!debug.contains("custom.example"));
+}
+
+#[test]
 fn env_base_url_overrides_debug_redacts_embedded_credentials() {
     let mut overrides = EnvBaseUrlOverrides::default();
     overrides.set(CowEnv::Prod, "https://u:p@example.com/");

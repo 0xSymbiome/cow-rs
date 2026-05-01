@@ -35,3 +35,15 @@ dtos:
     inventory: parity/openapi/onchain-order-data-inventory.yaml
     fixtures:
       - parity/fixtures/orderbook/onchain_order_data.json
+
+  - schema: components.schemas.TotalSurplus
+    rust_type: cow_sdk_orderbook::TotalSurplus
+    inventory: parity/openapi/total-surplus-inventory.yaml
+    fixtures:
+      - parity/fixtures/orderbook/total_surplus.json
+
+  - schema: components.schemas.CompetitionOrderStatus.value.items
+    rust_type: cow_sdk_orderbook::SolverExecution
+    inventory: parity/openapi/solver-execution-inventory.yaml
+    fixtures:
+      - parity/fixtures/orderbook/solver_execution.json

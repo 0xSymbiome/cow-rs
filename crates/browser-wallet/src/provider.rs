@@ -84,6 +84,13 @@ impl Origin {
                 message: "provider origin must not contain control characters".to_owned(),
             });
         }
+        if !origin_scheme_is_documented(trimmed) {
+            return Err(BrowserWalletError::InvalidProviderOrigin {
+                message:
+                    "provider origin scheme must be http, https, test, transport, or reverse-DNS"
+                        .to_owned(),
+            });
+        }
         Ok(Self(trimmed.to_owned()))
     }
 
@@ -92,6 +99,16 @@ impl Origin {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+}
+
+fn origin_scheme_is_documented(value: &str) -> bool {
+    let Some((scheme, _)) = value.split_once(':') else {
+        return true;
+    };
+    matches!(
+        scheme.to_ascii_lowercase().as_str(),
+        "http" | "https" | "test" | "transport"
+    )
 }
 
 impl fmt::Debug for Origin {

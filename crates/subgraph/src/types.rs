@@ -313,8 +313,16 @@ where
 
 fn value_to_string(value: serde_json::Value) -> Result<String, &'static str> {
     match value {
-        serde_json::Value::String(value) => Ok(value),
+        serde_json::Value::String(value) if is_finite_scalar_literal(&value) => Ok(value),
+        serde_json::Value::String(_) => Err("expected finite string or number"),
         serde_json::Value::Number(value) => Ok(value.to_string()),
         _ => Err("expected string or number"),
     }
+}
+
+fn is_finite_scalar_literal(value: &str) -> bool {
+    !matches!(
+        value.trim().to_ascii_lowercase().as_str(),
+        "nan" | "+nan" | "-nan" | "inf" | "+inf" | "-inf" | "infinity" | "+infinity" | "-infinity"
+    )
 }

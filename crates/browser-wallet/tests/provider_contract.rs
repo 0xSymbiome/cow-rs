@@ -2,6 +2,7 @@
 
 use cow_sdk_browser_wallet::{
     BrowserWallet, BrowserWalletError, Eip1193ProviderBuilder, MockEip1193Transport, Origin,
+    WalletChainParameters,
 };
 use cow_sdk_core::AsyncProvider;
 use cow_sdk_core::{Address, Amount, ContractCall, HexData, SupportedChainId, TransactionRequest};
@@ -75,4 +76,60 @@ fn provider_builder_accepts_explicit_trusted_origin() {
         provider.origin().map(Origin::as_str),
         Some("test://wallet/sepolia")
     );
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn wallet_add_chain_payload_urls_are_not_subject_to_external_host_policy() {
+    let transport = MockEip1193Transport::sepolia();
+    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
+    wallet.connect().await.unwrap();
+
+    let chain = WalletChainParameters::for_supported_chain(SupportedChainId::Base)
+        .try_with_rpc_url("https://rpc.private.example.invalid/base")
+        .unwrap()
+        .try_with_block_explorer_url("https://explorer.private.example.invalid/base")
+        .unwrap();
+
+    wallet.add_chain(&chain).await.unwrap();
+
+    let add_chain_request = transport
+        .request_log()
+        .into_iter()
+        .find(|record| record.method == "wallet_addEthereumChain")
+        .expect("wallet_addEthereumChain request must be recorded");
+    let payload = add_chain_request.params.unwrap();
+    let request = payload.as_array().unwrap().first().unwrap();
+    assert_eq!(
+        request["rpcUrls"][0],
+        serde_json::json!("https://rpc.private.example.invalid/base")
+    );
+    assert_eq!(
+        request["blockExplorerUrls"][0],
+        serde_json::json!("https://explorer.private.example.invalid/base")
+    );
+}
+
+#[test]
+fn trusted_origin_accepts_documented_schemes_and_rejects_others() {
+    for accepted in [
+        "https://wallet.example",
+        "http://localhost:3000",
+        "test://wallet/sepolia",
+        "transport:Mock Wallet",
+        "io.rabby",
+    ] {
+        assert!(Origin::new(accepted).is_ok(), "{accepted} must be accepted");
+    }
+
+    for rejected in [
+        "javascript:alert(1)",
+        "data:text/plain,wallet",
+        "file:///tmp/wallet",
+    ] {
+        let error = Origin::new(rejected).unwrap_err();
+        assert!(matches!(
+            error,
+            BrowserWalletError::InvalidProviderOrigin { .. }
+        ));
+    }
 }

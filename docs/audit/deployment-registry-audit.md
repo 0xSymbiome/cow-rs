@@ -1,8 +1,8 @@
 # Deployment Registry Audit
 
 Status: Current
-Last reviewed: 2026-04-29
-Re-review by: 2026-07-28
+Last reviewed: 2026-05-01
+Re-review by: 2026-07-30
 Owning surface: `cow-sdk-contracts` deployment registry and provenance manifest
 Refresh trigger: Changes to `crates/contracts/registry.toml`, `crates/contracts/deployment-provenance.yaml`, the compile-time validator in `build.rs`, the `registry-confirm` live-confirmation contract, deployed addresses, or supported chains
 Related docs:
@@ -28,6 +28,7 @@ It does not cover binding generation, partner API routing, arbitrary consumer RP
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Registry completeness | Every `(ContractId, SupportedChainId, CowEnv)` registry row has one provenance row | Conforms |
+| Runtime lookup matrix | Every supported `(ContractId, SupportedChainId, CowEnv)` tuple is either a typed deployed address or an explicit unsupported lookup without silent fallback | Conforms |
 | Source authority | Each provenance row records primary or secondary upstream authority at a pinned source commit | Conforms |
 | Compile-time validation | `build.rs` rejects missing, duplicate, extra, malformed, or address-mismatched provenance rows | Conforms |
 | Live confirmation | Every release-facing row records `kind: code_hash` with a non-zero `keccak256(eth_getCode)` value | Conforms |
@@ -48,6 +49,12 @@ The provenance row records:
 - `source_path`
 - `source_symbol`
 - `live_confirmation`
+
+The runtime lookup regression enumerates every shipped contract id across each
+supported chain and environment. Tuples present in the embedded manifest must
+resolve to the same non-zero address as their manifest row; unsupported tuples
+must stay typed misses rather than falling back to another chain, environment,
+or contract family.
 
 ### Source Authority
 
@@ -106,6 +113,7 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/contracts/tests/registry.rs`
+- `crates/contracts/tests/registry.rs::registry_address_lookup_matrix_is_exhaustive`
 - `crates/contracts/tests/build_rs_compile_fail.rs`
 - `crates/contracts/tests/deployment_provenance_contract.rs`
 - `scripts/validation-smoke/tests/registry_confirm.rs`

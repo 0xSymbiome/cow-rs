@@ -179,3 +179,54 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
     assert_eq!(parameters[1][1], serde_json::json!([]));
     assert_eq!(parameters[1][2], serde_json::json!([]));
 }
+
+#[test]
+fn settlement_reader_filled_amounts_decodes_known_payload() {
+    let provider = MockProvider::new();
+    provider.set_response("[\"1000000000000000000\",\"42\"]");
+
+    let settlement_reader = SettlementReader {
+        settlement_address: Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
+        settlement_abi_json: serde_json::to_string(&["function filledAmountsForOrders(bytes[])"])
+            .unwrap(),
+        reader_address: Address::new("0x5555555555555555555555555555555555555555").unwrap(),
+        reader_abi_json: serde_json::to_string(&["function filledAmountsForOrders(bytes[])"])
+            .unwrap(),
+        provider: provider.clone(),
+    };
+    let order_uids = vec![
+        OrderUid::new(format!(
+            "0x{}{}{}",
+            "01".repeat(32),
+            "02".repeat(20),
+            "00000001"
+        ))
+        .unwrap(),
+        OrderUid::new(format!(
+            "0x{}{}{}",
+            "03".repeat(32),
+            "04".repeat(20),
+            "00000002"
+        ))
+        .unwrap(),
+    ];
+
+    assert_eq!(
+        settlement_reader
+            .filled_amounts_for_orders(&order_uids)
+            .unwrap(),
+        vec![
+            Amount::new("1000000000000000000").unwrap(),
+            Amount::new("42").unwrap()
+        ],
+    );
+
+    let call = provider.calls.borrow().last().cloned().unwrap();
+    assert_eq!(call.method, "filledAmountsForOrders");
+    let payload: serde_json::Value = serde_json::from_str(&call.args_json).unwrap();
+    assert_eq!(
+        payload["baseAddress"],
+        serde_json::json!(settlement_reader.settlement_address)
+    );
+    assert_eq!(payload["parameters"], serde_json::json!(order_uids));
+}

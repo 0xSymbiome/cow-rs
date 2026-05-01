@@ -14,8 +14,9 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use cow_sdk_browser_wallet::{
-    BrowserWallet, BrowserWalletError, InjectedWalletDetectionOptions, MockEip1193Transport,
-    WalletChainChangeKind, WalletChainParameters, WalletEvent, WalletNativeCurrency,
+    BrowserWallet, BrowserWalletError, InjectedWalletDetectionOptions,
+    InjectedWalletDiscoverySource, InjectedWalletInfo, MockEip1193Transport, WalletChainChangeKind,
+    WalletChainParameters, WalletEvent, WalletNativeCurrency,
 };
 use cow_sdk_core::AsyncSigner;
 use cow_sdk_core::{
@@ -728,4 +729,39 @@ fn chain_parameters_public_debug_and_serialize_redact_url_credentials() {
         assert!(!rendered.contains("key=secret"));
         assert!(!rendered.contains("base.example.invalid"));
     }
+}
+
+#[test]
+fn eip6963_provider_iteration_order_matches_documented_rule() {
+    let announced = [
+        InjectedWalletInfo::new(
+            "MetaMask",
+            InjectedWalletDiscoverySource::Eip6963,
+            Some("wallet-metamask".to_owned()),
+            Some("io.metamask".to_owned()),
+            Some("data:text/plain,metamask".to_owned()),
+            true,
+            false,
+            false,
+        ),
+        InjectedWalletInfo::new(
+            "Rabby",
+            InjectedWalletDiscoverySource::Eip6963,
+            Some("wallet-rabby".to_owned()),
+            Some("io.rabby".to_owned()),
+            Some("data:text/plain,rabby".to_owned()),
+            false,
+            false,
+            true,
+        ),
+    ];
+
+    assert_eq!(
+        announced
+            .iter()
+            .map(|wallet| wallet.provider_label.as_str())
+            .collect::<Vec<_>>(),
+        vec!["MetaMask", "Rabby"],
+        "EIP-6963 candidates must be presented in announcement order",
+    );
 }

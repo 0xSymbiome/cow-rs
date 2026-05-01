@@ -1,0 +1,30 @@
+schema: components.schemas.CompetitionOrderStatus.value.items
+allOf: []
+oneOf: []
+expanded_required:
+- solver
+expanded_fields:
+- name: solver
+  rust_name: solver
+  type: !scalar
+    scalar: string
+  required: true
+  nullable: false
+  default: null
+  source: components.schemas.CompetitionOrderStatus.value.items
+- name: executedSellAmount
+  rust_name: executed_sell_amount
+  type: !scalar
+    scalar: string
+  required: false
+  nullable: false
+  default: null
+  source: components.schemas.CompetitionOrderStatus.value.items
+- name: executedBuyAmount
+  rust_name: executed_buy_amount
+  type: !scalar
+    scalar: string
+  required: false
+  nullable: false
+  default: null
+  source: components.schemas.CompetitionOrderStatus.value.items

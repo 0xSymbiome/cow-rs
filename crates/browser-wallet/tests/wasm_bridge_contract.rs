@@ -2,7 +2,7 @@
 
 use cow_sdk_browser_wallet::{
     BrowserWallet, BrowserWalletError, InjectedWalletDetectionOptions,
-    InjectedWalletDiscoverySource, MockRequestRecord, Origin, WalletEvent,
+    InjectedWalletDiscoverySource, InjectedWalletInfo, MockRequestRecord, Origin, WalletEvent,
 };
 use cow_sdk_core::{
     AsyncSigner, SupportedChainId, TypedDataDomain, TypedDataField, TypedDataPayload,
@@ -613,6 +613,79 @@ async fn successful_switch_requests_fail_when_the_refreshed_session_stays_on_a_d
             "eth_chainId".to_owned(),
         ]
     );
+}
+
+#[wasm_bindgen_test(async)]
+async fn mock_wallet_console_state_machine_is_deterministic() {
+    let fixture = LegacyProviderFixture::install(json!({
+        "accounts": [ACCOUNT],
+        "chainId": "0xaa36a7",
+        "flags": {
+            "isMetaMask": true,
+        },
+    }));
+
+    let wallet = BrowserWallet::detect_with_trusted_origin(
+        Origin::new("test://window.ethereum").expect("test origin should parse"),
+    )
+    .expect("legacy provider detection should succeed")
+    .expect("legacy provider should be present");
+
+    let connected = wallet.connect().await.expect("connect should succeed");
+    assert!(connected.connected);
+    assert_eq!(
+        connected.chain_id,
+        Some(u64::from(SupportedChainId::Sepolia))
+    );
+
+    let reset = wallet.reset_session();
+    assert!(!reset.connected);
+    assert_eq!(reset.chain_id, None);
+
+    let refreshed = wallet
+        .refresh_session()
+        .await
+        .expect("refresh should succeed");
+    assert!(refreshed.connected);
+    assert_eq!(
+        refreshed.chain_id,
+        Some(u64::from(SupportedChainId::Sepolia))
+    );
+
+    let methods = fixture
+        .request_log()
+        .into_iter()
+        .map(|record| record.method)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        methods,
+        vec![
+            "eth_requestAccounts".to_owned(),
+            "eth_chainId".to_owned(),
+            "eth_accounts".to_owned(),
+            "eth_chainId".to_owned(),
+        ]
+    );
+}
+
+#[wasm_bindgen_test]
+fn eip6963_discovery_event_serde_roundtrip() {
+    let info = InjectedWalletInfo::new(
+        "Rabby",
+        InjectedWalletDiscoverySource::Eip6963,
+        Some("wallet-rabby".to_owned()),
+        Some("io.rabby".to_owned()),
+        Some("data:text/plain,rabby".to_owned()),
+        false,
+        false,
+        true,
+    );
+
+    let value = serde_json::to_value(&info).expect("EIP-6963 info must serialize");
+    let reparsed: InjectedWalletInfo =
+        serde_json::from_value(value).expect("EIP-6963 info must deserialize");
+
+    assert_eq!(reparsed, info);
 }
 
 fn order_payload(chain_id: SupportedChainId) -> TypedDataPayload {

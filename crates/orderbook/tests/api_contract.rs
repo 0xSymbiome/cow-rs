@@ -367,6 +367,40 @@ async fn get_orders_uses_default_pagination_and_transforms_orders() {
 }
 
 #[tokio::test]
+async fn account_orders_pagination_boundary_table() {
+    for (offset, limit) in [(0, 1), (1, 1000), (u32::MAX - 1, u32::MAX)] {
+        let server = MockServer::start().await;
+        let uid = sample_order_uid();
+        Mock::given(method("GET"))
+            .and(path(format!(
+                "/api/v1/account/{}/orders",
+                sample_owner().as_str()
+            )))
+            .and(query_param("offset", offset.to_string()))
+            .and(query_param("limit", limit.to_string()))
+            .respond_with(ResponseTemplate::new(200).set_body_json(vec![sample_order_json(&uid)]))
+            .mount(&server)
+            .await;
+
+        let api = build_orderbook_api_with_base_url(
+            default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+            server.uri(),
+        );
+        let request = GetOrdersRequest::new(sample_owner())
+            .with_offset(offset)
+            .with_limit(limit);
+
+        let orders = api
+            .get_orders(&request)
+            .await
+            .unwrap_or_else(|error| panic!("pagination case {offset}/{limit} failed: {error}"));
+
+        assert_eq!(orders.len(), 1);
+        assert_eq!(orders[0].uid, uid);
+    }
+}
+
+#[tokio::test]
 async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))

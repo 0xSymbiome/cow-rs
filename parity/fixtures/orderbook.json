@@ -227,6 +227,16 @@
       }
     },
     {
+      "id": "trade_quote_id_matches_parent_quote_response",
+      "kind": "behavior-contract",
+      "description": "Order creation from a quoted response preserves the parent quote id while trade history remains linked through the submitted order UID.",
+      "expected": {
+        "quote_response_id": 42,
+        "order_creation_quote_id": 42,
+        "trade_order_uid": "0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710"
+      }
+    },
+    {
       "id": "orderbook-signed-cancellation-route",
       "kind": "behavior-scenario",
       "description": "Signed order cancellations are sent as DELETE requests to the orders endpoint.",

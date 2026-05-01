@@ -147,6 +147,31 @@ fn builder_debug_redacts_base_url_credentials() {
 }
 
 #[test]
+fn builder_debug_redacts_userinfo_in_custom_endpoint_url() {
+    let base_urls: SubgraphApiBaseUrls = [
+        (
+            SupportedChainId::Mainnet,
+            Some("https://user:pass@subgraph.example/path?apiKey=secret-token".to_owned()),
+        ),
+        (SupportedChainId::GnosisChain, None),
+    ]
+    .into_iter()
+    .collect();
+    let builder = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("partner-key")
+        .base_urls(base_urls);
+
+    let debug = format!("{builder:#?}");
+
+    assert!(debug.contains(REDACTED_PLACEHOLDER));
+    assert!(!debug.contains("partner-key"));
+    assert!(!debug.contains("user:pass"));
+    assert!(!debug.contains("apiKey=secret-token"));
+    assert!(!debug.contains("subgraph.example"));
+}
+
+#[test]
 fn explicit_transport_overrides_default_native_handle() {
     let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(
         ReqwestTransport::new(

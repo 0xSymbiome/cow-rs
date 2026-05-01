@@ -163,6 +163,49 @@ test("multi-wallet selection, reset, reconnect, and forget remain explicit", asy
   expect(state.sessionConnected).toBe(false);
 });
 
+test("connect disconnect flap does not leak session state", async ({ page }) => {
+  await installInjectedWalletFixtures(page, MULTI_WALLET_FIXTURE);
+  await loadConsole(page);
+  await connectRabby(page);
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await page.locator("#reset-wallet").click();
+    await expectInjectedState(page, "reset-wallet", "success");
+
+    let state = await contractState(page);
+    expect(state.selectedWallet).toBe("Rabby");
+    expect(state.sessionConnected).toBe(false);
+    expect(state.sessionAccount).toBeNull();
+
+    await page.locator("#connect-wallet").click();
+    await expectInjectedState(page, "connect-wallet", "success");
+
+    state = await contractState(page);
+    expect(state.selectedWallet).toBe("Rabby");
+    expect(state.sessionConnected).toBe(true);
+    expect(state.sessionAccount).toBe(SECONDARY_ACCOUNT);
+  }
+
+  await page.locator("#forget-wallet").click();
+  await expectInjectedState(page, "forget-wallet", "success");
+
+  let state = await contractState(page);
+  expect(state.selectedWallet).toBeNull();
+  expect(state.confirmedWallet).toBeNull();
+  expect(state.sessionConnected).toBe(false);
+  expect(state.sessionAccount).toBeNull();
+
+  await page.locator("#wallet-selection").fill("0");
+  await page.locator("#confirm-wallet").click();
+  await expectInjectedState(page, "confirm-wallet", "success");
+  await page.locator("#connect-wallet").click();
+  await expectInjectedState(page, "connect-wallet", "success");
+
+  state = await contractState(page);
+  expect(state.selectedWallet).toBe("MetaMask");
+  expect(state.sessionAccount).toBe(PRIMARY_ACCOUNT);
+});
+
 test("typed-data signing and route-mocked quote-submit-cancel stay deterministic", async ({
   page,
 }) => {

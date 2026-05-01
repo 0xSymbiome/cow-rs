@@ -37,15 +37,15 @@ use alloy_sol_types::{
 use cow_sdk_contracts::{
     AllowListReader, CANCELLATIONS_TYPE_FIELDS, ContractId, DEPLOYER_CONTRACT, EIP1271_MAGICVALUE,
     Eip1967Slot, EthFlowOrderData, IERC20, IERC20Permit, InteractionLike, ORDER_TYPE_FIELDS,
-    ORDER_TYPE_HASH, ORDER_UID_LENGTH, OrderFlags, Registry, SALT, SettlementEncoder,
-    SettlementReader, SigningScheme, Swap, TokenRegistry, TradeFlags, TradeSimulator,
-    VAULT_INTERFACE, encode_create_order_calldata, encode_invalidate_order_calldata,
-    encode_order_flags, encode_swap_step, encode_trade_flags, normalize_interaction,
-    permit_typed_data_hash, required_vault_roles,
+    ORDER_TYPE_HASH, ORDER_UID_LENGTH, Order, OrderFlags, Registry, SALT, SettlementEncoder,
+    SettlementReader, Signature, SigningScheme, Swap, TokenRegistry, TradeExecution, TradeFlags,
+    TradeSimulator, VAULT_INTERFACE, encode_create_order_calldata,
+    encode_invalidate_order_calldata, encode_order_flags, encode_swap_step, encode_trade_flags,
+    normalize_interaction, permit_typed_data_hash, required_vault_roles,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderDigest, OrderKind, OrderUid,
-    SellTokenSource, SupportedChainId, TypedDataDomain,
+    Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, CowEnv, OrderDigest, OrderKind,
+    OrderUid, SellTokenSource, SupportedChainId, TypedDataDomain,
 };
 use serde_json::Value;
 
@@ -150,6 +150,12 @@ fn parity_fixture_cases_hold() {
             }
             "contracts-vault-relayer-transfer-from-accounts-calldata" => {
                 assert_vault_relayer_transfer_from_accounts_calldata(id, expected);
+            }
+            "contracts-vault-relayer-mixed-balance-transfer-from-accounts-calldata" => {
+                assert_vault_relayer_mixed_balance_transfer_from_accounts_calldata(id, expected);
+            }
+            "contracts-settlement-clearing-prices-multi-trade" => {
+                assert_settlement_clearing_prices_multi_trade(id, expected);
             }
             "contracts-ethflow-create-order-calldata" => {
                 assert_ethflow_create_order_calldata(id, expected);
@@ -870,6 +876,153 @@ fn assert_vault_relayer_transfer_from_accounts_calldata(id: &str, expected: &Val
     .abi_encode();
 
     assert_calldata_hex(id, &call_data, expected_hex);
+}
+
+fn assert_vault_relayer_mixed_balance_transfer_from_accounts_calldata(id: &str, expected: &Value) {
+    let expected_hex = expected["call_data"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
+
+    let transfer =
+        |account: &str, token: &str, amount: u128, balance: u8| IGPv2VaultRelayer::Transfer {
+            account: to_sol_address(&Address::new(account).unwrap()),
+            token: to_sol_address(&Address::new(token).unwrap()),
+            amount: U256::from(amount),
+            balance,
+        };
+    let call_data = IGPv2VaultRelayer::transferFromAccountsCall {
+        transfers: vec![
+            transfer(
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                1_000_000_000_000_000_000,
+                0,
+            ),
+            transfer(
+                "0xcccccccccccccccccccccccccccccccccccccccc",
+                "0xdddddddddddddddddddddddddddddddddddddddd",
+                2_000_000_000_000_000_000,
+                1,
+            ),
+            transfer(
+                "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "0xffffffffffffffffffffffffffffffffffffffff",
+                3_000_000_000_000_000_000,
+                2,
+            ),
+        ],
+    }
+    .abi_encode();
+
+    assert_calldata_hex(id, &call_data, expected_hex);
+}
+
+fn assert_settlement_clearing_prices_multi_trade(id: &str, expected: &Value) {
+    let expected_tokens = expected["tokens"]
+        .as_array()
+        .unwrap_or_else(|| panic!("case {id}: expected.tokens must be an array"))
+        .iter()
+        .map(|value| {
+            value
+                .as_str()
+                .unwrap_or_else(|| panic!("case {id}: token entries must be strings"))
+        })
+        .collect::<Vec<_>>();
+    let expected_prices = expected["clearing_prices"]
+        .as_array()
+        .unwrap_or_else(|| panic!("case {id}: expected.clearing_prices must be an array"))
+        .iter()
+        .map(|value| {
+            value
+                .as_str()
+                .unwrap_or_else(|| panic!("case {id}: clearing price entries must be strings"))
+        })
+        .collect::<Vec<_>>();
+
+    let mut encoder = SettlementEncoder::new(sample_domain());
+    encoder
+        .encode_trade(
+            &settlement_sample_order(
+                "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+                "0x6b175474e89094c44da98b954eedeac495271d0f",
+                "1000",
+                "2000",
+                1_700_000_001,
+            ),
+            &settlement_sample_signature(),
+            Some(TradeExecution::new(Amount::new("1000").unwrap())),
+        )
+        .expect("first fixture trade must encode");
+    encoder
+        .encode_trade(
+            &settlement_sample_order(
+                "0x1111111111111111111111111111111111111111",
+                "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+                "3000",
+                "4000",
+                1_700_000_002,
+            ),
+            &settlement_sample_signature(),
+            Some(TradeExecution::new(Amount::new("3000").unwrap())),
+        )
+        .expect("second fixture trade must encode");
+
+    let prices = serde_json::from_value::<cow_sdk_contracts::Prices>(serde_json::json!({
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "1000000000000000000",
+        "0x6b175474e89094c44da98b954eedeac495271d0f": "500000000000000",
+        "0x1111111111111111111111111111111111111111": "250000000000000000"
+    }))
+    .expect("fixture prices must deserialize");
+
+    assert_eq!(
+        encoder
+            .tokens()
+            .iter()
+            .map(Address::as_str)
+            .collect::<Vec<_>>(),
+        expected_tokens,
+        "case {id}: token registry order must follow first-seen trade order",
+    );
+    assert_eq!(
+        encoder
+            .clearing_prices(&prices)
+            .expect("fixture prices cover every registered token")
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>(),
+        expected_prices,
+        "case {id}: clearing prices must align with encoded token order",
+    );
+}
+
+fn settlement_sample_order(
+    sell_token: &str,
+    buy_token: &str,
+    sell_amount: &str,
+    buy_amount: &str,
+    valid_to: u32,
+) -> Order {
+    Order::new(
+        Address::new(sell_token).unwrap(),
+        Address::new(buy_token).unwrap(),
+        None,
+        Amount::new(sell_amount).unwrap(),
+        Amount::new(buy_amount).unwrap(),
+        valid_to,
+        AppDataHex::new("0x0000000000000000000000000000000000000000000000000000000000000000")
+            .unwrap(),
+        Amount::zero(),
+        OrderKind::Sell,
+        false,
+        Some(SellTokenSource::Erc20),
+        Some(BuyTokenDestination::Erc20),
+    )
+}
+
+fn settlement_sample_signature() -> Signature {
+    Signature::PreSign {
+        owner: Address::new("0x9999999999999999999999999999999999999999").unwrap(),
+    }
 }
 
 fn assert_ethflow_create_order_calldata(id: &str, expected: &Value) {

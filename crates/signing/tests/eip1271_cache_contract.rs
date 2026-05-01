@@ -175,6 +175,39 @@ async fn cache_skips_every_non_cacheable_error_class() {
     }
 }
 
+#[tokio::test(flavor = "current_thread")]
+async fn eip1271_eoa_verifier_does_not_cache() {
+    let verifier = sample_address(6);
+    let request = Eip1271VerificationRequest::new(
+        verifier.clone(),
+        Hash32::from_bytes(digest(0x66)),
+        HexData::new("0x1234").unwrap(),
+    );
+    let provider = ScenarioProvider::new(NonCacheableScenario::MissingCode);
+    let cache = InMemoryEip1271VerificationCache::default();
+
+    for attempt in 1..=2 {
+        let error = verify_eip1271_signature_async(&provider, &request, &cache)
+            .await
+            .expect_err("EOA verifier must fail before signature verification");
+        assert!(matches!(
+            error,
+            ContractsError::UnsupportedEip1271Verifier { verifier: ref got }
+                if got == &verifier
+        ));
+        assert_eq!(
+            cache.len(),
+            0,
+            "EOA verifier attempt {attempt} must not populate the verification cache",
+        );
+        assert_eq!(
+            provider.counts().get_code,
+            attempt,
+            "EOA verifier attempt {attempt} must re-hit provider code lookup",
+        );
+    }
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn in_memory_cache_is_thread_safe_under_concurrent_probe_and_populate_load() {
     const TASKS: usize = 64;

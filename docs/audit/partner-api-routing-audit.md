@@ -1,9 +1,9 @@
 # Partner API Routing Audit
 
 Status: Current  
-Last reviewed: 2026-04-21  
+Last reviewed: 2026-05-01
 Owning surface: `cow-sdk-core` route selection and `cow-sdk-orderbook` partner header assembly  
-Refresh trigger: Changes to `ApiContext` partner-route selection, API-key validation, `X-API-Key` header construction, or partner endpoint family activation  
+Refresh trigger: Changes to `ApiContext` partner-route selection, API-key validation, `X-API-Key` header construction, partner endpoint family activation, or orderbook host-policy composition
 Related docs:
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [Verification Guide](../verification-guide.md)
@@ -16,6 +16,7 @@ This audit covers:
 - partner route selection in `ApiContext`
 - local validation of partner API key input before orderbook request assembly
 - `X-API-Key` header construction in `cow-sdk-orderbook`
+- composition between partner routing and orderbook external-host policy
 
 It does not cover unrelated transport retry policy, subgraph gateway routing,
 or broader credential-redaction questions already covered elsewhere.
@@ -26,6 +27,7 @@ or broader credential-redaction questions already covered elsewhere.
 | --- | --- | --- |
 | Partner route selection | Partner endpoint families activate only when the configured API key is locally header-valid | Conforms |
 | Header assembly | `X-API-Key` request headers are built from locally validated input instead of silently dropping invalid values | Conforms |
+| Host-policy composition | Partner routing does not bypass external-host validation for custom base URLs | Conforms |
 | Failure mode | Invalid partner API keys fail locally before route resolution or request transport proceeds | Conforms |
 
 ## Current Contract
@@ -48,6 +50,12 @@ Invalid partner API keys fail as a local validation error before request
 transport begins. This keeps the problem at the configuration boundary instead
 of converting it into a remote authorization failure with ambiguous cause.
 
+### Host-Policy Composition
+
+Partner route activation composes with the same orderbook base-URL host policy
+as non-partner routes. A partner API key can select the partner endpoint family
+only after the configured host is canonical or explicitly reviewed.
+
 ## Evidence
 
 Primary implementation points:
@@ -59,6 +67,7 @@ Primary regression coverage:
 
 - `crates/core/tests/config_contract.rs`
 - `crates/orderbook/tests/api_contract.rs`
+- `crates/orderbook/tests/host_policy_contract.rs::partner_api_routing_x_host_policy_compose_correctly`
 
 Validation surface:
 

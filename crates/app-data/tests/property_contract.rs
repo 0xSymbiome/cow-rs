@@ -341,6 +341,26 @@ proptest! {
         );
     }
 
+    #[test]
+    fn canonical_json_handles_unicode_escapes_consistently(
+        generated in prop::collection::vec(any::<char>(), 0..=16).prop_map(|chars| chars.into_iter().collect::<String>()),
+    ) {
+        let literal = "quote\" slash\\ newline\n tab\t snowman\u{2603}";
+        let document = Value::Object(Map::from_iter([
+            ("generated".to_owned(), Value::String(generated.clone())),
+            (generated.clone(), Value::String(literal.to_owned())),
+        ]));
+
+        let rendered = stringify_deterministic(&document).unwrap();
+
+        prop_assert_eq!(rendered.clone(), manual_canonical_json(&document));
+        prop_assert_eq!(serde_json::from_str::<Value>(&rendered).unwrap(), document);
+        prop_assert!(rendered.contains("\\\""));
+        prop_assert!(rendered.contains("\\\\"));
+        prop_assert!(rendered.contains("\\n"));
+        prop_assert!(rendered.contains("\\t"));
+    }
+
     /// [`get_app_data_info`] is invariant under equivalent top-level
     /// key orderings: permuting the root object preserves the CID, the
     /// app-data content string, and the app-data hex digest.

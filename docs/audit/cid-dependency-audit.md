@@ -1,7 +1,7 @@
 # CID Dependency Audit
 
 Status: Current
-Last reviewed: 2026-04-27
+Last reviewed: 2026-05-01
 Owning surface: `cow-sdk-app-data` CID encoding and published dependency boundary
 Refresh trigger: Changes to CID dependencies, the supported CID encoding, or the published dependency posture for the app-data stack
 Related docs:
@@ -28,7 +28,7 @@ outside the app-data boundary.
 | --- | --- | --- |
 | Supported CID conversion | Keep `cid`, `multihash`, and `multibase` as the maintained path | Conforms |
 | Published upstream dependency posture | `cid 0.11.3` no longer reaches the yanked `core2` dependency path | Conforms |
-| Unsupported CID encodings | Reject malformed or unsupported inputs, including CIDv0 (`Qm...` / dag-pb / sha2-256), through typed errors | Conforms |
+| Unsupported CID encodings | Reject malformed or unsupported inputs, including CIDv0 (`Qm...` / dag-pb / sha2-256) and CIDv1 raw CIDs with non-keccak256 multihashes, through typed errors | Conforms |
 
 ## Current Contract
 
@@ -50,9 +50,9 @@ The supported CID input is intentionally narrow:
 
 Rejected inputs include malformed app-data hex, malformed CID strings, wrong
 digest lengths, unsupported multicodec values, unsupported multihash
-values, and every non-CIDv1 version (in particular CIDv0 / `Qm...` /
-dag-pb / sha2-256, which is surfaced as a typed rejection at the decoder
-boundary).
+values, and every non-CIDv1 version. CIDv0 (`Qm...` / dag-pb /
+sha2-256), CIDv1 raw sha2-256, CIDv1 raw sha3-512, and CIDv1 raw
+blake2b-256 are surfaced as typed rejections at the decoder boundary.
 
 ### Published Upstream Dependency Posture
 
@@ -91,6 +91,7 @@ Primary regression coverage:
 - `crates/app-data/tests/cid_contract.rs::cid_digest_extraction_supports_the_supported_cid_shape`
 - `crates/app-data/tests/cid_contract.rs::invalid_app_data_hex_inputs_fail_closed`
 - `crates/app-data/tests/cid_contract.rs::unsupported_and_malformed_cids_are_rejected`
+- `crates/app-data/tests/cid_contract.rs::cid_rejects_non_keccak256_multihash_codecs`
 - `crates/app-data/tests/v0_cid_is_out_of_scope.rs::v0_cid_is_rejected_by_cid_to_app_data_hex`
 
 Validation surface:

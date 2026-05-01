@@ -165,6 +165,49 @@ fn subgraph_query_request_can_clear_variables_without_changing_the_document() {
 }
 
 #[test]
+fn multi_operation_document_requires_explicit_operation_name() {
+    let document = "query TokensByVolume { tokens(first: 1) { symbol } }\n\nquery TotalsForAudit { totals { orders } }";
+
+    let missing = SubgraphQueryRequest::new(document);
+    assert_eq!(document.matches("query ").count(), 2);
+    assert_eq!(missing.operation_name(), None);
+
+    let explicit = SubgraphQueryRequest::new(document).with_operation_name("TokensByVolume");
+    assert_eq!(explicit.operation_name(), Some("TokensByVolume"));
+}
+
+#[test]
+fn query_documents_open_response_dto_tolerates_unknown_extra_fields() {
+    let totals: cow_sdk_subgraph::TotalsResponse = serde_json::from_value(json!({
+        "totals": [
+            {
+                "tokens": "1",
+                "orders": "2",
+                "traders": "3",
+                "settlements": "4",
+                "unexpected": "ignored"
+            }
+        ],
+        "topLevelExtra": true
+    }))
+    .expect("totals response must ignore unknown extra fields");
+    assert_eq!(totals.totals[0].orders, "2");
+
+    let days: cow_sdk_subgraph::LastDaysVolumeResponse = serde_json::from_value(json!({
+        "dailyTotals": [
+            {
+                "timestamp": "1651104000",
+                "volumeUsd": "1",
+                "unexpected": "ignored"
+            }
+        ],
+        "topLevelExtra": true
+    }))
+    .expect("last-days response must ignore unknown extra fields");
+    assert_eq!(days.daily_totals[0].timestamp, 1_651_104_000);
+}
+
+#[test]
 fn totals_saved_query_document_builds_typed_test_only_request_body() {
     let request_body = Totals::build_query(totals::Variables);
 

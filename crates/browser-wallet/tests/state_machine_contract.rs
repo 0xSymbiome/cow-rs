@@ -1,7 +1,10 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use cow_sdk_browser_wallet::{BrowserWallet, MockEip1193Transport, WalletEvent};
+use cow_sdk_browser_wallet::{
+    BrowserWallet, BrowserWalletError, Eip1193Transport, MockEip1193Transport, WalletEvent,
+};
 use cow_sdk_core::{Address, SupportedChainId};
+use serde_json::{Value, json};
 
 #[tokio::test(flavor = "current_thread")]
 async fn wallet_session_state_machine_keeps_reset_and_refresh_boundaries_explicit() {
@@ -106,4 +109,50 @@ async fn wallet_event_state_machine_tracks_disconnect_and_explicit_reconnect() {
     assert!(events.iter().any(
         |event| matches!(event, WalletEvent::SessionUpdated { current, .. } if current.connected && current.chain_id == Some(u64::from(SupportedChainId::Mainnet)))
     ));
+}
+
+#[derive(Debug)]
+struct MalformedChainIdTransport;
+
+#[async_trait::async_trait(?Send)]
+impl Eip1193Transport for MalformedChainIdTransport {
+    fn label(&self) -> &'static str {
+        "Malformed Fixture Wallet"
+    }
+
+    async fn request(
+        &self,
+        method: &str,
+        _params: Option<Value>,
+    ) -> Result<Value, BrowserWalletError> {
+        match method {
+            "eth_accounts" => Ok(json!(["0x4444444444444444444444444444444444444444"])),
+            "eth_chainId" => Ok(json!({ "not": "a chain id" })),
+            other => Err(BrowserWalletError::UnsupportedRpcMethod {
+                method: other.to_owned(),
+                message: "fixture supports only session refresh methods".to_owned(),
+            }),
+        }
+    }
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn malformed_json_rpc_error_classifies_as_typed_provider_error() {
+    let wallet = BrowserWallet::from_transport_or_panic(MalformedChainIdTransport);
+
+    let error = wallet
+        .refresh_session()
+        .await
+        .expect_err("malformed eth_chainId response must fail");
+
+    match error {
+        BrowserWalletError::MalformedResponse { method, message } => {
+            assert_eq!(method, "eth_chainId");
+            assert!(
+                message.contains("expected string or number chain id"),
+                "malformed-response message must retain chain-id parse context: {message}",
+            );
+        }
+        other => panic!("expected MalformedResponse, got {other:?}"),
+    }
 }

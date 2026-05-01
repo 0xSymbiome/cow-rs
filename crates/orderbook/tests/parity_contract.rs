@@ -29,8 +29,9 @@
 use cow_sdk_core::{Amount, ApiContext, CowEnv, Redacted, SupportedChainId, default_api_base_urls};
 use cow_sdk_orderbook::{
     DEFAULT_INTERVAL_LABEL, DEFAULT_TOKENS_PER_INTERVAL, EVM_NATIVE_CURRENCY_ADDRESS,
-    GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderBookApiError, RETRYABLE_STATUS_CODES,
-    RequestPolicy, ResponseBody, calculate_total_fee,
+    GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderBookApiError, OrderCreation,
+    OrderQuoteResponse, RETRYABLE_STATUS_CODES, RequestPolicy, ResponseBody, SigningScheme, Trade,
+    calculate_total_fee,
 };
 use serde_json::{Value, json};
 
@@ -75,6 +76,9 @@ fn parity_fixture_cases_hold() {
             "orderbook-get-tx-orders-endpoint" => assert_get_tx_orders_endpoint(id, expected),
             "orderbook-auction-endpoint" => assert_auction_endpoint(id, expected),
             "orderbook-quote-endpoint" => assert_quote_endpoint(id, expected),
+            "trade_quote_id_matches_parent_quote_response" => {
+                assert_trade_quote_id_matches_parent_quote_response(id, expected);
+            }
             "orderbook-signed-cancellation-route" => {
                 assert_signed_cancellation_route(id, expected);
             }
@@ -366,6 +370,60 @@ fn assert_quote_endpoint(id: &str, expected: &Value) {
             "case {id}: quote response fields must include {field}",
         );
     }
+}
+
+fn assert_trade_quote_id_matches_parent_quote_response(id: &str, expected: &Value) {
+    let expected_quote_id = expected["quote_response_id"]
+        .as_i64()
+        .unwrap_or_else(|| panic!("case {id}: expected.quote_response_id must be an i64"));
+    let expected_order_quote_id = expected["order_creation_quote_id"]
+        .as_i64()
+        .unwrap_or_else(|| panic!("case {id}: expected.order_creation_quote_id must be an i64"));
+    let expected_trade_uid = expected["trade_order_uid"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.trade_order_uid must be a string"));
+
+    let quote_response: OrderQuoteResponse = serde_json::from_str(include_str!(
+        "../../../parity/fixtures/orderbook/order_quote_response.json"
+    ))
+    .expect("quote response fixture must deserialize");
+    assert_eq!(
+        quote_response.id,
+        Some(expected_quote_id),
+        "case {id}: parent quote response must carry the pinned quote id",
+    );
+
+    let order = OrderCreation::from_quote(
+        &quote_response.quote,
+        quote_response
+            .from
+            .clone()
+            .expect("quote response fixture includes from"),
+        None,
+        SigningScheme::Eip712,
+        "0x1234",
+    )
+    .with_quote_id(
+        quote_response
+            .id
+            .expect("quote response fixture includes quote id"),
+    );
+    let order_value = serde_json::to_value(&order).expect("order creation must serialize");
+    assert_eq!(
+        order_value["quoteId"].as_i64(),
+        Some(expected_order_quote_id),
+        "case {id}: order creation must preserve the parent quote id",
+    );
+
+    let trade: Trade = serde_json::from_str(include_str!(
+        "../../../parity/fixtures/orderbook/trade.json"
+    ))
+    .expect("trade fixture must deserialize");
+    assert_eq!(
+        trade.order_uid.as_str(),
+        expected_trade_uid,
+        "case {id}: trade history linkage remains keyed by order UID",
+    );
 }
 
 fn assert_signed_cancellation_route(id: &str, expected: &Value) {

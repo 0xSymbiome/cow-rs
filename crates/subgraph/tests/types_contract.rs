@@ -112,3 +112,69 @@ fn graphql_error_payload_allows_missing_locations() {
     assert_eq!(error.message, "Something went wrong");
     assert!(error.locations.is_empty());
 }
+
+#[test]
+fn subgraph_graphql_error_extensions_classification_table() {
+    for (code, expected_class) in [
+        ("GRAPHQL_VALIDATION_FAILED", "validation"),
+        ("BAD_USER_INPUT", "bad-user-input"),
+        ("INTERNAL_SERVER_ERROR", "server"),
+        ("RATE_LIMITED", "other"),
+    ] {
+        let error: SubgraphGraphQlError = serde_json::from_value(json!({
+            "message": "GraphQL request failed",
+            "extensions": {
+                "code": code
+            }
+        }))
+        .unwrap();
+        let actual_class = match error
+            .extensions
+            .as_ref()
+            .and_then(|extensions| extensions.get("code"))
+            .and_then(serde_json::Value::as_str)
+        {
+            Some("GRAPHQL_VALIDATION_FAILED") => "validation",
+            Some("BAD_USER_INPUT") => "bad-user-input",
+            Some("INTERNAL_SERVER_ERROR") => "server",
+            Some(_) | None => "other",
+        };
+
+        assert_eq!(actual_class, expected_class);
+    }
+}
+
+#[test]
+fn scalar_decode_rejects_non_finite_floats_and_overflows() {
+    for invalid_volume in ["NaN", "Infinity", "-Infinity"] {
+        let error = serde_json::from_value::<LastDaysVolumeResponse>(json!({
+            "dailyTotals": [
+                {
+                    "timestamp": "1651104000",
+                    "volumeUsd": invalid_volume
+                }
+            ]
+        }))
+        .expect_err("non-finite scalar strings must be rejected");
+        assert!(
+            error.to_string().contains("finite"),
+            "error should identify finite scalar requirement: {error}",
+        );
+    }
+
+    let overflow = serde_json::from_value::<LastDaysVolumeResponse>(json!({
+        "dailyTotals": [
+            {
+                "timestamp": "18446744073709551616",
+                "volumeUsd": "1"
+            }
+        ]
+    }))
+    .expect_err("timestamp values above u64::MAX must be rejected");
+    assert!(
+        overflow.to_string().contains("number too large")
+            || overflow.to_string().contains("out of range")
+            || overflow.to_string().contains("invalid digit"),
+        "overflow error should preserve numeric parse context: {overflow}",
+    );
+}

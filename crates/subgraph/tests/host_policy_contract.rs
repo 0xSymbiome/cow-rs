@@ -66,3 +66,29 @@ fn subgraph_builder_accepts_explicit_allow_and_loopback_policy() {
         );
     }
 }
+
+#[test]
+fn host_policy_treats_rfc_1918_private_ip_as_custom_host() {
+    for policy in [ExternalHostPolicy::Default, ExternalHostPolicy::Test] {
+        let error = SubgraphApi::builder()
+            .chain(SupportedChainId::Mainnet)
+            .api_key("partner-key")
+            .with_external_host_policy(policy)
+            .base_urls(base_urls("http://192.168.1.10:39111/subgraphs"))
+            .build()
+            .unwrap_err();
+
+        assert!(matches!(
+            rejected_host(error),
+            HostPolicyError::HostNotAllowed { .. }
+        ));
+    }
+
+    let allowed = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("partner-key")
+        .with_external_host_policy(ExternalHostPolicy::Allow(vec!["192.168.1.10".to_owned()]))
+        .base_urls(base_urls("http://192.168.1.10:39111/subgraphs"))
+        .build();
+    assert!(allowed.is_ok());
+}

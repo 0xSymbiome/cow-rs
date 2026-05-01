@@ -1,7 +1,7 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-04-27
+Last reviewed: 2026-05-01
 Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, and app-data
 Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without a redacting storage type
 Related docs:
@@ -29,7 +29,7 @@ It does not cover unrelated transport error redaction or credential handling out
 | --- | --- | --- |
 | Orderbook builder | `OrderBookApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
 | Subgraph builder | `SubgraphApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
-| URL configuration | Credential-bearing URL values use redacting storage types and unwrap only at dispatch seams | Conforms |
+| URL configuration | Credential-bearing URL values use redacting storage types for debug, display, and serialization, and unwrap only at dispatch seams | Conforms |
 | Host-policy errors | Orderbook and subgraph host-policy failures retain only a redacted host component and never serialize raw URL credentials, paths, queries, or fragments | Conforms |
 | Pinata upload trait | `IpfsUploadTransport::post_json` carries `Redacted<String>` header values and the Pinata header vector stays redacted under `Debug` | Conforms |
 
@@ -57,7 +57,9 @@ contract while keeping the key available for deliberate downstream use.
 credential-bearing URL values in redacting wrappers. Public debug and
 serialized output emits `[redacted]` for configured URL values while routing,
 wallet payload construction, and IPFS read/write policies use explicit raw
-access at the dispatch boundary.
+access at the dispatch boundary. Orderbook and subgraph custom endpoint debug
+output redacts userinfo-bearing URLs, and `IpfsConfig` display output follows
+the same redaction rule.
 
 ### Host-Policy Failures
 
@@ -94,11 +96,14 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/orderbook/tests/builder_contract.rs::builder_debug_redacts_partner_api_key`
+- `crates/orderbook/tests/builder_contract.rs::builder_debug_redacts_userinfo_in_custom_base_url_overrides`
 - `crates/core/tests/redaction_contract.rs`
 - `crates/subgraph/tests/builder_contract.rs::builder_debug_redacts_partner_api_key`
+- `crates/subgraph/tests/builder_contract.rs::builder_debug_redacts_userinfo_in_custom_endpoint_url`
 - `crates/browser-wallet/tests/wallet_contract.rs::chain_parameters_public_debug_and_serialize_redact_url_credentials`
 - `crates/app-data/tests/ipfs_config_redaction_contract.rs`
 - `crates/app-data/tests/pinning_contract.rs::pinning_headers_debug_redacts_secret_bytes`
+- `crates/app-data/tests/pinning_contract.rs::pinning_config_display_redacts_secret_bytes`
 - `crates/core/tests/config_contract.rs::external_host_policy_accepts_canonical_and_explicit_hosts_only`
 - `crates/orderbook/tests/host_policy_contract.rs`
 - `crates/subgraph/tests/host_policy_contract.rs`

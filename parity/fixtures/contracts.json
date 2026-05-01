@@ -485,6 +485,63 @@
       }
     },
     {
+      "id": "contracts-vault-relayer-mixed-balance-transfer-from-accounts-calldata",
+      "kind": "positive",
+      "description": "GPv2VaultRelayer.transferFromAccounts(Transfer[]) call-data for ERC20, external, and internal balances in one transfer array.",
+      "inputs": {
+        "transfers": [
+          {
+            "account": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "token": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "amount": "1000000000000000000",
+            "balance": 0
+          },
+          {
+            "account": "0xcccccccccccccccccccccccccccccccccccccccc",
+            "token": "0xdddddddddddddddddddddddddddddddddddddddd",
+            "amount": "2000000000000000000",
+            "balance": 1
+          },
+          {
+            "account": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "token": "0xffffffffffffffffffffffffffffffffffffffff",
+            "amount": "3000000000000000000",
+            "balance": 2
+          }
+        ]
+      },
+      "@source_ref": "contracts:c94c595a:src/ts/vault.ts#VAULT_INTERFACE",
+      "expected": {
+        "call_data": "0x3bfc497c00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cccccccccccccccccccccccccccccccccccccccc000000000000000000000000dddddddddddddddddddddddddddddddddddddddd0000000000000000000000000000000000000000000000001bc16d674ec800000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000000000000000000ffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000029a2241af62c00000000000000000000000000000000000000000000000000000000000000000002"
+      }
+    },
+    {
+      "id": "contracts-settlement-clearing-prices-multi-trade",
+      "kind": "positive",
+      "description": "SettlementEncoder clearing prices remain aligned to first-seen token registry order across multiple trades sharing a token.",
+      "inputs": {
+        "trades": 2,
+        "tokens": [
+          "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+          "0x6b175474e89094c44da98b954eedeac495271d0f",
+          "0x1111111111111111111111111111111111111111"
+        ]
+      },
+      "@source_ref": "cow-sdk:00c3dbd4:packages/contracts-ts/tests/settlement.test.ts#SettlementEncoder",
+      "expected": {
+        "tokens": [
+          "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+          "0x6b175474e89094c44da98b954eedeac495271d0f",
+          "0x1111111111111111111111111111111111111111"
+        ],
+        "clearing_prices": [
+          "1000000000000000000",
+          "500000000000000",
+          "250000000000000000"
+        ]
+      }
+    },
+    {
       "id": "contracts-ethflow-create-order-calldata",
       "kind": "positive",
       "description": "CoWSwapEthFlow.createOrder(EthFlowOrderData) call-data for a canonical EthFlow order whose static-tuple encoding takes nine 32-byte head words after the 4-byte selector.",

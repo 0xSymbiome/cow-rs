@@ -1,7 +1,7 @@
 # Browser Wallet Trust Posture Audit
 
 Status: Current
-Last reviewed: 2026-04-27
+Last reviewed: 2026-05-01
 Owning surface: `cow-sdk-browser-wallet` EIP-1193 provider construction and wallet chain-management URL payloads
 Refresh trigger: Changes to EIP-1193 provider construction, EIP-6963 discovery metadata, wallet origin handling, chain-management URL validation, or browser-wallet error redaction
 Related docs:
@@ -30,6 +30,7 @@ prompts, or RPC endpoint safety after a wallet accepts
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Provider trust | EIP-6963-discovered providers carry a detected origin into construction, while anonymous providers require `with_trusted_origin(...)` | Conforms |
+| Origin schemes | Trusted origins accept the documented browser-wallet schemes and reject unsupported schemes before provider construction | Conforms |
 | Error redaction | Untrusted provider-origin errors and trust telemetry use redacted origin values | Conforms |
 | Wallet URL payloads | `rpc_urls`, `block_explorer_urls`, and `icon_urls` stay wallet payload data and are not governed by SDK service-host policy | Conforms |
 | Regression depth | Provider-builder tests pin anonymous rejection, explicit trust, and session preservation | Conforms |
@@ -44,6 +45,9 @@ reverse-DNS identifier into the builder as detected origin metadata. A
 transport without EIP-6963 metadata is anonymous and fails construction with
 `BrowserWalletError::UntrustedProviderOrigin` unless the caller adds an
 explicit reviewed origin through `with_trusted_origin(...)`.
+Reviewed trusted origins accept reverse-DNS identifiers plus the documented
+`http`, `https`, `test`, and `transport` schemes. Other schemes fail before a
+provider can be constructed from the supplied origin.
 
 ### Telemetry And Errors
 
@@ -72,6 +76,8 @@ Primary regression coverage:
 
 - `crates/browser-wallet/tests/provider_contract.rs::anonymous_provider_builder_requires_trusted_origin`
 - `crates/browser-wallet/tests/provider_contract.rs::provider_builder_accepts_explicit_trusted_origin`
+- `crates/browser-wallet/tests/provider_contract.rs::trusted_origin_accepts_documented_schemes_and_rejects_others`
+- `crates/browser-wallet/tests/provider_contract.rs::wallet_add_chain_payload_urls_are_not_subject_to_external_host_policy`
 - `crates/browser-wallet/tests/wallet_contract.rs::chain_parameters_public_debug_and_serialize_redact_url_credentials`
 
 Validation surface:
@@ -80,4 +86,5 @@ Validation surface:
 cargo test -p cow-sdk-browser-wallet --test provider_contract
 cargo test -p cow-sdk-browser-wallet --test wallet_contract
 cargo test --workspace --all-features
+bun run --cwd e2e/browser-wallet test
 ```

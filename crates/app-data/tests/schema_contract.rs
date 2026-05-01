@@ -124,3 +124,51 @@ fn schema_regression_families_are_supported() {
     });
     assert!(validate_app_data_doc(&wrappers).success);
 }
+
+#[test]
+fn wrappers_v1_13_0_minimal_doc_validates_and_extracts_typed_fields() {
+    let wrappers = json!({
+        "version": "1.13.0",
+        "appCode": "euler",
+        "metadata": {
+            "wrappers": [
+                {
+                    "address": "0x74399a40D9FE2478e82058480F426D7e5783167c",
+                    "data": "0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000000000000000000000000000000000000ff123456000000000000000000000d8b27cf359b7da5be299af6e7bf904984c2000000000000000000000797dd80692c3b2dadabce8e30c07fde5307d48a90000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000005f5e100",
+                    "isOmittable": false
+                }
+            ]
+        }
+    });
+
+    let validation = validate_app_data_doc(&wrappers);
+    assert!(
+        validation.success,
+        "v1.13.0 wrappers fixture must validate, got {:?}",
+        validation.errors,
+    );
+
+    let wrapper = wrappers
+        .get("metadata")
+        .and_then(Value::as_object)
+        .and_then(|metadata| metadata.get("wrappers"))
+        .and_then(Value::as_array)
+        .and_then(|wrappers| wrappers.first())
+        .and_then(Value::as_object)
+        .expect("fixture carries one wrappers entry");
+    assert_eq!(
+        wrapper.get("address").and_then(Value::as_str),
+        Some("0x74399a40D9FE2478e82058480F426D7e5783167c")
+    );
+    assert_eq!(
+        wrapper.get("isOmittable").and_then(Value::as_bool),
+        Some(false)
+    );
+    assert!(
+        wrapper
+            .get("data")
+            .and_then(Value::as_str)
+            .is_some_and(|data| data.starts_with("0x")),
+        "wrapper calldata must remain hex-encoded",
+    );
+}

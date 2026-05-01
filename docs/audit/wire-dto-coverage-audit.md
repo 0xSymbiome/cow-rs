@@ -12,8 +12,8 @@ Related docs:
 This audit covers:
 
 - source-lock-pinned OpenAPI vendoring for the orderbook service schema
-- inventory-backed Rust DTO coverage for `Order`, `AuctionOrder`, `OrderQuoteResponse`, `Trade`, `StoredOrderQuote`, and `OnchainOrderData`
-- recorded fixture coverage and field-level round-trip tests for the six covered DTOs
+- inventory-backed Rust DTO coverage for `Order`, `AuctionOrder`, `OrderQuoteResponse`, `Trade`, `StoredOrderQuote`, `OnchainOrderData`, `TotalSurplus`, and `SolverExecution`
+- recorded fixture coverage and field-level round-trip tests for the eight covered DTOs
 - forward-compatible response deserialization without `serde(deny_unknown_fields)`
 
 It does not cover request builders, app-data schemas, contract ABI DTOs, or live orderbook endpoint behavior.
@@ -35,7 +35,7 @@ It does not cover request builders, app-data schemas, contract ABI DTOs, or live
 The vendored orderbook OpenAPI document is committed at
 `parity/openapi/services-orderbook.yml`. The file records the upstream services
 commit and source path in its header. `parity/openapi/coverage.yaml` is the
-public manifest for the six covered DTOs, and each manifest entry points to the
+public manifest for the eight covered DTOs, and each manifest entry points to the
 inventory and fixture used to validate that DTO.
 
 ### DTO Separation
@@ -56,6 +56,8 @@ and the auction-side `quote`.
 | `Trade` | `components.schemas.Trade` | `parity/openapi/trade-inventory.yaml` | `parity/fixtures/orderbook/trade.json` | `blockNumber`, `buyAmount`, `buyToken`, `executedProtocolFees`, `logIndex`, `orderUid`, `owner`, `sellAmount`, `sellAmountBeforeFees`, `sellToken`, `txHash` |
 | `StoredOrderQuote` | `components.schemas.StoredOrderQuote` | `parity/openapi/stored-order-quote-inventory.yaml` | `parity/fixtures/orderbook/stored_order_quote.json` | `buyAmount`, `feeAmount`, `gasAmount`, `gasPrice`, `metadata`, `sellAmount`, `sellTokenPrice`, `solver`, `verified` |
 | `OnchainOrderData` | `components.schemas.OnchainOrderData` | `parity/openapi/onchain-order-data-inventory.yaml` | `parity/fixtures/orderbook/onchain_order_data.json` | `placementError`, `sender` |
+| `TotalSurplus` | `components.schemas.TotalSurplus` | `parity/openapi/total-surplus-inventory.yaml` | `parity/fixtures/orderbook/total_surplus.json` | `totalSurplus` |
+| `SolverExecution` | `components.schemas.CompetitionOrderStatus.value.items` | `parity/openapi/solver-execution-inventory.yaml` | `parity/fixtures/orderbook/solver_execution.json` | `executedBuyAmount`, `executedSellAmount`, `solver` |
 
 ### Forward Compatibility
 
@@ -86,6 +88,8 @@ Primary implementation points:
 - `parity/openapi/trade-inventory.yaml`
 - `parity/openapi/stored-order-quote-inventory.yaml`
 - `parity/openapi/onchain-order-data-inventory.yaml`
+- `parity/openapi/total-surplus-inventory.yaml`
+- `parity/openapi/solver-execution-inventory.yaml`
 
 Primary regression coverage:
 
@@ -95,6 +99,7 @@ Primary regression coverage:
 - `crates/orderbook/tests/transform_contract.rs::trade_fixture_matches_openapi_inventory`
 - `crates/orderbook/tests/transform_contract.rs::stored_order_quote_fixture_matches_openapi_inventory`
 - `crates/orderbook/tests/transform_contract.rs::onchain_order_data_fixture_matches_openapi_inventory`
+- `crates/orderbook/tests/openapi_dto_coverage.rs::openapi_coverage_manifest_roundtrips_required_orderbook_dtos`
 - `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
 
 Validation surface:
@@ -102,6 +107,7 @@ Validation surface:
 ```text
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-coverage --validate
 cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
+cargo test -p cow-sdk-orderbook --test openapi_dto_coverage
 cargo test -p cow-sdk-orderbook --test transform_contract
 cargo run --manifest-path scripts/policy-maintainer/Cargo.toml -- check-deny-unknown-fields
 ```

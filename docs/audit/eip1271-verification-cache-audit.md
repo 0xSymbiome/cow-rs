@@ -38,6 +38,7 @@ covered by its own contract).
 | --- | --- | --- |
 | Trait contract | `get(verifier, digest) -> Option<bool>` and `put(verifier, digest, result)` with `Send + Sync + 'static` | Conforms |
 | Conservative caching | Only `Ok(())` (magic-value match) and `Eip1271MagicValueMismatch` outcomes are cached; every other error class re-hits the chain | Conforms |
+| EOA miss posture | Verifiers with no contract code return a typed error and do not populate the cache | Conforms |
 | Pre-interaction scope | The sync and async verification helpers document that they do not simulate order pre-interactions before checking EIP-1271 signatures | Conforms |
 | Verification telemetry | `verify_eip1271_signature_async` emits `verify.eip1271` tracing with cache, RPC, and final magic-value outcome fields | Conforms |
 | Shipped implementations | `NoopEip1271VerificationCache` (zero-sized, always miss) and `InMemoryEip1271VerificationCache` (bounded capacity, TTL-expiring) | Conforms |
@@ -78,6 +79,9 @@ hex decode error, provider error — bypasses the write-back so a
 transient network failure cannot pin a signer into a permanent
 `Rejected` state and a stale `false` cannot block a signer whose
 on-chain state has since changed.
+
+The no-code branch is covered explicitly: an EOA verifier miss returns the
+typed non-contract error and leaves the cache empty.
 
 The verifier's cacheability branch is an exhaustive contracts-crate
 match over the current `ContractsError` variants. External consumers
@@ -149,6 +153,7 @@ Primary regression coverage:
 
 - `crates/contracts/tests/verify_telemetry_contract.rs`
 - `crates/signing/tests/eip1271_cache_contract.rs::cache_skips_every_non_cacheable_error_class`
+- `crates/signing/tests/eip1271_cache_contract.rs::eip1271_eoa_verifier_does_not_cache`
 - `crates/signing/tests/eip1271_cache_contract.rs::cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one`
 - `crates/signing/tests/wasm_cache_contract.rs::cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one_on_wasm32`
 - `crates/signing/tests/ui.rs::eip1271_error_match_requires_wildcard`

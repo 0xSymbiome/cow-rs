@@ -59,3 +59,54 @@ fn orderbook_builder_accepts_explicit_allow_and_loopback_policy() {
         );
     }
 }
+
+#[test]
+fn partner_api_routing_x_host_policy_compose_correctly() {
+    let partner = OrderBookApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .environment(CowEnv::Prod)
+        .api_key("partner-key")
+        .build()
+        .expect("canonical partner host must be accepted by default policy");
+
+    assert_eq!(
+        partner.effective_base_url().unwrap(),
+        "https://partners.cow.fi/mainnet"
+    );
+
+    let blocked = OrderBookApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .environment(CowEnv::Prod)
+        .api_key("partner-key")
+        .base_url("https://partner-mirror.example/mainnet")
+        .build()
+        .unwrap_err();
+    assert!(matches!(
+        rejected_host(blocked),
+        HostPolicyError::HostNotAllowed { .. }
+    ));
+
+    let allowed = OrderBookApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .environment(CowEnv::Prod)
+        .api_key("partner-key")
+        .with_external_host_policy(ExternalHostPolicy::Allow(vec![
+            "partner-mirror.example".to_owned(),
+        ]))
+        .base_url("https://partner-mirror.example/mainnet")
+        .build()
+        .expect("explicitly allowed partner mirror must build");
+
+    assert_eq!(
+        allowed.effective_base_url().unwrap(),
+        "https://partner-mirror.example/mainnet"
+    );
+    assert_eq!(
+        allowed
+            .context()
+            .api_key
+            .as_ref()
+            .map(|key| key.as_inner().as_str()),
+        Some("partner-key"),
+    );
+}

@@ -4,6 +4,7 @@ use cow_sdk_contracts::{
     Eip1967Slot, IEip173Proxy, admin_address, implementation_address, owner_address,
 };
 use cow_sdk_core::Address;
+use sha3::{Digest, Keccak256};
 
 use common::{MockProvider, fixture_case};
 
@@ -77,5 +78,30 @@ fn eip173_proxy_interface_exposes_the_expected_function_selectors() {
     assert_eq!(
         IEip173Proxy::supportsInterfaceCall::SIGNATURE,
         "supportsInterface(bytes4)",
+    );
+}
+
+fn canonical_eip1967_slot(label: &str) -> String {
+    let mut bytes: [u8; 32] = Keccak256::digest(label.as_bytes()).into();
+    for byte in bytes.iter_mut().rev() {
+        if *byte == 0 {
+            *byte = u8::MAX;
+        } else {
+            *byte -= 1;
+            break;
+        }
+    }
+    format!("0x{}", hex::encode(bytes))
+}
+
+#[test]
+fn eip1967_slot_constants_match_canonical_keccak_minus_one() {
+    assert_eq!(
+        Eip1967Slot::Implementation.as_hex_str(),
+        canonical_eip1967_slot("eip1967.proxy.implementation")
+    );
+    assert_eq!(
+        Eip1967Slot::Admin.as_hex_str(),
+        canonical_eip1967_slot("eip1967.proxy.admin")
     );
 }
