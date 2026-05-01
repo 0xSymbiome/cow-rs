@@ -32,8 +32,10 @@ or changing SDK behavior.
 | --- | --- | --- |
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
-| Refresh outcome | Source-lock pins are aligned with current upstream commits after the 2026-04-29 refresh | Conforms |
+| Refresh outcome | Source-lock pins preserve the 2026-04-29 refresh baseline, and current upstream freshness is disclosed separately | Conforms |
 | Publication preflight | Source-lock validation metadata lists the complete package-family dry-run contract with local patches for unpublished intra-family crates | Conforms |
+| Schema enforcement | Unsupported source-lock schema versions fail closed with a stable diagnostic, while schema version 3 is accepted | Conforms |
+| Amount fixture roundtrip | Amount-shaped fixture strings parse through the shared `Amount` codec and round-trip byte-identically | Conforms |
 | Historical snapshot scope | Historical progress snapshots stay readable and unmodified while active preflight authority skips them by directory-prefix policy | Conforms |
 | Refresh mapping | The public audit-refresh map points source-lock changes and exclusion-policy changes back to this audit | Conforms |
 
@@ -54,16 +56,18 @@ upstream repositories before treating the evidence as current.
 
 ### Freshness State
 
-Upstream HEADs were checked on 2026-04-29 after the refresh:
+Upstream HEADs were checked on 2026-05-01:
 
 | Repository | Source-lock pin | Upstream HEAD | State |
 | --- | --- | --- | --- |
 | `cow-sdk` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | Current |
 | `contracts` | `c94c595a791681cf8ba7495117dcde397b932885` | `c94c595a791681cf8ba7495117dcde397b932885` | Current |
-| `services` | `bf40548684828ad72c1e10fbe8fe3467c90eba45` | `bf40548684828ad72c1e10fbe8fe3467c90eba45` | Current |
+| `services` | `bf40548684828ad72c1e10fbe8fe3467c90eba45` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | Stale |
 
-The source-lock pins are aligned with upstream commits at `cow-sdk @
-00c3dbd4`, `contracts @ c94c595a`, and `services @ bf405486`.
+The `cow-sdk` and `contracts` pins are aligned with upstream HEAD. The
+`services` pin remains the committed source-lock baseline from the 2026-04-29
+refresh and must be rechecked or refreshed before any release claim depends on
+current services HEAD freshness.
 
 ### Refresh Outcome
 
@@ -84,6 +88,27 @@ pre-publication dry-runs. In particular, `cow-sdk-contracts` patches
 the contracts crate, and `cow-sdk-trading` patches `cow-sdk-transport-wasm`
 until the first package family has been published.
 
+### Schema Version Enforcement
+
+The maintainer validates source-lock schema version 3 as the only supported
+schema. The fixture tests in
+`scripts/parity-maintainer/tests/source_lock_schema_version.rs` pin v2 and v4
+rejection with the stable diagnostic substring `expected source-lock
+schema_version 3`, and pin v3 acceptance against the current validation
+contract. The shared quality gate now runs
+`cargo test --manifest-path scripts/parity-maintainer/Cargo.toml`, so these
+checks are CI-enforced with the rest of the maintainer suite.
+
+### Cross-Fixture Amount Roundtrip
+
+The workspace-level SDK integration test at
+`crates/sdk/tests/cross_fixture_amount_roundtrip.rs` loads
+`parity/fixtures/core.json`, `parity/fixtures/orderbook.json`, and
+`parity/fixtures/trading.json`, collects amount-shaped strings, and asserts
+they parse through `cow_sdk_core::Amount::new` with byte-identical display
+roundtrips. When an identical hex string appears across fixture files, the
+decoded `BigUint` value is compared across appearances.
+
 ### Historical Snapshot Scope
 
 Historical progress snapshots are review history, not active lifecycle
@@ -102,31 +127,17 @@ archive additions a single refresh point.
 preflight exclusion policy to this audit. The public map records the review
 contract without exposing maintainer-only path names.
 
-## Pending verification evidence
-
-This section records evidence expected from the next verification refresh. It
-is removed once every permanent evidence pointer has landed in the sections
-above.
-
-- `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v2_is_rejected_with_stable_diagnostic`
-  and
-  `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v4_is_rejected_with_stable_diagnostic`
-  will pin deterministic rejection for unsupported source-lock schema versions.
-- `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v3_is_accepted`
-  will pin acceptance of the current schema version.
-- `.github/workflows/_quality-gate.yml` will run
-  `cargo test --manifest-path scripts/parity-maintainer/Cargo.toml` so the
-  maintainer-side provenance tests are enforced by the quality gate.
-- `crates/sdk/tests/cross_fixture_amount_roundtrip.rs` will pin canonical
-  amount parsing and byte-identical roundtrips across the committed parity
-  fixtures.
-
 ## Evidence
 
 Primary implementation points:
 
 - `parity/source-lock.yaml`
 - `scripts/parity-maintainer/src/main.rs`
+- `scripts/parity-maintainer/tests/fixtures/source-lock-v2.yaml`
+- `scripts/parity-maintainer/tests/fixtures/source-lock-v3.yaml`
+- `scripts/parity-maintainer/tests/fixtures/source-lock-v4.yaml`
+- `crates/sdk/tests/cross_fixture_amount_roundtrip.rs`
+- `.github/workflows/_quality-gate.yml`
 - `.github/config/audit-refresh-map.yml`
 - `docs/audit/source-lock-provenance-audit.md`
 
@@ -134,6 +145,10 @@ Primary regression coverage:
 
 - Maintainer-side exclusion tests cover exclusion-list loading, directory-prefix
   skipping, and rejection of file-level entries.
+- `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v2_is_rejected_with_stable_diagnostic`
+- `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v3_is_accepted`
+- `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v4_is_rejected_with_stable_diagnostic`
+- `crates/sdk/tests/cross_fixture_amount_roundtrip.rs::cross_fixture_amount_roundtrip`
 
 Validation surface:
 
@@ -143,4 +158,5 @@ git ls-remote https://github.com/cowprotocol/contracts HEAD
 git ls-remote https://github.com/cowprotocol/cow-sdk HEAD
 cargo parity-validate --source-lock parity/source-lock.yaml
 cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
+cargo test --workspace --all-features cross_fixture_amount_roundtrip
 ```

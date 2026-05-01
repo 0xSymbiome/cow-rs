@@ -518,6 +518,8 @@ dependencies = [
  "cow-sdk-orderbook",
  "cow-sdk-signing",
  "cow-sdk-trading",
+ "num-bigint",
+ "serde_json",
  "thiserror 2.0.18",
 ]
 

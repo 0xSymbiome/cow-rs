@@ -63,17 +63,13 @@ The covered response DTOs are open to additive upstream fields. Unknown fields
 are ignored during deserialization, while known fields remain modeled in the
 public typed surface and covered by fixtures.
 
-## Pending verification evidence
+### Validator Self-Test Enforcement
 
-This section records evidence expected from the next verification refresh. It
-is removed once every permanent evidence pointer has landed in the sections
-above.
-
-- `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
-  will remain the negative self-test for the OpenAPI coverage validator.
-- `.github/workflows/_quality-gate.yml` will run
-  `cargo test --manifest-path scripts/parity-maintainer/Cargo.toml` so the
-  validator self-test is enforced by the quality gate.
+The OpenAPI coverage validator has a negative self-test at
+`scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`.
+The shared quality gate runs the full `parity-maintainer` test suite through
+the `parity-maintainer` job, so validator regressions fail CI instead of
+remaining only locally reproducible.
 
 ## Evidence
 
@@ -81,6 +77,7 @@ Primary implementation points:
 
 - `crates/orderbook/src/types.rs`
 - `scripts/parity-maintainer/src/openapi_coverage.rs`
+- `.github/workflows/_quality-gate.yml`
 - `parity/openapi/coverage.yaml`
 - `parity/openapi/services-orderbook.yml`
 - `parity/openapi/order-inventory.yaml`
@@ -98,11 +95,13 @@ Primary regression coverage:
 - `crates/orderbook/tests/transform_contract.rs::trade_fixture_matches_openapi_inventory`
 - `crates/orderbook/tests/transform_contract.rs::stored_order_quote_fixture_matches_openapi_inventory`
 - `crates/orderbook/tests/transform_contract.rs::onchain_order_data_fixture_matches_openapi_inventory`
+- `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
 
 Validation surface:
 
 ```text
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-coverage --validate
+cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
 cargo test -p cow-sdk-orderbook --test transform_contract
 cargo run --manifest-path scripts/policy-maintainer/Cargo.toml -- check-deny-unknown-fields
 ```

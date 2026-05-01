@@ -46,3 +46,7 @@ cow-sdk-signing = { path = "../signing", version = "0.1.0" }
 cow-sdk-trading = { path = "../trading", version = "0.1.0" }
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 thiserror.workspace = true
+
+[dev-dependencies]
+num-bigint.workspace = true
+serde_json.workspace = true

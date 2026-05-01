@@ -1,0 +1,11 @@
+meta:
+  schema_version: 2
+  generated_at_utc: 2026-04-29T00:00:00Z
+  purpose: schema-version rejection fixture
+repositories: []
+fixtures: []
+validation:
+  standalone_repo_contract: []
+  repo_local_publication_contract: []
+  pinned_upstream_provenance_contract: []
+  maintainer_refresh_contract: []
