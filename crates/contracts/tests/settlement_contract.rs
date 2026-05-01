@@ -198,14 +198,16 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
     let order = sample_order(OrderKind::Sell, false);
     let mut encoder = SettlementEncoder::new(domain.clone());
 
-    encoder.encode_interaction(
-        &InteractionLike::new(
-            Address::new("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(),
-            None,
-            Some(bytes_from_hex_literal("0x12345678")),
-        ),
-        InteractionStage::Pre,
-    );
+    encoder
+        .encode_interaction(
+            &InteractionLike::new(
+                Address::new("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(),
+                None,
+                Some(bytes_from_hex_literal("0x12345678")),
+            ),
+            InteractionStage::Pre,
+        )
+        .unwrap();
     encoder
         .encode_trade(
             &order,
@@ -253,7 +255,8 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
             Some(Amount::new("1").unwrap()),
             None,
         ),
-    ]);
+    ])
+    .unwrap();
     assert!(setup.0.is_empty());
     assert!(setup.1.is_empty());
     assert!(setup.2.is_empty());
@@ -423,14 +426,16 @@ fn encoded_settlement_calldata_starts_with_the_settle_selector() {
             )),
         )
         .unwrap();
-    encoder.encode_interaction(
-        &InteractionLike::new(
-            Address::new("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(),
-            None,
-            Some(bytes_from_hex_literal("0xdeadbeef")),
-        ),
-        InteractionStage::Intra,
-    );
+    encoder
+        .encode_interaction(
+            &InteractionLike::new(
+                Address::new("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(),
+                None,
+                Some(bytes_from_hex_literal("0xdeadbeef")),
+            ),
+            InteractionStage::Intra,
+        )
+        .unwrap();
 
     let calldata = encoder.encoded_settlement_calldata(&prices).unwrap();
 

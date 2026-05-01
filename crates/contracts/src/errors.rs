@@ -100,6 +100,12 @@ pub enum ContractsError {
         /// Number of registered tokens in the settlement registry.
         registered: usize,
     },
+    /// A settlement interaction targeted a registry-paired forbidden contract.
+    #[error("forbidden settlement interaction target: {target}")]
+    ForbiddenInteractionTarget {
+        /// Rejected interaction target address.
+        target: Address,
+    },
     /// Provider operation failed outside the EIP-1271 helpers.
     #[error("provider error during {operation}: {message}")]
     Provider {

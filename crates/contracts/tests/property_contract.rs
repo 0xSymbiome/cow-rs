@@ -21,11 +21,11 @@
 )]
 
 use cow_sdk_contracts::{
-    Eip1271SignatureData, Order, OrderFlags, OrderUidParams, Signature, SigningScheme,
-    TokenRegistry, TradeExecution, TradeFlags, compute_order_uid, decode_eip1271_signature_data,
-    decode_order, decode_order_flags, decode_signing_scheme, decode_trade_flags,
-    encode_eip1271_signature_data, encode_order_flags, encode_signing_scheme, encode_trade,
-    encode_trade_flags, extract_order_uid_params, hash_order, normalize_order,
+    ContractsError, Eip1271SignatureData, Order, OrderFlags, OrderUidParams, Signature,
+    SigningScheme, TokenRegistry, Trade, TradeExecution, TradeFlags, compute_order_uid,
+    decode_eip1271_signature_data, decode_order, decode_order_flags, decode_signing_scheme,
+    decode_trade_flags, encode_eip1271_signature_data, encode_order_flags, encode_signing_scheme,
+    encode_trade, encode_trade_flags, extract_order_uid_params, hash_order, normalize_order,
     normalized_ecdsa_signature, pack_order_uid_params,
 };
 use cow_sdk_core::{
@@ -33,7 +33,7 @@ use cow_sdk_core::{
     TypedDataDomain,
 };
 use proptest::prelude::*;
-use proptest::test_runner::FileFailurePersistence;
+use proptest::test_runner::{FileFailurePersistence, TestRunner};
 
 /// Path for committed regression seeds; proptest writes new shrink
 /// outcomes here so every contributor re-runs prior counter-examples
@@ -269,6 +269,145 @@ fn scheme_and_signature_strategy() -> impl Strategy<Value = (SigningScheme, Sign
     })
 }
 
+fn signature_with_v(r_bytes: &[u8; 32], s_bytes: &[u8; 32], v_byte: u8) -> String {
+    let mut bytes = [0u8; 65];
+    bytes[..32].copy_from_slice(r_bytes);
+    bytes[32..64].copy_from_slice(s_bytes);
+    bytes[64] = v_byte;
+    format!("0x{}", hex::encode(bytes))
+}
+
+fn trade_with_indices_and_flags(
+    sell_token_index: usize,
+    buy_token_index: usize,
+    flags: u8,
+) -> Trade {
+    Trade::new(
+        sell_token_index,
+        buy_token_index,
+        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+        Amount::new("10").unwrap(),
+        Amount::new("20").unwrap(),
+        123,
+        AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            .unwrap(),
+        Amount::new("1").unwrap(),
+        flags,
+        Amount::zero(),
+        "0x".to_owned(),
+    )
+}
+
+#[test]
+fn decode_trade_flags_accepts_0b00_and_0b01_as_erc20() {
+    let sell_cases = [
+        (0b00, SellTokenSource::Erc20),
+        (0b01, SellTokenSource::Erc20),
+        (0b10, SellTokenSource::External),
+        (0b11, SellTokenSource::Internal),
+    ];
+    let buy_cases = [
+        (0b0, BuyTokenDestination::Erc20),
+        (0b1, BuyTokenDestination::Internal),
+    ];
+
+    for (sell_bits, expected_sell_balance) in sell_cases {
+        for (buy_bits, expected_buy_balance) in buy_cases {
+            for signing_scheme in [
+                SigningScheme::Eip712,
+                SigningScheme::EthSign,
+                SigningScheme::Eip1271,
+                SigningScheme::PreSign,
+            ] {
+                let flags = (sell_bits << 2) | (buy_bits << 4) | (signing_scheme.as_u8() << 5);
+                let decoded = decode_trade_flags(flags).unwrap();
+
+                assert_eq!(decoded.sell_token_balance, expected_sell_balance);
+                assert_eq!(decoded.buy_token_balance, expected_buy_balance);
+                assert_eq!(decoded.signing_scheme, signing_scheme);
+            }
+        }
+    }
+}
+
+#[test]
+fn decode_order_rejects_out_of_bounds_token_indices() {
+    let mut tokens = TokenRegistry::new();
+    tokens.index(&Address::new("0x1111111111111111111111111111111111111111").unwrap());
+    tokens.index(&Address::new("0x2222222222222222222222222222222222222222").unwrap());
+    let addresses = tokens.addresses();
+    let flags = encode_order_flags(&OrderFlags::new(
+        OrderKind::Sell,
+        false,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
+    ))
+    .unwrap();
+
+    let sell_invalid = trade_with_indices_and_flags(addresses.len(), 0, flags);
+    assert!(matches!(
+        decode_order(&sell_invalid, &addresses),
+        Err(ContractsError::InvalidTokenIndex {
+            index: 2,
+            registered: 2,
+        })
+    ));
+
+    let buy_invalid = trade_with_indices_and_flags(0, addresses.len() + 1, flags);
+    assert!(matches!(
+        decode_order(&buy_invalid, &addresses),
+        Err(ContractsError::InvalidTokenIndex {
+            index: 3,
+            registered: 2,
+        })
+    ));
+
+    let malformed_flags = trade_with_indices_and_flags(0, 1, 0b1000_0000);
+    assert!(matches!(
+        decode_order(&malformed_flags, &addresses),
+        Err(ContractsError::InvalidFlags(0b1000_0000))
+    ));
+}
+
+#[test]
+fn ecdsa_v_normalization_rejects_every_excluded_byte_value() {
+    let mut runner = TestRunner::new(ProptestConfig {
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct(REGRESSION_FILE))),
+        ..ProptestConfig::default()
+    });
+
+    runner
+        .run(
+            &(any::<[u8; 32]>(), any::<[u8; 32]>()),
+            |(r_bytes, s_bytes)| {
+                for v_byte in 0u8..=u8::MAX {
+                    let signature = signature_with_v(&r_bytes, &s_bytes, v_byte);
+                    match v_byte {
+                        0 | 1 | 27 | 28 => {
+                            let normalized = normalized_ecdsa_signature(&signature).unwrap();
+                            let output = hex::decode(normalized.trim_start_matches("0x")).unwrap();
+                            let expected_v = if matches!(v_byte, 0 | 27) { 27 } else { 28 };
+
+                            prop_assert_eq!(&output[..32], r_bytes.as_slice());
+                            prop_assert_eq!(&output[32..64], s_bytes.as_slice());
+                            prop_assert_eq!(output[64], expected_v);
+                        }
+                        _ => {
+                            let error = normalized_ecdsa_signature(&signature).unwrap_err();
+                            let rejected_with_value = matches!(
+                                error,
+                                ContractsError::InvalidSignatureRecoveryByte { value } if value == v_byte
+                            );
+                            prop_assert!(rejected_with_value);
+                        }
+                    }
+                }
+                Ok(())
+            },
+        )
+        .unwrap();
+}
+
 proptest! {
     #![proptest_config(ProptestConfig {
         failure_persistence: Some(Box::new(FileFailurePersistence::Direct(REGRESSION_FILE))),
@@ -499,4 +638,5 @@ proptest! {
     fn signing_scheme_decode_rejects_unknown_bytes(byte in 4u8..=u8::MAX) {
         prop_assert!(decode_signing_scheme(byte).is_err());
     }
+
 }

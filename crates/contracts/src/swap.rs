@@ -171,7 +171,10 @@ impl SwapEncoder {
     ///
     /// # Errors
     ///
-    /// Returns [`ContractsError`] when order normalization or trade encoding fails.
+    /// Returns [`ContractsError::ZeroReceiver`] when the order explicitly uses
+    /// `address(0)` as receiver. Signature payload failures are surfaced
+    /// through the typed signature and hex decoding variants on
+    /// [`ContractsError`].
     pub fn encode_trade(
         &mut self,
         order: &Order,
@@ -199,7 +202,9 @@ impl SwapEncoder {
     ///
     /// # Errors
     ///
-    /// Returns [`ContractsError::MissingTrade`] if no trade has been encoded yet.
+    /// Returns [`ContractsError::MissingTrade`] if no trade has been encoded
+    /// yet; any prior trade encoding rejection is returned by
+    /// [`Self::encode_trade`] before a trade is stored.
     pub fn encoded_swap(&self) -> Result<EncodedSwap, ContractsError> {
         Ok((self.swaps(), self.tokens(), self.trade()?))
     }

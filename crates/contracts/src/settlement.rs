@@ -6,11 +6,12 @@ use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, OrderUid, SellTokenSource,
-    TypedDataDomain,
+    SupportedChainId, TypedDataDomain,
 };
 
 use crate::{
     ContractsError,
+    deployments::{ContractId, Registry},
     interaction::{Interaction, InteractionLike, normalize_interaction},
     order::{NormalizedOrder, Order, extract_order_uid_params, normalize_order},
     primitives::{normalize_hex_payload, zero_address},
@@ -454,8 +455,27 @@ impl SettlementEncoder {
     }
 
     /// Encodes and appends an interaction in the requested stage.
-    pub fn encode_interaction(&mut self, interaction: &InteractionLike, stage: InteractionStage) {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError::ForbiddenInteractionTarget`] when this
+    /// encoder's domain identifies a canonical registry settlement and the
+    /// supplied interaction targets that settlement's paired vault relayer.
+    pub fn encode_interaction(
+        &mut self,
+        interaction: &InteractionLike,
+        stage: InteractionStage,
+    ) -> Result<(), ContractsError> {
+        if self
+            .canonical_vault_relayer_target()
+            .is_some_and(|target| interaction.target == target)
+        {
+            return Err(ContractsError::ForbiddenInteractionTarget {
+                target: interaction.target.clone(),
+            });
+        }
         self.interactions[stage as usize].push(normalize_interaction(interaction));
+        Ok(())
     }
 
     /// Appends order-refund storage-clearing requests.
@@ -511,8 +531,13 @@ impl SettlementEncoder {
     }
 
     /// Returns an interaction-only settlement setup payload.
-    #[must_use]
-    pub fn encoded_setup(interactions: &[InteractionLike]) -> EncodedSettlement {
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from [`Self::encode_interaction`].
+    pub fn encoded_setup(
+        interactions: &[InteractionLike],
+    ) -> Result<EncodedSettlement, ContractsError> {
         let mut encoder = Self::new(TypedDataDomain::new(
             "unused".to_owned(),
             "unused".to_owned(),
@@ -520,9 +545,9 @@ impl SettlementEncoder {
             zero_address(),
         ));
         for interaction in interactions {
-            encoder.encode_interaction(interaction, InteractionStage::Intra);
+            encoder.encode_interaction(interaction, InteractionStage::Intra)?;
         }
-        (
+        Ok((
             encoder.tokens(),
             Vec::new(),
             encoder.trades(),
@@ -531,7 +556,27 @@ impl SettlementEncoder {
                 encoder.interactions[InteractionStage::Intra as usize].clone(),
                 encoder.interactions[InteractionStage::Post as usize].clone(),
             ],
-        )
+        ))
+    }
+
+    fn canonical_vault_relayer_target(&self) -> Option<Address> {
+        let chain_id = SupportedChainId::try_from(self.domain.chain_id).ok()?;
+        let registry = Registry::default();
+        let mut matches = registry
+            .entries()
+            .filter(|(contract_id, entry_chain_id, _, address)| {
+                *contract_id == ContractId::Settlement
+                    && *entry_chain_id == chain_id
+                    && *address == &self.domain.verifying_contract
+            })
+            .map(|(_, _, env, _)| env);
+
+        let env = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+
+        registry.address(ContractId::VaultRelayer, chain_id, env)
     }
 }
 

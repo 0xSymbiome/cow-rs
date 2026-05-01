@@ -123,9 +123,18 @@ are not allowed in `cow-sdk-contracts`.
 ### Interaction Encoder
 
 Settlement interaction encoding is the reviewed boundary for translating
-typed interaction data into contract calldata. The permanent evidence pointer
-for the guarded canonical vault-relayer target policy will attach here once the
-encoder-side rejection and regression coverage land.
+typed interaction data into contract calldata. `normalize_interaction` remains
+infallible and value-neutral: missing value defaults to zero and missing
+calldata defaults to an empty payload.
+
+`SettlementEncoder::encode_interaction` is fallible. When the encoder's
+typed-data domain resolves through `Registry::default()` to exactly one
+canonical settlement for the domain chain id and verifying contract, the
+encoder rejects an interaction whose target is the paired vault relayer for the
+same chain and environment with
+`ContractsError::ForbiddenInteractionTarget`. Unknown or custom settlement
+domains pass through neutrally and leave final target authority to the
+settlement contract runtime. `PROP-CON-011` records the invariant.
 
 ### Vault Relayer Role Hash Parity
 
@@ -141,27 +150,13 @@ appends the 4-byte method selector, and hashes the resulting 36-byte payload.
 `contracts-vault-role-hashes-match-upstream-typescript` pins the canonical
 Mainnet Vault role hashes for `manageUserBalance` and `batchSwap`.
 
-## Pending verification evidence
-
-This section records evidence expected from the next verification refresh. It
-is removed once every permanent evidence pointer has landed in the sections
-above.
-
-- `crates/contracts/tests/interaction_contract.rs::interaction_encoder_rejects_vault_relayer_target_for_canonical_settlement_domain`
-  and
-  `crates/contracts/tests/interaction_contract.rs::interaction_encoder_neutral_for_unknown_custom_settlement_domain`
-  will pin the guarded canonical-domain rejection and custom-domain pass-through
-  rule from ADR 0034.
-- `crates/contracts/tests/property_contract.rs::decode_trade_flags_accepts_0b00_and_0b01_as_erc20`
-  and
-  `crates/contracts/tests/property_contract.rs::decode_order_rejects_out_of_bounds_token_indices`
-  will pin the reviewed trade-flag and token-index decoder boundaries.
-
 ## Evidence
 
 Primary implementation points:
 
 - `crates/contracts/src/settlement.rs`
+- `crates/contracts/src/interaction.rs`
+- `crates/contracts/src/errors.rs`
 - `crates/contracts/src/vault.rs`
 - `crates/contracts/src/eth_flow.rs`
 - `crates/contracts/src/proxy.rs`
@@ -180,6 +175,12 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/contracts/tests/parity_contract.rs`
+- `crates/contracts/tests/property_contract.rs::decode_trade_flags_accepts_0b00_and_0b01_as_erc20`
+- `crates/contracts/tests/property_contract.rs::decode_order_rejects_out_of_bounds_token_indices`
+- `crates/contracts/tests/interaction_contract.rs::interaction_encoder_rejects_vault_relayer_target_for_canonical_settlement_domain`
+- `crates/contracts/tests/interaction_contract.rs::interaction_encoder_accepts_non_vault_target_for_canonical_settlement_domain`
+- `crates/contracts/tests/interaction_contract.rs::interaction_encoder_does_not_cross_match_chain_or_env`
+- `crates/contracts/tests/interaction_contract.rs::interaction_encoder_neutral_for_unknown_custom_settlement_domain`
 - `crates/contracts/tests/vault_contract.rs::vault_role_hashes_match_the_canonical_solidity_packed_layout`
 - `crates/contracts/src/primitives.rs::tests::domain_separator_matches_shared_parity_fixture`
 - `crates/signing/src/domain.rs::tests::domain_separator_matches_shared_parity_fixture`
@@ -188,6 +189,8 @@ Validation surface:
 
 ```text
 cargo test -p cow-sdk-contracts --all-features
+cargo test -p cow-sdk-contracts --test property_contract
+cargo test -p cow-sdk-contracts --test interaction_contract
 cargo test -p cow-sdk-contracts --test vault_contract vault_role_hashes_match_the_canonical_solidity_packed_layout
 cargo test -p cow-sdk-contracts --test parity_contract parity_fixture_cases_hold
 cargo test -p cow-sdk-contracts domain_separator_matches_shared_parity_fixture

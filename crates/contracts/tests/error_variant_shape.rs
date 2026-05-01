@@ -110,6 +110,28 @@ fn invalid_decoded_length_variant_carries_structured_field_expected_and_actual_f
 }
 
 #[test]
+fn forbidden_interaction_target_carries_typed_target_address() {
+    let target =
+        Address::new("0x1111111111111111111111111111111111111111").expect("literal must parse");
+    let error = ContractsError::ForbiddenInteractionTarget {
+        target: target.clone(),
+    };
+
+    let ContractsError::ForbiddenInteractionTarget { target: extracted } = &error else {
+        panic!("expected ForbiddenInteractionTarget variant, got {error:?}");
+    };
+    assert_typed_token_address(extracted);
+    assert_eq!(extracted, &target);
+    assert_eq!(
+        error.to_string(),
+        format!(
+            "forbidden settlement interaction target: {}",
+            target.as_str()
+        ),
+    );
+}
+
+#[test]
 fn decode_hex_variant_wraps_hex_from_hex_error_source() {
     let source = hex::decode("zzzz").unwrap_err();
     let error = ContractsError::DecodeHex {

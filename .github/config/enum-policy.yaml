@@ -197,7 +197,7 @@ enums:
     line: 7
     category: sdk-local-state
     expected_marker: non_exhaustive
-    reason: Contract binding diagnostics can grow with new typed codecs and registry checks.
+    reason: Contract binding diagnostics can grow with new typed codecs, registry checks, and interaction-target guards.
   - name: TransportError
     file: crates/core/src/transport/error.rs
     line: 31

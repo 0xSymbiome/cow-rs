@@ -13,8 +13,11 @@
 mod common;
 
 use bytes::Bytes;
-use cow_sdk_contracts::{InteractionLike, normalize_interaction, normalize_interactions};
-use cow_sdk_core::{Address, Amount};
+use cow_sdk_contracts::{
+    ContractId, ContractsError, InteractionLike, InteractionStage, Registry, SettlementEncoder,
+    normalize_interaction, normalize_interactions,
+};
+use cow_sdk_core::{Address, Amount, CowEnv, SupportedChainId, TypedDataDomain};
 
 use common::fixture_case;
 
@@ -27,6 +30,15 @@ fn bytes_from_hex_literal(literal: &str) -> Bytes {
 
 fn hex_prefixed(bytes: &Bytes) -> String {
     format!("0x{}", hex::encode(bytes))
+}
+
+fn settlement_domain(chain_id: SupportedChainId, verifying_contract: Address) -> TypedDataDomain {
+    TypedDataDomain::new(
+        "Gnosis Protocol".to_owned(),
+        "v2".to_owned(),
+        chain_id.into(),
+        verifying_contract,
+    )
 }
 
 #[test]
@@ -110,5 +122,126 @@ fn interaction_calldata_clone_shares_backing_allocation() {
         cloned.as_ptr(),
         interaction.call_data.as_ptr(),
         "bytes::Bytes clone must reference the same backing allocation"
+    );
+}
+
+#[test]
+fn interaction_encoder_rejects_vault_relayer_target_for_canonical_settlement_domain() {
+    let registry = Registry::default();
+
+    for chain_id in SupportedChainId::ALL {
+        for env in [CowEnv::Prod, CowEnv::Staging] {
+            let settlement = registry
+                .address(ContractId::Settlement, chain_id, env)
+                .expect("canonical settlement must be registered for every supported env");
+            let vault_relayer = registry
+                .address(ContractId::VaultRelayer, chain_id, env)
+                .expect("canonical vault relayer must be registered for every supported env");
+            let mut encoder = SettlementEncoder::new(settlement_domain(chain_id, settlement));
+
+            let error = encoder
+                .encode_interaction(
+                    &InteractionLike::new(vault_relayer.clone(), None, None),
+                    InteractionStage::Intra,
+                )
+                .unwrap_err();
+
+            assert!(matches!(
+                error,
+                ContractsError::ForbiddenInteractionTarget { target } if target == vault_relayer
+            ));
+        }
+    }
+}
+
+#[test]
+fn interaction_encoder_accepts_non_vault_target_for_canonical_settlement_domain() {
+    let registry = Registry::default();
+    let chain_id = SupportedChainId::Mainnet;
+    let settlement = registry
+        .address(ContractId::Settlement, chain_id, CowEnv::Prod)
+        .expect("canonical settlement must be registered");
+    let mut encoder = SettlementEncoder::new(settlement_domain(chain_id, settlement));
+    let target = Address::new("0x1111111111111111111111111111111111111111").unwrap();
+
+    encoder
+        .encode_interaction(
+            &InteractionLike::new(target.clone(), None, None),
+            InteractionStage::Intra,
+        )
+        .unwrap();
+
+    let interactions = encoder.interactions().unwrap();
+    assert_eq!(
+        interactions[InteractionStage::Intra as usize][0].target,
+        target
+    );
+}
+
+#[test]
+fn interaction_encoder_does_not_cross_match_chain_or_env() {
+    let registry = Registry::default();
+    let chain_id = SupportedChainId::Mainnet;
+    let settlement = registry
+        .address(ContractId::Settlement, chain_id, CowEnv::Prod)
+        .expect("canonical settlement must be registered");
+    let staging_vault_relayer = registry
+        .address(ContractId::VaultRelayer, chain_id, CowEnv::Staging)
+        .expect("canonical staging vault relayer must be registered");
+    let mut prod_encoder = SettlementEncoder::new(settlement_domain(chain_id, settlement.clone()));
+
+    prod_encoder
+        .encode_interaction(
+            &InteractionLike::new(staging_vault_relayer.clone(), None, None),
+            InteractionStage::Intra,
+        )
+        .unwrap();
+
+    let unsupported_chain_domain = TypedDataDomain::new(
+        "Gnosis Protocol".to_owned(),
+        "v2".to_owned(),
+        424_242,
+        settlement,
+    );
+    let prod_vault_relayer = registry
+        .address(ContractId::VaultRelayer, chain_id, CowEnv::Prod)
+        .expect("canonical production vault relayer must be registered");
+    let mut custom_chain_encoder = SettlementEncoder::new(unsupported_chain_domain);
+
+    custom_chain_encoder
+        .encode_interaction(
+            &InteractionLike::new(prod_vault_relayer, None, None),
+            InteractionStage::Intra,
+        )
+        .unwrap();
+}
+
+#[test]
+fn interaction_encoder_neutral_for_unknown_custom_settlement_domain() {
+    let registry = Registry::default();
+    let vault_relayer = registry
+        .address(
+            ContractId::VaultRelayer,
+            SupportedChainId::Mainnet,
+            CowEnv::Prod,
+        )
+        .expect("canonical vault relayer must be registered");
+    let custom_settlement = Address::new("0x2222222222222222222222222222222222222222").unwrap();
+    let mut encoder = SettlementEncoder::new(settlement_domain(
+        SupportedChainId::Mainnet,
+        custom_settlement,
+    ));
+
+    encoder
+        .encode_interaction(
+            &InteractionLike::new(vault_relayer.clone(), None, None),
+            InteractionStage::Intra,
+        )
+        .unwrap();
+
+    let interactions = encoder.interactions().unwrap();
+    assert_eq!(
+        interactions[InteractionStage::Intra as usize][0].target,
+        vault_relayer,
     );
 }
