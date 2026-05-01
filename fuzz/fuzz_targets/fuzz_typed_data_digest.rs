@@ -79,12 +79,12 @@ fuzz_target!(|input: FuzzInput| {
     );
     let order: Order = (&unsigned).into();
 
-    let domain = TypedDataDomain {
-        name: bounded_ascii(input.domain_name_ascii_seed, input.domain_name_len),
-        version: bounded_ascii(input.domain_version_ascii_seed, input.domain_version_len),
-        chain_id: ChainId::from(input.chain_id),
-        verifying_contract: Address::from_bytes(input.verifying_contract),
-    };
+    let domain = TypedDataDomain::new(
+        bounded_ascii(input.domain_name_ascii_seed, input.domain_name_len),
+        bounded_ascii(input.domain_version_ascii_seed, input.domain_version_len),
+        ChainId::from(input.chain_id),
+        Address::from_bytes(input.verifying_contract),
+    );
 
     // `hash_order` is deterministic for a fixed accepted input. Rejected
     // orders are valid typed failures for the normalizer and are not

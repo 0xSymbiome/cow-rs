@@ -108,6 +108,7 @@ fn response_body_redaction_strips_credential_shapes_without_regex_dependency() {
     let raw = format!(
         "aUtHoRiZaTiOn: bEaReR bearer-secret-123\n\
          X-API-KEY: header-secret-456\n\
+         https://user:pass@example.test/path?apiKey=secret-token\n\
          /pin?api-key=query-secret&api_key=query-secret-2\n\
          {{\"api_key\":\"json-secret\",\"token\":\"token-secret\",\"secret\":\"secret-value\"}}\n\
          jwt={jwt}"
@@ -120,6 +121,8 @@ fn response_body_redaction_strips_credential_shapes_without_regex_dependency() {
     for forbidden in [
         "bearer-secret-123",
         "header-secret-456",
+        "user:pass",
+        "secret-token",
         "query-secret",
         "query-secret-2",
         "json-secret",

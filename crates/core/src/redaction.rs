@@ -114,6 +114,13 @@ fn strip_credential_tokens(input: &str) -> String {
     let mut offset = 0;
 
     while offset < input.len() {
+        if let Some(redaction) = url_userinfo_span(input, offset) {
+            output.push_str(&input[offset..redaction.value_start]);
+            output.push_str(REDACTED_PLACEHOLDER);
+            offset = redaction.value_end;
+            continue;
+        }
+
         if let Some(end) = jwt_token_end(input, offset) {
             output.push_str(REDACTED_PLACEHOLDER);
             offset = end;
@@ -141,6 +148,32 @@ fn strip_credential_tokens(input: &str) -> String {
 struct ValueRedaction {
     value_start: usize,
     value_end: usize,
+}
+
+fn url_userinfo_span(input: &str, offset: usize) -> Option<ValueRedaction> {
+    if offset > 0 && is_url_scheme_char(input.as_bytes()[offset - 1]) {
+        return None;
+    }
+
+    let scheme_end = input[offset..].find("://")? + offset;
+    if scheme_end == offset || !input[offset..scheme_end].bytes().all(is_url_scheme_char) {
+        return None;
+    }
+
+    let authority_start = scheme_end + 3;
+    let mut authority_end = authority_start;
+    while let Some(byte) = input.as_bytes().get(authority_end).copied() {
+        if byte.is_ascii_whitespace() || matches!(byte, b'/' | b'?' | b'#' | b'"' | b'\'') {
+            break;
+        }
+        authority_end += 1;
+    }
+
+    let at = input[authority_start..authority_end].find('@')? + authority_start;
+    (at > authority_start).then_some(ValueRedaction {
+        value_start: authority_start,
+        value_end: at,
+    })
 }
 
 fn credential_value_span(input: &str, offset: usize) -> Option<ValueRedaction> {
@@ -314,6 +347,10 @@ fn skip_ascii_whitespace(input: &str, mut offset: usize) -> usize {
 
 const fn is_key_char(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_')
+}
+
+const fn is_url_scheme_char(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || matches!(byte, b'+' | b'.' | b'-')
 }
 
 const fn is_credential_value_char(byte: u8) -> bool {

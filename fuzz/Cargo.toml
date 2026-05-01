@@ -11,6 +11,7 @@ cargo-fuzz = true
 libfuzzer-sys = "=0.4.12"
 arbitrary = { version = "=1.4.2", features = ["derive"] }
 hex = "=0.4.3"
+http = "=1.4.0"
 serde_json = "=1.0.149"
 alloy-sol-types = "=1.5.7"
 sha3 = "=0.11.0"
@@ -109,6 +110,27 @@ bench = false
 [[bin]]
 name = "fuzz_recover_ecdsa_address"
 path = "fuzz_targets/fuzz_recover_ecdsa_address.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_orderbook_rejection_decode"
+path = "fuzz_targets/fuzz_orderbook_rejection_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_app_data_merge"
+path = "fuzz_targets/fuzz_app_data_merge.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_transport_error_classify"
+path = "fuzz_targets/fuzz_transport_error_classify.rs"
 test = false
 doc = false
 bench = false

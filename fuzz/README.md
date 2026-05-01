@@ -57,9 +57,31 @@ is the codec boundary under test (`order_uid`, `typed_data`,
 `app_data_cid`, `order_signature`, `subgraph_graphql_error`,
 `settlement_settle`, `settlement_invalidate_order`,
 `ethflow_create_order`, `erc20_permit_typed_data`,
-`vault_relayer_transfer_from_accounts`, `order_bounds_validator`) and
+`vault_relayer_transfer_from_accounts`, `order_bounds_validator`,
+`orderbook_rejection`, `app_data_merge`, `transport_error`) and
 `<action>` is the specific invariant the target asserts (`pack_unpack`,
-`digest`, `roundtrip`, `classify`, `decode`, `encode`, `hash`).
+`digest`, `roundtrip`, `classify`, `decode`, `encode`, `hash`,
+`merge`).
+
+## Per-target seed contract
+
+Every target that is part of scheduled fuzzing must ship at least 5
+tracked seed files under `fuzz/corpus/<target>/`, excluding the
+directory README. The tracked corpus must include the following seed
+classes:
+
+- `canonical` — at least one seed derived from `parity/fixtures/*.json`
+  or a pinned upstream test fixture. The corpus README names the fixture
+  id and the derivation step.
+- `boundary` — at least one seed at an input-domain edge such as an
+  empty payload, all-zero or all-`0xff` bytes, a single-element list, a
+  capped maximum-length list, or a numeric extreme.
+- `adversarial` — at least one seed derived from a documented edge case,
+  upstream regression, named audit risk, or known historical bug.
+
+The remaining seeds needed to reach the 5-file floor may come from any
+of those classes. The per-target README is part of the seed contract and
+must be updated whenever tracked seeds are added, removed, or rederived.
 
 ## Encoder Fuzz Targets
 
@@ -93,6 +115,20 @@ every shipped contract binding family in `cow-sdk-contracts`:
   always returns a typed result without panicking. Its corpus seeds the
   happy path, each validator rejection class, timestamp extremes, and
   the WETH/native sentinel pair.
+
+## Parser, Merge, And Transport Fuzz Targets
+
+- `fuzz_orderbook_rejection_decode` — feeds arbitrary response bodies to
+  the typed orderbook rejection parser under `400` and `500` statuses,
+  asserting no panic and deterministic `Display` rendering for any typed
+  rejection.
+- `fuzz_app_data_merge` — maps arbitrary bytes into a bounded
+  `(serde_json::Value, AppDataParams)` pair, runs the typed
+  quote-to-post app-data merge, and asserts canonical JSON idempotency
+  for successful merges.
+- `fuzz_transport_error_classify` — maps arbitrary status, body, and
+  header bytes into the typed transport-error partition and asserts that
+  public diagnostics do not leak credential-bearing URL snippets.
 
 ## Input-size convention
 
@@ -129,8 +165,8 @@ cargo +nightly fuzz run <target> --fuzz-dir fuzz fuzz/corpus/<target>/<seed>
    arbitrary input), call the helper under test, and assert the
    documented invariant. Keep the assertion messages specific so a
    crash in CI names the diverging field.
-3. Add `corpus/<target>/README.md` and at least one deterministic seed
-   for each documented seed class the target depends on.
+3. Add `corpus/<target>/README.md` and at least 5 deterministic seed
+   files covering the canonical, boundary, and adversarial classes.
 4. Smoke-run locally: `cargo +nightly fuzz run <target> --fuzz-dir fuzz
    -- -runs=1000`.
 

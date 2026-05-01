@@ -422,6 +422,22 @@ jobs:
       - name: Check workspace feature matrix
         run: cargo hack check --workspace --feature-powerset --depth 1
 
+  fuzz-corpus-audit:
+    name: Fuzz corpus audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+      - name: Verify fuzz corpus property claims
+        run: cargo run --manifest-path scripts/fuzz-corpus-audit/Cargo.toml
+
   public-api-lints:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -620,6 +636,7 @@ jobs:
       - typos
       - deny
       - feature-matrix
+      - fuzz-corpus-audit
       - public-api-lints
       - alloy-provider-invariant
       - adr-coverage
