@@ -1,7 +1,7 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-04-30
+Last reviewed: 2026-05-01
 Owning surface: source-lock provenance and lifecycle preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
@@ -101,6 +101,25 @@ archive additions a single refresh point.
 `.github/config/audit-refresh-map.yml` maps source-lock changes and the named
 preflight exclusion policy to this audit. The public map records the review
 contract without exposing maintainer-only path names.
+
+## Pending verification evidence
+
+This section records evidence expected from the next verification refresh. It
+is removed once every permanent evidence pointer has landed in the sections
+above.
+
+- `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v2_is_rejected_with_stable_diagnostic`
+  and
+  `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v4_is_rejected_with_stable_diagnostic`
+  will pin deterministic rejection for unsupported source-lock schema versions.
+- `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v3_is_accepted`
+  will pin acceptance of the current schema version.
+- `.github/workflows/_quality-gate.yml` will run
+  `cargo test --manifest-path scripts/parity-maintainer/Cargo.toml` so the
+  maintainer-side provenance tests are enforced by the quality gate.
+- `crates/sdk/tests/cross_fixture_amount_roundtrip.rs` will pin canonical
+  amount parsing and byte-identical roundtrips across the committed parity
+  fixtures.
 
 ## Evidence
 

@@ -41,6 +41,7 @@ public and runtime shape of `cow-rs`.
 | [0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md) | Accepted | Drive orderbook response DTO coverage from OpenAPI with separate `Order` and `AuctionOrder` Rust types. |
 | [0032](0032-deployment-authority-machine-readable-provenance.md) | Accepted | Back deployment-address authority with machine-readable provenance and dual-mode live confirmation. |
 | [0033](0033-minimum-viable-panic-surface.md) | Accepted | Keep production panic sites allowlisted, documented, and limited to static invariants. |
+| [0034](0034-interaction-encoder-target-policy.md) | Accepted | Guard canonical vault-relayer interaction targets at the settlement encoder boundary while leaving custom domains to runtime authority. |
 
 ## When To Write An ADR
 

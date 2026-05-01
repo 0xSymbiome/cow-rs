@@ -1,11 +1,12 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-04-29
+Last reviewed: 2026-05-01
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a drift in the committed Solidity excerpt under `crates/contracts/abi/**/*.sol`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
 - [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md)
+- [ADR 0034](../adr/0034-interaction-encoder-target-policy.md)
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
 - [Parity Matrix](../parity-matrix.md)
 - [Parity Scope](../parity-scope.md)
@@ -117,6 +118,43 @@ audit. Third-party protocol bindings (Aave, bridging adapters,
 condition schedulers) stay in their own capability crates and carry
 their own parity contracts when they land. Hand-rolled encoder helpers
 are not allowed in `cow-sdk-contracts`.
+
+### Interaction Encoder
+
+Settlement interaction encoding is the reviewed boundary for translating
+typed interaction data into contract calldata. The permanent evidence pointer
+for the guarded canonical vault-relayer target policy will attach here once the
+encoder-side rejection and regression coverage land.
+
+### Vault Relayer Role Hash Parity
+
+Vault-relayer role hash helpers are part of the reviewed binding parity
+surface because callers use the emitted role identifiers in Balancer
+Authorizer grant calls. The permanent fixture and property evidence for the
+packed upstream hash formula will attach here once the role-hash parity
+coverage lands.
+
+## Pending verification evidence
+
+This section records evidence expected from the next verification refresh. It
+is removed once every permanent evidence pointer has landed in the sections
+above.
+
+- `crates/contracts/tests/vault_contract.rs::vault_role_hashes_match_the_canonical_solidity_packed_layout`
+  will pin the packed upstream role-hash formula through the public vault-role
+  helpers.
+- Fixture `contracts-vault-role-hashes-match-upstream-typescript` in
+  `parity/fixtures/contracts.json` will carry the canonical Mainnet Vault
+  address, selectors, and expected role hashes.
+- `crates/contracts/tests/interaction_contract.rs::interaction_encoder_rejects_vault_relayer_target_for_canonical_settlement_domain`
+  and
+  `crates/contracts/tests/interaction_contract.rs::interaction_encoder_neutral_for_unknown_custom_settlement_domain`
+  will pin the guarded canonical-domain rejection and custom-domain pass-through
+  rule from ADR 0034.
+- `crates/contracts/tests/property_contract.rs::decode_trade_flags_accepts_0b00_and_0b01_as_erc20`
+  and
+  `crates/contracts/tests/property_contract.rs::decode_order_rejects_out_of_bounds_token_indices`
+  will pin the reviewed trade-flag and token-index decoder boundaries.
 
 ## Evidence
 

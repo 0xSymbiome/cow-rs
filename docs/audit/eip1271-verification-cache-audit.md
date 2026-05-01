@@ -1,7 +1,7 @@
 # EIP-1271 Verification Cache Audit
 
 Status: Current
-Last reviewed: 2026-04-29
+Last reviewed: 2026-05-01
 Owning surface: `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `NoopEip1271VerificationCache` and `InMemoryEip1271VerificationCache` default implementations shipped from `cow-sdk-signing::cache`
 Refresh trigger: Changes to the trait signature, the caching semantics (what is cached and what is not), the `verify_eip1271_signature_async` call shape, the verification tracing fields, the default TTL or capacity on the in-memory implementation, the platform time-source selection, or the thread-safety posture; a new canonical implementation that ships in the workspace
 Related docs:
@@ -123,6 +123,23 @@ tasks against the same key space and asserts every key written by a
 racing task is observable through `get` after the tasks join. Linear
 value ordering between racing writers is not required — only that no
 write is lost.
+
+## Pending verification evidence
+
+This section records evidence expected from the next verification refresh. It
+is removed once every permanent evidence pointer has landed in the sections
+above.
+
+- `crates/signing/tests/eip1271_cache_contract.rs::cache_skips_every_non_cacheable_error_class`
+  will pin that non-cacheable verification failures do not write cache entries
+  and re-hit the provider on the next call.
+- `crates/signing/tests/eip1271_cache_contract.rs::cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one`
+  will pin the native TTL boundary under a controlled clock.
+- `crates/signing/tests/wasm_cache_contract.rs` will carry the sibling wasm
+  TTL-boundary coverage for the browser time-source path.
+- `crates/signing/tests/ui/eip1271_error_match_requires_wildcard.rs` will pin
+  non-exhaustive error matching from outside the crate through compile-fail
+  coverage.
 
 ## Evidence
 

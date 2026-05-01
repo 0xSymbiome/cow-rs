@@ -1,7 +1,7 @@
 # Cooperative Cancellation Contract Audit
 
 Status: Current
-Last reviewed: 2026-04-21
+Last reviewed: 2026-05-01
 Owning surface: Cross-cutting cooperative cancellation across `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, and `cow-sdk-trading`
 Refresh trigger: Changes to the `Cancellable` combinator, to the `CancellationToken` re-export, to the canonical long-running public methods on the three client surfaces, or to the `From<Cancelled>` bridges on the typed error aggregates
 Related docs:
@@ -89,6 +89,28 @@ drops the inner future, so the underlying socket releases promptly rather
 than waiting for the request deadline. Cancellation is cooperative: the
 caller owns the token and can clone it to propagate shutdown across
 multiple SDK instances.
+
+## Pending verification evidence
+
+This section records evidence expected from the next verification refresh. It
+is removed once every permanent evidence pointer has landed in the sections
+above.
+
+- `crates/orderbook/tests/cancellation_composition_contract.rs` will enumerate
+  the remaining long-running `OrderBookApi` async methods and exercise both the
+  pre-cancelled-token and in-flight-abort branches.
+- `crates/subgraph/tests/cancellation_composition_contract.rs` will enumerate
+  the remaining long-running `SubgraphApi` async methods and exercise both
+  cancellation branches.
+- `crates/trading/tests/cancellation_composition_contract.rs` will enumerate
+  the remaining long-running `TradingSdk` async methods and exercise both
+  cancellation branches.
+- `crates/orderbook/tests/request_contract.rs` will pin retry/backoff
+  cancellation by cancelling between a `Retry-After` response and the next
+  attempt.
+- `cargo test --workspace --all-features` will include a stable-toolchain
+  coverage validator that fails when a long-running public async method is
+  missing from the cancellation table.
 
 ## Evidence
 

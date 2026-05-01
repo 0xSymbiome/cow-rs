@@ -1,7 +1,7 @@
 # Trading Order-Bounds Validator Audit
 
 Status: Current
-Last reviewed: 2026-04-25
+Last reviewed: 2026-05-01
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
 `OrderValidityBounds`, `SubmissionClass`, `ClientRejection`,
 `AmountSide`, and the `TradingError::ClientRejected` lifting variant.
@@ -138,6 +138,29 @@ The validator never reads `SystemTime::now`, never opens a network
 connection, and never inspects environment variables. The pure
 shape keeps deterministic regression tests reproducible across
 machines and replays.
+
+## Pending verification evidence
+
+This section records evidence expected from the next verification refresh. It
+is removed once every permanent evidence pointer has landed in the sections
+above.
+
+- `crates/trading/tests/onchain_contract.rs::eth_flow_gas_estimate_applies_documented_floor_overhead`
+  and
+  `crates/trading/tests/onchain_contract.rs::pre_sign_gas_estimate_applies_documented_floor_overhead`
+  will pin the documented 20% gas-overhead formula with floor integer
+  rounding.
+- `crates/trading/tests/property_contract.rs::validator_is_monotonic_within_window_via_proptest`
+  will pin monotonic rejection classification inside the validity window.
+- `crates/trading/tests/property_contract.rs::validator_handles_u32_max_validto_without_overflow`
+  will pin overflow-safe validation around `u32::MAX` and `u64::MAX` time
+  boundaries.
+- `fuzz/fuzz_targets/fuzz_order_bounds_validator.rs` and
+  `fuzz/corpus/fuzz_order_bounds_validator/` will provide seeded fuzz coverage
+  for the validator's typed result boundary.
+- Property rows `PROP-TRD-007` and `PROP-TRD-008` will carry the permanent
+  evidence pointers for gas-overhead rounding and the seeded validator fuzz
+  target.
 
 ## Evidence
 

@@ -70,6 +70,25 @@ sites.
   signatures into different malformed signatures rather than rejecting
   them explicitly.
 
+## Prefix Ownership
+
+EthSign signing and recovery split EIP-191 prefix ownership across the signing
+and contracts crates. `cow-sdk-signing` routes the raw 32-byte order digest to
+`Signer::sign_message`; the wallet's personal-sign semantics adds the
+`"\x19Ethereum Signed Message:\n32"` prefix. The signing crate must not prepend
+that prefix itself, because doing so would double-prefix the payload and make
+the signature fail against the settlement contract.
+
+`cow-sdk-contracts` applies the EIP-191 prefix only at recovery time, through
+the private `eth_sign_digest_prehash` helper, because recovery has no wallet
+step that can add the prefix. The helper remains private; integration coverage
+exercises the invariant through the public
+`Signature::recover_ecdsa_address` API.
+
+The pinned upstream signing posture signs `hashTypedData(...)` bytes through
+`owner.signMessage(ethers.utils.arrayify(...))`, so the wallet/provider layer
+owns the personal-sign prefix during signing.
+
 ## Links
 
 - [Architecture](../architecture.md)

@@ -1,7 +1,7 @@
 # Wire DTO Coverage Audit
 
 Status: Current
-Last reviewed: 2026-04-29
+Last reviewed: 2026-05-01
 Owning surface: cow-sdk-orderbook DTO coverage
 Refresh trigger: changes to `parity/openapi/services-orderbook.yml`, changes to `parity/openapi/coverage.yaml`, source-lock refreshes for the services OpenAPI, or public field changes on covered orderbook response DTOs
 Related docs:
@@ -62,6 +62,18 @@ and the auction-side `quote`.
 The covered response DTOs are open to additive upstream fields. Unknown fields
 are ignored during deserialization, while known fields remain modeled in the
 public typed surface and covered by fixtures.
+
+## Pending verification evidence
+
+This section records evidence expected from the next verification refresh. It
+is removed once every permanent evidence pointer has landed in the sections
+above.
+
+- `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
+  will remain the negative self-test for the OpenAPI coverage validator.
+- `.github/workflows/_quality-gate.yml` will run
+  `cargo test --manifest-path scripts/parity-maintainer/Cargo.toml` so the
+  validator self-test is enforced by the quality gate.
 
 ## Evidence
 
