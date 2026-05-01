@@ -44,9 +44,9 @@ cargo +nightly fuzz run <target> --fuzz-dir fuzz -- -max_total_time=60
 
 - `fuzz_targets/` — one `.rs` file per target. The file stem matches the
   `[[bin]]` name declared in `Cargo.toml`.
-- `corpus/<target>/` — seed inputs for the matching target. Filenames
-  describe the boundary case they exercise. Not tracked in version
-  control so corpus entries can accumulate out-of-band.
+- `corpus/<target>/` — tracked baseline seed inputs for the matching
+  target. Filenames describe the boundary case they exercise. Local
+  fuzzing may add additional out-of-band corpus entries.
 - `artifacts/<target>/` — crash reproducers written by libFuzzer on
   failure. Also not tracked in version control.
 - `dictionaries/<target>.dict` — optional libFuzzer token dictionary for
@@ -57,9 +57,9 @@ is the codec boundary under test (`order_uid`, `typed_data`,
 `app_data_cid`, `order_signature`, `subgraph_graphql_error`,
 `settlement_settle`, `settlement_invalidate_order`,
 `ethflow_create_order`, `erc20_permit_typed_data`,
-`vault_relayer_transfer_from_accounts`) and `<action>` is the specific
-invariant the target asserts (`pack_unpack`, `digest`, `roundtrip`,
-`classify`, `decode`, `encode`, `hash`).
+`vault_relayer_transfer_from_accounts`, `order_bounds_validator`) and
+`<action>` is the specific invariant the target asserts (`pack_unpack`,
+`digest`, `roundtrip`, `classify`, `decode`, `encode`, `hash`).
 
 ## Encoder Fuzz Targets
 
@@ -84,6 +84,15 @@ every shipped contract binding family in `cow-sdk-contracts`:
 - `fuzz_vault_relayer_transfer_from_accounts_encode` — asserts
   `GPv2VaultRelayer.transferFromAccounts(Transfer[])` call-data length
   equals `selector + offset + length + n * 128` for `n` transfers.
+
+## Validator Fuzz Targets
+
+- `fuzz_order_bounds_validator` — maps arbitrary bytes into an
+  `OrderCreation`, signing scheme, optional app-data signer, timestamp,
+  and EthFlow flag, then asserts `OrderBoundsValidator::validate`
+  always returns a typed result without panicking. Its corpus seeds the
+  happy path, each validator rejection class, timestamp extremes, and
+  the WETH/native sentinel pair.
 
 ## Input-size convention
 
@@ -120,10 +129,12 @@ cargo +nightly fuzz run <target> --fuzz-dir fuzz fuzz/corpus/<target>/<seed>
    arbitrary input), call the helper under test, and assert the
    documented invariant. Keep the assertion messages specific so a
    crash in CI names the diverging field.
-3. Smoke-run locally: `cargo +nightly fuzz run <target> --fuzz-dir fuzz
+3. Add `corpus/<target>/README.md` and at least one deterministic seed
+   for each documented seed class the target depends on.
+4. Smoke-run locally: `cargo +nightly fuzz run <target> --fuzz-dir fuzz
    -- -runs=1000`.
 
 A target is complete when it builds under
 `cargo +nightly fuzz build --fuzz-dir fuzz`, runs panic-free on a
-1000-iteration smoke, and carries an assertion on the invariant its
-boundary guarantees.
+1000-iteration smoke, carries an assertion on the invariant its boundary
+guarantees, and ships a documented seed corpus.

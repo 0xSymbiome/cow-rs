@@ -1,3 +1,9 @@
+#![allow(
+    clippy::missing_const_for_fn,
+    clippy::must_use_candidate,
+    reason = "small integration-test helpers do not need public API lint polish"
+)]
+
 mod common;
 
 use cow_sdk_core::{
@@ -26,6 +32,25 @@ fn uint256_word(value: &BigUint) -> String {
     format!("{value:064x}")
 }
 
+fn set_estimated_gas(signer: &MockSigner, estimate: u64) {
+    signer
+        .state
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .estimated_gas =
+        Ok(Amount::new(estimate.to_string()).expect("test gas estimate must be valid"));
+}
+
+fn expected_gas_with_floor_overhead(estimate: u64) -> Amount {
+    let estimate = u128::from(estimate);
+    let expected = estimate + (estimate * 20) / 100;
+    Amount::new(expected.to_string()).expect("expected gas estimate must be valid")
+}
+
+fn gas_overhead_cases() -> [u64; 6] {
+    [1, 7, 100, 1_000, 100_000, u64::MAX / 2]
+}
+
 #[test]
 fn presign_transaction_uses_zero_value_margin_and_settlement_override() {
     let signer = MockSigner::default();
@@ -50,6 +75,23 @@ fn presign_transaction_uses_zero_value_margin_and_settlement_override() {
         tx.gas_limit,
         Some(Amount::new("150000").expect("test gas literal must be valid"))
     );
+}
+
+#[test]
+fn pre_sign_gas_estimate_applies_documented_floor_overhead() {
+    for estimate in gas_overhead_cases() {
+        let signer = MockSigner::default();
+        set_estimated_gas(&signer, estimate);
+
+        let tx = get_pre_sign_transaction(&signer, SupportedChainId::Sepolia, &order_uid(), None)
+            .expect("pre-sign transaction should build");
+
+        assert_eq!(
+            tx.gas_limit,
+            Some(expected_gas_with_floor_overhead(estimate)),
+            "estimate={estimate}"
+        );
+    }
 }
 
 #[tokio::test]
@@ -93,6 +135,35 @@ async fn ethflow_transaction_uses_wrapped_native_value_margin_and_ethflow_overri
         transaction.transaction.gas_limit,
         Some(Amount::new("150000").expect("test gas literal must be valid"))
     );
+}
+
+#[tokio::test]
+async fn eth_flow_gas_estimate_applies_documented_floor_overhead() {
+    for estimate in gas_overhead_cases() {
+        let signer = MockSigner::default();
+        set_estimated_gas(&signer, estimate);
+        let trader = sample_trader_parameters();
+        let mut params = sample_limit_parameters(OrderKind::Sell);
+        params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+        params.quote_id = Some(3);
+
+        let transaction = get_eth_flow_transaction(
+            &app_data_hash(),
+            &params,
+            SupportedChainId::Sepolia,
+            &PostTradeAdditionalParams::default(),
+            &trader,
+            &signer,
+        )
+        .await
+        .expect("eth-flow transaction should build");
+
+        assert_eq!(
+            transaction.transaction.gas_limit,
+            Some(expected_gas_with_floor_overhead(estimate)),
+            "estimate={estimate}"
+        );
+    }
 }
 
 #[tokio::test]

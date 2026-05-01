@@ -54,6 +54,10 @@ encoder.
 | EthFlow skip rule | `is_eth_flow: true` skips the native-currency-sentinel sell-token check and runs every other invariant | Conforms |
 | WETH-paired guard | A WETH-bound validator rejects `sell_token = WETH` paired with `buy_token = native sentinel` as `SameBuyAndSellToken { token: weth }` | Conforms |
 | Purity | The validator reads no system clock or environment, performs no I/O, and is idempotent for a given input tuple | Conforms |
+| Time-source determinism | Property coverage compares validation classifications at `now` and `now + delta` while both observations remain inside the same validity window | Conforms |
+| Timestamp extremes | `valid_to = u32::MAX` resolves to typed validation outcomes at `u32::MAX` and `u64::MAX` timestamp boundaries without panicking | Conforms |
+| Gas overhead | EthFlow and pre-sign transaction helpers apply the documented 20% gas overhead with floor integer rounding | Conforms |
+| Fuzz corpus | `fuzz_order_bounds_validator` ships with a documented, non-empty corpus covering validator rejection classes and timestamp/token sentinels | Conforms |
 | Scope framing | The public validator documentation frames the local checks as defence-in-depth and names services-side rejection classes outside SDK pre-check coverage | Conforms |
 
 ## Current Contract
@@ -139,51 +143,62 @@ connection, and never inspects environment variables. The pure
 shape keeps deterministic regression tests reproducible across
 machines and replays.
 
-## Pending verification evidence
+### Property And Fuzz Evidence
 
-This section records evidence expected from the next verification refresh. It
-is removed once every permanent evidence pointer has landed in the sections
-above.
+`crates/trading/tests/property_contract.rs` pins deterministic validation
+under caller-supplied time by comparing the typed result classification at
+`now` and `now + delta` while both timestamps remain inside the same validity
+window. The same file covers `valid_to = u32::MAX` with `now` values around
+`u32::MAX` and `u64::MAX`, asserting typed results rather than relying on an
+implicit non-panic test.
 
-- `crates/trading/tests/onchain_contract.rs::eth_flow_gas_estimate_applies_documented_floor_overhead`
-  and
-  `crates/trading/tests/onchain_contract.rs::pre_sign_gas_estimate_applies_documented_floor_overhead`
-  will pin the documented 20% gas-overhead formula with floor integer
-  rounding.
-- `crates/trading/tests/property_contract.rs::validator_is_monotonic_within_window_via_proptest`
-  will pin monotonic rejection classification inside the validity window.
-- `crates/trading/tests/property_contract.rs::validator_handles_u32_max_validto_without_overflow`
-  will pin overflow-safe validation around `u32::MAX` and `u64::MAX` time
-  boundaries.
-- `fuzz/fuzz_targets/fuzz_order_bounds_validator.rs` and
-  `fuzz/corpus/fuzz_order_bounds_validator/` will provide seeded fuzz coverage
-  for the validator's typed result boundary.
-- Property rows `PROP-TRD-007` and `PROP-TRD-008` will carry the permanent
-  evidence pointers for gas-overhead rounding and the seeded validator fuzz
-  target.
+`fuzz/fuzz_targets/fuzz_order_bounds_validator.rs` maps arbitrary bytes into
+the validator tuple shape and checks that every outcome remains a typed
+`Result`. Its corpus README documents happy-path, rejection-class,
+timestamp-extreme, and WETH/native sentinel seeds.
+
+### Gas Overhead Evidence
+
+The EthFlow and pre-sign transaction helpers apply the same documented gas
+overhead as the trading utility: `gas + (gas * 20) / 100`. The boundary tests
+pin small floor-rounding cases and a large `u64::MAX / 2` estimate so future
+changes cannot silently switch multiplier or rounding behavior.
 
 ## Evidence
 
 Primary implementation points:
 
+- `crates/trading/src/onchain.rs`
+- `crates/trading/src/slippage.rs`
 - `crates/trading/src/validation.rs`
 - `crates/trading/src/parameters.rs`
 - `crates/trading/src/post.rs`
 - `crates/trading/src/sdk.rs`
 - `crates/core/src/types.rs` (`Amount::is_zero`)
+- `fuzz/fuzz_targets/fuzz_order_bounds_validator.rs`
 
 Primary regression coverage:
 
 - `crates/trading/tests/validation_contract.rs`
+- `crates/trading/tests/property_contract.rs::validator_is_monotonic_within_window_via_proptest`
+- `crates/trading/tests/property_contract.rs::validator_handles_u32_max_validto_without_overflow`
+- `crates/trading/tests/onchain_contract.rs::eth_flow_gas_estimate_applies_documented_floor_overhead`
+- `crates/trading/tests/onchain_contract.rs::pre_sign_gas_estimate_applies_documented_floor_overhead`
 - `crates/trading/tests/post_contract.rs`
 - `crates/trading/tests/post_contract.rs::post_swap_order_appdata_from_mismatch_does_not_upload_or_sign`
 - `crates/trading/tests/post_contract.rs::post_swap_order_same_buy_sell_token_does_not_upload_or_sign`
 - `crates/trading/tests/post_contract.rs::post_swap_order_zero_amount_does_not_upload_or_sign`
 - `crates/trading/tests/parity_contract.rs`
+- `fuzz/corpus/fuzz_order_bounds_validator/`
 
 Validation surface:
 
 ```text
+cargo test -p cow-sdk-trading --test onchain_contract
+cargo test -p cow-sdk-trading --test property_contract
 cargo test -p cow-sdk-trading --all-features
 cargo clippy -p cow-sdk-trading --all-targets --all-features -- -D warnings
+cargo +nightly fuzz build --fuzz-dir fuzz fuzz_order_bounds_validator
+cargo +nightly fuzz run fuzz_order_bounds_validator --fuzz-dir fuzz -- -runs=1024
+cargo run --manifest-path scripts/policy-maintainer/Cargo.toml -- check-property-citations
 ```

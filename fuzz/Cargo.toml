@@ -16,9 +16,11 @@ alloy-sol-types = "=1.5.7"
 sha3 = "=0.11.0"
 cow-sdk-contracts = { path = "../crates/contracts" }
 cow-sdk-core = { path = "../crates/core" }
+cow-sdk-orderbook = { path = "../crates/orderbook" }
 cow-sdk-signing = { path = "../crates/signing" }
 cow-sdk-app-data = { path = "../crates/app-data" }
 cow-sdk-subgraph = { path = "../crates/subgraph" }
+cow-sdk-trading = { path = "../crates/trading" }
 
 [[bin]]
 name = "fuzz_order_uid_pack_unpack"
@@ -79,6 +81,13 @@ bench = false
 [[bin]]
 name = "fuzz_erc20_permit_typed_data_hash"
 path = "fuzz_targets/fuzz_erc20_permit_typed_data_hash.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_order_bounds_validator"
+path = "fuzz_targets/fuzz_order_bounds_validator.rs"
 test = false
 doc = false
 bench = false

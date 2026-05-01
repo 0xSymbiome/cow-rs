@@ -61,6 +61,11 @@ impl EthFlowTransaction {
 /// When gas estimation fails, the helper falls back to the documented default
 /// gas limit instead of failing closed.
 ///
+/// ## Gas overhead
+///
+/// Successful gas estimates receive a 20% overhead using integer floor
+/// division: `gas + (gas * 20) / 100`.
+///
 /// # Errors
 ///
 /// Returns [`TradingError`] when ABI encoding or gas-margin conversion fails.
@@ -101,6 +106,11 @@ where
 /// When gas estimation fails, the helper falls back to the documented default
 /// gas limit instead of failing closed.
 ///
+/// ## Gas overhead
+///
+/// Successful gas estimates receive a 20% overhead using integer floor
+/// division: `gas + (gas * 20) / 100`.
+///
 /// # Errors
 ///
 /// Returns [`TradingError`] when ABI encoding or gas-margin conversion fails.
@@ -139,6 +149,11 @@ where
 
 /// Builds an `EthFlow` order-creation transaction using a sync signer.
 ///
+/// ## Gas overhead
+///
+/// Successful gas estimates receive a 20% overhead using integer floor
+/// division: `gas + (gas * 20) / 100`.
+///
 /// # Errors
 ///
 /// Returns any error from [`get_eth_flow_transaction_async`].
@@ -170,6 +185,11 @@ where
 /// `EthFlow` order ids are generated against the wrapped-native sell token and
 /// `MAX_VALID_TO_EPOCH`, then retried by decrementing buy amount until the
 /// optional uniqueness checker reports a free id.
+///
+/// ## Gas overhead
+///
+/// Successful gas estimates receive a 20% overhead using integer floor
+/// division: `gas + (gas * 20) / 100`.
 ///
 /// # Errors
 ///
