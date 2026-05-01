@@ -9,6 +9,10 @@
 //! [`NoopEip1271VerificationCache`] for callers that do not want
 //! caching, and [`InMemoryEip1271VerificationCache`] for callers that
 //! want a capacity-bounded, TTL-respecting in-memory store.
+//! The in-memory implementation uses [`SystemClock`] by default and
+//! exposes [`InMemoryEip1271VerificationCache::with_clock`] so tests
+//! and deterministic runtimes can inject a controlled clock without
+//! changing production wall-clock behaviour.
 //!
 //! # Cached-value semantics
 //!
@@ -62,6 +66,37 @@ impl Eip1271VerificationCache for NoopEip1271VerificationCache {
     fn put(&self, _verifier: Address, _digest: [u8; 32], _result: bool) {}
 }
 
+/// Time source used by [`InMemoryEip1271VerificationCache`].
+///
+/// The default [`SystemClock`] implementation calls [`Instant::now`].
+/// Tests can implement this trait with a deterministic clock to assert
+/// TTL boundaries without sleeping. On `wasm32`, [`Instant`] resolves
+/// to [`web_time::Instant`]; on native targets it resolves to
+/// [`std::time::Instant`].
+pub trait Clock: Send + Sync + 'static {
+    /// Returns the current instant for cache timestamp comparisons.
+    fn now(&self) -> Instant;
+}
+
+/// Wall-clock [`Clock`] used by default cache constructors.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct SystemClock;
+
+impl Clock for SystemClock {
+    fn now(&self) -> Instant {
+        Instant::now()
+    }
+}
+
+impl<F> Clock for F
+where
+    F: Fn() -> Instant + Send + Sync + 'static,
+{
+    fn now(&self) -> Instant {
+        self()
+    }
+}
+
 #[derive(Debug)]
 struct CacheEntry {
     inserted_at: Instant,
@@ -80,6 +115,10 @@ struct CacheEntry {
 ///
 /// The store is `Send + Sync + 'static`, so the cache may be wrapped in
 /// [`std::sync::Arc`] and shared across `tokio` tasks.
+/// [`InMemoryEip1271VerificationCache::with_clock`] accepts a custom
+/// [`Clock`] for deterministic TTL tests and embedders that already
+/// centralize time; [`InMemoryEip1271VerificationCache::new`] preserves
+/// the default wall-clock behaviour.
 ///
 /// # Eviction Trade-Off
 ///
@@ -92,13 +131,14 @@ struct CacheEntry {
 /// LRU-backed impl of [`Eip1271VerificationCache`] rather than grow
 /// the in-memory cache past a few thousand entries.
 #[derive(Debug)]
-pub struct InMemoryEip1271VerificationCache {
+pub struct InMemoryEip1271VerificationCache<C = SystemClock> {
     inner: RwLock<HashMap<(Address, [u8; 32]), CacheEntry>>,
     ttl: Duration,
     capacity: usize,
+    clock: C,
 }
 
-impl Default for InMemoryEip1271VerificationCache {
+impl Default for InMemoryEip1271VerificationCache<SystemClock> {
     fn default() -> Self {
         Self::new(
             DEFAULT_EIP1271_VERIFICATION_CACHE_TTL,
@@ -107,15 +147,34 @@ impl Default for InMemoryEip1271VerificationCache {
     }
 }
 
-impl InMemoryEip1271VerificationCache {
+impl InMemoryEip1271VerificationCache<SystemClock> {
     /// Creates a cache with the supplied TTL and capacity bound.
     #[must_use]
     pub fn new(ttl: Duration, capacity: usize) -> Self {
+        Self::with_clock(ttl, capacity, SystemClock)
+    }
+}
+
+impl<C> InMemoryEip1271VerificationCache<C>
+where
+    C: Clock,
+{
+    /// Creates a cache with the supplied TTL, capacity bound, and clock.
+    ///
+    /// # Clock Injection
+    ///
+    /// The provided [`Clock`] is used for both write timestamps and read
+    /// expiry checks. This keeps TTL behaviour deterministic in tests
+    /// while leaving [`InMemoryEip1271VerificationCache::new`] on the
+    /// production wall clock.
+    #[must_use]
+    pub fn with_clock(ttl: Duration, capacity: usize, clock: C) -> Self {
         let capacity = capacity.max(1);
         Self {
             inner: RwLock::new(HashMap::with_capacity(capacity)),
             ttl,
             capacity,
+            clock,
         }
     }
 
@@ -149,9 +208,12 @@ impl InMemoryEip1271VerificationCache {
     }
 }
 
-impl Eip1271VerificationCache for InMemoryEip1271VerificationCache {
+impl<C> Eip1271VerificationCache for InMemoryEip1271VerificationCache<C>
+where
+    C: Clock,
+{
     fn get(&self, verifier: Address, digest: [u8; 32]) -> Option<bool> {
-        let now = Instant::now();
+        let now = self.clock.now();
         let snapshot = {
             let read = self.inner.read();
             read.get(&(verifier, digest))
@@ -167,7 +229,7 @@ impl Eip1271VerificationCache for InMemoryEip1271VerificationCache {
 
     fn put(&self, verifier: Address, digest: [u8; 32], result: bool) {
         let entry = CacheEntry {
-            inserted_at: Instant::now(),
+            inserted_at: self.clock.now(),
             result,
         };
         let mut write = self.inner.write();

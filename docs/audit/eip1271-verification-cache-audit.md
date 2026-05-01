@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-05-01
 Owning surface: `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `NoopEip1271VerificationCache` and `InMemoryEip1271VerificationCache` default implementations shipped from `cow-sdk-signing::cache`
-Refresh trigger: Changes to the trait signature, the caching semantics (what is cached and what is not), the `verify_eip1271_signature_async` call shape, the verification tracing fields, the default TTL or capacity on the in-memory implementation, the platform time-source selection, or the thread-safety posture; a new canonical implementation that ships in the workspace
+Refresh trigger: Changes to the trait signature, the caching semantics (what is cached and what is not), the `verify_eip1271_signature_async` call shape, the verification tracing fields, the default TTL or capacity on the in-memory implementation, the clock injection seam, the platform time-source selection, or the thread-safety posture; a new canonical implementation that ships in the workspace
 Related docs:
 - [ADR 0014](../adr/0014-eip1271-verification-cache.md)
 - [ADR 0027](../adr/0027-post-quantum-signing-absorption-plan.md)
@@ -24,6 +24,8 @@ This audit covers:
   which are not
 - the `verify.eip1271` tracing span and event fields emitted by the
   verification path
+- the controlled-clock seam and exact TTL boundary on native and
+  wasm32 targets
 - the thread-safety contract on the in-memory implementation
 
 It does not cover the ECDSA signing surface, EIP-712 typed-data
@@ -39,7 +41,8 @@ covered by its own contract).
 | Pre-interaction scope | The sync and async verification helpers document that they do not simulate order pre-interactions before checking EIP-1271 signatures | Conforms |
 | Verification telemetry | `verify_eip1271_signature_async` emits `verify.eip1271` tracing with cache, RPC, and final magic-value outcome fields | Conforms |
 | Shipped implementations | `NoopEip1271VerificationCache` (zero-sized, always miss) and `InMemoryEip1271VerificationCache` (bounded capacity, TTL-expiring) | Conforms |
-| Platform time source | `InMemoryEip1271VerificationCache` uses `web_time::Instant` on `wasm32` and `std::time::Instant` elsewhere so cache probes do not panic on browser targets | Conforms |
+| Platform time source | `InMemoryEip1271VerificationCache` defaults to wall-clock `Instant::now`, accepts an injected clock for deterministic TTL checks, and uses `web_time::Instant` on `wasm32` | Conforms |
+| TTL boundary | A 5-minute TTL cache hits at 4m59s999ms and misses at 5m1ms under controlled time on native and wasm32 targets | Conforms |
 | Thread-safety | `InMemoryEip1271VerificationCache` sustains concurrent inserts against the same key space without losing writes | Conforms |
 
 ## Current Contract
@@ -76,6 +79,12 @@ transient network failure cannot pin a signer into a permanent
 `Rejected` state and a stale `false` cannot block a signer whose
 on-chain state has since changed.
 
+The verifier's cacheability branch is an exhaustive contracts-crate
+match over the current `ContractsError` variants. External consumers
+still see `ContractsError` as non-exhaustive and must include a
+wildcard arm; the signing crate carries compile-fail coverage for that
+public posture.
+
 Both the sync `verify_eip1271_signature` helper and the async
 `verify_eip1271_signature_async` helper document the reviewed scope
 boundary: they call the verifier against the current provider state and
@@ -106,15 +115,20 @@ capacity keeps the scan cheap. Consumers with much larger key spaces
 are expected to compose a proper LRU-backed implementation of the trait
 rather than scale the capacity on this struct.
 
+The default constructor preserves wall-clock behaviour. The
+`with_clock` constructor accepts an injected `Clock` implementation for
+deterministic tests or embedders that centralize time elsewhere.
+
 ### Platform Time Source
 
-The in-memory cache timestamps entries with `Instant::now()` on both the
-miss path (`get`) and the write path (`put`). On native targets the
-implementation uses `std::time::Instant`. On `wasm32-unknown-unknown`
-the implementation switches to `web_time::Instant`, matching the rest of
-the workspace's time-bearing cache modules. This keeps the documented
-wasm32 support posture honest: constructing the cache, probing a miss,
-and writing a hit all stay non-panicking in browser runtimes.
+The in-memory cache obtains timestamps through the `Clock` trait on both
+the miss path (`get`) and the write path (`put`). `SystemClock` calls
+`Instant::now()` and remains the default. On native targets the instant
+type is `std::time::Instant`; on `wasm32-unknown-unknown` it is
+`web_time::Instant`, matching the rest of the workspace's time-bearing
+cache modules. This keeps the documented wasm32 support posture honest:
+constructing the cache, probing a miss, writing a hit, and checking TTL
+boundaries all stay non-panicking in browser runtimes.
 
 ### Thread-Safety
 
@@ -123,23 +137,6 @@ tasks against the same key space and asserts every key written by a
 racing task is observable through `get` after the tasks join. Linear
 value ordering between racing writers is not required — only that no
 write is lost.
-
-## Pending verification evidence
-
-This section records evidence expected from the next verification refresh. It
-is removed once every permanent evidence pointer has landed in the sections
-above.
-
-- `crates/signing/tests/eip1271_cache_contract.rs::cache_skips_every_non_cacheable_error_class`
-  will pin that non-cacheable verification failures do not write cache entries
-  and re-hit the provider on the next call.
-- `crates/signing/tests/eip1271_cache_contract.rs::cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one`
-  will pin the native TTL boundary under a controlled clock.
-- `crates/signing/tests/wasm_cache_contract.rs` will carry the sibling wasm
-  TTL-boundary coverage for the browser time-source path.
-- `crates/signing/tests/ui/eip1271_error_match_requires_wildcard.rs` will pin
-  non-exhaustive error matching from outside the crate through compile-fail
-  coverage.
 
 ## Evidence
 
@@ -151,14 +148,19 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/contracts/tests/verify_telemetry_contract.rs`
-- `crates/signing/tests/eip1271_cache_contract.rs`
-- `crates/signing/tests/wasm_cache_contract.rs`
+- `crates/signing/tests/eip1271_cache_contract.rs::cache_skips_every_non_cacheable_error_class`
+- `crates/signing/tests/eip1271_cache_contract.rs::cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one`
+- `crates/signing/tests/wasm_cache_contract.rs::cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one_on_wasm32`
+- `crates/signing/tests/ui.rs::eip1271_error_match_requires_wildcard`
+- `crates/signing/tests/ui/eip1271_error_match_requires_wildcard.rs`
 
 Validation surface:
 
 ```text
 cargo test -p cow-sdk-contracts --test verify_telemetry_contract --features tracing
+cargo test -p cow-sdk-signing --test eip1271_cache_contract
+cargo test -p cow-sdk-signing --test ui
 cargo test -p cow-sdk-contracts -p cow-sdk-signing --all-features
 cargo check -p cow-sdk-signing --target wasm32-unknown-unknown
-wasm-pack test --headless --chrome crates/signing
+wasm-pack test --node crates/signing
 ```

@@ -150,31 +150,59 @@ where
         })?;
 
     let outcome = ensure_magic_value(&raw);
-    match &outcome {
-        Ok(()) => {
-            cache.put(request.verifier.clone(), digest_key, true);
+    match cacheable_verification_outcome(&outcome) {
+        Some(cached) => {
+            cache.put(request.verifier.clone(), digest_key, cached);
             #[cfg(feature = "tracing")]
             tracing::debug!(
                 target: "cow_sdk::verify_eip1271",
                 cache_status = "store",
-                verification_result = "valid",
+                verification_result = if cached { "valid" } else { "invalid" },
             );
         }
-        Err(ContractsError::Eip1271MagicValueMismatch { .. }) => {
-            cache.put(request.verifier.clone(), digest_key, false);
-            #[cfg(feature = "tracing")]
-            tracing::debug!(
-                target: "cow_sdk::verify_eip1271",
-                cache_status = "store",
-                verification_result = "invalid",
-            );
-        }
-        Err(_) => {
+        None => {
             #[cfg(feature = "tracing")]
             emit_cache_skip_event();
         }
     }
     outcome
+}
+
+const fn cacheable_verification_outcome(outcome: &Result<(), ContractsError>) -> Option<bool> {
+    match outcome {
+        Ok(()) => Some(true),
+        Err(ContractsError::Eip1271MagicValueMismatch { .. }) => Some(false),
+        Err(
+            ContractsError::Core(_)
+            | ContractsError::Cancelled
+            | ContractsError::UnsupportedChain(_)
+            | ContractsError::InvalidOrderUidLength { .. }
+            | ContractsError::InvalidNumeric { .. }
+            | ContractsError::NumericOverflow { .. }
+            | ContractsError::InvalidFlags(_)
+            | ContractsError::UnsupportedSigningScheme(_)
+            | ContractsError::InvalidEip1271SignatureData
+            | ContractsError::UnsupportedEip1271Verifier { .. }
+            | ContractsError::Eip1271Provider { .. }
+            | ContractsError::MalformedEip1271Response { .. }
+            | ContractsError::MissingClearingPrice { .. }
+            | ContractsError::MissingExecutedAmount
+            | ContractsError::MissingTrade
+            | ContractsError::ZeroReceiver
+            | ContractsError::InvalidTokenIndex { .. }
+            | ContractsError::ForbiddenInteractionTarget { .. }
+            | ContractsError::Provider { .. }
+            | ContractsError::Abi(_)
+            | ContractsError::DecodeHex { .. }
+            | ContractsError::InvalidHexPrefix { .. }
+            | ContractsError::InvalidDecodedLength { .. }
+            | ContractsError::Serialization(_)
+            | ContractsError::InvalidSignatureLength { .. }
+            | ContractsError::InvalidSignatureRecoveryByte { .. }
+            | ContractsError::SignatureSchemeNotEcdsa
+            | ContractsError::SignatureRecovery { .. },
+        ) => None,
+    }
 }
 
 #[cfg(feature = "tracing")]

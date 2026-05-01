@@ -96,6 +96,35 @@ fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
     );
 }
 
+#[test]
+fn eth_sign_routes_raw_32_byte_digest_to_sign_message() {
+    let order = sample_order();
+    let signer = MockSigner::new();
+    let expected_digest = hash_order(
+        &get_domain(SupportedChainId::Sepolia, None).unwrap(),
+        &contracts_order(&order),
+    )
+    .unwrap();
+
+    let result = sign_order_with_scheme(
+        &order,
+        SupportedChainId::Sepolia,
+        &signer,
+        SigningScheme::EthSign,
+        None,
+    )
+    .unwrap();
+
+    assert_eq!(result.signing_scheme, SigningScheme::EthSign);
+    let captured = signer.calls.borrow().messages[0].clone();
+    assert_eq!(captured.len(), 32);
+    assert_eq!(
+        format!("0x{}", hex::encode(&captured)),
+        expected_digest.as_str()
+    );
+    assert!(!captured.starts_with(b"\x19Ethereum Signed Message:\n32"));
+}
+
 #[tokio::test]
 async fn async_sign_order_paths_match_sync_signing_behavior() {
     let order = sample_order();

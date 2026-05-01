@@ -22,8 +22,9 @@ pub mod errors;
 pub mod order_signing;
 
 pub use cache::{
-    DEFAULT_EIP1271_VERIFICATION_CACHE_CAPACITY, DEFAULT_EIP1271_VERIFICATION_CACHE_TTL,
+    Clock, DEFAULT_EIP1271_VERIFICATION_CACHE_CAPACITY, DEFAULT_EIP1271_VERIFICATION_CACHE_TTL,
     Eip1271VerificationCache, InMemoryEip1271VerificationCache, NoopEip1271VerificationCache,
+    SystemClock,
 };
 pub use cancellation::{
     ORDER_CANCELLATIONS_PRIMARY_TYPE, order_cancellation_typed_data_payload,

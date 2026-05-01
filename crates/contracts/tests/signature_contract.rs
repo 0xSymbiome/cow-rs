@@ -321,7 +321,7 @@ fn recover_ecdsa_address_recovers_eip712_prehash_signer() {
 }
 
 #[test]
-fn recover_ecdsa_address_recovers_eth_sign_digest_signer() {
+fn recover_ecdsa_address_eth_sign_recovers_signer_through_canonical_eip191_prehash() {
     let signing_key = deterministic_signing_key();
     let digest =
         Hash32::new("0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20").unwrap();
