@@ -24,6 +24,8 @@ fuzz/corpus/fuzz_recover_ecdsa_address/*
 !fuzz/corpus/fuzz_ecdsa_v_normalization/*
 !fuzz/corpus/fuzz_order_bounds_validator/
 !fuzz/corpus/fuzz_order_bounds_validator/*
+!fuzz/corpus/fuzz_typed_data_digest/
+!fuzz/corpus/fuzz_typed_data_digest/*
 fuzz/artifacts/
 fuzz/target/
 fuzz/Cargo.lock

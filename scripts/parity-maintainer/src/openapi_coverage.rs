@@ -40,6 +40,7 @@ struct CoverageEntry {
     schema: String,
     rust_type: String,
     inventory: PathBuf,
+    required_fields: Vec<String>,
     fixtures: Vec<PathBuf>,
 }
 
@@ -162,6 +163,7 @@ fn validate_coverage(args: OpenApiCoverageArgs) -> Result<()> {
             }
         };
 
+        validate_required_fields(entry, &inventory, &mut diagnostics);
         validate_inventory_fields(entry, &inventory, &rust_struct, &mut diagnostics);
     }
 
@@ -497,7 +499,7 @@ fn validate_inventory_fields(
             });
         }
 
-        let expected_types = expected_rust_types(&inventory_field.field_type);
+        let expected_types = expected_rust_types(inventory_field);
         if !expected_types.is_empty() {
             let rust_type = comparable_type(&rust_field.ty);
             if !rust_type
@@ -521,6 +523,35 @@ fn validate_inventory_fields(
     }
 }
 
+fn validate_required_fields(
+    entry: &CoverageEntry,
+    inventory: &SchemaInventory,
+    diagnostics: &mut Vec<Diagnostic>,
+) {
+    let expected = entry
+        .required_fields
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let observed = inventory
+        .expanded_required
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    if expected != observed {
+        diagnostics.push(Diagnostic {
+            schema: entry.schema.clone(),
+            rust_type: entry.rust_type.clone(),
+            field: None,
+            kind: "required_fields_mismatch",
+            message: format!(
+                "coverage.yaml required_fields {:?} must match inventory expanded_required {:?}",
+                entry.required_fields, inventory.expanded_required
+            ),
+        });
+    }
+}
+
 fn expects_option(field: &InventoryField) -> bool {
     if field.required && !field.nullable {
         return false;
@@ -535,9 +566,12 @@ fn expects_serde_default_skip(field: &InventoryField) -> bool {
     !field.required && !field.nullable && field.default.is_none()
 }
 
-fn expected_rust_types(field_type: &InventoryType) -> Vec<String> {
-    match field_type {
+fn expected_rust_types(field: &InventoryField) -> Vec<String> {
+    match &field.field_type {
         InventoryType::Scalar { scalar } => match scalar.as_str() {
+            "string" if is_amount_like_field(&field.name) => {
+                vec!["String".to_string(), "Amount".to_string()]
+            }
             "string" => vec!["String".to_string()],
             "boolean" => vec!["bool".to_string()],
             "integer" => [
@@ -554,12 +588,27 @@ fn expected_rust_types(field_type: &InventoryType) -> Vec<String> {
             .next()
             .map(openapi_ref_rust_types)
             .unwrap_or_default(),
-        InventoryType::Array { items } => expected_rust_types(items)
-            .into_iter()
-            .map(|item| format!("Vec<{item}>"))
-            .collect(),
+        InventoryType::Array { items } => {
+            let item_field = InventoryField {
+                name: field.name.clone(),
+                rust_name: field.rust_name.clone(),
+                field_type: (**items).clone(),
+                required: field.required,
+                nullable: field.nullable,
+                default: field.default.clone(),
+                source: field.source.clone(),
+            };
+            expected_rust_types(&item_field)
+                .into_iter()
+                .map(|item| format!("Vec<{item}>"))
+                .collect()
+        }
         InventoryType::Object | InventoryType::Unknown => Vec::new(),
     }
+}
+
+fn is_amount_like_field(name: &str) -> bool {
+    name.ends_with("Amount") || name == "totalSurplus"
 }
 
 fn openapi_ref_rust_types(schema_name: &str) -> Vec<String> {

@@ -90,8 +90,11 @@ here until the explicit app-data metadata translation boundary.
 
 Browser wallet support is explicit, bounded, and feature-gated. Deterministic
 proof comes from crate tests, direct browser-bridge coverage, mock-wallet
-flows, and fixture-backed browser automation. When a browser workflow already
-owns a chain authority, `BrowserWallet::signer_for_chain` keeps address,
+flows, and fixture-backed browser automation. The deterministic Playwright lane
+excludes installed-wallet live-extension specs; those checks remain manual
+canary evidence under `scripts/validation-smoke/browser-wallet-live/`. When a
+browser workflow already owns a chain authority,
+`BrowserWallet::signer_for_chain` keeps address,
 signature, gas, and transaction operations bound to that chain. Typed
 chain-management helpers such as `switch_chain` and `switch_or_add_chain`
 return success only after the refreshed wallet session confirms the requested
@@ -133,6 +136,8 @@ Use deeper evidence only when the change warrants it:
 - search-profile tests for larger deterministic helper families
 - targeted mutation scopes for deterministic transport or helper seams
 - provenance-sensitive parity validation when fixture provenance changes
+- report-only source-lock root warnings before relying on manually supplied
+  upstream checkouts
 - saved query documents and test-only schema evidence when a schema-backed
   subgraph boundary changes
 - optional smoke checks when browser pages or live services must be confirmed
@@ -140,6 +145,9 @@ Use deeper evidence only when the change warrants it:
 The canonical command set lives in [Release Checklist](release-checklist.md).
 Every shipped `README.md` is wired into crate rustdoc with a `cfg_attr(doctest, doc = include_str!("../README.md"))` shim, so `cargo test --workspace --doc` covers every fenced example.
 The `services-drift.yml` workflow compares the upstream services repository's error tags and request or response shapes against the typed orderbook surface each week and records drift as a tracked report.
+`retry-soak.yml` runs the deterministic long-run retry and timeout soak nightly,
+while `test-depth.yml` publishes scheduled mutation reports without turning
+mutation score into a branch-protection threshold.
 
 ## Review Rules
 

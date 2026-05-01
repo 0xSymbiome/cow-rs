@@ -288,6 +288,27 @@ proptest! {
         prop_assert!(Amount::new(&input).is_err(), "input = {input}");
     }
 
+    /// [`Amount::checked_mul`] preserves the `uint256` ceiling even when
+    /// callers construct values directly from raw atoms.
+    #[test]
+    fn amount_checked_mul_rejects_uint256_overflow(
+        bytes in atom_amount_bytes(),
+        multiplier in 0u8..=4u8,
+    ) {
+        let left = Amount::from_atoms(BigUint::from_bytes_be(&bytes));
+        let right = Amount::from_atoms(BigUint::from(multiplier));
+        let product = left.as_biguint() * right.as_biguint();
+
+        prop_assert_eq!(
+            left.checked_mul(&right).is_some(),
+            product.bits() <= 256,
+        );
+
+        let max = Amount::from_atoms((BigUint::from(1u8) << 256usize) - BigUint::from(1u8));
+        let two = Amount::from(2u32);
+        prop_assert!(max.checked_mul(&two).is_none());
+    }
+
     /// [`Hash32::new`] preserves the supplied input string exactly
     /// (including casing) and round-trips through its own string form.
     #[test]

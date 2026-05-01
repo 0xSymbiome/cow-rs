@@ -93,6 +93,8 @@ Expected workflow coverage:
 `test-depth.yml` is the maintained depth-reporting lane. It publishes coverage
 and mutation reports for follow-up work without defining threshold-based branch
 protection.
+The mutation report runs on the weekly schedule and can also be requested
+manually with a narrower scope.
 
 Coverage:
 
@@ -107,6 +109,12 @@ Mutation:
 cargo mutants -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-app-data --output target/mutants-report
 cargo mutants -p cow-sdk-orderbook -p cow-sdk-trading --file crates/orderbook/src/request.rs --file crates/orderbook/src/transform.rs --file crates/trading/src/order.rs --file crates/trading/src/slippage.rs --annotations none --no-times --re "decoded_body|execute_with|calculate_total_fee|add_decimal_strings|sanitize_protocol_fee_bps|partner_fee_bps|calculate_unique_order_id|adjust_buy_amount" --output target/mutants-report-orderbook-trading
 cargo mutants -p cow-sdk-subgraph -p cow-sdk-browser-wallet --file crates/subgraph/src/api.rs --file crates/subgraph/src/types.rs --file crates/browser-wallet/src/wallet.rs --file crates/browser-wallet/src/provider.rs --file crates/browser-wallet/src/error.rs --annotations none --no-times --re "run_query_with_config|config_with_override|base_url_for|deserialize_string_or_number|deserialize_optional_string_or_number|deserialize_u64_from_string_or_number|value_to_string|single_wallet|wallet_at|requires_explicit_selection|refresh_session|switch_or_add_chain|switch_chain_request|add_chain_request|validate_wallet_text|validate_wallet_url|query_accounts|query_chain_id|reset_session|parse_chain_id_value|parse_quantity_to_decimal|parse_address_array|transaction_to_rpc|from_rpc" --output target/mutants-report-subgraph-browser-wallet
+```
+
+Nightly retry soak:
+
+```text
+cargo test -p cow-sdk-orderbook --test request_contract retry_timeout_soak_exercises_deterministic_waveforms -- --ignored --exact
 ```
 
 ## 5. Repo-Local Parity And Publication Proof
@@ -275,6 +283,13 @@ pinned source lock, run:
 cargo parity-provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
 ```
 
+Before relying on manually supplied upstream roots, run the report-only root
+check so parent-checkout, remote, or commit mismatches are visible:
+
+```text
+cargo check-source-lock-roots --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
+```
+
 Then validate against those independent roots:
 
 ```text
@@ -376,6 +391,10 @@ bun install --cwd e2e/browser-wallet --frozen-lockfile
 bun run --cwd e2e/browser-wallet playwright install --with-deps chromium firefox
 bun run --cwd e2e/browser-wallet test
 ```
+
+The deterministic browser-wallet Playwright lane excludes live extension specs.
+Use `scripts/validation-smoke/browser-wallet-live/README.md` for the manual
+extension-backed canary when a release needs installed-wallet confirmation.
 
 ## 9. Optional Validation Smoke
 

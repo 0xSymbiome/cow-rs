@@ -76,6 +76,17 @@ For each supplied root, the validator requires:
 - all declared producer paths to exist
 - all declared producer paths to be clean relative to `HEAD`
 
+Before relying on manually supplied upstream roots, reviewers can run the
+report-only root check:
+
+```text
+cargo check-source-lock-roots --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
+```
+
+The command warns when a supplied path resolves to a parent checkout, has a
+remote that differs from the source-lock repository, or has `HEAD` checked out
+at a different commit than the source-lock pin.
+
 ## Pinned Revisions
 
 - `cow-sdk`: `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d`
@@ -140,6 +151,17 @@ Refresh the source lock from explicit upstream roots:
 ```text
 cargo parity-snapshot --output parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
 ```
+
+Generate the report-only services drift summary for a pinned services checkout:
+
+```text
+scripts/check-services-drift.sh --upstream <services-checkout> --cow-rs-root . --summary-output <summary.md>
+```
+
+The Markdown report schema has three stable sections: `errorType Drift`, `DTO
+Field Drift`, and `Summary Count`. CI also emits a `drift_detected` output so
+scheduled drift runs can open or update tracking issues without making routine
+builds depend on the upstream services repository.
 
 ## Maintenance Rules
 

@@ -87,6 +87,7 @@ downstream dashboards can pivot on the same names across every SDK call.
 | `transport_error_class` | string | Transport failure class on retry events without an HTTP response |
 | `duration_ms` | numeric | Elapsed time in milliseconds for the span |
 | `order_uid` | string | Order UID of the target order |
+| `order_uid_count` | numeric | Number of order UIDs included in a cancellation-signing event |
 | `quote_id` | numeric | Orderbook quote id returned by a quote or attached to an order submission |
 | `owner` | string | Owner address exposed on the request parameters |
 | `verifier` | string | Public on-chain verifier address for EIP-1271 verification |
@@ -199,7 +200,10 @@ The same target emits `debug` events for cache and verification outcomes.
 
 Local signing helpers carry `chain`, `scheme`, and `endpoint`. Signing is
 chain-bound, not env-bound; the owner is determined by the supplied signer
-and is not surfaced as a span field.
+and is not surfaced as a span field. Cancellation signing also emits a
+`debug` event with target `cow_sdk::signing` that records the first
+`order_uid` and `order_uid_count` so batch cancellation activity is visible
+without logging signatures or private material.
 
 - `sign_order_with_scheme`
 - `sign_order_with_scheme_async`

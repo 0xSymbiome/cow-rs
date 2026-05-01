@@ -73,6 +73,8 @@ across native and browser callers. Native futures are `Send`; browser
 futures drop that bound so the `FetchTransport` implementation remains
 viable. Callers that install a transport on the orderbook or subgraph
 builders wrap it in an `Arc<dyn HttpTransport + Send + Sync>`.
+The default seam is request/response only; it does not expose Server-Sent
+Events or streaming subscriptions.
 
 ## The Native Default: `ReqwestTransport`
 

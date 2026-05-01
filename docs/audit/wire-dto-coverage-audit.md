@@ -14,6 +14,8 @@ This audit covers:
 - source-lock-pinned OpenAPI vendoring for the orderbook service schema
 - inventory-backed Rust DTO coverage for `Order`, `AuctionOrder`, `OrderQuoteResponse`, `Trade`, `StoredOrderQuote`, `OnchainOrderData`, `TotalSurplus`, and `SolverExecution`
 - recorded fixture coverage and field-level round-trip tests for the eight covered DTOs
+- manifest-level required-field lists that must match each inventory's
+  expanded OpenAPI `required` set
 - forward-compatible response deserialization without `serde(deny_unknown_fields)`
 
 It does not cover request builders, app-data schemas, contract ABI DTOs, or live orderbook endpoint behavior.
@@ -24,6 +26,7 @@ It does not cover request builders, app-data schemas, contract ABI DTOs, or live
 | --- | --- | --- |
 | OpenAPI provenance | `parity/openapi/services-orderbook.yml` is vendored from the services commit pinned in `parity/source-lock.yaml` and carries a source-stamp header. | Conforms |
 | Inventory coverage | Every DTO listed in `parity/openapi/coverage.yaml` has a committed per-schema inventory under `parity/openapi/`. | Conforms |
+| Required-field drift | Every manifest entry records `required_fields`, and validation fails if the list diverges from the inventory's `expanded_required` set. | Conforms |
 | Rust DTO shape | The covered Rust response DTOs contain every inventory field with OpenAPI optionality preserved at the Rust boundary. | Conforms |
 | Fixture coverage | Each covered DTO has a recorded fixture under `parity/fixtures/orderbook/` that exercises every modeled top-level inventory field. | Conforms |
 | Forward compatibility | Covered response DTOs do not use `serde(deny_unknown_fields)`, so additive upstream fields do not break deserialization. | Conforms |
@@ -37,6 +40,10 @@ The vendored orderbook OpenAPI document is committed at
 commit and source path in its header. `parity/openapi/coverage.yaml` is the
 public manifest for the eight covered DTOs, and each manifest entry points to the
 inventory and fixture used to validate that DTO.
+The manifest also carries the required-field set for each DTO. The
+`openapi-coverage --validate` command compares that list against the committed
+inventory's `expanded_required` values so required-field drift is visible even
+when optional additive fields remain forward-compatible.
 
 ### DTO Separation
 
@@ -67,8 +74,11 @@ public typed surface and covered by fixtures.
 
 ### Validator Self-Test Enforcement
 
-The OpenAPI coverage validator has a negative self-test at
-`scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`.
+The OpenAPI coverage validator has negative self-tests for structured field
+mismatches and required-field drift:
+`scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
+and
+`scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_required_field_drift`.
 The shared quality gate runs the full `parity-maintainer` test suite through
 the `parity-maintainer` job, so validator regressions fail CI instead of
 remaining only locally reproducible.
@@ -101,6 +111,7 @@ Primary regression coverage:
 - `crates/orderbook/tests/transform_contract.rs::onchain_order_data_fixture_matches_openapi_inventory`
 - `crates/orderbook/tests/openapi_dto_coverage.rs::openapi_coverage_manifest_roundtrips_required_orderbook_dtos`
 - `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
+- `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_required_field_drift`
 
 Validation surface:
 

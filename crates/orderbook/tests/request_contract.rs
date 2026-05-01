@@ -710,6 +710,70 @@ async fn final_transport_error_returns_without_sleeping_again() {
     .expect_err("the single transport failure should still surface");
 }
 
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+#[ignore = "nightly deterministic retry / timeout soak"]
+async fn retry_timeout_soak_exercises_deterministic_waveforms() {
+    let policy =
+        RequestPolicy::new(3, RateLimitSettings::default()).with_jitter(JitterStrategy::none());
+
+    for round in 0..32usize {
+        let limiter = RequestRateLimiter::new(policy.rate_limit);
+        let attempts = Arc::new(AtomicUsize::new(0));
+        let result: serde_json::Value = execute_json_with(&policy, &limiter, {
+            let attempts = attempts.clone();
+            move || {
+                let attempts = attempts.clone();
+                async move {
+                    let current = attempts.fetch_add(1, Ordering::SeqCst);
+                    if current < 2 {
+                        Ok(ResponseEnvelope::json(
+                            INTERNAL_SERVER_ERROR,
+                            &json!({
+                                "errorType": "InternalServerError",
+                                "description": format!("retry soak round {round}")
+                            }),
+                        ))
+                    } else {
+                        Ok(ResponseEnvelope::json(200, &json!({ "round": round })))
+                    }
+                }
+            }
+        })
+        .await
+        .expect("third deterministic retry attempt should succeed");
+
+        assert_eq!(result["round"], json!(round));
+        assert_eq!(attempts.load(Ordering::SeqCst), 3);
+
+        let limiter = RequestRateLimiter::new(policy.rate_limit);
+        let timeout_attempts = Arc::new(AtomicUsize::new(0));
+        let error = execute_empty_with(&policy, &limiter, {
+            let timeout_attempts = timeout_attempts.clone();
+            move || {
+                let timeout_attempts = timeout_attempts.clone();
+                async move {
+                    timeout_attempts.fetch_add(1, Ordering::SeqCst);
+                    Err((
+                        cow_sdk_core::TransportErrorClass::Timeout,
+                        format!("deterministic timeout soak round {round}"),
+                    ))
+                }
+            }
+        })
+        .await
+        .expect_err("timeout waveform should exhaust deterministic retry attempts");
+
+        assert_eq!(timeout_attempts.load(Ordering::SeqCst), 3);
+        assert!(matches!(
+            error,
+            cow_sdk_orderbook::OrderbookError::Transport {
+                class: cow_sdk_core::TransportErrorClass::Timeout,
+                ..
+            }
+        ));
+    }
+}
+
 #[tokio::test]
 async fn api_errors_keep_empty_bodies_empty_even_outside_204_successes() {
     let policy = RequestPolicy::new(1, RateLimitSettings::default());

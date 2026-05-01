@@ -3,8 +3,8 @@ mod common;
 use sha3::{Digest, Keccak256};
 
 use cow_sdk_contracts::{
-    ContractId, DEPLOYER_CONTRACT, Registry, SALT, deployment_for_chain,
-    deterministic_deployment_address,
+    ContractId, DEPLOYER_CONTRACT, Registry, SALT, deployment_address_hash_input,
+    deployment_for_chain, deterministic_deployment_address,
 };
 use cow_sdk_core::{CowEnv, SupportedChainId};
 
@@ -81,4 +81,56 @@ fn deployment_for_chain_uses_core_protocol_addresses() {
     );
 
     assert!(deployment_for_chain(999_999).is_err());
+}
+
+#[test]
+fn registry_canonical_addresses_are_bound_to_the_reviewed_create2_salt_contract() {
+    let fixture = fixture_case("contracts-deployment-constants");
+    assert_eq!(SALT, fixture["expected"]["salt"].as_str().unwrap());
+    assert_eq!(
+        DEPLOYER_CONTRACT,
+        fixture["expected"]["deployer_contract"].as_str().unwrap()
+    );
+
+    let registry = Registry::default();
+    let canonical = [
+        (
+            ContractId::Settlement,
+            "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+        ),
+        (
+            ContractId::VaultRelayer,
+            "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110",
+        ),
+    ];
+
+    for (contract_id, expected_address) in canonical {
+        for chain in SupportedChainId::ALL {
+            let address = registry
+                .address(contract_id, chain, CowEnv::Prod)
+                .unwrap_or_else(|| panic!("{contract_id:?} prod address is missing for {chain:?}"));
+            assert_eq!(
+                address.normalized_key(),
+                expected_address,
+                "{contract_id:?} must keep the deterministic CREATE2 deployment address across prod chains",
+            );
+        }
+    }
+
+    let bytecode = "0x6001600055";
+    let args = vec!["0x1234".to_owned()];
+    let init_hash = deployment_address_hash_input(bytecode, &args).unwrap();
+    let mut payload = Vec::with_capacity(85);
+    payload.push(0xff);
+    payload.extend_from_slice(&hex::decode(DEPLOYER_CONTRACT.trim_start_matches("0x")).unwrap());
+    payload.extend_from_slice(&hex::decode(SALT.trim_start_matches("0x")).unwrap());
+    payload.extend_from_slice(&init_hash);
+    let expected = keccak256(payload);
+
+    assert_eq!(
+        deterministic_deployment_address(bytecode, &args)
+            .unwrap()
+            .as_str(),
+        format!("0x{}", hex::encode(&expected[12..]))
+    );
 }

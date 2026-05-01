@@ -683,7 +683,7 @@ async fn native_price_surplus_solver_competition_and_auction_routes_are_covered(
     assert!((native_price.price - 0.0004).abs() < 1.0e-12);
     assert_eq!(
         surplus.total_surplus,
-        Amount::new("100000000").expect("test amount literal must be valid")
+        Some(Amount::new("100000000").expect("test amount literal must be valid"))
     );
     assert_eq!(by_auction.auction_id, Some(7));
     assert_eq!(by_tx.auction_id, Some(8));

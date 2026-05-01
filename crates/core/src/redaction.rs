@@ -363,7 +363,7 @@ const fn is_credential_value_char(byte: u8) -> bool {
 /// can show which routes are configured, but every URL value serializes as
 /// [`REDACTED_PLACEHOLDER`]. Deserializing expects the raw URL map shape so
 /// persisted configuration can still be loaded before public output redacts it.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct RedactedUrlMap<K>(BTreeMap<K, String>);
 
 impl<K> RedactedUrlMap<K> {
@@ -472,7 +472,7 @@ where
 /// [`REDACTED_PLACEHOLDER`]. Deserializing expects the raw optional URL map
 /// shape so persisted configuration can still be loaded before public output
 /// redacts it.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct RedactedOptionalUrlMap<K>(BTreeMap<K, Option<String>>);
 
 impl<K> RedactedOptionalUrlMap<K> {

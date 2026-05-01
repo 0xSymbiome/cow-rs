@@ -18,7 +18,13 @@ struct DtoCoverage {
     schema: String,
     rust_type: String,
     inventory: String,
+    required_fields: Vec<String>,
     fixtures: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Inventory {
+    expanded_required: Vec<String>,
 }
 
 fn workspace_file(path: &str) -> std::path::PathBuf {
@@ -112,6 +118,18 @@ fn openapi_coverage_manifest_roundtrips_required_orderbook_dtos() {
             workspace_file(&entry.inventory).is_file(),
             "{} inventory file must exist",
             entry.inventory,
+        );
+        let inventory_raw = std::fs::read_to_string(workspace_file(&entry.inventory))
+            .unwrap_or_else(|error| {
+                panic!("{} inventory must be readable: {error}", entry.inventory)
+            });
+        let inventory: Inventory = serde_yaml::from_str(&inventory_raw)
+            .unwrap_or_else(|error| panic!("{} inventory must parse: {error}", entry.inventory));
+        assert_eq!(
+            entry.required_fields.iter().collect::<BTreeSet<_>>(),
+            inventory.expanded_required.iter().collect::<BTreeSet<_>>(),
+            "{} required_fields must match inventory expanded_required",
+            entry.rust_type,
         );
         assert!(
             !entry.schema.trim().is_empty(),

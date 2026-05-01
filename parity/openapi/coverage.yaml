@@ -3,47 +3,120 @@ dtos:
   - schema: components.schemas.Order
     rust_type: cow_sdk_orderbook::Order
     inventory: parity/openapi/order-inventory.yaml
+    required_fields:
+      - appData
+      - buyAmount
+      - buyToken
+      - class
+      - creationDate
+      - executedBuyAmount
+      - executedFeeAmount
+      - executedSellAmount
+      - executedSellAmountBeforeFees
+      - feeAmount
+      - invalidated
+      - kind
+      - owner
+      - partiallyFillable
+      - sellAmount
+      - sellToken
+      - settlementContract
+      - signature
+      - signingScheme
+      - status
+      - uid
+      - validTo
     fixtures:
       - parity/fixtures/orderbook/order_with_full_metadata.json
 
   - schema: components.schemas.AuctionOrder
     rust_type: cow_sdk_orderbook::AuctionOrder
     inventory: parity/openapi/auction-order-inventory.yaml
+    required_fields:
+      - appData
+      - buyAmount
+      - buyToken
+      - buyTokenBalance
+      - class
+      - created
+      - executed
+      - kind
+      - owner
+      - partiallyFillable
+      - postInteractions
+      - preInteractions
+      - protocolFees
+      - receiver
+      - sellAmount
+      - sellToken
+      - sellTokenBalance
+      - signature
+      - uid
+      - validTo
     fixtures:
       - parity/fixtures/orderbook/auction_order_with_protocol_fees.json
 
   - schema: components.schemas.OrderQuoteResponse
     rust_type: cow_sdk_orderbook::OrderQuoteResponse
     inventory: parity/openapi/order-quote-response-inventory.yaml
+    required_fields:
+      - expiration
+      - quote
+      - verified
     fixtures:
       - parity/fixtures/orderbook/order_quote_response.json
 
   - schema: components.schemas.Trade
     rust_type: cow_sdk_orderbook::Trade
     inventory: parity/openapi/trade-inventory.yaml
+    required_fields:
+      - blockNumber
+      - buyAmount
+      - buyToken
+      - logIndex
+      - orderUid
+      - owner
+      - sellAmount
+      - sellAmountBeforeFees
+      - sellToken
+      - txHash
     fixtures:
       - parity/fixtures/orderbook/trade.json
 
   - schema: components.schemas.StoredOrderQuote
     rust_type: cow_sdk_orderbook::StoredOrderQuote
     inventory: parity/openapi/stored-order-quote-inventory.yaml
+    required_fields:
+      - buyAmount
+      - feeAmount
+      - gasAmount
+      - gasPrice
+      - sellAmount
+      - sellTokenPrice
+      - solver
+      - verified
     fixtures:
       - parity/fixtures/orderbook/stored_order_quote.json
 
   - schema: components.schemas.OnchainOrderData
     rust_type: cow_sdk_orderbook::OnchainOrderData
     inventory: parity/openapi/onchain-order-data-inventory.yaml
+    required_fields:
+      - sender
     fixtures:
       - parity/fixtures/orderbook/onchain_order_data.json
 
   - schema: components.schemas.TotalSurplus
     rust_type: cow_sdk_orderbook::TotalSurplus
     inventory: parity/openapi/total-surplus-inventory.yaml
+    required_fields: []
     fixtures:
       - parity/fixtures/orderbook/total_surplus.json
 
   - schema: components.schemas.CompetitionOrderStatus.value.items
     rust_type: cow_sdk_orderbook::SolverExecution
     inventory: parity/openapi/solver-execution-inventory.yaml
+    required_fields:
+      - solver
     fixtures:
       - parity/fixtures/orderbook/solver_execution.json

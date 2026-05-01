@@ -81,16 +81,6 @@
       }
     },
     {
-      "id": "sdk-typedoc-entry-contract",
-      "kind": "behavior-contract",
-      "description": "Top-level generated docs intentionally narrow the surfaced package list to trading so documentation does not duplicate every leaf crate.",
-      "expected": {
-        "typedoc_exports_only": [
-          "@cowprotocol/sdk-trading"
-        ]
-      }
-    },
-    {
       "id": "sdk-package-root-export-contract",
       "kind": "behavior-contract",
       "description": "The published package exposes a single root entrypoint with dist artifacts and declares itself side-effect free.",
@@ -111,6 +101,16 @@
         "top_level_topics": [
           "Partner API",
           "Adapters"
+        ]
+      }
+    },
+    {
+      "id": "sdk-typedoc-entry-contract",
+      "kind": "behavior-contract",
+      "description": "Top-level generated docs intentionally narrow the surfaced package list to trading so documentation does not duplicate every leaf crate.",
+      "expected": {
+        "typedoc_exports_only": [
+          "@cowprotocol/sdk-trading"
         ]
       }
     }

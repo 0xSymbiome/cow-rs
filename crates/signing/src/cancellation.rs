@@ -211,6 +211,13 @@ where
     S: Signer,
     S::Error: fmt::Display,
 {
+    #[cfg(feature = "tracing")]
+    tracing::debug!(
+        target: "cow_sdk::signing",
+        order_uid = %order_uids.first().map_or("<empty>", OrderUid::as_str),
+        order_uid_count = order_uids.len(),
+        "signing order cancellation",
+    );
     let payload = cancellation_signing_payload(order_uids, chain_id, options)?;
     sign_with_scheme(signer, scheme, &payload.payload, &payload.digest)
 }
@@ -242,6 +249,13 @@ where
     S: AsyncSigner,
     S::Error: fmt::Display,
 {
+    #[cfg(feature = "tracing")]
+    tracing::debug!(
+        target: "cow_sdk::signing",
+        order_uid = %order_uids.first().map_or("<empty>", OrderUid::as_str),
+        order_uid_count = order_uids.len(),
+        "signing order cancellation",
+    );
     let payload = cancellation_signing_payload(order_uids, chain_id, options)?;
     sign_with_scheme_async(signer, scheme, &payload.payload, &payload.digest).await
 }

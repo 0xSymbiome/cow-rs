@@ -45,8 +45,8 @@ mod chain_ids;
 mod primitives;
 
 pub use deploy::{
-    ContractAddresses, ContractName, DEPLOYER_CONTRACT, SALT, deployment_for_chain,
-    deterministic_deployment_address,
+    ContractAddresses, ContractName, DEPLOYER_CONTRACT, SALT, deployment_address_hash_input,
+    deployment_for_chain, deterministic_deployment_address,
 };
 pub use deployments::{ContractId, Registry, RegistryError};
 pub use erc20::{IERC20, IERC20Permit, PERMIT_TYPE_HASH, permit_typed_data_hash};

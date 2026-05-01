@@ -29,7 +29,7 @@ committed in the repository.
 | App-data parity | `cow-sdk-app-data`, `cow-sdk-trading` | CID conversion, schema handling, fetch, pinning seams, and fail-closed encoding tests | Live IPFS or pinning services remain optional integration checks |
 | Subgraph support | `cow-sdk-subgraph` | Typed query construction, decode, and deterministic native scenarios | Live subgraph access depends on external endpoint configuration |
 | Orderbook transport | `cow-sdk-orderbook` | Mocked request-shape, retry, decode, and conversion tests | Live orderbook behavior depends on remote endpoints |
-| Browser-target HTTP transport | `cow-sdk-transport-wasm` | Cross-adapter parity against the native `ReqwestTransport` default and the shipped `wasm32-unknown-unknown` build | Live browser fetch behavior depends on vendor-specific network stacks |
+| Browser-target HTTP transport | `cow-sdk-transport-wasm` | Cross-adapter parity against the native `ReqwestTransport` default, cache-control header forwarding, request/response-only scope, documented browser redirect behavior, and the shipped `wasm32-unknown-unknown` build | Live browser fetch behavior depends on vendor-specific network stacks |
 | WASM target | `cow-sdk`, `cow-sdk-app-data`, `cow-sdk-transport-wasm`, WASM examples | WASM target builds, direct browser-bridge proof, deterministic verification-console checks, and committed browser automation | Browser-hosted rendering and deployment inspection remain environment-sensitive |
 | Browser wallet integration | `cow-sdk-browser-wallet`, `cow-sdk`, browser-wallet console | Native crate tests, direct `wasm-bindgen-test` bridge proof, deterministic mock-wallet flows, console builds, and committed fixture-backed browser automation | Live extension-backed authorization, prompts, and vendor behavior remain environment-sensitive |
 | Stability invariant | whole workspace | `cargo tree --invert alloy-provider -p ...` succeeds when no shipped crate transitively depends on `alloy-provider`; Cargo's success-case `did not match any packages` output is normalised by `cargo check-alloy-provider-invariant` for the published `cow-sdk` crate family (`cow-sdk`, `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`, `cow-sdk-browser-wallet`, `cow-sdk-transport-wasm`) | None |
@@ -45,6 +45,8 @@ cargo test --workspace
 cargo test --workspace --doc
 cargo test --all-features --workspace --doc
 cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
+cargo +nightly fuzz list --fuzz-dir fuzz
+cargo +nightly fuzz build --fuzz-dir fuzz
 cargo run-deterministic-examples --locked
 cargo doc --workspace --all-features --no-deps
 cd crates/browser-wallet && wasm-pack test --headless --chrome
@@ -59,6 +61,8 @@ cargo parity-validate --source-lock parity/source-lock.yaml
   this repository checkout.
 - Provenance-sensitive parity proof is separate and requires independent
   upstream checkouts at the pinned commits.
+- Report-only source-lock root warnings catch suspicious manually supplied
+  upstream roots before provenance-sensitive validation relies on them.
 - Direct browser-wallet bridge proof and broader console automation cover
   different seams on purpose.
 - Live orderbook, subgraph, and extension-backed wallet checks remain optional

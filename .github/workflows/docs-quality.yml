@@ -29,7 +29,7 @@ on:
       - 'docs/**'
       - 'crates/*/README.md'
   schedule:
-    - cron: '15 4 * * 6'
+    - cron: '15 4 * * *'
 
 permissions: {}
 
@@ -90,14 +90,38 @@ jobs:
           python - <<'PY'
           from html.parser import HTMLParser
           from pathlib import Path
+          import re
 
-          class TextExtractor(HTMLParser):
+          class HeadingExtractor(HTMLParser):
               def __init__(self):
                   super().__init__()
-                  self.parts = []
+                  self.headings = []
+                  self.current = None
+
+              def handle_starttag(self, tag, attrs):
+                  if re.fullmatch(r"h[1-6]", tag):
+                      attrs = dict(attrs)
+                      self.current = {
+                          "tag": tag,
+                          "id": attrs.get("id", ""),
+                          "parts": [],
+                      }
+
+              def handle_endtag(self, tag):
+                  if self.current and self.current["tag"] == tag:
+                      text = " ".join(
+                          part.strip() for part in self.current["parts"] if part.strip()
+                      )
+                      self.headings.append((self.current["tag"], self.current["id"], text))
+                      self.current = None
 
               def handle_data(self, data):
-                  self.parts.append(data)
+                  if self.current:
+                      self.current["parts"].append(data)
+
+          def canonical_anchor(heading):
+              slug = re.sub(r"[^a-z0-9]+", "-", heading.lower()).strip("-")
+              return slug
 
           crates = {
               "core": "cow_sdk_core",
@@ -120,9 +144,14 @@ jobs:
                   if line.startswith("# ")
               )
               html = Path("target/doc") / doc_dir / "index.html"
-              parser = TextExtractor()
+              parser = HeadingExtractor()
               parser.feed(html.read_text(encoding="utf-8"))
-              rendered_text = " ".join(part.strip() for part in parser.parts if part.strip())
-              if heading not in rendered_text:
-                  raise SystemExit(f"{html} is missing rendered README heading {heading!r}")
+              expected_anchor = canonical_anchor(heading)
+              if not any(
+                  text == heading and anchor == expected_anchor
+                  for _tag, anchor, text in parser.headings
+              ):
+                  raise SystemExit(
+                      f"{html} is missing README heading {heading!r} at canonical anchor {expected_anchor!r}"
+                  )
           PY

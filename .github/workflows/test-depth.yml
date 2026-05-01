@@ -109,7 +109,7 @@ jobs:
           if-no-files-found: error
 
   mutation:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_mutation }}
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_mutation) }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
@@ -133,7 +133,7 @@ jobs:
         run: |
           set +e
           mkdir -p artifacts/mutation
-          scope="${{ inputs.mutation_scope || 'core' }}"
+          scope="${{ github.event_name == 'workflow_dispatch' && inputs.mutation_scope || 'core' }}"
           case "${scope}" in
             core)
               cargo mutants -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-app-data \

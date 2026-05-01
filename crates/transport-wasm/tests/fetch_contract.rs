@@ -128,6 +128,11 @@ mod capture {
             &self.name
         }
 
+        #[cfg(target_arch = "wasm32")]
+        pub fn field_names(&self) -> Vec<&str> {
+            self.fields.keys().map(String::as_str).collect()
+        }
+
         pub fn field(&self, name: &str) -> Option<&str> {
             self.fields.get(name).map(String::as_str)
         }
@@ -338,5 +343,16 @@ export function restore_fetch(previous) {
             .expect("endpoint field must be present");
         assert!(!endpoint.contains("fetch.example"));
         assert!(!endpoint.contains("api_key"));
+        assert_eq!(
+            span.field_names(),
+            vec![
+                "bytes_received",
+                "bytes_sent",
+                "chain",
+                "endpoint",
+                "method"
+            ],
+            "browser transport spans must not grow undocumented fields"
+        );
     }
 }

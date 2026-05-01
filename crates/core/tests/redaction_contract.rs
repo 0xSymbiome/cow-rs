@@ -1,4 +1,7 @@
-use std::collections::BTreeMap;
+use std::{
+    collections::{BTreeMap, hash_map::DefaultHasher},
+    hash::{Hash, Hasher},
+};
 
 use cow_sdk_core::{
     ApiContext, CowEnv, REDACTED_PLACEHOLDER, REDACTED_RESPONSE_BODY_MAX_BYTES,
@@ -54,6 +57,39 @@ fn redacted_url_map_public_representations_redact_values_and_preserve_keys() {
 }
 
 #[test]
+fn redacted_url_map_equality_and_hash_use_raw_values() {
+    let first = RedactedUrlMap::from(BTreeMap::from([
+        (1u64, CREDENTIAL_URL.to_owned()),
+        (
+            100u64,
+            format!("https://rpc.example.invalid/v3/{JWT_SHAPED_TOKEN}"),
+        ),
+    ]));
+    let same = RedactedUrlMap::from(first.as_inner().clone());
+    let different = RedactedUrlMap::from(BTreeMap::from([
+        (1u64, "https://different.example.invalid".to_owned()),
+        (
+            100u64,
+            format!("https://rpc.example.invalid/v3/{JWT_SHAPED_TOKEN}"),
+        ),
+    ]));
+
+    assert_eq!(first, same);
+    assert_eq!(hash_value(&first), hash_value(&same));
+    assert_ne!(first, different);
+    assert_ne!(
+        first.as_inner().get(&1).map(String::as_str),
+        Some(REDACTED_PLACEHOLDER)
+    );
+}
+
+fn hash_value(value: &impl Hash) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    value.hash(&mut hasher);
+    hasher.finish()
+}
+
+#[test]
 fn redacted_optional_url_map_public_representations_redact_some_values_and_keep_none() {
     let urls = RedactedOptionalUrlMap::from(BTreeMap::from([
         (SupportedChainId::Mainnet, Some(CREDENTIAL_URL.to_owned())),
@@ -77,6 +113,24 @@ fn redacted_optional_url_map_public_representations_redact_some_values_and_keep_
             .get(&SupportedChainId::Mainnet)
             .and_then(Option::as_deref),
         Some(CREDENTIAL_URL)
+    );
+}
+
+#[test]
+fn redacted_optional_url_map_equality_and_hash_use_raw_option_values() {
+    let urls = RedactedOptionalUrlMap::from(BTreeMap::from([
+        (SupportedChainId::Mainnet, Some(CREDENTIAL_URL.to_owned())),
+        (SupportedChainId::GnosisChain, None),
+    ]));
+    let same = RedactedOptionalUrlMap::from(urls.as_inner().clone());
+
+    assert_eq!(urls, same);
+    assert_eq!(hash_value(&urls), hash_value(&same));
+    assert_eq!(
+        urls.as_inner()
+            .get(&SupportedChainId::GnosisChain)
+            .expect("gnosis marker is present"),
+        &None
     );
 }
 

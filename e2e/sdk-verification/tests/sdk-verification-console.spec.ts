@@ -18,6 +18,7 @@ import {
 } from "../fixtures/cow-api";
 
 let browserErrors: string[];
+let allowedBrowserErrors: RegExp[];
 
 interface RuntimeOutput {
   surface: string;
@@ -73,6 +74,7 @@ interface TotalsOutput {
 
 test.beforeEach(async ({ page }) => {
   browserErrors = [];
+  allowedBrowserErrors = [];
   page.on("pageerror", (error) => browserErrors.push(error.message));
   page.on("console", (message) => {
     if (message.type() === "error") {
@@ -82,7 +84,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.afterEach(() => {
-  expect(browserErrors).toEqual([]);
+  const unexpected = browserErrors.filter(
+    (error) => !allowedBrowserErrors.some((allowed) => allowed.test(error)),
+  );
+  expect(unexpected).toEqual([]);
 });
 
 test("property-0 loads the WASM bundle and runs deterministic exports", async ({ page }) => {
@@ -192,6 +197,56 @@ test("malformed subgraph responses surface as visible errors", async ({ page }) 
   await expect(page.locator("#subgraph-output")).toContainText("Error");
   await expect(page.locator("#subgraph-output")).toContainText("No totals found");
   expect(requestIssues).toEqual([]);
+});
+
+test("csp blocks off-allowlist scripts and connections", async ({ page }) => {
+  allowedBrowserErrors = [/Content Security Policy/i, /Refused to/i];
+  let scriptRequested = false;
+  let connectRequested = false;
+
+  await page.route("https://example.invalid/csp-probe.js", async (route) => {
+    scriptRequested = true;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: "globalThis.__cspScriptRan = true;",
+    });
+  });
+  await page.route("https://example.invalid/csp-connect", async (route) => {
+    connectRequested = true;
+    await route.fulfill({ status: 200, body: "allowed" });
+  });
+
+  await loadConsole(page);
+
+  const scriptOutcome = await page.evaluate(async () => {
+    return await new Promise<string>((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://example.invalid/csp-probe.js";
+      script.onload = () => resolve("loaded");
+      script.onerror = () => resolve("blocked");
+      document.head.appendChild(script);
+      window.setTimeout(() => resolve("timeout"), 1000);
+    });
+  });
+  const connectOutcome = await page.evaluate(async () => {
+    try {
+      await fetch("https://example.invalid/csp-connect");
+      return "loaded";
+    } catch {
+      return "blocked";
+    }
+  });
+
+  expect(scriptOutcome).not.toBe("loaded");
+  expect(connectOutcome).toBe("blocked");
+  expect(scriptRequested).toBe(false);
+  expect(connectRequested).toBe(false);
+  await expect
+    .poll(async () =>
+      page.evaluate(() => Boolean((globalThis as { __cspScriptRan?: boolean }).__cspScriptRan)),
+    )
+    .toBe(false);
 });
 
 async function outputJson<T>(page: Page, selector: string): Promise<T> {

@@ -1646,14 +1646,17 @@ impl NativePriceResponse {
 #[non_exhaustive]
 pub struct TotalSurplus {
     /// Total surplus value in the upstream decimal-string wire shape.
-    pub total_surplus: Amount,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_surplus: Option<Amount>,
 }
 
 impl TotalSurplus {
     /// Creates a total-surplus response from a typed amount.
     #[must_use]
     pub const fn new(total_surplus: Amount) -> Self {
-        Self { total_surplus }
+        Self {
+            total_surplus: Some(total_surplus),
+        }
     }
 }
 
@@ -1825,10 +1828,10 @@ pub struct SolverExecution {
     /// Solver identifier or address rendered by the API.
     pub solver: String,
     /// Executed sell amount for this solver path, when present.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub executed_sell_amount: Option<Amount>,
     /// Executed buy amount for this solver path, when present.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub executed_buy_amount: Option<Amount>,
 }
 

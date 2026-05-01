@@ -7,6 +7,8 @@ const repoRoot = resolve(configDir, "../..");
 
 export default defineConfig({
   testDir: "./tests",
+  // Live-extension checks depend on installed wallet state; run them through the manual canary runbook.
+  testIgnore: ["**/*.live-extension.spec.ts"],
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

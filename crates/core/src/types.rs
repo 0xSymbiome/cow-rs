@@ -847,7 +847,8 @@ impl Amount {
     #[inline]
     #[must_use]
     pub fn checked_mul(&self, other: &Self) -> Option<Self> {
-        Some(Self(&self.0 * &other.0))
+        let product = &self.0 * &other.0;
+        (product.bits() <= U256_MAX_BITS).then_some(Self(product))
     }
 }
 

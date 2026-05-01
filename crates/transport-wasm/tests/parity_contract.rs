@@ -58,12 +58,31 @@ fn cross_adapter_error_matrix_names_every_exercised_class() {
     assert!(class_values.contains(&TransportErrorClass::Body));
 }
 
+#[test]
+fn fetch_transport_contract_remains_request_response_only() {
+    let fetch_source = include_str!("../src/fetch.rs");
+    let transport_docs = include_str!("../../../docs/transport.md");
+
+    assert!(
+        !fetch_source.contains("EventSource"),
+        "FetchTransport must not grow a separate EventSource or SSE path",
+    );
+    assert!(
+        !fetch_source.contains("text/event-stream"),
+        "FetchTransport must stay scoped to request/response dispatch",
+    );
+    assert!(
+        transport_docs.contains("request/response only"),
+        "the public transport docs must state that the default seam is request/response only",
+    );
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 mod native {
     use std::time::Duration;
 
     use cow_sdk_core::{HttpTransport, ReqwestTransport, ReqwestTransportConfig, TransportError};
-    use wiremock::matchers::{method, path};
+    use wiremock::matchers::{header, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     use super::{
@@ -150,6 +169,29 @@ mod native {
             .await
             .expect("fixture round-trip must succeed through ReqwestTransport");
         assert_eq!(body, DELETE_ORDER_FIXTURE);
+    }
+
+    #[tokio::test]
+    async fn reqwest_transport_forwards_cache_control_headers() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/headers"))
+            .and(header("cache-control", "no-cache"))
+            .and(header("pragma", "no-cache"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("ok"))
+            .mount(&server)
+            .await;
+
+        let transport = build_transport(server.uri());
+        let headers = [
+            ("Cache-Control".to_owned(), "no-cache".to_owned()),
+            ("Pragma".to_owned(), "no-cache".to_owned()),
+        ];
+        let body = transport
+            .get("/headers", &headers, None)
+            .await
+            .expect("cache-control headers must be forwarded through ReqwestTransport");
+        assert_eq!(body, "ok");
     }
 
     #[tokio::test]
@@ -307,6 +349,22 @@ export function install_fetch_rejection_mock(name) {
   return previous;
 }
 
+export function install_fetch_header_echo_mock() {
+  const previous = globalThis.fetch;
+  globalThis.fetch = (input) => {
+    const headers = input instanceof Request ? input.headers : new Headers();
+    const response = new Response(JSON.stringify({
+      cacheControl: headers.get('Cache-Control'),
+      pragma: headers.get('Pragma'),
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return Promise.resolve(response);
+  };
+  return previous;
+}
+
 export function restore_fetch(previous) {
   if (previous !== undefined && previous !== null) {
     globalThis.fetch = previous;
@@ -317,6 +375,7 @@ export function restore_fetch(previous) {
         fn install_fetch_ok_mock(body: &str) -> JsValue;
         fn install_fetch_status_mock(status: u16, body: &str) -> JsValue;
         fn install_fetch_rejection_mock(name: &str) -> JsValue;
+        fn install_fetch_header_echo_mock() -> JsValue;
         fn restore_fetch(previous: JsValue);
     }
 
@@ -365,6 +424,23 @@ export function restore_fetch(previous) {
             .expect("fetch transport must deliver the mocked fixture body");
         restore_fetch(previous);
         assert_eq!(body, DELETE_ORDER_FIXTURE);
+    }
+
+    #[wasm_bindgen_test]
+    async fn fetch_transport_forwards_cache_control_headers() {
+        let previous = install_fetch_header_echo_mock();
+        let headers = [
+            ("Cache-Control".to_owned(), "no-cache".to_owned()),
+            ("Pragma".to_owned(), "no-cache".to_owned()),
+        ];
+        let body = transport()
+            .get("/headers", &headers, None)
+            .await
+            .expect("fetch transport must forward cache-control headers");
+        restore_fetch(previous);
+
+        assert!(body.contains("\"cacheControl\":\"no-cache\""));
+        assert!(body.contains("\"pragma\":\"no-cache\""));
     }
 
     #[wasm_bindgen_test]

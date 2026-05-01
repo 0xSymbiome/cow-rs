@@ -17,6 +17,8 @@ This audit covers:
 - the current upstream HEAD comparison used to make source-lock freshness
   explicit before release evidence relies on it
 - the source-lock refresh outcome for the first functional release evidence
+- the report-only local-root warning command for reviewer-supplied upstream
+  checkouts
 - the repo-local package dry-run command contract embedded in source-lock
   validation metadata
 - the exclusion-list rule that keeps historical progress snapshots readable but
@@ -33,6 +35,7 @@ or changing SDK behavior.
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
 | Refresh outcome | Source-lock pins preserve the 2026-04-29 refresh baseline, and current upstream freshness is disclosed separately | Conforms |
+| Local-root warnings | Reviewer-supplied upstream roots are checked for independent git top-levels, expected remotes, and pinned `HEAD` commits without making repo-local validation depend on those roots | Conforms |
 | Publication preflight | Source-lock validation metadata lists the complete package-family dry-run contract with local patches for unpublished intra-family crates | Conforms |
 | Schema enforcement | Unsupported source-lock schema versions fail closed with a stable diagnostic, while schema version 3 is accepted | Conforms |
 | Amount fixture roundtrip | Amount-shaped fixture strings parse through the shared `Amount` codec and round-trip byte-identically | Conforms |
@@ -68,6 +71,17 @@ The `cow-sdk` and `contracts` pins are aligned with upstream HEAD. The
 `services` pin remains the committed source-lock baseline from the 2026-04-29
 refresh and must be rechecked or refreshed before any release claim depends on
 current services HEAD freshness.
+
+### Local-Root Warning Command
+
+`cargo check-source-lock-roots` is a report-only policy-maintainer command for
+reviewers who pass local upstream checkouts into provenance-sensitive
+validation. When `--cow-sdk-root`, `--contracts-root`, or `--services-root` is
+supplied, the command warns if the path resolves to a parent git checkout, if
+the origin remote does not match `parity/source-lock.yaml`, or if `HEAD` does
+not equal the pinned commit. The command intentionally emits warnings instead
+of replacing `cargo parity-validate`; its purpose is to make suspicious local
+root choices visible before reviewers rely on them.
 
 ### Refresh Outcome
 
@@ -132,7 +146,9 @@ contract without exposing maintainer-only path names.
 Primary implementation points:
 
 - `parity/source-lock.yaml`
+- `.cargo/config.toml`
 - `scripts/parity-maintainer/src/main.rs`
+- `scripts/policy-maintainer/src/check_source_lock_roots.rs`
 - `scripts/parity-maintainer/tests/fixtures/source-lock-v2.yaml`
 - `scripts/parity-maintainer/tests/fixtures/source-lock-v3.yaml`
 - `scripts/parity-maintainer/tests/fixtures/source-lock-v4.yaml`
@@ -157,6 +173,8 @@ git ls-remote https://github.com/cowprotocol/services HEAD
 git ls-remote https://github.com/cowprotocol/contracts HEAD
 git ls-remote https://github.com/cowprotocol/cow-sdk HEAD
 cargo parity-validate --source-lock parity/source-lock.yaml
+cargo check-source-lock-roots --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
 cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
+cargo test --manifest-path scripts/policy-maintainer/Cargo.toml check_source_lock_roots
 cargo test --workspace --all-features cross_fixture_amount_roundtrip
 ```

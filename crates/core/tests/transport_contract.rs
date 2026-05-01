@@ -56,6 +56,14 @@ fn sanitize_public_base_url_strips_userinfo_credentials() {
     assert!(!sanitized.contains("pass"));
 }
 
+#[test]
+fn sanitize_public_base_url_strips_userinfo_without_password() {
+    let sanitized = sanitize_public_base_url("https://user@api.example.com/orders");
+
+    assert_eq!(sanitized, "https://api.example.com");
+    assert!(!sanitized.contains("user@"));
+}
+
 #[tokio::test]
 async fn default_config_sends_services_aligned_user_agent() {
     let server = MockServer::start().await;

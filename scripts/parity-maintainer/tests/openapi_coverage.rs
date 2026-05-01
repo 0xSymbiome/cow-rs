@@ -78,6 +78,49 @@ pub struct FixtureOrder {
     Ok(())
 }
 
+#[test]
+fn openapi_coverage_validate_reports_required_field_drift() -> Result<()> {
+    let temp = tempdir()?;
+    let root = temp.path();
+    write_openapi_fixture(root)?;
+    write_matching_rust_fixture(root)?;
+
+    let generate = command()
+        .current_dir(root)
+        .args(["openapi-coverage", "--source-lock", "source-lock.yaml"])
+        .output()?;
+    assert!(generate.status.success(), "{}", output_text(&generate));
+
+    write_file(
+        root.join("parity/openapi/coverage.yaml"),
+        r#"
+version: 1
+dtos:
+  - schema: components.schemas.FixtureOrder
+    rust_type: cow_sdk_orderbook::FixtureOrder
+    inventory: parity/openapi/fixture-order-inventory.yaml
+    required_fields:
+      - id
+      - enabled
+    fixtures:
+      - parity/fixtures/orderbook/fixture_order.json
+"#,
+    )?;
+
+    let validate = command()
+        .current_dir(root)
+        .args([
+            "openapi-coverage",
+            "--source-lock",
+            "source-lock.yaml",
+            "--validate",
+        ])
+        .output()?;
+    assert!(!validate.status.success(), "{}", output_text(&validate));
+    assert!(output_text(&validate).contains("required_fields_mismatch"));
+    Ok(())
+}
+
 fn write_openapi_fixture(root: &std::path::Path) -> Result<()> {
     write_source_lock(
         &root.join("source-lock.yaml"),
@@ -92,6 +135,10 @@ dtos:
   - schema: components.schemas.FixtureOrder
     rust_type: cow_sdk_orderbook::FixtureOrder
     inventory: parity/openapi/fixture-order-inventory.yaml
+    required_fields:
+      - id
+      - enabled
+      - amount
     fixtures:
       - parity/fixtures/orderbook/fixture_order.json
 "#,

@@ -13,7 +13,9 @@
 
 mod common;
 
+use cow_sdk_contracts::{ContractsError, decode_eip1271_signature_data};
 use cow_sdk_core::OrderKind;
+use cow_sdk_signing::SigningError;
 use cow_sdk_signing::eip1271_signature_payload;
 use num_bigint::BigUint;
 use sha3::{Digest, Keccak256};
@@ -49,6 +51,24 @@ fn eip1271_payload_changes_when_order_kind_changes() {
     let buy_payload = eip1271_signature_payload(&buy_order, &sample_signature("34")).unwrap();
 
     assert_ne!(sell_payload, buy_payload);
+}
+
+#[test]
+fn eip1271_signature_data_rejects_malformed_verifier_or_payload() {
+    let malformed_verifier = "0x1234";
+    let verifier_error = decode_eip1271_signature_data(malformed_verifier)
+        .expect_err("compact EIP-1271 data must include a verifier address and payload");
+    assert!(matches!(
+        verifier_error,
+        ContractsError::InvalidEip1271SignatureData
+    ));
+
+    let payload_error = eip1271_signature_payload(&sample_order(), "0x1234")
+        .expect_err("EIP-1271 helper must reject malformed ECDSA payloads");
+    assert!(matches!(
+        payload_error,
+        SigningError::Contracts(ContractsError::InvalidSignatureLength { actual: 2 })
+    ));
 }
 
 fn independent_payload(order: &cow_sdk_core::UnsignedOrder, ecdsa_signature: &str) -> String {

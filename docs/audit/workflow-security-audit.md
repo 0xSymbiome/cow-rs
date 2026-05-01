@@ -30,6 +30,7 @@ runner infrastructure outside the committed workflow definitions.
 | Trigger safety | Any workflow using `pull_request_target` must carry an explicit allow-list review comment; the current workflow set does not use the trigger | Conforms |
 | Third-party review log | Each pinned third-party action keeps a nearby `# Source ref:` comment naming the reviewed tag or source ref | Conforms |
 | Inline docs smoke | The docs-quality rendered README smoke uses the existing job environment and does not introduce a new third-party action or elevated permission | Conforms |
+| Scheduled retry soak | The retry-soak workflow uses read-only permissions, pinned actions, no privileged triggers, and a deterministic ignored test invocation | Conforms |
 
 Workflow snapshot:
 
@@ -46,6 +47,7 @@ Workflow snapshot:
 | `docs-quality.yml` | workflow `{}`; jobs grant `contents: read` | SHA-pinned | Absent |
 | `fuzz.yml` | `contents: read` | SHA-pinned | Absent |
 | `release-readiness.yml` | `contents: read` | SHA-pinned or same-repo reusable workflow | Absent |
+| `retry-soak.yml` | `contents: read` | SHA-pinned | Absent |
 | `sdk-verification-e2e.yml` | `contents: read` | SHA-pinned | Absent |
 | `services-drift.yml` | `contents: read`, `issues: write` | SHA-pinned | Absent |
 | `test-depth.yml` | `actions: read`, `contents: read` | SHA-pinned | Absent |
@@ -95,6 +97,15 @@ does not add a third-party `uses:` action, does not widen workflow
 permissions, and remains covered by the same workflow-security pinning and
 permissions checks as the rest of the workflow set.
 
+### Scheduled Depth And Retry Lanes
+
+The `test-depth.yml` mutation job now runs on the existing weekly schedule as
+well as explicit manual dispatch, publishes structured mutation artifacts, and
+keeps the same read-only permission posture. The `retry-soak.yml` workflow is a
+separate nightly lane that runs one ignored deterministic orderbook retry and
+timeout soak test. It uses only pinned third-party actions, `contents: read`,
+and no pull-request trigger.
+
 ## Evidence
 
 Primary implementation points:
@@ -110,6 +121,7 @@ Primary implementation points:
 - `.github/workflows/docs-quality.yml`
 - `.github/workflows/fuzz.yml`
 - `.github/workflows/release-readiness.yml`
+- `.github/workflows/retry-soak.yml`
 - `.github/workflows/sdk-verification-e2e.yml`
 - `.github/workflows/services-drift.yml`
 - `.github/workflows/test-depth.yml`
