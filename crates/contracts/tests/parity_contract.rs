@@ -41,7 +41,7 @@ use cow_sdk_contracts::{
     SettlementReader, SigningScheme, Swap, TokenRegistry, TradeFlags, TradeSimulator,
     VAULT_INTERFACE, encode_create_order_calldata, encode_invalidate_order_calldata,
     encode_order_flags, encode_swap_step, encode_trade_flags, normalize_interaction,
-    permit_typed_data_hash,
+    permit_typed_data_hash, required_vault_roles,
 };
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderDigest, OrderKind, OrderUid,
@@ -132,6 +132,9 @@ fn parity_fixture_cases_hold() {
             }
             "contracts-swap-default-user-data" => assert_swap_default_user_data(id, expected),
             "contracts-vault-required-methods" => assert_vault_required_methods(id, expected),
+            "contracts-vault-role-hashes-match-upstream-typescript" => {
+                assert_vault_role_hashes_match_upstream_typescript(id, expected);
+            }
             "contracts-reader-helper-surface" => assert_reader_helper_surface(id, expected),
             "contracts-settlement-invalidate-order-calldata" => {
                 assert_settlement_invalidate_order_calldata(id, expected);
@@ -604,6 +607,51 @@ fn assert_vault_required_methods(id: &str, expected: &Value) {
         actual_methods, expected_methods,
         "case {id}: VAULT_INTERFACE must expose the fixture-named methods in order",
     );
+}
+
+fn assert_vault_role_hashes_match_upstream_typescript(id: &str, expected: &Value) {
+    let vault_address = expected["vault_address"]
+        .as_str()
+        .unwrap_or_else(|| panic!("case {id}: expected.vault_address must be a string"));
+    let expected_roles = expected["roles"]
+        .as_array()
+        .unwrap_or_else(|| panic!("case {id}: expected.roles must be an array"));
+
+    let vault = Address::new(vault_address)
+        .unwrap_or_else(|error| panic!("case {id}: expected.vault_address must parse: {error}"));
+    let roles = required_vault_roles(&vault)
+        .unwrap_or_else(|error| panic!("case {id}: vault role derivation must succeed: {error}"));
+
+    assert_eq!(
+        roles.len(),
+        expected_roles.len(),
+        "case {id}: fixture must cover every required vault role",
+    );
+
+    for (role, expected_role) in roles.iter().zip(expected_roles.iter()) {
+        let method = expected_role["method"]
+            .as_str()
+            .unwrap_or_else(|| panic!("case {id}: expected role method must be a string"));
+        let selector = expected_role["selector"]
+            .as_str()
+            .unwrap_or_else(|| panic!("case {id}: expected role selector must be a string"));
+        let role_hash = expected_role["role_hash"]
+            .as_str()
+            .unwrap_or_else(|| panic!("case {id}: expected role_hash must be a string"));
+
+        assert_eq!(
+            role.method, method,
+            "case {id}: vault role method must match upstream order",
+        );
+        assert_eq!(
+            role.selector, selector,
+            "case {id}: vault role selector must match upstream TypeScript",
+        );
+        assert_eq!(
+            role.role, role_hash,
+            "case {id}: vault role hash must match upstream packed-keccak formula",
+        );
+    }
 }
 
 fn assert_reader_helper_surface(id: &str, expected: &Value) {

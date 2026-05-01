@@ -1,4 +1,4 @@
-use alloy_sol_types::{SolCall, SolValue, sol};
+use alloy_sol_types::{SolCall, sol};
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::Address;
@@ -243,11 +243,9 @@ where
 }
 
 fn role_hash(vault_address: &Address, selector: [u8; 4]) -> Result<String, ContractsError> {
-    use alloy_sol_types::private::{Address as SolAddress, FixedBytes};
-
     let address_bytes = parse_address_bytes(vault_address)?;
-    let addr = SolAddress::from(address_bytes);
-    let sel = FixedBytes::<4>::from(selector);
-    let encoded = <(SolAddress, FixedBytes<4>)>::abi_encode(&(addr, sel));
-    Ok(format!("0x{}", hex::encode(keccak256(&encoded))))
+    let mut packed = [0u8; 36];
+    packed[12..32].copy_from_slice(&address_bytes);
+    packed[32..36].copy_from_slice(&selector);
+    Ok(format!("0x{}", hex::encode(keccak256(packed))))
 }

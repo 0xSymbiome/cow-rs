@@ -42,6 +42,7 @@ provider.
 | Committed provenance | The Solidity excerpt used to author each binding is committed under `crates/contracts/abi/<family>/` | Conforms |
 | Byte-identity parity | Encoded call-data and hashed payloads match the TypeScript-SDK-derived golden fixtures on every binding | Conforms |
 | Domain separator parity | `cow-sdk-contracts` and `cow-sdk-signing` pin the same EIP-712 domain-separator fixture value | Conforms |
+| Vault role hash parity | Vault-relayer role helpers emit the same packed role hashes as the upstream TypeScript role-grant helpers | Conforms |
 | WASM compatibility | The `alloy-primitives` `k256` path enables the browser `getrandom` backend for `wasm32-unknown-unknown` builds | Conforms |
 | Scope discipline | The shipped set is the five families named above; any new family follows the same provenance and parity contract before it lands | Conforms |
 
@@ -130,9 +131,15 @@ encoder-side rejection and regression coverage land.
 
 Vault-relayer role hash helpers are part of the reviewed binding parity
 surface because callers use the emitted role identifiers in Balancer
-Authorizer grant calls. The permanent fixture and property evidence for the
-packed upstream hash formula will attach here once the role-hash parity
-coverage lands.
+Authorizer grant calls. The helpers derive each role with the same packed
+formula as the upstream TypeScript role-grant helpers:
+`solidityKeccak256(["uint256","bytes4"], [vaultAddress, selector])`.
+
+The Rust helper pads the 20-byte Vault address to the `uint256` width,
+appends the 4-byte method selector, and hashes the resulting 36-byte payload.
+`PROP-CON-010` records the invariant, and fixture
+`contracts-vault-role-hashes-match-upstream-typescript` pins the canonical
+Mainnet Vault role hashes for `manageUserBalance` and `batchSwap`.
 
 ## Pending verification evidence
 
@@ -140,12 +147,6 @@ This section records evidence expected from the next verification refresh. It
 is removed once every permanent evidence pointer has landed in the sections
 above.
 
-- `crates/contracts/tests/vault_contract.rs::vault_role_hashes_match_the_canonical_solidity_packed_layout`
-  will pin the packed upstream role-hash formula through the public vault-role
-  helpers.
-- Fixture `contracts-vault-role-hashes-match-upstream-typescript` in
-  `parity/fixtures/contracts.json` will carry the canonical Mainnet Vault
-  address, selectors, and expected role hashes.
 - `crates/contracts/tests/interaction_contract.rs::interaction_encoder_rejects_vault_relayer_target_for_canonical_settlement_domain`
   and
   `crates/contracts/tests/interaction_contract.rs::interaction_encoder_neutral_for_unknown_custom_settlement_domain`
@@ -174,10 +175,12 @@ Primary implementation points:
 - `crates/contracts/abi/erc20/`
 - `crates/contracts/tests/fixtures/domain_separator_parity.json`
 - `crates/signing/tests/fixtures/domain_separator_parity.json`
+- `parity/fixtures/contracts.json`
 
 Primary regression coverage:
 
 - `crates/contracts/tests/parity_contract.rs`
+- `crates/contracts/tests/vault_contract.rs::vault_role_hashes_match_the_canonical_solidity_packed_layout`
 - `crates/contracts/src/primitives.rs::tests::domain_separator_matches_shared_parity_fixture`
 - `crates/signing/src/domain.rs::tests::domain_separator_matches_shared_parity_fixture`
 
@@ -185,6 +188,8 @@ Validation surface:
 
 ```text
 cargo test -p cow-sdk-contracts --all-features
+cargo test -p cow-sdk-contracts --test vault_contract vault_role_hashes_match_the_canonical_solidity_packed_layout
+cargo test -p cow-sdk-contracts --test parity_contract parity_fixture_cases_hold
 cargo test -p cow-sdk-contracts domain_separator_matches_shared_parity_fixture
 cargo test -p cow-sdk-signing domain_separator_matches_shared_parity_fixture
 cargo build --target wasm32-unknown-unknown -p cow-sdk

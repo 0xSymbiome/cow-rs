@@ -378,6 +378,27 @@
       }
     },
     {
+      "id": "contracts-vault-role-hashes-match-upstream-typescript",
+      "kind": "positive",
+      "description": "Vault relayer role hashes match the upstream TypeScript packed-keccak formula for the canonical Mainnet Balancer Vault.",
+      "@source_ref": "contracts:c94c595a:src/ts/vault.ts#grantRequiredRoles",
+      "expected": {
+        "vault_address": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+        "roles": [
+          {
+            "method": "manageUserBalance",
+            "selector": "0x0e8e3e84",
+            "role_hash": "0xeba777d811cd36c06d540d7ff2ed18ed042fd67bbf7c9afcf88c818c7ee6b498"
+          },
+          {
+            "method": "batchSwap",
+            "selector": "0x945bcec9",
+            "role_hash": "0x1282ab709b2b70070f829c46bc36f76b32ad4989fecb2fcb09a1b3ce00bbfc30"
+          }
+        ]
+      }
+    },
+    {
       "id": "contracts-reader-helper-surface",
       "kind": "contract-shape",
       "description": "The contracts helper layer includes the three reader-oriented public helpers from contracts-ts.",
