@@ -42,6 +42,7 @@ reqwest = { workspace = true, features = ["json", "rustls"] }
 [dev-dependencies]
 proptest.workspace = true
 serde_json.workspace = true
+syn.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 trybuild.workspace = true
 

@@ -8,7 +8,9 @@ use std::time::{Duration, Instant};
 
 #[cfg(feature = "tracing")]
 use cow_sdk_core::Amount;
-use cow_sdk_core::{HttpClientPolicy, HttpTransport, ReqwestTransport, ReqwestTransportConfig};
+use cow_sdk_core::{
+    Cancellable, HttpClientPolicy, HttpTransport, ReqwestTransport, ReqwestTransportConfig,
+};
 use cow_sdk_orderbook::error::classify_reqwest_error;
 use cow_sdk_orderbook::request::{
     DEFAULT_ORDERBOOK_USER_AGENT, FetchParams, HttpMethod, JitterStrategy, OrderBookApiError,
@@ -16,14 +18,13 @@ use cow_sdk_orderbook::request::{
     ResponseEnvelope, execute_empty_with, execute_json_with, request_empty, request_json,
     request_text,
 };
+use cow_sdk_orderbook::{
+    CowEnv, DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_TOKENS_PER_INTERVAL,
+    INTERNAL_SERVER_ERROR, OrderbookError, RETRYABLE_STATUS_CODES, SupportedChainId,
+    TOO_MANY_REQUESTS,
+};
 #[cfg(feature = "tracing")]
-use cow_sdk_orderbook::{
-    CowEnv, OrderCreation, OrderQuoteRequest, QuoteSide, SigningScheme, SupportedChainId,
-};
-use cow_sdk_orderbook::{
-    DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_TOKENS_PER_INTERVAL,
-    INTERNAL_SERVER_ERROR, OrderbookError, RETRYABLE_STATUS_CODES, TOO_MANY_REQUESTS,
-};
+use cow_sdk_orderbook::{OrderCreation, OrderQuoteRequest, QuoteSide, SigningScheme};
 use proptest::prelude::*;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
@@ -44,9 +45,10 @@ use wiremock::{
 
 #[cfg(feature = "tracing")]
 use crate::common::{
-    build_orderbook_api_with_base_url, default_context, sample_buy_token, sample_order_uid,
-    sample_owner, sample_quote_response_json, sample_signature,
+    build_orderbook_api_with_base_url, sample_buy_token, sample_order_uid, sample_owner,
+    sample_quote_response_json, sample_signature,
 };
+use crate::common::{build_orderbook_api_with_policy, default_context};
 
 #[tokio::test]
 async fn request_policy_defaults_match_fixture_contract() {
@@ -176,6 +178,70 @@ async fn request_json_retries_429_and_preserves_headers_on_each_attempt() {
 
     assert_eq!(result["ok"], json!(true));
     assert_eq!(attempts.load(Ordering::SeqCst), 2);
+}
+
+#[tokio::test(flavor = "current_thread", start_paused = true)]
+async fn retry_after_backoff_wait_can_be_cancelled_before_next_attempt() {
+    let server = MockServer::start().await;
+    let attempts = Arc::new(AtomicUsize::new(0));
+
+    Mock::given(method("GET"))
+        .and(path("/api/v1/version"))
+        .respond_with({
+            let attempts = attempts.clone();
+            move |_request: &Request| {
+                let attempt = attempts.fetch_add(1, Ordering::SeqCst);
+                if attempt == 0 {
+                    ResponseTemplate::new(TOO_MANY_REQUESTS)
+                        .insert_header("Retry-After", "30")
+                        .set_body_json(json!({
+                            "errorType": "RateLimited",
+                            "description": "retry after cancellation boundary"
+                        }))
+                } else {
+                    ResponseTemplate::new(200).set_body_string("v1.2.3")
+                }
+            }
+        })
+        .mount(&server)
+        .await;
+
+    let transport_policy = OrderBookTransportPolicy::default().with_request_policy(
+        RequestPolicy::new(2, RateLimitSettings::default()).with_jitter(JitterStrategy::none()),
+    );
+    let api = build_orderbook_api_with_policy(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        transport_policy,
+    )
+    .with_env_base_url(CowEnv::Prod, server.uri());
+    let token = cow_sdk_core::CancellationToken::new();
+    let token_for_call = token.clone();
+
+    let call = api.get_version().cancel_with(&token_for_call);
+    let trigger = async {
+        for _ in 0..100 {
+            if attempts.load(Ordering::SeqCst) == 1 {
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+        assert_eq!(
+            attempts.load(Ordering::SeqCst),
+            1,
+            "the first retryable response must be observed before cancellation"
+        );
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        token.cancel();
+    };
+
+    let (result, ()) = tokio::join!(call, trigger);
+
+    assert!(matches!(result, Err(OrderbookError::Cancelled)));
+    assert_eq!(
+        attempts.load(Ordering::SeqCst),
+        1,
+        "cancelling during Retry-After backoff must not dispatch a second attempt"
+    );
 }
 
 #[tokio::test]

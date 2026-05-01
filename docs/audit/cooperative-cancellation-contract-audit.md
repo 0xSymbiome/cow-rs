@@ -90,28 +90,6 @@ than waiting for the request deadline. Cancellation is cooperative: the
 caller owns the token and can clone it to propagate shutdown across
 multiple SDK instances.
 
-## Pending verification evidence
-
-This section records evidence expected from the next verification refresh. It
-is removed once every permanent evidence pointer has landed in the sections
-above.
-
-- `crates/orderbook/tests/cancellation_composition_contract.rs` will enumerate
-  the remaining long-running `OrderBookApi` async methods and exercise both the
-  pre-cancelled-token and in-flight-abort branches.
-- `crates/subgraph/tests/cancellation_composition_contract.rs` will enumerate
-  the remaining long-running `SubgraphApi` async methods and exercise both
-  cancellation branches.
-- `crates/trading/tests/cancellation_composition_contract.rs` will enumerate
-  the remaining long-running `TradingSdk` async methods and exercise both
-  cancellation branches.
-- `crates/orderbook/tests/request_contract.rs` will pin retry/backoff
-  cancellation by cancelling between a `Retry-After` response and the next
-  attempt.
-- `cargo test --workspace --all-features` will include a stable-toolchain
-  coverage validator that fails when a long-running public async method is
-  missing from the cancellation table.
-
 ## Evidence
 
 Primary implementation points:
@@ -133,14 +111,24 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/core/tests/cancellation_contract.rs`
+- `crates/core/tests/cancellation_coverage_validator.rs`
 - `crates/orderbook/tests/api_contract.rs`
+- `crates/orderbook/tests/cancellation_composition_contract.rs`
+- `crates/orderbook/tests/request_contract.rs::retry_after_backoff_wait_can_be_cancelled_before_next_attempt`
 - `crates/subgraph/tests/api_contract.rs`
+- `crates/subgraph/tests/cancellation_composition_contract.rs`
 - `crates/trading/tests/sdk_contract.rs`
+- `crates/trading/tests/cancellation_composition_contract.rs`
 
 Validation surface:
 
 ```text
 cargo fmt --all --check
+cargo test -p cow-sdk-core --test cancellation_coverage_validator
+cargo test -p cow-sdk-orderbook --test cancellation_composition_contract
+cargo test -p cow-sdk-orderbook --test request_contract
+cargo test -p cow-sdk-subgraph --test cancellation_composition_contract
+cargo test -p cow-sdk-trading --test cancellation_composition_contract
 cargo test -p cow-sdk-core
 cargo test -p cow-sdk-orderbook
 cargo test -p cow-sdk-subgraph
