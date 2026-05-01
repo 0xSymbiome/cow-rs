@@ -1,7 +1,7 @@
 # Workflow Security Audit
 
 Status: Current
-Last reviewed: 2026-04-27
+Last reviewed: 2026-05-01
 Owning surface: every `.github/workflows/*.yml` file
 Refresh trigger: any new workflow file; any unpinned action; any addition of `pull_request_target`; any third-party action new to the workspace
 Related docs:
@@ -29,6 +29,7 @@ runner infrastructure outside the committed workflow definitions.
 | Permissions | Every workflow declares explicit least-privilege `permissions:` at workflow or job scope | Conforms |
 | Trigger safety | Any workflow using `pull_request_target` must carry an explicit allow-list review comment; the current workflow set does not use the trigger | Conforms |
 | Third-party review log | Each pinned third-party action keeps a nearby `# Source ref:` comment naming the reviewed tag or source ref | Conforms |
+| Inline docs smoke | The docs-quality rendered README smoke uses the existing job environment and does not introduce a new third-party action or elevated permission | Conforms |
 
 Workflow snapshot:
 
@@ -85,6 +86,14 @@ No workflow currently declares `pull_request_target`. The shared quality gate
 fails any workflow that adds the trigger without an explicit
 `# allow-pull-request-target:` review comment in the same workflow file, so a
 future privileged-trigger lane cannot be introduced silently.
+
+### Docs-Quality Inline Smoke
+
+The docs-quality workflow now parses the rustdoc-rendered crate HTML with an
+inline Python standard-library parser inside the existing docs job. The change
+does not add a third-party `uses:` action, does not widen workflow
+permissions, and remains covered by the same workflow-security pinning and
+permissions checks as the rest of the workflow set.
 
 ## Evidence
 

@@ -12,7 +12,7 @@ Authority order:
 
 | Surface | Primary upstream producers | Rust crates | Committed authority | Primary evidence |
 | --- | --- | --- | --- | --- |
-| Order creation, signing, and submission | `cowprotocol/cow-sdk` trading, order-signing, order-book, and sdk packages | `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk` | `parity/fixtures/signing.json`, `parity/fixtures/orderbook.json`, `parity/fixtures/trading.json`, `parity/fixtures/sdk.json` | `crates/signing/tests/order_signing_contract.rs`, `crates/orderbook/tests/api_contract.rs`, `crates/trading/tests/post_contract.rs`, `crates/trading/tests/sdk_contract.rs`, `crates/sdk/tests/public_api.rs` |
+| Order creation, signing, and submission | `cowprotocol/cow-sdk` trading, order-signing, order-book, and sdk packages | `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk` | `parity/fixtures/signing.json`, `parity/fixtures/orderbook.json`, `parity/fixtures/trading.json`, `parity/fixtures/sdk.json` | `crates/signing/tests/order_signing_contract.rs`, `crates/orderbook/tests/api_contract.rs`, `crates/trading/tests/post_contract.rs`, `crates/trading/tests/sdk_contract.rs`, `crates/sdk/tests/public_api.rs`, `crates/sdk/tests/public_api_default_features_only.rs`, `crates/sdk/tests/public_api_with_all_features.rs` |
 | Contracts parity | `cowprotocol/contracts` plus selected `cow-sdk` contract helpers | `cow-sdk-contracts`, `cow-sdk-signing` | `parity/fixtures/contracts.json` | `crates/contracts/tests/order_contract.rs`, `crates/contracts/tests/settlement_contract.rs`, `crates/contracts/tests/reader_contract.rs`, `crates/contracts/tests/parity_contract.rs`, `crates/signing/tests/eip1271_contract.rs` |
 | Codec fuzz corpora | `cowprotocol/contracts` order UID helpers plus selected `cowprotocol/cow-sdk` typed-data helpers | `cow-sdk-contracts`, `cow-sdk-signing` | `fuzz/corpus/fuzz_order_uid_pack_unpack/` (six 56-byte triples), `fuzz/corpus/fuzz_typed_data_digest/` (five 200-byte inputs), `parity/fixtures/contracts.json`, `parity/fixtures/signing.json` | `fuzz/fuzz_targets/fuzz_order_uid_pack_unpack.rs`, `fuzz/fuzz_targets/fuzz_typed_data_digest.rs`, `cargo fuzz run fuzz_order_uid_pack_unpack --runs 65536`, `cargo fuzz run fuzz_typed_data_digest --runs 65536` |
 | `GPv2Settlement` bindings | `cowprotocol/contracts` settlement surface | `cow-sdk-contracts::settlement` via `alloy::sol!` | Solidity excerpt under `crates/contracts/abi/settlement/` | `crates/contracts/tests/parity_contract.rs::settlement_calldata_matches_upstream_fixtures` |
@@ -43,9 +43,9 @@ spelling.
 ## Trading helper defaults
 
 The `metadata.utm` row below is a local Rust SDK attribution policy rather
-than an upstream fixture vector. It is intentionally asserted in
-`crates/trading/tests/quote_contract.rs` and not carried in
-`parity/fixtures/trading.json`.
+than an upstream fixture vector. It is intentionally asserted by
+`crates/trading/tests/quote_contract.rs::default_utm_block_uses_env_cargo_pkg_version`
+and not carried in `parity/fixtures/trading.json`.
 
 | Surface | Default | Opt-out / opt-in |
 | --- | --- | --- |

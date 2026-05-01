@@ -1,7 +1,7 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-04-29
+Last reviewed: 2026-05-01
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, transport crate advisory posture, or browser-wallet alloy advisory posture
 Related docs:
@@ -21,6 +21,8 @@ This audit covers:
 - the clean published CID dependency posture recorded for `cow-sdk-app-data`
 - the canonical advisory tolerance register shared by the RustSec gates
 - the canonical dependency-source whitelist
+- the workspace dependency default-feature audit
+- the release-doc guard that requires RustSec ignore rationale entries
 
 It does not cover broader dependency-freshness reporting, license or source
 policy details beyond the blocking gate split, or unrelated crate-specific
@@ -35,6 +37,8 @@ architecture reviews.
 | Gate ownership | `cargo deny` owns bans, licenses, sources, and yanked advisory policy, while `cargo audit` blocks vulnerabilities plus unsound and unmaintained advisories | Conforms |
 | Advisory tolerance source | `.github/config/deny.toml` is the canonical RustSec ignore register; CI derives `cargo audit` ignore arguments from it | Conforms |
 | Source whitelist | The dependency-source policy allows crates.io registry dependencies and rejects unknown registries and all git sources | Conforms |
+| Workspace default features | Root workspace dependencies either disable default features explicitly or appear in the reviewed exception register for dependencies without a meaningful default-feature control | Conforms |
+| Ignore rationale lint | Every canonical RustSec ignore token must appear in this audit before release-doc agreement passes | Conforms |
 | Direct WASM randomness | Direct crate use of `getrandom` for wasm32 is centralized on the workspace `0.4.2` pin with the `wasm_js` feature | Conforms |
 | Duplicate-version exceptions | Residual duplicate roots are documented as explicit skip-tree entries; stale `tiny-keccak` and `getrandom 0.2` exceptions were removed because they are no longer in the workspace graph | Conforms |
 | Legacy `thiserror` reachability | The remaining `thiserror 1.0.69` path is limited to the `graphql_client` codegen chain used by dev/test coverage | Conforms |
@@ -76,7 +80,19 @@ The shared quality gate reads that TOML register at runtime and derives the
 `cargo audit --ignore ...` arguments from it, so closure or addition of a
 reviewed advisory has one committed source of truth. The
 `docs-agree-on-release-gates` guard compares the public command examples
-against the same canonical register.
+against the same canonical register and fails if any ignored RustSec token
+lacks a matching rationale in this audit.
+
+### Workspace Default-Feature Policy
+
+Root workspace dependencies that expose meaningful default features are
+declared with `default-features = false` and explicit features. Dependencies
+that are intentionally kept on their defaults, or that expose no useful
+default-feature switch, must be listed in
+`tests/dependency_default_features_audit.rs` as reviewed exceptions. The
+current exception set includes browser/WASM bridge crates such as
+`serde-wasm-bindgen`, whose resolved manifest has no configurable feature
+surface for this policy to narrow.
 
 ### Yanked Advisory Policy
 
@@ -137,6 +153,8 @@ Primary implementation points:
 - `.github/workflows/release-readiness.yml`
 - `.github/workflows/_quality-gate.yml`
 - `.github/config/deny.toml`
+- `tests/dependency_default_features_audit.rs`
+- `scripts/check-release-docs-agree.sh`
 - `docs/release-checklist.md`
 - `docs/verification-guide.md`
 - `docs/verification-matrix.md`
@@ -158,4 +176,6 @@ cargo build --workspace --all-features
 cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo check --workspace --all-features --target wasm32-unknown-unknown
+cargo test -p cow-rs-workspace-tests --test dependency_default_features_audit
+bash scripts/check-release-docs-agree.sh
 ```

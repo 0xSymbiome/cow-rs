@@ -16,6 +16,7 @@ use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, Hash32, HexData, OrderDigest, OrderKind,
     OrderUid, SellTokenSource, SignedAmount,
 };
+use serde::Deserialize;
 use serde::Serialize;
 
 const CONTRACT_SIGNATURE_SOURCE: &str = include_str!("../src/signature.rs");
@@ -464,7 +465,72 @@ fn adr_0027_signature_family_non_exhaustive() {
     assert_enum_has_non_exhaustive(ORDERBOOK_TYPES_SOURCE, "SigningScheme");
 }
 
+#[test]
+fn enum_policy_manifest_entries_match_expected_markers() {
+    let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(std::path::Path::parent)
+        .expect("contracts crate must live under crates/contracts");
+    let manifest_path = repo_root.join(".github/config/enum-policy.yaml");
+    let manifest = std::fs::read_to_string(&manifest_path)
+        .unwrap_or_else(|error| panic!("failed to read {}: {error}", manifest_path.display()));
+    let policy: EnumPolicyManifest =
+        serde_yaml::from_str(&manifest).expect("enum-policy.yaml must parse");
+
+    assert_eq!(
+        policy.version, 1,
+        "enum-policy schema version must stay at 1"
+    );
+    assert!(
+        !policy.enums.is_empty(),
+        "enum-policy.yaml must classify at least one enum",
+    );
+
+    for entry in policy.enums {
+        let source_path = repo_root.join(&entry.file);
+        let source = std::fs::read_to_string(&source_path)
+            .unwrap_or_else(|error| panic!("failed to read {}: {error}", source_path.display()));
+        let has_marker = enum_has_non_exhaustive(&source, &entry.name);
+        match entry.expected_marker.as_str() {
+            "non_exhaustive" => assert!(
+                has_marker,
+                "{} in {} must carry #[non_exhaustive]",
+                entry.name, entry.file,
+            ),
+            "exhaustive" => assert!(
+                !has_marker,
+                "{} in {} must not carry #[non_exhaustive]",
+                entry.name, entry.file,
+            ),
+            marker => panic!(
+                "{} in enum-policy.yaml has unsupported expected_marker `{marker}`",
+                entry.name,
+            ),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct EnumPolicyManifest {
+    version: u32,
+    enums: Vec<EnumPolicyEntry>,
+}
+
+#[derive(Deserialize)]
+struct EnumPolicyEntry {
+    name: String,
+    file: String,
+    expected_marker: String,
+}
+
 fn assert_enum_has_non_exhaustive(source: &str, enum_name: &str) {
+    assert!(
+        enum_has_non_exhaustive(source, enum_name),
+        "public enum `{enum_name}` must carry #[non_exhaustive]",
+    );
+}
+
+fn enum_has_non_exhaustive(source: &str, enum_name: &str) -> bool {
     let enum_start = source
         .find(&format!("pub enum {enum_name}"))
         .unwrap_or_else(|| panic!("public enum `{enum_name}` must exist"));
@@ -475,8 +541,5 @@ fn assert_enum_has_non_exhaustive(source: &str, enum_name: &str) {
         .map_or(0, |position| position + 1);
     let item_header = &preceding[item_header_start..];
 
-    assert!(
-        item_header.contains("#[non_exhaustive]"),
-        "public enum `{enum_name}` must carry #[non_exhaustive]",
-    );
+    item_header.contains("#[non_exhaustive]")
 }

@@ -24,8 +24,8 @@
 mod common;
 
 use cow_sdk_app_data::{
-    AppDataParams, FlashloanHints, Hook, HookList, MetadataMap, generate_app_data_doc,
-    get_app_data_info,
+    AppDataParams, FlashloanHints, Hook, HookList, MetadataMap, PartnerFee, PartnerFeePolicy,
+    generate_app_data_doc, get_app_data_info,
 };
 use cow_sdk_core::{Amount, HexData, OrderKind};
 use cow_sdk_trading::{
@@ -154,6 +154,61 @@ fn override_with_only_signer_survives_into_wire_doc() {
     assert_eq!(
         info.doc["environment"], base_doc["environment"],
         "top-level environment must be preserved when not overridden"
+    );
+}
+
+#[test]
+fn merge_preserves_override_signer_byte_identical() {
+    let base_doc = sealed_base_doc(base_params_with_quote_metadata());
+    let signer = address(OWNER);
+    let override_params = AppDataParams::default().with_signer(signer.clone());
+
+    let (info, merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
+        .expect("typed merge with signer override must succeed");
+
+    assert_eq!(merged_params.signer, Some(signer.clone()));
+    assert_eq!(
+        info.doc["metadata"]["signer"].as_str(),
+        Some(signer.as_str()),
+        "override signer must be carried to the wire byte-identical",
+    );
+}
+
+#[test]
+fn merge_replaces_hooks_per_adr_0018() {
+    let mut base_metadata = base_params_with_quote_metadata().metadata;
+    base_metadata.insert("hooks".to_owned(), hooks_pre_value());
+    let base_doc = sealed_base_doc(base_params_with_quote_metadata().with_metadata(base_metadata));
+    let override_params = AppDataParams::default().with_hooks(typed_post_hooks());
+
+    let (info, _merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
+        .expect("typed hooks override must succeed");
+
+    assert!(
+        info.doc["metadata"]["hooks"].get("pre").is_none(),
+        "override hooks must replace the base hooks envelope",
+    );
+    assert_eq!(
+        info.doc["metadata"]["hooks"]["post"],
+        hooks_post_value()["post"],
+        "override post hooks must become the final wire hook set",
+    );
+}
+
+#[test]
+fn merge_lifts_flashloan_metadata_through_quote_to_post() {
+    let base_doc = sealed_base_doc(base_params_with_quote_metadata());
+    let hints = sample_flashloan();
+    let override_params = AppDataParams::default().with_flashloan(hints.clone());
+
+    let (info, merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
+        .expect("typed flashloan override must succeed");
+    let expected = serde_json::to_value(&hints).expect("flashloan hints must serialize");
+
+    assert_eq!(merged_params.flashloan, Some(hints));
+    assert_eq!(
+        info.doc["metadata"]["flashloan"], expected,
+        "typed flashloan metadata must be lifted into the final wire document",
     );
 }
 
@@ -350,6 +405,58 @@ async fn base_doc_signer_triggers_appdata_from_mismatch_when_from_differs() {
     assert!(
         orderbook.state().sent_orders.is_empty(),
         "order submission must not fire when the typed validator rejects",
+    );
+}
+
+#[tokio::test]
+async fn partner_fee_in_advanced_settings_appdata_merges_through_to_post() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::default();
+    let trade = sample_trade_parameters(OrderKind::Sell);
+    let partner_fee = PartnerFee::from(
+        PartnerFeePolicy::volume(42, address(ALT_RECEIVER))
+            .expect("partner-fee fixture must validate"),
+    )
+    .to_value();
+    let advanced = SwapAdvancedSettings::new().with_app_data(
+        AppDataParams::default().with_metadata(
+            serde_json::from_value(json!({
+                "partnerFee": partner_fee,
+            }))
+            .expect("advanced app-data metadata must deserialize"),
+        ),
+    );
+
+    let quote_results = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect("quote with partner-fee app-data override must succeed");
+    post_swap_order_from_quote(
+        &quote_results,
+        &trader,
+        &signer,
+        Some(&advanced),
+        &orderbook,
+    )
+    .await
+    .expect("quote-derived post must preserve partner-fee app-data override");
+    let sent = orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("post path must submit an order");
+    let app_data: Value = serde_json::from_str(
+        sent.app_data
+            .as_deref()
+            .expect("posted order must carry full app-data"),
+    )
+    .expect("posted full app-data must remain valid json");
+
+    assert_eq!(
+        app_data["metadata"]["partnerFee"]["volumeBps"],
+        json!(42),
+        "advancedSettings.appData partner fee must merge through to the posted order body",
     );
 }
 

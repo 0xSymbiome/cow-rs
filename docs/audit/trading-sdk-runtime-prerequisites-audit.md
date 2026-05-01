@@ -1,7 +1,7 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current
-Last reviewed: 2026-04-30
+Last reviewed: 2026-05-01
 Owning surface: `cow-sdk-trading` ready-state versus helper-only `TradingSdk` construction and helper-specific prerequisite contract
 Refresh trigger: Changes to ready-state `TradingSdk` builder terminals, helper-only setup entry points, method-specific prerequisite enforcement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`
 Related docs:
@@ -31,7 +31,7 @@ or unrelated credential-hygiene questions.
 | --- | --- | --- |
 | Typestate ready construction | `TradingSdkBuilder::build_ready` and `TradingSdkBuilder::ready` require total chain id plus `appCode` inputs before ready-state construction | Conforms |
 | wasm32 build_ready() requires injected orderbook client | `build_ready()` returns `TradingError::MissingInjectedOrderbookClient` when `options.orderbook_client().is_none()` on `wasm32` | Conforms |
-| Helper-only construction | `TradingSdkBuilder::build_helper_only` and `TradingSdkBuilder::helper_only` keep helper-only setup available without weakening the ready-state contract | Conforms |
+| Helper-only construction | `TradingSdkBuilder::build_helper_only` and `TradingSdkBuilder::helper_only` keep helper-only setup available on native and wasm32 without weakening the ready-state contract | Conforms |
 | Chain-bound helper prerequisites | Allowance, approval, pre-sign, and on-chain cancellation no longer require `appCode` when only chain and protocol context are needed | Conforms |
 
 ## Current Contract
@@ -65,7 +65,10 @@ keep the narrower helper-only contract explicit. They are intended for
 workflows such as allowance reads, approval submission, pre-sign transaction
 construction, and on-chain cancellation, where chain and protocol context
 matter but quote or submission attribution does not. Both construction paths
-require a chain id and produce `TradingSdkMode::HelperOnly`.
+require a chain id and produce `TradingSdkMode::HelperOnly`. On `wasm32`,
+helper-only construction does not require an injected orderbook client because
+the resulting SDK mode refuses quote, post, and off-chain cancellation flows
+before attempting orderbook transport.
 
 ### Helper-Specific Prerequisites
 
@@ -89,6 +92,7 @@ Primary regression coverage:
 
 - `crates/trading/tests/sdk_contract.rs::build_ready_rejects_missing_injected_orderbook_client_on_wasm32`
 - `crates/trading/tests/sdk_contract.rs::build_ready_succeeds_on_wasm32_with_injected_orderbook_client`
+- `crates/trading/tests/sdk_contract.rs::build_helper_only_succeeds_on_wasm32_without_injected_orderbook_client`
 - `crates/trading/tests/sdk_contract.rs::build_ready_succeeds_on_native_without_injected_orderbook_client`
 - `crates/trading/tests/sdk_contract.rs::sdk_ready_shortcut_accepts_total_trader_parameters`
 - `crates/trading/tests/sdk_contract.rs::sdk_helper_only_shortcut_builds_helper_mode_and_refuses_quote_only`

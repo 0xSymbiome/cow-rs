@@ -542,6 +542,17 @@ fn typestate_build_helper_only_produces_a_helper_mode_sdk_from_a_chain_only_stat
     assert!(sdk.trader_defaults().app_code.is_none());
 }
 
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen_test]
+fn build_helper_only_succeeds_on_wasm32_without_injected_orderbook_client() {
+    let sdk = TradingSdkBuilder::new()
+        .with_chain_id(SupportedChainId::Mainnet)
+        .build_helper_only()
+        .expect("wasm32 helper-only construction must not require an injected orderbook client");
+
+    assert_eq!(sdk.mode(), TradingSdkMode::HelperOnly);
+}
+
 #[tokio::test]
 async fn get_quote_only_returns_cancelled_when_combinator_token_fires_before_call() {
     use cow_sdk_core::Cancellable;

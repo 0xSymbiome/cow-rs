@@ -57,6 +57,7 @@ encoder.
 | Time-source determinism | Property coverage compares validation classifications at `now` and `now + delta` while both observations remain inside the same validity window | Conforms |
 | Timestamp extremes | `valid_to = u32::MAX` resolves to typed validation outcomes at `u32::MAX` and `u64::MAX` timestamp boundaries without panicking | Conforms |
 | Gas overhead | EthFlow and pre-sign transaction helpers apply the documented 20% gas overhead with floor integer rounding | Conforms |
+| Cancellation gas fallback | On-chain cancellation transaction construction falls back to `GAS_LIMIT_DEFAULT` when signer gas estimation is unavailable | Conforms |
 | Fuzz corpus | `fuzz_order_bounds_validator` ships with a documented, non-empty corpus covering validator rejection classes and timestamp/token sentinels | Conforms |
 | Scope framing | The public validator documentation frames the local checks as defence-in-depth and names services-side rejection classes outside SDK pre-check coverage | Conforms |
 
@@ -164,6 +165,11 @@ overhead as the trading utility: `gas + (gas * 20) / 100`. The boundary tests
 pin small floor-rounding cases and a large `u64::MAX / 2` estimate so future
 changes cannot silently switch multiplier or rounding behavior.
 
+On-chain cancellation transaction construction keeps a separate fallback
+contract: if signer gas estimation fails, the helper uses the documented
+`GAS_LIMIT_DEFAULT` constant rather than surfacing an estimation-only error
+before callers can sign or inspect the cancellation transaction.
+
 ## Evidence
 
 Primary implementation points:
@@ -184,6 +190,7 @@ Primary regression coverage:
 - `crates/trading/tests/property_contract.rs::validator_handles_u32_max_validto_without_overflow`
 - `crates/trading/tests/onchain_contract.rs::eth_flow_gas_estimate_applies_documented_floor_overhead`
 - `crates/trading/tests/onchain_contract.rs::pre_sign_gas_estimate_applies_documented_floor_overhead`
+- `crates/trading/tests/cancel_contract.rs::cancellation_gas_estimation_fallback_uses_documented_constant`
 - `crates/trading/tests/post_contract.rs`
 - `crates/trading/tests/post_contract.rs::post_swap_order_appdata_from_mismatch_does_not_upload_or_sign`
 - `crates/trading/tests/post_contract.rs::post_swap_order_same_buy_sell_token_does_not_upload_or_sign`

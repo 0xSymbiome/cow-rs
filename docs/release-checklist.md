@@ -16,7 +16,7 @@ typos --config .github/config/typos.toml
 cargo deny check --config .github/config/deny.toml
 cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436
 cargo check-alloy-provider-invariant
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk
 ```
 
 The `cargo tree --invert alloy-provider -p ...` invariant succeeds when no
@@ -76,6 +76,10 @@ cargo +1.94.0 check --workspace --all-features
 cargo +1.94.0 test --workspace
 cargo hack check --workspace --feature-powerset --depth 1
 ```
+
+`cargo hack check --workspace --feature-powerset --depth 1` is a
+build-correctness check for the feature lattice. Public API stability across
+feature combinations is guarded separately by the facade public API snapshots.
 
 Expected workflow coverage:
 

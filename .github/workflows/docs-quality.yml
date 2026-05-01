@@ -85,3 +85,44 @@ jobs:
         env:
           DOCS_RS: '1'
           RUSTDOCFLAGS: --cfg docsrs -D warnings -Zunstable-options --generate-link-to-definition --show-type-layout --enable-index-page
+      - name: Smoke-check rendered crate README sections
+        run: |
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class TextExtractor(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.parts = []
+
+              def handle_data(self, data):
+                  self.parts.append(data)
+
+          crates = {
+              "core": "cow_sdk_core",
+              "contracts": "cow_sdk_contracts",
+              "signing": "cow_sdk_signing",
+              "app-data": "cow_sdk_app_data",
+              "orderbook": "cow_sdk_orderbook",
+              "trading": "cow_sdk_trading",
+              "subgraph": "cow_sdk_subgraph",
+              "browser-wallet": "cow_sdk_browser_wallet",
+              "transport-wasm": "cow_sdk_transport_wasm",
+              "sdk": "cow_sdk",
+          }
+
+          for crate_dir, doc_dir in crates.items():
+              readme = Path("crates") / crate_dir / "README.md"
+              heading = next(
+                  line[2:].strip()
+                  for line in readme.read_text(encoding="utf-8").splitlines()
+                  if line.startswith("# ")
+              )
+              html = Path("target/doc") / doc_dir / "index.html"
+              parser = TextExtractor()
+              parser.feed(html.read_text(encoding="utf-8"))
+              rendered_text = " ".join(part.strip() for part in parser.parts if part.strip())
+              if heading not in rendered_text:
+                  raise SystemExit(f"{html} is missing rendered README heading {heading!r}")
+          PY

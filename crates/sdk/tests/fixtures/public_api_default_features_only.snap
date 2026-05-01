@@ -1,0 +1,32 @@
+cow-sdk public API snapshot: default features
+modules:
+- app_data
+- contracts
+- core
+- orderbook
+- prelude
+- signing
+- trading
+root exports:
+- Address
+- Amount
+- ErrorClass
+- HttpTransport
+- InMemoryEip1271VerificationCache
+- NoopEip1271VerificationCache
+- OrderBookApi
+- OrderUid
+- RegistryError
+- SdkError
+- Signature
+- SupportedChainId
+- TradeParameters
+- TraderParameters
+- TradingSdk
+- TradingSdkBuilder
+- TradingSdkOptions
+- TransportError
+- TransportErrorClass
+feature-gated exports absent:
+- browser_wallet
+- BrowserWalletSigner

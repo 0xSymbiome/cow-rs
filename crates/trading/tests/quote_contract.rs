@@ -1,18 +1,22 @@
 mod common;
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use cow_sdk_core::{BuyTokenDestination, CowEnv, SellTokenSource, ValidationReason};
+use cow_sdk_core::{
+    Amount, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, ProtocolOptions, SellTokenSource,
+    SupportedChainId, UnsignedOrder, ValidationReason, wrapped_native_token,
+};
 use cow_sdk_orderbook::{OrderKind, SigningScheme};
 use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{
     ClientRejection, PartnerFeePolicy, QuoteRequestOverride, QuoterParameters,
-    SwapAdvancedSettings, TradeParameters, build_app_data, get_quote_only, get_quote_results,
+    SwapAdvancedSettings, TradeParameters, build_app_data, calculate_unique_order_id,
+    get_quote_only, get_quote_results,
 };
 
 use crate::common::{
-    MockOrderbook, MockSigner, MockSlippageProvider, OWNER, address, sample_trade_parameters,
-    sell_quote_response, trading_fixture,
+    MockEthFlowChecker, MockOrderbook, MockSigner, MockSlippageProvider, OWNER, address,
+    app_data_hash, sample_trade_parameters, sell_quote_response, trading_fixture,
 };
 
 #[tokio::test]
@@ -365,6 +369,58 @@ async fn quote_results_capture_originating_orderbook_runtime_binding() {
 }
 
 #[tokio::test]
+async fn order_id_collision_retries_with_new_salt_until_success_or_cap() {
+    let chain_id = SupportedChainId::Sepolia;
+    let order = UnsignedOrder::new(
+        address(cow_sdk_core::EVM_NATIVE_CURRENCY_ADDRESS),
+        address(crate::common::COW),
+        address(OWNER),
+        Amount::new("1000000000000000000").expect("test sell amount literal must be valid"),
+        Amount::new("3").expect("test buy amount literal must be valid"),
+        MAX_VALID_TO_EPOCH,
+        app_data_hash(),
+        Amount::zero(),
+        OrderKind::Sell,
+        false,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
+    );
+    let checker = MockEthFlowChecker {
+        results: Arc::new(Mutex::new(vec![true, true, false])),
+    };
+
+    let generated = calculate_unique_order_id(
+        chain_id,
+        &order,
+        Some(&checker),
+        Some(&ProtocolOptions::new().with_env(CowEnv::Prod)),
+    )
+    .await
+    .expect("collision retry must eventually produce a free order id");
+
+    let mut expected_order = order;
+    expected_order.sell_token = wrapped_native_token(chain_id).address;
+    expected_order.buy_amount =
+        Amount::new("1").expect("second collision retry must decrement buy amount twice");
+    let expected = cow_sdk_signing::generate_order_id(
+        chain_id,
+        &expected_order,
+        &cow_sdk_contracts::Registry::default()
+            .address(
+                cow_sdk_contracts::ContractId::EthFlow,
+                chain_id,
+                CowEnv::Prod,
+            )
+            .expect("canonical EthFlow address must stay registered"),
+        Some(&ProtocolOptions::new().with_env(CowEnv::Prod)),
+    )
+    .expect("expected retried order id must generate");
+
+    assert_eq!(generated.order_id, expected.order_id);
+    assert_eq!(generated.order_digest, expected.order_digest);
+}
+
+#[tokio::test]
 async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_precedence() {
     let orderbook = MockOrderbook::new(
         cow_sdk_core::SupportedChainId::Sepolia,
@@ -619,6 +675,24 @@ async fn build_app_data_injects_default_utm_when_override_absent() {
     assert!(
         utm_medium.len() > EXPECTED_UTM_MEDIUM_PREFIX.len(),
         "default utmMedium must embed a non-empty crate version after the prefix, got {utm_medium:?}",
+    );
+}
+
+#[tokio::test]
+async fn default_utm_block_uses_env_cargo_pkg_version() {
+    let info = build_app_data("0x007", 50, "market", None, None)
+        .await
+        .expect("default app-data construction must succeed");
+    let doc: serde_json::Value =
+        serde_json::from_str(&info.full_app_data).expect("full app data must remain valid json");
+    let utm_medium = doc["metadata"]["utm"]["utmMedium"]
+        .as_str()
+        .expect("default UTM medium must be a string");
+
+    assert_eq!(
+        utm_medium,
+        format!("cow-rs@{}", env!("CARGO_PKG_VERSION")),
+        "default UTM medium must embed the trading crate version exactly",
     );
 }
 

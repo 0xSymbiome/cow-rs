@@ -128,6 +128,101 @@ fn slippage_bps_clamps_to_expected_bounds() {
 }
 
 #[test]
+fn slippage_clamps_at_max_10000_bps() {
+    let trader =
+        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
+    let trade = sample_trade_parameters(OrderKind::Sell);
+    let quote_data = QuoteData::new(
+        address(WETH),
+        address(COW),
+        Amount::new("1").expect("test amount literal must be valid"),
+        Amount::new("1").expect("test amount literal must be valid"),
+        1,
+        crate::common::app_data_hash(),
+        OrderKind::Sell,
+    )
+    .with_network_cost_amount(
+        Amount::new("1000000000000000000000").expect("test amount literal must be valid"),
+    )
+    .with_receiver(address(OWNER));
+    let quote = cow_sdk_orderbook::OrderQuoteResponse::new(
+        quote_data,
+        "2025-01-21T12:55:14.799709609Z",
+        true,
+    )
+    .with_from(address(OWNER))
+    .with_id(1);
+
+    assert_eq!(
+        suggest_slippage_bps(&quote, &trade, &trader, false, None)
+            .expect("high-fee slippage suggestion must clamp"),
+        MAX_SLIPPAGE_BPS,
+    );
+}
+
+#[test]
+fn slippage_clamps_at_zero_for_normal_orders() {
+    let trader =
+        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
+    let trade = sample_trade_parameters(OrderKind::Sell);
+    let quote_data = QuoteData::new(
+        address(WETH),
+        address(COW),
+        Amount::new("1").expect("test amount literal must be valid"),
+        Amount::new("1").expect("test amount literal must be valid"),
+        1,
+        crate::common::app_data_hash(),
+        OrderKind::Sell,
+    )
+    .with_network_cost_amount(Amount::zero())
+    .with_receiver(address(OWNER));
+    let quote = cow_sdk_orderbook::OrderQuoteResponse::new(
+        quote_data,
+        "2025-01-21T12:55:14.799709609Z",
+        true,
+    )
+    .with_from(address(OWNER))
+    .with_id(1);
+
+    assert_eq!(
+        suggest_slippage_bps(&quote, &trade, &trader, false, None)
+            .expect("normal zero-cost slippage suggestion must clamp"),
+        0,
+    );
+}
+
+#[test]
+fn slippage_clamps_at_eth_flow_default_for_eth_flow_orders() {
+    let trader =
+        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
+    let trade = sample_trade_parameters(OrderKind::Sell);
+    let quote_data = QuoteData::new(
+        address(WETH),
+        address(COW),
+        Amount::new("1").expect("test amount literal must be valid"),
+        Amount::new("1").expect("test amount literal must be valid"),
+        1,
+        crate::common::app_data_hash(),
+        OrderKind::Sell,
+    )
+    .with_network_cost_amount(Amount::zero())
+    .with_receiver(address(OWNER));
+    let quote = cow_sdk_orderbook::OrderQuoteResponse::new(
+        quote_data,
+        "2025-01-21T12:55:14.799709609Z",
+        true,
+    )
+    .with_from(address(OWNER))
+    .with_id(1);
+
+    assert_eq!(
+        suggest_slippage_bps(&quote, &trade, &trader, true, None)
+            .expect("EthFlow zero-cost slippage suggestion must clamp"),
+        cow_sdk_trading::DEFAULT_SLIPPAGE_BPS,
+    );
+}
+
+#[test]
 fn protocol_fee_sanitization_accepts_only_finite_supported_values() {
     assert_eq!(sanitize_protocol_fee_bps(None), None);
     assert_eq!(sanitize_protocol_fee_bps(Some("not-a-number")), None);

@@ -1,7 +1,7 @@
 # Trading Order Construction Integrity Audit
 
 Status: Current
-Last reviewed: 2026-04-29
+Last reviewed: 2026-05-01
 Owning surface: `cow-sdk-trading` order assembly, injected-orderbook builder terminal parity, and recoverable-signature posting boundary
 Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` builder terminals with injected orderbooks, or recoverable-signature posting validation
 Related docs:
@@ -15,6 +15,8 @@ Related docs:
 This audit covers:
 
 - order construction and submission helpers in `cow-sdk-trading`
+- receiver fallback when the caller leaves the receiver unset or set to the
+  zero address
 - quote-derived order assembly and direct posting flows
 - `TradingSdk` builder terminals that accept injected orderbook context
 - local signature validation before orderbook submission
@@ -27,6 +29,7 @@ unrelated leaf-crate transport policy.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Order construction balance semantics | Preserve reviewed `sellTokenBalance` and `buyTokenBalance` values end to end | Conforms |
+| Receiver fallback | Signing payload construction falls back to the effective `from` address when `receiver` is unset or zero-address | Conforms |
 | `TradingSdk` injected-orderbook terminals | Typestate and total-input builder terminals enforce one fail-fast authority contract | Conforms |
 | Recoverable signature posting | Reject explicit owner or signer mismatch before submission | Conforms |
 
@@ -39,6 +42,14 @@ unrelated leaf-crate transport policy.
 assembly, direct order construction, signing payload generation, and final
 submission. Non-default balance selections remain part of the signed order
 contract rather than being normalized during helper composition.
+
+### Receiver Fallback
+
+`get_order_to_sign` treats both an absent receiver and the zero address as
+unset and emits the effective `from` address as the receiver in the signing
+payload. This matches the reviewed upstream helper behavior and avoids signing
+an order with a placeholder receiver when caller intent is to receive proceeds
+at the owner address.
 
 ### Builder Terminal Parity
 
@@ -67,8 +78,10 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/trading/tests/order_contract.rs`
+- `crates/trading/tests/order_contract.rs::order_to_sign_receiver_falls_back_to_from_when_zero_or_unset`
 - `crates/trading/tests/post_contract.rs`
 - `crates/trading/tests/quote_contract.rs`
+- `crates/trading/tests/quote_contract.rs::order_id_collision_retries_with_new_salt_until_success_or_cap`
 - `crates/trading/tests/sdk_contract.rs`
 
 Validation surface:

@@ -1,7 +1,10 @@
 mod common;
 
-use cow_sdk_core::SupportedChainId;
-use cow_sdk_trading::{OrderTraderParameters, off_chain_cancel_order};
+use cow_sdk_core::{Amount, SupportedChainId};
+use cow_sdk_trading::{
+    GAS_LIMIT_DEFAULT, OrderTraderParameters, off_chain_cancel_order,
+    onchain_cancellation_transaction,
+};
 
 use crate::common::{
     MockOrderbook, MockSigner, order_uid, sample_trader_parameters, sell_quote_response,
@@ -59,4 +62,27 @@ async fn offchain_cancellation_rejects_call_level_chain_conflicts_with_orderbook
         }
     ));
     assert!(orderbook.state().cancellations.is_empty());
+}
+
+#[test]
+fn cancellation_gas_estimation_fallback_uses_documented_constant() {
+    let signer = MockSigner::default();
+    signer
+        .state
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .estimated_gas = Err("gas estimation unavailable".to_owned());
+
+    let tx = onchain_cancellation_transaction(
+        &signer,
+        SupportedChainId::Sepolia,
+        &crate::common::regular_order(),
+        None,
+    )
+    .expect("on-chain cancellation must fall back when gas estimation fails");
+
+    assert_eq!(
+        tx.gas_limit,
+        Some(Amount::new(GAS_LIMIT_DEFAULT.to_string()).expect("default gas literal is valid")),
+    );
 }

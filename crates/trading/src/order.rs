@@ -198,6 +198,7 @@ pub fn get_order_to_sign(
     let receiver = limit_parameters
         .receiver
         .clone()
+        .filter(|receiver| !is_zero_address(receiver))
         .unwrap_or_else(|| params.from.clone());
     let valid_to = if let Some(valid_to) = limit_parameters.valid_to {
         valid_to
@@ -347,4 +348,10 @@ fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
         });
     }
     Amount::new((amount - BigInt::from(1)).to_string()).map_err(Into::into)
+}
+
+fn is_zero_address(address: &Address) -> bool {
+    address
+        .as_str()
+        .eq_ignore_ascii_case("0x0000000000000000000000000000000000000000")
 }

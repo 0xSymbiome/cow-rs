@@ -58,10 +58,11 @@ deny_config="$repo_root/.github/config/deny.toml"
 browser_wallet_workflow="$repo_root/.github/workflows/browser-wallet-e2e.yml"
 contributing_md="$repo_root/CONTRIBUTING.md"
 properties_md="$repo_root/PROPERTIES.md"
+dependency_gate_audit="$repo_root/docs/audit/dependency-gate-audit.md"
 
 for file in "$release_checklist" "$verification_matrix" \
             "$quality_gate" "$deny_config" "$browser_wallet_workflow" \
-            "$contributing_md" "$properties_md"; do
+            "$contributing_md" "$properties_md" "$dependency_gate_audit"; do
   if [ ! -f "$file" ]; then
     echo "error: required source file missing: $file" >&2
     exit 1
@@ -219,6 +220,13 @@ diff_audit_or_fail "docs/release-checklist.md" ".github/config/deny.toml" \
 
 diff_audit_or_fail "docs/verification-matrix.md" ".github/config/deny.toml" \
   "$audit_matrix_tokens" "$audit_canonical_tokens"
+
+while IFS= read -r advisory_id; do
+  if [ -n "$advisory_id" ] && ! grep -qF "$advisory_id" "$dependency_gate_audit"; then
+    echo "error: docs/audit/dependency-gate-audit.md does not document cargo audit ignore token $advisory_id" >&2
+    exit 1
+  fi
+done < <(printf '%s\n' "$audit_canonical_tokens")
 
 extract_browser_wallet_playwright_browsers() {
   # Capture the trailing browser-set arguments from the playwright install

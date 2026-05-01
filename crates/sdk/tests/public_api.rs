@@ -139,3 +139,23 @@ fn crate_docs_and_manifest_keep_the_facade_trading_first() {
     assert!(manifest.contains("cow-sdk-trading"));
     assert!(!manifest.contains("cow-sdk-subgraph"));
 }
+
+#[test]
+fn prelude_does_not_export_low_level_encoders() {
+    let prelude = include_str!("../src/prelude.rs");
+    let forbidden = [
+        "encode_create_order_calldata",
+        "encode_invalidate_order_calldata",
+        "function_magic_value",
+        "calculate_total_fee",
+        "transform_order",
+        "parse_rejection",
+    ];
+
+    for symbol in forbidden {
+        assert!(
+            !prelude.contains(symbol),
+            "prelude must not export low-level helper `{symbol}`",
+        );
+    }
+}

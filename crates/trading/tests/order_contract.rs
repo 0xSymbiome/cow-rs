@@ -150,3 +150,38 @@ fn get_order_to_sign_preserves_non_default_balance_semantics() {
     assert_eq!(order.sell_token_balance, SellTokenSource::External);
     assert_eq!(order.buy_token_balance, BuyTokenDestination::Internal);
 }
+
+#[test]
+fn order_to_sign_receiver_falls_back_to_from_when_zero_or_unset() {
+    let mut params = sample_limit_parameters(cow_sdk_core::OrderKind::Sell);
+    params.receiver = None;
+    let from = address(OWNER);
+
+    let order = get_order_to_sign(
+        OrderToSignParams::new(SupportedChainId::Sepolia, from.clone(), false)
+            .with_apply_costs_slippage_and_fees(false),
+        &params,
+        &app_data_hash(),
+    )
+    .expect("order construction without receiver must succeed");
+
+    assert_eq!(
+        order.receiver, from,
+        "unset receiver must fall back to the effective from address",
+    );
+
+    params.receiver = Some(address("0x0000000000000000000000000000000000000000"));
+    let order = get_order_to_sign(
+        OrderToSignParams::new(SupportedChainId::Sepolia, address(OWNER), false)
+            .with_apply_costs_slippage_and_fees(false),
+        &params,
+        &app_data_hash(),
+    )
+    .expect("order construction with explicit zero receiver must preserve the caller value");
+
+    assert_eq!(
+        order.receiver,
+        address(OWNER),
+        "explicit zero-address receiver must also fall back to the effective from address",
+    );
+}

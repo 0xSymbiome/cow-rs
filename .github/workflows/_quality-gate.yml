@@ -504,6 +504,7 @@ jobs:
           #   -p cow-sdk-app-data \
           #   -p cow-sdk-trading \
           #   -p cow-sdk-browser-wallet \
+          #   -p cow-sdk-transport-wasm \
           #   -p cow-sdk 2>&1
           cargo check-alloy-provider-invariant
 

@@ -17,6 +17,7 @@ const SHIPPED_CRATES: &[&str] = &[
     "cow-sdk-app-data",
     "cow-sdk-trading",
     "cow-sdk-browser-wallet",
+    "cow-sdk-transport-wasm",
     "cow-sdk",
 ];
 

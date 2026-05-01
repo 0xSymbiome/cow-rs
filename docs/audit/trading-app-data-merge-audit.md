@@ -1,7 +1,7 @@
 # Trading App-Data Merge Audit
 
 Status: Current
-Last reviewed: 2026-04-22
+Last reviewed: 2026-05-01
 Owning surface: `cow-sdk-trading` quote-to-post app-data edit path,
 including the public `merge_and_seal_app_data` and
 `params_from_doc` helpers, the private typed merge with its
@@ -41,6 +41,8 @@ This audit covers:
 - the `AppDataParams::metadata_wire_value` lift that puts typed
   `signer` and `flashloan` sub-fields on the wire under the
   reviewed `metadata.signer` and `metadata.flashloan` positions
+- partner-fee metadata supplied through quote advanced settings and
+  preserved through the quote-to-post merge
 - the re-emission pipeline through
   `cow_sdk_app_data::generate_app_data_doc` and
   `cow_sdk_app_data::get_app_data_info` that produces the final
@@ -64,6 +66,7 @@ validator audit).
 | Typed field survival | Override-supplied `signer: Option<Address>` and `flashloan: Option<FlashloanHints>` survive end-to-end into `metadata.signer` and `metadata.flashloan` on the wire | Conforms |
 | Hooks replacement | When the override's metadata contains `"hooks"`, the base's `metadata.hooks` is dropped before recursive metadata merge so the override hook set fully replaces the base | Conforms |
 | User-consents replacement | Override-supplied `metadata.userConsents` arrays replace the base array through the object-aware fall-through in the typed merge | Conforms |
+| Partner-fee metadata | `PartnerFee` metadata supplied through advanced app-data settings survives the merge into the posted app-data document | Conforms |
 | Signer derivation | The submission-seam `app_data_signer` reads `merged_params.signer.clone()` from the typed merged value; no override-only read remains on the quote-to-post path | Conforms |
 | Round-trip idempotency | `params_from_doc(generate_app_data_doc(p))` equals `p` for every `AppDataParams` value constructed through the public surface | Conforms |
 
@@ -117,6 +120,15 @@ JSON objects, so an override-supplied array replaces the base
 array rather than concatenating with it. The same rule applies
 to every other array-valued metadata sibling.
 
+### Partner-Fee Metadata
+
+Partner-fee policy metadata supplied through
+`advanced_settings.app_data` remains part of the override
+`AppDataParams` and is emitted through the same typed merge path as
+other metadata siblings. The quote-to-post regression pins the
+resulting posted app-data document so later merge changes cannot
+drop the partner-fee policy while preserving the surrounding order.
+
 ### Signer Derivation
 
 The quote-to-post submission seam reads
@@ -149,6 +161,10 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/trading/tests/app_data_merge_contract.rs`
+- `crates/trading/tests/app_data_merge_contract.rs::merge_preserves_override_signer_byte_identical`
+- `crates/trading/tests/app_data_merge_contract.rs::merge_replaces_hooks_per_adr_0018`
+- `crates/trading/tests/app_data_merge_contract.rs::merge_lifts_flashloan_metadata_through_quote_to_post`
+- `crates/trading/tests/app_data_merge_contract.rs::partner_fee_in_advanced_settings_appdata_merges_through_to_post`
 - `crates/trading/tests/post_contract.rs`
 - `crates/trading/tests/parity_contract.rs`
 - `parity/fixtures/trading.json`
