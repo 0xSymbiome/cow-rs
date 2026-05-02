@@ -301,6 +301,8 @@ mod native {
 
 #[cfg(target_arch = "wasm32")]
 mod wasm {
+    use std::time::Duration;
+
     use cow_sdk_core::{HttpTransport, TransportError};
     use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
     use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
@@ -334,6 +336,32 @@ export function install_fetch_status_mock(status, body) {
     const response = new Response(body, {
       status,
       headers: { 'Retry-After': '5' },
+    });
+    return Promise.resolve(response);
+  };
+  return previous;
+}
+
+export function install_fetch_stalled_body_mock() {
+  const previous = globalThis.fetch;
+  globalThis.fetch = (input, init) => {
+    const signal = init && init.signal ? init.signal :
+      input instanceof Request ? input.signal : undefined;
+    const response = new Response('', {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' },
+    });
+    Object.defineProperty(response, 'text', {
+      value: () => new Promise((_resolve, reject) => {
+        const abortBody = () => reject(new DOMException('aborted', 'AbortError'));
+        if (signal) {
+          if (signal.aborted) {
+            abortBody();
+          } else {
+            signal.addEventListener('abort', abortBody, { once: true });
+          }
+        }
+      }),
     });
     return Promise.resolve(response);
   };
@@ -374,6 +402,7 @@ export function restore_fetch(previous) {
     extern "C" {
         fn install_fetch_ok_mock(body: &str) -> JsValue;
         fn install_fetch_status_mock(status: u16, body: &str) -> JsValue;
+        fn install_fetch_stalled_body_mock() -> JsValue;
         fn install_fetch_rejection_mock(name: &str) -> JsValue;
         fn install_fetch_header_echo_mock() -> JsValue;
         fn restore_fetch(previous: JsValue);
@@ -474,6 +503,17 @@ export function restore_fetch(previous) {
             .get("/slow", NO_HEADERS, None)
             .await
             .expect_err("AbortError rejection must surface as Timeout");
+        restore_fetch(previous);
+        assert_eq!(error.class(), Some(matrix_class("slow-response")));
+    }
+
+    #[wasm_bindgen_test]
+    async fn slow_response_maps_to_timeout_class_per_matrix() {
+        let previous = install_fetch_stalled_body_mock();
+        let error = transport()
+            .get("/slow", NO_HEADERS, Some(Duration::from_millis(100)))
+            .await
+            .expect_err("stalled body must exceed the configured timeout");
         restore_fetch(previous);
         assert_eq!(error.class(), Some(matrix_class("slow-response")));
     }

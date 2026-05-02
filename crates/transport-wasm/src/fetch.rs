@@ -19,8 +19,13 @@
 //! before the browser dispatches the request. An `Option<Duration>` per-call
 //! timeout overrides the transport's constructor-configured default; a
 //! `Some` timeout wires an [`web_sys::AbortController`] into the in-flight
-//! request so the resulting `AbortError` surfaces as
-//! [`TransportErrorClass::Timeout`].
+//! request and holds the abort handle across both the `fetch()` promise and
+//! the response-body read. The configured [`Duration`] therefore bounds the
+//! full request-response lifecycle, including headers and body bytes. A
+//! stalled body that exceeds the configured timeout is aborted and surfaces as
+//! [`TransportErrorClass::Timeout`]. Cancellation drops the owned callback
+//! closure registered with `setTimeout`, so long-lived browser sessions do
+//! not accumulate dead timeout callbacks.
 //!
 //! # URL redaction
 //!
@@ -210,30 +215,56 @@ impl FetchTransport {
         let window = window_or_configuration_error()?;
         let init = build_request_init(method, body, headers)?;
         let effective_timeout = timeout.or(self.timeout);
-        let abort_timeout = if let Some(timeout) = effective_timeout {
-            Some(install_abort_timeout(&window, &init, timeout)?)
-        } else {
-            None
+        let mut abort_timeout = match effective_timeout {
+            Some(timeout) => Some(install_abort_timeout(&window, &init, timeout)?),
+            None => None,
         };
-        let request = Request::new_with_str_and_init(&url, &init)
-            .map_err(|error| configuration_error("could not build fetch request", &error))?;
-        let response_value = JsFuture::from(window.fetch_with_request(&request))
-            .await
-            .map_err(|error| classify_fetch_rejection(&error))?;
-        if let Some(handle) = abort_timeout {
-            handle.cancel(&window);
-        }
-        let response: Response = response_value
-            .dyn_into()
-            .map_err(|_| decode_error("fetch returned a value that was not a Response"))?;
+        let request = match Request::new_with_str_and_init(&url, &init) {
+            Ok(request) => request,
+            Err(error) => {
+                if let Some(handle) = abort_timeout.take() {
+                    handle.cancel(&window);
+                }
+                return Err(configuration_error("could not build fetch request", &error));
+            }
+        };
+        let response_value = match JsFuture::from(window.fetch_with_request(&request)).await {
+            Ok(value) => value,
+            Err(error) => {
+                if let Some(handle) = abort_timeout.take() {
+                    handle.cancel(&window);
+                }
+                return Err(classify_fetch_rejection(&error));
+            }
+        };
+        let response: Response = match response_value.dyn_into() {
+            Ok(response) => response,
+            Err(_) => {
+                if let Some(handle) = abort_timeout.take() {
+                    handle.cancel(&window);
+                }
+                return Err(decode_error(
+                    "fetch returned a value that was not a Response",
+                ));
+            }
+        };
         let status = response.status();
         let headers = response_headers(&response.headers());
-        let text_promise = response
-            .text()
-            .map_err(|error| body_error("could not read response body", &error))?;
-        let text_value = JsFuture::from(text_promise)
-            .await
-            .map_err(|error| body_error("could not decode response body", &error))?;
+        let text_promise = match response.text() {
+            Ok(promise) => promise,
+            Err(error) => {
+                if let Some(handle) = abort_timeout.take() {
+                    handle.cancel(&window);
+                }
+                return Err(body_error("could not read response body", &error));
+            }
+        };
+        let body_result = JsFuture::from(text_promise).await;
+        if let Some(handle) = abort_timeout.take() {
+            handle.cancel(&window);
+        }
+        let text_value =
+            body_result.map_err(|error| body_error("could not decode response body", &error))?;
         let body_text = text_value
             .as_string()
             .ok_or_else(|| decode_error("response body was not a string"))?;
@@ -359,12 +390,19 @@ fn build_request_init(
 struct AbortTimeoutHandle {
     controller: AbortController,
     timeout_id: i32,
+    _on_timeout: wasm_bindgen::closure::Closure<dyn FnMut()>,
 }
 
 impl AbortTimeoutHandle {
     fn cancel(self, window: &Window) {
-        window.clear_timeout_with_handle(self.timeout_id);
-        drop(self.controller);
+        let Self {
+            controller,
+            timeout_id,
+            _on_timeout,
+        } = self;
+        window.clear_timeout_with_handle(timeout_id);
+        drop(controller);
+        drop(_on_timeout);
     }
 }
 
@@ -382,15 +420,19 @@ fn install_abort_timeout(
         message: format!("timeout {ms} ms exceeds the supported browser setTimeout range"),
     })?;
     let controller_clone = controller.clone();
-    let abort_callback = wasm_bindgen::closure::Closure::once_into_js(move || {
+    let on_timeout = wasm_bindgen::closure::Closure::<dyn FnMut()>::new(move || {
         controller_clone.abort();
     });
     let timeout_id = window
-        .set_timeout_with_callback_and_timeout_and_arguments_0(abort_callback.unchecked_ref(), ms)
+        .set_timeout_with_callback_and_timeout_and_arguments_0(
+            on_timeout.as_ref().unchecked_ref(),
+            ms,
+        )
         .map_err(|error| configuration_error("could not schedule the timeout callback", &error))?;
     Ok(AbortTimeoutHandle {
         controller,
         timeout_id,
+        _on_timeout: on_timeout,
     })
 }
 
@@ -423,9 +465,15 @@ fn configuration_error(context: &str, error: &JsValue) -> TransportError {
 }
 
 fn body_error(context: &str, error: &JsValue) -> TransportError {
+    let (class, detail) = classify_dom_exception(error);
+    let class = if matches!(class, TransportErrorClass::Timeout) {
+        TransportErrorClass::Timeout
+    } else {
+        TransportErrorClass::Body
+    };
     TransportError::Transport {
-        class: TransportErrorClass::Body,
-        detail: format!("{context}: {}", redacted_error_render(error)),
+        class,
+        detail: format!("{context}: {detail}"),
     }
 }
 
