@@ -405,12 +405,12 @@ async fn post_swap_order_same_buy_sell_token_does_not_upload_or_sign() {
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = CountingSigner::new(address(OWNER));
-    let mut params = sample_limit_parameters(OrderKind::Sell);
+    let mut params = sample_limit_parameters(OrderKind::Buy);
     params.buy_token = params.sell_token.clone();
 
     let error = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
         .await
-        .expect_err("same-token limit order must reject before upload or signing");
+        .expect_err("buy-side same-token limit order must reject before upload or signing");
 
     assert!(matches!(
         error,
@@ -421,6 +421,27 @@ async fn post_swap_order_same_buy_sell_token_does_not_upload_or_sign() {
     assert!(orderbook.state().uploads.is_empty());
     assert!(orderbook.state().sent_orders.is_empty());
     assert_eq!(signer.sign_calls(), 0);
+}
+
+#[tokio::test]
+async fn post_swap_order_sell_side_same_buy_sell_token_uploads_signs_and_submits() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::default();
+    let mut params = sample_limit_parameters(OrderKind::Sell);
+    params.buy_token = params.sell_token.clone();
+
+    let result = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect("sell-side same-token limit order must reach submission");
+
+    let state = orderbook.state();
+    assert_eq!(state.uploads.len(), 1);
+    assert_eq!(state.sent_orders.len(), 1);
+    assert_eq!(state.sent_orders[0].sell_token, params.sell_token);
+    assert_eq!(state.sent_orders[0].buy_token, params.sell_token);
+    assert_eq!(result.order_to_sign.sell_token, params.sell_token);
+    assert_eq!(result.order_to_sign.buy_token, params.sell_token);
 }
 
 #[tokio::test]

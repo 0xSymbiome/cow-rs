@@ -1,16 +1,18 @@
 # Trading Order-Bounds Validator Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-02
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
 `OrderValidityBounds`, `SubmissionClass`, `ClientRejection`,
 `AmountSide`, and the `TradingError::ClientRejected` lifting variant.
 Refresh trigger: Changes to the `validate` signature, the
 `ClientRejection` variant set, the `OrderValidityBounds::SERVICES_DEFAULT`
 constants, the `TradingSdkBuilder::with_order_bounds` plumbing, the
-eth-flow `is_eth_flow` skip rule, the WETH-paired-with-native-buy
-guard, or the offline `TradeParameters::validate` /
-`LimitTradeParameters::validate` builder-level subset.
+eth-flow `is_eth_flow` skip rule, upstream services
+`crates/shared/src/order_validation.rs` same-token semantics, the
+WETH-paired-with-native-buy guard, the offline `TradeParameters::validate`
+/ `LimitTradeParameters::validate` builder-level subset, or the
+`scripts/check-services-drift.sh` Semantic Surfaces section.
 Related docs:
 - [ADR 0015](../adr/0015-client-side-order-bounds-validator.md)
 - [Architecture](../architecture.md)
@@ -52,7 +54,8 @@ encoder.
 | Default policy | `OrderValidityBounds::SERVICES_DEFAULT` matches the published 60 s minimum, 3 h market maximum, and 1 y limit-class ceiling | Conforms |
 | Builder plumbing | `TradingSdkBuilder::with_order_bounds` flows through `TradingSdk` to every submission seam; the configured policy is honoured at validation time | Conforms |
 | EthFlow skip rule | `is_eth_flow: true` skips the native-currency-sentinel sell-token check and runs every other invariant | Conforms |
-| WETH-paired guard | A WETH-bound validator rejects `sell_token = WETH` paired with `buy_token = native sentinel` as `SameBuyAndSellToken { token: weth }` | Conforms |
+| Same-token policy | Same-token and WETH/native-sentinel pairs accept on sell-side orders and reject on buy-side orders with `SameBuyAndSellToken` | Conforms |
+| WETH-paired guard | A WETH-bound validator rejects buy-side `sell_token = WETH` paired with `buy_token = native sentinel` as `SameBuyAndSellToken { token: weth }` and accepts the sell-side pair | Conforms |
 | Purity | The validator reads no system clock or environment, performs no I/O, and is idempotent for a given input tuple | Conforms |
 | Time-source determinism | Property coverage compares validation classifications at `now` and `now + delta` while both observations remain inside the same validity window | Conforms |
 | Timestamp extremes | `valid_to = u32::MAX` resolves to typed validation outcomes at `u32::MAX` and `u64::MAX` timestamp boundaries without panicking | Conforms |
@@ -124,18 +127,33 @@ the chain-specific WETH address through `with_weth_address`, and
 runs the `validate` call between order construction and the HTTP
 upload.
 
+### Same-Token And Native-Sentinel Parity
+
+`OrderBoundsValidator::validate` mirrors the services same-token policy for
+the reviewed local validator surface. Exact same-token orders and
+WETH-paired-with-native-sentinel orders are accepted when `OrderKind::Sell`
+is submitted and rejected when `OrderKind::Buy` is submitted. Buy-side
+rejections continue to surface through
+`ClientRejection::SameBuyAndSellToken { token }`; no `TradingError` or
+`ClientRejection` variant is renamed for the policy split.
+
+`TradeParameters::validate` and `LimitTradeParameters::validate` apply the
+same buy-only exact same-token rule at the chain-agnostic builder layer. The
+chain-specific WETH/native-sentinel pairing remains owned by the order-level
+validator because it requires the wrapped-native token address for the
+selected chain.
+
 ### EthFlow Skip Rule And WETH-Paired Guard
 
 `post_sell_native_currency_order_async` invokes the validator with
 `is_eth_flow: true` so the native-currency-sentinel sell-token
 check is skipped while every other invariant (zero amount, same
-token, owner mismatch, lifetime bounds) still fires. When the
-validator is configured with the chain's wrapped-native address
-through `with_weth_address`, the paired sell-WETH /
-buy-native-sentinel case rejects locally as `SameBuyAndSellToken {
-token: weth_address }`, mirroring the reviewed services token-pair
-guard. Without a configured WETH address the exact-match guard
-still fires for identical sell and buy tokens.
+token buy-side rejection, owner mismatch, lifetime bounds) still fires. When
+the validator is configured with the chain's wrapped-native address through
+`with_weth_address`, the paired sell-WETH / buy-native-sentinel case rejects
+locally for buy-side orders as `SameBuyAndSellToken { token: weth_address }`,
+while sell-side orders validate. Without a configured WETH address the
+exact-match guard still applies for identical sell and buy tokens.
 
 ### Purity
 
@@ -186,14 +204,20 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/trading/tests/validation_contract.rs`
+- `crates/trading/tests/validation_contract.rs::validate_same_token_matches_services_allow_sell_policy`
+- `crates/trading/tests/validation_contract.rs::validate_mirrors_services_order_validation_regression`
+- `crates/trading/tests/parameters_contract.rs::tradeparameters_validate_mirrors_services_allow_sell`
+- `crates/trading/tests/parameters_contract.rs::limittradeparameters_validate_mirrors_services_allow_sell`
 - `crates/trading/tests/property_contract.rs::validator_is_monotonic_within_window_via_proptest`
 - `crates/trading/tests/property_contract.rs::validator_handles_u32_max_validto_without_overflow`
+- `crates/trading/tests/property_contract.rs::same_token_validation_class_is_buy_side_only`
 - `crates/trading/tests/onchain_contract.rs::eth_flow_gas_estimate_applies_documented_floor_overhead`
 - `crates/trading/tests/onchain_contract.rs::pre_sign_gas_estimate_applies_documented_floor_overhead`
 - `crates/trading/tests/cancel_contract.rs::cancellation_gas_estimation_fallback_uses_documented_constant`
 - `crates/trading/tests/post_contract.rs`
 - `crates/trading/tests/post_contract.rs::post_swap_order_appdata_from_mismatch_does_not_upload_or_sign`
 - `crates/trading/tests/post_contract.rs::post_swap_order_same_buy_sell_token_does_not_upload_or_sign`
+- `crates/trading/tests/post_contract.rs::post_swap_order_sell_side_same_buy_sell_token_uploads_signs_and_submits`
 - `crates/trading/tests/post_contract.rs::post_swap_order_zero_amount_does_not_upload_or_sign`
 - `crates/trading/tests/parity_contract.rs`
 - `fuzz/corpus/fuzz_order_bounds_validator/`
@@ -202,10 +226,13 @@ Validation surface:
 
 ```text
 cargo test -p cow-sdk-trading --test onchain_contract
+cargo test -p cow-sdk-trading --test validation_contract
+cargo test -p cow-sdk-trading --test parameters_contract
 cargo test -p cow-sdk-trading --test property_contract
 cargo test -p cow-sdk-trading --all-features
 cargo clippy -p cow-sdk-trading --all-targets --all-features -- -D warnings
 cargo +nightly fuzz build --fuzz-dir fuzz fuzz_order_bounds_validator
 cargo +nightly fuzz run fuzz_order_bounds_validator --fuzz-dir fuzz -- -runs=1024
 cargo run --manifest-path scripts/policy-maintainer/Cargo.toml -- check-property-citations
+bash scripts/check-services-drift.sh --upstream /tmp/services --cow-rs-root .
 ```

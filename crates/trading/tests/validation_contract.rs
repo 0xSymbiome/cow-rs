@@ -218,25 +218,38 @@ fn eth_flow_path_accepts_native_sell_token_but_still_enforces_zero_amount() {
 }
 
 #[test]
-fn identical_sell_and_buy_tokens_reject_as_same_token() {
+fn buy_side_identical_sell_and_buy_tokens_reject_as_same_token() {
     let validator = OrderBoundsValidator::services_default();
     let mut order = order();
     order.buy_token = address(SELL_TOKEN);
+    order.kind = OrderKind::Buy;
     let error = validator
         .validate(&order, SigningScheme::Eip712, None, NOW, false)
-        .expect_err("identical sell and buy tokens must reject");
+        .expect_err("buy-side identical sell and buy tokens must reject");
     assert!(matches!(error, ClientRejection::SameBuyAndSellToken { .. }));
 }
 
 #[test]
-fn paired_weth_sell_and_native_buy_rejects_through_weth_configured_validator() {
+fn sell_side_identical_sell_and_buy_tokens_are_accepted() {
+    let validator = OrderBoundsValidator::services_default();
+    let mut order = order();
+    order.buy_token = address(SELL_TOKEN);
+    order.kind = OrderKind::Sell;
+    validator
+        .validate(&order, SigningScheme::Eip712, None, NOW, false)
+        .expect("sell-side identical sell and buy tokens must validate");
+}
+
+#[test]
+fn buy_side_paired_weth_sell_and_native_buy_rejects_through_weth_configured_validator() {
     let validator = OrderBoundsValidator::services_default().with_weth_address(address(WETH));
     let mut order = order();
     order.sell_token = address(WETH);
     order.buy_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+    order.kind = OrderKind::Buy;
     let error = validator
         .validate(&order, SigningScheme::Eip712, None, NOW, false)
-        .expect_err("WETH sell paired with the native-buy sentinel must reject");
+        .expect_err("buy-side WETH sell paired with the native-buy sentinel must reject");
     match error {
         ClientRejection::SameBuyAndSellToken { token } => {
             assert_eq!(
@@ -247,6 +260,104 @@ fn paired_weth_sell_and_native_buy_rejects_through_weth_configured_validator() {
         }
         other => panic!("expected SameBuyAndSellToken, got {other:?}"),
     }
+}
+
+#[test]
+fn sell_side_paired_weth_sell_and_native_buy_is_accepted() {
+    let validator = OrderBoundsValidator::services_default().with_weth_address(address(WETH));
+    let mut order = order();
+    order.sell_token = address(WETH);
+    order.buy_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+    order.kind = OrderKind::Sell;
+    validator
+        .validate(&order, SigningScheme::Eip712, None, NOW, false)
+        .expect("sell-side WETH sell paired with the native-buy sentinel must validate");
+}
+
+#[test]
+fn validate_same_token_matches_services_allow_sell_policy() {
+    #[derive(Clone, Copy)]
+    enum Outcome {
+        Accept,
+        Reject,
+    }
+
+    let validator = OrderBoundsValidator::services_default().with_weth_address(address(WETH));
+    let cases = [
+        (
+            "same-token sell",
+            SELL_TOKEN,
+            SELL_TOKEN,
+            OrderKind::Sell,
+            Outcome::Accept,
+        ),
+        (
+            "same-token buy",
+            SELL_TOKEN,
+            SELL_TOKEN,
+            OrderKind::Buy,
+            Outcome::Reject,
+        ),
+        (
+            "WETH-native sell",
+            WETH,
+            EVM_NATIVE_CURRENCY_ADDRESS,
+            OrderKind::Sell,
+            Outcome::Accept,
+        ),
+        (
+            "WETH-native buy",
+            WETH,
+            EVM_NATIVE_CURRENCY_ADDRESS,
+            OrderKind::Buy,
+            Outcome::Reject,
+        ),
+    ];
+
+    for (label, sell, buy, kind, expected) in cases {
+        let mut order = order();
+        order.sell_token = address(sell);
+        order.buy_token = address(buy);
+        order.kind = kind;
+        let result = validator.validate(&order, SigningScheme::Eip712, None, NOW, false);
+        match (expected, result) {
+            (Outcome::Accept, Ok(()))
+            | (Outcome::Reject, Err(ClientRejection::SameBuyAndSellToken { .. })) => {}
+            (_, actual) => panic!("{label}: unexpected outcome: {actual:?}"),
+        }
+    }
+}
+
+#[test]
+fn validate_mirrors_services_order_validation_regression() {
+    let validator = OrderBoundsValidator::services_default().with_weth_address(address(WETH));
+
+    let mut order = order();
+    order.sell_token = address(SELL_TOKEN);
+    order.buy_token = address(SELL_TOKEN);
+    order.kind = OrderKind::Buy;
+    let error = validator
+        .validate(&order, SigningScheme::Eip712, None, NOW, false)
+        .expect_err("buy-side same-token must reject");
+    assert!(matches!(error, ClientRejection::SameBuyAndSellToken { .. }));
+
+    order.kind = OrderKind::Sell;
+    validator
+        .validate(&order, SigningScheme::Eip712, None, NOW, false)
+        .expect("sell-side same-token must validate");
+
+    order.sell_token = address(WETH);
+    order.buy_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+    order.kind = OrderKind::Sell;
+    validator
+        .validate(&order, SigningScheme::Eip712, None, NOW, false)
+        .expect("sell-side WETH-native pair must validate");
+
+    order.kind = OrderKind::Buy;
+    let error = validator
+        .validate(&order, SigningScheme::Eip712, None, NOW, false)
+        .expect_err("buy-side WETH-native pair must reject");
+    assert!(matches!(error, ClientRejection::SameBuyAndSellToken { .. }));
 }
 
 #[test]
@@ -380,9 +491,9 @@ fn trade_parameters_validate_enforces_builder_subset() {
 }
 
 #[test]
-fn trade_parameters_validate_rejects_same_tokens() {
+fn trade_parameters_validate_rejects_buy_side_same_tokens() {
     let params = TradeParameters::new(
-        OrderKind::Sell,
+        OrderKind::Buy,
         address(SELL_TOKEN),
         18,
         address(SELL_TOKEN),
@@ -391,7 +502,7 @@ fn trade_parameters_validate_rejects_same_tokens() {
     );
     let error = params
         .validate()
-        .expect_err("same sell/buy token must fail builder-level validation");
+        .expect_err("buy-side same sell/buy token must fail builder-level validation");
     assert!(matches!(error, ClientRejection::SameBuyAndSellToken { .. }));
 }
 

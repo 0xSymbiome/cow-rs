@@ -2,14 +2,14 @@
 //! builders.
 //!
 //! The builder-level subset covers the invariants a caller can check
-//! without constructing a full `OrderCreation`: distinct sell / buy tokens,
+//! without constructing a full `OrderCreation`: buy-side same-token rejection,
 //! non-zero sell / buy amounts, and a non-sentinel sell token. The full
 //! reviewed protocol-invariant matrix stays on
 //! [`crate::validation::OrderBoundsValidator::validate`], which is the
 //! mandatory pre-transport step on every submission seam.
 
 use cow_sdk_app_data::{AppDataError, PartnerFee};
-use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, ValidationReason};
+use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, ValidationReason};
 
 use crate::{
     LimitTradeParameters, TradeParameters,
@@ -24,8 +24,9 @@ fn native_sentinel() -> Address {
 fn validate_distinct_tokens(
     sell_token: &Address,
     buy_token: &Address,
+    kind: OrderKind,
 ) -> Result<(), ClientRejection> {
-    if sell_token == buy_token {
+    if sell_token == buy_token && kind == OrderKind::Buy {
         return Err(ClientRejection::SameBuyAndSellToken {
             token: sell_token.clone(),
         });
@@ -71,7 +72,7 @@ impl TradeParameters {
     ///
     /// Checked invariants:
     ///
-    /// * distinct sell and buy tokens
+    /// * buy-side same-token orders
     /// * non-zero sell amount
     /// * non-sentinel sell token (the native-currency sentinel belongs on
     ///   the eth-flow submission path)
@@ -82,7 +83,7 @@ impl TradeParameters {
     /// Returns [`ClientRejection`] on the first invariant violation.
     pub fn validate(&self) -> Result<(), ClientRejection> {
         validate_non_native_sell_token(&self.sell_token)?;
-        validate_distinct_tokens(&self.sell_token, &self.buy_token)?;
+        validate_distinct_tokens(&self.sell_token, &self.buy_token, self.kind)?;
         validate_non_zero_amount(AmountSide::Sell, &self.amount)?;
         validate_partner_fee(self.partner_fee.as_ref())?;
         Ok(())
@@ -95,7 +96,7 @@ impl LimitTradeParameters {
     ///
     /// Checked invariants:
     ///
-    /// * distinct sell and buy tokens
+    /// * buy-side same-token orders
     /// * non-zero sell and buy amounts
     /// * non-sentinel sell token (the native-currency sentinel belongs on
     ///   the eth-flow submission path)
@@ -106,7 +107,7 @@ impl LimitTradeParameters {
     /// Returns [`ClientRejection`] on the first invariant violation.
     pub fn validate(&self) -> Result<(), ClientRejection> {
         validate_non_native_sell_token(&self.sell_token)?;
-        validate_distinct_tokens(&self.sell_token, &self.buy_token)?;
+        validate_distinct_tokens(&self.sell_token, &self.buy_token, self.kind)?;
         validate_non_zero_amount(AmountSide::Sell, &self.sell_amount)?;
         validate_non_zero_amount(AmountSide::Buy, &self.buy_amount)?;
         validate_partner_fee(self.partner_fee.as_ref())?;

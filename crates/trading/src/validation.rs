@@ -2,7 +2,7 @@
 //!
 //! The validator is client-side defence-in-depth for orders before
 //! submission. It covers eight reviewed protocol invariants (zero-amount,
-//! same-token, app-data-from mismatch, and others) and is not a replacement
+//! buy-side same-token, app-data-from mismatch, and others) and is not a replacement
 //! for the broader services-side rejection set. Services may still reject for
 //! reasons the SDK cannot pre-check, including deny-list, transferability,
 //! gas budget, banned-users, market-class classification, and
@@ -17,7 +17,7 @@
 
 use std::time::Duration;
 
-use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS};
+use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use serde::{Deserialize, Serialize};
 
@@ -64,8 +64,8 @@ pub enum ClientRejection {
         /// `OrderCreation.from` address submitted alongside the order.
         from: Address,
     },
-    /// Sell and buy tokens collapse to the same address after native-sentinel
-    /// resolution.
+    /// A buy-side order's sell and buy tokens collapse to the same address
+    /// after native-sentinel resolution.
     #[error("same buy and sell token: {token}")]
     SameBuyAndSellToken {
         /// Address both `sell_token` and `buy_token` resolve to.
@@ -197,8 +197,8 @@ impl OrderBoundsValidator {
     /// Returns a copy of this validator configured with the chain-specific
     /// wrapped-native token address. When supplied, the validator rejects
     /// `sell_token == weth_address` paired with `buy_token == BUY_ETH_ADDRESS`
-    /// through [`ClientRejection::SameBuyAndSellToken`] to mirror the
-    /// reviewed services token-pair guard.
+    /// through [`ClientRejection::SameBuyAndSellToken`] on buy-side orders
+    /// to mirror the reviewed services token-pair guard.
     #[must_use]
     pub fn with_weth_address(mut self, weth_address: Address) -> Self {
         self.weth_address = Some(weth_address);
@@ -236,7 +236,7 @@ impl OrderBoundsValidator {
     /// `is_eth_flow` opts into the eth-flow submission-path defence-in-depth
     /// coverage: the native-currency-sentinel sell-token check is skipped
     /// (the sentinel is expected on that path), while every other invariant
-    /// (zero amount, same token, owner mismatch, `valid_to` bounds) still
+    /// (zero amount, buy-side same token, owner mismatch, `valid_to` bounds) still
     /// runs.
     ///
     /// # Errors
@@ -276,7 +276,7 @@ impl OrderBoundsValidator {
             }
         }
 
-        self.validate_token_bounds(&order.sell_token, &order.buy_token, is_eth_flow)?;
+        self.validate_token_bounds(&order.sell_token, &order.buy_token, order.kind, is_eth_flow)?;
 
         validate_amount("sellAmount", AmountSide::Sell, &order.sell_amount)?;
         validate_amount("buyAmount", AmountSide::Buy, &order.buy_amount)?;
@@ -299,6 +299,7 @@ impl OrderBoundsValidator {
         &self,
         sell_token: &Address,
         buy_token: &Address,
+        kind: OrderKind,
         is_eth_flow: bool,
     ) -> Result<(), ClientRejection> {
         if !is_eth_flow {
@@ -307,7 +308,7 @@ impl OrderBoundsValidator {
                 return Err(ClientRejection::InvalidNativeSellToken);
             }
         }
-        if sell_token == buy_token {
+        if sell_token == buy_token && kind == OrderKind::Buy {
             return Err(ClientRejection::SameBuyAndSellToken {
                 token: sell_token.clone(),
             });
@@ -315,6 +316,7 @@ impl OrderBoundsValidator {
         if let Some(weth) = self.weth_address.as_ref()
             && sell_token == weth
             && buy_token == &native_sentinel()
+            && kind == OrderKind::Buy
         {
             return Err(ClientRejection::SameBuyAndSellToken {
                 token: weth.clone(),

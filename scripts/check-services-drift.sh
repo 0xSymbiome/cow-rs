@@ -5,7 +5,9 @@
 # services errorType set and selected model DTO fields against the typed
 # orderbook surface in this checkout, then emits a Markdown summary for CI.
 #
-# Dependencies: bash, git, grep, awk, sort, comm, diff.
+# Dependencies: bash, git, grep, awk, sort, comm, diff. If yq is
+# available, the source-lock services pin is read with the canonical
+# select(.id == "services") query; otherwise the script falls back to awk.
 #
 # Exit code contract:
 #   0  completed successfully, with or without detected drift
@@ -44,6 +46,15 @@ count_lines() {
 }
 
 services_pin() {
+  if command -v yq >/dev/null 2>&1; then
+    local pin
+    pin="$(yq -r '.repositories[] | select(.id == "services") | .commit // ""' "$1")"
+    if [ -n "$pin" ] && [ "$pin" != "null" ]; then
+      printf '%s\n' "$pin"
+      return
+    fi
+  fi
+
   awk '
     /^repositories:/ { in_repos = 1; next }
     in_repos && /^[A-Za-z][A-Za-z_]*:/ { in_repos = 0; in_services = 0 }
@@ -238,6 +249,11 @@ dto_pairs() {
   ' | sort -u
 }
 
+semantic_surfaces() {
+  printf '%s\n' \
+    "crates/shared/src/order_validation.rs"
+}
+
 append_report() {
   report="${report}$*"$'\n'
 }
@@ -311,6 +327,8 @@ dto_services_count=0
 dto_cow_count=0
 dto_pair_count=0
 dto_rows=""
+semantic_drift_count=0
+semantic_rows=""
 
 while IFS='|' read -r upstream_struct cow_struct; do
   [ -n "$upstream_struct" ] || continue
@@ -346,7 +364,27 @@ done < <(dto_pairs "$upstream" "$types_file")
 
 [ "$dto_pair_count" -gt 0 ] || tool_fail "no comparable DTO struct pairs found"
 
-total_drift=$((err_services_count + err_cow_count + dto_services_count + dto_cow_count))
+if [ "$upstream_head" = "unknown" ]; then
+  semantic_rows="${semantic_rows}| not-checked | services checkout | upstream path is not a git checkout |"$'\n'
+elif ! git -C "$upstream" cat-file -e "$pin^{commit}" 2>/dev/null; then
+  semantic_drift_count=$((semantic_drift_count + 1))
+  semantic_rows="${semantic_rows}| pin-missing | \`$pin\` | pinned services commit is not present in the upstream checkout; manual review required |"$'\n'
+elif ! git -C "$upstream" merge-base --is-ancestor "$pin" "$upstream_head"; then
+  semantic_drift_count=$((semantic_drift_count + 1))
+  semantic_rows="${semantic_rows}| pin-not-ancestor | \`$pin\` | pinned services commit is not an ancestor of upstream HEAD \`$upstream_head\`; upstream history may have been rebased |"$'\n'
+else
+  while IFS= read -r surface; do
+    [ -n "$surface" ] || continue
+    diff_summary="$(git -C "$upstream" diff --stat "$pin" "$upstream_head" -- "$surface")"
+    if [ -n "$diff_summary" ]; then
+      semantic_drift_count=$((semantic_drift_count + 1))
+      semantic_rows="${semantic_rows}| semantic-surface-changed | \`$surface\` | between pinned \`${pin:0:8}\` and upstream HEAD \`${upstream_head:0:8}\`: $diff_summary |"$'\n'
+      semantic_rows="${semantic_rows}| review-target | \`$surface\` | review \`crates/trading/tests/validation_contract.rs\` and \`crates/trading/tests/parameters_contract.rs\` for parity |"$'\n'
+    fi
+  done < <(semantic_surfaces)
+fi
+
+total_drift=$((err_services_count + err_cow_count + dto_services_count + dto_cow_count + semantic_drift_count))
 drift_detected=false
 if [ "$total_drift" -gt 0 ]; then
   drift_detected=true
@@ -395,6 +433,17 @@ else
 fi
 
 append_report
+append_report "## Semantic Surfaces"
+append_report
+append_report "| Classification | Surface | Detail |"
+append_report "| --- | --- | --- |"
+if [ -z "$semantic_rows" ]; then
+  append_report "| match | all compared semantic surfaces | pinned services commit and upstream HEAD agree |"
+else
+  report="${report}${semantic_rows}"
+fi
+
+append_report
 append_report "## Summary Count"
 append_report
 append_report "| Metric | Count |"
@@ -406,6 +455,7 @@ append_report "| variants only in cow-rs | $err_cow_count |"
 append_report "| compared DTO pairs | $dto_pair_count |"
 append_report "| DTO fields only in services | $dto_services_count |"
 append_report "| DTO fields only in cow-rs | $dto_cow_count |"
+append_report "| semantic surface drift rows | $semantic_drift_count |"
 append_report "| total drift rows | $total_drift |"
 
 printf '%s' "$report"

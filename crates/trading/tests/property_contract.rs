@@ -155,6 +155,27 @@ fn validation_class(outcome: &Result<(), ClientRejection>) -> ValidationClass {
     }
 }
 
+#[test]
+fn same_token_validation_class_is_buy_side_only() {
+    let validator = OrderBoundsValidator::services_default();
+    let now = 1_700_000_000;
+    let mut buy_order = order_template();
+    buy_order.valid_to = u32::try_from(now + 3_600).expect("valid_to must fit in u32");
+    buy_order.buy_token = buy_order.sell_token.clone();
+    buy_order.kind = OrderKind::Buy;
+
+    let buy_outcome = validator.validate(&buy_order, SigningScheme::Eip712, None, now, false);
+    assert_eq!(
+        validation_class(&buy_outcome),
+        ValidationClass::SameBuyAndSellToken
+    );
+
+    let mut sell_order = buy_order;
+    sell_order.kind = OrderKind::Sell;
+    let sell_outcome = validator.validate(&sell_order, SigningScheme::Eip712, None, now, false);
+    assert_eq!(validation_class(&sell_outcome), ValidationClass::Accepted);
+}
+
 fn normalize_now_inside_u32_window(now_seconds: u64) -> u64 {
     let max_now = u64::from(u32::MAX) - MAX_DELTA_SECONDS - MIN_VALIDITY_MARGIN_SECONDS;
     now_seconds % (max_now + 1)
