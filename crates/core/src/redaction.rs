@@ -109,6 +109,13 @@ fn truncate_sanitized_body(input: &str) -> String {
     output
 }
 
+/// Removes credential-shaped spans from a response-body preview.
+///
+/// # Panics
+///
+/// Panics only if the scan offset stops pointing at a valid UTF-8 character
+/// boundary; all offset updates are derived from Rust string match indices or
+/// `char::len_utf8`.
 fn strip_credential_tokens(input: &str) -> String {
     let mut output = String::with_capacity(input.len());
     let mut offset = 0;
@@ -137,6 +144,9 @@ fn strip_credential_tokens(input: &str) -> String {
         let next = input[offset..]
             .chars()
             .next()
+            // SAFETY: offset is initialized to zero and then advanced only by
+            // string match boundaries or by the UTF-8 width of the current
+            // character.
             .expect("offset is always within the string");
         output.push(next);
         offset += next.len_utf8();

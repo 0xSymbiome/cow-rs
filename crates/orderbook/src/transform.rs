@@ -87,7 +87,15 @@ fn trim_leading_zeroes(value: &str) -> String {
     }
 }
 
+/// Returns the orderbook native-token sentinel address.
+///
+/// # Panics
+///
+/// Panics only if the shared native-currency sentinel literal stops being a
+/// valid EVM address.
 fn native_token_address() -> Address {
+    // SAFETY: EVM_NATIVE_CURRENCY_ADDRESS is a crate-owned protocol sentinel
+    // literal validated through the shared Address constructor.
     Address::new(EVM_NATIVE_CURRENCY_ADDRESS)
         .expect("native token literal must remain a valid address")
 }

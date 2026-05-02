@@ -10,7 +10,15 @@ use crate::ContractsError;
 pub(crate) const ZERO_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
 pub(crate) const ORDER_UID_LENGTH_BYTES: usize = 56;
 
+/// Returns the EVM zero address constant.
+///
+/// # Panics
+///
+/// Panics only if the crate-owned zero-address literal stops being a valid
+/// EVM address.
 pub(crate) fn zero_address() -> Address {
+    // SAFETY: ZERO_ADDRESS is a reviewed protocol literal with the exact EVM
+    // address shape.
     Address::new(ZERO_ADDRESS).expect("static zero address must remain valid")
 }
 
@@ -142,19 +150,35 @@ pub(crate) const fn order_kind_name(kind: OrderKind) -> &'static str {
     }
 }
 
+/// Returns the settlement flag label for a supported sell-token balance source.
+///
+/// # Panics
+///
+/// Panics only if a new balance-source variant reaches this internal codec
+/// before the settlement flag mapping is updated.
 pub(crate) fn sell_balance_name(balance: SellTokenSource) -> &'static str {
     match balance {
         SellTokenSource::Erc20 => "erc20",
         SellTokenSource::External => "external",
         SellTokenSource::Internal => "internal",
+        // SAFETY: all currently representable settlement sell-token balance
+        // variants are handled above; new variants must update this codec.
         _ => unreachable!("SellTokenSource variants are exhaustively covered"),
     }
 }
 
+/// Returns the settlement flag label for a supported buy-token balance destination.
+///
+/// # Panics
+///
+/// Panics only if a new balance-destination variant reaches this internal codec
+/// before the settlement flag mapping is updated.
 pub(crate) fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
     match balance {
         BuyTokenDestination::Erc20 => "erc20",
         BuyTokenDestination::Internal => "internal",
+        // SAFETY: all currently representable settlement buy-token balance
+        // variants are handled above; new variants must update this codec.
         _ => unreachable!("BuyTokenDestination variants are exhaustively covered"),
     }
 }

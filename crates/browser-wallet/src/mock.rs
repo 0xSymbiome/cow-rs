@@ -59,11 +59,19 @@ struct MockState {
 }
 
 impl Default for MockState {
+    /// Creates the deterministic mock wallet state.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the crate-owned static mock account literal stops being
+    /// a valid EVM address.
     fn default() -> Self {
         Self {
             connected: false,
             chain_id: u64::from(SupportedChainId::Sepolia),
             accounts: vec![
+                // SAFETY: the mock account is a reviewed static literal used
+                // only to seed deterministic browser-wallet fixtures.
                 Address::new("0x4444444444444444444444444444444444444444")
                     .expect("static mock address must remain valid"),
             ],

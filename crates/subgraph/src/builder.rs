@@ -234,6 +234,17 @@ impl<C, A, T> SubgraphApiBuilder<C, A, T> {
         self
     }
 
+    /// Finalizes the builder once a transport has been selected.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SubgraphError`] when explicit base-URL overrides fail the
+    /// configured external host policy.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the typestate marker invariants are bypassed and the
+    /// chain id or API key was not supplied before finalization.
     fn finish(
         self,
         transport: Arc<dyn HttpTransport + Send + Sync>,
@@ -242,9 +253,13 @@ impl<C, A, T> SubgraphApiBuilder<C, A, T> {
 
         let chain = self
             .chain
+            // SAFETY: finish is reached only by typestate build paths that set
+            // the chain marker.
             .expect("typestate guarantees chain id is supplied at build time");
         let api_key = self
             .api_key
+            // SAFETY: finish is reached only by typestate build paths that set
+            // the API-key marker.
             .expect("typestate guarantees api key is supplied at build time");
         let transport_policy = self.transport_policy.unwrap_or_default();
         let prod_config = build_prod_config();
@@ -279,6 +294,9 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportSet> {
         let transport = self
             .transport
             .clone()
+            // SAFETY: this impl is only available for the TransportSet
+            // typestate, so a missing transport means the marker invariant was
+            // bypassed.
             .expect("typestate guarantees a transport is supplied at build time");
         self.finish(transport)
     }
@@ -322,6 +340,8 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset> {
             config = config.with_timeout(timeout);
         }
         let transport = ReqwestTransport::new(config)
+            // SAFETY: the default user-agent comes from a validated static
+            // literal or from an existing HttpClientPolicy.
             .expect("default ReqwestTransport must build with the validated user-agent");
         self.finish(Arc::new(transport))
     }

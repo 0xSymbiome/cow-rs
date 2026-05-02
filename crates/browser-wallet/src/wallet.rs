@@ -208,6 +208,8 @@ impl WalletChainParameters {
     #[must_use]
     pub fn for_supported_chain(chain_id: SupportedChainId) -> Self {
         let (chain_name, native_currency) = known_chain_metadata(chain_id);
+        // SAFETY: known_chain_metadata returns crate-owned literals that share
+        // the same validators as user-supplied chain metadata.
         Self::new(chain_id, chain_name, native_currency)
             .expect("built-in chain metadata must stay valid")
     }
@@ -534,8 +536,12 @@ impl BrowserWallet {
     where
         T: Eip1193Transport + 'static,
     {
+        // SAFETY: the origin is derived from a trusted Rust transport label for
+        // this explicitly panic-named compatibility constructor.
         let origin = Origin::new(format!("transport:{}", transport.label()))
             .expect("transport label must produce a valid local origin label");
+        // SAFETY: the caller selected the panic-on-invalid constructor for a
+        // trusted in-process transport.
         Self::from_trusted_transport(transport, origin)
             .expect("explicitly trusted Rust transport must build")
     }
@@ -1049,7 +1055,15 @@ fn validate_wallet_url(
     Ok(trimmed.to_owned())
 }
 
+/// Builds built-in native-currency metadata for wallet chain registration.
+///
+/// # Panics
+///
+/// Panics only if crate-owned chain metadata literals stop satisfying the same
+/// validation rules enforced for caller-supplied wallet metadata.
 fn known_wallet_native_currency(name: &str, symbol: &str, decimals: u8) -> WalletNativeCurrency {
+    // SAFETY: all call sites pass reviewed static metadata from
+    // known_chain_metadata.
     WalletNativeCurrency::new(name, symbol, decimals)
         .expect("built-in native-currency metadata must stay valid")
 }

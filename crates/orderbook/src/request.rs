@@ -227,6 +227,12 @@ impl JitterStrategy {
         }
     }
 
+    /// Returns the jitter offset for one retry base delay.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the explicitly capped jitter window no longer fits into
+    /// `u64`.
     fn delay_for(&self, base: Duration) -> Duration {
         let JitterStrategyKind::Decorrelated { seed } = self.kind else {
             return Duration::ZERO;
@@ -240,6 +246,8 @@ impl JitterStrategy {
         let sequence = self.next_sequence();
         let window = window_ms.saturating_add(1).min(u128::from(u64::MAX));
         let offset = (u128::from(splitmix64(seed)) + u128::from(sequence)) % window;
+        // SAFETY: window is capped to u64::MAX before the modulo operation, so
+        // offset is representable as u64.
         let offset = u64::try_from(offset).expect("jitter offset is capped to `u64::MAX`");
         Duration::from_millis(offset)
     }
@@ -335,7 +343,15 @@ impl RequestPolicy {
         base.saturating_add(self.jitter.delay_for(base))
     }
 
+    /// Returns the unclamped exponential backoff base for an attempt.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the locally capped retry exponent no longer fits into
+    /// `u32`.
     fn base_backoff_delay(attempt_index: usize) -> Duration {
+        // SAFETY: the exponent is capped to six before conversion, which is
+        // always representable as u32.
         let exponent = u32::try_from(attempt_index.saturating_sub(1).min(6))
             .expect("backoff exponent is clamped to a `u32`-safe range");
         Duration::from_millis(50 * (1u64 << exponent))
@@ -389,8 +405,16 @@ pub struct OrderBookTransportPolicy {
 }
 
 impl Default for OrderBookTransportPolicy {
+    /// Creates the default orderbook transport policy.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the crate-owned default orderbook user-agent literal
+    /// stops being encodable as an HTTP header value.
     fn default() -> Self {
         Self {
+            // SAFETY: DEFAULT_ORDERBOOK_USER_AGENT is a crate-owned static
+            // literal validated by the shared HTTP policy constructor.
             http_policy: HttpClientPolicy::new(DEFAULT_ORDERBOOK_USER_AGENT)
                 .expect("static orderbook user-agent must remain valid"),
             request: RequestPolicy::default(),
@@ -501,6 +525,8 @@ impl ResponseEnvelope {
             status,
             status_text: canonical_status_text(status),
             content_type: Some("application/json".to_owned()),
+            // SAFETY: serde_json::Value serializes to JSON bytes without
+            // relying on caller-controlled type implementations.
             body: serde_json::to_vec(value).expect("test JSON serialization must succeed"),
         }
     }
@@ -1184,6 +1210,12 @@ fn duration_millis(duration: Duration) -> u64 {
     u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
 }
 
+/// Sleeps for the supplied retry delay on the active target.
+///
+/// # Panics
+///
+/// Panics only on `wasm32` if the millisecond duration no longer fits into
+/// `u32` after explicit clamping.
 async fn delay_for(duration: Duration) {
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -1192,6 +1224,8 @@ async fn delay_for(duration: Duration) {
 
     #[cfg(target_arch = "wasm32")]
     {
+        // SAFETY: the duration is clamped to u32::MAX before conversion for
+        // the wasm timer API.
         let millis = u32::try_from(duration.as_millis().min(u128::from(u32::MAX)))
             .expect("millisecond delay is clamped to `u32::MAX`");
         // TimeoutFuture::new(0) yields on wasm32, matching native zero-delay semantics.

@@ -391,6 +391,9 @@ impl PartnerFee {
     /// serializable to JSON.
     #[must_use]
     pub fn to_value(&self) -> Value {
+        // SAFETY: partner-fee schema values are typed serde data owned by this
+        // crate; serialization failure would mean the schema type stopped being
+        // serializable.
         serde_json::to_value(self).expect("partner-fee schema types must remain serializable")
     }
 

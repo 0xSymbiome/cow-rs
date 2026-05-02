@@ -103,6 +103,9 @@ pub fn deployment_for_chain(chain_id: u64) -> Result<ContractAddresses, Contract
         .map_err(|_| ContractsError::UnsupportedChain(chain_id))?;
     let registry = Registry::default();
     Ok(ContractAddresses::new(
+        // SAFETY: Registry::default parses the build-validated embedded
+        // manifest, which must include canonical production contracts for each
+        // supported chain.
         registry
             .address(ContractId::Settlement, chain, CowEnv::Prod)
             .expect("canonical settlement address is registered for every supported chain"),

@@ -586,6 +586,11 @@ impl SettlementEncoder {
 ///
 /// This function currently uses a total flag mapping and does not return an error,
 /// but it retains a fallible signature for API consistency with adjacent codecs.
+///
+/// # Panics
+///
+/// Panics only if a new balance enum variant reaches this codec before the
+/// settlement flag mapping is updated.
 pub fn encode_order_flags(flags: &OrderFlags) -> Result<u8, ContractsError> {
     let kind = match flags.kind {
         OrderKind::Sell => 0,
@@ -596,11 +601,15 @@ pub fn encode_order_flags(flags: &OrderFlags) -> Result<u8, ContractsError> {
         SellTokenSource::Erc20 => 0,
         SellTokenSource::External => 0b10 << 2,
         SellTokenSource::Internal => 0b11 << 2,
+        // SAFETY: the supported settlement sell-token balance variants are
+        // fully mapped above; a new variant must extend this bit layout.
         _ => unreachable!("SellTokenSource variants are exhaustively covered"),
     };
     let buy = match flags.buy_token_balance {
         BuyTokenDestination::Erc20 => 0,
         BuyTokenDestination::Internal => 0b1 << 4,
+        // SAFETY: the supported settlement buy-token balance variants are
+        // fully mapped above; a new variant must extend this bit layout.
         _ => unreachable!("BuyTokenDestination variants are exhaustively covered"),
     };
     Ok([kind, partial, sell, buy].into_iter().sum())
@@ -611,6 +620,11 @@ pub fn encode_order_flags(flags: &OrderFlags) -> Result<u8, ContractsError> {
 /// # Errors
 ///
 /// Returns [`ContractsError::InvalidFlags`] if unsupported bits are set.
+///
+/// # Panics
+///
+/// Panics only if the local bit masks stop constraining decoded flag arms to
+/// the enumerated values handled by this function.
 pub fn decode_order_flags(encoded: u8) -> Result<OrderFlags, ContractsError> {
     if encoded & 0b1000_0000 != 0 {
         return Err(ContractsError::InvalidFlags(encoded));
@@ -621,12 +635,16 @@ pub fn decode_order_flags(encoded: u8) -> Result<OrderFlags, ContractsError> {
         0b00 | 0b01 => SellTokenSource::Erc20,
         0b10 => SellTokenSource::External,
         0b11 => SellTokenSource::Internal,
+        // SAFETY: sell_bits is masked to two bits immediately above, so every
+        // possible value is handled by the explicit arms.
         _ => unreachable!(),
     };
 
     let buy_token_balance = match (encoded >> 4) & 0b1 {
         0 => BuyTokenDestination::Erc20,
         1 => BuyTokenDestination::Internal,
+        // SAFETY: the buy-token flag is masked to one bit immediately above,
+        // so every possible value is handled by the explicit arms.
         _ => unreachable!(),
     };
 

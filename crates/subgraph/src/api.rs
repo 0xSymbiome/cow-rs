@@ -110,8 +110,16 @@ pub struct SubgraphTransportPolicy {
 }
 
 impl Default for SubgraphTransportPolicy {
+    /// Creates the default subgraph transport policy.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the crate-owned default subgraph user-agent literal stops
+    /// being encodable as an HTTP header value.
     fn default() -> Self {
         Self {
+            // SAFETY: DEFAULT_SUBGRAPH_USER_AGENT is a crate-owned static
+            // literal validated by the shared HTTP policy constructor.
             http_policy: HttpClientPolicy::new(DEFAULT_SUBGRAPH_USER_AGENT)
                 .expect("static subgraph user-agent must remain valid"),
         }

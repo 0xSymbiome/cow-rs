@@ -151,6 +151,12 @@ fn schema_resources() -> &'static BTreeMap<String, Value> {
     })
 }
 
+/// Returns the embedded root app-data schemas keyed by version.
+///
+/// # Panics
+///
+/// Panics only if an embedded schema resource URI was not assembled under the
+/// crate-owned schema base URI.
 fn root_schemas() -> &'static BTreeMap<String, Value> {
     ROOT_SCHEMAS.get_or_init(|| {
         let mut schemas = BTreeMap::new();
@@ -171,6 +177,12 @@ fn root_schemas() -> &'static BTreeMap<String, Value> {
     })
 }
 
+/// Recursively collects embedded app-data schema resources.
+///
+/// # Panics
+///
+/// Panics only if `include_dir!` yields an embedded directory entry without a
+/// stable file name.
 fn collect_files(dir: &Dir<'_>, prefix: &str, resources: &mut BTreeMap<String, Value>) {
     for entry in dir.entries() {
         match entry {
@@ -196,6 +208,12 @@ fn collect_files(dir: &Dir<'_>, prefix: &str, resources: &mut BTreeMap<String, V
     }
 }
 
+/// Collects one embedded app-data schema resource.
+///
+/// # Panics
+///
+/// Panics only if `include_dir!` yields a file without a name, or if a committed
+/// embedded schema file stops being valid JSON.
 fn collect_file(file: &File<'_>, prefix: &str, resources: &mut BTreeMap<String, Value>) {
     let file_name = file
         .path()

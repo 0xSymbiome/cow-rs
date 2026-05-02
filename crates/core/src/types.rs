@@ -101,6 +101,8 @@ impl Address {
     #[must_use]
     pub fn from_bytes(bytes: [u8; 20]) -> Self {
         let hex_bytes = hex_encode_20(bytes);
+        // SAFETY: hex_encode_20 emits only the ASCII bytes `0`, `x`, and
+        // lowercase hex digits.
         let value = String::from_utf8(hex_bytes.to_vec())
             .expect("hex_encode_20 only emits valid ASCII hex characters plus the 0x prefix");
         Self(value)
@@ -358,6 +360,8 @@ impl AppDataHash {
     #[must_use]
     pub fn from_bytes(bytes: [u8; 32]) -> Self {
         let hex_bytes = hex_encode_32(bytes);
+        // SAFETY: hex_encode_32 emits only the ASCII bytes `0`, `x`, and
+        // lowercase hex digits.
         let value = String::from_utf8(hex_bytes.to_vec())
             .expect("hex_encode_32 only emits valid ASCII hex characters plus the 0x prefix");
         Self(value)
@@ -471,6 +475,8 @@ impl Hash32 {
     #[must_use]
     pub fn from_bytes(bytes: [u8; 32]) -> Self {
         let hex_bytes = hex_encode_32(bytes);
+        // SAFETY: hex_encode_32 emits only the ASCII bytes `0`, `x`, and
+        // lowercase hex digits.
         let value = String::from_utf8(hex_bytes.to_vec())
             .expect("hex_encode_32 only emits valid ASCII hex characters plus the 0x prefix");
         Self(value)
@@ -593,6 +599,8 @@ impl OrderUid {
     #[must_use]
     pub fn from_bytes(bytes: [u8; 56]) -> Self {
         let hex_bytes = hex_encode_56(bytes);
+        // SAFETY: hex_encode_56 emits only the ASCII bytes `0`, `x`, and
+        // lowercase hex digits.
         let value = String::from_utf8(hex_bytes.to_vec())
             .expect("hex_encode_56 only emits valid ASCII hex characters plus the 0x prefix");
         Self(value)
@@ -1995,11 +2003,19 @@ pub const fn hex_decode_56(hex: &str) -> [u8; 56] {
     out
 }
 
+/// Decodes one ASCII hex nibble for compile-time hex literal helpers.
+///
+/// # Panics
+///
+/// Panics when `c` is not an ASCII hex digit. Public compile-time decoders
+/// document that invalid embedded literals fail during constant evaluation.
 const fn decode_nibble(c: u8) -> u8 {
     match c {
         b'0'..=b'9' => c - b'0',
         b'a'..=b'f' => c - b'a' + 10,
         b'A'..=b'F' => c - b'A' + 10,
+        // SAFETY: this is the deliberate assertion used by the const hex
+        // decoders to reject non-hex crate-owned literals at compile time.
         _ => panic!("hex nibble must be 0-9, a-f, or A-F"),
     }
 }

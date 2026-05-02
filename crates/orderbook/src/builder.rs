@@ -295,10 +295,23 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
     pub fn base_url(self, base_url: impl Into<String>) -> Self {
         let env = self
             .env
+            // SAFETY: this panic documents misuse of the convenience method;
+            // callers can avoid it by setting environment/from_context first.
             .expect("base_url requires environment to be supplied first via `.environment(...)` or `.from_context(...)`");
         self.env_base_url(env, base_url)
     }
 
+    /// Finalizes the builder once a transport has been selected.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when explicit base-URL overrides fail the
+    /// configured external host policy.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the typestate marker invariants are bypassed and the
+    /// chain or environment was not supplied before finalization.
     fn finish(
         self,
         transport: Arc<dyn HttpTransport + Send + Sync>,
@@ -311,9 +324,13 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
 
         let chain = self
             .chain
+            // SAFETY: finish is reached only by typestate build paths that set
+            // the chain marker.
             .expect("typestate guarantees chain id is supplied at build time");
         let env = self
             .env
+            // SAFETY: finish is reached only by typestate build paths that set
+            // the environment marker.
             .expect("typestate guarantees environment is supplied at build time");
         let transport_policy = self.transport_policy.unwrap_or_default();
         let rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
@@ -351,6 +368,9 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportSet> {
         let transport = self
             .transport
             .clone()
+            // SAFETY: this impl is only available for the TransportSet
+            // typestate, so a missing transport means the marker invariant was
+            // bypassed.
             .expect("typestate guarantees a transport is supplied at build time");
         self.finish(transport)
     }
@@ -394,6 +414,8 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
             config = config.with_timeout(timeout);
         }
         let transport = ReqwestTransport::new(config)
+            // SAFETY: the default user-agent comes from a validated static
+            // literal or from an existing HttpClientPolicy.
             .expect("default ReqwestTransport must build with the validated user-agent");
         self.finish(Arc::new(transport))
     }

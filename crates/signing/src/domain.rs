@@ -41,6 +41,9 @@ pub fn get_domain(
         "v2".to_owned(),
         chain_id.into(),
         override_address.unwrap_or_else(|| {
+            // SAFETY: Registry::default parses the build-validated embedded
+            // manifest, which must include settlement addresses for supported
+            // chain/environment pairs.
             Registry::default()
                 .address(ContractId::Settlement, chain_id, env)
                 .expect("canonical settlement address is registered for every supported chain/env")

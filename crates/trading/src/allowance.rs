@@ -6,7 +6,15 @@ use cow_sdk_core::{
 
 use crate::{ApprovalParameters, TradingError};
 
+/// Resolves the canonical vault-relayer address for allowance checks.
+///
+/// # Panics
+///
+/// Panics only if the embedded deployment registry is missing the canonical
+/// vault-relayer entry for a supported chain/environment pair.
 fn resolve_vault_relayer(chain_id: SupportedChainId, env: cow_sdk_core::CowEnv) -> Address {
+    // SAFETY: Registry::default parses the build-validated embedded manifest,
+    // which must include vault-relayer addresses for supported chains.
     Registry::default()
         .address(ContractId::VaultRelayer, chain_id, env)
         .expect("canonical vault-relayer address is registered for every supported chain/env")

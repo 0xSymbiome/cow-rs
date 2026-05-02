@@ -487,6 +487,12 @@ pub(crate) fn protocol_options_for_partial_order(
     options
 }
 
+/// Resolves the settlement address for on-chain helper calls.
+///
+/// # Panics
+///
+/// Panics only if the embedded deployment registry is missing the canonical
+/// settlement entry for a supported chain/environment pair.
 fn resolve_settlement_address(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
@@ -498,12 +504,21 @@ fn resolve_settlement_address(
             let env = options
                 .and_then(|opts| opts.env)
                 .unwrap_or(cow_sdk_core::CowEnv::Prod);
+            // SAFETY: Registry::default parses the build-validated embedded
+            // manifest, which must include settlement addresses for supported
+            // chain/environment pairs.
             Registry::default()
                 .address(ContractId::Settlement, chain_id, env)
                 .expect("canonical settlement address is registered for every supported chain/env")
         })
 }
 
+/// Resolves the `EthFlow` address for on-chain helper calls.
+///
+/// # Panics
+///
+/// Panics only if the embedded deployment registry is missing the canonical
+/// `EthFlow` entry for a supported chain/environment pair.
 fn resolve_eth_flow_address(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
@@ -515,13 +530,24 @@ fn resolve_eth_flow_address(
             let env = options
                 .and_then(|opts| opts.env)
                 .unwrap_or(cow_sdk_core::CowEnv::Prod);
+            // SAFETY: Registry::default parses the build-validated embedded
+            // manifest, which must include EthFlow addresses for supported
+            // chain/environment pairs.
             Registry::default()
                 .address(ContractId::EthFlow, chain_id, env)
                 .expect("canonical EthFlow address is registered for every supported chain/env")
         })
 }
 
+/// Returns the default on-chain helper gas limit as a typed amount.
+///
+/// # Panics
+///
+/// Panics only if the crate-owned decimal gas-limit literal stops fitting the
+/// SDK amount validator.
 fn default_gas_limit() -> Amount {
+    // SAFETY: GAS_LIMIT_DEFAULT is a small static decimal literal that remains
+    // within the supported amount range.
     Amount::new(GAS_LIMIT_DEFAULT.to_string()).expect("static gas limit literal must remain valid")
 }
 

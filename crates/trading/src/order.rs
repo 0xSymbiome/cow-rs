@@ -216,6 +216,8 @@ pub fn get_order_to_sign(
         let clamped_valid_to = now
             .saturating_add(u64::from(valid_for))
             .min(u64::from(MAX_VALID_TO_EPOCH));
+        // SAFETY: clamped_valid_to is explicitly capped at MAX_VALID_TO_EPOCH,
+        // which is a u32 value.
         u32::try_from(clamped_valid_to)
             .expect("validity timestamp is clamped to the supported `u32` range")
     };
@@ -306,6 +308,9 @@ pub async fn calculate_unique_order_id(
         .and_then(|override_map| override_map.get(&u64::from(chain_id)).cloned())
         .unwrap_or_else(|| {
             let env = options.and_then(|opts| opts.env).unwrap_or(CowEnv::Prod);
+            // SAFETY: Registry::default parses the build-validated embedded
+            // manifest, which must include EthFlow addresses for supported
+            // chain/environment pairs.
             Registry::default()
                 .address(ContractId::EthFlow, chain_id, env)
                 .expect("canonical EthFlow address is registered for every supported chain/env")

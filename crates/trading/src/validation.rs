@@ -355,7 +355,15 @@ fn validate_amount(
     Ok(())
 }
 
+/// Returns the native-currency sentinel address used by order validation.
+///
+/// # Panics
+///
+/// Panics only if the shared native-currency sentinel literal stops being a
+/// valid EVM address.
 fn native_sentinel() -> Address {
+    // SAFETY: EVM_NATIVE_CURRENCY_ADDRESS is a crate-owned protocol sentinel
+    // literal validated through the shared Address constructor.
     Address::new(EVM_NATIVE_CURRENCY_ADDRESS)
         .expect("EVM_NATIVE_CURRENCY_ADDRESS must remain a valid address literal")
 }

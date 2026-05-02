@@ -62,9 +62,17 @@ pub struct Registry {
 }
 
 impl Default for Registry {
+    /// Parses the embedded deployment registry manifest.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the embedded registry TOML stops matching the
+    /// build-validated deployment schema.
     fn default() -> Self {
+        // SAFETY: build.rs validates the committed registry manifest before the
+        // crate is compiled.
         Self::from_toml_str(EMBEDDED_REGISTRY_TOML)
-            .expect("embedded registry manifest must be valid — build.rs gates the shape")
+            .expect("embedded registry manifest must be valid - build.rs gates the shape")
     }
 }
 
