@@ -9,7 +9,7 @@ local-dev or fork-specific deployment on top of the default map.
 Every deployed-address lookup in the workspace routes through one
 typed registry:
 
-```rust,ignore
+```rust
 use cow_sdk::contracts::{ContractId, Registry};
 use cow_sdk::prelude::{CowEnv, SupportedChainId};
 
@@ -21,6 +21,11 @@ let settlement = registry
         CowEnv::Prod,
     )
     .expect("settlement is deployed on mainnet");
+
+assert_ne!(
+    settlement.to_string(),
+    "0x0000000000000000000000000000000000000000"
+);
 ```
 
 The backing store is a `BTreeMap<(ContractId, SupportedChainId, CowEnv),
@@ -88,16 +93,33 @@ The manifest is validated twice:
 Consumers that want to drive the registry from their own TOML pipe the
 raw string into `Registry::from_toml_str`:
 
-```rust,ignore
+```rust
 use cow_sdk::contracts::{ContractId, Registry};
 use cow_sdk::prelude::{CowEnv, SupportedChainId};
 
-let raw = std::fs::read_to_string("my-registry.toml")?;
-let registry = Registry::from_toml_str(&raw)?;
-let eth_flow = registry.address(
-    ContractId::EthFlow,
-    SupportedChainId::Gnosis,
-    CowEnv::Prod,
+let raw = r#"
+schema_version = 1
+
+[[entries]]
+contract_id = "EthFlow"
+chain_id = 100
+env = "prod"
+address = "0x40a50cf069e992aa4536211b23f286ef88752187"
+"#;
+
+let registry = Registry::from_toml_str(raw)
+    .expect("custom registry manifest must parse");
+let eth_flow = registry
+    .address(
+        ContractId::EthFlow,
+        SupportedChainId::GnosisChain,
+        CowEnv::Prod,
+    )
+    .expect("eth-flow deployment is present");
+
+assert_ne!(
+    eth_flow.to_string(),
+    "0x0000000000000000000000000000000000000000"
 );
 ```
 
@@ -113,18 +135,28 @@ local-dev settlement contract, a fork-specific deployment, an
 integration-test fixture), compose an override on top of
 `Registry::default()`:
 
-```rust,ignore
+```rust
 use cow_sdk::contracts::{ContractId, Registry};
 use cow_sdk::prelude::{Address, CowEnv, SupportedChainId};
 
 let local = "0x1111111111111111111111111111111111111111"
-    .parse::<Address>()?;
+    .parse::<Address>()
+    .expect("fixture address must parse");
 
 let registry = Registry::default().with_override(
     ContractId::Settlement,
     SupportedChainId::Mainnet,
     CowEnv::Prod,
     local,
+);
+
+assert_eq!(
+    registry.address(
+        ContractId::Settlement,
+        SupportedChainId::Mainnet,
+        CowEnv::Prod,
+    ),
+    Some(local)
 );
 ```
 

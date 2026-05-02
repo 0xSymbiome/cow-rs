@@ -173,7 +173,7 @@ The first functional crate-family release begins at `0.1.0`.
   defaults` section.
 - `build_app_data` stamps a Rust-identified default
   `metadata.utm` attribution block when the caller does not
-  supply `metadata.utm`, carrying `utmSource = "cowmunity"`,
+  supply `metadata.utm`, carrying `utmSource = "cow-sdk"`,
   `utmMedium = "cow-rs@<crate-version>"`,
   `utmCampaign = "developer-cohort"`, `utmContent = ""`, and
   `utmTerm = "rs"` so downstream analytics can attribute
