@@ -10,7 +10,7 @@ excluded from this version history.
 
 The first functional crate-family release begins at `0.1.0`.
 
-## [0.1.0] — 2026-04-29
+## [0.1.0] — 2026-05-02
 
 ### Added
 
@@ -515,6 +515,20 @@ The first functional crate-family release begins at `0.1.0`.
   such variant to `ErrorClass::Cancelled` exhaustively.
   `docs/architecture.md` records the cancellation contract under a
   dedicated Cancellation subsection.
+- `cow_sdk_signing` exports the public `Clock` trait, the
+  `SystemClock` default implementation, and
+  `InMemoryEip1271VerificationCache::with_clock(ttl, capacity, clock)`
+  constructor so deterministic-time tests and embedders can drive cache
+  expiry without sleeping. Native builds use `std::time::Instant`; WASM
+  builds use `web_time::Instant`.
+- `cow_sdk_trading::deployment_address_hash_input` is publicly re-exported
+  for consumers that build EthFlow or pre-sign deployment-derived address
+  hashes outside the SDK.
+- Every `*_with_cancellation` partner method on `OrderBookApi`,
+  `SubgraphApi`, and `TradingSdk` emits a structured `tracing::debug`
+  event when cancellation is observed at the call-site combinator.
+- `cow_sdk_core::IpfsConfig` carries a redacted `Display` implementation
+  that omits credential-bearing query strings from observability sinks.
 
 ### Changed
 
@@ -535,6 +549,21 @@ The first functional crate-family release begins at `0.1.0`.
 - Order-book retry instrumentation now emits the documented `quote_id`,
   `attempts`, and `status` tracing fields at the call sites advertised by
   the field registry.
+- Transport diagnostic surfaces (`Display`, `Debug`, and error text) redact
+  URL `userinfo` before emission. `RedactedUrlMaps` and
+  `RedactedOptionalUrlMaps` also derive `Hash`, allowing sanitized URL maps
+  to serve as cache keys without exposing credentials.
+- Orderbook DTOs `TotalSurplus.total_surplus` and
+  `SolverExecution.executed_*_amount` are now `Option<Amount>` so
+  partially-settled auction responses can represent absent solver-execution
+  data without coercing it into a concrete amount.
+- `cow_sdk_subgraph::SubgraphGraphQlError` now carries GraphQL
+  `extensions` data when the upstream subgraph emits it.
+- The subgraph wire boundary rejects non-finite scalar literals (`NaN`,
+  `Infinity`, and `-Infinity`) with a typed `SubgraphError` instead of
+  silently coercing them to default values.
+- `cow_sdk_browser_wallet::Origin::new` tightens accepted schemes and
+  rejects non-authority schemes such as `data:` and `blob:`.
 
 ### Fixed
 
@@ -661,6 +690,17 @@ The first functional crate-family release begins at `0.1.0`.
   (`… rejected by the user (4001): …`) in addition to the JSON
   `"code": 4001` shape, so rejected typed-data signing now renders the
   `EIP-1193 4001` label consistently across Chromium and Firefox.
+- `cow_sdk_core::Amount::checked_mul` returns `None` on overflow instead of
+  panicking, so callers that branch on checked multiplication receive the
+  same fallible contract for large products as for other out-of-range amount
+  operations.
+- `cow_sdk_trading::get_order_to_sign` ignores zero-address receivers instead
+  of serializing them as an explicit `0x0000…` recipient, matching the
+  upstream behavior where a zero-address receiver means "no override."
+- `cow_sdk_signing::InMemoryEip1271VerificationCache` no longer caches
+  transient verification errors. Only successful verification and
+  `Eip1271MagicValueMismatch` outcomes are stored; every other
+  `ContractsError` variant re-checks the chain on the next call.
 
 ### Security
 
@@ -1469,14 +1509,17 @@ The first functional crate-family release begins at `0.1.0`.
   2026-04-29. `cow-sdk` had seven producer-path updates requiring a parity
   refresh plus three test-only changes, `services` had two producer-path
   updates requiring a parity refresh, and `contracts` had no drift.
-- Refreshed the source-lock to `cow-sdk @ 00c3dbd4`,
-  `contracts @ c94c595a`, and `services @ bf405486`; re-vendored the
-  services OpenAPI, whose covered DTO inventory remained unchanged.
+- Refreshed `parity/source-lock.yaml` to the current upstream HEADs for
+  `cowprotocol/cow-sdk`, `cowprotocol/contracts`, and
+  `cowprotocol/services`; regenerated all parity fixtures and re-vendored the
+  services OpenAPI against the committed source-lock. The source-lock file is
+  the authoritative record for the exact upstream pins.
 
 ### OpenAPI vendoring
 
-- The vendored services OpenAPI remains pinned to `services @ bf405486` and
-  the covered orderbook DTO inventory remains unchanged.
+- The vendored services OpenAPI remains aligned with the source-lock-pinned
+  services checkout, and the covered orderbook DTO inventory remains
+  unchanged.
 
 ### Deployment provenance refreshed
 
@@ -1492,6 +1535,25 @@ The first functional crate-family release begins at `0.1.0`.
   `cargo-deny`, `cargo-audit`, and duplicate-version posture.
 - Added `docs/audit/wasm-browser-runner-determinism-audit.md` for the pinned
   browser runner contract used by WASM validation.
+- Refreshed `docs/audit/contract-bindings-parity-audit.md` for vault
+  role-hash parity and forbidden interaction target coverage.
+- Refreshed `docs/audit/eip1271-verification-cache-audit.md` for the
+  non-cacheable error matrix, clock injection, and TTL boundary tests.
+- Refreshed `docs/audit/cooperative-cancellation-contract-audit.md` for the
+  cancellation composition contract across `OrderBookApi`, `SubgraphApi`,
+  `TradingSdk`, and the retry/backoff boundary.
+- Refreshed `docs/audit/trading-order-bounds-validator-audit.md` for the
+  monotonic-window property test, `u32::MAX` boundary coverage,
+  `fuzz_order_bounds_validator` corpus, and same-token policy mirror.
+- Refreshed `docs/audit/trading-order-construction-integrity-audit.md` for
+  the parameter-builder same-token policy mirror.
+- Refreshed `docs/audit/wire-dto-coverage-audit.md` for OpenAPI validator
+  self-test CI wiring.
+- Refreshed `docs/audit/source-lock-provenance-audit.md` for schema-v3
+  fixture tests and refreshed pin authority.
+- Refreshed `docs/audit/panic-free-public-surface-audit.md` for the
+  item-level panic policy gate that enforces ADR 0033 `# Panics` rustdoc and
+  `// SAFETY:` comments on allowlisted panic sites.
 
 ### WASM runner
 
@@ -1578,7 +1640,32 @@ The first functional crate-family release begins at `0.1.0`.
 - `TradingSdk::new` and `TradingSdk::new_partial` have been removed before the
   first functional release. Consumers must use `TradingSdkBuilder::ready`,
   `TradingSdkBuilder::helper_only`, or the fluent typestate builder terminals.
+- `cow_sdk_contracts::SettlementEncoder::encode_interaction` now returns
+  `Result<…, ContractsError>`. Settlement domains registered with the
+  canonical CoW Protocol registry reject interactions whose target equals the
+  paired vault-relayer address per ADR 0034, so call sites must propagate or
+  intentionally handle the new `Result`.
+- `cow_sdk_contracts::ContractsError` gains the
+  `ForbiddenInteractionTarget { target: Address }` variant for the settlement
+  interaction rejection above. The enum remains `#[non_exhaustive]`, so
+  existing exhaustive matches should keep their wildcard fallback.
+- `cow_sdk_contracts::SettlementEncoder::encoded_setup` now returns
+  `Result<…, ContractsError>` to propagate the same forbidden-target check
+  applied by `encode_interaction`.
+- `cow_sdk_trading` validator and parameter-builder semantics now mirror
+  services `SameTokensPolicy::AllowSell`: sell-side same-token orders and
+  sell-side WETH-paired-with-native-sentinel orders are accepted locally,
+  while buy-side same-token and buy-side WETH-native-sentinel orders still
+  surface
+  `TradingError::ClientRejected(ClientRejection::SameBuyAndSellToken { token })`.
+  The typed variant shape is unchanged; only the call-site predicate broadens
+  to honor `OrderKind`.
+- `cow_sdk_transport_wasm::FetchTransport` configured `timeout: Duration` now
+  bounds the full request-response lifecycle, including
+  `response.text().await`. Browser consumers that relied on the earlier
+  header-arrival-only timeout behavior should review their timeout settings.
 
 ### MSRV
 
-- Public MSRV remains Rust `1.94.0`.
+- Public MSRV remains Rust `1.94.0`. Contributor toolchains are pinned to
+  Rust `1.94.1` in `rust-toolchain.toml`.
