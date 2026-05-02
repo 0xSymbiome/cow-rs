@@ -103,19 +103,19 @@
     },
     {
       "repo": "services",
-      "commit": "bf40548684828ad72c1e10fbe8fe3467c90eba45",
+      "commit": "0720b9bc15138ecc362078f505d0e3ba1c7b9883",
       "path": "crates/orderbook/openapi.yml",
       "anchors": []
     },
     {
       "repo": "services",
-      "commit": "bf40548684828ad72c1e10fbe8fe3467c90eba45",
+      "commit": "0720b9bc15138ecc362078f505d0e3ba1c7b9883",
       "path": "crates/shared/src/order_validation.rs",
       "anchors": []
     },
     {
       "repo": "services",
-      "commit": "bf40548684828ad72c1e10fbe8fe3467c90eba45",
+      "commit": "0720b9bc15138ecc362078f505d0e3ba1c7b9883",
       "path": "crates/orderbook/src/app_data.rs",
       "anchors": [
         "Registry",

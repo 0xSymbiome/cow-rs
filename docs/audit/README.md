@@ -99,7 +99,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and lifecycle preflight authority | Source-lock commit pins, upstream freshness disclosure, publication preflight metadata, historical snapshot scope, and refresh ownership | Current | 2026-04-30 |
+| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and lifecycle preflight authority | Source-lock commit pins, upstream freshness disclosure, publication preflight metadata, historical snapshot scope, and refresh ownership | Current | 2026-05-02 |
 
 ## Orderbook Wire DTO Coverage
 

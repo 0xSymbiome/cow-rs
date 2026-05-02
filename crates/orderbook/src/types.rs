@@ -1820,6 +1820,25 @@ pub enum CompetitionOrderStatusKind {
     Cancelled,
 }
 
+/// Executed sell and buy amounts for a solver path.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+pub struct ExecutedAmounts {
+    /// Executed sell amount.
+    pub sell: Amount,
+    /// Executed buy amount.
+    pub buy: Amount,
+}
+
+impl ExecutedAmounts {
+    /// Creates executed-amounts data for a solver path.
+    #[must_use]
+    pub const fn new(sell: Amount, buy: Amount) -> Self {
+        Self { sell, buy }
+    }
+}
+
 /// Solver execution entry nested inside competition-status responses.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -1827,12 +1846,9 @@ pub enum CompetitionOrderStatusKind {
 pub struct SolverExecution {
     /// Solver identifier or address rendered by the API.
     pub solver: String,
-    /// Executed sell amount for this solver path, when present.
+    /// Executed amounts for this solver path, when present.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub executed_sell_amount: Option<Amount>,
-    /// Executed buy amount for this solver path, when present.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub executed_buy_amount: Option<Amount>,
+    pub executed_amounts: Option<ExecutedAmounts>,
 }
 
 impl SolverExecution {
@@ -1841,22 +1857,14 @@ impl SolverExecution {
     pub fn new(solver: impl Into<String>) -> Self {
         Self {
             solver: solver.into(),
-            executed_sell_amount: None,
-            executed_buy_amount: None,
+            executed_amounts: None,
         }
     }
 
-    /// Returns a copy with an explicit executed sell amount.
+    /// Returns a copy with explicit executed amounts.
     #[must_use]
-    pub fn with_executed_sell_amount(mut self, amount: Amount) -> Self {
-        self.executed_sell_amount = Some(amount);
-        self
-    }
-
-    /// Returns a copy with an explicit executed buy amount.
-    #[must_use]
-    pub fn with_executed_buy_amount(mut self, amount: Amount) -> Self {
-        self.executed_buy_amount = Some(amount);
+    pub fn with_executed_amounts(mut self, amounts: ExecutedAmounts) -> Self {
+        self.executed_amounts = Some(amounts);
         self
     }
 }

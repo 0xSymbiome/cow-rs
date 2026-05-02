@@ -113,7 +113,7 @@ dtos:
     fixtures:
       - parity/fixtures/orderbook/total_surplus.json
 
-  - schema: components.schemas.CompetitionOrderStatus.value.items
+  - schema: components.schemas.CompetitionOrderStatus.properties.value.items
     rust_type: cow_sdk_orderbook::SolverExecution
     inventory: parity/openapi/solver-execution-inventory.yaml
     required_fields:

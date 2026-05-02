@@ -69,7 +69,7 @@ fn promoted_amount_dtos_roundtrip_byte_identical() {
     );
 
     assert_wire_roundtrip::<CompetitionOrderStatus>(
-        r#"{"type":"solved","value":[{"solver":"solver-a","executedSellAmount":"100000000000000000","executedBuyAmount":"200000000000000000"}]}"#,
+        r#"{"type":"solved","value":[{"solver":"solver-a","executedAmounts":{"sell":"100000000000000000","buy":"200000000000000000"}}]}"#,
     );
 }
 

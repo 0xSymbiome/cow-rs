@@ -1,9 +1,9 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-02
 Owning surface: source-lock provenance and lifecycle preflight authority
-Refresh trigger: Changes to `parity/source-lock.yaml`, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
+Refresh trigger: Changes to `parity/source-lock.yaml`, vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
 - [ADR 0030](../adr/0030-workspace-locked-versioning-tag-baseline.md)
@@ -34,7 +34,7 @@ or changing SDK behavior.
 | --- | --- | --- |
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
-| Refresh outcome | Source-lock pins preserve the 2026-04-29 refresh baseline, and current upstream freshness is disclosed separately | Conforms |
+| Refresh outcome | Source-lock pins align with the 2026-05-02 upstream HEAD comparison, and dependent parity evidence is refreshed in lockstep | Conforms |
 | Local-root warnings | Reviewer-supplied upstream roots are checked for independent git top-levels, expected remotes, and pinned `HEAD` commits without making repo-local validation depend on those roots | Conforms |
 | Publication preflight | Source-lock validation metadata lists the complete package-family dry-run contract with local patches for unpublished intra-family crates | Conforms |
 | Schema enforcement | Unsupported source-lock schema versions fail closed with a stable diagnostic, while schema version 3 is accepted | Conforms |
@@ -51,7 +51,7 @@ fixtures and source-derived evidence. It currently pins:
 
 - `cow-sdk` at `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d`
 - `contracts` at `c94c595a791681cf8ba7495117dcde397b932885`
-- `services` at `bf40548684828ad72c1e10fbe8fe3467c90eba45`
+- `services` at `0720b9bc15138ecc362078f505d0e3ba1c7b9883`
 
 The lock is intentionally commit-based rather than branch-based. A release
 claim that depends on upstream freshness has to compare these pins against the
@@ -59,18 +59,17 @@ upstream repositories before treating the evidence as current.
 
 ### Freshness State
 
-Upstream HEADs were checked on 2026-05-01:
+Upstream HEADs were checked on 2026-05-02:
 
 | Repository | Source-lock pin | Upstream HEAD | State |
 | --- | --- | --- | --- |
 | `cow-sdk` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | Current |
 | `contracts` | `c94c595a791681cf8ba7495117dcde397b932885` | `c94c595a791681cf8ba7495117dcde397b932885` | Current |
-| `services` | `bf40548684828ad72c1e10fbe8fe3467c90eba45` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | Stale |
+| `services` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | Current |
 
-The `cow-sdk` and `contracts` pins are aligned with upstream HEAD. The
-`services` pin remains the committed source-lock baseline from the 2026-04-29
-refresh and must be rechecked or refreshed before any release claim depends on
-current services HEAD freshness.
+All three pins are aligned with upstream HEAD for this review. Release claims
+that depend on upstream freshness still have to rerun the comparison before
+publication if any upstream repository moves again.
 
 ### Local-Root Warning Command
 
@@ -85,11 +84,13 @@ root choices visible before reviewers rely on them.
 
 ### Refresh Outcome
 
-The 2026-04-29 upstream comparison found producer-path updates in `cow-sdk`
-and `services`, plus no producer-path drift in `contracts`. The source-lock was
-refreshed instead of retained at the older pins, fixture provenance was aligned
-to the refreshed commits, and the services OpenAPI was re-vendored. The covered
-orderbook DTO inventory remained unchanged after the OpenAPI refresh.
+The 2026-05-02 upstream comparison found `services` producer-path drift in
+`crates/shared/src/order_validation.rs` and no producer-path drift in
+`cow-sdk`, `contracts`, `crates/orderbook/openapi.yml`, or
+`crates/orderbook/src/app_data.rs`. The source-lock was refreshed to the
+current services HEAD, fixture provenance was aligned to the refreshed commit,
+the services OpenAPI was re-vendored, and the solver-execution DTO coverage was
+aligned with the committed OpenAPI `executedAmounts` payload shape.
 
 ### Publication Preflight Metadata
 
@@ -146,6 +147,10 @@ contract without exposing maintainer-only path names.
 Primary implementation points:
 
 - `parity/source-lock.yaml`
+- `parity/openapi/coverage.yaml`
+- `parity/openapi/solver-execution-inventory.yaml`
+- `parity/fixtures/orderbook/solver_execution.json`
+- `crates/orderbook/src/types.rs`
 - `.cargo/config.toml`
 - `scripts/parity-maintainer/src/main.rs`
 - `scripts/policy-maintainer/src/check_source_lock_roots.rs`
@@ -164,6 +169,8 @@ Primary regression coverage:
 - `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v2_is_rejected_with_stable_diagnostic`
 - `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v3_is_accepted`
 - `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v4_is_rejected_with_stable_diagnostic`
+- `crates/orderbook/tests/openapi_dto_coverage.rs::openapi_coverage_manifest_roundtrips_required_orderbook_dtos`
+- `crates/orderbook/tests/wire_contract.rs::promoted_amount_dtos_roundtrip_byte_identical`
 - `crates/sdk/tests/cross_fixture_amount_roundtrip.rs::cross_fixture_amount_roundtrip`
 
 Validation surface:

@@ -91,7 +91,7 @@ at a different commit than the source-lock pin.
 
 - `cow-sdk`: `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d`
 - `contracts`: `c94c595a791681cf8ba7495117dcde397b932885`
-- `services`: `bf40548684828ad72c1e10fbe8fe3467c90eba45`
+- `services`: `0720b9bc15138ecc362078f505d0e3ba1c7b9883`
 
 ## Source Ownership
 

@@ -1,6 +1,6 @@
 # Validation Evidence - cow-rs 0.1.0
 
-Generated: 2026-04-29T21:20:46Z
+Generated: 2026-05-02T14:29:31Z
 Workflow: release-readiness
 Workflow file: .github/workflows/release-readiness.yml
 Workflow run: pending final run
@@ -53,13 +53,13 @@ Generated at: 2026-04-29T00:00:00Z
 | --- | --- | --- | --- |
 | contracts | https://github.com/cowprotocol/contracts.git | c94c595a791681cf8ba7495117dcde397b932885 | primary |
 | cow-sdk | https://github.com/cowprotocol/cow-sdk.git | 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d | primary |
-| services | https://github.com/cowprotocol/services.git | bf40548684828ad72c1e10fbe8fe3467c90eba45 | reference-only |
+| services | https://github.com/cowprotocol/services.git | 0720b9bc15138ecc362078f505d0e3ba1c7b9883 | reference-only |
 
 ## OpenAPI Vendoring
 
 | Source | Path | Pinned commit | Generated at |
 | --- | --- | --- | --- |
-| cowprotocol/services | crates/orderbook/openapi.yml | bf40548684828ad72c1e10fbe8fe3467c90eba45 | 2026-04-29T16:55:47Z |
+| cowprotocol/services | crates/orderbook/openapi.yml | 0720b9bc15138ecc362078f505d0e3ba1c7b9883 | 2026-05-02T14:24:41Z |
 
 ## WASM Runner
 

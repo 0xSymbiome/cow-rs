@@ -26,11 +26,11 @@ fn fixture_args(temp: &TempDir) -> Args {
 fn write_fixtures(temp: &TempDir) {
     temp.write(
         "parity/source-lock.yaml",
-        "meta:\n  generated_at_utc: 2026-04-29T00:00:00Z\nrepositories:\n  - id: services\n    remote: https://github.com/cowprotocol/services.git\n    commit: bf40548684828ad72c1e10fbe8fe3467c90eba45\n    role: reference-only\n  - id: cow-sdk\n    remote: https://github.com/cowprotocol/cow-sdk.git\n    commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d\n    role: primary\n",
+        "meta:\n  generated_at_utc: 2026-04-29T00:00:00Z\nrepositories:\n  - id: services\n    remote: https://github.com/cowprotocol/services.git\n    commit: 0720b9bc15138ecc362078f505d0e3ba1c7b9883\n    role: reference-only\n  - id: cow-sdk\n    remote: https://github.com/cowprotocol/cow-sdk.git\n    commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d\n    role: primary\n",
     );
     temp.write(
         "parity/openapi/services-orderbook.yml",
-        "# Vendored from cowprotocol/services @ bf40548684828ad72c1e10fbe8fe3467c90eba45\n# Path: crates/orderbook/openapi.yml\n# Generated: 2026-04-29T16:55:47Z\nopenapi: 3.0.3\n",
+        "# Vendored from cowprotocol/services @ 0720b9bc15138ecc362078f505d0e3ba1c7b9883\n# Path: crates/orderbook/openapi.yml\n# Generated: 2026-05-02T14:24:41Z\nopenapi: 3.0.3\n",
     );
     temp.write(
         ".github/config/wasm-test-versions.yaml",

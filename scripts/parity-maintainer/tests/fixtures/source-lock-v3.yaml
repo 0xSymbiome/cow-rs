@@ -144,7 +144,7 @@ repositories:
   - test/GPv2Settlement/Swap/Swap.t.sol
 - id: services
   remote: https://github.com/cowprotocol/services.git
-  commit: bf40548684828ad72c1e10fbe8fe3467c90eba45
+  commit: 0720b9bc15138ecc362078f505d0e3ba1c7b9883
   role: reference-only
   optional_local_path: <services-checkout>
   producer_paths:

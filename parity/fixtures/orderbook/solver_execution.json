@@ -1,5 +1,7 @@
 {
   "solver": "solver-a",
-  "executedSellAmount": "100000000000000000",
-  "executedBuyAmount": "200000000000000000"
+  "executedAmounts": {
+    "sell": "100000000000000000",
+    "buy": "200000000000000000"
+  }
 }
