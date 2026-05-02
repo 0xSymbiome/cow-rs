@@ -1,5 +1,5 @@
 version: 1
-generated_at_utc: 2026-05-02T14:29:31Z
+generated_at_utc: 2026-05-02T20:10:47Z
 workflow:
   name: release-readiness
   file: .github/workflows/release-readiness.yml
@@ -18,6 +18,10 @@ lanes:
     status: pass
     step_id: quality-gate/audit
     notes: cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436
+  - lane: audit-index-agreement
+    status: pass
+    step_id: quality-gate/audit-index-agreement
+    notes: scripts/check-audit-index-agreement.sh validates docs/audit/README.md against every audit banner
   - lane: cargo-semver-checks
     status: pass
     step_id: quality-gate/cargo-semver-checks
@@ -106,6 +110,10 @@ lanes:
     status: pass
     step_id: release-readiness/source-lock-freshness
     notes: parity-maintainer check-freshness report-only lane
+  - lane: supported-chains-doc-table
+    status: pass
+    step_id: quality-gate/supported-chains-doc-table
+    notes: cargo test --workspace --test supported_chains_doc_table
   - lane: sbom
     status: pass
     step_id: release-readiness/sbom

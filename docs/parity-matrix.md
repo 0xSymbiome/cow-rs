@@ -8,6 +8,42 @@ Authority order:
 4. `docs/release-checklist.md`
 5. committed parity fixtures and executable tests
 
+## Supported Networks
+
+The Rust SDK supports the following CoW Protocol chains. Each entry maps to a
+`SupportedChainId` variant in `cow_sdk_core::config`. Endpoint resolution,
+deployed-contract addresses, and chain-specific defaults all bind through the
+registry at `crates/core/src/config.rs::Registry`.
+
+| Chain | `SupportedChainId` variant | Numeric chain id | Environment |
+| --- | --- | ---: | --- |
+| Ethereum Mainnet | `Mainnet` | 1 | Prod |
+| BNB Smart Chain | `Bnb` | 56 | Prod |
+| Gnosis Chain | `GnosisChain` | 100 | Prod |
+| Polygon PoS | `Polygon` | 137 | Prod |
+| Base | `Base` | 8453 | Prod |
+| Plasma | `Plasma` | 9745 | Prod |
+| Arbitrum One | `ArbitrumOne` | 42161 | Prod |
+| Avalanche C-Chain | `Avalanche` | 43114 | Prod |
+| Ink | `Ink` | 57073 | Prod |
+| Linea | `Linea` | 59144 | Prod |
+| Sepolia (Ethereum testnet) | `Sepolia` | 11155111 | Staging |
+
+The "Environment" column distinguishes production deployments from
+staging/test deployments. Endpoint discovery via
+`OrderBookApi::new(env, chain_id)` and `SubgraphApi::new(env, chain_id)` both
+honor this distinction.
+
+Supported-chain coverage matches the canonical pinned upstream `cow-sdk`
+package at the SHA in
+`parity/source-lock.yaml::repositories[id=cow-sdk].commit`. Future chain
+additions track upstream and require a coordinated update to
+`crates/core/src/config.rs` plus the registry tests at
+`crates/core/tests/config_contract.rs`.
+
+Reference: `crates/core/src/config.rs` (the `SupportedChainId` enum
+definition).
+
 ## Surface Matrix
 
 | Surface | Primary upstream producers | Rust crates | Committed authority | Primary evidence |

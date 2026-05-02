@@ -9,6 +9,7 @@ publish = false
 workspace = true
 
 [dev-dependencies]
+cow-sdk-core = { path = "../crates/core", version = "0.1.0" }
 toml.workspace = true
 
 [[test]]
@@ -26,3 +27,11 @@ path = "dependency_default_features_audit.rs"
 [[test]]
 name = "alloy_provider_invariant_covers_every_published_crate"
 path = "alloy_provider_invariant_covers_every_published_crate.rs"
+
+[[test]]
+name = "services_drift_report_schema"
+path = "services_drift_report_schema.rs"
+
+[[test]]
+name = "supported_chains_doc_table"
+path = "supported_chains_doc_table.rs"

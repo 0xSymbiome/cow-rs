@@ -1,6 +1,6 @@
 # Validation Evidence - cow-rs 0.1.0
 
-Generated: 2026-05-02T14:29:31Z
+Generated: 2026-05-02T20:10:47Z
 Workflow: release-readiness
 Workflow file: .github/workflows/release-readiness.yml
 Workflow run: pending final run
@@ -14,6 +14,7 @@ Release classification: first_functional (semver-checks: skip)
 | adr-coverage | pass | quality-gate/adr-coverage | policy-maintainer check-adr-coverage --mode blocking |
 | alloy-provider-invariant | pass | quality-gate/alloy-provider-invariant | policy-maintainer check-alloy-provider-invariant |
 | audit | pass | quality-gate/audit | cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436 |
+| audit-index-agreement | pass | quality-gate/audit-index-agreement | scripts/check-audit-index-agreement.sh validates docs/audit/README.md against every audit banner |
 | cargo-semver-checks | pass | quality-gate/cargo-semver-checks | first functional release classified with semver-checks skip |
 | chain-patch-eligibility | pass | quality-gate/chain-patch-eligibility | policy-maintainer check-chain-patch-eligibility |
 | clippy | pass | quality-gate/clippy | cargo clippy --workspace --all-targets --all-features -- -D warnings |
@@ -37,6 +38,7 @@ Release classification: first_functional (semver-checks: skip)
 | registry-confirm | pass | release-readiness/registry-confirm | validation-smoke registry-confirm --mode release --check for all supported release chains |
 | sbom | pass | release-readiness/sbom | cargo cyclonedx --format json --all --override-filename cow-rs-sbom |
 | source-lock-freshness | pass | release-readiness/source-lock-freshness | parity-maintainer check-freshness report-only lane |
+| supported-chains-doc-table | pass | quality-gate/supported-chains-doc-table | cargo test --workspace --test supported_chains_doc_table |
 | test | pass | quality-gate/test | cargo test --workspace --all-features |
 | typos | pass | quality-gate/typos | typos --config .github/config/typos.toml |
 | validation-evidence | pass | release-readiness/validation-evidence | policy-maintainer generate-validation-evidence --release-version 0.1.0 --check |
