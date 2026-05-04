@@ -1,9 +1,9 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-01
-Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, and app-data
-Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without a redacting storage type
+Last reviewed: 2026-05-04
+Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, contracts, signing, trading, app-data, and the SDK facade
+Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without a redacting storage type
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
@@ -19,6 +19,7 @@ This audit covers:
 - `cow-sdk-subgraph::SubgraphApiBuilder` partner API-key storage
 - credential-bearing URL fields in core, orderbook, subgraph, browser-wallet, and app-data
 - sanitized host-policy failures for orderbook and subgraph endpoint overrides
+- public error diagnostics that carry provider, signer, RPC, transport, response-body, orderbook-rejection, or caller-input message payloads
 - `cow-sdk-app-data::IpfsUploadTransport::post_json` header typing and the Pinata header assembly path
 
 It does not cover unrelated transport error redaction or credential handling outside these named boundaries.
@@ -31,6 +32,7 @@ It does not cover unrelated transport error redaction or credential handling out
 | Subgraph builder | `SubgraphApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
 | URL configuration | Credential-bearing URL values use redacting storage types for debug, display, and serialization, and unwrap only at dispatch seams | Conforms |
 | Host-policy errors | Orderbook and subgraph host-policy failures retain only a redacted host component and never serialize raw URL credentials, paths, queries, or fragments | Conforms |
+| Public error diagnostics | Provider, signer, RPC, transport, response-body, subgraph context, orderbook API, orderbook rejection, and facade error payloads wrap secret-bearing messages in `Redacted<T>` or sanitize protocol identifiers before rendering, and redact credential-bearing diagnostics across `Debug`, `Display`, and existing `Serialize` surfaces | Conforms |
 | Pinata upload trait | `IpfsUploadTransport::post_json` carries `Redacted<String>` header values and the Pinata header vector stays redacted under `Debug` | Conforms |
 
 ## Current Contract
@@ -71,6 +73,22 @@ to a `UrlParseFailureClass` and unsupported schemes use sanitized static
 labels. Error debug, display, and serialized output therefore cannot echo URL
 credentials, paths, query strings, or fragments.
 
+### Public Error Diagnostics
+
+Public error variants that can carry provider, signer, RPC, transport,
+response-body, orderbook-rejection, subgraph-context, browser-wallet, or
+caller-input message payloads use `Redacted<String>`,
+`Redacted<serde_json::Value>`, or `Redacted<ResponseBody>` for the
+credential-bearing field. The wrapper keeps explicit inner access available
+for callers that intentionally need the underlying diagnostic, while
+`Debug`, `Display`, and existing `Serialize` implementations emit the shared
+redaction marker. Typed diagnostics such as chain IDs, schema versions,
+environment names, HTTP status codes, field names, validation classes, and
+sanitized orderbook rejection tags remain visible so errors stay actionable.
+The SDK facade regression test constructs every reviewed public error family
+with URL, bearer-token, private-key-shaped, and PEM-shaped payloads and
+verifies no secret substring appears in public renderings.
+
 ### Pinata Upload Boundary
 
 `crates/app-data/src/pinning.rs` widens
@@ -87,11 +105,23 @@ Primary implementation points:
 - `crates/orderbook/src/builder.rs`
 - `crates/core/src/config.rs`
 - `crates/core/src/redaction.rs`
+- `crates/core/src/errors.rs`
+- `crates/core/src/transport/error.rs`
 - `crates/subgraph/src/builder.rs`
 - `crates/subgraph/src/api.rs`
+- `crates/subgraph/src/error.rs`
 - `crates/browser-wallet/src/wallet.rs`
+- `crates/browser-wallet/src/error.rs`
+- `crates/contracts/src/errors.rs`
+- `crates/signing/src/errors.rs`
+- `crates/trading/src/error.rs`
+- `crates/orderbook/src/error.rs`
+- `crates/orderbook/src/rejection.rs`
+- `crates/orderbook/src/request.rs`
 - `crates/app-data/src/types.rs`
+- `crates/app-data/src/errors.rs`
 - `crates/app-data/src/pinning.rs`
+- `crates/sdk/src/lib.rs`
 
 Primary regression coverage:
 
@@ -104,6 +134,7 @@ Primary regression coverage:
 - `crates/app-data/tests/ipfs_config_redaction_contract.rs`
 - `crates/app-data/tests/pinning_contract.rs::pinning_headers_debug_redacts_secret_bytes`
 - `crates/app-data/tests/pinning_contract.rs::pinning_config_display_redacts_secret_bytes`
+- `crates/sdk/tests/error_redaction_contract.rs`
 - `crates/core/tests/config_contract.rs::external_host_policy_accepts_canonical_and_explicit_hosts_only`
 - `crates/orderbook/tests/host_policy_contract.rs`
 - `crates/subgraph/tests/host_policy_contract.rs`
@@ -122,5 +153,7 @@ cargo test -p cow-sdk-subgraph --test host_policy_contract
 cargo test -p cow-sdk-browser-wallet --test wallet_contract
 cargo test -p cow-sdk-app-data --test ipfs_config_redaction_contract
 cargo test -p cow-sdk-app-data --test pinning_contract
+cargo test -p cow-sdk --test error_redaction_contract
+cargo test -p cow-sdk --test error_redaction_contract --all-features
 cargo test --workspace --all-features
 ```

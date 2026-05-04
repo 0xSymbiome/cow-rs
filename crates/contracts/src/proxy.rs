@@ -137,7 +137,7 @@ where
         .get_storage_at(proxy, slot.as_hex_str())
         .map_err(|error| ContractsError::Provider {
             operation: "get_storage_at",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })?;
     decode_storage_address(word.as_str())
 }

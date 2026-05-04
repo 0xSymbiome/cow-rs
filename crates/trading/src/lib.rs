@@ -44,7 +44,7 @@ pub use allowance::{
 };
 pub use cache::{InMemoryQuoteCache, NoopQuoteCache, QuoteCache, QuoteCacheKey};
 pub use cancel::{off_chain_cancel_order, off_chain_cancel_order_async};
-pub use error::TradingError;
+pub use error::{OrderbookContextValue, TradingError};
 pub use onchain::{
     EthFlowTransaction, cancel_order_onchain, cancel_order_onchain_async, get_eth_flow_transaction,
     get_eth_flow_transaction_async, get_pre_sign_transaction, get_pre_sign_transaction_async,

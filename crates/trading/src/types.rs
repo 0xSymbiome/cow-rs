@@ -15,7 +15,7 @@ use cow_sdk_orderbook::{
 };
 use cow_sdk_signing::OrderTypedData;
 
-use crate::TradingError;
+use crate::{OrderbookContextValue, TradingError};
 
 const fn default_sell_token_source() -> SellTokenSource {
     SellTokenSource::Erc20
@@ -1381,8 +1381,8 @@ where
     {
         return Err(TradingError::InjectedOrderbookContextConflict {
             field: "chainId",
-            requested: u64::from(chain_id).to_string(),
-            configured: u64::from(context.chain_id).to_string(),
+            requested: OrderbookContextValue::ChainId(u64::from(chain_id)),
+            configured: OrderbookContextValue::ChainId(u64::from(context.chain_id)),
         });
     }
 
@@ -1403,8 +1403,8 @@ where
     {
         return Err(TradingError::InjectedOrderbookContextConflict {
             field: "env",
-            requested: env.as_str().to_owned(),
-            configured: context.env.as_str().to_owned(),
+            requested: OrderbookContextValue::Env(env),
+            configured: OrderbookContextValue::Env(context.env),
         });
     }
 
@@ -1438,15 +1438,15 @@ where
     if quoted_binding.chain_id != submission_binding.chain_id {
         return Err(TradingError::QuoteOrderbookBindingConflict {
             field: "chainId",
-            quoted: u64::from(quoted_binding.chain_id).to_string(),
-            submitted: u64::from(submission_binding.chain_id).to_string(),
+            quoted: OrderbookContextValue::ChainId(u64::from(quoted_binding.chain_id)),
+            submitted: OrderbookContextValue::ChainId(u64::from(submission_binding.chain_id)),
         });
     }
     if quoted_binding.env != submission_binding.env {
         return Err(TradingError::QuoteOrderbookBindingConflict {
             field: "env",
-            quoted: quoted_binding.env.as_str().to_owned(),
-            submitted: submission_binding.env.as_str().to_owned(),
+            quoted: OrderbookContextValue::Env(quoted_binding.env),
+            submitted: OrderbookContextValue::Env(submission_binding.env),
         });
     }
     if let (Some(quoted_base_url), Some(submission_base_url)) = (
@@ -1456,8 +1456,8 @@ where
     {
         return Err(TradingError::QuoteOrderbookBindingConflict {
             field: "baseUrl",
-            quoted: quoted_base_url.clone(),
-            submitted: submission_base_url.clone(),
+            quoted: OrderbookContextValue::BaseUrl(quoted_base_url.clone().into()),
+            submitted: OrderbookContextValue::BaseUrl(submission_base_url.clone().into()),
         });
     }
 

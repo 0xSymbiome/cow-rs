@@ -24,7 +24,7 @@ fn transport_variant_carries_typed_class_and_sanitized_detail() {
             None,
         )),
         class,
-        details,
+        details: details.into(),
     };
 
     let SubgraphError::Transport {
@@ -39,7 +39,9 @@ fn transport_variant_carries_typed_class_and_sanitized_detail() {
     assert_eq!(*class, TransportErrorClass::Builder);
     assert_eq!(context.chain_id, u64::from(SupportedChainId::Mainnet));
     assert!(
-        !details.contains("api_key") && !details.contains("secret") && !details.contains("http://"),
+        !details.as_inner().contains("api_key")
+            && !details.as_inner().contains("secret")
+            && !details.as_inner().contains("http://"),
         "transport details must not expose URL fragments or query secrets: {details}",
     );
     assert!(

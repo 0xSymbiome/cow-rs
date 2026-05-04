@@ -1,5 +1,5 @@
 use cow_sdk_contracts::{ContractsError, SigningScheme};
-use cow_sdk_core::{Cancelled, CoreError};
+use cow_sdk_core::{Cancelled, CoreError, Redacted};
 use thiserror::Error;
 
 /// Errors returned by explicit signing helpers.
@@ -14,14 +14,14 @@ pub enum SigningError {
     Contracts(#[from] ContractsError),
     /// JSON or payload serialization failed.
     #[error("serialization error: {0}")]
-    Serialization(String),
+    Serialization(Redacted<String>),
     /// A signer operation returned an error.
     #[error("signer {operation} failed: {message}")]
     Signer {
         /// Signer operation being attempted.
         operation: &'static str,
         /// Signer error message.
-        message: String,
+        message: Redacted<String>,
     },
     /// Local signer generation only supports ECDSA-style schemes.
     #[error(

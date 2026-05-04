@@ -145,7 +145,7 @@ where
             emit_cache_skip_event();
             ContractsError::Eip1271Provider {
                 operation: "read_contract",
-                message: error.to_string(),
+                message: error.to_string().into(),
             }
         })?;
 

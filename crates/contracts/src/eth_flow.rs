@@ -164,7 +164,7 @@ fn to_sol_struct(
         if bytes.len() > 32 {
             return Err(ContractsError::NumericOverflow {
                 field: name,
-                value: value.to_str_radix(10),
+                value: value.to_str_radix(10).into(),
             });
         }
         let mut buf = [0u8; 32];

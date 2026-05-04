@@ -137,7 +137,7 @@ pub fn fetch_doc_from_app_data_hex_with_policy(
 ) -> Result<AppDataDoc, AppDataError> {
     let cid = app_data_hex_to_cid(app_data_hex).map_err(|err| AppDataError::Transport {
         class: cow_sdk_core::TransportErrorClass::Decode,
-        detail: format!("error decoding appDataHex={app_data_hex}: {err}"),
+        detail: format!("error decoding appDataHex={app_data_hex}: {err}").into(),
     })?;
     fetch_doc_from_cid_with_policy(&cid, transport, policy)
 }
@@ -159,7 +159,7 @@ pub(crate) fn normalize_ipfs_base_uri(
     if normalized.is_empty() {
         return Err(AppDataError::Transport {
             class: cow_sdk_core::TransportErrorClass::Builder,
-            detail: format!("ipfs {field} base uri must not be empty"),
+            detail: format!("ipfs {field} base uri must not be empty").into(),
         });
     }
 

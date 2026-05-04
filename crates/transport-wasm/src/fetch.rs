@@ -96,9 +96,9 @@ impl FetchTransportConfig {
     pub fn try_with_timeout_ms(mut self, timeout_ms: u64) -> Result<Self, TransportError> {
         if timeout_ms > i32::MAX as u64 {
             return Err(TransportError::Configuration {
-                message: format!(
+                message: Redacted::new(format!(
                     "timeout {timeout_ms} ms exceeds the supported browser setTimeout range"
-                ),
+                )),
             });
         }
         self.timeout = Some(Duration::from_millis(timeout_ms));
@@ -274,7 +274,7 @@ impl FetchTransport {
             Err(TransportError::HttpStatus {
                 status,
                 headers,
-                body: body_text,
+                body: Redacted::new(body_text),
             })
         }
     }
@@ -283,7 +283,8 @@ impl FetchTransport {
 #[cfg(feature = "tracing")]
 const fn bytes_received(result: &Result<String, TransportError>) -> Option<usize> {
     match result {
-        Ok(body) | Err(TransportError::HttpStatus { body, .. }) => Some(body.len()),
+        Ok(body) => Some(body.len()),
+        Err(TransportError::HttpStatus { body, .. }) => Some(body.as_inner().len()),
         Err(_) => None,
     }
 }
@@ -353,7 +354,9 @@ impl HttpTransport for FetchTransport {
 
 fn window_or_configuration_error() -> Result<Window, TransportError> {
     web_sys::window().ok_or_else(|| TransportError::Configuration {
-        message: "fetch requires a browser window; no global window is available".to_owned(),
+        message: Redacted::new(
+            "fetch requires a browser window; no global window is available".to_owned(),
+        ),
     })
 }
 
@@ -417,7 +420,9 @@ fn install_abort_timeout(
     init.set_signal(Some(&controller.signal()));
     let ms = timeout.as_millis();
     let ms = i32::try_from(ms).map_err(|_| TransportError::Configuration {
-        message: format!("timeout {ms} ms exceeds the supported browser setTimeout range"),
+        message: Redacted::new(format!(
+            "timeout {ms} ms exceeds the supported browser setTimeout range"
+        )),
     })?;
     let controller_clone = controller.clone();
     let on_timeout = wasm_bindgen::closure::Closure::<dyn FnMut()>::new(move || {
@@ -438,7 +443,10 @@ fn install_abort_timeout(
 
 fn classify_fetch_rejection(error: &JsValue) -> TransportError {
     let (class, detail) = classify_dom_exception(error);
-    TransportError::Transport { class, detail }
+    TransportError::Transport {
+        class,
+        detail: Redacted::new(detail),
+    }
 }
 
 fn classify_dom_exception(error: &JsValue) -> (TransportErrorClass, String) {
@@ -460,7 +468,7 @@ fn classify_dom_exception(error: &JsValue) -> (TransportErrorClass, String) {
 
 fn configuration_error(context: &str, error: &JsValue) -> TransportError {
     TransportError::Configuration {
-        message: format!("{context}: {}", redacted_error_render(error)),
+        message: Redacted::new(format!("{context}: {}", redacted_error_render(error))),
     }
 }
 
@@ -473,14 +481,14 @@ fn body_error(context: &str, error: &JsValue) -> TransportError {
     };
     TransportError::Transport {
         class,
-        detail: format!("{context}: {detail}"),
+        detail: Redacted::new(format!("{context}: {detail}")),
     }
 }
 
 fn decode_error(context: &str) -> TransportError {
     TransportError::Transport {
         class: TransportErrorClass::Decode,
-        detail: context.to_owned(),
+        detail: Redacted::new(context.to_owned()),
     }
 }
 
@@ -503,7 +511,7 @@ fn reflect_string(source: &JsValue, key: &str) -> Option<String> {
         })
 }
 
-fn response_headers(headers: &Headers) -> Vec<(String, String)> {
+fn response_headers(headers: &Headers) -> Vec<(String, Redacted<String>)> {
     let entries = Array::from(headers.as_ref());
     let mut collected = Vec::with_capacity(entries.length() as usize);
 
@@ -515,7 +523,7 @@ fn response_headers(headers: &Headers) -> Vec<(String, String)> {
         let Some(value) = pair.get(1).as_string() else {
             continue;
         };
-        collected.push((name, value));
+        collected.push((name, Redacted::new(value)));
     }
 
     collected

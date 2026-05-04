@@ -349,6 +349,30 @@ fixtures:
     path: crates/shared/src/order_validation.rs
   - repo: services
     path: crates/orderbook/src/app_data.rs
+- surface: orderbook-request-order-creation
+  file: parity/fixtures/orderbook-requests/order_creation.json
+  source_refs:
+  - repo: services
+    path: crates/orderbook/openapi.yml
+  - repo: services
+    path: crates/shared/src/order_validation.rs
+- surface: orderbook-request-order-quote
+  file: parity/fixtures/orderbook-requests/order_quote_request.json
+  source_refs:
+  - repo: services
+    path: crates/orderbook/openapi.yml
+- surface: orderbook-request-app-data-put
+  file: parity/fixtures/orderbook-requests/app_data_put.json
+  source_refs:
+  - repo: services
+    path: crates/orderbook/openapi.yml
+  - repo: services
+    path: crates/orderbook/src/app_data.rs
+- surface: orderbook-request-cancellations
+  file: parity/fixtures/orderbook-requests/order_cancellations.json
+  source_refs:
+  - repo: services
+    path: crates/orderbook/openapi.yml
 - surface: trading
   file: parity/fixtures/trading.json
   source_refs:

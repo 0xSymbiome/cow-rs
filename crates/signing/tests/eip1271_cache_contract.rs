@@ -319,14 +319,14 @@ impl NonCacheableScenario {
             Self::CodeProviderError => match error {
                 ContractsError::Eip1271Provider { operation, message } => {
                     assert_eq!(*operation, "get_code");
-                    assert_eq!(message, "code unavailable");
+                    assert_eq!(message.as_inner(), "code unavailable");
                 }
                 other => panic!("expected get_code Eip1271Provider, got {other:?}"),
             },
             Self::ReadProviderError => match error {
                 ContractsError::Eip1271Provider { operation, message } => {
                     assert_eq!(*operation, "read_contract");
-                    assert_eq!(message, "read unavailable");
+                    assert_eq!(message.as_inner(), "read unavailable");
                 }
                 other => panic!("expected read_contract Eip1271Provider, got {other:?}"),
             },

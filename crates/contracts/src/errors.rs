@@ -1,4 +1,4 @@
-use cow_sdk_core::{Address, Cancelled, CoreError};
+use cow_sdk_core::{Address, Cancelled, CoreError, Redacted};
 use thiserror::Error;
 
 /// Errors returned by low-level `CoW` contract helpers.
@@ -26,7 +26,7 @@ pub enum ContractsError {
         /// Field being encoded.
         field: &'static str,
         /// Original invalid value.
-        value: String,
+        value: Redacted<String>,
     },
     /// A numeric value exceeded `uint256` bounds.
     #[error("numeric value for {field} exceeds uint256: {value}")]
@@ -34,7 +34,7 @@ pub enum ContractsError {
         /// Field being encoded.
         field: &'static str,
         /// Original overflowing value.
-        value: String,
+        value: Redacted<String>,
     },
     /// Encoded settlement or trade flags used unsupported bits.
     #[error("invalid encoded flag bits: {0:#010b}")]
@@ -57,13 +57,13 @@ pub enum ContractsError {
         /// Operation being performed.
         operation: &'static str,
         /// Provider error message.
-        message: String,
+        message: Redacted<String>,
     },
     /// The EIP-1271 call response could not be decoded.
     #[error("malformed EIP-1271 response: {response}")]
     MalformedEip1271Response {
         /// Raw response that failed decoding.
-        response: String,
+        response: Redacted<String>,
     },
     /// The verifier returned an unexpected EIP-1271 magic value.
     #[error(
@@ -112,7 +112,7 @@ pub enum ContractsError {
         /// Failed provider operation.
         operation: &'static str,
         /// Provider error message.
-        message: String,
+        message: Redacted<String>,
     },
     /// ABI encoding or decoding failed through the `alloy-sol-types` surface.
     #[error("ABI error: {0}")]
@@ -167,7 +167,7 @@ pub enum ContractsError {
     #[error("ECDSA signature recovery failed: {message}")]
     SignatureRecovery {
         /// Sanitized recovery failure description from the backend.
-        message: String,
+        message: Redacted<String>,
     },
 }
 

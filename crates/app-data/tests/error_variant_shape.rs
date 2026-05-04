@@ -39,14 +39,14 @@ fn schema_variant_wraps_jsonschema_validation_error_through_typed_source() {
         .expect("missing-required-property must surface a validation error")
         .to_owned();
     let error = AppDataError::Schema {
-        message: format!("data {validation_error}"),
+        message: format!("data {validation_error}").into(),
         source: Box::new(validation_error),
     };
 
     let AppDataError::Schema { message, source } = &error else {
         panic!("expected Schema variant, got {error:?}");
     };
-    assert!(message.contains("required"));
+    assert!(message.as_inner().contains("required"));
     assert!(format!("{source}").contains("required"));
 }
 
@@ -86,14 +86,16 @@ fn calculation_variant_carries_typed_source_through_box_dyn_error() {
 fn transport_variant_carries_typed_class_and_detail() {
     let error = AppDataError::Transport {
         class: TransportErrorClass::Timeout,
-        detail: "ipfs gateway did not respond within the configured timeout".to_owned(),
+        detail: "ipfs gateway did not respond within the configured timeout"
+            .to_owned()
+            .into(),
     };
 
     let AppDataError::Transport { class, detail } = &error else {
         panic!("expected Transport variant, got {error:?}");
     };
     assert_eq!(*class, TransportErrorClass::Timeout);
-    assert!(detail.contains("ipfs gateway"));
+    assert!(detail.as_inner().contains("ipfs gateway"));
     assert!(
         error.to_string().contains("timeout"),
         "transport Display must include the typed class label",

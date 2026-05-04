@@ -854,7 +854,7 @@ impl TradingSdk {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
-            .ok_or_else(|| TradingError::MissingTraderParameters("chainId".to_owned()))?;
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
         let options = protocol_options_for_partial_order(params, &trader);
 
         get_pre_sign_transaction(signer, chain_id, &params.order_uid, Some(&options))
@@ -893,7 +893,7 @@ impl TradingSdk {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
-            .ok_or_else(|| TradingError::MissingTraderParameters("chainId".to_owned()))?;
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
         let options = protocol_options_for_partial_order(params, &trader);
 
         get_pre_sign_transaction_async(signer, chain_id, &params.order_uid, Some(&options)).await
@@ -1110,7 +1110,7 @@ impl TradingSdk {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
-            .ok_or_else(|| TradingError::MissingTraderParameters("chainId".to_owned()))?;
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
         let env = trader.env.unwrap_or(CowEnv::Prod);
 
         get_cow_protocol_allowance(
@@ -1155,7 +1155,7 @@ impl TradingSdk {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
-            .ok_or_else(|| TradingError::MissingTraderParameters("chainId".to_owned()))?;
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
         let env = trader.env.unwrap_or(CowEnv::Prod);
 
         get_cow_protocol_allowance_async(
@@ -1187,7 +1187,7 @@ impl TradingSdk {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
-            .ok_or_else(|| TradingError::MissingTraderParameters("chainId".to_owned()))?;
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
         let env = trader.env.unwrap_or(CowEnv::Prod);
 
         crate::approve_cow_protocol(signer, params, chain_id, env)
@@ -1227,7 +1227,7 @@ impl TradingSdk {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
-            .ok_or_else(|| TradingError::MissingTraderParameters("chainId".to_owned()))?;
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
         let env = trader.env.unwrap_or(CowEnv::Prod);
 
         crate::approve_cow_protocol_async(signer, params, chain_id, env).await
@@ -1255,11 +1255,11 @@ impl TradingSdk {
             .trader_defaults
             .app_code
             .clone()
-            .ok_or_else(|| TradingError::MissingQuoterParameters("appCode".to_owned()))?;
+            .ok_or(TradingError::MissingQuoterParameters("appCode"))?;
         let orderbook = self.resolve_orderbook_binding(
             self.trader_defaults.chain_id,
             requested_env.or(self.trader_defaults.env),
-            TradingError::MissingQuoterParameters("chainId".to_owned()),
+            TradingError::MissingQuoterParameters("chainId"),
         )?;
 
         Ok((
@@ -1283,14 +1283,15 @@ impl TradingSdk {
         requested_chain: Option<SupportedChainId>,
         requested_env: Option<CowEnv>,
     ) -> Result<(TraderParameters, ResolvedOrderbookBinding), TradingError> {
-        let app_code =
-            self.trader_defaults.app_code.clone().ok_or_else(|| {
-                TradingError::MissingTraderParameters("chainId, appCode".to_owned())
-            })?;
+        let app_code = self
+            .trader_defaults
+            .app_code
+            .clone()
+            .ok_or_else(|| TradingError::MissingTraderParameters("chainId, appCode"))?;
         let orderbook = self.resolve_orderbook_binding(
             requested_chain.or(self.trader_defaults.chain_id),
             requested_env.or(self.trader_defaults.env),
-            TradingError::MissingTraderParameters("chainId, appCode".to_owned()),
+            TradingError::MissingTraderParameters("chainId, appCode"),
         )?;
 
         Ok((
@@ -1316,7 +1317,7 @@ impl TradingSdk {
         let orderbook = self.resolve_orderbook_binding(
             requested_chain.or(self.trader_defaults.chain_id),
             requested_env.or(self.trader_defaults.env),
-            TradingError::MissingTraderParameters("chainId".to_owned()),
+            TradingError::MissingTraderParameters("chainId"),
         )?;
 
         Ok((

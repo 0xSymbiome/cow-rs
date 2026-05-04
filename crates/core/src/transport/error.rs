@@ -10,7 +10,7 @@
 
 use thiserror::Error;
 
-use crate::validation::TransportErrorClass;
+use crate::{redaction::Redacted, validation::TransportErrorClass};
 
 /// Typed error surface returned by every
 /// [`HttpTransport`](super::HttpTransport) implementation.
@@ -38,14 +38,14 @@ pub enum TransportError {
         class: TransportErrorClass,
         /// Redacted detail message with any URL stripped by the adapter before
         /// the wrap.
-        detail: String,
+        detail: Redacted<String>,
     },
     /// Builder-time or input-validation failure that prevented a request from
     /// being dispatched.
     #[error("transport configuration error: {message}")]
     Configuration {
         /// Human-readable configuration-validation message.
-        message: String,
+        message: Redacted<String>,
     },
     /// Non-2xx HTTP response returned by the remote endpoint.
     ///
@@ -58,9 +58,9 @@ pub enum TransportError {
         /// Numeric HTTP status code returned by the remote endpoint.
         status: u16,
         /// Response headers returned alongside the non-success status code.
-        headers: Vec<(String, String)>,
+        headers: Vec<(String, Redacted<String>)>,
         /// Raw response body returned alongside the status code.
-        body: String,
+        body: Redacted<String>,
     },
 }
 

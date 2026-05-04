@@ -289,7 +289,7 @@ where
         ))
         .map_err(|error| ContractsError::Provider {
             operation: "read_contract",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })
 }
 

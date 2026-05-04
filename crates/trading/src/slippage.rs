@@ -330,12 +330,12 @@ pub(crate) fn parse_integer(field: &'static str, value: &str) -> Result<BigInt, 
     if let Some(hex_value) = value.strip_prefix("0x") {
         BigInt::parse_bytes(hex_value.as_bytes(), 16).ok_or_else(|| TradingError::InvalidNumeric {
             field,
-            value: value.to_owned(),
+            value: value.to_owned().into(),
         })
     } else {
         BigInt::parse_bytes(value.as_bytes(), 10).ok_or_else(|| TradingError::InvalidNumeric {
             field,
-            value: value.to_owned(),
+            value: value.to_owned().into(),
         })
     }
 }
@@ -357,12 +357,12 @@ fn parse_percent_scaled(percent: f64, field: &'static str) -> Result<BigInt, Tra
     let whole =
         BigInt::parse_bytes(whole.as_bytes(), 10).ok_or_else(|| TradingError::InvalidNumeric {
             field,
-            value: rendered.clone(),
+            value: rendered.clone().into(),
         })?;
     let fractional = BigInt::parse_bytes(fractional.as_bytes(), 10).ok_or_else(|| {
         TradingError::InvalidNumeric {
             field,
-            value: rendered.clone(),
+            value: rendered.clone().into(),
         }
     })?;
 
@@ -457,7 +457,7 @@ fn scaled_percent_to_bps(percent_scaled: &BigInt) -> Result<u32, TradingError> {
         .parse::<u32>()
         .map_err(|_| TradingError::NumericOverflow {
             field: "slippageBps",
-            value,
+            value: value.into(),
         })
 }
 
@@ -655,7 +655,7 @@ fn rounded_nonnegative_f64_to_u32(value: f64, field: &'static str) -> Result<u32
     if !rounded.is_finite() || rounded < 0.0 || rounded > f64::from(u32::MAX) {
         return Err(TradingError::NumericOverflow {
             field,
-            value: rounded.to_string(),
+            value: rounded.to_string().into(),
         });
     }
     if rounded == 0.0 {
@@ -666,6 +666,6 @@ fn rounded_nonnegative_f64_to_u32(value: f64, field: &'static str) -> Result<u32
         .parse::<u32>()
         .map_err(|_| TradingError::NumericOverflow {
             field,
-            value: rounded.to_string(),
+            value: rounded.to_string().into(),
         })
 }

@@ -125,6 +125,10 @@ fn module_reexports_cover_expected_leaf_crates() {
 fn crate_docs_and_manifest_keep_the_facade_trading_first() {
     let lib_rs = include_str!("../src/lib.rs");
     let manifest = include_str!("../Cargo.toml");
+    let production_manifest = manifest
+        .split("[dev-dependencies]")
+        .next()
+        .expect("manifest must contain production dependency section");
 
     assert!(lib_rs.contains("Top-level docs are trading-first"));
     assert!(
@@ -136,8 +140,8 @@ fn crate_docs_and_manifest_keep_the_facade_trading_first() {
     assert!(lib_rs.contains("is a separate crate surface"));
     assert!(manifest.contains("default = []"));
     assert!(manifest.contains("browser-wallet = [\"dep:cow-sdk-browser-wallet\"]"));
-    assert!(manifest.contains("cow-sdk-trading"));
-    assert!(!manifest.contains("cow-sdk-subgraph"));
+    assert!(production_manifest.contains("cow-sdk-trading"));
+    assert!(!production_manifest.contains("cow-sdk-subgraph"));
 }
 
 #[test]

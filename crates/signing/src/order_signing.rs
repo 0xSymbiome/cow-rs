@@ -334,7 +334,7 @@ pub(crate) fn contracts_order(order: &UnsignedOrder) -> ContractsOrder {
 fn signer_error<E: fmt::Display>(operation: &'static str, error: E) -> SigningError {
     SigningError::Signer {
         operation,
-        message: error.to_string(),
+        message: error.to_string().into(),
     }
 }
 
@@ -397,14 +397,14 @@ fn encode_u256_str(field: &'static str, value: &str) -> Result<[u8; 32], Signing
         )
         .ok_or_else(|| ContractsError::InvalidNumeric {
             field,
-            value: value.to_owned(),
+            value: value.to_owned().into(),
         })?;
 
     let bytes = parsed.to_bytes_be();
     if bytes.len() > 32 {
         return Err(ContractsError::NumericOverflow {
             field,
-            value: value.to_owned(),
+            value: value.to_owned().into(),
         }
         .into());
     }

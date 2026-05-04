@@ -61,17 +61,17 @@ fn eip1271_magic_value_mismatch_carries_typed_four_byte_arrays() {
 fn provider_variant_carries_structured_operation_and_message_fields() {
     let error = ContractsError::Provider {
         operation: "read_contract",
-        message: "transport dropped".to_owned(),
+        message: "transport dropped".to_owned().into(),
     };
 
     let ContractsError::Provider { operation, message } = &error else {
         panic!("expected Provider variant, got {error:?}");
     };
     assert_eq!(*operation, "read_contract");
-    assert_eq!(message, "transport dropped");
+    assert_eq!(message.as_inner(), "transport dropped");
     assert_eq!(
         error.to_string(),
-        "provider error during read_contract: transport dropped",
+        "provider error during read_contract: [redacted]",
     );
 }
 

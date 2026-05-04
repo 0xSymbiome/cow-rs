@@ -9,8 +9,9 @@
 //! is `#[non_exhaustive]`, and the final [`OrderbookRejection::Unknown`]
 //! variant guarantees forward compatibility when services introduces a
 //! new tag: deserialisation never silently coerces an unknown tag into
-//! a default placeholder, but the SDK can still surface the wire code
-//! and description for diagnostics.
+//! a default placeholder, but the SDK can still surface a sanitized
+//! wire-code diagnostic while keeping the free-form description behind
+//! explicit redacted access.
 //!
 //! The wire shape is authoritative: services encodes order-creation,
 //! quote, cancellation, lookup, app-data registration, and
@@ -21,10 +22,59 @@
 //! `DELETE /orders`, and `DELETE /orders/{uid}`, grouped by their
 //! upstream handler families for reviewability.
 
-use cow_sdk_core::Amount;
+use std::fmt;
+
+use cow_sdk_core::{Amount, REDACTED_PLACEHOLDER, Redacted};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+/// Sanitized services rejection tag.
+///
+/// The orderbook wire contract uses short identifier tags. Inputs outside that
+/// reviewed shape are collapsed to the shared redaction marker so arbitrary
+/// server or caller text cannot leak through the forward-compatible unknown-code
+/// fallback.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
+#[serde(transparent)]
+pub struct OrderbookRejectionCode(String);
+
+impl OrderbookRejectionCode {
+    /// Creates a sanitized rejection-code value.
+    #[must_use]
+    pub fn new(code: impl Into<String>) -> Self {
+        let code = code.into();
+        if is_safe_rejection_code(&code) {
+            Self(code)
+        } else {
+            Self(REDACTED_PLACEHOLDER.to_owned())
+        }
+    }
+
+    /// Returns the sanitized code string.
+    #[must_use]
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for OrderbookRejectionCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl From<String> for OrderbookRejectionCode {
+    fn from(code: String) -> Self {
+        Self::new(code)
+    }
+}
+
+impl From<&str> for OrderbookRejectionCode {
+    fn from(code: &str) -> Self {
+        Self::new(code)
+    }
+}
 
 /// Structured rejection code returned by the `CoW` Protocol orderbook.
 ///
@@ -138,13 +188,13 @@ pub enum OrderbookRejection {
 
     // --- AppData ---
     /// App-data registration rejected the supplied document and
-    /// preserved the validator message in the wire `description`
-    /// field.
+    /// preserves the validator message in the redacted wire
+    /// `description` field.
     #[error("AppDataInvalid: {message}")]
     AppDataInvalid {
         /// Services-authored `description` string carried on the
-        /// rejection envelope.
-        message: String,
+        /// rejection envelope and redacted on public rendering.
+        message: Redacted<String>,
     },
     /// App-data document failed validation.
     #[error("invalid app data")]
@@ -157,8 +207,8 @@ pub enum OrderbookRejection {
     #[error("AppDataMismatch: {message}")]
     AppDataMismatch {
         /// Services-authored `description` string carried on the
-        /// rejection envelope.
-        message: String,
+        /// rejection envelope and redacted on public rendering.
+        message: Redacted<String>,
     },
     /// App-data `metadata.signer` must match the declared `from`
     /// address.
@@ -238,8 +288,8 @@ pub enum OrderbookRejection {
     #[error("NotFound: {message}")]
     NotFound {
         /// Services-authored `description` string carried on the
-        /// rejection envelope.
-        message: String,
+        /// rejection envelope and redacted on public rendering.
+        message: Redacted<String>,
     },
     /// On-chain orders must be cancelled through the on-chain flow.
     #[error("on-chain order")]
@@ -261,17 +311,19 @@ pub enum OrderbookRejection {
     ///
     /// The SDK keeps this variant as a permanent fallback so a new
     /// services-side tag never silently becomes a default placeholder
-    /// or a transport-level failure: callers still receive the raw
-    /// wire code and description for diagnostics, and the
-    /// `#[non_exhaustive]` attribute guarantees that promoting an
-    /// unknown tag to a dedicated variant remains a non-breaking
-    /// change.
+    /// or a transport-level failure: callers still receive the typed
+    /// wire code and description through deliberate `Redacted<T>`
+    /// accessors while public renderings preserve sanitized code tags and
+    /// redact free-form descriptions. The `#[non_exhaustive]` attribute
+    /// guarantees that promoting an unknown tag to a dedicated variant remains
+    /// a non-breaking change.
     #[error("unknown rejection code `{code}`: {message}")]
     Unknown {
-        /// Raw `errorType` tag as supplied by services.
-        code: String,
-        /// Raw `description` string as supplied by services.
-        message: String,
+        /// Sanitized `errorType` tag as supplied by services.
+        code: OrderbookRejectionCode,
+        /// Raw `description` string as supplied by services, redacted on
+        /// public rendering.
+        message: Redacted<String>,
     },
 }
 
@@ -381,9 +433,9 @@ fn classify(envelope: RejectionEnvelope) -> OrderbookRejection {
 
 fn message_variant(
     envelope: RejectionEnvelope,
-    constructor: impl FnOnce(String) -> OrderbookRejection,
+    constructor: impl FnOnce(Redacted<String>) -> OrderbookRejection,
 ) -> OrderbookRejection {
-    constructor(envelope.description)
+    constructor(envelope.description.into())
 }
 
 fn parse_sell_amount_does_not_cover_fee(
@@ -401,7 +453,16 @@ fn parse_sell_amount_does_not_cover_fee(
 
 fn unknown(envelope: RejectionEnvelope) -> OrderbookRejection {
     OrderbookRejection::Unknown {
-        code: envelope.error_type,
-        message: envelope.description,
+        code: envelope.error_type.into(),
+        message: envelope.description.into(),
     }
+}
+
+fn is_safe_rejection_code(code: &str) -> bool {
+    !code.is_empty()
+        && code.len() <= 48
+        && code.as_bytes().first().is_some_and(u8::is_ascii_uppercase)
+        && code
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
 }

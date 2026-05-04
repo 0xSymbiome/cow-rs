@@ -321,7 +321,7 @@ async fn legacy_typed_data_compatibility_rejects_unknown_primary_type_shapes() {
     assert_eq!(
         error,
         BrowserWalletError::Serialization {
-            message: "legacy sign_typed_data compatibility supports only CoW order and order cancellation payloads; use sign_typed_data_payload for explicit primary types".to_owned(),
+            message: "legacy sign_typed_data compatibility supports only CoW order and order cancellation payloads; use sign_typed_data_payload for explicit primary types".to_owned().into(),
         }
     );
 }
@@ -633,9 +633,9 @@ async fn switch_or_add_chain_does_not_add_when_chain_not_added_targets_a_differe
         "wallet_switchEthereumChain",
         BrowserWalletError::ChainNotAdded {
             chain_id: u64::from(SupportedChainId::Mainnet),
-            method: "wallet_switchEthereumChain".to_owned(),
+            method: "wallet_switchEthereumChain".to_owned().into(),
             code: 4902,
-            message: "mock wallet does not know chain 1".to_owned(),
+            message: "mock wallet does not know chain 1".to_owned().into(),
         },
     );
 
@@ -648,9 +648,9 @@ async fn switch_or_add_chain_does_not_add_when_chain_not_added_targets_a_differe
         error,
         BrowserWalletError::ChainNotAdded {
             chain_id: u64::from(SupportedChainId::Mainnet),
-            method: "wallet_switchEthereumChain".to_owned(),
+            method: "wallet_switchEthereumChain".to_owned().into(),
             code: 4902,
-            message: "mock wallet does not know chain 1".to_owned(),
+            message: "mock wallet does not know chain 1".to_owned().into(),
         }
     );
 
@@ -676,7 +676,9 @@ fn chain_configuration_validation_rejects_invalid_inputs_before_rpc() {
         invalid.validate().unwrap_err(),
         BrowserWalletError::InvalidChainConfiguration {
             chain_id: u64::from(SupportedChainId::Base),
-            message: "wallet add-chain requires at least one RPC URL".to_owned(),
+            message: "wallet add-chain requires at least one RPC URL"
+                .to_owned()
+                .into(),
         }
     );
 
@@ -687,7 +689,7 @@ fn chain_configuration_validation_rejects_invalid_inputs_before_rpc() {
         invalid_url,
         BrowserWalletError::InvalidChainConfiguration {
             chain_id: u64::from(SupportedChainId::Base),
-            message: "RPC URL must use an http or https URL".to_owned(),
+            message: "RPC URL must use an http or https URL".to_owned().into(),
         }
     );
 
@@ -696,7 +698,7 @@ fn chain_configuration_validation_rejects_invalid_inputs_before_rpc() {
         invalid_currency,
         BrowserWalletError::InvalidChainConfiguration {
             chain_id: 0,
-            message: "native currency name must not be empty".to_owned(),
+            message: "native currency name must not be empty".to_owned().into(),
         }
     );
 }

@@ -578,7 +578,7 @@ where
         .await
         .map_err(|error| TradingError::Signer {
             operation: "send_transaction",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })?;
 
     Ok(OrderPostingResult {
@@ -737,7 +737,7 @@ where
                 .await
                 .map_err(|error| TradingError::Signer {
                     operation: "get_address",
-                    message: error.to_string(),
+                    message: error.to_string().into(),
                 })?,
         )
     } else {

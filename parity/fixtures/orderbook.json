@@ -259,34 +259,34 @@
     {
       "id": "orderbook-app-data-invalid-error",
       "kind": "negative",
-      "description": "App-data registration rejects invalid documents on HTTP 400 with AppDataInvalid and preserves the services message in the typed variant.",
+      "description": "App-data registration rejects invalid documents on HTTP 400 with AppDataInvalid and redacts the services message in public rendering.",
       "expected": {
         "status": 400,
         "errorType": "AppDataInvalid",
         "description": "appData is invalid: missing protocol metadata",
-        "display": "AppDataInvalid: appData is invalid: missing protocol metadata"
+        "display": "AppDataInvalid: [redacted]"
       }
     },
     {
       "id": "orderbook-app-data-mismatch-error",
       "kind": "negative",
-      "description": "App-data registration rejects conflicting stored documents on HTTP 400 with AppDataMismatch and preserves the services message in the typed variant.",
+      "description": "App-data registration rejects conflicting stored documents on HTTP 400 with AppDataMismatch and redacts the services message in public rendering.",
       "expected": {
         "status": 400,
         "errorType": "AppDataMismatch",
         "description": "stored appData \"{\\\"version\\\":\\\"1.0.0\\\"}\" is different than the specified data",
-        "display": "AppDataMismatch: stored appData \"{\\\"version\\\":\\\"1.0.0\\\"}\" is different than the specified data"
+        "display": "AppDataMismatch: [redacted]"
       }
     },
     {
       "id": "orderbook-not-found-error",
       "kind": "negative",
-      "description": "Lookup-path 404 responses surface NotFound and preserve the services description separately from the cancel-path OrderNotFound variant.",
+      "description": "Lookup-path 404 responses surface NotFound and redact the services description separately from the cancel-path OrderNotFound variant.",
       "expected": {
         "status": 404,
         "errorType": "NotFound",
         "description": "Order was not found",
-        "display": "NotFound: Order was not found"
+        "display": "NotFound: [redacted]"
       }
     },
     {

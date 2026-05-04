@@ -474,13 +474,13 @@ fn assert_rejection_error(id: &str, expected: &Value) {
             let expected_rejection = match error_type {
                 "DuplicatedOrder" => cow_sdk_orderbook::OrderbookRejection::DuplicatedOrder,
                 "AppDataInvalid" => cow_sdk_orderbook::OrderbookRejection::AppDataInvalid {
-                    message: description.to_owned(),
+                    message: description.to_owned().into(),
                 },
                 "AppDataMismatch" => cow_sdk_orderbook::OrderbookRejection::AppDataMismatch {
-                    message: description.to_owned(),
+                    message: description.to_owned().into(),
                 },
                 "NotFound" => cow_sdk_orderbook::OrderbookRejection::NotFound {
-                    message: description.to_owned(),
+                    message: description.to_owned().into(),
                 },
                 other => panic!("case {id}: unsupported rejection fixture errorType {other}"),
             };

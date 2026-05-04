@@ -35,7 +35,7 @@ impl IpfsFetchTransport for RecordingFetchTransport {
             .cloned()
             .ok_or_else(|| AppDataError::Transport {
                 class: cow_sdk_core::TransportErrorClass::Other,
-                detail: format!("missing fixture for {uri}"),
+                detail: format!("missing fixture for {uri}").into(),
             })
     }
 }
@@ -71,8 +71,13 @@ fn fetch_helpers_use_explicit_transport_and_default_ipfs_uri() {
 fn fetch_by_app_data_hex_rejects_invalid_hex() {
     let transport = RecordingFetchTransport::default();
     let error = fetch_doc_from_app_data_hex("invalidHash", &transport, None).unwrap_err();
-    assert!(matches!(error, AppDataError::Transport { .. }));
-    assert!(error.to_string().contains("error decoding appDataHex"));
+    match &error {
+        AppDataError::Transport { detail, .. } => {
+            assert!(detail.as_inner().contains("error decoding appDataHex"));
+        }
+        other => panic!("expected Transport error, got {other:?}"),
+    }
+    assert_eq!(error.to_string(), "transport error (decode): [redacted]");
 }
 
 #[test]
@@ -156,8 +161,11 @@ fn fetch_doc_from_cid_rejects_empty_explicit_read_base_uri() {
     let error = fetch_doc_from_cid(CID, &transport, Some("   "))
         .expect_err("blank policy override must fail");
 
-    assert_eq!(
-        error.to_string(),
-        "transport error (builder): ipfs read base uri must not be empty"
-    );
+    match &error {
+        AppDataError::Transport { detail, .. } => {
+            assert_eq!(detail.as_inner(), "ipfs read base uri must not be empty");
+        }
+        other => panic!("expected Transport error, got {other:?}"),
+    }
+    assert_eq!(error.to_string(), "transport error (builder): [redacted]");
 }

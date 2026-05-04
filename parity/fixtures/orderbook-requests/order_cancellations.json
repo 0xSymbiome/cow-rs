@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "surface": "orderbook-request-cancellations",
+  "dto": "cow_sdk_orderbook::OrderCancellations",
+  "endpoint": "DELETE /api/v1/orders",
+  "reviewed_at": "2026-05-04",
+  "source_refs": [
+    {
+      "repo": "services",
+      "commit": "0720b9bc15138ecc362078f505d0e3ba1c7b9883",
+      "path": "crates/orderbook/openapi.yml",
+      "line_start": 1665,
+      "line_end": 1685
+    }
+  ],
+  "examples": [
+    {
+      "name": "single_uid_eip712",
+      "payload": {
+        "orderUids": [
+          "0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710"
+        ],
+        "signature": "0x1234",
+        "signingScheme": "eip712"
+      }
+    }
+  ]
+}

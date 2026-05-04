@@ -153,7 +153,8 @@ pub(crate) fn typed_data_types(primary_type: &str, fields: Vec<TypedDataField>) 
 }
 
 pub(crate) fn serialize_message<T: Serialize>(value: &T) -> Result<String, SigningError> {
-    serde_json::to_string(value).map_err(|error| SigningError::Serialization(error.to_string()))
+    serde_json::to_string(value)
+        .map_err(|error| SigningError::Serialization(error.to_string().into()))
 }
 
 fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
@@ -172,15 +173,15 @@ fn encode_u256_u64(value: u64) -> [u8; 32] {
 fn encode_address(address: &Address) -> Result<[u8; 32], SigningError> {
     let Some(stripped) = address.as_str().strip_prefix("0x") else {
         return Err(SigningError::Serialization(
-            "address must be 0x-prefixed".to_owned(),
+            "address must be 0x-prefixed".to_owned().into(),
         ));
     };
     let bytes = hex::decode(stripped).map_err(|_| {
-        SigningError::Serialization("address contains non-hex characters".to_owned())
+        SigningError::Serialization("address contains non-hex characters".to_owned().into())
     })?;
     if bytes.len() != 20 {
         return Err(SigningError::Serialization(
-            "address must be 20 bytes".to_owned(),
+            "address must be 20 bytes".to_owned().into(),
         ));
     }
 

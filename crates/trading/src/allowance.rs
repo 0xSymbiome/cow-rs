@@ -58,7 +58,7 @@ where
         ))
         .map_err(|error| TradingError::Provider {
             operation: "read_contract",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })?;
     decode_allowance_result(&raw)
 }
@@ -99,7 +99,7 @@ where
         .await
         .map_err(|error| TradingError::Provider {
             operation: "read_contract",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })?;
     decode_allowance_result(&raw)
 }
@@ -154,7 +154,7 @@ where
         .map(|receipt| receipt.transaction_hash)
         .map_err(|error| TradingError::Signer {
             operation: "send_transaction",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })
 }
 
@@ -180,7 +180,7 @@ where
         .map(|receipt| receipt.transaction_hash)
         .map_err(|error| TradingError::Signer {
             operation: "send_transaction",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })
 }
 
@@ -197,12 +197,12 @@ fn decode_hex_field(value: &str) -> Result<Vec<u8>, TradingError> {
     let Some(stripped) = value.strip_prefix("0x") else {
         return Err(TradingError::InvalidNumeric {
             field: "hex",
-            value: value.to_owned(),
+            value: value.to_owned().into(),
         });
     };
     hex::decode(stripped).map_err(|_| TradingError::InvalidNumeric {
         field: "hex",
-        value: value.to_owned(),
+        value: value.to_owned().into(),
     })
 }
 
@@ -211,7 +211,7 @@ fn encode_address_word(address: &Address) -> Result<[u8; 32], TradingError> {
     if bytes.len() != 20 {
         return Err(TradingError::InvalidNumeric {
             field: "address",
-            value: address.as_str().to_owned(),
+            value: address.as_str().to_owned().into(),
         });
     }
     let mut out = [0u8; 32];
@@ -224,7 +224,7 @@ fn encode_uint_word(value: &Amount) -> Result<[u8; 32], TradingError> {
     if bytes.len() > 32 {
         return Err(TradingError::NumericOverflow {
             field: "uint256",
-            value: value.to_string(),
+            value: value.to_string().into(),
         });
     }
     let mut out = [0u8; 32];

@@ -1,9 +1,9 @@
 # Wire DTO Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-04
 Owning surface: cow-sdk-orderbook DTO coverage
-Refresh trigger: changes to `parity/openapi/services-orderbook.yml`, changes to `parity/openapi/coverage.yaml`, source-lock refreshes for the services OpenAPI, or public field changes on covered orderbook response DTOs
+Refresh trigger: changes to `parity/openapi/services-orderbook.yml`, changes to `parity/openapi/coverage.yaml`, source-lock refreshes for the services OpenAPI, or public field changes on covered orderbook request or response DTOs
 Related docs:
 - [ADR 0031](../adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md)
 
@@ -13,12 +13,16 @@ This audit covers:
 
 - source-lock-pinned OpenAPI vendoring for the orderbook service schema
 - inventory-backed Rust DTO coverage for `Order`, `AuctionOrder`, `OrderQuoteResponse`, `Trade`, `StoredOrderQuote`, `OnchainOrderData`, `TotalSurplus`, and `SolverExecution`
+- reviewed request payload coverage for `OrderCreation`, `OrderQuoteRequest`,
+  `AppDataObject`, and `OrderCancellations`
 - recorded fixture coverage and field-level round-trip tests for the eight covered DTOs
 - manifest-level required-field lists that must match each inventory's
   expanded OpenAPI `required` set
 - forward-compatible response deserialization without `serde(deny_unknown_fields)`
+- inbound rejection of non-zero `OrderCreation.feeAmount` before a parsed
+  request can be used as a valid order submission DTO
 
-It does not cover request builders, app-data schemas, contract ABI DTOs, or live orderbook endpoint behavior.
+It does not cover app-data schema content, contract ABI DTOs, or live orderbook endpoint behavior.
 
 ## Outcome Summary
 
@@ -30,6 +34,8 @@ It does not cover request builders, app-data schemas, contract ABI DTOs, or live
 | Rust DTO shape | The covered Rust response DTOs contain every inventory field with OpenAPI optionality preserved at the Rust boundary. | Conforms |
 | Fixture coverage | Each covered DTO has a recorded fixture under `parity/fixtures/orderbook/` that exercises every modeled top-level inventory field. | Conforms |
 | Forward compatibility | Covered response DTOs do not use `serde(deny_unknown_fields)`, so additive upstream fields do not break deserialization. | Conforms |
+| Request DTO coverage | Every constructed orderbook request payload has a reviewed fixture under `parity/fixtures/orderbook-requests/` with source references to the pinned services revision. | Conforms |
+| OrderCreation fee boundary | `OrderCreation` serializes `feeAmount` as `"0"` and rejects inbound non-zero `feeAmount` during deserialization. | Conforms |
 
 ## Current Contract
 
@@ -66,6 +72,25 @@ and the auction-side `quote`.
 | `TotalSurplus` | `components.schemas.TotalSurplus` | `parity/openapi/total-surplus-inventory.yaml` | `parity/fixtures/orderbook/total_surplus.json` | `totalSurplus` |
 | `SolverExecution` | `components.schemas.CompetitionOrderStatus.value.items` | `parity/openapi/solver-execution-inventory.yaml` | `parity/fixtures/orderbook/solver_execution.json` | `executedBuyAmount`, `executedSellAmount`, `solver` |
 
+### Request DTOs
+
+| DTO type | Source file and Rust type | Audit verdict | Fixture path | Last reviewed |
+| --- | --- | --- | --- | --- |
+| `OrderCreation` | `crates/orderbook/src/types.rs::cow_sdk_orderbook::OrderCreation` | Conforms | `parity/fixtures/orderbook-requests/order_creation.json` | 2026-05-04 |
+| `OrderQuoteRequest` | `crates/orderbook/src/types.rs::cow_sdk_orderbook::OrderQuoteRequest` | Conforms | `parity/fixtures/orderbook-requests/order_quote_request.json` | 2026-05-04 |
+| `AppDataObject` PUT payload | `crates/orderbook/src/api.rs::cow_sdk_orderbook::AppDataObject` | Conforms | `parity/fixtures/orderbook-requests/app_data_put.json` | 2026-05-04 |
+| `OrderCancellations` | `crates/orderbook/src/types.rs::cow_sdk_orderbook::OrderCancellations` | Conforms | `parity/fixtures/orderbook-requests/order_cancellations.json` | 2026-05-04 |
+
+Request payload semantics reviewed against the services revision pinned in
+`parity/source-lock.yaml`:
+
+| DTO | Mandatory fields | Optional fields and defaults | Mutual-exclusion or dependency guard |
+| --- | --- | --- | --- |
+| `OrderCreation` | `sellToken`, `buyToken`, `sellAmount`, `buyAmount`, `validTo`, `appData`, `feeAmount`, `kind`, `partiallyFillable`, `signingScheme`, and `signature` are required by the vendored OpenAPI. The SDK also requires `from` on the typed constructor so owner intent is explicit. | `receiver`, `appDataHash`, `quoteId`, and `fullBalanceCheck` are optional. `sellTokenBalance` and `buyTokenBalance` default to `erc20`. The SDK emits `feeAmount` as `"0"` and deserializes omitted `feeAmount` as zero for compatibility with existing typed payloads. | Non-zero `feeAmount` now fails during `OrderCreation` deserialization with the stable serde error substring. Services also returns `OrderbookRejection::NonZeroFee` if a non-zero order-level fee reaches the backend. App-data hash mismatches remain a services-side `OrderbookRejection::AppDataHashMismatch`. |
+| `OrderQuoteRequest` | `sellToken`, `buyToken`, and `from` are required by the vendored OpenAPI. Exactly one side amount is required through the flattened side. | `receiver`, `validFor`, `validTo`, `appData`, `appDataHash`, `sellTokenBalance`, `buyTokenBalance`, `signingScheme`, `onchainOrder`, `verificationGasLimit`, and `timeout` are optional. The SDK constructor sets the public `appData` hash to the zero hash, `sellTokenBalance` and `buyTokenBalance` to `erc20`, `signingScheme` to `eip712`, `onchainOrder` to `false`, and `priceQuality` to `verified`. The `verified` default is retained because it is the most protective public OpenAPI default. | `QuoteSide::is_valid` and `OrderQuoteRequest::validate` reject missing or multiple side amounts with `OrderbookError::InvalidQuoteRequest`. `validate` also rejects `verificationGasLimit` without `eip1271` and ECDSA on-chain quote requests with `OrderbookError::IncompatibleSigningScheme`. |
+| `AppDataObject` PUT payload | `fullAppData` is the single request-body field for `PUT /api/v1/app_data/{hash}`. | The path hash is required by the route. No request-body defaults are applied. | Services validates the full app-data document and returns typed `AppDataInvalid`, `AppDataHashMismatch`, or `AppDataMismatch` rejections. The SDK constructs the body with the single `fullAppData` field. |
+| `OrderCancellations` | `signature` and `signingScheme` are required by the vendored OpenAPI. The services model signs flattened `orderUids` and the SDK always constructs that list explicitly. | `signingScheme` defaults to `eip712` in the SDK constructor. `orderUids` is supplied by callers and the upstream description caps the list at 128 UIDs. | Signature verification remains services-side and maps into orderbook cancellation rejection variants such as malformed or invalid signature responses. There are no mutually exclusive fields in the payload. |
+
 ### Forward Compatibility
 
 The covered response DTOs are open to additive upstream fields. Unknown fields
@@ -88,6 +113,7 @@ remaining only locally reproducible.
 Primary implementation points:
 
 - `crates/orderbook/src/types.rs`
+- `crates/orderbook/src/api.rs`
 - `scripts/parity-maintainer/src/openapi_coverage.rs`
 - `.github/workflows/_quality-gate.yml`
 - `parity/openapi/coverage.yaml`
@@ -100,9 +126,18 @@ Primary implementation points:
 - `parity/openapi/onchain-order-data-inventory.yaml`
 - `parity/openapi/total-surplus-inventory.yaml`
 - `parity/openapi/solver-execution-inventory.yaml`
+- `parity/fixtures/orderbook-requests/order_creation.json`
+- `parity/fixtures/orderbook-requests/order_quote_request.json`
+- `parity/fixtures/orderbook-requests/app_data_put.json`
+- `parity/fixtures/orderbook-requests/order_cancellations.json`
 
 Primary regression coverage:
 
+- `crates/orderbook/tests/order_creation_fee_deserialize.rs::order_creation_deserialize_accepts_zero_or_omitted_fee_amount`
+- `crates/orderbook/tests/order_creation_fee_deserialize.rs::order_creation_deserialize_rejects_non_zero_fee_amount`
+- `crates/orderbook/tests/order_creation_fee_deserialize.rs::order_creation_deserialize_keeps_malformed_fee_amount_parser_error`
+- `crates/orderbook/tests/order_creation_fee_deserialize.rs::quote_data_deserialize_keeps_non_zero_network_cost_fee_amount`
+- `crates/orderbook/tests/order_creation_fee_deserialize.rs::order_creation_deserialize_fee_amount_boundary_is_zero_only`
 - `crates/orderbook/tests/transform_contract.rs::order_fixture_matches_openapi_inventory`
 - `crates/orderbook/tests/transform_contract.rs::auction_order_fixture_matches_openapi_inventory`
 - `crates/orderbook/tests/transform_contract.rs::order_quote_response_fixture_matches_openapi_inventory`
@@ -117,7 +152,9 @@ Validation surface:
 
 ```text
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-coverage --validate
+cargo parity-validate --source-lock parity/source-lock.yaml
 cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
+cargo test -p cow-sdk-orderbook --test order_creation_fee_deserialize
 cargo test -p cow-sdk-orderbook --test openapi_dto_coverage
 cargo test -p cow-sdk-orderbook --test transform_contract
 cargo run --manifest-path scripts/policy-maintainer/Cargo.toml -- check-deny-unknown-fields

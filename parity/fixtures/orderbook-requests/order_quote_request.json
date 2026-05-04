@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "surface": "orderbook-request-order-quote",
+  "dto": "cow_sdk_orderbook::OrderQuoteRequest",
+  "endpoint": "POST /api/v1/quote",
+  "reviewed_at": "2026-05-04",
+  "source_refs": [
+    {
+      "repo": "services",
+      "commit": "0720b9bc15138ecc362078f505d0e3ba1c7b9883",
+      "path": "crates/orderbook/openapi.yml",
+      "line_start": 1882,
+      "line_end": 2029
+    }
+  ],
+  "examples": [
+    {
+      "name": "sell_verified_default",
+      "payload": {
+        "sellToken": "0x0000000000000000000000000000000000000001",
+        "buyToken": "0x0000000000000000000000000000000000000002",
+        "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20",
+        "from": "0x0000000000000000000000000000000000000003",
+        "priceQuality": "verified",
+        "signingScheme": "eip712",
+        "onchainOrder": false,
+        "kind": "sell",
+        "sellAmountBeforeFee": "1000000000000000000"
+      }
+    },
+    {
+      "name": "buy_eip1271_with_full_app_data",
+      "payload": {
+        "sellToken": "0x0000000000000000000000000000000000000001",
+        "buyToken": "0x0000000000000000000000000000000000000002",
+        "receiver": "0x0000000000000000000000000000000000000003",
+        "validFor": 1800,
+        "appData": "{\"version\":\"1.0.0\",\"metadata\":{}}",
+        "appDataHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "sellTokenBalance": "external",
+        "buyTokenBalance": "internal",
+        "from": "0x0000000000000000000000000000000000000003",
+        "priceQuality": "optimal",
+        "signingScheme": "eip1271",
+        "onchainOrder": true,
+        "verificationGasLimit": 27000,
+        "timeout": 2500,
+        "kind": "buy",
+        "buyAmountAfterFee": "2000000000000000000"
+      }
+    }
+  ]
+}

@@ -8,8 +8,8 @@
 //! typed [`ClientRejection::OwnerMismatch`] variant and this test proves
 //! the typed addresses still survive the round-trip.
 
-use cow_sdk_core::Address;
-use cow_sdk_trading::{ClientRejection, TradingError};
+use cow_sdk_core::{Address, CowEnv, REDACTED_PLACEHOLDER};
+use cow_sdk_trading::{ClientRejection, OrderbookContextValue, TradingError};
 
 const fn assert_typed_address(_: &Address) {}
 
@@ -69,4 +69,45 @@ fn invalid_input_carries_typed_field_and_validation_reason() {
         rendered.contains("buyAmount") && rendered.contains("out of range"),
         "InvalidInput must render the field and the validation reason, got: {rendered}",
     );
+}
+
+#[test]
+fn orderbook_context_conflicts_keep_typed_values_visible_and_urls_redacted() {
+    let chain_error = TradingError::InjectedOrderbookContextConflict {
+        field: "chainId",
+        requested: OrderbookContextValue::ChainId(1),
+        configured: OrderbookContextValue::ChainId(11_155_111),
+    };
+    let rendered = chain_error.to_string();
+    assert!(rendered.contains("chainId"));
+    assert!(rendered.contains('1'));
+    assert!(rendered.contains("11155111"));
+
+    let env_error = TradingError::QuoteOrderbookBindingConflict {
+        field: "env",
+        quoted: OrderbookContextValue::Env(CowEnv::Prod),
+        submitted: OrderbookContextValue::Env(CowEnv::Staging),
+    };
+    let rendered = env_error.to_string();
+    assert!(rendered.contains("env"));
+    assert!(rendered.contains(CowEnv::Prod.as_str()));
+    assert!(rendered.contains(CowEnv::Staging.as_str()));
+
+    let url_error = TradingError::QuoteOrderbookBindingConflict {
+        field: "baseUrl",
+        quoted: OrderbookContextValue::BaseUrl(
+            "https://user:pass@example.com/path?key=secret"
+                .to_owned()
+                .into(),
+        ),
+        submitted: OrderbookContextValue::BaseUrl(
+            "https://other:secret@example.com/path".to_owned().into(),
+        ),
+    };
+    let rendered = url_error.to_string();
+    assert!(rendered.contains("baseUrl"));
+    assert!(rendered.contains(REDACTED_PLACEHOLDER));
+    assert!(!rendered.contains("user:pass"));
+    assert!(!rendered.contains("key=secret"));
+    assert!(!rendered.contains("other:secret"));
 }

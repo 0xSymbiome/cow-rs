@@ -56,9 +56,18 @@ fn wallet_event_preserves_wire_shape() {
 fn rpc_error_payload_new_preserves_wire_shape() {
     let payload = RpcErrorPayload::new(4902, "missing chain", Some(json!({ "detail": "kept" })));
 
+    assert_eq!(payload.message.as_inner(), "missing chain");
+    assert_eq!(
+        payload
+            .data
+            .as_ref()
+            .expect("data value should be preserved internally")
+            .as_inner(),
+        &json!({ "detail": "kept" })
+    );
     assert_json_bytes(
         &payload,
-        r#"{"code":4902,"message":"missing chain","data":{"detail":"kept"}}"#,
+        r#"{"code":4902,"message":"[redacted]","data":"[redacted]"}"#,
     );
 }
 

@@ -223,7 +223,7 @@ fn eth_sign_digest_prehash(digest: &Hash32) -> Result<[u8; 32], ContractsError> 
 
 fn signature_recovery_error(error: &alloy_primitives::SignatureError) -> ContractsError {
     ContractsError::SignatureRecovery {
-        message: error.to_string(),
+        message: error.to_string().into(),
     }
 }
 
@@ -353,7 +353,7 @@ where
         ))
         .map_err(|error| ContractsError::Eip1271Provider {
             operation: "read_contract",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })?;
 
     ensure_magic_value(&raw)
@@ -368,7 +368,7 @@ where
         .get_code(verifier)
         .map_err(|error| ContractsError::Eip1271Provider {
             operation: "get_code",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })?;
 
     if has_contract_code(code.as_ref()) {
@@ -394,7 +394,7 @@ where
             .await
             .map_err(|error| ContractsError::Eip1271Provider {
                 operation: "get_code",
-                message: error.to_string(),
+                message: error.to_string().into(),
             })?;
 
     if has_contract_code(code.as_ref()) {
@@ -427,7 +427,7 @@ pub(crate) fn decode_magic_value_response(raw: &str) -> Result<[u8; 4], Contract
         Ok(serde_json::Value::String(value)) => value,
         Ok(other) => {
             return Err(ContractsError::MalformedEip1271Response {
-                response: other.to_string(),
+                response: other.to_string().into(),
             });
         }
         Err(_) => raw.to_owned(),
@@ -435,7 +435,7 @@ pub(crate) fn decode_magic_value_response(raw: &str) -> Result<[u8; 4], Contract
 
     let bytes = parse_hex_exact(&candidate, "magicValue", 4).map_err(|_| {
         ContractsError::MalformedEip1271Response {
-            response: raw.to_owned(),
+            response: raw.to_owned().into(),
         }
     })?;
     let mut out = [0u8; 4];

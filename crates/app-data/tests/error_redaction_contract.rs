@@ -38,7 +38,7 @@ impl IpfsUploadTransport for StubUploadTransport {
             .clone()
             .ok_or_else(|| AppDataError::Transport {
                 class: cow_sdk_core::TransportErrorClass::Other,
-                detail: "missing upload response".to_owned(),
+                detail: "missing upload response".to_owned().into(),
             })
     }
 }

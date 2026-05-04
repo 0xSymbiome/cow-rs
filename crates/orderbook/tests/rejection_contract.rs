@@ -5,7 +5,8 @@
 //! envelope. The tests below pin every services-authoritative tag from
 //! a JSON envelope to the typed [`OrderbookRejection`] variant produced
 //! by [`parse_rejection`], plus the permanent `Unknown { code, message }`
-//! fallback, the `None` outcome on non-envelope bodies, and the
+//! fallback with sanitized code and redacted message rendering, the `None`
+//! outcome on non-envelope bodies, and the
 //! `From<OrderBookApiError>` path that promotes the envelope into
 //! [`OrderbookError::Rejected`] inside the SDK transport stack.
 //!
@@ -23,7 +24,7 @@
     reason = "test helper code may exercise a large number of wire variants in a single table"
 )]
 
-use cow_sdk_core::Amount;
+use cow_sdk_core::{Amount, REDACTED_PLACEHOLDER};
 use cow_sdk_orderbook::{
     OrderBookApiError, OrderbookError, OrderbookRejection, ResponseBody, parse_rejection,
 };
@@ -60,12 +61,12 @@ fn assert_message_carrying_rejection_contract(
 
     assert_eq!(
         &rejection, expected,
-        "tag {tag} must preserve the services description in its typed variant",
+        "tag {tag} must preserve the services description behind explicit access",
     );
     assert_eq!(
         rejection.to_string(),
         expected_display,
-        "tag {tag} must preserve the reviewed Display contract",
+        "tag {tag} must preserve the reviewed redacted Display contract",
     );
 }
 
@@ -201,7 +202,7 @@ fn every_known_services_tag_parses_to_its_typed_variant() {
             "AppDataInvalid",
             StatusCode::BAD_REQUEST,
             OrderbookRejection::AppDataInvalid {
-                message: "services-authoritative description".to_owned(),
+                message: "services-authoritative description".to_owned().into(),
             },
         ),
         (
@@ -218,7 +219,7 @@ fn every_known_services_tag_parses_to_its_typed_variant() {
             "AppDataMismatch",
             StatusCode::BAD_REQUEST,
             OrderbookRejection::AppDataMismatch {
-                message: "services-authoritative description".to_owned(),
+                message: "services-authoritative description".to_owned().into(),
             },
         ),
         (
@@ -295,7 +296,7 @@ fn every_known_services_tag_parses_to_its_typed_variant() {
             "NotFound",
             StatusCode::NOT_FOUND,
             OrderbookRejection::NotFound {
-                message: "services-authoritative description".to_owned(),
+                message: "services-authoritative description".to_owned().into(),
             },
         ),
         (
@@ -335,9 +336,9 @@ fn app_data_invalid_tag_preserves_typed_message_and_display() {
         StatusCode::BAD_REQUEST,
         description,
         &OrderbookRejection::AppDataInvalid {
-            message: description.to_owned(),
+            message: description.to_owned().into(),
         },
-        "AppDataInvalid: appData is invalid: missing protocol metadata",
+        "AppDataInvalid: [redacted]",
     );
 }
 
@@ -350,9 +351,9 @@ fn app_data_mismatch_tag_preserves_typed_message_and_display() {
         StatusCode::BAD_REQUEST,
         description,
         &OrderbookRejection::AppDataMismatch {
-            message: description.to_owned(),
+            message: description.to_owned().into(),
         },
-        "AppDataMismatch: stored appData \"{\\\"version\\\":\\\"1.0.0\\\"}\" is different than the specified data",
+        "AppDataMismatch: [redacted]",
     );
 }
 
@@ -364,9 +365,9 @@ fn not_found_tag_preserves_typed_message_and_display() {
         StatusCode::NOT_FOUND,
         description,
         &OrderbookRejection::NotFound {
-            message: description.to_owned(),
+            message: description.to_owned().into(),
         },
-        "NotFound: Order was not found",
+        "NotFound: [redacted]",
     );
 }
 
@@ -401,7 +402,7 @@ fn sell_amount_does_not_cover_fee_falls_back_to_unknown_when_data_shape_drifts()
 
     match rejection {
         OrderbookRejection::Unknown { code, .. } => {
-            assert_eq!(code, "SellAmountDoesNotCoverFee");
+            assert_eq!(code.as_str(), "SellAmountDoesNotCoverFee");
         }
         other => panic!(
             "unknown data shape must surface as Unknown, not {:?}",
@@ -416,10 +417,17 @@ fn unknown_services_tag_surfaces_as_unknown_with_preserved_code_and_message() {
     let rejection = parse_rejection(StatusCode::BAD_REQUEST, &body)
         .expect("well-formed envelope must classify even when the tag is unknown");
 
-    match rejection {
+    match &rejection {
         OrderbookRejection::Unknown { code, message } => {
-            assert_eq!(code, "NotYetDefined");
-            assert_eq!(message, "services added this in a future release");
+            assert_eq!(code.as_str(), "NotYetDefined");
+            assert_eq!(
+                message.as_inner(),
+                "services added this in a future release"
+            );
+            assert_eq!(
+                rejection.to_string(),
+                "unknown rejection code `NotYetDefined`: [redacted]"
+            );
         }
         other => panic!(
             "unknown services tag must surface as Unknown, not {:?}",
@@ -437,12 +445,41 @@ fn duplicate_order_typo_is_classified_as_unknown_not_as_duplicated_order() {
     match rejection {
         OrderbookRejection::Unknown { code, .. } => {
             assert_eq!(
-                code, "DuplicateOrder",
+                code.as_str(),
+                "DuplicateOrder",
                 "the DuplicateOrder typo must surface as the literal unknown tag rather than the typed DuplicatedOrder variant",
             );
         }
         other => panic!(
             "DuplicateOrder typo must surface as Unknown, not {:?}",
+            other,
+        ),
+    }
+}
+
+#[test]
+fn secret_shaped_unknown_rejection_code_is_sanitized_before_public_rendering() {
+    let body = envelope_bytes(
+        "https://user:pass@example.com/path?key=secret",
+        "services added this in a future release",
+    );
+    let rejection = parse_rejection(StatusCode::BAD_REQUEST, &body)
+        .expect("well-formed envelope must classify even when the tag is unsafe");
+
+    match &rejection {
+        OrderbookRejection::Unknown { code, message } => {
+            assert_eq!(code.as_str(), REDACTED_PLACEHOLDER);
+            assert_eq!(
+                message.as_inner(),
+                "services added this in a future release"
+            );
+            assert_eq!(
+                rejection.to_string(),
+                "unknown rejection code `[redacted]`: [redacted]"
+            );
+        }
+        other => panic!(
+            "unsafe unknown services tag must surface as Unknown, not {:?}",
             other,
         ),
     }

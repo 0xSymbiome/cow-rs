@@ -15,14 +15,14 @@ use cow_sdk_orderbook::OrderbookError;
 fn transport_variant_carries_typed_class_and_detail() {
     let error = OrderbookError::Transport {
         class: TransportErrorClass::Connect,
-        detail: "connection reset by peer".to_owned(),
+        detail: "connection reset by peer".to_owned().into(),
     };
 
     let OrderbookError::Transport { class, detail } = &error else {
         panic!("expected Transport variant, got {error:?}");
     };
     assert_eq!(*class, TransportErrorClass::Connect);
-    assert!(detail.contains("connection reset"));
+    assert!(detail.as_inner().contains("connection reset"));
     assert!(
         error.to_string().contains("connect"),
         "transport Display must include the typed class label",

@@ -76,19 +76,22 @@ impl Origin {
         let trimmed = value.trim();
         if trimmed.is_empty() {
             return Err(BrowserWalletError::InvalidProviderOrigin {
-                message: "provider origin must not be empty".to_owned(),
+                message: "provider origin must not be empty".to_owned().into(),
             });
         }
         if trimmed.chars().any(char::is_control) {
             return Err(BrowserWalletError::InvalidProviderOrigin {
-                message: "provider origin must not contain control characters".to_owned(),
+                message: "provider origin must not contain control characters"
+                    .to_owned()
+                    .into(),
             });
         }
         if !origin_scheme_is_documented(trimmed) {
             return Err(BrowserWalletError::InvalidProviderOrigin {
                 message:
                     "provider origin scheme must be http, https, test, transport, or reverse-DNS"
-                        .to_owned(),
+                        .to_owned()
+                        .into(),
             });
         }
         Ok(Self(trimmed.to_owned()))
@@ -1005,8 +1008,8 @@ mod tests {
         assert_eq!(
             parse_quantity_to_decimal(&json!(42), "eth_estimateGas").unwrap_err(),
             BrowserWalletError::MalformedResponse {
-                method: "eth_estimateGas".to_owned(),
-                message: "expected hex quantity string".to_owned(),
+                method: "eth_estimateGas".to_owned().into(),
+                message: "expected hex quantity string".to_owned().into(),
             }
         );
     }

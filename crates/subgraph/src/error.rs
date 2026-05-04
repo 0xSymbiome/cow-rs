@@ -11,13 +11,13 @@ use thiserror::Error;
 #[non_exhaustive]
 pub struct SubgraphGraphQlError {
     /// Human-readable error message returned by the GraphQL service.
-    pub message: String,
+    pub message: Redacted<String>,
     /// Optional source locations within the submitted document.
     #[serde(default)]
     pub locations: Vec<SubgraphGraphQlErrorLocation>,
     /// Optional GraphQL extension metadata returned by the endpoint.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub extensions: Option<Value>,
+    pub extensions: Option<Redacted<Value>>,
 }
 
 impl SubgraphGraphQlError {
@@ -25,7 +25,7 @@ impl SubgraphGraphQlError {
     #[must_use]
     pub fn new(message: impl Into<String>, locations: Vec<SubgraphGraphQlErrorLocation>) -> Self {
         Self {
-            message: message.into(),
+            message: message.into().into(),
             locations,
             extensions: None,
         }
@@ -61,13 +61,13 @@ pub struct SubgraphRequestErrorContext {
     /// Production-derived routes are redacted before they reach this public
     /// error surface, and explicit overrides are normalized to non-secret route
     /// identity.
-    pub api: String,
+    pub api: Redacted<String>,
     /// Raw GraphQL document submitted to the endpoint.
-    pub document: String,
+    pub document: Redacted<String>,
     /// Optional GraphQL operation name sent with the request.
-    pub operation_name: Option<String>,
+    pub operation_name: Option<Redacted<String>>,
     /// Optional GraphQL variables sent with the request.
-    pub variables: Option<Value>,
+    pub variables: Option<Redacted<Value>>,
 }
 
 impl SubgraphRequestErrorContext {
@@ -82,10 +82,10 @@ impl SubgraphRequestErrorContext {
     ) -> Self {
         Self {
             chain_id,
-            api: api.into(),
-            document: document.into(),
-            operation_name,
-            variables,
+            api: api.into().into(),
+            document: document.into().into(),
+            operation_name: operation_name.map(Redacted::new),
+            variables: variables.map(Redacted::new),
         }
     }
 }
@@ -104,14 +104,14 @@ pub enum SubgraphError {
     #[error("No totals found")]
     NoTotalsFound,
     /// Request execution failed before a complete HTTP response was received.
-    #[error("subgraph transport error for {}: {details}", context.api)]
+    #[error("subgraph transport error ({class}) for {}: {details}", context.api)]
     Transport {
         /// Resolved request metadata captured at the failure boundary.
         context: Box<SubgraphRequestErrorContext>,
         /// Classification of the underlying transport failure.
         class: TransportErrorClass,
         /// Transport-layer error details from the HTTP client.
-        details: String,
+        details: Redacted<String>,
     },
     /// Explicit service endpoint override failed host-policy validation.
     #[error(transparent)]
@@ -134,7 +134,7 @@ pub enum SubgraphError {
         /// Redacted and bounded response body that failed to decode.
         body: Redacted<String>,
         /// Serde decoding error details.
-        details: String,
+        details: Redacted<String>,
     },
     /// The GraphQL payload returned one or more typed GraphQL errors.
     #[error("subgraph graphql error response for {}", context.api)]

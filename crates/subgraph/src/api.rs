@@ -511,7 +511,7 @@ impl SubgraphApi {
                     resolved_config.chain_id,
                     &request,
                     status,
-                    &body,
+                    body.as_inner(),
                 ));
             }
             Err(TransportError::Transport { class, detail }) => {
@@ -520,7 +520,7 @@ impl SubgraphApi {
                     resolved_config.chain_id,
                     &request,
                     class,
-                    detail,
+                    detail.into_inner(),
                 ));
             }
             Err(TransportError::Configuration { message }) => {
@@ -529,7 +529,7 @@ impl SubgraphApi {
                     resolved_config.chain_id,
                     &request,
                     TransportErrorClass::Builder,
-                    message,
+                    message.into_inner(),
                 ));
             }
             Err(other) => {
@@ -714,7 +714,7 @@ fn transport_error(
     SubgraphError::Transport {
         context: Box::new(request_error_context(api, chain_id, request)),
         class,
-        details,
+        details: details.into(),
     }
 }
 
@@ -742,7 +742,7 @@ fn serialization_error(
     SubgraphError::Serialization {
         context: Box::new(request_error_context(api, chain_id, request)),
         body: Redacted::new(redact_response_body(body)),
-        details,
+        details: details.into(),
     }
 }
 
@@ -775,10 +775,12 @@ fn request_error_context(
 ) -> SubgraphRequestErrorContext {
     SubgraphRequestErrorContext {
         chain_id: u64::from(chain_id),
-        api: api.to_owned(),
-        document: request.document().to_owned(),
-        operation_name: request.operation_name().map(str::to_owned),
-        variables: request.variables().cloned(),
+        api: api.to_owned().into(),
+        document: request.document().to_owned().into(),
+        operation_name: request
+            .operation_name()
+            .map(|value| value.to_owned().into()),
+        variables: request.variables().cloned().map(Redacted::new),
     }
 }
 

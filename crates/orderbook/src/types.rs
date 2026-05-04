@@ -716,7 +716,7 @@ impl OrderQuoteResponse {
 /// This is kept separate from `QuoteData` because submission adds signature,
 /// signer, signing-scheme, and optional quote-id fields while preserving the
 /// orderbook wire shape expected by `/api/v1/orders`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct OrderCreation {
@@ -745,24 +745,19 @@ pub struct OrderCreation {
     /// non-zero order-level fee (`NonZeroFee`), so the submission path
     /// always wires this component as `"0"` and preserves the EIP-712
     /// struct-hash contract that hashes it as `uint256(0)`.
-    #[serde(default = "order_creation_zero_fee_amount")]
     fee_amount: Amount,
     /// Opt-in strict balance check flag accepted by the orderbook services.
-    #[serde(default, skip_serializing_if = "is_false")]
+    #[serde(skip_serializing_if = "is_false")]
     full_balance_check: bool,
     /// Order kind.
     pub kind: OrderKind,
     /// Whether partial fills are allowed.
-    #[serde(default)]
     pub partially_fillable: bool,
     /// Sell-token balance source.
-    #[serde(default)]
     pub sell_token_balance: SellTokenSource,
     /// Buy-token balance destination.
-    #[serde(default)]
     pub buy_token_balance: BuyTokenDestination,
     /// Signature scheme used for `signature`.
-    #[serde(default)]
     pub signing_scheme: SigningScheme,
     /// Raw signature string encoded for the upstream API.
     pub signature: String,
@@ -777,12 +772,77 @@ fn order_creation_zero_fee_amount() -> Amount {
     Amount::zero()
 }
 
+const ORDER_CREATION_NON_ZERO_FEE_ERROR: &str =
+    "non-zero feeAmount is not accepted for OrderCreation";
+
 #[expect(
     clippy::trivially_copy_pass_by_ref,
     reason = "serde skip_serializing_if predicates receive a field reference"
 )]
 const fn is_false(value: &bool) -> bool {
     !*value
+}
+
+impl<'de> Deserialize<'de> for OrderCreation {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct OrderCreationWire {
+            sell_token: Address,
+            buy_token: Address,
+            receiver: Option<Address>,
+            sell_amount: Amount,
+            buy_amount: Amount,
+            valid_to: u32,
+            app_data: Option<String>,
+            app_data_hash: Option<AppDataHash>,
+            #[serde(default = "order_creation_zero_fee_amount")]
+            fee_amount: Amount,
+            #[serde(default)]
+            full_balance_check: bool,
+            kind: OrderKind,
+            #[serde(default)]
+            partially_fillable: bool,
+            #[serde(default)]
+            sell_token_balance: SellTokenSource,
+            #[serde(default)]
+            buy_token_balance: BuyTokenDestination,
+            #[serde(default)]
+            signing_scheme: SigningScheme,
+            signature: String,
+            from: Address,
+            quote_id: Option<i64>,
+        }
+
+        let wire = OrderCreationWire::deserialize(deserializer)?;
+        if !wire.fee_amount.is_zero() {
+            return Err(D::Error::custom(ORDER_CREATION_NON_ZERO_FEE_ERROR));
+        }
+
+        Ok(Self {
+            sell_token: wire.sell_token,
+            buy_token: wire.buy_token,
+            receiver: wire.receiver,
+            sell_amount: wire.sell_amount,
+            buy_amount: wire.buy_amount,
+            valid_to: wire.valid_to,
+            app_data: wire.app_data,
+            app_data_hash: wire.app_data_hash,
+            fee_amount: wire.fee_amount,
+            full_balance_check: wire.full_balance_check,
+            kind: wire.kind,
+            partially_fillable: wire.partially_fillable,
+            sell_token_balance: wire.sell_token_balance,
+            buy_token_balance: wire.buy_token_balance,
+            signing_scheme: wire.signing_scheme,
+            signature: wire.signature,
+            from: wire.from,
+            quote_id: wire.quote_id,
+        })
+    }
 }
 
 impl OrderCreation {

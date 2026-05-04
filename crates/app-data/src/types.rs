@@ -62,7 +62,7 @@ impl SchemaVersion {
         if is_semver(&version) {
             Ok(Self(version))
         } else {
-            Err(AppDataError::InvalidSchemaVersion(version))
+            Err(AppDataError::InvalidSchemaVersion(version.into()))
         }
     }
 
@@ -336,14 +336,17 @@ pub struct ValidationResult {
     pub success: bool,
     /// Rendered validation errors when `success` is `false`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub errors: Option<String>,
+    pub errors: Option<Redacted<String>>,
 }
 
 impl ValidationResult {
     /// Creates a schema validation result.
     #[must_use]
-    pub const fn new(success: bool, errors: Option<String>) -> Self {
-        Self { success, errors }
+    pub fn new(success: bool, errors: Option<String>) -> Self {
+        Self {
+            success,
+            errors: errors.map(Redacted::new),
+        }
     }
 }
 
@@ -807,7 +810,7 @@ mod tests {
             let error = SchemaVersion::new(invalid).unwrap_err();
             match error {
                 AppDataError::InvalidSchemaVersion(ref message) => {
-                    assert_eq!(message, invalid);
+                    assert_eq!(message.as_inner(), invalid);
                 }
                 other => panic!("expected InvalidSchemaVersion, got {other:?}"),
             }
@@ -824,7 +827,7 @@ mod tests {
             let error = invalid.parse::<SchemaVersion>().unwrap_err();
             match error {
                 AppDataError::InvalidSchemaVersion(ref message) => {
-                    assert_eq!(message, invalid);
+                    assert_eq!(message.as_inner(), invalid);
                 }
                 other => panic!("expected InvalidSchemaVersion, got {other:?}"),
             }

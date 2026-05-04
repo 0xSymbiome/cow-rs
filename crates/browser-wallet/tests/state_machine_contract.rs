@@ -129,8 +129,10 @@ impl Eip1193Transport for MalformedChainIdTransport {
             "eth_accounts" => Ok(json!(["0x4444444444444444444444444444444444444444"])),
             "eth_chainId" => Ok(json!({ "not": "a chain id" })),
             other => Err(BrowserWalletError::UnsupportedRpcMethod {
-                method: other.to_owned(),
-                message: "fixture supports only session refresh methods".to_owned(),
+                method: other.to_owned().into(),
+                message: "fixture supports only session refresh methods"
+                    .to_owned()
+                    .into(),
             }),
         }
     }
@@ -147,9 +149,11 @@ async fn malformed_json_rpc_error_classifies_as_typed_provider_error() {
 
     match error {
         BrowserWalletError::MalformedResponse { method, message } => {
-            assert_eq!(method, "eth_chainId");
+            assert_eq!(method.as_inner(), "eth_chainId");
             assert!(
-                message.contains("expected string or number chain id"),
+                message
+                    .as_inner()
+                    .contains("expected string or number chain id"),
                 "malformed-response message must retain chain-id parse context: {message}",
             );
         }

@@ -436,7 +436,7 @@ fn assert_invalid_query_error(id: &str, expected: &Value) {
     );
     let graphql_body = errors
         .iter()
-        .map(|entry| entry.message.as_str())
+        .map(|entry| entry.message.as_inner().as_str())
         .collect::<Vec<_>>()
         .join("; ");
     for reason in &reasons {

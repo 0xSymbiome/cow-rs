@@ -50,7 +50,7 @@ impl IpfsUploadTransport for RecordingUploadTransport {
             .clone()
             .ok_or_else(|| AppDataError::Transport {
                 class: cow_sdk_core::TransportErrorClass::Other,
-                detail: "missing upload response".to_string(),
+                detail: "missing upload response".to_string().into(),
             })
     }
 }
@@ -83,7 +83,7 @@ fn assert_write_uri_rejected_with_builder_error(write_uri: &str) {
             class: cow_sdk_core::TransportErrorClass::Builder,
             ref detail,
         } => {
-            assert_eq!(detail, "ipfs write base uri must not be empty");
+            assert_eq!(detail.as_inner(), "ipfs write base uri must not be empty");
         }
         other => panic!("expected Transport(Builder), got {other:?}"),
     }

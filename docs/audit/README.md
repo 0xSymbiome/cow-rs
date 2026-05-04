@@ -105,7 +105,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | OpenAPI-vendored orderbook response DTO inventories, fixtures, field-level round trips, and response forward compatibility | Current | 2026-05-01 |
+| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | OpenAPI-vendored orderbook response DTO inventories, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-05-04 |
 
 ## Transport And Routing
 
@@ -143,7 +143,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, URL-bearing config redaction, host-policy failures, `Redacted<T>` wrapper, transport error redaction, and typed user policy | Current | 2026-05-01 |
-| [Credential Surface Audit](credential-surface-audit.md) | Standing audit | Credential-bearing builder storage, URL configuration, host-policy errors, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, and app-data | Redacted credential storage plus sanitized host-policy failures and typed-redacted header values at the Pinata upload boundary | Current | 2026-05-01 |
+| [Credential Surface Audit](credential-surface-audit.md) | Standing audit | Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, contracts, signing, trading, app-data, and the SDK facade | Redacted credential storage plus sanitized host-policy failures, typed-redacted public error diagnostics, and typed-redacted header values at the Pinata upload boundary | Current | 2026-05-04 |
 | [URL Credential Redaction Audit](url-credential-redaction-audit.md) | Standing audit | URL-bearing public configuration across core, orderbook, subgraph, browser-wallet, and app-data | Redacting URL map and URL value wrappers for public diagnostics with explicit raw dispatch access at HTTP and wallet payload seams | Current | 2026-05-01 |
 | [Shared Logic Reviewability Audit](shared-logic-reviewability-audit.md) | Standing audit | Orderbook, signing, and trading shared-logic reviewability boundary | Shared request execution, signing payload preparation, thin posting wrappers, and justified DTO separation | Current | 2026-04-21 |
 | [Cooperative Cancellation Contract Audit](cooperative-cancellation-contract-audit.md) | Standing audit | Cross-cutting cooperative cancellation across core, orderbook, subgraph, and trading | Shared `CancellationToken` re-export, the `Cancellable` extension-trait combinator composed at the call site on every long-running public operation of `OrderBookApi`, `SubgraphApi`, and `TradingSdk`, typed `Cancelled` variants with `From<Cancelled>` bridges on every affected error aggregate, and biased-poll drop semantics | Current | 2026-05-01 |

@@ -488,7 +488,7 @@ fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
     match transport {
         ContractsError::Eip1271Provider { operation, message } => {
             assert_eq!(operation, "read_contract");
-            assert_eq!(message, "rpc unavailable");
+            assert_eq!(message.as_inner(), "rpc unavailable");
         }
         other => panic!("expected Eip1271Provider, got {other:?}"),
     }
@@ -512,7 +512,7 @@ fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
     .unwrap_err();
     match &malformed {
         ContractsError::MalformedEip1271Response { response } => {
-            assert_eq!(response, "{\"unexpected\":true}");
+            assert_eq!(response.as_inner(), "{\"unexpected\":true}");
         }
         other => panic!("expected MalformedEip1271Response, got {other:?}"),
     }
@@ -604,7 +604,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
     match &transport {
         ContractsError::Eip1271Provider { operation, message } => {
             assert_eq!(*operation, "read_contract");
-            assert_eq!(message, "rpc unavailable");
+            assert_eq!(message.as_inner(), "rpc unavailable");
         }
         other => panic!("expected Eip1271Provider, got {other:?}"),
     }
@@ -625,7 +625,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
     match &code_error {
         ContractsError::Eip1271Provider { operation, message } => {
             assert_eq!(*operation, "get_code");
-            assert_eq!(message, "code lookup unavailable");
+            assert_eq!(message.as_inner(), "code lookup unavailable");
         }
         other => panic!("expected Eip1271Provider, got {other:?}"),
     }

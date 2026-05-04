@@ -101,7 +101,7 @@ pub(crate) fn encode_u256_str(
         )
         .ok_or_else(|| ContractsError::InvalidNumeric {
             field,
-            value: value.to_owned(),
+            value: value.to_owned().into(),
         })?;
 
     encode_u256_biguint_inner(field, &parsed, || value.to_owned())
@@ -120,7 +120,7 @@ fn encode_u256_biguint_inner(
     if bytes.len() > 32 {
         return Err(ContractsError::NumericOverflow {
             field,
-            value: display(),
+            value: display().into(),
         });
     }
 

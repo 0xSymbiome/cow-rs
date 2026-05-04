@@ -519,14 +519,19 @@ dependencies = [
 name = "cow-sdk"
 version = "0.1.0"
 dependencies = [
+ "alloy-sol-types",
  "cow-sdk-app-data",
  "cow-sdk-browser-wallet",
  "cow-sdk-contracts",
  "cow-sdk-core",
  "cow-sdk-orderbook",
  "cow-sdk-signing",
+ "cow-sdk-subgraph",
  "cow-sdk-trading",
+ "hex",
+ "jsonschema",
  "num-bigint",
+ "serde",
  "serde_json",
  "thiserror 2.0.18",
  "trybuild",

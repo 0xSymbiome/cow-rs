@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::cancellation::Cancelled;
+use crate::{cancellation::Cancelled, config::CowEnv, redaction::Redacted};
 
 /// Validation failures for typed user input and configuration values.
 #[non_exhaustive]
@@ -85,16 +85,16 @@ pub enum CoreError {
         /// Numeric chain id that could not be resolved.
         chain_id: u64,
         /// Environment name used during resolution.
-        env: String,
+        env: CowEnv,
         /// Whether partner API URLs were being requested.
         partner_api: bool,
     },
     /// A JSON or ABI-adjacent serialization step failed.
     #[error("serialization error: {0}")]
-    Serialization(String),
+    Serialization(Redacted<String>),
     /// A downstream transport implementation violated the core contract.
     #[error("transport contract violation: {0}")]
-    TransportContract(String),
+    TransportContract(Redacted<String>),
     /// A long-running operation was cancelled through a cooperative cancellation token.
     #[error("operation was cancelled")]
     Cancelled,

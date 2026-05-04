@@ -133,8 +133,16 @@ Credential-bearing types use the workspace `Redacted<T>` wrapper. Their
 `Debug`, `Display`, `Serialize`, and panic-path renderings emit only sanitised
 identity information. Transport errors strip credential-bearing query strings
 before wrapping URL strings; orderbook and subgraph diagnostics expose only
-redacted route identity. No code path bypasses redaction through `Deref` or
-transparent re-exports of the inner string.
+redacted route identity. Public error diagnostics for provider, signer, RPC,
+transport, response-body, orderbook rejection, subgraph context, browser-wallet,
+and facade errors keep credential-bearing message payloads behind explicit
+`Redacted<T>` access or typed sanitizers, while safe diagnostics such as chain
+IDs, schema versions, environment labels, and sanitized orderbook rejection tags
+remain visible. `crates/sdk/tests/error_redaction_contract.rs` proves the
+contract by rendering the reviewed error families with URL, bearer-token,
+private-key-shaped, and PEM-shaped payloads across `Debug`, `Display`, and
+existing `Serialize` surfaces. No code path bypasses redaction through `Deref`
+or transparent re-exports of the inner string.
 
 **Anchored by**: [ADR 0025](adr/0025-workspace-url-redaction-convention.md) (primary). Supporting: [ADR 0005](adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md).
 

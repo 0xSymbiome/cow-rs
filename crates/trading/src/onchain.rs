@@ -90,7 +90,7 @@ where
         .estimate_gas(&tx)
         .map_err(|error| TradingError::Signer {
             operation: "estimate_gas",
-            message: error.to_string(),
+            message: error.to_string().into(),
         });
     let gas_limit = match gas {
         Ok(value) => gas_with_margin(&value)?,
@@ -136,7 +136,7 @@ where
         .await
         .map_err(|error| TradingError::Signer {
             operation: "estimate_gas",
-            message: error.to_string(),
+            message: error.to_string().into(),
         });
     let gas_limit = match gas {
         Ok(value) => gas_with_margin(&value)?,
@@ -212,7 +212,7 @@ where
         .await
         .map_err(|error| TradingError::Signer {
             operation: "get_address",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })?;
     let owner = from.clone();
     let mut adjusted = crate::adjust_ethflow_limit_parameters(chain_id, params);
@@ -275,7 +275,7 @@ where
         .await
         .map_err(|error| TradingError::Signer {
             operation: "estimate_gas",
-            message: error.to_string(),
+            message: error.to_string().into(),
         });
     let gas_limit = match gas {
         Ok(value) => gas_with_margin(&value)?,
@@ -329,7 +329,7 @@ where
         .estimate_gas(&tx)
         .map_err(|error| TradingError::Signer {
             operation: "estimate_gas",
-            message: error.to_string(),
+            message: error.to_string().into(),
         });
     tx.gas_limit = Some(match gas {
         Ok(value) => Amount::new(parse_integer("gas", &value.to_string())?.to_string())?,
@@ -377,7 +377,7 @@ where
         .await
         .map_err(|error| TradingError::Signer {
             operation: "estimate_gas",
-            message: error.to_string(),
+            message: error.to_string().into(),
         });
     tx.gas_limit = Some(match gas {
         Ok(value) => Amount::new(parse_integer("gas", &value.to_string())?.to_string())?,
@@ -406,7 +406,7 @@ where
         .send_transaction(&tx)
         .map_err(|error| TradingError::Signer {
             operation: "send_transaction",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })?;
     Ok(receipt.transaction_hash)
 }
@@ -432,7 +432,7 @@ where
         .await
         .map_err(|error| TradingError::Signer {
             operation: "send_transaction",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })?;
     Ok(receipt.transaction_hash)
 }
@@ -637,12 +637,12 @@ fn decode_hex_field(field: &'static str, value: &str) -> Result<Vec<u8>, Trading
     let Some(stripped) = value.strip_prefix("0x") else {
         return Err(TradingError::InvalidNumeric {
             field,
-            value: value.to_owned(),
+            value: value.to_owned().into(),
         });
     };
     hex::decode(stripped).map_err(|_| TradingError::InvalidNumeric {
         field,
-        value: value.to_owned(),
+        value: value.to_owned().into(),
     })
 }
 

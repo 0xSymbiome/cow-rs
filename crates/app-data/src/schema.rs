@@ -4,7 +4,10 @@ use include_dir::{Dir, DirEntry, File, include_dir};
 use jsonschema::{Draft, Resource};
 use serde_json::Value;
 
-use crate::{AppDataDoc, AppDataError, AppDataParams, LATEST_APP_DATA_VERSION, ValidationResult};
+use crate::{
+    AppDataDoc, AppDataError, AppDataParams, LATEST_APP_DATA_VERSION, SchemaVersion,
+    ValidationResult,
+};
 
 static SCHEMAS_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/schemas");
 static SCHEMA_RESOURCES: OnceLock<BTreeMap<String, Value>> = OnceLock::new();
@@ -61,11 +64,11 @@ pub fn generate_app_data_doc(params: AppDataParams) -> AppDataDoc {
 /// Panics only if the embedded schema bundle stops following the committed
 /// URI, file-name, and JSON-validity invariants validated with the crate.
 pub fn get_app_data_schema(version: &str) -> Result<AppDataDoc, AppDataError> {
-    validate_schema_version(version)?;
+    let version = SchemaVersion::new(version)?;
     root_schemas()
-        .get(version)
+        .get(version.as_str())
         .cloned()
-        .ok_or_else(|| AppDataError::UnknownSchemaVersion(version.to_string()))
+        .map_or_else(|| Err(AppDataError::UnknownSchemaVersion(version)), Ok)
 }
 
 /// Validates an app-data document against the bundled JSON schema set.
@@ -81,10 +84,16 @@ pub fn validate_app_data_doc(app_data_doc: &AppDataDoc) -> ValidationResult {
             success: true,
             errors: None,
         },
-        Err(err) => ValidationResult {
-            success: false,
-            errors: Some(err.to_string()),
-        },
+        Err(err) => {
+            let errors = match &err {
+                AppDataError::Schema { message, .. } => message.as_inner().clone(),
+                _ => err.to_string(),
+            };
+            ValidationResult {
+                success: false,
+                errors: Some(errors.into()),
+            }
+        }
     }
 }
 
@@ -113,7 +122,7 @@ fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataE
     let validator = options.build(&schema).map_err(|err| {
         let message = render_validation_error(&err);
         AppDataError::Schema {
-            message,
+            message: message.into(),
             source: Box::new(err.to_owned()),
         }
     })?;
@@ -126,7 +135,7 @@ fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataE
             rendered.push_str(&render_validation_error(&error));
         }
         return Err(AppDataError::Schema {
-            message: rendered,
+            message: rendered.into(),
             source: Box::new(first.to_owned()),
         });
     }
@@ -233,21 +242,4 @@ fn collect_file(file: &File<'_>, prefix: &str, resources: &mut BTreeMap<String, 
     let resource: Value =
         serde_json::from_slice(file.contents()).expect("embedded schema json is valid");
     resources.insert(uri, resource);
-}
-
-fn validate_schema_version(version: &str) -> Result<(), AppDataError> {
-    let mut parts = version.split('.');
-    let valid = parts.next().is_some_and(is_digits)
-        && parts.next().is_some_and(is_digits)
-        && parts.next().is_some_and(is_digits)
-        && parts.next().is_none();
-    if valid {
-        Ok(())
-    } else {
-        Err(AppDataError::InvalidSchemaVersion(version.to_string()))
-    }
-}
-
-fn is_digits(part: &str) -> bool {
-    !part.is_empty() && part.chars().all(|ch| ch.is_ascii_digit())
 }

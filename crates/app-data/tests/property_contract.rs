@@ -282,7 +282,7 @@ proptest! {
 
         prop_assert!(matches!(
             get_app_data_schema(&malformed).unwrap_err(),
-            AppDataError::InvalidSchemaVersion(ref message) if message == &malformed
+            AppDataError::InvalidSchemaVersion(ref message) if message.as_inner() == &malformed
         ));
         prop_assert!(SchemaVersion::new(malformed.clone()).is_err());
         prop_assert!(malformed.parse::<SchemaVersion>().is_err());
@@ -302,7 +302,7 @@ proptest! {
         let policy_err = IpfsFetchPolicy::new(whitespace).unwrap_err();
         match policy_err {
             AppDataError::Transport { ref detail, .. } => {
-                prop_assert_eq!(detail, "ipfs read base uri must not be empty");
+                prop_assert_eq!(detail.as_inner(), "ipfs read base uri must not be empty");
             }
             other => prop_assert!(false, "expected Transport, got {:?}", other),
         }

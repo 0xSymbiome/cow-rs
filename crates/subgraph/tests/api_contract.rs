@@ -766,7 +766,7 @@ async fn malformed_success_response_surfaces_serialization_error() {
                 )
             );
             assert_eq!(body.as_inner(), "not-json");
-            assert!(!details.is_empty());
+            assert!(!details.as_inner().is_empty());
         }
         other => panic!("expected serialization error, got {other:?}"),
     }
@@ -912,7 +912,7 @@ async fn transport_failures_surface_typed_context() {
                 )
             );
             assert_eq!(class, TransportErrorClass::Connect);
-            assert!(!details.is_empty());
+            assert!(!details.as_inner().is_empty());
         }
         other => panic!("expected Transport error, got {other:?}"),
     }
@@ -1278,8 +1278,11 @@ mod recording_transport {
                 body,
             } => Err(TransportError::HttpStatus {
                 status,
-                headers,
-                body,
+                headers: headers
+                    .into_iter()
+                    .map(|(name, value)| (name, value.into()))
+                    .collect(),
+                body: body.into(),
             }),
         }
     }
@@ -1377,7 +1380,7 @@ mod recording_transport {
         match error {
             SubgraphError::GraphQl { errors, .. } => {
                 assert_eq!(errors.len(), 1);
-                assert!(errors[0].message.contains("no field `tokens`"));
+                assert!(errors[0].message.as_inner().contains("no field `tokens`"));
             }
             other => panic!("expected GraphQl error, got {other:?}"),
         }

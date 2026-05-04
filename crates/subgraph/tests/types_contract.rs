@@ -109,7 +109,7 @@ fn graphql_error_payload_allows_missing_locations() {
     }))
     .unwrap();
 
-    assert_eq!(error.message, "Something went wrong");
+    assert_eq!(error.message.as_inner(), "Something went wrong");
     assert!(error.locations.is_empty());
 }
 
@@ -131,7 +131,7 @@ fn subgraph_graphql_error_extensions_classification_table() {
         let actual_class = match error
             .extensions
             .as_ref()
-            .and_then(|extensions| extensions.get("code"))
+            .and_then(|extensions| extensions.as_inner().get("code"))
             .and_then(serde_json::Value::as_str)
         {
             Some("GRAPHQL_VALIDATION_FAILED") => "validation",

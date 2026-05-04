@@ -225,6 +225,12 @@ impl CowEnv {
     }
 }
 
+impl fmt::Display for CowEnv {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 /// Redacting mapping from numeric chain id to API base URL.
 pub type ApiBaseUrls = RedactedUrlMap<ChainId>;
 /// Mapping from numeric chain id to deployment address override.
@@ -612,9 +618,9 @@ impl ApiContext {
             .as_inner()
             .get(&chain_id)
             .cloned()
-            .ok_or_else(|| CoreError::MissingBaseUrl {
+            .ok_or(CoreError::MissingBaseUrl {
                 chain_id,
-                env: self.env.as_str().to_owned(),
+                env: self.env,
                 partner_api,
             })
     }

@@ -3,6 +3,8 @@ use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use thiserror::Error;
 
+use crate::types::SchemaVersion;
+
 /// Errors returned by app-data generation, validation, transport, and CID helpers.
 #[non_exhaustive]
 #[derive(Debug, Error)]
@@ -15,10 +17,10 @@ pub enum AppDataError {
     InvalidCid,
     /// The supplied schema version did not match the expected `major.minor.patch` format.
     #[error("AppData version {0} is not a valid version")]
-    InvalidSchemaVersion(String),
+    InvalidSchemaVersion(Redacted<String>),
     /// The requested schema version was not embedded in the crate.
     #[error("AppData version {0} doesn't exist")]
-    UnknownSchemaVersion(String),
+    UnknownSchemaVersion(SchemaVersion),
     /// The app-data document did not contain a string `version` field.
     #[error("AppData document is missing string field `version`")]
     MissingSchemaVersion,
@@ -34,7 +36,7 @@ pub enum AppDataError {
         /// Path-prefixed validator message rendered for human inspection;
         /// includes the failing JSON instance path when available so the
         /// `Display` rendering identifies the offending field.
-        message: String,
+        message: Redacted<String>,
         /// Owned schema-validator error returned by the underlying
         /// [`jsonschema`] crate.
         #[source]
@@ -85,7 +87,7 @@ pub enum AppDataError {
         /// Classification of the underlying REST-transport failure.
         class: TransportErrorClass,
         /// Redacted detail message sourced from the transport layer.
-        detail: String,
+        detail: Redacted<String>,
     },
     /// A long-running app-data operation was cancelled through a cooperative cancellation token.
     #[error("app-data operation was cancelled")]

@@ -135,9 +135,9 @@ impl MockState {
         if !self.added_chains.contains(&requested_chain) {
             return Err(BrowserWalletError::ChainNotAdded {
                 chain_id: requested_chain,
-                method: method.to_owned(),
+                method: method.to_owned().into(),
                 code: 4902,
-                message: format!("mock wallet does not know chain {requested_chain}"),
+                message: format!("mock wallet does not know chain {requested_chain}").into(),
             });
         }
         if self.switch_applies_requested_chain {

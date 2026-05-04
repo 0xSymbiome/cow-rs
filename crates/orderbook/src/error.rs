@@ -1,4 +1,6 @@
-use cow_sdk_core::{Cancelled, CoreError, HostPolicyError, TransportErrorClass, ValidationReason};
+use cow_sdk_core::{
+    Cancelled, CoreError, HostPolicyError, Redacted, TransportErrorClass, ValidationReason,
+};
 use http::StatusCode;
 use thiserror::Error;
 
@@ -35,7 +37,7 @@ pub enum OrderbookError {
         /// Classification of the underlying REST-transport failure.
         class: TransportErrorClass,
         /// Redacted detail message sourced from the transport layer.
-        detail: String,
+        detail: Redacted<String>,
     },
     /// Explicit service endpoint override failed host-policy validation.
     #[error(transparent)]
@@ -85,7 +87,7 @@ pub enum OrderbookError {
 impl From<OrderBookApiError> for OrderbookError {
     fn from(value: OrderBookApiError) -> Self {
         let status = StatusCode::from_u16(value.status).ok();
-        let rejection = match (status, &value.body) {
+        let rejection = match (status, value.body.as_inner()) {
             (Some(status_code), ResponseBody::Json(body)) => serde_json::to_vec(body)
                 .ok()
                 .and_then(|bytes| parse_rejection(status_code, &bytes)),
@@ -112,7 +114,10 @@ impl From<Cancelled> for OrderbookError {
 impl From<reqwest::Error> for OrderbookError {
     fn from(error: reqwest::Error) -> Self {
         let (class, detail) = classify_reqwest_error(error);
-        Self::Transport { class, detail }
+        Self::Transport {
+            class,
+            detail: detail.into(),
+        }
     }
 }
 

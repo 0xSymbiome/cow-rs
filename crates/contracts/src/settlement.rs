@@ -752,7 +752,7 @@ fn encode_settle_call(
         if bytes.len() > 32 {
             return Err(ContractsError::NumericOverflow {
                 field: "amount",
-                value: amount.to_string(),
+                value: amount.to_string().into(),
             });
         }
         let mut buf = [0u8; 32];

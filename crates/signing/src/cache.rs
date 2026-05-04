@@ -71,7 +71,7 @@ impl Eip1271VerificationCache for NoopEip1271VerificationCache {
 /// The default [`SystemClock`] implementation calls [`Instant::now`].
 /// Tests can implement this trait with a deterministic clock to assert
 /// TTL boundaries without sleeping. On `wasm32`, [`Instant`] resolves
-/// to [`web_time::Instant`]; on native targets it resolves to
+/// to `web_time::Instant`; on native targets it resolves to
 /// [`std::time::Instant`].
 pub trait Clock: Send + Sync + 'static {
     /// Returns the current instant for cache timestamp comparisons.

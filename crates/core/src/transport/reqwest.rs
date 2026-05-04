@@ -139,7 +139,7 @@ impl ReqwestTransport {
         let client = builder
             .build()
             .map_err(|error| TransportError::Configuration {
-                message: format!("could not build reqwest client: {error}"),
+                message: Redacted::new(format!("could not build reqwest client: {error}")),
             })?;
 
         Ok(Self { client, base_url })
@@ -313,14 +313,15 @@ async fn dispatch_request(builder: RequestBuilder) -> Result<String, TransportEr
     Err(TransportError::HttpStatus {
         status: status_code,
         headers,
-        body,
+        body: Redacted::new(body),
     })
 }
 
 #[cfg(feature = "tracing")]
 const fn bytes_received(result: &Result<String, TransportError>) -> Option<usize> {
     match result {
-        Ok(body) | Err(TransportError::HttpStatus { body, .. }) => Some(body.len()),
+        Ok(body) => Some(body.len()),
+        Err(TransportError::HttpStatus { body, .. }) => Some(body.as_inner().len()),
         Err(_) => None,
     }
 }
@@ -351,26 +352,26 @@ fn build_header_map(headers: &[(String, String)]) -> Result<HeaderMap, Transport
     for (name, value) in headers {
         let header_name = HeaderName::from_bytes(name.as_bytes()).map_err(|error| {
             TransportError::Configuration {
-                message: format!("invalid header name: {error}"),
+                message: Redacted::new(format!("invalid header name: {error}")),
             }
         })?;
         let header_value =
             HeaderValue::from_str(value).map_err(|error| TransportError::Configuration {
-                message: format!("invalid header value: {error}"),
+                message: Redacted::new(format!("invalid header value: {error}")),
             })?;
         header_map.append(header_name, header_value);
     }
     Ok(header_map)
 }
 
-fn response_headers(response: &::reqwest::Response) -> Vec<(String, String)> {
+fn response_headers(response: &::reqwest::Response) -> Vec<(String, Redacted<String>)> {
     response
         .headers()
         .iter()
         .map(|(name, value)| {
             (
                 name.as_str().to_owned(),
-                String::from_utf8_lossy(value.as_bytes()).into_owned(),
+                Redacted::new(String::from_utf8_lossy(value.as_bytes()).into_owned()),
             )
         })
         .collect()
@@ -442,7 +443,7 @@ fn map_reqwest_error(error: ::reqwest::Error) -> TransportError {
     let class = classify(&sanitized);
     TransportError::Transport {
         class,
-        detail: sanitized.to_string(),
+        detail: Redacted::new(sanitized.to_string()),
     }
 }
 

@@ -164,12 +164,10 @@ async fn status_error_maps_to_http_status_variant_without_exposing_url() {
             body,
         } => {
             assert_eq!(*status, 500);
-            assert!(
-                headers.iter().any(|(name, value)| {
-                    name.eq_ignore_ascii_case("retry-after") && value == "5"
-                })
-            );
-            assert_eq!(body, "upstream exploded");
+            assert!(headers.iter().any(|(name, value)| {
+                name.eq_ignore_ascii_case("retry-after") && value.as_inner() == "5"
+            }));
+            assert_eq!(body.as_inner(), "upstream exploded");
         }
         other => panic!("expected HttpStatus variant, got {other:?}"),
     }
@@ -352,7 +350,7 @@ async fn body_stream_failure_classifies_through_exposed_helper() {
 #[test]
 fn configuration_error_surfaces_without_class() {
     let error = TransportError::Configuration {
-        message: "bad input".to_owned(),
+        message: "bad input".to_owned().into(),
     };
     assert!(error.class().is_none());
 }
@@ -361,8 +359,8 @@ fn configuration_error_surfaces_without_class() {
 fn http_status_error_surfaces_without_class_but_preserves_status_and_body() {
     let error = TransportError::HttpStatus {
         status: 418,
-        headers: vec![("Retry-After".to_owned(), "5".to_owned())],
-        body: "I am a teapot".to_owned(),
+        headers: vec![("Retry-After".to_owned(), "5".to_owned().into())],
+        body: "I am a teapot".to_owned().into(),
     };
     assert!(error.class().is_none());
     match error {
@@ -372,8 +370,9 @@ fn http_status_error_surfaces_without_class_but_preserves_status_and_body() {
             body,
         } => {
             assert_eq!(status, 418);
-            assert_eq!(headers, vec![("Retry-After".to_owned(), "5".to_owned())]);
-            assert_eq!(body, "I am a teapot");
+            assert_eq!(headers[0].0, "Retry-After");
+            assert_eq!(headers[0].1.as_inner(), "5");
+            assert_eq!(body.as_inner(), "I am a teapot");
         }
         _ => panic!("constructed variant must survive the round-trip"),
     }

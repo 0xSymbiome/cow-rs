@@ -236,7 +236,7 @@ where
     )? {
         contract_call(&call).map_err(|error| ContractsError::Provider {
             operation: "grantRole",
-            message: error.to_string(),
+            message: error.to_string().into(),
         })?;
     }
     Ok(())

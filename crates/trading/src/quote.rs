@@ -119,7 +119,7 @@ where
             .await
             .map_err(|error| TradingError::Signer {
                 operation: "get_address",
-                message: error.to_string(),
+                message: error.to_string().into(),
             })?,
     };
     effective_trade_parameters.owner = Some(account.clone());

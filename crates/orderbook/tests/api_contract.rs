@@ -997,8 +997,11 @@ mod recording_transport {
                 body,
             } => Err(TransportError::HttpStatus {
                 status,
-                headers,
-                body,
+                headers: headers
+                    .into_iter()
+                    .map(|(name, value)| (name, value.into()))
+                    .collect(),
+                body: body.into(),
             }),
         }
     }

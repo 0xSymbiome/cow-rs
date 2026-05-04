@@ -6,7 +6,7 @@ use std::{
 };
 
 use async_lock::Mutex;
-use cow_sdk_core::{HttpClientPolicy, HttpTransport, TransportError};
+use cow_sdk_core::{HttpClientPolicy, HttpTransport, Redacted, TransportError};
 use reqwest::header::{ACCEPT, CONTENT_TYPE, HeaderMap};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -104,10 +104,10 @@ pub struct OrderBookApiError {
     /// HTTP status code.
     pub status: u16,
     /// HTTP status text.
-    pub status_text: String,
+    pub status_text: Redacted<String>,
     /// Decoded response body captured from the error response.
-    pub body: ResponseBody,
-    message: String,
+    pub body: Redacted<ResponseBody>,
+    message: Redacted<String>,
 }
 
 impl OrderBookApiError {
@@ -128,9 +128,9 @@ impl OrderBookApiError {
 
         Self {
             status,
-            status_text,
-            body,
-            message,
+            status_text: Redacted::new(status_text),
+            body: Redacted::new(body),
+            message: Redacted::new(message),
         }
     }
 }
@@ -1019,14 +1019,18 @@ async fn send_request(
                 status,
                 status_text: canonical_status_text(status),
                 content_type: None,
-                body: body.into_bytes(),
+                body: body.into_inner().into_bytes(),
             },
-            headers,
+            headers: headers
+                .into_iter()
+                .map(|(name, value)| (name, value.into_inner()))
+                .collect(),
         }),
-        Err(TransportError::Transport { class, detail }) => Err((class, detail)),
-        Err(TransportError::Configuration { message }) => {
-            Err((cow_sdk_core::TransportErrorClass::Builder, message))
-        }
+        Err(TransportError::Transport { class, detail }) => Err((class, detail.into_inner())),
+        Err(TransportError::Configuration { message }) => Err((
+            cow_sdk_core::TransportErrorClass::Builder,
+            message.into_inner(),
+        )),
         Err(other) => Err((cow_sdk_core::TransportErrorClass::Other, other.to_string())),
     }
 }
@@ -1147,7 +1151,10 @@ where
             "request attempts exhausted".to_owned(),
         )
     });
-    Err(OrderbookError::Transport { class, detail })
+    Err(OrderbookError::Transport {
+        class,
+        detail: Redacted::new(detail),
+    })
 }
 
 #[cfg(feature = "tracing")]
@@ -1243,7 +1250,7 @@ where
 fn decode_text_body(response: &ResponseEnvelope) -> Result<String, OrderbookError> {
     String::from_utf8(response.body.clone()).map_err(|error| OrderbookError::Transport {
         class: cow_sdk_core::TransportErrorClass::Decode,
-        detail: error.to_string(),
+        detail: Redacted::new(error.to_string()),
     })
 }
 

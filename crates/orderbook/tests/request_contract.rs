@@ -507,12 +507,12 @@ fn typed_api_error_preserves_status_body_and_message() {
 
     assert_eq!(error.status, 400);
     assert!(
-        matches!(&error.body, ResponseBody::Json(_)),
+        matches!(error.body.as_inner(), ResponseBody::Json(_)),
         "typed body must be preserved verbatim"
     );
     assert!(
-        error.to_string().contains("order already exists"),
-        "Display must surface the description from the envelope",
+        error.to_string().contains("[redacted]"),
+        "Display must redact the description from the envelope",
     );
 }
 
@@ -687,7 +687,7 @@ async fn transport_errors_delay_between_retryable_attempts() {
     assert!(matches!(
         error,
         cow_sdk_orderbook::OrderbookError::Transport { ref detail, .. }
-            if detail == "temporary network outage"
+            if detail.as_inner() == "temporary network outage"
     ));
 }
 
@@ -788,7 +788,7 @@ async fn api_errors_keep_empty_bodies_empty_even_outside_204_successes() {
     match error {
         cow_sdk_orderbook::OrderbookError::Api(api_error) => {
             assert_eq!(api_error.status, INTERNAL_SERVER_ERROR);
-            assert_eq!(api_error.body, ResponseBody::Empty);
+            assert_eq!(api_error.body.as_inner(), &ResponseBody::Empty);
         }
         other => panic!("expected API error, got {other:?}"),
     }
@@ -808,8 +808,8 @@ async fn api_errors_keep_plain_text_payloads_out_of_the_json_decoder() {
     match error {
         cow_sdk_orderbook::OrderbookError::Api(api_error) => {
             assert_eq!(
-                api_error.body,
-                ResponseBody::Text("plain-text upstream failure".to_owned())
+                api_error.body.as_inner(),
+                &ResponseBody::Text("plain-text upstream failure".to_owned())
             );
         }
         other => panic!("expected API error, got {other:?}"),
@@ -883,7 +883,7 @@ fn orderbook_transport_error_from_conversion_classifies_without_url_exposure() {
     match &orderbook_err {
         OrderbookError::Transport { detail, .. } => {
             assert!(
-                !detail.contains("http://"),
+                !detail.as_inner().contains("http://"),
                 "wrapped transport detail must not include the URL scheme prefix: {detail}"
             );
         }

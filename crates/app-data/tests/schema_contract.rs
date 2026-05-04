@@ -27,13 +27,12 @@ fn generation_and_schema_lookup_follow_pinned_contract() {
 
     let schema = get_app_data_schema("0.4.0").unwrap();
     assert!(schema["$id"].as_str().unwrap().contains("0.4.0"));
+    let unknown = get_app_data_schema("0.0.0").unwrap_err();
+    assert_eq!(unknown.to_string(), "AppData version 0.0.0 doesn't exist");
+    let invalid = get_app_data_schema("not semver").unwrap_err();
     assert_eq!(
-        get_app_data_schema("0.0.0").unwrap_err().to_string(),
-        "AppData version 0.0.0 doesn't exist"
-    );
-    assert_eq!(
-        get_app_data_schema("not semver").unwrap_err().to_string(),
-        "AppData version not semver is not a valid version"
+        invalid.to_string(),
+        "AppData version [redacted] is not a valid version"
     );
 }
 
@@ -47,7 +46,8 @@ fn validation_supports_latest_docs_and_rejects_invalid_metadata() {
     assert!(
         invalid
             .errors
-            .as_deref()
+            .as_ref()
+            .map(|errors| errors.as_inner().as_str())
             .unwrap()
             .contains("/metadata/referrer/address")
     );
