@@ -21,10 +21,10 @@
 //! use cow_sdk_core::{Cancellable, CancellationToken, CoreError};
 //!
 //! let token = CancellationToken::new();
-//! let body = async { Ok::<_, CoreError>(String::new()) }
+//! let result = async { Ok::<_, CoreError>(()) }
 //!     .cancel_with(&token)
-//!     .await?;
-//! # drop(body);
+//!     .await;
+//! let _: Result<(), CoreError> = result;
 //! # Ok(()) }
 //! ```
 //!

@@ -59,6 +59,11 @@ impl ReqwestTransportConfig {
     ///
     /// The default policy applies [`DEFAULT_USER_AGENT`],
     /// [`DEFAULT_TCP_KEEPALIVE`], and no explicit request timeout.
+    /// Bare config has `timeout: None` by design. The default request
+    /// timeout is applied via `HttpClientPolicy::new` when this config is
+    /// wrapped through the orderbook builder. To get the policy default,
+    /// prefer constructing through `OrderBookApi::builder()` over
+    /// instantiating `ReqwestTransport` directly.
     #[must_use]
     pub fn new(base_url: impl Into<String>) -> Self {
         Self {

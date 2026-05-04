@@ -628,6 +628,11 @@ impl TradingSdk {
     ///
     /// Returns [`TradingError`] when quoting, signing, app-data upload, or
     /// order submission fails.
+    ///
+    /// `EthFlow` sell orders require a quote identifier and are routed to the
+    /// native-currency transaction path. Propagate the orderbook quote id with
+    /// `with_quote_id(quote.id)`; otherwise the method returns
+    /// [`TradingError::MissingQuoteId`] before building the transaction.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -710,6 +715,11 @@ impl TradingSdk {
     /// Returns [`TradingError`] when the stored orderbook binding no longer
     /// matches the SDK's active orderbook, when app-data merging fails, when
     /// signing fails, or when the orderbook rejects the submission.
+    ///
+    /// `EthFlow` sell orders require a quote identifier and are routed to the
+    /// native-currency transaction path. Propagate the orderbook quote id with
+    /// `with_quote_id(quote.id)`; otherwise the method returns
+    /// [`TradingError::MissingQuoteId`] before building the transaction.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -791,6 +801,11 @@ impl TradingSdk {
     ///
     /// Returns [`TradingError`] when required defaults are missing, app-data
     /// generation fails, or downstream signing/submission fails.
+    ///
+    /// `EthFlow` sell orders require a quote identifier and are routed to the
+    /// native-currency transaction path. Propagate the orderbook quote id with
+    /// `with_quote_id(quote.id)`; otherwise the method returns
+    /// [`TradingError::MissingQuoteId`] before building the transaction.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(

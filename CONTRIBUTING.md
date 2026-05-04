@@ -49,6 +49,24 @@ packages`. CI normalises this output via `cargo check-alloy-provider-invariant`.
 Contributors running the check locally should use the wrapper rather than
 reading the raw Cargo error as a failure.
 
+## Test Runner — `cargo nextest`
+
+CI uses the nextest profile in `.github/config/nextest.toml` for the canonical
+workspace test runner settings.
+
+Install nextest locally with:
+
+```text
+cargo install cargo-nextest --locked
+```
+
+Common local commands:
+
+```text
+cargo nextest run --workspace
+cargo test --workspace --doc
+```
+
 ## Cargo Aliases
 
 The repository exposes maintainer tooling through Cargo aliases in

@@ -15,7 +15,7 @@ the main SDK surfaces.
 | --- | --- |
 | Learn the facade shape | `sdk_surface_report` |
 | Work with app-data and signing | `app_data_roundtrip`, `signing_roundtrip` |
-| Quote, build, and simulate trading flows | `quote_only_simulation`, `limit_order_simulation`, `trading_sdk_simulation` |
+| Quote, build, cancel, and simulate trading flows | `quote_only_simulation`, `cancellation_combinator`, `limit_order_simulation`, `trading_sdk_simulation` |
 | Inspect order lifecycle and on-chain actions | `order_lifecycle_simulation`, `ethflow_transaction_simulation`, `onchain_order_actions_simulation` |
 | Inspect typed orderbook transport | `orderbook_transport_roundtrip` |
 | Work with read-only subgraph access | `subgraph_query_roundtrip`, `subgraph_custom_query_roundtrip` |

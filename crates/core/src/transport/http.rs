@@ -12,6 +12,10 @@ use crate::transport::error::TransportError;
 /// default implementation lives in `cow-sdk-transport-wasm` and bridges the
 /// same async signature through `JsFuture`.
 ///
+/// This trait does not retry. Retry, jitter, rate limiting, and
+/// `Retry-After` handling are applied at the orderbook layer via
+/// `OrderBookTransportPolicy`. See `docs/transport.md`.
+///
 /// Every method carries the per-call header set and an optional per-call
 /// timeout alongside the URL and body so downstream crates compose typed
 /// clients without holding a parallel `reqwest::Client` for header or

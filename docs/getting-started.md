@@ -229,6 +229,31 @@ This step does **not** yet prove signing, quoting, or transport behavior.
 
 Those proofs come from the maintained scenarios below.
 
+## EthFlow orders need a quote ID
+
+Native-sell / EthFlow posting requires the quote identifier returned by the
+orderbook. When you turn a quote into limit-style posting parameters, propagate
+that id before calling the post method:
+
+```rust,ignore
+use cow_sdk::trading::{swap_params_to_limit_order_params, TradingError};
+
+let quote = sdk.get_quote_results_async(params.clone(), signer, None).await?;
+let quote_id = quote
+    .quote_response
+    .id
+    .ok_or(TradingError::MissingQuoteId("EthFlow order posting"))?;
+let limit = swap_params_to_limit_order_params(&params, &quote.quote_response)?
+    .with_quote_id(quote_id);
+let order = sdk.post_limit_order_async(limit, signer, None).await?;
+```
+
+The essential step is passing the returned identifier with
+`with_quote_id(quote.id)` before posting.
+
+If the quote id is missing, EthFlow posting fails with
+`TradingError::MissingQuoteId` before the native-currency transaction is built.
+
 ## Step 2: Run The Deterministic Signing Scenario
 
 Run the maintained signing scenario:

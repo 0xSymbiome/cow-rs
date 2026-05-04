@@ -14,6 +14,12 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- Public error variants across the SDK now redact secret-shaped payloads
+  through dedicated safe wrappers or sanitized construction paths before
+  those values reach `Display`, `Debug`, or `Serialize`.
+- Order-creation request deserialization now rejects non-zero `feeAmount`
+  values with a stable diagnostic while preserving the serialization contract
+  that writes `"feeAmount": "0"`.
 - `cow-sdk-trading` now validates trading `appCode` values through a typed
   `AppCode` newtype that rejects empty strings, NUL bytes, and ASCII control
   characters without imposing a length cap or printable-ASCII restriction.
@@ -24,6 +30,28 @@ The first functional crate-family release begins at `0.1.0`.
 - On `wasm32`, `TradingSdkBuilder::build_ready()` continues to fail fast with
   `TradingError::MissingInjectedOrderbookClient` unless an orderbook client is
   injected before the terminal is called.
+
+### Added
+
+- A runnable native cancellation example demonstrates
+  `Cancellable::cancel_with(&token)` against a delayed orderbook response.
+- A public `ROADMAP.md` lists planned capability releases, including the
+  alloy adapter crates, composable and TWAP orders, permit signing, bridging,
+  flash-loans, weiroll, and hardware-wallet support.
+
+### Documentation
+
+- EthFlow order posting now documents quote-id propagation at the top-level
+  trading SDK methods and in the getting-started guide, including the
+  `TradingError::MissingQuoteId` failure mode.
+- The `HttpTransport` trait now states explicitly that retry, jitter, rate
+  limiting, and `Retry-After` handling live at the orderbook policy layer.
+- `ReqwestTransportConfig::new` now documents that bare configs use
+  `timeout: None` and that the orderbook builder applies the policy default.
+- Deployment-registry documentation now carries the per-chain provenance
+  record instead of splitting that authority into a parallel document.
+- The contributor guide now documents `cargo nextest` installation and common
+  workspace test commands.
 
 ## [0.1.0] — 2026-05-02
 

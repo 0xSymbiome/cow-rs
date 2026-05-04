@@ -16,7 +16,7 @@ cow-sdk = { path = "../../crates/sdk" }
 cow-sdk-subgraph = { path = "../../crates/subgraph" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
-tokio = { version = "1.51.1", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.51.1", features = ["macros", "rt-multi-thread", "time"] }
 wiremock = "0.6.5"
 
 [[example]]
@@ -34,6 +34,10 @@ path = "scenarios/signing_roundtrip.rs"
 [[example]]
 name = "quote_only_simulation"
 path = "scenarios/quote_only_simulation.rs"
+
+[[example]]
+name = "cancellation_combinator"
+path = "scenarios/cancellation_combinator.rs"
 
 [[example]]
 name = "limit_order_simulation"

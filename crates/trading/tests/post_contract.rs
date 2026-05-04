@@ -36,7 +36,7 @@ fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParameters) -> P
 }
 use cow_sdk_trading::{
     LimitOrderAdvancedSettings, LimitTradeParameters, PartnerFeePolicy, PostTradeAdditionalParams,
-    QuoteRequestOverride, SwapAdvancedSettings, build_app_data, get_quote_results,
+    QuoteRequestOverride, SwapAdvancedSettings, TradingError, build_app_data, get_quote_results,
     post_limit_order, post_limit_order_async, post_sell_native_currency_order, post_swap_order,
     post_swap_order_from_quote,
 };
@@ -328,6 +328,28 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
     assert_eq!(signer_state.sent_transactions.len(), 1);
     assert!(result.tx_hash.is_some());
     assert!(remaining.is_empty(), "collision callback must be consumed");
+}
+
+#[tokio::test]
+async fn native_sell_posting_requires_quote_id_before_signing_or_submission() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = CountingSigner::new(address(OWNER));
+    let mut params: LimitTradeParameters = sample_limit_parameters(OrderKind::Sell);
+    params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+    params.quote_id = None;
+
+    let error = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("native sell posting must require a quote id");
+
+    assert!(matches!(
+        error,
+        TradingError::MissingQuoteId("EthFlow order posting")
+    ));
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert_eq!(signer.sign_calls(), 0);
 }
 
 #[tokio::test]
