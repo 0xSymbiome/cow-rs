@@ -17,8 +17,8 @@ fn read_repo_file(path: &str) -> String {
 
 #[test]
 fn supported_networks_doc_table_matches_enum() {
-    let doc = read_repo_file("docs/parity-matrix.md");
-    let documented = parse_supported_networks_table(&doc);
+    let doc = read_repo_file("docs/audit/deployment-registry-audit.md");
+    let documented = parse_per_chain_provenance_table(&doc);
     let actual = SupportedChainId::ALL
         .iter()
         .map(|chain| (format!("{chain:?}"), *chain as u64))
@@ -26,16 +26,18 @@ fn supported_networks_doc_table_matches_enum() {
 
     assert_eq!(
         documented, actual,
-        "docs/parity-matrix.md Supported Networks table drifted from \
-         SupportedChainId; update either the docs or the enum."
+        "docs/audit/deployment-registry-audit.md Per-chain provenance table \
+         drifted from SupportedChainId; update either the audit or the enum."
     );
 }
 
-fn parse_supported_networks_table(doc: &str) -> BTreeMap<String, u64> {
+fn parse_per_chain_provenance_table(doc: &str) -> BTreeMap<String, u64> {
     let supported_heading = doc
         .lines()
-        .position(|line| line.trim() == "## Supported Networks")
-        .expect("docs/parity-matrix.md must contain a Supported Networks section");
+        .position(|line| line.trim() == "## Per-chain Provenance")
+        .expect(
+            "docs/audit/deployment-registry-audit.md must contain a Per-chain Provenance section",
+        );
 
     let mut rows = doc
         .lines()
@@ -49,8 +51,9 @@ fn parse_supported_networks_table(doc: &str) -> BTreeMap<String, u64> {
     assert!(
         header.contains("`SupportedChainId` variant")
             && header.contains("Numeric chain id")
-            && header.contains("Environment"),
-        "Supported Networks table header must document variant, numeric id, and environment"
+            && header.contains("Deployment provenance")
+            && header.contains("Wrapped native token"),
+        "Per-chain Provenance table header must document variant, numeric id, deployment provenance, and wrapped native token"
     );
 
     let separator = rows
@@ -72,8 +75,8 @@ fn parse_supported_networks_table(doc: &str) -> BTreeMap<String, u64> {
             .map(str::trim)
             .collect::<Vec<_>>();
         assert!(
-            cells.len() >= 4,
-            "Supported Networks row must have at least four columns: {row}"
+            cells.len() >= 8,
+            "Per-chain Provenance row must have at least eight columns: {row}"
         );
 
         let variant = cells[1].trim_matches('`').to_owned();
@@ -90,7 +93,7 @@ fn parse_supported_networks_table(doc: &str) -> BTreeMap<String, u64> {
 
     assert!(
         !documented.is_empty(),
-        "Supported Networks table must contain at least one documented chain"
+        "Per-chain Provenance table must contain at least one documented chain"
     );
     documented
 }

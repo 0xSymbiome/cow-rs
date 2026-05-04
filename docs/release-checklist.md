@@ -130,6 +130,18 @@ Validate the committed parity contract from the current checkout:
 cargo parity-validate --source-lock parity/source-lock.yaml
 ```
 
+Before creating the release tag, re-affirm the source-lock pins:
+
+- run `cargo parity-validate --source-lock parity/source-lock.yaml` and
+  confirm the command reports no fixture or provenance diffs
+- confirm the tag commit's `parity/source-lock.yaml` matches the upstream
+  pins recorded in
+  [Source-Lock Provenance Audit](audit/source-lock-provenance-audit.md), or
+  confirm any pin movement landed through a reviewed bump with rationale
+- confirm the
+  [per-chain provenance](audit/deployment-registry-audit.md#per-chain-provenance)
+  section is still within its 90-day review window
+
 Then run the published package-family dry-run in release order:
 
 ```text
@@ -302,9 +314,13 @@ Rules:
 - same-checkout directory copies are not valid provenance evidence
 - `release-readiness.yml` owns the routine automated provenance-sensitive lane
 
-The `services-drift.yml` workflow runs weekly against the upstream services
-repository and records newly-added error tags plus request or response shape
-changes as a tracked report before they reach the release window.
+The `services-drift.yml` workflow runs weekly against the pinned upstream
+services, contracts, and cow-sdk repositories. It records OpenAPI drift,
+newly-added services error tags, request or response shape changes, generated
+settlement chain-table drift, and supported-chain README drift as a
+`parity-drift` tracking report before those changes reach the release window.
+It never mutates `parity/source-lock.yaml`; source-lock movement remains a
+reviewed pull request.
 
 The `alloy-release-candidate.yml` workflow owns the alloy forward-compat
 canary on scheduled and manually-dispatched runs. Set the `ALLOY_CANARY_REF`

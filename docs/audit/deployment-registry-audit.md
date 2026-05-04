@@ -1,8 +1,8 @@
 # Deployment Registry Audit
 
 Status: Current
-Last reviewed: 2026-05-01
-Re-review by: 2026-07-30
+Last reviewed: 2026-05-04
+Re-review by: 2026-08-02
 Owning surface: `cow-sdk-contracts` deployment registry and provenance manifest
 Refresh trigger: Changes to `crates/contracts/registry.toml`, `crates/contracts/deployment-provenance.yaml`, the compile-time validator in `build.rs`, the `registry-confirm` live-confirmation contract, deployed addresses, or supported chains
 Related docs:
@@ -28,6 +28,7 @@ It does not cover binding generation, partner API routing, arbitrary consumer RP
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Registry completeness | Every `(ContractId, SupportedChainId, CowEnv)` registry row has one provenance row | Conforms |
+| Chain provenance | Every `SupportedChainId` variant has a source-cited services, TypeScript SDK, deployment-provenance, and wrapped-native-token row | Conforms |
 | Runtime lookup matrix | Every supported `(ContractId, SupportedChainId, CowEnv)` tuple is either a typed deployed address or an explicit unsupported lookup without silent fallback | Conforms |
 | Source authority | Each provenance row records primary or secondary upstream authority at a pinned source commit | Conforms |
 | Compile-time validation | `build.rs` rejects missing, duplicate, extra, malformed, or address-mismatched provenance rows | Conforms |
@@ -62,6 +63,28 @@ or contract family.
 | --- | ---: | --- |
 | `primary` | 16 | Production `Settlement` and `VaultRelayer` rows sourced from `cowprotocol/contracts` `networks.json` at commit `c94c595a791681cf8ba7495117dcde397b932885` |
 | `secondary` | 50 | Staging rows, Plasma/Linea/Ink `Settlement` and `VaultRelayer` rows, and all `EthFlow` rows sourced from `cowprotocol/cow-sdk` `packages/config/src/chains/const/contracts.ts` at commit `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` |
+
+## Per-chain Provenance
+
+The table below is the canonical supported-chain provenance view for the
+release-facing registry. It intentionally lives in this deployment-registry
+audit so chain support, deployed contract provenance, services-generated
+metadata, TypeScript SDK support, and wrapped-native-token evidence have one
+reviewed authority.
+
+| Chain | `SupportedChainId` variant | Numeric chain id | Deployment provenance | Services metadata | TypeScript SDK source | Wrapped native token | Last reviewed |
+| --- | --- | ---: | --- | --- | --- | --- | --- |
+| Ethereum Mainnet | `Mainnet` | 1 | `crates/contracts/deployment-provenance.yaml:5` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5075` | `packages/config/src/chains/const/chainIds.ts:21`; `README.md:19` | `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2` (`crates/core/src/config.rs:41`) | 2026-05-04 |
+| BNB Smart Chain | `Bnb` | 56 | `crates/contracts/deployment-provenance.yaml:40` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5083` | `packages/config/src/chains/const/chainIds.ts:27`; `README.md:20` | `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c` (`crates/core/src/config.rs:55`) | 2026-05-04 |
+| Gnosis Chain | `GnosisChain` | 100 | `crates/contracts/deployment-provenance.yaml:75` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5087` | `packages/config/src/chains/const/chainIds.ts:22`; `README.md:21` | `0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d` (`crates/core/src/config.rs:43`) | 2026-05-04 |
+| Polygon PoS | `Polygon` | 137 | `crates/contracts/deployment-provenance.yaml:110` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5091` | `packages/config/src/chains/const/chainIds.ts:26`; `README.md:22` | `0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270` (`crates/core/src/config.rs:51`) | 2026-05-04 |
+| Base | `Base` | 8453 | `crates/contracts/deployment-provenance.yaml:145` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5095` | `packages/config/src/chains/const/chainIds.ts:24`; `README.md:23` | `0x4200000000000000000000000000000000000006` (`crates/core/src/config.rs:47`) | 2026-05-04 |
+| Plasma | `Plasma` | 9745 | `crates/contracts/deployment-provenance.yaml:180` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5099` | `packages/config/src/chains/const/chainIds.ts:28`; `README.md:24` | `0x6100e367285b01f48d07953803a2d8dca5d19873` (`crates/core/src/config.rs:57`) | 2026-05-04 |
+| Arbitrum One | `ArbitrumOne` | 42161 | `crates/contracts/deployment-provenance.yaml:214` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5103` | `packages/config/src/chains/const/chainIds.ts:23`; `README.md:25` | `0x82aF49447D8a07e3bd95BD0d56f35241523fBab1` (`crates/core/src/config.rs:45`) | 2026-05-04 |
+| Avalanche C-Chain | `Avalanche` | 43114 | `crates/contracts/deployment-provenance.yaml:249` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5107` | `packages/config/src/chains/const/chainIds.ts:25`; `README.md:26` | `0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7` (`crates/core/src/config.rs:53`) | 2026-05-04 |
+| Ink | `Ink` | 57073 | `crates/contracts/deployment-provenance.yaml:284` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5111` | `packages/config/src/chains/const/chainIds.ts:30`; `README.md:27` | `0x4200000000000000000000000000000000000006` (`crates/core/src/config.rs:47`) | 2026-05-04 |
+| Linea | `Linea` | 59144 | `crates/contracts/deployment-provenance.yaml:318` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5115` | `packages/config/src/chains/const/chainIds.ts:29`; `README.md:28` | `0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f` (`crates/core/src/config.rs:59`) | 2026-05-04 |
+| Sepolia (Ethereum testnet) | `Sepolia` | 11155111 | `crates/contracts/deployment-provenance.yaml:352` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5119` | `packages/config/src/chains/const/chainIds.ts:31`; `README.md:29` | `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14` (`crates/core/src/config.rs:49`) | 2026-05-04 |
 
 ### Live Confirmation
 
@@ -105,6 +128,7 @@ Selector probes are currently disabled for all rows; the release evidence is the
 Primary implementation points:
 
 - `crates/contracts/src/deployments/registry.rs`
+- `crates/core/src/config.rs`
 - `crates/contracts/registry.toml`
 - `crates/contracts/deployment-provenance.yaml`
 - `crates/contracts/build.rs`
@@ -116,6 +140,7 @@ Primary regression coverage:
 - `crates/contracts/tests/registry.rs::registry_address_lookup_matrix_is_exhaustive`
 - `crates/contracts/tests/build_rs_compile_fail.rs`
 - `crates/contracts/tests/deployment_provenance_contract.rs`
+- `tests/supported_chains_doc_table.rs::supported_networks_doc_table_matches_enum`
 - `scripts/validation-smoke/tests/registry_confirm.rs`
 
 Validation surface:
@@ -123,6 +148,7 @@ Validation surface:
 ```text
 cargo build -p cow-sdk-contracts
 cargo test -p cow-sdk-contracts --test deployment_provenance_contract
+cargo test -p cow-rs-workspace-tests --test supported_chains_doc_table
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- registry-confirm --mode release --check --chain-ids 1,100,42161,8453,11155111,137,43114,56,9745,59144,57073
 bash scripts/check-release-docs-agree.sh
 ```

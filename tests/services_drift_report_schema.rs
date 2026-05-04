@@ -14,6 +14,10 @@ fn services_drift_script_generates_stable_markdown_report() {
     let summary = sandbox.join("summary.md");
 
     write_fixture_tree(&cow_root, &services_root);
+    let contracts_root = sandbox.join("contracts");
+    let cow_sdk_root = sandbox.join("cow-sdk");
+    write_dir(&contracts_root);
+    write_cow_sdk_fixture(&cow_sdk_root);
 
     let script = bash_path(&root.join("scripts/check-services-drift.sh"));
     let command = format!(
@@ -39,17 +43,25 @@ fn services_drift_script_generates_stable_markdown_report() {
         .unwrap_or_else(|error| panic!("{} must be written: {error}", summary.display()));
 
     for required in [
-        "# Upstream Services Drift Report",
+        "# Upstream Parity Drift Report",
         "| Input | Value |",
+        "## Source-Lock Pins",
+        "| Repository | Pinned commit | Checkout commit | Status |",
+        "## OpenAPI Drift",
+        "| match | services OpenAPI snapshot | upstream `crates/orderbook/openapi.yml` matches `parity/openapi/services-orderbook.yml` |",
         "## errorType Drift",
         "| Classification | Value | Detail |",
         "| match | all compared errorType tags | both sides agree |",
         "## DTO Field Drift",
         "| DTO | Classification | Field | Type |",
         "| all compared DTOs | match | all compared fields | both sides agree |",
+        "## Chain Coverage Drift",
+        "| match | services gpv2settlement deployment_info | all cow-sdk-supported chain ids match `SupportedChainId::ALL` |",
+        "| match | cow-sdk README supported chains | all chain ids match `SupportedChainId::ALL` |",
         "## Summary Count",
         "| Metric | Count |",
         "| compared DTO pairs | 7 |",
+        "| compared SupportedChainId variants | 2 |",
     ] {
         assert!(
             report.contains(required),
@@ -70,12 +82,36 @@ fn temp_sandbox(prefix: &str) -> PathBuf {
 }
 
 fn write_fixture_tree(cow_root: &Path, services_root: &Path) {
+    write_cow_fixture_tree(cow_root);
+    write_services_fixture_tree(services_root);
+}
+
+fn write_cow_fixture_tree(cow_root: &Path) {
     write_file(
         &cow_root.join("parity/source-lock.yaml"),
         r"repositories:
 - id: services
   remote: https://github.com/cowprotocol/services.git
   commit: fixture-pin
+- id: contracts
+  remote: https://github.com/cowprotocol/contracts.git
+  commit: fixture-pin
+- id: cow-sdk
+  remote: https://github.com/cowprotocol/cow-sdk.git
+  commit: fixture-pin
+",
+    );
+    write_file(
+        &cow_root.join("parity/openapi/services-orderbook.yml"),
+        "openapi: 3.0.3\ninfo:\n  title: fixture\n",
+    );
+    write_file(
+        &cow_root.join("crates/core/src/config.rs"),
+        r"
+pub enum SupportedChainId {
+    Mainnet = 1,
+    GnosisChain = 100,
+}
 ",
     );
     write_file(
@@ -115,6 +151,9 @@ pub struct OrderQuoteRequest {
 }
 ",
     );
+}
+
+fn write_services_fixture_tree(services_root: &Path) {
     write_file(
         &services_root.join("crates/orderbook/src/api.rs"),
         r#"
@@ -124,6 +163,10 @@ pub fn route() {
 "#,
     );
     write_file(&services_root.join("crates/orderbook/src/api/extra.rs"), "");
+    write_file(
+        &services_root.join("crates/orderbook/openapi.yml"),
+        "openapi: 3.0.3\ninfo:\n  title: fixture\n",
+    );
     write_file(
         &services_root.join("crates/model/src/request.rs"),
         r"
@@ -152,6 +195,39 @@ pub struct OrderQuoteRequest {
 }
 ",
     );
+    write_file(
+        &services_root.join("contracts/generated/contracts-generated/gpv2settlement/src/lib.rs"),
+        r#"
+pub const fn deployment_info(chain_id: u64) -> Option<(Address, Option<u64>)> {
+    match chain_id {
+        1u64 => Some((address!("0x0000000000000000000000000000000000000001"), None)),
+        100u64 => Some((address!("0x0000000000000000000000000000000000000064"), None)),
+        _ => None,
+    }
+}
+"#,
+    );
+}
+
+fn write_cow_sdk_fixture(cow_sdk_root: &Path) {
+    write_file(
+        &cow_sdk_root.join("README.md"),
+        r"
+### Supported chains
+
+CoW Swap is currently available on the following chains:
+
+- **Ethereum** (1)
+- **Gnosis Chain** (100)
+
+## Technical Overview
+",
+    );
+}
+
+fn write_dir(path: &Path) {
+    fs::create_dir_all(path)
+        .unwrap_or_else(|error| panic!("{} must be created: {error}", path.display()));
 }
 
 fn write_file(path: &Path, contents: &str) {
