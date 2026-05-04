@@ -2,14 +2,17 @@
 #[test]
 fn public_api_with_all_features_snapshot_matches() {
     use cow_sdk::{
-        Address, Amount, ErrorClass, HttpTransport, OrderBookApi, OrderUid, SdkError, Signature,
-        SupportedChainId, TradeParameters, TraderParameters, TradingSdk, TradingSdkBuilder,
-        TradingSdkOptions,
+        Address, Amount, AppCode, AppCodeError, ErrorClass, HelperOnlySdk, HttpTransport,
+        OrderBookApi, OrderUid, SdkError, Signature, SupportedChainId, TradeParameters,
+        TraderParameters, TradingSdk, TradingSdkBuilder, TradingSdkOptions,
     };
 
     let _ = core::any::type_name::<Address>();
     let _ = core::any::type_name::<Amount>();
+    let _ = core::any::type_name::<AppCode>();
+    let _ = core::any::type_name::<AppCodeError>();
     let _ = core::any::type_name::<ErrorClass>();
+    let _ = core::any::type_name::<HelperOnlySdk>();
     let _ = core::any::type_name::<dyn HttpTransport>();
     let _ = core::any::type_name::<OrderBookApi>();
     let _ = core::any::type_name::<OrderUid>();
@@ -46,8 +49,11 @@ modules:
 root exports:
 - Address
 - Amount
+- AppCode
+- AppCodeError
 - BrowserWalletSigner (prelude)
 - ErrorClass
+- HelperOnlySdk
 - HttpTransport
 - InMemoryEip1271VerificationCache
 - NoopEip1271VerificationCache

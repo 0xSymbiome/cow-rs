@@ -17,6 +17,7 @@ async fn sample_quote_results() -> QuoteResults {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response());
     let signer = MockSigner::default();
     let trader = cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, "cache-test")
+        .expect("app code should validate")
         .with_env(CowEnv::Prod);
     let trade = sample_trade_parameters(OrderKind::Sell);
 

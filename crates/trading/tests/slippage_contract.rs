@@ -68,7 +68,8 @@ fn slippage_helpers_follow_upstream_fee_and_volume_examples() {
 #[test]
 fn slippage_bps_clamps_to_expected_bounds() {
     let trader =
-        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
+        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER))
+            .expect("app code should validate");
     let trade = sample_trade_parameters(OrderKind::Sell);
 
     let zero_quote_data = QuoteData::new(
@@ -130,7 +131,8 @@ fn slippage_bps_clamps_to_expected_bounds() {
 #[test]
 fn slippage_clamps_at_max_10000_bps() {
     let trader =
-        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
+        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER))
+            .expect("app code should validate");
     let trade = sample_trade_parameters(OrderKind::Sell);
     let quote_data = QuoteData::new(
         address(WETH),
@@ -163,7 +165,8 @@ fn slippage_clamps_at_max_10000_bps() {
 #[test]
 fn slippage_clamps_at_zero_for_normal_orders() {
     let trader =
-        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
+        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER))
+            .expect("app code should validate");
     let trade = sample_trade_parameters(OrderKind::Sell);
     let quote_data = QuoteData::new(
         address(WETH),
@@ -194,7 +197,8 @@ fn slippage_clamps_at_zero_for_normal_orders() {
 #[test]
 fn slippage_clamps_at_eth_flow_default_for_eth_flow_orders() {
     let trader =
-        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
+        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER))
+            .expect("app code should validate");
     let trade = sample_trade_parameters(OrderKind::Sell);
     let quote_data = QuoteData::new(
         address(WETH),
@@ -267,7 +271,8 @@ async fn resolve_slippage_suggestion_skips_provider_for_fast_quotes_and_uses_pro
 {
     let trade = sample_trade_parameters(OrderKind::Sell);
     let trader =
-        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
+        cow_sdk_trading::QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER))
+            .expect("app code should validate");
     let quote = sell_quote_response();
     let fast_calls = Arc::new(AtomicUsize::new(0));
     let fast_settings = SwapAdvancedSettings::new()

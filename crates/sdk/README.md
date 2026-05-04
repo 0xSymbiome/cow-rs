@@ -34,7 +34,7 @@ let _sdk = TradingSdk::builder()
 ```
 
 For allowance, approval, pre-sign, or on-chain cancellation helpers that do
-not need quote or submission flows, build a helper-only SDK:
+not need quote, order lookup, or submission flows, build a `HelperOnlySdk`:
 
 ```rust
 use cow_sdk::prelude::{SupportedChainId, TradingSdk};

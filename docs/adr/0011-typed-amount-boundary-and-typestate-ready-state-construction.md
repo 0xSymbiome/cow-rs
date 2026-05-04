@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-17
-- Last reviewed: 2026-04-29
+- Last reviewed: 2026-05-04
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, trading, builders, semver
 - Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
@@ -61,11 +61,10 @@ widening the runtime surface.
 - Runtime and support: the wire form of every amount remains the
   canonical base-10 string already defined by the orderbook contract.
   `Amount` serializes to that exact string via a custom serializer;
-  decimal scaling is a pure presentation concern. Helper-only
-  `TradingSdk` instances fail quote, post, and off-chain cancellation
-  flows with a typed `TradingError::HelperOnlyMode` while pre-sign,
-  allowance, approval, and on-chain cancellation helpers stay fully
-  usable.
+  decimal scaling is a pure presentation concern. Helper-only flows use
+  the distinct `HelperOnlySdk` type, which exposes pre-sign, allowance,
+  approval, and on-chain cancellation helpers and does not expose quote,
+  post, or off-chain cancellation methods.
 - Validation and review: the wire and ABI boundary remains byte-equal
   against the pinned upstream fixtures; every per-crate parity contract
   suite continues to pass against the same vectors that validated the

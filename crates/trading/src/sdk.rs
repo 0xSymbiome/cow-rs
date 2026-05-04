@@ -10,36 +10,14 @@ use cow_sdk_orderbook::OrderBookApi;
 
 use crate::onchain::protocol_options_for_partial_order;
 use crate::{
-    AllowanceParameters, ApprovalParameters, LimitOrderAdvancedSettings, LimitTradeParameters,
-    OrderTraderParameters, OrderbookClient, PartialTraderParameters, QuoteResults,
-    QuoterParameters, SwapAdvancedSettings, TradeParameters, TraderParameters, TradingError,
-    TradingSdkOptions, cancel_order_onchain_async, get_cow_protocol_allowance,
+    AllowanceParameters, AppCode, AppCodeError, ApprovalParameters, LimitOrderAdvancedSettings,
+    LimitTradeParameters, OrderTraderParameters, OrderbookClient, PartialTraderParameters,
+    QuoteResults, QuoterParameters, SwapAdvancedSettings, TradeParameters, TraderParameters,
+    TradingError, TradingSdkOptions, cancel_order_onchain_async, get_cow_protocol_allowance,
     get_cow_protocol_allowance_async, get_pre_sign_transaction, get_pre_sign_transaction_async,
     get_quote_only, get_quote_results_async, off_chain_cancel_order_async,
     types::validate_orderbook_context,
 };
-
-/// Runtime readiness of a constructed [`TradingSdk`].
-///
-/// The default `Ready` mode exposes quote, post, and off-chain cancellation
-/// flows. `HelperOnly` mode is produced by
-/// [`TradingSdkBuilder::build_helper_only`] and restricts those flows so the
-/// sdk can only drive chain-bound helpers such as pre-sign transaction
-/// construction, allowance reads, approval submission, and on-chain
-/// cancellation.
-///
-/// Classified as `sdk-local-state` in the workspace enum policy manifest: the
-/// SDK owns this closed discriminator and the only valid runtime modes are
-/// ready-state execution and helper-only execution.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum TradingSdkMode {
-    /// Full quote, post, and off-chain cancellation flows are enabled.
-    #[default]
-    Ready,
-    /// Quote, post, and off-chain cancellation flows return
-    /// [`TradingError::HelperOnlyMode`].
-    HelperOnly,
-}
 
 /// Typestate marker for a builder that has not yet been given a chain id.
 #[derive(Debug, Clone, Copy)]
@@ -58,12 +36,22 @@ pub struct AppCodeUnset(());
 pub struct AppCodeSet(());
 
 /// High-level trading facade that stores trader defaults plus optional injected services.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct TradingSdk {
     trader_defaults: PartialTraderParameters,
     options: TradingSdkOptions,
-    mode: TradingSdkMode,
     order_bounds: crate::validation::OrderValidityBounds,
+}
+
+/// Helper-only trading facade for chain-bound helper workflows.
+///
+/// `HelperOnlySdk` intentionally exposes only allowance, approval, pre-sign,
+/// and on-chain cancellation helpers. Quote, post, order lookup, and off-chain
+/// cancellation methods exist only on [`TradingSdk`].
+#[derive(Debug, Clone)]
+pub struct HelperOnlySdk {
+    trader_defaults: PartialTraderParameters,
+    options: TradingSdkOptions,
 }
 
 /// Builder for [`TradingSdk`].
@@ -74,13 +62,20 @@ pub struct TradingSdk {
 /// supplied. When both are set, [`TradingSdkBuilder::build_ready`] is
 /// available and returns a fully-configured [`TradingSdk`] with only a
 /// runtime orderbook-binding check remaining. When only a chain id is set,
-/// [`TradingSdkBuilder::build_helper_only`] returns a helper-mode sdk that
-/// can still drive chain-bound helpers but fails closed on quote, post, and
-/// off-chain cancellation flows with [`TradingError::HelperOnlyMode`].
+/// [`TradingSdkBuilder::build_helper_only`] returns a [`HelperOnlySdk`] with
+/// no quote, post, order-lookup, or off-chain cancellation methods.
+///
+/// On `wasm32`, the SDK keeps a documented runtime terminal for ready-state
+/// orderbook injection: [`TradingSdkBuilder::build_ready`] requires
+/// [`TradingSdkBuilder::with_orderbook_client`] or
+/// [`TradingSdkBuilder::with_options`] with an injected orderbook client, and
+/// returns [`TradingError::MissingInjectedOrderbookClient`] when that runtime
+/// requirement is not satisfied.
 #[derive(Debug, Clone)]
 pub struct TradingSdkBuilder<C = ChainIdUnset, A = AppCodeUnset> {
     trader_defaults: PartialTraderParameters,
     options: TradingSdkOptions,
+    app_code_error: Option<AppCodeError>,
     order_bounds: crate::validation::OrderValidityBounds,
     _state: PhantomData<(C, A)>,
 }
@@ -90,6 +85,7 @@ impl Default for TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
         Self {
             trader_defaults: PartialTraderParameters::default(),
             options: TradingSdkOptions::default(),
+            app_code_error: None,
             order_bounds: crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
             _state: PhantomData,
         }
@@ -174,12 +170,11 @@ impl TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
         builder.build_ready()
     }
 
-    /// Builds a helper-only [`TradingSdk`] from total chain authority.
+    /// Builds a [`HelperOnlySdk`] from total chain authority.
     ///
     /// This one-call terminal is for chain-bound helper workflows that need no
-    /// quote or submission attribution. Quote, post, and off-chain
-    /// cancellation methods on the returned SDK fail closed with
-    /// [`TradingError::HelperOnlyMode`].
+    /// quote or submission attribution. The returned type does not expose
+    /// quote, post, order-lookup, or off-chain cancellation methods.
     ///
     /// # Errors
     ///
@@ -188,7 +183,7 @@ impl TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
     pub fn helper_only(
         chain_id: SupportedChainId,
         options: TradingSdkOptions,
-    ) -> Result<TradingSdk, TradingError> {
+    ) -> Result<HelperOnlySdk, TradingError> {
         Self::new()
             .with_options(options)
             .with_chain_id(chain_id)
@@ -224,24 +219,39 @@ impl<C, A> TradingSdkBuilder<C, A> {
                 ..self.trader_defaults
             },
             options: self.options,
+            app_code_error: self.app_code_error,
             order_bounds: self.order_bounds,
             _state: PhantomData,
         }
     }
 
-    /// Returns a copy of this builder with a default app code.
+    /// Returns a copy of this builder with a validated default app code.
     ///
     /// Transitions the builder's app-code typestate to [`AppCodeSet`], which
     /// completes the typestate for [`TradingSdkBuilder::build_ready`] once
     /// chain id is also set.
+    ///
+    /// Invalid input is recorded and surfaced by the builder terminal as
+    /// [`TradingError::AppCode`]. Deferring the error to the terminal keeps the
+    /// fluent construction chain ergonomic while preserving typed validation.
     #[must_use]
-    pub fn with_app_code(self, app_code: impl Into<String>) -> TradingSdkBuilder<C, AppCodeSet> {
+    pub fn with_app_code<T>(self, app_code: T) -> TradingSdkBuilder<C, AppCodeSet>
+    where
+        T: TryInto<AppCode>,
+        T::Error: Into<AppCodeError>,
+    {
+        let (app_code, app_code_error) = match app_code.try_into() {
+            Ok(app_code) => (Some(app_code), None),
+            Err(error) => (None, Some(error.into())),
+        };
+
         TradingSdkBuilder {
             trader_defaults: PartialTraderParameters {
-                app_code: Some(app_code.into()),
+                app_code,
                 ..self.trader_defaults
             },
             options: self.options,
+            app_code_error,
             order_bounds: self.order_bounds,
             _state: PhantomData,
         }
@@ -346,13 +356,12 @@ impl<C, A> TradingSdkBuilder<C, A> {
 }
 
 impl<A> TradingSdkBuilder<ChainIdSet, A> {
-    /// Builds a helper-only [`TradingSdk`].
+    /// Builds a [`HelperOnlySdk`].
     ///
-    /// The returned SDK is in [`TradingSdkMode::HelperOnly`] so quote, post,
-    /// and off-chain cancellation flows return
-    /// [`TradingError::HelperOnlyMode`]. Chain-bound helpers (pre-sign
+    /// The returned SDK exposes only chain-bound helpers: pre-sign
     /// transaction construction, allowance reads, approval submission, and
-    /// on-chain cancellation) remain fully usable.
+    /// on-chain cancellation. Quote, post, order-lookup, and off-chain
+    /// cancellation methods are not part of this type.
     ///
     /// The compile-time typestate guarantees that a chain id has been
     /// supplied before this terminal runs, so the only remaining runtime
@@ -363,14 +372,15 @@ impl<A> TradingSdkBuilder<ChainIdSet, A> {
     /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
     /// builder's default chain or environment conflicts with an injected
     /// orderbook client.
-    pub fn build_helper_only(self) -> Result<TradingSdk, TradingError> {
+    pub fn build_helper_only(self) -> Result<HelperOnlySdk, TradingError> {
+        if let Some(error) = self.app_code_error {
+            return Err(error.into());
+        }
         self.validate_injected_orderbook_binding()?;
 
-        Ok(TradingSdk {
+        Ok(HelperOnlySdk {
             trader_defaults: self.trader_defaults,
             options: self.options,
-            mode: TradingSdkMode::HelperOnly,
-            order_bounds: self.order_bounds,
         })
     }
 }
@@ -385,6 +395,10 @@ impl TradingSdkBuilder<ChainIdSet, AppCodeSet> {
     /// injected orderbook client through
     /// [`crate::TradingSdkOptions::with_orderbook_client`] because the browser
     /// runtime does not ship a default HTTP transport; see ADR 0013.
+    /// This is the chosen `wasm32` posture for the ready terminal: the
+    /// requirement remains a documented runtime terminal check rather than a
+    /// third typestate axis, keeping the public builder state readable while
+    /// still failing before any quote or post method can run.
     /// Attempting to call `build_ready` on a builder that does not own the
     /// typestate prerequisites is a compile error.
     ///
@@ -411,6 +425,9 @@ impl TradingSdkBuilder<ChainIdSet, AppCodeSet> {
     ///     .build_ready();
     /// ```
     pub fn build_ready(self) -> Result<TradingSdk, TradingError> {
+        if let Some(error) = self.app_code_error {
+            return Err(error.into());
+        }
         self.validate_injected_orderbook_binding()?;
 
         // On wasm32 targets the default orderbook factory cannot run because
@@ -425,7 +442,6 @@ impl TradingSdkBuilder<ChainIdSet, AppCodeSet> {
         Ok(TradingSdk {
             trader_defaults: self.trader_defaults,
             options: self.options,
-            mode: TradingSdkMode::Ready,
             order_bounds: self.order_bounds,
         })
     }
@@ -436,27 +452,6 @@ impl TradingSdk {
     #[must_use]
     pub fn builder() -> TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
         TradingSdkBuilder::new()
-    }
-
-    /// Returns the runtime readiness mode selected by the builder.
-    #[inline]
-    #[must_use]
-    pub const fn mode(&self) -> TradingSdkMode {
-        self.mode
-    }
-
-    /// Returns an error when the SDK is restricted to helper-only flows.
-    ///
-    /// Quote, post, and off-chain cancellation methods call this helper
-    /// before running so helper-mode SDKs fail closed with
-    /// [`TradingError::HelperOnlyMode`] instead of invoking a flow that would
-    /// depend on missing trader defaults.
-    #[inline]
-    const fn ensure_ready_mode(&self) -> Result<(), TradingError> {
-        match self.mode {
-            TradingSdkMode::Ready => Ok(()),
-            TradingSdkMode::HelperOnly => Err(TradingError::HelperOnlyMode),
-        }
     }
 
     /// Returns the stored trader defaults.
@@ -497,7 +492,6 @@ impl TradingSdk {
         mut params: TradeParameters,
         advanced_settings: Option<&SwapAdvancedSettings>,
     ) -> Result<QuoteResults, TradingError> {
-        self.ensure_ready_mode()?;
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let owner = self.resolve_quote_owner(&params, advanced_settings)?;
         let (quoter, orderbook) = self.resolve_quoter(owner, params.env)?;
@@ -575,7 +569,6 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display,
     {
-        self.ensure_ready_mode()?;
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
@@ -656,7 +649,6 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display,
     {
-        self.ensure_ready_mode()?;
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
@@ -739,7 +731,6 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display,
     {
-        self.ensure_ready_mode()?;
         let (trader, orderbook) =
             self.resolve_orderbook_trader(None, quote_results.trade_parameters.env)?;
 
@@ -821,7 +812,6 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display,
     {
-        self.ensure_ready_mode()?;
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
@@ -995,7 +985,6 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display,
     {
-        self.ensure_ready_mode()?;
         let (trader, orderbook) = self.resolve_orderbook_trader(params.chain_id, params.env)?;
         let effective_params = OrderTraderParameters {
             chain_id: Some(orderbook.chain_id),
@@ -1374,6 +1363,360 @@ impl TradingSdk {
             // from `cow-sdk-transport-wasm` and inject the resulting
             // [`OrderBookApi`] through
             // [`TradingSdkOptions::with_orderbook_client`].
+            let _ = (requested_chain, requested_env);
+            Err(missing_chain_error)
+        }
+    }
+}
+
+impl HelperOnlySdk {
+    /// Returns the stored trader defaults.
+    #[must_use]
+    pub const fn trader_defaults(&self) -> &PartialTraderParameters {
+        &self.trader_defaults
+    }
+
+    /// Returns the stored SDK options.
+    #[must_use]
+    pub const fn options(&self) -> &TradingSdkOptions {
+        &self.options
+    }
+
+    /// Builds the pre-sign transaction for an order using a sync signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or gas
+    /// estimation / transaction construction fails.
+    pub fn get_pre_sign_transaction<S>(
+        &self,
+        params: &OrderTraderParameters,
+        signer: &S,
+    ) -> Result<cow_sdk_core::TransactionRequest, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display,
+    {
+        let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
+        let chain_id = trader
+            .chain_id
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
+        let options = protocol_options_for_partial_order(params, &trader);
+
+        get_pre_sign_transaction(signer, chain_id, &params.order_uid, Some(&options))
+    }
+
+    /// Builds the pre-sign transaction for an order using an async signer.
+    ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or gas
+    /// estimation / transaction construction fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.helper_only.get_pre_sign_transaction_async",
+                order_uid = params.order_uid.as_str(),
+            ),
+        ),
+    )]
+    pub async fn get_pre_sign_transaction_async<S>(
+        &self,
+        params: &OrderTraderParameters,
+        signer: &S,
+    ) -> Result<cow_sdk_core::TransactionRequest, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
+        let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
+        let chain_id = trader
+            .chain_id
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
+        let options = protocol_options_for_partial_order(params, &trader);
+
+        get_pre_sign_transaction_async(signer, chain_id, &params.order_uid, Some(&options)).await
+    }
+
+    /// Cancels an order on-chain using a sync signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from [`Self::on_chain_cancel_order_async`].
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.helper_only.on_chain_cancel_order",
+                order_uid = params.order_uid.as_str(),
+            ),
+        ),
+    )]
+    pub async fn on_chain_cancel_order<S>(
+        &self,
+        params: &OrderTraderParameters,
+        signer: &S,
+    ) -> Result<TransactionHash, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display,
+    {
+        self.on_chain_cancel_order_async(params, signer).await
+    }
+
+    /// Cancels an order on-chain using an async signer.
+    ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when order lookup, transaction construction, or
+    /// transaction submission fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.helper_only.on_chain_cancel_order_async",
+                order_uid = params.order_uid.as_str(),
+            ),
+        ),
+    )]
+    pub async fn on_chain_cancel_order_async<S>(
+        &self,
+        params: &OrderTraderParameters,
+        signer: &S,
+    ) -> Result<TransactionHash, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
+        let (trader, orderbook) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
+
+        let order = orderbook.client.get_order(&params.order_uid).await?;
+
+        let effective_params = OrderTraderParameters {
+            chain_id: Some(orderbook.chain_id),
+            env: Some(orderbook.env),
+            ..params.clone()
+        };
+        let options = protocol_options_for_partial_order(&effective_params, &trader);
+
+        cancel_order_onchain_async(signer, orderbook.chain_id, &order, Some(&options)).await
+    }
+
+    /// Reads the `CoW` Protocol allowance using a sync provider.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or provider
+    /// reads fail.
+    pub fn get_cow_protocol_allowance<P>(
+        &self,
+        provider: &P,
+        params: &AllowanceParameters,
+    ) -> Result<Amount, TradingError>
+    where
+        P: Provider,
+        P::Error: std::fmt::Display,
+    {
+        let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
+        let chain_id = trader
+            .chain_id
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
+        let env = trader.env.unwrap_or(CowEnv::Prod);
+
+        get_cow_protocol_allowance(
+            provider,
+            &params.token_address,
+            &params.owner,
+            chain_id,
+            env,
+            params.vault_relayer_override.as_ref(),
+        )
+    }
+
+    /// Reads the `CoW` Protocol allowance using an async provider.
+    ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or provider
+    /// reads fail.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.helper_only.get_cow_protocol_allowance_async",
+            ),
+        ),
+    )]
+    pub async fn get_cow_protocol_allowance_async<P>(
+        &self,
+        provider: &P,
+        params: &AllowanceParameters,
+    ) -> Result<Amount, TradingError>
+    where
+        P: AsyncProvider,
+        P::Error: std::fmt::Display,
+    {
+        let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
+        let chain_id = trader
+            .chain_id
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
+        let env = trader.env.unwrap_or(CowEnv::Prod);
+
+        get_cow_protocol_allowance_async(
+            provider,
+            &params.token_address,
+            &params.owner,
+            chain_id,
+            env,
+            params.vault_relayer_override.as_ref(),
+        )
+        .await
+    }
+
+    /// Sends an approval transaction using a sync signer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or
+    /// transaction submission fails.
+    pub fn approve_cow_protocol<S>(
+        &self,
+        signer: &S,
+        params: &ApprovalParameters,
+    ) -> Result<TransactionHash, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display,
+    {
+        let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
+        let chain_id = trader
+            .chain_id
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
+        let env = trader.env.unwrap_or(CowEnv::Prod);
+
+        crate::approve_cow_protocol(signer, params, chain_id, env)
+    }
+
+    /// Sends an approval transaction using an async signer.
+    ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are incomplete or
+    /// transaction submission fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.helper_only.approve_cow_protocol_async",
+            ),
+        ),
+    )]
+    pub async fn approve_cow_protocol_async<S>(
+        &self,
+        signer: &S,
+        params: &ApprovalParameters,
+    ) -> Result<TransactionHash, TradingError>
+    where
+        S: AsyncSigner,
+        S::Error: std::fmt::Display,
+    {
+        let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
+        let chain_id = trader
+            .chain_id
+            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
+        let env = trader.env.unwrap_or(CowEnv::Prod);
+
+        crate::approve_cow_protocol_async(signer, params, chain_id, env).await
+    }
+
+    fn resolve_chain_partial_trader(
+        &self,
+        requested_chain: Option<SupportedChainId>,
+        requested_env: Option<CowEnv>,
+    ) -> Result<(PartialTraderParameters, ResolvedOrderbookBinding), TradingError> {
+        let orderbook = self.resolve_orderbook_binding(
+            requested_chain.or(self.trader_defaults.chain_id),
+            requested_env.or(self.trader_defaults.env),
+            TradingError::MissingTraderParameters("chainId"),
+        )?;
+
+        Ok((
+            PartialTraderParameters {
+                chain_id: Some(orderbook.chain_id),
+                app_code: self.trader_defaults.app_code.clone(),
+                owner: self.trader_defaults.owner.clone(),
+                env: Some(orderbook.env),
+                settlement_contract_override: self
+                    .trader_defaults
+                    .settlement_contract_override
+                    .clone(),
+                eth_flow_contract_override: self.trader_defaults.eth_flow_contract_override.clone(),
+            },
+            orderbook,
+        ))
+    }
+
+    fn resolve_orderbook_binding(
+        &self,
+        requested_chain: Option<SupportedChainId>,
+        requested_env: Option<CowEnv>,
+        missing_chain_error: TradingError,
+    ) -> Result<ResolvedOrderbookBinding, TradingError> {
+        if let Some(orderbook_client) = self.options.orderbook_client() {
+            validate_orderbook_context(orderbook_client.as_ref(), requested_chain, requested_env)?;
+            let context = orderbook_client.context().clone();
+
+            return Ok(ResolvedOrderbookBinding {
+                client: orderbook_client,
+                chain_id: context.chain_id,
+                env: context.env,
+            });
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let chain_id = requested_chain.ok_or(missing_chain_error)?;
+            let env = requested_env.unwrap_or(CowEnv::Prod);
+            let client = OrderBookApi::builder()
+                .chain(chain_id)
+                .environment(env)
+                .build()?;
+            Ok(ResolvedOrderbookBinding {
+                client: Arc::new(client),
+                chain_id,
+                env,
+            })
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
             let _ = (requested_chain, requested_env);
             Err(missing_chain_error)
         }

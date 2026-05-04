@@ -67,6 +67,7 @@ impl CaseRng {
 
 fn trader() -> QuoterParameters {
     QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER))
+        .expect("app code should validate")
 }
 
 fn generated_uint256_decimal(rng: &mut CaseRng, max_bytes: usize) -> String {

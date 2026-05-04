@@ -31,7 +31,7 @@ let _sdk = TradingSdk::builder()
 ```
 
 Use `build_helper_only()` for chain-bound helper workflows that do not need
-quote, post, or off-chain cancellation submission through the SDK:
+quote, post, order lookup, or off-chain cancellation submission through the SDK:
 
 ```rust
 use cow_sdk_trading::{SupportedChainId, TradingSdk};
@@ -43,8 +43,8 @@ let _sdk = TradingSdk::builder()
 ```
 
 Helper-only SDKs support allowance reads, approval submission, pre-sign
-transaction construction, and on-chain cancellation. Quote, post, and
-off-chain cancellation methods return `TradingError::HelperOnlyMode`.
+transaction construction, and on-chain cancellation. Quote, post, order lookup,
+and off-chain cancellation methods are available only on `TradingSdk`.
 
 ## Where to next
 

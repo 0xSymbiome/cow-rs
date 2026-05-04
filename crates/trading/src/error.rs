@@ -7,6 +7,7 @@ use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_signing::SigningError;
 use thiserror::Error;
 
+use crate::types::AppCodeError;
 use crate::validation::ClientRejection;
 
 /// Value captured in an orderbook runtime-context conflict.
@@ -53,6 +54,9 @@ pub enum TradingError {
     /// Signing helper error.
     #[error(transparent)]
     Signing(#[from] SigningError),
+    /// App-code validation error.
+    #[error(transparent)]
+    AppCode(#[from] AppCodeError),
     /// Missing quote-only parameters after precedence resolution.
     #[error("Missing quoter parameters: {0}")]
     MissingQuoterParameters(&'static str),
@@ -154,12 +158,6 @@ pub enum TradingError {
         /// Local signing scheme returned by the signer integration.
         scheme: SigningScheme,
     },
-    /// A quote, post, or off-chain cancellation method was called on an sdk
-    /// that was constructed through the helper-only terminal.
-    #[error(
-        "trading sdk is in helper-only mode; quote, post, and off-chain cancellation require a fully-configured sdk built through TradingSdkBuilder::build_ready"
-    )]
-    HelperOnlyMode,
     /// A long-running trading operation was cancelled through a cooperative cancellation token.
     #[error("trading operation was cancelled")]
     Cancelled,
@@ -174,5 +172,11 @@ pub enum TradingError {
 impl From<Cancelled> for TradingError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled
+    }
+}
+
+impl From<std::convert::Infallible> for TradingError {
+    fn from(error: std::convert::Infallible) -> Self {
+        match error {}
     }
 }

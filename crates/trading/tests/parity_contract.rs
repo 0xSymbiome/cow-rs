@@ -285,7 +285,8 @@ async fn assert_quote_app_data_enrichment(case_id: &str, input: &Value, expected
 
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response());
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, app_code);
+    let trader = cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, app_code)
+        .expect("app code should validate");
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.slippage_bps = Some(slippage_bps);
 
@@ -377,7 +378,8 @@ async fn assert_quote_validity_contract(case_id: &str, input: &Value, expected: 
     );
 
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, "0x007");
+    let trader = cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+        .expect("app code should validate");
 
     // Default path: no explicit validity → valid_for defaults to 1800.
     let default_orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response());
@@ -476,7 +478,8 @@ async fn assert_eth_sell_defaults(case_id: &str, expected: &Value) {
 
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response());
     let signer = MockSigner::default();
-    let trader = cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, "0x007");
+    let trader = cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+        .expect("app code should validate");
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
     trade.slippage_bps = None;
@@ -561,7 +564,8 @@ async fn assert_auto_slippage_suggestion(case_id: &str, input: &Value, expected:
     // Suggestion present: AUTO slippage adopts the provider value (combined
     // with the built-in base suggestion).
     let suggest_orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response());
-    let quoter = QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
+    let quoter = QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER))
+        .expect("app code should validate");
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.owner = Some(address(OWNER));
     trade.slippage_bps = None;
@@ -625,7 +629,8 @@ fn assert_slippage_helper_bounds(case_id: &str, expected: &Value) {
         "case {case_id}: expected.ethflow_minimum_is_chain_default must be true",
     );
 
-    let trader = QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER));
+    let trader = QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER))
+        .expect("app code should validate");
     let trade = sample_trade_parameters(OrderKind::Sell);
 
     // Zero-fee/volume quote → non-EthFlow yields the lower clamp (0), EthFlow
@@ -1413,7 +1418,9 @@ async fn assert_sdk_quote_only_owner_mode(case_id: &str, expected: &Value) {
         sell_quote_response(),
     ));
     let sdk = TradingSdkBuilder::ready(
-        TraderParameters::new(SupportedChainId::Sepolia, "0x007").with_env(CowEnv::Prod),
+        TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate")
+            .with_env(CowEnv::Prod),
         TradingSdkOptions::new().with_orderbook_client(orderbook.clone()),
     )
     .unwrap_or_else(|error| panic!("case {case_id}: sdk construction must succeed, got {error:?}"));
@@ -1447,16 +1454,12 @@ async fn assert_sdk_quote_only_owner_mode(case_id: &str, expected: &Value) {
             .unwrap_or_else(|error| {
                 panic!("case {case_id}: helper-only construction must succeed, got {error:?}")
             });
-    let Err(quote_error) = helper_only
-        .get_quote_only(sample_trade_parameters(OrderKind::Sell), None)
-        .await
-    else {
-        panic!("case {case_id}: helper-only quote must fail with a typed error");
-    };
-    assert!(
-        matches!(quote_error, TradingError::HelperOnlyMode),
-        "case {case_id}: helper-only quote flow must fail closed",
+    assert_eq!(
+        helper_only.trader_defaults().chain_id,
+        Some(SupportedChainId::Sepolia),
+        "case {case_id}: helper-only construction must preserve chain authority",
     );
+    assert!(helper_only.trader_defaults().app_code.is_none());
 }
 
 fn assert_sdk_allowance_approval_boundaries(case_id: &str, expected: &Value) {
@@ -1511,6 +1514,7 @@ fn assert_sdk_contract_override_precedence(case_id: &str, expected: &Value) {
     // Trader default override: settlement contract routes to TRADER_ADDR.
     let trader_addr = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     let trader = cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+        .expect("app code should validate")
         .with_settlement_contract_override(AddressPerChain::from([(
             u64::from(SupportedChainId::Sepolia),
             address(trader_addr),

@@ -11,8 +11,11 @@ modules:
 root exports:
 - Address
 - Amount
+- AppCode
+- AppCodeError
 - BrowserWalletSigner (prelude)
 - ErrorClass
+- HelperOnlySdk
 - HttpTransport
 - InMemoryEip1271VerificationCache
 - NoopEip1271VerificationCache

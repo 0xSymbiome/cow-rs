@@ -31,13 +31,13 @@ facade and trading flow end to end.
 Ready-state facade setup on the native/default transport path:
 
 ```rust
-use cow_sdk::{SupportedChainId, TraderParameters, TradingSdkBuilder, TradingSdkOptions};
+use cow_sdk::{SupportedChainId, TradingSdk};
 
-let _sdk = TradingSdkBuilder::ready(
-    TraderParameters::new(SupportedChainId::Sepolia, "your-app-code"),
-    TradingSdkOptions::default(),
-)
-.unwrap();
+let _sdk = TradingSdk::builder()
+    .with_chain_id(SupportedChainId::Sepolia)
+    .with_app_code("your-app-code")
+    .build_ready()
+    .unwrap();
 ```
 
 Use `appCode` as the stable identifier for the application or integration

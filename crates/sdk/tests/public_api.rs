@@ -9,7 +9,8 @@ use cow_sdk::trading::{PartialTraderParameters, PartnerFee, PartnerFeePolicy};
 #[test]
 fn public_api_reexports_cover_primary_root_surface() {
     let _ready_sdk = TradingSdkBuilder::ready(
-        TraderParameters::new(SupportedChainId::Sepolia, "cow-rs/public-api"),
+        TraderParameters::new(SupportedChainId::Sepolia, "cow-rs/public-api")
+            .expect("app code should validate"),
         TradingSdkOptions::default(),
     )
     .expect("ready trading sdk construction should succeed");

@@ -1,0 +1,11 @@
+error[E0599]: no method named `off_chain_cancel_order_async` found for struct `HelperOnlySdk` in the current scope
+  --> tests/ui/helper_only_sdk_no_offchain_cancel.rs:15:17
+   |
+15 |     let _ = sdk.off_chain_cancel_order_async(&order_parameters(), &signer);
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+help: there is a method `on_chain_cancel_order_async` with a similar name
+   |
+15 -     let _ = sdk.off_chain_cancel_order_async(&order_parameters(), &signer);
+15 +     let _ = sdk.on_chain_cancel_order_async(&order_parameters(), &signer);
+   |

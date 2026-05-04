@@ -12,7 +12,7 @@ use cow_sdk::{
         OrderBookApiError, OrderbookError, OrderbookRejection, ResponseBody, SigningScheme,
     },
     signing::SigningError,
-    trading::{ClientRejection, OrderbookContextValue, TradingError},
+    trading::{AppCodeError, ClientRejection, OrderbookContextValue, TradingError},
 };
 use cow_sdk_subgraph::{SubgraphError, SubgraphGraphQlError, SubgraphRequestErrorContext};
 use serde::Serialize;
@@ -440,7 +440,7 @@ fn trading_errors_redact_workflow_message_and_conflict_payloads() {
         TradingError::UnsupportedLocalSigningScheme {
             scheme: cow_sdk::contracts::SigningScheme::Eip1271,
         },
-        TradingError::HelperOnlyMode,
+        TradingError::AppCode(AppCodeError::ControlCharacter),
         TradingError::Cancelled,
         TradingError::MissingInjectedOrderbookClient,
     ];

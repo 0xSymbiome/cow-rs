@@ -196,9 +196,9 @@ SDK. Common examples are allowance and approval screens, pre-sign transaction
 tools, and on-chain cancellation tools.
 
 ```rust
-use cow_sdk::{SupportedChainId, TradingSdk};
+use cow_sdk::{HelperOnlySdk, SupportedChainId, TradingSdk};
 
-fn build_helper_only_sdk() -> Result<TradingSdk, Box<dyn std::error::Error>> {
+fn build_helper_only_sdk() -> Result<HelperOnlySdk, Box<dyn std::error::Error>> {
     let sdk = TradingSdk::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .build_helper_only()?;
@@ -208,8 +208,8 @@ fn build_helper_only_sdk() -> Result<TradingSdk, Box<dyn std::error::Error>> {
 ```
 
 A helper-only SDK can drive allowance reads, approval submission, pre-sign
-transaction construction, and on-chain cancellation. Quote, post, and
-off-chain cancellation methods return `TradingError::HelperOnlyMode`; choose
+transaction construction, and on-chain cancellation. Quote, post, order lookup,
+and off-chain cancellation methods are only available on `TradingSdk`; choose
 `build_ready()` when those flows are needed.
 
 ### What This Step Proves
@@ -220,8 +220,8 @@ This builder step proves the top-level SDK contract:
 - `SupportedChainId` is the public chain selector type
 - `appCode` is a required ready-state default and a stable integration
   identifier
-- `build_ready()` and `build_helper_only()` are separate terminal contracts
-  for full trading flows versus chain-bound helper flows
+- `build_ready()` returns `TradingSdk`, while `build_helper_only()` returns
+  `HelperOnlySdk` for chain-bound helper flows
 - `Address::new(...)` is the public validated address constructor
 - `CoreError` is the canonical shared validation and configuration error type
 

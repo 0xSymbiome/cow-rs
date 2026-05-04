@@ -37,6 +37,7 @@ async fn quote_app_data_and_request_shape_follow_pinned_contract() {
     let signer = MockSigner::default();
     let trader =
         cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate")
             .with_env(CowEnv::Prod);
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.slippage_bps = Some(76);
@@ -71,7 +72,8 @@ async fn quote_validity_uses_valid_for_by_default_and_exact_valid_to_when_reques
     );
     let signer = MockSigner::default();
     let trader =
-        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007");
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate");
 
     let default_trade = sample_trade_parameters(OrderKind::Sell);
     let _ = get_quote_results(&default_trade, &trader, &signer, None, &orderbook)
@@ -126,7 +128,8 @@ async fn native_sell_quote_uses_wrapped_native_and_onchain_defaults() {
     );
     let signer = MockSigner::default();
     let trader =
-        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007");
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate");
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.sell_token = address(cow_sdk_core::EVM_NATIVE_CURRENCY_ADDRESS);
     trade.slippage_bps = None;
@@ -163,7 +166,8 @@ async fn auto_slippage_uses_provider_suggestion_and_quote_only_uses_owner_withou
         cow_sdk_core::SupportedChainId::Sepolia,
         "0x007",
         address(OWNER),
-    );
+    )
+    .expect("app code should validate");
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.owner = Some(address(OWNER));
     trade.slippage_bps = None;
@@ -200,7 +204,8 @@ async fn quote_request_override_can_change_receiver_and_price_quality() {
     );
     let signer = MockSigner::default();
     let trader =
-        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007");
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate");
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
     let advanced = SwapAdvancedSettings::new().with_quote_request(
         QuoteRequestOverride::new()
@@ -238,7 +243,8 @@ async fn quote_results_preserve_non_default_balance_semantics_from_quote_and_ove
     let orderbook = MockOrderbook::new(cow_sdk_core::SupportedChainId::Sepolia, quote_response);
     let signer = MockSigner::default();
     let trader =
-        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007");
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate");
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
     let advanced = SwapAdvancedSettings::new().with_quote_request(
         QuoteRequestOverride::new()
@@ -292,7 +298,8 @@ async fn quote_request_keeps_trade_partial_fill_flag_without_direct_override() {
     );
     let signer = MockSigner::default();
     let trader =
-        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007");
+        cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate");
     let mut trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
     trade.partially_fillable = true;
 
@@ -322,6 +329,7 @@ async fn quote_helpers_reject_injected_orderbook_chain_conflicts() {
         "0x007",
         address(OWNER),
     )
+    .expect("app code should validate")
     .with_env(CowEnv::Prod);
     let trade = sample_trade_parameters(OrderKind::Sell);
 
@@ -350,6 +358,7 @@ async fn quote_results_capture_originating_orderbook_runtime_binding() {
     let signer = MockSigner::default();
     let trader =
         cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate")
             .with_env(CowEnv::Prod);
     let trade = sample_trade_parameters(OrderKind::Sell);
 
@@ -429,6 +438,7 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
     let signer = MockSigner::default();
     let trader =
         cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate")
             .with_env(CowEnv::Prod);
     let mut trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
     trade.owner = None;
@@ -510,6 +520,7 @@ async fn quote_results_reject_invalid_partner_fee_metadata_before_quoting() {
     let signer = MockSigner::default();
     let trader =
         cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate")
             .with_env(CowEnv::Prod);
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
     let advanced = SwapAdvancedSettings::new().with_app_data(
@@ -548,6 +559,7 @@ async fn quote_request_validation_runs_before_orderbook_transport() {
     let signer = MockSigner::default();
     let trader =
         cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate")
             .with_env(CowEnv::Prod);
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
     let advanced = SwapAdvancedSettings::new().with_quote_request(
@@ -604,6 +616,7 @@ async fn quote_results_reject_zero_address_partner_fee_before_quoting() {
     let signer = MockSigner::default();
     let trader =
         cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate")
             .with_env(CowEnv::Prod);
     let trade = sample_trade_parameters(OrderKind::Sell).with_partner_fee(
         PartnerFeePolicy::Volume {

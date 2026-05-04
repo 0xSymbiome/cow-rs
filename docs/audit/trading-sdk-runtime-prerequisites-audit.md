@@ -1,8 +1,8 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current
-Last reviewed: 2026-05-01
-Owning surface: `cow-sdk-trading` ready-state versus helper-only `TradingSdk` construction and helper-specific prerequisite contract
+Last reviewed: 2026-05-04
+Owning surface: `cow-sdk-trading` ready-state `TradingSdk` construction, helper-only `HelperOnlySdk` construction, and helper-specific prerequisite contract
 Refresh trigger: Changes to ready-state `TradingSdk` builder terminals, helper-only setup entry points, method-specific prerequisite enforcement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
@@ -16,7 +16,7 @@ Related docs:
 
 This audit covers:
 
-- ready-state and helper-only `TradingSdk` construction
+- ready-state `TradingSdk` and helper-only `HelperOnlySdk` construction
 - method-specific prerequisites across quote, post, cancellation, allowance,
   approval, and pre-sign helper flows
 - the boundary between trading attribution requirements and chain-bound helper
@@ -29,9 +29,10 @@ or unrelated credential-hygiene questions.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Typestate ready construction | `TradingSdkBuilder::build_ready` and `TradingSdkBuilder::ready` require total chain id plus `appCode` inputs before ready-state construction | Conforms |
+| AppCode attribution | Trading attribution uses the `AppCode` newtype, rejecting empty strings, NUL bytes, and ASCII control characters before ready-state construction | Conforms |
+| Typestate ready construction | `TradingSdkBuilder::build_ready` and `TradingSdkBuilder::ready` require total chain id plus validated `appCode` inputs before ready-state construction | Conforms |
 | wasm32 build_ready() requires injected orderbook client | `build_ready()` returns `TradingError::MissingInjectedOrderbookClient` when `options.orderbook_client().is_none()` on `wasm32` | Conforms |
-| Helper-only construction | `TradingSdkBuilder::build_helper_only` and `TradingSdkBuilder::helper_only` keep helper-only setup available on native and wasm32 without weakening the ready-state contract | Conforms |
+| Helper-only construction | `TradingSdkBuilder::build_helper_only` and `TradingSdkBuilder::helper_only` return the distinct `HelperOnlySdk` type on native and wasm32 without weakening the ready-state contract | Conforms |
 | Chain-bound helper prerequisites | Allowance, approval, pre-sign, and on-chain cancellation no longer require `appCode` when only chain and protocol context are needed | Conforms |
 
 ## Current Contract
@@ -39,8 +40,9 @@ or unrelated credential-hygiene questions.
 ### Ready-State Construction
 
 `TradingSdkBuilder::build_ready` is available only after the builder has both
-chain id and `appCode` typestate markers set, so missing ready-state
-prerequisites are rejected at compile time for fluent builder callers.
+chain id and `AppCode` typestate markers set, so missing ready-state
+prerequisites are rejected at compile time for fluent builder callers and
+invalid attribution strings are rejected before the SDK handle is returned.
 `TradingSdkBuilder::ready` is the one-call ready-state shortcut for callers
 that already hold total `TraderParameters`; it does not accept partial defaults.
 
@@ -65,15 +67,14 @@ keep the narrower helper-only contract explicit. They are intended for
 workflows such as allowance reads, approval submission, pre-sign transaction
 construction, and on-chain cancellation, where chain and protocol context
 matter but quote or submission attribution does not. Both construction paths
-require a chain id and produce `TradingSdkMode::HelperOnly`. On `wasm32`,
-helper-only construction does not require an injected orderbook client because
-the resulting SDK mode refuses quote, post, and off-chain cancellation flows
-before attempting orderbook transport.
+require a chain id and produce `HelperOnlySdk`. On `wasm32`, helper-only
+construction does not require an injected orderbook client because the
+resulting type does not expose quote, post, or off-chain cancellation methods.
 
 ### Helper-Specific Prerequisites
 
 Allowance, approval, pre-sign, and on-chain cancellation resolve only the
-chain-bound protocol context they actually need. `appCode` remains required for
+chain-bound protocol context they actually need. `AppCode` remains required for
 quote, post, and off-chain cancellation flows, where app-data attribution and
 orderbook submission semantics depend on it, but it is no longer forced into
 helpers that do not consume that contract.
@@ -83,6 +84,7 @@ helpers that do not consume that contract.
 Primary implementation points:
 
 - `crates/trading/src/sdk.rs`
+- `crates/trading/src/types.rs`
 - `crates/trading/src/onchain.rs`
 - `crates/sdk/src/prelude.rs`
 - `crates/sdk/src/lib.rs`
@@ -95,7 +97,10 @@ Primary regression coverage:
 - `crates/trading/tests/sdk_contract.rs::build_helper_only_succeeds_on_wasm32_without_injected_orderbook_client`
 - `crates/trading/tests/sdk_contract.rs::build_ready_succeeds_on_native_without_injected_orderbook_client`
 - `crates/trading/tests/sdk_contract.rs::sdk_ready_shortcut_accepts_total_trader_parameters`
-- `crates/trading/tests/sdk_contract.rs::sdk_helper_only_shortcut_builds_helper_mode_and_refuses_quote_only`
+- `crates/trading/tests/sdk_contract.rs::sdk_helper_only_shortcut_builds_helper_only_type`
+- `crates/trading/tests/app_code_contract.rs`
+- `crates/trading/tests/ui/helper_only_sdk_no_quote_methods.rs`
+- `crates/trading/tests/ui/helper_only_sdk_no_offchain_cancel.rs`
 - `crates/sdk/tests/public_api.rs`
 
 Validation surface:

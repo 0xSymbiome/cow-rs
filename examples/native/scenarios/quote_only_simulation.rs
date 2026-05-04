@@ -13,7 +13,7 @@ use cow_sdk_examples_native::support::{
 async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
     let sdk = TradingSdkBuilder::ready(
-        TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-quote-only"),
+        TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-quote-only").expect("app code should validate"),
         TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     )?;
 

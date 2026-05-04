@@ -10,6 +10,21 @@ excluded from this version history.
 
 The first functional crate-family release begins at `0.1.0`.
 
+## [Unreleased]
+
+### Changed
+
+- `cow-sdk-trading` now validates trading `appCode` values through a typed
+  `AppCode` newtype that rejects empty strings, NUL bytes, and ASCII control
+  characters without imposing a length cap or printable-ASCII restriction.
+- `TradingSdkBuilder::build_helper_only` now returns `HelperOnlySdk`, a
+  narrower helper surface for allowance, approval, pre-sign, and on-chain
+  cancellation workflows. Quote, post, order lookup, and off-chain
+  cancellation methods remain available on `TradingSdk`.
+- On `wasm32`, `TradingSdkBuilder::build_ready()` continues to fail fast with
+  `TradingError::MissingInjectedOrderbookClient` unless an orderbook client is
+  injected before the terminal is called.
+
 ## [0.1.0] — 2026-05-02
 
 ### Added
@@ -425,13 +440,12 @@ The first functional crate-family release begins at `0.1.0`.
   been supplied through the explicit `with_chain_id` and `with_app_code`
   setters. The compile-time-checked `build_ready` terminal is only
   available once both markers reach the `Set` state, and `build_helper_only`
-  is only available once the chain-id marker is `Set`. A `TradingSdkMode`
-  enum (`Ready` or `HelperOnly`) plus the new
-  `TradingError::HelperOnlyMode` variant fail
-  quote, post, and off-chain cancellation flows closed when the sdk was
-  constructed through the helper-only terminal, while chain-bound helpers
-  (pre-sign transaction construction, allowance reads, approval submission,
-  and on-chain cancellation) stay fully usable. A runnable
+  is only available once the chain-id marker is `Set`. The ready terminal
+  returns `TradingSdk`, while the helper terminal returns `HelperOnlySdk` so
+  quote, post, order lookup, and off-chain cancellation methods are absent
+  from the helper-only type. Chain-bound helpers (pre-sign transaction
+  construction, allowance reads, approval submission, and on-chain
+  cancellation) stay fully usable. A runnable
   `typestate_builder_example` demonstrates both terminals without requiring
   external credentials.
 - Forward-compatible `#[non_exhaustive]` audit on the public configuration

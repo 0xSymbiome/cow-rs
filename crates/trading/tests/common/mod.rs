@@ -117,6 +117,7 @@ pub fn sample_trade_parameters(kind: OrderKind) -> cow_sdk_trading::TradeParamet
 
 pub fn sample_trader_parameters() -> cow_sdk_trading::TraderParameters {
     cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+        .expect("app code should validate")
         .with_env(CowEnv::Prod)
 }
 

@@ -10,7 +10,7 @@ use cow_sdk_orderbook::OrderBookApi;
 use cow_sdk_trading::TradingError;
 use cow_sdk_trading::{
     ApprovalParameters, OrderTraderParameters, TraderParameters, TradingSdk, TradingSdkBuilder,
-    TradingSdkMode, TradingSdkOptions,
+    TradingSdkOptions,
 };
 #[cfg(target_arch = "wasm32")]
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
@@ -45,7 +45,9 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
         sell_quote_response(),
     ));
     let sdk = TradingSdkBuilder::ready(
-        TraderParameters::new(SupportedChainId::Sepolia, "0x007").with_env(CowEnv::Prod),
+        TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate")
+            .with_env(CowEnv::Prod),
         TradingSdkOptions::new().with_orderbook_client(orderbook.clone()),
     )
     .expect("sdk construction should succeed");
@@ -71,6 +73,7 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
 fn sdk_ready_shortcut_accepts_total_trader_parameters() {
     let sdk = TradingSdkBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate")
             .with_env(CowEnv::Prod)
             .with_settlement_contract_override(AddressPerChain::from([(
                 u64::from(SupportedChainId::Sepolia),
@@ -84,7 +87,6 @@ fn sdk_ready_shortcut_accepts_total_trader_parameters() {
     )
     .expect("ready shortcut should construct from total trader parameters");
 
-    assert_eq!(sdk.mode(), TradingSdkMode::Ready);
     assert_eq!(
         sdk.trader_defaults().chain_id,
         Some(SupportedChainId::Sepolia)
@@ -153,7 +155,9 @@ fn sdk_ready_shortcut_validates_injected_orderbook_context_with_the_same_contrac
     ));
 
     let error = TradingSdkBuilder::ready(
-        TraderParameters::new(SupportedChainId::Mainnet, "0x007").with_env(CowEnv::Prod),
+        TraderParameters::new(SupportedChainId::Mainnet, "0x007")
+            .expect("app code should validate")
+            .with_env(CowEnv::Prod),
         TradingSdkOptions::new().with_orderbook_client(orderbook),
     )
     .expect_err("ready shortcut must reject injected orderbook conflicts");
@@ -195,21 +199,15 @@ async fn sdk_orderbook_bound_calls_reject_env_conflicts_with_injected_client_con
 }
 
 #[tokio::test]
-async fn sdk_helper_only_shortcut_builds_helper_mode_and_refuses_quote_only() {
-    let trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
-
+async fn sdk_helper_only_shortcut_builds_helper_only_type() {
     let helper_only =
         TradingSdkBuilder::helper_only(SupportedChainId::Sepolia, TradingSdkOptions::default())
             .expect("helper-only shortcut with chainId should succeed");
-    assert_eq!(helper_only.mode(), TradingSdkMode::HelperOnly);
-    let quote_error = helper_only
-        .get_quote_only(trade, None)
-        .await
-        .expect_err("helper-only construction must refuse quote-only flows");
-    assert!(matches!(
-        quote_error,
-        cow_sdk_trading::TradingError::HelperOnlyMode
-    ));
+    assert_eq!(
+        helper_only.trader_defaults().chain_id,
+        Some(SupportedChainId::Sepolia)
+    );
+    assert!(helper_only.trader_defaults().app_code.is_none());
 }
 
 #[test]
@@ -383,6 +381,7 @@ async fn sdk_onchain_cancel_order_routes_regular_orders_through_settlement_when_
     let signer = MockSigner::default();
     let sdk = TradingSdkBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate")
             .with_env(CowEnv::Prod)
             .with_settlement_contract_override(AddressPerChain::from([(
                 u64::from(SupportedChainId::Sepolia),
@@ -431,6 +430,7 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
     let signer = MockSigner::default();
     let sdk = TradingSdkBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+            .expect("app code should validate")
             .with_env(CowEnv::Prod)
             .with_settlement_contract_override(AddressPerChain::from([(
                 u64::from(SupportedChainId::Sepolia),
@@ -506,8 +506,6 @@ fn build_ready_succeeds_on_wasm32_with_injected_orderbook_client() {
         .with_orderbook_client(Arc::new(client))
         .build_ready()
         .expect("wasm32 build_ready must accept an injected orderbook client");
-
-    assert_eq!(sdk.mode(), TradingSdkMode::Ready);
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -519,7 +517,6 @@ async fn build_ready_succeeds_on_native_without_injected_orderbook_client() {
         .build_ready()
         .expect("native build_ready must succeed when the typestate prerequisites are set");
 
-    assert_eq!(sdk.mode(), TradingSdkMode::Ready);
     assert_eq!(
         sdk.trader_defaults().chain_id,
         Some(SupportedChainId::Mainnet)
@@ -528,13 +525,12 @@ async fn build_ready_succeeds_on_native_without_injected_orderbook_client() {
 }
 
 #[test]
-fn typestate_build_helper_only_produces_a_helper_mode_sdk_from_a_chain_only_state() {
+fn typestate_build_helper_only_produces_a_helper_only_sdk_from_a_chain_only_state() {
     let sdk = cow_sdk_trading::TradingSdkBuilder::new()
         .with_chain_id(SupportedChainId::Sepolia)
         .build_helper_only()
         .expect("typestate build_helper_only must succeed when chain id is set");
 
-    assert_eq!(sdk.mode(), cow_sdk_trading::TradingSdkMode::HelperOnly);
     assert_eq!(
         sdk.trader_defaults().chain_id,
         Some(SupportedChainId::Sepolia)
@@ -550,7 +546,11 @@ fn build_helper_only_succeeds_on_wasm32_without_injected_orderbook_client() {
         .build_helper_only()
         .expect("wasm32 helper-only construction must not require an injected orderbook client");
 
-    assert_eq!(sdk.mode(), TradingSdkMode::HelperOnly);
+    assert_eq!(
+        sdk.trader_defaults().chain_id,
+        Some(SupportedChainId::Mainnet)
+    );
+    assert!(sdk.trader_defaults().app_code.is_none());
 }
 
 #[tokio::test]
@@ -644,34 +644,16 @@ async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
 }
 
 #[tokio::test]
-async fn helper_only_sdk_refuses_quote_post_and_off_chain_cancel_flows() {
+async fn helper_only_sdk_exposes_chain_bound_helper_defaults() {
     let sdk = cow_sdk_trading::TradingSdkBuilder::new()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_owner(address(OWNER))
         .build_helper_only()
         .expect("helper-only builder must succeed when chain id is set");
 
-    let trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
-    let quote_error = sdk
-        .get_quote_only(trade, None)
-        .await
-        .expect_err("helper-only sdk must refuse the quote flow");
-    assert!(matches!(
-        quote_error,
-        cow_sdk_trading::TradingError::HelperOnlyMode
-    ));
-
-    let cancel_error = sdk
-        .off_chain_cancel_order_async(
-            &OrderTraderParameters::new(order_uid())
-                .with_chain_id(SupportedChainId::Sepolia)
-                .with_env(CowEnv::Prod),
-            &MockSigner::default(),
-        )
-        .await
-        .expect_err("helper-only sdk must refuse the off-chain cancellation flow");
-    assert!(matches!(
-        cancel_error,
-        cow_sdk_trading::TradingError::HelperOnlyMode
-    ));
+    assert_eq!(
+        sdk.trader_defaults().chain_id,
+        Some(SupportedChainId::Sepolia)
+    );
+    assert_eq!(sdk.trader_defaults().owner.as_ref(), Some(&address(OWNER)));
 }

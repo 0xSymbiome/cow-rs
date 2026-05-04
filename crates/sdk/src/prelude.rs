@@ -29,6 +29,6 @@ pub use cow_sdk_orderbook::{OrderBookApi, OrderBookApiBuilder, OrderbookError};
 pub use cow_sdk_core::{AsyncSigner, Signer};
 // trading
 pub use cow_sdk_trading::{
-    TradeParameters, TraderParameters, TradingError, TradingSdk, TradingSdkBuilder,
-    TradingSdkOptions,
+    AppCode, AppCodeError, HelperOnlySdk, TradeParameters, TraderParameters, TradingError,
+    TradingSdk, TradingSdkBuilder, TradingSdkOptions,
 };

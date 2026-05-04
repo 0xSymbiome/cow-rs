@@ -67,8 +67,8 @@ pub use quote::{
     merge_and_seal_app_data, params_from_doc,
 };
 pub use sdk::{
-    AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, TradingSdk, TradingSdkBuilder,
-    TradingSdkMode,
+    AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, HelperOnlySdk, TradingSdk,
+    TradingSdkBuilder,
 };
 pub use slippage::{
     DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT,
@@ -77,12 +77,13 @@ pub use slippage::{
     suggest_slippage_from_fee, suggest_slippage_from_volume,
 };
 pub use types::{
-    AllowanceParameters, ApprovalParameters, Eip1271SignatureProvider, EthFlowOrderExistsChecker,
-    LimitOrderAdvancedSettings, LimitTradeParameters, LimitTradeParametersFromQuote,
-    OrderPostingResult, OrderTraderParameters, PartialTraderParameters, PostTradeAdditionalParams,
-    QuoteRequestOverride, QuoteResults, QuoterParameters, SlippageSuggestionProvider,
-    SlippageToleranceRequest, SlippageToleranceResponse, SwapAdvancedSettings, TradeParameters,
-    TraderParameters, TradingAppDataInfo, TradingSdkOptions, TradingTransactionParams,
+    AllowanceParameters, AppCode, AppCodeError, ApprovalParameters, Eip1271SignatureProvider,
+    EthFlowOrderExistsChecker, LimitOrderAdvancedSettings, LimitTradeParameters,
+    LimitTradeParametersFromQuote, OrderPostingResult, OrderTraderParameters,
+    PartialTraderParameters, PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults,
+    QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
+    SlippageToleranceResponse, SwapAdvancedSettings, TradeParameters, TraderParameters,
+    TradingAppDataInfo, TradingSdkOptions, TradingTransactionParams,
 };
 pub use validation::{
     AmountSide, ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass,

@@ -1,9 +1,9 @@
 # Typestate Builder Contract Audit
 
 Status: Current
-Last reviewed: 2026-04-30
-Owning surface: `cow-sdk-orderbook::OrderBookApiBuilder` and `cow-sdk-subgraph::SubgraphApiBuilder` construction seams
-Refresh trigger: Type-parameter or marker visibility changes on either builder, a change to the set of required inputs (chain, environment or API key, transport), a change to host-policy validation, a change to the native default-transport convenience impl, a change to the wasm32 transport-required invariant, or a new `trybuild` witness replacing the current compile-fail coverage
+Last reviewed: 2026-05-04
+Owning surface: `cow-sdk-orderbook::OrderBookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, and `cow-sdk-trading::TradingSdkBuilder` construction seams
+Refresh trigger: Type-parameter or marker visibility changes on any covered builder, a change to the set of required inputs (chain, environment, API key, appCode, or transport), a change to host-policy validation, a change to the native default-transport convenience impl, a change to the wasm32 transport-required or injected-orderbook invariant, or a new `trybuild` witness replacing the current compile-fail coverage
 Related docs:
 - [ADR 0011](../adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
@@ -24,6 +24,10 @@ This audit covers:
 - the native default-transport convenience on both builders and its
   `#[cfg(not(target_arch = "wasm32"))]` gate
 - external host-policy validation for explicit endpoint overrides
+- the two-marker `TradingSdkBuilder` typestate
+  (`ChainIdState`, `AppCodeState`), validated `AppCode` attribution,
+  the distinct `TradingSdk`/`HelperOnlySdk` terminal types, and the
+  documented `wasm32` injected-orderbook runtime terminal
 - the sealed marker structs that prevent direct external construction of
   typestate witnesses
 - the wasm32 transport-required invariant proven by a `trybuild`
@@ -33,8 +37,8 @@ This audit covers:
 
 It does not cover transport-policy retry, rate-limit, or user-agent
 layering (the policy surface sits above the builder and is covered by
-a separate contract), and it does not cover the `TradingSdkBuilder`
-typestate (covered by the trading-sdk runtime prerequisites audit).
+a separate contract). Method-specific trading prerequisites are covered by
+the trading-sdk runtime prerequisites audit.
 
 ## Outcome Summary
 
@@ -46,6 +50,8 @@ typestate (covered by the trading-sdk runtime prerequisites audit).
 | Native convenience | Both builders carry a default-transport `.build()` impl gated on `#[cfg(not(target_arch = "wasm32"))]` that installs a `ReqwestTransport` | Conforms |
 | Host policy | Explicit orderbook and subgraph endpoint overrides are validated at build time and fail through typed host-policy errors | Conforms |
 | wasm32 invariant | `trybuild` compile-fail coverage asserts `.build()` without `.transport(...)` does not compile on `wasm32` | Conforms |
+| Trading SDK construction | `build_ready` requires chain id plus validated `AppCode`, `build_helper_only` requires chain id only, and the terminals return distinct SDK types | Conforms |
+| Trading wasm32 posture | `build_ready` documents and enforces the injected orderbook-client requirement at the runtime terminal on `wasm32` | Conforms |
 
 ## Current Contract
 
@@ -100,6 +106,27 @@ reach `.build()`. The `trybuild` UI harness at
 `crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs` captures
 the expected compile error and its stderr fixture.
 
+### Trading SDK Construction
+
+`TradingSdkBuilder<ChainIdState, AppCodeState>` lives at
+`crates/trading/src/sdk.rs`. The fluent chain-id and app-code setters move
+the builder from unset to set marker states. `build_ready()` is implemented
+only on `(ChainIdSet, AppCodeSet)` and returns `TradingSdk`; `build_helper_only()`
+is implemented once `ChainIdSet` is present and returns `HelperOnlySdk`, which
+does not expose quote, post, order lookup, or off-chain cancellation methods.
+
+Trading attribution is validated through `AppCode` before a ready SDK is
+returned. The validation deliberately rejects only empty strings, NUL bytes,
+and ASCII control characters so source-backed examples such as `CoW Swap`,
+`cow-rs/wasm-console`, and `COW_BRIDGING_REACT_EXAMPLE` remain accepted.
+
+On `wasm32`, `build_ready()` keeps the documented runtime terminal posture:
+callers must inject an orderbook client with
+`TradingSdkOptions::with_orderbook_client(...)`, otherwise the terminal returns
+`TradingError::MissingInjectedOrderbookClient`. That avoids adding a third
+builder marker while keeping the browser runtime requirement explicit in
+rustdoc and regression coverage.
+
 ### Legacy Constructor Retirement
 
 The legacy free-function constructors on `OrderBookApi` (`new`,
@@ -120,6 +147,8 @@ Primary implementation points:
 - `crates/orderbook/src/api.rs`
 - `crates/subgraph/src/builder.rs`
 - `crates/subgraph/src/api.rs`
+- `crates/trading/src/sdk.rs`
+- `crates/trading/src/types.rs`
 
 Primary regression coverage:
 
@@ -128,12 +157,16 @@ Primary regression coverage:
 - `crates/subgraph/tests/builder_contract.rs`
 - `crates/subgraph/tests/host_policy_contract.rs`
 - `crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs`
+- `crates/trading/tests/sdk_contract.rs`
+- `crates/trading/tests/app_code_contract.rs`
+- `crates/trading/tests/ui.rs`
 
 Validation surface:
 
 ```text
 cargo test -p cow-sdk-orderbook --all-features
 cargo test -p cow-sdk-subgraph --all-features
+cargo test -p cow-sdk-trading
 cargo check --workspace --all-features --target wasm32-unknown-unknown
-cargo clippy -p cow-sdk-orderbook -p cow-sdk-subgraph --all-targets --all-features -- -D warnings
+cargo clippy -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-trading --all-targets --all-features -- -D warnings
 ```

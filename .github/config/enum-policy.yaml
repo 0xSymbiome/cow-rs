@@ -54,15 +54,21 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Submission classes mirror services-owned order submission semantics.
-  - name: TradingSdkMode
-    file: crates/trading/src/sdk.rs
-    line: 31
+  - name: AppCodeError
+    file: crates/trading/src/types.rs
+    line: 44
     category: sdk-local-state
-    expected_marker: exhaustive
-    reason: Builder-state discriminator is SDK-owned and closed to the two runtime modes.
+    expected_marker: non_exhaustive
+    reason: App-code validation diagnostics can grow if new source-backed integration identifier checks are added.
+  - name: OrderbookContextValue
+    file: crates/trading/src/error.rs
+    line: 19
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Public orderbook-context conflict diagnostics can grow as trading runtime authority fields are added.
   - name: TradingError
     file: crates/trading/src/error.rs
-    line: 13
+    line: 41
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Trading orchestration diagnostics can grow as typed workflows are added.
