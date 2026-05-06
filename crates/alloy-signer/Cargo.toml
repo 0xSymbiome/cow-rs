@@ -31,6 +31,7 @@ tracing = ["dep:tracing"]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 cow-sdk-core = { path = "../core", version = "0.1.0" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
 
 alloy-consensus.workspace = true
 alloy-dyn-abi = { workspace = true, features = ["std", "eip712"] }
@@ -41,10 +42,12 @@ alloy-signer-local.workspace = true
 alloy-sol-types = { workspace = true, features = ["std"] }
 async-trait.workspace = true
 hex.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
 tracing = { workspace = true, optional = true }
 
 [dev-dependencies]
+cow-sdk-signing = { path = "../signing", version = "0.1.0" }
 proptest.workspace = true
 serde_json.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

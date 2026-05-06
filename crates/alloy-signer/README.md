@@ -1,11 +1,11 @@
 # cow-sdk-alloy-signer
 
-Native Alloy-backed signing adapter package for the `cow-rs` SDK.
+Native Alloy-backed local signing adapter package for the `cow-rs` SDK.
 
-This crate is the signing leaf for applications that want the `cow-rs` signer
-boundary backed by Alloy local signing on native targets. It is published as a
-separate opt-in crate so the default `cow-sdk` facade does not pull native Alloy
-signer dependencies.
+This crate is the signing leaf for native applications that want
+`cow_sdk_core::AsyncSigner` backed by Alloy local private-key signing. It is
+published as a separate opt-in crate so read-only provider users and the default
+`cow-sdk` facade do not pull native local-keystore dependencies.
 
 ## Capability Boundary
 
@@ -13,9 +13,22 @@ This crate is native-only. Wasm applications should use
 [`cow-sdk-browser-wallet`](https://docs.rs/cow-sdk-browser-wallet) for browser
 wallet signing.
 
-The package boundary is intentionally narrow in this release. Provider access is
-owned by [`cow-sdk-alloy-provider`](https://docs.rs/cow-sdk-alloy-provider), and
-combined provider plus signer composition is owned by
+The package boundary is intentionally narrow:
+
+- `LocalAlloyKeystoreSigner` implements `cow_sdk_core::AsyncSigner`.
+- It signs EIP-191 messages and EIP-712 typed-data payloads.
+- Canonical typed-data signing preserves the payload primary type.
+- The legacy flat typed-data compatibility path uses `Message` as its
+  placeholder primary type.
+- ECDSA signatures are normalized through the shared `cow-sdk-contracts`
+  signature helper before they are returned.
+- `sign_transaction`, `send_transaction`, and `estimate_gas` return
+  `AsyncSignerError::ProviderRequired` because a standalone local signer cannot
+  fill nonce, fee, chain, or transaction-type context.
+
+Provider access is owned by
+[`cow-sdk-alloy-provider`](https://docs.rs/cow-sdk-alloy-provider), and combined
+provider plus signer composition is owned by
 [`cow-sdk-alloy`](https://docs.rs/cow-sdk-alloy).
 
 ## Install
@@ -24,6 +37,54 @@ combined provider plus signer composition is owned by
 [dependencies]
 cow-sdk-alloy-signer = "0.1"
 ```
+
+The crate enables EIP-712 signing by default. Disable default features only if
+your application needs the EIP-191 message path without typed-data support.
+
+```toml
+[dependencies]
+cow-sdk-alloy-signer = { version = "0.1", default-features = false }
+```
+
+## Example
+
+```rust
+use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
+use cow_sdk_core::{AsyncSigner, SupportedChainId};
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let signer = LocalAlloyKeystoreSigner::builder()
+    .private_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")?
+    .chain_id(SupportedChainId::Mainnet)
+    .build()?;
+
+let owner = signer.get_address().await?;
+let signature = signer.sign_message(b"hello cow").await?;
+# let _ = (owner, signature);
+# Ok(())
+# }
+```
+
+The builder requires both key source and chain id before `build()` is available.
+Its typestate markers are sealed, so external code cannot construct a completed
+builder state by hand.
+
+## Errors
+
+`AsyncSignerError` is non-exhaustive and exposes a stable
+`AsyncSignerErrorClass` partition:
+
+- `validation`
+- `signing`
+- `provider_required`
+- `unsupported`
+- `cancelled`
+- `internal`
+
+Validation, signing, and internal details are redacted in public formatting.
+`From<cow_sdk_core::Cancelled>` is implemented so
+`Cancellable::cancel_with(...).await?` propagates cancellation through this
+crate's error type.
 
 ## Related Crates
 

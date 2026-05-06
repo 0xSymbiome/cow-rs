@@ -117,11 +117,12 @@ where
         cache_status = "miss",
     );
 
-    if let Err(error) = ensure_contract_code_async(provider, &request.verifier).await {
-        #[cfg(feature = "tracing")]
+    let code_result = ensure_contract_code_async(provider, &request.verifier).await;
+    #[cfg(feature = "tracing")]
+    if code_result.is_err() {
         emit_cache_skip_event();
-        return Err(error);
     }
+    code_result?;
 
     let args_json =
         match serde_json::to_string(&(request.digest.as_str(), request.signature.as_str())) {
@@ -150,20 +151,17 @@ where
         })?;
 
     let outcome = ensure_magic_value(&raw);
-    match cacheable_verification_outcome(&outcome) {
-        Some(cached) => {
-            cache.put(request.verifier.clone(), digest_key, cached);
-            #[cfg(feature = "tracing")]
-            tracing::debug!(
-                target: "cow_sdk::verify_eip1271",
-                cache_status = "store",
-                verification_result = if cached { "valid" } else { "invalid" },
-            );
-        }
-        None => {
-            #[cfg(feature = "tracing")]
-            emit_cache_skip_event();
-        }
+    if let Some(cached) = cacheable_verification_outcome(&outcome) {
+        cache.put(request.verifier.clone(), digest_key, cached);
+        #[cfg(feature = "tracing")]
+        tracing::debug!(
+            target: "cow_sdk::verify_eip1271",
+            cache_status = "store",
+            verification_result = if cached { "valid" } else { "invalid" },
+        );
+    } else {
+        #[cfg(feature = "tracing")]
+        emit_cache_skip_event();
     }
     outcome
 }

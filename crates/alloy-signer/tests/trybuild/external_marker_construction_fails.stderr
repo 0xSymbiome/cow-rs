@@ -1,0 +1,25 @@
+error: cannot construct `KeySourceUnset` with struct literal syntax due to private fields
+  --> tests/trybuild/external_marker_construction_fails.rs:13:13
+   |
+13 |     let _ = KeySourceUnset {};
+   |             ^^^^^^^^^^^^^^
+   |
+   = note: private field `_private` that was not provided
+help: you might have meant to use the `new` associated function
+   |
+13 -     let _ = KeySourceUnset {};
+13 +     let _ = KeySourceUnset::new();
+   |
+
+error: cannot construct `ChainUnset` with struct literal syntax due to private fields
+  --> tests/trybuild/external_marker_construction_fails.rs:17:13
+   |
+17 |     let _ = ChainUnset {};
+   |             ^^^^^^^^^^
+   |
+   = note: private field `_private` that was not provided
+help: you might have meant to use the `new` associated function
+   |
+17 -     let _ = ChainUnset {};
+17 +     let _ = ChainUnset::new();
+   |

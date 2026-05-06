@@ -66,6 +66,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Alloy Provider Adapter Audit](alloy-provider-adapter-audit.md) | Standing audit | `cow-sdk-alloy-provider` `RpcAlloyProvider`, its builder, and its `AsyncProvider` implementation | Read-only provider methods, HTTP typestate construction, redacted error classification, `read_contract` ABI handling, doc-hidden helper seam, and dependency boundary | Current | 2026-05-06 |
+| [Alloy Signer Adapter Audit](alloy-signer-adapter-audit.md) | Standing audit | `cow-sdk-alloy-signer` `LocalAlloyKeystoreSigner`, its builder, and its `AsyncSigner` implementation | Local-keystore message and typed-data signing, primary-type preservation, signature normalization, provider-required transaction methods, redacted errors, cancellation bridge, and dependency boundary | Current | 2026-05-06 |
 
 ## Signature Verification Caching
 
