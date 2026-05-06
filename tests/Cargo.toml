@@ -29,6 +29,14 @@ name = "alloy_provider_invariant_covers_every_published_crate"
 path = "alloy_provider_invariant_covers_every_published_crate.rs"
 
 [[test]]
+name = "alloy_signer_invariant_covers_every_published_crate"
+path = "alloy_signer_invariant_covers_every_published_crate.rs"
+
+[[test]]
+name = "alloy_two_family_pin_lockstep"
+path = "alloy_two_family_pin_lockstep.rs"
+
+[[test]]
 name = "services_drift_report_schema"
 path = "services_drift_report_schema.rs"
 

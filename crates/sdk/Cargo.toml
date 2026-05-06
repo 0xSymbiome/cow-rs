@@ -26,8 +26,23 @@ workspace = true
 
 [features]
 default = []
+alloy = [
+    "dep:cow-sdk-alloy",
+    "cow-sdk-alloy/http",
+    "cow-sdk-alloy/eip712",
+    "alloy-provider",
+    "alloy-signer",
+]
+alloy-provider = ["dep:cow-sdk-alloy-provider"]
+alloy-signer = [
+    "dep:cow-sdk-alloy-signer",
+    "cow-sdk-alloy-signer/eip712",
+]
 browser-wallet = ["dep:cow-sdk-browser-wallet"]
 tracing = [
+    "cow-sdk-alloy?/tracing",
+    "cow-sdk-alloy-provider?/tracing",
+    "cow-sdk-alloy-signer?/tracing",
     "cow-sdk-app-data/tracing",
     "cow-sdk-contracts/tracing",
     "cow-sdk-core/tracing",
@@ -38,6 +53,9 @@ tracing = [
 ]
 
 [dependencies]
+cow-sdk-alloy = { path = "../alloy", version = "0.1.0", optional = true, default-features = false }
+cow-sdk-alloy-provider = { path = "../alloy-provider", version = "0.1.0", optional = true, default-features = false }
+cow-sdk-alloy-signer = { path = "../alloy-signer", version = "0.1.0", optional = true, default-features = false }
 cow-sdk-app-data = { path = "../app-data", version = "0.1.0" }
 cow-sdk-browser-wallet = { path = "../browser-wallet", version = "0.1.0", optional = true, default-features = false }
 cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }

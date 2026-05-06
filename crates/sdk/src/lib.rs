@@ -65,6 +65,27 @@ pub mod prelude;
 
 pub use prelude::*;
 
+#[cfg(all(
+    any(
+        feature = "alloy",
+        feature = "alloy-provider",
+        feature = "alloy-signer"
+    ),
+    target_arch = "wasm32"
+))]
+compile_error!(
+    "the alloy / alloy-provider / alloy-signer features on cow-sdk are for native targets only; wasm targets should use cow-sdk-browser-wallet for signing and consumer-supplied EIP-1193 providers for RPC reads."
+);
+
+#[cfg(all(feature = "alloy", not(target_arch = "wasm32")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloy")))]
+pub use cow_sdk_alloy as alloy;
+#[cfg(all(feature = "alloy-provider", not(target_arch = "wasm32")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloy-provider")))]
+pub use cow_sdk_alloy_provider as alloy_provider;
+#[cfg(all(feature = "alloy-signer", not(target_arch = "wasm32")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloy-signer")))]
+pub use cow_sdk_alloy_signer as alloy_signer;
 pub use cow_sdk_app_data as app_data;
 #[cfg(feature = "browser-wallet")]
 #[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]

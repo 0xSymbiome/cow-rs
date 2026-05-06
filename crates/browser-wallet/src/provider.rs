@@ -892,6 +892,15 @@ fn dyn_value_to_json(value: &DynSolValue) -> Value {
         DynSolValue::Array(items) | DynSolValue::FixedArray(items) | DynSolValue::Tuple(items) => {
             Value::Array(items.iter().map(dyn_value_to_json).collect())
         }
+        DynSolValue::CustomStruct {
+            prop_names, tuple, ..
+        } => Value::Object(
+            prop_names
+                .iter()
+                .zip(tuple)
+                .map(|(name, value)| (name.clone(), dyn_value_to_json(value)))
+                .collect::<Map<_, _>>(),
+        ),
         DynSolValue::Function(function) => {
             Value::String(format!("0x{}", hex::encode(function.as_slice())))
         }
