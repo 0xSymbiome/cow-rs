@@ -72,11 +72,11 @@ marker types use private tuple fields so external crates cannot construct them.
 
 ## Chain-RPC Runtime Neutrality
 
-The published `cow-sdk` crate family does not transitively depend on
-`alloy-provider`. Consumers own their chain-RPC runtime through the
-`AsyncProvider` seam in `cow-sdk-core`, and the `cargo tree --invert
-alloy-provider` check on every crate in the family is a release-gating
-invariant rather than an aspiration.
+The default SDK path stays provider-neutral. Consumers own their chain-RPC
+runtime through the `AsyncProvider` seam in `cow-sdk-core`, while native Alloy
+support is available only through explicit adapter crates and facade features.
+The `alloy-provider` and `alloy-signer-local` allow-list checks are
+release-gating invariants rather than aspirations.
 
 **Anchored by**: [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0014](adr/0014-eip1271-verification-cache.md), [ADR 0028](adr/0028-account-abstraction-integration-plan.md).
 

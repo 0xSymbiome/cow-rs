@@ -1,13 +1,14 @@
 # Cooperative Cancellation Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-06
 Owning surface: Cross-cutting cooperative cancellation across `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, and `cow-sdk-trading`
 Refresh trigger: Changes to the `Cancellable` combinator, to the `CancellationToken` re-export, to the canonical long-running public methods on the three client surfaces, or to the `From<Cancelled>` bridges on the typed error aggregates
 Related docs:
 - [ADR 0005](../adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [ADR 0010](../adr/0010-runtime-neutral-async-and-transport-posture.md)
+- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 - [Architecture](../architecture.md)
 - [Observability](../observability.md)
 
@@ -25,6 +26,8 @@ This audit covers:
   `SubgraphError`, `TradingError`, `SigningError`, `BrowserWalletError`,
   and the facade `SdkError`, plus the `From<Cancelled>` bridges that lift
   the marker across every public error boundary
+- typed `Cancelled` variants and `From<Cancelled>` bridges on the native
+  Alloy provider, signer, and umbrella adapter error aggregates
 - the biased cancellation poll inside the combinator that drops in-flight
   request futures promptly when the caller cancels
 
@@ -38,6 +41,7 @@ policy, or future capability crates outside the published surface.
 | Shared token import | One typed cancellation token re-export across every public crate | Conforms |
 | Canonical public methods | Every long-running public operation on `OrderBookApi`, `SubgraphApi`, and `TradingSdk` is exposed as one canonical async method; cancellation composes through `Cancellable::cancel_with(&token)` at the call site | Conforms |
 | Typed `Cancelled` variants | Every affected error aggregate surfaces cancellation as a discrete typed variant, and each carries a `From<Cancelled>` bridge so the marker propagates with `?` across every public boundary | Conforms |
+| Native Alloy adapters | Provider, signer, and umbrella adapter error aggregates expose cancellation as typed variants and propagate the marker through the same combinator contract | Conforms |
 | Combinator poll | The combinator polls the token in a biased branch, drops the inner future promptly on cancellation, and routes the marker through the inner result's `From<Cancelled>` implementation | Conforms |
 
 ## Current Contract
@@ -71,7 +75,8 @@ through the combinator at the call site.
 ### Typed `Cancelled` Variants And `From<Cancelled>` Bridges
 
 `CoreError`, `OrderbookError`, `SubgraphError`, `TradingError`,
-`SigningError`, `BrowserWalletError`, and the facade `SdkError` each
+`SigningError`, `BrowserWalletError`, `AlloyProviderError`,
+`AlloySignerError`, `AlloyClientError`, and the facade `SdkError` each
 expose a typed `Cancelled` variant and an
 `impl From<cow_sdk_core::Cancelled>` that lifts the marker into that
 variant. Operation code therefore propagates cancellation with `?` across
@@ -79,6 +84,11 @@ every public error boundary without pulling the raw `tokio-util` future
 type into downstream signatures. Facade classification through
 `SdkError::class()` routes every reachable `Cancelled` variant to
 `ErrorClass::Cancelled`.
+
+The native Alloy adapter family uses the same boundary posture. Provider
+read calls, signer typed-data signing, and umbrella client operations can be
+wrapped by `Cancellable::cancel_with(&token)` and resolve to typed cancellation
+errors without exposing transport internals or signer state.
 
 ### Combinator Poll And Drop Semantics
 
@@ -106,6 +116,9 @@ Primary implementation points:
 - `crates/trading/src/error.rs`
 - `crates/signing/src/errors.rs`
 - `crates/browser-wallet/src/error.rs`
+- `crates/alloy-provider/src/error.rs`
+- `crates/alloy-signer/src/error.rs`
+- `crates/alloy/src/error.rs`
 - `crates/sdk/src/lib.rs`
 
 Primary regression coverage:
@@ -119,6 +132,9 @@ Primary regression coverage:
 - `crates/subgraph/tests/cancellation_composition_contract.rs`
 - `crates/trading/tests/sdk_contract.rs`
 - `crates/trading/tests/cancellation_composition_contract.rs`
+- `crates/alloy-provider/tests/cancellation_contract.rs`
+- `crates/alloy-signer/tests/cancellation_contract.rs`
+- `crates/alloy/tests/cancellation_contract.rs`
 
 Validation surface:
 
@@ -129,6 +145,9 @@ cargo test -p cow-sdk-orderbook --test cancellation_composition_contract
 cargo test -p cow-sdk-orderbook --test request_contract
 cargo test -p cow-sdk-subgraph --test cancellation_composition_contract
 cargo test -p cow-sdk-trading --test cancellation_composition_contract
+cargo test -p cow-sdk-alloy-provider --test cancellation_contract
+cargo test -p cow-sdk-alloy-signer --test cancellation_contract
+cargo test -p cow-sdk-alloy --test cancellation_contract
 cargo test -p cow-sdk-core
 cargo test -p cow-sdk-orderbook
 cargo test -p cow-sdk-subgraph

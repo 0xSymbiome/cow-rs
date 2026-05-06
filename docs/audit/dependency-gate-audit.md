@@ -1,13 +1,14 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-06
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, transport crate advisory posture, or browser-wallet alloy advisory posture
 Related docs:
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [CID Dependency Audit](cid-dependency-audit.md)
 - [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
+- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 - [Release Checklist](../release-checklist.md)
 - [Verification Guide](../verification-guide.md)
 
@@ -22,6 +23,8 @@ This audit covers:
 - the canonical advisory tolerance register shared by the RustSec gates
 - the canonical dependency-source whitelist
 - the workspace dependency default-feature audit
+- the native Alloy provider and signer dependency allow-list gates for
+  shipped crates
 - the release-doc guard that requires RustSec ignore rationale entries
 - the report-only alloy release-candidate canary and its failure response
 
@@ -43,6 +46,7 @@ architecture reviews.
 | Direct WASM randomness | Direct crate use of `getrandom` for wasm32 is centralized on the workspace `0.4.2` pin with the `wasm_js` feature | Conforms |
 | Duplicate-version exceptions | Residual duplicate roots are documented as explicit skip-tree entries; stale `tiny-keccak` and `getrandom 0.2` exceptions were removed because they are no longer in the workspace graph | Conforms |
 | Legacy `thiserror` reachability | The remaining `thiserror 1.0.69` path is limited to the `graphql_client` codegen chain used by dev/test coverage | Conforms |
+| Native Alloy allow-lists | Shipped crates that depend on `alloy-provider` or `alloy-signer-local` are limited to the reviewed adapter crates and fail the policy-maintainer gate if the dependency escapes | Conforms |
 | Alloy canary failures | Scheduled canary failures are triaged as upstream-compatibility reports, with local pins changed only after ordinary quality gates pass and without dependency-policy waivers | Conforms |
 
 ## Current Contract
@@ -146,6 +150,16 @@ coverage for the subgraph and contracts crates. The release-facing gate keeps
 the path visible as duplicate-version debt rather than hiding it behind an
 advisory tolerance.
 
+### Native Alloy Dependency Allow-Lists
+
+The native Alloy adapters are the only shipped crates allowed to carry
+`alloy-provider` or `alloy-signer-local` reachability. The policy-maintainer
+commands `cargo check-alloy-provider-invariant` and
+`cargo check-alloy-signer-invariant` parse the inverse dependency tree and
+fail if those runtime dependencies appear in any other shipped `cow-sdk*`
+crate. The umbrella crate is allow-listed because it intentionally composes
+the reviewed provider and signer leaves into one native client surface.
+
 ### Alloy Canary Failure Response
 
 The alloy release-candidate canary is report-only and has no pull-request
@@ -171,6 +185,8 @@ Primary implementation points:
 - `.github/config/deny.toml`
 - `tests/dependency_default_features_audit.rs`
 - `scripts/check-release-docs-agree.sh`
+- `scripts/policy-maintainer/src/check_alloy_provider_invariant.rs`
+- `scripts/policy-maintainer/src/check_alloy_signer_invariant.rs`
 - `docs/release-checklist.md`
 - `docs/verification-guide.md`
 - `docs/verification-matrix.md`
@@ -188,6 +204,8 @@ cargo deny check --config .github/config/deny.toml
 cargo audit --deny unsound --deny unmaintained \
   --ignore RUSTSEC-2024-0436
 cargo tree --workspace --invert thiserror:1.0.69 -e no-build
+cargo check-alloy-provider-invariant
+cargo check-alloy-signer-invariant
 gh workflow run alloy-release-candidate.yml
 cargo build --workspace --all-features
 cargo test --workspace --all-features

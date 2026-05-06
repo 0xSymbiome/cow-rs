@@ -1299,8 +1299,14 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 name = "cow-rs-workspace-tests"
 version = "0.0.0"
 dependencies = [
+ "cow-sdk",
+ "cow-sdk-alloy",
  "cow-sdk-core",
+ "cow-sdk-trading",
+ "serde_json",
+ "tokio",
  "toml",
+ "wiremock",
 ]
 
 [[package]]
@@ -1334,6 +1340,8 @@ version = "0.1.0"
 dependencies = [
  "alloy-consensus",
  "alloy-dyn-abi",
+ "alloy-json-abi",
+ "alloy-json-rpc",
  "alloy-network",
  "alloy-primitives",
  "alloy-provider",
@@ -1342,10 +1350,13 @@ dependencies = [
  "alloy-signer-local",
  "alloy-sol-types",
  "alloy-transport",
+ "alloy-transport-http",
  "async-trait",
  "cow-sdk-alloy-provider",
  "cow-sdk-alloy-signer",
+ "cow-sdk-contracts",
  "cow-sdk-core",
+ "cow-sdk-signing",
  "hex",
  "reqwest",
  "serde_json",

@@ -167,6 +167,28 @@ const SERVICES_PATHS: &[&str] = &[
     "crates/orderbook/src/app_data.rs",
 ];
 
+const ALLOY_PATHS: &[&str] = &[
+    "Cargo.toml",
+    "crates/consensus/src/lib.rs",
+    "crates/json-rpc/src/lib.rs",
+    "crates/network/src/lib.rs",
+    "crates/provider/src/lib.rs",
+    "crates/rpc-types-eth/src/lib.rs",
+    "crates/signer/src/lib.rs",
+    "crates/signer-local/src/lib.rs",
+    "crates/transport/src/lib.rs",
+    "crates/transport-http/src/lib.rs",
+];
+
+const ALLOY_CORE_PATHS: &[&str] = &[
+    "Cargo.toml",
+    "crates/dyn-abi/src/lib.rs",
+    "crates/json-abi/src/lib.rs",
+    "crates/primitives/src/lib.rs",
+    "crates/sol-macro/src/lib.rs",
+    "crates/sol-types/src/lib.rs",
+];
+
 fn repo_local_publication_contract() -> Vec<String> {
     vec![
         "cargo parity-validate --source-lock parity/source-lock.yaml".to_string(),
@@ -178,8 +200,11 @@ fn repo_local_publication_contract() -> Vec<String> {
         "cargo package -p cow-sdk-subgraph --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
         "cargo package -p cow-sdk-transport-wasm --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
         "cargo package -p cow-sdk-trading --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'\"".to_string(),
+        "cargo package -p cow-sdk-alloy-provider --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
+        "cargo package -p cow-sdk-alloy-signer --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\"".to_string(),
+        "cargo package -p cow-sdk-alloy --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'\" --config \"patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'\"".to_string(),
         "cargo package -p cow-sdk-browser-wallet --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-        "cargo package -p cow-sdk --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-trading.path='crates/trading'\" --config \"patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'\"".to_string(),
+        "cargo package -p cow-sdk --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-trading.path='crates/trading'\" --config \"patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'\" --config \"patch.crates-io.cow-sdk-alloy.path='crates/alloy'\" --config \"patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'\" --config \"patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'\"".to_string(),
     ]
 }
 
@@ -204,6 +229,23 @@ const REPO_TEMPLATES: &[RepoTemplate] = &[
         role: "reference-only",
         local_hint: "<services-checkout>",
         producer_paths: SERVICES_PATHS,
+    },
+];
+
+const DEPENDENCY_REPO_TEMPLATES: &[RepoTemplate] = &[
+    RepoTemplate {
+        id: "alloy",
+        remote: "https://github.com/alloy-rs/alloy.git",
+        role: "dependency",
+        local_hint: "<alloy-checkout>",
+        producer_paths: ALLOY_PATHS,
+    },
+    RepoTemplate {
+        id: "alloy-core",
+        remote: "https://github.com/alloy-rs/core.git",
+        role: "dependency",
+        local_hint: "<alloy-core-checkout>",
+        producer_paths: ALLOY_CORE_PATHS,
     },
 ];
 
@@ -510,14 +552,18 @@ fn validate(options: &CliOptions) -> Result<()> {
         .iter()
         .map(|template| (template.id, *template))
         .collect();
+    let dependency_templates: BTreeMap<&str, RepoTemplate> = DEPENDENCY_REPO_TEMPLATES
+        .iter()
+        .map(|template| (template.id, *template))
+        .collect();
     let actual_repos: BTreeMap<&str, &RepositoryEntry> = lock
         .repositories
         .iter()
         .map(|repo| (repo.id.as_str(), repo))
         .collect();
 
-    if actual_repos.len() != expected_templates.len() {
-        bail!("unexpected repository count in source lock");
+    if actual_repos.len() != lock.repositories.len() {
+        bail!("duplicate repository id in source lock");
     }
 
     for (id, template) in &expected_templates {
@@ -525,24 +571,17 @@ fn validate(options: &CliOptions) -> Result<()> {
             .get(id)
             .with_context(|| format!("missing repository entry for {id}"))?;
 
-        if repo.remote != template.remote {
-            bail!("repository {id} remote mismatch");
-        }
-        if repo.role != template.role {
-            bail!("repository {id} role mismatch");
-        }
-        if repo.optional_local_path != template.local_hint {
-            bail!("repository {id} local hint mismatch");
-        }
+        validate_repository_entry_template(id, repo, template)?;
+    }
 
-        let expected_paths: Vec<String> = template
-            .producer_paths
-            .iter()
-            .map(|path| (*path).to_string())
-            .collect();
-        if repo.producer_paths != expected_paths {
-            bail!("repository {id} producer paths do not match expected contract");
+    for (id, repo) in &actual_repos {
+        if expected_templates.contains_key(id) {
+            continue;
         }
+        let template = dependency_templates
+            .get(id)
+            .with_context(|| format!("unexpected repository entry in source lock: {id}"))?;
+        validate_repository_entry_template(id, repo, template)?;
     }
 
     let roots = resolve_optional_roots(options);
@@ -707,6 +746,32 @@ fn load_source_lock(path: &Path) -> Result<SourceLock> {
     let raw =
         fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
     serde_yaml::from_str(&raw).context("failed to parse source lock")
+}
+
+fn validate_repository_entry_template(
+    id: &str,
+    repo: &RepositoryEntry,
+    template: &RepoTemplate,
+) -> Result<()> {
+    if repo.remote != template.remote {
+        bail!("repository {id} remote mismatch");
+    }
+    if repo.role != template.role {
+        bail!("repository {id} role mismatch");
+    }
+    if repo.optional_local_path != template.local_hint {
+        bail!("repository {id} local hint mismatch");
+    }
+
+    let expected_paths: Vec<String> = template
+        .producer_paths
+        .iter()
+        .map(|path| (*path).to_string())
+        .collect();
+    if repo.producer_paths != expected_paths {
+        bail!("repository {id} producer paths do not match expected contract");
+    }
+    Ok(())
 }
 
 fn repository_entry<'a>(lock: &'a SourceLock, id: &str) -> Result<&'a RepositoryEntry> {

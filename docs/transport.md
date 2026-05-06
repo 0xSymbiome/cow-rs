@@ -17,19 +17,31 @@ concrete backend.
   dedicated `cow-sdk-transport-wasm` crate.
 - **`AsyncProvider`** in `cow-sdk-core` is the read-only chain-RPC seam used by
   on-chain helpers (allowance reads, EIP-1271 verification, on-chain
-  cancellation). Consumers bring their own provider through the
-  `docs/providers/` adapter guide.
+  cancellation). Consumers can bring their own provider through the
+  `docs/providers/` adapter guide or use the native Alloy provider adapter.
 - **`AsyncSigningProvider`** in `cow-sdk-core` extends `AsyncProvider` for
   async providers that can create signers. Read-only provider adapters do not
   implement this extension.
 
-`alloy-provider` is intentionally not pulled by any shipped leaf
-crate. The `cargo tree --invert alloy-provider -p ...` invariant succeeds
-when no shipped crate transitively depends on `alloy-provider`. In the
-success case, Cargo emits `error: package ID specification alloy-provider
-did not match any packages`. CI normalises this output via
-`cargo check-alloy-provider-invariant`, so consumers keep full control of
-their chain-RPC runtime.
+Native Alloy runtime dependencies are explicit opt-ins. `alloy-provider` is
+allowed only in `cow-sdk-alloy-provider` and `cow-sdk-alloy`, and
+`alloy-signer-local` is allowed only in `cow-sdk-alloy-signer` and
+`cow-sdk-alloy`. CI normalises these allow-list checks through
+`cargo check-alloy-provider-invariant` and
+`cargo check-alloy-signer-invariant`, so the default facade stays
+provider-neutral.
+
+## Native Alloy Adapters
+
+`cow-sdk-alloy-provider` implements `AsyncProvider` for read-only Alloy RPC
+access. `cow-sdk-alloy-signer` implements `AsyncSigner` for local private-key
+message and typed-data signing. `cow-sdk-alloy` composes both through an Alloy
+wallet-filler provider so allowance, approval, pre-sign, and on-chain
+cancellation helpers can use one native client.
+
+The Alloy adapter crates are native-only. On `wasm32-unknown-unknown`, use
+`cow-sdk-browser-wallet` for signing and inject browser RPC access through the
+browser runtime instead.
 
 ## The `HttpTransport` Trait
 

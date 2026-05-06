@@ -25,7 +25,8 @@ raise the floor if fewer than 30 complete calendar days have elapsed.
 The workspace raises its MSRV only when at least one of these conditions holds:
 
 - a workspace dependency declares a new minimum Rust version that the SDK must
-  consume;
+  consume, including optional native adapter dependencies such as the Alloy
+  provider and signer crates;
 - a stable Rust feature materially improves a hot path or removes a
   meaningful maintenance burden;
 - the Rust `1.94.0` floor blocks closure of a security advisory.

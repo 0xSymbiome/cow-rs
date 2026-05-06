@@ -59,7 +59,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [HTTP Transport Contract Audit](http-transport-contract-audit.md) | Standing audit | `cow-sdk-core::HttpTransport` trait and its native and browser default adapters | Trait shape, typed `TransportError`, additive response-header surface, orderbook `Retry-After` cooldown honor, URL-redaction contract, and cross-adapter classification parity | Current | 2026-04-30 |
-| [Typestate Builder Contract Audit](typestate-builder-contract-audit.md) | Standing audit | `cow-sdk-orderbook::OrderBookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, and `cow-sdk-trading::TradingSdkBuilder` construction seams | Required-input typestate, marker sealing, host-policy validation, native default-transport convenience, wasm32 transport-required and injected-orderbook invariants, validated `AppCode`, distinct `TradingSdk`/`HelperOnlySdk` terminals, and retirement of legacy free-function constructors | Current | 2026-05-04 |
+| [Typestate Builder Contract Audit](typestate-builder-contract-audit.md) | Standing audit | `cow-sdk-orderbook::OrderBookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, `cow-sdk-trading::TradingSdkBuilder`, and native Alloy adapter builders | Required-input typestate, marker sealing, host-policy validation, native default-transport convenience, wasm32 transport-required and injected-orderbook invariants, validated `AppCode`, distinct `TradingSdk`/`HelperOnlySdk` terminals, native Alloy adapter terminals, and retirement of legacy free-function constructors | Current | 2026-05-06 |
 
 ## Native Alloy Adapters
 
@@ -67,6 +67,8 @@ If the reviewed surface did not change, leave the audit alone.
 | --- | --- | --- | --- | --- | --- |
 | [Alloy Provider Adapter Audit](alloy-provider-adapter-audit.md) | Standing audit | `cow-sdk-alloy-provider` `RpcAlloyProvider`, its builder, and its `AsyncProvider` implementation | Read-only provider methods, HTTP typestate construction, redacted error classification, `read_contract` ABI handling, doc-hidden helper seam, and dependency boundary | Current | 2026-05-06 |
 | [Alloy Signer Adapter Audit](alloy-signer-adapter-audit.md) | Standing audit | `cow-sdk-alloy-signer` `LocalAlloyKeystoreSigner`, its builder, and its `AsyncSigner` implementation | Local-keystore message and typed-data signing, primary-type preservation, signature normalization, provider-required transaction methods, redacted errors, cancellation bridge, and dependency boundary | Current | 2026-05-06 |
+| [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md) | Standing audit | `cow-sdk-alloy` `AlloyClient`, its builder, provider implementation, and owned signer handle | Wallet-filler composition, provider delegation, typed-data signing, transaction submission, no-broadcast raw signing deferral, redaction, cancellation, and dependency boundary | Current | 2026-05-06 |
+| [WASM Unsupported Target Audit](wasm-unsupported-target-audit.md) | Standing audit | Native Alloy adapter crates and facade Alloy features on `wasm32` | Compile-time unsupported-target diagnostics and browser-runtime guidance for Alloy-adapter feature selection | Current | 2026-05-06 |
 
 ## Signature Verification Caching
 
@@ -86,7 +88,7 @@ If the reviewed surface did not change, leave the audit alone.
 | --- | --- | --- | --- | --- | --- |
 | [Browser Wallet Chain Coherence Audit](browser-wallet-chain-coherence-audit.md) | Standing audit | `cow-sdk-browser-wallet` chain-bound signer and typed chain-management contract | Wallet-session chain coherence for browser-wallet-backed flows | Current | 2026-05-01 |
 | [Browser Wallet Trust Posture Audit](browser-wallet-trust-posture-audit.md) | Standing audit | `cow-sdk-browser-wallet` EIP-1193 provider construction and wallet chain-management URL payloads | EIP-6963 provider metadata trust, explicit origin opt-in for anonymous providers, redacted trust failures, and wallet URL payload boundaries | Current | 2026-05-01 |
-| [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md) | Standing audit | `cow-sdk-browser-wallet` ABI helper family and reachable alloy advisories | Adoption of `alloy-primitives`, `alloy-dyn-abi`, and `alloy-json-abi` with revisit triggers for the reviewed advisories they transit | Current | 2026-04-27 |
+| [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md) | Standing audit | `cow-sdk-browser-wallet` ABI helper family and reachable alloy advisories | Adoption of `alloy-primitives`, `alloy-dyn-abi`, and `alloy-json-abi` with revisit triggers for the reviewed advisories they transit, plus explicit separation from native Alloy adapter dependencies | Current | 2026-05-06 |
 
 ## WASM Example Proof Posture
 
@@ -100,13 +102,13 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [CID Dependency Audit](cid-dependency-audit.md) | Standing audit | `cow-sdk-app-data` CID encoding and published dependency boundary | Supported CID paths, fail-closed encoding, and clean published-upstream posture | Current | 2026-05-01 |
-| [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, direct WASM randomness alignment, canonical advisory tolerance, and source whitelist | Current | 2026-05-01 |
+| [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, direct WASM randomness alignment, canonical advisory tolerance, source whitelist, and native Alloy provider/signer dependency allow-lists | Current | 2026-05-06 |
 
 ## Source Provenance
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and lifecycle preflight authority | Source-lock commit pins, upstream freshness disclosure, publication preflight metadata, historical snapshot scope, and refresh ownership | Current | 2026-05-04 |
+| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and release preflight authority | Source-lock commit pins, upstream freshness disclosure, Alloy runtime/core dependency provenance, publication preflight metadata, historical snapshot scope, and refresh ownership | Current | 2026-05-06 |
 
 ## Orderbook Wire DTO Coverage
 
@@ -142,15 +144,15 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Unsafe-Code Policy Audit](unsafe-code-policy-audit.md) | Standing audit | Workspace `unsafe_code = deny` lint declared in `Cargo.toml` workspace lint section | Workspace unsafe-code deny lint, crate lint adoption, public-path source posture, and clippy enforcement | Current | 2026-04-23 |
-| [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site and allowlist coverage | Current | 2026-05-02 |
+| [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site, including native Alloy adapter conversion and error paths, and allowlist coverage | Current | 2026-05-06 |
 | [Workflow Security Audit](workflow-security-audit.md) | Standing audit | Every `.github/workflows/*.yml` file | SHA-pinned third-party actions, explicit permissions, reviewed action source refs, and guarded `pull_request_target` use | Current | 2026-05-01 |
 
 ## Cross-Cutting Reviewability And Contract Hygiene
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, URL-bearing config redaction, host-policy failures, `Redacted<T>` wrapper, transport error redaction, and typed user policy | Current | 2026-05-01 |
-| [Credential Surface Audit](credential-surface-audit.md) | Standing audit | Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, contracts, signing, trading, app-data, and the SDK facade | Redacted credential storage plus sanitized host-policy failures, typed-redacted public error diagnostics, and typed-redacted header values at the Pinata upload boundary | Current | 2026-05-04 |
-| [URL Credential Redaction Audit](url-credential-redaction-audit.md) | Standing audit | URL-bearing public configuration across core, orderbook, subgraph, browser-wallet, and app-data | Redacting URL map and URL value wrappers for public diagnostics with explicit raw dispatch access at HTTP and wallet payload seams | Current | 2026-05-01 |
+| [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, URL-bearing config redaction, native Alloy key/URL redaction, host-policy failures, `Redacted<T>` wrapper, transport error redaction, and typed user policy | Current | 2026-05-06 |
+| [Credential Surface Audit](credential-surface-audit.md) | Standing audit | Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, Pinata upload-trait headers, and native Alloy adapter credentials across orderbook, subgraph, browser-wallet, core, contracts, signing, trading, app-data, and the SDK facade | Redacted credential storage plus sanitized host-policy failures, typed-redacted public error diagnostics, and typed-redacted header values at the Pinata upload boundary | Current | 2026-05-06 |
+| [URL Credential Redaction Audit](url-credential-redaction-audit.md) | Standing audit | URL-bearing public configuration across core, orderbook, subgraph, browser-wallet, app-data, and native Alloy adapters | Redacting URL map and URL value wrappers for public diagnostics with explicit raw dispatch access at HTTP, wallet, and Alloy RPC seams | Current | 2026-05-06 |
 | [Shared Logic Reviewability Audit](shared-logic-reviewability-audit.md) | Standing audit | Orderbook, signing, and trading shared-logic reviewability boundary | Shared request execution, signing payload preparation, thin posting wrappers, and justified DTO separation | Current | 2026-04-21 |
-| [Cooperative Cancellation Contract Audit](cooperative-cancellation-contract-audit.md) | Standing audit | Cross-cutting cooperative cancellation across core, orderbook, subgraph, and trading | Shared `CancellationToken` re-export, the `Cancellable` extension-trait combinator composed at the call site on every long-running public operation of `OrderBookApi`, `SubgraphApi`, and `TradingSdk`, typed `Cancelled` variants with `From<Cancelled>` bridges on every affected error aggregate, and biased-poll drop semantics | Current | 2026-05-01 |
+| [Cooperative Cancellation Contract Audit](cooperative-cancellation-contract-audit.md) | Standing audit | Cross-cutting cooperative cancellation across core, orderbook, subgraph, trading, and native Alloy adapters | Shared `CancellationToken` re-export, the `Cancellable` extension-trait combinator composed at the call site on every long-running public operation of `OrderBookApi`, `SubgraphApi`, `TradingSdk`, and native Alloy adapter calls, typed `Cancelled` variants with `From<Cancelled>` bridges on every affected error aggregate, and biased-poll drop semantics | Current | 2026-05-06 |

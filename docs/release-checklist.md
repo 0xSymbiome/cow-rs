@@ -16,15 +16,17 @@ typos --config .github/config/typos.toml
 cargo deny check --config .github/config/deny.toml
 cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436
 cargo check-alloy-provider-invariant
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk
+cargo check-alloy-signer-invariant
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk
 ```
 
-The `cargo tree --invert alloy-provider -p ...` invariant succeeds when no
-shipped crate transitively depends on `alloy-provider`. In the success case,
-Cargo emits `error: package ID specification alloy-provider did not match any
-packages`. CI normalises this output via `cargo check-alloy-provider-invariant`.
-Contributors running the check locally should use the wrapper rather than
-reading the raw Cargo error as a failure.
+The native Alloy dependency gates enforce explicit allow-lists:
+`alloy-provider` is allowed only in `cow-sdk-alloy-provider` and
+`cow-sdk-alloy`, while `alloy-signer-local` is allowed only in
+`cow-sdk-alloy-signer` and `cow-sdk-alloy`. CI normalises the raw Cargo tree
+output via `cargo check-alloy-provider-invariant` and
+`cargo check-alloy-signer-invariant`; contributors should use the wrappers
+rather than reading raw Cargo tree output directly.
 
 This command is guarded for drift by `scripts/check-release-docs-agree.sh`;
 any mismatch against `docs/verification-matrix.md`,
@@ -156,7 +158,10 @@ cargo package -p cow-sdk-subgraph --allow-dirty --config "patch.crates-io.cow-sd
 cargo package -p cow-sdk-transport-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
 cargo package -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
+cargo package -p cow-sdk-alloy-provider --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo package -p cow-sdk-alloy-signer --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
+cargo package -p cow-sdk-alloy --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'"
+cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'" --config "patch.crates-io.cow-sdk-alloy.path='crates/alloy'"
 ```
 
 Then run the registry-validation dry-run in the same order:
@@ -171,7 +176,10 @@ cargo publish --dry-run -p cow-sdk-subgraph --allow-dirty --config "patch.crates
 cargo publish --dry-run -p cow-sdk-transport-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
 cargo publish --dry-run -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-cargo publish --dry-run -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
+cargo publish --dry-run -p cow-sdk-alloy-provider --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo publish --dry-run -p cow-sdk-alloy-signer --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
+cargo publish --dry-run -p cow-sdk-alloy --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'"
+cargo publish --dry-run -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'" --config "patch.crates-io.cow-sdk-alloy.path='crates/alloy'"
 ```
 
 ## 6. Manual Publish Sequence
@@ -205,6 +213,9 @@ cargo publish -p cow-sdk-subgraph
 cargo publish -p cow-sdk-transport-wasm
 cargo publish -p cow-sdk-trading
 cargo publish -p cow-sdk-browser-wallet
+cargo publish -p cow-sdk-alloy-provider
+cargo publish -p cow-sdk-alloy-signer
+cargo publish -p cow-sdk-alloy
 cargo publish -p cow-sdk
 ```
 

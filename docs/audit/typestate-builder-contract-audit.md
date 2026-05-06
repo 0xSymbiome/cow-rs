@@ -1,13 +1,14 @@
 # Typestate Builder Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-04
+Last reviewed: 2026-05-06
 Owning surface: `cow-sdk-orderbook::OrderBookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, and `cow-sdk-trading::TradingSdkBuilder` construction seams
 Refresh trigger: Type-parameter or marker visibility changes on any covered builder, a change to the set of required inputs (chain, environment, API key, appCode, or transport), a change to host-policy validation, a change to the native default-transport convenience impl, a change to the wasm32 transport-required or injected-orderbook invariant, or a new `trybuild` witness replacing the current compile-fail coverage
 Related docs:
 - [ADR 0011](../adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0028](../adr/0028-account-abstraction-integration-plan.md)
+- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 - [Transport](../transport.md)
 - [Architecture](../architecture.md)
 
@@ -28,6 +29,9 @@ This audit covers:
   (`ChainIdState`, `AppCodeState`), validated `AppCode` attribution,
   the distinct `TradingSdk`/`HelperOnlySdk` terminal types, and the
   documented `wasm32` injected-orderbook runtime terminal
+- the native Alloy provider, signer, and umbrella builders that expose
+  terminal construction only after their sealed transport, key-source, and
+  chain marker states are satisfied
 - the sealed marker structs that prevent direct external construction of
   typestate witnesses
 - the wasm32 transport-required invariant proven by a `trybuild`
@@ -52,6 +56,7 @@ the trading-sdk runtime prerequisites audit.
 | wasm32 invariant | `trybuild` compile-fail coverage asserts `.build()` without `.transport(...)` does not compile on `wasm32` | Conforms |
 | Trading SDK construction | `build_ready` requires chain id plus validated `AppCode`, `build_helper_only` requires chain id only, and the terminals return distinct SDK types | Conforms |
 | Trading wasm32 posture | `build_ready` documents and enforces the injected orderbook-client requirement at the runtime terminal on `wasm32` | Conforms |
+| Native Alloy builders | Provider, signer, and umbrella construction terminals are reachable only after required transport, key-source, and chain marker axes are set | Conforms |
 
 ## Current Contract
 
@@ -139,6 +144,16 @@ free-function public constructor remains on either type; every caller
 in the trading surface, examples workspace, and e2e suite constructs
 through the typestate builder.
 
+### Native Alloy Builder Construction
+
+`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy` each
+use sealed marker states to make required construction inputs explicit. The
+umbrella `AlloyClientBuilder` combines the native HTTP endpoint, private key,
+and chain id into a single terminal `.build()` path. Compile-fail witnesses
+cover incomplete states on the public client and signer handle surfaces, while
+runtime tests assert chain coherence and non-broadcasting synchronous signing
+posture.
+
 ## Evidence
 
 Primary implementation points:
@@ -149,6 +164,9 @@ Primary implementation points:
 - `crates/subgraph/src/api.rs`
 - `crates/trading/src/sdk.rs`
 - `crates/trading/src/types.rs`
+- `crates/alloy-provider/src/builder.rs`
+- `crates/alloy-signer/src/builder.rs`
+- `crates/alloy/src/builder.rs`
 
 Primary regression coverage:
 
@@ -160,6 +178,9 @@ Primary regression coverage:
 - `crates/trading/tests/sdk_contract.rs`
 - `crates/trading/tests/app_code_contract.rs`
 - `crates/trading/tests/ui.rs`
+- `crates/alloy/tests/compile_fail.rs`
+- `crates/alloy/tests/chain_coherence.rs`
+- `crates/alloy/tests/no_broadcast_for_sign_transaction.rs`
 
 Validation surface:
 
@@ -167,6 +188,7 @@ Validation surface:
 cargo test -p cow-sdk-orderbook --all-features
 cargo test -p cow-sdk-subgraph --all-features
 cargo test -p cow-sdk-trading
+cargo test -p cow-sdk-alloy --all-features
 cargo check --workspace --all-features --target wasm32-unknown-unknown
-cargo clippy -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-trading --all-targets --all-features -- -D warnings
+cargo clippy -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-trading -p cow-sdk-alloy --all-targets --all-features -- -D warnings
 ```

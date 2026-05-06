@@ -172,7 +172,10 @@ chain-RPC dependency. Resolving an address is a pure in-memory lookup;
 the SDK never dispatches a network call on behalf of a `Registry::address`
 call. Chain-RPC resolution — for example querying whether a proxy
 implementation has been upgraded — flows through the `AsyncProvider`
-seam in `cow-sdk-core` and is a separate runtime contract.
+seam in `cow-sdk-core` and is a separate runtime contract. Native
+applications that already use Alloy can satisfy that runtime contract with
+`cow-sdk-alloy-provider` for read-only checks or `cow-sdk-alloy` when the same
+client also needs signing and transaction submission.
 
 ## Related Docs
 

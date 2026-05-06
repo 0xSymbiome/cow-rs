@@ -21,6 +21,9 @@ cow-sdk-subgraph = { version = "0.1", features = ["tracing"] }
 cow-sdk-signing = { version = "0.1", features = ["tracing"] }
 cow-sdk-browser-wallet = { version = "0.1", features = ["tracing"] }
 cow-sdk-transport-wasm = { version = "0.1", features = ["tracing"] }
+cow-sdk-alloy-provider = { version = "0.1", features = ["tracing"] }
+cow-sdk-alloy-signer = { version = "0.1", features = ["tracing"] }
+cow-sdk-alloy = { version = "0.1", features = ["tracing"] }
 ```
 
 With the feature off the SDK emits zero spans and zero events, and none of
@@ -100,12 +103,13 @@ downstream dashboards can pivot on the same names across every SDK call.
 
 Tracing spans are emitted by every long-running public async method on
 `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`,
-`cow-sdk-signing`, and `cow-sdk-browser-wallet`. Each canonical public
-async method carries `#[tracing::instrument]` and emits exactly one span
-per call. Callers that need cooperative cancellation wrap the returned
-future through [`cow_sdk_core::Cancellable::cancel_with`] at the call
-site; the span is emitted through the wrapped future without additional
-instrumentation.
+`cow-sdk-signing`, and `cow-sdk-browser-wallet`. Each canonical public async
+method carries `#[tracing::instrument]` and emits exactly one span per call.
+The native Alloy adapter crates participate in the facade `tracing` feature
+family and follow the same redaction posture for any adapter diagnostics.
+Callers that need cooperative cancellation wrap the returned future through
+[`cow_sdk_core::Cancellable::cancel_with`] at the call site; the span is
+emitted through the wrapped future without additional instrumentation.
 
 ### Transport Layer
 
@@ -221,6 +225,15 @@ label identifying the operation.
 - `BrowserWallet::switch_chain`
 - `BrowserWallet::switch_or_add_chain`
 
+### Native Alloy Adapters
+
+Native Alloy adapter telemetry follows the same redaction posture as the rest
+of the SDK. Provider URLs, private-key material, typed-data payload contents,
+signature bytes, raw transaction payloads, and response bodies are not trace
+fields. Downstream applications that need provider-specific telemetry can add
+their own spans around the `AsyncProvider`, `AsyncSigningProvider`, or
+`AsyncSigner` calls.
+
 ## Secrets
 
 No traced span or event must ever carry a secret. Concretely:
@@ -234,6 +247,8 @@ No traced span or event must ever carry a secret. Concretely:
 - Wallet signatures, recovered public keys, and private-key material are
   never logged by the SDK. Downstream instrumentation that wants to record
   a signature should do so explicitly in host code.
+- Native Alloy adapter diagnostics redact configured RPC URLs and signing
+  secrets before public formatting or telemetry.
 - EIP-1271 verification telemetry records the verifier address and
   low-cardinality cache/result labels only; it never records signature
   bytes, raw digest content, provider URLs, or response bodies.

@@ -1,12 +1,13 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-05-04
-Owning surface: source-lock provenance and lifecycle preflight authority
+Last reviewed: 2026-05-06
+Owning surface: source-lock provenance and release preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
 - [ADR 0030](../adr/0030-workspace-locked-versioning-tag-baseline.md)
+- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 
 ## Scope
 
@@ -21,6 +22,8 @@ This audit covers:
   checkouts
 - the repo-local package dry-run command contract embedded in source-lock
   validation metadata
+- the native Alloy runtime and core upstream pins used for source-derived
+  dependency evidence and release-candidate validation
 - the exclusion-list rule that keeps historical progress snapshots readable but
   outside active preflight path-normalization authority
 - the audit-refresh mapping that points provenance changes back to this record
@@ -34,9 +37,10 @@ or changing SDK behavior.
 | --- | --- | --- |
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
-| Re-affirmation outcome | Source-lock pins align with the 2026-05-04 upstream HEAD comparison; no lock bump is required for the current release evidence | Conforms |
+| Re-affirmation outcome | CoW Protocol source-lock pins align with the 2026-05-04 upstream HEAD comparison, and native Alloy pins are tag-aligned for the reviewed dependency families | Conforms |
 | Local-root warnings | Reviewer-supplied upstream roots are checked for independent git top-levels, expected remotes, and pinned `HEAD` commits without making repo-local validation depend on those roots | Conforms |
 | Publication preflight | Source-lock validation metadata lists the complete package-family dry-run contract with local patches for unpublished intra-family crates | Conforms |
+| Native Alloy provenance | `parity/source-lock.yaml` pins exact Alloy runtime and Alloy Core commits for source-derived dependency evidence used by the native adapter family | Conforms |
 | Schema enforcement | Unsupported source-lock schema versions fail closed with a stable diagnostic, while schema version 3 is accepted | Conforms |
 | Amount fixture roundtrip | Amount-shaped fixture strings parse through the shared `Amount` codec and round-trip byte-identically | Conforms |
 | Historical snapshot scope | Historical progress snapshots stay readable and unmodified while active preflight authority skips them by directory-prefix policy | Conforms |
@@ -52,6 +56,8 @@ fixtures and source-derived evidence. It currently pins:
 - `cow-sdk` at `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d`
 - `contracts` at `c94c595a791681cf8ba7495117dcde397b932885`
 - `services` at `0720b9bc15138ecc362078f505d0e3ba1c7b9883`
+- `alloy` at `f3fe4cfff0553e9e234a53208bb69b7c222c66e5`
+- `alloy-core` at `e6b30e4c2407cd1d2ea93e79f2768e5a4f21d266`
 
 The lock is intentionally commit-based rather than branch-based. A release
 claim that depends on upstream freshness has to compare these pins against the
@@ -70,6 +76,12 @@ Upstream HEADs were checked on 2026-05-04:
 All three pins are aligned with upstream HEAD for this review. Release claims
 that depend on upstream freshness still have to rerun the comparison before
 publication if any upstream repository moves again.
+
+The Alloy runtime and Alloy Core pins are tag-aligned dependency evidence for
+the native adapter family rather than CoW Protocol upstream parity evidence.
+They are kept in the same source-lock contract so dependency provenance,
+producer paths, and package dry-run metadata stay reviewable through the
+existing validation gate.
 
 ### Release Re-affirmation
 
@@ -117,6 +129,10 @@ pre-publication dry-runs. In particular, `cow-sdk-contracts` patches
 `cow-sdk-orderbook` and `cow-sdk-subgraph` because they are dev-dependencies of
 the contracts crate, and `cow-sdk-trading` patches `cow-sdk-transport-wasm`
 until the first package family has been published.
+
+The package dry-run contract also covers `cow-sdk-alloy-provider`,
+`cow-sdk-alloy-signer`, and `cow-sdk-alloy`, with `cow-sdk` patched to the
+local adapter crates when validating the facade before publication.
 
 ### Schema Version Enforcement
 

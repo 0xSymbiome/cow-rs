@@ -7,6 +7,7 @@ check-deny-unknown-fields = "run --quiet --manifest-path scripts/policy-maintain
 check-workspace-versions = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-workspace-versions"
 check-msrv-notice = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-msrv-notice"
 check-alloy-provider-invariant = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-alloy-provider-invariant"
+check-alloy-signer-invariant = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-alloy-signer-invariant"
 check-adr-coverage = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-adr-coverage"
 check-chain-patch-eligibility = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-chain-patch-eligibility"
 check-wasm-runner-freshness = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-wasm-runner-freshness"

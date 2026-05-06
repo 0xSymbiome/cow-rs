@@ -39,15 +39,15 @@ cargo check -p cow-sdk --examples
 cargo check --manifest-path examples/native/Cargo.toml --examples
 cargo run-deterministic-examples
 cargo check-alloy-provider-invariant
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk
+cargo check-alloy-signer-invariant
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk
 ```
 
-The `cargo tree --invert alloy-provider -p ...` invariant succeeds when no
-shipped crate transitively depends on `alloy-provider`. In the success case,
-Cargo emits `error: package ID specification alloy-provider did not match any
-packages`. CI normalises this output via `cargo check-alloy-provider-invariant`.
-Contributors running the check locally should use the wrapper rather than
-reading the raw Cargo error as a failure.
+The Alloy dependency gates enforce explicit native adapter allow-lists:
+`alloy-provider` is allowed only in `cow-sdk-alloy-provider` and
+`cow-sdk-alloy`, while `alloy-signer-local` is allowed only in
+`cow-sdk-alloy-signer` and `cow-sdk-alloy`. Use the Cargo aliases rather than
+reading raw `cargo tree` output directly.
 
 ## Test Runner — `cargo nextest`
 

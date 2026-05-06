@@ -25,8 +25,23 @@ That design keeps the shipped surface:
 - easier to audit
 - additive for downstream runtime crates
 
-If you need `alloy`, `ethers`, or a custom in-house runtime integration, build
-that adapter in a leaf crate that implements the core traits.
+If you need Alloy, use the shipped native adapter crates. For `ethers` or a
+custom in-house runtime, build an adapter in a leaf crate that implements the
+core traits.
+
+## Shipped Alloy Adapters
+
+The native Alloy family is opt-in:
+
+- `cow-sdk-alloy-provider` implements read-only `AsyncProvider`.
+- `cow-sdk-alloy-signer` implements local private-key `AsyncSigner`.
+- `cow-sdk-alloy` composes provider and signer support and implements
+  `AsyncSigningProvider` for `TradingSdk` helper flows.
+
+The root facade exposes matching features named `alloy-provider`,
+`alloy-signer`, and `alloy`. These features are native-only and hard-fail on
+`wasm32-unknown-unknown`; browser integrations should use
+`cow-sdk-browser-wallet`.
 
 ## The Five Runtime Seams
 

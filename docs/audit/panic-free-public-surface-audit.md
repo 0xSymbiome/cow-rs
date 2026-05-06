@@ -1,11 +1,12 @@
 # Panic-Free Public Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-02
+Last reviewed: 2026-05-06
 Owning surface: every `crates/*/src/**/*.rs` file accessible from the published public API
 Refresh trigger: any ADR 0033 panic-policy change, panic-allowlist addition, or new `expect`, `unwrap`, or `panic!` site on a path reachable from the published public API
 Related docs:
 - [ADR 0033](../adr/0033-minimum-viable-panic-surface.md)
+- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 
 ## Scope
 
@@ -28,6 +29,7 @@ benchmarks, or private review tooling. Those surfaces may use `unwrap` or
 | Typestate builders | Builder `expect` sites are guarded by marker types and are unreachable from safe public construction paths | Conforms |
 | Numeric clamps | Conversion `expect` sites follow saturating or bounded arithmetic immediately before the conversion | Conforms |
 | Panic allowlist | `.github/config/panic-allowlist.yaml` carries 45 reviewed item-path entries covering 55 accepted static-invariant panic-bearing calls | Conforms |
+| Native Alloy adapters | Provider, signer, and umbrella public methods return typed errors for validation, transport, signing, pending transaction, and unsupported capability failures rather than panicking | Conforms |
 | Item-level panic artifacts | Each documented allowlist entry requires a rationale, `# Panics` rustdoc on the named item, and a `// SAFETY:` comment in the item body | Conforms |
 
 Documented public runtime sites:

@@ -19,6 +19,10 @@ support is owned by
 [`cow-sdk-alloy-provider`](https://docs.rs/cow-sdk-alloy-provider), signing
 support is owned by [`cow-sdk-alloy-signer`](https://docs.rs/cow-sdk-alloy-signer),
 and this package is the composed namespace for consumers that want both.
+`AlloyClient` implements `AsyncProvider` and `AsyncSigningProvider`; the owned
+signer handle returned by `create_signer` implements `AsyncSigner`, signs CoW
+EIP-712 typed-data payloads directly, submits transactions through Alloy's
+wallet-filler provider, and reports the broadcast transaction hash.
 
 ## Install
 
@@ -26,6 +30,29 @@ and this package is the composed namespace for consumers that want both.
 [dependencies]
 cow-sdk-alloy = "0.1"
 ```
+
+## Quick Start
+
+```rust,no_run
+use cow_sdk_alloy::AlloyClient;
+use cow_sdk_core::SupportedChainId;
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let client = AlloyClient::builder()
+    .http("https://example.invalid/rpc")?
+    .private_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")?
+    .chain_id(SupportedChainId::Sepolia)
+    .build()
+    .await?;
+# let _ = client;
+# Ok(())
+# }
+```
+
+Raw `sign_transaction` is intentionally unsupported in this release because
+the relevant Alloy provider path asks the remote JSON-RPC peer to sign. Use
+`send_transaction` for wallet-filler submission or the signer leaf for local
+message and typed-data signatures.
 
 ## Related Crates
 

@@ -1,0 +1,11 @@
+error[E0277]: the trait bound `AlloyClientSignerHandle: Signer` is not satisfied
+ --> tests/trybuild/no_sync_signer_on_handle.rs:7:28
+  |
+7 |     requires_sync_signer::<AlloyClientSignerHandle>();
+  |                            ^^^^^^^^^^^^^^^^^^^^^^^ the trait `Signer` is not implemented for `AlloyClientSignerHandle`
+  |
+note: required by a bound in `requires_sync_signer`
+ --> tests/trybuild/no_sync_signer_on_handle.rs:4:28
+  |
+4 | fn requires_sync_signer<S: Signer>() {}
+  |                            ^^^^^^ required by this bound in `requires_sync_signer`

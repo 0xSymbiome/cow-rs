@@ -28,10 +28,15 @@ families.
   [ADR 0003](adr/0003-separate-read-only-subgraph-crate.md).
 - Where do native runtime integrations fit? `cow-sdk-core::{Signer,
   AsyncSigner, AsyncSigningProvider, Provider, AsyncProvider}` defines the stable extension contract
-  for signer and RPC adapters. Provider-specific integrations remain additive
+  for signer and RPC adapters. Native Alloy integrations ship as opt-in
+  adapter crates, and other provider-specific integrations remain additive
   leaf crates rather than widening the default facade. See
   [Integrations](integrations.md) and
   [Architecture](architecture.md#provider-and-signer-adapter-seams).
+- Which Alloy crate should I use? Use `cow-sdk-alloy-provider` for read-only
+  RPC, `cow-sdk-alloy-signer` for local private-key signing, and
+  `cow-sdk-alloy` when the same native client should satisfy both provider and
+  signer helper paths. See [Adapting Alloy](providers/adapting-alloy.md).
 - How do I plug in a custom HTTP transport? Every `HttpTransport` impl
   installs through the builder's `.transport(...)` setter on both
   `OrderBookApi` and `SubgraphApi`. Native consumers get

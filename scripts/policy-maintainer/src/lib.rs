@@ -2,6 +2,7 @@
 
 pub mod check_adr_coverage;
 pub mod check_alloy_provider_invariant;
+pub mod check_alloy_signer_invariant;
 pub mod check_chain_patch_eligibility;
 pub mod check_deny_unknown_fields;
 pub mod check_enum_policy;

@@ -39,6 +39,7 @@ environment selection through the typed API context.
 | Orderbook transport | `cowprotocol/cow-sdk` order-book package plus selected `cowprotocol/services` references | `cow-sdk-orderbook` | `parity/fixtures/orderbook.json` | `crates/orderbook/tests/api_contract.rs`, `crates/orderbook/tests/request_contract.rs`, `crates/orderbook/tests/transform_contract.rs`, `crates/orderbook/tests/types_contract.rs` |
 | WASM target | `cowprotocol/cow-sdk` sdk package | `cow-sdk`, `cow-sdk-app-data`, WASM examples | `parity/fixtures/sdk.json`, committed workflow definitions, example READMEs | `examples/wasm/sdk-verification-console/tests/deterministic_exports.rs`, `wasm-pack test --headless --chrome`, `bun run --cwd e2e/sdk-verification test` |
 | Browser wallet integration | selected `cowprotocol/cow-sdk` common, provider, trading, and sdk paths | `cow-sdk-browser-wallet`, `cow-sdk` | `examples/wasm/browser-wallet-console/README.md`, `docs/validation-scope.md` | `crates/browser-wallet/tests/provider_contract.rs`, `crates/browser-wallet/tests/wallet_contract.rs`, direct browser-bridge proof, and committed browser-wallet console automation |
+| Native Alloy adapters | `alloy-rs/alloy` and `alloy-rs/core` source-lock pins plus local trait contracts | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`, `cow-sdk` opt-in features | `parity/source-lock.yaml`, `docs/providers/adapting-alloy.md`, `examples/native/README.md` | `crates/alloy-provider/tests/*`, `crates/alloy-signer/tests/*`, `crates/alloy/tests/*`, `tests/alloy_umbrella_composition.rs` |
 
 ## Orderbook Rejection Tags
 
@@ -92,7 +93,10 @@ The published crate-family dry-run order is:
 6. `cow-sdk-subgraph`
 7. `cow-sdk-trading`
 8. `cow-sdk-browser-wallet`
-9. `cow-sdk`
+9. `cow-sdk-alloy-provider`
+10. `cow-sdk-alloy-signer`
+11. `cow-sdk-alloy`
+12. `cow-sdk`
 
 `cow-sdk-transport-wasm` is the shipped browser-target `HttpTransport`
 adapter and is consumed through the workspace rather than through the

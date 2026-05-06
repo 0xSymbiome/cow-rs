@@ -35,6 +35,15 @@ The first functional crate-family release begins at `0.1.0`.
 
 - A runnable native cancellation example demonstrates
   `Cancellable::cancel_with(&token)` against a delayed orderbook response.
+- Native Alloy adapter support now ships as three opt-in crates:
+  `cow-sdk-alloy-provider` for read-only RPC, `cow-sdk-alloy-signer` for local
+  private-key signing, and `cow-sdk-alloy` for the composed provider-plus-signer
+  client used by `TradingSdk` async helper flows. The default facade remains
+  provider-neutral unless `alloy-provider`, `alloy-signer`, or `alloy` is
+  enabled; the adapter family is native-only, hard-fails on WASM targets,
+  follows the Alloy runtime `2.0` and ABI/core `1.5` pin policy, normalizes
+  ECDSA recovery bytes through the shared contracts helper, and propagates
+  cooperative cancellation through typed adapter errors.
 - A public `ROADMAP.md` lists planned capability releases, including the
   alloy adapter crates, composable and TWAP orders, permit signing, bridging,
   flash-loans, weiroll, and hardware-wallet support.
@@ -52,6 +61,9 @@ The first functional crate-family release begins at `0.1.0`.
   record instead of splitting that authority into a parallel document.
 - The contributor guide now documents `cargo nextest` installation and common
   workspace test commands.
+- Native Alloy documentation now covers native-only target support, the
+  two-family Alloy pin policy, ECDSA recovery-byte normalization, cooperative
+  cancellation propagation, and the WASM hard-fail posture for Alloy features.
 
 ## [0.1.0] — 2026-05-02
 

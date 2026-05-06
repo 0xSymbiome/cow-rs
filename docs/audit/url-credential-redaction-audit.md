@@ -1,13 +1,14 @@
 # URL Credential Redaction Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-06
 Owning surface: Credential-bearing URL storage and dispatch boundaries across core, orderbook, subgraph, browser-wallet, and app-data
 Refresh trigger: Changes to URL-bearing public configuration fields, browser wallet add-chain URL payload construction, IPFS URI dispatch, or the `RedactedUrlMap` and `RedactedOptionalUrlMap` contracts
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [Credential Surface Audit](credential-surface-audit.md)
 - [Verification Matrix](../verification-matrix.md)
+- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 
 ## Scope
 
@@ -28,6 +29,7 @@ where they share the same `Redacted<T>` storage contract.
 | Core and orderbook base URLs | Configured base-URL map values, including userinfo-bearing custom overrides, redact in public diagnostics and serialization while routing keeps raw URLs | Conforms |
 | Subgraph base URLs | Optional base-URL map values, including userinfo-bearing custom endpoints, redact and unsupported-chain `None` markers remain visible | Conforms |
 | Browser wallet add-chain URLs | Public chain parameters redact URL vectors while the EIP-1193 payload uses raw URL bytes outside SDK service-host policy | Conforms |
+| Native Alloy URLs | Provider and umbrella builders store configured RPC URLs behind redacting state and debug output never prints credentials or query secrets | Conforms |
 | App-data IPFS URIs | IPFS URI config fields redact in public debug, display, and serialization while fetch and upload policies use raw URI bytes | Conforms |
 
 ## Current Contract

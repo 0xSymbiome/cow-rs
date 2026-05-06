@@ -15,6 +15,9 @@ flowchart TD
   subgraph_crate["cow-sdk-subgraph"];
   wallet["cow-sdk-browser-wallet"];
   transport_wasm["cow-sdk-transport-wasm"];
+  alloy_provider["cow-sdk-alloy-provider"];
+  alloy_signer["cow-sdk-alloy-signer"];
+  alloy["cow-sdk-alloy"];
 
   sdk --> core;
   sdk --> contracts;
@@ -23,6 +26,9 @@ flowchart TD
   sdk --> orderbook;
   sdk --> trading;
   sdk -.->|feature: browser-wallet| wallet;
+  sdk -.->|feature: alloy-provider| alloy_provider;
+  sdk -.->|feature: alloy-signer| alloy_signer;
+  sdk -.->|feature: alloy| alloy;
   contracts --> core;
   signing --> core;
   signing --> contracts;
@@ -36,6 +42,13 @@ flowchart TD
   subgraph_crate --> core;
   wallet --> core;
   transport_wasm --> core;
+  alloy_provider --> core;
+  alloy_signer --> core;
+  alloy_signer --> contracts;
+  alloy --> core;
+  alloy --> contracts;
+  alloy --> alloy_provider;
+  alloy --> alloy_signer;
 ```
 
 ## Crate Roles
@@ -52,6 +65,9 @@ flowchart TD
 | `cow-sdk-subgraph` | Read-only subgraph access over the `HttpTransport` seam, with the `SubgraphApiBuilder` typestate | You need GraphQL reads or custom subgraph queries. |
 | `cow-sdk-transport-wasm` | Browser-target `HttpTransport` implementation (`FetchTransport`) | You build for `wasm32-unknown-unknown` and need the shipped browser default. |
 | `cow-sdk-browser-wallet` | Browser-runtime wallet integration | You need EIP-1193 wallet flows in WASM. |
+| `cow-sdk-alloy-provider` | Native Alloy-backed `AsyncProvider` adapter | You need read-only chain RPC through Alloy without a signer dependency. |
+| `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `AsyncSigner` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
+| `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `AsyncProvider`, `AsyncSigningProvider`, and `AsyncSigner` helper flows. |
 
 ## Layering
 
@@ -61,7 +77,7 @@ flowchart TD
 | Deterministic protocol transforms | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` | Typed bindings, registry authority, hashing, signing, app-data, and compatibility logic |
 | Client | `cow-sdk-orderbook`, `cow-sdk-subgraph` | Typed HTTP and GraphQL access through the `HttpTransport` seam |
 | Workflow | `cow-sdk-trading` | Quote, submit, cancel, approve, and related flows |
-| Runtime adapter | `cow-sdk-browser-wallet`, `cow-sdk-transport-wasm` | Browser-wallet session integration and the browser-target HTTP adapter |
+| Runtime adapter | `cow-sdk-browser-wallet`, `cow-sdk-transport-wasm`, `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Browser-wallet session integration, browser-target HTTP transport, and opt-in native Alloy provider/signer adapters |
 | Facade | `cow-sdk` | Curated public entrypoint |
 
 ## Facade And Adapter FAQ
@@ -85,13 +101,14 @@ Native runtime integrations plug in through the stable traits owned by
 use cow_sdk_core::{AsyncProvider, AsyncSigner, AsyncSigningProvider, Provider, Signer};
 ```
 
-For most native integrations, implement `Provider` and `Signer` on the adapter
-type that owns your RPC or signer backend. The blanket implementations then let
-that same adapter satisfy the read-only async surface through `AsyncProvider`,
-and the signing-capable async surface through `AsyncSigningProvider` when the
-signer supports the async contract. Browser-wallet support is the shipped async
-runtime adapter today, so `cow-sdk-browser-wallet` implements the async side
-directly without widening the native facade.
+For most custom native integrations, implement `Provider` and `Signer` on the
+adapter type that owns your RPC or signer backend. The blanket implementations
+then let that same adapter satisfy the read-only async surface through
+`AsyncProvider`, and the signing-capable async surface through
+`AsyncSigningProvider` when the signer supports the async contract. Native
+Alloy support is already shipped as `cow-sdk-alloy-provider`,
+`cow-sdk-alloy-signer`, and `cow-sdk-alloy`; browser-wallet support implements
+the async side directly without widening the native facade.
 
 The stable public contract is the trait seam itself. Native signer and RPC
 integrations remain additive leaf crates so the workspace does not freeze one
@@ -192,9 +209,9 @@ let result = sdk
 Cancellation is cooperative: the caller owns the token, and every SDK
 instance that needs to propagate shutdown through a shared token simply
 clones it. `From<Cancelled>` bridges on `CoreError`, `OrderbookError`,
-`SubgraphError`, `TradingError`, `SigningError`, `BrowserWalletError`,
-and the facade `SdkError` lift the marker through `?` across every public
-error boundary.
+`SubgraphError`, `TradingError`, `SigningError`, `BrowserWalletError`, the
+native Alloy adapter errors, and the facade `SdkError` lift the marker through
+`?` across every public error boundary.
 
 ### Workflow Ownership
 
@@ -254,12 +271,11 @@ switch success.
 - `OrderBookApi`, `SubgraphApi`, and `TradingSdk` construct exclusively
   through their typestate builders; no free-function public constructors
   remain on any of the three.
-- The published `cow-sdk` crate family (`cow-sdk`, `cow-sdk-core`,
-  `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
-  `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`,
-  `cow-sdk-browser-wallet`) does not transitively depend on
-  `alloy-provider`; consumers own their chain-RPC runtime through the
-  `AsyncProvider` seam.
+- Native Alloy dependencies are confined to the reviewed opt-in adapter crates:
+  `alloy-provider` is allowed only in `cow-sdk-alloy-provider` and
+  `cow-sdk-alloy`, while `alloy-signer-local` is allowed only in
+  `cow-sdk-alloy-signer` and `cow-sdk-alloy`. The default facade stays
+  provider-neutral unless an Alloy feature is enabled.
 - Every deployed-contract-address lookup routes through the typed
   `Registry` authority; hard-coded chain-scoped address constants are not
   allowed in shipped crates.

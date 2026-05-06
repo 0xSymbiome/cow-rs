@@ -43,14 +43,12 @@ the compile-time gate.
   the embedded manifest. The canonical binding families covered by this
   rule are `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, the
   EIP-1967 proxy slot surface, and `IERC20` / `IERC20Permit`.
-- Runtime and support: the published `cow-sdk` crate family (`cow-sdk`,
-  `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`,
-  `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`,
-  `cow-sdk-subgraph`, `cow-sdk-browser-wallet`) does not transitively pull
-  `alloy-provider`. The `alloy::sol!` machinery (`alloy-sol-types`,
-  `alloy-sol-macro`, `alloy-primitives`) is wasm-safe and carries no
-  tokio-bound network client. Consumers select their own chain-RPC runtime
-  through the `AsyncProvider` seam in `cow-sdk-core`.
+- Runtime and support: native Alloy provider and local-signer dependencies are
+  confined by the policy-maintainer allow-list checks rather than by a
+  hand-maintained crate enumeration in this ADR. The `alloy::sol!` machinery
+  (`alloy-sol-types`, `alloy-sol-macro`, `alloy-primitives`) is wasm-safe and
+  carries no tokio-bound network client. Consumers select their own chain-RPC
+  runtime through the `AsyncProvider` seam in `cow-sdk-core`.
 - Validation and review: parity scope is byte-identity on implemented
   surfaces. Every migrated binding has a regression test that asserts the
   generated call-data matches a TypeScript-SDK-derived fixture bit for

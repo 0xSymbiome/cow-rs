@@ -8,6 +8,8 @@ flows must not require local checkouts of:
 - `cowprotocol/cow-sdk`
 - `cowprotocol/contracts`
 - `cowprotocol/services`
+- `alloy-rs/alloy`
+- `alloy-rs/core`
 
 Those repositories are used only during explicit parity refresh or
 provenance-sensitive validation.
@@ -30,6 +32,8 @@ caller-local copy.
    - `https://github.com/cowprotocol/cow-sdk`
    - `https://github.com/cowprotocol/contracts`
    - `https://github.com/cowprotocol/services`
+   - `https://github.com/alloy-rs/alloy`
+   - `https://github.com/alloy-rs/core`
 
    Every committed parity fixture and every embedded schema cites its
    producer paths under one of those pinned commits, so provenance is
@@ -92,6 +96,8 @@ at a different commit than the source-lock pin.
 - `cow-sdk`: `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d`
 - `contracts`: `c94c595a791681cf8ba7495117dcde397b932885`
 - `services`: `0720b9bc15138ecc362078f505d0e3ba1c7b9883`
+- `alloy`: `f3fe4cfff0553e9e234a53208bb69b7c222c66e5`
+- `alloy-core`: `e6b30e4c2407cd1d2ea93e79f2768e5a4f21d266`
 
 ## Source Ownership
 
@@ -103,9 +109,12 @@ Primary sources:
 Reference-only source:
 
 - `https://github.com/cowprotocol/services.git`
+- `https://github.com/alloy-rs/alloy.git`
+- `https://github.com/alloy-rs/core.git`
 
-`services` is used for transport and validation semantics only. It is not a
-publish-time dependency.
+`services` is used for transport and validation semantics only. The Alloy
+repositories are dependency-provenance evidence for native adapter crates.
+They are not publish-time git dependencies.
 
 ## Surface Map
 
@@ -119,6 +128,7 @@ publish-time dependency.
 | trading | trading quote, order, post, cancellation, slippage, settlement, pre-sign, and EthFlow sources | `parity/fixtures/trading.json` |
 | subgraph | subgraph API, GraphQL, query, and selected test scenarios | `parity/fixtures/subgraph.json` |
 | sdk | SDK root exports, typedoc entrypoint, package metadata, and README surface | `parity/fixtures/sdk.json` |
+| native Alloy adapters | Alloy runtime and Alloy Core producer paths pinned in `parity/source-lock.yaml` | Adapter crate tests and native examples |
 
 ## Provenance Rule
 

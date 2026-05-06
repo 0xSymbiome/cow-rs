@@ -527,6 +527,80 @@ fn sdk_error_facade_redacts_nested_public_errors() {
     assert_all_render("SdkError", &errors);
 }
 
+#[cfg(feature = "alloy")]
+#[test]
+fn alloy_adapter_errors_redact_secret_bearing_payloads() {
+    use cow_sdk::{
+        alloy::AlloyClientError,
+        alloy_provider::AsyncProviderError,
+        alloy_signer::AsyncSignerError,
+        core::{Redacted, TransportErrorClass},
+    };
+
+    let client_errors = [
+        AlloyClientError::Validation(secret_payload()),
+        AlloyClientError::Transport {
+            class: TransportErrorClass::Other,
+            detail: Redacted::new(secret_payload()),
+        },
+        AlloyClientError::Signing {
+            detail: Redacted::new(secret_payload()),
+        },
+        AlloyClientError::PendingTransaction {
+            detail: Redacted::new(secret_payload()),
+        },
+        AlloyClientError::Internal(secret_payload()),
+    ];
+    assert_all_render("AlloyClientError", &client_errors);
+
+    let provider_errors = [
+        AsyncProviderError::Validation(secret_payload()),
+        AsyncProviderError::Transport {
+            class: TransportErrorClass::Other,
+            detail: Redacted::new(secret_payload()),
+        },
+        AsyncProviderError::Internal(secret_payload()),
+    ];
+    assert_all_render("AsyncProviderError", &provider_errors);
+
+    let signer_errors = [
+        AsyncSignerError::Validation(secret_payload()),
+        AsyncSignerError::Signing {
+            detail: Redacted::new(secret_payload()),
+        },
+        AsyncSignerError::Internal(secret_payload()),
+    ];
+    assert_all_render("AsyncSignerError", &signer_errors);
+
+    assert_render(
+        "AlloyClientError::Remote",
+        &AlloyClientError::Remote {
+            code: -32_000,
+            message: "execution reverted".to_owned(),
+        },
+    );
+    assert_render(
+        "AsyncProviderError::Remote",
+        &AsyncProviderError::Remote {
+            code: -32_000,
+            message: "execution reverted".to_owned(),
+        },
+    );
+    assert_render(
+        "AlloyClientError::UnsupportedTransactionRequest",
+        &AlloyClientError::UnsupportedTransactionRequest {
+            method: "sign_transaction",
+            reason: "raw transaction signing is deferred; use send_transaction",
+        },
+    );
+    assert_render(
+        "AsyncSignerError::ProviderRequired",
+        &AsyncSignerError::ProviderRequired {
+            method: "send_transaction",
+        },
+    );
+}
+
 #[cfg(feature = "browser-wallet")]
 #[test]
 fn browser_wallet_errors_and_rpc_payloads_redact_method_message_and_data() {

@@ -151,6 +151,34 @@ repositories:
   - crates/orderbook/openapi.yml
   - crates/shared/src/order_validation.rs
   - crates/orderbook/src/app_data.rs
+- id: alloy
+  remote: https://github.com/alloy-rs/alloy.git
+  commit: f3fe4cfff0553e9e234a53208bb69b7c222c66e5
+  role: dependency
+  optional_local_path: <alloy-checkout>
+  producer_paths:
+  - Cargo.toml
+  - crates/consensus/src/lib.rs
+  - crates/json-rpc/src/lib.rs
+  - crates/network/src/lib.rs
+  - crates/provider/src/lib.rs
+  - crates/rpc-types-eth/src/lib.rs
+  - crates/signer/src/lib.rs
+  - crates/signer-local/src/lib.rs
+  - crates/transport/src/lib.rs
+  - crates/transport-http/src/lib.rs
+- id: alloy-core
+  remote: https://github.com/alloy-rs/core.git
+  commit: e6b30e4c2407cd1d2ea93e79f2768e5a4f21d266
+  role: dependency
+  optional_local_path: <alloy-core-checkout>
+  producer_paths:
+  - Cargo.toml
+  - crates/dyn-abi/src/lib.rs
+  - crates/json-abi/src/lib.rs
+  - crates/primitives/src/lib.rs
+  - crates/sol-macro/src/lib.rs
+  - crates/sol-types/src/lib.rs
 fixtures:
 - surface: core
   file: parity/fixtures/core.json
@@ -484,8 +512,11 @@ validation:
   - cargo package -p cow-sdk-subgraph --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
   - cargo package -p cow-sdk-transport-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
   - cargo package -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
+  - cargo package -p cow-sdk-alloy-provider --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+  - cargo package -p cow-sdk-alloy-signer --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
+  - cargo package -p cow-sdk-alloy --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'"
   - cargo package -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-  - cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
+  - cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'" --config "patch.crates-io.cow-sdk-alloy.path='crates/alloy'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'"
   pinned_upstream_provenance_contract:
   - cargo parity-provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
   - cargo parity-validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services

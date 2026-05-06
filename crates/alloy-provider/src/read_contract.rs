@@ -258,6 +258,7 @@ fn json_to_dyn_value(
 
 #[allow(
     unreachable_patterns,
+    clippy::match_wildcard_for_single_variants,
     reason = "alloy-dyn-abi adds CustomStruct only when its eip712 feature is unified elsewhere"
 )]
 fn dyn_value_to_json(value: &DynSolValue) -> Value {

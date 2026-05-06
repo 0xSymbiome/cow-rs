@@ -14,6 +14,8 @@ Pinned sources live in `parity/source-lock.yaml`.
 | `cowprotocol/cow-sdk` | Primary | SDK ergonomics, trading flows, orderbook client shape, app-data behavior, subgraph query shape, and root facade evidence |
 | `cowprotocol/contracts` | Primary | Contract hashing, order UID packing, signatures, settlement encoding, and ABI-level behavior |
 | `cowprotocol/services` | Reference-only | Orderbook OpenAPI, order validation behavior, and app-data service behavior where the TypeScript SDK delegates to service contracts |
+| `alloy-rs/alloy` | Dependency evidence | Native Alloy runtime producer paths for provider, wallet, transport, network, RPC, and signer runtime crates |
+| `alloy-rs/core` | Dependency evidence | Native Alloy ABI/core producer paths for primitives, Solidity bindings, JSON ABI, and dynamic ABI support |
 
 Local upstream checkout paths are optional validation inputs. When they are
 used, they must be independent git checkouts or worktrees at the pinned
@@ -36,6 +38,7 @@ provenance is required.
 | Trading | `cow-sdk-trading` | TypeScript trading workflows and tests |
 | Subgraph | `cow-sdk-subgraph` | TypeScript subgraph API, GraphQL, query, and test sources |
 | SDK facade | `cow-sdk` | TypeScript SDK root package exports and typedoc entrypoint |
+| Native Alloy adapters | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Alloy runtime and Alloy Core source-lock pins, adapter contract tests, and native examples |
 
 ## Schema Evidence Policy
 
@@ -80,6 +83,9 @@ The Rust SDK ships in scope:
 - quote-to-order trading workflows (`cow-sdk-trading`)
 - browser-runtime wallet integration (`cow-sdk-browser-wallet`)
 - browser-target HTTP transport (`cow-sdk-transport-wasm`)
+- opt-in native Alloy provider, signer, and composed provider-plus-signer
+  adapters (`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`,
+  `cow-sdk-alloy`)
 
 The first release does **not** ship the capability families below. Each is a
 candidate for additive follow-up under ADR 0008 (additive optional
@@ -115,14 +121,12 @@ release.
 Hook-trampoline bytecode chaining. Deferred; not in scope for the first
 release.
 
-### Provider adapters
+### Additional provider ecosystems
 
-The first release ships only the `AsyncProvider` and `AsyncSigningProvider`
-trait seams in `cow-sdk-core`. No provider implementation is published by
-default. A planned native adapter crate `cow-sdk-alloy-provider` is a
-candidate for additive follow-up. The `docs/providers/adapting-alloy.md` guide
-explains how a consumer wires an alloy-backed provider through the trait seam
-in the meantime.
+Beyond the shipped native Alloy adapters, provider ecosystems such as `ethers`
+or hosted signer runtimes are not in scope for the first release. They remain
+additive follow-up crates that implement the same `AsyncProvider`,
+`AsyncSigningProvider`, and `AsyncSigner` trait seams.
 
 ### TypeScript-tooling-only packages
 

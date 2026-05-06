@@ -1,9 +1,9 @@
 use clap::{Parser, Subcommand};
 use policy_maintainer::{
-    check_adr_coverage, check_alloy_provider_invariant, check_chain_patch_eligibility,
-    check_deny_unknown_fields, check_enum_policy, check_msrv_notice, check_panic_allowlist,
-    check_property_citations, check_source_lock_roots, check_stub, check_wasm_runner_freshness,
-    check_workspace_versions, classify_release, diagnostics::OutputMode,
+    check_adr_coverage, check_alloy_provider_invariant, check_alloy_signer_invariant,
+    check_chain_patch_eligibility, check_deny_unknown_fields, check_enum_policy, check_msrv_notice,
+    check_panic_allowlist, check_property_citations, check_source_lock_roots, check_stub,
+    check_wasm_runner_freshness, check_workspace_versions, classify_release, diagnostics::OutputMode,
     generate_validation_evidence, run_deterministic_examples,
 };
 
@@ -45,6 +45,9 @@ enum Command {
     /// Verify shipped crates do not depend on alloy-provider.
     #[command(name = "check-alloy-provider-invariant")]
     CheckAlloyProviderInvariant(check_alloy_provider_invariant::Args),
+    /// Verify shipped crates do not depend on alloy-signer.
+    #[command(name = "check-alloy-signer-invariant")]
+    CheckAlloySignerInvariant(check_alloy_signer_invariant::Args),
     /// Verify principles and accepted ADRs are mutually covered.
     #[command(name = "check-adr-coverage")]
     CheckAdrCoverage(check_adr_coverage::Args),
@@ -84,6 +87,9 @@ fn main() -> anyhow::Result<()> {
         Command::CheckMsrvNotice(args) => check_msrv_notice::run(args, output_mode),
         Command::CheckAlloyProviderInvariant(args) => {
             check_alloy_provider_invariant::run(args, output_mode)
+        }
+        Command::CheckAlloySignerInvariant(args) => {
+            check_alloy_signer_invariant::run(args, output_mode)
         }
         Command::CheckAdrCoverage(args) => check_adr_coverage::run(args, output_mode),
         Command::CheckChainPatchEligibility(args) => {

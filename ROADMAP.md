@@ -6,26 +6,23 @@ changes, and review findings.
 
 ## Initial SDK Foundation
 
-The initial SDK foundation focuses on the existing ten-crate SDK family:
+The initial SDK foundation focuses on the existing SDK family:
 `cow-sdk`, `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`,
 `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`,
 `cow-sdk-subgraph`, `cow-sdk-browser-wallet`, and
-`cow-sdk-transport-wasm`.
+`cow-sdk-transport-wasm`, plus the opt-in native Alloy adapter crates
+`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy`.
 
 This work prioritizes a clean trading-first foundation: typed orderbook DTOs,
 typed signing and contract helpers, deployment registry provenance, cooperative
-cancellation, provider-neutral runtime seams, browser wallet support, and
-deterministic native and WASM examples.
+cancellation, provider-neutral runtime seams, browser wallet support, opt-in
+native Alloy provider and signer support, and deterministic native and WASM
+examples.
 
 ## Next Planned Capabilities
 
-The next planned capability group adds opt-in alloy adapter crates:
-`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and the `cow-sdk-alloy`
-umbrella crate. These crates are planned as additive adapters over the existing
-provider and signer traits, keeping the default SDK provider-neutral.
-
-This group also includes `cow-shed` integration, depending on implementation
-capacity and review scope.
+The next planned capability group focuses on `cow-shed` integration, depending
+on implementation capacity and review scope.
 
 ## Composable Order Capabilities
 
@@ -51,7 +48,7 @@ Later releases are reserved for advanced capabilities and polish, including:
 
 - flash-loan helpers
 - weiroll command support
-- hardware-wallet implementations for Ledger and Trezor on the alloy signer
+- hardware-wallet implementations for Ledger and Trezor on the Alloy signer
   adapter
 - additional ergonomics, documentation, and integration polish
 

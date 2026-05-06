@@ -14,10 +14,16 @@ types: it exposes `cow-sdk-core` domain types, provider traits, generated
 contract bindings, and typed request or response models rather than concrete
 alloy provider types.
 
-The workspace keeps alloy's ABI, primitive, and `sol!` dependency family pinned
-centrally. A dedicated weekly scheduled and manually-dispatched canary workflow
-checks the same workspace against a configurable upstream `ALLOY_CANARY_REF`
-and falls back to a pinned SHA when no repository variable is set. The canary
+The workspace keeps Alloy's runtime family and Alloy Core's ABI, primitive, and
+`sol!` family pinned centrally. Runtime crates stay on the reviewed `2.0`
+family; ABI/core crates stay on the reviewed `1.5` family. `alloy-provider` is
+allowed only in `cow-sdk-alloy-provider` and `cow-sdk-alloy`.
+`alloy-signer-local` is allowed only in `cow-sdk-alloy-signer` and
+`cow-sdk-alloy`.
+
+A dedicated weekly scheduled and manually-dispatched canary workflow checks the
+same workspace against configurable upstream Alloy and Alloy Core refs and
+falls back to pinned SHAs when no repository variables are set. The canary
 reports forward-compatibility drift without adding a pull-request trigger;
 promotion to PR-blocking status requires an explicit policy change.
 
@@ -32,14 +38,16 @@ change.
 
 ## Must Remain True
 
-- Public surface: default published crates do not force an `alloy-provider`
-  dependency, facade re-exports remain SDK-owned, and public RPC traits
-  continue to use SDK-owned request and response types.
+- Public surface: default published crates do not force native Alloy provider
+  or local-signer dependencies, facade re-exports remain SDK-owned, and public
+  RPC traits continue to use SDK-owned request and response types.
 - Runtime and support: alloy-powered adapters live at leaf or consumer-owned
   boundaries; the facade does not choose a chain-RPC runtime for consumers.
-- Validation and review: `alloy-*` workspace packages stay on one reviewed
-  minor line, the `alloy-provider` invariant gate stays blocking, and the
-  candidate canary stays configurable by ref with a pinned SHA fallback.
+- Validation and review: Alloy runtime crates and Alloy ABI/core crates stay on
+  their reviewed two-family policy, the Alloy provider and signer-local
+  invariant gates stay blocking, source-lock records the reviewed upstream pins
+  for `alloy-rs/alloy` v2.0.4 and `alloy-rs/core` v1.5.7, and the candidate
+  canary stays configurable by ref with pinned SHA fallbacks.
 - Cost: a canary failure requires triage before the next dependency upgrade,
   but it does not block routine PR CI while it remains informational.
 
@@ -62,10 +70,12 @@ change.
 - [Parity scope surface boundaries](../parity-scope.md#surface-boundaries)
 - [Verification matrix workspace gates](../verification-matrix.md#workspace-gates)
 - [Alloy release-candidate workflow](../../.github/workflows/alloy-release-candidate.yml)
+- [Alloy Umbrella Adapter ADR](0037-alloy-umbrella-adapter.md)
 
 **Proven by:**
 
 - [Contract Bindings Parity Audit](../audit/contract-bindings-parity-audit.md)
 - [Browser-Wallet Alloy Dependency Audit](../audit/browser-wallet-alloy-dependency-audit.md)
+- [Alloy Umbrella Adapter Audit](../audit/alloy-umbrella-adapter-audit.md)
 - [Source-Lock Provenance Audit](../audit/source-lock-provenance-audit.md)
 - [Workflow Security Audit](../audit/workflow-security-audit.md)

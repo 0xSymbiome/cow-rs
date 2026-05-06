@@ -44,6 +44,7 @@ public and runtime shape of `cow-rs`.
 | [0034](0034-interaction-encoder-target-policy.md) | Accepted | Guard canonical vault-relayer interaction targets at the settlement encoder boundary while leaving custom domains to runtime authority. |
 | [0035](0035-alloy-provider-adapter.md) | Accepted | Ship a read-only Alloy provider adapter behind an opt-in native crate. |
 | [0036](0036-alloy-signer-adapter.md) | Accepted | Ship a native Alloy local signer adapter behind an opt-in native crate. |
+| [0037](0037-alloy-umbrella-adapter.md) | Accepted | Compose the native Alloy provider and local signer into one wallet-capable client. |
 
 ## When To Write An ADR
 

@@ -30,9 +30,10 @@ committed in the repository.
 | Subgraph support | `cow-sdk-subgraph` | Typed query construction, decode, and deterministic native scenarios | Live subgraph access depends on external endpoint configuration |
 | Orderbook transport | `cow-sdk-orderbook` | Mocked request-shape, retry, decode, and conversion tests | Live orderbook behavior depends on remote endpoints |
 | Browser-target HTTP transport | `cow-sdk-transport-wasm` | Cross-adapter parity against the native `ReqwestTransport` default, cache-control header forwarding, request/response-only scope, documented browser redirect behavior, and the shipped `wasm32-unknown-unknown` build | Live browser fetch behavior depends on vendor-specific network stacks |
+| Native Alloy adapters | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`, `cow-sdk` opt-in features | Adapter crate contract tests, compile-fail boundary tests, redaction tests, cancellation tests, workspace TradingSdk composition, native examples, and native-only WASM hard-fail checks | Live RPC behavior depends on caller-supplied endpoints |
 | WASM target | `cow-sdk`, `cow-sdk-app-data`, `cow-sdk-transport-wasm`, WASM examples | WASM target builds, direct browser-bridge proof, deterministic verification-console checks, and committed browser automation | Browser-hosted rendering and deployment inspection remain environment-sensitive |
 | Browser wallet integration | `cow-sdk-browser-wallet`, `cow-sdk`, browser-wallet console | Native crate tests, direct `wasm-bindgen-test` bridge proof, deterministic mock-wallet flows, console builds, and committed fixture-backed browser automation | Live extension-backed authorization, prompts, and vendor behavior remain environment-sensitive |
-| Stability invariant | whole workspace | `cargo tree --invert alloy-provider -p ...` succeeds when no shipped crate transitively depends on `alloy-provider`; Cargo's success-case `did not match any packages` output is normalised by `cargo check-alloy-provider-invariant` for the published `cow-sdk` crate family (`cow-sdk`, `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`, `cow-sdk-browser-wallet`, `cow-sdk-transport-wasm`) | None |
+| Stability invariant | whole workspace | Native Alloy dependencies stay inside explicit allow-lists: `alloy-provider` only in `cow-sdk-alloy-provider` and `cow-sdk-alloy`, and `alloy-signer-local` only in `cow-sdk-alloy-signer` and `cow-sdk-alloy`; the policy-maintainer wrappers validate the full published crate list | None |
 | Quality and publishability | whole workspace | Formatting, linting, tests, doctests, docs, source-lock validation, and package dry runs | Crates.io publication and independent-root provenance checks are separate operational steps |
 
 ## High-Signal Commands
@@ -49,6 +50,8 @@ cargo +nightly fuzz list --fuzz-dir fuzz
 cargo +nightly fuzz build --fuzz-dir fuzz
 cargo run-deterministic-examples --locked
 cargo doc --workspace --all-features --no-deps
+cargo check-alloy-provider-invariant
+cargo check-alloy-signer-invariant
 cd crates/browser-wallet && wasm-pack test --headless --chrome
 cd examples/wasm/sdk-verification-console && wasm-pack test --headless --chrome
 bun run --cwd e2e/browser-wallet test

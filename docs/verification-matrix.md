@@ -56,7 +56,7 @@ Use it with:
 | `cargo deny check --config .github/config/deny.toml` | Blocking advisory, license, source, and duplicate-version policy gate |
 | `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate; `scripts/check-release-docs-agree.sh` keeps the ignore-token list aligned with the release checklist and `.github/config/deny.toml`, and requires a dependency-gate audit rationale for every ignored RustSec token. |
 | `cargo test --workspace` | Main workspace test gate |
-| `cargo test -p cow-rs-workspace-tests` | Workspace policy tests for MSRV alignment, root dependency default-feature review, nested alloy pin lockstep, and shipped-crate alloy-provider invariant coverage |
+| `cargo test -p cow-rs-workspace-tests` | Workspace policy tests for MSRV alignment, root dependency default-feature review, nested Alloy pin lockstep, and native Alloy adapter composition coverage |
 | `cargo test --workspace --doc` | Explicit doctest gate for rustdoc examples |
 | Published crate README doctests | Every published crate README is wired into crate rustdoc with a `cfg_attr(doctest, ...)` shim, so `cargo test --workspace --doc` compiles every fenced README example on CI. |
 | `cargo test --all-features --workspace --doc` | All-feature doctest gate for the public docs contract |
@@ -72,7 +72,8 @@ Use it with:
 | `cargo check-source-lock-roots --cow-sdk-root <path> --contracts-root <path> --services-root <path>` | Report-only warning command for manually supplied upstream roots that do not match the source-lock remotes or commits |
 | `ci-success` | Aggregate routine CI status for branch protection across the required native validation and publication jobs |
 | Alloy release-candidate canary | Scheduled and manual forward-compat drift workflow in `.github/workflows/alloy-release-candidate.yml` checks configurable `ALLOY_CANARY_REF` with a pinned SHA fallback and has no pull-request trigger. |
-| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk` | Blocking stability-invariant gate asserting no shipped leaf crate transitively depends on `alloy-provider`; Cargo's success-case `did not match any packages` output is normalised by `cargo check-alloy-provider-invariant`, and `scripts/check-release-docs-agree.sh` keeps the raw package list aligned across the release checklist, `_quality-gate.yml`, `CONTRIBUTING.md`, and `PROPERTIES.md`. |
+| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk` | Blocking allow-list gate asserting `alloy-provider` remains limited to `cow-sdk-alloy-provider` and `cow-sdk-alloy`; `cargo check-alloy-provider-invariant` normalises the raw Cargo tree output, and `scripts/check-release-docs-agree.sh` keeps the raw package list aligned across the release checklist, `_quality-gate.yml`, `CONTRIBUTING.md`, and `PROPERTIES.md`. |
+| `cargo check-alloy-signer-invariant` | Blocking allow-list gate asserting `alloy-signer-local` remains limited to `cow-sdk-alloy-signer` and `cow-sdk-alloy`. |
 | Release reproducibility posture | Reproducible-build posture documented across the release checklist with explicit source-and-lockfile guarantees and a documented future extension for WebAssembly artifact byte-reproducibility. |
 
 ## Publication Gates
@@ -99,4 +100,4 @@ Use it with:
 - Higher-iteration search-profile tests remain limited to narrow deterministic helper families whose inputs are large enough to justify the extra exploration and whose failures stay readable in ordinary crate test output.
 - `cow-sdk-browser-wallet` tests, mock console mode, and the committed browser-wallet console automation provide deterministic proof without a live extension, public RPC endpoint, or external website.
 - Extension-backed injected-provider execution remains environment-sensitive because authorization, chain inventory, wallet UX, and vendor-specific behavior are controlled by the installed extension.
-- The public rustc lint gate applies to `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, and the `cow-sdk` facade.
+- The public rustc lint gate applies to `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, the native Alloy adapter crates, and the `cow-sdk` facade.

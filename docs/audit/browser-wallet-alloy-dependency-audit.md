@@ -1,11 +1,12 @@
 # Browser-Wallet Alloy Dependency Audit
 
 Status: Current
-Last reviewed: 2026-04-27
+Last reviewed: 2026-05-06
 Owning surface: `cow-sdk-browser-wallet` typed EIP-1193 contract-call bridge and its `alloy-primitives` / `alloy-dyn-abi` / `alloy-json-abi` ABI helpers
 Refresh trigger: Upstream movement in the alloy family (new major, dropped transitive dependency), a new reviewed warning surfacing through the alloy toolchain, or a new maintained successor to the affected proc-macro deps
 Related docs:
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
+- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 - [Dependency Gate Audit](dependency-gate-audit.md)
 - [CID Dependency Audit](cid-dependency-audit.md)
 - [ADR 0007](../adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
@@ -27,6 +28,13 @@ This audit covers:
 It does not cover the published CID dependency posture, transport-layer
 TLS choices, or any advisory outside the narrow alloy subtree reachable
 from the browser-wallet contract-call bridge.
+
+## Alloy Adapter Refresh
+
+The native Alloy provider, signer, and umbrella adapters now carry their own
+standing audits and dependency allow-list checks. Browser-wallet remains on the
+ABI/helper subset and does not depend on the native provider or local signer
+families.
 
 ## Outcome Summary
 

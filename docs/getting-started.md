@@ -72,6 +72,12 @@ Browser wallet support also stays additive.
 It is exposed only behind the `browser-wallet` feature and the dedicated
 `cow-sdk-browser-wallet` leaf crate.
 
+Native Alloy support is additive as well. Use `cow-sdk-alloy-provider` for
+read-only RPC, `cow-sdk-alloy-signer` for local private-key signing, and
+`cow-sdk-alloy` when one native client should satisfy both provider and signer
+helper paths. The facade exposes those surfaces behind the `alloy-provider`,
+`alloy-signer`, and `alloy` features on native targets.
+
 Shared validation and configuration failures surface under the canonical
 `CoreError` type from `cow-sdk-core`.
 
@@ -516,6 +522,23 @@ Use these examples when you want local or transport-mocked Rust flows:
 
 - focuses on typed orderbook transport behavior rather than high-level trading
 
+`alloy_quickstart`
+
+- shows the composed native Alloy client setup
+
+`alloy_provider_only`
+
+- shows read-only Alloy RPC through `AsyncProvider`
+
+`alloy_signer_only`
+
+- signs a real CoW order typed-data payload through the Alloy signer leaf
+
+`alloy_trading_full_flow`
+
+- exercises allowance, approval, and pre-sign helper paths through the composed
+  Alloy client
+
 ### Read-Only Follow-Ons
 
 When your goal is read-only analytics instead of trading orchestration, switch
@@ -571,10 +594,12 @@ No.
 
 This guide stays provider-agnostic.
 
-The deterministic example path does not assume an `alloy`, `ethers`, or other
-ecosystem-specific adapter crate.
+The deterministic first-touch path does not assume Alloy, `ethers`, or another
+ecosystem-specific adapter.
 
-When you are ready to wire one, use [Integrations](integrations.md).
+When you are ready to wire native Alloy, use
+[Adapting Alloy](providers/adapting-alloy.md). For other provider ecosystems,
+use [Integrations](integrations.md).
 
 ### Do I need a browser wallet to finish this guide?
 

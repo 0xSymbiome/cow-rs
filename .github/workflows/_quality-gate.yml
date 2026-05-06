@@ -492,7 +492,7 @@ jobs:
           toolchain: ${{ inputs.rust_toolchain }}
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
-      - name: Assert no shipped leaf crate depends on alloy-provider
+      - name: Assert alloy-provider stays inside the native provider allow-list
         run: |
           # docs-agreement package list:
           # cargo tree --invert alloy-provider \
@@ -505,8 +505,28 @@ jobs:
           #   -p cow-sdk-trading \
           #   -p cow-sdk-browser-wallet \
           #   -p cow-sdk-transport-wasm \
+          #   -p cow-sdk-alloy-provider \
+          #   -p cow-sdk-alloy-signer \
+          #   -p cow-sdk-alloy \
           #   -p cow-sdk 2>&1
           cargo check-alloy-provider-invariant
+
+  alloy-signer-invariant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Assert alloy-signer-local stays inside the native signer allow-list
+        run: cargo check-alloy-signer-invariant
 
   adr-coverage:
     name: ADR coverage (blocking)
@@ -662,6 +682,7 @@ jobs:
       - fuzz-corpus-audit
       - public-api-lints
       - alloy-provider-invariant
+      - alloy-signer-invariant
       - adr-coverage
       - cargo-semver-checks
       - docs-agree-on-release-gates

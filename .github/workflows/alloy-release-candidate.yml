@@ -12,7 +12,8 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   CARGO_TERM_COLOR: always
   RUST_CI_TOOLCHAIN: 1.94.1
-  ALLOY_CANARY_REF: ${{ vars.ALLOY_CANARY_REF || '83de021b1bf6f00ab1b38532460a387697ad25a7' }}
+  ALLOY_CANARY_REF: ${{ vars.ALLOY_CANARY_REF || '0a8118146f4c546674a907122f3f2b817bbb79f5' }}
+  ALLOY_CORE_CANARY_REF: ${{ vars.ALLOY_CORE_CANARY_REF || '2ebfa5b502e535d9864497579ebac7eeae30e27d' }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -38,23 +39,36 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          remote="https://github.com/alloy-rs/alloy"
-          ref="${ALLOY_CANARY_REF}"
-          resolved="$(git ls-remote "$remote" "$ref" "refs/heads/$ref" "refs/tags/$ref" | awk 'NR == 1 { print $1 }')"
-          if [ -z "$resolved" ]; then
-            if [[ "$ref" =~ ^[0-9a-fA-F]{40}$ ]]; then
-              resolved="$ref"
-            else
-              echo "::error::ALLOY_CANARY_REF did not resolve to a branch, tag, or full commit SHA"
-              exit 1
+          resolve_ref() {
+            local remote="$1"
+            local ref="$2"
+            local resolved
+            resolved="$(git ls-remote "$remote" "$ref" "refs/heads/$ref" "refs/tags/$ref" | awk 'NR == 1 { print $1 }')"
+            if [ -z "$resolved" ]; then
+              if [[ "$ref" =~ ^[0-9a-fA-F]{40}$ ]]; then
+                resolved="$ref"
+              else
+                echo "::error::${ref} did not resolve to a branch, tag, or full commit SHA"
+                exit 1
+              fi
             fi
-          fi
+            printf '%s' "$resolved"
+          }
+          alloy_remote="https://github.com/alloy-rs/alloy"
+          core_remote="https://github.com/alloy-rs/core"
+          alloy_ref="${ALLOY_CANARY_REF}"
+          core_ref="${ALLOY_CORE_CANARY_REF}"
+          resolved="$(resolve_ref "$alloy_remote" "$alloy_ref")"
+          core_resolved="$(resolve_ref "$core_remote" "$core_ref")"
           echo "resolved=$resolved" >> "$GITHUB_OUTPUT"
+          echo "core_resolved=$core_resolved" >> "$GITHUB_OUTPUT"
           {
             echo "# Alloy forward-compat canary"
             echo
-            echo "- Requested ref: \`$ref\`"
-            echo "- Resolved commit: \`$resolved\`"
+            echo "- Runtime requested ref: \`$alloy_ref\`"
+            echo "- Runtime resolved commit: \`$resolved\`"
+            echo "- Core requested ref: \`$core_ref\`"
+            echo "- Core resolved commit: \`$core_resolved\`"
             echo "- Mode: scheduled/manual drift report; no pull-request trigger"
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Report forward-compat drift
@@ -62,19 +76,38 @@ jobs:
         run: |
           set -euo pipefail
           resolved="${{ steps.alloy-ref.outputs.resolved }}"
+          core_resolved="${{ steps.alloy-ref.outputs.core_resolved }}"
           mkdir -p .cargo
           {
             echo '[patch.crates-io]'
-            echo "alloy-dyn-abi = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
-            echo "alloy-json-abi = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
-            echo "alloy-primitives = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
-            echo "alloy-sol-macro = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
-            echo "alloy-sol-types = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-consensus = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-json-rpc = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-network = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-provider = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-rpc-types-eth = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-signer = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-signer-local = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-transport = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-transport-http = { git = 'https://github.com/alloy-rs/alloy', rev = '${resolved}' }"
+            echo "alloy-dyn-abi = { git = 'https://github.com/alloy-rs/core', rev = '${core_resolved}' }"
+            echo "alloy-json-abi = { git = 'https://github.com/alloy-rs/core', rev = '${core_resolved}' }"
+            echo "alloy-primitives = { git = 'https://github.com/alloy-rs/core', rev = '${core_resolved}' }"
+            echo "alloy-sol-macro = { git = 'https://github.com/alloy-rs/core', rev = '${core_resolved}' }"
+            echo "alloy-sol-types = { git = 'https://github.com/alloy-rs/core', rev = '${core_resolved}' }"
           } >> .cargo/config.toml
           cargo update \
+            -p alloy-consensus \
             -p alloy-dyn-abi \
+            -p alloy-json-rpc \
             -p alloy-json-abi \
+            -p alloy-network \
             -p alloy-primitives \
+            -p alloy-provider \
+            -p alloy-rpc-types-eth \
+            -p alloy-signer \
+            -p alloy-signer-local \
             -p alloy-sol-macro \
-            -p alloy-sol-types
+            -p alloy-sol-types \
+            -p alloy-transport \
+            -p alloy-transport-http
           cargo check --workspace --all-features

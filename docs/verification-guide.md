@@ -61,17 +61,14 @@ request failures free of raw Graph API credentials.
 
 ### Stability Invariant
 
-The published `cow-sdk` crate family (`cow-sdk`, `cow-sdk-core`,
-`cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
-`cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`,
-`cow-sdk-browser-wallet`, `cow-sdk-transport-wasm`) does not transitively depend on
-`alloy-provider`. Review every dependency change against this invariant;
-the `cargo tree --invert alloy-provider -p ...` invariant succeeds when no
-shipped crate transitively depends on `alloy-provider`. In the success case,
-Cargo emits `error: package ID specification alloy-provider did not match any
-packages`. CI normalises this output via `cargo check-alloy-provider-invariant`.
-Contributors running the check locally should use the wrapper rather than
-reading the raw Cargo error as a failure.
+Native Alloy dependencies are intentionally narrow. `alloy-provider` is
+allowed only in `cow-sdk-alloy-provider` and `cow-sdk-alloy`, while
+`alloy-signer-local` is allowed only in `cow-sdk-alloy-signer` and
+`cow-sdk-alloy`. Review every dependency change against these allow-lists. CI
+normalises the raw Cargo tree output via
+`cargo check-alloy-provider-invariant` and
+`cargo check-alloy-signer-invariant`; contributors should use the wrappers
+rather than reading raw Cargo output directly.
 
 ### Workflow Ownership
 
@@ -109,8 +106,8 @@ runs, and provenance-sensitive parity checks are part of the published
 crate-family contract. Review publication-policy changes through the release
 docs rather than as local implementation details. Workspace policy tests keep
 the root MSRV aligned with CI, review root dependency default-feature posture,
-and check that the shipped-crate alloy-provider invariant enumerates every
-published crate. Dependency policy is split
+and check that the native Alloy provider and signer allow-list invariants
+enumerate every published crate. Dependency policy is split
 deliberately: `cargo deny` owns bans, licenses, source policy, and yanked
 advisory policy, while
 `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436`
@@ -127,7 +124,7 @@ Release artifacts ship reproducible at the source and lockfile level today;
 the release checklist records the two-tier reproducibility posture and the path
 to binary reproducibility for the WebAssembly artifacts.
 
-The `cargo tree --invert alloy-provider` invariant, the `cargo audit --deny ... --ignore RUSTSEC-...` ignore-token list, each ignored RustSec rationale entry, and the browser-wallet Playwright install browser set are guarded against their source-of-truth files by `scripts/check-release-docs-agree.sh`.
+The `cargo tree --invert alloy-provider` package list, the `cargo audit --deny ... --ignore RUSTSEC-...` ignore-token list, each ignored RustSec rationale entry, and the browser-wallet Playwright install browser set are guarded against their source-of-truth files by `scripts/check-release-docs-agree.sh`.
 
 ## Going Deeper
 

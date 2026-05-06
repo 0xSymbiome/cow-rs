@@ -2,6 +2,9 @@
 members = []
 resolver = "2"
 
+[workspace.dependencies]
+hex = "0.4.3"
+
 [package]
 name = "cow-sdk-examples-native"
 version = "0.1.0"
@@ -10,10 +13,17 @@ rust-version = "1.94.0"
 publish = false
 description = "Native consumer-facing capability scenarios for cow-rs"
 
+[features]
+default = []
+alloy-provider = ["cow-sdk/alloy-provider"]
+alloy-signer = ["cow-sdk/alloy-signer"]
+alloy = ["cow-sdk/alloy"]
+
 [dependencies]
 async-trait = "0.1.89"
 cow-sdk = { path = "../../crates/sdk" }
 cow-sdk-subgraph = { path = "../../crates/subgraph" }
+hex = { workspace = true }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 tokio = { version = "1.51.1", features = ["macros", "rt-multi-thread", "time"] }
@@ -78,3 +88,33 @@ path = "scenarios/subgraph_custom_query_roundtrip.rs"
 [[example]]
 name = "subgraph_live_query"
 path = "scenarios/subgraph_live_query.rs"
+
+[[example]]
+name = "alloy_quickstart"
+path = "scenarios/alloy_quickstart.rs"
+required-features = ["alloy"]
+
+[[example]]
+name = "alloy_provider_only"
+path = "scenarios/alloy_provider_only.rs"
+required-features = ["alloy-provider"]
+
+[[example]]
+name = "alloy_signer_only"
+path = "scenarios/alloy_signer_only.rs"
+required-features = ["alloy-signer"]
+
+[[example]]
+name = "alloy_provider_with_custom_signer"
+path = "scenarios/alloy_provider_with_custom_signer.rs"
+required-features = ["alloy-provider"]
+
+[[example]]
+name = "alloy_signer_with_custom_provider"
+path = "scenarios/alloy_signer_with_custom_provider.rs"
+required-features = ["alloy-signer"]
+
+[[example]]
+name = "alloy_trading_full_flow"
+path = "scenarios/alloy_trading_full_flow.rs"
+required-features = ["alloy"]

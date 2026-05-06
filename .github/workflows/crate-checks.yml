@@ -68,3 +68,33 @@ jobs:
             echo
             echo "</details>"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  published-crate-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - cow-sdk-alloy-provider
+          - cow-sdk-alloy-signer
+          - cow-sdk-alloy
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Check crate all targets and features
+        run: cargo check -p "${{ matrix.crate }}" --all-targets --all-features
+      - name: Build crate documentation with warnings denied
+        run: cargo doc -p "${{ matrix.crate }}" --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings

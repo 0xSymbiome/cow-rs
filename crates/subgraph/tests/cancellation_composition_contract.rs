@@ -15,10 +15,11 @@ use std::{
     time::{Duration, Instant},
 };
 
-use cow_sdk_core::{Cancellable, CancellationToken, SupportedChainId};
+use cow_sdk_core::{Cancellable, CancellationToken, HttpClientPolicy, SupportedChainId};
 use cow_sdk_subgraph::{
-    ExternalHostPolicy, LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi,
-    SubgraphApiBaseUrls, SubgraphConfigOverride, SubgraphError, SubgraphQueryRequest, Total,
+    DEFAULT_SUBGRAPH_USER_AGENT, ExternalHostPolicy, LastDaysVolumeResponse,
+    LastHoursVolumeResponse, SubgraphApi, SubgraphApiBaseUrls, SubgraphConfigOverride,
+    SubgraphError, SubgraphQueryRequest, SubgraphTransportPolicy, Total,
 };
 use serde_json::Value;
 use wiremock::{
@@ -189,6 +190,11 @@ fn api_with_override(server: &MockServer) -> SubgraphApi {
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
         .with_external_host_policy(ExternalHostPolicy::Test)
+        .policy(SubgraphTransportPolicy::new(
+            HttpClientPolicy::new(DEFAULT_SUBGRAPH_USER_AGENT)
+                .expect("default subgraph user-agent must remain valid")
+                .without_timeout(),
+        ))
         .base_urls(base_urls)
         .build()
         .expect("subgraph test client with loopback override must build")

@@ -1,7 +1,7 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-04
+Last reviewed: 2026-05-06
 Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, contracts, signing, trading, app-data, and the SDK facade
 Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without a redacting storage type
 Related docs:
@@ -10,6 +10,7 @@ Related docs:
 - [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md)
 - [Typestate Builder Contract Audit](typestate-builder-contract-audit.md)
 - [Verification Matrix](../verification-matrix.md)
+- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 
 ## Scope
 
@@ -28,6 +29,7 @@ It does not cover unrelated transport error redaction or credential handling out
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
+| Native Alloy adapters | Provider URLs, private-key material, signer internals, transport details, and pending-transaction details are redacted across the provider, signer, umbrella, and facade error tests | Conforms |
 | Orderbook builder | `OrderBookApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
 | Subgraph builder | `SubgraphApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
 | URL configuration | Credential-bearing URL values use redacting storage types for debug, display, and serialization, and unwrap only at dispatch seams | Conforms |

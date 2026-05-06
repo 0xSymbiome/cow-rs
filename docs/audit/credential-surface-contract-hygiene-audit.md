@@ -1,7 +1,7 @@
 # Credential Surface Contract Hygiene Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-06
 Owning surface: Cross-cutting credential redaction and typed partner-fee public boundary across core, app-data, orderbook, subgraph, and trading
 Refresh trigger: Changes to public credential-bearing configs, URL-bearing public configuration fields, subgraph route identity or request-failure context, the `Redacted<T>` newtype contract, external host-policy validation, the transport `From<reqwest::Error>` conversion classifiers, or typed partner-fee request boundaries
 Related docs:
@@ -14,6 +14,7 @@ Related docs:
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)
+- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 
 ## Scope
 
@@ -29,6 +30,9 @@ This audit covers:
 It does not cover browser-wallet session management, unrelated transport-policy
 questions, or future capability crates that are still outside the active SDK
 surface.
+
+The native Alloy adapter family is now inside the active SDK surface and is
+covered by the same redaction and facade error probes.
 
 ## Outcome Summary
 
