@@ -78,6 +78,12 @@ support is available only through explicit adapter crates and facade features.
 The `alloy-provider` and `alloy-signer-local` allow-list checks are
 release-gating invariants rather than aspirations.
 
+The trait abstraction is the mechanism that keeps a single trading path working
+across runtimes. `cow-sdk-trading` depends on `cow-sdk-core` traits rather than
+on a concrete provider library, so native Alloy, the browser-wallet leaf, and a
+custom simulator or fork-test adapter can all satisfy the same helper calls
+without widening the default facade.
+
 **Anchored by**: [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0014](adr/0014-eip1271-verification-cache.md), [ADR 0028](adr/0028-account-abstraction-integration-plan.md).
 
 ## Canonical Contract Bindings
@@ -143,6 +149,11 @@ contract by rendering the reviewed error families with URL, bearer-token,
 private-key-shaped, and PEM-shaped payloads across `Debug`, `Display`, and
 existing `Serialize` surfaces. No code path bypasses redaction through `Deref`
 or transparent re-exports of the inner string.
+
+Credential-bearing types in the native Alloy adapter family also avoid derived
+`Debug`. Hand-written implementations print opaque placeholders for configured
+RPC URLs, private keys, and inner signers so wrapper diagnostics cannot leak
+credentials through `Display`, `Debug`, or `Error::source()`.
 
 **Anchored by**: [ADR 0025](adr/0025-workspace-url-redaction-convention.md) (primary). Supporting: [ADR 0005](adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md).
 

@@ -123,10 +123,10 @@ release.
 
 ### Additional provider ecosystems
 
-Beyond the shipped native Alloy adapters, provider ecosystems such as `ethers`
-or hosted signer runtimes are not in scope for the first release. They remain
-additive follow-up crates that implement the same `AsyncProvider`,
-`AsyncSigningProvider`, and `AsyncSigner` trait seams.
+Additional provider ecosystems beyond the native Alloy adapter and the
+browser-wallet leaf are not in scope for the first release. Consumers can
+implement the SDK's `AsyncProvider`, `AsyncSigningProvider`, and `AsyncSigner`
+trait seams to bridge a custom ecosystem.
 
 ### TypeScript-tooling-only packages
 

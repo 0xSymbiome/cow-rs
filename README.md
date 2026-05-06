@@ -11,6 +11,11 @@ seam with native and browser default adapters, a typed deployment
 registry, opt-in native Alloy provider and signer adapters, and an optional
 EIP-1271 signature-verification cache.
 
+The native Alloy adapter is provided for trading-flow consumers. Generic
+Ethereum applications without trading helpers should depend on Alloy directly;
+the adapter exists to wire native Alloy into the SDK's signing and transaction
+contracts.
+
 ## Start Here
 
 The canonical first-touch path is [Getting Started](docs/getting-started.md).

@@ -24,11 +24,12 @@ const ORDER_UID: &str = "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f
 async fn main() -> Result<(), Box<dyn Error>> {
     let server = MockServer::start().await;
     let methods = mount_rpc(&server).await;
+    // build_checked() verifies the configured chain id against the RPC endpoint.
     let client = AlloyClient::builder()
         .http(server.uri())?
         .private_key(TEST_KEY)?
         .chain_id(SupportedChainId::Mainnet)
-        .build()
+        .build_checked()
         .await?;
     let signer = client.create_signer("local-key").await?;
     let sdk = TradingSdk::builder()

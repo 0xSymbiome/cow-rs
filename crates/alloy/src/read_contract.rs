@@ -56,9 +56,14 @@ pub(crate) async fn execute_read_contract(
             ))
         })?;
     let json = if decoded.len() == 1 {
-        dyn_value_to_json(&decoded[0])
+        dyn_value_to_json(&decoded[0])?
     } else {
-        Value::Array(decoded.iter().map(dyn_value_to_json).collect())
+        Value::Array(
+            decoded
+                .iter()
+                .map(dyn_value_to_json)
+                .collect::<Result<Vec<_>, _>>()?,
+        )
     };
     serde_json::to_string(&json).map_err(|error| {
         AlloyClientError::Internal(format!(
@@ -254,28 +259,42 @@ fn json_to_dyn_value(
 
 #[allow(
     unreachable_patterns,
-    reason = "alloy-dyn-abi adds CustomStruct only when its eip712 feature is unified elsewhere"
+    clippy::match_wildcard_for_single_variants,
+    reason = "the wildcard rejects future DynSolValue variants instead of mapping them to null"
 )]
-fn dyn_value_to_json(value: &DynSolValue) -> Value {
+fn dyn_value_to_json(value: &DynSolValue) -> Result<Value, AlloyClientError> {
     match value {
-        DynSolValue::Address(address) => {
-            Value::String(format!("0x{}", hex::encode(address.as_slice())))
-        }
-        DynSolValue::FixedBytes(word, size) => {
-            Value::String(format!("0x{}", hex::encode(&word.as_slice()[..*size])))
-        }
-        DynSolValue::Bytes(bytes) => Value::String(format!("0x{}", hex::encode(bytes))),
-        DynSolValue::Int(int, _) => Value::String(int.to_string()),
-        DynSolValue::Uint(uint, _) => Value::String(uint.to_string()),
-        DynSolValue::Bool(flag) => Value::Bool(*flag),
-        DynSolValue::String(text) => Value::String(text.clone()),
+        DynSolValue::Address(address) => Ok(Value::String(format!(
+            "0x{}",
+            hex::encode(address.as_slice())
+        ))),
+        DynSolValue::FixedBytes(word, size) => Ok(Value::String(format!(
+            "0x{}",
+            hex::encode(&word.as_slice()[..*size])
+        ))),
+        DynSolValue::Bytes(bytes) => Ok(Value::String(format!("0x{}", hex::encode(bytes)))),
+        DynSolValue::Int(int, _) => Ok(Value::String(int.to_string())),
+        DynSolValue::Uint(uint, _) => Ok(Value::String(uint.to_string())),
+        DynSolValue::Bool(flag) => Ok(Value::Bool(*flag)),
+        DynSolValue::String(text) => Ok(Value::String(text.clone())),
         DynSolValue::Array(items) | DynSolValue::FixedArray(items) | DynSolValue::Tuple(items) => {
-            Value::Array(items.iter().map(dyn_value_to_json).collect())
+            Ok(Value::Array(
+                items
+                    .iter()
+                    .map(dyn_value_to_json)
+                    .collect::<Result<Vec<_>, _>>()?,
+            ))
         }
-        DynSolValue::Function(function) => {
-            Value::String(format!("0x{}", hex::encode(function.as_slice())))
-        }
-        DynSolValue::CustomStruct { .. } => Value::Null,
+        DynSolValue::Function(function) => Ok(Value::String(format!(
+            "0x{}",
+            hex::encode(function.as_slice())
+        ))),
+        DynSolValue::CustomStruct { name, .. } => Err(AlloyClientError::Validation(format!(
+            "unsupported ABI output shape: custom struct `{name}` not supported in this release"
+        ))),
+        other => Err(AlloyClientError::Validation(format!(
+            "unsupported ABI output shape: {other:?}"
+        ))),
     }
 }
 
@@ -352,5 +371,97 @@ fn parse_i256(value: &Value, method: &str) -> Result<I256, AlloyClientError> {
                 "method `{method}`: invalid signed integer `{raw}`: {error}"
             ))
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn parse_dyn_sol_values_handles_uint256_string_decimal() {
+        let inputs = vec![Param {
+            ty: "uint256".to_owned(),
+            name: "amount".to_owned(),
+            components: Vec::new(),
+            internal_type: None,
+        }];
+        let values = json_args_to_dyn_values(&inputs, &json!(["42"]), "value").unwrap();
+        assert!(matches!(values[0], DynSolValue::Uint(_, 256)));
+    }
+
+    #[test]
+    fn parse_dyn_sol_values_handles_uint256_hex_prefix() {
+        let inputs = vec![Param {
+            ty: "uint256".to_owned(),
+            name: "amount".to_owned(),
+            components: Vec::new(),
+            internal_type: None,
+        }];
+        let values = json_args_to_dyn_values(&inputs, &json!(["0x2a"]), "value").unwrap();
+        assert_eq!(dyn_value_to_json(&values[0]).unwrap(), json!("42"));
+    }
+
+    #[test]
+    fn parse_dyn_sol_values_handles_address() {
+        let inputs = vec![Param {
+            ty: "address".to_owned(),
+            name: "owner".to_owned(),
+            components: Vec::new(),
+            internal_type: None,
+        }];
+        let values = json_args_to_dyn_values(
+            &inputs,
+            &json!(["0x1111111111111111111111111111111111111111"]),
+            "owner",
+        )
+        .unwrap();
+        assert_eq!(
+            dyn_value_to_json(&values[0]).unwrap(),
+            json!("0x1111111111111111111111111111111111111111")
+        );
+    }
+
+    #[test]
+    fn parse_dyn_sol_values_handles_tuple_recursive() {
+        let inputs = vec![Param {
+            ty: "(uint256,bool)".to_owned(),
+            name: "tuple".to_owned(),
+            components: Vec::new(),
+            internal_type: None,
+        }];
+        let values = json_args_to_dyn_values(&inputs, &json!([[7, true]]), "tuple").unwrap();
+        assert_eq!(dyn_value_to_json(&values[0]).unwrap(), json!(["7", true]));
+    }
+
+    #[test]
+    fn dyn_value_to_json_rejects_custom_struct_with_validation_error() {
+        let custom = DynSolValue::CustomStruct {
+            name: "FakeStruct".to_owned(),
+            prop_names: vec!["a".to_owned(), "b".to_owned()],
+            tuple: vec![DynSolValue::Bool(true), DynSolValue::Bool(false)],
+        };
+
+        let error = dyn_value_to_json(&custom).expect_err("custom struct must be rejected");
+
+        assert!(matches!(error, AlloyClientError::Validation(_)));
+        let message = error.to_string();
+        assert!(
+            message.contains("[redacted]"),
+            "validation display should remain redacted, got `{message}`"
+        );
+    }
+
+    #[test]
+    fn resolve_function_rejects_overloads() {
+        let abi: JsonAbi = serde_json::from_str(
+            r#"[{"type":"function","name":"f","inputs":[{"type":"uint256","name":"a"}],"outputs":[]},{"type":"function","name":"f","inputs":[{"type":"address","name":"a"}],"outputs":[]}]"#,
+        )
+        .unwrap();
+        assert!(matches!(
+            resolve_function(&abi, "f"),
+            Err(AlloyClientError::Validation(_))
+        ));
     }
 }

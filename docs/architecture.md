@@ -101,6 +101,14 @@ Native runtime integrations plug in through the stable traits owned by
 use cow_sdk_core::{AsyncProvider, AsyncSigner, AsyncSigningProvider, Provider, Signer};
 ```
 
+The SDK declares its provider, signer, and signing-provider contracts in
+`cow-sdk-core` rather than binding trading helpers directly to a concrete
+Ethereum runtime library. This lets one trading call site drive native Alloy on
+x86 / ARM, the browser-wallet leaf on `wasm32`, or any custom adapter that
+implements the same traits. If `cow-sdk-trading` depended on a concrete
+provider library directly, the wasm path would have to pull native-only
+dependencies or fork trading helpers per runtime.
+
 For most custom native integrations, implement `Provider` and `Signer` on the
 adapter type that owns your RPC or signer backend. The blanket implementations
 then let that same adapter satisfy the read-only async surface through
@@ -109,6 +117,13 @@ then let that same adapter satisfy the read-only async surface through
 Alloy support is already shipped as `cow-sdk-alloy-provider`,
 `cow-sdk-alloy-signer`, and `cow-sdk-alloy`; browser-wallet support implements
 the async side directly without widening the native facade.
+
+The native Alloy adapter family ships as three crates so a consumer can pull
+only the capabilities they exercise: `cow-sdk-alloy-provider` for read-only
+RPC, `cow-sdk-alloy-signer` for local private-key signing, and `cow-sdk-alloy`
+for the composed read-plus-sign flow that most trading applications need. The
+split keeps the provider leaf free of signing-crypto features and lets the
+signer leaf stay free of transport plumbing.
 
 The stable public contract is the trait seam itself. Native signer and RPC
 integrations remain additive leaf crates so the workspace does not freeze one

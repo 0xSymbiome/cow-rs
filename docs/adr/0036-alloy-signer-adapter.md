@@ -63,6 +63,18 @@ signature bytes and the Solidity-compatible form used by the contracts crate.
 - Return placeholder transaction signatures: signing incomplete transaction
   payloads without provider context would be misleading and unsafe.
 
+## Stability
+
+The public `AsyncSignerError::from_alloy_signer` constructor is gated
+`#[doc(hidden)]` and documented in source as an inter-crate seam constructor.
+It exists so sibling adapter crates can lift `alloy_signer::Error` values into
+the signer's typed error surface. It is not a semver-stable consumer API and
+may change in any minor release.
+
+The documented consumer surface is limited to `LocalAlloyKeystoreSigner`,
+`LocalAlloyKeystoreSignerBuilder`, `AsyncSignerError`, and the typestate
+markers explicitly exported from `lib.rs`.
+
 ## Links
 
 - [Alloy Provider Adapter ADR](0035-alloy-provider-adapter.md)

@@ -80,7 +80,11 @@ impl AsyncSignerError {
         }
     }
 
-    /// Converts an upstream Alloy signer error into this crate's public error.
+    /// Inter-crate seam constructor; not part of the semver-stable consumer
+    /// API. Sibling adapter crates use this to lift Alloy signer errors into
+    /// the signer's typed error surface. The argument shape may change in any
+    /// minor release.
+    #[doc(hidden)]
     #[must_use]
     pub fn from_alloy_signer(error: &alloy_signer::Error) -> Self {
         Self::Signing {

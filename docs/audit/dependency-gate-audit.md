@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-05-06
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
-Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, transport crate advisory posture, or browser-wallet alloy advisory posture
+Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, or browser-wallet alloy advisory posture
 Related docs:
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [CID Dependency Audit](cid-dependency-audit.md)
@@ -25,6 +25,7 @@ This audit covers:
 - the workspace dependency default-feature audit
 - the native Alloy provider and signer dependency allow-list gates for
   shipped crates
+- the native Alloy runtime and Alloy Core ABI two-family lockfile invariant
 - the release-doc guard that requires RustSec ignore rationale entries
 - the report-only alloy release-candidate canary and its failure response
 
@@ -47,6 +48,7 @@ architecture reviews.
 | Duplicate-version exceptions | Residual duplicate roots are documented as explicit skip-tree entries; stale `tiny-keccak` and `getrandom 0.2` exceptions were removed because they are no longer in the workspace graph | Conforms |
 | Legacy `thiserror` reachability | The remaining `thiserror 1.0.69` path is limited to the `graphql_client` codegen chain used by dev/test coverage | Conforms |
 | Native Alloy allow-lists | Shipped crates that depend on `alloy-provider` or `alloy-signer-local` are limited to the reviewed adapter crates and fail the policy-maintainer gate if the dependency escapes | Conforms |
+| Native Alloy two-family lockfile | The workspace lockfile keeps reviewed Alloy runtime crates on `2.0.4` and Alloy Core ABI crates on `1.5.7`, with exactly one resolved version per listed crate | Conforms |
 | Alloy canary failures | Scheduled canary failures are triaged as upstream-compatibility reports, with local pins changed only after ordinary quality gates pass and without dependency-policy waivers | Conforms |
 
 ## Current Contract
@@ -160,6 +162,15 @@ fail if those runtime dependencies appear in any other shipped `cow-sdk*`
 crate. The umbrella crate is allow-listed because it intentionally composes
 the reviewed provider and signer leaves into one native client surface.
 
+### Native Alloy Two-Family Lockfile Invariant
+
+The lockfile invariant treats Alloy runtime crates and Alloy Core ABI crates as
+separate reviewed dependency families. Runtime crates are pinned at `2.0.4`,
+Core ABI crates are pinned at `1.5.7`, and the workspace regression test fails
+if any listed crate resolves to a second version. This keeps ABI conversion
+changes from entering through a runtime-only update and keeps runtime transport
+changes from entering through an ABI-only update.
+
 ### Alloy Canary Failure Response
 
 The alloy release-candidate canary is report-only and has no pull-request
@@ -167,7 +178,9 @@ trigger. A failed scheduled run is triaged as upstream compatibility drift:
 inspect the workflow summary and failing crate, decide whether the failure is
 caused by an upstream release-candidate regression or by a required local
 adaptation, and keep the committed workspace pins unchanged until the ordinary
-quality gates pass against a reviewed update. Do not add a RustSec ignore,
+quality gates pass against a reviewed update. The workflow creates or reuses a
+tracking issue through `gh api` using the repository token and `issues: write`;
+it does not introduce a new third-party action. Do not add a RustSec ignore,
 license exception, source exception, or `alloy-provider` dependency waiver in
 response to the canary alone. If a local change is needed, it must preserve the
 published-crate invariant that no shipped leaf crate transitively depends on
@@ -184,6 +197,7 @@ Primary implementation points:
 - `.github/workflows/_quality-gate.yml`
 - `.github/config/deny.toml`
 - `tests/dependency_default_features_audit.rs`
+- `tests/alloy_two_family_lockfile_invariant.rs`
 - `scripts/check-release-docs-agree.sh`
 - `scripts/policy-maintainer/src/check_alloy_provider_invariant.rs`
 - `scripts/policy-maintainer/src/check_alloy_signer_invariant.rs`
@@ -206,6 +220,7 @@ cargo audit --deny unsound --deny unmaintained \
 cargo tree --workspace --invert thiserror:1.0.69 -e no-build
 cargo check-alloy-provider-invariant
 cargo check-alloy-signer-invariant
+cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant
 gh workflow run alloy-release-candidate.yml
 cargo build --workspace --all-features
 cargo test --workspace --all-features

@@ -20,11 +20,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
+    // build_checked() verifies the configured chain id against the RPC endpoint.
     let client = AlloyClient::builder()
         .http(server.uri())?
         .private_key(TEST_KEY)?
         .chain_id(SupportedChainId::Mainnet)
-        .build()
+        .build_checked()
         .await?;
     let signer = client.create_signer("local-key").await?;
     let signature = signer.sign_message(b"hello cow").await?;

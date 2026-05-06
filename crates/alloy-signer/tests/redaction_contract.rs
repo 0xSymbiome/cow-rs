@@ -124,4 +124,13 @@ fn assert_redacted(error: &AsyncSignerError, secret: &str) {
     assert!(!display.contains(secret), "{display}");
     assert!(!debug.contains(secret), "{debug}");
     assert!(display.contains("[redacted]") || debug.contains("[redacted]"));
+
+    let mut current = std::error::Error::source(error);
+    while let Some(source) = current {
+        let source_display = source.to_string();
+        let source_debug = format!("{source:?}");
+        assert!(!source_display.contains(secret), "{source_display}");
+        assert!(!source_debug.contains(secret), "{source_debug}");
+        current = source.source();
+    }
 }

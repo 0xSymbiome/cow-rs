@@ -85,9 +85,12 @@ step that can add the prefix. The helper remains private; integration coverage
 exercises the invariant through the public
 `Signature::recover_ecdsa_address` API.
 
-The pinned upstream signing posture signs `hashTypedData(...)` bytes through
-`owner.signMessage(ethers.utils.arrayify(...))`, so the wallet/provider layer
-owns the personal-sign prefix during signing.
+The pinned upstream signing posture signs the keccak digest of
+`hashTypedData(...)` as a personal-sign message, so the wallet/provider layer
+owns the EIP-191 prefix application and recovery-byte direction during signing.
+The SDK normalizes the recovery byte through
+`cow_sdk_contracts::normalized_ecdsa_signature` regardless of which adapter
+produced the signature.
 
 ## Links
 

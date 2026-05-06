@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -111,3 +112,24 @@ jobs:
             -p alloy-transport \
             -p alloy-transport-http
           cargo check --workspace --all-features
+      - name: Open a tracking issue when the canary fails
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title="alloy canary failed on $(date -u +%Y-%m-%dT%H:%M:%SZ) run"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body="$(printf 'The weekly alloy canary detected a breakage with the latest configured alloy release candidate.\n\nRun: %s\n\nNext steps follow the Upgrade Rehearsal section of docs/adr/0026-alloy-major-release-absorption-plan.md.\n' "${run_url}")"
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/labels" \
+            -f name='alloy-canary' \
+            -f color='5319e7' \
+            -f description='Alloy release-candidate canary failures' >/dev/null 2>&1 || true
+          existing="$(gh api "repos/${GITHUB_REPOSITORY}/issues?state=open&labels=alloy-canary&per_page=1" --jq 'length')"
+          if [ "${existing}" -eq 0 ]; then
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/issues" \
+              -f title="${title}" \
+              -f body="${body}" \
+              -f labels[]='alloy-canary' >/dev/null
+          fi

@@ -40,9 +40,10 @@ The environment-sensitive lane depends on real browser extensions and real
 public endpoints. It cannot be deterministic and is never asserted as
 contract proof.
 
-- Manual QA against real wallet extensions (MetaMask, Rabby, Coinbase, and
-  similar providers) confirms that the console behaves honestly with real
-  user prompts, chain availability, and vendor-specific UX.
+- Manual QA against real EIP-1193 wallet extensions covering the supported
+  browser-extension wallet families confirms that the console behaves honestly
+  with real user prompts, chain availability, and vendor-specific UX. The QA
+  matrix records the latest covered set.
 - Optional static browser-live smoke checks that the served console page is
   reachable and still exposes the stable DOM markers before extension-backed
   actions run. Smoke results are readiness signals, not behavior proof.

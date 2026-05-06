@@ -63,6 +63,11 @@ This crate hard-fails on `wasm32` targets. Browser applications should use
 `cow-sdk-browser-wallet` for wallet-backed signing and provide RPC access
 through the browser's EIP-1193 provider surface.
 
+The compile-time failure is deliberate. It keeps browser builds on the
+browser-wallet adapter and fails with a direct SDK message instead of allowing
+native Alloy HTTP transport dependencies to fail later with platform-specific
+errors.
+
 ## Companion Crates
 
 - `cow-sdk-alloy-signer` owns native local-key signing support.

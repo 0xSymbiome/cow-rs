@@ -64,6 +64,20 @@ dependencies onto read-only users.
 - Declare placeholder WS or IPC features: compiling a feature that later fails
   through an unsupported runtime path is less honest than omitting the feature.
 
+## Stability
+
+The `cow_sdk_alloy_provider::__seam` module is a doc-hidden public inter-crate
+seam for sibling `cow-rs` adapter crates. It is not a semver-stable consumer
+API. Anything inside the seam may change in any minor release without notice.
+Consumers who write code against it do so at their own risk; the documented
+consumer surface is limited to `RpcAlloyProvider`,
+`RpcAlloyProviderBuilder`, `AsyncProviderError`, and the typestate markers
+explicitly exported from `lib.rs`.
+
+The same posture applies to `AsyncProviderError::from_alloy_transport`. It is
+gated `#[doc(hidden)]` and documented in source as an inter-crate seam
+constructor, not as a stable consumer API.
+
 ## Links
 
 - [Architecture](../architecture.md)

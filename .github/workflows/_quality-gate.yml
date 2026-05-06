@@ -282,6 +282,10 @@ jobs:
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Run workspace library and integration tests
         run: cargo test --workspace --lib --tests
+      - name: Cargo.lock alloy lockstep invariant
+        run: cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant
+      - name: Read-contract parity invariant
+        run: cargo test -p cow-rs-workspace-tests --test alloy_read_contract_parity_invariant
       - name: Check sdk examples
         run: cargo check -p cow-sdk --examples
       - name: Check native showcase examples

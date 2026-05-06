@@ -99,6 +99,13 @@ at a different commit than the source-lock pin.
 - `alloy`: `f3fe4cfff0553e9e234a53208bb69b7c222c66e5`
 - `alloy-core`: `e6b30e4c2407cd1d2ea93e79f2768e5a4f21d266`
 
+The native Alloy adapter family pins two version generations: Alloy runtime
+crates at `2.0.4` for provider, transport, network, RPC, signer, and
+signer-local crates, and Alloy Core ABI crates at `1.5.7` for primitives,
+dynamic ABI, JSON ABI, Solidity macro, and Solidity types. The two families
+ship on independent release cadences; the workspace lockfile invariant enforces
+single-version resolution across both families.
+
 ## Source Ownership
 
 Primary sources:

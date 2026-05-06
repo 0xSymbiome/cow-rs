@@ -37,7 +37,7 @@ or changing SDK behavior.
 | --- | --- | --- |
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
-| Re-affirmation outcome | CoW Protocol source-lock pins align with the 2026-05-04 upstream HEAD comparison, and native Alloy pins are tag-aligned for the reviewed dependency families | Conforms |
+| Re-affirmation outcome | CoW Protocol source-lock pins align with the 2026-05-04 upstream HEAD comparison, and native Alloy pins are tag-aligned for the reviewed dependency families tracked in ADR 0026 | Conforms |
 | Local-root warnings | Reviewer-supplied upstream roots are checked for independent git top-levels, expected remotes, and pinned `HEAD` commits without making repo-local validation depend on those roots | Conforms |
 | Publication preflight | Source-lock validation metadata lists the complete package-family dry-run contract with local patches for unpublished intra-family crates | Conforms |
 | Native Alloy provenance | `parity/source-lock.yaml` pins exact Alloy runtime and Alloy Core commits for source-derived dependency evidence used by the native adapter family | Conforms |
@@ -80,8 +80,8 @@ publication if any upstream repository moves again.
 The Alloy runtime and Alloy Core pins are tag-aligned dependency evidence for
 the native adapter family rather than CoW Protocol upstream parity evidence.
 They are kept in the same source-lock contract so dependency provenance,
-producer paths, and package dry-run metadata stay reviewable through the
-existing validation gate.
+producer paths, package dry-run metadata, and the ADR 0026 compatibility matrix
+and upgrade rehearsal stay reviewable through the existing validation gate.
 
 ### Release Re-affirmation
 

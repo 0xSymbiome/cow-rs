@@ -78,7 +78,11 @@ impl AsyncProviderError {
         }
     }
 
-    /// Converts an Alloy transport error into this crate's public error.
+    /// Inter-crate seam constructor; not part of the semver-stable consumer
+    /// API. Sibling adapter crates use this to lift Alloy transport errors into
+    /// the provider's typed error surface. The argument shape may change in any
+    /// minor release.
+    #[doc(hidden)]
     #[must_use]
     pub fn from_alloy_transport(error: alloy_transport::TransportError) -> Self {
         match __transport_classification::rpc_error_to_class_and_detail(error) {

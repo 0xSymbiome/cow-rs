@@ -11,6 +11,7 @@ workspace = true
 [dev-dependencies]
 cow-sdk = { path = "../crates/sdk", version = "0.1.0", features = ["alloy"] }
 cow-sdk-alloy = { path = "../crates/alloy", version = "0.1.0" }
+cow-sdk-alloy-provider = { path = "../crates/alloy-provider", version = "0.1.0" }
 cow-sdk-core = { path = "../crates/core", version = "0.1.0" }
 cow-sdk-trading = { path = "../crates/trading", version = "0.1.0" }
 serde_json.workspace = true
@@ -45,6 +46,14 @@ path = "alloy_umbrella_composition.rs"
 [[test]]
 name = "alloy_two_family_pin_lockstep"
 path = "alloy_two_family_pin_lockstep.rs"
+
+[[test]]
+name = "alloy_two_family_lockfile_invariant"
+path = "alloy_two_family_lockfile_invariant.rs"
+
+[[test]]
+name = "alloy_read_contract_parity_invariant"
+path = "alloy_read_contract_parity_invariant.rs"
 
 [[test]]
 name = "services_drift_report_schema"

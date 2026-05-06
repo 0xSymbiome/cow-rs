@@ -80,6 +80,25 @@ impl AlloyClient {
     pub fn chain_id(&self) -> ChainId {
         self.inner.chain_id
     }
+
+    /// Verifies that the configured chain id matches the chain id reported by
+    /// the RPC endpoint.
+    ///
+    /// # Errors
+    ///
+    /// Returns the underlying transport error for RPC failure. Returns
+    /// [`AlloyClientError::Validation`] when the configured chain id does not
+    /// match the remote endpoint.
+    pub async fn verify_chain_id(&self) -> Result<(), AlloyClientError> {
+        let remote = self.get_chain_id().await?;
+        if remote != self.inner.chain_id {
+            return Err(AlloyClientError::Validation(format!(
+                "configured chain id `{}` does not match remote `eth_chainId` `{remote}`",
+                self.inner.chain_id
+            )));
+        }
+        Ok(())
+    }
 }
 
 impl fmt::Debug for AlloyClient {

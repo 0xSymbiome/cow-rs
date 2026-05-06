@@ -31,11 +31,12 @@ browser-wallet signing plus consumer-supplied EIP-1193 provider reads.
 
 ## Why
 
-Native consumers often want one ergonomic client that can both read chain state
-and submit signed transactions. The provider and signer leaves keep capability
-boundaries available for users that need only one side; the umbrella composes
-them for the common native wallet-provider case without changing the default
-facade dependency graph.
+Native consumers often want a single client that exposes both `AsyncProvider`
+and `AsyncSigningProvider` so trading flows can drive the same client for chain
+reads, EIP-712 typed-data signing, and transaction submission. The provider and
+signer leaves keep capability boundaries available for users that need only
+one side; the umbrella composes them for the common native wallet-provider case
+without changing the default facade dependency graph.
 
 The owned handle shape follows the `AsyncSigningProvider` trait contract, which
 has no lifetime parameter. Returning a borrowed signer would either fail to
@@ -67,7 +68,8 @@ type does not represent.
 - Support posture: native targets are supported; wasm targets fail closed with
   the documented compile-time diagnostic.
 - Validation: tests cover provider delegation, owned signer handles, EIP-712
-  vectors, chain coherence, redaction, cancellation, no-broadcast
+  vectors, chain-coherence verification through `build_checked()` or
+  `verify_chain_id().await`, redaction, cancellation, no-broadcast
   `sign_transaction`, compile-fail capability exclusions, examples, and
   TradingSdk integration.
 
@@ -82,6 +84,39 @@ type does not represent.
   directly instead of introducing an adapter-to-adapter call chain.
 - Use `pending.get_receipt().await`: the SDK receipt type carries only the
   transaction hash, so receipt waiting would misrepresent the public semantic.
+
+## Chain Coherence
+
+`AlloyClientBuilder::chain_id(SupportedChainId)` binds the local signer to the
+configured chain id. The default `build()` path is free of network I/O; the
+configured chain id is not verified against the RPC endpoint at construction
+time.
+
+Trading flows that require the configured chain id to match the RPC endpoint
+should use `build_checked().await`, which dispatches one `eth_chainId` call and
+rejects mismatch with `AlloyClientBuilderError::ChainMismatch`, or call
+`AlloyClient::verify_chain_id().await?` after construction. Keeping this check
+opt-in avoids surprising long-running clients that re-verify on their own
+cadence while making the chain-coherence guarantee available where it matters.
+
+## Stability
+
+The public
+`AlloyClientError::{from_alloy_transport, from_alloy_signer, from_pending_tx_error}`
+constructors are gated `#[doc(hidden)]` and documented in source as
+inter-crate seam constructors. They exist so sibling adapter crates can lift
+Alloy error types into the umbrella's typed error surface. They are not
+semver-stable consumer API.
+
+The documented consumer surface is limited to `AlloyClient`,
+`AlloyClientBuilder`, `AlloyClientSignerHandle`, `AlloyClientError`, the
+typestate markers explicitly exported from `lib.rs`, and the namespaced
+provider and signer re-exports of the leaf adapter public surfaces.
+
+The umbrella duplicates the read-contract and typed-data conversion modules
+from the leaf adapters by design. The workspace read-contract parity invariant
+asserts byte-for-byte equality for pinned ABI fixtures, and maintainers mirror
+bug fixes across both copies before submitting.
 
 ## Links
 

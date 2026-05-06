@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-05-06
 Owning surface: `cow-sdk-alloy` `AlloyClient`, its builder, its `AsyncProvider` implementation, and its owned signer handle
-Refresh trigger: Changes to the umbrella public API, `AsyncProvider`, `AsyncSigningProvider`, `AsyncSigner`, wallet-filler transaction submission, typed-data conversion, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
+Refresh trigger: Changes to the umbrella public API, `AsyncProvider`, `AsyncSigningProvider`, `AsyncSigner`, wallet-filler transaction submission, typed-data conversion, chain-coherence validation, read-contract conversion parity, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
 Related docs:
 - [ADR 0037](../adr/0037-alloy-umbrella-adapter.md)
 - [ADR 0024](../adr/0024-asyncprovider-asyncsigningprovider-capability-split.md)
@@ -38,12 +38,15 @@ operator reliability, or smart-account signing.
 | --- | --- | --- |
 | Public API exposure | `AlloyClient`, its builder, the signer handle, and errors expose SDK-owned types; upstream Alloy state remains private and redacted | Conforms |
 | Builder typestate | HTTP transport, private-key source, and chain id are selected before `build()` is available; marker states remain sealed | Conforms |
+| Chain coherence | `build_checked()` rejects configured-chain and remote-chain mismatches directly, while `verify_chain_id().await` exposes the same check for clients built through `build()` | Conforms |
 | Provider coverage | Every `AsyncProvider` method delegates through the inner Alloy provider with SDK-owned conversions | Conforms |
+| Read-contract parity | The umbrella read-contract decoder remains byte-for-byte aligned with the provider leaf for supported ABI outputs and rejects unsupported decoded shapes as validation errors | Conforms |
 | Signing-provider coverage | `create_signer` returns an owned handle that survives parent client drop | Conforms |
 | Typed-data signing | Canonical payload signing preserves the caller's primary type and matches the CoW order reference vector | Conforms |
 | Transaction behavior | `send_transaction` uses the Alloy wallet-filler provider and returns the broadcast hash from `pending.watch().await`; `estimate_gas` delegates to the provider | Conforms |
 | Raw transaction deferral | `sign_transaction` returns `UnsupportedTransactionRequest` without dispatching HTTP | Conforms |
 | Error and cancellation | Error classes cover validation, transport, remote, signing, pending transaction, unsupported request, cancelled, and internal failures; sensitive details are redacted | Conforms |
+| Stability boundary | Documented client, builder, trait, signer-handle, and error-class surfaces are consumer API; doc-hidden conversion seams are sibling-crate internals and not semver-guaranteed | Conforms |
 | Dependency boundary | The umbrella is the only crate, alongside the provider and signer leaves, allowed to consume the native Alloy provider and signer-local families | Conforms |
 
 ## Evidence
@@ -52,11 +55,13 @@ operator reliability, or smart-account signing.
 - `crates/alloy/tests/asyncsigningprovider_contract.rs`
 - `crates/alloy/tests/eip712_reference_vectors.rs`
 - `crates/alloy/tests/no_broadcast_for_sign_transaction.rs`
+- `crates/alloy/tests/chain_coherence_mismatch.rs`
 - `crates/alloy/tests/handle_survives_drop.rs`
 - `crates/alloy/tests/cancellation_contract.rs`
 - `crates/alloy/tests/redaction_contract.rs`
 - `crates/alloy/tests/compile_fail.rs`
 - `tests/alloy_umbrella_composition.rs`
+- `tests/alloy_read_contract_parity_invariant.rs`
 - `examples/native/scenarios/alloy_trading_full_flow.rs`
 - `scripts/policy-maintainer/src/check_alloy_provider_invariant.rs`
 - `scripts/policy-maintainer/src/check_alloy_signer_invariant.rs`
@@ -72,7 +77,9 @@ canary against configurable Alloy refs.
 
 ```text
 cargo test -p cow-sdk-alloy --all-features
+cargo test -p cow-sdk-alloy --test chain_coherence_mismatch
 cargo test -p cow-rs-workspace-tests --test alloy_umbrella_composition
+cargo test -p cow-rs-workspace-tests --test alloy_read_contract_parity_invariant
 cargo run --manifest-path examples/native/Cargo.toml --example alloy_trading_full_flow --features alloy
 cargo check-alloy-provider-invariant
 cargo check-alloy-signer-invariant

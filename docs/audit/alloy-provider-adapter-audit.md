@@ -31,13 +31,13 @@ transport support, browser-wallet behavior, or transaction submission.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Public API exposure | Documented provider and builder methods expose SDK-owned domain types; upstream Alloy values remain internal apart from the doc-hidden sibling seam | Conforms |
+| Public API exposure | Documented provider and builder methods expose SDK-owned domain types; upstream Alloy values remain internal apart from the doc-hidden sibling seam, which is not semver-guaranteed consumer API | Conforms |
 | Trait coverage | `RpcAlloyProvider` implements all eight `AsyncProvider` methods from `cow-sdk-core` | Conforms |
 | Negative capability boundary | Compile-fail tests assert the provider is not an `AsyncSigningProvider`, `AsyncSigner`, or sync `Signer` | Conforms |
 | Builder typestate | `build()` is callable only on the HTTP-selected builder state; transport state stores the URL through `Redacted<reqwest::Url>` | Conforms |
 | Error classification | `AsyncProviderError::class()` covers validation, transport, remote, cancelled, and internal failures | Conforms |
 | Credential redaction | Invalid URL errors carry no input detail, provider debug output redacts the transport, and transport details use `Redacted<String>` | Conforms |
-| `read_contract` | The adapter loads the ABI, resolves a single function, parses JSON arguments, ABI-encodes, dispatches `eth_call`, decodes the response, and serializes the expected JSON value string | Conforms |
+| `read_contract` | The adapter loads the ABI, resolves a single function, parses JSON arguments, ABI-encodes, dispatches `eth_call`, decodes the response, serializes supported JSON value strings, and rejects unsupported decoded shapes as validation errors | Conforms |
 | Dependency boundary | The crate declares no direct signer-family dependency and the resolved normal graph excludes `alloy-signer-local`; upstream Alloy's internal `alloy-signer` dependency does not enable local signing | Conforms |
 
 ## Current Contract
@@ -52,7 +52,8 @@ private state and keeps raw transport labels out of debug output.
 
 The `__seam` module is `#[doc(hidden)]` and exists only for sibling `cow-rs`
 Alloy adapter crates. Its conversion and classification functions are not part
-of the documented consumer API.
+of the documented consumer API and are not semver-guaranteed for downstream
+consumers.
 
 ### Provider Methods
 
@@ -112,6 +113,7 @@ Primary regression coverage:
 - `crates/alloy-provider/tests/asyncprovider_contract.rs`
 - `crates/alloy-provider/tests/read_contract_parity.rs`
 - `crates/alloy-provider/tests/read_contract_no_panic.rs`
+- `tests/alloy_read_contract_parity_invariant.rs`
 - `crates/alloy-provider/tests/redaction_contract.rs`
 - `crates/alloy-provider/tests/cancellation_contract.rs`
 - `crates/alloy-provider/tests/dependency_boundary_contract.rs`
@@ -127,6 +129,7 @@ Validation surface:
 cargo fmt --all --check
 cargo clippy -p cow-sdk-alloy-provider --all-targets -- -D warnings
 cargo test -p cow-sdk-alloy-provider --all-features
+cargo test -p cow-rs-workspace-tests --test alloy_read_contract_parity_invariant
 cargo test -p cow-sdk-alloy-provider --test compile_fail
 RUSTDOCFLAGS="-D warnings" cargo doc -p cow-sdk-alloy-provider --no-deps
 cargo check-property-citations

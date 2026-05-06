@@ -13,6 +13,10 @@ This crate is native-only. Wasm applications should use
 [`cow-sdk-browser-wallet`](https://docs.rs/cow-sdk-browser-wallet) for browser
 wallet signing.
 
+The native-only boundary is enforced at compile time on `wasm32` targets. That
+keeps browser signing on the audited EIP-1193/browser-wallet path and avoids
+shipping local-key native dependencies into browser builds.
+
 The package boundary is intentionally narrow:
 
 - `LocalAlloyKeystoreSigner` implements `cow_sdk_core::AsyncSigner`.
@@ -25,6 +29,20 @@ The package boundary is intentionally narrow:
 - `sign_transaction`, `send_transaction`, and `estimate_gas` return
   `AsyncSignerError::ProviderRequired` because a standalone local signer cannot
   fill nonce, fee, chain, or transaction-type context.
+
+The canonical typed-data path preserves the caller's primary type because CoW
+Protocol order signing depends on the `Order` domain shape matching the payload.
+The legacy flat typed-data helper keeps its `Message` placeholder isolated to
+the compatibility path.
+
+ECDSA `v` normalization is centralized through the contracts helper shared by
+the SDK. Keeping normalization in one helper prevents provider-specific recovery
+id formats from leaking through the public signing API.
+
+Public formatting is redacted by construction and the signer error type does
+not derive `Debug`. The manual debug implementation delegates through the same
+redaction contract used by display formatting, so private keys, RPC URLs, and
+transport internals are not exposed through ordinary error reporting.
 
 Provider access is owned by
 [`cow-sdk-alloy-provider`](https://docs.rs/cow-sdk-alloy-provider), and combined

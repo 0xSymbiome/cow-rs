@@ -15,8 +15,11 @@ boundary between the SDK and a caller-supplied signer or RPC backend:
   for async-first providers that can create signers.
 
 This directory documents shipped and custom adapter paths against those trait
-surfaces. Consumers can use the native Alloy adapters directly, or implement
-the same traits for another provider ecosystem.
+surfaces. Consumers who use `cow-sdk-trading` should pick the native Alloy
+adapter on native targets or the browser-wallet leaf on wasm. Consumers
+building a generic Ethereum application without trading helpers should use
+Alloy directly; the adapter exists to wire native Alloy into the SDK's trading
+and signing contracts.
 
 ## Available Worked Examples
 
@@ -32,3 +35,8 @@ support ships as explicit leaf crates, and other ecosystems can still integrate
 by implementing the same `cow-sdk-core` traits. Leaf crates such as
 `cow-sdk-browser-wallet` implement the async trait surface directly for the
 runtimes they own.
+
+Those traits are the runtime-neutral contract. A single trading helper can
+drive native Alloy, the browser-wallet leaf, or a custom adapter because the
+provider and signer seams live in `cow-sdk-core` rather than in a concrete
+runtime crate.

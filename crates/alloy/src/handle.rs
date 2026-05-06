@@ -118,6 +118,11 @@ impl AsyncSigner for AlloyClientSignerHandle {
         }
     }
 
+    /// Submits a transaction through the wallet-filler provider.
+    ///
+    /// The returned [`TransactionReceipt`] wraps the broadcast transaction hash
+    /// only. Callers that need mined-success or revert status should follow up
+    /// with `provider.get_transaction_receipt(hash).await?`.
     async fn send_transaction(
         &self,
         tx: &TransactionRequest,

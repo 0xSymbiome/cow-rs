@@ -111,7 +111,11 @@ impl AlloyClientError {
         }
     }
 
-    /// Converts an Alloy transport error into this crate's public error.
+    /// Inter-crate seam constructor; not part of the semver-stable consumer
+    /// API. Sibling adapter crates use this to lift Alloy transport errors into
+    /// the umbrella's typed error surface. The argument shape may change in any
+    /// minor release.
+    #[doc(hidden)]
     #[must_use]
     pub fn from_alloy_transport(error: alloy_transport::TransportError) -> Self {
         match rpc_error_to_class_and_detail(error) {
@@ -128,7 +132,11 @@ impl AlloyClientError {
         }
     }
 
-    /// Converts an upstream Alloy signer error into this crate's public error.
+    /// Inter-crate seam constructor; not part of the semver-stable consumer
+    /// API. Sibling adapter crates use this to lift Alloy signer errors into
+    /// the umbrella's typed error surface. The argument shape may change in any
+    /// minor release.
+    #[doc(hidden)]
     #[must_use]
     pub fn from_alloy_signer(error: &alloy_signer::Error) -> Self {
         Self::Signing {
@@ -136,7 +144,11 @@ impl AlloyClientError {
         }
     }
 
-    /// Converts an Alloy pending transaction error into this crate's public error.
+    /// Inter-crate seam constructor; not part of the semver-stable consumer
+    /// API. Sibling adapter crates use this to lift Alloy pending transaction
+    /// errors into the umbrella's typed error surface. The argument shape may
+    /// change in any minor release.
+    #[doc(hidden)]
     #[must_use]
     pub fn from_pending_tx_error(error: &alloy_provider::PendingTransactionError) -> Self {
         Self::PendingTransaction {

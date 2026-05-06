@@ -189,6 +189,15 @@ fn assert_redacted(error: &AlloyClientError, secret: &str) {
     assert_no_secret(&display, secret);
     assert_no_secret(&debug, secret);
     assert!(display.contains("[redacted]") || debug.contains("[redacted]"));
+
+    let mut current = std::error::Error::source(error);
+    while let Some(source) = current {
+        let source_display = source.to_string();
+        let source_debug = format!("{source:?}");
+        assert_no_secret(&source_display, secret);
+        assert_no_secret(&source_debug, secret);
+        current = source.source();
+    }
 }
 
 fn assert_no_secret(rendered: &str, secret: &str) {

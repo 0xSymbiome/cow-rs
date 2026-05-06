@@ -32,7 +32,7 @@ tracing = ["dep:tracing"]
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 
 alloy-consensus.workspace = true
-alloy-dyn-abi = { workspace = true, features = ["std"] }
+alloy-dyn-abi = { workspace = true, features = ["std", "eip712"] }
 alloy-json-abi.workspace = true
 alloy-json-rpc.workspace = true
 alloy-network.workspace = true

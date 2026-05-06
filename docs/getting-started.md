@@ -594,12 +594,12 @@ No.
 
 This guide stays provider-agnostic.
 
-The deterministic first-touch path does not assume Alloy, `ethers`, or another
-ecosystem-specific adapter.
+The deterministic first-touch path does not assume a particular Ethereum
+runtime.
 
 When you are ready to wire native Alloy, use
-[Adapting Alloy](providers/adapting-alloy.md). For other provider ecosystems,
-use [Integrations](integrations.md).
+[Adapting Alloy](providers/adapting-alloy.md). For custom runtime adapters, use
+[Integrations](integrations.md).
 
 ### Do I need a browser wallet to finish this guide?
 

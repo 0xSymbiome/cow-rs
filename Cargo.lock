@@ -1301,6 +1301,7 @@ version = "0.0.0"
 dependencies = [
  "cow-sdk",
  "cow-sdk-alloy",
+ "cow-sdk-alloy-provider",
  "cow-sdk-core",
  "cow-sdk-trading",
  "serde_json",

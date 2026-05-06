@@ -22,12 +22,20 @@ AsyncSigningProvider, Provider, AsyncProvider}`.
 That design keeps the shipped surface:
 
 - provider-agnostic
-- easier to audit
+- easier to audit because every credential-bearing error surface is covered by
+  [Credential Surface Audit](audit/credential-surface-audit.md), and long
+  async methods are covered by
+  [Cooperative Cancellation Contract Audit](audit/cooperative-cancellation-contract-audit.md)
 - additive for downstream runtime crates
 
-If you need Alloy, use the shipped native adapter crates. For `ethers` or a
-custom in-house runtime, build an adapter in a leaf crate that implements the
-core traits.
+If you need native Alloy, use the shipped adapter crates. For a custom
+in-house runtime, build an adapter in a leaf crate that implements the core
+traits.
+
+The native Alloy adapter exists to wire Alloy into the SDK's trading and
+signing contracts. It is not a general Alloy improvement. Consumers building
+generic Ethereum applications without trading helpers should depend on Alloy
+directly.
 
 ## Shipped Alloy Adapters
 
@@ -98,7 +106,10 @@ A sync signer owns:
 - message signing via `sign_message`
 - transaction signing via `sign_transaction`
 - typed-data signing via `sign_typed_data` or `sign_typed_data_payload`
-- transaction submission via `send_transaction`
+- transaction submission via `send_transaction`, which returns a
+  `TransactionReceipt` carrying the broadcast hash. Callers that need
+  mined-success or revert status fetch the full receipt separately through
+  their provider.
 - gas estimation via `estimate_gas`
 
 ### `AsyncSigner`
@@ -214,6 +225,9 @@ impl Signer for StaticSigner {
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionReceipt, Self::Error> {
+        // `TransactionReceipt::new` wraps the broadcast hash. Callers that
+        // need mined-success status follow up with
+        // `provider.get_transaction_receipt(receipt.transaction_hash()).await?`.
         Ok(TransactionReceipt::new(self.receipt_hash.clone()))
     }
 

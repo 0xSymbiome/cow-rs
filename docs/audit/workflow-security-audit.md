@@ -1,9 +1,9 @@
 # Workflow Security Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-06
 Owning surface: every `.github/workflows/*.yml` file
-Refresh trigger: any new workflow file; any unpinned action; any addition of `pull_request_target`; any third-party action new to the workspace
+Refresh trigger: any new workflow file; any unpinned action; any addition of `pull_request_target`; any third-party action new to the workspace; any permission widening or issue-creation behavior in scheduled workflows
 Related docs:
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
 
@@ -31,13 +31,14 @@ runner infrastructure outside the committed workflow definitions.
 | Third-party review log | Each pinned third-party action keeps a nearby `# Source ref:` comment naming the reviewed tag or source ref | Conforms |
 | Inline docs smoke | The docs-quality rendered README smoke uses the existing job environment and does not introduce a new third-party action or elevated permission | Conforms |
 | Scheduled retry soak | The retry-soak workflow uses read-only permissions, pinned actions, no privileged triggers, and a deterministic ignored test invocation | Conforms |
+| Alloy canary issue creation | The report-only Alloy canary grants `issues: write` only to create or reuse a tracking issue through `gh api`, with no new third-party action | Conforms |
 
 Workflow snapshot:
 
 | Workflow | Permissions posture | Action pin status | `pull_request_target` |
 | --- | --- | --- | --- |
 | `_quality-gate.yml` | `contents: read` | SHA-pinned; includes pinning guard | Absent |
-| `alloy-release-candidate.yml` | `contents: read` | SHA-pinned | Absent |
+| `alloy-release-candidate.yml` | `contents: read`, `issues: write` | SHA-pinned | Absent |
 | `benchmarks.yml` | `contents: read` | SHA-pinned | Absent |
 | `browser-wallet-e2e.yml` | `contents: read` | SHA-pinned | Absent |
 | `ci.yml` | `contents: read`; aggregate job uses `{}` | SHA-pinned or same-repo reusable workflow | Absent |
@@ -79,8 +80,9 @@ used by both routine CI and release-readiness validation.
 Every workflow declares explicit `permissions:`. Most workflows use
 `contents: read`; workflows that need narrower or elevated rights declare them
 at job scope. The Pages deployment job is the only workflow lane that grants
-`pages: write` and `id-token: write`, and the CodeQL analyze job is the only
-lane that grants `security-events: write`.
+`pages: write` and `id-token: write`, the CodeQL analyze job is the only lane
+that grants `security-events: write`, and scheduled drift/canary lanes grant
+`issues: write` only when they create or reuse tracking issues.
 
 ### `pull_request_target` Review Guard
 
@@ -105,6 +107,15 @@ keeps the same read-only permission posture. The `retry-soak.yml` workflow is a
 separate nightly lane that runs one ignored deterministic orderbook retry and
 timeout soak test. It uses only pinned third-party actions, `contents: read`,
 and no pull-request trigger.
+
+### Alloy Canary Issue Creation
+
+The Alloy release-candidate workflow remains report-only and scheduled/manual.
+When a canary step fails, the workflow uses the first-party GitHub CLI already
+available on the hosted runner to call `gh api`, create the `alloy-canary`
+label if needed, and create at most one open tracking issue for the failing
+canary. This requires `issues: write` but does not add a third-party action,
+does not run on pull requests, and does not mutate dependency pins.
 
 ## Evidence
 

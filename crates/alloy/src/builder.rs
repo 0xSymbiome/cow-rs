@@ -2,10 +2,10 @@
 
 use alloy_primitives::B256;
 use alloy_signer_local::PrivateKeySigner;
-use cow_sdk_core::{ChainId, Redacted, SupportedChainId};
+use cow_sdk_core::{AsyncProvider, ChainId, Redacted, SupportedChainId};
 use thiserror::Error;
 
-use crate::client::AlloyClient;
+use crate::{client::AlloyClient, error::AlloyClientError};
 
 mod sealed {
     use alloy_signer_local::PrivateKeySigner;
@@ -216,6 +216,34 @@ impl AlloyClientBuilder<HttpTransport, PrivateKeySource, ChainSet> {
             self.chain.chain_id,
         ))
     }
+
+    /// Builds the composed client and verifies the configured chain id against
+    /// the remote `eth_chainId`.
+    ///
+    /// This method dispatches one `eth_chainId` call. Use it for trading flows
+    /// that require the configured chain to agree with the remote endpoint
+    /// before any transaction is signed or submitted. Workflows that prefer a
+    /// custom verification cadence can call [`Self::build`] and then
+    /// [`AlloyClient::verify_chain_id`] explicitly.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AlloyClientBuilderError::ChainMismatch`] when the configured
+    /// chain id does not match the remote endpoint. Returns
+    /// [`AlloyClientBuilderError::Client`] for transport, decoding, or internal
+    /// client failures encountered while resolving `eth_chainId`.
+    pub async fn build_checked(self) -> Result<AlloyClient, AlloyClientBuilderError> {
+        let configured = self.chain.chain_id;
+        let client = self.build().await?;
+        let remote = client
+            .get_chain_id()
+            .await
+            .map_err(|error| AlloyClientBuilderError::Client(Box::new(error)))?;
+        if remote != configured {
+            return Err(AlloyClientBuilderError::ChainMismatch { configured, remote });
+        }
+        Ok(client)
+    }
 }
 
 impl std::fmt::Debug for AlloyClientBuilder<TransportUnset, KeySourceUnset, ChainUnset> {
@@ -289,6 +317,27 @@ pub enum AlloyClientBuilderError {
     /// secp256k1 key.
     #[error("invalid private key")]
     InvalidPrivateKey,
+    /// The configured chain id did not match the remote `eth_chainId`.
+    ///
+    /// Surfaced only by [`AlloyClientBuilder::build_checked`]; the default
+    /// [`AlloyClientBuilder::build`] path remains free of network I/O.
+    #[error("configured chain id `{configured}` does not match remote `eth_chainId` `{remote}`")]
+    ChainMismatch {
+        /// Chain id configured on the builder via
+        /// [`AlloyClientBuilder::chain_id`].
+        configured: ChainId,
+        /// Chain id reported by the configured RPC endpoint.
+        remote: ChainId,
+    },
+    /// Client-level error encountered by the checked build path.
+    #[error(transparent)]
+    Client(Box<AlloyClientError>),
+}
+
+impl From<AlloyClientError> for AlloyClientBuilderError {
+    fn from(error: AlloyClientError) -> Self {
+        Self::Client(Box::new(error))
+    }
 }
 
 fn parse_private_key(value: &str) -> Result<PrivateKeySigner, AlloyClientBuilderError> {

@@ -4,6 +4,13 @@
 native application wants Alloy-backed chain RPC, local private-key signing, or
 both through the same client.
 
+The native Alloy adapter family ships as three crates so a consumer can pull
+only the capabilities they exercise: `cow-sdk-alloy-provider` for read-only
+RPC, `cow-sdk-alloy-signer` for local private-key signing, and `cow-sdk-alloy`
+for the composed read-plus-sign flow that most trading applications need. The
+provider leaf stays free of signing-crypto features, and the signer leaf stays
+free of transport plumbing.
+
 ## Crates And Features
 
 | Need | Crate or facade feature |
@@ -35,7 +42,7 @@ let client = AlloyClient::builder()
     .http("https://example.invalid/rpc")?
     .private_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")?
     .chain_id(SupportedChainId::Sepolia)
-    .build()
+    .build_checked()
     .await?;
 # let _ = client;
 # Ok(())
@@ -48,6 +55,18 @@ transactions through Alloy's wallet-filler provider, and returns the broadcast
 transaction hash. Raw `sign_transaction` is intentionally unsupported because
 the relevant Alloy provider path delegates to the remote JSON-RPC peer rather
 than producing a local signed payload.
+
+The umbrella composes its provider and signer through Alloy's wallet-filler
+provider pattern rather than reimplementing transaction filling, signing, or
+dispatch. Reusing that composition keeps the adapter small and avoids
+re-deriving nonce, chain id, fee, and signature filling. The adapter's role is
+to bridge SDK domain types into the Alloy types the wallet-filler consumes and
+to preserve the SDK-owned error and cancellation contracts.
+
+Canonical typed-data signing preserves the payload's `primary_type`
+end-to-end. That matters for CoW orders because the settlement contract expects
+the canonical `"Order"` type; signing the same fields under a placeholder type
+would produce a valid-looking signature over the wrong digest.
 
 ## Leaf Adapters
 
@@ -103,7 +122,7 @@ let client = AlloyClient::builder()
     .http("https://example.invalid/rpc")?
     .private_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")?
     .chain_id(SupportedChainId::Sepolia)
-    .build()
+    .build_checked()
     .await?;
 
 let sdk = TradingSdk::builder()
@@ -118,3 +137,15 @@ let signer = client.create_signer("local").await?;
 
 For runnable scenarios, see the Alloy examples listed in
 [`examples/native/README.md`](../../examples/native/README.md).
+
+## Stability Boundary
+
+Only the documented exported types and methods are part of the consumer API and
+subject to semver guarantees. Doc-hidden internals exist for cross-crate
+composition inside the SDK family and may change in any minor release without
+notice. Consumers who need a capability that is not in the documented surface
+should open an issue requesting a stable API rather than reaching into
+doc-hidden items through private rustdoc tooling.
+
+The internal composition shape and the rationale for keeping it hidden are
+recorded in the adapter ADRs and standing adapter audits.

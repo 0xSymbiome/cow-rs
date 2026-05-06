@@ -58,6 +58,9 @@ pub use provider::RpcAlloyProvider;
 /// This is not a stable consumer API. Anything exported here may change without
 /// notice; it exists so sibling adapter crates can reuse the reviewed address,
 /// request, block, receipt, and transport-classification helpers.
+///
+/// See the Stability section of `docs/adr/0035-alloy-provider-adapter.md` for
+/// the semver posture.
 #[cfg(not(target_arch = "wasm32"))]
 #[doc(hidden)]
 pub mod __seam {
