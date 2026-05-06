@@ -738,7 +738,7 @@ fn warn_noncanonical_external_host(host: &str, policy: &'static str, allowed: bo
 }
 
 #[cfg(not(feature = "tracing"))]
-fn warn_noncanonical_external_host(_host: &str, _policy: &'static str, _allowed: bool) {}
+const fn warn_noncanonical_external_host(_host: &str, _policy: &'static str, _allowed: bool) {}
 
 fn validate_user_agent(user_agent: String) -> Result<String, ValidationError> {
     if user_agent.trim().is_empty() {

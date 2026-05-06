@@ -61,6 +61,12 @@ If the reviewed surface did not change, leave the audit alone.
 | [HTTP Transport Contract Audit](http-transport-contract-audit.md) | Standing audit | `cow-sdk-core::HttpTransport` trait and its native and browser default adapters | Trait shape, typed `TransportError`, additive response-header surface, orderbook `Retry-After` cooldown honor, URL-redaction contract, and cross-adapter classification parity | Current | 2026-04-30 |
 | [Typestate Builder Contract Audit](typestate-builder-contract-audit.md) | Standing audit | `cow-sdk-orderbook::OrderBookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, and `cow-sdk-trading::TradingSdkBuilder` construction seams | Required-input typestate, marker sealing, host-policy validation, native default-transport convenience, wasm32 transport-required and injected-orderbook invariants, validated `AppCode`, distinct `TradingSdk`/`HelperOnlySdk` terminals, and retirement of legacy free-function constructors | Current | 2026-05-04 |
 
+## Native Alloy Adapters
+
+| Artifact | Type | Owning surface | Scope | Status | Last reviewed |
+| --- | --- | --- | --- | --- | --- |
+| [Alloy Provider Adapter Audit](alloy-provider-adapter-audit.md) | Standing audit | `cow-sdk-alloy-provider` `RpcAlloyProvider`, its builder, and its `AsyncProvider` implementation | Read-only provider methods, HTTP typestate construction, redacted error classification, `read_contract` ABI handling, doc-hidden helper seam, and dependency boundary | Current | 2026-05-06 |
+
 ## Signature Verification Caching
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |

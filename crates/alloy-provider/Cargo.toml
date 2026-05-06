@@ -44,6 +44,7 @@ alloy-transport-http.workspace = true
 async-trait.workspace = true
 hex.workspace = true
 reqwest = { workspace = true, default-features = false, features = ["rustls"] }
+serde_json.workspace = true
 thiserror.workspace = true
 tracing = { workspace = true, optional = true }
 url.workspace = true

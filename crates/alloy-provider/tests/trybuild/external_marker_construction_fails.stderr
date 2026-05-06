@@ -1,0 +1,13 @@
+error[E0451]: field `_private` of struct `TransportUnset` is private
+ --> tests/trybuild/external_marker_construction_fails.rs:5:35
+  |
+5 |     let _unset = TransportUnset { _private: () };
+  |                                   ^^^^^^^^ private field
+
+error[E0451]: field `url` of struct `cow_sdk_alloy_provider::HttpTransport` is private
+ --> tests/trybuild/external_marker_construction_fails.rs:7:9
+  |
+6 |     let _http = HttpTransport {
+  |                 ------------- in this type
+7 |         url: Redacted::new(reqwest::Url::parse("https://example.invalid").unwrap()),
+  |         ^^^ private field

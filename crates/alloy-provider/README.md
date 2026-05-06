@@ -1,23 +1,10 @@
 # cow-sdk-alloy-provider
 
-Native Alloy-backed provider adapter package for the `cow-rs` SDK.
+Native Alloy-backed read-only provider adapter for the `cow-rs` SDK.
 
-This crate is the read-only provider leaf for applications that want the
-`cow-rs` provider boundary backed by Alloy on native targets. It is published
-as a separate opt-in crate so the default `cow-sdk` facade does not pull native
-Alloy provider dependencies.
-
-## Capability Boundary
-
-This crate is native-only. Wasm applications should use
-[`cow-sdk-browser-wallet`](https://docs.rs/cow-sdk-browser-wallet) for browser
-wallet signing and inject browser RPC access through the supported browser
-transport surfaces.
-
-The package boundary is intentionally narrow in this release. Full provider
-methods are implemented in the provider adapter crate surface, while the
-top-level `cow-sdk` facade only exposes this crate when its native Alloy feature
-is enabled.
+This crate wraps an Alloy HTTP RPC provider and exposes it through
+`cow_sdk_core::AsyncProvider`. It is intentionally read-only: it does not
+create signers, sign messages, sign transactions, or submit transactions.
 
 ## Install
 
@@ -26,13 +13,70 @@ is enabled.
 cow-sdk-alloy-provider = "0.1"
 ```
 
-## Related Crates
+## Build A Provider
 
-- [`cow-sdk-alloy`](https://docs.rs/cow-sdk-alloy) composes provider and signer
-  support behind one native package.
-- [`cow-sdk-alloy-signer`](https://docs.rs/cow-sdk-alloy-signer) owns native
-  signing support.
-- [`cow-sdk`](https://docs.rs/cow-sdk) is the curated facade for most SDK users.
+```rust,no_run
+use std::time::Duration;
+
+use cow_sdk_alloy_provider::RpcAlloyProvider;
+use cow_sdk_core::AsyncProvider;
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let provider = RpcAlloyProvider::builder()
+    .timeout(Duration::from_secs(20))
+    .http("https://example.invalid/rpc")?
+    .build()
+    .await?;
+
+let chain_id = provider.get_chain_id().await?;
+# let _ = chain_id;
+# Ok(())
+# }
+```
+
+The builder stores the RPC URL behind `cow_sdk_core::Redacted` before the
+transport state becomes visible through debug output. Invalid URLs return a
+typed builder error without echoing the supplied value.
+
+## Capability Boundary
+
+`RpcAlloyProvider` implements `AsyncProvider` only. The crate provides all
+read methods required by the core trait:
+
+- `get_chain_id`
+- `get_code`
+- `get_transaction_receipt`
+- `get_storage_at`
+- `call`
+- `read_contract`
+- `get_block`
+- `get_contract`
+
+`read_contract` parses the supplied JSON ABI, resolves a single non-overloaded
+function, ABI-encodes JSON arguments with `alloy-dyn-abi`, dispatches
+`eth_call`, decodes the output, and returns the JSON value string expected by
+`cow_sdk_core::ContractCall`.
+
+## Native Only
+
+This crate hard-fails on `wasm32` targets. Browser applications should use
+`cow-sdk-browser-wallet` for wallet-backed signing and provide RPC access
+through the browser's EIP-1193 provider surface.
+
+## Companion Crates
+
+- `cow-sdk-alloy-signer` owns native local-key signing support.
+- `cow-sdk-alloy` composes provider and signer support for consumers that want
+  one native Alloy client.
+- `cow-sdk` remains the curated facade and exposes Alloy support only when the
+  matching opt-in features are enabled.
+
+## Error Model
+
+Provider failures use `AsyncProviderError`. Transport details are redacted,
+remote JSON-RPC errors preserve their code and message, caller input failures
+are typed as validation errors, and cooperative cancellation propagates through
+the `Cancelled` variant when callers use `cow_sdk_core::Cancellable`.
 
 ## License
 
