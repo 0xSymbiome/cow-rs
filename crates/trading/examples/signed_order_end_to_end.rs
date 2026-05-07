@@ -39,8 +39,8 @@ mod native {
     use cow_sdk_core::{
         Address, Amount, ApiContext, BlockInfo, BuyTokenDestination, ContractCall, ContractHandle,
         CowEnv, HexData, OrderKind, Provider, SellTokenSource, Signer, SupportedChainId,
-        TransactionHash, TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
-        ValidationReason,
+        TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest,
+        TypedDataDomain, TypedDataField, ValidationReason,
     };
     use cow_sdk_orderbook::{
         AppDataHash, AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
@@ -275,7 +275,7 @@ mod native {
         fn send_transaction(
             &self,
             _tx: &TransactionRequest,
-        ) -> Result<TransactionReceipt, Self::Error> {
+        ) -> Result<TransactionBroadcast, Self::Error> {
             Err(ExampleSignerError::Unsupported("send_transaction"))
         }
 

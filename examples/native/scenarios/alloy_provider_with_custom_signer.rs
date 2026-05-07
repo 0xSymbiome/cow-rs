@@ -2,7 +2,7 @@ use std::{convert::Infallible, error::Error};
 
 use cow_sdk::alloy_provider::RpcAlloyProvider;
 use cow_sdk::core::{
-    Address, Amount, AsyncProvider, AsyncSigner, TransactionReceipt, TransactionRequest,
+    Address, Amount, AsyncProvider, AsyncSigner, TransactionBroadcast, TransactionRequest,
     TypedDataDomain, TypedDataField,
 };
 use serde_json::json;
@@ -39,8 +39,8 @@ impl AsyncSigner for StaticAsyncSigner {
     async fn send_transaction(
         &self,
         _tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error> {
-        Ok(TransactionReceipt::new(
+    ) -> Result<TransactionBroadcast, Self::Error> {
+        Ok(TransactionBroadcast::new(
             cow_sdk::core::TransactionHash::new(format!("0x{}", "33".repeat(32))).unwrap(),
         ))
     }

@@ -3,7 +3,7 @@
 use std::{cell::RefCell, fmt, rc::Rc};
 
 use cow_sdk_core::{
-    Address, Amount, Hash32, Signer, TransactionReceipt, TransactionRequest, TypedDataDomain,
+    Address, Amount, Hash32, Signer, TransactionBroadcast, TransactionRequest, TypedDataDomain,
     TypedDataField, UnsignedOrder,
 };
 use serde_json::Value;
@@ -91,8 +91,8 @@ impl Signer for MockSigner {
     fn send_transaction(
         &self,
         _tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error> {
-        Ok(TransactionReceipt::new(
+    ) -> Result<TransactionBroadcast, Self::Error> {
+        Ok(TransactionBroadcast::new(
             Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap(),
         ))
     }

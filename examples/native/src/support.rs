@@ -5,8 +5,8 @@ use serde_json::json;
 
 use cow_sdk::core::{
     Amount, AppDataHex, BlockInfo, BuyTokenDestination, ContractCall, ContractHandle, Hash32,
-    HexData, OrderKind, Provider, SellTokenSource, Signer, TransactionReceipt, TransactionRequest,
-    TypedDataDomain, TypedDataField, UnsignedOrder,
+    HexData, OrderKind, Provider, SellTokenSource, Signer, TransactionBroadcast,
+    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField, UnsignedOrder,
 };
 use cow_sdk::orderbook::{
     ApiContext, AppDataHash, AppDataObject, Order, OrderCancellations, OrderCreation,
@@ -382,13 +382,16 @@ impl Signer for MockSigner {
         Ok(TYPED_SIGNATURE.to_owned())
     }
 
-    fn send_transaction(&self, tx: &TransactionRequest) -> Result<TransactionReceipt, Self::Error> {
+    fn send_transaction(
+        &self,
+        tx: &TransactionRequest,
+    ) -> Result<TransactionBroadcast, Self::Error> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         state.sent_transactions.push(tx.clone());
-        Ok(TransactionReceipt::new(state.tx_hash.clone()))
+        Ok(TransactionBroadcast::new(state.tx_hash.clone()))
     }
 
     fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {

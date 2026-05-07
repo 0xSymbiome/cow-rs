@@ -1,9 +1,14 @@
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo, ContractCall,
     ContractHandle, GraphTransport, Hash32, HexData, PinningTransport, Provider, Signer,
-    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField, TypedDataPayload,
-    TypedDataTypes,
+    TransactionBroadcast, TransactionReceipt, TransactionRequest, TransactionStatus,
+    TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
+
+const HASH_1: &str = "0x1111111111111111111111111111111111111111111111111111111111111111";
+const BLOCK_HASH_1: &str = "0x2222222222222222222222222222222222222222222222222222222222222222";
+const FROM_ADDR: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+const TO_ADDR: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
 #[derive(Clone)]
 struct MockSigner {
@@ -48,8 +53,8 @@ impl Signer for MockSigner {
     fn send_transaction(
         &self,
         _tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error> {
-        Ok(TransactionReceipt::new(
+    ) -> Result<TransactionBroadcast, Self::Error> {
+        Ok(TransactionBroadcast::new(
             Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap(),
         ))
     }
@@ -86,7 +91,15 @@ impl Provider for MockProvider {
         &self,
         transaction_hash: &cow_sdk_core::TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
-        Ok(Some(TransactionReceipt::new(transaction_hash.clone())))
+        Ok(Some(
+            TransactionReceipt::new(transaction_hash.clone())
+                .with_status(TransactionStatus::Success)
+                .with_block_number(42)
+                .with_block_hash(Hash32::new(format!("0x{}", "ba".repeat(32))).unwrap())
+                .with_gas_used(Amount::from(21_000u32))
+                .with_from(Address::new(FROM_ADDR).unwrap())
+                .with_to(Address::new(TO_ADDR).unwrap()),
+        ))
     }
 
     fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
@@ -178,6 +191,18 @@ fn sample_transaction() -> TransactionRequest {
         Some(Amount::zero()),
         Some(Amount::from(21_000u32)),
     )
+}
+
+fn transaction_hash(value: &str) -> cow_sdk_core::TransactionHash {
+    Hash32::new(value).unwrap()
+}
+
+fn sample_from_address() -> Address {
+    Address::new(FROM_ADDR).unwrap()
+}
+
+fn sample_to_address() -> Address {
+    Address::new(TO_ADDR).unwrap()
 }
 
 fn sample_typed_data_domain() -> TypedDataDomain {
@@ -321,6 +346,125 @@ fn assert_provider_contracts(
         .unwrap()
         .abi_json,
         "[{\"type\":\"function\"}]"
+    );
+}
+
+#[tokio::test]
+async fn async_signer_returns_transaction_broadcast() {
+    let signer = MockSigner {
+        address: Address::new("0x9999999999999999999999999999999999999999").unwrap(),
+        provider_hint: None,
+    };
+    let tx = sample_transaction();
+
+    let broadcast = AsyncSigner::send_transaction(&signer, &tx).await.unwrap();
+
+    assert_eq!(
+        broadcast,
+        TransactionBroadcast::new(Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap())
+    );
+}
+
+#[tokio::test]
+async fn async_provider_returns_rich_transaction_receipt() {
+    let provider = sample_provider(sample_signer());
+    let tx_hash = transaction_hash(HASH_1);
+
+    let receipt = AsyncProvider::get_transaction_receipt(&provider, &tx_hash)
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(receipt.transaction_hash, tx_hash);
+    assert_eq!(receipt.status, Some(TransactionStatus::Success));
+    assert_eq!(receipt.block_number, Some(42));
+    assert_eq!(
+        receipt.block_hash,
+        Some(Hash32::new(format!("0x{}", "ba".repeat(32))).unwrap())
+    );
+    assert_eq!(receipt.gas_used, Some(Amount::from(21_000u32)));
+    assert_eq!(receipt.from, Some(sample_from_address()));
+    assert_eq!(receipt.to, Some(sample_to_address()));
+}
+
+#[test]
+fn transaction_status_serde_roundtrip_camel_case() {
+    let serialized = serde_json::to_string(&TransactionStatus::Success).unwrap();
+
+    assert_eq!(serialized, "\"success\"");
+    assert_eq!(
+        serde_json::from_str::<TransactionStatus>(&serialized).unwrap(),
+        TransactionStatus::Success
+    );
+    assert_eq!(
+        serde_json::from_str::<TransactionStatus>("\"reverted\"").unwrap(),
+        TransactionStatus::Reverted
+    );
+}
+
+#[test]
+fn transaction_receipt_skips_serializing_none_fields() {
+    let receipt = TransactionReceipt::new(transaction_hash(HASH_1));
+
+    assert_eq!(
+        serde_json::to_value(receipt).unwrap(),
+        serde_json::json!({
+            "transactionHash": HASH_1,
+        })
+    );
+}
+
+#[test]
+fn transaction_receipt_serializes_populated_fields() {
+    let receipt = TransactionReceipt::from_parts(
+        transaction_hash(HASH_1),
+        Some(TransactionStatus::Success),
+        Some(12_345),
+        Some(transaction_hash(BLOCK_HASH_1)),
+        Some(Amount::from(21_000u64)),
+        Some(sample_from_address()),
+        Some(sample_to_address()),
+    );
+
+    assert_eq!(
+        serde_json::to_value(receipt).unwrap(),
+        serde_json::json!({
+            "transactionHash": HASH_1,
+            "status": "success",
+            "blockNumber": 12345,
+            "blockHash": BLOCK_HASH_1,
+            "gasUsed": "21000",
+            "from": FROM_ADDR,
+            "to": TO_ADDR,
+        })
+    );
+}
+
+#[test]
+fn transaction_receipt_with_builders_round_trips() {
+    let receipt = TransactionReceipt::new(transaction_hash(HASH_1))
+        .with_status(TransactionStatus::Reverted)
+        .with_block_number(98_765)
+        .with_block_hash(transaction_hash(BLOCK_HASH_1))
+        .with_gas_used(Amount::from(30_000u64))
+        .with_from(sample_from_address())
+        .with_to(sample_to_address());
+
+    let serialized = serde_json::to_string(&receipt).unwrap();
+    let deserialized = serde_json::from_str::<TransactionReceipt>(&serialized).unwrap();
+
+    assert_eq!(deserialized, receipt);
+}
+
+#[test]
+fn transaction_broadcast_minimal_serde_shape() {
+    let broadcast = TransactionBroadcast::new(transaction_hash(HASH_1));
+
+    assert_eq!(
+        serde_json::to_value(broadcast).unwrap(),
+        serde_json::json!({
+            "transactionHash": HASH_1,
+        })
     );
 }
 

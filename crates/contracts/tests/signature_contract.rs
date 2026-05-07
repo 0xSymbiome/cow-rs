@@ -12,7 +12,7 @@ use cow_sdk_contracts::{
 };
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo, ContractCall,
-    ContractHandle, Hash32, HexData, TransactionReceipt, TransactionRequest,
+    ContractHandle, Hash32, HexData, TransactionBroadcast, TransactionReceipt, TransactionRequest,
 };
 use k256::ecdsa::SigningKey;
 use sha3::{Digest, Keccak256};
@@ -103,8 +103,8 @@ impl AsyncSigner for DummyAsyncSigner {
     async fn send_transaction(
         &self,
         _tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error> {
-        Ok(TransactionReceipt::new(
+    ) -> Result<TransactionBroadcast, Self::Error> {
+        Ok(TransactionBroadcast::new(
             Hash32::new(format!("0x{}", "aa".repeat(32))).unwrap(),
         ))
     }

@@ -14,8 +14,8 @@ use serde_json::json;
 use cow_sdk_core::{
     Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, AsyncSigner, BlockInfo, ContractCall,
     ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer,
-    SupportedChainId, TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
-    TypedDataPayload,
+    SupportedChainId, TransactionBroadcast, TransactionReceipt, TransactionRequest,
+    TypedDataDomain, TypedDataField, TypedDataPayload,
 };
 use cow_sdk_orderbook::{
     AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
@@ -368,7 +368,7 @@ impl AsyncSigner for CountingSigner {
     async fn send_transaction(
         &self,
         _tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error> {
+    ) -> Result<TransactionBroadcast, Self::Error> {
         Err(
             "CountingSigner::send_transaction must not be reached under validator-first invariant"
                 .into(),
@@ -461,13 +461,16 @@ impl Signer for MockSigner {
         Ok(TYPED_SIGNATURE.to_owned())
     }
 
-    fn send_transaction(&self, tx: &TransactionRequest) -> Result<TransactionReceipt, Self::Error> {
+    fn send_transaction(
+        &self,
+        tx: &TransactionRequest,
+    ) -> Result<TransactionBroadcast, Self::Error> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.sent_transactions.push(tx.clone());
-        Ok(TransactionReceipt::new(state.tx_hash.clone()))
+        Ok(TransactionBroadcast::new(state.tx_hash.clone()))
     }
 
     fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {

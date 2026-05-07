@@ -166,21 +166,152 @@ impl TransactionRequest {
     }
 }
 
-/// Minimal transaction receipt contract used by the SDK surface.
+/// Broadcast acknowledgement returned by signer-backed transaction submission.
+///
+/// This value confirms that a backend accepted or observed a transaction hash.
+/// It does not imply that the transaction has been mined, succeeded, or even
+/// become visible to a read provider. Use [`Provider::get_transaction_receipt`],
+/// [`AsyncProvider::get_transaction_receipt`], or a higher-level
+/// `cow-sdk-trading` wait helper when lifecycle state is required.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TransactionReceipt {
+pub struct TransactionBroadcast {
     /// Transaction hash for the submitted transaction.
     pub transaction_hash: TransactionHash,
 }
 
-impl TransactionReceipt {
-    /// Creates a minimal transaction receipt.
+impl TransactionBroadcast {
+    /// Creates a transaction broadcast acknowledgement from its hash.
     #[inline]
     #[must_use]
     pub const fn new(transaction_hash: TransactionHash) -> Self {
         Self { transaction_hash }
+    }
+}
+
+/// Terminal transaction execution state exposed by receipt-capable providers.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransactionStatus {
+    /// The transaction was mined successfully.
+    Success,
+    /// The transaction was mined and reverted.
+    Reverted,
+}
+
+/// Transaction receipt contract returned by provider receipt lookups.
+///
+/// [`TransactionReceipt::new`] preserves hash-only adapters by leaving every
+/// rich lifecycle field empty. Receipt-capable providers can populate the
+/// optional fields with [`TransactionReceipt::from_parts`] or the builder
+/// methods as adapter support matures.
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransactionReceipt {
+    /// Transaction hash for the observed transaction.
+    pub transaction_hash: TransactionHash,
+    /// Optional terminal execution status.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<TransactionStatus>,
+    /// Optional block number that included the transaction.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub block_number: Option<u64>,
+    /// Optional block hash that included the transaction.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub block_hash: Option<BlockHash>,
+    /// Optional gas used by the transaction.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gas_used: Option<Amount>,
+    /// Optional sender address.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub from: Option<Address>,
+    /// Optional destination address.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub to: Option<Address>,
+}
+
+impl TransactionReceipt {
+    /// Creates a hash-only transaction receipt.
+    #[inline]
+    #[must_use]
+    pub const fn new(transaction_hash: TransactionHash) -> Self {
+        Self {
+            transaction_hash,
+            status: None,
+            block_number: None,
+            block_hash: None,
+            gas_used: None,
+            from: None,
+            to: None,
+        }
+    }
+
+    /// Creates a transaction receipt from every supported receipt field.
+    #[inline]
+    #[must_use]
+    pub const fn from_parts(
+        transaction_hash: TransactionHash,
+        status: Option<TransactionStatus>,
+        block_number: Option<u64>,
+        block_hash: Option<BlockHash>,
+        gas_used: Option<Amount>,
+        from: Option<Address>,
+        to: Option<Address>,
+    ) -> Self {
+        Self {
+            transaction_hash,
+            status,
+            block_number,
+            block_hash,
+            gas_used,
+            from,
+            to,
+        }
+    }
+
+    /// Sets the terminal execution status.
+    #[must_use]
+    pub const fn with_status(mut self, status: TransactionStatus) -> Self {
+        self.status = Some(status);
+        self
+    }
+
+    /// Sets the block number that included the transaction.
+    #[must_use]
+    pub const fn with_block_number(mut self, block_number: u64) -> Self {
+        self.block_number = Some(block_number);
+        self
+    }
+
+    /// Sets the block hash that included the transaction.
+    #[must_use]
+    pub fn with_block_hash(mut self, block_hash: BlockHash) -> Self {
+        self.block_hash = Some(block_hash);
+        self
+    }
+
+    /// Sets the gas used by the transaction.
+    #[must_use]
+    pub fn with_gas_used(mut self, gas_used: Amount) -> Self {
+        self.gas_used = Some(gas_used);
+        self
+    }
+
+    /// Sets the sender address.
+    #[must_use]
+    pub fn with_from(mut self, from: Address) -> Self {
+        self.from = Some(from);
+        self
+    }
+
+    /// Sets the destination address.
+    #[must_use]
+    pub fn with_to(mut self, to: Address) -> Self {
+        self.to = Some(to);
+        self
     }
 }
 
@@ -313,12 +444,20 @@ pub trait Signer {
         fields: &[TypedDataField],
         value_json: &str,
     ) -> Result<String, Self::Error>;
-    /// Sends a transaction and returns a minimal receipt contract.
+    /// Sends a transaction and returns the broadcast transaction hash.
+    ///
+    /// This confirms only that the signer backend returned a transaction hash.
+    /// Use [`Provider::get_transaction_receipt`] or a higher-level
+    /// `cow-sdk-trading` wait helper to observe mining status and receipt
+    /// fields.
     ///
     /// # Errors
     ///
     /// Returns the implementation-defined signer error when submission fails.
-    fn send_transaction(&self, tx: &TransactionRequest) -> Result<TransactionReceipt, Self::Error>;
+    fn send_transaction(
+        &self,
+        tx: &TransactionRequest,
+    ) -> Result<TransactionBroadcast, Self::Error>;
     /// Estimates gas for a transaction request.
     ///
     /// # Errors
@@ -382,7 +521,12 @@ pub trait AsyncSigner {
         fields: &[TypedDataField],
         value_json: &str,
     ) -> Result<String, Self::Error>;
-    /// Sends a transaction and returns a minimal receipt contract.
+    /// Sends a transaction and returns the broadcast transaction hash.
+    ///
+    /// This confirms only that the signer backend returned a transaction hash.
+    /// Use [`AsyncProvider::get_transaction_receipt`] or a higher-level
+    /// `cow-sdk-trading` wait helper to observe mining status and receipt
+    /// fields.
     ///
     /// # Errors
     ///
@@ -390,7 +534,7 @@ pub trait AsyncSigner {
     async fn send_transaction(
         &self,
         tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error>;
+    ) -> Result<TransactionBroadcast, Self::Error>;
     /// Estimates gas for a transaction request.
     ///
     /// # Errors
@@ -429,7 +573,7 @@ where
     async fn send_transaction(
         &self,
         tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error> {
+    ) -> Result<TransactionBroadcast, Self::Error> {
         Signer::send_transaction(self, tx)
     }
 
@@ -462,7 +606,10 @@ pub trait Provider {
     ///
     /// Returns the implementation-defined provider error when the backend lookup fails.
     fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error>;
-    /// Returns the receipt for a transaction hash, if known.
+    /// Returns mined receipt information for a transaction hash, if known.
+    ///
+    /// Implementations may return hash-only receipts while richer lifecycle
+    /// fields are unavailable from the backend.
     ///
     /// # Errors
     ///
@@ -641,7 +788,10 @@ pub trait AsyncProvider {
     ///
     /// Returns the implementation-defined provider error when the backend lookup fails.
     async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error>;
-    /// Returns the receipt for a transaction hash, if known.
+    /// Returns mined receipt information for a transaction hash, if known.
+    ///
+    /// Implementations may return hash-only receipts while richer lifecycle
+    /// fields are unavailable from the backend.
     ///
     /// # Errors
     ///
@@ -743,7 +893,7 @@ where
 /// # use cow_sdk_core::{
 /// #     Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo,
 /// #     ContractCall, ContractHandle, Hash32, HexData, TransactionHash, TransactionReceipt,
-/// #     TransactionRequest, TypedDataDomain, TypedDataField,
+/// #     TransactionBroadcast, TransactionRequest, TypedDataDomain, TypedDataField,
 /// # };
 /// #[derive(Clone)]
 /// struct WalletSigner;
@@ -773,8 +923,8 @@ where
 /// #   async fn send_transaction(
 /// #       &self,
 /// #       _tx: &TransactionRequest,
-/// #   ) -> Result<TransactionReceipt, Self::Error> {
-/// #       Ok(TransactionReceipt::new(Hash32::new(format!("0x{}", "11".repeat(32))).unwrap()))
+/// #   ) -> Result<TransactionBroadcast, Self::Error> {
+/// #       Ok(TransactionBroadcast::new(Hash32::new(format!("0x{}", "11".repeat(32))).unwrap()))
 /// #   }
 /// #   async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
 /// #       Ok(Amount::from(21_000u32))

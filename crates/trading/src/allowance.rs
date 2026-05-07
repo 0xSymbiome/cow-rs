@@ -151,7 +151,7 @@ where
     let tx = approval_transaction(params, chain_id, env)?;
     signer
         .send_transaction(&tx)
-        .map(|receipt| receipt.transaction_hash)
+        .map(|broadcast| broadcast.transaction_hash)
         .map_err(|error| TradingError::Signer {
             operation: "send_transaction",
             message: error.to_string().into(),
@@ -177,7 +177,7 @@ where
     signer
         .send_transaction(&tx)
         .await
-        .map(|receipt| receipt.transaction_hash)
+        .map(|broadcast| broadcast.transaction_hash)
         .map_err(|error| TradingError::Signer {
             operation: "send_transaction",
             message: error.to_string().into(),

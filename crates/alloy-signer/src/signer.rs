@@ -5,8 +5,8 @@ use std::{fmt, sync::Arc};
 use alloy_signer::Signer as AlloySigner;
 use alloy_signer_local::PrivateKeySigner;
 use cow_sdk_core::{
-    Address, Amount, AsyncSigner, ChainId, TransactionReceipt, TransactionRequest, TypedDataDomain,
-    TypedDataField, TypedDataPayload,
+    Address, Amount, AsyncSigner, ChainId, TransactionBroadcast, TransactionRequest,
+    TypedDataDomain, TypedDataField, TypedDataPayload,
 };
 
 use crate::{
@@ -130,7 +130,7 @@ impl AsyncSigner for LocalAlloyKeystoreSigner {
     async fn send_transaction(
         &self,
         _tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error> {
+    ) -> Result<TransactionBroadcast, Self::Error> {
         Err(AsyncSignerError::ProviderRequired {
             method: "send_transaction",
         })

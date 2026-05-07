@@ -285,7 +285,7 @@ impl BrowserWalletConsole {
         let tx = approval_transaction(&approval, chain_id, env).map_err(js_string_error)?;
         let signer = self.mock_wallet.signer();
         let estimated_gas = signer.estimate_gas(&tx).await.map_err(js_string_error)?;
-        let receipt = signer
+        let broadcast = signer
             .send_transaction(&tx)
             .await
             .map_err(js_string_error)?;
@@ -294,7 +294,7 @@ impl BrowserWalletConsole {
             "mode": "mock",
             "transaction": tx,
             "estimatedGas": estimated_gas,
-            "transactionHash": receipt.transaction_hash,
+            "transactionHash": broadcast.transaction_hash,
             "events": self.mock_wallet.take_events(),
             "requestLog": self.mock_transport.request_log(),
         }))

@@ -402,13 +402,13 @@ where
     S::Error: std::fmt::Display,
 {
     let tx = onchain_cancellation_transaction(signer, chain_id, order, options)?;
-    let receipt = signer
+    let broadcast = signer
         .send_transaction(&tx)
         .map_err(|error| TradingError::Signer {
             operation: "send_transaction",
             message: error.to_string().into(),
         })?;
-    Ok(receipt.transaction_hash)
+    Ok(broadcast.transaction_hash)
 }
 
 /// Cancels an order on-chain using an async signer.
@@ -427,14 +427,14 @@ where
     S::Error: std::fmt::Display,
 {
     let tx = onchain_cancellation_transaction_async(signer, chain_id, order, options).await?;
-    let receipt = signer
+    let broadcast = signer
         .send_transaction(&tx)
         .await
         .map_err(|error| TradingError::Signer {
             operation: "send_transaction",
             message: error.to_string().into(),
         })?;
-    Ok(receipt.transaction_hash)
+    Ok(broadcast.transaction_hash)
 }
 
 /// Resolves protocol options for an order-level workflow.

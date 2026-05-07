@@ -30,6 +30,14 @@ The first functional crate-family release begins at `0.1.0`.
 - On `wasm32`, `TradingSdkBuilder::build_ready()` continues to fail fast with
   `TradingError::MissingInjectedOrderbookClient` unless an orderbook client is
   injected before the terminal is called.
+- Transaction submission and observation are now split into distinct public
+  types: `TransactionBroadcast` carries the broadcast transaction hash from
+  signer-backed submission, while `TransactionReceipt` represents receipt
+  observation with optional `status`, `block_number`, `block_hash`,
+  `gas_used`, `from`, and `to` fields plus constructor and builder APIs.
+  `Signer::send_transaction` and `AsyncSigner::send_transaction` now return
+  `TransactionBroadcast`; provider receipt lookups continue returning
+  `TransactionReceipt`.
 
 ### Added
 

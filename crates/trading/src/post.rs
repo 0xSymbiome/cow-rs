@@ -573,7 +573,7 @@ where
         .upload_app_data(&app_data.app_data_keccak256, &app_data.full_app_data)
         .await?;
 
-    let receipt = signer
+    let broadcast = signer
         .send_transaction(&tx.transaction)
         .await
         .map_err(|error| TradingError::Signer {
@@ -583,7 +583,7 @@ where
 
     Ok(OrderPostingResult {
         order_id: tx.order_id,
-        tx_hash: Some(receipt.transaction_hash),
+        tx_hash: Some(broadcast.transaction_hash),
         order_to_sign: tx.order_to_sign,
         signature: String::new(),
         signing_scheme: SigningScheme::Eip1271,

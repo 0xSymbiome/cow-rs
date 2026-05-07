@@ -83,9 +83,11 @@ the relevant Alloy provider path asks the remote JSON-RPC peer to sign. Use
 message and typed-data signatures.
 
 `send_transaction` returns a `TransactionReceipt` carrying the broadcast
-transaction hash. It does not prove block inclusion or execution success; call
-`get_transaction_receipt` through the provider path when mined status or revert
-state matters.
+transaction hash. It does not prove block inclusion or execution success.
+The trait surface is hash-only end-to-end: `AsyncProvider::get_transaction_receipt`
+returns the same hash-shaped struct wrapped in `Option` (signaling on-chain
+visibility) and does not expose mined-success, gas-used, or block-number fields.
+Trading flows that need those drop to the underlying Alloy provider directly.
 
 ## Maintenance
 

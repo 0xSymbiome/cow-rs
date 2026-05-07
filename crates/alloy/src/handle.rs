@@ -5,7 +5,7 @@ use std::{fmt, sync::Arc};
 use alloy_provider::Provider as AlloyProviderTrait;
 use alloy_signer::Signer as AlloySigner;
 use cow_sdk_core::{
-    Address, Amount, AsyncSigner, TransactionHash, TransactionReceipt, TransactionRequest,
+    Address, Amount, AsyncSigner, TransactionBroadcast, TransactionHash, TransactionRequest,
     TypedDataDomain, TypedDataField, TypedDataPayload,
 };
 
@@ -120,13 +120,13 @@ impl AsyncSigner for AlloyClientSignerHandle {
 
     /// Submits a transaction through the wallet-filler provider.
     ///
-    /// The returned [`TransactionReceipt`] wraps the broadcast transaction hash
-    /// only. Callers that need mined-success or revert status should follow up
-    /// with `provider.get_transaction_receipt(hash).await?`.
+    /// The returned [`TransactionBroadcast`] wraps the broadcast transaction
+    /// hash only. Use `AsyncProvider::get_transaction_receipt(hash).await?` to
+    /// observe receipt availability and lifecycle fields.
     async fn send_transaction(
         &self,
         tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error> {
+    ) -> Result<TransactionBroadcast, Self::Error> {
         let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::Validation)?;
         let pending = self
             .inner
@@ -140,7 +140,7 @@ impl AsyncSigner for AlloyClientSignerHandle {
             .map_err(|error| AlloyClientError::from_pending_tx_error(&error))?;
         let transaction_hash = TransactionHash::new(format!("0x{tx_hash:x}"))
             .map_err(|error| AlloyClientError::Internal(format!("hash conversion: {error}")))?;
-        Ok(TransactionReceipt::new(transaction_hash))
+        Ok(TransactionBroadcast::new(transaction_hash))
     }
 
     async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error> {

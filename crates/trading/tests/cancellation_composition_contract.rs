@@ -20,8 +20,8 @@ use std::{
 use cow_sdk_core::{
     Address, Amount, ApiContext, AppDataHash, AsyncProvider, AsyncSigner, BlockInfo, Cancellable,
     ContractCall, ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid, SupportedChainId,
-    TransactionHash, TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
-    TypedDataPayload,
+    TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest, TypedDataDomain,
+    TypedDataField, TypedDataPayload,
 };
 use cow_sdk_orderbook::{
     AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
@@ -356,9 +356,9 @@ impl AsyncSigner for SlowAsyncSigner {
     async fn send_transaction(
         &self,
         _tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error> {
+    ) -> Result<TransactionBroadcast, Self::Error> {
         self.wait().await;
-        Ok(TransactionReceipt::new(
+        Ok(TransactionBroadcast::new(
             Hash32::new(TX_HASH).expect("test transaction hash literal must be valid"),
         ))
     }

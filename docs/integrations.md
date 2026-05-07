@@ -107,9 +107,12 @@ A sync signer owns:
 - transaction signing via `sign_transaction`
 - typed-data signing via `sign_typed_data` or `sign_typed_data_payload`
 - transaction submission via `send_transaction`, which returns a
-  `TransactionReceipt` carrying the broadcast hash. Callers that need
-  mined-success or revert status fetch the full receipt separately through
-  their provider.
+  `TransactionReceipt` carrying the broadcast hash. The trait surface is
+  hash-only end-to-end: `AsyncProvider::get_transaction_receipt` returns
+  the same hash-shaped struct wrapped in `Option` (signaling whether the
+  transaction is visible on chain) and does not expose mined-success,
+  gas-used, or block-number fields. Callers that need those drop to the
+  underlying provider library directly.
 - gas estimation via `estimate_gas`
 
 ### `AsyncSigner`
@@ -225,9 +228,11 @@ impl Signer for StaticSigner {
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionReceipt, Self::Error> {
-        // `TransactionReceipt::new` wraps the broadcast hash. Callers that
-        // need mined-success status follow up with
-        // `provider.get_transaction_receipt(receipt.transaction_hash()).await?`.
+        // `TransactionReceipt::new` wraps the broadcast hash. The trait
+        // surface is hash-only end-to-end: a follow-up
+        // `provider.get_transaction_receipt(receipt.transaction_hash()).await?`
+        // returns the same hash-shaped value wrapped in `Option` and does not
+        // expose mined-success, gas-used, or block-number fields.
         Ok(TransactionReceipt::new(self.receipt_hash.clone()))
     }
 

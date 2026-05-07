@@ -1,7 +1,7 @@
 //! Typed EIP-1193 signer implementation for browser wallets.
 
 use cow_sdk_core::{
-    Address, Amount, AsyncSigner, SupportedChainId, TransactionReceipt, TransactionRequest,
+    Address, Amount, AsyncSigner, SupportedChainId, TransactionBroadcast, TransactionRequest,
     TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
 use serde_json::{Value, json};
@@ -203,7 +203,7 @@ impl AsyncSigner for Eip1193Signer {
     async fn send_transaction(
         &self,
         tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error> {
+    ) -> Result<TransactionBroadcast, Self::Error> {
         let from = self.account().await?;
         let value = self
             .provider
@@ -218,9 +218,9 @@ impl AsyncSigner for Eip1193Signer {
                 "wallet must return a transaction hash",
             )
         })?;
-        Ok(TransactionReceipt::new(cow_sdk_core::TransactionHash::new(
-            hash,
-        )?))
+        Ok(TransactionBroadcast::new(
+            cow_sdk_core::TransactionHash::new(hash)?,
+        ))
     }
 
     async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error> {
