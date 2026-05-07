@@ -3,7 +3,7 @@
 use cow_sdk_alloy::AlloyClient;
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, ContractCall, HexData, SupportedChainId, TransactionHash,
-    TransactionRequest,
+    TransactionRequest, TransactionStatus,
 };
 use serde_json::{Value, json};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
@@ -44,6 +44,24 @@ async fn get_transaction_receipt_delegates_to_inner_provider() {
         .unwrap();
 
     assert_eq!(receipt.transaction_hash.as_str(), HASH);
+}
+
+#[tokio::test]
+async fn get_transaction_receipt_populates_rich_fields_from_alloy_receipt() {
+    let (_server, client) = client_with_result(full_receipt_response()).await;
+
+    let receipt = client
+        .get_transaction_receipt(&TransactionHash::new(HASH).unwrap())
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(receipt.status, Some(TransactionStatus::Success));
+    assert_eq!(receipt.block_number, Some(1234));
+    assert_eq!(receipt.gas_used, Some(Amount::from(21_000u64)));
+    assert_eq!(receipt.block_hash.unwrap().as_str(), HASH);
+    assert_eq!(receipt.from.unwrap().as_str(), ADDRESS);
+    assert_eq!(receipt.to.unwrap().as_str(), ADDRESS);
 }
 
 #[tokio::test]
@@ -173,6 +191,25 @@ fn receipt_response() -> Value {
         "transactionIndex": "0x0",
         "blockHash": HASH,
         "blockNumber": "0x2a",
+        "from": ADDRESS,
+        "to": ADDRESS,
+        "contractAddress": null,
+        "gasUsed": "0x5208",
+        "effectiveGasPrice": "0x1",
+        "cumulativeGasUsed": "0x5208",
+        "logsBloom": format!("0x{}", "00".repeat(256)),
+        "status": "0x1",
+        "logs": [],
+        "type": "0x2"
+    })
+}
+
+fn full_receipt_response() -> Value {
+    json!({
+        "transactionHash": HASH,
+        "transactionIndex": "0x0",
+        "blockHash": HASH,
+        "blockNumber": "0x4d2",
         "from": ADDRESS,
         "to": ADDRESS,
         "contractAddress": null,

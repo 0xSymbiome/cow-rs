@@ -18,6 +18,9 @@ cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436
 cargo check-alloy-provider-invariant
 cargo check-alloy-signer-invariant
 cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant
+cargo test -p cow-sdk-alloy --test send_transaction_does_not_wait_for_confirmation
+cargo test -p cow-sdk-browser-wallet --test transaction_receipt_parsing
+cargo test -p cow-rs-workspace-tests --test transaction_lifecycle_cross_adapter_invariant
 cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk
 ```
 
@@ -41,6 +44,10 @@ any mismatch against `docs/verification-matrix.md`,
   Alloy runtime crates at `2.0.4` and Alloy Core ABI crates at `1.5.7`. Alloy
   runtime and ABI crates ship on independent release cadences, so both family
   sets are checked explicitly before release.
+- The transaction lifecycle checks enforce that signer-backed submission
+  returns a broadcast acknowledgement without receipt polling and that adapter
+  receipt lookups populate the modeled mined fields consistently across native
+  Alloy and browser-wallet paths.
 
 `cargo audit` is the blocking RustSec gate for published advisories. It keeps
 vulnerabilities, unsound advisories, and unmaintained advisories blocking while

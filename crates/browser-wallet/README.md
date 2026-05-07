@@ -15,6 +15,13 @@ environment-sensitive: authorization prompts, provider inventory, and
 vendor-specific support are controlled by the browser runtime rather
 than normalized into universal SDK guarantees.
 
+Transaction submission through the browser wallet returns
+`TransactionBroadcast` with the hash accepted by the injected provider.
+Receipt observation is a separate provider lookup. When an EIP-1193 receipt is
+available, this crate populates `TransactionReceipt` fields for status, block,
+gas, sender, and recipient; absent optional fields remain empty, while present
+malformed fields fail closed with a typed browser-wallet error.
+
 ## Install
 
 ```toml

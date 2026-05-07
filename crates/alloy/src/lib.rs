@@ -25,9 +25,13 @@
 //! ```
 //!
 //! `send_transaction` submits through the wallet-filler provider and returns
-//! the broadcast transaction hash. Raw `sign_transaction` is intentionally not
-//! exposed by this release because Alloy's provider method routes to the remote
-//! JSON-RPC peer rather than producing a local signed payload.
+//! [`cow_sdk_core::TransactionBroadcast`] with the broadcast transaction hash
+//! from Alloy's pending transaction handle. It does not wait for receipt
+//! observation. Use [`cow_sdk_core::AsyncProvider::get_transaction_receipt`]
+//! on the client when mined status, block, gas, sender, or recipient fields are
+//! needed. Raw `sign_transaction` is intentionally not exposed by this release
+//! because Alloy's provider method routes to the remote JSON-RPC peer rather
+//! than producing a local signed payload.
 
 #![warn(missing_docs)]
 #![allow(

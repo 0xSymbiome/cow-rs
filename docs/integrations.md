@@ -107,12 +107,8 @@ A sync signer owns:
 - transaction signing via `sign_transaction`
 - typed-data signing via `sign_typed_data` or `sign_typed_data_payload`
 - transaction submission via `send_transaction`, which returns a
-  `TransactionReceipt` carrying the broadcast hash. The trait surface is
-  hash-only end-to-end: `AsyncProvider::get_transaction_receipt` returns
-  the same hash-shaped struct wrapped in `Option` (signaling whether the
-  transaction is visible on chain) and does not expose mined-success,
-  gas-used, or block-number fields. Callers that need those drop to the
-  underlying provider library directly.
+  `TransactionBroadcast` carrying the broadcast hash. This is not a mined
+  receipt and does not prove block inclusion or execution success.
 - gas estimation via `estimate_gas`
 
 ### `AsyncSigner`
@@ -186,8 +182,8 @@ Its job is to demonstrate the trait shape, not to model a production RPC stack.
 ```rust
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ChainId, ContractCall, ContractHandle, CoreError, HexData,
-    Provider, Signer, TransactionHash, TransactionReceipt, TransactionRequest,
-    TypedDataDomain, TypedDataField,
+    Provider, Signer, TransactionBroadcast, TransactionHash, TransactionReceipt,
+    TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField,
 };
 
 #[derive(Debug, Clone)]
@@ -227,13 +223,8 @@ impl Signer for StaticSigner {
     fn send_transaction(
         &self,
         _tx: &TransactionRequest,
-    ) -> Result<TransactionReceipt, Self::Error> {
-        // `TransactionReceipt::new` wraps the broadcast hash. The trait
-        // surface is hash-only end-to-end: a follow-up
-        // `provider.get_transaction_receipt(receipt.transaction_hash()).await?`
-        // returns the same hash-shaped value wrapped in `Option` and does not
-        // expose mined-success, gas-used, or block-number fields.
-        Ok(TransactionReceipt::new(self.receipt_hash.clone()))
+    ) -> Result<TransactionBroadcast, Self::Error> {
+        Ok(TransactionBroadcast::new(self.receipt_hash.clone()))
     }
 
     fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
@@ -266,9 +257,15 @@ impl Provider for StaticProvider {
 
     fn get_transaction_receipt(
         &self,
-        _transaction_hash: &TransactionHash,
+        transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
-        Ok(None)
+        Ok(Some(
+            TransactionReceipt::new(transaction_hash.clone())
+                .with_status(TransactionStatus::Success)
+                .with_block_number(1)
+                .with_gas_used(Amount::from(21_000u64))
+                .with_from(self.signer.address.clone()),
+        ))
     }
 
     fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
@@ -314,6 +311,7 @@ integration contract:
 
 - address resolution comes from the signer
 - transaction submission comes from the signer
+- transaction observation comes from the provider receipt lookup
 - typed contract reads come from the provider
 - signer creation is provider-owned
 - the provider keeps chain authority

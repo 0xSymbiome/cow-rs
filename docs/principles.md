@@ -49,6 +49,17 @@ source-lock-pinned OpenAPI inventory, not from hand-written prior memory.
 
 **Anchored by**: [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md) (primary). Supporting: [ADR 0005](adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0015](adr/0015-client-side-order-bounds-validator.md), [ADR 0016](adr/0016-split-sell-and-buy-token-balance-enums.md), [ADR 0017](adr/0017-typed-orderbook-rejection-parser.md), [ADR 0018](adr/0018-typed-app-data-merge.md), [ADR 0021](adr/0021-orderbook-total-fee-policy.md).
 
+## Type The Lifecycle
+
+Public transaction APIs name the lifecycle state they actually observe.
+Signer-backed submission returns `TransactionBroadcast`, which carries only the
+broadcast hash. Provider receipt lookup returns `TransactionReceipt`, which may
+carry mined execution status, block, gas, sender, and recipient fields when the
+runtime exposes them. Submission must not hide implicit receipt polling behind a
+hash-shaped return value.
+
+**Anchored by**: [ADR 0038](adr/0038-transaction-lifecycle-types.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](adr/0029-trait-evolution-extension-traits.md).
+
 ## Additive Optional Ecosystems
 
 Optional capabilities grow through leaf crates and feature-gated additions.

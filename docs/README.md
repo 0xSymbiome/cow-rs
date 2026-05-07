@@ -37,6 +37,10 @@ families.
   RPC, `cow-sdk-alloy-signer` for local private-key signing, and
   `cow-sdk-alloy` when the same native client should satisfy both provider and
   signer helper paths. See [Adapting Alloy](providers/adapting-alloy.md).
+- What does transaction submission return? Signers return
+  `TransactionBroadcast`, a broadcast-hash acknowledgement. Provider receipt
+  lookups return `TransactionReceipt` with mined fields when available. See
+  [ADR 0038](adr/0038-transaction-lifecycle-types.md).
 - How do I plug in a custom HTTP transport? Every `HttpTransport` impl
   installs through the builder's `.transport(...)` setter on both
   `OrderBookApi` and `SubgraphApi`. Native consumers get

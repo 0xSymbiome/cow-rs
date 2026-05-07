@@ -118,11 +118,17 @@ impl AsyncSigner for AlloyClientSignerHandle {
         }
     }
 
-    /// Submits a transaction through the wallet-filler provider.
+    /// Submits a transaction through the wallet-filler provider and
+    /// returns the broadcast acknowledgement.
     ///
-    /// The returned [`TransactionBroadcast`] wraps the broadcast transaction
-    /// hash only. Use `AsyncProvider::get_transaction_receipt(hash).await?` to
-    /// observe receipt availability and lifecycle fields.
+    /// The returned [`TransactionBroadcast`] confirms the broadcast was
+    /// accepted by the underlying Alloy provider; it does not prove inclusion
+    /// or execution success. Use
+    /// [`cow_sdk_core::AsyncProvider::get_transaction_receipt`] or a
+    /// higher-level `cow-sdk-trading` wait helper to observe mined status.
+    /// The umbrella reads the broadcast hash through
+    /// `pending.tx_hash()`, Alloy's immediate accessor, so it does not wait
+    /// for confirmation before returning.
     async fn send_transaction(
         &self,
         tx: &TransactionRequest,
@@ -134,10 +140,7 @@ impl AsyncSigner for AlloyClientSignerHandle {
             .send_transaction(tx)
             .await
             .map_err(AlloyClientError::from_alloy_transport)?;
-        let tx_hash = pending
-            .watch()
-            .await
-            .map_err(|error| AlloyClientError::from_pending_tx_error(&error))?;
+        let tx_hash = *pending.tx_hash();
         let transaction_hash = TransactionHash::new(format!("0x{tx_hash:x}"))
             .map_err(|error| AlloyClientError::Internal(format!("hash conversion: {error}")))?;
         Ok(TransactionBroadcast::new(transaction_hash))

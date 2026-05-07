@@ -1,11 +1,12 @@
 # Alloy Provider Adapter Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-05-07
 Owning surface: `cow-sdk-alloy-provider` `RpcAlloyProvider`, its builder, and its `AsyncProvider` implementation
-Refresh trigger: Changes to the provider public API, the `AsyncProvider` trait, transport classification, the `read_contract` algorithm, the workspace Alloy runtime pin, or the crate dependency boundary
+Refresh trigger: ADR 0038 - rich receipt population, or changes to the provider public API, the `AsyncProvider` trait, transport classification, the `read_contract` algorithm, the workspace Alloy runtime pin, or the crate dependency boundary
 Related docs:
 - [ADR 0035](../adr/0035-alloy-provider-adapter.md)
+- [ADR 0038](../adr/0038-transaction-lifecycle-types.md)
 - [ADR 0024](../adr/0024-asyncprovider-asyncsigningprovider-capability-split.md)
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
@@ -63,6 +64,13 @@ The adapter implements `get_chain_id`, `get_code`,
 types to Alloy values before dispatch and converts the result back to
 `cow-sdk-core` types before returning.
 
+`get_transaction_receipt` converts Alloy receipts into the rich
+`TransactionReceipt` shape. Status comes from
+`receipt.inner.status_or_post_state().as_eip658()`, so a pre-Byzantium
+post-state receipt surfaces `status: None` rather than coerced success.
+Block number, block hash, gas used, sender, and recipient are populated when
+the Alloy receipt carries them; contract creation leaves `to` unset.
+
 `get_contract` returns the SDK contract handle without dispatching RPC. The
 handle carries the address and ABI for higher-level contract helpers.
 
@@ -111,6 +119,10 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/alloy-provider/tests/asyncprovider_contract.rs`
+- `crates/alloy-provider/src/conversion.rs::tests::alloy_to_cow_receipt_populates_status_success`
+- `crates/alloy-provider/src/conversion.rs::tests::alloy_to_cow_receipt_populates_status_reverted`
+- `crates/alloy-provider/src/conversion.rs::tests::alloy_to_cow_receipt_returns_none_status_for_post_state_receipt`
+- `crates/alloy-provider/src/conversion.rs::tests::alloy_to_cow_receipt_handles_contract_creation_no_to`
 - `crates/alloy-provider/tests/read_contract_parity.rs`
 - `crates/alloy-provider/tests/read_contract_no_panic.rs`
 - `tests/alloy_read_contract_parity_invariant.rs`

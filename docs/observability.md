@@ -234,6 +234,13 @@ fields. Downstream applications that need provider-specific telemetry can add
 their own spans around the `AsyncProvider`, `AsyncSigningProvider`, or
 `AsyncSigner` calls.
 
+Keep transaction lifecycle telemetry separated at the host boundary:
+submission spans should record broadcast acknowledgement details such as the
+transaction hash, while receipt-observation spans should record mined fields
+such as status, block number, and gas used only after an explicit provider
+receipt lookup. A `send_transaction` span should not imply inclusion or
+execution success.
+
 ## Secrets
 
 No traced span or event must ever carry a secret. Concretely:

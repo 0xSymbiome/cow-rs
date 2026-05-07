@@ -9,6 +9,11 @@ the top-level [`cow-sdk`](https://crates.io/crates/cow-sdk) facade
 re-exports; depend on this crate directly when you are building a sibling
 leaf crate or implementing a custom `Signer` or `Provider` adapter.
 
+The core runtime traits split transaction lifecycle states explicitly:
+`TransactionBroadcast` is the signer-side broadcast acknowledgement, while
+`TransactionReceipt` is the provider-side mined observation shape with optional
+status, block, gas, sender, and recipient fields.
+
 ## Install
 
 ```toml

@@ -118,3 +118,8 @@ required-features = ["alloy-signer"]
 name = "alloy_trading_full_flow"
 path = "scenarios/alloy_trading_full_flow.rs"
 required-features = ["alloy"]
+
+[[example]]
+name = "transaction_lifecycle"
+path = "scenarios/transaction_lifecycle.rs"
+required-features = ["alloy"]

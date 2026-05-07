@@ -57,6 +57,13 @@ function, ABI-encodes JSON arguments with `alloy-dyn-abi`, dispatches
 `eth_call`, decodes the output, and returns the JSON value string expected by
 `cow_sdk_core::ContractCall`.
 
+`get_transaction_receipt` maps Alloy receipts into
+`cow_sdk_core::TransactionReceipt`. The adapter populates the transaction hash,
+EIP-658 success / reverted status when present, block number, block hash, gas
+used, sender, and recipient. Contract creation keeps `to` empty, and
+pre-Byzantium post-state receipts keep `status` empty rather than coercing the
+post-state root into a success value.
+
 ## Native Only
 
 This crate hard-fails on `wasm32` targets. Browser applications should use

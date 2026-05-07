@@ -101,6 +101,13 @@ Native runtime integrations plug in through the stable traits owned by
 use cow_sdk_core::{AsyncProvider, AsyncSigner, AsyncSigningProvider, Provider, Signer};
 ```
 
+The same seam also owns the transaction lifecycle boundary. Signers return
+`TransactionBroadcast`, a hash-only broadcast acknowledgement, while provider
+receipt lookups return `TransactionReceipt` with optional mined-state fields
+such as status, block, gas, sender, and recipient. Adapter implementations must
+not turn submission into implicit receipt polling; mined observation stays an
+explicit provider call.
+
 The SDK declares its provider, signer, and signing-provider contracts in
 `cow-sdk-core` rather than binding trading helpers directly to a concrete
 Ethereum runtime library. This lets one trading call site drive native Alloy on
@@ -140,6 +147,9 @@ rather than being reconstructed from ad hoc field lists. Credential-bearing
 config stays explicit as input, but the default diagnostic and serialized
 surfaces owned by `cow-sdk-core`, `cow-sdk-orderbook`, and `cow-sdk-app-data`
 redact secret material instead of treating it as routine log data.
+Transaction broadcast and receipt observation stay separate typed results so
+callers can reason about submission, inclusion, and execution without
+provider-specific timing assumptions.
 
 ### Typed Amounts
 

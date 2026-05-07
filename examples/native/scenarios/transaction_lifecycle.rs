@@ -1,100 +1,51 @@
-#![cfg(not(target_arch = "wasm32"))]
+//! Demonstrates the broadcast / receipt lifecycle: build a self-transfer,
+//! broadcast it once via `send_transaction`, print the broadcast hash, then
+//! exit. The receipt-polling helper is shown in a follow-up release once the
+//! trading helper crate exposes it.
 
-use std::sync::{Arc, Mutex};
+use std::{error::Error, sync::{Arc, Mutex}};
 
-use cow_sdk_alloy::AlloyClient;
-use cow_sdk_core::{
-    Amount, AsyncSigningProvider, CowEnv, HexData, OrderUid, SupportedChainId, TransactionHash,
+use cow_sdk::alloy::AlloyClient;
+use cow_sdk::core::{
+    Address, Amount, AsyncSigner, AsyncSigningProvider, SupportedChainId, TransactionBroadcast,
     TransactionRequest,
 };
-use cow_sdk_trading::{AllowanceParameters, ApprovalParameters, OrderTraderParameters, TradingSdk};
 use serde_json::{Value, json};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
 const TEST_KEY: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 const HASH: &str = "0x13579bdf2468ace013579bdf2468ace013579bdf2468ace013579bdf2468ace0";
 const ADDRESS: &str = "0x1111111111111111111111111111111111111111";
-const COW: &str = "0x0625aFB445C3B6B7B929342a04A22599fd5dBB59";
-const OWNER: &str = "0xc8c753Ee51E8Fc80e199AB297fB575634a1aC1d3";
-const ORDER_UID: &str = "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f42e1a42f0ad0b7795e18767259cc253a2af471dbc4c72b49516ffffffff";
 
-#[tokio::test]
-async fn alloy_client_satisfies_trading_sdk_async_boundaries() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     let server = MockServer::start().await;
     let methods = mount_rpc(&server).await;
     let client = AlloyClient::builder()
-        .http(server.uri())
-        .unwrap()
-        .private_key(TEST_KEY)
-        .unwrap()
+        .http(server.uri())?
+        .private_key(TEST_KEY)?
         .chain_id(SupportedChainId::Mainnet)
         .build()
-        .await
-        .unwrap();
-    let signer = client.create_signer("local-key").await.unwrap();
-    let sdk = TradingSdk::builder()
-        .with_chain_id(SupportedChainId::Mainnet)
-        .with_env(CowEnv::Prod)
-        .build_helper_only()
-        .unwrap();
+        .await?;
+    let signer = client.create_signer("local-key").await?;
+    let tx = self_transfer(&signer.get_address().await?);
 
-    let allowance = sdk
-        .get_cow_protocol_allowance_async(
-            &client,
-            &AllowanceParameters::new(address(COW), address(OWNER)),
-        )
-        .await
-        .unwrap();
-    assert_eq!(allowance, Amount::from(42u32));
+    let broadcast: TransactionBroadcast = signer.send_transaction(&tx).await?;
 
-    let approval_hash = sdk
-        .approve_cow_protocol_async(
-            &signer,
-            &ApprovalParameters::new(address(COW), Amount::new("1000").unwrap()),
-        )
-        .await
-        .unwrap();
-    assert_eq!(approval_hash, TransactionHash::new(HASH).unwrap());
-
-    let pre_sign = sdk
-        .get_pre_sign_transaction_async(&OrderTraderParameters::new(order_uid()), &signer)
-        .await
-        .unwrap();
-    assert!(pre_sign.to.is_some());
-    assert!(pre_sign.data.is_some());
-    assert_eq!(pre_sign.value, Some(Amount::zero()));
-    assert_eq!(pre_sign.gas_limit, Some(Amount::from(25_200u32)));
-
-    let methods = {
-        let guard = methods
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        guard.clone()
-    };
-    assert!(
-        methods.iter().any(|method| method == "eth_call"),
-        "{methods:?}"
-    );
-    assert!(
-        methods
+    let methods = methods
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .clone();
+    let report = json!({
+        "surface": "transaction lifecycle",
+        "broadcastHash": broadcast.transaction_hash.as_str(),
+        "receiptRequestsDuringBroadcast": methods
             .iter()
-            .any(|method| method == "eth_sendRawTransaction"),
-        "{methods:?}"
-    );
-    assert!(
-        methods
-            .iter()
-            .all(|method| method != "eth_getTransactionReceipt"),
-        "{methods:?}"
-    );
-    assert!(
-        methods
-            .iter()
-            .filter(|method| method.as_str() == "eth_estimateGas")
+            .filter(|method| method.as_str() == "eth_getTransactionReceipt")
             .count()
-            >= 2,
-        "{methods:?}"
-    );
+    });
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(())
 }
 
 async fn mount_rpc(server: &MockServer) -> Arc<Mutex<Vec<String>>> {
@@ -151,7 +102,6 @@ fn rpc_result(method: &str) -> Result<Value, String> {
         }),
         "eth_getBlockByNumber" => block_response("0x2a"),
         "eth_sendRawTransaction" => json!(HASH),
-        "eth_call" => json!(format!("0x{:0>64}", "2a")),
         _ => return Err(format!("unexpected JSON-RPC method `{method}`")),
     };
     Ok(result)
@@ -183,20 +133,11 @@ fn block_response(number: &str) -> Value {
     })
 }
 
-fn address(value: &str) -> cow_sdk_core::Address {
-    cow_sdk_core::Address::new(value).unwrap()
-}
-
-fn order_uid() -> OrderUid {
-    OrderUid::new(ORDER_UID).unwrap()
-}
-
-#[allow(dead_code)]
-fn sample_transaction() -> TransactionRequest {
+fn self_transfer(address: &Address) -> TransactionRequest {
     TransactionRequest::new(
-        Some(address(COW)),
-        Some(HexData::new("0x").unwrap()),
-        Some(Amount::zero()),
+        Some(address.clone()),
         None,
+        Some(Amount::zero()),
+        Some(Amount::from(21_000u32)),
     )
 }

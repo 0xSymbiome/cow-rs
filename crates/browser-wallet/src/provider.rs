@@ -14,8 +14,9 @@ use num_bigint::BigUint;
 use serde_json::{Map, Value, json};
 
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, AsyncSigningProvider, BlockInfo, ChainId, ContractCall,
-    ContractHandle, HexData, Redacted, TransactionHash, TransactionReceipt, TransactionRequest,
+    Address, Amount, AsyncProvider, AsyncSigningProvider, BlockHash, BlockInfo, ChainId,
+    ContractCall, ContractHandle, HexData, Redacted, TransactionHash, TransactionReceipt,
+    TransactionRequest, TransactionStatus,
 };
 
 use crate::{
@@ -438,16 +439,7 @@ impl AsyncProvider for Eip1193Provider {
         if value.is_null() {
             return Ok(None);
         }
-        let hash = value
-            .get("transactionHash")
-            .and_then(Value::as_str)
-            .ok_or_else(|| {
-                BrowserWalletError::malformed_response(
-                    "eth_getTransactionReceipt",
-                    "receipt must include `transactionHash`",
-                )
-            })?;
-        Ok(Some(TransactionReceipt::new(TransactionHash::new(hash)?)))
+        Ok(Some(parse_transaction_receipt(&value)?))
     }
 
     async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
@@ -623,6 +615,164 @@ pub(crate) fn parse_quantity_to_decimal(
             "expected hex quantity string",
         )),
     }
+}
+
+/// Parses an `eth_getTransactionReceipt` JSON-RPC response into the SDK
+/// receipt contract.
+///
+/// Optional fields are tolerant of absence but strict on malformed values:
+/// missing or `null` fields become `None`; present invalid fields return
+/// [`BrowserWalletError::MalformedResponse`] with the field name.
+fn parse_transaction_receipt(value: &Value) -> Result<TransactionReceipt, BrowserWalletError> {
+    let transaction_hash_raw = value
+        .get("transactionHash")
+        .and_then(Value::as_str)
+        .ok_or_else(|| {
+            BrowserWalletError::malformed_response(
+                "eth_getTransactionReceipt",
+                "receipt must include `transactionHash`",
+            )
+        })?;
+    let transaction_hash = TransactionHash::new(transaction_hash_raw).map_err(|error| {
+        BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            format!("transactionHash: {error}"),
+        )
+    })?;
+
+    Ok(TransactionReceipt::from_parts(
+        transaction_hash,
+        parse_optional_status(value.get("status"))?,
+        parse_optional_u64_quantity(value.get("blockNumber"), "blockNumber")?,
+        parse_optional_block_hash(value.get("blockHash"))?,
+        parse_optional_amount_quantity(value.get("gasUsed"), "gasUsed")?,
+        parse_optional_address(value.get("from"), "from")?,
+        parse_optional_address(value.get("to"), "to")?,
+    ))
+}
+
+fn parse_optional_status(
+    value: Option<&Value>,
+) -> Result<Option<TransactionStatus>, BrowserWalletError> {
+    let Some(raw) = value else {
+        return Ok(None);
+    };
+    if raw.is_null() {
+        return Ok(None);
+    }
+    match raw.as_str() {
+        Some("0x1") => Ok(Some(TransactionStatus::Success)),
+        Some("0x0") => Ok(Some(TransactionStatus::Reverted)),
+        Some(other) => Err(BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            format!("status: unrecognized value `{other}`"),
+        )),
+        None => Err(BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            "status: expected hex-encoded string",
+        )),
+    }
+}
+
+fn parse_optional_u64_quantity(
+    value: Option<&Value>,
+    field: &'static str,
+) -> Result<Option<u64>, BrowserWalletError> {
+    let Some(raw) = value else {
+        return Ok(None);
+    };
+    if raw.is_null() {
+        return Ok(None);
+    }
+    let raw = raw.as_str().ok_or_else(|| {
+        BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            format!("{field}: expected hex-encoded string"),
+        )
+    })?;
+    let hex = raw.strip_prefix("0x").ok_or_else(|| {
+        BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            format!("{field}: missing `0x` prefix"),
+        )
+    })?;
+    u64::from_str_radix(hex, 16).map(Some).map_err(|error| {
+        BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            format!("{field}: {error}"),
+        )
+    })
+}
+
+fn parse_optional_block_hash(
+    value: Option<&Value>,
+) -> Result<Option<BlockHash>, BrowserWalletError> {
+    let Some(raw) = value else {
+        return Ok(None);
+    };
+    if raw.is_null() {
+        return Ok(None);
+    }
+    let raw = raw.as_str().ok_or_else(|| {
+        BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            "blockHash: expected hex-encoded string",
+        )
+    })?;
+    BlockHash::new(raw).map(Some).map_err(|error| {
+        BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            format!("blockHash: {error}"),
+        )
+    })
+}
+
+fn parse_optional_amount_quantity(
+    value: Option<&Value>,
+    field: &'static str,
+) -> Result<Option<Amount>, BrowserWalletError> {
+    let Some(raw) = value else {
+        return Ok(None);
+    };
+    if raw.is_null() {
+        return Ok(None);
+    }
+    let raw = raw.as_str().ok_or_else(|| {
+        BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            format!("{field}: expected hex-encoded string"),
+        )
+    })?;
+    Amount::new(raw).map(Some).map_err(|error| {
+        BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            format!("{field}: {error}"),
+        )
+    })
+}
+
+fn parse_optional_address(
+    value: Option<&Value>,
+    field: &'static str,
+) -> Result<Option<Address>, BrowserWalletError> {
+    let Some(raw) = value else {
+        return Ok(None);
+    };
+    if raw.is_null() {
+        return Ok(None);
+    }
+    let raw = raw.as_str().ok_or_else(|| {
+        BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            format!("{field}: expected hex-encoded string"),
+        )
+    })?;
+    Address::new(raw).map(Some).map_err(|error| {
+        BrowserWalletError::malformed_response(
+            "eth_getTransactionReceipt",
+            format!("{field}: {error}"),
+        )
+    })
 }
 
 fn expect_string(value: &Value, method: &str) -> Result<String, BrowserWalletError> {

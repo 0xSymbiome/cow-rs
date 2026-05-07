@@ -4,7 +4,7 @@
 - Date: 2026-05-06
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy, provider, signer, adapter, native
-- Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0035](0035-alloy-provider-adapter.md), [ADR 0036](0036-alloy-signer-adapter.md)
+- Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0035](0035-alloy-provider-adapter.md), [ADR 0036](0036-alloy-signer-adapter.md), [ADR 0038](0038-transaction-lifecycle-types.md)
 
 ## Decision
 
@@ -18,8 +18,9 @@ filler and implements both `cow_sdk_core::AsyncProvider` and
 value is dropped and does not borrow from the client. The handle implements
 `AsyncSigner`, preserves canonical EIP-712 payload primary types, normalizes
 ECDSA recovery bytes through `cow-sdk-contracts`, submits transactions through
-the wallet-filler provider, and returns the broadcast hash from
-`pending.watch().await`.
+the wallet-filler provider, and returns `TransactionBroadcast` with the
+broadcast hash read through `*pending.tx_hash()` without waiting for
+confirmation.
 
 Raw `sign_transaction` is intentionally unsupported on the umbrella handle. It
 returns `UnsupportedTransactionRequest` without sending an HTTP request; callers
@@ -42,10 +43,16 @@ The owned handle shape follows the `AsyncSigningProvider` trait contract, which
 has no lifetime parameter. Returning a borrowed signer would either fail to
 compile or expose a fragile lifetime model to downstream users.
 
-`pending.watch().await` honestly returns the broadcast transaction hash, which
-is the only value carried by the SDK's minimal `TransactionReceipt`. Waiting for
-and then discarding a full receipt would imply inclusion semantics the public
-type does not represent.
+`pending.tx_hash()` reads the broadcast hash already captured by Alloy's
+pending-transaction builder. Waiting through `pending.watch().await` would
+observe confirmation before returning from a method whose contract is only
+broadcast acknowledgement. ADR 0038 separates that acknowledgement from mined
+receipt observation.
+
+Provider-side receipt conversion uses
+`receipt.inner.status_or_post_state().as_eip658()` for status mapping. That
+preserves `None` for pre-Byzantium post-state receipts instead of coercing them
+to success through Alloy's higher-level `status()` helper.
 
 ## Must Remain True
 
@@ -59,10 +66,12 @@ type does not represent.
 - Trait coverage: `AlloyClient` implements `AsyncProvider` and
   `AsyncSigningProvider`; `AlloyClientSignerHandle` implements `AsyncSigner`
   and does not implement `AsyncProvider` or sync `Signer`.
-- Runtime behavior: `send_transaction` uses the Alloy wallet-filler provider and
-  `pending.watch().await`; `sign_transaction` returns
+- Runtime behavior: `send_transaction` uses the Alloy wallet-filler provider,
+  reads the broadcast hash through `*pending.tx_hash()`, and returns
+  `TransactionBroadcast`; `sign_transaction` returns
   `UnsupportedTransactionRequest` without dispatching HTTP; `estimate_gas`
-  delegates directly to the provider.
+  delegates directly to the provider. `get_transaction_receipt` delegates to
+  the provider crate's rich receipt conversion.
 - Typed-data behavior: `sign_typed_data_payload` preserves the payload primary
   type rather than routing through the legacy flat-fields fallback.
 - Support posture: native targets are supported; wasm targets fail closed with
@@ -82,8 +91,9 @@ type does not represent.
 - Route umbrella typed-data signing through the signer leaf at runtime: the
   umbrella already owns the local signer and should preserve the primary type
   directly instead of introducing an adapter-to-adapter call chain.
-- Use `pending.get_receipt().await`: the SDK receipt type carries only the
-  transaction hash, so receipt waiting would misrepresent the public semantic.
+- Use `pending.get_receipt().await`: transaction submission should return only
+  a broadcast acknowledgement; receipt waiting belongs to provider lookup or a
+  higher-level wait helper.
 
 ## Chain Coherence
 
@@ -122,6 +132,7 @@ bug fixes across both copies before submitting.
 
 - [Alloy Provider Adapter ADR](0035-alloy-provider-adapter.md)
 - [Alloy Signer Adapter ADR](0036-alloy-signer-adapter.md)
+- [Transaction Lifecycle Types ADR](0038-transaction-lifecycle-types.md)
 - [Async Provider Capability Split ADR](0024-asyncprovider-asyncsigningprovider-capability-split.md)
 - [Architecture](../architecture.md)
 

@@ -32,7 +32,8 @@ and this package is the composed namespace for consumers that want both.
 `AlloyClient` implements `AsyncProvider` and `AsyncSigningProvider`; the owned
 signer handle returned by `create_signer` implements `AsyncSigner`, signs CoW
 EIP-712 typed-data payloads directly, submits transactions through Alloy's
-wallet-filler provider, and reports the broadcast transaction hash.
+wallet-filler provider, and reports `TransactionBroadcast` with the broadcast
+transaction hash.
 
 Transaction filling remains Alloy-owned. The SDK builds the local signer and
 provider composition, then delegates nonce, fee, chain, and transaction-type
@@ -82,12 +83,14 @@ the relevant Alloy provider path asks the remote JSON-RPC peer to sign. Use
 `send_transaction` for wallet-filler submission or the signer leaf for local
 message and typed-data signatures.
 
-`send_transaction` returns a `TransactionReceipt` carrying the broadcast
-transaction hash. It does not prove block inclusion or execution success.
-The trait surface is hash-only end-to-end: `AsyncProvider::get_transaction_receipt`
-returns the same hash-shaped struct wrapped in `Option` (signaling on-chain
-visibility) and does not expose mined-success, gas-used, or block-number fields.
-Trading flows that need those drop to the underlying Alloy provider directly.
+`send_transaction` returns `TransactionBroadcast` carrying the broadcast
+transaction hash read from Alloy's pending transaction handle. It does not
+prove block inclusion or execution success and does not poll for a receipt.
+
+Use `AsyncProvider::get_transaction_receipt` on the client when mined state is
+needed. Receipt lookup delegates to the provider leaf and returns
+`TransactionReceipt` with optional status, block number, block hash, gas used,
+sender, and recipient fields when the chain response exposes them.
 
 ## Maintenance
 

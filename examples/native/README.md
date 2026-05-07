@@ -50,6 +50,7 @@ After that, branch by goal through the full scenario table below.
 | `alloy_quickstart` | Build the composed native Alloy client against a mock RPC |
 | `alloy_provider_only` | Use the read-only Alloy provider leaf against a mock RPC |
 | `alloy_signer_only` | Sign a real CoW order typed-data payload with the Alloy signer leaf |
+| `transaction_lifecycle` | Submit a transaction through the composed Alloy signer and verify no receipt polling happens during broadcast |
 | `alloy_provider_with_custom_signer` | Pair the Alloy provider leaf with a consumer-supplied async signer |
 | `alloy_signer_with_custom_provider` | Pair the Alloy signer leaf with a consumer-supplied async provider |
 | `alloy_trading_full_flow` | Invoke allowance, approval, and pre-sign TradingSdk async boundaries through `AlloyClient` |
@@ -86,6 +87,7 @@ cargo run --manifest-path examples/native/Cargo.toml --example subgraph_live_que
 cargo run --manifest-path examples/native/Cargo.toml --example alloy_quickstart --features alloy
 cargo run --manifest-path examples/native/Cargo.toml --example alloy_provider_only --features alloy-provider
 cargo run --manifest-path examples/native/Cargo.toml --example alloy_signer_only --features alloy-signer
+cargo run --manifest-path examples/native/Cargo.toml --example transaction_lifecycle --features alloy
 cargo run --manifest-path examples/native/Cargo.toml --example alloy_provider_with_custom_signer --features alloy-provider
 cargo run --manifest-path examples/native/Cargo.toml --example alloy_signer_with_custom_provider --features alloy-signer
 cargo run --manifest-path examples/native/Cargo.toml --example alloy_trading_full_flow --features alloy

@@ -38,6 +38,12 @@ The first functional crate-family release begins at `0.1.0`.
   `Signer::send_transaction` and `AsyncSigner::send_transaction` now return
   `TransactionBroadcast`; provider receipt lookups continue returning
   `TransactionReceipt`.
+- The composed native Alloy signer now returns the broadcast hash from Alloy's
+  pending transaction handle without waiting for confirmation.
+- Alloy provider and browser-wallet receipt adapters now populate rich
+  `TransactionReceipt` fields, including status, block, gas, sender, and
+  recipient, while browser-wallet parsing fails closed on malformed present
+  fields.
 
 ### Added
 
@@ -55,6 +61,8 @@ The first functional crate-family release begins at `0.1.0`.
 - A public `ROADMAP.md` lists planned capability releases, including the
   alloy adapter crates, composable and TWAP orders, permit signing, bridging,
   flash-loans, weiroll, and hardware-wallet support.
+- A native `transaction_lifecycle` example demonstrates broadcast-hash
+  transaction submission without receipt polling.
 
 ### Documentation
 
@@ -72,6 +80,8 @@ The first functional crate-family release begins at `0.1.0`.
 - Native Alloy documentation now covers native-only target support, the
   two-family Alloy pin policy, ECDSA recovery-byte normalization, cooperative
   cancellation propagation, and the WASM hard-fail posture for Alloy features.
+- ADR 0038 and the transaction receipt shape audit document the split between
+  broadcast acknowledgement and mined receipt observation across adapters.
 
 ## [0.1.0] — 2026-05-02
 

@@ -38,7 +38,7 @@ provenance is required.
 | Trading | `cow-sdk-trading` | TypeScript trading workflows and tests |
 | Subgraph | `cow-sdk-subgraph` | TypeScript subgraph API, GraphQL, query, and test sources |
 | SDK facade | `cow-sdk` | TypeScript SDK root package exports and typedoc entrypoint |
-| Native Alloy adapters | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Alloy runtime and Alloy Core source-lock pins, adapter contract tests, and native examples |
+| Native Alloy adapters | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Alloy runtime and Alloy Core source-lock pins, adapter contract tests, transaction broadcast / receipt shape invariants, and native examples |
 
 ## Schema Evidence Policy
 
@@ -86,6 +86,12 @@ The Rust SDK ships in scope:
 - opt-in native Alloy provider, signer, and composed provider-plus-signer
   adapters (`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`,
   `cow-sdk-alloy`)
+
+Native Alloy transaction parity is scoped to the SDK trait contract, not to
+re-exporting Alloy's full transaction surface. The composed signer returns
+`TransactionBroadcast` from the hash Alloy has already accepted for broadcast,
+and provider receipt lookup populates `TransactionReceipt` fields that the SDK
+models: status, block number, block hash, gas used, sender, and recipient.
 
 The first release does **not** ship the capability families below. Each is a
 candidate for additive follow-up under ADR 0008 (additive optional

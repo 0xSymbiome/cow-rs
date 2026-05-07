@@ -29,6 +29,9 @@ The package boundary is intentionally narrow:
 - `sign_transaction`, `send_transaction`, and `estimate_gas` return
   `AsyncSignerError::ProviderRequired` because a standalone local signer cannot
   fill nonce, fee, chain, or transaction-type context.
+- Provider-backed transaction submission is owned by `cow-sdk-alloy`, whose
+  signer handle returns `TransactionBroadcast`; receipt observation is a
+  provider lookup, not a local-signing concern.
 
 The canonical typed-data path preserves the caller's primary type because CoW
 Protocol order signing depends on the `Order` domain shape matching the payload.

@@ -158,3 +158,17 @@ fn mandatory_trading_examples_reference_reviewed_sdk_surfaces() {
     assert!(onchain.contains("on_chain_cancel_order"));
     assert!(onchain.contains("onchain_cancellation_transaction"));
 }
+
+#[test]
+fn transaction_lifecycle_example_is_declared_and_documented() {
+    let manifest = include_str!("../Cargo.toml");
+    let native_readme = include_str!("../README.md");
+    let examples_readme = include_str!("../../README.md");
+    let scenario = include_str!("../scenarios/transaction_lifecycle.rs");
+
+    assert!(manifest.contains("transaction_lifecycle"));
+    assert!(native_readme.contains("transaction_lifecycle"));
+    assert!(examples_readme.contains("transaction_lifecycle"));
+    assert!(scenario.contains("receiptRequestsDuringBroadcast"));
+    assert!(scenario.contains("send_transaction"));
+}

@@ -52,9 +52,9 @@ let client = AlloyClient::builder()
 The umbrella signer handle signs CoW EIP-712 typed-data payloads directly,
 normalizes ECDSA `v` values through the shared contracts helper, sends
 transactions through Alloy's wallet-filler provider, and returns the broadcast
-transaction hash. Raw `sign_transaction` is intentionally unsupported because
-the relevant Alloy provider path delegates to the remote JSON-RPC peer rather
-than producing a local signed payload.
+transaction hash as `TransactionBroadcast`. Raw `sign_transaction` is
+intentionally unsupported because the relevant Alloy provider path delegates to
+the remote JSON-RPC peer rather than producing a local signed payload.
 
 The umbrella composes its provider and signer through Alloy's wallet-filler
 provider pattern rather than reimplementing transaction filling, signing, or
@@ -105,6 +105,19 @@ let signer = LocalAlloyKeystoreSigner::builder()
 The signer leaf returns provider-required errors for transaction submission and
 gas estimation because it does not own RPC state. Use the umbrella client when
 the same runtime must both sign and submit transactions.
+
+## Transaction Lifecycle
+
+`AlloyClientSignerHandle::send_transaction` submits through Alloy's
+wallet-filler provider and reads the already accepted hash through
+`pending.tx_hash()`. It returns after broadcast acknowledgement and does not
+wait for `eth_getTransactionReceipt`.
+
+Receipt observation is an explicit provider operation. The Alloy provider leaf
+maps Alloy receipts into `TransactionReceipt`, including EIP-658 success /
+reverted status when present, block number, block hash, gas used, sender, and
+recipient. Pre-Byzantium post-state receipts keep `status` empty rather than
+being coerced into success.
 
 ## Trading Integration
 

@@ -16,6 +16,10 @@ claim and runs on every commit.
   host-side lane the consoles run against `MockEip1193Transport`, so
   discovery, selection, confirmation, connect, signing, quote, submit, and
   cancel compose deterministically without a browser.
+- Browser-wallet receipt parsing is also covered in the deterministic lane:
+  missing or null optional receipt fields remain tolerated, while present
+  malformed `status`, `blockNumber`, `blockHash`, `gasUsed`, `from`, and `to`
+  fields fail closed before reaching callers.
 - In-browser `wasm-bindgen-test` runs the same surface through a real
   headless Chrome so the WebAssembly boundary and the `wasm-bindgen` interop
   idioms see continuous proof. The sdk-verification console exercises

@@ -40,3 +40,9 @@ Those traits are the runtime-neutral contract. A single trading helper can
 drive native Alloy, the browser-wallet leaf, or a custom adapter because the
 provider and signer seams live in `cow-sdk-core` rather than in a concrete
 runtime crate.
+
+The transaction lifecycle is split across the same traits. Signers return
+`TransactionBroadcast` after a backend accepts a transaction hash for broadcast;
+providers return `Option<TransactionReceipt>` when a transaction is visible to
+receipt lookup. Adapter authors should populate receipt fields when the runtime
+exposes them and should keep receipt polling out of `send_transaction`.

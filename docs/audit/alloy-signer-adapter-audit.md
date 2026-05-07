@@ -1,11 +1,12 @@
 # Alloy Signer Adapter Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-05-07
 Owning surface: `cow-sdk-alloy-signer` `LocalAlloyKeystoreSigner`, its builder, and its `AsyncSigner` implementation
-Refresh trigger: Changes to the signer public API, the `AsyncSigner` trait, typed-data conversion, signature normalization, cancellation propagation, the workspace Alloy signer pin, or the crate dependency boundary
+Refresh trigger: ADR 0038 - `send_transaction` return type clarification, or changes to the signer public API, the `AsyncSigner` trait, typed-data conversion, signature normalization, cancellation propagation, the workspace Alloy signer pin, or the crate dependency boundary
 Related docs:
 - [ADR 0036](../adr/0036-alloy-signer-adapter.md)
+- [ADR 0038](../adr/0038-transaction-lifecycle-types.md)
 - [ADR 0022](../adr/0022-ecdsa-signature-v-normalization.md)
 - [ADR 0024](../adr/0024-asyncprovider-asyncsigningprovider-capability-split.md)
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
@@ -61,6 +62,10 @@ The adapter implements `get_address`, `sign_message`,
 `sign_typed_data_payload`, and the legacy flat `sign_typed_data` path.
 `sign_transaction`, `send_transaction`, and `estimate_gas` return
 `ProviderRequired` because the local signer does not own provider context.
+The `send_transaction` method still has the `Result<TransactionBroadcast, _>`
+trait shape; the provider-required result means this leaf never fabricates a
+broadcast hash without a provider. The composed Alloy umbrella owns the
+provider-backed path and returns the broadcast hash through `*pending.tx_hash()`.
 
 `sign_typed_data_payload` converts the explicit SDK payload into Alloy dynamic
 typed data without dropping the payload primary type. The legacy flat path has

@@ -534,6 +534,11 @@ Use these examples when you want local or transport-mocked Rust flows:
 
 - signs a real CoW order typed-data payload through the Alloy signer leaf
 
+`transaction_lifecycle`
+
+- shows that native Alloy transaction submission returns a broadcast hash
+  without receipt polling
+
 `alloy_trading_full_flow`
 
 - exercises allowance, approval, and pre-sign helper paths through the composed

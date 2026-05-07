@@ -19,7 +19,7 @@ the main SDK surfaces.
 | Inspect order lifecycle and on-chain actions | `order_lifecycle_simulation`, `ethflow_transaction_simulation`, `onchain_order_actions_simulation` |
 | Inspect typed orderbook transport | `orderbook_transport_roundtrip` |
 | Work with read-only subgraph access | `subgraph_query_roundtrip`, `subgraph_custom_query_roundtrip` |
-| Work with native Alloy adapters | `alloy_quickstart`, `alloy_provider_only`, `alloy_signer_only`, `alloy_provider_with_custom_signer`, `alloy_signer_with_custom_provider`, `alloy_trading_full_flow` |
+| Work with native Alloy adapters | `alloy_quickstart`, `alloy_provider_only`, `alloy_signer_only`, `transaction_lifecycle`, `alloy_provider_with_custom_signer`, `alloy_signer_with_custom_provider`, `alloy_trading_full_flow` |
 | Run an opt-in live service check | `orderbook_live_probe`, `subgraph_live_query` |
 
 See [Native examples](../examples/native/README.md) for commands and
@@ -98,7 +98,8 @@ Every console ships with:
 - The native examples include both provider-agnostic deterministic flows and
   explicit Alloy adapter flows. Alloy scenarios run with `--features
   alloy-provider`, `--features alloy-signer`, or `--features alloy` depending
-  on the smallest adapter surface they exercise.
+  on the smallest adapter surface they exercise. The `transaction_lifecycle`
+  scenario shows the broadcast-hash result without receipt polling.
 - Native runtime integrations plug into
   `cow-sdk-core::{Signer, AsyncSigner, AsyncSigningProvider, Provider, AsyncProvider}`. That keeps
   provider-specific choices outside the default facade while preserving one

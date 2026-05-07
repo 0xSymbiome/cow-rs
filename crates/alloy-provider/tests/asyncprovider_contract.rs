@@ -3,7 +3,7 @@ use std::time::Duration;
 use cow_sdk_alloy_provider::{AsyncProviderError, RpcAlloyProvider};
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, ContractCall, HexData, TransactionHash, TransactionRequest,
-    TransportErrorClass,
+    TransactionStatus, TransportErrorClass,
 };
 use serde_json::{Value, json};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
@@ -90,7 +90,7 @@ async fn get_transaction_receipt_returns_none_for_null() {
 }
 
 #[tokio::test]
-async fn get_transaction_receipt_returns_minimal_receipt() {
+async fn get_transaction_receipt_returns_rich_receipt() {
     let (_server, provider) = provider_with_result(receipt_response()).await;
 
     let receipt = provider
@@ -99,6 +99,30 @@ async fn get_transaction_receipt_returns_minimal_receipt() {
         .unwrap()
         .unwrap();
     assert_eq!(receipt.transaction_hash.as_str(), HASH);
+    assert_eq!(receipt.status, Some(TransactionStatus::Success));
+    assert_eq!(receipt.block_number, Some(42));
+    assert_eq!(receipt.block_hash.unwrap().as_str(), HASH);
+    assert_eq!(receipt.gas_used, Some(Amount::from(21_000u64)));
+    assert_eq!(receipt.from.unwrap().as_str(), ADDRESS);
+    assert_eq!(receipt.to.unwrap().as_str(), ADDRESS);
+}
+
+#[tokio::test]
+async fn get_transaction_receipt_populates_status_block_gas_from_to() {
+    let (_server, provider) = provider_with_result(full_receipt_response()).await;
+
+    let receipt = provider
+        .get_transaction_receipt(&TransactionHash::new(HASH).unwrap())
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(receipt.status, Some(TransactionStatus::Success));
+    assert_eq!(receipt.block_number, Some(1234));
+    assert_eq!(receipt.block_hash.unwrap().as_str(), HASH);
+    assert_eq!(receipt.gas_used, Some(Amount::from(30_000u64)));
+    assert_eq!(receipt.from.unwrap().as_str(), ADDRESS);
+    assert_eq!(receipt.to.unwrap().as_str(), ADDRESS);
 }
 
 #[tokio::test]
@@ -277,6 +301,25 @@ fn receipt_response() -> Value {
         "gasUsed": "0x5208",
         "effectiveGasPrice": "0x1",
         "cumulativeGasUsed": "0x5208",
+        "logsBloom": format!("0x{}", "00".repeat(256)),
+        "status": "0x1",
+        "logs": [],
+        "type": "0x2"
+    })
+}
+
+fn full_receipt_response() -> Value {
+    json!({
+        "transactionHash": HASH,
+        "transactionIndex": "0x0",
+        "blockHash": HASH,
+        "blockNumber": "0x4d2",
+        "from": ADDRESS,
+        "to": ADDRESS,
+        "contractAddress": null,
+        "gasUsed": "0x7530",
+        "effectiveGasPrice": "0x1",
+        "cumulativeGasUsed": "0x7530",
         "logsBloom": format!("0x{}", "00".repeat(256)),
         "status": "0x1",
         "logs": [],
