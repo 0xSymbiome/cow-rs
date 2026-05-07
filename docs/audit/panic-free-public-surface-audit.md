@@ -1,7 +1,7 @@
 # Panic-Free Public Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-05-07
 Owning surface: every `crates/*/src/**/*.rs` file accessible from the published public API
 Refresh trigger: any ADR 0033 panic-policy change, panic-allowlist addition, or new `expect`, `unwrap`, or `panic!` site on a path reachable from the published public API
 Related docs:
@@ -30,6 +30,7 @@ benchmarks, or private review tooling. Those surfaces may use `unwrap` or
 | Numeric clamps | Conversion `expect` sites follow saturating or bounded arithmetic immediately before the conversion | Conforms |
 | Panic allowlist | `.github/config/panic-allowlist.yaml` carries 45 reviewed item-path entries covering 55 accepted static-invariant panic-bearing calls | Conforms |
 | Native Alloy adapters | Provider, signer, and umbrella public methods return typed errors for validation, transport, signing, pending transaction, and unsupported capability failures rather than panicking | Conforms |
+| Trading wait helper | `WaitOptions` constructors/builders, `submit_and_wait_for_receipt`, `poll_for_receipt`, and `WaitError` formatting/error implementations return typed results and do not panic | Conforms |
 | Item-level panic artifacts | Each documented allowlist entry requires a rationale, `# Panics` rustdoc on the named item, and a `// SAFETY:` comment in the item body | Conforms |
 
 Documented public runtime sites:
@@ -55,6 +56,14 @@ No new `expect`, `unwrap`, or `panic!` site on a public runtime path ships
 without a documented rationale and a refreshed entry in this audit. When a
 fallible operation can fail because of caller input, the public contract must
 return a typed error instead of panicking.
+
+`cow-sdk-trading` receipt-wait helpers follow that contract:
+`WaitOptions::new`, `WaitOptions::approve_default`,
+`WaitOptions::inclusion_default`, and the three `with_*` builders are total
+value constructors; `submit_and_wait_for_receipt` and `poll_for_receipt`
+surface signer, provider, timeout, revert, and cancellation outcomes through
+`WaitError`; the `Display` and `Error` implementations format or expose
+sources without unchecked assumptions.
 
 The canonical panic allowlist is `.github/config/panic-allowlist.yaml`.
 It currently contains 45 reviewed item-path entries covering 55
@@ -88,6 +97,7 @@ Primary implementation points:
 
 - `.github/config/panic-allowlist.yaml`
 - `crates/*/src/**/*.rs`
+- `crates/trading/src/wait.rs`
 - `Cargo.toml` workspace clippy lint configuration
 - `scripts/policy-maintainer/src/check_panic_allowlist.rs`
 

@@ -171,4 +171,7 @@ fn transaction_lifecycle_example_is_declared_and_documented() {
     assert!(examples_readme.contains("transaction_lifecycle"));
     assert!(scenario.contains("receiptRequestsDuringBroadcast"));
     assert!(scenario.contains("send_transaction"));
+    assert!(scenario.contains("submit_and_wait_for_receipt"));
+    assert!(scenario.contains("Shape A"));
+    assert!(scenario.contains("Shape B"));
 }

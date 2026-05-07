@@ -46,6 +46,72 @@ Helper-only SDKs support allowance reads, approval submission, pre-sign
 transaction construction, and on-chain cancellation. Quote, post, order lookup,
 and off-chain cancellation methods are available only on `TradingSdk`.
 
+## Waiting for mined receipts
+
+For workflows that need to observe mined success or revert status before
+continuing, use `submit_and_wait_for_receipt`. This is the common shape for
+approve-then-settle flows:
+
+```rust,no_run
+# use std::error::Error;
+# use cow_sdk_core::{
+#     AsyncProvider, AsyncSigner, TransactionRequest, TransactionStatus,
+# };
+use cow_sdk_trading::{WaitError, WaitOptions, submit_and_wait_for_receipt};
+#
+# async fn approve_flow<S, P>(
+#     signer: &S,
+#     provider: &P,
+#     approve_tx: &TransactionRequest,
+# ) -> Result<(), Box<dyn Error>>
+# where
+#     S: AsyncSigner,
+#     S::Error: Error + 'static,
+#     P: AsyncProvider,
+#     P::Error: Error + 'static,
+# {
+
+let receipt = match submit_and_wait_for_receipt(
+    signer,
+    provider,
+    approve_tx,
+    WaitOptions::approve_default(),
+)
+.await
+{
+    Ok(receipt) => receipt,
+    Err(WaitError::Reverted { receipt }) => {
+        return Err(format!(
+            "approval reverted: gas_used={:?}",
+            receipt.gas_used
+        )
+        .into());
+    }
+    Err(WaitError::Timeout {
+        transaction_hash,
+        elapsed,
+    }) => {
+        return Err(format!(
+            "approval receipt {} was not observed after {:?}",
+            transaction_hash.as_str(),
+            elapsed
+        )
+        .into());
+    }
+    Err(other) => return Err(Box::new(other)),
+};
+
+assert_eq!(receipt.status, Some(TransactionStatus::Success));
+# Ok(())
+# }
+```
+
+The companion `poll_for_receipt` helper is available when a workflow already
+has a transaction hash from a separate broadcast path. Both helpers are generic
+over `AsyncSigner` and `AsyncProvider`, so they work with the native Alloy
+client, separate Alloy provider and signer adapters, browser-wallet adapters,
+and custom integrations.
+
 ## Where to next
 
 - [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)

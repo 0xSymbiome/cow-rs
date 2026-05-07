@@ -1,15 +1,18 @@
-//! Demonstrates the broadcast / receipt lifecycle: build a self-transfer,
-//! broadcast it once via `send_transaction`, print the broadcast hash, then
-//! exit. The receipt-polling helper is shown in a follow-up release once the
-//! trading helper crate exposes it.
+//! Demonstrates two transaction lifecycle shapes:
+//! (A) submit and wait for one mined receipt through the trading helper, and
+//! (B) broadcast once and keep receipt observation separate.
 
-use std::{error::Error, sync::{Arc, Mutex}};
+use std::{
+    error::Error,
+    sync::{Arc, Mutex},
+};
 
 use cow_sdk::alloy::AlloyClient;
 use cow_sdk::core::{
     Address, Amount, AsyncSigner, AsyncSigningProvider, SupportedChainId, TransactionBroadcast,
-    TransactionRequest,
+    TransactionRequest, TransactionStatus,
 };
+use cow_sdk::trading::{WaitOptions, submit_and_wait_for_receipt};
 use serde_json::{Value, json};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
@@ -30,18 +33,43 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let signer = client.create_signer("local-key").await?;
     let tx = self_transfer(&signer.get_address().await?);
 
+    // Shape A: one helper call broadcasts once and returns the mined receipt.
+    let helper_receipt =
+        submit_and_wait_for_receipt(&signer, &client, &tx, WaitOptions::approve_default()).await?;
+    assert_eq!(helper_receipt.status, Some(TransactionStatus::Success));
+
+    // Shape B: one manual broadcast, with receipt observation left separate.
+    let method_start = {
+        methods
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
+    };
     let broadcast: TransactionBroadcast = signer.send_transaction(&tx).await?;
 
     let methods = methods
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .clone();
+    let shape_b_methods = &methods[method_start..];
     let report = json!({
         "surface": "transaction lifecycle",
-        "broadcastHash": broadcast.transaction_hash.as_str(),
-        "receiptRequestsDuringBroadcast": methods
+        "shapeA": {
+            "receiptHash": helper_receipt.transaction_hash.as_str(),
+            "status": format!("{:?}", helper_receipt.status),
+            "blockNumber": helper_receipt.block_number,
+            "gasUsed": helper_receipt.gas_used,
+        },
+        "shapeB": {
+            "broadcastHash": broadcast.transaction_hash.as_str(),
+            "receiptRequestsDuringBroadcast": shape_b_methods
+                .iter()
+                .filter(|method| method.as_str() == "eth_getTransactionReceipt")
+                .count()
+        },
+        "totalBroadcasts": methods
             .iter()
-            .filter(|method| method.as_str() == "eth_getTransactionReceipt")
+            .filter(|method| method.as_str() == "eth_sendRawTransaction")
             .count()
     });
     println!("{}", serde_json::to_string_pretty(&report)?);
@@ -102,6 +130,7 @@ fn rpc_result(method: &str) -> Result<Value, String> {
         }),
         "eth_getBlockByNumber" => block_response("0x2a"),
         "eth_sendRawTransaction" => json!(HASH),
+        "eth_getTransactionReceipt" => receipt_response(),
         _ => return Err(format!("unexpected JSON-RPC method `{method}`")),
     };
     Ok(result)
@@ -130,6 +159,25 @@ fn block_response(number: &str) -> Value {
         "uncles": [],
         "totalDifficulty": "0x0",
         "size": "0x1",
+    })
+}
+
+fn receipt_response() -> Value {
+    json!({
+        "transactionHash": HASH,
+        "transactionIndex": "0x0",
+        "blockHash": HASH,
+        "blockNumber": "0x2a",
+        "from": ADDRESS,
+        "to": ADDRESS,
+        "contractAddress": null,
+        "gasUsed": "0x5208",
+        "effectiveGasPrice": "0x1",
+        "cumulativeGasUsed": "0x5208",
+        "logsBloom": format!("0x{}", "00".repeat(256)),
+        "status": "0x1",
+        "logs": [],
+        "type": "0x2"
     })
 }
 

@@ -1431,6 +1431,8 @@ dependencies = [
  "cow-sdk-core",
  "cow-sdk-orderbook",
  "cow-sdk-signing",
+ "futures-timer",
+ "gloo-timers",
  "hex",
  "num-bigint",
  "serde",

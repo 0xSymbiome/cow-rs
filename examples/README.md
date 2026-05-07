@@ -14,7 +14,7 @@ The repository includes native and WASM example galleries for the public
 - native-sell / EthFlow transaction construction
 - pre-sign and on-chain cancellation flows
 - read-only subgraph access
-- native Alloy transaction broadcast timing
+- native Alloy transaction lifecycle timing
 
 The native gallery includes dedicated scenarios for
 `ethflow_transaction_simulation`, `onchain_order_actions_simulation`, and

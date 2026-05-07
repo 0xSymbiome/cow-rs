@@ -50,10 +50,10 @@ After that, branch by goal through the full scenario table below.
 | `alloy_quickstart` | Build the composed native Alloy client against a mock RPC |
 | `alloy_provider_only` | Use the read-only Alloy provider leaf against a mock RPC |
 | `alloy_signer_only` | Sign a real CoW order typed-data payload with the Alloy signer leaf |
-| `transaction_lifecycle` | Submit a transaction through the composed Alloy signer and verify no receipt polling happens during broadcast |
+| `transaction_lifecycle` | Compare helper-based receipt waiting with broadcast-only submission through the composed Alloy signer |
 | `alloy_provider_with_custom_signer` | Pair the Alloy provider leaf with a consumer-supplied async signer |
 | `alloy_signer_with_custom_provider` | Pair the Alloy signer leaf with a consumer-supplied async provider |
-| `alloy_trading_full_flow` | Invoke allowance, approval, and pre-sign TradingSdk async boundaries through `AlloyClient` |
+| `alloy_trading_full_flow` | Invoke allowance, approval receipt waiting, and pre-sign TradingSdk async boundaries through `AlloyClient` |
 
 Subgraph scenarios use `cow-sdk-subgraph` directly rather than the root
 facade.

@@ -6,9 +6,11 @@ use std::{
 use cow_sdk::alloy::AlloyClient;
 use cow_sdk::core::{
     Amount, AsyncSigningProvider, CowEnv, OrderUid, SupportedChainId, TransactionHash,
+    TransactionStatus,
 };
 use cow_sdk::trading::{
-    AllowanceParameters, ApprovalParameters, OrderTraderParameters, TradingSdk,
+    AllowanceParameters, ApprovalParameters, OrderTraderParameters, TradingSdk, WaitOptions,
+    approval_transaction, submit_and_wait_for_receipt,
 };
 use serde_json::{Value, json};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
@@ -45,13 +47,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
     assert_eq!(allowance, Amount::from(42u32));
 
-    let approval_hash = sdk
-        .approve_cow_protocol_async(
-            &signer,
-            &ApprovalParameters::new(address(COW), Amount::new("1000")?),
-        )
-        .await?;
-    assert_eq!(approval_hash, TransactionHash::new(HASH)?);
+    let approval_params = ApprovalParameters::new(address(COW), Amount::new("1000")?);
+    let approval_tx =
+        approval_transaction(&approval_params, SupportedChainId::Mainnet, CowEnv::Prod)?;
+    let approval_receipt =
+        submit_and_wait_for_receipt(&signer, &client, &approval_tx, WaitOptions::approve_default())
+            .await?;
+    assert_eq!(approval_receipt.transaction_hash, TransactionHash::new(HASH)?);
+    assert_eq!(approval_receipt.status, Some(TransactionStatus::Success));
 
     let pre_sign = sdk
         .get_pre_sign_transaction_async(&OrderTraderParameters::new(order_uid()), &signer)
@@ -65,7 +68,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
         "surface": "cow-sdk::alloy::AlloyClient with TradingSdk",
         "allowance": allowance,
-        "approvalTxHash": approval_hash.as_str(),
+        "approvalTxHash": approval_receipt.transaction_hash.as_str(),
+        "approvalStatus": format!("{:?}", approval_receipt.status),
+        "approvalBlockNumber": approval_receipt.block_number,
+        "approvalGasUsed": approval_receipt.gas_used,
         "preSignGasLimit": pre_sign.gas_limit,
         "rpcMethods": methods
     });

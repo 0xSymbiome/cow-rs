@@ -12,10 +12,10 @@ use async_trait::async_trait;
 use serde_json::json;
 
 use cow_sdk_core::{
-    Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, AsyncSigner, BlockInfo, ContractCall,
-    ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer,
-    SupportedChainId, TransactionBroadcast, TransactionReceipt, TransactionRequest,
-    TypedDataDomain, TypedDataField, TypedDataPayload,
+    Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, AsyncProvider, AsyncSigner, BlockHash,
+    BlockInfo, ContractCall, ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid,
+    Provider, Signer, SupportedChainId, TransactionBroadcast, TransactionHash, TransactionReceipt,
+    TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField, TypedDataPayload,
 };
 use cow_sdk_orderbook::{
     AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
@@ -729,4 +729,259 @@ pub fn ethflow_order() -> Order {
     let mut order = regular_order();
     order.ethflow_data = Some(cow_sdk_orderbook::EthflowData::new(order.valid_to));
     order
+}
+
+pub const BLOCK_HASH: &str = "0x2468ace013579bdf2468ace013579bdf2468ace013579bdf2468ace013579bdf";
+pub const TO: &str = "0x70997970c51812dc3a010c7d01b50e0d17dc79c8";
+
+pub fn test_hash() -> TransactionHash {
+    TransactionHash::new(TX_HASH).expect("test transaction hash literal must be valid")
+}
+
+pub fn test_block_hash() -> BlockHash {
+    BlockHash::new(BLOCK_HASH).expect("test block hash literal must be valid")
+}
+
+pub fn test_from_address() -> Address {
+    address(OWNER)
+}
+
+pub fn test_to_address() -> Address {
+    address(TO)
+}
+
+pub fn rich_receipt_fixture() -> TransactionReceipt {
+    TransactionReceipt::from_parts(
+        test_hash(),
+        Some(TransactionStatus::Success),
+        Some(1_234),
+        Some(test_block_hash()),
+        Some(Amount::from(21_000u64)),
+        Some(test_from_address()),
+        Some(test_to_address()),
+    )
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FakeSignerError {
+    Boom,
+}
+
+impl std::fmt::Display for FakeSignerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Boom => f.write_str("fake signer boom"),
+        }
+    }
+}
+
+impl std::error::Error for FakeSignerError {}
+
+#[derive(Clone)]
+pub struct FakeSigner {
+    outcome: Arc<FakeSignerOutcome>,
+}
+
+#[derive(Clone)]
+enum FakeSignerOutcome {
+    Broadcast(TransactionHash),
+    Error(FakeSignerError),
+}
+
+impl FakeSigner {
+    pub fn with_broadcast(transaction_hash: TransactionHash) -> Self {
+        Self {
+            outcome: Arc::new(FakeSignerOutcome::Broadcast(transaction_hash)),
+        }
+    }
+
+    pub fn with_error(error: FakeSignerError) -> Self {
+        Self {
+            outcome: Arc::new(FakeSignerOutcome::Error(error)),
+        }
+    }
+}
+
+impl AsyncSigner for FakeSigner {
+    type Error = FakeSignerError;
+
+    async fn get_address(&self) -> Result<Address, Self::Error> {
+        Ok(test_from_address())
+    }
+
+    async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
+        Ok(MESSAGE_SIGNATURE.to_owned())
+    }
+
+    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+        Ok(TX_HASH.to_owned())
+    }
+
+    async fn sign_typed_data_payload(
+        &self,
+        _payload: &TypedDataPayload,
+    ) -> Result<String, Self::Error> {
+        Ok(TYPED_SIGNATURE.to_owned())
+    }
+
+    async fn sign_typed_data(
+        &self,
+        _domain: &TypedDataDomain,
+        _fields: &[TypedDataField],
+        _value_json: &str,
+    ) -> Result<String, Self::Error> {
+        Ok(TYPED_SIGNATURE.to_owned())
+    }
+
+    async fn send_transaction(
+        &self,
+        _tx: &TransactionRequest,
+    ) -> Result<TransactionBroadcast, Self::Error> {
+        match self.outcome.as_ref() {
+            FakeSignerOutcome::Broadcast(transaction_hash) => {
+                Ok(TransactionBroadcast::new(transaction_hash.clone()))
+            }
+            FakeSignerOutcome::Error(error) => Err(*error),
+        }
+    }
+
+    async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
+        Ok(Amount::from(21_000u64))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FakeProviderError {
+    LookupFailed,
+}
+
+impl std::fmt::Display for FakeProviderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::LookupFailed => f.write_str("fake provider lookup failed"),
+        }
+    }
+}
+
+impl std::error::Error for FakeProviderError {}
+
+#[derive(Clone)]
+pub struct FakeProvider {
+    state: Arc<Mutex<FakeProviderState>>,
+}
+
+#[derive(Clone)]
+struct FakeProviderState {
+    poll_count: usize,
+    receipt_after_poll: Option<usize>,
+    receipt: Option<TransactionReceipt>,
+    fail_first_poll: bool,
+}
+
+impl FakeProvider {
+    pub fn with_receipt_after_polls(polls: usize, receipt: TransactionReceipt) -> Self {
+        Self {
+            state: Arc::new(Mutex::new(FakeProviderState {
+                poll_count: 0,
+                receipt_after_poll: Some(polls.max(1)),
+                receipt: Some(receipt),
+                fail_first_poll: false,
+            })),
+        }
+    }
+
+    pub fn with_receipt_immediately_available(receipt: TransactionReceipt) -> Self {
+        Self::with_receipt_after_polls(1, receipt)
+    }
+
+    pub fn never_yields_receipt() -> Self {
+        Self {
+            state: Arc::new(Mutex::new(FakeProviderState {
+                poll_count: 0,
+                receipt_after_poll: None,
+                receipt: None,
+                fail_first_poll: false,
+            })),
+        }
+    }
+
+    pub fn never_polled() -> Self {
+        Self::never_yields_receipt()
+    }
+
+    pub fn with_lookup_error_on_first_poll() -> Self {
+        Self {
+            state: Arc::new(Mutex::new(FakeProviderState {
+                poll_count: 0,
+                receipt_after_poll: None,
+                receipt: None,
+                fail_first_poll: true,
+            })),
+        }
+    }
+
+    pub fn poll_count(&self) -> usize {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .poll_count
+    }
+}
+
+impl AsyncProvider for FakeProvider {
+    type Error = FakeProviderError;
+
+    async fn get_chain_id(&self) -> Result<u64, Self::Error> {
+        Ok(u64::from(SupportedChainId::Mainnet))
+    }
+
+    async fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
+        Ok(None)
+    }
+
+    async fn get_transaction_receipt(
+        &self,
+        _transaction_hash: &TransactionHash,
+    ) -> Result<Option<TransactionReceipt>, Self::Error> {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state.poll_count += 1;
+        if state.fail_first_poll && state.poll_count == 1 {
+            return Err(FakeProviderError::LookupFailed);
+        }
+        Ok(state
+            .receipt_after_poll
+            .filter(|poll| state.poll_count >= *poll)
+            .and_then(|_| state.receipt.clone()))
+    }
+
+    async fn get_storage_at(
+        &self,
+        _address: &Address,
+        _slot: &str,
+    ) -> Result<HexData, Self::Error> {
+        Ok(HexData::empty())
+    }
+
+    async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
+        Ok(HexData::empty())
+    }
+
+    async fn read_contract(&self, _request: &ContractCall) -> Result<String, Self::Error> {
+        Ok("null".to_owned())
+    }
+
+    async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
+        Ok(BlockInfo::new(0, None))
+    }
+
+    async fn get_contract(
+        &self,
+        address: &Address,
+        abi_json: &str,
+    ) -> Result<ContractHandle, Self::Error> {
+        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+    }
 }

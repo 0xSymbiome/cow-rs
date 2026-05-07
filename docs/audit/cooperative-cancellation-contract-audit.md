@@ -1,7 +1,7 @@
 # Cooperative Cancellation Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-05-07
 Owning surface: Cross-cutting cooperative cancellation across `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, and `cow-sdk-trading`
 Refresh trigger: Changes to the `Cancellable` combinator, to the `CancellationToken` re-export, to the canonical long-running public methods on the three client surfaces, or to the `From<Cancelled>` bridges on the typed error aggregates
 Related docs:
@@ -41,6 +41,7 @@ policy, or future capability crates outside the published surface.
 | Shared token import | One typed cancellation token re-export across every public crate | Conforms |
 | Canonical public methods | Every long-running public operation on `OrderBookApi`, `SubgraphApi`, and `TradingSdk` is exposed as one canonical async method; cancellation composes through `Cancellable::cancel_with(&token)` at the call site | Conforms |
 | Typed `Cancelled` variants | Every affected error aggregate surfaces cancellation as a discrete typed variant, and each carries a `From<Cancelled>` bridge so the marker propagates with `?` across every public boundary | Conforms |
+| Trading wait helper | `WaitError::Cancelled(Cancelled)` and its `From<Cancelled>` bridge let receipt-wait helpers propagate `Cancellable::cancel_with(&token)` cancellation without erasing signer or provider error types | Conforms |
 | Native Alloy adapters | Provider, signer, and umbrella adapter error aggregates expose cancellation as typed variants and propagate the marker through the same combinator contract | Conforms |
 | Combinator poll | The combinator polls the token in a biased branch, drops the inner future promptly on cancellation, and routes the marker through the inner result's `From<Cancelled>` implementation | Conforms |
 
@@ -90,6 +91,12 @@ read calls, signer typed-data signing, and umbrella client operations can be
 wrapped by `Cancellable::cancel_with(&token)` and resolve to typed cancellation
 errors without exposing transport internals or signer state.
 
+`cow-sdk-trading::WaitError<S, P>` carries a `Cancelled(Cancelled)` variant and
+an `impl From<Cancelled>` bridge. A future returned by
+`submit_and_wait_for_receipt` or `poll_for_receipt` can therefore be wrapped by
+`Cancellable::cancel_with(&token)` and still preserve typed signer/provider
+error parameters for the non-cancelled paths.
+
 ### Combinator Poll And Drop Semantics
 
 The `WithCancellation<'t, F>` wrapper drives a biased poll against the
@@ -114,6 +121,7 @@ Primary implementation points:
 - `crates/trading/src/sdk.rs`
 - `crates/trading/src/post.rs`
 - `crates/trading/src/error.rs`
+- `crates/trading/src/wait.rs`
 - `crates/signing/src/errors.rs`
 - `crates/browser-wallet/src/error.rs`
 - `crates/alloy-provider/src/error.rs`
@@ -132,6 +140,7 @@ Primary regression coverage:
 - `crates/subgraph/tests/cancellation_composition_contract.rs`
 - `crates/trading/tests/sdk_contract.rs`
 - `crates/trading/tests/cancellation_composition_contract.rs`
+- `crates/trading/tests/wait_helper_contract.rs::cancellation_through_cancellable_propagates_through_helper`
 - `crates/alloy-provider/tests/cancellation_contract.rs`
 - `crates/alloy-signer/tests/cancellation_contract.rs`
 - `crates/alloy/tests/cancellation_contract.rs`
@@ -145,6 +154,7 @@ cargo test -p cow-sdk-orderbook --test cancellation_composition_contract
 cargo test -p cow-sdk-orderbook --test request_contract
 cargo test -p cow-sdk-subgraph --test cancellation_composition_contract
 cargo test -p cow-sdk-trading --test cancellation_composition_contract
+cargo test -p cow-sdk-trading --test wait_helper_contract
 cargo test -p cow-sdk-alloy-provider --test cancellation_contract
 cargo test -p cow-sdk-alloy-signer --test cancellation_contract
 cargo test -p cow-sdk-alloy --test cancellation_contract

@@ -37,6 +37,8 @@ pub mod types;
 /// Typed client-side validator enforcing the reviewed services
 /// protocol-invariant matrix on every submission seam.
 pub mod validation;
+/// Broadcast-then-poll helpers for mined transaction receipts.
+pub mod wait;
 
 pub use allowance::{
     approval_transaction, approve_cow_protocol, approve_cow_protocol_async,
@@ -88,3 +90,4 @@ pub use types::{
 pub use validation::{
     AmountSide, ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass,
 };
+pub use wait::{WaitError, WaitOptions, poll_for_receipt, submit_and_wait_for_receipt};

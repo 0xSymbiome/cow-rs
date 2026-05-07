@@ -44,6 +44,9 @@ The first functional crate-family release begins at `0.1.0`.
   `TransactionReceipt` fields, including status, block, gas, sender, and
   recipient, while browser-wallet parsing fails closed on malformed present
   fields.
+- `cow-sdk-trading` now exports `submit_and_wait_for_receipt`,
+  `poll_for_receipt`, `WaitOptions`, and `WaitError` for workflows that need
+  to compose broadcast acknowledgement with mined receipt observation.
 
 ### Added
 
@@ -62,7 +65,7 @@ The first functional crate-family release begins at `0.1.0`.
   alloy adapter crates, composable and TWAP orders, permit signing, bridging,
   flash-loans, weiroll, and hardware-wallet support.
 - A native `transaction_lifecycle` example demonstrates broadcast-hash
-  transaction submission without receipt polling.
+  transaction submission beside helper-based mined receipt waiting.
 
 ### Documentation
 
