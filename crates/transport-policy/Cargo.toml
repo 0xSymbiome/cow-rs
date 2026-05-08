@@ -1,0 +1,51 @@
+[package]
+name = "cow-sdk-transport-policy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Retry, rate-limit, and transport classification policy for CoW Protocol SDK HTTP clients"
+readme = "README.md"
+documentation = "https://docs.rs/cow-sdk-transport-policy"
+homepage = "https://github.com/cowdao-grants/cow-rs"
+keywords = ["cow", "cow-protocol", "sdk", "http-policy", "transport"]
+categories = ["api-bindings", "asynchronous", "network-programming"]
+
+[package.metadata.docs.rs]
+all-features = true
+default-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+
+[lints]
+workspace = true
+
+[features]
+default = []
+tracing = ["dep:tracing", "cow-sdk-core/tracing"]
+reqwest-classifier = ["dep:reqwest"]
+
+[dependencies]
+async-trait.workspace = true
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+http.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio-util.workspace = true
+url.workspace = true
+tracing = { workspace = true, optional = true }
+futures-timer.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = { workspace = true, optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+gloo-timers.workspace = true
+web-time.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }
+wiremock.workspace = true

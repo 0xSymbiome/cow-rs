@@ -12,7 +12,7 @@
 //!   solver-competition).
 //! * [`GetOrdersRequest`] / [`GetTradesRequest`] — pagination defaults and
 //!   single-filter query contract.
-//! * [`RequestPolicy`] / [`RETRYABLE_STATUS_CODES`] /
+//! * [`RetryPolicy`] / [`RETRYABLE_STATUSES`] /
 //!   [`DEFAULT_TOKENS_PER_INTERVAL`] / [`DEFAULT_INTERVAL_LABEL`] — typed
 //!   request policy.
 //! * [`OrderbookRejection`] — typed classification of the services
@@ -28,10 +28,13 @@
 
 use cow_sdk_core::{Amount, ApiContext, CowEnv, Redacted, SupportedChainId, default_api_base_urls};
 use cow_sdk_orderbook::{
-    DEFAULT_INTERVAL_LABEL, DEFAULT_TOKENS_PER_INTERVAL, EVM_NATIVE_CURRENCY_ADDRESS,
-    GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderBookApiError, OrderCreation,
-    OrderQuoteResponse, RETRYABLE_STATUS_CODES, RequestPolicy, ResponseBody, SigningScheme, Trade,
+    EVM_NATIVE_CURRENCY_ADDRESS, GetOrdersRequest, GetTradesRequest, OrderBookApi,
+    OrderBookApiError, OrderCreation, OrderQuoteResponse, ResponseBody, SigningScheme, Trade,
     calculate_total_fee,
+};
+use cow_sdk_transport_policy::{
+    DEFAULT_INTERVAL_LABEL, DEFAULT_TOKENS_PER_INTERVAL, RETRYABLE_STATUSES, RequestRateLimiter,
+    RetryPolicy,
 };
 use serde_json::{Value, json};
 
@@ -565,8 +568,8 @@ fn assert_request_helper_policy(id: &str, expected: &Value) {
         })
         .collect();
     assert_eq!(
-        retry_statuses, RETRYABLE_STATUS_CODES,
-        "case {id}: RETRYABLE_STATUS_CODES must match the fixture list",
+        retry_statuses, RETRYABLE_STATUSES,
+        "case {id}: RETRYABLE_STATUSES must match the fixture list",
     );
 
     let tokens = expected["default_tokens_per_interval"]
@@ -586,12 +589,11 @@ fn assert_request_helper_policy(id: &str, expected: &Value) {
     );
 
     // The default request policy embeds these defaults.
-    let policy = RequestPolicy::default();
-    assert_eq!(
-        policy.rate_limit.tokens_per_interval,
-        DEFAULT_TOKENS_PER_INTERVAL
-    );
-    assert_eq!(policy.rate_limit.interval_label, DEFAULT_INTERVAL_LABEL);
+    let policy = RetryPolicy::default();
+    let limiter = RequestRateLimiter::default_orderbook();
+    assert_eq!(policy.max_attempts(), 10);
+    assert_eq!(limiter.tokens_per_interval(), DEFAULT_TOKENS_PER_INTERVAL);
+    assert_eq!(limiter.interval_label(), DEFAULT_INTERVAL_LABEL);
 }
 
 fn assert_total_fee_transform(id: &str, expected: &Value) {

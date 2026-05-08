@@ -39,6 +39,7 @@ alloy-signer = [
     "cow-sdk-alloy-signer/eip712",
 ]
 browser-wallet = ["dep:cow-sdk-browser-wallet"]
+http-classifier = ["cow-sdk-transport-policy/reqwest-classifier"]
 tracing = [
     "cow-sdk-alloy?/tracing",
     "cow-sdk-alloy-provider?/tracing",
@@ -48,6 +49,7 @@ tracing = [
     "cow-sdk-core/tracing",
     "cow-sdk-orderbook/tracing",
     "cow-sdk-signing/tracing",
+    "cow-sdk-transport-policy/tracing",
     "cow-sdk-trading/tracing",
     "cow-sdk-browser-wallet?/tracing",
 ]
@@ -61,6 +63,7 @@ cow-sdk-browser-wallet = { path = "../browser-wallet", version = "0.1.0", option
 cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
 cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0" }
 cow-sdk-signing = { path = "../signing", version = "0.1.0" }
+cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0" }
 cow-sdk-trading = { path = "../trading", version = "0.1.0" }
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 thiserror.workspace = true

@@ -46,6 +46,7 @@ public and runtime shape of `cow-rs`.
 | [0036](0036-alloy-signer-adapter.md) | Accepted | Ship a native Alloy local signer adapter behind an opt-in native crate. |
 | [0037](0037-alloy-umbrella-adapter.md) | Accepted | Compose the native Alloy provider and local signer into one wallet-capable client. |
 | [0038](0038-transaction-lifecycle-types.md) | Accepted (amended) | Split transaction broadcast acknowledgement from mined receipt observation. |
+| [0041](0041-transport-policy-l3-layering.md) | Accepted | Share retry, rate-limit, cooldown, and classification policy across HTTP clients. |
 
 ## When To Write An ADR
 

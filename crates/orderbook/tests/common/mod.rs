@@ -14,9 +14,10 @@
 use serde_json::{Value, json};
 
 use cow_sdk_orderbook::{
-    Address, ApiContext, AppDataHash, CowEnv, ExternalHostPolicy, OrderBookApi,
-    OrderBookTransportPolicy, OrderUid, SupportedChainId,
+    Address, ApiContext, AppDataHash, CowEnv, ExternalHostPolicy, OrderBookApi, OrderUid,
+    SupportedChainId,
 };
+use cow_sdk_transport_policy::TransportPolicy;
 
 pub fn address(value: &str) -> Address {
     Address::new(value).expect("test address literal must be valid")
@@ -53,10 +54,10 @@ pub fn build_orderbook_api_with_base_url(
 
 pub fn build_orderbook_api_with_policy(
     context: ApiContext,
-    policy: OrderBookTransportPolicy,
+    policy: TransportPolicy,
 ) -> OrderBookApi {
     OrderBookApi::builder_from_context(context)
-        .policy(policy)
+        .transport_policy(policy)
         .build()
         .expect("orderbook test client with custom policy must build")
 }

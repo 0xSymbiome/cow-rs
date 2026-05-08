@@ -1,0 +1,58 @@
+# ADR 0041: Share Transport Policy Across HTTP Clients
+
+- Status: Accepted
+- Date: 2026-05-08
+- Last reviewed: 2026-05-08
+- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
+- Tags: transport, retry, layering
+- Related: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md)
+
+## Decision
+
+Orderbook and subgraph retry, `Retry-After`, jitter, rate-limit, and
+transport-error classification behavior lives in `cow-sdk-transport-policy`.
+The crate sits above `cow-sdk-core::HttpTransport` and below typed clients.
+`OrderBookApiBuilder` and `SubgraphApiBuilder` accept the shared
+`TransportPolicy` through `.transport_policy(...)`.
+
+## Why
+
+The raw transport trait should stay a dispatch seam. Retry and rate-limit
+behavior depends on client semantics, HTTP status handling, and caller policy,
+so embedding it in `cow-sdk-core` would make the trait harder to keep stable.
+Keeping it separately owned gives orderbook and subgraph one consistent policy
+without duplicating backoff code or tying the browser transport crate to native
+HTTP details.
+
+The clean migration also avoids parallel public names for the same behavior.
+Downstream callers configure one policy type for orderbook and subgraph instead
+of separate client-specific policy wrappers.
+
+## Must Remain True
+
+- Public surface: typed clients consume `TransportPolicy`; moved policy types
+  are not re-exported from orderbook or subgraph.
+- Runtime and support: retryable statuses remain `408`, `425`, `429`, `500`,
+  `502`, `503`, and `504`; `Retry-After` is honored for `429` and `503`;
+  rate-limit state remains instance-scoped.
+- Validation and review: the transport-policy crate must test default
+  orderbook and subgraph policy stability, no-retry behavior, jitter bounds,
+  per-host limiter keying, status completeness, and classifier totality.
+- Cost: callers that used orderbook-specific or subgraph-specific policy names
+  must switch to `cow-sdk-transport-policy::TransportPolicy`.
+
+## Alternatives Rejected
+
+- Keep client-local policy types: this retained duplicated retry and
+  `Retry-After` logic and made subgraph retry behavior diverge from orderbook.
+- Move retry policy into `cow-sdk-core`: this widened the raw transport seam
+  with client policy that belongs above dispatch.
+- Provide compatibility aliases from orderbook or subgraph: aliases would
+  preserve two names for one policy and make the public surface harder to audit.
+
+## Links
+
+- [Transport](../transport.md)
+- [Architecture](../architecture.md)
+- [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
+- [ADR 0019](0019-http-transport-sole-dispatch.md)

@@ -16,9 +16,8 @@ use cow_sdk_core::{
     ApiContext, CowEnv, HttpTransport, REDACTED_PLACEHOLDER, RedactedUrlMap, ReqwestTransport,
     ReqwestTransportConfig, SupportedChainId, TransportError,
 };
-use cow_sdk_orderbook::{
-    EnvBaseUrlOverrides, ExternalHostPolicy, OrderBookApi, OrderBookTransportPolicy, RequestPolicy,
-};
+use cow_sdk_orderbook::{EnvBaseUrlOverrides, ExternalHostPolicy, OrderBookApi};
+use cow_sdk_transport_policy::{RetryPolicy, TransportPolicy};
 
 #[derive(Debug, Default)]
 struct StubTransport;
@@ -186,19 +185,17 @@ fn env_base_url_overrides_debug_redacts_embedded_credentials() {
 
 #[test]
 fn policy_override_replaces_default_request_policy() {
-    let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy::new(
-        1,
-        cow_sdk_orderbook::request::RateLimitSettings::default(),
-    ));
+    let policy =
+        TransportPolicy::default().with_retry(RetryPolicy::builder().max_attempts(1).build());
     let api = OrderBookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
-        .policy(policy)
+        .transport_policy(policy)
         .transport(Arc::new(StubTransport))
         .build()
         .expect("orderbook client with policy override must build");
 
-    assert_eq!(api.request_policy().max_attempts, 1);
+    assert_eq!(api.request_policy().max_attempts(), 1);
 }
 
 #[test]

@@ -11,6 +11,7 @@ flowchart TD
   signing["cow-sdk-signing"];
   appdata["cow-sdk-app-data"];
   orderbook["cow-sdk-orderbook"];
+  transport_policy["cow-sdk-transport-policy"];
   trading["cow-sdk-trading"];
   subgraph_crate["cow-sdk-subgraph"];
   wallet["cow-sdk-browser-wallet"];
@@ -24,6 +25,7 @@ flowchart TD
   sdk --> signing;
   sdk --> appdata;
   sdk --> orderbook;
+  sdk --> transport_policy;
   sdk --> trading;
   sdk -.->|feature: browser-wallet| wallet;
   sdk -.->|feature: alloy-provider| alloy_provider;
@@ -34,12 +36,14 @@ flowchart TD
   signing --> contracts;
   appdata --> core;
   orderbook --> core;
+  orderbook --> transport_policy;
   trading --> core;
   trading --> contracts;
   trading --> signing;
   trading --> appdata;
   trading --> orderbook;
   subgraph_crate --> core;
+  subgraph_crate --> transport_policy;
   wallet --> core;
   transport_wasm --> core;
   alloy_provider --> core;
@@ -57,6 +61,7 @@ flowchart TD
 | --- | --- | --- |
 | `cow-sdk` | Thin public facade | You want the main Rust SDK entrypoint. |
 | `cow-sdk-core` | Shared domain types, config, validation, runtime traits, and the `HttpTransport` seam with its native `ReqwestTransport` default | You need the common typed contracts. |
+| `cow-sdk-transport-policy` | Shared HTTP retry, rate-limit, jitter, `Retry-After`, and transport classification policy | You need consistent transport behavior across typed clients. |
 | `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings, the typed `Registry` deployment authority, and deterministic hashing and verification helpers | You need ABI-level, address-authority, or settlement-level primitives. |
 | `cow-sdk-signing` | Typed-data, signing, cancellation, UID helpers, and the `Eip1271VerificationCache` default implementations | You need signing without the full trading layer. |
 | `cow-sdk-app-data` | App-data encoding, schema handling, and CID behavior | You need app-data generation or validation. |
@@ -75,6 +80,7 @@ flowchart TD
 | --- | --- | --- |
 | Foundation | `cow-sdk-core` | Shared domain model, runtime seams, and the `HttpTransport` trait |
 | Deterministic protocol transforms | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` | Typed bindings, registry authority, hashing, signing, app-data, and compatibility logic |
+| Client policy | `cow-sdk-transport-policy` | Shared retry, cooldown, rate-limit, and classification behavior above the raw transport seam |
 | Client | `cow-sdk-orderbook`, `cow-sdk-subgraph` | Typed HTTP and GraphQL access through the `HttpTransport` seam |
 | Workflow | `cow-sdk-trading` | Quote, submit, cancel, approve, and related flows |
 | Runtime adapter | `cow-sdk-browser-wallet`, `cow-sdk-transport-wasm`, `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Browser-wallet session integration, browser-target HTTP transport, and opt-in native Alloy provider/signer adapters |
@@ -170,7 +176,10 @@ backend. The `HttpTransport` trait in `cow-sdk-core` is the HTTPS seam used
 by `cow-sdk-orderbook` and `cow-sdk-subgraph` for REST and GraphQL
 dispatch; native consumers get `ReqwestTransport` from `cow-sdk-core`, and
 browser consumers get `FetchTransport` from the dedicated
-`cow-sdk-transport-wasm` leaf crate. The `AsyncProvider` trait (also in
+`cow-sdk-transport-wasm` leaf crate. Retry, cooldown, rate-limit, and
+transport-error classification policy lives in `cow-sdk-transport-policy`
+so orderbook and subgraph clients keep the same behavior without widening
+the raw `HttpTransport` trait. The `AsyncProvider` trait (also in
 `cow-sdk-core`) is the read-only chain-RPC seam used by on-chain helpers such
 as allowance reads, EIP-1271 verification, and on-chain cancellation. Signer
 creation for async-capable providers lives in `AsyncSigningProvider`; no

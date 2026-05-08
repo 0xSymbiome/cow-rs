@@ -1,12 +1,12 @@
 //! Typed subgraph client configuration and query execution.
 
-use std::fmt;
-use std::sync::Arc;
+use std::{fmt, sync::Arc, time::SystemTime};
 
 use cow_sdk_core::{
     HttpClientPolicy, HttpTransport, Redacted, RedactedOptionalUrlMap, SupportedChainId,
     TransportError, TransportErrorClass, redact_response_body,
 };
+use cow_sdk_transport_policy::{NetworkErrorKind, RequestRateLimiter, TransportPolicy, sleep};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 
@@ -26,10 +26,6 @@ const CUSTOM_OVERRIDE_ROUTE_IDENTITY: &str = "<custom override>";
 
 /// Human-readable name for the `CoW` Protocol subgraph service.
 pub const API_NAME: &str = "CoW Protocol Subgraph";
-/// Default user-agent used by the subgraph client.
-pub const DEFAULT_SUBGRAPH_USER_AGENT: &str =
-    concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
-
 /// Redacting base-URL overrides keyed by chain id.
 ///
 /// A `Some(url)` entry enables that chain and routes requests to `url`. A
@@ -102,53 +98,6 @@ impl SubgraphConfigOverride {
     }
 }
 
-/// Shared HTTP client policy for subgraph requests.
-#[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SubgraphTransportPolicy {
-    http_policy: HttpClientPolicy,
-}
-
-impl Default for SubgraphTransportPolicy {
-    /// Creates the default subgraph transport policy.
-    ///
-    /// # Panics
-    ///
-    /// Panics only if the crate-owned default subgraph user-agent literal stops
-    /// being encodable as an HTTP header value.
-    fn default() -> Self {
-        Self {
-            // SAFETY: DEFAULT_SUBGRAPH_USER_AGENT is a crate-owned static
-            // literal validated by the shared HTTP policy constructor.
-            http_policy: HttpClientPolicy::new(DEFAULT_SUBGRAPH_USER_AGENT)
-                .expect("static subgraph user-agent must remain valid"),
-        }
-    }
-}
-
-impl SubgraphTransportPolicy {
-    /// Creates a transport policy from an explicit HTTP client policy.
-    #[must_use]
-    pub const fn new(client: HttpClientPolicy) -> Self {
-        Self {
-            http_policy: client,
-        }
-    }
-
-    /// Returns the shared HTTP client policy.
-    #[must_use]
-    pub const fn client_policy(&self) -> &HttpClientPolicy {
-        &self.http_policy
-    }
-
-    /// Returns a copy of this transport policy with a new HTTP client policy.
-    #[must_use]
-    pub fn with_client_policy(mut self, client: HttpClientPolicy) -> Self {
-        self.http_policy = client;
-        self
-    }
-}
-
 /// Typed client for `CoW` Protocol subgraph queries.
 ///
 /// The client owns API-key-derived production routing, optional per-instance
@@ -160,7 +109,8 @@ pub struct SubgraphApi {
     config: SubgraphConfig,
     api_key: Redacted<String>,
     prod_config: SubgraphApiBaseUrls,
-    transport_policy: SubgraphTransportPolicy,
+    transport_policy: TransportPolicy,
+    rate_limiter: RequestRateLimiter,
     transport: Arc<dyn HttpTransport + Send + Sync>,
 }
 
@@ -203,7 +153,8 @@ impl SubgraphApi {
         config: SubgraphConfig,
         api_key: Redacted<String>,
         prod_config: SubgraphApiBaseUrls,
-        transport_policy: SubgraphTransportPolicy,
+        transport_policy: TransportPolicy,
+        rate_limiter: RequestRateLimiter,
         transport: Arc<dyn HttpTransport + Send + Sync>,
     ) -> Self {
         Self {
@@ -211,6 +162,7 @@ impl SubgraphApi {
             api_key,
             prod_config,
             transport_policy,
+            rate_limiter,
             transport,
         }
     }
@@ -249,7 +201,7 @@ impl SubgraphApi {
 
     /// Returns the active transport policy.
     #[must_use]
-    pub const fn transport_policy(&self) -> &SubgraphTransportPolicy {
+    pub const fn transport_policy(&self) -> &TransportPolicy {
         &self.transport_policy
     }
 
@@ -265,7 +217,8 @@ impl SubgraphApi {
     /// replacing the policy updates the user-agent and timeout inputs that
     /// the request helper threads into the transport call.
     #[must_use]
-    pub fn with_transport_policy(mut self, transport_policy: SubgraphTransportPolicy) -> Self {
+    pub fn with_transport_policy(mut self, transport_policy: TransportPolicy) -> Self {
+        self.rate_limiter = transport_policy.rate_limit().clone();
         self.transport_policy = transport_policy;
         self
     }
@@ -500,48 +453,9 @@ impl SubgraphApi {
                 error.to_string(),
             )
         })?;
-        let headers = [("content-type".to_owned(), "application/json".to_owned())];
-        let timeout = self.transport_policy.client_policy().timeout();
-
-        let body = match self.transport.post(&api, &body, &headers, timeout).await {
-            Ok(body) => body,
-            Err(TransportError::HttpStatus { status, body, .. }) => {
-                return Err(http_status_error(
-                    &public_api,
-                    resolved_config.chain_id,
-                    &request,
-                    status,
-                    body.as_inner(),
-                ));
-            }
-            Err(TransportError::Transport { class, detail }) => {
-                return Err(transport_error(
-                    &public_api,
-                    resolved_config.chain_id,
-                    &request,
-                    class,
-                    detail.into_inner(),
-                ));
-            }
-            Err(TransportError::Configuration { message }) => {
-                return Err(transport_error(
-                    &public_api,
-                    resolved_config.chain_id,
-                    &request,
-                    TransportErrorClass::Builder,
-                    message.into_inner(),
-                ));
-            }
-            Err(other) => {
-                return Err(transport_error(
-                    &public_api,
-                    resolved_config.chain_id,
-                    &request,
-                    TransportErrorClass::Other,
-                    other.to_string(),
-                ));
-            }
-        };
+        let body = self
+            .post_graphql_with_policy(&api, &public_api, resolved_config.chain_id, &request, &body)
+            .await?;
 
         let response: GraphQlResponse<T> = serde_json::from_str(&body).map_err(|error| {
             serialization_error(
@@ -565,6 +479,91 @@ impl SubgraphApi {
         response
             .data
             .ok_or_else(|| missing_data_error(&public_api, resolved_config.chain_id, &request))
+    }
+
+    async fn post_graphql_with_policy(
+        &self,
+        api: &str,
+        public_api: &str,
+        chain_id: SupportedChainId,
+        request: &SubgraphQueryRequest,
+        body: &str,
+    ) -> Result<String, SubgraphError> {
+        let headers = [("content-type".to_owned(), "application/json".to_owned())];
+        let timeout = self.transport_policy.timeout();
+        let limiter_url = url::Url::parse(api).map_err(|error| {
+            transport_error(
+                public_api,
+                chain_id,
+                request,
+                TransportErrorClass::Builder,
+                format!("could not parse subgraph URL for rate limiting: {error}"),
+            )
+        })?;
+        let retry = self.transport_policy.retry();
+        let mut last_transport_error = None;
+
+        for attempt_index in 1..=retry.max_attempts() {
+            let cancellation_token = cow_sdk_core::CancellationToken::new();
+            self.rate_limiter
+                .acquire(&limiter_url, &cancellation_token)
+                .await?;
+
+            match self.transport.post(api, body, &headers, timeout).await {
+                Ok(body) => return Ok(body),
+                Err(TransportError::HttpStatus {
+                    status,
+                    headers,
+                    body,
+                }) => {
+                    let header_pairs = headers
+                        .into_iter()
+                        .map(|(name, value)| (name, value.into_inner()))
+                        .collect::<Vec<_>>();
+                    if retry.should_retry_status(status) && attempt_index < retry.max_attempts() {
+                        let delay = retry.delay_for_status(
+                            attempt_index,
+                            status,
+                            &header_pairs,
+                            SystemTime::now(),
+                        );
+                        sleep(delay).await;
+                        continue;
+                    }
+                    return Err(http_status_error(
+                        public_api,
+                        chain_id,
+                        request,
+                        status,
+                        body.as_inner(),
+                    ));
+                }
+                Err(error) => {
+                    let (class, details) = transport_failure_parts(error);
+                    if retry
+                        .should_retry_network(NetworkErrorKind::from_transport_error_class(class))
+                        && attempt_index < retry.max_attempts()
+                    {
+                        last_transport_error = Some((class, details));
+                        sleep(retry.delay_for_attempt(attempt_index)).await;
+                        continue;
+                    }
+                    return Err(transport_error(
+                        public_api, chain_id, request, class, details,
+                    ));
+                }
+            }
+        }
+
+        let (class, details) = last_transport_error.unwrap_or_else(|| {
+            (
+                TransportErrorClass::Other,
+                "query attempts exhausted".to_owned(),
+            )
+        });
+        Err(transport_error(
+            public_api, chain_id, request, class, details,
+        ))
     }
 
     fn config_with_override(&self, config_override: &SubgraphConfigOverride) -> SubgraphConfig {
@@ -715,6 +714,20 @@ fn transport_error(
         context: Box::new(request_error_context(api, chain_id, request)),
         class,
         details: details.into(),
+    }
+}
+
+fn transport_failure_parts(error: TransportError) -> (TransportErrorClass, String) {
+    match error {
+        TransportError::Transport { class, detail } => (class, detail.into_inner()),
+        TransportError::Configuration { message } => {
+            (TransportErrorClass::Builder, message.into_inner())
+        }
+        TransportError::HttpStatus { .. } => (
+            TransportErrorClass::Status,
+            "unexpected HTTP status error branch".to_owned(),
+        ),
+        other => (TransportErrorClass::Other, other.to_string()),
     }
 }
 

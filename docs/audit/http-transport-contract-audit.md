@@ -114,18 +114,17 @@ there is empty by design.
 
 ### Retry Cooldowns
 
-The orderbook request pipeline reads `Retry-After` from
+The shared transport policy reads `Retry-After` from
 `TransportError::HttpStatus.headers` on `429 Too Many Requests` and
 `503 Service Unavailable` responses. The parser accepts both
 delta-seconds and HTTP-date forms, parse failures fall back to the
 local exponential backoff schedule, and successful parses hold the
 retry loop for the larger of the jittered local backoff and the
-server-supplied cooldown. `RequestPolicy::with_jitter` accepts an
-explicit `JitterStrategy`; the default decorrelated strategy seeds its
-sequence from the operating-system random source, while
-`JitterStrategy::none` keeps deterministic wait schedules available for
-tests and controlled callers. The retry loop continues to honor the
-existing `max_attempts` limit and per-attempt timeout contract.
+server-supplied cooldown. `RetryPolicy::with_jitter` accepts an
+explicit `JitterStrategy`; `JitterStrategy::none` keeps deterministic
+wait schedules available for tests and controlled callers. The retry
+loop continues to honor the existing `max_attempts` limit and
+per-attempt timeout contract for both orderbook and subgraph clients.
 
 When the `tracing` feature is enabled, every retry decision emits a
 `debug` event with `attempt_index`, `backoff_ms`, and either `status`

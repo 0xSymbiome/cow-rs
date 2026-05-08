@@ -3,12 +3,12 @@ use cow_sdk_core::{
     TransportErrorClass,
 };
 use cow_sdk_subgraph::{
-    DEFAULT_SUBGRAPH_USER_AGENT, DailyTotal, ExternalHostPolicy, HourlyTotal,
-    LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY, LastDaysVolumeResponse,
-    LastHoursVolumeResponse, SubgraphApi, SubgraphApiBaseUrls, SubgraphError, SubgraphGraphQlError,
-    SubgraphGraphQlErrorLocation, SubgraphQueryRequest, SubgraphRequestErrorContext,
-    SubgraphTransportPolicy, TOTALS_QUERY, Total,
+    DailyTotal, ExternalHostPolicy, HourlyTotal, LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY,
+    LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi, SubgraphApiBaseUrls,
+    SubgraphError, SubgraphGraphQlError, SubgraphGraphQlErrorLocation, SubgraphQueryRequest,
+    SubgraphRequestErrorContext, TOTALS_QUERY, Total,
 };
+use cow_sdk_transport_policy::{DEFAULT_SUBGRAPH_USER_AGENT, TransportPolicy};
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 use std::net::TcpListener;
@@ -562,7 +562,7 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
     ]
     .into_iter()
     .collect();
-    let transport_policy = SubgraphTransportPolicy::default().with_client_policy(
+    let transport_policy = TransportPolicy::default_subgraph().with_client_policy(
         HttpClientPolicy::new("custom-subgraph-client/9.9.9")
             .expect("custom user-agent must be valid")
             .without_timeout(),
@@ -572,7 +572,7 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
         .api_key("FakeApiKey")
         .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
-        .policy(transport_policy)
+        .transport_policy(transport_policy)
         .build()
         .expect("subgraph test client with loopback override must build");
 
@@ -1154,6 +1154,7 @@ mod recording_transport {
     use cow_sdk_subgraph::{
         ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls, SubgraphError, SubgraphQueryRequest,
     };
+    use cow_sdk_transport_policy::{RetryPolicy, TransportPolicy};
     use serde_json::{Value, json};
 
     #[derive(Debug, Clone)]
@@ -1290,6 +1291,16 @@ mod recording_transport {
     const RECORDING_BASE_URL: &str = "https://subgraph-recording.example";
 
     fn api_with_recorder(recorder: Arc<RecordingTransport>) -> SubgraphApi {
+        api_with_recorder_and_policy(
+            recorder,
+            TransportPolicy::default_subgraph().with_retry(RetryPolicy::no_retry()),
+        )
+    }
+
+    fn api_with_recorder_and_policy(
+        recorder: Arc<RecordingTransport>,
+        transport_policy: TransportPolicy,
+    ) -> SubgraphApi {
         let base_urls: SubgraphApiBaseUrls = [
             (
                 SupportedChainId::Mainnet,
@@ -1315,6 +1326,7 @@ mod recording_transport {
                 "subgraph-recording.example".to_owned(),
             ]))
             .base_urls(base_urls)
+            .transport_policy(transport_policy)
             .transport(recorder as Arc<dyn HttpTransport + Send + Sync>)
             .build()
             .expect("subgraph client with recording transport override must build")
@@ -1431,5 +1443,43 @@ mod recording_transport {
             }
             other => panic!("expected HttpStatus error, got {other:?}"),
         }
+    }
+
+    #[tokio::test]
+    async fn subgraph_retries_transient_status_through_injected_transport() {
+        let recorder = RecordingTransport::new([
+            Canned::HttpStatus {
+                status: 503,
+                headers: Vec::new(),
+                body: "upstream unavailable".to_owned(),
+            },
+            Canned::Ok(
+                json!({
+                    "data": {
+                        "tokens": [
+                            { "symbol": "WXDAI" }
+                        ]
+                    }
+                })
+                .to_string(),
+            ),
+        ]);
+        let transport_policy = TransportPolicy::default_subgraph().with_retry(
+            RetryPolicy::builder()
+                .max_attempts(2)
+                .base_delay(Duration::ZERO)
+                .max_delay(Duration::ZERO)
+                .build(),
+        );
+        let api = api_with_recorder_and_policy(recorder.clone(), transport_policy);
+        let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
+
+        let response: Value = api
+            .run_query(SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"))
+            .await
+            .expect("a transient status must retry and return the successful response");
+
+        assert_eq!(response["tokens"][0]["symbol"], "WXDAI");
+        assert_eq!(recorder.observed().len(), 2);
     }
 }

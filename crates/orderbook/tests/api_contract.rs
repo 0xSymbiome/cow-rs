@@ -6,9 +6,12 @@ use std::time::{Duration, Instant};
 
 use cow_sdk_core::{Amount, CoreError, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError};
 use cow_sdk_orderbook::{
-    ApiContextOverride, AppDataObject, CowEnv, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
-    GetOrdersRequest, GetTradesRequest, OrderBookTransportPolicy, OrderCancellations,
-    OrderCreation, OrderStatus, QuoteSide, RequestPolicy, SigningScheme, SupportedChainId,
+    ApiContextOverride, AppDataObject, CowEnv, GetOrdersRequest, GetTradesRequest,
+    OrderCancellations, OrderCreation, OrderStatus, QuoteSide, SigningScheme, SupportedChainId,
+};
+use cow_sdk_transport_policy::{
+    DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT, RequestRateLimiter, RetryPolicy,
+    TransportPolicy,
 };
 use serde_json::json;
 use wiremock::{
@@ -22,6 +25,22 @@ use crate::common::{
     sample_order_json, sample_order_uid, sample_owner, sample_quote_response_json,
     sample_signature, sample_trade_json, sample_tx_hash,
 };
+
+const fn retry_policy(max_attempts: usize) -> RetryPolicy {
+    RetryPolicy::builder().max_attempts(max_attempts).build()
+}
+
+fn limiter(
+    tokens_per_interval: u32,
+    interval: Duration,
+    interval_label: &'static str,
+) -> RequestRateLimiter {
+    RequestRateLimiter::builder()
+        .tokens_per_interval(tokens_per_interval)
+        .interval(interval)
+        .interval_label(interval_label)
+        .build()
+}
 
 #[tokio::test]
 async fn version_endpoint_matches_transport_contract() {
@@ -55,7 +74,7 @@ fn default_transport_policy_is_explicit_and_stable() {
         policy.client_policy().user_agent(),
         DEFAULT_ORDERBOOK_USER_AGENT
     );
-    assert_eq!(policy.request_policy().max_attempts, DEFAULT_MAX_ATTEMPTS);
+    assert_eq!(policy.retry().max_attempts(), DEFAULT_MAX_ATTEMPTS);
 }
 
 #[tokio::test]
@@ -167,16 +186,13 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
         .mount(&server)
         .await;
 
-    let transport_policy = OrderBookTransportPolicy::default()
+    let transport_policy = TransportPolicy::default()
         .with_client_policy(
             HttpClientPolicy::new("custom-orderbook-client/9.9.9")
                 .expect("custom header must be valid")
                 .without_timeout(),
         )
-        .with_request_policy(RequestPolicy::new(
-            1,
-            cow_sdk_orderbook::request::RateLimitSettings::default(),
-        ));
+        .with_retry(retry_policy(1));
     let api = build_orderbook_api_with_policy(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         transport_policy,
@@ -190,7 +206,7 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
 
     assert_eq!(version, "v9.9.9");
     assert_eq!(api.client_policy().timeout(), None);
-    assert_eq!(api.request_policy().max_attempts, 1);
+    assert_eq!(api.request_policy().max_attempts(), 1);
 }
 
 #[tokio::test]
@@ -214,15 +230,9 @@ async fn cloned_clients_share_the_same_instance_scoped_rate_limiter() {
         .mount(&server)
         .await;
 
-    let transport_policy =
-        OrderBookTransportPolicy::default().with_request_policy(RequestPolicy::new(
-            1,
-            cow_sdk_orderbook::request::RateLimitSettings::new(
-                1,
-                Duration::from_millis(60),
-                "test",
-            ),
-        ));
+    let transport_policy = TransportPolicy::default()
+        .with_retry(retry_policy(1))
+        .with_rate_limit(limiter(1, Duration::from_millis(60), "test"));
     let api = build_orderbook_api_with_policy(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         transport_policy,
@@ -284,10 +294,7 @@ async fn service_unavailable_retry_after_header_delays_retry_for_at_least_server
         .mount(&server)
         .await;
 
-    let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy::new(
-        2,
-        cow_sdk_orderbook::request::RateLimitSettings::default(),
-    ));
+    let policy = TransportPolicy::default().with_retry(retry_policy(2));
     let api = build_orderbook_api_with_policy(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         policy,
@@ -861,14 +868,16 @@ mod recording_transport {
         Amount, ApiContext, HttpTransport, SupportedChainId, TransportError, TransportErrorClass,
     };
     use cow_sdk_orderbook::{
-        CowEnv, OrderBookApi, OrderBookTransportPolicy, OrderCancellations, OrderCreation,
-        OrderbookError, OrderbookRejection, QuoteSide, RequestPolicy, SigningScheme,
+        CowEnv, OrderBookApi, OrderCancellations, OrderCreation, OrderbookError,
+        OrderbookRejection, QuoteSide, SigningScheme,
     };
+    use cow_sdk_transport_policy::TransportPolicy;
 
     use crate::common::{
         sample_buy_token, sample_order_uid, sample_owner, sample_quote_response_json,
         sample_signature,
     };
+    use crate::retry_policy;
 
     #[derive(Debug, Clone)]
     struct RecordedRequest {
@@ -1007,16 +1016,16 @@ mod recording_transport {
     }
 
     fn api_with_recorder(recorder: Arc<RecordingTransport>) -> OrderBookApi {
-        api_with_recorder_and_policy(recorder, OrderBookTransportPolicy::default())
+        api_with_recorder_and_policy(recorder, TransportPolicy::default())
     }
 
     fn api_with_recorder_and_policy(
         recorder: Arc<RecordingTransport>,
-        policy: OrderBookTransportPolicy,
+        policy: TransportPolicy,
     ) -> OrderBookApi {
         let context = ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod);
         OrderBookApi::builder_from_context(context)
-            .policy(policy)
+            .transport_policy(policy)
             .transport(recorder as Arc<dyn HttpTransport + Send + Sync>)
             .build()
             .expect("orderbook client with injected transport must build")
@@ -1127,10 +1136,7 @@ mod recording_transport {
             },
             Canned::Ok("v1.2.3".to_owned()),
         ]);
-        let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy::new(
-            5,
-            cow_sdk_orderbook::request::RateLimitSettings::default(),
-        ));
+        let policy = TransportPolicy::default().with_retry(retry_policy(5));
         let api = api_with_recorder_and_policy(recorder.clone(), policy);
 
         let version = api
@@ -1155,10 +1161,7 @@ mod recording_transport {
             body: "{\"errorType\":\"DuplicatedOrder\",\"description\":\"order already exists\"}"
                 .to_owned(),
         }]);
-        let policy = OrderBookTransportPolicy::default().with_request_policy(RequestPolicy::new(
-            1,
-            cow_sdk_orderbook::request::RateLimitSettings::default(),
-        ));
+        let policy = TransportPolicy::default().with_retry(retry_policy(1));
         let api = api_with_recorder_and_policy(recorder.clone(), policy);
 
         let error = api

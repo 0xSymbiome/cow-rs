@@ -48,6 +48,7 @@ console_error_panic_hook.workspace = true
 cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0" }
 cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0" }
 cow-sdk-trading = { path = "../trading", version = "0.1.0" }
+cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0" }
 cow-sdk-transport-wasm = { path = "../transport-wasm", version = "0.1.0" }
 getrandom = { workspace = true }
 js-sys.workspace = true

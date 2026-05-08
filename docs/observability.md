@@ -274,18 +274,18 @@ during normal operation.
 
 ## Retry Cooldowns
 
-`cow-sdk-orderbook` honors `Retry-After` on `429 Too Many Requests` and
-`503 Service Unavailable` responses when the transport surfaces response
-headers through `TransportError::HttpStatus`. The retry loop accepts both
-delta-seconds and HTTP-date values and waits for the larger of the local
-backoff schedule and the server-provided cooldown before retrying. The local
-backoff supports jitter strategies through `RequestPolicy::with_jitter`, with
-a decorrelated default seeded from the operating-system random source and
-an explicit no-jitter strategy for deterministic tests. The native cooldown
-contract is exercised by
+`cow-sdk-transport-policy` supplies the shared retry cooldown behavior used by
+the orderbook and subgraph clients. Both clients honor `Retry-After` on
+`429 Too Many Requests` and `503 Service Unavailable` responses when the
+transport surfaces response headers through `TransportError::HttpStatus`. The
+retry loop accepts both delta-seconds and HTTP-date values and waits for the
+larger of the local backoff schedule and the server-provided cooldown before
+retrying. The local backoff supports jitter strategies through
+`RetryPolicy::with_jitter`, and callers can select an explicit no-jitter
+strategy for deterministic tests. The native cooldown contract is exercised by
 `crates/orderbook/tests/api_contract.rs::service_unavailable_retry_after_header_delays_retry_for_at_least_server_cooldown`,
-the parser boundary is covered by the `crates/orderbook/src/request.rs` unit
-tests, and the retry-event contract is covered by
+the parser boundary is covered by `crates/transport-policy/tests/policy_tests.rs`,
+and the retry-event contract is covered by
 `crates/orderbook/tests/request_contract.rs::tracing_contract::execute_with_emits_retry_events_with_status_and_transport_error_fields`.
 
 ## Error Classification

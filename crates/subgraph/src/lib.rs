@@ -19,10 +19,7 @@ pub mod queries;
 /// Public request and response DTOs for the subgraph surface.
 pub mod types;
 
-pub use api::{
-    API_NAME, DEFAULT_SUBGRAPH_USER_AGENT, SubgraphApi, SubgraphApiBaseUrls, SubgraphConfig,
-    SubgraphConfigOverride, SubgraphTransportPolicy,
-};
+pub use api::{API_NAME, SubgraphApi, SubgraphApiBaseUrls, SubgraphConfig, SubgraphConfigOverride};
 pub use builder::{
     ApiKeySet, ApiKeyUnset, ChainIdSet, ChainIdUnset, SubgraphApiBuilder, TransportSet,
     TransportUnset,

@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-05-08
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
-Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, or browser-wallet alloy advisory posture
+Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, or browser-wallet alloy advisory posture
 Related docs:
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [CID Dependency Audit](cid-dependency-audit.md)
@@ -19,6 +19,8 @@ This audit covers:
 - the dependency-audit gate used by routine CI and release-readiness validation
 - the published `rustls-webpki` patch uplift on the orderbook and subgraph
   transport path
+- the shared `cow-sdk-transport-policy` dependency boundary used by
+  orderbook and subgraph retry behavior
 - the clean published CID dependency posture recorded for `cow-sdk-app-data`
 - the canonical advisory tolerance register shared by the RustSec gates
 - the canonical dependency-source whitelist
@@ -45,6 +47,7 @@ architecture reviews.
 | Workspace default features | Root workspace dependencies either disable default features explicitly or appear in the reviewed exception register for dependencies without a meaningful default-feature control | Conforms |
 | Ignore rationale lint | Every canonical RustSec ignore token must appear in this audit before release-doc agreement passes | Conforms |
 | Direct WASM randomness | Direct crate use of `getrandom` for wasm32 is centralized on the workspace `0.4.2` pin with the `wasm_js` feature | Conforms |
+| Shared transport policy | Retry timers and browser timer dependencies are centralized in `cow-sdk-transport-policy` instead of duplicated in orderbook or subgraph | Conforms |
 | Workspace dependency inheritance | Shared helper pins for timers, browser panic hooks, and test HTTP fixtures are centralized in the workspace table | Conforms |
 | Duplicate-version exceptions | Residual duplicate roots are documented as explicit skip-tree entries; stale `tiny-keccak` and `getrandom 0.2` exceptions were removed because they are no longer in the workspace graph | Conforms |
 | Legacy `thiserror` reachability | The remaining `thiserror 1.0.69` path is limited to the `graphql_client` codegen chain used by dev/test coverage | Conforms |
@@ -121,7 +124,7 @@ plus first-party workspace paths.
 
 The workspace carries `getrandom 0.4.2` with the `wasm_js` feature as the
 canonical first-party direct dependency for wasm32 consumers.
-`cow-sdk-browser-wallet`, `cow-sdk-contracts`, and `cow-sdk-orderbook` use the
+`cow-sdk-browser-wallet` and `cow-sdk-contracts` use the
 workspace dependency instead of carrying leaf-local direct pins. The shared
 Alloy workspace pins keep their default `std` features disabled so the
 contracts crate can enable alloy-primitives' `k256` feature without also
@@ -132,9 +135,10 @@ wasm32 builds.
 
 The workspace dependency table centralizes the shared `wiremock`,
 `web-time`, `gloo-timers`, `futures-timer`, and
-`console_error_panic_hook` pins. Consumer manifests inherit those pins through
-workspace dependencies, keeping the reviewed versions in one place while
-preserving the existing target-specific dependency boundaries.
+`console_error_panic_hook` pins. `cow-sdk-transport-policy` owns the retry
+timer dependencies used by orderbook and subgraph. Consumer manifests inherit
+those pins through workspace dependencies, keeping the reviewed versions in one
+place while preserving the existing target-specific dependency boundaries.
 
 ### Duplicate-Version Exceptions
 

@@ -4,6 +4,7 @@ members = [
   "crates/contracts",
   "crates/signing",
   "crates/app-data",
+  "crates/transport-policy",
   "crates/orderbook",
   "crates/trading",
   "crates/subgraph",

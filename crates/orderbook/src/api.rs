@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use cow_sdk_core::{CoreError, HttpClientPolicy, HttpTransport, ValidationError};
+use cow_sdk_transport_policy::{RequestRateLimiter, RetryPolicy, TransportPolicy};
 use http::header::{HeaderMap, HeaderValue};
 use serde_json::json;
 
@@ -8,8 +9,8 @@ use crate::{
     builder::{ChainIdSet, ChainIdUnset, EnvSet, EnvUnset, OrderBookApiBuilder, TransportUnset},
     error::OrderbookError,
     request::{
-        FetchParams, HttpMethod, OrderBookTransportPolicy, RequestPolicy, RequestRateLimiter,
-        request_empty_with_timeout, request_json_with_timeout, request_text_with_timeout,
+        FetchParams, HttpMethod, request_empty_with_timeout, request_json_with_timeout,
+        request_text_with_timeout,
     },
     transform::{transform_order, transform_orders},
     types::{
@@ -36,7 +37,7 @@ const API_KEY_HEADER: &str = "X-API-Key";
 #[derive(Debug, Clone)]
 pub struct OrderBookApi {
     context: ApiContext,
-    transport_policy: OrderBookTransportPolicy,
+    transport_policy: TransportPolicy,
     rate_limiter: RequestRateLimiter,
     env_base_url_overrides: EnvBaseUrlOverrides,
     transport: Arc<dyn HttpTransport + Send + Sync>,
@@ -75,7 +76,7 @@ impl OrderBookApi {
     #[must_use]
     pub(crate) fn from_parts(
         context: ApiContext,
-        transport_policy: OrderBookTransportPolicy,
+        transport_policy: TransportPolicy,
         rate_limiter: RequestRateLimiter,
         env_base_url_overrides: EnvBaseUrlOverrides,
         transport: Arc<dyn HttpTransport + Send + Sync>,
@@ -105,8 +106,8 @@ impl OrderBookApi {
     /// limiter; the injected HTTP transport continues to carry every live
     /// request.
     #[must_use]
-    pub fn with_transport_policy(mut self, transport_policy: OrderBookTransportPolicy) -> Self {
-        self.rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
+    pub fn with_transport_policy(mut self, transport_policy: TransportPolicy) -> Self {
+        self.rate_limiter = transport_policy.rate_limit().clone();
         self.transport_policy = transport_policy;
         self
     }
@@ -153,7 +154,7 @@ impl OrderBookApi {
 
     /// Returns the active transport policy for this client instance.
     #[must_use]
-    pub const fn transport_policy(&self) -> &OrderBookTransportPolicy {
+    pub const fn transport_policy(&self) -> &TransportPolicy {
         &self.transport_policy
     }
 
@@ -174,8 +175,8 @@ impl OrderBookApi {
 
     /// Returns the orderbook request policy embedded in the transport policy.
     #[must_use]
-    pub const fn request_policy(&self) -> &RequestPolicy {
-        self.transport_policy.request_policy()
+    pub const fn request_policy(&self) -> &RetryPolicy {
+        self.transport_policy.retry()
     }
 
     /// Returns the canonical order details link for `order_uid`.
@@ -824,9 +825,9 @@ impl OrderBookApi {
             &self.transport,
             &self.resolved_base_url(&self.context)?,
             &params,
-            self.transport_policy.request_policy(),
+            self.transport_policy.retry(),
             &self.rate_limiter,
-            self.transport_policy.client_policy().timeout(),
+            self.transport_policy.timeout(),
             self.additional_headers()?,
         )
         .await
@@ -837,9 +838,9 @@ impl OrderBookApi {
             &self.transport,
             &self.resolved_base_url(&self.context)?,
             &params,
-            self.transport_policy.request_policy(),
+            self.transport_policy.retry(),
             &self.rate_limiter,
-            self.transport_policy.client_policy().timeout(),
+            self.transport_policy.timeout(),
             self.additional_headers()?,
         )
         .await
@@ -850,9 +851,9 @@ impl OrderBookApi {
             &self.transport,
             &self.resolved_base_url(&self.context)?,
             &params,
-            self.transport_policy.request_policy(),
+            self.transport_policy.retry(),
             &self.rate_limiter,
-            self.transport_policy.client_policy().timeout(),
+            self.transport_policy.timeout(),
             self.additional_headers()?,
         )
         .await

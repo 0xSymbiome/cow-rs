@@ -84,6 +84,102 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Transport classification can grow as adapters surface new failure classes.
+  - name: NetworkErrorKind
+    file: crates/transport-policy/src/classify.rs
+    line: 8
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Retry-oriented transport failure categories can grow as adapters surface new classes.
+  - name: JitterStrategy
+    file: crates/transport-policy/src/jitter.rs
+    line: 10
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Retry jitter strategies can grow without breaking downstream matches.
+  - name: LimiterScope
+    file: crates/transport-policy/src/rate_limit.rs
+    line: 24
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Request limiter bucket scopes can grow as additional routing policies are added.
+  - name: TransportPolicyBuildError
+    file: crates/transport-policy/src/policy.rs
+    line: 153
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Transport policy builder diagnostics can grow with new validation knobs.
+  - name: RpcAlloyProviderBuilderError
+    file: crates/alloy-provider/src/builder.rs
+    line: 164
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Alloy provider builder diagnostics can grow with additional transport and configuration checks.
+  - name: AsyncProviderErrorClass
+    file: crates/alloy-provider/src/error.rs
+    line: 10
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Provider error classes can grow as adapter transport and RPC failure modes expand.
+  - name: AsyncProviderError
+    file: crates/alloy-provider/src/error.rs
+    line: 45
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Provider diagnostics can grow as native adapter capabilities expand.
+  - name: RpcErrorClassification
+    file: crates/alloy-provider/src/lib.rs
+    line: 73
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Hidden inter-crate RPC classification can grow as adapter transport mappings expand.
+  - name: LocalAlloyKeystoreSignerBuilderError
+    file: crates/alloy-signer/src/builder.rs
+    line: 184
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Alloy signer builder diagnostics can grow with additional key-source validation.
+  - name: AsyncSignerErrorClass
+    file: crates/alloy-signer/src/error.rs
+    line: 10
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Signer error classes can grow as signer capabilities expand.
+  - name: AsyncSignerError
+    file: crates/alloy-signer/src/error.rs
+    line: 48
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Signer diagnostics can grow as signing and provider-required paths expand.
+  - name: AlloyClientBuilderError
+    file: crates/alloy/src/builder.rs
+    line: 312
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Alloy client builder diagnostics can grow with additional checked-build validation.
+  - name: AlloyClientErrorClass
+    file: crates/alloy/src/error.rs
+    line: 12
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Alloy client error classes can grow as provider and signer composition expands.
+  - name: AlloyClientError
+    file: crates/alloy/src/error.rs
+    line: 56
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Alloy client diagnostics can grow as composed provider and signer capabilities expand.
+  - name: TransactionStatus
+    file: crates/core/src/traits.rs
+    line: 197
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Receipt-capable providers may expose additional terminal transaction states over time.
+  - name: WaitError
+    file: crates/trading/src/wait.rs
+    line: 84
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Receipt wait helper diagnostics can grow as polling and provider semantics expand.
   - name: OrderKind
     file: crates/core/src/types.rs
     line: 1255

@@ -139,8 +139,9 @@ requests inherit the latency.
 use std::time::Duration;
 
 use cow_sdk_core::SupportedChainId;
-use cow_sdk_orderbook::{CowEnv, OrderBookApi, DEFAULT_ORDERBOOK_USER_AGENT};
+use cow_sdk_orderbook::{CowEnv, OrderBookApi};
 use cow_sdk_subgraph::SubgraphApi;
+use cow_sdk_transport_policy::DEFAULT_ORDERBOOK_USER_AGENT;
 
 fn build_shared_client() -> reqwest::Client {
     reqwest::Client::builder()

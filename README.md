@@ -7,9 +7,9 @@
 It provides typed Rust surfaces for order creation, signing, quoting,
 submission, app-data handling, orderbook access, read-only subgraph
 queries, browser-compatible WASM workflows, a pluggable `HttpTransport`
-seam with native and browser default adapters, a typed deployment
-registry, opt-in native Alloy provider and signer adapters, and an optional
-EIP-1271 signature-verification cache.
+seam with native and browser default adapters, shared retry and rate-limit
+transport policy, a typed deployment registry, opt-in native Alloy provider
+and signer adapters, and an optional EIP-1271 signature-verification cache.
 
 The native Alloy adapter is provided for trading-flow consumers. Generic
 Ethereum applications without trading helpers should depend on Alloy directly;
@@ -67,6 +67,7 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 | --- | --- |
 | Main Rust SDK entrypoint | `cow-sdk` |
 | Shared domain types, runtime traits, and the `HttpTransport` seam with its native `ReqwestTransport` default | `cow-sdk-core` |
+| Shared HTTP retry, rate-limit, jitter, `Retry-After`, and error-classification policy | `cow-sdk-transport-policy` |
 | Browser-target HTTP transport (`FetchTransport`) for `wasm32-unknown-unknown` | `cow-sdk-transport-wasm` |
 | Read-only subgraph queries | `cow-sdk-subgraph` |
 | Browser wallet integration for WASM | `cow-sdk-browser-wallet` or `cow-sdk` with `browser-wallet` |

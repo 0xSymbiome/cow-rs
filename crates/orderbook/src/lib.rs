@@ -255,13 +255,7 @@ pub use builder::{
 };
 pub use error::OrderbookError;
 pub use rejection::{OrderbookRejection, parse_rejection};
-pub use request::{
-    BAD_GATEWAY, DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
-    DEFAULT_TOKENS_PER_INTERVAL, GATEWAY_TIMEOUT, HttpMethod, INTERNAL_SERVER_ERROR,
-    JitterStrategy, OrderBookApiError, OrderBookTransportPolicy, REQUEST_TIMEOUT,
-    RETRYABLE_STATUS_CODES, RequestPolicy, ResponseBody, SERVICE_UNAVAILABLE, TOO_EARLY,
-    TOO_MANY_REQUESTS,
-};
+pub use request::{HttpMethod, OrderBookApiError, ResponseBody};
 pub use transform::{calculate_total_fee, transform_order, transform_orders};
 pub use types::{
     Address, Amount, ApiBaseUrls, ApiContext, ApiContextOverride, AppDataHash, AppDataObject,

@@ -97,6 +97,18 @@ pub use cow_sdk_contracts as contracts;
 /// directly.
 pub use cow_sdk_contracts::RegistryError;
 pub use cow_sdk_core as core;
+/// Shared HTTP retry, rate-limit, and classification policy.
+pub mod http {
+    pub use cow_sdk_transport_policy::{
+        ErrorClassifier, JitterStrategy, LimiterScope, NetworkErrorKind, RequestRateLimiter,
+        RequestRateLimiterBuilder, RetryAfter, RetryPolicy, RetryPolicyBuilder, TransportPolicy,
+        TransportPolicyBuildError, TransportPolicyBuilder, is_retryable_status, parse_retry_after,
+    };
+
+    #[cfg(feature = "http-classifier")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "http-classifier")))]
+    pub use cow_sdk_transport_policy::ReqwestErrorClassifier;
+}
 /// Transport-error classification shared across transport-capable crates.
 ///
 /// Typed label that downstream telemetry and retry layers can use to

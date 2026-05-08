@@ -42,14 +42,12 @@ use cow_sdk_core::{
 };
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
+use cow_sdk_transport_policy::{DEFAULT_ORDERBOOK_USER_AGENT, TransportPolicy};
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
 
 use crate::api::OrderBookApi;
 use crate::error::OrderbookError;
-#[cfg(not(target_arch = "wasm32"))]
-use crate::request::DEFAULT_ORDERBOOK_USER_AGENT;
-use crate::request::{OrderBookTransportPolicy, RequestRateLimiter};
 use crate::types::{ApiContext, EnvBaseUrlOverrides};
 
 /// Typestate marker — chain id has not been supplied.
@@ -89,7 +87,7 @@ pub struct OrderBookApiBuilder<
     chain: Option<SupportedChainId>,
     env: Option<CowEnv>,
     transport: Option<Arc<dyn HttpTransport + Send + Sync>>,
-    transport_policy: Option<OrderBookTransportPolicy>,
+    transport_policy: Option<TransportPolicy>,
     api_key: Option<Redacted<String>>,
     base_urls: Option<ApiBaseUrls>,
     env_base_url_overrides: EnvBaseUrlOverrides,
@@ -233,10 +231,10 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
     /// Sets the request retry, rate-limit, and HTTP-client policy bundle.
     ///
     /// When this method is not called, [`OrderBookApiBuilder::build`] uses
-    /// [`OrderBookTransportPolicy::default`] which preserves the documented
+    /// [`TransportPolicy::default_orderbook`] which preserves the documented
     /// rate-limit and retry behavior.
     #[must_use]
-    pub fn policy(mut self, policy: OrderBookTransportPolicy) -> Self {
+    pub fn transport_policy(mut self, policy: TransportPolicy) -> Self {
         self.transport_policy = Some(policy);
         self
     }
@@ -332,8 +330,10 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
             // SAFETY: finish is reached only by typestate build paths that set
             // the environment marker.
             .expect("typestate guarantees environment is supplied at build time");
-        let transport_policy = self.transport_policy.unwrap_or_default();
-        let rate_limiter = RequestRateLimiter::new(transport_policy.request_policy().rate_limit);
+        let transport_policy = self
+            .transport_policy
+            .unwrap_or_else(TransportPolicy::default_orderbook);
+        let rate_limiter = transport_policy.rate_limit().clone();
         let mut context = ApiContext::new(chain, env);
         if let Some(api_key) = self.api_key {
             context.api_key = Some(api_key);
@@ -401,14 +401,12 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
         let user_agent = self
             .transport_policy
             .as_ref()
-            .map_or(DEFAULT_ORDERBOOK_USER_AGENT, |policy| {
-                policy.client_policy().user_agent()
-            })
+            .map_or(DEFAULT_ORDERBOOK_USER_AGENT, |policy| policy.user_agent())
             .to_owned();
         let timeout = self
             .transport_policy
             .as_ref()
-            .and_then(|policy| policy.client_policy().timeout());
+            .and_then(TransportPolicy::timeout);
         let mut config = ReqwestTransportConfig::new(String::new()).with_user_agent(user_agent);
         if let Some(timeout) = timeout {
             config = config.with_timeout(timeout);

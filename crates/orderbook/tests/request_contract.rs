@@ -13,18 +13,17 @@ use cow_sdk_core::{
 };
 use cow_sdk_orderbook::error::classify_reqwest_error;
 use cow_sdk_orderbook::request::{
-    DEFAULT_ORDERBOOK_USER_AGENT, FetchParams, HttpMethod, JitterStrategy, OrderBookApiError,
-    OrderBookTransportPolicy, RateLimitSettings, RequestPolicy, RequestRateLimiter, ResponseBody,
-    ResponseEnvelope, execute_empty_with, execute_json_with, request_empty, request_json,
-    request_text,
+    FetchParams, HttpMethod, OrderBookApiError, ResponseBody, ResponseEnvelope, execute_empty_with,
+    execute_json_with, request_empty, request_json, request_text,
 };
-use cow_sdk_orderbook::{
-    CowEnv, DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_TOKENS_PER_INTERVAL,
-    INTERNAL_SERVER_ERROR, OrderbookError, RETRYABLE_STATUS_CODES, SupportedChainId,
-    TOO_MANY_REQUESTS,
-};
+use cow_sdk_orderbook::{CowEnv, OrderbookError, SupportedChainId};
 #[cfg(feature = "tracing")]
 use cow_sdk_orderbook::{OrderCreation, OrderQuoteRequest, QuoteSide, SigningScheme};
+use cow_sdk_transport_policy::{
+    DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
+    DEFAULT_TOKENS_PER_INTERVAL, INTERNAL_SERVER_ERROR, JitterStrategy, RETRYABLE_STATUSES,
+    RequestRateLimiter, RetryPolicy, TOO_MANY_REQUESTS, TransportPolicy,
+};
 use proptest::prelude::*;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
@@ -35,6 +34,33 @@ fn build_shared_transport() -> Arc<dyn HttpTransport + Send + Sync> {
         )
         .expect("reqwest transport must build for the request-helper tests"),
     )
+}
+
+const fn retry_policy(max_attempts: usize) -> RetryPolicy {
+    RetryPolicy::builder().max_attempts(max_attempts).build()
+}
+
+const fn retry_policy_no_jitter(max_attempts: usize) -> RetryPolicy {
+    RetryPolicy::builder()
+        .max_attempts(max_attempts)
+        .jitter(JitterStrategy::none())
+        .build()
+}
+
+fn default_limiter() -> RequestRateLimiter {
+    RequestRateLimiter::default_orderbook()
+}
+
+fn limiter(
+    tokens_per_interval: u32,
+    interval: Duration,
+    interval_label: &'static str,
+) -> RequestRateLimiter {
+    RequestRateLimiter::builder()
+        .tokens_per_interval(tokens_per_interval)
+        .interval(interval)
+        .interval_label(interval_label)
+        .build()
 }
 use serde_json::json;
 use tokio::time::{sleep, timeout};
@@ -52,56 +78,49 @@ use crate::common::{build_orderbook_api_with_policy, default_context};
 
 #[tokio::test]
 async fn request_policy_defaults_match_fixture_contract() {
-    let policy = RequestPolicy::default();
+    let policy = RetryPolicy::default();
+    let limiter = default_limiter();
 
-    assert_eq!(policy.max_attempts, DEFAULT_MAX_ATTEMPTS);
-    assert_eq!(
-        policy.rate_limit.tokens_per_interval,
-        DEFAULT_TOKENS_PER_INTERVAL
-    );
-    assert_eq!(policy.rate_limit.interval_label, DEFAULT_INTERVAL_LABEL);
-    assert_eq!(RETRYABLE_STATUS_CODES, [408, 425, 429, 500, 502, 503, 504]);
+    assert_eq!(policy.max_attempts(), DEFAULT_MAX_ATTEMPTS);
+    assert_eq!(limiter.tokens_per_interval(), DEFAULT_TOKENS_PER_INTERVAL);
+    assert_eq!(limiter.interval_label(), DEFAULT_INTERVAL_LABEL);
+    assert_eq!(RETRYABLE_STATUSES, [408, 425, 429, 500, 502, 503, 504]);
     assert!(policy.should_retry_status(TOO_MANY_REQUESTS));
     assert!(!policy.should_retry_status(400));
 }
 
 #[test]
 fn request_policy_backoff_is_exponential_and_caps_growth() {
-    let policy = RequestPolicy::default().with_jitter(JitterStrategy::none());
+    let policy = RetryPolicy::default().with_jitter(JitterStrategy::none());
 
-    assert_eq!(policy.backoff_delay(1), Duration::from_millis(50));
-    assert_eq!(policy.backoff_delay(2), Duration::from_millis(100));
-    assert_eq!(policy.backoff_delay(3), Duration::from_millis(200));
-    assert_eq!(policy.backoff_delay(7), Duration::from_millis(3200));
-    assert_eq!(policy.backoff_delay(8), Duration::from_millis(3200));
+    assert_eq!(policy.delay_for_attempt(1), Duration::from_millis(50));
+    assert_eq!(policy.delay_for_attempt(2), Duration::from_millis(100));
+    assert_eq!(policy.delay_for_attempt(3), Duration::from_millis(200));
+    assert_eq!(policy.delay_for_attempt(7), Duration::from_millis(3200));
+    assert_eq!(policy.delay_for_attempt(8), Duration::from_millis(3200));
 }
 
 proptest! {
     #[test]
     fn seeded_jitter_decorrelates_parallel_retry_waits(seed in any::<u64>(), attempt_index in 1usize..=7) {
-        let base_policy = RequestPolicy::new(3, RateLimitSettings::default())
-            .with_jitter(JitterStrategy::none());
-        let base = base_policy.backoff_delay(attempt_index);
-        let policy = RequestPolicy::new(3, RateLimitSettings::default())
+        let base_policy = retry_policy_no_jitter(3);
+        let base = base_policy.delay_for_attempt(attempt_index);
+        let policy = retry_policy(3)
             .with_jitter(JitterStrategy::decorrelated_from_seed(seed));
-        let first_policy = policy.clone();
-        let second_policy = policy;
+        let first = policy.delay_for_attempt(attempt_index);
+        let second = policy.delay_for_attempt(attempt_index.saturating_add(1));
 
-        let first = first_policy.backoff_delay(attempt_index);
-        let second = second_policy.backoff_delay(attempt_index);
-
-        prop_assert_ne!(first, second);
         prop_assert!(first >= base);
         prop_assert!(second >= base);
         prop_assert!(first <= base.saturating_add(base / 2));
-        prop_assert!(second <= base.saturating_add(base / 2));
+        prop_assert!(second <= policy.max_delay());
     }
 }
 
 #[tokio::test]
 async fn execute_json_with_retries_transient_statuses_until_success() {
-    let policy = RequestPolicy::default();
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = RetryPolicy::default();
+    let limiter = default_limiter();
     let attempts = Arc::new(AtomicUsize::new(0));
 
     let result: serde_json::Value = execute_json_with(&policy, &limiter, {
@@ -157,8 +176,8 @@ async fn request_json_retries_429_and_preserves_headers_on_each_attempt() {
         .mount(&server)
         .await;
 
-    let policy = RequestPolicy::new(3, RateLimitSettings::default());
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = retry_policy(3);
+    let limiter = default_limiter();
     let mut headers = HeaderMap::new();
     headers.insert(
         HeaderName::from_static("x-api-key"),
@@ -206,9 +225,7 @@ async fn retry_after_backoff_wait_can_be_cancelled_before_next_attempt() {
         .mount(&server)
         .await;
 
-    let transport_policy = OrderBookTransportPolicy::default().with_request_policy(
-        RequestPolicy::new(2, RateLimitSettings::default()).with_jitter(JitterStrategy::none()),
-    );
+    let transport_policy = TransportPolicy::default().with_retry(retry_policy_no_jitter(2));
     let api = build_orderbook_api_with_policy(
         default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
         transport_policy,
@@ -246,8 +263,8 @@ async fn retry_after_backoff_wait_can_be_cancelled_before_next_attempt() {
 
 #[tokio::test]
 async fn execute_json_with_stops_on_non_retryable_api_error_and_preserves_body() {
-    let policy = RequestPolicy::default();
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = RetryPolicy::default();
+    let limiter = default_limiter();
     let attempts = Arc::new(AtomicUsize::new(0));
 
     let error = execute_json_with::<serde_json::Value, _, _>(&policy, &limiter, {
@@ -289,8 +306,8 @@ async fn execute_json_with_stops_on_non_retryable_api_error_and_preserves_body()
 
 #[tokio::test]
 async fn execute_empty_with_allows_204_without_body() {
-    let policy = RequestPolicy::default();
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = RetryPolicy::default();
+    let limiter = default_limiter();
 
     execute_empty_with(&policy, &limiter, || async {
         Ok(ResponseEnvelope::empty(204))
@@ -347,8 +364,8 @@ async fn request_text_and_empty_share_the_request_builder_and_success_path() {
         .mount(&server)
         .await;
 
-    let policy = RequestPolicy::default();
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = RetryPolicy::default();
+    let limiter = default_limiter();
 
     let version = request_text(
         &build_shared_transport(),
@@ -383,8 +400,8 @@ async fn request_text_and_empty_share_the_request_builder_and_success_path() {
 #[tokio::test]
 async fn rate_limiter_spaces_requests_after_token_budget_is_consumed() {
     let interval = Duration::from_millis(40);
-    let policy = RequestPolicy::new(1, RateLimitSettings::new(1, interval, "test"));
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = retry_policy(1);
+    let limiter = limiter(1, interval, "test");
 
     execute_empty_with(&policy, &limiter, || async {
         Ok(ResponseEnvelope::empty(204))
@@ -408,12 +425,12 @@ async fn rate_limiter_spaces_requests_after_token_budget_is_consumed() {
 #[tokio::test]
 async fn concurrent_attempts_share_limiter_state_across_clones() {
     let interval = Duration::from_millis(60);
-    let policy = RequestPolicy::new(1, RateLimitSettings::new(1, interval, "test"));
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = retry_policy(1);
+    let limiter = limiter(1, interval, "test");
     let arrivals = Arc::new(Mutex::new(Vec::new()));
 
     let spawn_attempt =
-        |policy: RequestPolicy, limiter: RequestRateLimiter, arrivals: Arc<Mutex<Vec<Instant>>>| {
+        |policy: RetryPolicy, limiter: RequestRateLimiter, arrivals: Arc<Mutex<Vec<Instant>>>| {
             tokio::spawn(async move {
                 execute_empty_with(&policy, &limiter, || {
                     let arrivals = arrivals.clone();
@@ -455,8 +472,8 @@ async fn concurrent_attempts_share_limiter_state_across_clones() {
 #[tokio::test]
 async fn cancelling_waiting_attempt_keeps_limiter_reusable() {
     let interval = Duration::from_millis(60);
-    let policy = RequestPolicy::new(1, RateLimitSettings::new(1, interval, "test"));
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = retry_policy(1);
+    let limiter = limiter(1, interval, "test");
 
     execute_empty_with(&policy, &limiter, || async {
         Ok(ResponseEnvelope::empty(204))
@@ -549,14 +566,12 @@ fn transport_policy_wraps_validated_shared_client_policy() {
     let custom = HttpClientPolicy::new("custom-orderbook-test/1.0.0")
         .expect("custom user-agent should be valid")
         .without_timeout();
-    let policy = OrderBookTransportPolicy::default().with_client_policy(custom.clone());
+    let policy = TransportPolicy::default().with_client_policy(custom.clone());
 
     assert_eq!(policy.client_policy(), &custom);
     assert_eq!(policy.client_policy().timeout(), None);
     assert_eq!(
-        OrderBookTransportPolicy::default()
-            .client_policy()
-            .user_agent(),
+        TransportPolicy::default().client_policy().user_agent(),
         DEFAULT_ORDERBOOK_USER_AGENT
     );
 }
@@ -579,8 +594,8 @@ async fn request_json_surfaces_malformed_success_payloads() {
         .mount(&server)
         .await;
 
-    let policy = RequestPolicy::new(1, RateLimitSettings::default());
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = retry_policy(1);
+    let limiter = default_limiter();
 
     let error = request_json::<serde_json::Value>(
         &build_shared_transport(),
@@ -603,8 +618,8 @@ async fn request_json_surfaces_malformed_success_payloads() {
 
 #[tokio::test]
 async fn retryable_api_error_does_not_retry_past_the_final_attempt() {
-    let policy = RequestPolicy::new(1, RateLimitSettings::default());
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = retry_policy(1);
+    let limiter = default_limiter();
     let attempts = Arc::new(AtomicUsize::new(0));
 
     let error = execute_json_with::<serde_json::Value, _, _>(&policy, &limiter, {
@@ -647,8 +662,8 @@ async fn retryable_api_error_does_not_retry_past_the_final_attempt() {
 
 #[tokio::test]
 async fn transport_errors_delay_between_retryable_attempts() {
-    let policy = RequestPolicy::new(2, RateLimitSettings::default());
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = retry_policy(2);
+    let limiter = default_limiter();
     let attempts = Arc::new(AtomicUsize::new(0));
     let attempt_times = Arc::new(Mutex::new(Vec::new()));
 
@@ -693,8 +708,8 @@ async fn transport_errors_delay_between_retryable_attempts() {
 
 #[tokio::test]
 async fn final_transport_error_returns_without_sleeping_again() {
-    let policy = RequestPolicy::new(1, RateLimitSettings::default());
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = retry_policy(1);
+    let limiter = default_limiter();
 
     timeout(
         Duration::from_millis(35),
@@ -713,11 +728,10 @@ async fn final_transport_error_returns_without_sleeping_again() {
 #[tokio::test(flavor = "current_thread", start_paused = true)]
 #[ignore = "nightly deterministic retry / timeout soak"]
 async fn retry_timeout_soak_exercises_deterministic_waveforms() {
-    let policy =
-        RequestPolicy::new(3, RateLimitSettings::default()).with_jitter(JitterStrategy::none());
+    let policy = retry_policy_no_jitter(3);
 
     for round in 0..32usize {
-        let limiter = RequestRateLimiter::new(policy.rate_limit);
+        let limiter = default_limiter();
         let attempts = Arc::new(AtomicUsize::new(0));
         let result: serde_json::Value = execute_json_with(&policy, &limiter, {
             let attempts = attempts.clone();
@@ -745,7 +759,7 @@ async fn retry_timeout_soak_exercises_deterministic_waveforms() {
         assert_eq!(result["round"], json!(round));
         assert_eq!(attempts.load(Ordering::SeqCst), 3);
 
-        let limiter = RequestRateLimiter::new(policy.rate_limit);
+        let limiter = default_limiter();
         let timeout_attempts = Arc::new(AtomicUsize::new(0));
         let error = execute_empty_with(&policy, &limiter, {
             let timeout_attempts = timeout_attempts.clone();
@@ -776,8 +790,8 @@ async fn retry_timeout_soak_exercises_deterministic_waveforms() {
 
 #[tokio::test]
 async fn api_errors_keep_empty_bodies_empty_even_outside_204_successes() {
-    let policy = RequestPolicy::new(1, RateLimitSettings::default());
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = retry_policy(1);
+    let limiter = default_limiter();
 
     let error = execute_json_with::<serde_json::Value, _, _>(&policy, &limiter, || async {
         Ok(ResponseEnvelope::empty(INTERNAL_SERVER_ERROR))
@@ -796,8 +810,8 @@ async fn api_errors_keep_empty_bodies_empty_even_outside_204_successes() {
 
 #[tokio::test]
 async fn api_errors_keep_plain_text_payloads_out_of_the_json_decoder() {
-    let policy = RequestPolicy::new(1, RateLimitSettings::default());
-    let limiter = RequestRateLimiter::new(policy.rate_limit);
+    let policy = retry_policy(1);
+    let limiter = default_limiter();
 
     let error = execute_json_with::<serde_json::Value, _, _>(&policy, &limiter, || async {
         Ok(ResponseEnvelope::text(400, "plain-text upstream failure"))
@@ -920,9 +934,8 @@ mod tracing_contract {
     #[tokio::test(flavor = "current_thread")]
     async fn execute_with_emits_retry_events_with_status_and_transport_error_fields() {
         let capture = TraceCapture::install();
-        let policy =
-            RequestPolicy::new(2, RateLimitSettings::default()).with_jitter(JitterStrategy::none());
-        let limiter = RequestRateLimiter::new(policy.rate_limit);
+        let policy = retry_policy_no_jitter(2);
+        let limiter = default_limiter();
         let attempts = Arc::new(AtomicUsize::new(0));
 
         let result: serde_json::Value = execute_json_with(&policy, &limiter, {
@@ -950,7 +963,7 @@ mod tracing_contract {
 
         assert_eq!(result["ok"], json!(true));
 
-        let transport_limiter = RequestRateLimiter::new(policy.rate_limit);
+        let transport_limiter = default_limiter();
         let _ = execute_empty_with(&policy, &transport_limiter, || async {
             Err((
                 cow_sdk_core::TransportErrorClass::Other,

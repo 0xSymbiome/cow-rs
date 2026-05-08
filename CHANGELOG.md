@@ -14,6 +14,12 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow-sdk-transport-policy` now owns shared HTTP retry, rate-limit,
+  `Retry-After`, jitter, and transport-error classification policy for
+  orderbook and subgraph clients. The `cow-sdk` facade exposes the policy
+  surface through `cow_sdk::http`, including the optional reqwest classifier
+  behind the `http-classifier` feature.
+
 - A runnable native cancellation example demonstrates
   `Cancellable::cancel_with(&token)` against a delayed orderbook response.
 
@@ -1101,7 +1107,7 @@ The first functional crate-family release begins at `0.1.0`.
   chain id, partner Graph API key, and HTTP transport are all supplied
   before `.build()` becomes callable. The builder accepts an
   `Arc<dyn HttpTransport + Send + Sync>` via `.transport(...)` and
-  exposes optional fluent setters for the `SubgraphTransportPolicy`,
+  exposes optional fluent setters for the shared `TransportPolicy`,
   per-chain base-URL map, and a shared `reqwest::Client` for multi-chain
   connection-pool reuse. On native targets the builder also exposes a
   `.build()` overload that defaults the transport to `ReqwestTransport`,
@@ -1123,7 +1129,7 @@ The first functional crate-family release begins at `0.1.0`.
   enforces that the chain id, environment, and HTTP transport are all
   supplied before `.build()` becomes callable. The builder accepts an
   `Arc<dyn HttpTransport + Send + Sync>` via `.transport(...)` and exposes
-  optional fluent setters for the `OrderBookTransportPolicy`, partner
+  optional fluent setters for the shared `TransportPolicy`, partner
   API key, base-URL map, per-environment base-URL overrides, and a shared
   `reqwest::Client` for multi-chain connection-pool reuse. On native
   targets the builder also exposes a `.build()` overload that defaults the
