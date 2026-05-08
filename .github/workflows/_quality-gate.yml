@@ -292,8 +292,13 @@ jobs:
         run: cargo check --manifest-path examples/native/Cargo.toml --examples
 
   nextest:
-    runs-on: ubuntu-latest
+    name: nextest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -311,6 +316,108 @@ jobs:
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Run workspace nextest suite
         run: cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
+
+  ipfs-fetch-await-grep:
+    name: IpfsFetch await grep
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Assert IpfsFetchTransport async usage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          roots = [Path("crates"), Path("tests"), Path("examples"), Path("e2e")]
+          rust_sources = sorted(
+              path
+              for root in roots
+              if root.exists()
+              for path in root.rglob("*.rs")
+              if "target" not in path.parts
+          )
+
+          fetch_call = re.compile(r"\bfetch_doc_from_[a-z_]+\s*\(")
+          impl_start = re.compile(
+              r"impl\s*(?:<[^>{}]*>)?\s+(?:[\w:]+::)?IpfsFetchTransport\s+for\b",
+              re.MULTILINE,
+          )
+          bare_get = re.compile(r"(?<!async\s)fn\s+get\s*\(")
+
+          failures: list[str] = []
+
+          def line_number(text: str, offset: int) -> int:
+              return text.count("\n", 0, offset) + 1
+
+          def line_at(text: str, offset: int) -> str:
+              start = text.rfind("\n", 0, offset) + 1
+              end = text.find("\n", offset)
+              if end == -1:
+                  end = len(text)
+              return text[start:end]
+
+          def brace_block(text: str, open_brace: int) -> str:
+              depth = 0
+              for cursor in range(open_brace, len(text)):
+                  char = text[cursor]
+                  if char == "{":
+                      depth += 1
+                  elif char == "}":
+                      depth -= 1
+                      if depth == 0:
+                          return text[open_brace : cursor + 1]
+              return text[open_brace:]
+
+          for path in rust_sources:
+              text = path.read_text(encoding="utf-8")
+              for match in fetch_call.finditer(text):
+                  line = line_at(text, match.start())
+                  stripped = line.lstrip()
+                  prefix = line[: match.start() - (text.rfind("\n", 0, match.start()) + 1)]
+                  if stripped.startswith(("//", "///", "//!")):
+                      continue
+                  if "use " in prefix or "fn " in prefix:
+                      continue
+                  end = text.find(";", match.end())
+                  if end == -1:
+                      end = len(text)
+                  statement = text[match.start() : end]
+                  if ".await" not in statement:
+                      failures.append(
+                          f"{path}:{line_number(text, match.start())}: fetch_doc_from_* call is not awaited"
+                      )
+
+              for match in impl_start.finditer(text):
+                  open_brace = text.find("{", match.end())
+                  if open_brace == -1:
+                      failures.append(
+                          f"{path}:{line_number(text, match.start())}: IpfsFetchTransport impl has no body"
+                      )
+                      continue
+                  block = brace_block(text, open_brace)
+                  if "async fn get" not in block:
+                      failures.append(
+                          f"{path}:{line_number(text, match.start())}: IpfsFetchTransport impl must contain async fn get"
+                      )
+                  if bare_get.search(block):
+                      failures.append(
+                          f"{path}:{line_number(text, match.start())}: IpfsFetchTransport impl contains sync fn get"
+                      )
+
+          if failures:
+              for failure in failures:
+                  print(f"::error::{failure}", file=sys.stderr)
+              raise SystemExit(1)
+
+          print("IpfsFetchTransport async usage verified.")
+          PY
 
   docs:
     runs-on: ubuntu-latest
@@ -679,6 +786,7 @@ jobs:
       - clippy
       - test
       - nextest
+      - ipfs-fetch-await-grep
       - docs
       - typos
       - deny

@@ -1,0 +1,64 @@
+name: wasm-imports-grep-gate
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/wasm-imports-grep-gate.yml'
+      - 'crates/wasm/src/**/*.rs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  forbidden-imports:
+    name: forbidden wasm imports
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Reject forbidden cow-sdk-wasm imports
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t wasm_sources < <(find crates/wasm/src -type f -name '*.rs' 2>/dev/null | sort || true)
+          if [ "${#wasm_sources[@]}" -eq 0 ]; then
+            echo "No cow-sdk-wasm Rust sources found; forbidden-import scan has no candidates."
+            exit 0
+          fi
+
+          labels=(
+            'alloy family'
+            'reqwest'
+            'tokio runtime parts'
+            'tokio macros'
+            'cow-sdk-core reqwest re-exports'
+          )
+          patterns=(
+            'cow[-_]sdk[-_]alloy([-_](provider|signer))?'
+            '\breqwest\b'
+            'tokio::(spawn|runtime|time)'
+            'tokio::(macros)'
+            'cow_sdk_core::Reqwest(Transport|TransportConfig|classify_reqwest_error)'
+          )
+
+          failures=0
+          for index in "${!patterns[@]}"; do
+            hit_file="$(mktemp)"
+            if grep -nE "${patterns[$index]}" "${wasm_sources[@]}" > "$hit_file"; then
+              echo "::error::Forbidden ${labels[$index]} reference found in cow-sdk-wasm source." >&2
+              cat "$hit_file" >&2
+              failures=1
+            fi
+            rm -f "$hit_file"
+          done
+
+          exit "$failures"

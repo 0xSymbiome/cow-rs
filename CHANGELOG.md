@@ -611,6 +611,13 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- CI hardening adds a forbidden-import gate for `cow-sdk-wasm`, centralizes the
+  standard nextest runner on Ubuntu, macOS, and Windows with
+  `fail-fast: false`, removes duplicate single-host jobs from routine and
+  release-readiness workflows, and adds an IpfsFetch static gate that requires
+  `.await` on every `fetch_doc_from_*` call and `async fn get` on every
+  `IpfsFetchTransport` implementation.
+
 - ADR amendments: 0007 widens the browser-wallet leaf-local rule for the WASM
   leaf-crate ecosystem; 0010 records `JsCallbackHttpTransport`,
   reqwest-stays-in-core posture, async `IpfsFetchTransport`, and string

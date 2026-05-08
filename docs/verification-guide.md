@@ -126,6 +126,18 @@ to binary reproducibility for the WebAssembly artifacts.
 
 The `cargo tree --invert alloy-provider` package list, the `cargo audit --deny ... --ignore RUSTSEC-...` ignore-token list, each ignored RustSec rationale entry, and the browser-wallet Playwright install browser set are guarded against their source-of-truth files by `scripts/check-release-docs-agree.sh`.
 
+### CI Architecture Gates
+
+The workflow layer carries three static architecture gates in addition to the
+ordinary Rust build and test jobs. The `wasm-imports-grep-gate.yml` workflow
+rejects native-only Alloy, `reqwest`, Tokio runtime, Tokio macro, and
+`cow-sdk-core` reqwest re-export references in `cow-sdk-wasm` sources. The
+shared quality gate runs the standard nextest suite on Ubuntu, macOS, and
+Windows with `fail-fast: false`, replacing duplicate single-host jobs with one
+matrix-owned host-coverage lane. The same shared quality gate also checks
+that every `fetch_doc_from_*` caller awaits the returned future and every
+`IpfsFetchTransport` implementation keeps `get` async.
+
 ## Going Deeper
 
 Use deeper evidence only when the change warrants it:

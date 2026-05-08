@@ -1,7 +1,7 @@
 # Workflow Security Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-05-08
 Owning surface: every `.github/workflows/*.yml` file
 Refresh trigger: any new workflow file; any unpinned action; any addition of `pull_request_target`; any third-party action new to the workspace; any permission widening or issue-creation behavior in scheduled workflows
 Related docs:
@@ -29,6 +29,7 @@ runner infrastructure outside the committed workflow definitions.
 | Permissions | Every workflow declares explicit least-privilege `permissions:` at workflow or job scope | Conforms |
 | Trigger safety | Any workflow using `pull_request_target` must carry an explicit allow-list review comment; the current workflow set does not use the trigger | Conforms |
 | Third-party review log | Each pinned third-party action keeps a nearby `# Source ref:` comment naming the reviewed tag or source ref | Conforms |
+| WASM import gate | The forbidden-import workflow uses read-only permissions and SHA-pinned checkout only | Conforms |
 | Inline docs smoke | The docs-quality rendered README smoke uses the existing job environment and does not introduce a new third-party action or elevated permission | Conforms |
 | Scheduled retry soak | The retry-soak workflow uses read-only permissions, pinned actions, no privileged triggers, and a deterministic ignored test invocation | Conforms |
 | Alloy canary issue creation | The report-only Alloy canary grants `issues: write` only to create or reuse a tracking issue through `gh api`, with no new third-party action | Conforms |
@@ -52,6 +53,7 @@ Workflow snapshot:
 | `sdk-verification-e2e.yml` | `contents: read` | SHA-pinned | Absent |
 | `services-drift.yml` | `contents: read`, `issues: write` | SHA-pinned | Absent |
 | `test-depth.yml` | `actions: read`, `contents: read` | SHA-pinned | Absent |
+| `wasm-imports-grep-gate.yml` | `contents: read` | SHA-pinned | Absent |
 | `wasm-pages.yml` | `contents: read`; deploy job grants `pages: write`, `id-token: write` | SHA-pinned | Absent |
 | `wasm.yml` | `contents: read` | SHA-pinned | Absent |
 
@@ -99,6 +101,13 @@ does not add a third-party `uses:` action, does not widen workflow
 permissions, and remains covered by the same workflow-security pinning and
 permissions checks as the rest of the workflow set.
 
+### WASM Import Gate
+
+The `wasm-imports-grep-gate.yml` workflow runs on pull requests that touch the
+browser leaf crate source tree. It uses read-only repository permissions and a
+SHA-pinned checkout action, and its enforcement logic runs inline in the hosted
+shell without introducing a new third-party action.
+
 ### Scheduled Depth And Retry Lanes
 
 The `test-depth.yml` mutation job now runs on the existing weekly schedule as
@@ -136,6 +145,7 @@ Primary implementation points:
 - `.github/workflows/sdk-verification-e2e.yml`
 - `.github/workflows/services-drift.yml`
 - `.github/workflows/test-depth.yml`
+- `.github/workflows/wasm-imports-grep-gate.yml`
 - `.github/workflows/wasm-pages.yml`
 - `.github/workflows/wasm.yml`
 

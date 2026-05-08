@@ -40,6 +40,15 @@ any mismatch against `docs/verification-matrix.md`,
 - The `_quality-gate.yml` lane enforces both the `alloy-*` workspace-pin
   same-minor invariant and the inner-workspace WASM pin diff against the
   root workspace pins.
+- The `_quality-gate.yml` nextest lane runs the standard workspace test
+  runner on Ubuntu, macOS, and Windows with `fail-fast: false`, so routine
+  host coverage is centralized in the shared quality gate.
+- The `wasm-imports-grep-gate.yml` lane rejects forbidden `cow-sdk-wasm`
+  source imports for native-only Alloy crates, `reqwest`, Tokio runtime
+  entrypoints, Tokio macros, and the `cow-sdk-core` reqwest re-exports.
+- The `_quality-gate.yml` IpfsFetch static gate rejects dropped
+  `fetch_doc_from_*` futures and synchronous `IpfsFetchTransport::get`
+  implementations.
 - The lockfile invariant enforces single-version resolution for the reviewed
   Alloy runtime crates at `2.0.4` and Alloy Core ABI crates at `1.5.7`. Alloy
   runtime and ABI crates ship on independent release cadences, so both family
@@ -98,7 +107,8 @@ feature combinations is guarded separately by the facade public API snapshots.
 Expected workflow coverage:
 
 - `ci.yml` for routine native validation and the compatibility floor
-- Windows stable lane for light native host coverage
+- shared quality-gate nextest matrix for Ubuntu, macOS, and Windows host
+  coverage
 - `crate-checks.yml` for maintenance-depth crate isolation
 - `codeql.yml` for semantic security analysis
 

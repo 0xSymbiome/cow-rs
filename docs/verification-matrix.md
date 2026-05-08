@@ -70,7 +70,10 @@ Use it with:
 | `cargo test --workspace --doc` | Explicit doctest gate for rustdoc examples |
 | Published crate README doctests | Every published crate README is wired into crate rustdoc with a `cfg_attr(doctest, ...)` shim, so `cargo test --workspace --doc` compiles every fenced README example on CI. |
 | `cargo test --all-features --workspace --doc` | All-feature doctest gate for the public docs contract |
-| Windows stable lane (`windows-latest`) | Light native host compatibility gate with `cargo check --workspace --all-features` and `cargo test --workspace --lib --tests` |
+| Native host matrix | Shared quality-gate host coverage on Ubuntu, macOS, and Windows |
+| `wasm-imports-grep-gate.yml` | Forbidden-import gate for `cow-sdk-wasm` source files; rejects native-only Alloy crates, `reqwest`, Tokio runtime entrypoints, Tokio macros, and the `cow-sdk-core` reqwest re-exports before they can enter the browser leaf crate. |
+| Shared nextest OS matrix | `_quality-gate.yml` runs `cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml` on Ubuntu, macOS, and Windows with `fail-fast: false`. |
+| IpfsFetch await static gate | `_quality-gate.yml` rejects `fetch_doc_from_*` calls without `.await` and rejects any `IpfsFetchTransport` implementation that defines a synchronous `fn get`. |
 | `cargo doc --workspace --all-features --no-deps` | Public rustdoc build gate |
 | `docs-quality.yml` | Nightly docs.rs-style rustdoc lane with `DOCS_RS=1`, `--cfg docsrs`, nightly rustdoc presentation flags, and rendered README heading smoke coverage |
 | `fuzz.yml` | Weekly report-only fuzz canary across every active `cargo +nightly fuzz list --fuzz-dir fuzz` target with crash corpus artifact upload |
@@ -97,7 +100,7 @@ Use it with:
 - Required tests and examples avoid private keys, seed phrases, live wallet authorization, and live order submission.
 - Doctests stay deterministic and are limited to local examples that do not require live-network or host-specific behavior.
 - The nightly docs-quality lane stays documentation-only. It exercises docs.rs-style rustdoc flags and all-feature doctests without widening validation into browser-extension, live-network, or host-sensitive behavior.
-- The Windows stable lane stays intentionally narrow and does not absorb browser-target, WASM, or publication-only validation.
+- The native host matrix stays intentionally narrow and does not absorb browser-target, WASM, or publication-only validation.
 - CodeQL complements dependency policy by scanning Rust and GitHub Actions semantics; it does not replace `cargo-deny` or `cargo-audit`.
 - Dependency policy is intentionally split: `cargo-deny` owns bans, licenses, sources, and yanked advisory policy, while `cargo-audit` blocks vulnerabilities plus unsound and unmaintained advisories. Yanked published-upstream cases require explicit audit evidence instead of widened ignore lists or hidden unreleased overrides.
 - Routine native validation workflows and the dedicated WASM workflows disable checkout credential persistence and use explicit timeout budgets per job. `wasm-pages.yml` scopes elevated Pages permissions to the deployment job.
