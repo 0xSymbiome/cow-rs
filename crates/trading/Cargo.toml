@@ -37,7 +37,6 @@ num-bigint.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-tokio-util.workspace = true
 tracing = { workspace = true, optional = true }
 
 [dev-dependencies]

@@ -1,23 +1,19 @@
 # cow-sdk-wasm
 
-TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK.
-
-This crate exposes deterministic CoW Protocol logic — order signing,
-EIP-1271 envelope construction, app-data hashing, orderbook,
-subgraph, IPFS, trading — to JavaScript and TypeScript consumers
-through typed DTOs and explicit JS callbacks for wallet, signer, and
-HTTP transport. It wraps the existing native SDK helpers; it does
-not reimplement any protocol primitive.
+TypeScript-callable wasm-bindgen bindings for the CoW Protocol Rust
+SDK. The crate exposes deterministic protocol logic to JavaScript and
+TypeScript consumers through typed DTOs and explicit JS callbacks for
+wallet, signer, and HTTP transport while reusing the existing native
+SDK helpers.
 
 ## Runtime support
 
 | Runtime | Support tier | HTTP transport |
 | --- | --- | --- |
 | Browser bundlers (Vite, webpack, Next.js, Rollup, Parcel, esbuild) | Default-supported | Default `fetch` |
-| Node.js (Active LTS) | Tested | JS callback transport |
+| Node.js 24 LTS | Tested | JS callback transport |
 | Cloudflare Workers (workerd) | Tested | JS callback transport |
-| Deno | Optional / experimental | JS callback transport |
-| Bun, Vercel Edge Functions, Fly.io Machines | Best effort | JS callback transport |
+| Deno | Opt-in / experimental | JS callback transport |
 
 The `Default-supported` tier uses `cow-sdk-transport-wasm`, which
 requires a `Window`-scoped `fetch`. The `Tested` and
@@ -27,9 +23,8 @@ host runtime owns request dispatch.
 
 ## Install
 
-The canonical npm package is published from the staging tree under
-`crates/wasm/npm/`. The package name is selected at publish time;
-consult the project release notes for the current name.
+The package name is selected at publish time and resolved by the
+package rendering script.
 
 ```bash
 # Replace <package-name> with the published npm package name.
@@ -48,6 +43,7 @@ cow-sdk-wasm = "0.1"
 - [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
 - [Integrations Guide](https://github.com/cowdao-grants/cow-rs/blob/main/docs/integrations.md)
 - [Architecture Overview](https://github.com/cowdao-grants/cow-rs/blob/main/docs/architecture.md)
+- [WASM Surface Audit](https://github.com/cowdao-grants/cow-rs/blob/main/docs/audit/cow-sdk-wasm-surface-audit.md)
 - [Workspace README](https://github.com/cowdao-grants/cow-rs/blob/main/README.md)
 
 ## License

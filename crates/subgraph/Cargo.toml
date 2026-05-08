@@ -30,7 +30,6 @@ cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0" }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 thiserror.workspace = true
-tokio-util.workspace = true
 tracing = { workspace = true, optional = true }
 url.workspace = true
 

@@ -137,6 +137,18 @@ pub use cow_sdk_signing::{
 };
 pub use cow_sdk_trading as trading;
 
+#[cfg(all(feature = "wasm", target_arch = "wasm32"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "wasm")))]
+pub use cow_sdk_wasm as wasm;
+
+#[cfg(all(feature = "wasm", not(target_arch = "wasm32")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "wasm")))]
+/// Host-safe subset of the TypeScript-callable WASM crate.
+pub mod wasm {
+    /// Host-safe protocol helper modules.
+    pub use cow_sdk_wasm::pure;
+}
+
 use thiserror::Error;
 
 /// Aggregate error type for the root facade crate.

@@ -10,11 +10,11 @@ members = [
   "crates/subgraph",
   "crates/browser-wallet",
   "crates/transport-wasm",
+  "crates/wasm",
   "crates/alloy-provider",
   "crates/alloy-signer",
   "crates/alloy",
   "crates/sdk",
-  "crates/wasm",
   "tests",
 ]
 resolver = "2"
