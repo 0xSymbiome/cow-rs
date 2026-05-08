@@ -14,6 +14,16 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- ADR amendments: 0007 widens the browser-wallet leaf-local rule for the WASM
+  leaf-crate ecosystem; 0010 records `JsCallbackHttpTransport`,
+  reqwest-stays-in-core posture, async `IpfsFetchTransport`, and string
+  `schemaVersion`; 0013 covers JS callback transport and
+  `cow-sdk-transport-policy`; 0019 extends sole dispatch to JS callback
+  transport; 0028 records the EIP-1271 facade-resolves-callback pattern and
+  `OrderUid` `as_str()` contributor rule; 0026 extracts the rehearsal and
+  rollback runbook to `docs/alloy-major-release-runbook.md`; 0027 drops
+  forward-speculative post-quantum scheme names; 0034 applies the canonical
+  ADR heading template; and 0038 normalizes tag and cross-reference style.
 - Public error variants across the SDK now redact secret-shaped payloads
   through dedicated safe wrappers or sanitized construction paths before
   those values reach `Display`, `Debug`, or `Serialize`.

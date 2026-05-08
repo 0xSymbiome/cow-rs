@@ -1,16 +1,23 @@
 # ADR 0007: Bounded Browser Wallet Support And Current Browser Runtime Contract
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-13
+- Last reviewed: 2026-05-08
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: browser-wallet, wasm, support-posture, interop
-- Related: [ADR 0004](0004-feature-gated-browser-wallet-sidecar.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
+- Related: [ADR 0004](0004-feature-gated-browser-wallet-sidecar.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md)
 
 ## Decision
 
 Keep browser wallet support explicit, feature-scoped, and compatibility-bounded,
 and keep browser-runtime interop aligned to the current leaf-local
 `wasm-bindgen` contract.
+
+The leaf-local rule applies per WASM leaf. cow-rs supports three peer WASM
+leaves: `cow-sdk-browser-wallet` for the EIP-1193 wallet adapter,
+`cow-sdk-transport-wasm` for browser `fetch`, and `cow-sdk-wasm` for the
+TypeScript-callable surface. Each leaf is single-purpose and additive per ADR
+0008.
 
 ## Why
 
@@ -27,13 +34,13 @@ carrying compatibility-era behavior indefinitely.
   typed rather than widening into a generic raw RPC surface.
 - Runtime and support: browser-only dependencies, Promise handling,
   `serde-wasm-bindgen`, typed JS imports, and bridge-local interop remain
-  leaf-local to `cow-sdk-browser-wallet`. Raw `JsValue` and browser-global
+  leaf-local to their owning WASM crates. Raw `JsValue` and browser-global
   types do not become the public SDK contract.
 - Validation and review: direct browser-targeted proof, higher-level browser
   automation, and optional environment-sensitive confirmation stay separate
   lanes with distinct claims.
-- Cost: browser support requires extra proof, tighter wording, and slower,
-  more deliberate expansion than a permissive generic adapter surface.
+- Cost: each WASM leaf requires extra proof, tighter wording, and slower, more
+  deliberate expansion than a permissive generic adapter surface.
 
 ## Alternatives Rejected
 
@@ -50,6 +57,7 @@ carrying compatibility-era behavior indefinitely.
 - [Verification Guide](../verification-guide.md)
 - [Browser-Runtime Proof Posture](../browser-runtime-proof-posture.md)
 - [ADR 0009](0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md)
+- See also: ADR 0039 and ADR 0040.
 
 **Proven by:**
 

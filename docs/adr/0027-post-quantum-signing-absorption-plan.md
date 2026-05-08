@@ -2,32 +2,35 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-27
-- Last reviewed: 2026-04-29
+- Last reviewed: 2026-05-08
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, signatures, compatibility, eip1271, eip7212
 - Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
 
 ## Decision
 
-Future signature families such as Dilithium, Falcon, SPHINCS+, and secp256r1
-through EIP-7212 land additively through non-exhaustive signing and signature
-enums. Existing ECDSA variants, wire spellings, and recovery-byte behavior stay
-stable. New schemes get scheme-keyed normalization and verification paths rather
-than widening the ECDSA normalizer.
+Future signature families land additively through non-exhaustive signing and
+signature enums. Existing ECDSA variants, wire spellings, and recovery-byte
+behavior stay stable. New schemes get scheme-keyed normalization and
+verification paths rather than widening the ECDSA normalizer.
 
 Verifier-only or contract-mediated schemes use the EIP-1271 verification path
 until protocol support requires a dedicated typed variant. Consumers matching on
 `SigningScheme` or `Signature` must keep wildcard arms because these enums are
 explicitly open to future protocol-side signature forms.
 
+When cowprotocol upstream specifies a post-quantum signing scheme, cow-rs
+absorbs it through an additive ADR and focused audit before exposing a stable
+SDK-owned type.
+
 ## Why
 
 Post-quantum and passkey-style signatures differ from recoverable ECDSA in
 size, encoding, verification location, and key material. Treating those schemes
 as ECDSA-shaped byte arrays would weaken validation and make the existing
-Solidity-compatible recovery-byte contract ambiguous. The current non-exhaustive
-boundaries let the SDK grow without reassigning old variants or creating a
-breaking match exhaustiveness change for downstream code.
+Solidity-compatible recovery-byte contract ambiguous. The current
+non-exhaustive boundaries let the SDK grow without reassigning old variants or
+creating a breaking match exhaustiveness change for downstream code.
 
 ## Must Remain True
 

@@ -14,10 +14,10 @@ public and runtime shape of `cow-rs`.
 | [0004](0004-feature-gated-browser-wallet-sidecar.md) | Accepted | Keep browser wallet support in a feature-gated sidecar crate. |
 | [0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md) | Accepted | Keep runtime contracts boundary-specific and public Rust types strongly typed. |
 | [0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md) | Accepted | Keep policy contracts explicit, review-visible, and instance-scoped. |
-| [0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md) | Accepted | Keep browser wallet support explicit, bounded, and aligned to the current browser-runtime seam. |
+| [0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md) | Accepted (amended) | Keep browser wallet support explicit, bounded, and aligned to the current browser-runtime seam. |
 | [0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md) | Accepted | Grow new capability surfaces through additive leaf crates and owned sidecars. |
 | [0009](0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md) | Accepted | Keep WASM examples as named verification consoles with one naming shape, one ship checklist, a two-tier proof posture, and a hybrid extensibility rule. |
-| [0010](0010-runtime-neutral-async-and-transport-posture.md) | Accepted (superseded in part by [0013](0013-http-transport-injection-and-typestate-builders.md)) | Keep the async surface runtime-neutral with a `CancellationToken` contract, typed transport-error classification that strips the URL, and opt-in `tracing` instrumentation. |
+| [0010](0010-runtime-neutral-async-and-transport-posture.md) | Accepted (amended); superseded in part by [0013](0013-http-transport-injection-and-typestate-builders.md) | Keep the async surface runtime-neutral with a `CancellationToken` contract, typed transport-error classification that strips the URL, and opt-in `tracing` instrumentation. |
 | [0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md) | Accepted (amended) | Distinguish atomic and decimal-scaled amounts through dedicated newtypes and advertise `TradingSdkBuilder` prerequisites through typestate terminals. |
 | [0012](0012-alloy-sol-bindings-and-registry-authority.md) | Accepted | Generate every ABI binding through `alloy::sol!` and resolve every deployed address through a single typed `Registry` authority. |
 | [0013](0013-http-transport-injection-and-typestate-builders.md) | Accepted (amended) | Route orderbook and subgraph dispatch through the typed `HttpTransport` seam in `cow-sdk-core`, and construct both public clients through typestate builders. |
@@ -26,26 +26,26 @@ public and runtime shape of `cow-rs`.
 | [0016](0016-split-sell-and-buy-token-balance-enums.md) | Accepted | Split the sell-side allowance path and the buy-side payout path into distinct `SellTokenSource` and `BuyTokenDestination` enums and reject cross-side coercion at the type system. |
 | [0017](0017-typed-orderbook-rejection-parser.md) | Accepted | Classify non-2xx orderbook responses through a typed `OrderbookRejection` enum with a permanent `Unknown { code, message }` fallback and promote the typed payload onto `OrderbookError::Rejected`. |
 | [0018](0018-typed-app-data-merge.md) | Accepted | Run quote-to-post app-data edits through a single typed merge pipeline and retire the opaque `serde_json::Value`-taking merge helper so the typed `signer`, `flashloan`, and `metadata.hooks` replacement semantics stay enforced end-to-end. |
-| [0019](0019-http-transport-sole-dispatch.md) | Accepted | Make `HttpTransport` in `cow-sdk-core` the sole live-dispatch surface on `OrderBookApi` and `SubgraphApi` and carry non-2xx responses through the typed `TransportError::HttpStatus` channel. |
+| [0019](0019-http-transport-sole-dispatch.md) | Accepted (amended) | Make `HttpTransport` in `cow-sdk-core` the sole live-dispatch surface on `OrderBookApi` and `SubgraphApi` and carry non-2xx responses through the typed `TransportError::HttpStatus` channel. |
 | [0020](0020-ethflow-owner-threading.md) | Accepted | Thread the signer-derived owner onto `EthFlowTransaction` and read `tx.from` (not `tx.order_to_sign.receiver`) when building the pre-HTTP validator preview on the native-currency submission seam. |
 | [0021](0021-orderbook-total-fee-policy.md) | Accepted | Define `Order.total_fee` narrowly as the canonical executed-fee component and surface the deprecated `executedFeeAmount` wire field as a typed read-only sibling so consumers compute any legacy summation explicitly. |
 | [0022](0022-ecdsa-signature-v-normalization.md) | Accepted | Canonicalize recoverable ECDSA signatures at the contracts boundary so every emitted signature carries a Solidity-compatible `27` / `28` recovery byte. |
 | [0023](0023-legacy-compatibility-shim-removal.md) | Accepted | Remove the legacy compatibility order helpers and models so contract digests flow only through the canonical `UnsignedOrder` to `Order` path. |
 | [0024](0024-asyncprovider-asyncsigningprovider-capability-split.md) | Accepted | Split `AsyncProvider` into a read-only chain-RPC trait and an `AsyncSigningProvider` extension that owns signer creation. |
 | [0025](0025-workspace-url-redaction-convention.md) | Accepted | Store credential-bearing URL fields in redacting types before they become public SDK state. |
-| [0026](0026-alloy-major-release-absorption-plan.md) | Accepted | Bound alloy major releases behind SDK-owned types and a configurable scheduled canary lane. |
+| [0026](0026-alloy-major-release-absorption-plan.md) | Accepted (amended; runbook extracted) | Bound alloy major releases behind SDK-owned types and a configurable scheduled canary lane. |
 | [0027](0027-post-quantum-signing-absorption-plan.md) | Accepted (amended) | Add future signing schemes through non-exhaustive signature boundaries without widening ECDSA semantics. |
-| [0028](0028-account-abstraction-integration-plan.md) | Accepted | Integrate account abstraction through provider capability traits and EIP-1271-compatible signing surfaces. |
+| [0028](0028-account-abstraction-integration-plan.md) | Accepted (amended) | Integrate account abstraction through provider capability traits and EIP-1271-compatible signing surfaces. |
 | [0029](0029-trait-evolution-extension-traits.md) | Accepted | Evolve provider traits through opt-in extension traits rather than adding methods to frozen core trait shapes. |
 | [0030](0030-workspace-locked-versioning-tag-baseline.md) | Accepted | Keep workspace crate versions locked through `0.x` and run patch semver checks against the previous release tag. |
 | [0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md) | Accepted | Drive orderbook response DTO coverage from OpenAPI with separate `Order` and `AuctionOrder` Rust types. |
 | [0032](0032-deployment-authority-machine-readable-provenance.md) | Accepted | Back deployment-address authority with machine-readable provenance and dual-mode live confirmation. |
 | [0033](0033-minimum-viable-panic-surface.md) | Accepted | Keep production panic sites allowlisted, documented, and limited to static invariants. |
-| [0034](0034-interaction-encoder-target-policy.md) | Accepted | Guard canonical vault-relayer interaction targets at the settlement encoder boundary while leaving custom domains to runtime authority. |
+| [0034](0034-interaction-encoder-target-policy.md) | Accepted (amended) | Guard canonical vault-relayer interaction targets at the settlement encoder boundary while leaving custom domains to runtime authority. |
 | [0035](0035-alloy-provider-adapter.md) | Accepted | Ship a read-only Alloy provider adapter behind an opt-in native crate. |
 | [0036](0036-alloy-signer-adapter.md) | Accepted | Ship a native Alloy local signer adapter behind an opt-in native crate. |
 | [0037](0037-alloy-umbrella-adapter.md) | Accepted | Compose the native Alloy provider and local signer into one wallet-capable client. |
-| [0038](0038-transaction-lifecycle-types.md) | Accepted | Split transaction broadcast acknowledgement from mined receipt observation. |
+| [0038](0038-transaction-lifecycle-types.md) | Accepted (amended) | Split transaction broadcast acknowledgement from mined receipt observation. |
 
 ## When To Write An ADR
 

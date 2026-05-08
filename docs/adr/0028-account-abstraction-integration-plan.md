@@ -1,7 +1,8 @@
 # ADR 0028: Integrate Account Abstraction Through Provider Capabilities And EIP-1271 Signing
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-27
+- Last reviewed: 2026-05-08
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: account-abstraction, provider, signing, eip1271, eip4337, eip7702, eip7212
 - Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
@@ -10,11 +11,23 @@
 
 Account-abstraction support enters through the existing provider and signing
 capability split. EIP-7702 set-code EOAs, EIP-4337 user-operation or paymaster
-flows, and EIP-7212 secp256r1 verification are integrated by explicit provider,
-signer, and EIP-1271 signature-provider adapters. Core SDK order construction
-and read-only chain access continue to depend on `AsyncProvider`; signer
-creation continues to require `AsyncSigningProvider`; signature production
-continues to flow through `AsyncSigner` or explicit EIP-1271 provider surfaces.
+flows, and EIP-7212 secp256r1 verification integrate by explicit provider,
+signer, and EIP-1271 signature-provider adapters. Core order construction and
+read-only chain access depend on `AsyncProvider`; signer creation requires
+`AsyncSigningProvider`; signature production flows through `AsyncSigner` or
+explicit EIP-1271 provider surfaces.
+
+EIP-1271 callbacks for wasm consumers follow the facade-resolves-callback
+pattern: the JavaScript callback returns the final ABI-encoded signature
+(verifier plus signature blob), and the Rust facade wraps that resolved hex
+string in a `cow_sdk_signing::Eip1271SignatureProvider` implementation. No
+`js_sys::Function` or `JsValue` is stored in the trait object; the trait remains
+trivially `Send + Sync` and composes with native consumers.
+
+Contributor rule for cross-ABI DTOs that include an `OrderUid` or
+`OrderDigest`: source the field from `as_str()` (the canonical hex string),
+never from `as_bytes()`. The wasm crate's PROP-WB-010 covers this invariant;
+CI grep gates enforce it.
 
 The root facade does not grow a monolithic account-abstraction client. Bundler,
 paymaster, wallet, and passkey-specific behavior belongs in leaf adapters until
@@ -31,25 +44,22 @@ dependencies in read-only flows and keeps order ownership reviewable.
 ## Must Remain True
 
 - Public surface: read-only operations are bounded by `AsyncProvider`; signer
-  creation is bounded by `AsyncSigningProvider`; account-abstraction-specific
-  bundler or paymaster types stay out of the core facade until stabilized.
-- Runtime and support: EIP-7702, EIP-4337, and EIP-7212 integrations are
-  explicit adapters; the SDK does not silently choose a bundler, paymaster, or
-  browser-wallet runtime.
+  creation is bounded by `AsyncSigningProvider`; bundler and paymaster types
+  stay out of the core facade until stabilized.
+- Runtime and support: account-abstraction integrations are explicit adapters;
+  the SDK does not silently choose a bundler, paymaster, or wallet runtime.
 - Validation and review: EIP-1271 cache behavior, browser-wallet trust
-  posture, typestate construction, and parity-scope rows for signing, trading,
-  contracts, and orderbook remain the review anchors for new flows.
-- Cost: account-abstraction ergonomics may require adapter crates, but that
-  cost preserves dependency and trust-boundary clarity for the stable facade.
+  posture, typestate construction, and parity rows for signing, trading,
+  contracts, and orderbook remain review anchors.
+- Cost: account-abstraction ergonomics may require adapter crates, preserving
+  dependency and trust-boundary clarity for the stable facade.
 
 ## Alternatives Rejected
 
 - Add one root account-abstraction client: this would mix read-only access,
-  signer creation, bundler transport, paymaster policy, and wallet trust into a
-  single broad dependency surface.
+  signer creation, bundler transport, paymaster policy, and wallet trust.
 - Treat every smart-account path as browser-wallet signing: native and contract
-  account flows need the same trait contract without assuming an EIP-1193
-  runtime.
+  account flows need the same trait contract without assuming EIP-1193.
 - Bypass EIP-1271 for contract-mediated signatures: that would duplicate the
   reviewed verification path and weaken cache behavior.
 
@@ -61,6 +71,7 @@ dependencies in read-only flows and keeps order ownership reviewable.
 - [Verification matrix crate contracts](../verification-matrix.md#crate-contracts)
 - [Core provider traits](../../crates/core/src/traits.rs)
 - [Trading EIP-1271 signature provider](../../crates/trading/src/types.rs)
+- See also: ADR 0024, ADR 0031, ADR 0039, and ADR 0040.
 
 **Proven by:**
 

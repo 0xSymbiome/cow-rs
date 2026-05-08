@@ -1,20 +1,11 @@
 # ADR 0034: Guard Canonical Vault-Relayer Interaction Targets
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-05-01
+- Last reviewed: 2026-05-08
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: contracts, settlement, registry, interaction, error-typing
 - Related: [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0019](0019-http-transport-sole-dispatch.md)
-
-## Context
-
-`cow-sdk-contracts::SettlementEncoder::encode_interaction` accepts a
-caller-supplied interaction target. The upstream settlement contract rejects the
-vault relayer as an interaction target at runtime with the
-`"GPv2: forbidden interaction"` revert reason. The SDK also has registry
-context for canonical settlement and vault-relayer deployments, so it can guard
-the common canonical misuse without becoming the authority for custom
-settlement domains.
 
 ## Decision
 
@@ -35,7 +26,17 @@ The rejection is surfaced through a typed
 target address and stays within the workspace's non-exhaustive error-enum
 policy.
 
-## Consequences
+## Why
+
+`cow-sdk-contracts::SettlementEncoder::encode_interaction` accepts a
+caller-supplied interaction target. The upstream settlement contract rejects the
+vault relayer as an interaction target at runtime with the
+`"GPv2: forbidden interaction"` revert reason. The SDK also has registry
+context for canonical settlement and vault-relayer deployments, so it can guard
+the common canonical misuse without becoming the authority for custom
+settlement domains.
+
+## Must Remain True
 
 - Canonical settlement transaction builders receive a deterministic SDK-side
   rejection before submitting a vault-relayer self-target interaction to the
@@ -45,7 +46,7 @@ policy.
 - The settlement encoder call path becomes fallible and callers propagate the
   typed rejection through the existing contracts error channel.
 
-## Alternatives
+## Alternatives Rejected
 
 - Reject every vault-relayer-looking target unconditionally. Rejected because
   the SDK cannot identify the paired vault-relayer address for arbitrary custom
@@ -54,7 +55,7 @@ policy.
   Rejected because registry-backed canonical deployments give the SDK enough
   information to prevent the common misuse earlier.
 
-## References
+## Links
 
 - [ADR 0019](0019-http-transport-sole-dispatch.md) records the sibling pattern
   that SDK-side guards cover what they can while upstream runtime authority

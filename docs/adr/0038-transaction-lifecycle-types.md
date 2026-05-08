@@ -1,10 +1,11 @@
 # ADR 0038: Split Transaction Broadcast And Receipt Observation
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-05-07
+- Last reviewed: 2026-05-08
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: [types], [adapters], [trading]
-- Related: [ADR-0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR-0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR-0029](0029-trait-evolution-extension-traits.md), [ADR-0037](0037-alloy-umbrella-adapter.md)
+- Tags: types, adapters, trading
+- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0037](0037-alloy-umbrella-adapter.md)
 
 ## Decision
 
@@ -58,7 +59,8 @@ fields are malformed.
 - [EIP-658](https://eips.ethereum.org/EIPS/eip-658)
 - [CoW Protocol SDK](https://github.com/cowprotocol/cow-sdk)
 - [Alloy `PendingTransactionBuilder`](https://docs.rs/alloy-provider/latest/alloy_provider/struct.PendingTransactionBuilder.html)
-- [ADR 0037 - Alloy umbrella adapter](0037-alloy-umbrella-adapter.md)
+- [ADR 0037](0037-alloy-umbrella-adapter.md)
+- See also: ADR 0030.
 
 **Proven by:**
 

@@ -2,112 +2,65 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-04-30
+- Last reviewed: 2026-05-08
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, typestate, builders, wasm, async
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 
 ## Decision
 
-HTTP dispatch for the orderbook and subgraph surfaces flows through a
-single typed `HttpTransport` trait in `cow-sdk-core`. The trait is
-`dyn`-compatible through `async-trait` so consumers can hold transports
-behind `Arc<dyn HttpTransport + Send + Sync>`. The native default is `ReqwestTransport`
-in `cow-sdk-core`; the browser default is `FetchTransport` shipped from
-the dedicated `cow-sdk-transport-wasm` leaf crate. Construction of
-`OrderBookApi` and `SubgraphApi` is exclusively through the
-`OrderBookApiBuilder` and `SubgraphApiBuilder` typestate builders; the
-legacy shared-client free-function constructors are retired.
+HTTP dispatch for orderbook and subgraph flows through the single
+`HttpTransport` trait in `cow-sdk-core`. The trait stays dyn-compatible through
+`async-trait`, so consumers can hold any implementation behind
+`Arc<dyn HttpTransport + Send + Sync>`.
+
+The typestate builders accept the same transport seam for every runtime:
+native consumers pass `Arc<ReqwestTransport>`, browser wasm consumers pass
+`Arc<FetchTransport>`, and runtime-neutral JS consumers pass
+`Arc<JsCallbackHttpTransport>`. Transport policy for timeout, retry,
+rate-limit, and jitter is injected through
+`cow_sdk_transport_policy::TransportPolicy` per ADR 0041. Builders remain
+transport-agnostic; new transports land as additive peers without changing the
+builder API.
+
+`OrderBookApi` and `SubgraphApi` construct exclusively through their typestate
+builders. Marker types use private tuple fields so external crates cannot
+construct them, and `.build()` is reachable only from the fully-set state.
+Native targets keep `.client(reqwest::Client)` as a convenience over
+`ReqwestTransport`; wasm targets must inject an explicit transport.
 
 ## Why
 
 A protocol SDK that ties orderbook and subgraph calls to a concrete
-`reqwest::Client` forces every consumer — bot, analytics pipeline,
-browser app, test harness — to accept that backend regardless of whether
-it is a fit. The browser target in particular cannot carry `reqwest`'s
-native TLS stack, so pinning the transport there was always an
-artificial coupling. A single trait seam in `cow-sdk-core` pulls the
-dispatch boundary one level up, keeps the default ergonomics unchanged
-for native callers, and makes the browser adapter a peer rather than a
-workaround. Replacing the five-plus free-function constructors on
-`OrderBookApi` (and the six on `SubgraphApi`) with one typestate builder
-per crate collapses the construction surface to one reviewable path,
-encodes the three required inputs (chain, environment or API key,
-transport) as compile-time markers, and removes an entire class of
-silent mismatch between the client's chain, its environment, and its
-installed transport.
+`reqwest::Client` forces every consumer to accept that backend. The browser
+target cannot carry reqwest's native TLS stack, and JavaScript runtimes need a
+callback transport. A single trait seam pulls dispatch one level up, keeps
+native ergonomics, and lets transport choice remain caller-owned.
+
+Typestate construction collapses the prior constructor family into one
+reviewable path, proving chain, environment or API key, and transport are all
+set before a live client exists.
 
 ## Must Remain True
 
-- Public surface: `HttpTransport` in `cow-sdk-core` is the production
-  injection point for every REST or GraphQL call the orderbook and
-  subgraph clients issue. Implementations carry `Debug` and declare the
-  `get`, `post`, `put`, and `delete` methods, each with per-call headers
-  and timeout inputs; the trait is target-aware through `async-trait` so
-  injected client builders compose `Arc<dyn HttpTransport + Send + Sync>`
-  across native and browser callers while browser futures can drop the
-  `Send` bound. `OrderBookApi::builder()` returns
-  `OrderBookApiBuilder<ChainIdUnset, EnvironmentUnset, TransportUnset>`
-  and `SubgraphApi::builder()` returns the analogous three-marker
-  builder; `.build()` is reachable only from the fully-set state on
-  both, and the wasm32 default-transport convenience impl is gated on
-  `#[cfg(not(target_arch = "wasm32"))]` so browser consumers must
-  supply `FetchTransport` from `cow-sdk-transport-wasm` explicitly.
-  `.client(reqwest_client)` remains available on native targets as a
-  convenience over `ReqwestTransport` for multi-chain connection-pool
-  reuse.
-- Typestate marker types use private tuple fields so external crates
-  cannot construct them. A `trybuild` `compile_fail` fixture under
-  `crates/<crate>/tests/ui/` proves the sealing for every typed client.
-- Runtime and support: `TransportError` is a typed enum with a
-  `Transport { class: TransportErrorClass, detail: String }` variant
-  partitioned across `Timeout`, `Connect`, `Redirect`, `Decode`, `Body`,
-  `Builder`, `Request`, `Status`, and `Other`, plus a `Configuration`
-  variant for builder-time failures. Native and browser adapters strip
-  the URL (through `reqwest::Error::without_url` on the native side and
-  through explicit URL omission on the browser side) before wrapping,
-  so credential-bearing query strings never surface through `Display`
-  or `Debug`. The transport-policy layer on the orderbook and subgraph
-  clients (retry, rate-limit, user-agent) sits above the trait and is
-  unchanged.
-- Validation and review: a cross-adapter parity contract test exercises
-  `ReqwestTransport` and `FetchTransport` against matching fixtures and
-  asserts both adapters surface the same `TransportErrorClass` for the
-  same failure class. A `trybuild` UI witness asserts that calling
-  `.build()` on a `SubgraphApiBuilder` without `.transport(...)` on a
-  `wasm32` target fails to compile; the analogous native happy-path
-  test covers the `ReqwestTransport` default. Every caller in the
-  trading surface, the examples workspace, and the browser-wallet
-  console uses one of the two builders — no free-function constructors
-  remain.
-- Cost: one new trait in `cow-sdk-core`, one new leaf crate
-  (`cow-sdk-transport-wasm`) for the browser transport, and one new
-  builder per public client. The `async-trait` macro adds a small amount
-  of generated code per method. The construction path becomes slightly
-  more verbose (three setters plus `.build()`) in exchange for the
-  compile-time guarantee that the three required inputs are present.
+- Public surface: `HttpTransport` is the production injection point for every
+  REST or GraphQL call issued by orderbook and subgraph clients.
+- Runtime and support: `TransportError` remains typed and URL-redacted on both
+  native and browser adapters; retry and rate-limit orchestration stays above
+  the transport trait.
+- Validation and review: cross-adapter parity tests, builder contract tests,
+  and trybuild compile-fail fixtures prove dispatch parity and marker sealing.
+- Cost: the trait, transport leaf, policy object, and typestate builders add
+  modest construction verbosity in exchange for one enforceable path.
 
 ## Alternatives Rejected
 
-- Keep the direct `reqwest::Client` constructor family on each public
-  client: familiar, but forces every wasm consumer to own the browser
-  transport integration and keeps five-plus free-function constructors
-  on `OrderBookApi` alone as parallel construction paths that drift over
-  time.
-- Expose a single `OrderBookApi::new(chain, env, transport)` free
-  function and drop the builder altogether: shorter, but removes the
-  compile-time coverage for "forgot to set chain" that the typestate
-  markers provide and loses the fluent extension points (policy,
-  shared client, base-URL override) that callers actually use.
-- Keep the HTTP seam as a plain `async fn in trait` and rely on
-  specialized generics instead of `dyn` compatibility: workable for
-  a single callsite, but makes `Arc<dyn HttpTransport + Send + Sync>`
-  composition (the shape capability crates and the transport-wasm adapter
-  both reach for) either impossible or `Box<dyn ...>`-heavy.
-- Ship the browser transport inside `cow-sdk-core` behind a cfg flag:
-  smaller surface area, but pins every native consumer to a
-  wasm-bindgen dependency graph they never run, and makes the browser
-  transport a second-class inhabitant of the core crate.
+- Keep direct `reqwest::Client` constructors: familiar, but keeps parallel
+  construction paths and excludes wasm transports.
+- Expose one free-function constructor: shorter, but loses compile-time
+  coverage for missing required inputs.
+- Put browser transport in `cow-sdk-core`: smaller surface, but pulls
+  wasm-bindgen concerns into native consumers.
 
 ## Links
 
@@ -115,11 +68,8 @@ installed transport.
 - [Transport](../transport.md)
 - [Performance](../performance.md)
 - [Verification Guide](../verification-guide.md)
-- [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
-- [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
-- [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
-- [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [ADR 0019](0019-http-transport-sole-dispatch.md)
+- See also: ADR 0023, ADR 0030, ADR 0039, and ADR 0041.
 
 **Proven by:**
 
