@@ -1,7 +1,8 @@
 mod common;
 
-use std::{cell::RefCell, collections::HashMap};
+use std::{collections::HashMap, sync::Mutex};
 
+use async_trait::async_trait;
 use cow_sdk_app_data::{
     AppDataError, IpfsConfig, IpfsFetchPolicy, IpfsFetchTransport, fetch_doc_from_app_data_hex,
     fetch_doc_from_cid, fetch_doc_from_cid_with_policy,
@@ -13,7 +14,7 @@ use crate::common::{APP_DATA_HEX, APP_DATA_STRING, CID};
 #[derive(Default)]
 struct RecordingFetchTransport {
     responses: HashMap<String, String>,
-    requests: RefCell<Vec<String>>,
+    captured: Mutex<Vec<String>>,
 }
 
 impl RecordingFetchTransport {
@@ -23,13 +24,14 @@ impl RecordingFetchTransport {
     }
 
     fn requests(&self) -> Vec<String> {
-        self.requests.borrow().clone()
+        self.captured.lock().unwrap().clone()
     }
 }
 
+#[async_trait]
 impl IpfsFetchTransport for RecordingFetchTransport {
-    fn get(&self, uri: &str) -> Result<String, AppDataError> {
-        self.requests.borrow_mut().push(uri.to_string());
+    async fn get(&self, uri: &str) -> Result<String, AppDataError> {
+        self.captured.lock().unwrap().push(uri.to_string());
         self.responses
             .get(uri)
             .cloned()
@@ -40,15 +42,17 @@ impl IpfsFetchTransport for RecordingFetchTransport {
     }
 }
 
-#[test]
-fn fetch_helpers_use_explicit_transport_and_default_ipfs_uri() {
+#[tokio::test]
+async fn fetch_helpers_use_explicit_transport_and_default_ipfs_uri() {
     let transport = RecordingFetchTransport::default().with_response(
         &format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
         APP_DATA_STRING,
     );
 
-    let from_cid = fetch_doc_from_cid(CID, &transport, None).unwrap();
-    let from_hex = fetch_doc_from_app_data_hex(APP_DATA_HEX, &transport, None).unwrap();
+    let from_cid = fetch_doc_from_cid(CID, &transport, None).await.unwrap();
+    let from_hex = fetch_doc_from_app_data_hex(APP_DATA_HEX, &transport, None)
+        .await
+        .unwrap();
 
     assert_eq!(
         from_cid,
@@ -67,10 +71,12 @@ fn fetch_helpers_use_explicit_transport_and_default_ipfs_uri() {
     );
 }
 
-#[test]
-fn fetch_by_app_data_hex_rejects_invalid_hex() {
+#[tokio::test]
+async fn fetch_by_app_data_hex_rejects_invalid_hex() {
     let transport = RecordingFetchTransport::default();
-    let error = fetch_doc_from_app_data_hex("invalidHash", &transport, None).unwrap_err();
+    let error = fetch_doc_from_app_data_hex("invalidHash", &transport, None)
+        .await
+        .unwrap_err();
     match &error {
         AppDataError::Transport { detail, .. } => {
             assert!(detail.as_inner().contains("error decoding appDataHex"));
@@ -120,8 +126,8 @@ fn fetch_policy_with_read_base_uri_replaces_the_existing_policy_value() {
     assert_eq!(policy.read_base_uri(), "https://second.example.test/ipfs");
 }
 
-#[test]
-fn fetch_helpers_accept_typed_policy_and_custom_read_base_uri() {
+#[tokio::test]
+async fn fetch_helpers_accept_typed_policy_and_custom_read_base_uri() {
     let policy =
         IpfsFetchPolicy::new("https://ipfs.example.test/ipfs").expect("policy should be valid");
     let transport = RecordingFetchTransport::default().with_response(
@@ -129,7 +135,9 @@ fn fetch_helpers_accept_typed_policy_and_custom_read_base_uri() {
         APP_DATA_STRING,
     );
 
-    let from_cid = fetch_doc_from_cid_with_policy(CID, &transport, &policy).unwrap();
+    let from_cid = fetch_doc_from_cid_with_policy(CID, &transport, &policy)
+        .await
+        .unwrap();
 
     assert_eq!(
         from_cid,
@@ -141,8 +149,8 @@ fn fetch_helpers_accept_typed_policy_and_custom_read_base_uri() {
     );
 }
 
-#[test]
-fn fetch_doc_from_cid_with_policy_rejects_malformed_json() {
+#[tokio::test]
+async fn fetch_doc_from_cid_with_policy_rejects_malformed_json() {
     let policy = IpfsFetchPolicy::default();
     let transport = RecordingFetchTransport::default().with_response(
         &format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
@@ -150,15 +158,17 @@ fn fetch_doc_from_cid_with_policy_rejects_malformed_json() {
     );
 
     let error = fetch_doc_from_cid_with_policy(CID, &transport, &policy)
+        .await
         .expect_err("malformed json must fail");
 
     assert!(matches!(error, AppDataError::Json(_)));
 }
 
-#[test]
-fn fetch_doc_from_cid_rejects_empty_explicit_read_base_uri() {
+#[tokio::test]
+async fn fetch_doc_from_cid_rejects_empty_explicit_read_base_uri() {
     let transport = RecordingFetchTransport::default();
     let error = fetch_doc_from_cid(CID, &transport, Some("   "))
+        .await
         .expect_err("blank policy override must fail");
 
     match &error {

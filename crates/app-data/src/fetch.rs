@@ -1,15 +1,18 @@
+use async_trait::async_trait;
 use serde_json::Value;
 
 use crate::{AppDataDoc, AppDataError, DEFAULT_IPFS_READ_URI, IpfsConfig, app_data_hex_to_cid};
 
 /// Read transport seam for fetching app-data JSON from IPFS.
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 pub trait IpfsFetchTransport {
     /// Performs a GET request against `uri`.
     ///
     /// # Errors
     ///
     /// Returns the transport-specific error when the read request fails.
-    fn get(&self, uri: &str) -> Result<String, AppDataError>;
+    async fn get(&self, uri: &str) -> Result<String, AppDataError>;
 }
 
 /// Fetch policy for IPFS reads.
@@ -85,12 +88,12 @@ impl IpfsFetchPolicy {
 ///
 /// Returns [`AppDataError`] if the policy is invalid, the transport fails, or
 /// the fetched payload is not valid JSON.
-pub fn fetch_doc_from_cid(
+pub async fn fetch_doc_from_cid(
     cid: &str,
     transport: &impl IpfsFetchTransport,
     ipfs_uri: Option<&str>,
 ) -> Result<AppDataDoc, AppDataError> {
-    fetch_doc_from_cid_with_policy(cid, transport, &policy_from_optional_uri(ipfs_uri)?)
+    fetch_doc_from_cid_with_policy(cid, transport, &policy_from_optional_uri(ipfs_uri)?).await
 }
 
 /// Fetches an app-data document by CID using an explicit fetch policy.
@@ -98,12 +101,14 @@ pub fn fetch_doc_from_cid(
 /// # Errors
 ///
 /// Returns [`AppDataError`] if the transport fails or the fetched payload is not valid JSON.
-pub fn fetch_doc_from_cid_with_policy(
+pub async fn fetch_doc_from_cid_with_policy(
     cid: &str,
     transport: &impl IpfsFetchTransport,
     policy: &IpfsFetchPolicy,
 ) -> Result<AppDataDoc, AppDataError> {
-    let raw = transport.get(&format!("{}/{}", policy.read_base_uri(), cid))?;
+    let raw = transport
+        .get(&format!("{}/{}", policy.read_base_uri(), cid))
+        .await?;
     serde_json::from_str::<Value>(&raw).map_err(AppDataError::from)
 }
 
@@ -113,7 +118,7 @@ pub fn fetch_doc_from_cid_with_policy(
 ///
 /// Returns [`AppDataError`] if CID derivation, policy creation, transport execution,
 /// or JSON decoding fails.
-pub fn fetch_doc_from_app_data_hex(
+pub async fn fetch_doc_from_app_data_hex(
     app_data_hex: &str,
     transport: &impl IpfsFetchTransport,
     ipfs_uri: Option<&str>,
@@ -123,6 +128,7 @@ pub fn fetch_doc_from_app_data_hex(
         transport,
         &policy_from_optional_uri(ipfs_uri)?,
     )
+    .await
 }
 
 /// Fetches an app-data document using the app-data hex digest and an explicit policy.
@@ -130,7 +136,7 @@ pub fn fetch_doc_from_app_data_hex(
 /// # Errors
 ///
 /// Returns [`AppDataError`] if CID derivation, transport execution, or JSON decoding fails.
-pub fn fetch_doc_from_app_data_hex_with_policy(
+pub async fn fetch_doc_from_app_data_hex_with_policy(
     app_data_hex: &str,
     transport: &impl IpfsFetchTransport,
     policy: &IpfsFetchPolicy,
@@ -139,7 +145,7 @@ pub fn fetch_doc_from_app_data_hex_with_policy(
         class: cow_sdk_core::TransportErrorClass::Decode,
         detail: format!("error decoding appDataHex={app_data_hex}: {err}").into(),
     })?;
-    fetch_doc_from_cid_with_policy(&cid, transport, policy)
+    fetch_doc_from_cid_with_policy(&cid, transport, policy).await
 }
 
 fn policy_from_optional_uri(ipfs_uri: Option<&str>) -> Result<IpfsFetchPolicy, AppDataError> {

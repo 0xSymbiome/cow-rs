@@ -18,6 +18,7 @@
 //! Failure messages carry the fixture case id so a reviewer looking at a
 //! broken CI run sees the exact upstream vector that diverged.
 
+use async_trait::async_trait;
 use cow_sdk_app_data::{
     AppDataError, AppDataParams, IpfsConfig, LATEST_APP_DATA_VERSION, app_data_hex_to_cid,
     cid_to_app_data_hex, generate_app_data_doc, get_app_data_info, get_app_data_schema,
@@ -27,8 +28,8 @@ use serde_json::{Value, json};
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/app-data.json");
 
-#[test]
-fn parity_fixture_cases_hold() {
+#[tokio::test]
+async fn parity_fixture_cases_hold() {
     let fixture: Value = serde_json::from_str(FIXTURE).expect("fixture must parse as JSON");
 
     assert_eq!(
@@ -62,7 +63,9 @@ fn parity_fixture_cases_hold() {
             }
             "app-data-schema-lookup-contract" => assert_schema_lookup_contract(id, expected),
             "app-data-validation-contract" => assert_validation_contract(id, expected),
-            "app-data-fetch-transport-boundary" => assert_fetch_transport_boundary(id, expected),
+            "app-data-fetch-transport-boundary" => {
+                assert_fetch_transport_boundary(id, expected).await;
+            }
             "app-data-upload-transport-boundary" => {
                 assert_upload_transport_boundary(id, expected);
             }
@@ -341,7 +344,7 @@ fn assert_validation_contract(id: &str, expected: &Value) {
     );
 }
 
-fn assert_fetch_transport_boundary(id: &str, expected: &Value) {
+async fn assert_fetch_transport_boundary(id: &str, expected: &Value) {
     let helpers: Vec<&str> = expected["helpers"]
         .as_array()
         .unwrap_or_else(|| panic!("case {id}: expected.helpers must be an array"))
@@ -371,6 +374,7 @@ fn assert_fetch_transport_boundary(id: &str, expected: &Value) {
     // transport fires; an empty URI fails through the typed policy surface
     // before any network call is dispatched.
     let err = cow_sdk_app_data::fetch_doc_from_cid("bafybeiany", &PanicFetchTransport, Some(""))
+        .await
         .expect_err("empty IPFS URI must fail-closed before dispatching the transport");
     assert!(
         matches!(err, AppDataError::Transport { .. }),
@@ -381,6 +385,7 @@ fn assert_fetch_transport_boundary(id: &str, expected: &Value) {
     // so a malformed hex literal fails through the typed hex path before the
     // transport runs — no URI override needed.
     let err = cow_sdk_app_data::fetch_doc_from_app_data_hex("0xzz", &PanicFetchTransport, None)
+        .await
         .expect_err("malformed app-data hex must fail-closed before dispatching the transport");
     assert!(
         matches!(err, AppDataError::Transport { .. }),
@@ -443,8 +448,9 @@ fn assert_schema_regression_families(id: &str, expected: &Value) {
 
 struct PanicFetchTransport;
 
+#[async_trait]
 impl cow_sdk_app_data::IpfsFetchTransport for PanicFetchTransport {
-    fn get(&self, _uri: &str) -> Result<String, AppDataError> {
+    async fn get(&self, _uri: &str) -> Result<String, AppDataError> {
         panic!(
             "PanicFetchTransport must never be invoked; malformed inputs must fail-closed earlier"
         )

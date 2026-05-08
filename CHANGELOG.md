@@ -53,6 +53,10 @@ The first functional crate-family release begins at `0.1.0`.
   and `url` crates directly where `reqwest` previously re-exported those
   types, while native-only `reqwest::Error` classification remains available
   behind target gates.
+- `cow-sdk-app-data`'s `IpfsFetchTransport` trait is now `async`. The four
+  `fetch_doc_from_*` free functions are now `async fn`, and consumers must
+  `.await` each call. The dual-gate `async_trait` pattern (`?Send` on wasm32;
+  `Send` on native) matches the workspace's public async transport traits.
 - The workspace dependency table now centralizes shared pins for `wiremock`,
   `web-time`, `gloo-timers`, `futures-timer`, and
   `console_error_panic_hook`.
@@ -80,6 +84,11 @@ The first functional crate-family release begins at `0.1.0`.
   flash-loans, weiroll, and hardware-wallet support.
 - A native `transaction_lifecycle` example demonstrates broadcast-hash
   transaction submission beside helper-based mined receipt waiting.
+
+### Removed
+
+- `cow-sdk-app-data`'s sync `IpfsFetchTransport::get` has been removed in
+  favor of the async equivalent.
 
 ### Documentation
 

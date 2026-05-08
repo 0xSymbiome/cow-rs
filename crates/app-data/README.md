@@ -29,6 +29,31 @@ let roundtrip = cid_to_app_data_hex(&cid).unwrap();
 assert_eq!(roundtrip, hex);
 ```
 
+## IPFS fetch transport
+
+The fetch seam is async so native and browser runtimes can supply their own
+HTTP implementation without blocking the caller.
+
+```rust,no_run
+use cow_sdk_app_data::{AppDataError, IpfsFetchTransport, fetch_doc_from_cid};
+
+struct IpfsClient;
+
+#[async_trait::async_trait]
+impl IpfsFetchTransport for IpfsClient {
+    async fn get(&self, uri: &str) -> Result<String, AppDataError> {
+        let _ = uri;
+        Ok(r#"{"version":"1.4.0","metadata":{}}"#.to_owned())
+    }
+}
+
+# async fn example(client: &IpfsClient) -> Result<(), AppDataError> {
+let doc = fetch_doc_from_cid("bafybeiany", client, None).await?;
+assert_eq!(doc["version"], "1.4.0");
+# Ok(())
+# }
+```
+
 ## Where to next
 
 - [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)

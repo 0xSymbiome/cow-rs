@@ -1,7 +1,7 @@
 # CID Dependency Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-08
 Owning surface: `cow-sdk-app-data` CID encoding and published dependency boundary
 Refresh trigger: Changes to CID dependencies, the supported CID encoding, or the published dependency posture for the app-data stack
 Related docs:

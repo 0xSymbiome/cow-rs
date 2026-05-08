@@ -1,7 +1,7 @@
 # Trading App-Data Merge Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-08
 Owning surface: `cow-sdk-trading` quote-to-post app-data edit path,
 including the public `merge_and_seal_app_data` and
 `params_from_doc` helpers, the private typed merge with its
@@ -69,6 +69,7 @@ validator audit).
 | Partner-fee metadata | `PartnerFee` metadata supplied through advanced app-data settings survives the merge into the posted app-data document | Conforms |
 | Signer derivation | The submission-seam `app_data_signer` reads `merged_params.signer.clone()` from the typed merged value; no override-only read remains on the quote-to-post path | Conforms |
 | Round-trip idempotency | `params_from_doc(generate_app_data_doc(p))` equals `p` for every `AppDataParams` value constructed through the public surface | Conforms |
+| Runtime-neutral validation | `cow_sdk_app_data::validate_app_data_doc` validates the same `AppDataDoc` wire shape used by browser-facing bindings, so the WASM boundary does not introduce a trading merge rewrite | Conforms |
 
 ## Current Contract
 
@@ -146,6 +147,13 @@ reflects the actually-uploaded document.
 regression suite pins this invariant explicitly so a later change
 to the wire serializer or the `Deserialize` lift cannot silently
 drift the merge pipeline.
+
+### Runtime-Neutral Validation
+
+`cow_sdk_app_data::validate_app_data_doc` validates the same `AppDataDoc` wire
+document shape that trading emits. Browser-facing bindings can pass that shape
+through unchanged, keeping validation ownership in `cow-sdk-app-data` without
+introducing another merge or rewrite step on the quote-to-post path.
 
 ## Evidence
 

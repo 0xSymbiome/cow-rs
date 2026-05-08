@@ -1469,6 +1469,7 @@ dependencies = [
 name = "cow-sdk-app-data"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "cid",
  "cow-sdk-core",
  "criterion",
@@ -1482,6 +1483,7 @@ dependencies = [
  "serde_json",
  "sha3 0.11.0",
  "thiserror 2.0.18",
+ "tokio",
  "tracing",
  "trybuild",
 ]

@@ -1,7 +1,7 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-05-08
 Owning surface: source-lock provenance and release preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
@@ -37,10 +37,11 @@ or changing SDK behavior.
 | --- | --- | --- |
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
-| Re-affirmation outcome | CoW Protocol source-lock pins align with the 2026-05-04 upstream HEAD comparison, and native Alloy pins are tag-aligned for the reviewed dependency families tracked in ADR 0026 | Conforms |
+| Re-affirmation outcome | CoW Protocol source-lock pins remain explicit; the 2026-05-08 upstream HEAD comparison shows `cow-sdk` still aligned and fresh `contracts` / `services` drift requiring normal parity triage before any freshness-based release claim | Conforms |
 | Local-root warnings | Reviewer-supplied upstream roots are checked for independent git top-levels, expected remotes, and pinned `HEAD` commits without making repo-local validation depend on those roots | Conforms |
 | Publication preflight | Source-lock validation metadata lists the complete package-family dry-run contract with local patches for unpublished intra-family crates | Conforms |
 | Native Alloy provenance | `parity/source-lock.yaml` pins exact Alloy runtime and Alloy Core commits for source-derived dependency evidence used by the native adapter family | Conforms |
+| App-data schema bundle | `crates/app-data/schemas/` remains anchored to the pinned `cow-sdk` app-data schema tree and is validated as a byte-for-byte parity asset | Conforms |
 | Schema enforcement | Unsupported source-lock schema versions fail closed with a stable diagnostic, while schema version 3 is accepted | Conforms |
 | Amount fixture roundtrip | Amount-shaped fixture strings parse through the shared `Amount` codec and round-trip byte-identically | Conforms |
 | Historical snapshot scope | Historical progress snapshots stay readable and unmodified while active preflight authority skips them by directory-prefix policy | Conforms |
@@ -65,17 +66,17 @@ upstream repositories before treating the evidence as current.
 
 ### Freshness State
 
-Upstream HEADs were checked on 2026-05-04:
+Upstream HEADs were checked on 2026-05-08:
 
 | Repository | Source-lock pin | Upstream HEAD | State |
 | --- | --- | --- | --- |
 | `cow-sdk` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | Current |
-| `contracts` | `c94c595a791681cf8ba7495117dcde397b932885` | `c94c595a791681cf8ba7495117dcde397b932885` | Current |
-| `services` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | Current |
+| `contracts` | `c94c595a791681cf8ba7495117dcde397b932885` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | Drift visible |
+| `services` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | `50694520c18b1e1fd52eb2fee72c7482cc4cf8f5` | Drift visible |
 
-All three pins are aligned with upstream HEAD for this review. Release claims
-that depend on upstream freshness still have to rerun the comparison before
-publication if any upstream repository moves again.
+The source lock remains intentionally commit-based and is not updated by this
+review. Release claims that depend on upstream freshness must triage the
+visible `contracts` and `services` drift before publication.
 
 The Alloy runtime and Alloy Core pins are tag-aligned dependency evidence for
 the native adapter family rather than CoW Protocol upstream parity evidence.
@@ -83,16 +84,24 @@ They are kept in the same source-lock contract so dependency provenance,
 producer paths, package dry-run metadata, and the ADR 0026 compatibility matrix
 and upgrade rehearsal stay reviewable through the existing validation gate.
 
+### App-Data Schema Bundle
+
+`crates/app-data/schemas/` is a committed parity asset for the app-data
+surface. The parity maintainer validates it against the pinned `cow-sdk`
+producer path `packages/app-data/src/schemas/` when an independent upstream
+root is supplied, and the repo-local schema regression tests exercise the
+bundled root schemas through `cow_sdk_app_data::get_app_data_schema` and
+`cow_sdk_app_data::validate_app_data_doc`.
+
 ### Release Re-affirmation
 
-The 2026-05-04 pre-tag re-affirmation returned the same commit for every
-source-lock repository:
+The 2026-05-08 re-affirmation returned:
 
 | Repository | Source-lock pin | `git ls-remote ... HEAD` result | Action |
 | --- | --- | --- | --- |
 | `cow-sdk` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | Re-affirmed; no bump |
-| `contracts` | `c94c595a791681cf8ba7495117dcde397b932885` | `c94c595a791681cf8ba7495117dcde397b932885` | Re-affirmed; no bump |
-| `services` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | Re-affirmed; no bump |
+| `contracts` | `c94c595a791681cf8ba7495117dcde397b932885` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | Drift visible; no source-lock mutation in this review |
+| `services` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | `50694520c18b1e1fd52eb2fee72c7482cc4cf8f5` | Drift visible; no source-lock mutation in this review |
 
 This review does not mutate `parity/source-lock.yaml`. If a later release
 candidate needs to move any upstream pin, that change remains a deliberate
