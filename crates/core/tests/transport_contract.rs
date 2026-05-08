@@ -421,6 +421,7 @@ fn transport_error_class_labels_cover_every_documented_variant() {
     assert_eq!(TransportErrorClass::Builder.as_str(), "builder");
     assert_eq!(TransportErrorClass::Request.as_str(), "request");
     assert_eq!(TransportErrorClass::Status.as_str(), "status");
+    assert_eq!(TransportErrorClass::Upgrade.as_str(), "upgrade");
     assert_eq!(TransportErrorClass::Other.as_str(), "other");
 }
 

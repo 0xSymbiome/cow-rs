@@ -789,7 +789,7 @@ fn request_error_context(
     reason = "the Ok arm binds an intermediate origin and carries a nested conditional; the combinator form would collapse that multi-statement body into a closure and obscure the two-branch parallel structure"
 )]
 fn sanitize_public_base_url(base_url: &str) -> String {
-    match reqwest::Url::parse(base_url) {
+    match url::Url::parse(base_url) {
         Ok(url) => {
             let origin = url.origin().ascii_serialization();
             if origin == "null" {

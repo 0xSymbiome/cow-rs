@@ -73,6 +73,10 @@ pub enum TransportErrorClass {
     Request,
     /// The server returned a non-success status code without a structured body.
     Status,
+    /// HTTP `101 Switching Protocols` upgrade (e.g., WebSocket); reserved
+    /// for future streaming response API. Not currently produced by any
+    /// in-tree transport implementation.
+    Upgrade,
     /// The transport failure does not match any of the named categories.
     Other,
 }
@@ -91,6 +95,7 @@ impl TransportErrorClass {
             Self::Builder => "builder",
             Self::Request => "request",
             Self::Status => "status",
+            Self::Upgrade => "upgrade",
             Self::Other => "other",
         }
     }

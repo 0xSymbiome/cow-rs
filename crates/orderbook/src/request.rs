@@ -7,7 +7,7 @@ use std::{
 
 use async_lock::Mutex;
 use cow_sdk_core::{HttpClientPolicy, HttpTransport, Redacted, TransportError};
-use reqwest::header::{ACCEPT, CONTENT_TYPE, HeaderMap};
+use http::header::{ACCEPT, CONTENT_TYPE, HeaderMap};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use thiserror::Error;
@@ -1039,7 +1039,7 @@ fn append_query_string(url: &str, query: &[(String, String)]) -> Result<String, 
     if query.is_empty() {
         return Ok(url.to_owned());
     }
-    reqwest::Url::parse_with_params(
+    url::Url::parse_with_params(
         url,
         query
             .iter()
@@ -1255,7 +1255,7 @@ fn decode_text_body(response: &ResponseEnvelope) -> Result<String, OrderbookErro
 }
 
 fn canonical_status_text(status: u16) -> String {
-    reqwest::StatusCode::from_u16(status)
+    http::StatusCode::from_u16(status)
         .ok()
         .and_then(|status| status.canonical_reason().map(ToOwned::to_owned))
         .unwrap_or_else(|| "Unknown Status".to_owned())

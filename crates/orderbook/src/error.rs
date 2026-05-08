@@ -111,6 +111,7 @@ impl From<Cancelled> for OrderbookError {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl From<reqwest::Error> for OrderbookError {
     fn from(error: reqwest::Error) -> Self {
         let (class, detail) = classify_reqwest_error(error);
@@ -131,12 +132,14 @@ impl From<reqwest::Error> for OrderbookError {
 /// documented `is_timeout`, `is_connect`, `is_redirect`, `is_decode`,
 /// `is_body`, `is_builder`, `is_request`, and `is_status` partition.
 #[must_use]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn classify_reqwest_error(error: reqwest::Error) -> (TransportErrorClass, String) {
     let sanitized = error.without_url();
     let class = reqwest_error_class(&sanitized);
     (class, sanitized.to_string())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn reqwest_error_class(error: &reqwest::Error) -> TransportErrorClass {
     if error.is_timeout() {
         return TransportErrorClass::Timeout;

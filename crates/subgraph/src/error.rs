@@ -234,12 +234,14 @@ impl Serialize for SubgraphError {
 /// [`std::fmt::Display`] implementation runs so gateway URLs and their
 /// query-string API keys cannot leak through error text.
 #[must_use]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn classify_reqwest_error(error: reqwest::Error) -> (TransportErrorClass, String) {
     let sanitized = error.without_url();
     let class = reqwest_error_class(&sanitized);
     (class, sanitized.to_string())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn reqwest_error_class(error: &reqwest::Error) -> TransportErrorClass {
     if error.is_timeout() {
         return TransportErrorClass::Timeout;

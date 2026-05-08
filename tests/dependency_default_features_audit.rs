@@ -6,7 +6,10 @@ const REVIEWED_DEFAULT_FEATURE_EXCEPTIONS: &[&str] = &[
     "alloy-sol-macro",
     "async-lock",
     "async-trait",
+    "console_error_panic_hook",
+    "futures-timer",
     "getrandom",
+    "gloo-timers",
     "hex",
     "http",
     "js-sys",
@@ -28,6 +31,8 @@ const REVIEWED_DEFAULT_FEATURE_EXCEPTIONS: &[&str] = &[
     "wasm-bindgen",
     "wasm-bindgen-futures",
     "wasm-bindgen-test",
+    "web-time",
+    "wiremock",
 ];
 
 fn repo_root() -> PathBuf {

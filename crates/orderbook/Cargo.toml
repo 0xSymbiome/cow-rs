@@ -33,18 +33,17 @@ http.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 thiserror.workspace = true
-futures-timer = "3.0.3"
-tokio = { workspace = true, features = ["macros"] }
+futures-timer.workspace = true
 tokio-util.workspace = true
 tracing = { workspace = true, optional = true }
+url.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-reqwest = { workspace = true, features = ["json", "query", "rustls"] }
+reqwest = { workspace = true, features = ["json", "rustls", "gzip"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-reqwest = { workspace = true, features = ["json", "query"] }
-web-time = "1.1.0"
-gloo-timers = { version = "0.4.0", features = ["futures"] }
+web-time.workspace = true
+gloo-timers.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true
@@ -53,7 +52,7 @@ serde_json.workspace = true
 serde_yaml.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }
 tracing-core = "0.1.36"
-wiremock = "0.6.5"
+wiremock.workspace = true
 
 [[bench]]
 name = "quote_cost"

@@ -1,7 +1,7 @@
 # HTTP Transport Contract Audit
 
 Status: Current
-Last reviewed: 2026-04-30
+Last reviewed: 2026-05-08
 Owning surface: `cow-sdk-core::HttpTransport` trait and the `ReqwestTransport` (native) and `FetchTransport` (browser) default adapters, including the sole-dispatch contract that binds every live REST or GraphQL call from `cow-sdk-orderbook` and `cow-sdk-subgraph` to the injected transport
 Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the orderbook retry-orchestrator backoff schedule, jitter policy, retry tracing events, or `Retry-After` honor contract; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderBookApi` or `SubgraphApi` bypass `self.transport`
 Related docs:
@@ -41,6 +41,7 @@ orderbook request executor, or the
 | Trait seam | `HttpTransport` is the sole production HTTP injection point and is dyn-compatible through `async-trait` with target-aware `Send` bounds | Conforms |
 | Per-call controls | Every trait method carries per-call headers and an optional per-call timeout; adapters merge with constructor defaults and apply the deadline when supplied | Conforms |
 | Typed failures | Every failure routes through `TransportError::Transport { class, detail }`, `TransportError::Configuration { message }`, or `TransportError::HttpStatus { status, headers, body }` | Conforms |
+| Canonical HTTP and URL types | Orderbook and subgraph request code reaches `http` and `url` directly where the native client previously re-exported those types | Conforms |
 | URL redaction | Both defaults strip URLs before wrapping so credential-bearing query strings never surface through `Debug` or `Display` | Conforms |
 | Adapter parity | The native and browser adapters report the same `TransportErrorClass` for the same failure class on matching fixtures, and both surface non-2xx responses through `TransportError::HttpStatus` with the numeric status code preserved | Conforms |
 | Retry cooldowns | The orderbook retry orchestrator honors `Retry-After` on `429` and `503`, waiting for the larger of the jittered local backoff and the server cooldown | Conforms |
@@ -66,7 +67,7 @@ consumer-facing clients.
 
 `TransportError::Transport { class, detail }` pairs a categorical
 `TransportErrorClass` tag (`Timeout`, `Connect`, `Redirect`, `Decode`,
-`Body`, `Builder`, `Request`, `Status`, `Other`) with a redacted
+`Body`, `Builder`, `Request`, `Status`, `Upgrade`, `Other`) with a redacted
 detail string. `TransportError::Configuration { message }` captures
 builder-time failures that prevent a request from dispatching.
 `TransportError::HttpStatus { status, headers, body }` captures a
@@ -76,7 +77,8 @@ rather than through an `Ok(String)` success path. Downstream error
 aggregates
 (`OrderbookError::Transport`, `SubgraphError::Transport`,
 `SubgraphError::HttpStatus`, `AppDataError::Transport`) carry the same
-partition.
+partition. `Upgrade` is reserved for future HTTP protocol-upgrade
+classification and is not produced by any current adapter.
 
 ### URL Redaction
 
@@ -131,6 +133,14 @@ or `transport_error_class`. The final exhausted retry emits the same
 field shape at `warn` level. The request executor records `attempts`
 and `status` on the current request span, and the quote/order methods
 populate the documented `quote_id` field where the value is available.
+
+### Canonical Type Imports
+
+`cow-sdk-orderbook` imports header and status types from `http` and parses
+query strings with `url::Url`. `cow-sdk-subgraph` also parses explicit base
+URLs with `url::Url`. These paths match the concrete crates re-exported by
+the native client while keeping the browser target free of that client on the
+orderbook, subgraph, and trading leaves.
 
 ### Sole-Dispatch Invariant
 

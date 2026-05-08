@@ -47,6 +47,20 @@ The first functional crate-family release begins at `0.1.0`.
 - `cow-sdk-trading` now exports `submit_and_wait_for_receipt`,
   `poll_for_receipt`, `WaitOptions`, and `WaitError` for workflows that need
   to compose broadcast acknowledgement with mined receipt observation.
+- Workspace dependency hygiene now keeps `cow-sdk-orderbook`,
+  `cow-sdk-subgraph`, and `cow-sdk-trading` off direct `reqwest` and `tokio`
+  macro dependencies on `wasm32`; source files now use the canonical `http`
+  and `url` crates directly where `reqwest` previously re-exported those
+  types, while native-only `reqwest::Error` classification remains available
+  behind target gates.
+- The workspace dependency table now centralizes shared pins for `wiremock`,
+  `web-time`, `gloo-timers`, `futures-timer`, and
+  `console_error_panic_hook`.
+- The workspace pins for `tokio`, `reqwest`, and `bytes` are updated to
+  `1.52.2`, `0.13.3`, and `1.11`, respectively.
+- `cow-sdk-core` reserves `TransportErrorClass::Upgrade` for future HTTP
+  protocol-upgrade classification; no in-tree transport currently produces
+  it.
 
 ### Added
 

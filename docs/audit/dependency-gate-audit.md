@@ -1,7 +1,7 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-05-08
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, or browser-wallet alloy advisory posture
 Related docs:
@@ -45,6 +45,7 @@ architecture reviews.
 | Workspace default features | Root workspace dependencies either disable default features explicitly or appear in the reviewed exception register for dependencies without a meaningful default-feature control | Conforms |
 | Ignore rationale lint | Every canonical RustSec ignore token must appear in this audit before release-doc agreement passes | Conforms |
 | Direct WASM randomness | Direct crate use of `getrandom` for wasm32 is centralized on the workspace `0.4.2` pin with the `wasm_js` feature | Conforms |
+| Workspace dependency inheritance | Shared helper pins for timers, browser panic hooks, and test HTTP fixtures are centralized in the workspace table | Conforms |
 | Duplicate-version exceptions | Residual duplicate roots are documented as explicit skip-tree entries; stale `tiny-keccak` and `getrandom 0.2` exceptions were removed because they are no longer in the workspace graph | Conforms |
 | Legacy `thiserror` reachability | The remaining `thiserror 1.0.69` path is limited to the `graphql_client` codegen chain used by dev/test coverage | Conforms |
 | Native Alloy allow-lists | Shipped crates that depend on `alloy-provider` or `alloy-signer-local` are limited to the reviewed adapter crates and fail the policy-maintainer gate if the dependency escapes | Conforms |
@@ -126,6 +127,14 @@ Alloy workspace pins keep their default `std` features disabled so the
 contracts crate can enable alloy-primitives' `k256` feature without also
 activating the upstream `k256` / `rand_core 0.6` `getrandom 0.2` std path on
 wasm32 builds.
+
+### Workspace Dependency Inheritance
+
+The workspace dependency table centralizes the shared `wiremock`,
+`web-time`, `gloo-timers`, `futures-timer`, and
+`console_error_panic_hook` pins. Consumer manifests inherit those pins through
+workspace dependencies, keeping the reviewed versions in one place while
+preserving the existing target-specific dependency boundaries.
 
 ### Duplicate-Version Exceptions
 

@@ -1,7 +1,7 @@
 # Panic-Free Public Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-07
+Last reviewed: 2026-05-08
 Owning surface: every `crates/*/src/**/*.rs` file accessible from the published public API
 Refresh trigger: any ADR 0033 panic-policy change, panic-allowlist addition, or new `expect`, `unwrap`, or `panic!` site on a path reachable from the published public API
 Related docs:
@@ -31,6 +31,7 @@ benchmarks, or private review tooling. Those surfaces may use `unwrap` or
 | Panic allowlist | `.github/config/panic-allowlist.yaml` carries 45 reviewed item-path entries covering 55 accepted static-invariant panic-bearing calls | Conforms |
 | Native Alloy adapters | Provider, signer, and umbrella public methods return typed errors for validation, transport, signing, pending transaction, and unsupported capability failures rather than panicking | Conforms |
 | Trading wait helper | `WaitOptions` constructors/builders, `submit_and_wait_for_receipt`, `poll_for_receipt`, and `WaitError` formatting/error implementations return typed results and do not panic | Conforms |
+| Transport classification growth | `TransportErrorClass::Upgrade` is an additive non-exhaustive enum variant and introduces no new panic path | Conforms |
 | Item-level panic artifacts | Each documented allowlist entry requires a rationale, `# Panics` rustdoc on the named item, and a `// SAFETY:` comment in the item body | Conforms |
 
 Documented public runtime sites:
@@ -69,6 +70,11 @@ The canonical panic allowlist is `.github/config/panic-allowlist.yaml`.
 It currently contains 45 reviewed item-path entries covering 55
 panic-bearing calls. Each accepted production panic site remains tied to a
 documented static invariant rather than to caller-controlled input.
+
+`TransportErrorClass::Upgrade` is a reserved classification slot on an
+already non-exhaustive enum. It adds no conversion, allocation, parsing, or
+panic-bearing runtime path, and current transports continue producing only
+their existing classes.
 
 The `policy-maintainer check-panic-allowlist` gate enforces ADR 0033 at item
 level. Each allowlist entry keeps the reviewed rationale, and each documented
