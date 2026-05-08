@@ -177,6 +177,11 @@ applications that already use Alloy can satisfy that runtime contract with
 `cow-sdk-alloy-provider` for read-only checks or `cow-sdk-alloy` when the same
 client also needs signing and transaction submission.
 
+Crates.io owner rotation is not deployment provenance. Publication ownership
+for the SDK crate family is tracked separately in
+[Publication Handoff](publication-handoff.md), while this page remains limited
+to on-chain contract address authority.
+
 ## Related Docs
 
 - [Architecture](architecture.md) — how the registry sits inside the

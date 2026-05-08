@@ -87,6 +87,7 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 - Public evolution follows the [Forward-Compatible Public Surfaces](docs/principles.md#forward-compatible-public-surfaces),
   [Credential Redaction by Construction](docs/principles.md#credential-redaction-by-construction),
   [Cooperative Cancellation Coverage](docs/principles.md#cooperative-cancellation-coverage),
+  [Type The Lifecycle](docs/principles.md#type-the-lifecycle),
   and [Minimum-Viable Panic Surface](docs/principles.md#minimum-viable-panic-surface)
   principles.
 
@@ -106,6 +107,7 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 ### For SDK Consumers
 
 - [Getting Started](docs/getting-started.md)
+- [Integrations](docs/integrations.md)
 - [Documentation Index](docs/README.md)
 - [Principles](docs/principles.md)
 - [Architecture](docs/architecture.md)

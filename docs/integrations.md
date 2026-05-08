@@ -51,7 +51,7 @@ The root facade exposes matching features named `alloy-provider`,
 `wasm32-unknown-unknown`; browser integrations should use
 `cow-sdk-browser-wallet`.
 
-## The Five Runtime Seams
+## The Six Runtime Seams
 
 Import the owning traits from `cow-sdk-core`:
 

@@ -38,6 +38,7 @@ provenance is required.
 | Trading | `cow-sdk-trading` | TypeScript trading workflows and tests |
 | Subgraph | `cow-sdk-subgraph` | TypeScript subgraph API, GraphQL, query, and test sources |
 | SDK facade | `cow-sdk` | TypeScript SDK root package exports and typedoc entrypoint |
+| HTTP transport policy | `cow-sdk-orderbook`, `cow-sdk-subgraph` | Retry, rate-limit, and transport-classification behavior remains SDK-owned evidence; a future dedicated policy crate will inherit this row when it becomes part of the published family |
 | Native Alloy adapters | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Alloy runtime and Alloy Core source-lock pins, adapter contract tests, transaction broadcast / receipt shape invariants, and native examples |
 
 ## Schema Evidence Policy

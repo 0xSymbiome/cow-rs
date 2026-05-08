@@ -82,8 +82,8 @@ The WASM consoles in this directory carry footer links that reference the
 hosted-build authority where the current Pages deploy runs. The workspace crate
 metadata in `Cargo.toml::repository` names the publication authority, and
 `SECURITY.md` names the publication authority for private advisory reports.
-These two owners are intentionally distinct during the current
-pre-publication posture:
+These two owners are intentionally distinct while the hosted console URLs and
+publication metadata have not yet rotated to the same owner:
 
 - Hosted build authority: where the rendered consoles actually run today.
 - Publication authority: where the published crates and the security advisory

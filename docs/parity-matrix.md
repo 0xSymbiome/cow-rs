@@ -83,7 +83,7 @@ and not carried in `parity/fixtures/trading.json`.
 
 ## Publish Order
 
-The published crate-family dry-run order is:
+The published crate-family dry-run order follows the release checklist:
 
 1. `cow-sdk-core`
 2. `cow-sdk-contracts`
@@ -91,14 +91,10 @@ The published crate-family dry-run order is:
 4. `cow-sdk-orderbook`
 5. `cow-sdk-signing`
 6. `cow-sdk-subgraph`
-7. `cow-sdk-trading`
-8. `cow-sdk-browser-wallet`
-9. `cow-sdk-alloy-provider`
-10. `cow-sdk-alloy-signer`
-11. `cow-sdk-alloy`
-12. `cow-sdk`
-
-`cow-sdk-transport-wasm` is the shipped browser-target `HttpTransport`
-adapter and is consumed through the workspace rather than through the
-first-party publish sequence above; the exact verification commands
-are recorded in [Release Checklist](release-checklist.md).
+7. `cow-sdk-transport-wasm`
+8. `cow-sdk-trading`
+9. `cow-sdk-browser-wallet`
+10. `cow-sdk-alloy-provider`
+11. `cow-sdk-alloy-signer`
+12. `cow-sdk-alloy`
+13. `cow-sdk`

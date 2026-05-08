@@ -19,6 +19,11 @@ path. Then use the other consumer pages to choose crates, understand public
 boundaries, integrate custom runtimes, and branch into the maintained example
 families.
 
+Use [Getting Started](getting-started.md) for facade-first Rust flows,
+[Integrations](integrations.md) for custom HTTP, signer, provider, and callback
+boundaries, and [Architecture](architecture.md) for crate ownership and
+contracts-test entry points.
+
 ## Common Boundary Questions
 
 - Why is `cow-sdk-subgraph` separate? The default `cow-sdk` facade stays

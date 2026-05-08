@@ -187,42 +187,75 @@ Any type that implements `HttpTransport` works as an injected
 transport. A common pattern is a test transport that replays fixtures
 without touching the network:
 
-```rust,ignore
+```rust,no_run
 use async_trait::async_trait;
 use cow_sdk::{HttpTransport, TransportError};
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 #[derive(Debug, Clone, Default)]
 pub struct FixtureTransport {
     responses: HashMap<String, String>,
 }
 
-#[async_trait(?Send)]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 impl HttpTransport for FixtureTransport {
-    async fn get(&self, path: &str) -> Result<String, TransportError> {
+    async fn get(
+        &self,
+        path: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
         self.responses
             .get(path)
             .cloned()
             .ok_or_else(|| TransportError::Configuration {
-                message: format!("no fixture for GET {path}"),
+                message: format!("no fixture for GET {path}").into(),
             })
     }
 
-    async fn post(&self, path: &str, _body: &str) -> Result<String, TransportError> {
+    async fn post(
+        &self,
+        path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
         self.responses
             .get(path)
             .cloned()
             .ok_or_else(|| TransportError::Configuration {
-                message: format!("no fixture for POST {path}"),
+                message: format!("no fixture for POST {path}").into(),
             })
     }
 
-    async fn delete(&self, path: &str, _body: &str) -> Result<String, TransportError> {
+    async fn put(
+        &self,
+        path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
         self.responses
             .get(path)
             .cloned()
             .ok_or_else(|| TransportError::Configuration {
-                message: format!("no fixture for DELETE {path}"),
+                message: format!("no fixture for PUT {path}").into(),
+            })
+    }
+
+    async fn delete(
+        &self,
+        path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.responses
+            .get(path)
+            .cloned()
+            .ok_or_else(|| TransportError::Configuration {
+                message: format!("no fixture for DELETE {path}").into(),
             })
     }
 }
@@ -234,7 +267,7 @@ Install it through the builder's `.transport(...)` setter:
 use std::sync::Arc;
 use cow_sdk::{OrderBookApi, SupportedChainId};
 
-let transport: Arc<dyn cow_sdk::HttpTransport> = Arc::new(fixture_transport);
+let transport: Arc<dyn cow_sdk::HttpTransport + Send + Sync> = Arc::new(fixture_transport);
 let orderbook = OrderBookApi::builder()
     .chain(SupportedChainId::Mainnet)
     .environment(/* prod | staging */)
@@ -257,7 +290,7 @@ not called.
 ## Related Docs
 
 - [Architecture](architecture.md) — how `HttpTransport` fits into the
-  nine-crate workspace
+  workspace's published family
 - [Integrations](integrations.md) — broader runtime-adapter guide
   covering `Signer`, `AsyncSigner`, `Provider`, `AsyncProvider`,
   `AsyncSigningProvider`, and `HttpTransport`

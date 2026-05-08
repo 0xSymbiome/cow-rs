@@ -12,74 +12,11 @@ The first functional crate-family release begins at `0.1.0`.
 
 ## [Unreleased]
 
-### Changed
-
-- ADR amendments: 0007 widens the browser-wallet leaf-local rule for the WASM
-  leaf-crate ecosystem; 0010 records `JsCallbackHttpTransport`,
-  reqwest-stays-in-core posture, async `IpfsFetchTransport`, and string
-  `schemaVersion`; 0013 covers JS callback transport and
-  `cow-sdk-transport-policy`; 0019 extends sole dispatch to JS callback
-  transport; 0028 records the EIP-1271 facade-resolves-callback pattern and
-  `OrderUid` `as_str()` contributor rule; 0026 extracts the rehearsal and
-  rollback runbook to `docs/alloy-major-release-runbook.md`; 0027 drops
-  forward-speculative post-quantum scheme names; 0034 applies the canonical
-  ADR heading template; and 0038 normalizes tag and cross-reference style.
-- Public error variants across the SDK now redact secret-shaped payloads
-  through dedicated safe wrappers or sanitized construction paths before
-  those values reach `Display`, `Debug`, or `Serialize`.
-- Order-creation request deserialization now rejects non-zero `feeAmount`
-  values with a stable diagnostic while preserving the serialization contract
-  that writes `"feeAmount": "0"`.
-- `cow-sdk-trading` now validates trading `appCode` values through a typed
-  `AppCode` newtype that rejects empty strings, NUL bytes, and ASCII control
-  characters without imposing a length cap or printable-ASCII restriction.
-- `TradingSdkBuilder::build_helper_only` now returns `HelperOnlySdk`, a
-  narrower helper surface for allowance, approval, pre-sign, and on-chain
-  cancellation workflows. Quote, post, order lookup, and off-chain
-  cancellation methods remain available on `TradingSdk`.
-- On `wasm32`, `TradingSdkBuilder::build_ready()` continues to fail fast with
-  `TradingError::MissingInjectedOrderbookClient` unless an orderbook client is
-  injected before the terminal is called.
-- Transaction submission and observation are now split into distinct public
-  types: `TransactionBroadcast` carries the broadcast transaction hash from
-  signer-backed submission, while `TransactionReceipt` represents receipt
-  observation with optional `status`, `block_number`, `block_hash`,
-  `gas_used`, `from`, and `to` fields plus constructor and builder APIs.
-  `Signer::send_transaction` and `AsyncSigner::send_transaction` now return
-  `TransactionBroadcast`; provider receipt lookups continue returning
-  `TransactionReceipt`.
-- The composed native Alloy signer now returns the broadcast hash from Alloy's
-  pending transaction handle without waiting for confirmation.
-- Alloy provider and browser-wallet receipt adapters now populate rich
-  `TransactionReceipt` fields, including status, block, gas, sender, and
-  recipient, while browser-wallet parsing fails closed on malformed present
-  fields.
-- `cow-sdk-trading` now exports `submit_and_wait_for_receipt`,
-  `poll_for_receipt`, `WaitOptions`, and `WaitError` for workflows that need
-  to compose broadcast acknowledgement with mined receipt observation.
-- Workspace dependency hygiene now keeps `cow-sdk-orderbook`,
-  `cow-sdk-subgraph`, and `cow-sdk-trading` off direct `reqwest` and `tokio`
-  macro dependencies on `wasm32`; source files now use the canonical `http`
-  and `url` crates directly where `reqwest` previously re-exported those
-  types, while native-only `reqwest::Error` classification remains available
-  behind target gates.
-- `cow-sdk-app-data`'s `IpfsFetchTransport` trait is now `async`. The four
-  `fetch_doc_from_*` free functions are now `async fn`, and consumers must
-  `.await` each call. The dual-gate `async_trait` pattern (`?Send` on wasm32;
-  `Send` on native) matches the workspace's public async transport traits.
-- The workspace dependency table now centralizes shared pins for `wiremock`,
-  `web-time`, `gloo-timers`, `futures-timer`, and
-  `console_error_panic_hook`.
-- The workspace pins for `tokio`, `reqwest`, and `bytes` are updated to
-  `1.52.2`, `0.13.3`, and `1.11`, respectively.
-- `cow-sdk-core` reserves `TransportErrorClass::Upgrade` for future HTTP
-  protocol-upgrade classification; no in-tree transport currently produces
-  it.
-
 ### Added
 
 - A runnable native cancellation example demonstrates
   `Cancellable::cancel_with(&token)` against a delayed orderbook response.
+
 - Native Alloy adapter support now ships as three opt-in crates:
   `cow-sdk-alloy-provider` for read-only RPC, `cow-sdk-alloy-signer` for local
   private-key signing, and `cow-sdk-alloy` for the composed provider-plus-signer
@@ -89,123 +26,120 @@ The first functional crate-family release begins at `0.1.0`.
   follows the Alloy runtime `2.0` and ABI/core `1.5` pin policy, normalizes
   ECDSA recovery bytes through the shared contracts helper, and propagates
   cooperative cancellation through typed adapter errors.
+
 - A public `ROADMAP.md` lists planned capability releases, including the
   alloy adapter crates, composable and TWAP orders, permit signing, bridging,
   flash-loans, weiroll, and hardware-wallet support.
+
 - A native `transaction_lifecycle` example demonstrates broadcast-hash
   transaction submission beside helper-based mined receipt waiting.
-
-### Removed
-
-- `cow-sdk-app-data`'s sync `IpfsFetchTransport::get` has been removed in
-  favor of the async equivalent.
-
-### Documentation
-
-- EthFlow order posting now documents quote-id propagation at the top-level
-  trading SDK methods and in the getting-started guide, including the
-  `TradingError::MissingQuoteId` failure mode.
-- The `HttpTransport` trait now states explicitly that retry, jitter, rate
-  limiting, and `Retry-After` handling live at the orderbook policy layer.
-- `ReqwestTransportConfig::new` now documents that bare configs use
-  `timeout: None` and that the orderbook builder applies the policy default.
-- Deployment-registry documentation now carries the per-chain provenance
-  record instead of splitting that authority into a parallel document.
-- The contributor guide now documents `cargo nextest` installation and common
-  workspace test commands.
-- Native Alloy documentation now covers native-only target support, the
-  two-family Alloy pin policy, ECDSA recovery-byte normalization, cooperative
-  cancellation propagation, and the WASM hard-fail posture for Alloy features.
-- ADR 0038 and the transaction receipt shape audit document the split between
-  broadcast acknowledgement and mined receipt observation across adapters.
-
-## [0.1.0] — 2026-05-02
-
-### Added
 
 - The public parity scope now carries a first-release scope section that names
   the crate families, DTO shapes, browser runtime surfaces, and explicitly
   deferred upstream packages covered by the first functional release.
+
 - A standing WASM browser-runner determinism audit documents the pinned
   Chrome-for-Testing runner, setup command, freshness gate, and workflow
   evidence used by browser-targeted `wasm-pack` lanes.
+
 - Release-readiness now includes blocking registry confirmation,
   parity-maintainer provenance, and CI-success aggregation lanes; routine
   quality gates include a locked native-examples lane.
+
 - The public principle charter now includes Forward-Compatible Public
   Surfaces, Credential Redaction by Construction, Cooperative Cancellation
   Coverage, and Minimum-Viable Panic Surface.
+
 - ADRs 0029 through 0033 now publish the accepted decisions for extension-trait
   evolution, workspace-locked versioning, OpenAPI-driven wire DTO coverage,
   machine-readable deployment provenance, and the minimum-viable panic surface.
+
 - `TradingSdkBuilder::ready` and `TradingSdkBuilder::helper_only` provide
   ergonomic construction terminals for total ready-state trader parameters and
   helper-only chain authority.
+
 - Release readiness automation now generates a SLSA provenance attestation
   alongside the existing software-bill-of-materials artifact so downstream
   consumers can verify the provenance of every published crate tarball.
+
 - Continuous integration now reports semantic-versioning compatibility against
   the most recent published version of every workspace crate so accidental
   public-API regressions surface during code review.
+
 - Continuous integration now runs a weekly drift detection lane against the
   upstream CoW services repository so newly-added error tags and request or
   response shapes surface as a tracked report before they reach the release
   window.
+
 - Core redaction primitives cover credential-bearing URL maps,
   optional URL maps, and response-body snippets before those values reach
   public `Debug`, `Display`, `Serialize`, or error text. Dispatch paths
   retain explicit raw-value accessors, while diagnostic paths emit the
   stable `[redacted]` marker or a bounded sanitized response body.
+
 - `cow_sdk_orderbook::OrderbookRejection` represents the services
   `InvalidTradeFilter`, `InvalidLimit`, and `LIMIT_OUT_OF_BOUNDS` wire
   tags as dedicated typed variants. The modeled rejection surface contains
   49 enum variants including the forward-compatible `Unknown` fallback.
+
 - Contracts and signing domain-separator helpers are pinned to the same
   shared EIP-712 parity fixture so the order digest boundary cannot drift
   between the two crates.
+
 - EIP-1271 asynchronous verification emits a tracing span plus cache-hit,
   cache-store, cache-skip, and completion events without
   recording verifier addresses, digests, signatures, or response bytes.
+
 - Orderbook and subgraph base-URL overrides enforce canonical-host
   guard rails by default, with explicit opt-in policies for reviewed
   external hosts and loopback test routes.
+
 - Browser wallet EIP-1193 provider construction is origin-aware: detected
   wallet origins are accepted, anonymous transports must supply an
   explicitly reviewed trusted origin, and rejected anonymous origins fail
   closed with a typed error.
+
 - `cow_sdk_contracts::Signature` exposes scheme-aware ownership helpers:
   `recover_ecdsa_address` recovers EIP-712 and EthSign ECDSA signers from
   the supplied digest, while `declared_address` returns the declared owner
   for PreSign and EIP-1271 signatures.
+
 - App-data metadata now exposes a typed `HookList` slot on `AppDataParams`
   for hook-bearing documents (cow-shed, flash-loans, bridging). The
   `OrderbookClient` trait is now reachable from `cow-sdk-orderbook` so
   capability consumers can compose against the trait without the trading-crate
   dependency.
+
 - Order quote requests now pre-validate the `(signingScheme,
   onchainOrder)` pair locally so incompatible ECDSA/on-chain
   combinations fail with a typed error before the HTTP call.
+
 - `OrderCreation` carries an opt-in
   `with_full_balance_check(bool)` builder method matching the upstream
   services policy while preserving the existing wire shape when unset.
+
 - `cow_sdk_orderbook` response DTOs now carry OpenAPI-inventory coverage for
   order, auction-order, quote-response, trade, stored-quote, and on-chain
   order-data shapes. The source-lock-pinned services OpenAPI is vendored under
   `parity/openapi/`, six per-schema inventories and fixtures pin the modeled
   fields, and `transform_contract` asserts field-level round-trips for every
   covered DTO.
+
 - The lowest-level transport seam on both the native and browser adapters now
   emits one tracing span per request with method, endpoint (path-only, never
   the full URL), and byte counts when the `tracing` feature is enabled.
+
 - The order-book retry orchestrator now emits per-attempt tracing events with
   attempt index, response status or transport error class, and backoff
   duration when the `tracing` feature is enabled, and supports jitter
   strategies for production deployments. The advertised `quote_id`,
   `attempts`, and `status` tracing fields are now populated on the request
   spans they document.
+
 - Typed-amount arithmetic now lives on `cow_sdk_core::Amount` directly,
   with Add, Sub, AddAssign, SubAssign, checked_add, checked_sub, and
   checked_mul operators that delegate to the underlying integer storage.
+
 - Testing depth across `cow-sdk-contracts` now spans every
   `alloy::sol!` binding family through three reinforcing lanes:
   ten new byte-identity parity fixtures in
@@ -234,6 +168,7 @@ The first functional crate-family release begins at `0.1.0`.
   policy round-trip, `PROP-APP-004` for the `AppDataValidation`
   size-limit warning threshold, and `PROP-ORD-004` for the
   typed `OrderbookRejection` parser governed by ADR 0017).
+
 - ADR 0018 (`Typed App-Data Merge As The Single Canonical
   Quote-To-Post Edit Path`), ADR 0019 (`HTTP Transport Is The
   Sole Live-Dispatch Surface On The Orderbook And Subgraph
@@ -251,6 +186,7 @@ The first functional crate-family release begins at `0.1.0`.
   by` cross-link contract. The `docs/adr/README.md` index
   lists the three new entries in numerical order after
   `0017`.
+
 - `scripts/fetch-upstream-pins.sh` materializes the pinned
   upstream CoW Protocol repositories
   (`https://github.com/cowprotocol/cow-sdk`,
@@ -265,6 +201,7 @@ The first functional crate-family release begins at `0.1.0`.
   authoritative provenance, the independently-materialized
   upstream worktrees as the verification target, and the
   provisioning script as the supported reviewer path.
+
 - ADR 0021 (`Narrow Order.total_fee And Read-Only Legacy
   Executed-Fee Surface`) ships under `docs/adr/`, paired with a
   new `Order.executed_fee_amount: Amount`
@@ -280,6 +217,7 @@ The first functional crate-family release begins at `0.1.0`.
   order after `0020`, and `docs/parity-matrix.md` records the
   `Order.total_fee` divergence under the `Orderbook DTO
   defaults` section.
+
 - `build_app_data` stamps a Rust-identified default
   `metadata.utm` attribution block when the caller does not
   supply `metadata.utm`, carrying `utmSource = "cow-sdk"`,
@@ -290,6 +228,7 @@ The first functional crate-family release begins at `0.1.0`.
   caller-supplied `metadata.utm` key — partial or full — fully
   replaces the default block and is carried through
   byte-identical.
+
 - ADR 0015 (`Typed Client-Side Order-Bounds Validator On Every
   Trading Submission Seam`), ADR 0016 (`Split SellTokenSource And
   BuyTokenDestination Into Distinct Side-Specific Enums`), and ADR
@@ -300,6 +239,7 @@ The first functional crate-family release begins at `0.1.0`.
   `Related docs` block reciprocates the ADR's `Proven by`
   cross-link, and the `docs/adr/README.md` index lists the three
   new entries in numerical order after `0014`.
+
 - Typed client-side validator on every trading submission path.
   `cow_sdk_trading::OrderBoundsValidator` pairs
   `OrderValidityBounds` (with the published services defaults
@@ -319,6 +259,7 @@ The first functional crate-family release begins at `0.1.0`.
   for callers that assemble an order outside the hot submission
   path. `Amount::is_zero` is now exposed on
   `cow_sdk_core::types::Amount` for predicate-style checks.
+
 - Typed flash-loan hints and signer fields on the app-data metadata
   shape. `cow_sdk_app_data::FlashloanHints` is a new
   `#[non_exhaustive]` Rust type with five required fields —
@@ -338,6 +279,7 @@ The first functional crate-family release begins at `0.1.0`.
   reuses the shared `cow_sdk_core::ValidationReason` enum so callers
   can pattern-match on the validation-failure mode without parsing
   free-form strings.
+
 - Typed orderbook-rejection enum with structured per-code variants.
   `cow_sdk_orderbook::OrderbookRejection` ships a
   `#[non_exhaustive]` classification of every authoritative
@@ -370,10 +312,12 @@ The first functional crate-family release begins at `0.1.0`.
   hold a raw HTTP response instead of an `OrderBookApiError`.
   `OrderbookRejection` and `parse_rejection` re-export through the
   `cow-sdk` facade and `cow_sdk::prelude`.
+
 - A trading-first Rust SDK workspace covering `cow-sdk`, `cow-sdk-core`,
   `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
   `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-subgraph`, and
   `cow-sdk-browser-wallet`.
+
 - Optional caching seam for EIP-1271 signature verification.
   `cow_sdk_signing::Eip1271VerificationCache` is a narrow `Send + Sync`
   trait keyed by `(verifier, digest)` that
@@ -393,6 +337,7 @@ The first functional crate-family release begins at `0.1.0`.
   re-export through the `cow-sdk` facade, and the trait surfaces
   through `cow_sdk::prelude::*` for compositions that hold the cache
   generically.
+
 - New browser-side transport leaf crate `cow-sdk-transport-wasm`.
   The crate ships `FetchTransport`, a `wasm32`-only implementation of
   the shared `cow_sdk_core::HttpTransport` trait backed by
@@ -412,6 +357,7 @@ The first functional crate-family release begins at `0.1.0`.
   consumers compose `Arc<dyn HttpTransport>` values directly from
   their browser-side code without pulling the crate into native
   transitive graphs.
+
 - Chain-keyed registry of canonical CoW Protocol contract deployments
   under `cow_sdk_contracts::deployments`. The new `Registry` type
   resolves deployed addresses through the typed
@@ -428,6 +374,7 @@ The first functional crate-family release begins at `0.1.0`.
   from the facade, and `Registry` plus `ContractId` surface through
   `cow_sdk::prelude::*` so the typed address lookup is a single import
   away for trading and bridging consumers.
+
 - Typed ERC-20 and EIP-2612 Permit bindings under a new
   `cow_sdk_contracts::erc20` module, generated from the canonical Solidity
   surfaces through the `alloy::sol!` macro. The module exposes the minimal
@@ -440,10 +387,13 @@ The first functional crate-family release begins at `0.1.0`.
   EIP-712 envelope so off-chain signers produce a digest every EIP-2612
   deployment accepts, and the committed Solidity excerpts under
   `crates/contracts/abi/erc20/` preserve upstream provenance for reviewers.
+
 - Deterministic native example scenarios plus browser-hosted WASM verification
   surfaces for the supported SDK and browser-wallet flows.
+
 - Public verification, parity, architecture, ADR, and audit documentation for
   the current Rust SDK surface.
+
 - Typed decimal-aware amount boundary in `cow-sdk-core`. `Amount` wraps an
   unsigned 256-bit atomic quantity as a typed `BigUint` and keeps the
   canonical base-10 string on the wire, while `DecimalAmount` pairs an
@@ -451,35 +401,42 @@ The first functional crate-family release begins at `0.1.0`.
   typed amount surface is the single canonical shape on the
   `cow-sdk-trading` request boundary, with `From<BigUint>` and
   `TryFrom<&str>` conversions for atomic interop.
+
 - Zero-copy settlement call-data representation. Settlement, interaction, and
   swap encoder outputs now hold their payload as `bytes::Bytes` so fanning
   the same encoded call data across multiple settlement candidates shares a
   single backing allocation through reference-counted clones. The public
   JSON wire form remains the canonical `0x`-prefixed hex string.
+
 - Criterion benchmark suites for order hashing, UID pack and extract, signing
   typed-data envelope construction, deterministic app-data stringification,
   orderbook quote-fee aggregation, and trading limit-order construction, plus
   a non-blocking weekly benchmarks workflow that archives the Criterion HTML
   and JSON reports.
+
 - Public performance posture note under `docs/performance.md` mapping the
   benchmarked hot paths and their reported ranges.
+
 - Typed `ValidTo` newtype in `cow-sdk-core` with absolute and relative-window
   constructors plus exported `VALID_TO_MIN_RELATIVE_SECONDS` and
   `VALID_TO_MAX_RELATIVE_SECONDS` constants. `LimitTradeParameters` exposes a
   `valid_to_typed` accessor that resolves absolute or relative inputs through
   the typed boundary so out-of-window deadlines fail closed with a typed
   `ValidationError::ValidToOutOfRange` at the client edge.
+
 - Client-side 8 KB app-data size guard in `cow-sdk-app-data`. `get_app_data_info`
   and `get_app_data_info_legacy` now reject oversized stringified documents
   with a typed `AppDataError::TooLarge { actual_bytes, max_bytes }` before any
   network round trip, matching the orderbook's documented 8192-byte ceiling
   through the exported `APP_DATA_MAX_BYTES` constant.
+
 - `Redacted<T>` newtype in `cow-sdk-core` with `Debug`, `Display`, and
   `Serialize` emitting the literal `[redacted]` marker and an
   `into_inner` escape for deliberate access. Secret-bearing configuration
   fields migrated to `Redacted<T>`: `ApiContext::api_key`,
   `ApiContextOverride::api_key`, `IpfsConfig::pinata_api_key`,
   `IpfsConfig::pinata_api_secret`, and the internal `SubgraphApi` API key.
+
 - Shared `reqwest::Client` pooling for multi-chain consumers.
   `OrderBookApi::builder()` and `SubgraphApi::builder()` both expose a
   convenience `.client(shared)` setter on native targets that installs a
@@ -489,6 +446,7 @@ The first functional crate-family release begins at `0.1.0`.
   install through the analogous `.transport(Arc::new(...))` setter.
   Default construction on native targets installs a conservative
   `ReqwestTransport` automatically.
+
 - Stability invariant across the published `cow-sdk` crate family.
   `cow-sdk`, `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`,
   `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`,
@@ -500,6 +458,7 @@ The first functional crate-family release begins at `0.1.0`.
   `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk`
   on every pull request, asserting empty output before the change can
   land.
+
 - Canonical `alloy::sol!`-generated typed bindings for every contract
   surface the SDK emits call-data against: `GPv2Settlement` settlement
   plus pre-signature and invalidation, `GPv2VaultRelayer` authorization
@@ -511,6 +470,7 @@ The first functional crate-family release begins at `0.1.0`.
   derived from the upstream TypeScript SDK, so the encoded call-data
   output is always sourced from the upstream CoW Protocol Solidity
   surface rather than a parallel Rust reimplementation.
+
 - Opt-in quote-cache seam in `cow-sdk-trading`. The `QuoteCache` trait
   exposes async `lookup`, `insert`, and `invalidate` contract, with
   `NoopQuoteCache` shipped as the pass-through default and
@@ -519,6 +479,7 @@ The first functional crate-family release begins at `0.1.0`.
   onto the builder, so cache policy stays instance-scoped and caller-owned.
   The deterministic `QuoteCacheKey` derivation normalises address inputs so
   Redis-backed user implementations can share entries across processes.
+
 - Byte-oriented constructors on the fixed-length typed newtypes. `Address`,
   `AppDataHash`, `Hash32`, and `OrderUid` expose `from_bytes` built on top
   of exported `const fn` hex encoders (`hex_encode_20`, `hex_encode_32`,
@@ -528,6 +489,7 @@ The first functional crate-family release begins at `0.1.0`.
   vault-relayer, ethflow, and wrapped-native addresses as `const [u8; 20]`
   byte arrays and construct the typed addresses through `from_bytes`,
   preserving the existing public accessor signatures and behaviour.
+
 - Typestate `TradingSdkBuilder`. The builder carries two marker type
   parameters (`ChainIdUnset`/`ChainIdSet` and `AppCodeUnset`/`AppCodeSet`)
   that track whether the required chain id and app code prerequisites have
@@ -542,6 +504,7 @@ The first functional crate-family release begins at `0.1.0`.
   cancellation) stay fully usable. A runnable
   `typestate_builder_example` demonstrates both terminals without requiring
   external credentials.
+
 - Forward-compatible `#[non_exhaustive]` audit on the public configuration
   and context-override DTO families. `ApiContext`, `ProtocolOptions`, and
   `HttpClientPolicy` in `cow-sdk-core`, `ApiContextOverride` and
@@ -553,6 +516,7 @@ The first functional crate-family release begins at `0.1.0`.
   `with_env`/`with_settlement_contract_override`/`with_eth_flow_contract_override`,
   `ApiContextOverride::new` plus `with_chain_id`/`with_env`/`with_base_urls`/`with_api_key`)
   replace struct-literal construction for downstream callers.
+
 - Broadened `#[non_exhaustive]` coverage across every public DTO family in
   the trading-first surface so later additive fields no longer require a
   major version bump. `cow-sdk-orderbook` now annotates `OrderCreation`,
@@ -576,6 +540,7 @@ The first functional crate-family release begins at `0.1.0`.
   struct ships an ergonomic constructor (`::new(required_args)` plus
   chainable `with_*` setters for the optional fields) so downstream
   callers migrate off struct-literal syntax without boilerplate.
+
 - Opt-in `tracing` feature family across the public crate graph. Every
   published leaf crate now exposes a `tracing` feature that pulls
   `tracing = { version = "0.1", default-features = false, features = ["attributes"] }`
@@ -590,6 +555,7 @@ The first functional crate-family release begins at `0.1.0`.
   host applications can route structured spans into their own
   subscriber. With the feature off the SDK emits zero spans and
   incurs no dependency or runtime cost.
+
 - `SdkError::class() -> ErrorClass` classification helper on the facade
   aggregate. Every variant of the facade error family resolves to one of
   `Validation`, `Transport`, `Remote`, `Signing`, `Cancelled`, or
@@ -599,6 +565,7 @@ The first functional crate-family release begins at `0.1.0`.
   registry, baseline `tracing-subscriber` setup, OpenTelemetry notes, and
   an explicit reminder that secret-bearing fields are never emitted
   through SDK spans.
+
 - Cooperative cancellation on long-running SDK operations via the
   `cow_sdk_core::Cancellable::cancel_with(&token)` extension-trait
   combinator. `cow-sdk-core` defines the `Cancellable` trait, the
@@ -623,250 +590,168 @@ The first functional crate-family release begins at `0.1.0`.
   such variant to `ErrorClass::Cancelled` exhaustively.
   `docs/architecture.md` records the cancellation contract under a
   dedicated Cancellation subsection.
+
 - `cow_sdk_signing` exports the public `Clock` trait, the
   `SystemClock` default implementation, and
   `InMemoryEip1271VerificationCache::with_clock(ttl, capacity, clock)`
   constructor so deterministic-time tests and embedders can drive cache
   expiry without sleeping. Native builds use `std::time::Instant`; WASM
   builds use `web_time::Instant`.
+
 - `cow_sdk_trading::deployment_address_hash_input` is publicly re-exported
   for consumers that build EthFlow or pre-sign deployment-derived address
   hashes outside the SDK.
+
 - Every `*_with_cancellation` partner method on `OrderBookApi`,
   `SubgraphApi`, and `TradingSdk` emits a structured `tracing::debug`
   event when cancellation is observed at the call-site combinator.
+
 - `cow_sdk_core::IpfsConfig` carries a redacted `Display` implementation
   that omits credential-bearing query strings from observability sinks.
 
 ### Changed
 
+- ADR amendments: 0007 widens the browser-wallet leaf-local rule for the WASM
+  leaf-crate ecosystem; 0010 records `JsCallbackHttpTransport`,
+  reqwest-stays-in-core posture, async `IpfsFetchTransport`, and string
+  `schemaVersion`; 0013 covers JS callback transport and
+  `cow-sdk-transport-policy`; 0019 extends sole dispatch to JS callback
+  transport; 0028 records the EIP-1271 facade-resolves-callback pattern and
+  `OrderUid` `as_str()` contributor rule; 0026 extracts the rehearsal and
+  rollback runbook to `docs/alloy-major-release-runbook.md`; 0027 drops
+  forward-speculative post-quantum scheme names; 0034 applies the canonical
+  ADR heading template; and 0038 normalizes tag and cross-reference style.
+
+- Public error variants across the SDK now redact secret-shaped payloads
+  through dedicated safe wrappers or sanitized construction paths before
+  those values reach `Display`, `Debug`, or `Serialize`.
+
+- Order-creation request deserialization now rejects non-zero `feeAmount`
+  values with a stable diagnostic while preserving the serialization contract
+  that writes `"feeAmount": "0"`.
+
+- `cow-sdk-trading` now validates trading `appCode` values through a typed
+  `AppCode` newtype that rejects empty strings, NUL bytes, and ASCII control
+  characters without imposing a length cap or printable-ASCII restriction.
+
+- `TradingSdkBuilder::build_helper_only` now returns `HelperOnlySdk`, a
+  narrower helper surface for allowance, approval, pre-sign, and on-chain
+  cancellation workflows. Quote, post, order lookup, and off-chain
+  cancellation methods remain available on `TradingSdk`.
+
+- On `wasm32`, `TradingSdkBuilder::build_ready()` continues to fail fast with
+  `TradingError::MissingInjectedOrderbookClient` unless an orderbook client is
+  injected before the terminal is called.
+
+- Transaction submission and observation are now split into distinct public
+  types: `TransactionBroadcast` carries the broadcast transaction hash from
+  signer-backed submission, while `TransactionReceipt` represents receipt
+  observation with optional `status`, `block_number`, `block_hash`,
+  `gas_used`, `from`, and `to` fields plus constructor and builder APIs.
+  `Signer::send_transaction` and `AsyncSigner::send_transaction` now return
+  `TransactionBroadcast`; provider receipt lookups continue returning
+  `TransactionReceipt`.
+
+- The composed native Alloy signer now returns the broadcast hash from Alloy's
+  pending transaction handle without waiting for confirmation.
+
+- Alloy provider and browser-wallet receipt adapters now populate rich
+  `TransactionReceipt` fields, including status, block, gas, sender, and
+  recipient, while browser-wallet parsing fails closed on malformed present
+  fields.
+
+- `cow-sdk-trading` now exports `submit_and_wait_for_receipt`,
+  `poll_for_receipt`, `WaitOptions`, and `WaitError` for workflows that need
+  to compose broadcast acknowledgement with mined receipt observation.
+
+- Workspace dependency hygiene now keeps `cow-sdk-orderbook`,
+  `cow-sdk-subgraph`, and `cow-sdk-trading` off direct `reqwest` and `tokio`
+  macro dependencies on `wasm32`; source files now use the canonical `http`
+  and `url` crates directly where `reqwest` previously re-exported those
+  types, while native-only `reqwest::Error` classification remains available
+  behind target gates.
+
+- `cow-sdk-app-data`'s `IpfsFetchTransport` trait is now `async`. The four
+  `fetch_doc_from_*` free functions are now `async fn`, and consumers must
+  `.await` each call. The dual-gate `async_trait` pattern (`?Send` on wasm32;
+  `Send` on native) matches the workspace's public async transport traits.
+
+- The workspace dependency table now centralizes shared pins for `wiremock`,
+  `web-time`, `gloo-timers`, `futures-timer`, and
+  `console_error_panic_hook`.
+
+- The workspace pins for `tokio`, `reqwest`, and `bytes` are updated to
+  `1.52.2`, `0.13.3`, and `1.11`, respectively.
+
+- `cow-sdk-core` reserves `TransportErrorClass::Upgrade` for future HTTP
+  protocol-upgrade classification; no in-tree transport currently produces
+  it.
+
+- EthFlow order posting now documents quote-id propagation at the top-level
+  trading SDK methods and in the getting-started guide, including the
+  `TradingError::MissingQuoteId` failure mode.
+
+- The `HttpTransport` trait now states explicitly that retry, jitter, rate
+  limiting, and `Retry-After` handling live at the orderbook policy layer.
+
+- `ReqwestTransportConfig::new` now documents that bare configs use
+  `timeout: None` and that the orderbook builder applies the policy default.
+
+- Deployment-registry documentation now carries the per-chain provenance
+  record instead of splitting that authority into a parallel document.
+
+- The contributor guide now documents `cargo nextest` installation and common
+  workspace test commands.
+
+- Native Alloy documentation now covers native-only target support, the
+  two-family Alloy pin policy, ECDSA recovery-byte normalization, cooperative
+  cancellation propagation, and the WASM hard-fail posture for Alloy features.
+
+- ADR 0038 and the transaction receipt shape audit document the split between
+  broadcast acknowledgement and mined receipt observation across adapters.
+
 - Release documentation now describes the reproducible-build posture and the
   path to binary reproducibility for the WebAssembly artifacts.
+
 - The `cow-sdk-transport-wasm` crate now ships a per-crate README that
   renders on docs.rs alongside the inline `lib.rs` doc comments. The
   `ContractId` enum documentation now names the Pascal-case convention and
   the version-suffix style for new variants.
+
 - Getting Started, the facade crate README, and the trading crate README now
   document helper-only `TradingSdk` construction for allowance, approval,
   pre-sign, and on-chain cancellation workflows that do not need quote or
   submission flows.
+
 - EIP-1271 verification helpers now document the
   no-pre-interaction-simulation caveat for watchtower consumers.
+
 - Partner fee policies now document and enforce zero-address recipient
   rejection through the typed validation paths.
+
 - Order-book retry instrumentation now emits the documented `quote_id`,
   `attempts`, and `status` tracing fields at the call sites advertised by
   the field registry.
+
 - Transport diagnostic surfaces (`Display`, `Debug`, and error text) redact
   URL `userinfo` before emission. `RedactedUrlMaps` and
   `RedactedOptionalUrlMaps` also derive `Hash`, allowing sanitized URL maps
   to serve as cache keys without exposing credentials.
+
 - Orderbook DTOs `TotalSurplus.total_surplus` and
   `SolverExecution.executed_*_amount` are now `Option<Amount>` so
   partially-settled auction responses can represent absent solver-execution
   data without coercing it into a concrete amount.
+
 - `cow_sdk_subgraph::SubgraphGraphQlError` now carries GraphQL
   `extensions` data when the upstream subgraph emits it.
+
 - The subgraph wire boundary rejects non-finite scalar literals (`NaN`,
   `Infinity`, and `-Infinity`) with a typed `SubgraphError` instead of
   silently coercing them to default values.
+
 - `cow_sdk_browser_wallet::Origin::new` tightens accepted schemes and
   rejects non-authority schemes such as `data:` and `blob:`.
-
-### Fixed
-
-- Direct wasm32 `getrandom` consumers now use the workspace `0.4.2` pin with
-  `wasm_js`, `async-lock` is promoted to a workspace dependency, Alloy
-  workspace pins stop enabling `std` globally so the contracts `k256` path
-  stays wasm-compatible, the stale `tiny-keccak` license exception is removed,
-  and the duplicate-version register documents the remaining upstream-owned
-  roots.
-- The alloy-provider invariant documentation now describes Cargo's success
-  case accurately through the `cargo check-alloy-provider-invariant` wrapper,
-  and the alloy provider adaptation guide replaces a placeholder
-  `unimplemented!()` with a concrete `chain_id` example.
-- `HostPolicyError::UnparsableUrl` corrects the public variant spelling before
-  the first functional release. App-data schema panic sites now carry explicit
-  invariant rationales and rustdoc panic documentation, and internal hook gas
-  limit serde helpers no longer widen the public API surface.
-- Legacy compatibility helpers in the contracts crate that produced
-  protocol-incorrect digests by zeroing amounts before hashing have
-  been removed. Order digest computation now flows exclusively through
-  the canonical unsigned-order to order path, which produces
-  byte-identical output to the upstream service for the same input.
-- Native ethflow simulation example now passes the typed
-  order-validity bounds and the optional app-data signer through
-  the native-currency posting seam so the reviewed submission
-  contract is exercised end-to-end on the native evidence
-  surface. The scenario computes its `valid_to` against the
-  current wall clock so the sample stays inside
-  `OrderValidityBounds::SERVICES_DEFAULT` indefinitely without
-  a hard-coded timestamp drift.
-- Browser wallet console and SDK verification console examples
-  now compose the fetch-backed transport inside a wasm32 build
-  branch and fall back to the default reqwest transport on the
-  host target, so both examples build as the `rlib` targets
-  declared in their manifests without referencing the wasm-only
-  transport crate root from host code. A narrow compile-time
-  symbol smoke in each example's test directory names the
-  transport types under a wasm32 gate so later export drift
-  surfaces at build time.
-- SDK verification console now unwraps the validated
-  `PartnerFeePolicy::volume` constructor at the typed-defaults
-  composition site so the demo payload always carries a
-  `PartnerFee` value produced through the typed partner-fee
-  bounds. A narrow regression in the example's test directory
-  locks the typed-defaults round-trip so the validator contract
-  cannot silently drift.
-- `scripts/check-release-docs-agree.sh` and
-  `scripts/fetch-upstream-pins.sh` carry executable file mode in
-  the tracked index so the release-gate docs-agreement check and
-  the documented upstream-provisioning tool run by their bare
-  paths on every contributor platform without a shell prefix.
-- Trading submission seam no longer panics on
-  `wasm32-unknown-unknown` when the typed order-bounds validator
-  reads the current instant. The internal `current_unix_seconds`
-  helper now reads the clock through the same dual-target
-  `std::time` on native and `web_time` on wasm32 shape already
-  used by the order-derivation surface, matching the reviewed
-  cross-runtime contract so browser-wallet-backed submission
-  flows stay live on wasm32 builds.
-- Client-side order validation on the non-native-currency posting
-  path now runs before the app-data document is uploaded and
-  before the signer is prompted, so rejected orders no longer
-  persist pre-submission work.
-- IPFS base-URI preflight now fails closed symmetrically across the
-  read and write paths. The `cow_sdk_app_data::pin_json_in_pinata_ipfs`
-  helper rejects an empty, whitespace-only, or slash-only `write_uri`
-  with a typed `AppDataError::Transport { class:
-  TransportErrorClass::Builder, detail: "ipfs write base uri must
-  not be empty" }` before any bytes cross the upload transport,
-  matching the existing read-side guard that surfaces the
-  corresponding `"ipfs read base uri must not be empty"` detail for
-  a malformed read base URI. Valid inputs are normalized identically
-  on both sides: leading and trailing whitespace is stripped and a
-  single trailing `/` is trimmed, so `https://api.pinata.cloud/` and
-  `https://api.pinata.cloud` build the same
-  `https://api.pinata.cloud/pinning/pinJSONToIPFS` upload URL.
-- Eth-flow submission validation now reads the client-side `from`
-  identity from the signer-derived owner carried on
-  `cow_sdk_trading::EthFlowTransaction`, not from
-  `order_to_sign.receiver`. The typed bundle gains a
-  `from: cow_sdk_core::Address` field populated at transaction
-  construction from the existing signer address resolution, and
-  `post_sell_native_currency_order_async` feeds that owner into the
-  client-side `OrderBoundsValidator` before any transport. Payout
-  receivers that legitimately differ from the owner no longer trip a
-  false `ClientRejection::AppdataFromMismatch`, and the mismatched
-  app-data signer case now reports the owner as the typed rejection's
-  `from` field so downstream diagnostics and pattern-matching stay
-  aligned with the signing authority rather than the payout recipient.
-- Example crates now construct every `#[non_exhaustive]` public DTO
-  through the published ergonomic constructors (`::new(required_args)`
-  plus chained `with_*` setters) rather than struct-literal syntax, so
-  the `examples/native`, `examples/wasm/sdk-verification-console`, and
-  `examples/wasm/browser-wallet-console` build surfaces stay green
-  under the broadened `#[non_exhaustive]` coverage shipped in the same
-  `0.1.0` cycle. The `cow-sdk-core::cancellation` rustdoc also
-  corrects a spelling drift in the `Cancelled` marker's documentation.
-- Example-crate browser-hosted tests now align with the current public
-  contract. The `sdk-verification-console` deterministic-export suite
-  compares wrapped-native and sample-order addresses through a
-  case-insensitive helper so the byte-array-sourced lowercase hex output
-  no longer breaks the assertion, and the EIP-1271 payload preview
-  assertion now matches the `0x`-prefixed hex shape that
-  `eip1271_signature_payload` actually returns. The
-  `browser-wallet-console` test-only helper surface is also reachable
-  under `wasm32-unknown-unknown`, so headless wasm-pack runs exercise
-  the injected-wallet, session, and cached-detection paths alongside
-  their native counterparts. The helpers remain marked `#[doc(hidden)]`
-  and stay excluded from the public API surface.
-- Playwright deterministic-lane suites for both example consoles now
-  track the current SDK contract end-to-end. Quote, order, and
-  order-trades assertions compare addresses through a case-insensitive
-  helper; the order-trades fixture routes the current `/api/v2/trades`
-  endpoint; the solver-competition assertions describe the reviewed
-  `SolverSettlement` contract (ranking, solver address, score, and
-  clearing-prices map) rather than fields that are not part of the
-  typed boundary; the orderbook network-failure assertion matches the
-  classified `reqwest` error text; and the chain-mismatch fail-closed
-  contract is verified by asserting the disabled `#sign-order` button
-  and its chain-mismatch title rather than attempting to click a button
-  the console deliberately disables. The `browser-wallet-console`
-  diagnostic labeller also classifies EIP-1193 provider codes that
-  arrive through the `Display`-formatted Rust error shape
-  (`… rejected by the user (4001): …`) in addition to the JSON
-  `"code": 4001` shape, so rejected typed-data signing now renders the
-  `EIP-1193 4001` label consistently across Chromium and Firefox.
-- `cow_sdk_core::Amount::checked_mul` returns `None` on overflow instead of
-  panicking, so callers that branch on checked multiplication receive the
-  same fallible contract for large products as for other out-of-range amount
-  operations.
-- `cow_sdk_trading::get_order_to_sign` ignores zero-address receivers instead
-  of serializing them as an explicit `0x0000…` recipient, matching the
-  upstream behavior where a zero-address receiver means "no override."
-- `cow_sdk_signing::InMemoryEip1271VerificationCache` no longer caches
-  transient verification errors. Only successful verification and
-  `Eip1271MagicValueMismatch` outcomes are stored; every other
-  `ContractsError` variant re-checks the chain on the next call.
-
-### Security
-
-- Dependency gate documentation now records the refreshed RustSec tolerance
-  posture, direct WASM randomness alignment, legacy `thiserror` codegen
-  reachability, and warning-free `cargo-deny` configuration after regenerating
-  both workspace and native-example lockfiles.
-- API-key validation paths now fail with a typed error variant rather than a
-  panic that could include the offending bytes. Base-URL override fields are
-  redacted from `Debug` formatting so credentials embedded in override URLs no
-  longer surface in diagnostic output. A new `sanitize_public_base_url` helper
-  in `cow-sdk-core` strips path, query, and fragment from URLs before they
-  cross any logging or tracing boundary.
-- Both shipped WASM consoles now declare a `Content-Security-Policy` meta tag
-  with explicit `script-src` and `connect-src` allowlists.
-- Operator-side base-URL override and browser-wallet trust threat surfaces are
-  now documented in `SECURITY.md` with explicit consumer-side mitigations.
-- Three new standing audits cover the workspace `unsafe_code = deny`
-  lint posture, the panic-free public surface contract, and the
-  workflow security posture.
-- Dependency audit gate advances past the reachable
-  certificate-revocation-list parsing panic reported for
-  `rustls-webpki 0.103.12` (RUSTSEC-2026-0104). The reqwest
-  transport chain used by the orderbook and subgraph clients now
-  resolves through `rustls-webpki 0.103.13` without a workspace
-  override. The standing reviewed-upstream ignore contract in the
-  dependency-audit gate additionally records the `core2` yanked
-  and unmaintained posture reachable through `cid 0.11.1`
-  (RUSTSEC-2026-0105) under the same explicit-reason rationale
-  that covers the previously-tracked upstream advisories. The
-  governing dependency-gate and CID audit records refresh to the
-  new posture, and the release-checklist, verification-matrix,
-  and verification-guide surfaces quote the full reviewed
-  audit-gate invocation.
-- Defense-in-depth redaction in transport error paths. `From<reqwest::Error>`
-  on the orderbook and subgraph error surfaces now calls
-  `reqwest::Error::without_url` and classifies failures through the
-  documented `is_timeout`, `is_connect`, `is_redirect`, `is_decode`,
-  `is_body`, `is_builder`, `is_request`, and `is_status` set, so partner
-  routes and their query-string API keys cannot leak through error
-  `Display` output. The `Redacted<T>` newtype and the config-layer
-  migrations above keep the configuration surface redacted even before a
-  request is built.
-- Repository security reporting now has an explicit private disclosure path and
-  a protocol-level escalation note for issues that could affect deployed CoW
-  Protocol infrastructure or user funds.
-
-### Removed
-
-- Removed the permissive runtime-validated `TradingSdkBuilder::build` and
-  `TradingSdkBuilder::build_partial` terminals; the typestate-gated
-  `build_ready` and `build_helper_only` terminals are now the only
-  construction paths. Pre-release surface; zero migration cost.
-- Stale WASM build artifacts have been removed from the verification console
-  package directory; the per-package gitignore now tracks only the canonical
-  wasm-pack outputs.
-
-### Changed
 
 - `BrowserWallet::from_transport` has been renamed to
   `BrowserWallet::from_transport_or_panic`, while README examples now use
@@ -874,40 +759,51 @@ The first functional crate-family release begins at `0.1.0`.
   constructor for reviewed local transports. The public API lint gate now
   treats missing docs, missing debug implementations, unreachable public items,
   and unnameable types as hard errors.
+
 - The project now tracks a register of post-1.0 type-system improvements
   queued for a future major release.
+
 - Typestate marker structs across the workspace are now sealed against
   external construction.
+
 - Public-field types across `cow-sdk-core`, `cow-sdk-app-data`,
   `cow-sdk-subgraph`, `cow-sdk-signing`, and `cow-sdk-trading` are now marked
   non-exhaustive so later protocol-driven field additions ship as additive
   minor changes.
+
 - The `cow-sdk` prelude now exposes a curated first-touch surface for common
   quote, sign, post, app-data validation, transport/provider wiring, and
   primary error-handling workflows; reach specialized APIs through the
   named-module re-exports. Workspace MSRV bump policy is now documented with
   explicit cadence and notice window.
+
 - Default-constructed transports now apply a `cow-sdk/<version>` user-agent
   and a 60-second TCP keepalive aligned with the upstream services defaults.
+
 - Continuous integration now enforces an `alloy-*` workspace-pin same-minor
   invariant on every PR, and an inner-workspace WASM pin diff against the
   workspace pins so the example consoles cannot drift away from the workspace
   lock-step.
+
 - The `cow-sdk-browser-wallet-console` crate name no longer carries the
   redundant `-wasm` suffix, matching the `cow-sdk-<capability>-console`
   naming convention.
+
 - Partner-fee policies now reject the zero address as the recipient through
   app-data validation and trading quote construction before quote transport.
   The client-side order-bounds validator documentation now explicitly frames
   the validator as defence-in-depth and names broader services rejection
   classes that the SDK does not pre-cover.
+
 - Subgraph transport errors now carry a typed class alongside the details
   string, matching the order-book error model. Cancellation events are now
   distinguishable from normal completion via a dedicated `cancelled = true`
   tracing warning when the `tracing` feature is enabled.
+
 - Order-book wire DTO amount fields are now typed; the JSON wire shape is
   unchanged but malformed amount strings now surface as typed deserialization
   failures with the wire-shape error context.
+
 - The pre-release stability sweep is now consolidated across
   core, contracts, orderbook, browser-wallet, signing, app-data,
   and async-provider surfaces: public DTOs and enum heads use
@@ -919,16 +815,20 @@ The first functional crate-family release begins at `0.1.0`.
   legacy digest shims are removed, codec fuzz targets start from
   committed corpora, and read-only async providers are separated from
   signer-capable providers.
+
 - The async provider surface now separates read-only chain RPC from signer
   creation. `AsyncProvider` carries only read methods, while the new
   `AsyncSigningProvider: AsyncProvider` extension owns `type Signer` and
   `create_signer`; wallet-capable providers implement both traits and read-only
   adapters implement only the read-only half.
+
 - Two critical codec fuzz targets — covering the canonical order-uid
   pack-unpack pipeline and the EIP-712 typed-data digest pipeline — now
   ship with non-empty corpora seeded from the parity fixture set, so
   weekly fuzz runs no longer start from libFuzzer random initial inputs.
+
 - Public protocol DTOs in the contracts crate are now marked non-exhaustive and ship with explicit constructors so later protocol field additions land additively.
+
 - Test-suite naming and properties-registry classification now
   match the shipped evidence methodology. Boundary-sweep suites on
   the orderbook, trading, and subgraph crates live at
@@ -940,6 +840,7 @@ The first functional crate-family release begins at `0.1.0`.
   crates) from `Invariant` rows (backed by curated boundary
   sweeps on orchestration crates). Evidence citations in
   `PROPERTIES.md` follow the rename.
+
 - ADR 0013 (`HTTP Transport Injection Seam And Typestate
   Construction For Orderbook And Subgraph`) now cross-links to
   ADR 0019 in the `Links` section and its `Proven by` block
@@ -951,16 +852,19 @@ The first functional crate-family release begins at `0.1.0`.
   Contract Audit's `Related docs` block reciprocates the
   cross-link to ADR 0019 so the two-way proof surface between
   the decision record and the standing audit stays symmetrical.
+
 - The previously published narrow `Order.total_fee` policy
   decision record is available under its final public number
   ADR 0021; the `docs/adr/README.md` index and
   `docs/parity-matrix.md` cross-links cite that number.
+
 - The release checklist, the verification matrix, and the
   quality-gate workflow now enforce the
   `cargo tree --invert alloy-provider` invariant over the full
-  nine-crate published family including `cow-sdk-browser-wallet`,
+  workspace's published family including `cow-sdk-browser-wallet`,
   closing the prior gap between the broader invariant claims and
   the enforced commands.
+
 - The release checklist deterministic browser-wallet lane now
   mirrors the maintained workflow exactly: a Chromium and Firefox
   Playwright install, host-side and direct-bridge wasm tests, the
@@ -968,6 +872,7 @@ The first functional crate-family release begins at `0.1.0`.
   browser-wallet console WASM build and host-side tests, the
   console wasm-bindgen tests under headless Chrome, and the
   Playwright DOM lane under both engines.
+
 - A new `scripts/check-release-docs-agree.sh` lint guards against
   release-doc and CI drift by extracting the cargo-tree
   alloy-provider package list from the release checklist, the
@@ -978,6 +883,7 @@ The first functional crate-family release begins at `0.1.0`.
   disagreement. The lint is wired into the quality-gate workflow
   as a new `docs-agree-on-release-gates` job so the drift class
   is closed at the workspace level instead of patched once.
+
 - `OrderToSignParams::new(...)` now defaults
   `apply_costs_slippage_and_fees` to `true`, aligning the public
   helper with the internal quote and submission flows that already
@@ -985,6 +891,7 @@ The first functional crate-family release begins at `0.1.0`.
   into the unsigned order amounts. Callers that want raw-amount
   payloads call `.with_apply_costs_slippage_and_fees(false)` to
   opt out explicitly.
+
 - `HttpTransport` is now the sole live-dispatch surface on the
   orderbook and subgraph clients. `OrderBookApi` and `SubgraphApi`
   no longer hold a parallel `reqwest::Client`; every REST and GraphQL
@@ -999,6 +906,7 @@ The first functional crate-family release begins at `0.1.0`.
   into a `ReqwestTransport` so multi-chain consumers keep one shared
   TCP, TLS, and HTTP/2 connection cache across the clients they
   construct.
+
 - `HttpTransport` gains per-call headers and an optional per-call
   timeout on every method, and `TransportError` gains a typed
   `HttpStatus { status, body }` variant so non-2xx responses flow
@@ -1017,6 +925,7 @@ The first functional crate-family release begins at `0.1.0`.
   `Send` on native targets and `!Send` on `wasm32` targets so the
   transport composes onto multi-threaded native runtimes while the
   browser adapter remains viable.
+
 - Quote-to-post app-data edits now run through a typed merge
   pipeline. `cow_sdk_trading::merge_and_seal_app_data` is the
   canonical merge-and-seal helper: it deserializes the sealed
@@ -1041,6 +950,7 @@ The first functional crate-family release begins at `0.1.0`.
   the base or the override, and an override that carries
   `metadata.hooks` replaces the base-side hooks envelope in full
   rather than recursively merging pre/post sibling arrays.
+
 - Promote both compile-fail witnesses to live `trybuild` harnesses
   that re-prove the captured compile failure on every `cargo test`
   run. The token-balance split witness at
@@ -1053,6 +963,7 @@ The first functional crate-family release begins at `0.1.0`.
   current compiler diagnostic. `trybuild = "1.0.116"` is pinned
   through `[workspace.dependencies]` and consumed via
   `trybuild.workspace = true` in the consuming crates.
+
 - Tighten the typed client-side trading validator surface.
   `TradingSdkBuilder::with_order_bounds` now flows through to
   `TradingSdk` and the submission seam, so a custom
@@ -1072,6 +983,7 @@ The first functional crate-family release begins at `0.1.0`.
   pipeline reads the typed
   `cow_sdk_app_data::AppDataParams::signer` field directly instead
   of parsing a free-form JSON path.
+
 - `TradingError` gains a typed `ClientRejected(ClientRejection)`
   variant that surfaces the new client-side validator output as a
   structured payload; the prior
@@ -1080,6 +992,7 @@ The first functional crate-family release begins at `0.1.0`.
   `ClientRejection::OwnerMismatch`, whose typed owner and recovered
   fields preserve the diagnostic information that downstream
   callers pattern-match on.
+
 - Return shape of app-data info construction carries typed
   validation metadata. `cow_sdk_app_data::get_app_data_info` now
   returns `Result<AppDataValidated, AppDataError>`, where
@@ -1099,6 +1012,7 @@ The first functional crate-family release begins at `0.1.0`.
   `app_data_content` through dot notation continues to compile
   without code change; callers that need to move the underlying
   `AppDataInfo` out destructure `validated.info`.
+
 - Partner-fee validation surface is tightened across the public
   contract. Every basis-point field on
   `cow_sdk_app_data::PartnerFee` and
@@ -1127,6 +1041,7 @@ The first functional crate-family release begins at `0.1.0`.
   parse-time parity with the reviewed services behaviour while every
   value emitted on the wire continues to use the modern `volumeBps`
   key.
+
 - Orderbook transport error surface now carries a typed rejection
   variant. `cow_sdk_orderbook::OrderbookError` gains
   `Rejected { status: http::StatusCode, rejection: OrderbookRejection,
@@ -1144,6 +1059,7 @@ The first functional crate-family release begins at `0.1.0`.
   helper is retired in favour of the typed `OrderbookRejection`
   classification path, and the multi-environment order-lookup
   fallback honours both `Api` and `Rejected` on a 404 response.
+
 - `cow_sdk_core::OrderBalance` is replaced with two distinct contract
   types — `SellTokenSource { Erc20, External, Internal }` and
   `BuyTokenDestination { Erc20, Internal }` — modeling the sell-side
@@ -1172,6 +1088,7 @@ The first functional crate-family release begins at `0.1.0`.
   set, re-export through the root `cow-sdk` facade and `cow_sdk::prelude`,
   and surface from the `cow-sdk-orderbook` crate for downstream consumers
   that construct orderbook DTOs directly.
+
 - `cow_sdk_subgraph::SubgraphApi` is constructed exclusively through the
   typestate `SubgraphApi::builder()` so the compiler enforces that the
   chain id, partner Graph API key, and HTTP transport are all supplied
@@ -1192,6 +1109,7 @@ The first functional crate-family release begins at `0.1.0`.
   remains available for adjusting an existing instance. `SubgraphApi`
   surface continues to live in the dedicated `cow-sdk-subgraph` crate
   and is not re-exported through the root facade.
+
 - `cow_sdk_orderbook::OrderBookApi` is constructed exclusively through the
   typestate `OrderBookApi::builder()` (or the convenience
   `OrderBookApi::builder_from_context(ApiContext)` seed) so the compiler
@@ -1213,12 +1131,14 @@ The first functional crate-family release begins at `0.1.0`.
   `with_context_override` modifiers remain available for adjusting an
   existing instance. `OrderBookApiBuilder` is re-exported through the
   facade and prelude.
+
 - `cow_sdk_core::HttpTransport` is dyn-compatible through `async-trait`,
   so downstream clients compose transports as `Arc<dyn HttpTransport>`
   without reaching for a bespoke adapter trait. Both the native
   `ReqwestTransport` default and the browser `FetchTransport` default
   carry the matching `#[async_trait(?Send)]` impl annotation so the
   trait-object dispatch compiles on every supported runtime.
+
 - `ContractsError`, `AppDataError`, and `RegistryError` carry typed
   underlying sources through `#[source]` chains.
   `ContractsError::DecodeHex { field, source: hex::FromHexError }`,
@@ -1232,11 +1152,13 @@ The first functional crate-family release begins at `0.1.0`.
   failure through a boxed trait-object source; and
   `RegistryError::Parse { source: toml::de::Error }` exposes the typed
   TOML-deserialization error.
+
 - The browser `FetchTransport` default uses the browser-native
   `redirect: "follow"` fetch mode, so redirect-chain failures surface as
   `TypeError`-shaped DOMExceptions classified through
   `TransportErrorClass::Connect`. The module-level rustdoc documents the
   redirect-mode choice.
+
 - Lifted `cow_sdk_core::HttpTransport` to the production injection point for
   HTTPS REST traffic and shipped `cow_sdk_core::transport::reqwest::ReqwestTransport`
   as the native default implementation. The trait now exposes `async fn`
@@ -1251,18 +1173,22 @@ The first functional crate-family release begins at `0.1.0`.
   serialized output. The facade and prelude re-export `HttpTransport`,
   `TransportError`, `ReqwestTransport`, and `ReqwestTransportConfig` so
   downstream consumers reach the new transport seam through a single import.
+
 - `cow_sdk_core::Address` compares and hashes case-insensitively through the
   lowercase normalized key while `Address::as_str` preserves the original
   input casing. `addresses_equal` now dispatches to the same case-insensitive
   comparison as the `PartialEq` and `Hash` implementations.
+
 - New `as_bytes` and `byte_length` accessors on `Address`, `AppDataHash`,
   `Hash32`, `OrderUid`, and `HexData` expose the stored hex representation as
   a byte slice and report the decoded byte length without allocation.
+
 - Hot cross-crate helpers (`addresses_equal`, `token_id`,
   `pack_order_uid_params`, `extract_order_uid_params`, `hash_order_for_contract`,
   `compute_order_uid`, and the small `SigningScheme` and trade-flag codecs)
   carry `#[inline]` annotations so equality checks and contract encoding on
   the fast path incur no avoidable work.
+
 - Generator-backed property tests on the four deterministic-codec crates.
   `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, and `cow-sdk-app-data`
   now run their `property_contract.rs` suites through `proptest = "1.11"` with
@@ -1270,6 +1196,7 @@ The first functional crate-family release begins at `0.1.0`.
   stay reproducible across contributors. Every invariant family the previous
   deterministic enumerator exercised is preserved as a named `proptest!` case
   with a plain-English doc comment.
+
 - Fixture-driven `parity_contract.rs` regressions on `cow-sdk-signing`,
   `cow-sdk-orderbook`, `cow-sdk-app-data`, `cow-sdk-subgraph`, and
   `cow-sdk-contracts`. Each regression loads `parity/fixtures/<surface>.json`
@@ -1278,6 +1205,7 @@ The first functional crate-family release begins at `0.1.0`.
   unknown ids, invokes the covered Rust helper, and carries the fixture
   case id into every assertion message so a broken CI run names the upstream
   vector that diverged.
+
 - A field-level trading parity round-trip on
   `crates/trading/tests/parity_contract.rs`. The regression reconstructs typed
   Rust inputs from every case in `parity/fixtures/trading.json` and drives
@@ -1288,6 +1216,7 @@ The first functional crate-family release begins at `0.1.0`.
   `merge_and_seal_app_data`, `suggest_slippage_bps`, `TradingSdk`, and
   `protocol_options_for_order` — with per-field `assert_eq!` messages
   that name the fixture case id and the diverging field at once.
+
 - A cargo-fuzz harness under a standalone `fuzz/` crate that pins
   `libfuzzer-sys` to an exact version and carries five fuzz targets
   covering the deterministic codec boundaries: `fuzz_order_uid_pack_unpack`
@@ -1308,6 +1237,7 @@ The first functional crate-family release begins at `0.1.0`.
   toolchain is never forced onto nightly; `fuzz/README.md` documents the
   shared-harness conventions, supported-platform boundary, and the
   reproduce-from-corpus workflow.
+
 - A scheduled weekly `.github/workflows/fuzz.yml` report-only lane
   (Friday 05:00 UTC plus `workflow_dispatch`) that matrix-runs each of
   the five fuzz targets on `ubuntu-latest` for five minutes under a
@@ -1323,6 +1253,7 @@ The first functional crate-family release begins at `0.1.0`.
   `cargo install cargo-fuzz --locked`, `cargo fuzz list`, the per-target
   one-minute local-run command, and the reproduce-from-corpus
   invocation.
+
 - A Firefox Playwright project on `e2e/browser-wallet/` that runs
   alongside the existing Chromium project, so the browser-wallet
   deterministic-lane DOM contract is validated under both widely
@@ -1341,6 +1272,7 @@ The first functional crate-family release begins at `0.1.0`.
   Chromium and Firefox. `docs/browser-runtime-proof-posture.md`
   acknowledges the two-browser deterministic matrix under the existing
   Deterministic Lane. ADR 0007 is unchanged.
+
 - The canonical atomic amount type is now `cow_sdk_core::Amount(BigUint)`.
   A single typed newtype carries every atomic quantity across
   `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-signing`,
@@ -1351,6 +1283,7 @@ The first functional crate-family release begins at `0.1.0`.
   and `0x`-prefixed hex literals as before, and `Amount::from_atoms`,
   `Amount::as_biguint`, and `Amount::into_biguint` expose the inner
   `BigUint` directly for typed arithmetic.
+
 - Workspace dependency hygiene. The `http` crate now lives in the root
   `[workspace.dependencies]` table pinned at `1.4.0` alongside the other
   shared transport crates, so `cow-sdk-core` consumes it through a single
@@ -1363,6 +1296,7 @@ The first functional crate-family release begins at `0.1.0`.
   `cow-sdk-signing` is retired; the canonical `UnsignedOrder` type is the
   single name for the pre-signature order state exported through the public
   signing surface and the `cow-sdk` prelude.
+
 - `docs/parity-scope.md` now carries an explicit `Intentionally Out-of-Scope`
   section enumerating the upstream TypeScript-SDK surfaces that `cow-rs`
   intentionally declines to mirror, each entry paired with its rationale
@@ -1372,6 +1306,7 @@ The first functional crate-family release begins at `0.1.0`.
   cross-link the parity-scope document as the authoritative exclusion
   list; reviewers can now navigate between the ADR and the scope doc
   without private-context chasing.
+
 - Strengthen error types on `ContractsError`, `AppDataError`,
   `OrderbookError`, and `TradingError`: wrapper variants that previously
   held arbitrary external error strings now carry typed `#[from]`
@@ -1395,6 +1330,7 @@ The first functional crate-family release begins at `0.1.0`.
   failures carry a structured `{ field, message }` payload and
   trade-index violations surface through the dedicated
   `ContractsError::InvalidTokenIndex { index, registered }` variant.
+
 - Tighten the typed shape of three public error variants so downstream
   callers can pattern-match on the typed payload without re-parsing
   error messages: `cow_sdk_contracts::ContractsError::MissingClearingPrice`
@@ -1409,6 +1345,7 @@ The first functional crate-family release begins at `0.1.0`.
   output for each variant is unchanged: addresses render as their
   canonical `0x`-prefixed hex form and the 4-byte magic values render as
   `0x`-prefixed lowercase hex.
+
 - The `alloy-sol-macro` and `alloy-sol-types` crates now live in the root
   `[workspace.dependencies]` table pinned at `1.5.7` alongside the existing
   `alloy-primitives`, `alloy-dyn-abi`, and `alloy-json-abi` declarations.
@@ -1416,6 +1353,7 @@ The first functional crate-family release begins at `0.1.0`.
   table pin ensures every later consumer of the `alloy::sol!` macro idiom
   resolves against a single authoritative version, keeping the Ethereum
   primitives stack consistent across the published surface.
+
 - `cow-sdk-contracts` now derives its `GPv2Settlement` call-data bindings from
   an `alloy::sol!` interface block sourced from the upstream
   `cowprotocol/contracts` Solidity surface. The `SettlementEncoder` order-refund
@@ -1428,6 +1366,7 @@ The first functional crate-family release begins at `0.1.0`.
   baseline, and the committed Solidity excerpt at
   `crates/contracts/abi/settlement/GPv2Settlement.sol` preserves upstream
   provenance for reviewers.
+
 - `cow-sdk-contracts` now derives its `GPv2VaultRelayer` authorization-role
   bindings from an `alloy::sol!` interface block that declares the canonical
   GPv2 Vault Relayer surface alongside the partial Balancer V2 Vault ABI the
@@ -1439,6 +1378,7 @@ The first functional crate-family release begins at `0.1.0`.
   committed Solidity excerpt at
   `crates/contracts/abi/vault-relayer/GPv2VaultRelayer.sol` preserves
   upstream provenance for reviewers.
+
 - `cow-sdk-contracts` now hosts the typed `CoWSwapEthFlow` call-data
   bindings under a new `cow_sdk_contracts::eth_flow` module generated from
   an `alloy::sol!` interface block sourced from the upstream Solidity
@@ -1455,6 +1395,7 @@ The first functional crate-family release begins at `0.1.0`.
   for downstream consumers, and the committed Solidity excerpt at
   `crates/contracts/abi/eth-flow/CoWSwapEthFlow.sol` preserves upstream
   provenance for reviewers.
+
 - The `cow-sdk-contracts` EIP-1967 proxy-inspection surface now derives
   from an `alloy::sol!` interface block that declares the canonical
   EIP-173 ownership proxy ABI alongside the EIP-1967 storage-slot
@@ -1491,23 +1432,30 @@ The first functional crate-family release begins at `0.1.0`.
   `with_vault_relayer_override` respectively so the name tells the
   reader the field only applies when the canonical registry entry needs
   to be bypassed.
+
 - The public documentation graph now routes first-touch users through one
   canonical getting-started path before branching into the maintained example
   families.
+
 - The root landing page and docs hub now expose explicit trust and maintenance
   signals, including the current publication state, security disclosure path,
   and release-readiness references.
+
 - Public error enums and the documented growth-state enums now use
   `#[non_exhaustive]` so additive variants remain compatible with the shipped
   `0.1.0` surface.
+
 - `CoreError` is now the single canonical shared core error name across the
   public facade and guides; the unused `CowRsError` alias has been removed as a
   naming finalization before the first functional release.
+
 - ADR 0010 records the runtime-neutral async and transport posture covering
   cooperative cancellation, the shared `reqwest::Client` pattern, the
   url-stripped reqwest error classification, and the opt-in `tracing` feature.
+
 - ADR 0011 records the typed amount boundary and the typestate ready-state
   construction rule for `TradingSdkBuilder`.
+
 - The Cooperative Cancellation Contract Audit is a standing audit covering
   the shared `CancellationToken` re-export, the
   `cow_sdk_core::Cancellable::cancel_with(&token)` extension-trait combinator
@@ -1516,41 +1464,32 @@ The first functional crate-family release begins at `0.1.0`.
   `Cancelled` variants on each crate-level error enum, the `From<Cancelled>`
   bridges, and the biased `tokio::select!` semantics that the combinator
   delivers inside its poll implementation.
+
 - The Credential Surface Contract Hygiene Audit is refreshed to cover the
   `Redacted<T>` wrapper and the transport-level error redaction path.
+
 - `docs/release-checklist.md` now describes the functional `0.1.0` crates.io
   release publish sequence in finished-product language, naming the
   published `cow-sdk` crate family the sequence publishes in dependency
   order.
 
-### Changed
-
 - The public principle charter now records the amended Strong Typed Public
   Surfaces, Sole Construction Seam, and Evidence-Backed Public Claims
   contracts.
-- Continuous integration now enforces an `alloy-*` workspace-pin
-  same-minor invariant on every PR, and an inner-workspace WASM pin diff
-  against the workspace pins so the example consoles cannot drift away
-  from the workspace lock-step.
-- The `cow-sdk-browser-wallet-console` crate name no longer carries the
-  redundant `-wasm` suffix, matching the `cow-sdk-<capability>-console`
-  naming convention.
-- The `cow-sdk` prelude now exposes a curated first-touch surface for common
-  quote, sign, post, app-data validation, transport/provider wiring, and
-  primary error-handling workflows; reach specialized APIs through the
-  named-module re-exports. Workspace MSRV bump policy is now documented with
-  explicit cadence and notice window.
+
 - The `SignedAmount` type on `cow-sdk-core` now stores its
   value as an arbitrary-precision integer internally and
   exposes typed accessors and arithmetic delegation. The
   decimal-string wire serde shape is preserved, so wire DTOs
   that carry signed amounts are unchanged on the wire.
+
 - Three additional services-emitted rejection tags now flow
   through typed orderbook variants instead of the generic
   unknown-fallback shape: app-data invalid, app-data mismatch
   on registration, and lookup-path not-found responses are each
   routed to a dedicated variant with a documented distinction
   from the cancel-path not-found case.
+
 - Partner API keys on `OrderBookApiBuilder` and
   `SubgraphApiBuilder`, plus IPFS pinning header values at the
   `IpfsUploadTransport::post_json` boundary, now flow through
@@ -1559,11 +1498,13 @@ The first functional crate-family release begins at `0.1.0`.
   `IpfsUploadTransport::post_json` now receives header values as
   `&[(String, Redacted<String>)]`; transport implementations call
   `.into_inner()` when they need the raw header bytes.
+
 - Public wallet session, event, error payload, discovery, and
   chain-management types in `cow-sdk-browser-wallet` are now
   `#[non_exhaustive]`, and the constructor-backed structs expose
   explicit `new(...)` entry points so later EIP-1193 amendments
   and wallet-side capabilities land additively.
+
 - `cow_sdk_core::SupportedChainId`, `cow_sdk_core::CowEnv`, and
   `cow_sdk_core::UnsignedOrder` are now `#[non_exhaustive]` public
   surfaces so additive chain, environment, and order-shape evolution
@@ -1574,62 +1515,39 @@ The first functional crate-family release begins at `0.1.0`.
   `with_buy_token_balance` setters, while downstream `match` expressions
   over `SupportedChainId` and `CowEnv` must include wildcard fallback
   arms.
+
 - The orderbook crate's ECDSA signing-scheme enum, auction order
   envelope, and request-policy structs are now marked non-exhaustive,
   and the request-policy surface exposes explicit constructors so
   later signing schemes, auction-side fields, and policy settings land
   additively.
+
 - Public-field types in `cow-sdk-app-data`, `cow-sdk-subgraph`,
   `cow-sdk-signing`, and `cow-sdk-trading` are now marked non-exhaustive
   so later protocol-driven field additions ship as additive minor
   changes.
+
 - `TradingSdkBuilder::build_ready()` on `wasm32` targets now fails fast with a typed error when no orderbook client has been injected, instead of deferring the failure to the first quote or post call.
+
 - The release-gate docs-agreement check now guards the `cargo tree` and `cargo audit` invariants across every source-of-truth document and ships with a self-test harness that catches extraction drift in the check itself.
+
 - Shipped WASM consoles now carry a clear acknowledgement of their current dual-authority posture - the publication authority named in the workspace crate metadata and the hosted-build authority named in the footer links - so reviewers can read the two surfaces consistently until the hosted-build rotation completes.
-
-### Fixed
-
-- The orderbook retry orchestrator now honors the `Retry-After`
-  header on `429 Too Many Requests` and `503 Service
-  Unavailable` responses, waiting for the larger of its
-  exponential backoff schedule and the server-provided
-  cooldown. Both the native `reqwest` adapter and the browser
-  `fetch` adapter now surface non-success response headers
-  through the typed transport error variant.
-- The EIP-1271 verification cache no longer panics on browser
-  targets. The cache time source now uses `web_time::Instant`
-  on `wasm32-unknown-unknown` and `std::time::Instant` on
-  native builds, matching the time-source pattern used across
-  the rest of the SDK.
-- Published crate READMEs now compile as doctests on every CI run, and the
-  previously broken orderbook, trading, and contracts examples match the
-  shipped public API.
-- Every ECDSA signature leaving the contracts crate now carries the
-  Solidity-compatible `27` / `28` marker expected by on-chain
-  verification. Signers that emit modern `0` / `1` markers are
-  normalized automatically, and any other trailing byte now fails with a
-  typed error before downstream `ecrecover` paths can consume it.
-
-### Source-lock
 
 - Upstream-diff triage compared the source-lock-pinned commits against
   current upstream `services`, `contracts`, and `cow-sdk` HEADs on
   2026-04-29. `cow-sdk` had seven producer-path updates requiring a parity
   refresh plus three test-only changes, `services` had two producer-path
   updates requiring a parity refresh, and `contracts` had no drift.
+
 - Refreshed `parity/source-lock.yaml` to the current upstream HEADs for
   `cowprotocol/cow-sdk`, `cowprotocol/contracts`, and
   `cowprotocol/services`; regenerated all parity fixtures and re-vendored the
   services OpenAPI against the committed source-lock. The source-lock file is
   the authoritative record for the exact upstream pins.
 
-### OpenAPI vendoring
-
 - The vendored services OpenAPI remains aligned with the source-lock-pinned
   services checkout, and the covered orderbook DTO inventory remains
   unchanged.
-
-### Deployment provenance refreshed
 
 - Release provenance records `code_hash` confirmation for `Settlement`,
   `VaultRelayer`, and `EthFlow` rows on chain IDs `1`, `56`, `100`, `137`,
@@ -1637,43 +1555,89 @@ The first functional crate-family release begins at `0.1.0`.
   registry confirmation remains the release-readiness gate for chain
   deployment availability.
 
-### Audits refreshed
-
 - Refreshed `docs/audit/dependency-gate-audit.md` for the lockfile,
   `cargo-deny`, `cargo-audit`, and duplicate-version posture.
+
 - Added `docs/audit/wasm-browser-runner-determinism-audit.md` for the pinned
   browser runner contract used by WASM validation.
+
 - Refreshed `docs/audit/contract-bindings-parity-audit.md` for vault
   role-hash parity and forbidden interaction target coverage.
+
 - Refreshed `docs/audit/eip1271-verification-cache-audit.md` for the
   non-cacheable error matrix, clock injection, and TTL boundary tests.
+
 - Refreshed `docs/audit/cooperative-cancellation-contract-audit.md` for the
   cancellation composition contract across `OrderBookApi`, `SubgraphApi`,
   `TradingSdk`, and the retry/backoff boundary.
+
 - Refreshed `docs/audit/trading-order-bounds-validator-audit.md` for the
   monotonic-window property test, `u32::MAX` boundary coverage,
   `fuzz_order_bounds_validator` corpus, and same-token policy mirror.
+
 - Refreshed `docs/audit/trading-order-construction-integrity-audit.md` for
   the parameter-builder same-token policy mirror.
+
 - Refreshed `docs/audit/wire-dto-coverage-audit.md` for OpenAPI validator
   self-test CI wiring.
+
 - Refreshed `docs/audit/source-lock-provenance-audit.md` for schema-v3
   fixture tests and refreshed pin authority.
+
 - Refreshed `docs/audit/panic-free-public-surface-audit.md` for the
   item-level panic policy gate that enforces ADR 0033 `# Panics` rustdoc and
   `// SAFETY:` comments on allowlisted panic sites.
-
-### WASM runner
 
 - The browser-targeted WASM lanes use the committed Chrome-for-Testing Stable
   pin `148.0.7778.56` released on `2026-04-28`, with
   `cargo check-wasm-runner-freshness` blocking stale release candidates.
 
+- Public MSRV remains Rust `1.94.0`. Contributor toolchains are pinned to
+  Rust `1.94.1` in `rust-toolchain.toml`.
+
+- Documentation refresh in progress for the upcoming TypeScript-callable
+  wasm SDK release. Forthcoming entries will reference ADR 0039
+  (TypeScript-callable wasm SDK surface) and ADR 0040 (wallet/provider
+  callback boundary for JS consumers) once authored.
+
+- Documentation coherence pass: workspace crate count corrected across
+  shipped-surface locations; `docs/parity-matrix.md` publish-order rewritten
+  to match `docs/release-checklist.md` with 13 dependency-aware steps;
+  `docs/transport.md` `FixtureTransport` pedagogy example completed with
+  all four trait methods; minor header arithmetic fix in
+  `docs/integrations.md`. Forward-pointer added for the upcoming WASM SDK
+  documentation refresh.
+
+- CHANGELOG conformance: the spurious `[0.1.0] - 2026-05-02` block contents
+  moved back into `[Unreleased]` because no git tag was cut; the maintainer
+  promotes `[Unreleased]` to `[0.1.0] - <release-date>` at tag-cut time,
+  with no rc.N intermediate;
+  non-standard section headers folded into canonical Keep a Changelog 1.1.0
+  sections; duplicate sections within `[Unreleased]` consolidated.
+
+- PROPERTIES.md: broken named-test citations replaced with verified test
+  names; PROP-DOCS-001 README inventory extended to 13 publishable crates;
+  PROP-CORE-004 ADR backing reference added; 14 PROP-WB row numbers reserved
+  for the upcoming TypeScript-callable wasm SDK release.
+
+### Deprecated
+
+- No public APIs are deprecated ahead of the first functional release.
+
 ### Removed
 
+- `cow-sdk-app-data`'s sync `IpfsFetchTransport::get` has been removed in
+  favor of the async equivalent.
+
+- Removed the permissive runtime-validated `TradingSdkBuilder::build` and
+  `TradingSdkBuilder::build_partial` terminals; the typestate-gated
+  `build_ready` and `build_helper_only` terminals are now the only
+  construction paths. Pre-release surface; zero migration cost.
+
 - Stale WASM build artifacts have been removed from the verification console
-  package directory; the per-pkg gitignore now tracks only the canonical
+  package directory; the per-package gitignore now tracks only the canonical
   wasm-pack outputs.
+
 - Retired the hand-rolled ABI encoder helpers previously maintained inside
   `cow-sdk-contracts`. Every encoded call-data payload the SDK emits now
   flows through the `alloy::sol!`-generated typed bindings for
@@ -1683,6 +1647,7 @@ The first functional crate-family release begins at `0.1.0`.
   a parallel Rust reimplementation. Byte-identity parity with the pre-
   migration encoder output is gated by the regression contract at
   `crates/contracts/tests/parity_contract.rs`.
+
 - Retired the legacy free-function constructor family on `OrderBookApi`
   (`new`, `new_with_transport_policy`, `from_shared_client`,
   `from_shared_client_with_transport_policy`, `new_with_base_url`) and
@@ -1698,6 +1663,7 @@ The first functional crate-family release begins at `0.1.0`.
   builder's `.client(shared)` convenience setter on native targets; a
   `trybuild` UI witness asserts `.build()` without `.transport(...)`
   does not compile on `wasm32` targets.
+
 - Retired every CIDv0 (dag-pb + sha2-256, `Qm...`-prefixed) encoding and
   decoding path from `cow-sdk-app-data`. CIDv1 with the raw multicodec
   (`0x55`) over a keccak-256 multihash (`0x1b`) is the only supported
@@ -1711,6 +1677,7 @@ The first functional crate-family release begins at `0.1.0`.
   consumers that need to parse historical Qm-prefixed values use a
   general-purpose `cid` crate directly. The `sha2` dependency has been
   dropped from `cow-sdk-app-data`.
+
 - The order-level `fee_amount` descriptor is no longer a public field or a
   public builder setter on `cow_sdk_orderbook::QuoteData`,
   `cow_sdk_orderbook::OrderCreation`, `cow_sdk_orderbook::Order`, or
@@ -1721,6 +1688,7 @@ The first functional crate-family release begins at `0.1.0`.
   network-cost amount returned by `/api/v1/quote` is now accessed through
   the typed `QuoteData::network_cost_amount` getter and the
   `with_network_cost_amount` / `set_network_cost_amount` setters.
+
 - The retired `fullFeeAmount` descriptor has been removed from the orderbook
   order-response DTO. Fee exposure on the response flows through the
   canonical `executedFee` component, while the deprecated
@@ -1731,35 +1699,25 @@ The first functional crate-family release begins at `0.1.0`.
   now takes a single `executed_fee` argument and normalizes it into the
   `total_fee` value surfaced on the transformed order.
 
-### Security
-
-- Both shipped WASM consoles now declare a `Content-Security-Policy` meta tag
-  with explicit `script-src` and `connect-src` allowlists.
-- The RustSec audit posture now resolves the prior `rand 0.8.5` warning
-  through `rand 0.8.6`; the reviewed advisory tolerance register retains only
-  the current Alloy `paste` proc-macro exception.
-
-### Deprecated
-
-- No public APIs are deprecated in `0.1.0`.
-
-### Breaking
-
 - `TradingSdk::new` and `TradingSdk::new_partial` have been removed before the
   first functional release. Consumers must use `TradingSdkBuilder::ready`,
   `TradingSdkBuilder::helper_only`, or the fluent typestate builder terminals.
+
 - `cow_sdk_contracts::SettlementEncoder::encode_interaction` now returns
   `Result<…, ContractsError>`. Settlement domains registered with the
   canonical CoW Protocol registry reject interactions whose target equals the
   paired vault-relayer address per ADR 0034, so call sites must propagate or
   intentionally handle the new `Result`.
+
 - `cow_sdk_contracts::ContractsError` gains the
   `ForbiddenInteractionTarget { target: Address }` variant for the settlement
   interaction rejection above. The enum remains `#[non_exhaustive]`, so
   existing exhaustive matches should keep their wildcard fallback.
+
 - `cow_sdk_contracts::SettlementEncoder::encoded_setup` now returns
   `Result<…, ContractsError>` to propagate the same forbidden-target check
   applied by `encode_interaction`.
+
 - `cow_sdk_trading` validator and parameter-builder semantics now mirror
   services `SameTokensPolicy::AllowSell`: sell-side same-token orders and
   sell-side WETH-paired-with-native-sentinel orders are accepted locally,
@@ -1768,12 +1726,243 @@ The first functional crate-family release begins at `0.1.0`.
   `TradingError::ClientRejected(ClientRejection::SameBuyAndSellToken { token })`.
   The typed variant shape is unchanged; only the call-site predicate broadens
   to honor `OrderKind`.
+
 - `cow_sdk_transport_wasm::FetchTransport` configured `timeout: Duration` now
   bounds the full request-response lifecycle, including
   `response.text().await`. Browser consumers that relied on the earlier
   header-arrival-only timeout behavior should review their timeout settings.
 
-### MSRV
+### Fixed
 
-- Public MSRV remains Rust `1.94.0`. Contributor toolchains are pinned to
-  Rust `1.94.1` in `rust-toolchain.toml`.
+- Direct wasm32 `getrandom` consumers now use the workspace `0.4.2` pin with
+  `wasm_js`, `async-lock` is promoted to a workspace dependency, Alloy
+  workspace pins stop enabling `std` globally so the contracts `k256` path
+  stays wasm-compatible, the stale `tiny-keccak` license exception is removed,
+  and the duplicate-version register documents the remaining upstream-owned
+  roots.
+
+- The alloy-provider invariant documentation now describes Cargo's success
+  case accurately through the `cargo check-alloy-provider-invariant` wrapper,
+  and the alloy provider adaptation guide replaces a placeholder
+  `unimplemented!()` with a concrete `chain_id` example.
+
+- `HostPolicyError::UnparsableUrl` corrects the public variant spelling before
+  the first functional release. App-data schema panic sites now carry explicit
+  invariant rationales and rustdoc panic documentation, and internal hook gas
+  limit serde helpers no longer widen the public API surface.
+
+- Legacy compatibility helpers in the contracts crate that produced
+  protocol-incorrect digests by zeroing amounts before hashing have
+  been removed. Order digest computation now flows exclusively through
+  the canonical unsigned-order to order path, which produces
+  byte-identical output to the upstream service for the same input.
+
+- Native ethflow simulation example now passes the typed
+  order-validity bounds and the optional app-data signer through
+  the native-currency posting seam so the reviewed submission
+  contract is exercised end-to-end on the native evidence
+  surface. The scenario computes its `valid_to` against the
+  current wall clock so the sample stays inside
+  `OrderValidityBounds::SERVICES_DEFAULT` indefinitely without
+  a hard-coded timestamp drift.
+
+- Browser wallet console and SDK verification console examples
+  now compose the fetch-backed transport inside a wasm32 build
+  branch and fall back to the default reqwest transport on the
+  host target, so both examples build as the `rlib` targets
+  declared in their manifests without referencing the wasm-only
+  transport crate root from host code. A narrow compile-time
+  symbol smoke in each example's test directory names the
+  transport types under a wasm32 gate so later export drift
+  surfaces at build time.
+
+- SDK verification console now unwraps the validated
+  `PartnerFeePolicy::volume` constructor at the typed-defaults
+  composition site so the demo payload always carries a
+  `PartnerFee` value produced through the typed partner-fee
+  bounds. A narrow regression in the example's test directory
+  locks the typed-defaults round-trip so the validator contract
+  cannot silently drift.
+
+- `scripts/check-release-docs-agree.sh` and
+  `scripts/fetch-upstream-pins.sh` carry executable file mode in
+  the tracked index so the release-gate docs-agreement check and
+  the documented upstream-provisioning tool run by their bare
+  paths on every contributor platform without a shell prefix.
+
+- Trading submission seam no longer panics on
+  `wasm32-unknown-unknown` when the typed order-bounds validator
+  reads the current instant. The internal `current_unix_seconds`
+  helper now reads the clock through the same dual-target
+  `std::time` on native and `web_time` on wasm32 shape already
+  used by the order-derivation surface, matching the reviewed
+  cross-runtime contract so browser-wallet-backed submission
+  flows stay live on wasm32 builds.
+
+- Client-side order validation on the non-native-currency posting
+  path now runs before the app-data document is uploaded and
+  before the signer is prompted, so rejected orders no longer
+  persist pre-submission work.
+
+- IPFS base-URI preflight now fails closed symmetrically across the
+  read and write paths. The `cow_sdk_app_data::pin_json_in_pinata_ipfs`
+  helper rejects an empty, whitespace-only, or slash-only `write_uri`
+  with a typed `AppDataError::Transport { class:
+  TransportErrorClass::Builder, detail: "ipfs write base uri must
+  not be empty" }` before any bytes cross the upload transport,
+  matching the existing read-side guard that surfaces the
+  corresponding `"ipfs read base uri must not be empty"` detail for
+  a malformed read base URI. Valid inputs are normalized identically
+  on both sides: leading and trailing whitespace is stripped and a
+  single trailing `/` is trimmed, so `https://api.pinata.cloud/` and
+  `https://api.pinata.cloud` build the same
+  `https://api.pinata.cloud/pinning/pinJSONToIPFS` upload URL.
+
+- Eth-flow submission validation now reads the client-side `from`
+  identity from the signer-derived owner carried on
+  `cow_sdk_trading::EthFlowTransaction`, not from
+  `order_to_sign.receiver`. The typed bundle gains a
+  `from: cow_sdk_core::Address` field populated at transaction
+  construction from the existing signer address resolution, and
+  `post_sell_native_currency_order_async` feeds that owner into the
+  client-side `OrderBoundsValidator` before any transport. Payout
+  receivers that legitimately differ from the owner no longer trip a
+  false `ClientRejection::AppdataFromMismatch`, and the mismatched
+  app-data signer case now reports the owner as the typed rejection's
+  `from` field so downstream diagnostics and pattern-matching stay
+  aligned with the signing authority rather than the payout recipient.
+
+- Example crates now construct every `#[non_exhaustive]` public DTO
+  through the published ergonomic constructors (`::new(required_args)`
+  plus chained `with_*` setters) rather than struct-literal syntax, so
+  the `examples/native`, `examples/wasm/sdk-verification-console`, and
+  `examples/wasm/browser-wallet-console` build surfaces stay green
+  under the broadened `#[non_exhaustive]` coverage shipped in the same
+  `0.1.0` cycle. The `cow-sdk-core::cancellation` rustdoc also
+  corrects a spelling drift in the `Cancelled` marker's documentation.
+
+- Example-crate browser-hosted tests now align with the current public
+  contract. The `sdk-verification-console` deterministic-export suite
+  compares wrapped-native and sample-order addresses through a
+  case-insensitive helper so the byte-array-sourced lowercase hex output
+  no longer breaks the assertion, and the EIP-1271 payload preview
+  assertion now matches the `0x`-prefixed hex shape that
+  `eip1271_signature_payload` actually returns. The
+  `browser-wallet-console` test-only helper surface is also reachable
+  under `wasm32-unknown-unknown`, so headless wasm-pack runs exercise
+  the injected-wallet, session, and cached-detection paths alongside
+  their native counterparts. The helpers remain marked `#[doc(hidden)]`
+  and stay excluded from the public API surface.
+
+- Playwright deterministic-lane suites for both example consoles now
+  track the current SDK contract end-to-end. Quote, order, and
+  order-trades assertions compare addresses through a case-insensitive
+  helper; the order-trades fixture routes the current `/api/v2/trades`
+  endpoint; the solver-competition assertions describe the reviewed
+  `SolverSettlement` contract (ranking, solver address, score, and
+  clearing-prices map) rather than fields that are not part of the
+  typed boundary; the orderbook network-failure assertion matches the
+  classified `reqwest` error text; and the chain-mismatch fail-closed
+  contract is verified by asserting the disabled `#sign-order` button
+  and its chain-mismatch title rather than attempting to click a button
+  the console deliberately disables. The `browser-wallet-console`
+  diagnostic labeller also classifies EIP-1193 provider codes that
+  arrive through the `Display`-formatted Rust error shape
+  (`… rejected by the user (4001): …`) in addition to the JSON
+  `"code": 4001` shape, so rejected typed-data signing now renders the
+  `EIP-1193 4001` label consistently across Chromium and Firefox.
+
+- `cow_sdk_core::Amount::checked_mul` returns `None` on overflow instead of
+  panicking, so callers that branch on checked multiplication receive the
+  same fallible contract for large products as for other out-of-range amount
+  operations.
+
+- `cow_sdk_trading::get_order_to_sign` ignores zero-address receivers instead
+  of serializing them as an explicit `0x0000…` recipient, matching the
+  upstream behavior where a zero-address receiver means "no override."
+
+- `cow_sdk_signing::InMemoryEip1271VerificationCache` no longer caches
+  transient verification errors. Only successful verification and
+  `Eip1271MagicValueMismatch` outcomes are stored; every other
+  `ContractsError` variant re-checks the chain on the next call.
+
+- The orderbook retry orchestrator now honors the `Retry-After`
+  header on `429 Too Many Requests` and `503 Service
+  Unavailable` responses, waiting for the larger of its
+  exponential backoff schedule and the server-provided
+  cooldown. Both the native `reqwest` adapter and the browser
+  `fetch` adapter now surface non-success response headers
+  through the typed transport error variant.
+
+- The EIP-1271 verification cache no longer panics on browser
+  targets. The cache time source now uses `web_time::Instant`
+  on `wasm32-unknown-unknown` and `std::time::Instant` on
+  native builds, matching the time-source pattern used across
+  the rest of the SDK.
+
+- Published crate READMEs now compile as doctests on every CI run, and the
+  previously broken orderbook, trading, and contracts examples match the
+  shipped public API.
+
+- Every ECDSA signature leaving the contracts crate now carries the
+  Solidity-compatible `27` / `28` marker expected by on-chain
+  verification. Signers that emit modern `0` / `1` markers are
+  normalized automatically, and any other trailing byte now fails with a
+  typed error before downstream `ecrecover` paths can consume it.
+
+### Security
+
+- Dependency gate documentation now records the refreshed RustSec tolerance
+  posture, direct WASM randomness alignment, legacy `thiserror` codegen
+  reachability, and warning-free `cargo-deny` configuration after regenerating
+  both workspace and native-example lockfiles.
+
+- API-key validation paths now fail with a typed error variant rather than a
+  panic that could include the offending bytes. Base-URL override fields are
+  redacted from `Debug` formatting so credentials embedded in override URLs no
+  longer surface in diagnostic output. A new `sanitize_public_base_url` helper
+  in `cow-sdk-core` strips path, query, and fragment from URLs before they
+  cross any logging or tracing boundary.
+
+- Both shipped WASM consoles now declare a `Content-Security-Policy` meta tag
+  with explicit `script-src` and `connect-src` allowlists.
+
+- Operator-side base-URL override and browser-wallet trust threat surfaces are
+  now documented in `SECURITY.md` with explicit consumer-side mitigations.
+
+- Three new standing audits cover the workspace `unsafe_code = deny`
+  lint posture, the panic-free public surface contract, and the
+  workflow security posture.
+
+- Dependency audit gate advances past the reachable
+  certificate-revocation-list parsing panic reported for
+  `rustls-webpki 0.103.12` (RUSTSEC-2026-0104). The reqwest
+  transport chain used by the orderbook and subgraph clients now
+  resolves through `rustls-webpki 0.103.13` without a workspace
+  override. The standing reviewed-upstream ignore contract in the
+  dependency-audit gate additionally records the `core2` yanked
+  and unmaintained posture reachable through `cid 0.11.1`
+  (RUSTSEC-2026-0105) under the same explicit-reason rationale
+  that covers the previously-tracked upstream advisories. The
+  governing dependency-gate and CID audit records refresh to the
+  new posture, and the release-checklist, verification-matrix,
+  and verification-guide surfaces quote the full reviewed
+  audit-gate invocation.
+
+- Defense-in-depth redaction in transport error paths. `From<reqwest::Error>`
+  on the orderbook and subgraph error surfaces now calls
+  `reqwest::Error::without_url` and classifies failures through the
+  documented `is_timeout`, `is_connect`, `is_redirect`, `is_decode`,
+  `is_body`, `is_builder`, `is_request`, and `is_status` set, so partner
+  routes and their query-string API keys cannot leak through error
+  `Display` output. The `Redacted<T>` newtype and the config-layer
+  migrations above keep the configuration surface redacted even before a
+  request is built.
+
+- Repository security reporting now has an explicit private disclosure path and
+  a protocol-level escalation note for issues that could affect deployed CoW
+  Protocol infrastructure or user funds.
+
+- The RustSec audit posture now resolves the prior `rand 0.8.5` warning
+  through `rand 0.8.6`; the reviewed advisory tolerance register retains only
+  the current Alloy `paste` proc-macro exception.
