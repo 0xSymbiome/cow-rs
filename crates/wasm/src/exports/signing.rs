@@ -403,6 +403,12 @@ fn cancellation_payload(
     order_uids: Vec<String>,
     chain_id: u32,
 ) -> Result<(Vec<OrderUid>, cow_sdk_core::TypedDataPayload, Hash32), JsValue> {
+    if order_uids.is_empty() {
+        return Err(
+            WasmError::invalid("orderUids", "at least one order UID is required").into_js(),
+        );
+    }
+
     let chain = parse_chain(chain_id)?;
     let uids = order_uids
         .into_iter()

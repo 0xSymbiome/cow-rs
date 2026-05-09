@@ -13,6 +13,7 @@ check-chain-patch-eligibility = "run --quiet --manifest-path scripts/policy-main
 check-wasm-runner-freshness = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-wasm-runner-freshness"
 check-property-citations = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-property-citations"
 check-source-lock-roots = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-source-lock-roots"
+check-wasm-invariant = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-wasm-invariant"
 classify-release = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- classify-release"
 run-deterministic-examples = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- run-deterministic-examples"
 

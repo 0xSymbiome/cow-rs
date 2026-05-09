@@ -3,8 +3,8 @@ use policy_maintainer::{
     check_adr_coverage, check_alloy_provider_invariant, check_alloy_signer_invariant,
     check_chain_patch_eligibility, check_deny_unknown_fields, check_enum_policy, check_msrv_notice,
     check_panic_allowlist, check_property_citations, check_source_lock_roots, check_stub,
-    check_wasm_runner_freshness, check_workspace_versions, classify_release, diagnostics::OutputMode,
-    generate_validation_evidence, run_deterministic_examples,
+    check_wasm_invariant, check_wasm_runner_freshness, check_workspace_versions, classify_release,
+    diagnostics::OutputMode, generate_validation_evidence, run_deterministic_examples,
 };
 
 #[derive(Debug, Parser)]
@@ -63,6 +63,9 @@ enum Command {
     /// Verify source-lock local roots match their pinned upstream repositories.
     #[command(name = "check-source-lock-roots")]
     CheckSourceLockRoots(check_source_lock_roots::Args),
+    /// Verify wasm package boundary invariants.
+    #[command(name = "check-wasm-invariant")]
+    CheckWasmInvariant(check_wasm_invariant::Args),
     /// Generate or check the release validation evidence artefact.
     #[command(name = "generate-validation-evidence")]
     GenerateValidationEvidence(generate_validation_evidence::Args),
@@ -100,6 +103,7 @@ fn main() -> anyhow::Result<()> {
         }
         Command::CheckPropertyCitations(args) => check_property_citations::run(args, output_mode),
         Command::CheckSourceLockRoots(args) => check_source_lock_roots::run(args, output_mode),
+        Command::CheckWasmInvariant(args) => check_wasm_invariant::run(args, output_mode),
         Command::GenerateValidationEvidence(args) => {
             generate_validation_evidence::run(args, output_mode)
         }

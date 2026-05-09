@@ -105,7 +105,8 @@ impl WasmError {
     /// Converts this typed error into a `JsValue` without panicking.
     #[must_use]
     pub fn into_js(self) -> JsValue {
-        serde_wasm_bindgen::to_value(&self)
+        let serializer = serde_wasm_bindgen::Serializer::json_compatible();
+        self.serialize(&serializer)
             .unwrap_or_else(|_| JsValue::from_str("WasmError serialization failed"))
     }
 

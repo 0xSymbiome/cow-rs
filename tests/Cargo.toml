@@ -67,3 +67,7 @@ path = "supported_chains_doc_table.rs"
 [[test]]
 name = "transaction_lifecycle_cross_adapter_invariant"
 path = "transaction_lifecycle_cross_adapter_invariant.rs"
+
+[[test]]
+name = "wasm_dependency_invariant"
+path = "wasm_dependency_invariant.rs"

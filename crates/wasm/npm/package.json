@@ -1,0 +1,70 @@
+{
+  "name": "cow-sdk-wasm-placeholder",
+  "version": "0.1.0",
+  "description": "TypeScript-callable wasm-bindgen bindings for the CoW Protocol Rust SDK",
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/cowdao-grants/cow-rs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cowdao-grants/cow-rs.git",
+    "directory": "crates/wasm/npm"
+  },
+  "keywords": [
+    "cow-protocol",
+    "sdk",
+    "wasm",
+    "wasm-bindgen",
+    "typescript",
+    "eip-1193",
+    "eip-1271"
+  ],
+  "type": "module",
+  "main": "./dist/nodejs/cow_sdk_wasm.cjs",
+  "module": "./dist/bundler/cow_sdk_wasm.js",
+  "types": "./dist/bundler/cow_sdk_wasm.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/bundler/cow_sdk_wasm.d.ts",
+      "node": {
+        "types": "./dist/nodejs/cow_sdk_wasm.d.ts",
+        "require": "./dist/nodejs/cow_sdk_wasm.cjs",
+        "default": "./dist/nodejs/cow_sdk_wasm.cjs"
+      },
+      "browser": {
+        "types": "./dist/web/cow_sdk_wasm.d.ts",
+        "import": "./dist/web/cow_sdk_wasm.js"
+      },
+      "default": "./dist/bundler/cow_sdk_wasm.js"
+    },
+    "./web": {
+      "types": "./dist/web/cow_sdk_wasm.d.ts",
+      "import": "./dist/web/cow_sdk_wasm.js"
+    },
+    "./bundler": {
+      "types": "./dist/bundler/cow_sdk_wasm.d.ts",
+      "import": "./dist/bundler/cow_sdk_wasm.js"
+    },
+    "./nodejs": {
+      "types": "./dist/nodejs/cow_sdk_wasm.d.ts",
+      "require": "./dist/nodejs/cow_sdk_wasm.cjs",
+      "default": "./dist/nodejs/cow_sdk_wasm.cjs"
+    },
+    "./cloudflare": {
+      "types": "./dist/web/cow_sdk_wasm.d.ts",
+      "import": "./dist/web/cow_sdk_wasm.js"
+    },
+    "./cloudflare/wasm": "./dist/web/cow_sdk_wasm_bg.wasm"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}

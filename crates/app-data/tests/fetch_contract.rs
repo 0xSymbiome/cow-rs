@@ -9,7 +9,7 @@ use cow_sdk_app_data::{
 };
 use serde_json::Value;
 
-use crate::common::{APP_DATA_HEX, APP_DATA_STRING, CID};
+use crate::common::{APP_DATA_HEX, APP_DATA_HEX_2, APP_DATA_STRING, APP_DATA_STRING_2, CID, CID_2};
 
 #[derive(Default)]
 struct RecordingFetchTransport {
@@ -43,31 +43,41 @@ impl IpfsFetchTransport for RecordingFetchTransport {
 }
 
 #[tokio::test]
-async fn fetch_helpers_use_explicit_transport_and_default_ipfs_uri() {
+async fn async_trait_fetches_cid_with_default_ipfs_uri() {
     let transport = RecordingFetchTransport::default().with_response(
         &format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
         APP_DATA_STRING,
     );
 
     let from_cid = fetch_doc_from_cid(CID, &transport, None).await.unwrap();
-    let from_hex = fetch_doc_from_app_data_hex(APP_DATA_HEX, &transport, None)
-        .await
-        .unwrap();
-
     assert_eq!(
         from_cid,
         serde_json::from_str::<Value>(APP_DATA_STRING).unwrap()
     );
+    assert_eq!(
+        transport.requests(),
+        vec![format!("https://cloudflare-ipfs.com/ipfs/{CID}")]
+    );
+}
+
+#[tokio::test]
+async fn async_trait_fetches_doc_from_app_data_hex() {
+    let transport = RecordingFetchTransport::default().with_response(
+        &format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
+        APP_DATA_STRING,
+    );
+
+    let from_hex = fetch_doc_from_app_data_hex(APP_DATA_HEX, &transport, None)
+        .await
+        .unwrap();
+
     assert_eq!(
         from_hex,
         serde_json::from_str::<Value>(APP_DATA_STRING).unwrap()
     );
     assert_eq!(
         transport.requests(),
-        vec![
-            format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
-            format!("https://cloudflare-ipfs.com/ipfs/{CID}")
-        ]
+        vec![format!("https://cloudflare-ipfs.com/ipfs/{CID}")]
     );
 }
 
@@ -100,6 +110,13 @@ fn fetch_policy_defaults_and_trims_explicit_read_base_urls() {
         explicit_policy.read_base_uri(),
         "https://ipfs.example.test/ipfs"
     );
+}
+
+#[test]
+fn fetch_policy_rejects_empty_base_uri() {
+    let error = IpfsFetchPolicy::new("   ").expect_err("empty base URI must fail");
+    assert!(matches!(error, AppDataError::Transport { class, .. }
+        if class == cow_sdk_core::TransportErrorClass::Builder));
 }
 
 #[test]
@@ -150,6 +167,35 @@ async fn fetch_helpers_accept_typed_policy_and_custom_read_base_uri() {
 }
 
 #[tokio::test]
+async fn fetch_helpers_keep_distinct_cid_requests() {
+    let transport = RecordingFetchTransport::default()
+        .with_response(
+            &format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
+            APP_DATA_STRING,
+        )
+        .with_response(
+            &format!("https://cloudflare-ipfs.com/ipfs/{CID_2}"),
+            APP_DATA_STRING_2,
+        );
+
+    let first = fetch_doc_from_app_data_hex(APP_DATA_HEX, &transport, None)
+        .await
+        .unwrap();
+    let second = fetch_doc_from_app_data_hex(APP_DATA_HEX_2, &transport, None)
+        .await
+        .unwrap();
+
+    assert_ne!(first, second);
+    assert_eq!(
+        transport.requests(),
+        vec![
+            format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
+            format!("https://cloudflare-ipfs.com/ipfs/{CID_2}")
+        ]
+    );
+}
+
+#[tokio::test]
 async fn fetch_doc_from_cid_with_policy_rejects_malformed_json() {
     let policy = IpfsFetchPolicy::default();
     let transport = RecordingFetchTransport::default().with_response(
@@ -178,4 +224,13 @@ async fn fetch_doc_from_cid_rejects_empty_explicit_read_base_uri() {
         other => panic!("expected Transport error, got {other:?}"),
     }
     assert_eq!(error.to_string(), "transport error (builder): [redacted]");
+}
+
+#[tokio::test]
+async fn missing_fixture_maps_to_transport_error() {
+    let error = fetch_doc_from_cid(CID, &RecordingFetchTransport::default(), None)
+        .await
+        .expect_err("missing fixture should fail through transport");
+
+    assert_eq!(error.to_string(), "transport error (other): [redacted]");
 }

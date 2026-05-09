@@ -435,8 +435,7 @@ impl From<pure::dto::DeploymentAddresses> for DeploymentAddressesDto {
 }
 
 /// Fetch request shape for callback transports.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CowFetchRequest {
     /// HTTP method.
@@ -454,8 +453,7 @@ pub struct CowFetchRequest {
 }
 
 /// Fetch response shape returned from callback transports.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CowFetchResponse {
     /// HTTP status code.
@@ -558,7 +556,10 @@ pub(crate) fn parse_owner(owner: &str) -> Result<cow_sdk_core::Address, WasmErro
 }
 
 pub(crate) fn to_js_value<T: Serialize>(value: &T) -> Result<JsValue, JsValue> {
-    serde_wasm_bindgen::to_value(value).map_err(|error| WasmError::from(error).into_js())
+    let serializer = serde_wasm_bindgen::Serializer::json_compatible();
+    value
+        .serialize(&serializer)
+        .map_err(|error| WasmError::from(error).into_js())
 }
 
 pub(crate) fn from_json_value<T: DeserializeOwned>(

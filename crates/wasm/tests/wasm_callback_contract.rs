@@ -1,0 +1,296 @@
+#![cfg(target_arch = "wasm32")]
+
+mod common;
+
+use cow_sdk_wasm::exports::{
+    compute_order_uid, sign_cancellation_eth_sign_digest, sign_cancellation_with_eip1193,
+    sign_cancellation_with_typed_data_signer, sign_order_eth_sign_digest, sign_order_with_eip1193,
+    sign_order_with_typed_data_signer,
+};
+use js_sys::Function;
+use serde_json::Value;
+use wasm_bindgen::JsValue;
+use wasm_bindgen_test::*;
+
+use crate::common::{
+    ADDR_OWNER, CHAIN_MAINNET, ECDSA_SIGNATURE, ECDSA_SIGNATURE_MODERN_V,
+    ECDSA_SIGNATURE_MODERN_V_ONE, ECDSA_SIGNATURE_RECOVERY_28, wasm_order_input,
+};
+
+wasm_bindgen_test_configure!(run_in_browser);
+
+fn callback(args: &str, body: &str) -> Function {
+    Function::new_with_args(args, body)
+}
+
+fn json(value: JsValue) -> Value {
+    serde_wasm_bindgen::from_value(value).expect("JS value should decode to JSON")
+}
+
+fn generated_order_uid() -> String {
+    let value =
+        json(compute_order_uid(wasm_order_input(), CHAIN_MAINNET, ADDR_OWNER.to_owned()).unwrap());
+    value["orderUid"].as_str().unwrap().to_owned()
+}
+
+#[wasm_bindgen_test]
+async fn typed_data_signer_receives_order_envelope() {
+    let signer = callback(
+        "envelope",
+        &format!(
+            "globalThis.__cowEnvelope = envelope; return '{}';",
+            ECDSA_SIGNATURE
+        ),
+    );
+    let signed = json(
+        sign_order_with_typed_data_signer(
+            wasm_order_input(),
+            CHAIN_MAINNET,
+            ADDR_OWNER.to_owned(),
+            signer,
+        )
+        .await
+        .unwrap(),
+    );
+    let envelope = json(js_sys::eval("globalThis.__cowEnvelope").unwrap());
+
+    assert_eq!(envelope["primaryType"], "Order");
+    assert_eq!(envelope["domain"]["chainId"], CHAIN_MAINNET);
+    assert_eq!(signed["signingScheme"], "eip712");
+}
+
+#[wasm_bindgen_test]
+async fn typed_data_signer_normalizes_modern_v_signatures() {
+    let signer = callback(
+        "envelope",
+        &format!("return '{}';", ECDSA_SIGNATURE_MODERN_V),
+    );
+    let signed = json(
+        sign_order_with_typed_data_signer(
+            wasm_order_input(),
+            CHAIN_MAINNET,
+            ADDR_OWNER.to_owned(),
+            signer,
+        )
+        .await
+        .unwrap(),
+    );
+
+    assert_eq!(signed["signature"], ECDSA_SIGNATURE);
+
+    let signer = callback(
+        "envelope",
+        &format!("return '{}';", ECDSA_SIGNATURE_MODERN_V_ONE),
+    );
+    let signed = json(
+        sign_order_with_typed_data_signer(
+            wasm_order_input(),
+            CHAIN_MAINNET,
+            ADDR_OWNER.to_owned(),
+            signer,
+        )
+        .await
+        .unwrap(),
+    );
+
+    assert_eq!(signed["signature"], ECDSA_SIGNATURE_RECOVERY_28);
+}
+
+#[wasm_bindgen_test]
+async fn eip1193_request_uses_eth_sign_typed_data_v4() {
+    let provider = callback(
+        "request",
+        &format!(
+            "globalThis.__cowRequest = request; return Promise.resolve('{}');",
+            ECDSA_SIGNATURE
+        ),
+    );
+    let signed = json(
+        sign_order_with_eip1193(
+            wasm_order_input(),
+            CHAIN_MAINNET,
+            ADDR_OWNER.to_owned(),
+            provider,
+        )
+        .await
+        .unwrap(),
+    );
+    let request = json(js_sys::eval("globalThis.__cowRequest").unwrap());
+
+    assert_eq!(request["method"], "eth_signTypedData_v4");
+    assert_eq!(request["params"][0], ADDR_OWNER);
+    assert_eq!(signed["signingScheme"], "eip712");
+}
+
+#[wasm_bindgen_test]
+async fn eip1193_throw_maps_to_wallet_error() {
+    let provider = callback(
+        "request",
+        "const err = new Error('provider denied request'); err.code = 4001; throw err;",
+    );
+    let error = sign_order_with_eip1193(
+        wasm_order_input(),
+        CHAIN_MAINNET,
+        ADDR_OWNER.to_owned(),
+        provider,
+    )
+    .await
+    .expect_err("provider throw must fail");
+    let value = json(error);
+
+    assert_eq!(value["kind"], "walletRequest");
+    assert_eq!(value["method"], "eth_signTypedData_v4");
+    assert_eq!(value["code"], 4001);
+}
+
+#[wasm_bindgen_test]
+async fn eip1193_rejection_maps_to_wallet_error() {
+    let provider = callback(
+        "request",
+        "return Promise.reject(Object.assign(new Error('async denial'), { code: 4900 }));",
+    );
+    let error = sign_order_with_eip1193(
+        wasm_order_input(),
+        CHAIN_MAINNET,
+        ADDR_OWNER.to_owned(),
+        provider,
+    )
+    .await
+    .expect_err("provider rejection must fail");
+    let value = json(error);
+
+    assert_eq!(value["kind"], "walletRequest");
+    assert_eq!(value["message"], "async denial");
+}
+
+#[wasm_bindgen_test]
+async fn typed_data_callback_non_string_return_is_rejected() {
+    let signer = callback("envelope", "return { signature: 'not a string' };");
+    let error = sign_order_with_typed_data_signer(
+        wasm_order_input(),
+        CHAIN_MAINNET,
+        ADDR_OWNER.to_owned(),
+        signer,
+    )
+    .await
+    .expect_err("non-string callback return must fail");
+    let value = json(error);
+
+    assert_eq!(value["kind"], "walletRequest");
+    assert_eq!(value["message"], "callback did not return a string");
+}
+
+#[wasm_bindgen_test]
+async fn eth_sign_digest_callback_receives_digest() {
+    let signer = callback(
+        "digest",
+        &format!(
+            "globalThis.__cowDigest = digest; return Promise.resolve('{}');",
+            ECDSA_SIGNATURE
+        ),
+    );
+    let signed = json(
+        sign_order_eth_sign_digest(
+            wasm_order_input(),
+            CHAIN_MAINNET,
+            ADDR_OWNER.to_owned(),
+            signer,
+        )
+        .await
+        .unwrap(),
+    );
+    let digest = js_sys::eval("globalThis.__cowDigest").unwrap();
+
+    assert_eq!(digest.as_string().unwrap().len(), 66);
+    assert_eq!(signed["signingScheme"], "ethsign");
+}
+
+#[wasm_bindgen_test]
+async fn typed_cancellation_signer_returns_order_uids() {
+    let order_uid = generated_order_uid();
+    let signer = callback(
+        "envelope",
+        &format!(
+            "globalThis.__cowCancel = envelope; return '{}';",
+            ECDSA_SIGNATURE
+        ),
+    );
+    let signed = json(
+        sign_cancellation_with_typed_data_signer(vec![order_uid.clone()], CHAIN_MAINNET, signer)
+            .await
+            .unwrap(),
+    );
+    let envelope = json(js_sys::eval("globalThis.__cowCancel").unwrap());
+
+    assert_eq!(envelope["primaryType"], "OrderCancellations");
+    assert_eq!(signed["orderUids"][0], order_uid);
+    assert_eq!(signed["signingScheme"], "eip712");
+}
+
+#[wasm_bindgen_test]
+async fn eip1193_cancellation_callback_shape_is_stable() {
+    let order_uid = generated_order_uid();
+    let provider = callback(
+        "request",
+        &format!(
+            "globalThis.__cowCancelRequest = request; return '{}';",
+            ECDSA_SIGNATURE
+        ),
+    );
+    let signed = json(
+        sign_cancellation_with_eip1193(
+            vec![order_uid],
+            CHAIN_MAINNET,
+            ADDR_OWNER.to_owned(),
+            provider,
+        )
+        .await
+        .unwrap(),
+    );
+    let request = json(js_sys::eval("globalThis.__cowCancelRequest").unwrap());
+
+    assert_eq!(request["method"], "eth_signTypedData_v4");
+    assert_eq!(request["params"][0], ADDR_OWNER);
+    assert_eq!(signed["signingScheme"], "eip712");
+}
+
+#[wasm_bindgen_test]
+async fn eth_sign_cancellation_callback_receives_digest() {
+    let order_uid = generated_order_uid();
+    let signer = callback(
+        "digest",
+        &format!(
+            "globalThis.__cowCancelDigest = digest; return '{}';",
+            ECDSA_SIGNATURE
+        ),
+    );
+    let signed = json(
+        sign_cancellation_eth_sign_digest(vec![order_uid], CHAIN_MAINNET, signer)
+            .await
+            .unwrap(),
+    );
+    let digest = js_sys::eval("globalThis.__cowCancelDigest").unwrap();
+
+    assert_eq!(digest.as_string().unwrap().len(), 66);
+    assert_eq!(signed["signingScheme"], "ethsign");
+}
+
+#[wasm_bindgen_test]
+async fn empty_cancellation_list_fails_before_callback_dispatch() {
+    let signer = callback(
+        "envelope",
+        "globalThis.__cowUnexpectedCancelDispatch = true; return '0x00';",
+    );
+    let error = sign_cancellation_with_typed_data_signer(Vec::new(), CHAIN_MAINNET, signer)
+        .await
+        .expect_err("empty cancellation list must fail");
+    let value = json(error);
+    let dispatched = js_sys::eval("Boolean(globalThis.__cowUnexpectedCancelDispatch)")
+        .unwrap()
+        .as_bool()
+        .unwrap();
+
+    assert_eq!(value["kind"], "invalidInput");
+    assert_eq!(value["field"], "orderUids");
+    assert!(!dispatched);
+}

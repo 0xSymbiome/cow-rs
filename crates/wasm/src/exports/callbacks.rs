@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen(typescript_custom_section)]
 const CALLBACK_TYPES: &str = r#"
 export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE";
+export type Value = unknown;
 
 export interface CowFetchRequest {
   method: CowFetchMethod;
@@ -34,13 +35,6 @@ export type Eip1193RequestCallback = (
 export type DigestSignerCallback = (
   digest: string,
 ) => Promise<string> | string;
-
-export interface CowEip1271SignRequest {
-  order: OrderInput;
-  typedData: TypedDataEnvelopeDto;
-  owner: string;
-  chainId: number;
-}
 
 export type CowEip1271SignCallback = (
   request: CowEip1271SignRequest,

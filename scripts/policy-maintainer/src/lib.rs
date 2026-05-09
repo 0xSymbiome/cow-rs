@@ -11,6 +11,7 @@ pub mod check_panic_allowlist;
 pub mod check_property_citations;
 pub mod check_source_lock_roots;
 pub mod check_stub;
+pub mod check_wasm_invariant;
 pub mod check_wasm_runner_freshness;
 pub mod check_workspace_versions;
 pub mod classify_release;
