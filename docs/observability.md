@@ -256,6 +256,9 @@ No traced span or event must ever carry a secret. Concretely:
   a signature should do so explicitly in host code.
 - Native Alloy adapter diagnostics redact configured RPC URLs and signing
   secrets before public formatting or telemetry.
+- `cow-sdk-wasm` maps transport, app-data, signing, orderbook, subgraph, and
+  trading failures into `WasmError` with display-safe messages and redacted
+  response bodies before those values cross into JavaScript.
 - EIP-1271 verification telemetry records the verifier address and
   low-cardinality cache/result labels only; it never records signature
   bytes, raw digest content, provider URLs, or response bodies.

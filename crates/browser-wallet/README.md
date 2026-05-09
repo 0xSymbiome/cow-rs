@@ -15,6 +15,11 @@ environment-sensitive: authorization prompts, provider inventory, and
 vendor-specific support are controlled by the browser runtime rather
 than normalized into universal SDK guarantees.
 
+For TypeScript applications that already use viem, ethers, wagmi, or another
+JavaScript wallet stack, prefer `cow-sdk-wasm`. It exposes the SDK through
+typed callbacks and keeps JavaScript wallet objects outside Rust trait storage.
+This crate remains the Rust-native browser-wallet leaf.
+
 Transaction submission through the browser wallet returns
 `TransactionBroadcast` with the hash accepted by the injected provider.
 Receipt observation is a separate provider lookup. When an EIP-1193 receipt is
@@ -50,6 +55,7 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 ## Where to next
 
 - [Browser-Wallet Example](https://github.com/cowdao-grants/cow-rs/tree/main/examples/wasm/browser-wallet-console)
+- [cow-sdk-wasm README](https://github.com/cowdao-grants/cow-rs/blob/main/crates/wasm/README.md)
 - [Architecture](https://github.com/cowdao-grants/cow-rs/blob/main/docs/architecture.md)
 - [Workspace README](https://github.com/cowdao-grants/cow-rs/blob/main/README.md)
 

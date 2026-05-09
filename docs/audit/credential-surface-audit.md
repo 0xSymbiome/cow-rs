@@ -1,7 +1,7 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-05-09
 Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, contracts, signing, trading, app-data, and the SDK facade
 Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without a redacting storage type
 Related docs:
@@ -36,6 +36,7 @@ It does not cover unrelated transport error redaction or credential handling out
 | Host-policy errors | Orderbook and subgraph host-policy failures retain only a redacted host component and never serialize raw URL credentials, paths, queries, or fragments | Conforms |
 | Public error diagnostics | Provider, signer, RPC, transport, response-body, subgraph context, orderbook API, orderbook rejection, and facade error payloads wrap secret-bearing messages in `Redacted<T>` or sanitize protocol identifiers before rendering, and redact credential-bearing diagnostics across `Debug`, `Display`, and existing `Serialize` surfaces | Conforms |
 | Pinata upload trait | `IpfsUploadTransport::post_json` carries `Redacted<String>` header values and the Pinata header vector stays redacted under `Debug` | Conforms |
+| WASM error envelope | `WasmError` maps transport, app-data, signing, orderbook, subgraph, and trading errors through display-safe messages and redacted response-body handling | Conforms |
 
 ## Current Contract
 
@@ -91,6 +92,12 @@ The SDK facade regression test constructs every reviewed public error family
 with URL, bearer-token, private-key-shaped, and PEM-shaped payloads and
 verifies no secret substring appears in public renderings.
 
+The wasm surface extends that contract to JavaScript. `WasmError` exposes
+typed discriminants and low-cardinality fields while preserving redaction for
+transport details, HTTP status response bodies, app-data transport detail,
+wallet errors, and internal diagnostics. The mapping does not unwrap
+`Redacted<T>` into a JS-visible field.
+
 ### Pinata Upload Boundary
 
 `crates/app-data/src/pinning.rs` widens
@@ -124,6 +131,7 @@ Primary implementation points:
 - `crates/app-data/src/errors.rs`
 - `crates/app-data/src/pinning.rs`
 - `crates/sdk/src/lib.rs`
+- `crates/wasm/src/exports/errors.rs`
 
 Primary regression coverage:
 
@@ -140,6 +148,9 @@ Primary regression coverage:
 - `crates/core/tests/config_contract.rs::external_host_policy_accepts_canonical_and_explicit_hosts_only`
 - `crates/orderbook/tests/host_policy_contract.rs`
 - `crates/subgraph/tests/host_policy_contract.rs`
+- `crates/wasm/tests/wasm_redaction_contract.rs::transport_connect_error_uses_redacted_message`
+- `crates/wasm/tests/wasm_redaction_contract.rs::http_status_error_redacts_headers_and_body`
+- `crates/wasm/tests/wasm_redaction_contract.rs::errors_module_does_not_unwrap_redacted_values`
 
 Validation surface:
 

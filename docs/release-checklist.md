@@ -172,13 +172,15 @@ Then run the published package-family dry-run in release order:
 cargo fetch --locked
 cargo build --frozen --workspace --all-features
 cargo package -p cow-sdk-core --allow-dirty
+cargo package -p cow-sdk-transport-policy --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-contracts --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'"
 cargo package -p cow-sdk-app-data --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-cargo package -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo package -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-transport-policy.path='crates/transport-policy'"
 cargo package -p cow-sdk-signing --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
 cargo package -p cow-sdk-subgraph --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-transport-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
+cargo package -p cow-sdk-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-transport-policy.path='crates/transport-policy'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
 cargo package -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-alloy-provider --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-alloy-signer --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
@@ -190,13 +192,15 @@ Then run the registry-validation dry-run in the same order:
 
 ```text
 cargo publish --dry-run -p cow-sdk-core --allow-dirty
+cargo publish --dry-run -p cow-sdk-transport-policy --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-contracts --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'"
 cargo publish --dry-run -p cow-sdk-app-data --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-cargo publish --dry-run -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+cargo publish --dry-run -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-transport-policy.path='crates/transport-policy'"
 cargo publish --dry-run -p cow-sdk-signing --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
 cargo publish --dry-run -p cow-sdk-subgraph --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-transport-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
+cargo publish --dry-run -p cow-sdk-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-transport-policy.path='crates/transport-policy'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
 cargo publish --dry-run -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-alloy-provider --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-alloy-signer --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
@@ -227,6 +231,7 @@ Publish one crate at a time in the order below:
 
 ```text
 cargo publish -p cow-sdk-core
+cargo publish -p cow-sdk-transport-policy
 cargo publish -p cow-sdk-contracts
 cargo publish -p cow-sdk-app-data
 cargo publish -p cow-sdk-orderbook
@@ -234,6 +239,7 @@ cargo publish -p cow-sdk-signing
 cargo publish -p cow-sdk-subgraph
 cargo publish -p cow-sdk-transport-wasm
 cargo publish -p cow-sdk-trading
+cargo publish -p cow-sdk-wasm
 cargo publish -p cow-sdk-browser-wallet
 cargo publish -p cow-sdk-alloy-provider
 cargo publish -p cow-sdk-alloy-signer
@@ -381,6 +387,7 @@ cargo build --target wasm32-unknown-unknown -p cow-sdk
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
 cargo build --target wasm32-unknown-unknown -p cow-sdk-transport-wasm
+cargo build --target wasm32-unknown-unknown -p cow-sdk-wasm
 cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
 ```
 
@@ -440,6 +447,27 @@ bun install --cwd e2e/browser-wallet --frozen-lockfile
 bun run --cwd e2e/browser-wallet playwright install --with-deps chromium firefox
 bun run --cwd e2e/browser-wallet test
 ```
+
+TypeScript-callable wasm package checks:
+
+```text
+cargo test -p cow-sdk-wasm --test host_pure_helpers
+wasm-pack test crates/wasm --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
+bash crates/wasm/npm/scripts/build.sh
+node crates/wasm/npm/scripts/verify-exports.mjs
+pnpm install --dir e2e/wasm-typescript --frozen-lockfile
+pnpm --dir e2e/wasm-typescript test
+pnpm install --dir e2e/wasm-typescript-cf --frozen-lockfile
+pnpm --dir e2e/wasm-typescript-cf test
+```
+
+The rendered npm package name is selected at publication time. Maintainer
+publish runs must keep the placeholder guard enabled by default: the
+`prepublish-guard.sh` script refuses to publish the placeholder package name
+unless the operator explicitly overrides it for a dry-run pipeline. The package
+exports map, declaration snapshots, Cloudflare `./cloudflare` and
+`./cloudflare/wasm` subpaths, and generated `dist` metadata cleanup are part of
+the release check.
 
 The deterministic browser-wallet Playwright lane excludes live extension specs.
 Use `scripts/validation-smoke/browser-wallet-live/README.md` for the manual

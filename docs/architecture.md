@@ -16,6 +16,7 @@ flowchart TD
   subgraph_crate["cow-sdk-subgraph"];
   wallet["cow-sdk-browser-wallet"];
   transport_wasm["cow-sdk-transport-wasm"];
+  wasm["cow-sdk-wasm"];
   alloy_provider["cow-sdk-alloy-provider"];
   alloy_signer["cow-sdk-alloy-signer"];
   alloy["cow-sdk-alloy"];
@@ -46,6 +47,14 @@ flowchart TD
   subgraph_crate --> transport_policy;
   wallet --> core;
   transport_wasm --> core;
+  wasm --> core;
+  wasm --> contracts;
+  wasm --> signing;
+  wasm --> appdata;
+  wasm --> orderbook;
+  wasm --> trading;
+  wasm --> subgraph_crate;
+  wasm --> transport_wasm;
   alloy_provider --> core;
   alloy_signer --> core;
   alloy_signer --> contracts;
@@ -69,6 +78,7 @@ flowchart TD
 | `cow-sdk-trading` | Quote-to-order workflows | You need the main trading orchestration layer. |
 | `cow-sdk-subgraph` | Read-only subgraph access over the `HttpTransport` seam, with the `SubgraphApiBuilder` typestate | You need GraphQL reads or custom subgraph queries. |
 | `cow-sdk-transport-wasm` | Browser-target `HttpTransport` implementation (`FetchTransport`) | You build for `wasm32-unknown-unknown` and need the shipped browser default. |
+| `cow-sdk-wasm` | TypeScript-callable wasm-bindgen bindings over deterministic SDK helpers, typed callbacks, orderbook/subgraph/IPFS clients, and trading flows | JavaScript or TypeScript should call the Rust SDK through wasm exports. |
 | `cow-sdk-browser-wallet` | Browser-runtime wallet integration | You need EIP-1193 wallet flows in WASM. |
 | `cow-sdk-alloy-provider` | Native Alloy-backed `AsyncProvider` adapter | You need read-only chain RPC through Alloy without a signer dependency. |
 | `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `AsyncSigner` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
@@ -84,7 +94,43 @@ flowchart TD
 | Client | `cow-sdk-orderbook`, `cow-sdk-subgraph` | Typed HTTP and GraphQL access through the `HttpTransport` seam |
 | Workflow | `cow-sdk-trading` | Quote, submit, cancel, approve, and related flows |
 | Runtime adapter | `cow-sdk-browser-wallet`, `cow-sdk-transport-wasm`, `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Browser-wallet session integration, browser-target HTTP transport, and opt-in native Alloy provider/signer adapters |
+| TypeScript WASM leaf | `cow-sdk-wasm` | Typed wasm-bindgen exports and JavaScript callbacks over the same protocol helpers and HTTP seams |
 | Facade | `cow-sdk` | Curated public entrypoint |
+
+## TypeScript-Callable WASM Surface
+
+`cow-sdk-wasm` is a peer leaf, not a replacement for the native facade. Its
+surface has four layers: pure helpers for deterministic protocol output,
+wallet and signer callback exports, orderbook plus subgraph plus IPFS clients,
+and trading clients. The crate reuses the same Rust helpers that native
+consumers call, then crosses into JavaScript only at typed wasm-bindgen
+exports and callbacks.
+
+```mermaid
+flowchart TD
+  pure["Layer 1: pure helpers"];
+  callbacks["Layer 2: wallet and signer callbacks"];
+  clients["Layer 3: orderbook, subgraph, and IPFS clients"];
+  trading_wasm["Layer 4: trading clients"];
+  js_host["JavaScript runtime"];
+
+  pure --> callbacks;
+  callbacks --> clients;
+  clients --> trading_wasm;
+  js_host -.-> callbacks;
+  js_host -.-> clients;
+```
+
+| Audience | Path |
+| --- | --- |
+| Native Rust services, bots, solvers, analytics | `cow-sdk` |
+| Native Rust apps using Alloy directly | `cow-sdk` plus `cow-sdk-alloy-*` |
+| Rust applications that compile to WASM and run in a browser | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` |
+| TypeScript apps that want SDK-managed browser wallet flows | `cow-sdk-browser-wallet` (convenience integration) |
+| TypeScript apps using viem, ethers, wagmi, or any EIP-1193 wallet | `cow-sdk-wasm` (after publication) |
+| Node.js LTS backends | `cow-sdk-wasm` (`nodejs` wasm-pack target) |
+| Cloudflare Workers | `cow-sdk-wasm` with callback transport (`OrderBookClientWithFetch`) |
+| Deno (optional / experimental) | `cow-sdk-wasm` (`deno` wasm-pack target, opt-in only via `BUILD_DENO=1`; `./deno` npm export absent by default) |
 
 ## Facade And Adapter FAQ
 

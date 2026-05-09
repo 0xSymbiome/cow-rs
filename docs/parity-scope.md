@@ -40,6 +40,7 @@ provenance is required.
 | SDK facade | `cow-sdk` | TypeScript SDK root package exports and typedoc entrypoint |
 | HTTP transport policy | `cow-sdk-transport-policy` | Retry, rate-limit, cooldown, jitter, and transport-classification behavior shared by typed HTTP clients |
 | Native Alloy adapters | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Alloy runtime and Alloy Core source-lock pins, adapter contract tests, transaction broadcast / receipt shape invariants, and native examples |
+| TypeScript-callable WASM | `cow-sdk-wasm` | Native Rust helper parity for typed-data, UID, digest, app-data, EIP-1271 payloads, orderbook/subgraph/IPFS/trading DTO shape, npm declaration snapshots, and upstream TypeScript SDK EIP-1271 vector coverage |
 
 ## Schema Evidence Policy
 
@@ -87,6 +88,8 @@ The Rust SDK ships in scope:
 - opt-in native Alloy provider, signer, and composed provider-plus-signer
   adapters (`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`,
   `cow-sdk-alloy`)
+- TypeScript-callable wasm-bindgen bindings (`cow-sdk-wasm`) with typed
+  JavaScript callbacks for wallet, signer, EIP-1271, and HTTP dispatch
 
 Native Alloy transaction parity is scoped to the SDK trait contract, not to
 re-exporting Alloy's full transaction surface. The composed signer returns

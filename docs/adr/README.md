@@ -46,6 +46,8 @@ public and runtime shape of `cow-rs`.
 | [0036](0036-alloy-signer-adapter.md) | Accepted | Ship a native Alloy local signer adapter behind an opt-in native crate. |
 | [0037](0037-alloy-umbrella-adapter.md) | Accepted | Compose the native Alloy provider and local signer into one wallet-capable client. |
 | [0038](0038-transaction-lifecycle-types.md) | Accepted (amended) | Split transaction broadcast acknowledgement from mined receipt observation. |
+| [0039](0039-typescript-callable-wasm-sdk-surface.md) | Accepted | Keep the TypeScript-callable WASM SDK surface as an additive leaf crate. |
+| [0040](0040-wallet-provider-callback-boundary-for-js-consumers.md) | Accepted | Keep wallet and provider interop behind typed JavaScript callbacks. |
 | [0041](0041-transport-policy-l3-layering.md) | Accepted | Share retry, rate-limit, cooldown, and classification policy across HTTP clients. |
 
 ## When To Write An ADR

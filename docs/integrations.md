@@ -93,6 +93,30 @@ Their roles are:
   both `OrderBookApi::builder()` and `SubgraphApi::builder()`. See
   [Transport](transport.md) for the full seam.
 
+## TypeScript And JavaScript Runtime Boundary
+
+`cow-sdk-wasm` exposes the SDK to JavaScript through typed callbacks rather
+than a bundled wallet or HTTP library. It names five host callbacks:
+`TypedDataSignerCallback`, `Eip1193RequestCallback`, `DigestSignerCallback`,
+`CustomEip1271Callback`, and `CowFetchCallback`. The callback HTTP transport
+uses SDK-owned timeout and a live `AbortSignal`, while the host runtime owns
+actual network dispatch.
+
+| Audience | Path |
+| --- | --- |
+| Native Rust services, bots, solvers, analytics | `cow-sdk` |
+| Native Rust apps using Alloy directly | `cow-sdk` plus `cow-sdk-alloy-*` |
+| Rust applications that compile to WASM and run in a browser | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` |
+| TypeScript apps that want SDK-managed browser wallet flows | `cow-sdk-browser-wallet` (convenience integration) |
+| TypeScript apps using viem, ethers, wagmi, or any EIP-1193 wallet | `cow-sdk-wasm` (after publication) |
+| Node.js LTS backends | `cow-sdk-wasm` (`nodejs` wasm-pack target) |
+| Cloudflare Workers | `cow-sdk-wasm` with callback transport (`OrderBookClientWithFetch`) |
+| Deno (optional / experimental) | `cow-sdk-wasm` (`deno` wasm-pack target, opt-in only via `BUILD_DENO=1`; `./deno` npm export absent by default) |
+
+`signOrderWithCustomEip1271` is the smart-account integration point when a
+JavaScript application owns the account-abstraction client and the SDK should
+only consume the resolved EIP-1271 signature.
+
 ## Contract Shape
 
 The traits are intentionally narrow.

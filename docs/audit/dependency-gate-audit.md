@@ -1,7 +1,7 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-05-08
+Last reviewed: 2026-05-09
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, or browser-wallet alloy advisory posture
 Related docs:
@@ -30,6 +30,8 @@ This audit covers:
 - the native Alloy runtime and Alloy Core ABI two-family lockfile invariant
 - the release-doc guard that requires RustSec ignore rationale entries
 - the report-only alloy release-candidate canary and its failure response
+- the `cow-sdk-wasm` wasm32 dependency exclusion list for browser-wallet,
+  native Alloy, reqwest, and hyper families
 
 It does not cover broader dependency-freshness reporting, license or source
 policy details beyond the blocking gate split, or unrelated crate-specific
@@ -54,6 +56,7 @@ architecture reviews.
 | Native Alloy allow-lists | Shipped crates that depend on `alloy-provider` or `alloy-signer-local` are limited to the reviewed adapter crates and fail the policy-maintainer gate if the dependency escapes | Conforms |
 | Native Alloy two-family lockfile | The workspace lockfile keeps reviewed Alloy runtime crates on `2.0.4` and Alloy Core ABI crates on `1.5.7`, with exactly one resolved version per listed crate | Conforms |
 | Alloy canary failures | Scheduled canary failures are triaged as upstream-compatibility reports, with local pins changed only after ordinary quality gates pass and without dependency-policy waivers | Conforms |
+| `cow-sdk-wasm` wasm32 tree | The wasm32 dependency graph excludes `cow-sdk-browser-wallet`, `cow-sdk-alloy*`, `alloy-provider`, reqwest, and hyper families; `tokio` is limited to the existing cancellation-token path | Conforms |
 
 ## Current Contract
 
@@ -199,6 +202,16 @@ response to the canary alone. If a local change is needed, it must preserve the
 published-crate invariant that no shipped leaf crate transitively depends on
 `alloy-provider`.
 
+### `cow-sdk-wasm` Dependency Boundary
+
+`cow-sdk-wasm` is a peer leaf of `cow-sdk-browser-wallet`,
+`cow-sdk-transport-wasm`, and the native Alloy adapter family. Its wasm32
+dependency tree must not pull browser-wallet, native Alloy provider/signer
+crates, reqwest, hyper, or native Alloy RPC transport families. The workspace
+test reads cargo metadata for the wasm32 target and fails if any forbidden
+crate appears in the dependency closure. This keeps the TypeScript-callable
+crate browser-safe and preserves the native Alloy adapter boundary.
+
 ## Evidence
 
 Primary implementation points:
@@ -211,6 +224,7 @@ Primary implementation points:
 - `.github/config/deny.toml`
 - `tests/dependency_default_features_audit.rs`
 - `tests/alloy_two_family_lockfile_invariant.rs`
+- `tests/wasm_dependency_invariant.rs`
 - `scripts/check-release-docs-agree.sh`
 - `scripts/policy-maintainer/src/check_alloy_provider_invariant.rs`
 - `scripts/policy-maintainer/src/check_alloy_signer_invariant.rs`
@@ -219,6 +233,7 @@ Primary implementation points:
 - `docs/verification-matrix.md`
 - `docs/audit/cid-dependency-audit.md`
 - `docs/audit/browser-wallet-alloy-dependency-audit.md`
+- `crates/wasm/Cargo.toml`
 - `crates/browser-wallet/Cargo.toml`
 - `crates/contracts/Cargo.toml`
 - `crates/orderbook/Cargo.toml`

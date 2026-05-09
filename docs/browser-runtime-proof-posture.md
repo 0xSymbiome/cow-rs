@@ -82,12 +82,25 @@ Pages-style serving path. The consoles surface this boundary directly so a
 reviewer cannot accidentally submit a real order from the shipped static
 build.
 
+## TypeScript-Callable WASM Runtime Matrix
+
+`cow-sdk-wasm` extends browser-runtime evidence beyond the Rust browser-wallet
+leaf. Browser bundlers are default-http-supported through the fetch-backed
+package path and Playwright coverage. Node.js 24 LTS and Cloudflare Workers are
+callback-http-tested through `CowFetchCallback`; Cloudflare also verifies that
+worker source does not use dynamic WebAssembly compilation or streaming
+instantiation entry points. Deno is optional experimental and runs only through
+the opt-in Deno package target. Bun, Vercel Edge, and Fly.io are documented as
+best-effort without a CI support claim.
+
 ## Related
 
 - [ADR 0007: Bounded Browser Wallet Support And Current Browser Runtime Contract](adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
 - [ADR 0009: WASM Verification Consoles — Hybrid Extensibility And Two-Tier Proof](adr/0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md)
+- [ADR 0039: Keep The TypeScript-Callable WASM SDK Surface As An Additive Leaf Crate](adr/0039-typescript-callable-wasm-sdk-surface.md)
 - [Browser Wallet Chain Coherence Audit](audit/browser-wallet-chain-coherence-audit.md)
 - [WASM Example Proof-Posture Audit](audit/wasm-example-proof-posture-audit.md)
+- [WASM Surface Audit](audit/wasm-surface-audit.md)
 - [Examples catalogue](examples.md)
 - [Browser Wallet Console](../examples/wasm/browser-wallet-console/README.md)
 - [SDK Verification Console](../examples/wasm/sdk-verification-console/README.md)

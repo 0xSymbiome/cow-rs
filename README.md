@@ -9,7 +9,8 @@ submission, app-data handling, orderbook access, read-only subgraph
 queries, browser-compatible WASM workflows, a pluggable `HttpTransport`
 seam with native and browser default adapters, shared retry and rate-limit
 transport policy, a typed deployment registry, opt-in native Alloy provider
-and signer adapters, and an optional EIP-1271 signature-verification cache.
+and signer adapters, TypeScript-callable wasm-bindgen bindings, and an
+optional EIP-1271 signature-verification cache.
 
 The native Alloy adapter is provided for trading-flow consumers. Generic
 Ethereum applications without trading helpers should depend on Alloy directly;
@@ -26,6 +27,12 @@ The functional published install surface will be:
 
 ```text
 cargo add cow-sdk
+```
+
+The TypeScript-callable WASM package name is resolved at npm publication time:
+
+```text
+npm install <published-cow-sdk-wasm-package>
 ```
 
 Reserved-placeholder `0.0.1-reserved.0` entries are already live on crates.io
@@ -69,6 +76,7 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 | Shared domain types, runtime traits, and the `HttpTransport` seam with its native `ReqwestTransport` default | `cow-sdk-core` |
 | Shared HTTP retry, rate-limit, jitter, `Retry-After`, and error-classification policy | `cow-sdk-transport-policy` |
 | Browser-target HTTP transport (`FetchTransport`) for `wasm32-unknown-unknown` | `cow-sdk-transport-wasm` |
+| TypeScript-callable wasm-bindgen SDK bindings for browser, Node.js, Workers, and optional Deno consumers | `cow-sdk-wasm` |
 | Read-only subgraph queries | `cow-sdk-subgraph` |
 | Browser wallet integration for WASM | `cow-sdk-browser-wallet` or `cow-sdk` with `browser-wallet` |
 | Native Alloy provider, signer, or composed provider-plus-signer support | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`, or `cow-sdk` with `alloy-provider`, `alloy-signer`, or `alloy` |
@@ -76,12 +84,33 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 | Typed orderbook transport | `cow-sdk-orderbook` |
 | High-level trading workflows | `cow-sdk-trading` |
 
+## TypeScript-Callable WASM
+
+`cow-sdk-wasm` exposes deterministic Rust SDK logic to JavaScript and
+TypeScript through typed DTOs and explicit callbacks for signing, wallet, and
+HTTP dispatch. Browser bundlers may use the default fetch-backed path; Node.js
+24 LTS, Cloudflare Workers, and custom runtimes use `CowFetchCallback` through
+`JsCallbackHttpTransport`.
+
+| Audience | Path |
+| --- | --- |
+| Native Rust services, bots, solvers, analytics | `cow-sdk` |
+| Native Rust apps using Alloy directly | `cow-sdk` plus `cow-sdk-alloy-*` |
+| Rust applications that compile to WASM and run in a browser | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` |
+| TypeScript apps that want SDK-managed browser wallet flows | `cow-sdk-browser-wallet` (convenience integration) |
+| TypeScript apps using viem, ethers, wagmi, or any EIP-1193 wallet | `cow-sdk-wasm` (after publication) |
+| Node.js LTS backends | `cow-sdk-wasm` (`nodejs` wasm-pack target) |
+| Cloudflare Workers | `cow-sdk-wasm` with callback transport (`OrderBookClientWithFetch`) |
+| Deno (optional / experimental) | `cow-sdk-wasm` (`deno` wasm-pack target, opt-in only via `BUILD_DENO=1`; `./deno` npm export absent by default) |
+
 ## Public Boundary
 
 - `cow-sdk` is a thin facade.
 - `cow-sdk-trading` owns quote-to-order workflows.
 - `cow-sdk-subgraph` is a separate read-only crate.
 - Browser wallet support is additive and feature-gated.
+- TypeScript-callable WASM support is an additive leaf crate with explicit
+  JavaScript callbacks rather than bundled wallet-library dependencies.
 - Pure transform crates do not hide network I/O.
 - Public claims are backed by repository-visible tests, fixtures, and release
   documentation.

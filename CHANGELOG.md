@@ -20,6 +20,15 @@ The first functional crate-family release begins at `0.1.0`.
   surface through `cow_sdk::http`, including the optional reqwest classifier
   behind the `http-classifier` feature.
 
+- `cow-sdk-wasm` now ships as the TypeScript-callable wasm-bindgen leaf crate
+  for JavaScript and TypeScript consumers. The surface includes pure protocol
+  helpers, typed wallet and signer callbacks, callback HTTP transport,
+  orderbook, subgraph, IPFS, and trading clients, plus the
+  facade-resolves-callback EIP-1271 path for smart-account signatures.
+  The staged npm package layout includes web, bundler, nodejs, Cloudflare, and
+  optional Deno export targets, declaration snapshots, package export
+  verification, and a placeholder-name publish guard.
+
 - A runnable native cancellation example demonstrates
   `Cancellable::cancel_with(&token)` against a delayed orderbook response.
 
@@ -1571,6 +1580,14 @@ The first functional crate-family release begins at `0.1.0`.
 - Refreshed `docs/audit/dependency-gate-audit.md` for the lockfile,
   `cargo-deny`, `cargo-audit`, and duplicate-version posture.
 
+- Added `docs/audit/wasm-surface-audit.md`,
+  `docs/audit/wasm-type-generation-audit.md`, and
+  `docs/audit/wasm-eip1271-parity-audit.md` for the wasm public
+  surface, TypeScript declaration generation, and EIP-1271 parity contract.
+  Refreshed the cooperative-cancellation, panic-free public-surface,
+  credential-surface, URL credential redaction, and dependency-gate audits for
+  the wasm callback transport and `WasmError` redaction posture.
+
 - Added `docs/audit/wasm-browser-runner-determinism-audit.md` for the pinned
   browser runner contract used by WASM validation.
 
@@ -1608,10 +1625,12 @@ The first functional crate-family release begins at `0.1.0`.
 - Public MSRV remains Rust `1.94.0`. Contributor toolchains are pinned to
   Rust `1.94.1` in `rust-toolchain.toml`.
 
-- Documentation refresh in progress for the upcoming TypeScript-callable
-  wasm SDK release. Forthcoming entries will reference ADR 0039
-  (TypeScript-callable wasm SDK surface) and ADR 0040 (wallet/provider
-  callback boundary for JS consumers) once authored.
+- ADR 0039 (`Keep The TypeScript-Callable WASM SDK Surface As An Additive Leaf
+  Crate`) and ADR 0040 (`Keep Wallet And Provider Interop Behind Typed
+  JavaScript Callbacks`) document the `cow-sdk-wasm` surface and callback
+  boundary. ADRs 0007, 0010, 0013, 0019, and 0028 are refreshed to reflect the
+  wasm peer leaf, `JsCallbackHttpTransport`, sole-dispatch transport posture,
+  and `signOrderWithCustomEip1271` smart-account entry point.
 
 - Documentation coherence pass: workspace crate count corrected across
   shipped-surface locations; `docs/parity-matrix.md` publish-order rewritten
@@ -1629,9 +1648,10 @@ The first functional crate-family release begins at `0.1.0`.
   sections; duplicate sections within `[Unreleased]` consolidated.
 
 - PROPERTIES.md: broken named-test citations replaced with verified test
-  names; PROP-DOCS-001 README inventory extended to 13 publishable crates;
-  PROP-CORE-004 ADR backing reference added; 14 PROP-WB row numbers reserved
-  for the upcoming TypeScript-callable wasm SDK release.
+  names; PROP-DOCS-001 README inventory extended to 14 publishable crates;
+  PROP-CORE-004 ADR backing reference added; PROP-WB-001 through PROP-WB-014
+  now cover the TypeScript-callable wasm surface, callback transport,
+  EIP-1271 parity, runtime support matrix, and redaction posture.
 
 ### Deprecated
 

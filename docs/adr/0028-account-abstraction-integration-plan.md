@@ -2,10 +2,10 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-27
-- Last reviewed: 2026-05-08
+- Last reviewed: 2026-05-09
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: account-abstraction, provider, signing, eip1271, eip4337, eip7702, eip7212
-- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
+- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
 
 ## Decision
 
@@ -18,16 +18,17 @@ read-only chain access depend on `AsyncProvider`; signer creation requires
 explicit EIP-1271 provider surfaces.
 
 EIP-1271 callbacks for wasm consumers follow the facade-resolves-callback
-pattern: the JavaScript callback returns the final ABI-encoded signature
-(verifier plus signature blob), and the Rust facade wraps that resolved hex
-string in a `cow_sdk_signing::Eip1271SignatureProvider` implementation. No
-`js_sys::Function` or `JsValue` is stored in the trait object; the trait remains
-trivially `Send + Sync` and composes with native consumers.
+pattern. `signOrderWithCustomEip1271` is the JavaScript smart-account entry
+point: the callback returns the final ABI-encoded signature (verifier plus
+signature blob), and the Rust facade wraps that resolved hex string in a
+`cow_sdk_signing::Eip1271SignatureProvider` implementation. No
+`js_sys::Function` or `JsValue` is stored in the trait object; the trait
+remains trivially `Send + Sync` and composes with native consumers.
 
 Contributor rule for cross-ABI DTOs that include an `OrderUid` or
 `OrderDigest`: source the field from `as_str()` (the canonical hex string),
-never from `as_bytes()`. The wasm crate's PROP-WB-010 covers this invariant;
-CI grep gates enforce it.
+never from `as_bytes()`. The wasm crate's PROP-WB-004 covers this invariant;
+CI and contract tests enforce it.
 
 The root facade does not grow a monolithic account-abstraction client. Bundler,
 paymaster, wallet, and passkey-specific behavior belongs in leaf adapters until

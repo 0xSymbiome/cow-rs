@@ -36,6 +36,12 @@ by implementing the same `cow-sdk-core` traits. Leaf crates such as
 `cow-sdk-browser-wallet` implement the async trait surface directly for the
 runtimes they own.
 
+JavaScript and TypeScript consumers should use `cow-sdk-wasm` when wallet or
+provider interop happens through viem, ethers, wagmi, raw EIP-1193 providers,
+Workers, Node.js, or Deno. The wasm package keeps those runtime objects behind
+typed callbacks instead of asking adapter authors to store JavaScript handles
+inside Rust trait objects.
+
 Those traits are the runtime-neutral contract. A single trading helper can
 drive native Alloy, the browser-wallet leaf, or a custom adapter because the
 provider and signer seams live in `cow-sdk-core` rather than in a concrete

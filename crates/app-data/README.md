@@ -34,6 +34,10 @@ assert_eq!(roundtrip, hex);
 The fetch seam is async so native and browser runtimes can supply their own
 HTTP implementation without blocking the caller.
 
+`cow-sdk-wasm` uses the same async fetch seam for IPFS reads when JavaScript
+provides HTTP dispatch through `CowFetchCallback`, so browser and non-browser
+wasm runtimes share the same app-data contract.
+
 ```rust,no_run
 use cow_sdk_app_data::{AppDataError, IpfsFetchTransport, fetch_doc_from_cid};
 

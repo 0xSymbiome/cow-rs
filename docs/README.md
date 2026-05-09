@@ -24,6 +24,13 @@ Use [Getting Started](getting-started.md) for facade-first Rust flows,
 boundaries, and [Architecture](architecture.md) for crate ownership and
 contracts-test entry points.
 
+For JavaScript and TypeScript consumers, `cow-sdk-wasm` provides the
+wasm-bindgen package surface, callback wallet boundary, callback HTTP
+transport, and runtime-specific npm exports. See
+[Architecture](architecture.md#typescript-callable-wasm-surface),
+[Integrations](integrations.md#typescript-and-javascript-runtime-boundary),
+and [cow-sdk-wasm](../crates/wasm/README.md).
+
 ## Common Boundary Questions
 
 - Why is `cow-sdk-subgraph` separate? The default `cow-sdk` facade stays
@@ -52,6 +59,10 @@ contracts-test entry points.
   `ReqwestTransport` by default; browser consumers install
   `FetchTransport` from `cow-sdk-transport-wasm`. See
   [Transport](transport.md) for the full seam.
+- How do TypeScript apps use the SDK? Use `cow-sdk-wasm` after npm
+  publication. Browser bundlers can use the default fetch-backed path, while
+  Node.js, Workers, Deno, and custom runtimes provide `CowFetchCallback`
+  through the callback transport. See [Integrations](integrations.md).
 - Where do deployed contract addresses come from? Every address routes
   through the typed `Registry` in `cow-sdk-contracts`. See
   [Deployments](deployments.md).

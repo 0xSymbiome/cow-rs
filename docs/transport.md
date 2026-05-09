@@ -149,6 +149,24 @@ so the `TransportErrorClass::Redirect` variant is unreachable from the
 browser side. Cross-adapter parity tests exercise every other
 classification arm against both adapters.
 
+## JavaScript Callback Transport
+
+`cow-sdk-wasm` also exposes `JsCallbackHttpTransport` for JavaScript runtimes
+that do not have a browser `Window` or that need to own HTTP dispatch. The
+transport implements the same `cow_sdk_core::HttpTransport` trait, but calls a
+host-provided `CowFetchCallback` with a typed request object.
+
+The request object carries method, URL, headers, body, timeout, and a live
+`AbortSignal`. The SDK assembles that object with JavaScript property writes so
+the signal is not serialized. Timeout remains SDK-owned through
+`globalThis.AbortController`; `TimerGuard` clears the opaque timeout handle and
+drops its closure on success, throw, rejection, malformed response, or abort.
+
+Use this path for Node.js 24 LTS, Cloudflare Workers, Deno, custom service
+workers, and tests that need precise control over HTTP responses. Cloudflare
+Workers consume the web-target package through `./cloudflare` and
+`./cloudflare/wasm`, not the bundler target.
+
 ## Typed Failures: `TransportError` And `TransportErrorClass`
 
 Every transport adapter funnels failures into the same typed enum:
@@ -304,3 +322,7 @@ rate-limit state instance-scoped.
   — the architectural rule behind the seam
 - [ADR 0041](adr/0041-transport-policy-l3-layering.md)
   — the shared retry and rate-limit policy layer
+- [ADR 0039](adr/0039-typescript-callable-wasm-sdk-surface.md)
+  — the TypeScript-callable wasm SDK surface
+- [ADR 0040](adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
+  — the JavaScript callback boundary

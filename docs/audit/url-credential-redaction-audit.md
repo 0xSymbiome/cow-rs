@@ -1,7 +1,7 @@
 # URL Credential Redaction Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-05-09
 Owning surface: Credential-bearing URL storage and dispatch boundaries across core, orderbook, subgraph, browser-wallet, and app-data
 Refresh trigger: Changes to URL-bearing public configuration fields, browser wallet add-chain URL payload construction, IPFS URI dispatch, or the `RedactedUrlMap` and `RedactedOptionalUrlMap` contracts
 Related docs:
@@ -31,6 +31,7 @@ where they share the same `Redacted<T>` storage contract.
 | Browser wallet add-chain URLs | Public chain parameters redact URL vectors while the EIP-1193 payload uses raw URL bytes outside SDK service-host policy | Conforms |
 | Native Alloy URLs | Provider and umbrella builders store configured RPC URLs behind redacting state and debug output never prints credentials or query secrets | Conforms |
 | App-data IPFS URIs | IPFS URI config fields redact in public debug, display, and serialization while fetch and upload policies use raw URI bytes | Conforms |
+| WASM transport errors | `From<TransportError> for WasmError` uses display-safe transport messages and redacted response bodies before crossing the JavaScript ABI | Conforms |
 
 ## Current Contract
 
@@ -72,6 +73,14 @@ the configured URI values. `IpfsFetchPolicy::from_config` and
 `pin_json_in_pinata_ipfs` unwrap only at the read/write dispatch seams.
 `Display` follows the same redaction contract as `Debug`.
 
+### WASM Error Envelope
+
+`crates/wasm/src/exports/errors.rs` maps `TransportError` into the
+JavaScript-visible `WasmError` envelope through `Display` and
+`cow_sdk_core::redact_response_body`. It does not call `Redacted::into_inner`
+for JS-visible detail, so URL credentials and secret-shaped response snippets
+remain redacted across `Debug`, `Display`, and serialized error output.
+
 ## Evidence
 
 Primary implementation points:
@@ -86,6 +95,7 @@ Primary implementation points:
 - `crates/app-data/src/types.rs`
 - `crates/app-data/src/fetch.rs`
 - `crates/app-data/src/pinning.rs`
+- `crates/wasm/src/exports/errors.rs`
 
 Primary regression coverage:
 
@@ -101,6 +111,9 @@ Primary regression coverage:
 - `crates/browser-wallet/tests/wallet_contract.rs::chain_parameters_public_debug_and_serialize_redact_url_credentials`
 - `crates/app-data/tests/ipfs_config_redaction_contract.rs`
 - `crates/app-data/tests/pinning_contract.rs::pinning_config_display_redacts_secret_bytes`
+- `crates/wasm/tests/wasm_redaction_contract.rs::http_status_error_redacts_headers_and_body`
+- `crates/wasm/tests/wasm_redaction_contract.rs::display_format_of_redacted_transport_error_does_not_expose_secret`
+- `crates/wasm/tests/wasm_redaction_contract.rs::errors_module_does_not_unwrap_redacted_values`
 
 Validation surface:
 

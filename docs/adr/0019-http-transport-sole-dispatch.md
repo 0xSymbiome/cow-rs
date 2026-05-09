@@ -2,10 +2,10 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-22
-- Last reviewed: 2026-05-08
+- Last reviewed: 2026-05-09
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, orderbook, subgraph, wasm, async, error-typing
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md)
 
 ## Decision
 

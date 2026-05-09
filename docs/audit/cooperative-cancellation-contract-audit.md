@@ -1,7 +1,7 @@
 # Cooperative Cancellation Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-07
+Last reviewed: 2026-05-09
 Owning surface: Cross-cutting cooperative cancellation across `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, and `cow-sdk-trading`
 Refresh trigger: Changes to the `Cancellable` combinator, to the `CancellationToken` re-export, to the canonical long-running public methods on the three client surfaces, or to the `From<Cancelled>` bridges on the typed error aggregates
 Related docs:
@@ -30,6 +30,8 @@ This audit covers:
   Alloy provider, signer, and umbrella adapter error aggregates
 - the biased cancellation poll inside the combinator that drops in-flight
   request futures promptly when the caller cancels
+- `cow-sdk-wasm` callback HTTP timeouts that construct a live
+  `AbortSignal` and map JavaScript aborts to typed timeout errors
 
 It does not cover browser-wallet session cancellation, unrelated transport
 policy, or future capability crates outside the published surface.
@@ -44,6 +46,7 @@ policy, or future capability crates outside the published surface.
 | Trading wait helper | `WaitError::Cancelled(Cancelled)` and its `From<Cancelled>` bridge let receipt-wait helpers propagate `Cancellable::cancel_with(&token)` cancellation without erasing signer or provider error types | Conforms |
 | Native Alloy adapters | Provider, signer, and umbrella adapter error aggregates expose cancellation as typed variants and propagate the marker through the same combinator contract | Conforms |
 | Combinator poll | The combinator polls the token in a biased branch, drops the inner future promptly on cancellation, and routes the marker through the inner result's `From<Cancelled>` implementation | Conforms |
+| WASM callback transport | `JsCallbackHttpTransport` constructs a live `AbortSignal`, owns its timer through `TimerGuard`, and maps aborts into the transport timeout class | Conforms |
 
 ## Current Contract
 
@@ -91,6 +94,12 @@ read calls, signer typed-data signing, and umbrella client operations can be
 wrapped by `Cancellable::cancel_with(&token)` and resolve to typed cancellation
 errors without exposing transport internals or signer state.
 
+`cow-sdk-wasm` uses the same cooperative boundary when JavaScript owns HTTP
+dispatch. `JsCallbackHttpTransport` builds a request DTO with a live
+`AbortSignal`, schedules SDK-owned timeout through `globalThis.AbortController`,
+and lets the `TimerGuard` clear the timer and drop the closure on success,
+throw, rejection, parse failure, or abort.
+
 `cow-sdk-trading::WaitError<S, P>` carries a `Cancelled(Cancelled)` variant and
 an `impl From<Cancelled>` bridge. A future returned by
 `submit_and_wait_for_receipt` or `poll_for_receipt` can therefore be wrapped by
@@ -128,6 +137,7 @@ Primary implementation points:
 - `crates/alloy-signer/src/error.rs`
 - `crates/alloy/src/error.rs`
 - `crates/sdk/src/lib.rs`
+- `crates/wasm/src/exports/transport.rs`
 
 Primary regression coverage:
 
@@ -144,6 +154,10 @@ Primary regression coverage:
 - `crates/alloy-provider/tests/cancellation_contract.rs`
 - `crates/alloy-signer/tests/cancellation_contract.rs`
 - `crates/alloy/tests/cancellation_contract.rs`
+- `crates/wasm/tests/wasm_callback_transport_contract.rs::callback_receives_request_dto_with_signal`
+- `crates/wasm/tests/wasm_callback_transport_contract.rs::callback_abort_error_maps_to_timeout`
+- `crates/wasm/tests/wasm_callback_transport_contract.rs::numeric_timer_handle_is_cleared`
+- `crates/wasm/tests/wasm_callback_transport_contract.rs::object_timer_handle_is_cleared`
 
 Validation surface:
 

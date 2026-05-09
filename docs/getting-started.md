@@ -86,6 +86,8 @@ That split matters when you choose where to start:
 - use `cow-sdk` for the main trading-first path
 - use `cow-sdk-subgraph` when you need explicit GraphQL reads
 - use `cow-sdk-browser-wallet` when you need injected-wallet flows in WASM
+- use `cow-sdk-wasm` when TypeScript or JavaScript code should call the Rust
+  SDK through wasm-bindgen exports
 - use `cow-sdk-transport-wasm` when you build for
   `wasm32-unknown-unknown` and need the shipped browser-target HTTP
   transport (`FetchTransport`); install it on the orderbook and
@@ -94,6 +96,33 @@ That split matters when you choose where to start:
 
 For the rest of this guide, stay on the default `cow-sdk` facade on a
 native target.
+
+## Using cow-sdk-wasm From TypeScript
+
+The TypeScript-callable package name is selected at npm publication time. The
+Rust crate already owns the wasm-bindgen surface, TypeScript declarations,
+callback transport, and package export map.
+
+```text
+npm install <published-cow-sdk-wasm-package>
+```
+
+Choose the crate or package by runtime:
+
+| Audience | Path |
+| --- | --- |
+| Native Rust services, bots, solvers, analytics | `cow-sdk` |
+| Native Rust apps using Alloy directly | `cow-sdk` plus `cow-sdk-alloy-*` |
+| Rust applications that compile to WASM and run in a browser | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` |
+| TypeScript apps that want SDK-managed browser wallet flows | `cow-sdk-browser-wallet` (convenience integration) |
+| TypeScript apps using viem, ethers, wagmi, or any EIP-1193 wallet | `cow-sdk-wasm` (after publication) |
+| Node.js LTS backends | `cow-sdk-wasm` (`nodejs` wasm-pack target) |
+| Cloudflare Workers | `cow-sdk-wasm` with callback transport (`OrderBookClientWithFetch`) |
+| Deno (optional / experimental) | `cow-sdk-wasm` (`deno` wasm-pack target, opt-in only via `BUILD_DENO=1`; `./deno` npm export absent by default) |
+
+The WASM package keeps wallet libraries outside the Rust crate. Supply typed
+JavaScript callbacks for typed-data signing, EIP-1193 requests, digest signing,
+custom EIP-1271 signatures, and HTTP fetch dispatch.
 
 ## Step 1: Build A Ready-State `TradingSdk`
 

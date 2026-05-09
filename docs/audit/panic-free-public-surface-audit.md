@@ -1,7 +1,7 @@
 # Panic-Free Public Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-08
+Last reviewed: 2026-05-09
 Owning surface: every `crates/*/src/**/*.rs` file accessible from the published public API
 Refresh trigger: any ADR 0033 panic-policy change, panic-allowlist addition, or new `expect`, `unwrap`, or `panic!` site on a path reachable from the published public API
 Related docs:
@@ -33,6 +33,7 @@ benchmarks, or private review tooling. Those surfaces may use `unwrap` or
 | Trading wait helper | `WaitOptions` constructors/builders, `submit_and_wait_for_receipt`, `poll_for_receipt`, and `WaitError` formatting/error implementations return typed results and do not panic | Conforms |
 | Transport classification growth | `TransportErrorClass::Upgrade` is an additive non-exhaustive enum variant and introduces no new panic path | Conforms |
 | Item-level panic artifacts | Each documented allowlist entry requires a rationale, `# Panics` rustdoc on the named item, and a `// SAFETY:` comment in the item body | Conforms |
+| WASM exports | Every `#[wasm_bindgen]` export returns `Result<T, JsValue>` and `__cow_sdk_wasm_init` initializes `console_error_panic_hook` exactly once | Conforms |
 
 Documented public runtime sites:
 
@@ -84,6 +85,12 @@ optional `documented: false` field is reserved for reviewed exceptions such as
 compile-time-only helpers or test-only items, and still requires a rationale in
 the allowlist entry.
 
+The TypeScript-callable wasm surface follows the same posture. Exported
+functions convert failures into `JsValue` through `WasmError`; the crate root
+forbids unsafe code, and `__cow_sdk_wasm_init` installs
+`console_error_panic_hook::set_once()` without requiring callers to duplicate
+panic-hook setup.
+
 ### Allowed Static-Invariant Sites
 
 The remaining sites are limited to static literals, embedded assets, typestate
@@ -106,6 +113,9 @@ Primary implementation points:
 - `crates/trading/src/wait.rs`
 - `Cargo.toml` workspace clippy lint configuration
 - `scripts/policy-maintainer/src/check_panic_allowlist.rs`
+- `crates/wasm/src/lib.rs`
+- `crates/wasm/src/exports/mod.rs`
+- `crates/wasm/src/exports/errors.rs`
 
 Primary regression coverage:
 
@@ -118,6 +128,8 @@ Primary regression coverage:
   panic-surface lints as they are enabled in the workspace lint set
 - public rustdoc `# Panics` sections on exposed functions that retain a
   static-invariant panic site
+- `crates/wasm/tests/wasm_error_abi_contract.rs`
+- `crates/wasm/tests/wasm_fail_closed_contract.rs`
 
 Validation surface:
 

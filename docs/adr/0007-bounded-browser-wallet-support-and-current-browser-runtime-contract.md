@@ -2,10 +2,10 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-13
-- Last reviewed: 2026-05-08
+- Last reviewed: 2026-05-09
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: browser-wallet, wasm, support-posture, interop
-- Related: [ADR 0004](0004-feature-gated-browser-wallet-sidecar.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md)
+- Related: [ADR 0004](0004-feature-gated-browser-wallet-sidecar.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
 
 ## Decision
 
@@ -14,10 +14,10 @@ and keep browser-runtime interop aligned to the current leaf-local
 `wasm-bindgen` contract.
 
 The leaf-local rule applies per WASM leaf. cow-rs supports three peer WASM
-leaves: `cow-sdk-browser-wallet` for the EIP-1193 wallet adapter,
+leaves: `cow-sdk-browser-wallet` for the Rust-native EIP-1193 wallet adapter,
 `cow-sdk-transport-wasm` for browser `fetch`, and `cow-sdk-wasm` for the
-TypeScript-callable surface. Each leaf is single-purpose and additive per ADR
-0008.
+TypeScript-callable surface used by JavaScript consumers. Each leaf is
+single-purpose and additive per ADR 0008.
 
 ## Why
 
