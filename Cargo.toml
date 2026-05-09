@@ -50,6 +50,14 @@ missing_panics_doc = "warn"
 must_use_candidate = "warn"
 unreadable_literal = "warn"
 
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+debug = false
+panic = "abort"
+
 [workspace.dependencies]
 alloy-dyn-abi = { version = "1.5.7", default-features = false }
 alloy-consensus = { version = "2.0.4", default-features = false }
