@@ -1,15 +1,13 @@
 use std::collections::{BTreeMap, HashMap};
 
 use cow_sdk_core::{TypedDataDomain, TypedDataField, TypedDataPayload};
+use cow_sdk_pure_helpers::{self as pure, errors::PureError};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use tsify::Tsify;
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    exports::errors::WasmError,
-    pure::{self, errors::PureError},
-};
+use crate::exports::errors::WasmError;
 
 /// Version tag carried by wasm output envelopes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]

@@ -3,6 +3,7 @@ use std::{sync::Arc, time::Duration};
 use async_trait::async_trait;
 use cow_sdk_app_data::{AppDataError, IpfsFetchTransport};
 use cow_sdk_core::{HttpTransport, Redacted, TransportError, TransportErrorClass};
+use cow_sdk_pure_helpers as pure;
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
 
@@ -218,7 +219,7 @@ async fn fetch_doc_from_cid_with_adapter(
     ipfs_uri: Option<&str>,
     adapter: &HttpToIpfsAdapter,
 ) -> Result<JsValue, JsValue> {
-    let document = crate::pure::app_data::fetch_doc_from_cid(cid, adapter, ipfs_uri)
+    let document = pure::app_data::fetch_doc_from_cid(cid, adapter, ipfs_uri)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&AppDataDocDto::from(document))

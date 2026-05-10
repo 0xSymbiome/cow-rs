@@ -29,8 +29,8 @@ pub const ECDSA_SIGNATURE_MODERN_V_ONE: &str = "0x111111111111111111111111111111
 pub const EIP1271_SIGNATURE: &str = "0x0000000000000000000000001111111111111111111111111111111111111111000000000000000000000000222222222222222222222222222222222222222200000000000000000000000044444444444444444444444444444444444444440000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000001bc16d674ec800000000000000000000000000000000000000000000000000000000000067748580337aa6e6c2a7a0d1eb79a35ebd88b08fc963d5f7a3fc953b7ffb2b7f5898a1df0000000000000000000000000000000000000000000000000000000000000000f3b277728b3fee749481eb3e0b3b48980dbbab78658fc419025cb16eee34677500000000000000000000000000000000000000000000000000000000000000005a28e9363bb942b639270062aa6bb295f434bcdfc42c97267bf003f272060dc95a28e9363bb942b639270062aa6bb295f434bcdfc42c97267bf003f272060dc900000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000041111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222221b00000000000000000000000000000000000000000000000000000000000000";
 
 #[cfg(not(target_arch = "wasm32"))]
-pub fn host_order_input() -> cow_sdk_wasm::pure::dto::OrderInput {
-    cow_sdk_wasm::pure::dto::OrderInput {
+pub fn host_order_input() -> cow_sdk_pure_helpers::dto::OrderInput {
+    cow_sdk_pure_helpers::dto::OrderInput {
         sell_token: ADDR_SELL.to_owned(),
         buy_token: ADDR_BUY.to_owned(),
         receiver: Some(ADDR_RECEIVER.to_owned()),
@@ -39,16 +39,16 @@ pub fn host_order_input() -> cow_sdk_wasm::pure::dto::OrderInput {
         valid_to: VALID_TO,
         app_data: HASH_APP_DATA.to_owned(),
         fee_amount: "0".to_owned(),
-        kind: cow_sdk_wasm::pure::dto::OrderKindDto::Sell,
+        kind: cow_sdk_pure_helpers::dto::OrderKindDto::Sell,
         partially_fillable: false,
-        sell_token_balance: cow_sdk_wasm::pure::dto::TokenBalanceDto::Erc20,
-        buy_token_balance: cow_sdk_wasm::pure::dto::TokenBalanceDto::Erc20,
+        sell_token_balance: cow_sdk_pure_helpers::dto::TokenBalanceDto::Erc20,
+        buy_token_balance: cow_sdk_pure_helpers::dto::TokenBalanceDto::Erc20,
     }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub fn host_app_data_input() -> cow_sdk_wasm::pure::dto::AppDataDocInput {
-    cow_sdk_wasm::pure::dto::AppDataDocInput {
+pub fn host_app_data_input() -> cow_sdk_pure_helpers::dto::AppDataDocInput {
+    cow_sdk_pure_helpers::dto::AppDataDocInput {
         app_code: "CoW Swap".to_owned(),
         metadata: serde_json::json!({}),
         version: "0.7.0".to_owned(),

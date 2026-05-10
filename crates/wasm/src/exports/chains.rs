@@ -1,15 +1,14 @@
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    exports::{
-        dto::{
-            AppDataDocDto, AppDataDocInput, AppDataInfoDto, DeploymentAddressesDto,
-            GeneratedOrderUidDto, TypedDataEnvelopeDto, ValidationResultDto, parse_chain,
-            parse_order, parse_owner, to_js_value,
-        },
-        errors::WasmError,
+use cow_sdk_pure_helpers as pure;
+
+use crate::exports::{
+    dto::{
+        AppDataDocDto, AppDataDocInput, AppDataInfoDto, DeploymentAddressesDto,
+        GeneratedOrderUidDto, TypedDataEnvelopeDto, ValidationResultDto, parse_chain, parse_order,
+        parse_owner, to_js_value,
     },
-    pure,
+    errors::WasmError,
 };
 
 /// Computes the EIP-712 domain separator for a supported chain.

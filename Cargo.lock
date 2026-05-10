@@ -1349,6 +1349,7 @@ dependencies = [
  "cow-sdk-contracts",
  "cow-sdk-core",
  "cow-sdk-orderbook",
+ "cow-sdk-pure-helpers",
  "cow-sdk-signing",
  "cow-sdk-subgraph",
  "cow-sdk-trading",
@@ -1569,6 +1570,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "cow-sdk-pure-helpers"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "cow-sdk-app-data",
+ "cow-sdk-contracts",
+ "cow-sdk-core",
+ "cow-sdk-signing",
+ "hex",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "cow-sdk-signing"
 version = "0.1.0"
 dependencies = [
@@ -1685,6 +1701,7 @@ dependencies = [
  "cow-sdk-contracts",
  "cow-sdk-core",
  "cow-sdk-orderbook",
+ "cow-sdk-pure-helpers",
  "cow-sdk-signing",
  "cow-sdk-subgraph",
  "cow-sdk-trading",

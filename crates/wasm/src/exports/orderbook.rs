@@ -2,6 +2,7 @@ use cow_sdk_core::{Address, OrderUid};
 use cow_sdk_orderbook::{
     GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderCancellations, OrderCreation,
 };
+use cow_sdk_pure_helpers as pure;
 use js_sys::Function;
 use serde_json::{Value, json};
 use wasm_bindgen::prelude::*;
@@ -181,7 +182,7 @@ pub(crate) fn build_orderbook(
     transport: std::sync::Arc<dyn cow_sdk_core::HttpTransport + Send + Sync>,
 ) -> Result<OrderBookApi, JsValue> {
     let chain = parse_chain(chain_id)?;
-    let env = crate::pure::chains::env_from_str(env.as_deref())
+    let env = pure::chains::env_from_str(env.as_deref())
         .map_err(|error| WasmError::from(error).into_js())?;
     OrderBookApi::builder()
         .chain(chain)

@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use cow_sdk_core::Address;
 use cow_sdk_orderbook::SigningScheme;
+use cow_sdk_pure_helpers as pure;
 use cow_sdk_trading::{
     PostTradeAdditionalParams, QuoteRequestOverride, SwapAdvancedSettings, TradeParameters,
     TradingSdk,
@@ -164,7 +165,7 @@ fn build_trading(
     transport: Arc<dyn cow_sdk_core::HttpTransport + Send + Sync>,
 ) -> Result<TradingSdk, JsValue> {
     let chain = parse_chain(chain_id)?;
-    let env_value = crate::pure::chains::env_from_str(env.as_deref())
+    let env_value = pure::chains::env_from_str(env.as_deref())
         .map_err(|error| WasmError::from(error).into_js())?;
     let orderbook = Arc::new(build_orderbook(chain_id, env, transport)?);
     TradingSdk::builder()

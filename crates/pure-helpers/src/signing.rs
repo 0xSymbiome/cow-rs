@@ -1,3 +1,5 @@
+//! Signing payload helpers.
+
 use cow_sdk_core::{Address, SupportedChainId, TypedDataPayload, UnsignedOrder};
 use cow_sdk_signing::{GeneratedOrderId, SigningError};
 

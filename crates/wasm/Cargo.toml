@@ -38,6 +38,7 @@ async-trait.workspace = true
 cow-sdk-app-data = { path = "../app-data", version = "0.1.0" }
 cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
 cow-sdk-core = { path = "../core", version = "0.1.0" }
+cow-sdk-pure-helpers = { path = "../pure-helpers", version = "0.1.0" }
 cow-sdk-signing = { path = "../signing", version = "0.1.0" }
 hex.workspace = true
 serde.workspace = true

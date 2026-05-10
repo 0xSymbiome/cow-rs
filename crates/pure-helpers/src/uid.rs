@@ -1,6 +1,8 @@
+//! Order UID formatting helpers.
+
 use cow_sdk_signing::GeneratedOrderId;
 
-use crate::pure::dto::GeneratedOrderUidDto;
+use crate::dto::GeneratedOrderUidDto;
 
 /// Converts generated UID data into canonical string DTO fields.
 #[must_use]

@@ -1,7 +1,9 @@
+//! Chain and deployment helpers.
+
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{CowEnv, SupportedChainId};
 
-use crate::pure::{dto::DeploymentAddresses, errors::PureError};
+use crate::{dto::DeploymentAddresses, errors::PureError};
 
 /// Parses a numeric chain id into the SDK-supported chain set.
 ///

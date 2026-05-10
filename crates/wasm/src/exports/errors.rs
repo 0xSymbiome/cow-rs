@@ -3,14 +3,13 @@ use cow_sdk_core::{
     Cancelled, REDACTED_PLACEHOLDER, Redacted, TransportError, redact_response_body,
 };
 use cow_sdk_orderbook::OrderbookError;
+use cow_sdk_pure_helpers::errors::PureError;
 use cow_sdk_signing::SigningError;
 use cow_sdk_subgraph::SubgraphError;
 use cow_sdk_trading::TradingError;
 use serde::{Deserialize, Serialize};
 use tsify::Tsify;
 use wasm_bindgen::prelude::*;
-
-use crate::pure::errors::PureError;
 
 /// JS-visible typed error envelope for every wasm export.
 #[derive(Debug, Clone, Serialize, Deserialize, Tsify)]
@@ -142,6 +141,9 @@ impl From<PureError> for WasmError {
             },
             PureError::UnknownEnumValue { field, value } => Self::UnknownEnumValue { field, value },
             PureError::UnsupportedChain { chain_id } => Self::UnsupportedChain { chain_id },
+            error => Self::Internal {
+                message: error.to_string(),
+            },
         }
     }
 }

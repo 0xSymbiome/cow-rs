@@ -1,3 +1,5 @@
+//! Error types for runtime-neutral helpers.
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -31,14 +33,16 @@ pub enum PureError {
 }
 
 impl PureError {
-    pub(crate) fn invalid(field: impl Into<String>, message: impl Into<String>) -> Self {
+    /// Builds an invalid-input error for a public field.
+    pub fn invalid(field: impl Into<String>, message: impl Into<String>) -> Self {
         Self::InvalidInput {
             field: field.into(),
             message: message.into(),
         }
     }
 
-    pub(crate) fn unknown_enum(field: impl Into<String>, value: impl Into<String>) -> Self {
+    /// Builds an unknown-enum-value error for a public field.
+    pub fn unknown_enum(field: impl Into<String>, value: impl Into<String>) -> Self {
         Self::UnknownEnumValue {
             field: field.into(),
             value: value.into(),

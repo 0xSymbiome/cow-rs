@@ -7,13 +7,12 @@
 //! consumers through typed DTOs and explicit JavaScript callbacks for
 //! wallet, signer, and HTTP transport.
 //!
-//! The crate is split into two module trees:
+//! The crate separates runtime-neutral helpers from the JavaScript binding
+//! surface:
 //!
-//! - [`pure`] holds host-safe protocol helpers. Modules here compile
-//!   for both native and `wasm32-unknown-unknown` targets. They
-//!   contain no `wasm-bindgen` derives, no `tsify` derives, and no
-//!   `JsValue` references, which keeps the host build cleanly
-//!   separated from the JavaScript binding surface.
+//! - `cow-sdk-pure-helpers` holds host-safe protocol helpers. Those modules
+//!   compile for both native and `wasm32-unknown-unknown` targets and contain no
+//!   `wasm-bindgen` derives, no `tsify` derives, and no `JsValue` references.
 //! - `exports` (visible only on `wasm32-unknown-unknown`) holds the
 //!   `wasm-bindgen` surface, the `tsify`-derived DTOs, the four
 //!   typed wallet callback shapes, the JS callback HTTP transport,
@@ -22,9 +21,7 @@
 //! The split is enforced by a host gate: building the crate for the
 //! native target with `cargo check -p cow-sdk-wasm
 //! --no-default-features` succeeds only when no wasm-bindgen or
-//! tsify derive leaks into the `pure` module tree.
-
-pub mod pure;
+//! tsify derive leaks into target-agnostic dependencies.
 
 #[cfg(target_arch = "wasm32")]
 pub mod exports;

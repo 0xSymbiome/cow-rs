@@ -145,8 +145,8 @@ pub use cow_sdk_wasm as wasm;
 #[cfg_attr(docsrs, doc(cfg(feature = "wasm")))]
 /// Host-safe subset of the TypeScript-callable WASM crate.
 pub mod wasm {
-    /// Host-safe protocol helper modules.
-    pub use cow_sdk_wasm::pure;
+    /// Host-safe protocol helper modules shared with the WASM crate.
+    pub use cow_sdk_pure_helpers as pure_helpers;
 }
 
 use thiserror::Error;

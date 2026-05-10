@@ -1,0 +1,31 @@
+[package]
+name = "cow-sdk-pure-helpers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Runtime-neutral helper functions for the CoW Protocol Rust SDK wasm surface"
+readme = "README.md"
+documentation = "https://docs.rs/cow-sdk-pure-helpers"
+homepage = "https://github.com/cowdao-grants/cow-rs"
+keywords = ["cow-protocol", "sdk", "helpers", "wasm"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[lib]
+crate-type = ["rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy-primitives.workspace = true
+cow-sdk-app-data = { path = "../app-data", version = "0.1.0" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+cow-sdk-signing = { path = "../signing", version = "0.1.0" }
+hex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

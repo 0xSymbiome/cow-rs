@@ -1,8 +1,10 @@
+//! App-data document and CID helpers.
+
 use cow_sdk_app_data::{
     AppDataDoc, AppDataError, AppDataInfo, IpfsFetchTransport, ValidationResult,
 };
 
-use crate::pure::{dto::AppDataDocInput, errors::PureError};
+use crate::{dto::AppDataDocInput, errors::PureError};
 
 /// Builds an app-data document from the wasm input DTO.
 ///

@@ -9,20 +9,18 @@ use std::{
 
 use async_trait::async_trait;
 use cow_sdk_core::UnsignedOrder;
+use cow_sdk_pure_helpers as pure;
 use cow_sdk_trading::{Eip1271SignatureProvider, TradingError};
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    exports::{
-        dto::{
-            CowEip1271SignRequest, OrderInput, SignedOrderDto, TypedDataEnvelopeDto, parse_chain,
-            parse_order, parse_owner, to_js_value,
-        },
-        errors::WasmError,
-        signing::{await_callback_string, js_error_to_string, signed_order_from_parts},
+use crate::exports::{
+    dto::{
+        CowEip1271SignRequest, OrderInput, SignedOrderDto, TypedDataEnvelopeDto, parse_chain,
+        parse_order, parse_owner, to_js_value,
     },
-    pure,
+    errors::WasmError,
+    signing::{await_callback_string, js_error_to_string, signed_order_from_parts},
 };
 
 const MAX_EIP1271_ALLOCATION_ATTEMPTS: u32 = 16;

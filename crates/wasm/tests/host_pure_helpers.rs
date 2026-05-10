@@ -3,7 +3,7 @@
 mod common;
 
 use cow_sdk_core::{Address, SupportedChainId};
-use cow_sdk_wasm::pure::{
+use cow_sdk_pure_helpers::{
     app_data, chains,
     dto::{AppDataDocInput, OrderKindDto, TokenBalanceDto},
     errors::PureError,

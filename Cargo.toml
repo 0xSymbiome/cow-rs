@@ -6,6 +6,7 @@ members = [
   "crates/app-data",
   "crates/transport-policy",
   "crates/orderbook",
+  "crates/pure-helpers",
   "crates/trading",
   "crates/subgraph",
   "crates/browser-wallet",

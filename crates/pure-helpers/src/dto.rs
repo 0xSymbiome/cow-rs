@@ -1,3 +1,5 @@
+//! Runtime-neutral DTOs shared by helper and wasm export layers.
+
 use std::collections::BTreeMap;
 
 use cow_sdk_app_data::{AppDataDoc, AppDataInfo, ValidationResult};
@@ -8,7 +10,7 @@ use cow_sdk_core::{
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-use crate::pure::errors::PureError;
+use crate::errors::PureError;
 
 /// Order side accepted by the wasm input DTOs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -307,7 +309,12 @@ impl From<ValidationResult> for ValidationResultDto {
     }
 }
 
-pub(crate) fn parse_address(field: &str, value: &str) -> Result<Address, PureError> {
+/// Parses an EVM address from a public string field.
+///
+/// # Errors
+///
+/// Returns [`PureError`] when the address is malformed.
+pub fn parse_address(field: &str, value: &str) -> Result<Address, PureError> {
     Address::new(value.to_owned()).map_err(|error| PureError::invalid(field, error.to_string()))
 }
 
