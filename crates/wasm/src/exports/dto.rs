@@ -839,6 +839,74 @@ impl OrderCreationInput {
     }
 }
 
+/// Pagination options shared by orderbook list helpers.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginationOptions {
+    /// Pagination offset.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offset: Option<u32>,
+    /// Pagination limit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u32>,
+}
+
+/// Trades query accepted by `OrderBookClient.getTrades`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct TradesQueryInput {
+    /// Owner filter. Set exactly one of `owner` or `orderUid`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner: Option<String>,
+    /// Order UID filter. Set exactly one of `owner` or `orderUid`.
+    #[serde(rename = "orderUid", default, skip_serializing_if = "Option::is_none")]
+    pub order_uid: Option<String>,
+    /// Pagination offset.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offset: Option<u32>,
+    /// Pagination limit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub limit: Option<u32>,
+}
+
+/// Quote-response reference accepted by quote-derived posting helpers.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct QuoteResponseRefInput {
+    /// Upstream quote id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<i64>,
+}
+
+/// Minimal quote-results payload accepted by `TradingClient.postSwapOrderFromQuote`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct QuoteResultsInput {
+    /// Order returned by a previous quote response.
+    pub order_to_sign: OrderInput,
+    /// Upstream quote response reference.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quote_response: Option<QuoteResponseRefInput>,
+    /// Direct quote id fallback.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quote_id: Option<i64>,
+}
+
+impl QuoteResultsInput {
+    /// Returns the quote id supplied by either supported input shape.
+    #[must_use]
+    pub fn quote_id(&self) -> Option<i64> {
+        self.quote_response
+            .as_ref()
+            .and_then(|response| response.id)
+            .or(self.quote_id)
+    }
+}
+
 /// Partner-fee policy input for trading swap parameters.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
@@ -924,6 +992,198 @@ impl SwapParametersInput {
     pub(crate) fn into_value(self) -> Result<Value, WasmError> {
         serde_json::to_value(self).map_err(WasmError::from)
     }
+}
+
+/// Limit-order parameters accepted by trading posting helpers.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct LimitTradeParametersInput {
+    /// Order side.
+    pub kind: OrderKindDto,
+    /// Optional owner override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner: Option<String>,
+    /// Sell-token address.
+    pub sell_token: String,
+    /// Sell-token decimals.
+    pub sell_token_decimals: u8,
+    /// Buy-token address.
+    pub buy_token: String,
+    /// Buy-token decimals.
+    pub buy_token_decimals: u8,
+    /// Sell amount before transformations.
+    pub sell_amount: String,
+    /// Buy amount before transformations.
+    pub buy_amount: String,
+    /// Optional quote id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quote_id: Option<i64>,
+    /// Optional environment override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub env: Option<String>,
+    /// Optional settlement-contract overrides keyed by chain id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub settlement_contract_override: Option<BTreeMap<u64, String>>,
+    /// Optional `EthFlow` contract overrides keyed by chain id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub eth_flow_contract_override: Option<BTreeMap<u64, String>>,
+    /// Whether partial fills are allowed.
+    #[serde(default)]
+    pub partially_fillable: bool,
+    /// Sell-token balance source.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sell_token_balance: Option<TokenBalanceDto>,
+    /// Buy-token balance destination.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub buy_token_balance: Option<TokenBalanceDto>,
+    /// Optional slippage tolerance in basis points.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub slippage_bps: Option<u32>,
+    /// Optional receiver override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receiver: Option<String>,
+    /// Optional relative validity duration.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub valid_for: Option<u32>,
+    /// Optional absolute UNIX expiry timestamp.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub valid_to: Option<u32>,
+    /// Optional partner-fee metadata.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub partner_fee: Option<PartnerFeeInput>,
+}
+
+impl LimitTradeParametersInput {
+    pub(crate) fn into_value(self) -> Result<Value, WasmError> {
+        serde_json::to_value(self).map_err(WasmError::from)
+    }
+}
+
+/// Order transaction helper parameters.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderTraderParametersInput {
+    /// Target order UID.
+    #[serde(rename = "orderUid")]
+    pub order_uid: String,
+    /// Optional chain-id override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chain_id: Option<u32>,
+    /// Optional environment override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub env: Option<String>,
+    /// Optional settlement-contract overrides keyed by chain id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub settlement_contract_override: Option<BTreeMap<u64, String>>,
+    /// Optional `EthFlow` contract overrides keyed by chain id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub eth_flow_contract_override: Option<BTreeMap<u64, String>>,
+}
+
+impl OrderTraderParametersInput {
+    pub(crate) fn into_value(self) -> Result<Value, WasmError> {
+        serde_json::to_value(self).map_err(WasmError::from)
+    }
+}
+
+/// Allowance helper parameters.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct AllowanceParametersInput {
+    /// ERC-20 token address.
+    pub token_address: String,
+    /// Owner whose allowance should be inspected.
+    pub owner: String,
+    /// Optional chain-id override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chain_id: Option<u32>,
+    /// Optional environment override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub env: Option<String>,
+    /// Optional vault-relayer deployment override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vault_relayer_override: Option<String>,
+}
+
+impl AllowanceParametersInput {
+    pub(crate) fn into_value(self) -> Result<Value, WasmError> {
+        serde_json::to_value(self).map_err(WasmError::from)
+    }
+}
+
+/// Contract-read callback request.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct ContractCallDto {
+    /// Target contract address.
+    pub address: String,
+    /// ABI method name.
+    pub method: String,
+    /// JSON ABI fragment.
+    pub abi_json: String,
+    /// JSON-encoded function arguments.
+    pub args_json: String,
+}
+
+impl From<&cow_sdk_core::ContractCall> for ContractCallDto {
+    fn from(value: &cow_sdk_core::ContractCall) -> Self {
+        Self {
+            address: value.address.as_str().to_owned(),
+            method: value.method.clone(),
+            abi_json: value.abi_json.clone(),
+            args_json: value.args_json.clone(),
+        }
+    }
+}
+
+/// Transaction request DTO returned by transaction builders.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct TransactionRequestDto {
+    /// Destination address.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub to: Option<String>,
+    /// Hex-encoded calldata.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+    /// Native value.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value: Option<String>,
+    /// Gas limit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gas_limit: Option<String>,
+}
+
+impl From<&cow_sdk_core::TransactionRequest> for TransactionRequestDto {
+    fn from(value: &cow_sdk_core::TransactionRequest) -> Self {
+        Self {
+            to: value.to.as_ref().map(|address| address.as_str().to_owned()),
+            data: value.data.as_ref().map(ToString::to_string),
+            value: value.value.as_ref().map(ToString::to_string),
+            gas_limit: value.gas_limit.as_ref().map(ToString::to_string),
+        }
+    }
+}
+
+/// Native-currency sell transaction bundle.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct BuiltSellNativeCurrencyTxDto {
+    /// Deterministic order UID.
+    #[serde(rename = "orderUid")]
+    pub order_uid: String,
+    /// Transaction request to submit.
+    pub transaction: TransactionRequestDto,
+    /// Unsigned order encoded by the transaction.
+    pub order_to_sign: OrderInput,
+    /// Effective order owner.
+    pub from: String,
 }
 
 /// Explicit raw GraphQL query input.

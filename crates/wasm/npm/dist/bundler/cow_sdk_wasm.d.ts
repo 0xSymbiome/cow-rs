@@ -1,4 +1,3 @@
-/// <reference lib="esnext.disposable" />
 /* tslint:disable */
 /* eslint-disable */
 
@@ -57,6 +56,10 @@ request: CowEip1271SignRequest,
 
 export type CustomEip1271Callback = CowEip1271SignCallback;
 
+export type ContractReadCallback = (
+request: ContractCallDto,
+) => Promise<string> | string;
+
 export type HttpTransportConfig =
 | { kind: "fetch"; fetch?: typeof globalThis.fetch }
 | { kind: "callback"; callback: CowFetchCallback };
@@ -64,6 +67,7 @@ export type HttpTransportConfig =
 export interface OrderBookClientConfig {
     chainId: number;
     env?: string | null;
+    apiKey?: string | null;
     transport: HttpTransportConfig;
     transportPolicy?: TransportPolicyConfig | null;
     timeoutMs?: number | null;
@@ -81,6 +85,7 @@ export interface TradingClientConfig {
     chainId: number;
     env?: string | null;
     appCode: string;
+    apiKey?: string | null;
     transport: HttpTransportConfig;
     transportPolicy?: TransportPolicyConfig | null;
     timeoutMs?: number | null;
@@ -93,6 +98,32 @@ export interface IpfsClientConfig {
     timeoutMs?: number | null;
 }
 
+
+/**
+ * Allowance helper parameters.
+ */
+export interface AllowanceParametersInput {
+    /**
+     * ERC-20 token address.
+     */
+    tokenAddress: string;
+    /**
+     * Owner whose allowance should be inspected.
+     */
+    owner: string;
+    /**
+     * Optional chain-id override.
+     */
+    chainId?: number;
+    /**
+     * Optional environment override.
+     */
+    env?: string;
+    /**
+     * Optional vault-relayer deployment override.
+     */
+    vaultRelayerOverride?: string;
+}
 
 /**
  * App-data document input.
@@ -156,6 +187,28 @@ export interface ValidationResultDto {
      * Errors when validation failed.
      */
     errors?: string;
+}
+
+/**
+ * Contract-read callback request.
+ */
+export interface ContractCallDto {
+    /**
+     * Target contract address.
+     */
+    address: string;
+    /**
+     * ABI method name.
+     */
+    method: string;
+    /**
+     * JSON ABI fragment.
+     */
+    abiJson: string;
+    /**
+     * JSON-encoded function arguments.
+     */
+    argsJson: string;
 }
 
 /**
@@ -255,6 +308,132 @@ export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; me
 export type JitterStrategyConfig = "none" | "full" | "equal" | "decorrelated";
 
 /**
+ * Limit-order parameters accepted by trading posting helpers.
+ */
+export interface LimitTradeParametersInput {
+    /**
+     * Order side.
+     */
+    kind: OrderKindDto;
+    /**
+     * Optional owner override.
+     */
+    owner?: string;
+    /**
+     * Sell-token address.
+     */
+    sellToken: string;
+    /**
+     * Sell-token decimals.
+     */
+    sellTokenDecimals: number;
+    /**
+     * Buy-token address.
+     */
+    buyToken: string;
+    /**
+     * Buy-token decimals.
+     */
+    buyTokenDecimals: number;
+    /**
+     * Sell amount before transformations.
+     */
+    sellAmount: string;
+    /**
+     * Buy amount before transformations.
+     */
+    buyAmount: string;
+    /**
+     * Optional quote id.
+     */
+    quoteId?: number;
+    /**
+     * Optional environment override.
+     */
+    env?: string;
+    /**
+     * Optional settlement-contract overrides keyed by chain id.
+     */
+    settlementContractOverride?: Map<number, string>;
+    /**
+     * Optional `EthFlow` contract overrides keyed by chain id.
+     */
+    ethFlowContractOverride?: Map<number, string>;
+    /**
+     * Whether partial fills are allowed.
+     */
+    partiallyFillable?: boolean;
+    /**
+     * Sell-token balance source.
+     */
+    sellTokenBalance?: TokenBalanceDto;
+    /**
+     * Buy-token balance destination.
+     */
+    buyTokenBalance?: TokenBalanceDto;
+    /**
+     * Optional slippage tolerance in basis points.
+     */
+    slippageBps?: number;
+    /**
+     * Optional receiver override.
+     */
+    receiver?: string;
+    /**
+     * Optional relative validity duration.
+     */
+    validFor?: number;
+    /**
+     * Optional absolute UNIX expiry timestamp.
+     */
+    validTo?: number;
+    /**
+     * Optional partner-fee metadata.
+     */
+    partnerFee?: PartnerFeeInput;
+}
+
+/**
+ * Minimal quote-results payload accepted by `TradingClient.postSwapOrderFromQuote`.
+ */
+export interface QuoteResultsInput {
+    /**
+     * Order returned by a previous quote response.
+     */
+    orderToSign: OrderInput;
+    /**
+     * Upstream quote response reference.
+     */
+    quoteResponse?: QuoteResponseRefInput;
+    /**
+     * Direct quote id fallback.
+     */
+    quoteId?: number;
+}
+
+/**
+ * Native-currency sell transaction bundle.
+ */
+export interface BuiltSellNativeCurrencyTxDto {
+    /**
+     * Deterministic order UID.
+     */
+    orderUid: string;
+    /**
+     * Transaction request to submit.
+     */
+    transaction: TransactionRequestDto;
+    /**
+     * Unsigned order encoded by the transaction.
+     */
+    orderToSign: OrderInput;
+    /**
+     * Effective order owner.
+     */
+    from: string;
+}
+
+/**
  * Order input shared by signing and UID exports.
  */
 export interface OrderInput {
@@ -312,6 +491,32 @@ export interface OrderInput {
  * Order side accepted by wasm order inputs.
  */
 export type OrderKindDto = "sell" | "buy";
+
+/**
+ * Order transaction helper parameters.
+ */
+export interface OrderTraderParametersInput {
+    /**
+     * Target order UID.
+     */
+    orderUid: string;
+    /**
+     * Optional chain-id override.
+     */
+    chainId?: number;
+    /**
+     * Optional environment override.
+     */
+    env?: string;
+    /**
+     * Optional settlement-contract overrides keyed by chain id.
+     */
+    settlementContractOverride?: Map<number, string>;
+    /**
+     * Optional `EthFlow` contract overrides keyed by chain id.
+     */
+    ethFlowContractOverride?: Map<number, string>;
+}
 
 /**
  * Orderbook order-creation input.
@@ -474,6 +679,20 @@ export interface OrderQuoteRequestInput {
 }
 
 /**
+ * Pagination options shared by orderbook list helpers.
+ */
+export interface PaginationOptions {
+    /**
+     * Pagination offset.
+     */
+    offset?: number;
+    /**
+     * Pagination limit.
+     */
+    limit?: number;
+}
+
+/**
  * Partner-fee input accepted by trading swap parameters.
  */
 export type PartnerFeeInput = PartnerFeePolicyInput | PartnerFeePolicyInput[];
@@ -502,6 +721,16 @@ export interface PartnerFeePolicyInput {
      * Fee recipient address.
      */
     recipient: string;
+}
+
+/**
+ * Quote-response reference accepted by quote-derived posting helpers.
+ */
+export interface QuoteResponseRefInput {
+    /**
+     * Upstream quote id.
+     */
+    id?: number;
 }
 
 /**
@@ -603,6 +832,28 @@ export interface SignedCancellationsInput {
 export type TokenBalanceDto = "erc20" | "external" | "internal";
 
 /**
+ * Trades query accepted by `OrderBookClient.getTrades`.
+ */
+export interface TradesQueryInput {
+    /**
+     * Owner filter. Set exactly one of `owner` or `orderUid`.
+     */
+    owner?: string;
+    /**
+     * Order UID filter. Set exactly one of `owner` or `orderUid`.
+     */
+    orderUid?: string;
+    /**
+     * Pagination offset.
+     */
+    offset?: number;
+    /**
+     * Pagination limit.
+     */
+    limit?: number;
+}
+
+/**
  * Trading swap-parameter input.
  */
 export interface SwapParametersInput {
@@ -670,6 +921,28 @@ export interface SwapParametersInput {
      * Optional partner-fee metadata.
      */
     partnerFee?: PartnerFeeInput;
+}
+
+/**
+ * Transaction request DTO returned by transaction builders.
+ */
+export interface TransactionRequestDto {
+    /**
+     * Destination address.
+     */
+    to?: string;
+    /**
+     * Hex-encoded calldata.
+     */
+    data?: string;
+    /**
+     * Native value.
+     */
+    value?: string;
+    /**
+     * Gas limit.
+     */
+    gasLimit?: string;
 }
 
 /**
@@ -817,15 +1090,19 @@ export class OrderBookClient {
     /**
      * Fetches orders owned by an address.
      */
-    getOrdersByOwner(owner: string, options?: SdkClientOptions | null): Promise<any>;
+    getOrders(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<any>;
+    /**
+     * Fetches orders owned by an address.
+     */
+    getOrdersByOwner(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Fetches a quote.
      */
     getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<any>;
     /**
-     * Fetches trades for an order UID.
+     * Fetches trades for an owner or order UID.
      */
-    getTrades(orderUid: string, options?: SdkClientOptions | null): Promise<any>;
+    getTrades(query: TradesQueryInput, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Creates an orderbook client from a single config object.
      */
@@ -875,6 +1152,14 @@ export class TradingClient {
     free(): void;
     [Symbol.dispose](): void;
     /**
+     * Builds the transaction for a native-currency sell order.
+     */
+    buildSellNativeCurrencyTx(order: OrderInput, quoteId: bigint, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<BuiltSellNativeCurrencyTxDto>>;
+    /**
+     * Reads CoW Protocol allowance through a read-only contract callback.
+     */
+    getCowProtocolAllowance(params: AllowanceParametersInput, readContractCallback: ContractReadCallback, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
+    /**
      * Fetches a quote without submitting an order.
      */
     getQuote(params: SwapParametersInput, options?: SdkClientOptions | null): Promise<any>;
@@ -883,9 +1168,17 @@ export class TradingClient {
      */
     constructor(config: TradingClientConfig);
     /**
+     * Signs and posts a limit order through a typed-data callback.
+     */
+    postLimitOrder(params: LimitTradeParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<any>;
+    /**
      * Quotes, signs, and posts a swap order through a typed-data callback.
      */
     postSwapOrder(params: SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<any>;
+    /**
+     * Signs and posts a previously quoted swap order.
+     */
+    postSwapOrderFromQuote(quoteResults: QuoteResultsInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<any>;
     /**
      * Quotes and posts a swap order with a custom EIP-1271 signature callback.
      */
@@ -911,6 +1204,16 @@ export function appDataHexToCid(appDataHex: string): WasmEnvelope<string>;
  * Returns deterministic app-data content, hash, and CID.
  */
 export function appDataInfo(doc: AppDataDocInput): WasmEnvelope<AppDataInfoDto>;
+
+/**
+ * Builds a settlement cancellation transaction for an order UID.
+ */
+export function buildCancelOrderTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>;
+
+/**
+ * Builds a settlement pre-sign transaction for an order UID.
+ */
+export function buildPresignTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>;
 
 /**
  * Converts an IPFS CID to an app-data hash.

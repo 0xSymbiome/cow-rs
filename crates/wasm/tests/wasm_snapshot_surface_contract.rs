@@ -141,6 +141,38 @@ fn generated_type_declarations_expose_transport_policy_config() {
 }
 
 #[test]
+fn generated_type_declarations_expose_workflow_coverage_helpers() {
+    let expected = [
+        "apiKey?: string | null;",
+        "export type ContractReadCallback",
+        "export interface AllowanceParametersInput",
+        "export interface BuiltSellNativeCurrencyTxDto",
+        "export interface ContractCallDto",
+        "export interface LimitTradeParametersInput",
+        "export interface OrderTraderParametersInput",
+        "export interface PaginationOptions",
+        "export interface QuoteResultsInput",
+        "export interface TradesQueryInput",
+        "export interface TransactionRequestDto",
+        "buildCancelOrderTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>",
+        "buildPresignTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>",
+        "buildSellNativeCurrencyTx(order: OrderInput, quoteId: bigint, from: string",
+        "getCowProtocolAllowance(params: AllowanceParametersInput, readContractCallback: ContractReadCallback",
+        "getOrders(owner: string, pagination?: PaginationOptions | null",
+        "getTrades(query: TradesQueryInput",
+        "postLimitOrder(params: LimitTradeParametersInput, owner: string, signerCallback: TypedDataSignerCallback",
+        "postSwapOrderFromQuote(quoteResults: QuoteResultsInput, owner: string, signerCallback: TypedDataSignerCallback",
+    ];
+
+    for snapshot in SNAPSHOTS {
+        let content = read_snapshot(snapshot);
+        for token in expected {
+            assert!(content.contains(token), "{snapshot} must expose `{token}`");
+        }
+    }
+}
+
+#[test]
 fn generated_type_declarations_keep_unknown_escape_hatch_scoped() {
     let expected = [
         "message: Value;",

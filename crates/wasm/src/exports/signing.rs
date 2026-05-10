@@ -1,12 +1,14 @@
-use cow_sdk_contracts::normalized_ecdsa_signature;
+use cow_sdk_contracts::{ContractId, Registry, normalized_ecdsa_signature};
 use std::{cell::RefCell, rc::Rc};
 
 use cow_sdk_core::{
-    Address, AsyncDigestSigner, AsyncEip1193, AsyncOwner, AsyncTypedDataSigner, Hash32, OrderUid,
-    TypedDataDomain, TypedDataField, TypedDataPayload,
+    Address, Amount, AsyncDigestSigner, AsyncEip1193, AsyncOwner, AsyncTypedDataSigner, Hash32,
+    HexData, OrderUid, ProtocolOptions, TransactionRequest, TypedDataDomain, TypedDataField,
+    TypedDataPayload,
 };
 use cow_sdk_pure_helpers as pure;
 use cow_sdk_signing::order_cancellations_typed_data_payload;
+use cow_sdk_trading::GAS_LIMIT_DEFAULT;
 use js_sys::{Array, Function, Promise, Reflect};
 use serde_json::json;
 use wasm_bindgen::{JsCast, closure::Closure, prelude::*};
@@ -15,8 +17,9 @@ use wasm_bindgen_futures::JsFuture;
 use crate::exports::{
     cancel::{ClientCallScope, SigningOptions, run_with_client_options, signing_wallet_timeout_ms},
     dto::{
-        Eip1193Request, OrderInput, SignedCancellationsInput, SignedOrderDto, TypedDataEnvelopeDto,
-        parse_chain, parse_order, parse_owner, to_js_value, typed_data_json,
+        Eip1193Request, OrderInput, OrderTraderParametersInput, SignedCancellationsInput,
+        SignedOrderDto, TransactionRequestDto, TypedDataEnvelopeDto, from_json_value, parse_chain,
+        parse_order, parse_owner, to_js_value, typed_data_json,
     },
     envelope::WasmEnvelope,
     errors::WasmError,
@@ -262,6 +265,30 @@ pub async fn sign_order_eth_sign_digest(
         to_js_value(&WasmEnvelope::v1(signed))
     })
     .await
+}
+
+/// Builds a settlement pre-sign transaction for an order UID.
+#[wasm_bindgen(
+    js_name = "buildPresignTx",
+    unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
+)]
+pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
+    let params: cow_sdk_trading::OrderTraderParameters =
+        from_json_value("params", params.into_value()?)?;
+    let tx = order_uid_transaction(&params, "setPreSignature(bytes,bool)", true)?;
+    to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
+}
+
+/// Builds a settlement cancellation transaction for an order UID.
+#[wasm_bindgen(
+    js_name = "buildCancelOrderTx",
+    unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
+)]
+pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
+    let params: cow_sdk_trading::OrderTraderParameters =
+        from_json_value("params", params.into_value()?)?;
+    let tx = order_uid_transaction(&params, "invalidateOrder(bytes)", false)?;
+    to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
 
 /// Signs cancellation typed data through a typed-data callback.
@@ -526,6 +553,116 @@ fn cancellation_payload(
     let digest = cow_sdk_contracts::hash_order_cancellations(&payload.domain, &cancellations)
         .map_err(|error| WasmError::from(error).into_js())?;
     Ok((uids, payload, digest))
+}
+
+fn order_uid_transaction(
+    params: &cow_sdk_trading::OrderTraderParameters,
+    selector: &'static str,
+    include_bool: bool,
+) -> Result<TransactionRequest, JsValue> {
+    let chain_id = params
+        .chain_id
+        .ok_or_else(|| WasmError::invalid("chainId", "chainId is required").into_js())?;
+    let mut options = ProtocolOptions::new();
+    if let Some(env) = params.env {
+        options = options.with_env(env);
+    }
+    if let Some(overrides) = params.settlement_contract_override.clone() {
+        options = options.with_settlement_contract_override(overrides);
+    }
+    if let Some(overrides) = params.eth_flow_contract_override.clone() {
+        options = options.with_eth_flow_contract_override(overrides);
+    }
+    let env = options.env.unwrap_or(cow_sdk_core::CowEnv::Prod);
+    let settlement = options
+        .settlement_contract_override
+        .as_ref()
+        .and_then(|overrides| overrides.get(&u64::from(chain_id)).cloned())
+        .or_else(|| Registry::default().address(ContractId::Settlement, chain_id, env))
+        .ok_or_else(|| {
+            WasmError::invalid(
+                "chainId",
+                "settlement deployment is not available for this chain and environment",
+            )
+            .into_js()
+        })?;
+    let data = if include_bool {
+        encode_selector_and_dynamic_bytes_bool(selector, params.order_uid.as_str(), true)?
+    } else {
+        encode_selector_and_dynamic_bytes(selector, params.order_uid.as_str())?
+    };
+    let tx = TransactionRequest::new(
+        Some(settlement),
+        Some(HexData::new(data).map_err(|error| WasmError::from(error).into_js())?),
+        Some(Amount::zero()),
+        Some(default_gas_limit()?),
+    );
+    Ok(tx)
+}
+
+fn default_gas_limit() -> Result<Amount, JsValue> {
+    Amount::new(GAS_LIMIT_DEFAULT.to_string())
+        .map_err(|error| WasmError::invalid("gasLimit", error.to_string()).into_js())
+}
+
+fn encode_selector_and_dynamic_bytes(signature: &str, bytes_hex: &str) -> Result<String, JsValue> {
+    let selector = selector_bytes(signature)?;
+    let bytes = decode_hex_field("bytes", bytes_hex)?;
+    let mut encoded = Vec::new();
+    encoded.extend_from_slice(&selector);
+    encoded.extend_from_slice(&encode_usize_word(32));
+    encoded.extend_from_slice(&encode_usize_word(bytes.len()));
+    encoded.extend_from_slice(&pad_to_word(bytes));
+    Ok(format!("0x{}", hex::encode(encoded)))
+}
+
+fn encode_selector_and_dynamic_bytes_bool(
+    signature: &str,
+    bytes_hex: &str,
+    flag: bool,
+) -> Result<String, JsValue> {
+    let selector = selector_bytes(signature)?;
+    let bytes = decode_hex_field("bytes", bytes_hex)?;
+    let mut encoded = Vec::new();
+    encoded.extend_from_slice(&selector);
+    encoded.extend_from_slice(&encode_usize_word(64));
+    encoded.extend_from_slice(&encode_bool_word(flag));
+    encoded.extend_from_slice(&encode_usize_word(bytes.len()));
+    encoded.extend_from_slice(&pad_to_word(bytes));
+    Ok(format!("0x{}", hex::encode(encoded)))
+}
+
+fn selector_bytes(signature: &str) -> Result<[u8; 4], JsValue> {
+    let selector = cow_sdk_contracts::function_magic_value(signature);
+    let bytes = decode_hex_field("selector", &selector)?;
+    let mut out = [0u8; 4];
+    out.copy_from_slice(&bytes);
+    Ok(out)
+}
+
+fn decode_hex_field(field: &'static str, value: &str) -> Result<Vec<u8>, JsValue> {
+    let Some(stripped) = value.strip_prefix("0x") else {
+        return Err(WasmError::invalid(field, "hex value must start with 0x").into_js());
+    };
+    hex::decode(stripped).map_err(|error| WasmError::invalid(field, error.to_string()).into_js())
+}
+
+fn encode_usize_word(value: usize) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    out[24..].copy_from_slice(&(value as u64).to_be_bytes());
+    out
+}
+
+fn encode_bool_word(value: bool) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    out[31] = u8::from(value);
+    out
+}
+
+fn pad_to_word(mut bytes: Vec<u8>) -> Vec<u8> {
+    let padding = (32 - (bytes.len() % 32)) % 32;
+    bytes.extend(std::iter::repeat_n(0u8, padding));
+    bytes
 }
 
 fn uid_strings(uids: &[OrderUid]) -> Vec<String> {

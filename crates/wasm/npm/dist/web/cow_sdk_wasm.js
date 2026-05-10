@@ -113,13 +113,27 @@ export class OrderBookClient {
     /**
      * Fetches orders owned by an address.
      * @param {string} owner
+     * @param {PaginationOptions | null} [pagination]
      * @param {SdkClientOptions | null} [options]
      * @returns {Promise<any>}
      */
-    getOrdersByOwner(owner, options) {
+    getOrders(owner, pagination, options) {
         const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.orderbookclient_getOrdersByOwner(this.__wbg_ptr, ptr0, len0, isLikeNone(options) ? 0 : addHeapObject(options));
+        const ret = wasm.orderbookclient_getOrders(this.__wbg_ptr, ptr0, len0, isLikeNone(pagination) ? 0 : addHeapObject(pagination), isLikeNone(options) ? 0 : addHeapObject(options));
+        return takeObject(ret);
+    }
+    /**
+     * Fetches orders owned by an address.
+     * @param {string} owner
+     * @param {PaginationOptions | null} [pagination]
+     * @param {SdkClientOptions | null} [options]
+     * @returns {Promise<any>}
+     */
+    getOrdersByOwner(owner, pagination, options) {
+        const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.orderbookclient_getOrdersByOwner(this.__wbg_ptr, ptr0, len0, isLikeNone(pagination) ? 0 : addHeapObject(pagination), isLikeNone(options) ? 0 : addHeapObject(options));
         return takeObject(ret);
     }
     /**
@@ -133,15 +147,13 @@ export class OrderBookClient {
         return takeObject(ret);
     }
     /**
-     * Fetches trades for an order UID.
-     * @param {string} orderUid
+     * Fetches trades for an owner or order UID.
+     * @param {TradesQueryInput} query
      * @param {SdkClientOptions | null} [options]
      * @returns {Promise<any>}
      */
-    getTrades(orderUid, options) {
-        const ptr0 = passStringToWasm0(orderUid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.orderbookclient_getTrades(this.__wbg_ptr, ptr0, len0, isLikeNone(options) ? 0 : addHeapObject(options));
+    getTrades(query, options) {
+        const ret = wasm.orderbookclient_getTrades(this.__wbg_ptr, addHeapObject(query), isLikeNone(options) ? 0 : addHeapObject(options));
         return takeObject(ret);
     }
     /**
@@ -280,6 +292,31 @@ export class TradingClient {
         wasm.__wbg_tradingclient_free(ptr, 0);
     }
     /**
+     * Builds the transaction for a native-currency sell order.
+     * @param {OrderInput} order
+     * @param {bigint} quoteId
+     * @param {string} from
+     * @param {SdkClientOptions | null} [options]
+     * @returns {WasmEnvelope<BuiltSellNativeCurrencyTxDto>}
+     */
+    buildSellNativeCurrencyTx(order, quoteId, from, options) {
+        const ptr0 = passStringToWasm0(from, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.tradingclient_buildSellNativeCurrencyTx(this.__wbg_ptr, addHeapObject(order), quoteId, ptr0, len0, isLikeNone(options) ? 0 : addHeapObject(options));
+        return takeObject(ret);
+    }
+    /**
+     * Reads CoW Protocol allowance through a read-only contract callback.
+     * @param {AllowanceParametersInput} params
+     * @param {ContractReadCallback} readContractCallback
+     * @param {SdkClientOptions | null} [options]
+     * @returns {WasmEnvelope<string>}
+     */
+    getCowProtocolAllowance(params, readContractCallback, options) {
+        const ret = wasm.tradingclient_getCowProtocolAllowance(this.__wbg_ptr, addHeapObject(params), addHeapObject(readContractCallback), isLikeNone(options) ? 0 : addHeapObject(options));
+        return takeObject(ret);
+    }
+    /**
      * Fetches a quote without submitting an order.
      * @param {SwapParametersInput} params
      * @param {SdkClientOptions | null} [options]
@@ -311,6 +348,20 @@ export class TradingClient {
         }
     }
     /**
+     * Signs and posts a limit order through a typed-data callback.
+     * @param {LimitTradeParametersInput} params
+     * @param {string} owner
+     * @param {TypedDataSignerCallback} signerCallback
+     * @param {SigningOptions | null} [options]
+     * @returns {Promise<any>}
+     */
+    postLimitOrder(params, owner, signerCallback, options) {
+        const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.tradingclient_postLimitOrder(this.__wbg_ptr, addHeapObject(params), ptr0, len0, addHeapObject(signerCallback), isLikeNone(options) ? 0 : addHeapObject(options));
+        return takeObject(ret);
+    }
+    /**
      * Quotes, signs, and posts a swap order through a typed-data callback.
      * @param {SwapParametersInput} params
      * @param {string} owner
@@ -322,6 +373,20 @@ export class TradingClient {
         const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.tradingclient_postSwapOrder(this.__wbg_ptr, addHeapObject(params), ptr0, len0, addHeapObject(signerCallback), isLikeNone(options) ? 0 : addHeapObject(options));
+        return takeObject(ret);
+    }
+    /**
+     * Signs and posts a previously quoted swap order.
+     * @param {QuoteResultsInput} quoteResults
+     * @param {string} owner
+     * @param {TypedDataSignerCallback} signerCallback
+     * @param {SigningOptions | null} [options]
+     * @returns {Promise<any>}
+     */
+    postSwapOrderFromQuote(quoteResults, owner, signerCallback, options) {
+        const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.tradingclient_postSwapOrderFromQuote(this.__wbg_ptr, addHeapObject(quoteResults), ptr0, len0, addHeapObject(signerCallback), isLikeNone(options) ? 0 : addHeapObject(options));
         return takeObject(ret);
     }
     /**
@@ -401,6 +466,48 @@ export function appDataInfo(doc) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         wasm.appDataInfo(retptr, addHeapObject(doc));
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+        if (r2) {
+            throw takeObject(r1);
+        }
+        return takeObject(r0);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
+ * Builds a settlement cancellation transaction for an order UID.
+ * @param {OrderTraderParametersInput} params
+ * @returns {WasmEnvelope<TransactionRequestDto>}
+ */
+export function buildCancelOrderTx(params) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.buildCancelOrderTx(retptr, addHeapObject(params));
+        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+        if (r2) {
+            throw takeObject(r1);
+        }
+        return takeObject(r0);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+    }
+}
+
+/**
+ * Builds a settlement pre-sign transaction for an order UID.
+ * @param {OrderTraderParametersInput} params
+ * @returns {WasmEnvelope<TransactionRequestDto>}
+ */
+export function buildPresignTx(params) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.buildPresignTx(retptr, addHeapObject(params));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
@@ -997,7 +1104,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_11349(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_11719(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -1039,7 +1146,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_11349(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_11719(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -1175,18 +1282,18 @@ function __wbg_get_imports() {
             console.warn(getObject(arg0));
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 2232, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_11341);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 2272, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_11711);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 6, ret: Externref, inner_ret: Some(Externref) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1158);
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_1326);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000003: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [], shim_idx: 2225, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_11262);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [], shim_idx: 2265, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_11632);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000004: function(arg0) {
@@ -1223,19 +1330,19 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_11262(arg0, arg1) {
-    wasm.__wasm_bindgen_func_elem_11262(arg0, arg1);
+function __wasm_bindgen_func_elem_11632(arg0, arg1) {
+    wasm.__wasm_bindgen_func_elem_11632(arg0, arg1);
 }
 
-function __wasm_bindgen_func_elem_1158(arg0, arg1, arg2) {
-    const ret = wasm.__wasm_bindgen_func_elem_1158(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_1326(arg0, arg1, arg2) {
+    const ret = wasm.__wasm_bindgen_func_elem_1326(arg0, arg1, addHeapObject(arg2));
     return takeObject(ret);
 }
 
-function __wasm_bindgen_func_elem_11341(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_11711(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_11341(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_11711(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -1246,8 +1353,8 @@ function __wasm_bindgen_func_elem_11341(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_11349(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_11349(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_11719(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_11719(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 const IpfsClientFinalization = (typeof FinalizationRegistry === 'undefined')

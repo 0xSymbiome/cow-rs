@@ -57,6 +57,10 @@ export type CowEip1271SignCallback = (
 
 export type CustomEip1271Callback = CowEip1271SignCallback;
 
+export type ContractReadCallback = (
+  request: ContractCallDto,
+) => Promise<string> | string;
+
 export type HttpTransportConfig =
   | { kind: "fetch"; fetch?: typeof globalThis.fetch }
   | { kind: "callback"; callback: CowFetchCallback };
@@ -64,6 +68,7 @@ export type HttpTransportConfig =
 export interface OrderBookClientConfig {
   chainId: number;
   env?: string | null;
+  apiKey?: string | null;
   transport: HttpTransportConfig;
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
@@ -81,6 +86,7 @@ export interface TradingClientConfig {
   chainId: number;
   env?: string | null;
   appCode: string;
+  apiKey?: string | null;
   transport: HttpTransportConfig;
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;

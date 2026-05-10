@@ -12,9 +12,10 @@ use crate::exports::{
         ClientCallScope, SdkClientOptions, run_with_client_options, transport_policy_with_timeout,
     },
     dto::{
-        OrderCreationInput, OrderInput, OrderQuoteRequestInput, SignedCancellationsInput,
-        SignedOrderDto, ecdsa_signing_scheme, from_json_value, orderbook_signing_scheme,
-        parse_chain, parse_order, to_js_value, transport_policy_from_config,
+        OrderCreationInput, OrderInput, OrderQuoteRequestInput, PaginationOptions,
+        SignedCancellationsInput, SignedOrderDto, TradesQueryInput, ecdsa_signing_scheme,
+        from_json_value, orderbook_signing_scheme, parse_chain, parse_order, to_js_value,
+        transport_policy_from_config,
     },
     envelope::WasmEnvelope,
     errors::WasmError,
@@ -42,17 +43,22 @@ impl OrderBookClient {
         let config = config.as_ref();
         let chain_id = required_u32(config, "chainId")?;
         let env = optional_string(config, "env")?;
+        let api_key = optional_string(config, "apiKey")?;
         let timeout = optional_timeout(config)?;
         let transport_policy =
             transport_policy_from_config(config, TransportPolicy::default_orderbook(), timeout)?;
         let (transport, callback_guard) = configured_fetch_transport(config, timeout)?;
         Ok(Self {
-            inner: build_orderbook(chain_id, env, transport, transport_policy)?,
+            inner: build_orderbook(chain_id, env, transport, transport_policy, api_key)?,
             _callback_guard: callback_guard,
         })
     }
 
     /// Fetches a quote.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_quote"))
+    )]
     #[wasm_bindgen(js_name = "getQuote")]
     pub async fn get_quote(
         &self,
@@ -69,6 +75,10 @@ impl OrderBookClient {
     }
 
     /// Submits a signed order.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.send_order"))
+    )]
     #[wasm_bindgen(js_name = "sendOrder", unchecked_return_type = "WasmEnvelope<string>")]
     pub async fn send_order(
         &self,
@@ -85,6 +95,10 @@ impl OrderBookClient {
     }
 
     /// Submits a raw order-creation payload.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.send_order_creation"))
+    )]
     #[wasm_bindgen(
         js_name = "sendOrderCreation",
         unchecked_return_type = "WasmEnvelope<string>"
@@ -103,6 +117,10 @@ impl OrderBookClient {
     }
 
     /// Fetches an order by UID.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_order"))
+    )]
     #[wasm_bindgen(js_name = "getOrder")]
     pub async fn get_order(
         &self,
@@ -117,37 +135,71 @@ impl OrderBookClient {
         .await
     }
 
-    /// Fetches trades for an order UID.
+    /// Fetches trades for an owner or order UID.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_trades"))
+    )]
     #[wasm_bindgen(js_name = "getTrades")]
     pub async fn get_trades(
         &self,
-        #[wasm_bindgen(js_name = orderUid)] order_uid: String,
+        query: TradesQueryInput,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = orderbook_for_scope(&self.inner, &scope);
+        run_with_client_options(
+            scope,
+            async move { orderbook_get_trades(&inner, query).await },
+        )
+        .await
+    }
+
+    /// Fetches orders owned by an address.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_orders_by_owner"))
+    )]
+    #[wasm_bindgen(js_name = "getOrdersByOwner")]
+    pub async fn get_orders_by_owner(
+        &self,
+        owner: String,
+        #[wasm_bindgen(js_name = pagination)] pagination: Option<PaginationOptions>,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
         let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
         let inner = orderbook_for_scope(&self.inner, &scope);
         run_with_client_options(scope, async move {
-            orderbook_get_trades(&inner, order_uid).await
+            orderbook_get_orders_by_owner(&inner, owner, pagination).await
         })
         .await
     }
 
     /// Fetches orders owned by an address.
-    #[wasm_bindgen(js_name = "getOrdersByOwner")]
-    pub async fn get_orders_by_owner(
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_orders"))
+    )]
+    #[wasm_bindgen(js_name = "getOrders")]
+    pub async fn get_orders(
         &self,
         owner: String,
+        #[wasm_bindgen(js_name = pagination)] pagination: Option<PaginationOptions>,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
         let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
         let inner = orderbook_for_scope(&self.inner, &scope);
         run_with_client_options(scope, async move {
-            orderbook_get_orders_by_owner(&inner, owner).await
+            orderbook_get_orders_by_owner(&inner, owner, pagination).await
         })
         .await
     }
 
     /// Fetches a token's native price.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_native_price"))
+    )]
     #[wasm_bindgen(js_name = "getNativePrice")]
     pub async fn get_native_price(
         &self,
@@ -163,6 +215,10 @@ impl OrderBookClient {
     }
 
     /// Cancels orders through a signed cancellation payload.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.cancel_orders"))
+    )]
     #[wasm_bindgen(
         js_name = "cancelOrders",
         unchecked_return_type = "WasmEnvelope<{ cancelled: true }>"
@@ -186,15 +242,20 @@ pub(crate) fn build_orderbook(
     env: Option<String>,
     transport: std::sync::Arc<dyn cow_sdk_core::HttpTransport + Send + Sync>,
     transport_policy: TransportPolicy,
+    api_key: Option<String>,
 ) -> Result<OrderBookApi, JsValue> {
     let chain = parse_chain(chain_id)?;
     let env = pure::chains::env_from_str(env.as_deref())
         .map_err(|error| WasmError::from(error).into_js())?;
-    OrderBookApi::builder()
+    let mut builder = OrderBookApi::builder()
         .chain(chain)
         .environment(env)
         .transport(transport)
-        .transport_policy(transport_policy)
+        .transport_policy(transport_policy);
+    if let Some(api_key) = api_key {
+        builder = builder.api_key(api_key);
+    }
+    builder
         .build()
         .map_err(|error| WasmError::from(error).into_js())
 }
@@ -255,9 +316,27 @@ async fn orderbook_get_order(inner: &OrderBookApi, order_uid: String) -> Result<
     to_js_value(&WasmEnvelope::v1(order))
 }
 
-async fn orderbook_get_trades(inner: &OrderBookApi, order_uid: String) -> Result<JsValue, JsValue> {
-    let order_uid = parse_order_uid(order_uid)?;
-    let request = GetTradesRequest::by_order_uid(order_uid);
+async fn orderbook_get_trades(
+    inner: &OrderBookApi,
+    query: TradesQueryInput,
+) -> Result<JsValue, JsValue> {
+    let mut request = match (query.owner, query.order_uid) {
+        (Some(owner), None) => GetTradesRequest::by_owner(parse_address("owner", owner)?),
+        (None, Some(order_uid)) => GetTradesRequest::by_order_uid(parse_order_uid(order_uid)?),
+        _ => {
+            return Err(WasmError::invalid(
+                "trades",
+                "exactly one of owner or orderUid must be set",
+            )
+            .into_js());
+        }
+    };
+    if let Some(offset) = query.offset {
+        request = request.with_offset(offset);
+    }
+    if let Some(limit) = query.limit {
+        request = request.with_limit(limit);
+    }
     let trades = inner
         .get_trades(&request)
         .await
@@ -268,9 +347,18 @@ async fn orderbook_get_trades(inner: &OrderBookApi, order_uid: String) -> Result
 async fn orderbook_get_orders_by_owner(
     inner: &OrderBookApi,
     owner: String,
+    pagination: Option<PaginationOptions>,
 ) -> Result<JsValue, JsValue> {
     let owner = parse_address("owner", owner)?;
-    let request = GetOrdersRequest::new(owner);
+    let mut request = GetOrdersRequest::new(owner);
+    if let Some(pagination) = pagination {
+        if let Some(offset) = pagination.offset {
+            request = request.with_offset(offset);
+        }
+        if let Some(limit) = pagination.limit {
+            request = request.with_limit(limit);
+        }
+    }
     let orders = inner
         .get_orders(&request)
         .await
