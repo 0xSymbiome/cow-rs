@@ -413,61 +413,175 @@ export interface WasmEnvelope<T> {
 export function __cow_sdk_wasm_init(): void;
 
 /**
- * Computes the compact order UID and digest.
+ * Computes the canonical order UID and order digest for an unsigned order.
+ *
+ * The UID combines the EIP-712 order digest, owner address, and validity
+ * timestamp using the same packing rules as the native Rust SDK.
+ *
+ * @param input Unsigned order fields to hash and pack.
+ * @param chainId EVM chain id used for the EIP-712 domain.
+ * @param owner Order owner address included in the UID suffix.
+ * @returns A versioned envelope with `orderUid` and `orderDigest`.
+ * @throws SdkError when the order, owner, or chain id is invalid.
  */
 export function computeOrderUid(input: OrderInput, chainId: number, owner: string): WasmEnvelope<GeneratedOrderUidDto>;
 
 /**
- * Returns canonical deployment addresses for a chain and environment.
+ * Returns canonical CoW Protocol deployment addresses for a chain.
+ *
+ * The optional environment selects production or staging deployment data. When
+ * omitted, the helper uses the SDK default environment.
+ *
+ * @param chainId EVM chain id to resolve.
+ * @param env Optional CoW environment name, such as `prod` or `staging`.
+ * @returns Settlement, VaultRelayer, EthFlow, and AllowListAuth addresses.
+ * @throws SdkError when the chain or environment is unsupported.
  */
 export function deploymentAddresses(chainId: number, env?: string | null): WasmEnvelope<DeploymentAddressesDto>;
 
 /**
- * Computes the EIP-712 domain separator for a supported chain.
+ * Computes the CoW Protocol EIP-712 domain separator for a supported chain.
+ *
+ * Use this helper when a JavaScript host needs to compare the domain hash used
+ * by the Rust SDK with another signing stack. The input is an EVM chain id,
+ * not a CoW environment selector.
+ *
+ * @param chainId EVM chain id supported by the deployment registry.
+ * @returns The `0x`-prefixed 32-byte domain separator.
+ * @throws SdkError when the chain is not supported.
  */
 export function domainSeparator(chainId: number): string;
 
 /**
- * Encodes a CoW EIP-1271 payload from an ECDSA signature.
+ * Encodes a CoW EIP-1271 payload from an ECDSA order signature.
+ *
+ * Use this pure helper when a smart-account flow already has the wrapped ECDSA
+ * signature and needs the contract-signature payload bytes expected by CoW
+ * Protocol order submission.
+ *
+ * @param input Unsigned order used to derive the EIP-1271 payload.
+ * @param ecdsaSignature Wrapped ECDSA signature as a `0x`-prefixed string.
+ * @returns A versioned envelope containing the encoded EIP-1271 payload.
+ * @throws SdkError when the order or signature is invalid.
  */
 export function eip1271SignaturePayload(input: OrderInput, ecdsaSignature: string): WasmEnvelope<string>;
 
 /**
- * Builds signer-facing order typed data.
+ * Builds signer-facing EIP-712 typed data for an unsigned order.
+ *
+ * The returned envelope contains the domain, type map, primary type, and
+ * order message that wallet libraries expect for EIP-712 signing. It is
+ * deterministic for the provided order and chain id.
+ *
+ * @param input Unsigned order fields using the facade order DTO shape.
+ * @param chainId EVM chain id used for the EIP-712 domain.
+ * @returns A versioned envelope containing typed-data DTO fields.
+ * @throws SdkError when order parsing or chain validation fails.
  */
 export function orderTypedData(input: OrderInput, chainId: number): WasmEnvelope<TypedDataEnvelopeDto>;
 
 /**
  * Signs an order digest through an explicit `eth_sign` callback.
+ *
+ * The SDK computes the canonical order digest, passes the digest as a
+ * `0x`-prefixed string to the callback, normalizes the signature, and returns
+ * an `ethsign` signed-order DTO.
+ *
+ * @param input Unsigned order fields to sign.
+ * @param chainId EVM chain id used for the digest.
+ * @param owner Owner address used in the generated order UID.
+ * @param digestSigner Callback that signs the digest string.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing the signed order.
+ * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner: string, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through a custom EIP-1271 callback.
+ *
+ * Use this method when the JavaScript host owns the smart-account or
+ * account-abstraction client and can return the final contract signature
+ * directly. The SDK still builds typed data and the deterministic order UID.
+ *
+ * @param input Unsigned order to sign.
+ * @param chainId EVM chain id for the EIP-712 domain.
+ * @param owner Smart-account owner address used in the generated order UID.
+ * @param customCallback Callback that returns the final EIP-1271 signature.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing the signed-order DTO.
+ * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through an EIP-1193 request callback.
+ *
+ * The callback receives an `eth_signTypedData_v4` request object with owner
+ * address and serialized typed data. This is the bridge for injected wallets
+ * and wallet-client libraries that expose an EIP-1193-style request function.
+ *
+ * @param input Unsigned order fields to sign.
+ * @param chainId EVM chain id used for the EIP-712 domain.
+ * @param owner Owner address used in the wallet request and order UID.
+ * @param requestCallback Callback that executes the EIP-1193 request.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing the signed order.
+ * @throws SdkError for invalid input, wallet failure, timeout, or cancellation.
  */
 export function signOrderWithEip1193(input: OrderInput, chainId: number, owner: string, requestCallback: Eip1193RequestCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through typed-data ECDSA and wraps it as EIP-1271.
+ *
+ * The SDK sends the EIP-712 envelope to the provided typed-data callback,
+ * then converts the returned ECDSA signature into the CoW EIP-1271 payload.
+ * Per-call options may attach cancellation and wallet timeout settings.
+ *
+ * @param input Unsigned order to sign.
+ * @param chainId EVM chain id for the EIP-712 domain.
+ * @param owner Smart-account owner address used in the generated order UID.
+ * @param typedDataSigner Callback that signs the typed-data envelope.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing the signed-order DTO.
+ * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through a typed-data callback.
+ *
+ * The SDK builds the EIP-712 typed-data envelope, passes it to the callback,
+ * normalizes the returned ECDSA signature, and returns the signed-order DTO
+ * with the canonical order UID and digest.
+ *
+ * @param input Unsigned order fields to sign.
+ * @param chainId EVM chain id used for the EIP-712 domain.
+ * @param owner Owner address used in the generated order UID.
+ * @param typedDataSigner Callback that signs the typed-data envelope.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing the signed order.
+ * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderWithTypedDataSigner(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
- * Returns supported EVM chain ids.
+ * Returns the EVM chain ids supported by the SDK deployment registry.
+ *
+ * This is a pure helper and does not perform network I/O. The returned list is
+ * suitable for runtime validation, UI selection, or capability checks before a
+ * client is constructed.
+ *
+ * @returns A typed array of supported EVM chain ids.
  */
 export function supportedChainIds(): Uint32Array;
 
 /**
- * Returns the wasm crate version.
+ * Returns the version of the wasm package runtime.
+ *
+ * The value comes from the Rust package metadata used to build the wasm
+ * artifact and can be included in diagnostics or compatibility checks.
+ *
+ * @returns The semantic version string for this wasm build.
  */
 export function wasmVersion(): string;

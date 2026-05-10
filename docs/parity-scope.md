@@ -26,6 +26,42 @@ Release validation uses fresh git checkouts at the source-lock-pinned commits,
 produced by the `parity-maintainer provision-upstreams` flow whenever
 provenance is required.
 
+## Workflow-Defined 0.1.0 Scope
+
+Parity for `cow-rs` 0.1.0 is defined by supported workflows, not by a
+percentage of upstream TypeScript methods. The release supports these workflow
+buckets:
+
+1. **Deterministic order primitives**: order UID calculation, EIP-712 typed
+   data envelopes, and EIP-1271 signature payload generation from wrapped ECDSA
+   signatures.
+2. **Order signing flows**: typed-data EIP-712 signing, raw EIP-1193 signing,
+   EIP-191 digest signing, EIP-1271 wrapping, custom EIP-1271 signatures, and
+   cancellation typed data.
+3. **Orderbook operations**: quote, signed order submission, raw order-creation
+   submission, order lookup, owner order pagination, trade lookup, native price
+   lookup, app-data lookup, app-data upload, and signed cancellation
+   submission.
+4. **Trading orchestration**: quote, quote-sign-post, quote-result reuse, limit
+   order posting, native-sell transaction construction, allowance reads, and
+   EIP-1271-backed swap posting.
+5. **Subgraph reads**: protocol totals, recent daily and hourly volume, and
+   arbitrary GraphQL query execution.
+6. **App-data tools**: app-data document generation, CID and hash derivation,
+   schema validation, CID-to-hex conversion, and hex-to-CID conversion.
+7. **IPFS app-data fetch**: fetch by CID and fetch by app-data hash through an
+   injected HTTP transport.
+8. **Deployment registry**: chain and environment addresses for Settlement,
+   VaultRelayer, EthFlow, and AllowListAuth.
+9. **Runtime support**: browser bundlers, Node.js 22 and 24 LTS, Cloudflare
+   Workers, and experimental Deno builds.
+10. **Cancellation and timeouts**: per-call `signal`, per-call `timeoutMs`, and
+    wallet callback `walletConfig.timeoutMs`.
+
+The 0.1.0 scope does not claim total method-for-method parity with the
+upstream TypeScript SDK. Deferred capability families should use the upstream
+packages until their `cow-rs` leaf crates and package flavors ship.
+
 ## Surface Boundaries
 
 | Surface | Rust crate | Pinned evidence |

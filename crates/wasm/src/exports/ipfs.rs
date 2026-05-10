@@ -86,11 +86,20 @@ impl IpfsFetchTransport for IpfsHttpAdapter {
 
 #[wasm_bindgen]
 extern "C" {
+    /// Configuration object used to construct an `IpfsClient`.
+    ///
+    /// The public TypeScript facade accepts optional `ipfsUri`, an explicit
+    /// `transport`, optional `transportPolicy`, and default cancellation
+    /// settings.
     #[wasm_bindgen(typescript_type = "IpfsClientConfig")]
     pub type IpfsClientConfig;
 }
 
-/// IPFS client backed by an explicitly configured HTTP transport.
+/// IPFS app-data client backed by an explicitly configured HTTP transport.
+///
+/// Construct this client when JavaScript needs to fetch app-data documents by
+/// CID or app-data hash while preserving SDK retry, timeout, and cancellation
+/// behavior.
 #[wasm_bindgen]
 pub struct IpfsClient {
     adapter: IpfsHttpAdapter,
@@ -100,7 +109,14 @@ pub struct IpfsClient {
 
 #[wasm_bindgen]
 impl IpfsClient {
-    /// Creates an IPFS client from a single config object.
+    /// Creates an IPFS app-data client from a single config object.
+    ///
+    /// The config must include `transport`. Optional `ipfsUri` overrides the
+    /// default gateway base, while timeout, signal, and policy fields become
+    /// defaults for method calls.
+    ///
+    /// @param config IPFS client configuration.
+    /// @throws SdkError when transport, policy, timeout, or gateway config is invalid.
     #[wasm_bindgen(constructor)]
     pub fn new(config: IpfsClientConfig) -> Result<IpfsClient, JsValue> {
         let config = config.as_ref();
@@ -117,6 +133,14 @@ impl IpfsClient {
     }
 
     /// Fetches and parses an app-data document by CID.
+    ///
+    /// The CID is resolved through the configured gateway and transport. The
+    /// returned document is normalized into the SDK app-data DTO shape.
+    ///
+    /// @param cid Canonical IPFS CID for the app-data document.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the app-data document.
+    /// @throws SdkError for invalid CID, transport failure, timeout, or parse failure.
     #[wasm_bindgen(
         js_name = "fetchAppDataFromCid",
         unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
@@ -136,6 +160,14 @@ impl IpfsClient {
     }
 
     /// Fetches and parses an app-data document by app-data hash.
+    ///
+    /// The helper converts the app-data hash to the canonical CID before
+    /// fetching through the configured gateway.
+    ///
+    /// @param appDataHex App-data hash as a `0x`-prefixed hex string.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the app-data document.
+    /// @throws SdkError for invalid hash, transport failure, timeout, or parse failure.
     #[wasm_bindgen(
         js_name = "fetchAppDataFromHex",
         unchecked_return_type = "WasmEnvelope<AppDataDocDto>"

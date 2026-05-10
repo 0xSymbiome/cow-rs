@@ -24,11 +24,21 @@ use crate::exports::{
 
 #[wasm_bindgen]
 extern "C" {
+    /// Configuration object used to construct an `OrderBookClient`.
+    ///
+    /// The public TypeScript facade accepts `chainId`, optional `env`, optional
+    /// `apiKey`, an explicit `transport`, optional `transportPolicy`, and
+    /// default cancellation settings.
     #[wasm_bindgen(typescript_type = "OrderBookClientConfig")]
     pub type OrderBookClientConfig;
 }
 
 /// Orderbook client backed by an explicitly configured HTTP transport.
+///
+/// Construct this client when JavaScript needs direct access to quote,
+/// submission, lookup, trade, native-price, app-data, and cancellation orderbook
+/// endpoints. The client owns one callback registration and releases raw wasm
+/// resources through the facade `dispose()` method.
 #[wasm_bindgen]
 pub struct OrderBookClient {
     inner: OrderBookApi,
@@ -38,6 +48,13 @@ pub struct OrderBookClient {
 #[wasm_bindgen]
 impl OrderBookClient {
     /// Creates an orderbook client from a single config object.
+    ///
+    /// The config must include `chainId` and `transport`. The optional
+    /// `timeoutMs`, `signal`, and `transportPolicy` fields become defaults for
+    /// calls made through this client unless a method call overrides them.
+    ///
+    /// @param config Orderbook client configuration.
+    /// @throws SdkError when the chain, environment, transport, or policy is invalid.
     #[wasm_bindgen(constructor)]
     pub fn new(config: OrderBookClientConfig) -> Result<OrderBookClient, JsValue> {
         let config = config.as_ref();
@@ -54,7 +71,16 @@ impl OrderBookClient {
         })
     }
 
-    /// Fetches a quote.
+    /// Fetches a price quote from the orderbook API.
+    ///
+    /// The request is converted to the typed orderbook quote request and sent
+    /// through the configured transport. Per-call options can override the
+    /// constructor timeout or attach an `AbortSignal`.
+    ///
+    /// @param request Quote request DTO.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the quote response.
+    /// @throws SdkError for invalid input, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_quote"))
@@ -74,7 +100,16 @@ impl OrderBookClient {
         .await
     }
 
-    /// Submits a signed order.
+    /// Submits a signed order to the orderbook.
+    ///
+    /// The signed DTO normally comes from a signing helper in the same package.
+    /// The SDK reconstructs the typed order creation payload and returns the
+    /// order UID assigned by the orderbook service.
+    ///
+    /// @param signed Signed order DTO including typed data, signature, owner, and scheme.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the submitted order UID.
+    /// @throws SdkError for invalid signatures, transport failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.send_order"))
@@ -94,7 +129,16 @@ impl OrderBookClient {
         .await
     }
 
-    /// Submits a raw order-creation payload.
+    /// Submits a raw order-creation payload to the orderbook.
+    ///
+    /// Use this method when the host already has a complete orderbook
+    /// `OrderCreation` shape and does not need the facade to reconstruct it
+    /// from a signed-order DTO.
+    ///
+    /// @param input Raw order-creation DTO.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the submitted order UID.
+    /// @throws SdkError for malformed input, transport failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.send_order_creation"))
@@ -116,7 +160,15 @@ impl OrderBookClient {
         .await
     }
 
-    /// Fetches an order by UID.
+    /// Fetches one order by its canonical order UID.
+    ///
+    /// The UID must be the full 56-byte CoW order UID encoded as a `0x`-prefixed
+    /// string. The response is returned in the orderbook wire DTO shape.
+    ///
+    /// @param orderUid Full order UID to look up.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the order response.
+    /// @throws SdkError for invalid UID, not-found responses, transport failure, or timeout.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_order"))
@@ -135,7 +187,15 @@ impl OrderBookClient {
         .await
     }
 
-    /// Fetches trades for an owner or order UID.
+    /// Fetches trades for exactly one owner address or order UID.
+    ///
+    /// The query must set one of `owner` or `orderUid`, not both. Optional
+    /// pagination fields are forwarded to the orderbook request.
+    ///
+    /// @param query Trade query DTO.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing matching trades.
+    /// @throws SdkError when the query is ambiguous or transport fails.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_trades"))
@@ -156,6 +216,15 @@ impl OrderBookClient {
     }
 
     /// Fetches orders owned by an address.
+    ///
+    /// This compatibility method is equivalent to `getOrders` and accepts the
+    /// same pagination options. New TypeScript code can use `getOrders`.
+    ///
+    /// @param owner Owner address to query.
+    /// @param pagination Optional offset and limit.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing matching orders.
+    /// @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_orders_by_owner"))
@@ -175,7 +244,16 @@ impl OrderBookClient {
         .await
     }
 
-    /// Fetches orders owned by an address.
+    /// Fetches orders owned by an address with optional pagination.
+    ///
+    /// The owner address is validated before the request is dispatched. The
+    /// response preserves the typed orderbook order shape.
+    ///
+    /// @param owner Owner address to query.
+    /// @param pagination Optional offset and limit.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing matching orders.
+    /// @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_orders"))
@@ -195,7 +273,15 @@ impl OrderBookClient {
         .await
     }
 
-    /// Fetches a token's native price.
+    /// Fetches a token's native price from the orderbook API.
+    ///
+    /// The token must be an EVM address. The returned value follows the
+    /// orderbook native-price response shape.
+    ///
+    /// @param token Token address to price.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing native price data.
+    /// @throws SdkError for invalid token address, transport failure, or timeout.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_native_price"))
@@ -214,7 +300,16 @@ impl OrderBookClient {
         .await
     }
 
-    /// Cancels orders through a signed cancellation payload.
+    /// Submits signed off-chain order cancellations.
+    ///
+    /// Build the signed cancellation payload with one of the cancellation
+    /// signing helpers, then submit it through the same orderbook runtime
+    /// configuration used for order operations.
+    ///
+    /// @param signed Signed cancellation payload.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing `{ cancelled: true }` on success.
+    /// @throws SdkError for invalid UID, signature, transport failure, or timeout.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.cancel_orders"))

@@ -42,11 +42,20 @@ use crate::exports::{
 
 #[wasm_bindgen]
 extern "C" {
+    /// Configuration object used to construct a `TradingClient`.
+    ///
+    /// The public TypeScript facade accepts `chainId`, `appCode`, optional
+    /// environment and API key, explicit HTTP transport, optional transport
+    /// policy, and default cancellation settings.
     #[wasm_bindgen(typescript_type = "TradingClientConfig")]
     pub type TradingClientConfig;
 }
 
-/// Trading facade backed by an explicitly configured HTTP transport.
+/// High-level trading client backed by an explicitly configured orderbook.
+///
+/// Construct this client when JavaScript needs quote, sign, post, allowance,
+/// and native-sell helper workflows rather than direct orderbook calls. The
+/// client keeps app-code, chain, environment, transport, and policy defaults.
 #[wasm_bindgen]
 pub struct TradingClient {
     orderbook: OrderBookApi,
@@ -59,6 +68,13 @@ pub struct TradingClient {
 #[wasm_bindgen]
 impl TradingClient {
     /// Creates a trading client from a single config object.
+    ///
+    /// The config must include `chainId`, `appCode`, and `transport`. Optional
+    /// environment, API key, timeout, signal, and transport policy fields become
+    /// defaults for all trading methods.
+    ///
+    /// @param config Trading client configuration.
+    /// @throws SdkError when chain, app-code, environment, transport, or policy validation fails.
     #[wasm_bindgen(constructor)]
     pub fn new(config: TradingClientConfig) -> Result<TradingClient, JsValue> {
         let config = config.as_ref();
@@ -92,7 +108,15 @@ impl TradingClient {
         })
     }
 
-    /// Fetches a quote without submitting an order.
+    /// Fetches a quote without signing or submitting an order.
+    ///
+    /// Use this method when a host wants to preview the quote response before
+    /// asking a wallet to sign or before constructing a post request.
+    ///
+    /// @param params Swap parameters DTO.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing quote results.
+    /// @throws SdkError for invalid parameters, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.trading.get_quote"))
@@ -113,6 +137,17 @@ impl TradingClient {
     }
 
     /// Quotes, signs, and posts a swap order through a typed-data callback.
+    ///
+    /// The SDK fetches a quote, builds the order to sign, invokes the callback
+    /// with the EIP-712 envelope, posts the signed order, and returns posting
+    /// output from the trading workflow.
+    ///
+    /// @param params Swap parameters DTO.
+    /// @param owner Owner address to bind to the order.
+    /// @param signerCallback Callback that signs the typed-data envelope.
+    /// @param options Optional cancellation, timeout, and wallet timeout settings.
+    /// @returns A versioned envelope containing order posting output.
+    /// @throws SdkError for invalid input, quote failure, wallet failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.trading.post_swap_order"))
@@ -148,6 +183,16 @@ impl TradingClient {
     }
 
     /// Signs and posts a previously quoted swap order.
+    ///
+    /// Use this method when a host has already called `getQuote` and wants to
+    /// reuse that quote result for posting without requesting a new quote.
+    ///
+    /// @param quoteResults Quote result DTO returned by `getQuote`.
+    /// @param owner Owner address to bind to the order.
+    /// @param signerCallback Callback that signs the typed-data envelope.
+    /// @param options Optional cancellation, timeout, and wallet timeout settings.
+    /// @returns A versioned envelope containing order posting output.
+    /// @throws SdkError for invalid quote data, wallet failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -184,6 +229,16 @@ impl TradingClient {
     }
 
     /// Signs and posts a limit order through a typed-data callback.
+    ///
+    /// This helper follows the native limit-order trading path and lets the SDK
+    /// build, sign, and submit the order using the configured orderbook.
+    ///
+    /// @param params Limit-order parameters DTO.
+    /// @param owner Owner address to bind to the order when absent from params.
+    /// @param signerCallback Callback that signs the typed-data envelope.
+    /// @param options Optional cancellation, timeout, and wallet timeout settings.
+    /// @returns A versioned envelope containing order posting output.
+    /// @throws SdkError for invalid input, wallet failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.trading.post_limit_order"))
@@ -209,6 +264,17 @@ impl TradingClient {
     }
 
     /// Builds the transaction for a native-currency sell order.
+    ///
+    /// The helper validates that the order sells the native-token sentinel,
+    /// resolves the EthFlow deployment, and returns a transaction request for
+    /// the host wallet to submit.
+    ///
+    /// @param order Unsigned native-sell order DTO.
+    /// @param quoteId Quote identifier returned by the orderbook.
+    /// @param from Transaction sender address.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing order UID and transaction request.
+    /// @throws SdkError when the order, chain, deployment, or sender is invalid.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -237,6 +303,16 @@ impl TradingClient {
     }
 
     /// Reads CoW Protocol allowance through a read-only contract callback.
+    ///
+    /// The SDK builds the contract call while the JavaScript host performs the
+    /// actual chain read. Use this when a TypeScript runtime owns the RPC
+    /// provider.
+    ///
+    /// @param params Allowance parameters DTO.
+    /// @param readContractCallback Callback that executes the read-only call.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the allowance amount string.
+    /// @throws SdkError for invalid parameters, callback failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -264,6 +340,17 @@ impl TradingClient {
     }
 
     /// Quotes and posts a swap order with a custom EIP-1271 signature callback.
+    ///
+    /// Use this method when a smart-account runtime owns final contract
+    /// signature production. The SDK still quotes the swap, builds typed data,
+    /// posts the signed order, and returns posting output.
+    ///
+    /// @param params Swap parameters DTO.
+    /// @param owner Smart-account owner address.
+    /// @param customCallback Callback that returns the final EIP-1271 signature.
+    /// @param options Optional cancellation, timeout, and wallet timeout settings.
+    /// @returns A versioned envelope containing order posting output.
+    /// @throws SdkError for invalid input, quote failure, callback failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(

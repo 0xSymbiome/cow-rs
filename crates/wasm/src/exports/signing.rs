@@ -166,6 +166,18 @@ impl AsyncEip1193 for JsEip1193Requester {
 }
 
 /// Signs an order through a typed-data callback.
+///
+/// The SDK builds the EIP-712 typed-data envelope, passes it to the callback,
+/// normalizes the returned ECDSA signature, and returns the signed-order DTO
+/// with the canonical order UID and digest.
+///
+/// @param input Unsigned order fields to sign.
+/// @param chainId EVM chain id used for the EIP-712 domain.
+/// @param owner Owner address used in the generated order UID.
+/// @param typedDataSigner Callback that signs the typed-data envelope.
+/// @param options Optional cancellation, timeout, and wallet timeout settings.
+/// @returns A versioned envelope containing the signed order.
+/// @throws SdkError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderWithTypedDataSigner",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -197,6 +209,18 @@ pub async fn sign_order_with_typed_data_signer(
 }
 
 /// Signs an order through an EIP-1193 request callback.
+///
+/// The callback receives an `eth_signTypedData_v4` request object with owner
+/// address and serialized typed data. This is the bridge for injected wallets
+/// and wallet-client libraries that expose an EIP-1193-style request function.
+///
+/// @param input Unsigned order fields to sign.
+/// @param chainId EVM chain id used for the EIP-712 domain.
+/// @param owner Owner address used in the wallet request and order UID.
+/// @param requestCallback Callback that executes the EIP-1193 request.
+/// @param options Optional cancellation, timeout, and wallet timeout settings.
+/// @returns A versioned envelope containing the signed order.
+/// @throws SdkError for invalid input, wallet failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderWithEip1193",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -237,6 +261,18 @@ pub async fn sign_order_with_eip1193(
 }
 
 /// Signs an order digest through an explicit `eth_sign` callback.
+///
+/// The SDK computes the canonical order digest, passes the digest as a
+/// `0x`-prefixed string to the callback, normalizes the signature, and returns
+/// an `ethsign` signed-order DTO.
+///
+/// @param input Unsigned order fields to sign.
+/// @param chainId EVM chain id used for the digest.
+/// @param owner Owner address used in the generated order UID.
+/// @param digestSigner Callback that signs the digest string.
+/// @param options Optional cancellation, timeout, and wallet timeout settings.
+/// @returns A versioned envelope containing the signed order.
+/// @throws SdkError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderEthSignDigest",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -284,6 +320,14 @@ pub async fn sign_order_eth_sign_digest(
 }
 
 /// Builds a settlement pre-sign transaction for an order UID.
+///
+/// The returned transaction request targets the Settlement contract and encodes
+/// `setPreSignature(bytes,bool)` with the order UID and `true` flag. The host
+/// wallet remains responsible for transaction submission.
+///
+/// @param params Order UID, chain, environment, and optional deployment override.
+/// @returns A versioned envelope containing the transaction request DTO.
+/// @throws SdkError when the chain, deployment, or order UID is invalid.
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "buildPresignTx",
@@ -295,6 +339,14 @@ pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, J
 }
 
 /// Builds a settlement cancellation transaction for an order UID.
+///
+/// The returned transaction request targets the Settlement contract and encodes
+/// `invalidateOrder(bytes)`. The host wallet remains responsible for submitting
+/// and observing the transaction.
+///
+/// @param params Order UID, chain, environment, and optional deployment override.
+/// @returns A versioned envelope containing the transaction request DTO.
+/// @throws SdkError when the chain, deployment, or order UID is invalid.
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "buildCancelOrderTx",
@@ -306,6 +358,17 @@ pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsVal
 }
 
 /// Signs cancellation typed data through a typed-data callback.
+///
+/// The SDK builds the batch cancellation EIP-712 payload for the provided order
+/// UIDs and asks the callback to sign it. The response can be submitted through
+/// `OrderBookClient.cancelOrders`.
+///
+/// @param orderUids One or more full order UIDs to cancel.
+/// @param chainId EVM chain id used for the cancellation domain.
+/// @param typedDataSigner Callback that signs the typed-data envelope.
+/// @param options Optional cancellation, timeout, and wallet timeout settings.
+/// @returns A versioned envelope containing signed cancellations.
+/// @throws SdkError for empty input, invalid UID, callback failure, or timeout.
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "signCancellationWithTypedDataSigner",
@@ -342,6 +405,17 @@ pub async fn sign_cancellation_with_typed_data_signer(
 }
 
 /// Signs cancellation typed data through an EIP-1193 callback.
+///
+/// The callback receives an `eth_signTypedData_v4` request object. Use this
+/// helper when an injected wallet or wallet client owns typed-data signing.
+///
+/// @param orderUids One or more full order UIDs to cancel.
+/// @param chainId EVM chain id used for the cancellation domain.
+/// @param owner Owner address included in the EIP-1193 request parameters.
+/// @param requestCallback Callback that executes the EIP-1193 request.
+/// @param options Optional cancellation, timeout, and wallet timeout settings.
+/// @returns A versioned envelope containing signed cancellations.
+/// @throws SdkError for invalid input, wallet failure, timeout, or cancellation.
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "signCancellationWithEip1193",
@@ -382,6 +456,16 @@ pub async fn sign_cancellation_with_eip1193(
 }
 
 /// Signs a cancellation digest through an explicit `eth_sign` callback.
+///
+/// The SDK computes the canonical cancellation digest for the provided UIDs and
+/// passes it to the digest signer callback as a `0x`-prefixed string.
+///
+/// @param orderUids One or more full order UIDs to cancel.
+/// @param chainId EVM chain id used for the cancellation digest.
+/// @param digestSigner Callback that signs the digest string.
+/// @param options Optional cancellation, timeout, and wallet timeout settings.
+/// @returns A versioned envelope containing signed cancellations.
+/// @throws SdkError for empty input, invalid UID, callback failure, or timeout.
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "signCancellationEthSignDigest",

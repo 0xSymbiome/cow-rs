@@ -17,6 +17,37 @@ Ethereum applications without trading helpers should depend on Alloy directly;
 the adapter exists to wire native Alloy into the SDK's signing and transaction
 contracts.
 
+## When to use cow-rs
+
+| You are building... | Choose | Why |
+| --- | --- | --- |
+| MEV bot, market maker, solver, analytics job, or treasury automation in Rust | `cow-sdk` | Native Rust facade over typed transport, signing, orderbook, and trading crates |
+| Browser dapp embedding "swap with CoW" through TypeScript | `<published-cow-sdk-wasm-package>` | TypeScript facade over deterministic Rust helpers with wallet callbacks |
+| Browser dapp that only needs orderbook plus signing | `<published-cow-sdk-wasm-package>/orderbook` | Smaller wasm flavor for quote, post, lookup, trade, and cancellation flows |
+| Node.js 22 or 24 backend service | `<published-cow-sdk-wasm-package>` | Node target works with explicit fetch or callback transport |
+| Cloudflare Worker proxying orderbook calls | `<published-cow-sdk-wasm-package>/cloudflare` | Worker-compatible package flavor and explicit wasm module initialization |
+| Signer service or HSM proxy | `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, deployment, and version helpers without HTTP clients |
+| Native Rust app using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in provider and signer adapters without widening the default facade |
+| Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm path; not the JavaScript-callable npm package |
+| TWAP, composable, bridging, Cow Shed, flash-loan, weiroll, or hardware-wallet flows | Upstream TypeScript packages until `cow-rs` ships those capabilities | These capability families are intentionally outside the 0.1.0 package scope |
+
+<!-- runtime-routing:start -->
+## Choose the crate or package by runtime
+
+| You're building... | Use | Why |
+| --- | --- | --- |
+| Native Rust services, bots, solvers, analytics | `cow-sdk` | Native HTTP transport, signing, trading, orderbook, and subgraph surfaces. |
+| Native Rust apps using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in Alloy provider and signer adapters without widening the default facade. |
+| Rust apps that compile to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm wallet and fetch plumbing; not the JavaScript-callable package. |
+| TypeScript apps with viem, ethers, wagmi, or EIP-1193 wallets | `<published-cow-sdk-wasm-package>` | Wallet stack-agnostic callbacks and the full facade surface. |
+| Browser dapps with a smaller bundle target | `<published-cow-sdk-wasm-package>/orderbook` | Orderbook and signing subset with a smaller raw wasm budget. |
+| Signer services or HSM proxies | `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, and deployment helpers without HTTP clients. |
+| Node.js 22 or 24 LTS backends | `<published-cow-sdk-wasm-package>` | Node target works without browser polyfills when transport is configured. |
+| Cloudflare Workers | `<published-cow-sdk-wasm-package>/cloudflare` plus `<published-cow-sdk-wasm-package>/cloudflare/wasm` | Worker-compatible web target with explicit module initialization. |
+| Deno | `<published-cow-sdk-wasm-package>` | Experimental build-only support; validate in your own runtime before production use. |
+| Non-JS wasm consumers, WASI, WebAssembly components, TinyGo, Blazor, AssemblyScript guests, or no_std | Out of scope for 0.1.0 | Use native Rust crates where possible; the npm package targets JavaScript hosts. |
+<!-- runtime-routing:end -->
+
 ## Start Here
 
 The canonical first-touch path is [Getting Started](docs/getting-started.md).
@@ -87,21 +118,11 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 ## TypeScript-Callable WASM
 
 `cow-sdk-wasm` exposes deterministic Rust SDK logic to JavaScript and
-TypeScript through typed DTOs and explicit callbacks for signing, wallet, and
-HTTP dispatch. Browser bundlers may use the default fetch-backed path; Node.js
-24 LTS, Cloudflare Workers, and custom runtimes use `CowFetchCallback` through
-`JsCallbackHttpTransport`.
-
-| Audience | Path |
-| --- | --- |
-| Native Rust services, bots, solvers, analytics | `cow-sdk` |
-| Native Rust apps using Alloy directly | `cow-sdk` plus `cow-sdk-alloy-*` |
-| Rust applications that compile to WASM and run in a browser | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` |
-| TypeScript apps that want SDK-managed browser wallet flows | `cow-sdk-browser-wallet` (convenience integration) |
-| TypeScript apps using viem, ethers, wagmi, or any EIP-1193 wallet | `cow-sdk-wasm` (after publication) |
-| Node.js LTS backends | `cow-sdk-wasm` (`nodejs` wasm-pack target) |
-| Cloudflare Workers | `cow-sdk-wasm` with explicit callback transport config |
-| Deno (optional / experimental) | `cow-sdk-wasm` (`deno` wasm-pack target, opt-in only via `BUILD_DENO=1`; `./deno` npm export absent by default) |
+TypeScript through a TypeScript facade, typed DTOs, explicit callbacks for
+signing and HTTP dispatch, per-call cancellation, per-call timeouts, and
+flavor-specific imports. Browser, Node.js, Workers, and other JavaScript hosts
+configure transport explicitly through `transport: { kind: "fetch" }` or
+`transport: { kind: "callback", callback }`.
 
 ## Public Boundary
 

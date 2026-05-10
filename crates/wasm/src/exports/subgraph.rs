@@ -15,11 +15,20 @@ use crate::exports::{
 
 #[wasm_bindgen]
 extern "C" {
+    /// Configuration object used to construct a `SubgraphClient`.
+    ///
+    /// The public TypeScript facade accepts `chainId`, required `apiKey`, an
+    /// explicit `transport`, optional `transportPolicy`, and default
+    /// cancellation settings.
     #[wasm_bindgen(typescript_type = "SubgraphClientConfig")]
     pub type SubgraphClientConfig;
 }
 
-/// Subgraph client backed by an explicitly configured HTTP transport.
+/// Read-only subgraph client backed by an explicitly configured transport.
+///
+/// Construct this client when JavaScript needs protocol totals, recent volume,
+/// or custom GraphQL query execution through the same transport and policy
+/// model as the orderbook clients.
 #[wasm_bindgen]
 pub struct SubgraphClient {
     inner: SubgraphApi,
@@ -29,6 +38,13 @@ pub struct SubgraphClient {
 #[wasm_bindgen]
 impl SubgraphClient {
     /// Creates a subgraph client from a single config object.
+    ///
+    /// The config must include `chainId`, `apiKey`, and `transport`. Optional
+    /// timeout, signal, and policy fields become client defaults for later
+    /// method calls.
+    ///
+    /// @param config Subgraph client configuration.
+    /// @throws SdkError when the chain, API key, transport, or policy is invalid.
     #[wasm_bindgen(constructor)]
     pub fn new(config: SubgraphClientConfig) -> Result<SubgraphClient, JsValue> {
         let config = config.as_ref();
@@ -44,7 +60,14 @@ impl SubgraphClient {
         })
     }
 
-    /// Fetches aggregate totals.
+    /// Fetches aggregate protocol totals from the subgraph.
+    ///
+    /// The request uses the client's configured chain, API key, transport, and
+    /// transport policy.
+    ///
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing aggregate totals.
+    /// @throws SdkError for transport, cancellation, timeout, or subgraph errors.
     #[wasm_bindgen(js_name = "getTotals")]
     pub async fn get_totals(
         &self,
@@ -55,7 +78,15 @@ impl SubgraphClient {
         run_with_client_options(scope, async move { subgraph_get_totals(&inner).await }).await
     }
 
-    /// Fetches daily volume rows.
+    /// Fetches recent daily volume rows.
+    ///
+    /// The `days` value controls how many recent daily buckets the subgraph
+    /// query requests.
+    ///
+    /// @param days Number of daily buckets to fetch.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing daily volume rows.
+    /// @throws SdkError for invalid query shape, transport failure, or timeout.
     #[wasm_bindgen(js_name = "getLastDaysVolume")]
     pub async fn get_last_days_volume(
         &self,
@@ -70,7 +101,15 @@ impl SubgraphClient {
         .await
     }
 
-    /// Fetches hourly volume rows.
+    /// Fetches recent hourly volume rows.
+    ///
+    /// The `hours` value controls how many recent hourly buckets the subgraph
+    /// query requests.
+    ///
+    /// @param hours Number of hourly buckets to fetch.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing hourly volume rows.
+    /// @throws SdkError for invalid query shape, transport failure, or timeout.
     #[wasm_bindgen(js_name = "getLastHoursVolume")]
     pub async fn get_last_hours_volume(
         &self,
@@ -85,7 +124,15 @@ impl SubgraphClient {
         .await
     }
 
-    /// Runs a raw GraphQL query.
+    /// Runs a caller-provided GraphQL query against the configured subgraph.
+    ///
+    /// Use this method when the built-in totals or volume helpers are too
+    /// narrow. Variables and operation name are forwarded when present.
+    ///
+    /// @param request GraphQL query, variables, and optional operation name.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the JSON GraphQL response.
+    /// @throws SdkError for transport, timeout, cancellation, or GraphQL errors.
     #[wasm_bindgen(js_name = "runQuery")]
     pub async fn run_query(
         &self,

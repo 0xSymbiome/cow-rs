@@ -162,10 +162,89 @@ the signal is not serialized. Timeout remains SDK-owned through
 `globalThis.AbortController`; `TimerGuard` clears the opaque timeout handle and
 drops its closure on success, throw, rejection, malformed response, or abort.
 
-Use this path for Node.js 24 LTS, Cloudflare Workers, Deno, custom service
+Use this path for Node.js 22 or 24 LTS, Cloudflare Workers, Deno, custom service
 workers, and tests that need precise control over HTTP responses. Cloudflare
 Workers consume the web-target package through `./cloudflare` and
 `./cloudflare/wasm`, not the bundler target.
+
+## TypeScript TransportConfig
+
+After publication, the TypeScript facade exposes one transport option on every
+client constructor:
+
+```ts
+import { OrderBookClient } from "<published-cow-sdk-wasm-package>";
+
+const client = new OrderBookClient({
+  chainId: 1,
+  env: "prod",
+  transport: { kind: "fetch" }
+});
+```
+
+`transport: { kind: "fetch" }` uses `globalThis.fetch`. It is the shortest
+path for browser, Node.js, and Worker hosts that already expose a standards
+compatible fetch implementation. Pass `fetch` explicitly when the host uses a
+wrapped, instrumented, or test-owned implementation:
+
+```ts
+const client = new OrderBookClient({
+  chainId: 1,
+  env: "prod",
+  transport: { kind: "fetch", fetch: instrumentedFetch }
+});
+```
+
+`transport: { kind: "callback", callback }` gives the host full ownership of
+HTTP dispatch. The callback receives a `CowFetchRequest` with method, URL,
+headers, optional body, optional timeout, and a live `AbortSignal`; it returns
+a `CowFetchResponse` with status, optional headers, and optional body:
+
+```ts
+const client = new OrderBookClient({
+  chainId: 1,
+  env: "prod",
+  transport: {
+    kind: "callback",
+    callback: async (request) => {
+      const response = await fetch(request.url, {
+        method: request.method,
+        headers: request.headers,
+        body: request.body,
+        signal: request.signal
+      });
+
+      return {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        body: await response.text()
+      };
+    }
+  }
+});
+```
+
+Every client also accepts `transportPolicy: TransportPolicyConfig`:
+
+```ts
+const client = new OrderBookClient({
+  chainId: 1,
+  env: "prod",
+  transport: { kind: "fetch" },
+  transportPolicy: {
+    retryPolicy: { maxAttempts: 3, initialDelayMs: 200, maxDelayMs: 2_000 },
+    requestRateLimiter: { enabled: true, burst: 10, refillPerSecond: 5 },
+    jitterStrategy: "full",
+    tracingEnabled: true,
+    userAgent: "my-app/1.0"
+  }
+});
+```
+
+Omitted policy fields inherit the SDK defaults for the selected client. Per-call
+`timeoutMs` and `signal` options remain separate from the constructor policy so
+each request can still set its own cancellation and latency boundary.
 
 ## Typed Failures: `TransportError` And `TransportErrorClass`
 

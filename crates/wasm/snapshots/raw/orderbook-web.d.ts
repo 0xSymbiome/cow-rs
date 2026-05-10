@@ -681,48 +681,138 @@ export interface WasmEnvelope<T> {
 
 /**
  * Orderbook client backed by an explicitly configured HTTP transport.
+ *
+ * Construct this client when JavaScript needs direct access to quote,
+ * submission, lookup, trade, native-price, app-data, and cancellation orderbook
+ * endpoints. The client owns one callback registration and releases raw wasm
+ * resources through the facade `dispose()` method.
  */
 export class OrderBookClient {
     free(): void;
     [Symbol.dispose](): void;
     /**
-     * Cancels orders through a signed cancellation payload.
+     * Submits signed off-chain order cancellations.
+     *
+     * Build the signed cancellation payload with one of the cancellation
+     * signing helpers, then submit it through the same orderbook runtime
+     * configuration used for order operations.
+     *
+     * @param signed Signed cancellation payload.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing `{ cancelled: true }` on success.
+     * @throws SdkError for invalid UID, signature, transport failure, or timeout.
      */
     cancelOrders(signed: SignedCancellationsInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ cancelled: true }>>;
     /**
-     * Fetches a token's native price.
+     * Fetches a token's native price from the orderbook API.
+     *
+     * The token must be an EVM address. The returned value follows the
+     * orderbook native-price response shape.
+     *
+     * @param token Token address to price.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing native price data.
+     * @throws SdkError for invalid token address, transport failure, or timeout.
      */
     getNativePrice(token: string, options?: SdkClientOptions | null): Promise<any>;
     /**
-     * Fetches an order by UID.
+     * Fetches one order by its canonical order UID.
+     *
+     * The UID must be the full 56-byte CoW order UID encoded as a `0x`-prefixed
+     * string. The response is returned in the orderbook wire DTO shape.
+     *
+     * @param orderUid Full order UID to look up.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the order response.
+     * @throws SdkError for invalid UID, not-found responses, transport failure, or timeout.
      */
     getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<any>;
     /**
-     * Fetches orders owned by an address.
+     * Fetches orders owned by an address with optional pagination.
+     *
+     * The owner address is validated before the request is dispatched. The
+     * response preserves the typed orderbook order shape.
+     *
+     * @param owner Owner address to query.
+     * @param pagination Optional offset and limit.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing matching orders.
+     * @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
      */
     getOrders(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Fetches orders owned by an address.
+     *
+     * This compatibility method is equivalent to `getOrders` and accepts the
+     * same pagination options. New TypeScript code can use `getOrders`.
+     *
+     * @param owner Owner address to query.
+     * @param pagination Optional offset and limit.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing matching orders.
+     * @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
      */
     getOrdersByOwner(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<any>;
     /**
-     * Fetches a quote.
+     * Fetches a price quote from the orderbook API.
+     *
+     * The request is converted to the typed orderbook quote request and sent
+     * through the configured transport. Per-call options can override the
+     * constructor timeout or attach an `AbortSignal`.
+     *
+     * @param request Quote request DTO.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the quote response.
+     * @throws SdkError for invalid input, transport failure, timeout, or cancellation.
      */
     getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<any>;
     /**
-     * Fetches trades for an owner or order UID.
+     * Fetches trades for exactly one owner address or order UID.
+     *
+     * The query must set one of `owner` or `orderUid`, not both. Optional
+     * pagination fields are forwarded to the orderbook request.
+     *
+     * @param query Trade query DTO.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing matching trades.
+     * @throws SdkError when the query is ambiguous or transport fails.
      */
     getTrades(query: TradesQueryInput, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Creates an orderbook client from a single config object.
+     *
+     * The config must include `chainId` and `transport`. The optional
+     * `timeoutMs`, `signal`, and `transportPolicy` fields become defaults for
+     * calls made through this client unless a method call overrides them.
+     *
+     * @param config Orderbook client configuration.
+     * @throws SdkError when the chain, environment, transport, or policy is invalid.
      */
     constructor(config: OrderBookClientConfig);
     /**
-     * Submits a signed order.
+     * Submits a signed order to the orderbook.
+     *
+     * The signed DTO normally comes from a signing helper in the same package.
+     * The SDK reconstructs the typed order creation payload and returns the
+     * order UID assigned by the orderbook service.
+     *
+     * @param signed Signed order DTO including typed data, signature, owner, and scheme.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the submitted order UID.
+     * @throws SdkError for invalid signatures, transport failure, timeout, or rejection.
      */
     sendOrder(signed: SignedOrderDto, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     /**
-     * Submits a raw order-creation payload.
+     * Submits a raw order-creation payload to the orderbook.
+     *
+     * Use this method when the host already has a complete orderbook
+     * `OrderCreation` shape and does not need the facade to reconstruct it
+     * from a signed-order DTO.
+     *
+     * @param input Raw order-creation DTO.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the submitted order UID.
+     * @throws SdkError for malformed input, transport failure, timeout, or rejection.
      */
     sendOrderCreation(input: OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
 }
@@ -734,86 +824,248 @@ export function __cow_sdk_wasm_init(): void;
 
 /**
  * Builds a settlement cancellation transaction for an order UID.
+ *
+ * The returned transaction request targets the Settlement contract and encodes
+ * `invalidateOrder(bytes)`. The host wallet remains responsible for submitting
+ * and observing the transaction.
+ *
+ * @param params Order UID, chain, environment, and optional deployment override.
+ * @returns A versioned envelope containing the transaction request DTO.
+ * @throws SdkError when the chain, deployment, or order UID is invalid.
  */
 export function buildCancelOrderTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>;
 
 /**
  * Builds a settlement pre-sign transaction for an order UID.
+ *
+ * The returned transaction request targets the Settlement contract and encodes
+ * `setPreSignature(bytes,bool)` with the order UID and `true` flag. The host
+ * wallet remains responsible for transaction submission.
+ *
+ * @param params Order UID, chain, environment, and optional deployment override.
+ * @returns A versioned envelope containing the transaction request DTO.
+ * @throws SdkError when the chain, deployment, or order UID is invalid.
  */
 export function buildPresignTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>;
 
 /**
- * Computes the compact order UID and digest.
+ * Computes the canonical order UID and order digest for an unsigned order.
+ *
+ * The UID combines the EIP-712 order digest, owner address, and validity
+ * timestamp using the same packing rules as the native Rust SDK.
+ *
+ * @param input Unsigned order fields to hash and pack.
+ * @param chainId EVM chain id used for the EIP-712 domain.
+ * @param owner Order owner address included in the UID suffix.
+ * @returns A versioned envelope with `orderUid` and `orderDigest`.
+ * @throws SdkError when the order, owner, or chain id is invalid.
  */
 export function computeOrderUid(input: OrderInput, chainId: number, owner: string): WasmEnvelope<GeneratedOrderUidDto>;
 
 /**
- * Returns canonical deployment addresses for a chain and environment.
+ * Returns canonical CoW Protocol deployment addresses for a chain.
+ *
+ * The optional environment selects production or staging deployment data. When
+ * omitted, the helper uses the SDK default environment.
+ *
+ * @param chainId EVM chain id to resolve.
+ * @param env Optional CoW environment name, such as `prod` or `staging`.
+ * @returns Settlement, VaultRelayer, EthFlow, and AllowListAuth addresses.
+ * @throws SdkError when the chain or environment is unsupported.
  */
 export function deploymentAddresses(chainId: number, env?: string | null): WasmEnvelope<DeploymentAddressesDto>;
 
 /**
- * Computes the EIP-712 domain separator for a supported chain.
+ * Computes the CoW Protocol EIP-712 domain separator for a supported chain.
+ *
+ * Use this helper when a JavaScript host needs to compare the domain hash used
+ * by the Rust SDK with another signing stack. The input is an EVM chain id,
+ * not a CoW environment selector.
+ *
+ * @param chainId EVM chain id supported by the deployment registry.
+ * @returns The `0x`-prefixed 32-byte domain separator.
+ * @throws SdkError when the chain is not supported.
  */
 export function domainSeparator(chainId: number): string;
 
 /**
- * Encodes a CoW EIP-1271 payload from an ECDSA signature.
+ * Encodes a CoW EIP-1271 payload from an ECDSA order signature.
+ *
+ * Use this pure helper when a smart-account flow already has the wrapped ECDSA
+ * signature and needs the contract-signature payload bytes expected by CoW
+ * Protocol order submission.
+ *
+ * @param input Unsigned order used to derive the EIP-1271 payload.
+ * @param ecdsaSignature Wrapped ECDSA signature as a `0x`-prefixed string.
+ * @returns A versioned envelope containing the encoded EIP-1271 payload.
+ * @throws SdkError when the order or signature is invalid.
  */
 export function eip1271SignaturePayload(input: OrderInput, ecdsaSignature: string): WasmEnvelope<string>;
 
 /**
- * Builds signer-facing order typed data.
+ * Builds signer-facing EIP-712 typed data for an unsigned order.
+ *
+ * The returned envelope contains the domain, type map, primary type, and
+ * order message that wallet libraries expect for EIP-712 signing. It is
+ * deterministic for the provided order and chain id.
+ *
+ * @param input Unsigned order fields using the facade order DTO shape.
+ * @param chainId EVM chain id used for the EIP-712 domain.
+ * @returns A versioned envelope containing typed-data DTO fields.
+ * @throws SdkError when order parsing or chain validation fails.
  */
 export function orderTypedData(input: OrderInput, chainId: number): WasmEnvelope<TypedDataEnvelopeDto>;
 
 /**
  * Signs a cancellation digest through an explicit `eth_sign` callback.
+ *
+ * The SDK computes the canonical cancellation digest for the provided UIDs and
+ * passes it to the digest signer callback as a `0x`-prefixed string.
+ *
+ * @param orderUids One or more full order UIDs to cancel.
+ * @param chainId EVM chain id used for the cancellation digest.
+ * @param digestSigner Callback that signs the digest string.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing signed cancellations.
+ * @throws SdkError for empty input, invalid UID, callback failure, or timeout.
  */
 export function signCancellationEthSignDigest(orderUids: string[], chainId: number, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
 /**
  * Signs cancellation typed data through an EIP-1193 callback.
+ *
+ * The callback receives an `eth_signTypedData_v4` request object. Use this
+ * helper when an injected wallet or wallet client owns typed-data signing.
+ *
+ * @param orderUids One or more full order UIDs to cancel.
+ * @param chainId EVM chain id used for the cancellation domain.
+ * @param owner Owner address included in the EIP-1193 request parameters.
+ * @param requestCallback Callback that executes the EIP-1193 request.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing signed cancellations.
+ * @throws SdkError for invalid input, wallet failure, timeout, or cancellation.
  */
 export function signCancellationWithEip1193(orderUids: string[], chainId: number, owner: string, requestCallback: Eip1193RequestCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
 /**
  * Signs cancellation typed data through a typed-data callback.
+ *
+ * The SDK builds the batch cancellation EIP-712 payload for the provided order
+ * UIDs and asks the callback to sign it. The response can be submitted through
+ * `OrderBookClient.cancelOrders`.
+ *
+ * @param orderUids One or more full order UIDs to cancel.
+ * @param chainId EVM chain id used for the cancellation domain.
+ * @param typedDataSigner Callback that signs the typed-data envelope.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing signed cancellations.
+ * @throws SdkError for empty input, invalid UID, callback failure, or timeout.
  */
 export function signCancellationWithTypedDataSigner(orderUids: string[], chainId: number, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
 /**
  * Signs an order digest through an explicit `eth_sign` callback.
+ *
+ * The SDK computes the canonical order digest, passes the digest as a
+ * `0x`-prefixed string to the callback, normalizes the signature, and returns
+ * an `ethsign` signed-order DTO.
+ *
+ * @param input Unsigned order fields to sign.
+ * @param chainId EVM chain id used for the digest.
+ * @param owner Owner address used in the generated order UID.
+ * @param digestSigner Callback that signs the digest string.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing the signed order.
+ * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner: string, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through a custom EIP-1271 callback.
+ *
+ * Use this method when the JavaScript host owns the smart-account or
+ * account-abstraction client and can return the final contract signature
+ * directly. The SDK still builds typed data and the deterministic order UID.
+ *
+ * @param input Unsigned order to sign.
+ * @param chainId EVM chain id for the EIP-712 domain.
+ * @param owner Smart-account owner address used in the generated order UID.
+ * @param customCallback Callback that returns the final EIP-1271 signature.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing the signed-order DTO.
+ * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through an EIP-1193 request callback.
+ *
+ * The callback receives an `eth_signTypedData_v4` request object with owner
+ * address and serialized typed data. This is the bridge for injected wallets
+ * and wallet-client libraries that expose an EIP-1193-style request function.
+ *
+ * @param input Unsigned order fields to sign.
+ * @param chainId EVM chain id used for the EIP-712 domain.
+ * @param owner Owner address used in the wallet request and order UID.
+ * @param requestCallback Callback that executes the EIP-1193 request.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing the signed order.
+ * @throws SdkError for invalid input, wallet failure, timeout, or cancellation.
  */
 export function signOrderWithEip1193(input: OrderInput, chainId: number, owner: string, requestCallback: Eip1193RequestCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through typed-data ECDSA and wraps it as EIP-1271.
+ *
+ * The SDK sends the EIP-712 envelope to the provided typed-data callback,
+ * then converts the returned ECDSA signature into the CoW EIP-1271 payload.
+ * Per-call options may attach cancellation and wallet timeout settings.
+ *
+ * @param input Unsigned order to sign.
+ * @param chainId EVM chain id for the EIP-712 domain.
+ * @param owner Smart-account owner address used in the generated order UID.
+ * @param typedDataSigner Callback that signs the typed-data envelope.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing the signed-order DTO.
+ * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through a typed-data callback.
+ *
+ * The SDK builds the EIP-712 typed-data envelope, passes it to the callback,
+ * normalizes the returned ECDSA signature, and returns the signed-order DTO
+ * with the canonical order UID and digest.
+ *
+ * @param input Unsigned order fields to sign.
+ * @param chainId EVM chain id used for the EIP-712 domain.
+ * @param owner Owner address used in the generated order UID.
+ * @param typedDataSigner Callback that signs the typed-data envelope.
+ * @param options Optional cancellation, timeout, and wallet timeout settings.
+ * @returns A versioned envelope containing the signed order.
+ * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderWithTypedDataSigner(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
- * Returns supported EVM chain ids.
+ * Returns the EVM chain ids supported by the SDK deployment registry.
+ *
+ * This is a pure helper and does not perform network I/O. The returned list is
+ * suitable for runtime validation, UI selection, or capability checks before a
+ * client is constructed.
+ *
+ * @returns A typed array of supported EVM chain ids.
  */
 export function supportedChainIds(): Uint32Array;
 
 /**
- * Returns the wasm crate version.
+ * Returns the version of the wasm package runtime.
+ *
+ * The value comes from the Rust package metadata used to build the wasm
+ * artifact and can be included in diagnostics or compatibility checks.
+ *
+ * @returns The semantic version string for this wasm build.
  */
 export function wasmVersion(): string;
 

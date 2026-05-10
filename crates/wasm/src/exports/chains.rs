@@ -16,7 +16,15 @@ use crate::exports::dto::{
 #[cfg(feature = "app-data")]
 use crate::exports::dto::{AppDataDocDto, AppDataDocInput, AppDataInfoDto, ValidationResultDto};
 
-/// Computes the EIP-712 domain separator for a supported chain.
+/// Computes the CoW Protocol EIP-712 domain separator for a supported chain.
+///
+/// Use this helper when a JavaScript host needs to compare the domain hash used
+/// by the Rust SDK with another signing stack. The input is an EVM chain id,
+/// not a CoW environment selector.
+///
+/// @param chainId EVM chain id supported by the deployment registry.
+/// @returns The `0x`-prefixed 32-byte domain separator.
+/// @throws SdkError when the chain is not supported.
 #[wasm_bindgen(js_name = "domainSeparator")]
 pub fn domain_separator(
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
@@ -24,7 +32,16 @@ pub fn domain_separator(
     pure::chains::domain_separator(chain_id).map_err(|error| WasmError::from(error).into_js())
 }
 
-/// Builds signer-facing order typed data.
+/// Builds signer-facing EIP-712 typed data for an unsigned order.
+///
+/// The returned envelope contains the domain, type map, primary type, and
+/// order message that wallet libraries expect for EIP-712 signing. It is
+/// deterministic for the provided order and chain id.
+///
+/// @param input Unsigned order fields using the facade order DTO shape.
+/// @param chainId EVM chain id used for the EIP-712 domain.
+/// @returns A versioned envelope containing typed-data DTO fields.
+/// @throws SdkError when order parsing or chain validation fails.
 #[cfg(feature = "signing")]
 #[wasm_bindgen(
     js_name = "orderTypedData",
@@ -43,7 +60,16 @@ pub fn order_typed_data(
     )?))
 }
 
-/// Computes the compact order UID and digest.
+/// Computes the canonical order UID and order digest for an unsigned order.
+///
+/// The UID combines the EIP-712 order digest, owner address, and validity
+/// timestamp using the same packing rules as the native Rust SDK.
+///
+/// @param input Unsigned order fields to hash and pack.
+/// @param chainId EVM chain id used for the EIP-712 domain.
+/// @param owner Order owner address included in the UID suffix.
+/// @returns A versioned envelope with `orderUid` and `orderDigest`.
+/// @throws SdkError when the order, owner, or chain id is invalid.
 #[cfg(feature = "signing")]
 #[wasm_bindgen(
     js_name = "computeOrderUid",
@@ -63,14 +89,28 @@ pub fn compute_order_uid(
     to_js_value(&WasmEnvelope::v1(dto))
 }
 
-/// Returns supported EVM chain ids.
+/// Returns the EVM chain ids supported by the SDK deployment registry.
+///
+/// This is a pure helper and does not perform network I/O. The returned list is
+/// suitable for runtime validation, UI selection, or capability checks before a
+/// client is constructed.
+///
+/// @returns A typed array of supported EVM chain ids.
 #[wasm_bindgen(js_name = "supportedChainIds")]
 #[must_use]
 pub fn supported_chain_ids() -> Vec<u32> {
     pure::chains::supported_chain_ids()
 }
 
-/// Returns canonical deployment addresses for a chain and environment.
+/// Returns canonical CoW Protocol deployment addresses for a chain.
+///
+/// The optional environment selects production or staging deployment data. When
+/// omitted, the helper uses the SDK default environment.
+///
+/// @param chainId EVM chain id to resolve.
+/// @param env Optional CoW environment name, such as `prod` or `staging`.
+/// @returns Settlement, VaultRelayer, EthFlow, and AllowListAuth addresses.
+/// @throws SdkError when the chain or environment is unsupported.
 #[wasm_bindgen(
     js_name = "deploymentAddresses",
     unchecked_return_type = "WasmEnvelope<DeploymentAddressesDto>"
@@ -84,7 +124,14 @@ pub fn deployment_addresses(
     to_js_value(&WasmEnvelope::v1(DeploymentAddressesDto::from(addresses)))
 }
 
-/// Returns deterministic app-data content, hash, and CID.
+/// Builds app-data content and returns its deterministic hash and CID.
+///
+/// Use this when a JavaScript host wants the SDK to construct the canonical
+/// document and expose the values needed for order submission and storage.
+///
+/// @param doc App-data document input accepted by the SDK schema.
+/// @returns A versioned envelope containing document, hash, CID, and hex data.
+/// @throws SdkError when the document cannot be normalized or hashed.
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "appDataInfo",
@@ -100,7 +147,14 @@ pub fn app_data_info(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
     )))
 }
 
-/// Validates an app-data document against the embedded schemas.
+/// Validates an app-data document against the embedded schema set.
+///
+/// Validation is local and deterministic. The result reports whether the
+/// document conforms and includes validation details without uploading data.
+///
+/// @param doc App-data document input to validate.
+/// @returns A versioned envelope containing the validation result.
+/// @throws SdkError when the input cannot be converted into a document.
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "validateAppDataDoc",
@@ -115,7 +169,14 @@ pub fn validate_app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
     )))
 }
 
-/// Builds an app-data document without hashing it.
+/// Builds a normalized app-data document without deriving storage metadata.
+///
+/// This helper is useful when a host wants to inspect or modify the canonical
+/// document shape before separately deriving app-data information.
+///
+/// @param doc App-data document input accepted by the SDK schema.
+/// @returns A versioned envelope containing the normalized document.
+/// @throws SdkError when the input cannot be normalized.
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "appDataDoc",
@@ -127,7 +188,14 @@ pub fn app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
     to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))
 }
 
-/// Converts an app-data hash to an IPFS CID.
+/// Converts a `0x`-prefixed app-data hash into the canonical IPFS CID.
+///
+/// The conversion is pure and uses the same app-data multicodec and multihash
+/// rules as the Rust app-data crate.
+///
+/// @param appDataHex App-data hash as a `0x`-prefixed hex string.
+/// @returns A versioned envelope containing the CID string.
+/// @throws SdkError when the hash is malformed.
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "appDataHexToCid",
@@ -141,7 +209,14 @@ pub fn app_data_hex_to_cid(
     to_js_value(&WasmEnvelope::v1(cid))
 }
 
-/// Converts an IPFS CID to an app-data hash.
+/// Converts a canonical IPFS CID into a `0x`-prefixed app-data hash.
+///
+/// Use this helper when an order or metadata path starts from a CID but the
+/// orderbook request needs the app-data hash form.
+///
+/// @param cid Canonical CID string for an app-data document.
+/// @returns A versioned envelope containing the `0x`-prefixed hash.
+/// @throws SdkError when the CID does not match the supported app-data shape.
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "cidToAppDataHex",
@@ -153,7 +228,12 @@ pub fn cid_to_app_data_hex(cid: String) -> Result<JsValue, JsValue> {
     to_js_value(&WasmEnvelope::v1(hash))
 }
 
-/// Returns the wasm crate version.
+/// Returns the version of the wasm package runtime.
+///
+/// The value comes from the Rust package metadata used to build the wasm
+/// artifact and can be included in diagnostics or compatibility checks.
+///
+/// @returns The semantic version string for this wasm build.
 #[wasm_bindgen(js_name = "wasmVersion")]
 #[must_use]
 pub fn wasm_version() -> String {

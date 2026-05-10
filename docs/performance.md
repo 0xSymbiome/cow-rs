@@ -55,6 +55,41 @@ window, not a single absolute number.
 Refresh the table when the next scheduled run reports a shift that crosses one
 of these order-of-magnitude boundaries.
 
+## WASM Package Size And Startup Budgets
+
+The TypeScript-callable package is built from release artifacts with the
+workspace size profile and a `wasm-opt -Oz` post-pass. The package publishes
+one npm package with flavor-specific subpath exports, so consumers can choose
+the smallest runtime surface that covers their workflow.
+
+| Flavor | Public import | Raw wasm | Brotli | Gzip | Release gate |
+| --- | --- | ---: | ---: | ---: | --- |
+| default | `<published-cow-sdk-wasm-package>` | 2.97 MiB | 790 KiB | 1129 KiB | 3.0 MiB raw / 800 KiB brotli |
+| orderbook | `<published-cow-sdk-wasm-package>/orderbook` | 0.98 MiB | 321 KiB | 426 KiB | 1.5 MiB raw / 500 KiB brotli |
+| signing | `<published-cow-sdk-wasm-package>/signing` | 0.43 MiB | 150 KiB | 183 KiB | 0.9 MiB raw / 300 KiB brotli |
+| full | `<published-cow-sdk-wasm-package>/full` | 2.97 MiB | 790 KiB | 1129 KiB | 3.0 MiB raw / 1000 KiB brotli |
+| cloudflare | `<published-cow-sdk-wasm-package>/cloudflare` | 2.88 MiB | 768 KiB | 1095 KiB | 3.0 MiB raw / 800 KiB brotli / 3.0 MiB gzip |
+
+The raw and compressed measurements above come from the current package build
+pipeline after optimization. The gate values are enforced per flavor so the
+default and Worker surfaces cannot grow silently.
+
+### Cloudflare Worker Cold Starts
+
+Cloudflare Worker startup time is sensitive to the Worker script, isolate
+state, network position, and runtime cache state. The package treats cold start
+as a release-readiness budget rather than a deterministic microbenchmark:
+
+| Budget | Meaning |
+| --- | --- |
+| Under 300 ms | Warning threshold; investigate bundle growth or initialization work. |
+| Under 500 ms | Release gate for the Worker flavor. |
+| Under 1 second | Platform-limit budget that Worker consumers should stay below. |
+
+Worker integrations should initialize `<published-cow-sdk-wasm-package>/cloudflare` once
+per isolate with the `<published-cow-sdk-wasm-package>/cloudflare/wasm` module asset, then
+reuse clients or create short-lived clients with explicit `dispose()` calls.
+
 ## Running Locally
 
 Compile the benchmarks without running them:

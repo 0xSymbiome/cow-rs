@@ -17,7 +17,16 @@ use crate::exports::{
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ResolvedEip1271Provider;
 
-/// Encodes a CoW EIP-1271 payload from an ECDSA signature.
+/// Encodes a CoW EIP-1271 payload from an ECDSA order signature.
+///
+/// Use this pure helper when a smart-account flow already has the wrapped ECDSA
+/// signature and needs the contract-signature payload bytes expected by CoW
+/// Protocol order submission.
+///
+/// @param input Unsigned order used to derive the EIP-1271 payload.
+/// @param ecdsaSignature Wrapped ECDSA signature as a `0x`-prefixed string.
+/// @returns A versioned envelope containing the encoded EIP-1271 payload.
+/// @throws SdkError when the order or signature is invalid.
 #[wasm_bindgen(
     js_name = "eip1271SignaturePayload",
     unchecked_return_type = "WasmEnvelope<string>"
@@ -33,6 +42,18 @@ pub fn eip1271_signature_payload_export(
 }
 
 /// Signs an order through typed-data ECDSA and wraps it as EIP-1271.
+///
+/// The SDK sends the EIP-712 envelope to the provided typed-data callback,
+/// then converts the returned ECDSA signature into the CoW EIP-1271 payload.
+/// Per-call options may attach cancellation and wallet timeout settings.
+///
+/// @param input Unsigned order to sign.
+/// @param chainId EVM chain id for the EIP-712 domain.
+/// @param owner Smart-account owner address used in the generated order UID.
+/// @param typedDataSigner Callback that signs the typed-data envelope.
+/// @param options Optional cancellation, timeout, and wallet timeout settings.
+/// @returns A versioned envelope containing the signed-order DTO.
+/// @throws SdkError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderWithEip1271",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -74,6 +95,18 @@ pub async fn sign_order_with_eip1271(
 }
 
 /// Signs an order through a custom EIP-1271 callback.
+///
+/// Use this method when the JavaScript host owns the smart-account or
+/// account-abstraction client and can return the final contract signature
+/// directly. The SDK still builds typed data and the deterministic order UID.
+///
+/// @param input Unsigned order to sign.
+/// @param chainId EVM chain id for the EIP-712 domain.
+/// @param owner Smart-account owner address used in the generated order UID.
+/// @param customCallback Callback that returns the final EIP-1271 signature.
+/// @param options Optional cancellation, timeout, and wallet timeout settings.
+/// @returns A versioned envelope containing the signed-order DTO.
+/// @throws SdkError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderWithCustomEip1271",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
