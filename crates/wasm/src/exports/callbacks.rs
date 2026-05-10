@@ -16,6 +16,7 @@ export interface CowFetchRequest {
 
 export interface CowFetchResponse {
   status: number;
+  statusText?: string;
   headers: Record<string, string>;
   body: string;
 }
@@ -41,4 +42,36 @@ export type CowEip1271SignCallback = (
 ) => Promise<string> | string;
 
 export type CustomEip1271Callback = CowEip1271SignCallback;
+
+export type HttpTransportConfig =
+  | { kind: "fetch"; fetch?: typeof globalThis.fetch }
+  | { kind: "callback"; callback: CowFetchCallback };
+
+export interface OrderBookClientConfig {
+  chainId: number;
+  env?: string | null;
+  transport: HttpTransportConfig;
+  timeoutMs?: number | null;
+}
+
+export interface SubgraphClientConfig {
+  chainId: number;
+  apiKey: string;
+  transport: HttpTransportConfig;
+  timeoutMs?: number | null;
+}
+
+export interface TradingClientConfig {
+  chainId: number;
+  env?: string | null;
+  appCode: string;
+  transport: HttpTransportConfig;
+  timeoutMs?: number | null;
+}
+
+export interface IpfsClientConfig {
+  ipfsUri?: string | null;
+  transport: HttpTransportConfig;
+  timeoutMs?: number | null;
+}
 "#;

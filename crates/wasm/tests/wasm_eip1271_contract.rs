@@ -2,12 +2,10 @@
 
 mod common;
 
-use cow_sdk_wasm::{
-    exports::{
-        ResolvedEip1271Provider, compute_order_uid, eip1271_signature_payload_export,
-        sign_order_with_custom_eip1271, sign_order_with_eip1271,
-    },
-    pure,
+use cow_sdk_pure_helpers as pure;
+use cow_sdk_wasm::exports::{
+    ResolvedEip1271Provider, compute_order_uid, eip1271_signature_payload_export,
+    sign_order_with_custom_eip1271, sign_order_with_eip1271,
 };
 use js_sys::Function;
 use serde::Deserialize;

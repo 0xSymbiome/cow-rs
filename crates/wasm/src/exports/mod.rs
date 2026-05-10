@@ -7,15 +7,15 @@ pub mod eip1271;
 pub mod errors;
 pub mod ipfs;
 pub mod orderbook;
-pub mod registry;
+mod registry;
 pub mod signing;
 pub mod subgraph;
 pub mod trading;
 pub mod transport;
 
 pub use {
-    chains::*, dto::*, eip1271::*, errors::*, ipfs::*, orderbook::*, registry::*, signing::*,
-    subgraph::*, trading::*, transport::*,
+    chains::*, dto::*, eip1271::*, errors::*, ipfs::*, orderbook::*, signing::*, subgraph::*,
+    trading::*, transport::*,
 };
 
 use wasm_bindgen::prelude::*;

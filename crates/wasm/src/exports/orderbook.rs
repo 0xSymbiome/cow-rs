@@ -3,7 +3,6 @@ use cow_sdk_orderbook::{
     GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderCancellations, OrderCreation,
 };
 use cow_sdk_pure_helpers as pure;
-use js_sys::Function;
 use serde_json::{Value, json};
 use wasm_bindgen::prelude::*;
 
@@ -14,113 +13,35 @@ use crate::exports::{
         orderbook_signing_scheme, parse_chain, parse_order, to_js_value,
     },
     errors::WasmError,
-    transport::{
-        callback_fetch_transport, callback_fetch_transport_from_handle, default_fetch_transport,
-    },
+    transport::{configured_fetch_transport, optional_string, optional_timeout, required_u32},
 };
 
-/// Orderbook client backed by the browser fetch transport.
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "OrderBookClientConfig")]
+    pub type OrderBookClientConfig;
+}
+
+/// Orderbook client backed by an explicitly configured HTTP transport.
 #[wasm_bindgen]
 pub struct OrderBookClient {
     inner: OrderBookApi,
+    _callback_guard: crate::exports::registry::FetchCallbackGuard,
 }
 
 #[wasm_bindgen]
 impl OrderBookClient {
-    /// Creates an orderbook client for a chain and environment.
+    /// Creates an orderbook client from a single config object.
     #[wasm_bindgen(constructor)]
-    pub fn new(chain_id: u32, env: Option<String>) -> Result<OrderBookClient, JsValue> {
-        Ok(Self {
-            inner: build_orderbook(chain_id, env, default_fetch_transport(None))?,
-        })
-    }
-
-    /// Fetches a quote.
-    #[wasm_bindgen(js_name = "getQuote")]
-    pub async fn get_quote(&self, request: OrderQuoteRequestInput) -> Result<JsValue, JsValue> {
-        orderbook_get_quote(&self.inner, request).await
-    }
-
-    /// Submits a signed order.
-    #[wasm_bindgen(js_name = "sendOrder")]
-    pub async fn send_order(&self, signed: SignedOrderDto) -> Result<String, JsValue> {
-        orderbook_send_order(&self.inner, signed).await
-    }
-
-    /// Submits a raw order-creation payload.
-    #[wasm_bindgen(js_name = "sendOrderCreation")]
-    pub async fn send_order_creation(&self, input: OrderCreationInput) -> Result<String, JsValue> {
-        orderbook_send_order_creation(&self.inner, input).await
-    }
-
-    /// Fetches an order by UID.
-    #[wasm_bindgen(js_name = "getOrder")]
-    pub async fn get_order(&self, order_uid: String) -> Result<JsValue, JsValue> {
-        orderbook_get_order(&self.inner, order_uid).await
-    }
-
-    /// Fetches trades for an order UID.
-    #[wasm_bindgen(js_name = "getTrades")]
-    pub async fn get_trades(&self, order_uid: String) -> Result<JsValue, JsValue> {
-        orderbook_get_trades(&self.inner, order_uid).await
-    }
-
-    /// Fetches orders owned by an address.
-    #[wasm_bindgen(js_name = "getOrdersByOwner")]
-    pub async fn get_orders_by_owner(&self, owner: String) -> Result<JsValue, JsValue> {
-        orderbook_get_orders_by_owner(&self.inner, owner).await
-    }
-
-    /// Fetches a token's native price.
-    #[wasm_bindgen(js_name = "getNativePrice")]
-    pub async fn get_native_price(&self, token: String) -> Result<JsValue, JsValue> {
-        orderbook_get_native_price(&self.inner, token).await
-    }
-
-    /// Cancels orders through a signed cancellation payload.
-    #[wasm_bindgen(js_name = "cancelOrders")]
-    pub async fn cancel_orders(
-        &self,
-        signed: SignedCancellationsInput,
-    ) -> Result<JsValue, JsValue> {
-        orderbook_cancel_orders(&self.inner, signed).await
-    }
-}
-
-/// Orderbook client backed by a JavaScript fetch callback.
-#[wasm_bindgen]
-pub struct OrderBookClientWithFetch {
-    inner: OrderBookApi,
-    _handle: Option<crate::exports::registry::FetchCallbackHandle>,
-}
-
-#[wasm_bindgen]
-impl OrderBookClientWithFetch {
-    /// Creates an orderbook client that owns a registered fetch callback.
-    #[wasm_bindgen(constructor)]
-    pub fn new(
-        chain_id: u32,
-        env: Option<String>,
-        fetch_callback: Function,
-    ) -> Result<OrderBookClientWithFetch, JsValue> {
-        let (transport, handle) = callback_fetch_transport(fetch_callback, None)?;
+    pub fn new(config: OrderBookClientConfig) -> Result<OrderBookClient, JsValue> {
+        let config = config.as_ref();
+        let chain_id = required_u32(config, "chainId")?;
+        let env = optional_string(config, "env")?;
+        let timeout = optional_timeout(config)?;
+        let (transport, callback_guard) = configured_fetch_transport(config, timeout)?;
         Ok(Self {
             inner: build_orderbook(chain_id, env, transport)?,
-            _handle: Some(handle),
-        })
-    }
-
-    /// Creates an orderbook client from an existing fetch-callback handle id.
-    #[wasm_bindgen(js_name = "fromHandle")]
-    pub fn from_handle(
-        chain_id: u32,
-        env: Option<String>,
-        fetch_callback_id: u32,
-    ) -> Result<OrderBookClientWithFetch, JsValue> {
-        let transport = callback_fetch_transport_from_handle(fetch_callback_id, None)?;
-        Ok(Self {
-            inner: build_orderbook(chain_id, env, transport)?,
-            _handle: None,
+            _callback_guard: callback_guard,
         })
     }
 

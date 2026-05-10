@@ -456,6 +456,9 @@ pub struct CowFetchRequest {
 pub struct CowFetchResponse {
     /// HTTP status code.
     pub status: u16,
+    /// Optional HTTP status text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status_text: Option<String>,
     /// Header map.
     #[serde(default)]
     pub headers: HashMap<String, String>,

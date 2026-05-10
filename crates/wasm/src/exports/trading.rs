@@ -17,108 +17,40 @@ use crate::exports::{
     orderbook::build_orderbook,
     signing::{JsTypedDataSigner, OwnerOnlySigner},
     transport::{
-        callback_fetch_transport, callback_fetch_transport_from_handle, default_fetch_transport,
+        configured_fetch_transport, optional_string, optional_timeout, required_string,
+        required_u32,
     },
 };
 
-/// Trading facade backed by the browser fetch transport.
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "TradingClientConfig")]
+    pub type TradingClientConfig;
+}
+
+/// Trading facade backed by an explicitly configured HTTP transport.
 #[wasm_bindgen]
 pub struct TradingClient {
     inner: TradingSdk,
     chain_id: u32,
+    _callback_guard: crate::exports::registry::FetchCallbackGuard,
 }
 
 #[wasm_bindgen]
 impl TradingClient {
-    /// Creates a trading client for a chain, environment, and app code.
+    /// Creates a trading client from a single config object.
     #[wasm_bindgen(constructor)]
-    pub fn new(
-        chain_id: u32,
-        env: Option<String>,
-        app_code: String,
-    ) -> Result<TradingClient, JsValue> {
-        let transport = default_fetch_transport(None);
+    pub fn new(config: TradingClientConfig) -> Result<TradingClient, JsValue> {
+        let config = config.as_ref();
+        let chain_id = required_u32(config, "chainId")?;
+        let env = optional_string(config, "env")?;
+        let app_code = required_string(config, "appCode")?;
+        let timeout = optional_timeout(config)?;
+        let (transport, callback_guard) = configured_fetch_transport(config, timeout)?;
         Ok(Self {
             inner: build_trading(chain_id, env, app_code, transport)?,
             chain_id,
-        })
-    }
-
-    /// Fetches a quote without submitting an order.
-    #[wasm_bindgen(js_name = "getQuote")]
-    pub async fn get_quote(&self, params: SwapParametersInput) -> Result<JsValue, JsValue> {
-        trading_get_quote(&self.inner, params).await
-    }
-
-    /// Quotes, signs, and posts a swap order through a typed-data callback.
-    #[wasm_bindgen(js_name = "postSwapOrder")]
-    pub async fn post_swap_order(
-        &self,
-        params: SwapParametersInput,
-        owner: String,
-        signer_callback: Function,
-    ) -> Result<JsValue, JsValue> {
-        trading_post_swap_order(&self.inner, params, owner, signer_callback).await
-    }
-
-    /// Quotes and posts a swap order with a custom EIP-1271 signature callback.
-    #[wasm_bindgen(js_name = "postSwapOrderWithEip1271")]
-    pub async fn post_swap_order_with_eip1271(
-        &self,
-        params: SwapParametersInput,
-        owner: String,
-        custom_callback: Function,
-    ) -> Result<JsValue, JsValue> {
-        trading_post_swap_order_with_eip1271(
-            &self.inner,
-            self.chain_id,
-            params,
-            owner,
-            custom_callback,
-        )
-        .await
-    }
-}
-
-/// Trading facade backed by a JavaScript fetch callback.
-#[wasm_bindgen]
-pub struct TradingClientWithFetch {
-    inner: TradingSdk,
-    chain_id: u32,
-    _handle: Option<crate::exports::registry::FetchCallbackHandle>,
-}
-
-#[wasm_bindgen]
-impl TradingClientWithFetch {
-    /// Creates a trading client that owns a registered fetch callback.
-    #[wasm_bindgen(constructor)]
-    pub fn new(
-        chain_id: u32,
-        env: Option<String>,
-        app_code: String,
-        fetch_callback: Function,
-    ) -> Result<TradingClientWithFetch, JsValue> {
-        let (transport, handle) = callback_fetch_transport(fetch_callback, None)?;
-        Ok(Self {
-            inner: build_trading(chain_id, env, app_code, transport)?,
-            chain_id,
-            _handle: Some(handle),
-        })
-    }
-
-    /// Creates a trading client from an existing fetch-callback handle id.
-    #[wasm_bindgen(js_name = "fromHandle")]
-    pub fn from_handle(
-        chain_id: u32,
-        env: Option<String>,
-        app_code: String,
-        fetch_callback_id: u32,
-    ) -> Result<TradingClientWithFetch, JsValue> {
-        let transport = callback_fetch_transport_from_handle(fetch_callback_id, None)?;
-        Ok(Self {
-            inner: build_trading(chain_id, env, app_code, transport)?,
-            chain_id,
-            _handle: None,
+            _callback_guard: callback_guard,
         })
     }
 

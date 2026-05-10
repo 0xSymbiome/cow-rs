@@ -1,5 +1,8 @@
 #![allow(dead_code)]
 
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::JsCast;
+
 pub const ADDR_SELL: &str = "0x1111111111111111111111111111111111111111";
 pub const ADDR_BUY: &str = "0x2222222222222222222222222222222222222222";
 pub const ADDR_OWNER: &str = "0x3333333333333333333333333333333333333333";
@@ -82,4 +85,108 @@ pub fn wasm_app_data_input() -> cow_sdk_wasm::exports::AppDataDocInput {
         version: "0.7.0".to_owned(),
         environment: None,
     }
+}
+
+#[cfg(target_arch = "wasm32")]
+fn set_js(target: &js_sys::Object, key: &str, value: &wasm_bindgen::JsValue) {
+    js_sys::Reflect::set(target, &wasm_bindgen::JsValue::from_str(key), value)
+        .expect("test config property should be set");
+}
+
+#[cfg(target_arch = "wasm32")]
+fn callback_transport(callback: &js_sys::Function) -> js_sys::Object {
+    let transport = js_sys::Object::new();
+    set_js(
+        &transport,
+        "kind",
+        &wasm_bindgen::JsValue::from_str("callback"),
+    );
+    set_js(&transport, "callback", callback.as_ref());
+    transport
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn orderbook_config(
+    chain_id: u32,
+    env: Option<&str>,
+    callback: &js_sys::Function,
+) -> cow_sdk_wasm::exports::OrderBookClientConfig {
+    let config = js_sys::Object::new();
+    set_js(
+        &config,
+        "chainId",
+        &wasm_bindgen::JsValue::from_f64(f64::from(chain_id)),
+    );
+    if let Some(env) = env {
+        set_js(&config, "env", &wasm_bindgen::JsValue::from_str(env));
+    }
+    set_js(&config, "transport", callback_transport(callback).as_ref());
+    wasm_bindgen::JsValue::from(config).unchecked_into()
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn subgraph_config(
+    chain_id: u32,
+    api_key: &str,
+    callback: &js_sys::Function,
+) -> cow_sdk_wasm::exports::SubgraphClientConfig {
+    let config = js_sys::Object::new();
+    set_js(
+        &config,
+        "chainId",
+        &wasm_bindgen::JsValue::from_f64(f64::from(chain_id)),
+    );
+    set_js(&config, "apiKey", &wasm_bindgen::JsValue::from_str(api_key));
+    set_js(&config, "transport", callback_transport(callback).as_ref());
+    wasm_bindgen::JsValue::from(config).unchecked_into()
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn trading_config(
+    chain_id: u32,
+    env: Option<&str>,
+    app_code: &str,
+    callback: &js_sys::Function,
+) -> cow_sdk_wasm::exports::TradingClientConfig {
+    let config = js_sys::Object::new();
+    set_js(
+        &config,
+        "chainId",
+        &wasm_bindgen::JsValue::from_f64(f64::from(chain_id)),
+    );
+    if let Some(env) = env {
+        set_js(&config, "env", &wasm_bindgen::JsValue::from_str(env));
+    }
+    set_js(
+        &config,
+        "appCode",
+        &wasm_bindgen::JsValue::from_str(app_code),
+    );
+    set_js(&config, "transport", callback_transport(callback).as_ref());
+    wasm_bindgen::JsValue::from(config).unchecked_into()
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn ipfs_config(
+    ipfs_uri: Option<&str>,
+    timeout_ms: Option<u32>,
+    callback: &js_sys::Function,
+) -> cow_sdk_wasm::exports::IpfsClientConfig {
+    let config = js_sys::Object::new();
+    if let Some(ipfs_uri) = ipfs_uri {
+        set_js(
+            &config,
+            "ipfsUri",
+            &wasm_bindgen::JsValue::from_str(ipfs_uri),
+        );
+    }
+    if let Some(timeout_ms) = timeout_ms {
+        set_js(
+            &config,
+            "timeoutMs",
+            &wasm_bindgen::JsValue::from_f64(f64::from(timeout_ms)),
+        );
+    }
+    set_js(&config, "transport", callback_transport(callback).as_ref());
+    wasm_bindgen::JsValue::from(config).unchecked_into()
 }

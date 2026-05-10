@@ -8,13 +8,15 @@ use cow_sdk_wasm::exports::{
     deployment_addresses, domain_separator, order_typed_data, supported_chain_ids,
     validate_app_data_doc, wasm_version,
 };
+use js_sys::Function;
 use serde_json::Value;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_test::*;
 
 use crate::common::{
     ADDR_OWNER, APP_DATA_CONTENT, CHAIN_MAINNET, CHAIN_UNSUPPORTED, CID_APP_DATA, HASH_APP_DATA,
-    wasm_app_data_input, wasm_order_input,
+    ipfs_config, orderbook_config, subgraph_config, trading_config, wasm_app_data_input,
+    wasm_order_input,
 };
 
 wasm_bindgen_test_configure!(run_in_browser);
@@ -25,6 +27,17 @@ fn json(value: JsValue) -> Value {
 
 fn error_json(value: JsValue) -> Value {
     json(value)
+}
+
+fn callback(args: &str, body: &str) -> Function {
+    Function::new_with_args(args, body)
+}
+
+fn empty_fetch_callback() -> Function {
+    callback(
+        "request",
+        "return { status: 200, headers: {}, body: '{}' };",
+    )
 }
 
 #[wasm_bindgen_test]
@@ -164,17 +177,25 @@ fn invalid_cid_returns_typed_error() {
 
 #[wasm_bindgen_test]
 fn client_constructors_accept_supported_runtime_inputs() {
-    let _orderbook = OrderBookClient::new(CHAIN_MAINNET, None).unwrap();
-    let _subgraph = SubgraphClient::new(CHAIN_MAINNET, "test-key".to_owned()).unwrap();
-    let _trading = TradingClient::new(CHAIN_MAINNET, None, "CoW Swap".to_owned()).unwrap();
-    let _ipfs = IpfsClient::new(None, Some(500)).unwrap();
+    let fetch = empty_fetch_callback();
+
+    let _orderbook = OrderBookClient::new(orderbook_config(CHAIN_MAINNET, None, &fetch)).unwrap();
+    let _subgraph =
+        SubgraphClient::new(subgraph_config(CHAIN_MAINNET, "test-key", &fetch)).unwrap();
+    let _trading =
+        TradingClient::new(trading_config(CHAIN_MAINNET, None, "CoW Swap", &fetch)).unwrap();
+    let _ipfs = IpfsClient::new(ipfs_config(None, Some(500), &fetch)).unwrap();
 }
 
 #[wasm_bindgen_test]
 fn client_constructors_reject_unsupported_chain() {
-    assert!(OrderBookClient::new(CHAIN_UNSUPPORTED, None).is_err());
-    assert!(SubgraphClient::new(CHAIN_UNSUPPORTED, "test-key".to_owned()).is_err());
-    assert!(TradingClient::new(CHAIN_UNSUPPORTED, None, "CoW Swap".to_owned()).is_err());
+    let fetch = empty_fetch_callback();
+
+    assert!(OrderBookClient::new(orderbook_config(CHAIN_UNSUPPORTED, None, &fetch)).is_err());
+    assert!(SubgraphClient::new(subgraph_config(CHAIN_UNSUPPORTED, "test-key", &fetch)).is_err());
+    assert!(
+        TradingClient::new(trading_config(CHAIN_UNSUPPORTED, None, "CoW Swap", &fetch)).is_err()
+    );
 }
 
 #[wasm_bindgen_test]

@@ -16,6 +16,7 @@ export interface CowFetchRequest {
 
 export interface CowFetchResponse {
     status: number;
+    statusText?: string;
     headers: Record<string, string>;
     body: string;
 }
@@ -41,6 +42,38 @@ request: CowEip1271SignRequest,
 ) => Promise<string> | string;
 
 export type CustomEip1271Callback = CowEip1271SignCallback;
+
+export type HttpTransportConfig =
+| { kind: "fetch"; fetch?: typeof globalThis.fetch }
+| { kind: "callback"; callback: CowFetchCallback };
+
+export interface OrderBookClientConfig {
+    chainId: number;
+    env?: string | null;
+    transport: HttpTransportConfig;
+    timeoutMs?: number | null;
+}
+
+export interface SubgraphClientConfig {
+    chainId: number;
+    apiKey: string;
+    transport: HttpTransportConfig;
+    timeoutMs?: number | null;
+}
+
+export interface TradingClientConfig {
+    chainId: number;
+    env?: string | null;
+    appCode: string;
+    transport: HttpTransportConfig;
+    timeoutMs?: number | null;
+}
+
+export interface IpfsClientConfig {
+    ipfsUri?: string | null;
+    transport: HttpTransportConfig;
+    timeoutMs?: number | null;
+}
 
 
 /**
@@ -423,48 +456,7 @@ export interface WasmEnvelope<T> {
 
 
 /**
- * Disposable callback registry handle.
- */
-export class FetchCallbackHandle {
-    private constructor();
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Disposes this callback registration. Calling this more than once is harmless.
-     */
-    dispose(): void;
-    /**
-     * Numeric callback id.
-     */
-    readonly id: number;
-}
-
-/**
- * Adapter that lets app-data IPFS reads flow through an HTTP transport.
- */
-export class HttpToIpfsAdapter {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Fetches and parses an app-data document by CID.
-     */
-    fetchAppDataFromCid(cid: string, ipfs_uri?: string | null): Promise<any>;
-    /**
-     * Fetches and parses an app-data document by app-data hash.
-     */
-    fetchAppDataFromHex(app_data_hex: string, ipfs_uri?: string | null): Promise<any>;
-    /**
-     * Creates an adapter from an existing fetch-callback handle id.
-     */
-    static fromHandle(fetch_callback_id: number, timeout_ms?: number | null): HttpToIpfsAdapter;
-    /**
-     * Creates an adapter that owns a registered fetch callback.
-     */
-    constructor(fetch_callback: Function, timeout_ms?: number | null);
-}
-
-/**
- * IPFS client backed by the browser fetch transport.
+ * IPFS client backed by an explicitly configured HTTP transport.
  */
 export class IpfsClient {
     free(): void;
@@ -478,37 +470,13 @@ export class IpfsClient {
      */
     fetchAppDataFromHex(app_data_hex: string): Promise<any>;
     /**
-     * Creates an IPFS client with the default browser fetch transport.
+     * Creates an IPFS client from a single config object.
      */
-    constructor(ipfs_uri?: string | null, timeout_ms?: number | null);
+    constructor(config: IpfsClientConfig);
 }
 
 /**
- * IPFS client backed by a JavaScript fetch callback.
- */
-export class IpfsClientWithFetch {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Fetches and parses an app-data document by CID.
-     */
-    fetchAppDataFromCid(cid: string): Promise<any>;
-    /**
-     * Fetches and parses an app-data document by app-data hash.
-     */
-    fetchAppDataFromHex(app_data_hex: string): Promise<any>;
-    /**
-     * Creates an IPFS client from an existing fetch-callback handle id.
-     */
-    static fromHandle(ipfs_uri: string | null | undefined, timeout_ms: number | null | undefined, fetch_callback_id: number): IpfsClientWithFetch;
-    /**
-     * Creates an IPFS client that owns a registered fetch callback.
-     */
-    constructor(ipfs_uri: string | null | undefined, timeout_ms: number | null | undefined, fetch_callback: Function);
-}
-
-/**
- * Orderbook client backed by the browser fetch transport.
+ * Orderbook client backed by an explicitly configured HTTP transport.
  */
 export class OrderBookClient {
     free(): void;
@@ -538,9 +506,9 @@ export class OrderBookClient {
      */
     getTrades(order_uid: string): Promise<any>;
     /**
-     * Creates an orderbook client for a chain and environment.
+     * Creates an orderbook client from a single config object.
      */
-    constructor(chain_id: number, env?: string | null);
+    constructor(config: OrderBookClientConfig);
     /**
      * Submits a signed order.
      */
@@ -552,55 +520,7 @@ export class OrderBookClient {
 }
 
 /**
- * Orderbook client backed by a JavaScript fetch callback.
- */
-export class OrderBookClientWithFetch {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Cancels orders through a signed cancellation payload.
-     */
-    cancelOrders(signed: SignedCancellationsInput): Promise<any>;
-    /**
-     * Creates an orderbook client from an existing fetch-callback handle id.
-     */
-    static fromHandle(chain_id: number, env: string | null | undefined, fetch_callback_id: number): OrderBookClientWithFetch;
-    /**
-     * Fetches a token's native price.
-     */
-    getNativePrice(token: string): Promise<any>;
-    /**
-     * Fetches an order by UID.
-     */
-    getOrder(order_uid: string): Promise<any>;
-    /**
-     * Fetches orders owned by an address.
-     */
-    getOrdersByOwner(owner: string): Promise<any>;
-    /**
-     * Fetches a quote.
-     */
-    getQuote(request: OrderQuoteRequestInput): Promise<any>;
-    /**
-     * Fetches trades for an order UID.
-     */
-    getTrades(order_uid: string): Promise<any>;
-    /**
-     * Creates an orderbook client that owns a registered fetch callback.
-     */
-    constructor(chain_id: number, env: string | null | undefined, fetch_callback: Function);
-    /**
-     * Submits a signed order.
-     */
-    sendOrder(signed: SignedOrderDto): Promise<string>;
-    /**
-     * Submits a raw order-creation payload.
-     */
-    sendOrderCreation(input: OrderCreationInput): Promise<string>;
-}
-
-/**
- * Subgraph client backed by the browser fetch transport.
+ * Subgraph client backed by an explicitly configured HTTP transport.
  */
 export class SubgraphClient {
     free(): void;
@@ -618,9 +538,9 @@ export class SubgraphClient {
      */
     getTotals(): Promise<any>;
     /**
-     * Creates a subgraph client for a chain and Graph API key.
+     * Creates a subgraph client from a single config object.
      */
-    constructor(chain_id: number, api_key: string);
+    constructor(config: SubgraphClientConfig);
     /**
      * Runs a raw GraphQL query.
      */
@@ -628,39 +548,7 @@ export class SubgraphClient {
 }
 
 /**
- * Subgraph client backed by a JavaScript fetch callback.
- */
-export class SubgraphClientWithFetch {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Creates a subgraph client from an existing fetch-callback handle id.
-     */
-    static fromHandle(chain_id: number, api_key: string, fetch_callback_id: number): SubgraphClientWithFetch;
-    /**
-     * Fetches daily volume rows.
-     */
-    getLastDaysVolume(days: number): Promise<any>;
-    /**
-     * Fetches hourly volume rows.
-     */
-    getLastHoursVolume(hours: number): Promise<any>;
-    /**
-     * Fetches aggregate totals.
-     */
-    getTotals(): Promise<any>;
-    /**
-     * Creates a subgraph client that owns a registered fetch callback.
-     */
-    constructor(chain_id: number, api_key: string, fetch_callback: Function);
-    /**
-     * Runs a raw GraphQL query.
-     */
-    runQuery(request: SubgraphQueryInput): Promise<any>;
-}
-
-/**
- * Trading facade backed by the browser fetch transport.
+ * Trading facade backed by an explicitly configured HTTP transport.
  */
 export class TradingClient {
     free(): void;
@@ -670,37 +558,9 @@ export class TradingClient {
      */
     getQuote(params: SwapParametersInput): Promise<any>;
     /**
-     * Creates a trading client for a chain, environment, and app code.
+     * Creates a trading client from a single config object.
      */
-    constructor(chain_id: number, env: string | null | undefined, app_code: string);
-    /**
-     * Quotes, signs, and posts a swap order through a typed-data callback.
-     */
-    postSwapOrder(params: SwapParametersInput, owner: string, signer_callback: Function): Promise<any>;
-    /**
-     * Quotes and posts a swap order with a custom EIP-1271 signature callback.
-     */
-    postSwapOrderWithEip1271(params: SwapParametersInput, owner: string, custom_callback: Function): Promise<any>;
-}
-
-/**
- * Trading facade backed by a JavaScript fetch callback.
- */
-export class TradingClientWithFetch {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Creates a trading client from an existing fetch-callback handle id.
-     */
-    static fromHandle(chain_id: number, env: string | null | undefined, app_code: string, fetch_callback_id: number): TradingClientWithFetch;
-    /**
-     * Fetches a quote without submitting an order.
-     */
-    getQuote(params: SwapParametersInput): Promise<any>;
-    /**
-     * Creates a trading client that owns a registered fetch callback.
-     */
-    constructor(chain_id: number, env: string | null | undefined, app_code: string, fetch_callback: Function);
+    constructor(config: TradingClientConfig);
     /**
      * Quotes, signs, and posts a swap order through a typed-data callback.
      */
@@ -757,24 +617,9 @@ export function domainSeparator(chain_id: number): string;
 export function eip1271SignaturePayload(input: OrderInput, ecdsa_signature: string): string;
 
 /**
- * Fetches and parses an app-data document by CID.
- */
-export function fetchAppDataFromCid(cid: string, ipfs_uri?: string | null, timeout_ms?: number | null): Promise<any>;
-
-/**
- * Fetches and parses an app-data document by app-data hash.
- */
-export function fetchAppDataFromHex(app_data_hex: string, ipfs_uri?: string | null, timeout_ms?: number | null): Promise<any>;
-
-/**
  * Builds signer-facing order typed data.
  */
 export function orderTypedData(input: OrderInput, chain_id: number): any;
-
-/**
- * Registers a JS fetch callback and returns a disposable handle.
- */
-export function registerFetchCallback(callback: Function): FetchCallbackHandle;
 
 /**
  * Signs a cancellation digest through an explicit `eth_sign` callback.

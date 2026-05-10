@@ -110,7 +110,7 @@ actual network dispatch.
 | TypeScript apps that want SDK-managed browser wallet flows | `cow-sdk-browser-wallet` (convenience integration) |
 | TypeScript apps using viem, ethers, wagmi, or any EIP-1193 wallet | `cow-sdk-wasm` (after publication) |
 | Node.js LTS backends | `cow-sdk-wasm` (`nodejs` wasm-pack target) |
-| Cloudflare Workers | `cow-sdk-wasm` with callback transport (`OrderBookClientWithFetch`) |
+| Cloudflare Workers | `cow-sdk-wasm` with explicit callback transport config |
 | Deno (optional / experimental) | `cow-sdk-wasm` (`deno` wasm-pack target, opt-in only via `BUILD_DENO=1`; `./deno` npm export absent by default) |
 
 `signOrderWithCustomEip1271` is the smart-account integration point when a

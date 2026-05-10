@@ -1,140 +1,7 @@
 /* @ts-self-types="./cow_sdk_wasm.d.ts" */
 
 /**
- * Disposable callback registry handle.
- */
-export class FetchCallbackHandle {
-    static __wrap(ptr) {
-        ptr = ptr >>> 0;
-        const obj = Object.create(FetchCallbackHandle.prototype);
-        obj.__wbg_ptr = ptr;
-        FetchCallbackHandleFinalization.register(obj, obj.__wbg_ptr, obj);
-        return obj;
-    }
-    __destroy_into_raw() {
-        const ptr = this.__wbg_ptr;
-        this.__wbg_ptr = 0;
-        FetchCallbackHandleFinalization.unregister(this);
-        return ptr;
-    }
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_fetchcallbackhandle_free(ptr, 0);
-    }
-    /**
-     * Disposes this callback registration. Calling this more than once is harmless.
-     */
-    dispose() {
-        wasm.fetchcallbackhandle_dispose(this.__wbg_ptr);
-    }
-    /**
-     * Numeric callback id.
-     * @returns {number}
-     */
-    get id() {
-        const ret = wasm.fetchcallbackhandle_id(this.__wbg_ptr);
-        return ret >>> 0;
-    }
-}
-if (Symbol.dispose) FetchCallbackHandle.prototype[Symbol.dispose] = FetchCallbackHandle.prototype.free;
-
-/**
- * Adapter that lets app-data IPFS reads flow through an HTTP transport.
- */
-export class HttpToIpfsAdapter {
-    static __wrap(ptr) {
-        ptr = ptr >>> 0;
-        const obj = Object.create(HttpToIpfsAdapter.prototype);
-        obj.__wbg_ptr = ptr;
-        HttpToIpfsAdapterFinalization.register(obj, obj.__wbg_ptr, obj);
-        return obj;
-    }
-    __destroy_into_raw() {
-        const ptr = this.__wbg_ptr;
-        this.__wbg_ptr = 0;
-        HttpToIpfsAdapterFinalization.unregister(this);
-        return ptr;
-    }
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_httptoipfsadapter_free(ptr, 0);
-    }
-    /**
-     * Fetches and parses an app-data document by CID.
-     * @param {string} cid
-     * @param {string | null} [ipfs_uri]
-     * @returns {Promise<any>}
-     */
-    fetchAppDataFromCid(cid, ipfs_uri) {
-        const ptr0 = passStringToWasm0(cid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        var ptr1 = isLikeNone(ipfs_uri) ? 0 : passStringToWasm0(ipfs_uri, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        var len1 = WASM_VECTOR_LEN;
-        const ret = wasm.httptoipfsadapter_fetchAppDataFromCid(this.__wbg_ptr, ptr0, len0, ptr1, len1);
-        return takeObject(ret);
-    }
-    /**
-     * Fetches and parses an app-data document by app-data hash.
-     * @param {string} app_data_hex
-     * @param {string | null} [ipfs_uri]
-     * @returns {Promise<any>}
-     */
-    fetchAppDataFromHex(app_data_hex, ipfs_uri) {
-        const ptr0 = passStringToWasm0(app_data_hex, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        var ptr1 = isLikeNone(ipfs_uri) ? 0 : passStringToWasm0(ipfs_uri, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        var len1 = WASM_VECTOR_LEN;
-        const ret = wasm.httptoipfsadapter_fetchAppDataFromHex(this.__wbg_ptr, ptr0, len0, ptr1, len1);
-        return takeObject(ret);
-    }
-    /**
-     * Creates an adapter from an existing fetch-callback handle id.
-     * @param {number} fetch_callback_id
-     * @param {number | null} [timeout_ms]
-     * @returns {HttpToIpfsAdapter}
-     */
-    static fromHandle(fetch_callback_id, timeout_ms) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.httptoipfsadapter_fromHandle(retptr, fetch_callback_id, isLikeNone(timeout_ms) ? 0x100000001 : (timeout_ms) >>> 0);
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-            if (r2) {
-                throw takeObject(r1);
-            }
-            return HttpToIpfsAdapter.__wrap(r0);
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-     * Creates an adapter that owns a registered fetch callback.
-     * @param {Function} fetch_callback
-     * @param {number | null} [timeout_ms]
-     */
-    constructor(fetch_callback, timeout_ms) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.httptoipfsadapter_new(retptr, addHeapObject(fetch_callback), isLikeNone(timeout_ms) ? 0x100000001 : (timeout_ms) >>> 0);
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-            if (r2) {
-                throw takeObject(r1);
-            }
-            this.__wbg_ptr = r0 >>> 0;
-            HttpToIpfsAdapterFinalization.register(this, this.__wbg_ptr, this);
-            return this;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-}
-if (Symbol.dispose) HttpToIpfsAdapter.prototype[Symbol.dispose] = HttpToIpfsAdapter.prototype.free;
-
-/**
- * IPFS client backed by the browser fetch transport.
+ * IPFS client backed by an explicitly configured HTTP transport.
  */
 export class IpfsClient {
     __destroy_into_raw() {
@@ -170,16 +37,13 @@ export class IpfsClient {
         return takeObject(ret);
     }
     /**
-     * Creates an IPFS client with the default browser fetch transport.
-     * @param {string | null} [ipfs_uri]
-     * @param {number | null} [timeout_ms]
+     * Creates an IPFS client from a single config object.
+     * @param {IpfsClientConfig} config
      */
-    constructor(ipfs_uri, timeout_ms) {
+    constructor(config) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            var ptr0 = isLikeNone(ipfs_uri) ? 0 : passStringToWasm0(ipfs_uri, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            var len0 = WASM_VECTOR_LEN;
-            wasm.ipfsclient_new(retptr, ptr0, len0, isLikeNone(timeout_ms) ? 0x100000001 : (timeout_ms) >>> 0);
+            wasm.ipfsclient_new(retptr, addHeapObject(config));
             var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
             var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
             var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
@@ -197,102 +61,7 @@ export class IpfsClient {
 if (Symbol.dispose) IpfsClient.prototype[Symbol.dispose] = IpfsClient.prototype.free;
 
 /**
- * IPFS client backed by a JavaScript fetch callback.
- */
-export class IpfsClientWithFetch {
-    static __wrap(ptr) {
-        ptr = ptr >>> 0;
-        const obj = Object.create(IpfsClientWithFetch.prototype);
-        obj.__wbg_ptr = ptr;
-        IpfsClientWithFetchFinalization.register(obj, obj.__wbg_ptr, obj);
-        return obj;
-    }
-    __destroy_into_raw() {
-        const ptr = this.__wbg_ptr;
-        this.__wbg_ptr = 0;
-        IpfsClientWithFetchFinalization.unregister(this);
-        return ptr;
-    }
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_ipfsclientwithfetch_free(ptr, 0);
-    }
-    /**
-     * Fetches and parses an app-data document by CID.
-     * @param {string} cid
-     * @returns {Promise<any>}
-     */
-    fetchAppDataFromCid(cid) {
-        const ptr0 = passStringToWasm0(cid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.ipfsclientwithfetch_fetchAppDataFromCid(this.__wbg_ptr, ptr0, len0);
-        return takeObject(ret);
-    }
-    /**
-     * Fetches and parses an app-data document by app-data hash.
-     * @param {string} app_data_hex
-     * @returns {Promise<any>}
-     */
-    fetchAppDataFromHex(app_data_hex) {
-        const ptr0 = passStringToWasm0(app_data_hex, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.ipfsclientwithfetch_fetchAppDataFromHex(this.__wbg_ptr, ptr0, len0);
-        return takeObject(ret);
-    }
-    /**
-     * Creates an IPFS client from an existing fetch-callback handle id.
-     * @param {string | null | undefined} ipfs_uri
-     * @param {number | null | undefined} timeout_ms
-     * @param {number} fetch_callback_id
-     * @returns {IpfsClientWithFetch}
-     */
-    static fromHandle(ipfs_uri, timeout_ms, fetch_callback_id) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            var ptr0 = isLikeNone(ipfs_uri) ? 0 : passStringToWasm0(ipfs_uri, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            var len0 = WASM_VECTOR_LEN;
-            wasm.ipfsclientwithfetch_fromHandle(retptr, ptr0, len0, isLikeNone(timeout_ms) ? 0x100000001 : (timeout_ms) >>> 0, fetch_callback_id);
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-            if (r2) {
-                throw takeObject(r1);
-            }
-            return IpfsClientWithFetch.__wrap(r0);
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-     * Creates an IPFS client that owns a registered fetch callback.
-     * @param {string | null | undefined} ipfs_uri
-     * @param {number | null | undefined} timeout_ms
-     * @param {Function} fetch_callback
-     */
-    constructor(ipfs_uri, timeout_ms, fetch_callback) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            var ptr0 = isLikeNone(ipfs_uri) ? 0 : passStringToWasm0(ipfs_uri, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            var len0 = WASM_VECTOR_LEN;
-            wasm.ipfsclientwithfetch_new(retptr, ptr0, len0, isLikeNone(timeout_ms) ? 0x100000001 : (timeout_ms) >>> 0, addHeapObject(fetch_callback));
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-            if (r2) {
-                throw takeObject(r1);
-            }
-            this.__wbg_ptr = r0 >>> 0;
-            IpfsClientWithFetchFinalization.register(this, this.__wbg_ptr, this);
-            return this;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-}
-if (Symbol.dispose) IpfsClientWithFetch.prototype[Symbol.dispose] = IpfsClientWithFetch.prototype.free;
-
-/**
- * Orderbook client backed by the browser fetch transport.
+ * Orderbook client backed by an explicitly configured HTTP transport.
  */
 export class OrderBookClient {
     __destroy_into_raw() {
@@ -368,16 +137,13 @@ export class OrderBookClient {
         return takeObject(ret);
     }
     /**
-     * Creates an orderbook client for a chain and environment.
-     * @param {number} chain_id
-     * @param {string | null} [env]
+     * Creates an orderbook client from a single config object.
+     * @param {OrderBookClientConfig} config
      */
-    constructor(chain_id, env) {
+    constructor(config) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            var ptr0 = isLikeNone(env) ? 0 : passStringToWasm0(env, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            var len0 = WASM_VECTOR_LEN;
-            wasm.orderbookclient_new(retptr, chain_id, ptr0, len0);
+            wasm.orderbookclient_new(retptr, addHeapObject(config));
             var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
             var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
             var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
@@ -413,160 +179,7 @@ export class OrderBookClient {
 if (Symbol.dispose) OrderBookClient.prototype[Symbol.dispose] = OrderBookClient.prototype.free;
 
 /**
- * Orderbook client backed by a JavaScript fetch callback.
- */
-export class OrderBookClientWithFetch {
-    static __wrap(ptr) {
-        ptr = ptr >>> 0;
-        const obj = Object.create(OrderBookClientWithFetch.prototype);
-        obj.__wbg_ptr = ptr;
-        OrderBookClientWithFetchFinalization.register(obj, obj.__wbg_ptr, obj);
-        return obj;
-    }
-    __destroy_into_raw() {
-        const ptr = this.__wbg_ptr;
-        this.__wbg_ptr = 0;
-        OrderBookClientWithFetchFinalization.unregister(this);
-        return ptr;
-    }
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_orderbookclientwithfetch_free(ptr, 0);
-    }
-    /**
-     * Cancels orders through a signed cancellation payload.
-     * @param {SignedCancellationsInput} signed
-     * @returns {Promise<any>}
-     */
-    cancelOrders(signed) {
-        const ret = wasm.orderbookclientwithfetch_cancelOrders(this.__wbg_ptr, addHeapObject(signed));
-        return takeObject(ret);
-    }
-    /**
-     * Creates an orderbook client from an existing fetch-callback handle id.
-     * @param {number} chain_id
-     * @param {string | null | undefined} env
-     * @param {number} fetch_callback_id
-     * @returns {OrderBookClientWithFetch}
-     */
-    static fromHandle(chain_id, env, fetch_callback_id) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            var ptr0 = isLikeNone(env) ? 0 : passStringToWasm0(env, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            var len0 = WASM_VECTOR_LEN;
-            wasm.orderbookclientwithfetch_fromHandle(retptr, chain_id, ptr0, len0, fetch_callback_id);
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-            if (r2) {
-                throw takeObject(r1);
-            }
-            return OrderBookClientWithFetch.__wrap(r0);
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-     * Fetches a token's native price.
-     * @param {string} token
-     * @returns {Promise<any>}
-     */
-    getNativePrice(token) {
-        const ptr0 = passStringToWasm0(token, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.orderbookclientwithfetch_getNativePrice(this.__wbg_ptr, ptr0, len0);
-        return takeObject(ret);
-    }
-    /**
-     * Fetches an order by UID.
-     * @param {string} order_uid
-     * @returns {Promise<any>}
-     */
-    getOrder(order_uid) {
-        const ptr0 = passStringToWasm0(order_uid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.orderbookclientwithfetch_getOrder(this.__wbg_ptr, ptr0, len0);
-        return takeObject(ret);
-    }
-    /**
-     * Fetches orders owned by an address.
-     * @param {string} owner
-     * @returns {Promise<any>}
-     */
-    getOrdersByOwner(owner) {
-        const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.orderbookclientwithfetch_getOrdersByOwner(this.__wbg_ptr, ptr0, len0);
-        return takeObject(ret);
-    }
-    /**
-     * Fetches a quote.
-     * @param {OrderQuoteRequestInput} request
-     * @returns {Promise<any>}
-     */
-    getQuote(request) {
-        const ret = wasm.orderbookclientwithfetch_getQuote(this.__wbg_ptr, addHeapObject(request));
-        return takeObject(ret);
-    }
-    /**
-     * Fetches trades for an order UID.
-     * @param {string} order_uid
-     * @returns {Promise<any>}
-     */
-    getTrades(order_uid) {
-        const ptr0 = passStringToWasm0(order_uid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.orderbookclientwithfetch_getTrades(this.__wbg_ptr, ptr0, len0);
-        return takeObject(ret);
-    }
-    /**
-     * Creates an orderbook client that owns a registered fetch callback.
-     * @param {number} chain_id
-     * @param {string | null | undefined} env
-     * @param {Function} fetch_callback
-     */
-    constructor(chain_id, env, fetch_callback) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            var ptr0 = isLikeNone(env) ? 0 : passStringToWasm0(env, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            var len0 = WASM_VECTOR_LEN;
-            wasm.orderbookclientwithfetch_new(retptr, chain_id, ptr0, len0, addHeapObject(fetch_callback));
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-            if (r2) {
-                throw takeObject(r1);
-            }
-            this.__wbg_ptr = r0 >>> 0;
-            OrderBookClientWithFetchFinalization.register(this, this.__wbg_ptr, this);
-            return this;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-     * Submits a signed order.
-     * @param {SignedOrderDto} signed
-     * @returns {Promise<string>}
-     */
-    sendOrder(signed) {
-        const ret = wasm.orderbookclientwithfetch_sendOrder(this.__wbg_ptr, addHeapObject(signed));
-        return takeObject(ret);
-    }
-    /**
-     * Submits a raw order-creation payload.
-     * @param {OrderCreationInput} input
-     * @returns {Promise<string>}
-     */
-    sendOrderCreation(input) {
-        const ret = wasm.orderbookclientwithfetch_sendOrderCreation(this.__wbg_ptr, addHeapObject(input));
-        return takeObject(ret);
-    }
-}
-if (Symbol.dispose) OrderBookClientWithFetch.prototype[Symbol.dispose] = OrderBookClientWithFetch.prototype.free;
-
-/**
- * Subgraph client backed by the browser fetch transport.
+ * Subgraph client backed by an explicitly configured HTTP transport.
  */
 export class SubgraphClient {
     __destroy_into_raw() {
@@ -606,16 +219,13 @@ export class SubgraphClient {
         return takeObject(ret);
     }
     /**
-     * Creates a subgraph client for a chain and Graph API key.
-     * @param {number} chain_id
-     * @param {string} api_key
+     * Creates a subgraph client from a single config object.
+     * @param {SubgraphClientConfig} config
      */
-    constructor(chain_id, api_key) {
+    constructor(config) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            const ptr0 = passStringToWasm0(api_key, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            const len0 = WASM_VECTOR_LEN;
-            wasm.subgraphclient_new(retptr, chain_id, ptr0, len0);
+            wasm.subgraphclient_new(retptr, addHeapObject(config));
             var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
             var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
             var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
@@ -642,115 +252,7 @@ export class SubgraphClient {
 if (Symbol.dispose) SubgraphClient.prototype[Symbol.dispose] = SubgraphClient.prototype.free;
 
 /**
- * Subgraph client backed by a JavaScript fetch callback.
- */
-export class SubgraphClientWithFetch {
-    static __wrap(ptr) {
-        ptr = ptr >>> 0;
-        const obj = Object.create(SubgraphClientWithFetch.prototype);
-        obj.__wbg_ptr = ptr;
-        SubgraphClientWithFetchFinalization.register(obj, obj.__wbg_ptr, obj);
-        return obj;
-    }
-    __destroy_into_raw() {
-        const ptr = this.__wbg_ptr;
-        this.__wbg_ptr = 0;
-        SubgraphClientWithFetchFinalization.unregister(this);
-        return ptr;
-    }
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_subgraphclientwithfetch_free(ptr, 0);
-    }
-    /**
-     * Creates a subgraph client from an existing fetch-callback handle id.
-     * @param {number} chain_id
-     * @param {string} api_key
-     * @param {number} fetch_callback_id
-     * @returns {SubgraphClientWithFetch}
-     */
-    static fromHandle(chain_id, api_key, fetch_callback_id) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            const ptr0 = passStringToWasm0(api_key, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            const len0 = WASM_VECTOR_LEN;
-            wasm.subgraphclientwithfetch_fromHandle(retptr, chain_id, ptr0, len0, fetch_callback_id);
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-            if (r2) {
-                throw takeObject(r1);
-            }
-            return SubgraphClientWithFetch.__wrap(r0);
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-     * Fetches daily volume rows.
-     * @param {number} days
-     * @returns {Promise<any>}
-     */
-    getLastDaysVolume(days) {
-        const ret = wasm.subgraphclientwithfetch_getLastDaysVolume(this.__wbg_ptr, days);
-        return takeObject(ret);
-    }
-    /**
-     * Fetches hourly volume rows.
-     * @param {number} hours
-     * @returns {Promise<any>}
-     */
-    getLastHoursVolume(hours) {
-        const ret = wasm.subgraphclientwithfetch_getLastHoursVolume(this.__wbg_ptr, hours);
-        return takeObject(ret);
-    }
-    /**
-     * Fetches aggregate totals.
-     * @returns {Promise<any>}
-     */
-    getTotals() {
-        const ret = wasm.subgraphclientwithfetch_getTotals(this.__wbg_ptr);
-        return takeObject(ret);
-    }
-    /**
-     * Creates a subgraph client that owns a registered fetch callback.
-     * @param {number} chain_id
-     * @param {string} api_key
-     * @param {Function} fetch_callback
-     */
-    constructor(chain_id, api_key, fetch_callback) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            const ptr0 = passStringToWasm0(api_key, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            const len0 = WASM_VECTOR_LEN;
-            wasm.subgraphclientwithfetch_new(retptr, chain_id, ptr0, len0, addHeapObject(fetch_callback));
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-            if (r2) {
-                throw takeObject(r1);
-            }
-            this.__wbg_ptr = r0 >>> 0;
-            SubgraphClientWithFetchFinalization.register(this, this.__wbg_ptr, this);
-            return this;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-     * Runs a raw GraphQL query.
-     * @param {SubgraphQueryInput} request
-     * @returns {Promise<any>}
-     */
-    runQuery(request) {
-        const ret = wasm.subgraphclientwithfetch_runQuery(this.__wbg_ptr, addHeapObject(request));
-        return takeObject(ret);
-    }
-}
-if (Symbol.dispose) SubgraphClientWithFetch.prototype[Symbol.dispose] = SubgraphClientWithFetch.prototype.free;
-
-/**
- * Trading facade backed by the browser fetch transport.
+ * Trading facade backed by an explicitly configured HTTP transport.
  */
 export class TradingClient {
     __destroy_into_raw() {
@@ -773,19 +275,13 @@ export class TradingClient {
         return takeObject(ret);
     }
     /**
-     * Creates a trading client for a chain, environment, and app code.
-     * @param {number} chain_id
-     * @param {string | null | undefined} env
-     * @param {string} app_code
+     * Creates a trading client from a single config object.
+     * @param {TradingClientConfig} config
      */
-    constructor(chain_id, env, app_code) {
+    constructor(config) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            var ptr0 = isLikeNone(env) ? 0 : passStringToWasm0(env, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            var len0 = WASM_VECTOR_LEN;
-            const ptr1 = passStringToWasm0(app_code, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            const len1 = WASM_VECTOR_LEN;
-            wasm.tradingclient_new(retptr, chain_id, ptr0, len0, ptr1, len1);
+            wasm.tradingclient_new(retptr, addHeapObject(config));
             var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
             var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
             var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
@@ -827,120 +323,6 @@ export class TradingClient {
     }
 }
 if (Symbol.dispose) TradingClient.prototype[Symbol.dispose] = TradingClient.prototype.free;
-
-/**
- * Trading facade backed by a JavaScript fetch callback.
- */
-export class TradingClientWithFetch {
-    static __wrap(ptr) {
-        ptr = ptr >>> 0;
-        const obj = Object.create(TradingClientWithFetch.prototype);
-        obj.__wbg_ptr = ptr;
-        TradingClientWithFetchFinalization.register(obj, obj.__wbg_ptr, obj);
-        return obj;
-    }
-    __destroy_into_raw() {
-        const ptr = this.__wbg_ptr;
-        this.__wbg_ptr = 0;
-        TradingClientWithFetchFinalization.unregister(this);
-        return ptr;
-    }
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_tradingclientwithfetch_free(ptr, 0);
-    }
-    /**
-     * Creates a trading client from an existing fetch-callback handle id.
-     * @param {number} chain_id
-     * @param {string | null | undefined} env
-     * @param {string} app_code
-     * @param {number} fetch_callback_id
-     * @returns {TradingClientWithFetch}
-     */
-    static fromHandle(chain_id, env, app_code, fetch_callback_id) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            var ptr0 = isLikeNone(env) ? 0 : passStringToWasm0(env, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            var len0 = WASM_VECTOR_LEN;
-            const ptr1 = passStringToWasm0(app_code, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            const len1 = WASM_VECTOR_LEN;
-            wasm.tradingclientwithfetch_fromHandle(retptr, chain_id, ptr0, len0, ptr1, len1, fetch_callback_id);
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-            if (r2) {
-                throw takeObject(r1);
-            }
-            return TradingClientWithFetch.__wrap(r0);
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-     * Fetches a quote without submitting an order.
-     * @param {SwapParametersInput} params
-     * @returns {Promise<any>}
-     */
-    getQuote(params) {
-        const ret = wasm.tradingclientwithfetch_getQuote(this.__wbg_ptr, addHeapObject(params));
-        return takeObject(ret);
-    }
-    /**
-     * Creates a trading client that owns a registered fetch callback.
-     * @param {number} chain_id
-     * @param {string | null | undefined} env
-     * @param {string} app_code
-     * @param {Function} fetch_callback
-     */
-    constructor(chain_id, env, app_code, fetch_callback) {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            var ptr0 = isLikeNone(env) ? 0 : passStringToWasm0(env, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            var len0 = WASM_VECTOR_LEN;
-            const ptr1 = passStringToWasm0(app_code, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-            const len1 = WASM_VECTOR_LEN;
-            wasm.tradingclientwithfetch_new(retptr, chain_id, ptr0, len0, ptr1, len1, addHeapObject(fetch_callback));
-            var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-            var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-            var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-            if (r2) {
-                throw takeObject(r1);
-            }
-            this.__wbg_ptr = r0 >>> 0;
-            TradingClientWithFetchFinalization.register(this, this.__wbg_ptr, this);
-            return this;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-     * Quotes, signs, and posts a swap order through a typed-data callback.
-     * @param {SwapParametersInput} params
-     * @param {string} owner
-     * @param {Function} signer_callback
-     * @returns {Promise<any>}
-     */
-    postSwapOrder(params, owner, signer_callback) {
-        const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.tradingclientwithfetch_postSwapOrder(this.__wbg_ptr, addHeapObject(params), ptr0, len0, addHeapObject(signer_callback));
-        return takeObject(ret);
-    }
-    /**
-     * Quotes and posts a swap order with a custom EIP-1271 signature callback.
-     * @param {SwapParametersInput} params
-     * @param {string} owner
-     * @param {Function} custom_callback
-     * @returns {Promise<any>}
-     */
-    postSwapOrderWithEip1271(params, owner, custom_callback) {
-        const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.tradingclientwithfetch_postSwapOrderWithEip1271(this.__wbg_ptr, addHeapObject(params), ptr0, len0, addHeapObject(custom_callback));
-        return takeObject(ret);
-    }
-}
-if (Symbol.dispose) TradingClientWithFetch.prototype[Symbol.dispose] = TradingClientWithFetch.prototype.free;
 
 /**
  * Initializes the wasm crate's panic hook once.
@@ -1168,38 +550,6 @@ export function eip1271SignaturePayload(input, ecdsa_signature) {
 }
 
 /**
- * Fetches and parses an app-data document by CID.
- * @param {string} cid
- * @param {string | null} [ipfs_uri]
- * @param {number | null} [timeout_ms]
- * @returns {Promise<any>}
- */
-export function fetchAppDataFromCid(cid, ipfs_uri, timeout_ms) {
-    const ptr0 = passStringToWasm0(cid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-    const len0 = WASM_VECTOR_LEN;
-    var ptr1 = isLikeNone(ipfs_uri) ? 0 : passStringToWasm0(ipfs_uri, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-    var len1 = WASM_VECTOR_LEN;
-    const ret = wasm.fetchAppDataFromCid(ptr0, len0, ptr1, len1, isLikeNone(timeout_ms) ? 0x100000001 : (timeout_ms) >>> 0);
-    return takeObject(ret);
-}
-
-/**
- * Fetches and parses an app-data document by app-data hash.
- * @param {string} app_data_hex
- * @param {string | null} [ipfs_uri]
- * @param {number | null} [timeout_ms]
- * @returns {Promise<any>}
- */
-export function fetchAppDataFromHex(app_data_hex, ipfs_uri, timeout_ms) {
-    const ptr0 = passStringToWasm0(app_data_hex, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-    const len0 = WASM_VECTOR_LEN;
-    var ptr1 = isLikeNone(ipfs_uri) ? 0 : passStringToWasm0(ipfs_uri, wasm.__wbindgen_export, wasm.__wbindgen_export2);
-    var len1 = WASM_VECTOR_LEN;
-    const ret = wasm.fetchAppDataFromHex(ptr0, len0, ptr1, len1, isLikeNone(timeout_ms) ? 0x100000001 : (timeout_ms) >>> 0);
-    return takeObject(ret);
-}
-
-/**
  * Builds signer-facing order typed data.
  * @param {OrderInput} input
  * @param {number} chain_id
@@ -1216,27 +566,6 @@ export function orderTypedData(input, chain_id) {
             throw takeObject(r1);
         }
         return takeObject(r0);
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-    }
-}
-
-/**
- * Registers a JS fetch callback and returns a disposable handle.
- * @param {Function} callback
- * @returns {FetchCallbackHandle}
- */
-export function registerFetchCallback(callback) {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.registerFetchCallback(retptr, addHeapObject(callback));
-        var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
-        var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
-        var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-        if (r2) {
-            throw takeObject(r1);
-        }
-        return FetchCallbackHandle.__wrap(r0);
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
     }
@@ -1469,6 +798,10 @@ function __wbg_get_imports() {
             const ret = typeof(getObject(arg0)) === 'function';
             return ret;
         },
+        __wbg___wbindgen_is_null_52ff4ec04186736f: function(arg0) {
+            const ret = getObject(arg0) === null;
+            return ret;
+        },
         __wbg___wbindgen_is_object_63322ec0cd6ea4ef: function(arg0) {
             const val = getObject(arg0);
             const ret = typeof(val) === 'object' && val !== null;
@@ -1510,9 +843,6 @@ function __wbg_get_imports() {
         __wbg__wbg_cb_unref_b46c9b5a9f08ec37: function(arg0) {
             getObject(arg0)._wbg_cb_unref();
         },
-        __wbg_abort_4ce5b484434ef6fd: function(arg0) {
-            getObject(arg0).abort();
-        },
         __wbg_abort_79db88f743c3efd7: function(arg0) {
             getObject(arg0).abort();
         },
@@ -1524,9 +854,10 @@ function __wbg_get_imports() {
             const ret = getObject(arg0).call(getObject(arg1), getObject(arg2));
             return addHeapObject(ret);
         }, arguments); },
-        __wbg_clearTimeout_1a62f3563b1611b3: function(arg0, arg1) {
-            getObject(arg0).clearTimeout(arg1);
-        },
+        __wbg_call_bb28efe6b2f55b86: function() { return handleError(function (arg0, arg1, arg2, arg3) {
+            const ret = getObject(arg0).call(getObject(arg1), getObject(arg2), getObject(arg3));
+            return addHeapObject(ret);
+        }, arguments); },
         __wbg_clearTimeout_3629d6209dfcc46e: function(arg0) {
             const ret = clearTimeout(takeObject(arg0));
             return addHeapObject(ret);
@@ -1552,10 +883,6 @@ function __wbg_get_imports() {
             } finally {
                 wasm.__wbindgen_export4(deferred0_0, deferred0_1, 1);
             }
-        },
-        __wbg_fetch_9ea633a8592ee39a: function(arg0, arg1) {
-            const ret = getObject(arg0).fetch(getObject(arg1));
-            return addHeapObject(ret);
         },
         __wbg_from_0dbf29f09e7fb200: function(arg0) {
             const ret = Array.from(getObject(arg0));
@@ -1608,16 +935,6 @@ function __wbg_get_imports() {
             const ret = result;
             return ret;
         },
-        __wbg_instanceof_Object_7c99480a1cdfb911: function(arg0) {
-            let result;
-            try {
-                result = getObject(arg0) instanceof Object;
-            } catch (_) {
-                result = false;
-            }
-            const ret = result;
-            return ret;
-        },
         __wbg_instanceof_Response_9b2d111407865ff2: function(arg0) {
             let result;
             try {
@@ -1632,16 +949,6 @@ function __wbg_get_imports() {
             let result;
             try {
                 result = getObject(arg0) instanceof Uint8Array;
-            } catch (_) {
-                result = false;
-            }
-            const ret = result;
-            return ret;
-        },
-        __wbg_instanceof_Window_cc64c86c8ef9e02b: function(arg0) {
-            let result;
-            try {
-                result = getObject(arg0) instanceof Window;
             } catch (_) {
                 result = false;
             }
@@ -1672,10 +979,6 @@ function __wbg_get_imports() {
             const ret = new Uint8Array(getObject(arg0));
             return addHeapObject(ret);
         },
-        __wbg_new_15a4889b4b90734d: function() { return handleError(function () {
-            const ret = new Headers();
-            return addHeapObject(ret);
-        }, arguments); },
         __wbg_new_227d7c05414eb861: function() {
             const ret = new Error();
             return addHeapObject(ret);
@@ -1688,10 +991,6 @@ function __wbg_get_imports() {
             const ret = new Array();
             return addHeapObject(ret);
         },
-        __wbg_new_98c22165a42231aa: function() { return handleError(function () {
-            const ret = new AbortController();
-            return addHeapObject(ret);
-        }, arguments); },
         __wbg_new_aa8d0fa9762c29bd: function() {
             const ret = new Object();
             return addHeapObject(ret);
@@ -1707,7 +1006,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_4078(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_3654(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -1718,10 +1017,6 @@ function __wbg_get_imports() {
                 state0.a = 0;
             }
         },
-        __wbg_new_with_str_and_init_897be1708e42f39d: function() { return handleError(function (arg0, arg1, arg2) {
-            const ret = new Request(getStringFromWasm0(arg0, arg1), getObject(arg2));
-            return addHeapObject(ret);
-        }, arguments); },
         __wbg_next_0340c4ae324393c3: function() { return handleError(function (arg0) {
             const ret = getObject(arg0).next();
             return addHeapObject(ret);
@@ -1764,16 +1059,9 @@ function __wbg_get_imports() {
             const ret = setTimeout(getObject(arg0), arg1);
             return addHeapObject(ret);
         }, arguments); },
-        __wbg_setTimeout_d8786dd31f90da0f: function() { return handleError(function (arg0, arg1, arg2) {
-            const ret = getObject(arg0).setTimeout(getObject(arg1), arg2);
-            return ret;
-        }, arguments); },
         __wbg_set_022bee52d0b05b19: function() { return handleError(function (arg0, arg1, arg2) {
             const ret = Reflect.set(getObject(arg0), getObject(arg1), getObject(arg2));
             return ret;
-        }, arguments); },
-        __wbg_set_1ffc463d4c541483: function() { return handleError(function (arg0, arg1, arg2, arg3, arg4) {
-            getObject(arg0).set(getStringFromWasm0(arg1, arg2), getStringFromWasm0(arg3, arg4));
         }, arguments); },
         __wbg_set_3bf1de9fab0cd644: function(arg0, arg1, arg2) {
             getObject(arg0)[arg1 >>> 0] = takeObject(arg2);
@@ -1781,27 +1069,11 @@ function __wbg_get_imports() {
         __wbg_set_6be42768c690e380: function(arg0, arg1, arg2) {
             getObject(arg0)[takeObject(arg1)] = takeObject(arg2);
         },
-        __wbg_set_body_be11680f34217f75: function(arg0, arg1) {
-            getObject(arg0).body = getObject(arg1);
-        },
         __wbg_set_fde2cec06c23692b: function(arg0, arg1, arg2) {
             const ret = getObject(arg0).set(getObject(arg1), getObject(arg2));
             return addHeapObject(ret);
         },
-        __wbg_set_headers_50fc01786240a440: function(arg0, arg1) {
-            getObject(arg0).headers = getObject(arg1);
-        },
-        __wbg_set_method_c9f1f985f6b6c427: function(arg0, arg1, arg2) {
-            getObject(arg0).method = getStringFromWasm0(arg1, arg2);
-        },
-        __wbg_set_signal_1d4e73c2305a0e7c: function(arg0, arg1) {
-            getObject(arg0).signal = getObject(arg1);
-        },
         __wbg_signal_b74e34a36211c513: function(arg0) {
-            const ret = getObject(arg0).signal;
-            return addHeapObject(ret);
-        },
-        __wbg_signal_fdc54643b47bf85b: function(arg0) {
             const ret = getObject(arg0).signal;
             return addHeapObject(ret);
         },
@@ -1828,6 +1100,13 @@ function __wbg_get_imports() {
             const ret = typeof window === 'undefined' ? null : window;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
         },
+        __wbg_statusText_a0c2afa453245983: function(arg0, arg1) {
+            const ret = getObject(arg1).statusText;
+            const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+            const len1 = WASM_VECTOR_LEN;
+            getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
+            getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
+        },
         __wbg_status_43e0d2f15b22d69f: function(arg0) {
             const ret = getObject(arg0).status;
             return ret;
@@ -1849,18 +1128,18 @@ function __wbg_get_imports() {
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 476, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_4070);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 1, ret: Externref, inner_ret: Some(Externref) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_903);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [], shim_idx: 345, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_2364);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 381, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3646);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000003: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [], shim_idx: 455, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3787);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [], shim_idx: 353, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3307);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000004: function(arg0) {
@@ -1897,18 +1176,19 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_2364(arg0, arg1) {
-    wasm.__wasm_bindgen_func_elem_2364(arg0, arg1);
+function __wasm_bindgen_func_elem_3307(arg0, arg1) {
+    wasm.__wasm_bindgen_func_elem_3307(arg0, arg1);
 }
 
-function __wasm_bindgen_func_elem_3787(arg0, arg1) {
-    wasm.__wasm_bindgen_func_elem_3787(arg0, arg1);
+function __wasm_bindgen_func_elem_903(arg0, arg1, arg2) {
+    const ret = wasm.__wasm_bindgen_func_elem_903(arg0, arg1, addHeapObject(arg2));
+    return takeObject(ret);
 }
 
-function __wasm_bindgen_func_elem_4070(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_3646(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_4070(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_3646(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -1919,40 +1199,22 @@ function __wasm_bindgen_func_elem_4070(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_4078(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_4078(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_3654(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_3654(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
-const FetchCallbackHandleFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_fetchcallbackhandle_free(ptr >>> 0, 1));
-const HttpToIpfsAdapterFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_httptoipfsadapter_free(ptr >>> 0, 1));
 const IpfsClientFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_ipfsclient_free(ptr >>> 0, 1));
-const IpfsClientWithFetchFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_ipfsclientwithfetch_free(ptr >>> 0, 1));
 const OrderBookClientFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_orderbookclient_free(ptr >>> 0, 1));
-const OrderBookClientWithFetchFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_orderbookclientwithfetch_free(ptr >>> 0, 1));
 const SubgraphClientFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_subgraphclient_free(ptr >>> 0, 1));
-const SubgraphClientWithFetchFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_subgraphclientwithfetch_free(ptr >>> 0, 1));
 const TradingClientFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_tradingclient_free(ptr >>> 0, 1));
-const TradingClientWithFetchFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_tradingclientwithfetch_free(ptr >>> 0, 1));
 
 function addHeapObject(obj) {
     if (heap_next === heap.length) heap.push(heap.length + 1);

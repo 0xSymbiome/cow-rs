@@ -16,6 +16,7 @@ export interface CowFetchRequest {
 
 export interface CowFetchResponse {
     status: number;
+    statusText?: string;
     headers: Record<string, string>;
     body: string;
 }
@@ -41,6 +42,38 @@ request: CowEip1271SignRequest,
 ) => Promise<string> | string;
 
 export type CustomEip1271Callback = CowEip1271SignCallback;
+
+export type HttpTransportConfig =
+| { kind: "fetch"; fetch?: typeof globalThis.fetch }
+| { kind: "callback"; callback: CowFetchCallback };
+
+export interface OrderBookClientConfig {
+    chainId: number;
+    env?: string | null;
+    transport: HttpTransportConfig;
+    timeoutMs?: number | null;
+}
+
+export interface SubgraphClientConfig {
+    chainId: number;
+    apiKey: string;
+    transport: HttpTransportConfig;
+    timeoutMs?: number | null;
+}
+
+export interface TradingClientConfig {
+    chainId: number;
+    env?: string | null;
+    appCode: string;
+    transport: HttpTransportConfig;
+    timeoutMs?: number | null;
+}
+
+export interface IpfsClientConfig {
+    ipfsUri?: string | null;
+    transport: HttpTransportConfig;
+    timeoutMs?: number | null;
+}
 
 
 /**
@@ -423,48 +456,7 @@ export interface WasmEnvelope<T> {
 
 
 /**
- * Disposable callback registry handle.
- */
-export class FetchCallbackHandle {
-    private constructor();
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Disposes this callback registration. Calling this more than once is harmless.
-     */
-    dispose(): void;
-    /**
-     * Numeric callback id.
-     */
-    readonly id: number;
-}
-
-/**
- * Adapter that lets app-data IPFS reads flow through an HTTP transport.
- */
-export class HttpToIpfsAdapter {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Fetches and parses an app-data document by CID.
-     */
-    fetchAppDataFromCid(cid: string, ipfs_uri?: string | null): Promise<any>;
-    /**
-     * Fetches and parses an app-data document by app-data hash.
-     */
-    fetchAppDataFromHex(app_data_hex: string, ipfs_uri?: string | null): Promise<any>;
-    /**
-     * Creates an adapter from an existing fetch-callback handle id.
-     */
-    static fromHandle(fetch_callback_id: number, timeout_ms?: number | null): HttpToIpfsAdapter;
-    /**
-     * Creates an adapter that owns a registered fetch callback.
-     */
-    constructor(fetch_callback: Function, timeout_ms?: number | null);
-}
-
-/**
- * IPFS client backed by the browser fetch transport.
+ * IPFS client backed by an explicitly configured HTTP transport.
  */
 export class IpfsClient {
     free(): void;
@@ -478,37 +470,13 @@ export class IpfsClient {
      */
     fetchAppDataFromHex(app_data_hex: string): Promise<any>;
     /**
-     * Creates an IPFS client with the default browser fetch transport.
+     * Creates an IPFS client from a single config object.
      */
-    constructor(ipfs_uri?: string | null, timeout_ms?: number | null);
+    constructor(config: IpfsClientConfig);
 }
 
 /**
- * IPFS client backed by a JavaScript fetch callback.
- */
-export class IpfsClientWithFetch {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Fetches and parses an app-data document by CID.
-     */
-    fetchAppDataFromCid(cid: string): Promise<any>;
-    /**
-     * Fetches and parses an app-data document by app-data hash.
-     */
-    fetchAppDataFromHex(app_data_hex: string): Promise<any>;
-    /**
-     * Creates an IPFS client from an existing fetch-callback handle id.
-     */
-    static fromHandle(ipfs_uri: string | null | undefined, timeout_ms: number | null | undefined, fetch_callback_id: number): IpfsClientWithFetch;
-    /**
-     * Creates an IPFS client that owns a registered fetch callback.
-     */
-    constructor(ipfs_uri: string | null | undefined, timeout_ms: number | null | undefined, fetch_callback: Function);
-}
-
-/**
- * Orderbook client backed by the browser fetch transport.
+ * Orderbook client backed by an explicitly configured HTTP transport.
  */
 export class OrderBookClient {
     free(): void;
@@ -538,9 +506,9 @@ export class OrderBookClient {
      */
     getTrades(order_uid: string): Promise<any>;
     /**
-     * Creates an orderbook client for a chain and environment.
+     * Creates an orderbook client from a single config object.
      */
-    constructor(chain_id: number, env?: string | null);
+    constructor(config: OrderBookClientConfig);
     /**
      * Submits a signed order.
      */
@@ -552,55 +520,7 @@ export class OrderBookClient {
 }
 
 /**
- * Orderbook client backed by a JavaScript fetch callback.
- */
-export class OrderBookClientWithFetch {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Cancels orders through a signed cancellation payload.
-     */
-    cancelOrders(signed: SignedCancellationsInput): Promise<any>;
-    /**
-     * Creates an orderbook client from an existing fetch-callback handle id.
-     */
-    static fromHandle(chain_id: number, env: string | null | undefined, fetch_callback_id: number): OrderBookClientWithFetch;
-    /**
-     * Fetches a token's native price.
-     */
-    getNativePrice(token: string): Promise<any>;
-    /**
-     * Fetches an order by UID.
-     */
-    getOrder(order_uid: string): Promise<any>;
-    /**
-     * Fetches orders owned by an address.
-     */
-    getOrdersByOwner(owner: string): Promise<any>;
-    /**
-     * Fetches a quote.
-     */
-    getQuote(request: OrderQuoteRequestInput): Promise<any>;
-    /**
-     * Fetches trades for an order UID.
-     */
-    getTrades(order_uid: string): Promise<any>;
-    /**
-     * Creates an orderbook client that owns a registered fetch callback.
-     */
-    constructor(chain_id: number, env: string | null | undefined, fetch_callback: Function);
-    /**
-     * Submits a signed order.
-     */
-    sendOrder(signed: SignedOrderDto): Promise<string>;
-    /**
-     * Submits a raw order-creation payload.
-     */
-    sendOrderCreation(input: OrderCreationInput): Promise<string>;
-}
-
-/**
- * Subgraph client backed by the browser fetch transport.
+ * Subgraph client backed by an explicitly configured HTTP transport.
  */
 export class SubgraphClient {
     free(): void;
@@ -618,9 +538,9 @@ export class SubgraphClient {
      */
     getTotals(): Promise<any>;
     /**
-     * Creates a subgraph client for a chain and Graph API key.
+     * Creates a subgraph client from a single config object.
      */
-    constructor(chain_id: number, api_key: string);
+    constructor(config: SubgraphClientConfig);
     /**
      * Runs a raw GraphQL query.
      */
@@ -628,39 +548,7 @@ export class SubgraphClient {
 }
 
 /**
- * Subgraph client backed by a JavaScript fetch callback.
- */
-export class SubgraphClientWithFetch {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Creates a subgraph client from an existing fetch-callback handle id.
-     */
-    static fromHandle(chain_id: number, api_key: string, fetch_callback_id: number): SubgraphClientWithFetch;
-    /**
-     * Fetches daily volume rows.
-     */
-    getLastDaysVolume(days: number): Promise<any>;
-    /**
-     * Fetches hourly volume rows.
-     */
-    getLastHoursVolume(hours: number): Promise<any>;
-    /**
-     * Fetches aggregate totals.
-     */
-    getTotals(): Promise<any>;
-    /**
-     * Creates a subgraph client that owns a registered fetch callback.
-     */
-    constructor(chain_id: number, api_key: string, fetch_callback: Function);
-    /**
-     * Runs a raw GraphQL query.
-     */
-    runQuery(request: SubgraphQueryInput): Promise<any>;
-}
-
-/**
- * Trading facade backed by the browser fetch transport.
+ * Trading facade backed by an explicitly configured HTTP transport.
  */
 export class TradingClient {
     free(): void;
@@ -670,37 +558,9 @@ export class TradingClient {
      */
     getQuote(params: SwapParametersInput): Promise<any>;
     /**
-     * Creates a trading client for a chain, environment, and app code.
+     * Creates a trading client from a single config object.
      */
-    constructor(chain_id: number, env: string | null | undefined, app_code: string);
-    /**
-     * Quotes, signs, and posts a swap order through a typed-data callback.
-     */
-    postSwapOrder(params: SwapParametersInput, owner: string, signer_callback: Function): Promise<any>;
-    /**
-     * Quotes and posts a swap order with a custom EIP-1271 signature callback.
-     */
-    postSwapOrderWithEip1271(params: SwapParametersInput, owner: string, custom_callback: Function): Promise<any>;
-}
-
-/**
- * Trading facade backed by a JavaScript fetch callback.
- */
-export class TradingClientWithFetch {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Creates a trading client from an existing fetch-callback handle id.
-     */
-    static fromHandle(chain_id: number, env: string | null | undefined, app_code: string, fetch_callback_id: number): TradingClientWithFetch;
-    /**
-     * Fetches a quote without submitting an order.
-     */
-    getQuote(params: SwapParametersInput): Promise<any>;
-    /**
-     * Creates a trading client that owns a registered fetch callback.
-     */
-    constructor(chain_id: number, env: string | null | undefined, app_code: string, fetch_callback: Function);
+    constructor(config: TradingClientConfig);
     /**
      * Quotes, signs, and posts a swap order through a typed-data callback.
      */
@@ -757,24 +617,9 @@ export function domainSeparator(chain_id: number): string;
 export function eip1271SignaturePayload(input: OrderInput, ecdsa_signature: string): string;
 
 /**
- * Fetches and parses an app-data document by CID.
- */
-export function fetchAppDataFromCid(cid: string, ipfs_uri?: string | null, timeout_ms?: number | null): Promise<any>;
-
-/**
- * Fetches and parses an app-data document by app-data hash.
- */
-export function fetchAppDataFromHex(app_data_hex: string, ipfs_uri?: string | null, timeout_ms?: number | null): Promise<any>;
-
-/**
  * Builds signer-facing order typed data.
  */
 export function orderTypedData(input: OrderInput, chain_id: number): any;
-
-/**
- * Registers a JS fetch callback and returns a disposable handle.
- */
-export function registerFetchCallback(callback: Function): FetchCallbackHandle;
 
 /**
  * Signs a cancellation digest through an explicit `eth_sign` callback.
@@ -835,105 +680,62 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
-    readonly appDataDoc: (a: any) => [number, number, number];
-    readonly appDataHexToCid: (a: number, b: number) => [number, number, number, number];
-    readonly appDataInfo: (a: any) => [number, number, number];
-    readonly cidToAppDataHex: (a: number, b: number) => [number, number, number, number];
-    readonly computeOrderUid: (a: any, b: number, c: number, d: number) => [number, number, number];
-    readonly deploymentAddresses: (a: number, b: number, c: number) => [number, number, number];
-    readonly domainSeparator: (a: number) => [number, number, number, number];
-    readonly orderTypedData: (a: any, b: number) => [number, number, number];
-    readonly supportedChainIds: () => [number, number];
-    readonly validateAppDataDoc: (a: any) => [number, number, number];
-    readonly wasmVersion: () => [number, number];
-    readonly __wbg_fetchcallbackhandle_free: (a: number, b: number) => void;
-    readonly __wbg_orderbookclient_free: (a: number, b: number) => void;
-    readonly __wbg_orderbookclientwithfetch_free: (a: number, b: number) => void;
-    readonly __wbg_subgraphclient_free: (a: number, b: number) => void;
-    readonly __wbg_subgraphclientwithfetch_free: (a: number, b: number) => void;
-    readonly fetchcallbackhandle_dispose: (a: number) => void;
-    readonly fetchcallbackhandle_id: (a: number) => number;
-    readonly orderbookclient_cancelOrders: (a: number, b: any) => any;
-    readonly orderbookclient_getNativePrice: (a: number, b: number, c: number) => any;
-    readonly orderbookclient_getOrder: (a: number, b: number, c: number) => any;
-    readonly orderbookclient_getOrdersByOwner: (a: number, b: number, c: number) => any;
-    readonly orderbookclient_getQuote: (a: number, b: any) => any;
-    readonly orderbookclient_getTrades: (a: number, b: number, c: number) => any;
-    readonly orderbookclient_new: (a: number, b: number, c: number) => [number, number, number];
-    readonly orderbookclient_sendOrder: (a: number, b: any) => any;
-    readonly orderbookclient_sendOrderCreation: (a: number, b: any) => any;
-    readonly orderbookclientwithfetch_cancelOrders: (a: number, b: any) => any;
-    readonly orderbookclientwithfetch_fromHandle: (a: number, b: number, c: number, d: number) => [number, number, number];
-    readonly orderbookclientwithfetch_getNativePrice: (a: number, b: number, c: number) => any;
-    readonly orderbookclientwithfetch_getOrder: (a: number, b: number, c: number) => any;
-    readonly orderbookclientwithfetch_getOrdersByOwner: (a: number, b: number, c: number) => any;
-    readonly orderbookclientwithfetch_getQuote: (a: number, b: any) => any;
-    readonly orderbookclientwithfetch_getTrades: (a: number, b: number, c: number) => any;
-    readonly orderbookclientwithfetch_new: (a: number, b: number, c: number, d: any) => [number, number, number];
-    readonly orderbookclientwithfetch_sendOrder: (a: number, b: any) => any;
-    readonly orderbookclientwithfetch_sendOrderCreation: (a: number, b: any) => any;
-    readonly registerFetchCallback: (a: any) => [number, number, number];
-    readonly subgraphclient_getLastDaysVolume: (a: number, b: number) => any;
-    readonly subgraphclient_getLastHoursVolume: (a: number, b: number) => any;
-    readonly subgraphclient_getTotals: (a: number) => any;
-    readonly subgraphclient_new: (a: number, b: number, c: number) => [number, number, number];
-    readonly subgraphclient_runQuery: (a: number, b: any) => any;
-    readonly subgraphclientwithfetch_fromHandle: (a: number, b: number, c: number, d: number) => [number, number, number];
-    readonly subgraphclientwithfetch_getLastDaysVolume: (a: number, b: number) => any;
-    readonly subgraphclientwithfetch_getLastHoursVolume: (a: number, b: number) => any;
-    readonly subgraphclientwithfetch_getTotals: (a: number) => any;
-    readonly subgraphclientwithfetch_new: (a: number, b: number, c: number, d: any) => [number, number, number];
-    readonly subgraphclientwithfetch_runQuery: (a: number, b: any) => any;
-    readonly __wbg_httptoipfsadapter_free: (a: number, b: number) => void;
-    readonly __wbg_ipfsclient_free: (a: number, b: number) => void;
-    readonly __wbg_ipfsclientwithfetch_free: (a: number, b: number) => void;
-    readonly fetchAppDataFromCid: (a: number, b: number, c: number, d: number, e: number) => any;
-    readonly fetchAppDataFromHex: (a: number, b: number, c: number, d: number, e: number) => any;
-    readonly httptoipfsadapter_fetchAppDataFromCid: (a: number, b: number, c: number, d: number, e: number) => any;
-    readonly httptoipfsadapter_fetchAppDataFromHex: (a: number, b: number, c: number, d: number, e: number) => any;
-    readonly httptoipfsadapter_fromHandle: (a: number, b: number) => [number, number, number];
-    readonly httptoipfsadapter_new: (a: any, b: number) => [number, number, number];
-    readonly ipfsclient_fetchAppDataFromCid: (a: number, b: number, c: number) => any;
-    readonly ipfsclient_fetchAppDataFromHex: (a: number, b: number, c: number) => any;
-    readonly ipfsclient_new: (a: number, b: number, c: number) => [number, number, number];
-    readonly ipfsclientwithfetch_fetchAppDataFromCid: (a: number, b: number, c: number) => any;
-    readonly ipfsclientwithfetch_fetchAppDataFromHex: (a: number, b: number, c: number) => any;
-    readonly ipfsclientwithfetch_fromHandle: (a: number, b: number, c: number, d: number) => [number, number, number];
-    readonly ipfsclientwithfetch_new: (a: number, b: number, c: number, d: any) => [number, number, number];
     readonly __cow_sdk_wasm_init: () => void;
+    readonly __wbg_ipfsclient_free: (a: number, b: number) => void;
+    readonly __wbg_orderbookclient_free: (a: number, b: number) => void;
+    readonly __wbg_subgraphclient_free: (a: number, b: number) => void;
     readonly __wbg_tradingclient_free: (a: number, b: number) => void;
-    readonly __wbg_tradingclientwithfetch_free: (a: number, b: number) => void;
-    readonly eip1271SignaturePayload: (a: any, b: number, c: number) => [number, number, number, number];
-    readonly signCancellationEthSignDigest: (a: number, b: number, c: number, d: any) => any;
-    readonly signCancellationWithEip1193: (a: number, b: number, c: number, d: number, e: number, f: any) => any;
-    readonly signCancellationWithTypedDataSigner: (a: number, b: number, c: number, d: any) => any;
-    readonly signOrderEthSignDigest: (a: any, b: number, c: number, d: number, e: any) => any;
-    readonly signOrderWithCustomEip1271: (a: any, b: number, c: number, d: number, e: any) => any;
-    readonly signOrderWithEip1193: (a: any, b: number, c: number, d: number, e: any) => any;
-    readonly signOrderWithEip1271: (a: any, b: number, c: number, d: number, e: any) => any;
-    readonly signOrderWithTypedDataSigner: (a: any, b: number, c: number, d: number, e: any) => any;
-    readonly tradingclient_getQuote: (a: number, b: any) => any;
-    readonly tradingclient_new: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
-    readonly tradingclient_postSwapOrder: (a: number, b: any, c: number, d: number, e: any) => any;
-    readonly tradingclient_postSwapOrderWithEip1271: (a: number, b: any, c: number, d: number, e: any) => any;
-    readonly tradingclientwithfetch_fromHandle: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number];
-    readonly tradingclientwithfetch_getQuote: (a: number, b: any) => any;
-    readonly tradingclientwithfetch_new: (a: number, b: number, c: number, d: number, e: number, f: any) => [number, number, number];
-    readonly tradingclientwithfetch_postSwapOrder: (a: number, b: any, c: number, d: number, e: any) => any;
-    readonly tradingclientwithfetch_postSwapOrderWithEip1271: (a: number, b: any, c: number, d: number, e: any) => any;
-    readonly wasm_bindgen__convert__closures_____invoke__hd9f032c1a2f8138e: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen__convert__closures_____invoke__h16b7440c88f0269d: (a: number, b: number, c: any, d: any) => void;
-    readonly wasm_bindgen__convert__closures_____invoke__hf3184c2633042a72: (a: number, b: number) => void;
-    readonly wasm_bindgen__convert__closures_____invoke__h7af8680472e534d6: (a: number, b: number) => void;
-    readonly __wbindgen_malloc: (a: number, b: number) => number;
-    readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
-    readonly __wbindgen_exn_store: (a: number) => void;
-    readonly __externref_table_alloc: () => number;
-    readonly __wbindgen_externrefs: WebAssembly.Table;
-    readonly __wbindgen_free: (a: number, b: number, c: number) => void;
-    readonly __wbindgen_destroy_closure: (a: number, b: number) => void;
-    readonly __externref_table_dealloc: (a: number) => void;
-    readonly __wbindgen_start: () => void;
+    readonly appDataDoc: (a: number, b: number) => void;
+    readonly appDataHexToCid: (a: number, b: number, c: number) => void;
+    readonly appDataInfo: (a: number, b: number) => void;
+    readonly cidToAppDataHex: (a: number, b: number, c: number) => void;
+    readonly computeOrderUid: (a: number, b: number, c: number, d: number, e: number) => void;
+    readonly deploymentAddresses: (a: number, b: number, c: number, d: number) => void;
+    readonly domainSeparator: (a: number, b: number) => void;
+    readonly eip1271SignaturePayload: (a: number, b: number, c: number, d: number) => void;
+    readonly ipfsclient_fetchAppDataFromCid: (a: number, b: number, c: number) => number;
+    readonly ipfsclient_fetchAppDataFromHex: (a: number, b: number, c: number) => number;
+    readonly ipfsclient_new: (a: number, b: number) => void;
+    readonly orderTypedData: (a: number, b: number, c: number) => void;
+    readonly orderbookclient_cancelOrders: (a: number, b: number) => number;
+    readonly orderbookclient_getNativePrice: (a: number, b: number, c: number) => number;
+    readonly orderbookclient_getOrder: (a: number, b: number, c: number) => number;
+    readonly orderbookclient_getOrdersByOwner: (a: number, b: number, c: number) => number;
+    readonly orderbookclient_getQuote: (a: number, b: number) => number;
+    readonly orderbookclient_getTrades: (a: number, b: number, c: number) => number;
+    readonly orderbookclient_new: (a: number, b: number) => void;
+    readonly orderbookclient_sendOrder: (a: number, b: number) => number;
+    readonly orderbookclient_sendOrderCreation: (a: number, b: number) => number;
+    readonly signCancellationEthSignDigest: (a: number, b: number, c: number, d: number) => number;
+    readonly signCancellationWithEip1193: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly signCancellationWithTypedDataSigner: (a: number, b: number, c: number, d: number) => number;
+    readonly signOrderEthSignDigest: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly signOrderWithCustomEip1271: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly signOrderWithEip1193: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly signOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly signOrderWithTypedDataSigner: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly subgraphclient_getLastDaysVolume: (a: number, b: number) => number;
+    readonly subgraphclient_getLastHoursVolume: (a: number, b: number) => number;
+    readonly subgraphclient_getTotals: (a: number) => number;
+    readonly subgraphclient_new: (a: number, b: number) => void;
+    readonly subgraphclient_runQuery: (a: number, b: number) => number;
+    readonly supportedChainIds: (a: number) => void;
+    readonly tradingclient_getQuote: (a: number, b: number) => number;
+    readonly tradingclient_new: (a: number, b: number) => void;
+    readonly tradingclient_postSwapOrder: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly tradingclient_postSwapOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly validateAppDataDoc: (a: number, b: number) => void;
+    readonly wasmVersion: (a: number) => void;
+    readonly __wasm_bindgen_func_elem_3646: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_3654: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_903: (a: number, b: number, c: number) => number;
+    readonly __wasm_bindgen_func_elem_3307: (a: number, b: number) => void;
+    readonly __wbindgen_export: (a: number, b: number) => number;
+    readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
+    readonly __wbindgen_export3: (a: number) => void;
+    readonly __wbindgen_export4: (a: number, b: number, c: number) => void;
+    readonly __wbindgen_export5: (a: number, b: number) => void;
+    readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

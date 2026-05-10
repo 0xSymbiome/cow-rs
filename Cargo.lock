@@ -1706,7 +1706,6 @@ dependencies = [
  "cow-sdk-subgraph",
  "cow-sdk-trading",
  "cow-sdk-transport-policy",
- "cow-sdk-transport-wasm",
  "getrandom 0.4.2",
  "hex",
  "js-sys",

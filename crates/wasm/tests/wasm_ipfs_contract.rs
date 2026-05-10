@@ -2,15 +2,13 @@
 
 mod common;
 
-use cow_sdk_wasm::exports::{
-    HttpToIpfsAdapter, IpfsClient, IpfsClientWithFetch, registry::register_fetch_callback,
-};
+use cow_sdk_wasm::exports::IpfsClient;
 use js_sys::Function;
 use serde_json::Value;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_test::*;
 
-use crate::common::{APP_DATA_CONTENT, CID_APP_DATA, HASH_APP_DATA};
+use crate::common::{APP_DATA_CONTENT, CID_APP_DATA, HASH_APP_DATA, ipfs_config};
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -34,14 +32,16 @@ fn app_data_fetch_callback() -> Function {
 }
 
 #[wasm_bindgen_test]
-async fn adapter_fetches_app_data_from_cid() {
-    let adapter = HttpToIpfsAdapter::new(app_data_fetch_callback(), Some(500)).unwrap();
+async fn ipfs_client_fetches_app_data_from_cid() {
+    let client = IpfsClient::new(ipfs_config(
+        Some("https://ipfs.example.test/ipfs"),
+        Some(500),
+        &app_data_fetch_callback(),
+    ))
+    .unwrap();
     let value = json(
-        adapter
-            .fetch_app_data_from_cid(
-                CID_APP_DATA.to_owned(),
-                Some("https://ipfs.example.test/ipfs".to_owned()),
-            )
+        client
+            .fetch_app_data_from_cid(CID_APP_DATA.to_owned())
             .await
             .unwrap(),
     );
@@ -51,14 +51,16 @@ async fn adapter_fetches_app_data_from_cid() {
 }
 
 #[wasm_bindgen_test]
-async fn adapter_fetches_app_data_from_hex() {
-    let adapter = HttpToIpfsAdapter::new(app_data_fetch_callback(), None).unwrap();
+async fn ipfs_client_fetches_app_data_from_hex() {
+    let client = IpfsClient::new(ipfs_config(
+        Some("https://ipfs.example.test/ipfs"),
+        None,
+        &app_data_fetch_callback(),
+    ))
+    .unwrap();
     let value = json(
-        adapter
-            .fetch_app_data_from_hex(
-                HASH_APP_DATA.to_owned(),
-                Some("https://ipfs.example.test/ipfs".to_owned()),
-            )
+        client
+            .fetch_app_data_from_hex(HASH_APP_DATA.to_owned())
             .await
             .unwrap(),
     );
@@ -67,12 +69,12 @@ async fn adapter_fetches_app_data_from_hex() {
 }
 
 #[wasm_bindgen_test]
-async fn ipfs_client_with_fetch_uses_custom_gateway_url() {
-    let client = IpfsClientWithFetch::new(
-        Some("https://ipfs.example.test/ipfs".to_owned()),
+async fn ipfs_client_uses_custom_gateway_url() {
+    let client = IpfsClient::new(ipfs_config(
+        Some("https://ipfs.example.test/ipfs"),
         Some(500),
-        app_data_fetch_callback(),
-    )
+        &app_data_fetch_callback(),
+    ))
     .unwrap();
     client
         .fetch_app_data_from_cid(CID_APP_DATA.to_owned())
@@ -90,13 +92,12 @@ async fn ipfs_client_with_fetch_uses_custom_gateway_url() {
 }
 
 #[wasm_bindgen_test]
-async fn ipfs_client_from_handle_keeps_shared_callback_alive() {
-    let handle = register_fetch_callback(app_data_fetch_callback()).unwrap();
-    let client = IpfsClientWithFetch::from_handle(
-        Some("https://ipfs.example.test/ipfs".to_owned()),
+async fn ipfs_client_keeps_internal_callback_registration_alive() {
+    let client = IpfsClient::new(ipfs_config(
+        Some("https://ipfs.example.test/ipfs"),
         None,
-        handle.id(),
-    )
+        &app_data_fetch_callback(),
+    ))
     .unwrap();
     let value = json(
         client
@@ -110,19 +111,17 @@ async fn ipfs_client_from_handle_keeps_shared_callback_alive() {
 
 #[wasm_bindgen_test]
 async fn http_404_maps_to_app_data_error() {
-    let adapter = HttpToIpfsAdapter::new(
-        callback(
+    let client = IpfsClient::new(ipfs_config(
+        Some("https://ipfs.example.test/ipfs"),
+        None,
+        &callback(
             "request",
             "return { status: 404, headers: {}, body: 'not found' };",
         ),
-        None,
-    )
+    ))
     .unwrap();
-    let error = adapter
-        .fetch_app_data_from_cid(
-            CID_APP_DATA.to_owned(),
-            Some("https://ipfs.example.test/ipfs".to_owned()),
-        )
+    let error = client
+        .fetch_app_data_from_cid(CID_APP_DATA.to_owned())
         .await
         .expect_err("404 must fail");
     let value = json(error);
@@ -133,19 +132,17 @@ async fn http_404_maps_to_app_data_error() {
 
 #[wasm_bindgen_test]
 async fn invalid_hex_rejects_before_fetch_callback() {
-    let adapter = HttpToIpfsAdapter::new(
-        callback(
+    let client = IpfsClient::new(ipfs_config(
+        Some("https://ipfs.example.test/ipfs"),
+        None,
+        &callback(
             "request",
             "globalThis.__cowUnexpectedIpfsDispatch = true; return { status: 200, headers: {}, body: '{}' };",
         ),
-        None,
-    )
+    ))
     .unwrap();
-    let error = adapter
-        .fetch_app_data_from_hex(
-            "not-a-hex".to_owned(),
-            Some("https://ipfs.example.test/ipfs".to_owned()),
-        )
+    let error = client
+        .fetch_app_data_from_hex("not-a-hex".to_owned())
         .await
         .expect_err("malformed app-data hash must fail");
     let dispatched = js_sys::eval("Boolean(globalThis.__cowUnexpectedIpfsDispatch)")
@@ -160,7 +157,8 @@ async fn invalid_hex_rejects_before_fetch_callback() {
 
 #[wasm_bindgen_test]
 fn invalid_timeout_is_rejected_by_constructor() {
-    let error = match HttpToIpfsAdapter::new(app_data_fetch_callback(), Some(i32::MAX as u32 + 1)) {
+    let callback = app_data_fetch_callback();
+    let error = match IpfsClient::new(ipfs_config(None, Some(i32::MAX as u32 + 1), &callback)) {
         Ok(_) => panic!("oversized timeout must fail"),
         Err(error) => error,
     };
@@ -171,8 +169,8 @@ fn invalid_timeout_is_rejected_by_constructor() {
 }
 
 #[wasm_bindgen_test]
-async fn default_ipfs_client_rejects_malformed_hex_without_network() {
-    let client = IpfsClient::new(None, None).unwrap();
+async fn ipfs_client_rejects_malformed_hex_without_network() {
+    let client = IpfsClient::new(ipfs_config(None, None, &app_data_fetch_callback())).unwrap();
     let error = client
         .fetch_app_data_from_hex("not-a-hex".to_owned())
         .await
