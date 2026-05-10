@@ -6,7 +6,7 @@ import {
   signOrderEthSignDigest,
   signOrderWithEip1193,
   signOrderWithTypedDataSigner
-} from "cow-sdk-wasm-test-package/nodejs";
+} from "cow-sdk-wasm-test-package";
 import { describe, expect, test } from "vitest";
 import { ORDER, OWNER } from "./orderbook.spec.js";
 

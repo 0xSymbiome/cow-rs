@@ -1,4 +1,4 @@
-import { IpfsClient } from "cow-sdk-wasm-test-package/nodejs";
+import { IpfsClient } from "cow-sdk-wasm-test-package";
 import { describe, expect, test } from "vitest";
 import { CID } from "./orderbook.spec.js";
 

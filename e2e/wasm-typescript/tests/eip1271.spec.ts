@@ -2,7 +2,7 @@ import {
   eip1271SignaturePayload,
   signOrderWithCustomEip1271,
   signOrderWithEip1271
-} from "cow-sdk-wasm-test-package/nodejs";
+} from "cow-sdk-wasm-test-package";
 import { describe, expect, test } from "vitest";
 import { ORDER, OWNER } from "./orderbook.spec.js";
 

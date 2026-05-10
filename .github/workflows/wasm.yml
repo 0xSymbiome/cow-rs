@@ -178,13 +178,25 @@ jobs:
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: ${{ env.NODE_VERSION }}
+      # Source ref: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: ${{ env.PNPM_VERSION }}
       - name: Render package manifest
         run: node crates/wasm/npm/scripts/render-package-json.mjs
+      - name: Install facade toolchain
+        run: pnpm --dir crates/wasm/npm install --frozen-lockfile
+      - name: Compile TypeScript facade
+        run: bash crates/wasm/npm/scripts/compile-facade.sh
       - name: Verify export targets
         run: node crates/wasm/npm/scripts/verify-exports.mjs
+      - name: Verify no raw package exports
+        run: node crates/wasm/npm/scripts/verify-no-raw-exports.mjs
+      - name: Verify facade declarations
+        run: node crates/wasm/npm/scripts/verify-facade-denylist.mjs
       - name: Enforce wasm size budgets
         run: node crates/wasm/npm/scripts/measure-wasm-size.mjs
-      - name: Check TypeScript declaration snapshots
+      - name: Check raw TypeScript declaration snapshots
         run: |
           node - <<'JS'
           const fs = require("node:fs");
@@ -201,11 +213,28 @@ jobs:
             }
           }
           JS
+      - name: Check facade TypeScript declaration snapshots
+        run: |
+          node - <<'JS'
+          const fs = require("node:fs");
+          const { spawnSync } = require("node:child_process");
+          const descriptor = JSON.parse(fs.readFileSync("crates/wasm/npm/flavours.json", "utf8"));
+          for (const flavour of descriptor.flavours) {
+            const snapshot = `crates/wasm/snapshots/facade/${flavour.name}.d.ts`;
+            const generated = `crates/wasm/npm/dist/${flavour.name}/index.d.ts`;
+            const result = spawnSync("diff", ["-u", snapshot, generated], { stdio: "inherit" });
+            if (result.status !== 0) {
+              process.exit(result.status);
+            }
+          }
+          JS
       # Source ref: actions/upload-artifact@v4
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: cow-sdk-wasm-npm
-          path: crates/wasm/npm/
+          path: |
+            crates/wasm/npm/
+            !crates/wasm/npm/node_modules/**
           if-no-files-found: error
 
   wasm-bindgen-tests:

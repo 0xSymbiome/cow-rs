@@ -20,13 +20,20 @@ function rawDir(flavour, target) {
   return `./dist/raw/${flavour.name}-${target}`;
 }
 
-function declarationPath(flavour, target) {
-  return `${rawDir(flavour, target)}/cow_sdk_wasm.d.ts`;
+function facadeDir(flavour) {
+  return `./dist/${flavour.name}`;
 }
 
-function modulePath(flavour, target) {
-  const extension = target === "nodejs" ? "cjs" : "js";
-  return `${rawDir(flavour, target)}/cow_sdk_wasm.${extension}`;
+function facadeDeclarationPath(flavour) {
+  return `${facadeDir(flavour)}/index.d.ts`;
+}
+
+function facadeModulePath(flavour) {
+  return `${facadeDir(flavour)}/index.mjs`;
+}
+
+function facadeRequirePath(flavour) {
+  return `${facadeDir(flavour)}/index.cjs`;
 }
 
 function wasmPath(flavour, target) {
@@ -50,33 +57,28 @@ function preferredTypesTarget(flavour) {
 }
 
 function flavourExport(flavour) {
-  const typeTarget = preferredTypesTarget(flavour);
   const entry = {
-    types: declarationPath(flavour, typeTarget)
+    types: facadeDeclarationPath(flavour)
   };
 
   if (flavour.targets.includes("nodejs")) {
     entry.node = {
-      types: declarationPath(flavour, "nodejs"),
-      require: modulePath(flavour, "nodejs"),
-      default: modulePath(flavour, "nodejs")
+      types: facadeDeclarationPath(flavour),
+      require: facadeRequirePath(flavour),
+      default: facadeRequirePath(flavour)
     };
   }
 
   if (flavour.targets.includes("web")) {
     entry.browser = {
-      types: declarationPath(flavour, "web"),
-      import: modulePath(flavour, "web")
+      types: facadeDeclarationPath(flavour),
+      import: facadeModulePath(flavour)
     };
   }
 
-  if (flavour.targets.includes("bundler")) {
-    entry.import = modulePath(flavour, "bundler");
-    entry.default = modulePath(flavour, "bundler");
-  } else {
-    entry.import = modulePath(flavour, typeTarget);
-    entry.default = modulePath(flavour, typeTarget);
-  }
+  preferredTypesTarget(flavour);
+  entry.import = facadeModulePath(flavour);
+  entry.default = facadeModulePath(flavour);
 
   return entry;
 }
@@ -88,9 +90,9 @@ if (!defaultFlavour) {
 requireTarget(defaultFlavour, "bundler");
 requireTarget(defaultFlavour, "nodejs");
 
-template.main = modulePath(defaultFlavour, "nodejs");
-template.module = modulePath(defaultFlavour, "bundler");
-template.types = declarationPath(defaultFlavour, "bundler");
+template.main = facadeRequirePath(defaultFlavour);
+template.module = facadeModulePath(defaultFlavour);
+template.types = facadeDeclarationPath(defaultFlavour);
 template.exports = {};
 
 for (const flavour of descriptor.flavours) {

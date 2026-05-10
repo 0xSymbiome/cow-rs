@@ -149,6 +149,9 @@ find "${npm_root}/dist/raw" -name .gitignore -type f -delete
 find "${npm_root}/dist/raw" \( -name README.md -o -name package.json \) -type f -delete
 
 if [ -z "${filter_flavour}" ] && [ -z "${filter_target}" ]; then
-  node "${npm_root}/scripts/render-package-json.mjs"
+  bash "${npm_root}/scripts/compile-facade.sh"
   node "${npm_root}/scripts/verify-exports.mjs"
+  node "${npm_root}/scripts/verify-no-raw-exports.mjs"
+  node "${npm_root}/scripts/verify-facade-denylist.mjs"
+  node "${npm_root}/scripts/measure-wasm-size.mjs"
 fi

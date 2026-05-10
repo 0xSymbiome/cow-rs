@@ -18,75 +18,76 @@
     "eip-1193",
     "eip-1271"
   ],
+  "packageManager": "pnpm@9.15.0",
   "type": "module",
-  "main": "./dist/raw/default-nodejs/cow_sdk_wasm.cjs",
-  "module": "./dist/raw/default-bundler/cow_sdk_wasm.js",
-  "types": "./dist/raw/default-bundler/cow_sdk_wasm.d.ts",
+  "main": "./dist/default/index.cjs",
+  "module": "./dist/default/index.mjs",
+  "types": "./dist/default/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/raw/default-bundler/cow_sdk_wasm.d.ts",
+      "types": "./dist/default/index.d.ts",
       "node": {
-        "types": "./dist/raw/default-nodejs/cow_sdk_wasm.d.ts",
-        "require": "./dist/raw/default-nodejs/cow_sdk_wasm.cjs",
-        "default": "./dist/raw/default-nodejs/cow_sdk_wasm.cjs"
+        "types": "./dist/default/index.d.ts",
+        "require": "./dist/default/index.cjs",
+        "default": "./dist/default/index.cjs"
       },
       "browser": {
-        "types": "./dist/raw/default-web/cow_sdk_wasm.d.ts",
-        "import": "./dist/raw/default-web/cow_sdk_wasm.js"
+        "types": "./dist/default/index.d.ts",
+        "import": "./dist/default/index.mjs"
       },
-      "import": "./dist/raw/default-bundler/cow_sdk_wasm.js",
-      "default": "./dist/raw/default-bundler/cow_sdk_wasm.js"
+      "import": "./dist/default/index.mjs",
+      "default": "./dist/default/index.mjs"
     },
     "./orderbook": {
-      "types": "./dist/raw/orderbook-bundler/cow_sdk_wasm.d.ts",
+      "types": "./dist/orderbook/index.d.ts",
       "node": {
-        "types": "./dist/raw/orderbook-nodejs/cow_sdk_wasm.d.ts",
-        "require": "./dist/raw/orderbook-nodejs/cow_sdk_wasm.cjs",
-        "default": "./dist/raw/orderbook-nodejs/cow_sdk_wasm.cjs"
+        "types": "./dist/orderbook/index.d.ts",
+        "require": "./dist/orderbook/index.cjs",
+        "default": "./dist/orderbook/index.cjs"
       },
       "browser": {
-        "types": "./dist/raw/orderbook-web/cow_sdk_wasm.d.ts",
-        "import": "./dist/raw/orderbook-web/cow_sdk_wasm.js"
+        "types": "./dist/orderbook/index.d.ts",
+        "import": "./dist/orderbook/index.mjs"
       },
-      "import": "./dist/raw/orderbook-bundler/cow_sdk_wasm.js",
-      "default": "./dist/raw/orderbook-bundler/cow_sdk_wasm.js"
+      "import": "./dist/orderbook/index.mjs",
+      "default": "./dist/orderbook/index.mjs"
     },
     "./signing": {
-      "types": "./dist/raw/signing-bundler/cow_sdk_wasm.d.ts",
+      "types": "./dist/signing/index.d.ts",
       "node": {
-        "types": "./dist/raw/signing-nodejs/cow_sdk_wasm.d.ts",
-        "require": "./dist/raw/signing-nodejs/cow_sdk_wasm.cjs",
-        "default": "./dist/raw/signing-nodejs/cow_sdk_wasm.cjs"
+        "types": "./dist/signing/index.d.ts",
+        "require": "./dist/signing/index.cjs",
+        "default": "./dist/signing/index.cjs"
       },
       "browser": {
-        "types": "./dist/raw/signing-web/cow_sdk_wasm.d.ts",
-        "import": "./dist/raw/signing-web/cow_sdk_wasm.js"
+        "types": "./dist/signing/index.d.ts",
+        "import": "./dist/signing/index.mjs"
       },
-      "import": "./dist/raw/signing-bundler/cow_sdk_wasm.js",
-      "default": "./dist/raw/signing-bundler/cow_sdk_wasm.js"
+      "import": "./dist/signing/index.mjs",
+      "default": "./dist/signing/index.mjs"
     },
     "./full": {
-      "types": "./dist/raw/full-bundler/cow_sdk_wasm.d.ts",
+      "types": "./dist/full/index.d.ts",
       "node": {
-        "types": "./dist/raw/full-nodejs/cow_sdk_wasm.d.ts",
-        "require": "./dist/raw/full-nodejs/cow_sdk_wasm.cjs",
-        "default": "./dist/raw/full-nodejs/cow_sdk_wasm.cjs"
+        "types": "./dist/full/index.d.ts",
+        "require": "./dist/full/index.cjs",
+        "default": "./dist/full/index.cjs"
       },
       "browser": {
-        "types": "./dist/raw/full-web/cow_sdk_wasm.d.ts",
-        "import": "./dist/raw/full-web/cow_sdk_wasm.js"
+        "types": "./dist/full/index.d.ts",
+        "import": "./dist/full/index.mjs"
       },
-      "import": "./dist/raw/full-bundler/cow_sdk_wasm.js",
-      "default": "./dist/raw/full-bundler/cow_sdk_wasm.js"
+      "import": "./dist/full/index.mjs",
+      "default": "./dist/full/index.mjs"
     },
     "./cloudflare": {
-      "types": "./dist/raw/cloudflare-web/cow_sdk_wasm.d.ts",
+      "types": "./dist/cloudflare/index.d.ts",
       "browser": {
-        "types": "./dist/raw/cloudflare-web/cow_sdk_wasm.d.ts",
-        "import": "./dist/raw/cloudflare-web/cow_sdk_wasm.js"
+        "types": "./dist/cloudflare/index.d.ts",
+        "import": "./dist/cloudflare/index.mjs"
       },
-      "import": "./dist/raw/cloudflare-web/cow_sdk_wasm.js",
-      "default": "./dist/raw/cloudflare-web/cow_sdk_wasm.js"
+      "import": "./dist/cloudflare/index.mjs",
+      "default": "./dist/cloudflare/index.mjs"
     },
     "./cloudflare/wasm": "./dist/raw/cloudflare-web/cow_sdk_wasm_bg.wasm"
   },
@@ -95,6 +96,17 @@
     "README.md",
     "LICENSE"
   ],
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "compile:facade": "bash scripts/compile-facade.sh",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --project tsconfig.facade.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "25.6.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.5"
+  },
   "engines": {
     "node": ">=22.0.0"
   },

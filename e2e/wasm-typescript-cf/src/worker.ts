@@ -1,4 +1,4 @@
-import init, {
+import initialize, {
   appDataHexToCid,
   computeOrderUid,
   supportedChainIds,
@@ -30,9 +30,7 @@ let initCount = 0;
 async function ensureReady() {
   if (!ready) {
     initCount += 1;
-    ready = init({ module_or_path: wasmModule } as unknown as Parameters<typeof init>[0]).then(
-      () => undefined
-    );
+    ready = initialize(wasmModule as WebAssembly.Module);
   }
   await ready;
 }

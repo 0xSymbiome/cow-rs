@@ -1,4 +1,4 @@
-import init, {
+import {
   appDataHexToCid,
   cidToAppDataHex,
   computeOrderUid,
@@ -6,7 +6,7 @@ import init, {
   orderTypedData,
   supportedChainIds,
   wasmVersion
-} from "cow-sdk-wasm-test-package/web";
+} from "cow-sdk-wasm-test-package";
 
 const ORDER = {
   sellToken: "0x1111111111111111111111111111111111111111",
@@ -26,7 +26,6 @@ const ORDER = {
 const OWNER = "0x3333333333333333333333333333333333333333";
 
 export async function runBrowserSmoke() {
-  await init();
   const cid = appDataHexToCid(ORDER.appData).value;
   const uid = computeOrderUid(ORDER, 1, OWNER).value;
   const typedData = orderTypedData(ORDER, 1).value;
