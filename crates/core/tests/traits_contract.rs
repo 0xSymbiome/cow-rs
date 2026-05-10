@@ -1,8 +1,9 @@
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo, ContractCall,
-    ContractHandle, GraphTransport, Hash32, HexData, PinningTransport, Provider, Signer,
-    TransactionBroadcast, TransactionReceipt, TransactionRequest, TransactionStatus,
-    TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
+    Address, Amount, AsyncDigestSigner, AsyncOwner, AsyncProvider, AsyncSigner,
+    AsyncSigningProvider, AsyncTypedDataSigner, BlockInfo, ContractCall, ContractHandle,
+    GraphTransport, Hash32, HexData, PinningTransport, Provider, Signer, TransactionBroadcast,
+    TransactionReceipt, TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField,
+    TypedDataPayload, TypedDataTypes,
 };
 
 const HASH_1: &str = "0x1111111111111111111111111111111111111111111111111111111111111111";
@@ -233,6 +234,28 @@ fn sample_typed_data_payload(domain: TypedDataDomain) -> TypedDataPayload {
         "Order".to_owned(),
         types,
         "{\"kind\":\"sell\"}".to_owned(),
+    )
+}
+
+fn sample_custom_action_payload() -> TypedDataPayload {
+    let mut types = TypedDataTypes::new();
+    types.insert(
+        "CustomAction".to_owned(),
+        vec![TypedDataField::new(
+            "actor".to_owned(),
+            "address".to_owned(),
+        )],
+    );
+    TypedDataPayload::new(
+        TypedDataDomain::new(
+            "Gnosis Protocol".to_owned(),
+            "v2".to_owned(),
+            1,
+            Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+        ),
+        "CustomAction".to_owned(),
+        types,
+        "{\"actor\":\"0x9999999999999999999999999999999999999999\"}".to_owned(),
     )
 }
 
@@ -530,35 +553,34 @@ async fn sync_runtime_contracts_gain_async_compatibility_through_blanket_impls()
         "0x9999999999999999999999999999999999999999"
     );
     assert_eq!(
+        AsyncOwner::get_address(&async_signer)
+            .await
+            .unwrap()
+            .as_str(),
+        "0x9999999999999999999999999999999999999999"
+    );
+    assert_eq!(
         AsyncSigner::estimate_gas(&async_signer, &tx).await.unwrap(),
         Amount::from(21_000u32)
     );
-    let mut types = TypedDataTypes::new();
-    types.insert(
-        "CustomAction".to_owned(),
-        vec![TypedDataField::new(
-            "actor".to_owned(),
-            "address".to_owned(),
-        )],
+    let payload = sample_custom_action_payload();
+    assert_eq!(
+        AsyncSigner::sign_typed_data_payload(&async_signer, &payload)
+            .await
+            .unwrap(),
+        "Gnosis Protocol:1:54"
     );
     assert_eq!(
-        AsyncSigner::sign_typed_data_payload(
-            &async_signer,
-            &TypedDataPayload::new(
-                TypedDataDomain::new(
-                    "Gnosis Protocol".to_owned(),
-                    "v2".to_owned(),
-                    1,
-                    Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-                ),
-                "CustomAction".to_owned(),
-                types,
-                "{\"actor\":\"0x9999999999999999999999999999999999999999\"}".to_owned(),
-            ),
-        )
-        .await
-        .unwrap(),
+        AsyncTypedDataSigner::sign_typed_data_payload(&async_signer, &payload)
+            .await
+            .unwrap(),
         "Gnosis Protocol:1:54"
+    );
+    assert_eq!(
+        AsyncDigestSigner::sign_digest(&async_signer, b"cow")
+            .await
+            .unwrap(),
+        "signed-message:3"
     );
     assert_eq!(
         AsyncSigner::send_transaction(&async_signer, &tx)

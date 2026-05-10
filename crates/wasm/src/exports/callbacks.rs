@@ -6,6 +6,19 @@ export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 export type Value = unknown;
 export type SdkError = WasmError;
 
+export interface SdkClientOptions {
+  timeoutMs?: number;
+  signal?: AbortSignal;
+}
+
+export interface WalletConfig {
+  timeoutMs?: number;
+}
+
+export interface SigningOptions extends SdkClientOptions {
+  walletConfig?: WalletConfig;
+}
+
 export interface CowFetchRequest {
   method: CowFetchMethod;
   url: string;

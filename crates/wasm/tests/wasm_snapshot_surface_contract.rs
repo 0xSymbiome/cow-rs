@@ -79,6 +79,7 @@ fn generated_type_declarations_version_errors_and_outputs() {
         "export type SchemaVersion = \"v1\" | \"__unknown\";",
         "export interface WasmEnvelope<T>",
         "schemaVersion: SchemaVersion;",
+        "kind: \"walletTimeout\"",
         "kind: \"forbiddenInteraction\"",
         "kind: \"__unknown\"",
     ];
@@ -94,6 +95,27 @@ fn generated_type_declarations_version_errors_and_outputs() {
                 !content.contains(token),
                 "{snapshot} must not expose `{token}`"
             );
+        }
+    }
+}
+
+#[test]
+fn generated_type_declarations_expose_abort_and_wallet_options() {
+    let expected = [
+        "export interface SdkClientOptions",
+        "timeoutMs?: number;",
+        "signal?: AbortSignal;",
+        "export interface WalletConfig",
+        "export interface SigningOptions extends SdkClientOptions",
+        "walletConfig?: WalletConfig;",
+        "options?: SdkClientOptions",
+        "options?: SigningOptions",
+    ];
+
+    for snapshot in SNAPSHOTS {
+        let content = read_snapshot(snapshot);
+        for token in expected {
+            assert!(content.contains(token), "{snapshot} must expose `{token}`");
         }
     }
 }

@@ -2,13 +2,14 @@ use std::fmt;
 
 use cow_sdk_contracts::{OrderCancellations, SigningScheme};
 use cow_sdk_core::{
-    AsyncSigner, OrderUid, ProtocolOptions, Signer, SupportedChainId, TypedDataPayload,
+    AsyncDigestSigner, AsyncTypedDataSigner, OrderUid, ProtocolOptions, Signer, SupportedChainId,
+    TypedDataPayload,
 };
 
 use crate::{
     SigningError,
     domain::{cancellation_fields, get_domain, serialize_message, typed_data_types},
-    order_signing::{sign_with_scheme, sign_with_scheme_async},
+    order_signing::{sign_with_scheme, sign_with_scheme_async, signer_error},
 };
 
 /// Primary type name for `CoW` order-cancellation payloads.
@@ -49,17 +50,10 @@ pub async fn sign_order_cancellation_async<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<crate::SigningResult, SigningError>
 where
-    S: AsyncSigner,
+    S: AsyncTypedDataSigner,
     S::Error: fmt::Display,
 {
-    sign_order_cancellation_with_scheme_async(
-        order_uid,
-        chain_id,
-        signer,
-        SigningScheme::Eip712,
-        options,
-    )
-    .await
+    sign_order_cancellations_async(std::slice::from_ref(order_uid), chain_id, signer, options).await
 }
 
 /// Signs a single order cancellation using an explicit local signing scheme.
@@ -122,8 +116,8 @@ pub async fn sign_order_cancellation_with_scheme_async<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<crate::SigningResult, SigningError>
 where
-    S: AsyncSigner,
-    S::Error: fmt::Display,
+    S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
+    <S as AsyncTypedDataSigner>::Error: fmt::Display,
 {
     sign_order_cancellations_with_scheme_async(
         std::slice::from_ref(order_uid),
@@ -171,17 +165,25 @@ pub async fn sign_order_cancellations_async<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<crate::SigningResult, SigningError>
 where
-    S: AsyncSigner,
+    S: AsyncTypedDataSigner,
     S::Error: fmt::Display,
 {
-    sign_order_cancellations_with_scheme_async(
-        order_uids,
-        chain_id,
-        signer,
-        SigningScheme::Eip712,
-        options,
-    )
-    .await
+    #[cfg(feature = "tracing")]
+    tracing::debug!(
+        target: "cow_sdk::signing",
+        order_uid = %order_uids.first().map_or("<empty>", OrderUid::as_str),
+        order_uid_count = order_uids.len(),
+        "signing order cancellation",
+    );
+    let payload = cancellation_signing_payload(order_uids, chain_id, options)?;
+    let signature = signer
+        .sign_typed_data_payload(&payload.payload)
+        .await
+        .map_err(|error| signer_error("sign_typed_data_payload", error))?;
+    Ok(crate::SigningResult {
+        signature: cow_sdk_contracts::normalized_ecdsa_signature(&signature)?,
+        signing_scheme: SigningScheme::Eip712,
+    })
 }
 
 /// Signs a batch order cancellation using an explicit local signing scheme.
@@ -246,8 +248,8 @@ pub async fn sign_order_cancellations_with_scheme_async<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<crate::SigningResult, SigningError>
 where
-    S: AsyncSigner,
-    S::Error: fmt::Display,
+    S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
+    <S as AsyncTypedDataSigner>::Error: fmt::Display,
 {
     #[cfg(feature = "tracing")]
     tracing::debug!(

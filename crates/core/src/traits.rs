@@ -466,11 +466,93 @@ pub trait Signer {
     fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error>;
 }
 
-/// Asynchronous signing boundary for browser wallets and async runtimes.
+/// Asynchronous owner-address capability.
 ///
-/// Browser wallet support implements this trait directly. Synchronous signers
-/// also implement it through the blanket implementation so public trading flows
-/// can keep one async-first internal path.
+/// This narrow trait lets async flows ask only for signer ownership when no
+/// signing operation is required.
+#[allow(async_fn_in_trait)]
+pub trait AsyncOwner {
+    /// Error type returned by owner resolution.
+    type Error;
+
+    /// Returns the signer address.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when address resolution fails.
+    async fn get_address(&self) -> Result<Address, Self::Error>;
+}
+
+/// Asynchronous EIP-712 typed-data signing capability.
+#[allow(async_fn_in_trait)]
+pub trait AsyncTypedDataSigner {
+    /// Error type returned by typed-data signing.
+    type Error;
+
+    /// Signs an explicit typed-data payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns any error from [`AsyncTypedDataSigner::sign_typed_data`].
+    async fn sign_typed_data_payload(
+        &self,
+        payload: &TypedDataPayload,
+    ) -> Result<String, Self::Error> {
+        self.sign_typed_data(
+            &payload.domain,
+            payload.primary_type_fields().unwrap_or_default(),
+            payload.message_json(),
+        )
+        .await
+    }
+
+    /// Signs typed-data components using the compatibility field-based contract.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when signing fails.
+    async fn sign_typed_data(
+        &self,
+        domain: &TypedDataDomain,
+        fields: &[TypedDataField],
+        value_json: &str,
+    ) -> Result<String, Self::Error>;
+}
+
+/// Asynchronous digest-signing capability.
+#[allow(async_fn_in_trait)]
+pub trait AsyncDigestSigner {
+    /// Error type returned by digest signing.
+    type Error;
+
+    /// Signs raw digest bytes according to the backend's message-signing rules.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined signer error when signing fails.
+    async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error>;
+}
+
+/// Asynchronous EIP-1193 request capability.
+#[allow(async_fn_in_trait)]
+pub trait AsyncEip1193 {
+    /// Error type returned by provider requests.
+    type Error;
+
+    /// Executes an EIP-1193 request with string parameters.
+    ///
+    /// # Errors
+    ///
+    /// Returns the implementation-defined provider error when the request fails.
+    async fn request(&self, method: &str, params: &[String]) -> Result<String, Self::Error>;
+}
+
+/// Asynchronous signing boundary for wallets and async runtimes.
+///
+/// Synchronous signers implement this trait through the blanket implementation
+/// so native trading flows can keep one async-first internal path. Narrow async
+/// capability traits above are preferred for callback-shaped adapters that only
+/// expose one signing operation.
 #[allow(async_fn_in_trait)]
 pub trait AsyncSigner {
     /// Error type returned by signer operations.
@@ -579,6 +661,51 @@ where
 
     async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error> {
         Signer::estimate_gas(self, tx)
+    }
+}
+
+impl<T> AsyncOwner for T
+where
+    T: AsyncSigner,
+{
+    type Error = T::Error;
+
+    async fn get_address(&self) -> Result<Address, Self::Error> {
+        AsyncSigner::get_address(self).await
+    }
+}
+
+impl<T> AsyncTypedDataSigner for T
+where
+    T: AsyncSigner,
+{
+    type Error = T::Error;
+
+    async fn sign_typed_data_payload(
+        &self,
+        payload: &TypedDataPayload,
+    ) -> Result<String, Self::Error> {
+        AsyncSigner::sign_typed_data_payload(self, payload).await
+    }
+
+    async fn sign_typed_data(
+        &self,
+        domain: &TypedDataDomain,
+        fields: &[TypedDataField],
+        value_json: &str,
+    ) -> Result<String, Self::Error> {
+        AsyncSigner::sign_typed_data(self, domain, fields, value_json).await
+    }
+}
+
+impl<T> AsyncDigestSigner for T
+where
+    T: AsyncSigner,
+{
+    type Error = T::Error;
+
+    async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error> {
+        AsyncSigner::sign_message(self, digest).await
     }
 }
 

@@ -3,13 +3,13 @@
 mod common;
 
 use cow_sdk_wasm::exports::{
-    compute_order_uid, sign_cancellation_eth_sign_digest, sign_cancellation_with_eip1193,
-    sign_cancellation_with_typed_data_signer, sign_order_eth_sign_digest, sign_order_with_eip1193,
-    sign_order_with_typed_data_signer,
+    SigningOptions, compute_order_uid, sign_cancellation_eth_sign_digest,
+    sign_cancellation_with_eip1193, sign_cancellation_with_typed_data_signer,
+    sign_order_eth_sign_digest, sign_order_with_eip1193, sign_order_with_typed_data_signer,
 };
-use js_sys::Function;
+use js_sys::{Function, Object, Reflect};
 use serde_json::Value;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_test::*;
 
 use crate::common::{
@@ -25,6 +25,22 @@ fn callback(args: &str, body: &str) -> Function {
 
 fn json(value: JsValue) -> Value {
     serde_wasm_bindgen::from_value(value).expect("JS value should decode to JSON")
+}
+
+fn set_js(target: &Object, key: &str, value: &JsValue) {
+    Reflect::set(target, &JsValue::from_str(key), value).expect("test option should be set");
+}
+
+fn signing_options_with_wallet_timeout(timeout_ms: u32) -> SigningOptions {
+    let wallet_config = Object::new();
+    set_js(
+        &wallet_config,
+        "timeoutMs",
+        &JsValue::from_f64(f64::from(timeout_ms)),
+    );
+    let options = Object::new();
+    set_js(&options, "walletConfig", wallet_config.as_ref());
+    JsValue::from(options).unchecked_into()
 }
 
 fn generated_order_uid() -> String {
@@ -48,6 +64,7 @@ async fn typed_data_signer_receives_order_envelope() {
             CHAIN_MAINNET,
             ADDR_OWNER.to_owned(),
             signer,
+            None,
         )
         .await
         .unwrap(),
@@ -71,6 +88,7 @@ async fn typed_data_signer_normalizes_modern_v_signatures() {
             CHAIN_MAINNET,
             ADDR_OWNER.to_owned(),
             signer,
+            None,
         )
         .await
         .unwrap(),
@@ -88,6 +106,7 @@ async fn typed_data_signer_normalizes_modern_v_signatures() {
             CHAIN_MAINNET,
             ADDR_OWNER.to_owned(),
             signer,
+            None,
         )
         .await
         .unwrap(),
@@ -111,6 +130,7 @@ async fn eip1193_request_uses_eth_sign_typed_data_v4() {
             CHAIN_MAINNET,
             ADDR_OWNER.to_owned(),
             provider,
+            None,
         )
         .await
         .unwrap(),
@@ -133,6 +153,7 @@ async fn eip1193_throw_maps_to_wallet_error() {
         CHAIN_MAINNET,
         ADDR_OWNER.to_owned(),
         provider,
+        None,
     )
     .await
     .expect_err("provider throw must fail");
@@ -154,6 +175,7 @@ async fn eip1193_rejection_maps_to_wallet_error() {
         CHAIN_MAINNET,
         ADDR_OWNER.to_owned(),
         provider,
+        None,
     )
     .await
     .expect_err("provider rejection must fail");
@@ -171,6 +193,7 @@ async fn typed_data_callback_non_string_return_is_rejected() {
         CHAIN_MAINNET,
         ADDR_OWNER.to_owned(),
         signer,
+        None,
     )
     .await
     .expect_err("non-string callback return must fail");
@@ -178,6 +201,24 @@ async fn typed_data_callback_non_string_return_is_rejected() {
 
     assert_eq!(value["kind"], "walletRequest");
     assert_eq!(value["message"], "callback did not return a string");
+}
+
+#[wasm_bindgen_test]
+async fn wallet_config_timeout_rejects_pending_signer_callback() {
+    let signer = callback("envelope", "return new Promise(() => {});");
+    let error = sign_order_with_typed_data_signer(
+        wasm_order_input(),
+        CHAIN_MAINNET,
+        ADDR_OWNER.to_owned(),
+        signer,
+        Some(signing_options_with_wallet_timeout(1)),
+    )
+    .await
+    .expect_err("wallet timeout must reject a pending signer callback");
+    let value = json(error);
+
+    assert_eq!(value["kind"], "walletTimeout");
+    assert_eq!(value["timeoutMs"], 1);
 }
 
 #[wasm_bindgen_test]
@@ -195,6 +236,7 @@ async fn eth_sign_digest_callback_receives_digest() {
             CHAIN_MAINNET,
             ADDR_OWNER.to_owned(),
             signer,
+            None,
         )
         .await
         .unwrap(),
@@ -216,9 +258,14 @@ async fn typed_cancellation_signer_returns_order_uids() {
         ),
     );
     let signed = json(
-        sign_cancellation_with_typed_data_signer(vec![order_uid.clone()], CHAIN_MAINNET, signer)
-            .await
-            .unwrap(),
+        sign_cancellation_with_typed_data_signer(
+            vec![order_uid.clone()],
+            CHAIN_MAINNET,
+            signer,
+            None,
+        )
+        .await
+        .unwrap(),
     );
     let envelope = json(js_sys::eval("globalThis.__cowCancel").unwrap());
 
@@ -243,6 +290,7 @@ async fn eip1193_cancellation_callback_shape_is_stable() {
             CHAIN_MAINNET,
             ADDR_OWNER.to_owned(),
             provider,
+            None,
         )
         .await
         .unwrap(),
@@ -265,7 +313,7 @@ async fn eth_sign_cancellation_callback_receives_digest() {
         ),
     );
     let signed = json(
-        sign_cancellation_eth_sign_digest(vec![order_uid], CHAIN_MAINNET, signer)
+        sign_cancellation_eth_sign_digest(vec![order_uid], CHAIN_MAINNET, signer, None)
             .await
             .unwrap(),
     );
@@ -281,7 +329,7 @@ async fn empty_cancellation_list_fails_before_callback_dispatch() {
         "envelope",
         "globalThis.__cowUnexpectedCancelDispatch = true; return '0x00';",
     );
-    let error = sign_cancellation_with_typed_data_signer(Vec::new(), CHAIN_MAINNET, signer)
+    let error = sign_cancellation_with_typed_data_signer(Vec::new(), CHAIN_MAINNET, signer, None)
         .await
         .expect_err("empty cancellation list must fail");
     let value = json(error);

@@ -68,6 +68,18 @@ fn wallet_request_variant_round_trips() {
 }
 
 #[wasm_bindgen_test]
+fn wallet_timeout_variant_round_trips() {
+    let value = round_trip(json!({
+        "schemaVersion": "v1",
+        "kind": "walletTimeout",
+        "timeoutMs": 250
+    }));
+
+    assert_eq!(value["kind"], "walletTimeout");
+    assert_eq!(value["timeoutMs"], 250);
+}
+
+#[wasm_bindgen_test]
 fn transport_variant_round_trips() {
     let value = round_trip(json!({
         "schemaVersion": "v1",

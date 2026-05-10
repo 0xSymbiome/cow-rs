@@ -115,6 +115,7 @@ async fn unsupported_chain_rejects_before_wallet_callback() {
         CHAIN_UNSUPPORTED,
         ADDR_OWNER.to_owned(),
         signer,
+        None,
     )
     .await
     .expect_err("unsupported chain must fail");
@@ -134,7 +135,7 @@ async fn empty_cancellation_rejects_before_wallet_callback() {
         "envelope",
         "globalThis.__cowEmptyCancelDispatch = true; return '0x00';",
     );
-    let error = sign_cancellation_with_typed_data_signer(Vec::new(), CHAIN_MAINNET, signer)
+    let error = sign_cancellation_with_typed_data_signer(Vec::new(), CHAIN_MAINNET, signer, None)
         .await
         .expect_err("empty cancellation list must fail");
     let dispatched = js_sys::eval("Boolean(globalThis.__cowEmptyCancelDispatch)")

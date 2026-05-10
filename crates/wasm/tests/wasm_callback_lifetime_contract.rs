@@ -43,7 +43,7 @@ async fn client_owned_callback_survives_until_request_resolves() {
 
     let value = json(
         client
-            .fetch_app_data_from_cid(CID_APP_DATA.to_owned())
+            .fetch_app_data_from_cid(CID_APP_DATA.to_owned(), None)
             .await
             .unwrap(),
     );

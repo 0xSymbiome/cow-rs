@@ -3,6 +3,9 @@ use serde_json::Value;
 use wasm_bindgen::prelude::*;
 
 use crate::exports::{
+    cancel::{
+        ClientCallScope, SdkClientOptions, run_with_client_options, transport_policy_with_timeout,
+    },
     dto::{SubgraphQueryInput, parse_chain, to_js_value},
     envelope::WasmEnvelope,
     errors::WasmError,
@@ -40,26 +43,59 @@ impl SubgraphClient {
 
     /// Fetches aggregate totals.
     #[wasm_bindgen(js_name = "getTotals")]
-    pub async fn get_totals(&self) -> Result<JsValue, JsValue> {
-        subgraph_get_totals(&self.inner).await
+    pub async fn get_totals(
+        &self,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = subgraph_for_scope(&self.inner, &scope);
+        run_with_client_options(scope, async move { subgraph_get_totals(&inner).await }).await
     }
 
     /// Fetches daily volume rows.
     #[wasm_bindgen(js_name = "getLastDaysVolume")]
-    pub async fn get_last_days_volume(&self, days: u32) -> Result<JsValue, JsValue> {
-        subgraph_get_last_days_volume(&self.inner, days).await
+    pub async fn get_last_days_volume(
+        &self,
+        days: u32,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = subgraph_for_scope(&self.inner, &scope);
+        run_with_client_options(scope, async move {
+            subgraph_get_last_days_volume(&inner, days).await
+        })
+        .await
     }
 
     /// Fetches hourly volume rows.
     #[wasm_bindgen(js_name = "getLastHoursVolume")]
-    pub async fn get_last_hours_volume(&self, hours: u32) -> Result<JsValue, JsValue> {
-        subgraph_get_last_hours_volume(&self.inner, hours).await
+    pub async fn get_last_hours_volume(
+        &self,
+        hours: u32,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = subgraph_for_scope(&self.inner, &scope);
+        run_with_client_options(scope, async move {
+            subgraph_get_last_hours_volume(&inner, hours).await
+        })
+        .await
     }
 
     /// Runs a raw GraphQL query.
     #[wasm_bindgen(js_name = "runQuery")]
-    pub async fn run_query(&self, request: SubgraphQueryInput) -> Result<JsValue, JsValue> {
-        subgraph_run_query(&self.inner, request).await
+    pub async fn run_query(
+        &self,
+        request: SubgraphQueryInput,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = subgraph_for_scope(&self.inner, &scope);
+        run_with_client_options(
+            scope,
+            async move { subgraph_run_query(&inner, request).await },
+        )
+        .await
     }
 }
 
@@ -75,6 +111,15 @@ fn build_subgraph(
         .transport(transport)
         .build()
         .map_err(|error| WasmError::from(error).into_js())
+}
+
+fn subgraph_for_scope(inner: &SubgraphApi, scope: &ClientCallScope) -> SubgraphApi {
+    inner
+        .clone()
+        .with_transport_policy(transport_policy_with_timeout(
+            inner.transport_policy(),
+            scope.timeout(),
+        ))
 }
 
 async fn subgraph_get_totals(inner: &SubgraphApi) -> Result<JsValue, JsValue> {

@@ -5,8 +5,9 @@ use cow_sdk_contracts::{
     normalize_order, normalized_ecdsa_signature, pack_order_uid_params,
 };
 use cow_sdk_core::{
-    Address, AsyncSigner, BuyTokenDestination, OrderDigest, OrderKind, OrderUid, ProtocolOptions,
-    SellTokenSource, Signer, SupportedChainId, TypedDataPayload, UnsignedOrder,
+    Address, AsyncDigestSigner, AsyncTypedDataSigner, BuyTokenDestination, OrderDigest, OrderKind,
+    OrderUid, ProtocolOptions, SellTokenSource, Signer, SupportedChainId, TypedDataPayload,
+    UnsignedOrder,
 };
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
@@ -96,10 +97,18 @@ pub async fn sign_order_async<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<SigningResult, SigningError>
 where
-    S: AsyncSigner,
+    S: AsyncTypedDataSigner,
     S::Error: fmt::Display,
 {
-    sign_order_with_scheme_async(order, chain_id, signer, SigningScheme::Eip712, options).await
+    let payload = order_signing_payload(order, chain_id, options)?;
+    let signature = signer
+        .sign_typed_data_payload(&payload.payload)
+        .await
+        .map_err(|error| signer_error("sign_typed_data_payload", error))?;
+    Ok(SigningResult {
+        signature: normalized_ecdsa_signature(&signature)?,
+        signing_scheme: SigningScheme::Eip712,
+    })
 }
 
 /// Signs an order using an explicit local signing scheme.
@@ -157,8 +166,8 @@ pub async fn sign_order_with_scheme_async<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<SigningResult, SigningError>
 where
-    S: AsyncSigner,
-    S::Error: fmt::Display,
+    S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
+    <S as AsyncTypedDataSigner>::Error: fmt::Display,
 {
     let payload = order_signing_payload(order, chain_id, options)?;
     sign_with_scheme_async(signer, scheme, &payload.payload, &payload.digest).await
@@ -283,8 +292,8 @@ pub(crate) async fn sign_with_scheme_async<S>(
     digest_hex: &str,
 ) -> Result<SigningResult, SigningError>
 where
-    S: AsyncSigner,
-    S::Error: fmt::Display,
+    S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
+    <S as AsyncTypedDataSigner>::Error: fmt::Display,
 {
     if !scheme.is_ecdsa() {
         return Err(SigningError::UnsupportedSignerGeneratedScheme { scheme });
@@ -298,7 +307,7 @@ where
         SigningScheme::EthSign => {
             let digest = parse_hex(digest_hex, "digest")?;
             signer
-                .sign_message(&digest)
+                .sign_digest(&digest)
                 .await
                 .map_err(|error| signer_error("sign_message", error))?
         }
@@ -331,7 +340,7 @@ pub(crate) fn contracts_order(order: &UnsignedOrder) -> ContractsOrder {
     ContractsOrder::from(order)
 }
 
-fn signer_error<E: fmt::Display>(operation: &'static str, error: E) -> SigningError {
+pub(crate) fn signer_error<E: fmt::Display>(operation: &'static str, error: E) -> SigningError {
     SigningError::Signer {
         operation,
         message: error.to_string().into(),

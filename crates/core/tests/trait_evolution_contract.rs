@@ -33,6 +33,36 @@ fn async_signer_trait_shape_unchanged() {
 }
 
 #[test]
+fn narrow_async_signer_capability_traits_are_stable() {
+    assert_eq!(
+        trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncOwner"),
+        ["async fn get_address(&self) -> Result<Address, Self::Error>;"],
+    );
+    assert_eq!(
+        trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncTypedDataSigner"),
+        [
+            "async fn sign_typed_data(&self, domain: &TypedDataDomain, fields: &[TypedDataField], value_json: &str) -> Result<String, Self::Error>;"
+        ],
+    );
+    assert_eq!(
+        trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncDigestSigner"),
+        ["async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error>;"],
+    );
+    assert_eq!(
+        trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncEip1193"),
+        [
+            "async fn request(&self, method: &str, params: &[String]) -> Result<String, Self::Error>;"
+        ],
+    );
+
+    let typed_data_body = trait_body(CORE_TRAITS_SOURCE, "AsyncTypedDataSigner");
+    assert!(
+        typed_data_body.contains("async fn sign_typed_data_payload("),
+        "AsyncTypedDataSigner must expose the explicit typed-data payload helper"
+    );
+}
+
+#[test]
 fn async_provider_trait_shape_unchanged() {
     assert_eq!(
         trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncProvider"),

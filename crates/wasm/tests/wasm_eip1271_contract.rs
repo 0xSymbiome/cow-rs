@@ -79,6 +79,7 @@ async fn sign_order_with_eip1271_returns_eip1271_scheme() {
             CHAIN_MAINNET,
             ADDR_OWNER.to_owned(),
             signer,
+            None,
         )
         .await
         .unwrap(),
@@ -97,6 +98,7 @@ async fn sign_order_with_eip1271_uid_equals_generated_order_id_as_str() {
             CHAIN_MAINNET,
             ADDR_OWNER.to_owned(),
             signer,
+            None,
         )
         .await
         .unwrap(),
@@ -114,6 +116,7 @@ async fn sign_order_with_eip1271_from_field_is_owner() {
             CHAIN_MAINNET,
             ADDR_OWNER.to_owned(),
             signer,
+            None,
         )
         .await
         .unwrap(),
@@ -136,6 +139,7 @@ async fn typed_data_callback_receives_order_primary_type() {
         CHAIN_MAINNET,
         ADDR_OWNER.to_owned(),
         signer,
+        None,
     )
     .await
     .unwrap();
@@ -156,6 +160,7 @@ async fn custom_eip1271_callback_signature_is_used_verbatim() {
             CHAIN_MAINNET,
             ADDR_OWNER.to_owned(),
             custom,
+            None,
         )
         .await
         .unwrap(),
@@ -178,6 +183,7 @@ async fn missing_owner_is_rejected_before_dispatch() {
         CHAIN_MAINNET,
         "0x1234".to_owned(),
         signer,
+        None,
     )
     .await
     .expect_err("malformed owner must fail");
@@ -200,6 +206,7 @@ async fn callback_throw_maps_to_typed_wallet_error() {
         CHAIN_MAINNET,
         ADDR_OWNER.to_owned(),
         signer,
+        None,
     )
     .await
     .expect_err("throw must fail");
@@ -217,6 +224,7 @@ async fn custom_callback_non_string_is_rejected() {
         CHAIN_MAINNET,
         ADDR_OWNER.to_owned(),
         custom,
+        None,
     )
     .await
     .expect_err("non-string custom callback must fail");

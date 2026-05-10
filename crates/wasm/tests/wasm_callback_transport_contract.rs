@@ -43,7 +43,7 @@ async fn callback_transport_receives_request_dto_with_signal() {
 
     let value = json(
         client
-            .fetch_app_data_from_cid(CID_APP_DATA.to_owned())
+            .fetch_app_data_from_cid(CID_APP_DATA.to_owned(), None)
             .await
             .unwrap(),
     );
@@ -77,7 +77,7 @@ async fn callback_transport_maps_non_2xx_to_typed_error() {
     ))
     .unwrap();
     let error = client
-        .fetch_app_data_from_cid(CID_APP_DATA.to_owned())
+        .fetch_app_data_from_cid(CID_APP_DATA.to_owned(), None)
         .await
         .expect_err("non-success callback response must fail");
     let value = json(error);
@@ -99,7 +99,7 @@ async fn callback_transport_reject_maps_to_typed_error() {
     ))
     .unwrap();
     let error = client
-        .fetch_app_data_from_cid(CID_APP_DATA.to_owned())
+        .fetch_app_data_from_cid(CID_APP_DATA.to_owned(), None)
         .await
         .expect_err("callback rejection must fail");
     let value = json(error);

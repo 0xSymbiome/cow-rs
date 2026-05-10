@@ -7,6 +7,7 @@ use cow_sdk_pure_helpers as pure;
 use wasm_bindgen::prelude::*;
 
 use crate::exports::{
+    cancel::{ClientCallScope, SdkClientOptions, run_with_client_options},
     dto::{AppDataDocDto, to_js_value},
     envelope::WasmEnvelope,
     errors::WasmError,
@@ -22,6 +23,13 @@ pub(crate) struct IpfsHttpAdapter {
 impl IpfsHttpAdapter {
     fn from_parts(inner: Arc<dyn HttpTransport + Send + Sync>, timeout: Option<Duration>) -> Self {
         Self { inner, timeout }
+    }
+
+    fn with_call_timeout(&self, timeout: Option<Duration>) -> Self {
+        Self {
+            inner: Arc::clone(&self.inner),
+            timeout: timeout.or(self.timeout),
+        }
     }
 }
 
@@ -70,8 +78,18 @@ impl IpfsClient {
         js_name = "fetchAppDataFromCid",
         unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
     )]
-    pub async fn fetch_app_data_from_cid(&self, cid: String) -> Result<JsValue, JsValue> {
-        fetch_doc_from_cid_with_adapter(&cid, self.ipfs_uri.as_deref(), &self.adapter).await
+    pub async fn fetch_app_data_from_cid(
+        &self,
+        cid: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let adapter = self.adapter.with_call_timeout(scope.timeout());
+        let ipfs_uri = self.ipfs_uri.clone();
+        run_with_client_options(scope, async move {
+            fetch_doc_from_cid_with_adapter(&cid, ipfs_uri.as_deref(), &adapter).await
+        })
+        .await
     }
 
     /// Fetches and parses an app-data document by app-data hash.
@@ -82,9 +100,15 @@ impl IpfsClient {
     pub async fn fetch_app_data_from_hex(
         &self,
         #[wasm_bindgen(js_name = appDataHex)] app_data_hex: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        fetch_doc_from_hex_with_adapter(&app_data_hex, self.ipfs_uri.as_deref(), &self.adapter)
-            .await
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let adapter = self.adapter.with_call_timeout(scope.timeout());
+        let ipfs_uri = self.ipfs_uri.clone();
+        run_with_client_options(scope, async move {
+            fetch_doc_from_hex_with_adapter(&app_data_hex, ipfs_uri.as_deref(), &adapter).await
+        })
+        .await
     }
 }
 

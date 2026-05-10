@@ -7,6 +7,9 @@ use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 use crate::exports::{
+    cancel::{
+        ClientCallScope, SdkClientOptions, run_with_client_options, transport_policy_with_timeout,
+    },
     dto::{
         OrderCreationInput, OrderInput, OrderQuoteRequestInput, SignedCancellationsInput,
         SignedOrderDto, ecdsa_signing_scheme, from_json_value, orderbook_signing_scheme,
@@ -48,14 +51,34 @@ impl OrderBookClient {
 
     /// Fetches a quote.
     #[wasm_bindgen(js_name = "getQuote")]
-    pub async fn get_quote(&self, request: OrderQuoteRequestInput) -> Result<JsValue, JsValue> {
-        orderbook_get_quote(&self.inner, request).await
+    pub async fn get_quote(
+        &self,
+        request: OrderQuoteRequestInput,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = orderbook_for_scope(&self.inner, &scope);
+        run_with_client_options(
+            scope,
+            async move { orderbook_get_quote(&inner, request).await },
+        )
+        .await
     }
 
     /// Submits a signed order.
     #[wasm_bindgen(js_name = "sendOrder", unchecked_return_type = "WasmEnvelope<string>")]
-    pub async fn send_order(&self, signed: SignedOrderDto) -> Result<JsValue, JsValue> {
-        orderbook_send_order(&self.inner, signed).await
+    pub async fn send_order(
+        &self,
+        signed: SignedOrderDto,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = orderbook_for_scope(&self.inner, &scope);
+        run_with_client_options(
+            scope,
+            async move { orderbook_send_order(&inner, signed).await },
+        )
+        .await
     }
 
     /// Submits a raw order-creation payload.
@@ -63,8 +86,17 @@ impl OrderBookClient {
         js_name = "sendOrderCreation",
         unchecked_return_type = "WasmEnvelope<string>"
     )]
-    pub async fn send_order_creation(&self, input: OrderCreationInput) -> Result<JsValue, JsValue> {
-        orderbook_send_order_creation(&self.inner, input).await
+    pub async fn send_order_creation(
+        &self,
+        input: OrderCreationInput,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = orderbook_for_scope(&self.inner, &scope);
+        run_with_client_options(scope, async move {
+            orderbook_send_order_creation(&inner, input).await
+        })
+        .await
     }
 
     /// Fetches an order by UID.
@@ -72,8 +104,14 @@ impl OrderBookClient {
     pub async fn get_order(
         &self,
         #[wasm_bindgen(js_name = orderUid)] order_uid: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        orderbook_get_order(&self.inner, order_uid).await
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = orderbook_for_scope(&self.inner, &scope);
+        run_with_client_options(scope, async move {
+            orderbook_get_order(&inner, order_uid).await
+        })
+        .await
     }
 
     /// Fetches trades for an order UID.
@@ -81,20 +119,44 @@ impl OrderBookClient {
     pub async fn get_trades(
         &self,
         #[wasm_bindgen(js_name = orderUid)] order_uid: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        orderbook_get_trades(&self.inner, order_uid).await
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = orderbook_for_scope(&self.inner, &scope);
+        run_with_client_options(scope, async move {
+            orderbook_get_trades(&inner, order_uid).await
+        })
+        .await
     }
 
     /// Fetches orders owned by an address.
     #[wasm_bindgen(js_name = "getOrdersByOwner")]
-    pub async fn get_orders_by_owner(&self, owner: String) -> Result<JsValue, JsValue> {
-        orderbook_get_orders_by_owner(&self.inner, owner).await
+    pub async fn get_orders_by_owner(
+        &self,
+        owner: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = orderbook_for_scope(&self.inner, &scope);
+        run_with_client_options(scope, async move {
+            orderbook_get_orders_by_owner(&inner, owner).await
+        })
+        .await
     }
 
     /// Fetches a token's native price.
     #[wasm_bindgen(js_name = "getNativePrice")]
-    pub async fn get_native_price(&self, token: String) -> Result<JsValue, JsValue> {
-        orderbook_get_native_price(&self.inner, token).await
+    pub async fn get_native_price(
+        &self,
+        token: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = orderbook_for_scope(&self.inner, &scope);
+        run_with_client_options(scope, async move {
+            orderbook_get_native_price(&inner, token).await
+        })
+        .await
     }
 
     /// Cancels orders through a signed cancellation payload.
@@ -105,8 +167,14 @@ impl OrderBookClient {
     pub async fn cancel_orders(
         &self,
         signed: SignedCancellationsInput,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        orderbook_cancel_orders(&self.inner, signed).await
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = orderbook_for_scope(&self.inner, &scope);
+        run_with_client_options(scope, async move {
+            orderbook_cancel_orders(&inner, signed).await
+        })
+        .await
     }
 }
 
@@ -124,6 +192,15 @@ pub(crate) fn build_orderbook(
         .transport(transport)
         .build()
         .map_err(|error| WasmError::from(error).into_js())
+}
+
+pub(crate) fn orderbook_for_scope(inner: &OrderBookApi, scope: &ClientCallScope) -> OrderBookApi {
+    inner
+        .clone()
+        .with_transport_policy(transport_policy_with_timeout(
+            inner.transport_policy(),
+            scope.timeout(),
+        ))
 }
 
 async fn orderbook_get_quote(
@@ -226,7 +303,7 @@ async fn orderbook_cancel_orders(
     to_js_value(&WasmEnvelope::v1(json!({ "cancelled": true })))
 }
 
-fn order_creation_from_signed(signed: SignedOrderDto) -> Result<OrderCreation, JsValue> {
+pub(crate) fn order_creation_from_signed(signed: SignedOrderDto) -> Result<OrderCreation, JsValue> {
     let order_input: OrderInput = serde_json::from_value(signed.typed_data.message.clone())
         .map_err(|error| WasmError::invalid("typedData.message", error.to_string()).into_js())?;
     let order = parse_order(order_input)?;

@@ -41,7 +41,7 @@ async fn ipfs_client_fetches_app_data_from_cid() {
     .unwrap();
     let value = json(
         client
-            .fetch_app_data_from_cid(CID_APP_DATA.to_owned())
+            .fetch_app_data_from_cid(CID_APP_DATA.to_owned(), None)
             .await
             .unwrap(),
     );
@@ -60,7 +60,7 @@ async fn ipfs_client_fetches_app_data_from_hex() {
     .unwrap();
     let value = json(
         client
-            .fetch_app_data_from_hex(HASH_APP_DATA.to_owned())
+            .fetch_app_data_from_hex(HASH_APP_DATA.to_owned(), None)
             .await
             .unwrap(),
     );
@@ -77,7 +77,7 @@ async fn ipfs_client_uses_custom_gateway_url() {
     ))
     .unwrap();
     client
-        .fetch_app_data_from_cid(CID_APP_DATA.to_owned())
+        .fetch_app_data_from_cid(CID_APP_DATA.to_owned(), None)
         .await
         .unwrap();
     let requests: Vec<String> =
@@ -101,7 +101,7 @@ async fn ipfs_client_keeps_internal_callback_registration_alive() {
     .unwrap();
     let value = json(
         client
-            .fetch_app_data_from_cid(CID_APP_DATA.to_owned())
+            .fetch_app_data_from_cid(CID_APP_DATA.to_owned(), None)
             .await
             .unwrap(),
     );
@@ -121,7 +121,7 @@ async fn http_404_maps_to_app_data_error() {
     ))
     .unwrap();
     let error = client
-        .fetch_app_data_from_cid(CID_APP_DATA.to_owned())
+        .fetch_app_data_from_cid(CID_APP_DATA.to_owned(), None)
         .await
         .expect_err("404 must fail");
     let value = json(error);
@@ -142,7 +142,7 @@ async fn invalid_hex_rejects_before_fetch_callback() {
     ))
     .unwrap();
     let error = client
-        .fetch_app_data_from_hex("not-a-hex".to_owned())
+        .fetch_app_data_from_hex("not-a-hex".to_owned(), None)
         .await
         .expect_err("malformed app-data hash must fail");
     let dispatched = js_sys::eval("Boolean(globalThis.__cowUnexpectedIpfsDispatch)")
@@ -172,7 +172,7 @@ fn invalid_timeout_is_rejected_by_constructor() {
 async fn ipfs_client_rejects_malformed_hex_without_network() {
     let client = IpfsClient::new(ipfs_config(None, None, &app_data_fetch_callback())).unwrap();
     let error = client
-        .fetch_app_data_from_hex("not-a-hex".to_owned())
+        .fetch_app_data_from_hex("not-a-hex".to_owned(), None)
         .await
         .expect_err("malformed app-data hash must fail");
     let value = json(error);

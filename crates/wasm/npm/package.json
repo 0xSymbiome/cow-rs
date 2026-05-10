@@ -53,7 +53,11 @@
       "types": "./dist/web/cow_sdk_wasm.d.ts",
       "import": "./dist/web/cow_sdk_wasm.js"
     },
-    "./cloudflare/wasm": "./dist/web/cow_sdk_wasm_bg.wasm"
+    "./cloudflare/wasm": "./dist/web/cow_sdk_wasm_bg.wasm",
+    "./deno": {
+      "types": "./dist/deno/cow_sdk_wasm.d.ts",
+      "import": "./dist/deno/cow_sdk_wasm.js"
+    }
   },
   "files": [
     "dist/",

@@ -1,6 +1,7 @@
 //! wasm-bindgen exports for the TypeScript-callable WASM API.
 
 pub mod callbacks;
+pub mod cancel;
 pub mod chains;
 pub mod dto;
 pub mod eip1271;
@@ -15,8 +16,8 @@ pub mod trading;
 pub mod transport;
 
 pub use {
-    chains::*, dto::*, eip1271::*, envelope::*, errors::*, ipfs::*, orderbook::*, signing::*,
-    subgraph::*, trading::*, transport::*,
+    cancel::*, chains::*, dto::*, eip1271::*, envelope::*, errors::*, ipfs::*, orderbook::*,
+    signing::*, subgraph::*, trading::*, transport::*,
 };
 
 use wasm_bindgen::prelude::*;

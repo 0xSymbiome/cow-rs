@@ -6,6 +6,19 @@ export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 export type Value = unknown;
 export type SdkError = WasmError;
 
+export interface SdkClientOptions {
+    timeoutMs?: number;
+    signal?: AbortSignal;
+}
+
+export interface WalletConfig {
+    timeoutMs?: number;
+}
+
+export interface SigningOptions extends SdkClientOptions {
+    walletConfig?: WalletConfig;
+}
+
 export interface CowFetchRequest {
     method: CowFetchMethod;
     url: string;
@@ -230,7 +243,7 @@ export interface GeneratedOrderUidDto {
 /**
  * JS-visible typed error envelope for every wasm export.
  */
-export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; message: string } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; raw: Value };
+export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "walletTimeout"; schemaVersion: SchemaVersion; timeoutMs: number } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; message: string } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; raw: Value };
 
 /**
  * Order input shared by signing and UID exports.
@@ -696,11 +709,11 @@ export class IpfsClient {
     /**
      * Fetches and parses an app-data document by CID.
      */
-    fetchAppDataFromCid(cid: string): Promise<WasmEnvelope<AppDataDocDto>>;
+    fetchAppDataFromCid(cid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataDocDto>>;
     /**
      * Fetches and parses an app-data document by app-data hash.
      */
-    fetchAppDataFromHex(appDataHex: string): Promise<WasmEnvelope<AppDataDocDto>>;
+    fetchAppDataFromHex(appDataHex: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataDocDto>>;
     /**
      * Creates an IPFS client from a single config object.
      */
@@ -716,27 +729,27 @@ export class OrderBookClient {
     /**
      * Cancels orders through a signed cancellation payload.
      */
-    cancelOrders(signed: SignedCancellationsInput): Promise<WasmEnvelope<{ cancelled: true }>>;
+    cancelOrders(signed: SignedCancellationsInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ cancelled: true }>>;
     /**
      * Fetches a token's native price.
      */
-    getNativePrice(token: string): Promise<any>;
+    getNativePrice(token: string, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Fetches an order by UID.
      */
-    getOrder(orderUid: string): Promise<any>;
+    getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Fetches orders owned by an address.
      */
-    getOrdersByOwner(owner: string): Promise<any>;
+    getOrdersByOwner(owner: string, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Fetches a quote.
      */
-    getQuote(request: OrderQuoteRequestInput): Promise<any>;
+    getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Fetches trades for an order UID.
      */
-    getTrades(orderUid: string): Promise<any>;
+    getTrades(orderUid: string, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Creates an orderbook client from a single config object.
      */
@@ -744,11 +757,11 @@ export class OrderBookClient {
     /**
      * Submits a signed order.
      */
-    sendOrder(signed: SignedOrderDto): Promise<WasmEnvelope<string>>;
+    sendOrder(signed: SignedOrderDto, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     /**
      * Submits a raw order-creation payload.
      */
-    sendOrderCreation(input: OrderCreationInput): Promise<WasmEnvelope<string>>;
+    sendOrderCreation(input: OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
 }
 
 /**
@@ -760,15 +773,15 @@ export class SubgraphClient {
     /**
      * Fetches daily volume rows.
      */
-    getLastDaysVolume(days: number): Promise<any>;
+    getLastDaysVolume(days: number, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Fetches hourly volume rows.
      */
-    getLastHoursVolume(hours: number): Promise<any>;
+    getLastHoursVolume(hours: number, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Fetches aggregate totals.
      */
-    getTotals(): Promise<any>;
+    getTotals(options?: SdkClientOptions | null): Promise<any>;
     /**
      * Creates a subgraph client from a single config object.
      */
@@ -776,7 +789,7 @@ export class SubgraphClient {
     /**
      * Runs a raw GraphQL query.
      */
-    runQuery(request: SubgraphQueryInput): Promise<any>;
+    runQuery(request: SubgraphQueryInput, options?: SdkClientOptions | null): Promise<any>;
 }
 
 /**
@@ -788,7 +801,7 @@ export class TradingClient {
     /**
      * Fetches a quote without submitting an order.
      */
-    getQuote(params: SwapParametersInput): Promise<any>;
+    getQuote(params: SwapParametersInput, options?: SdkClientOptions | null): Promise<any>;
     /**
      * Creates a trading client from a single config object.
      */
@@ -796,11 +809,11 @@ export class TradingClient {
     /**
      * Quotes, signs, and posts a swap order through a typed-data callback.
      */
-    postSwapOrder(params: SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback): Promise<any>;
+    postSwapOrder(params: SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<any>;
     /**
      * Quotes and posts a swap order with a custom EIP-1271 signature callback.
      */
-    postSwapOrderWithEip1271(params: SwapParametersInput, owner: string, customCallback: CustomEip1271Callback): Promise<any>;
+    postSwapOrderWithEip1271(params: SwapParametersInput, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<any>;
 }
 
 /**
@@ -856,42 +869,42 @@ export function orderTypedData(input: OrderInput, chainId: number): WasmEnvelope
 /**
  * Signs a cancellation digest through an explicit `eth_sign` callback.
  */
-export function signCancellationEthSignDigest(orderUids: string[], chainId: number, digestSigner: DigestSignerCallback): Promise<WasmEnvelope<SignedCancellationsInput>>;
+export function signCancellationEthSignDigest(orderUids: string[], chainId: number, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
 /**
  * Signs cancellation typed data through an EIP-1193 callback.
  */
-export function signCancellationWithEip1193(orderUids: string[], chainId: number, owner: string, requestCallback: Eip1193RequestCallback): Promise<WasmEnvelope<SignedCancellationsInput>>;
+export function signCancellationWithEip1193(orderUids: string[], chainId: number, owner: string, requestCallback: Eip1193RequestCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
 /**
  * Signs cancellation typed data through a typed-data callback.
  */
-export function signCancellationWithTypedDataSigner(orderUids: string[], chainId: number, typedDataSigner: TypedDataSignerCallback): Promise<WasmEnvelope<SignedCancellationsInput>>;
+export function signCancellationWithTypedDataSigner(orderUids: string[], chainId: number, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
 /**
  * Signs an order digest through an explicit `eth_sign` callback.
  */
-export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner: string, digestSigner: DigestSignerCallback): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner: string, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through a custom EIP-1271 callback.
  */
-export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, owner: string, customCallback: CustomEip1271Callback): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through an EIP-1193 request callback.
  */
-export function signOrderWithEip1193(input: OrderInput, chainId: number, owner: string, requestCallback: Eip1193RequestCallback): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderWithEip1193(input: OrderInput, chainId: number, owner: string, requestCallback: Eip1193RequestCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through typed-data ECDSA and wraps it as EIP-1271.
  */
-export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through a typed-data callback.
  */
-export function signOrderWithTypedDataSigner(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderWithTypedDataSigner(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Returns supported EVM chain ids.
@@ -925,43 +938,43 @@ export interface InitOutput {
     readonly deploymentAddresses: (a: number, b: number, c: number, d: number) => void;
     readonly domainSeparator: (a: number, b: number) => void;
     readonly eip1271SignaturePayload: (a: number, b: number, c: number, d: number) => void;
-    readonly ipfsclient_fetchAppDataFromCid: (a: number, b: number, c: number) => number;
-    readonly ipfsclient_fetchAppDataFromHex: (a: number, b: number, c: number) => number;
+    readonly ipfsclient_fetchAppDataFromCid: (a: number, b: number, c: number, d: number) => number;
+    readonly ipfsclient_fetchAppDataFromHex: (a: number, b: number, c: number, d: number) => number;
     readonly ipfsclient_new: (a: number, b: number) => void;
     readonly orderTypedData: (a: number, b: number, c: number) => void;
-    readonly orderbookclient_cancelOrders: (a: number, b: number) => number;
-    readonly orderbookclient_getNativePrice: (a: number, b: number, c: number) => number;
-    readonly orderbookclient_getOrder: (a: number, b: number, c: number) => number;
-    readonly orderbookclient_getOrdersByOwner: (a: number, b: number, c: number) => number;
-    readonly orderbookclient_getQuote: (a: number, b: number) => number;
-    readonly orderbookclient_getTrades: (a: number, b: number, c: number) => number;
+    readonly orderbookclient_cancelOrders: (a: number, b: number, c: number) => number;
+    readonly orderbookclient_getNativePrice: (a: number, b: number, c: number, d: number) => number;
+    readonly orderbookclient_getOrder: (a: number, b: number, c: number, d: number) => number;
+    readonly orderbookclient_getOrdersByOwner: (a: number, b: number, c: number, d: number) => number;
+    readonly orderbookclient_getQuote: (a: number, b: number, c: number) => number;
+    readonly orderbookclient_getTrades: (a: number, b: number, c: number, d: number) => number;
     readonly orderbookclient_new: (a: number, b: number) => void;
-    readonly orderbookclient_sendOrder: (a: number, b: number) => number;
-    readonly orderbookclient_sendOrderCreation: (a: number, b: number) => number;
-    readonly signCancellationEthSignDigest: (a: number, b: number, c: number, d: number) => number;
-    readonly signCancellationWithEip1193: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-    readonly signCancellationWithTypedDataSigner: (a: number, b: number, c: number, d: number) => number;
-    readonly signOrderEthSignDigest: (a: number, b: number, c: number, d: number, e: number) => number;
-    readonly signOrderWithCustomEip1271: (a: number, b: number, c: number, d: number, e: number) => number;
-    readonly signOrderWithEip1193: (a: number, b: number, c: number, d: number, e: number) => number;
-    readonly signOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number) => number;
-    readonly signOrderWithTypedDataSigner: (a: number, b: number, c: number, d: number, e: number) => number;
-    readonly subgraphclient_getLastDaysVolume: (a: number, b: number) => number;
-    readonly subgraphclient_getLastHoursVolume: (a: number, b: number) => number;
-    readonly subgraphclient_getTotals: (a: number) => number;
+    readonly orderbookclient_sendOrder: (a: number, b: number, c: number) => number;
+    readonly orderbookclient_sendOrderCreation: (a: number, b: number, c: number) => number;
+    readonly signCancellationEthSignDigest: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly signCancellationWithEip1193: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => number;
+    readonly signCancellationWithTypedDataSigner: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly signOrderEthSignDigest: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly signOrderWithCustomEip1271: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly signOrderWithEip1193: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly signOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly signOrderWithTypedDataSigner: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly subgraphclient_getLastDaysVolume: (a: number, b: number, c: number) => number;
+    readonly subgraphclient_getLastHoursVolume: (a: number, b: number, c: number) => number;
+    readonly subgraphclient_getTotals: (a: number, b: number) => number;
     readonly subgraphclient_new: (a: number, b: number) => void;
-    readonly subgraphclient_runQuery: (a: number, b: number) => number;
+    readonly subgraphclient_runQuery: (a: number, b: number, c: number) => number;
     readonly supportedChainIds: (a: number) => void;
-    readonly tradingclient_getQuote: (a: number, b: number) => number;
+    readonly tradingclient_getQuote: (a: number, b: number, c: number) => number;
     readonly tradingclient_new: (a: number, b: number) => void;
-    readonly tradingclient_postSwapOrder: (a: number, b: number, c: number, d: number, e: number) => number;
-    readonly tradingclient_postSwapOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number) => number;
+    readonly tradingclient_postSwapOrder: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+    readonly tradingclient_postSwapOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly validateAppDataDoc: (a: number, b: number) => void;
     readonly wasmVersion: (a: number) => void;
-    readonly __wasm_bindgen_func_elem_3785: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_3793: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_987: (a: number, b: number, c: number) => number;
-    readonly __wasm_bindgen_func_elem_3446: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_11271: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_11279: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1133: (a: number, b: number, c: number) => number;
+    readonly __wasm_bindgen_func_elem_11192: (a: number, b: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

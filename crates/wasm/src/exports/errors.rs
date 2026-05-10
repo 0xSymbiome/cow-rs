@@ -64,6 +64,13 @@ pub enum WasmError {
         #[serde(skip_serializing_if = "Option::is_none")]
         data: Option<serde_json::Value>,
     },
+    /// Wallet callback timeout.
+    WalletTimeout {
+        /// Error schema version.
+        schema_version: SchemaVersion,
+        /// Timeout in milliseconds.
+        timeout_ms: u32,
+    },
     /// HTTP transport failure.
     Transport {
         /// Error schema version.
@@ -171,6 +178,19 @@ impl WasmError {
             code: None,
             message: message.into(),
             data: None,
+        }
+    }
+
+    pub(crate) fn wallet_timeout(timeout_ms: u32) -> Self {
+        Self::WalletTimeout {
+            schema_version: SchemaVersion::V1,
+            timeout_ms,
+        }
+    }
+
+    pub(crate) fn cancelled() -> Self {
+        Self::Cancelled {
+            schema_version: SchemaVersion::V1,
         }
     }
 
