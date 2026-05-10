@@ -15,6 +15,11 @@ pub const DEFAULT_ORDERBOOK_USER_AGENT: &str =
 /// Default subgraph user-agent string.
 pub const DEFAULT_SUBGRAPH_USER_AGENT: &str =
     concat!("cow-sdk-subgraph", "/", env!("CARGO_PKG_VERSION"));
+/// Default trading user-agent string.
+pub const DEFAULT_TRADING_USER_AGENT: &str =
+    concat!("cow-sdk-trading", "/", env!("CARGO_PKG_VERSION"));
+/// Default IPFS user-agent string.
+pub const DEFAULT_IPFS_USER_AGENT: &str = concat!("cow-sdk-ipfs", "/", env!("CARGO_PKG_VERSION"));
 
 /// Combined HTTP client, retry, rate-limit, and tracing policy.
 #[non_exhaustive]
@@ -82,6 +87,51 @@ impl TransportPolicy {
                 .jitter(JitterStrategy::decorrelated_from_seed(DEFAULT_JITTER_SEED))
                 .build(),
             rate_limit: RequestRateLimiter::default_subgraph(),
+            tracing_enabled: false,
+        }
+    }
+
+    /// Returns the documented default trading transport policy.
+    ///
+    /// Trading currently routes HTTP through the orderbook client, so this
+    /// preserves the same retry and limiter behavior with a trading-specific
+    /// client policy label.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the crate-owned default trading user-agent literal stops
+    /// being encodable as an HTTP header value.
+    #[must_use]
+    pub fn default_trading() -> Self {
+        Self {
+            client: HttpClientPolicy::new(DEFAULT_TRADING_USER_AGENT)
+                .expect("static trading user-agent must remain valid"),
+            retry: RetryPolicy::builder()
+                .jitter(JitterStrategy::decorrelated_from_seed(DEFAULT_JITTER_SEED))
+                .build(),
+            rate_limit: RequestRateLimiter::default_orderbook(),
+            tracing_enabled: false,
+        }
+    }
+
+    /// Returns the documented default IPFS transport policy.
+    ///
+    /// IPFS reads historically performed one direct fetch with no SDK-owned
+    /// retry, rate limiting, or default timeout, so the default policy keeps
+    /// those behaviors disabled unless a caller opts in.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the crate-owned default IPFS user-agent literal stops
+    /// being encodable as an HTTP header value.
+    #[must_use]
+    pub fn default_ipfs() -> Self {
+        Self {
+            client: HttpClientPolicy::new(DEFAULT_IPFS_USER_AGENT)
+                .expect("static IPFS user-agent must remain valid")
+                .without_timeout(),
+            retry: RetryPolicy::no_retry(),
+            rate_limit: RequestRateLimiter::unlimited(),
             tracing_enabled: false,
         }
     }

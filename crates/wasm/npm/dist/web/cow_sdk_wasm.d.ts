@@ -65,6 +65,7 @@ export interface OrderBookClientConfig {
     chainId: number;
     env?: string | null;
     transport: HttpTransportConfig;
+    transportPolicy?: TransportPolicyConfig | null;
     timeoutMs?: number | null;
 }
 
@@ -72,6 +73,7 @@ export interface SubgraphClientConfig {
     chainId: number;
     apiKey: string;
     transport: HttpTransportConfig;
+    transportPolicy?: TransportPolicyConfig | null;
     timeoutMs?: number | null;
 }
 
@@ -80,12 +82,14 @@ export interface TradingClientConfig {
     env?: string | null;
     appCode: string;
     transport: HttpTransportConfig;
+    transportPolicy?: TransportPolicyConfig | null;
     timeoutMs?: number | null;
 }
 
 export interface IpfsClientConfig {
     ipfsUri?: string | null;
     transport: HttpTransportConfig;
+    transportPolicy?: TransportPolicyConfig | null;
     timeoutMs?: number | null;
 }
 
@@ -244,6 +248,11 @@ export interface GeneratedOrderUidDto {
  * JS-visible typed error envelope for every wasm export.
  */
 export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "walletTimeout"; schemaVersion: SchemaVersion; timeoutMs: number } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; message: string } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; raw: Value };
+
+/**
+ * Jitter strategy accepted by JS client constructors.
+ */
+export type JitterStrategyConfig = "none" | "full" | "equal" | "decorrelated";
 
 /**
  * Order input shared by signing and UID exports.
@@ -496,6 +505,47 @@ export interface PartnerFeePolicyInput {
 }
 
 /**
+ * Rate-limiter bucket scope accepted by JS client constructors.
+ */
+export type LimiterScopeConfig = "global" | "perHost";
+
+/**
+ * Request-rate limiter override accepted by JS client constructors.
+ */
+export interface RequestRateLimiterConfig {
+    /**
+     * Request tokens granted per interval. Zero disables limiting.
+     */
+    tokensPerInterval?: number;
+    /**
+     * Limiter interval in milliseconds.
+     */
+    intervalMs?: number;
+    /**
+     * Bucket scope.
+     */
+    scope?: LimiterScopeConfig;
+}
+
+/**
+ * Retry-policy override accepted by JS client constructors.
+ */
+export interface RetryPolicyConfig {
+    /**
+     * Maximum attempts, including the initial request.
+     */
+    maxAttempts?: number;
+    /**
+     * Base exponential-backoff delay in milliseconds.
+     */
+    baseDelayMs?: number;
+    /**
+     * Maximum exponential-backoff delay in milliseconds.
+     */
+    maxDelayMs?: number;
+}
+
+/**
  * Signed order DTO returned by wallet callback exports.
  */
 export interface SignedOrderDto {
@@ -620,6 +670,32 @@ export interface SwapParametersInput {
      * Optional partner-fee metadata.
      */
     partnerFee?: PartnerFeeInput;
+}
+
+/**
+ * Transport-policy override accepted by JS client constructors.
+ */
+export interface TransportPolicyConfig {
+    /**
+     * Retry-policy override.
+     */
+    retryPolicy?: RetryPolicyConfig;
+    /**
+     * Rate-limiter override.
+     */
+    requestRateLimiter?: RequestRateLimiterConfig;
+    /**
+     * Retry jitter override.
+     */
+    jitterStrategy?: JitterStrategyConfig;
+    /**
+     * Optional transport user-agent value.
+     */
+    userAgent?: string;
+    /**
+     * Enables or disables transport tracing integration.
+     */
+    tracingEnabled?: boolean;
 }
 
 /**
@@ -971,10 +1047,10 @@ export interface InitOutput {
     readonly tradingclient_postSwapOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly validateAppDataDoc: (a: number, b: number) => void;
     readonly wasmVersion: (a: number) => void;
-    readonly __wasm_bindgen_func_elem_11271: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_11279: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1133: (a: number, b: number, c: number) => number;
-    readonly __wasm_bindgen_func_elem_11192: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_11341: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_11349: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1158: (a: number, b: number, c: number) => number;
+    readonly __wasm_bindgen_func_elem_11262: (a: number, b: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

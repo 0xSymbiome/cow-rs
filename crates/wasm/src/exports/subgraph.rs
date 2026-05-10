@@ -1,4 +1,5 @@
 use cow_sdk_subgraph::{SubgraphApi, SubgraphQueryRequest};
+use cow_sdk_transport_policy::TransportPolicy;
 use serde_json::Value;
 use wasm_bindgen::prelude::*;
 
@@ -6,7 +7,7 @@ use crate::exports::{
     cancel::{
         ClientCallScope, SdkClientOptions, run_with_client_options, transport_policy_with_timeout,
     },
-    dto::{SubgraphQueryInput, parse_chain, to_js_value},
+    dto::{SubgraphQueryInput, parse_chain, to_js_value, transport_policy_from_config},
     envelope::WasmEnvelope,
     errors::WasmError,
     transport::{configured_fetch_transport, optional_timeout, required_string, required_u32},
@@ -34,9 +35,11 @@ impl SubgraphClient {
         let chain_id = required_u32(config, "chainId")?;
         let api_key = required_string(config, "apiKey")?;
         let timeout = optional_timeout(config)?;
+        let transport_policy =
+            transport_policy_from_config(config, TransportPolicy::default_subgraph(), timeout)?;
         let (transport, callback_guard) = configured_fetch_transport(config, timeout)?;
         Ok(Self {
-            inner: build_subgraph(chain_id, api_key, transport)?,
+            inner: build_subgraph(chain_id, api_key, transport, transport_policy)?,
             _callback_guard: callback_guard,
         })
     }
@@ -103,12 +106,14 @@ fn build_subgraph(
     chain_id: u32,
     api_key: String,
     transport: std::sync::Arc<dyn cow_sdk_core::HttpTransport + Send + Sync>,
+    transport_policy: TransportPolicy,
 ) -> Result<SubgraphApi, JsValue> {
     let chain = parse_chain(chain_id)?;
     SubgraphApi::builder()
         .chain(chain)
         .api_key(api_key)
         .transport(transport)
+        .transport_policy(transport_policy)
         .build()
         .map_err(|error| WasmError::from(error).into_js())
 }

@@ -65,6 +65,7 @@ export interface OrderBookClientConfig {
   chainId: number;
   env?: string | null;
   transport: HttpTransportConfig;
+  transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
 }
 
@@ -72,6 +73,7 @@ export interface SubgraphClientConfig {
   chainId: number;
   apiKey: string;
   transport: HttpTransportConfig;
+  transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
 }
 
@@ -80,12 +82,14 @@ export interface TradingClientConfig {
   env?: string | null;
   appCode: string;
   transport: HttpTransportConfig;
+  transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
 }
 
 export interface IpfsClientConfig {
   ipfsUri?: string | null;
   transport: HttpTransportConfig;
+  transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
 }
 "#;

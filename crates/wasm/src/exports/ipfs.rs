@@ -1,14 +1,22 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::Arc,
+    time::{Duration, UNIX_EPOCH},
+};
 
 use async_trait::async_trait;
 use cow_sdk_app_data::{AppDataError, IpfsFetchTransport};
-use cow_sdk_core::{HttpTransport, Redacted, TransportError, TransportErrorClass};
+use cow_sdk_core::{
+    CancellationToken, HttpTransport, Redacted, TransportError, TransportErrorClass,
+};
 use cow_sdk_pure_helpers as pure;
+use cow_sdk_transport_policy::{NetworkErrorKind, TransportPolicy, sleep};
 use wasm_bindgen::prelude::*;
 
 use crate::exports::{
-    cancel::{ClientCallScope, SdkClientOptions, run_with_client_options},
-    dto::{AppDataDocDto, to_js_value},
+    cancel::{
+        ClientCallScope, SdkClientOptions, run_with_client_options, transport_policy_with_timeout,
+    },
+    dto::{AppDataDocDto, to_js_value, transport_policy_from_config},
     envelope::WasmEnvelope,
     errors::WasmError,
     transport::{configured_fetch_transport, optional_string, optional_timeout},
@@ -17,18 +25,24 @@ use crate::exports::{
 /// Adapter that lets app-data IPFS reads flow through an HTTP transport.
 pub(crate) struct IpfsHttpAdapter {
     inner: Arc<dyn HttpTransport + Send + Sync>,
-    timeout: Option<Duration>,
+    transport_policy: TransportPolicy,
 }
 
 impl IpfsHttpAdapter {
-    fn from_parts(inner: Arc<dyn HttpTransport + Send + Sync>, timeout: Option<Duration>) -> Self {
-        Self { inner, timeout }
+    fn from_parts(
+        inner: Arc<dyn HttpTransport + Send + Sync>,
+        transport_policy: TransportPolicy,
+    ) -> Self {
+        Self {
+            inner,
+            transport_policy,
+        }
     }
 
-    fn with_call_timeout(&self, timeout: Option<Duration>) -> Self {
+    fn with_call_timeout(&self, timeout: Option<std::time::Duration>) -> Self {
         Self {
             inner: Arc::clone(&self.inner),
-            timeout: timeout.or(self.timeout),
+            transport_policy: transport_policy_with_timeout(&self.transport_policy, timeout),
         }
     }
 }
@@ -36,10 +50,37 @@ impl IpfsHttpAdapter {
 #[async_trait(?Send)]
 impl IpfsFetchTransport for IpfsHttpAdapter {
     async fn get(&self, uri: &str) -> Result<String, AppDataError> {
-        self.inner
-            .get(uri, &[], self.timeout)
-            .await
-            .map_err(transport_to_app_data_error)
+        let retry = self.transport_policy.retry();
+        let rate_limiter = self.transport_policy.rate_limit();
+
+        for attempt_index in 1..=retry.max_attempts() {
+            let cancellation_token = CancellationToken::new();
+            rate_limiter
+                .acquire_global(&cancellation_token)
+                .await
+                .map_err(|_| AppDataError::Cancelled)?;
+
+            match self
+                .inner
+                .get(uri, &[], self.transport_policy.timeout())
+                .await
+            {
+                Ok(body) => return Ok(body),
+                Err(error) => {
+                    let Some(delay) =
+                        retry_delay_for_error(&self.transport_policy, &error, attempt_index)
+                    else {
+                        return Err(transport_to_app_data_error(error));
+                    };
+                    sleep(delay).await;
+                }
+            }
+        }
+
+        Err(AppDataError::Transport {
+            class: TransportErrorClass::Other,
+            detail: Redacted::new("IPFS request attempts exhausted".to_owned()),
+        })
     }
 }
 
@@ -65,9 +106,11 @@ impl IpfsClient {
         let config = config.as_ref();
         let timeout = optional_timeout(config)?;
         let ipfs_uri = optional_string(config, "ipfsUri")?;
+        let transport_policy =
+            transport_policy_from_config(config, TransportPolicy::default_ipfs(), timeout)?;
         let (transport, callback_guard) = configured_fetch_transport(config, timeout)?;
         Ok(Self {
-            adapter: IpfsHttpAdapter::from_parts(transport, timeout),
+            adapter: IpfsHttpAdapter::from_parts(transport, transport_policy),
             ipfs_uri,
             _callback_guard: callback_guard,
         })
@@ -149,5 +192,34 @@ fn transport_to_app_data_error(error: TransportError) -> AppDataError {
             class: TransportErrorClass::Other,
             detail: Redacted::new(error.to_string()),
         },
+    }
+}
+
+fn retry_delay_for_error(
+    transport_policy: &TransportPolicy,
+    error: &TransportError,
+    attempt_index: usize,
+) -> Option<Duration> {
+    let retry = transport_policy.retry();
+    if attempt_index >= retry.max_attempts() {
+        return None;
+    }
+
+    match error {
+        TransportError::HttpStatus {
+            status, headers, ..
+        } if retry.should_retry_status(*status) => {
+            let headers = headers
+                .iter()
+                .map(|(name, value)| (name.clone(), value.as_inner().clone()))
+                .collect::<Vec<_>>();
+            Some(retry.delay_for_status(attempt_index, *status, &headers, UNIX_EPOCH))
+        }
+        TransportError::Transport { class, .. }
+            if retry.should_retry_network(NetworkErrorKind::from_transport_error_class(*class)) =>
+        {
+            Some(retry.delay_for_attempt(attempt_index))
+        }
+        _ => None,
     }
 }

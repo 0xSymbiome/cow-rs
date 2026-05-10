@@ -3,6 +3,7 @@ use cow_sdk_orderbook::{
     GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderCancellations, OrderCreation,
 };
 use cow_sdk_pure_helpers as pure;
+use cow_sdk_transport_policy::TransportPolicy;
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
@@ -13,7 +14,7 @@ use crate::exports::{
     dto::{
         OrderCreationInput, OrderInput, OrderQuoteRequestInput, SignedCancellationsInput,
         SignedOrderDto, ecdsa_signing_scheme, from_json_value, orderbook_signing_scheme,
-        parse_chain, parse_order, to_js_value,
+        parse_chain, parse_order, to_js_value, transport_policy_from_config,
     },
     envelope::WasmEnvelope,
     errors::WasmError,
@@ -42,9 +43,11 @@ impl OrderBookClient {
         let chain_id = required_u32(config, "chainId")?;
         let env = optional_string(config, "env")?;
         let timeout = optional_timeout(config)?;
+        let transport_policy =
+            transport_policy_from_config(config, TransportPolicy::default_orderbook(), timeout)?;
         let (transport, callback_guard) = configured_fetch_transport(config, timeout)?;
         Ok(Self {
-            inner: build_orderbook(chain_id, env, transport)?,
+            inner: build_orderbook(chain_id, env, transport, transport_policy)?,
             _callback_guard: callback_guard,
         })
     }
@@ -182,6 +185,7 @@ pub(crate) fn build_orderbook(
     chain_id: u32,
     env: Option<String>,
     transport: std::sync::Arc<dyn cow_sdk_core::HttpTransport + Send + Sync>,
+    transport_policy: TransportPolicy,
 ) -> Result<OrderBookApi, JsValue> {
     let chain = parse_chain(chain_id)?;
     let env = pure::chains::env_from_str(env.as_deref())
@@ -190,6 +194,7 @@ pub(crate) fn build_orderbook(
         .chain(chain)
         .environment(env)
         .transport(transport)
+        .transport_policy(transport_policy)
         .build()
         .map_err(|error| WasmError::from(error).into_js())
 }

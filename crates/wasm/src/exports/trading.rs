@@ -6,6 +6,7 @@ use cow_sdk_pure_helpers as pure;
 use cow_sdk_trading::{
     OrderPostingResult, QuoteRequestOverride, SwapAdvancedSettings, TradeParameters, TradingSdk,
 };
+use cow_sdk_transport_policy::TransportPolicy;
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
 
@@ -16,7 +17,7 @@ use crate::exports::{
     },
     dto::{
         CowEip1271SignRequest, OrderInput, SwapParametersInput, TypedDataEnvelopeDto,
-        from_json_value, parse_chain, to_js_value,
+        from_json_value, parse_chain, to_js_value, transport_policy_from_config,
     },
     envelope::WasmEnvelope,
     errors::WasmError,
@@ -54,8 +55,15 @@ impl TradingClient {
         let env = optional_string(config, "env")?;
         let app_code = required_string(config, "appCode")?;
         let timeout = optional_timeout(config)?;
+        let transport_policy =
+            transport_policy_from_config(config, TransportPolicy::default_trading(), timeout)?;
         let (transport, callback_guard) = configured_fetch_transport(config, timeout)?;
-        let orderbook = build_orderbook(chain_id, env.clone(), Arc::clone(&transport))?;
+        let orderbook = build_orderbook(
+            chain_id,
+            env.clone(),
+            Arc::clone(&transport),
+            transport_policy,
+        )?;
         build_trading_with_orderbook(
             chain_id,
             env.clone(),

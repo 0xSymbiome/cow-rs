@@ -47,10 +47,10 @@ export const tradingclient_postSwapOrder: (a: number, b: number, c: number, d: n
 export const tradingclient_postSwapOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
 export const validateAppDataDoc: (a: number, b: number) => void;
 export const wasmVersion: (a: number) => void;
-export const __wasm_bindgen_func_elem_11271: (a: number, b: number, c: number, d: number) => void;
-export const __wasm_bindgen_func_elem_11279: (a: number, b: number, c: number, d: number) => void;
-export const __wasm_bindgen_func_elem_1133: (a: number, b: number, c: number) => number;
-export const __wasm_bindgen_func_elem_11192: (a: number, b: number) => void;
+export const __wasm_bindgen_func_elem_11341: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_11349: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_1158: (a: number, b: number, c: number) => number;
+export const __wasm_bindgen_func_elem_11262: (a: number, b: number) => void;
 export const __wbindgen_export: (a: number, b: number) => number;
 export const __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
 export const __wbindgen_export3: (a: number) => void;

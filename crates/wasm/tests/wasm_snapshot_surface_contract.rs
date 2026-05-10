@@ -121,6 +121,26 @@ fn generated_type_declarations_expose_abort_and_wallet_options() {
 }
 
 #[test]
+fn generated_type_declarations_expose_transport_policy_config() {
+    let expected = [
+        "export interface TransportPolicyConfig",
+        "retryPolicy?: RetryPolicyConfig",
+        "requestRateLimiter?: RequestRateLimiterConfig",
+        "jitterStrategy?: JitterStrategyConfig",
+        "tracingEnabled?: boolean",
+        "userAgent?: string",
+        "transportPolicy?: TransportPolicyConfig",
+    ];
+
+    for snapshot in SNAPSHOTS {
+        let content = read_snapshot(snapshot);
+        for token in expected {
+            assert!(content.contains(token), "{snapshot} must expose `{token}`");
+        }
+    }
+}
+
+#[test]
 fn generated_type_declarations_keep_unknown_escape_hatch_scoped() {
     let expected = [
         "message: Value;",
