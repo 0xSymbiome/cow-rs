@@ -1,3 +1,4 @@
+/// <reference lib="esnext.disposable" />
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
@@ -47,10 +48,10 @@ export const tradingclient_postSwapOrder: (a: number, b: number, c: number, d: n
 export const tradingclient_postSwapOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number) => number;
 export const validateAppDataDoc: (a: number, b: number) => void;
 export const wasmVersion: (a: number) => void;
-export const __wasm_bindgen_func_elem_3646: (a: number, b: number, c: number, d: number) => void;
-export const __wasm_bindgen_func_elem_3654: (a: number, b: number, c: number, d: number) => void;
-export const __wasm_bindgen_func_elem_903: (a: number, b: number, c: number) => number;
-export const __wasm_bindgen_func_elem_3307: (a: number, b: number) => void;
+export const __wasm_bindgen_func_elem_3785: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_3793: (a: number, b: number, c: number, d: number) => void;
+export const __wasm_bindgen_func_elem_987: (a: number, b: number, c: number) => number;
+export const __wasm_bindgen_func_elem_3446: (a: number, b: number) => void;
 export const __wbindgen_export: (a: number, b: number) => number;
 export const __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
 export const __wbindgen_export3: (a: number) => void;

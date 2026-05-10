@@ -108,8 +108,5 @@ fn allocate_callback_key() -> Result<FetchCallbackKey, JsValue> {
         }
     }
 
-    Err(WasmError::Internal {
-        message: "fetch callback registry key space exhausted".to_owned(),
-    }
-    .into_js())
+    Err(WasmError::internal("fetch callback registry key space exhausted").into_js())
 }

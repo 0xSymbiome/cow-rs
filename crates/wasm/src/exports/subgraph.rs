@@ -3,7 +3,8 @@ use serde_json::Value;
 use wasm_bindgen::prelude::*;
 
 use crate::exports::{
-    dto::{SubgraphQueryInput, WasmEnvelope, from_json_value, parse_chain, to_js_value},
+    dto::{SubgraphQueryInput, parse_chain, to_js_value},
+    envelope::WasmEnvelope,
     errors::WasmError,
     transport::{configured_fetch_transport, optional_timeout, required_string, required_u32},
 };
@@ -107,7 +108,7 @@ async fn subgraph_run_query(
     inner: &SubgraphApi,
     request: SubgraphQueryInput,
 ) -> Result<JsValue, JsValue> {
-    let request = parse_subgraph_request(request.value)?;
+    let request = parse_subgraph_request(request);
     let value: Value = inner
         .run_query(request)
         .await
@@ -115,9 +116,13 @@ async fn subgraph_run_query(
     to_js_value(&WasmEnvelope::v1(value))
 }
 
-fn parse_subgraph_request(value: Value) -> Result<SubgraphQueryRequest, JsValue> {
-    match value {
-        Value::String(document) => Ok(SubgraphQueryRequest::new(document)),
-        value => from_json_value("query", value),
+fn parse_subgraph_request(input: SubgraphQueryInput) -> SubgraphQueryRequest {
+    let mut request = SubgraphQueryRequest::new(input.query);
+    if let Some(variables) = input.variables {
+        request = request.with_variables(variables);
     }
+    if let Some(operation_name) = input.operation_name {
+        request = request.with_operation_name(operation_name);
+    }
+    request
 }

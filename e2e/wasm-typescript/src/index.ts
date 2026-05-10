@@ -27,13 +27,13 @@ const OWNER = "0x3333333333333333333333333333333333333333";
 
 export async function runBrowserSmoke() {
   await init();
-  const cid = appDataHexToCid(ORDER.appData);
-  const uid = computeOrderUid(ORDER, 1, OWNER);
-  const typedData = orderTypedData(ORDER, 1);
+  const cid = appDataHexToCid(ORDER.appData).value;
+  const uid = computeOrderUid(ORDER, 1, OWNER).value;
+  const typedData = orderTypedData(ORDER, 1).value;
   const result = {
     chainIds: supportedChainIds(),
     cid,
-    hash: cidToAppDataHex(cid),
+    hash: cidToAppDataHex(cid).value,
     domainSeparator: domainSeparator(1),
     primaryType: typedData.primaryType,
     uid: uid.orderUid,

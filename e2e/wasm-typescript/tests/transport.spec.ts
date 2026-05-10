@@ -4,6 +4,7 @@ import { CID } from "./orderbook.spec.js";
 
 const APP_DATA_CONTENT = '{"appCode":"CoW Swap","metadata":{},"version":"0.7.0"}';
 const HASH = "0x337aa6e6c2a7a0d1eb79a35ebd88b08fc963d5f7a3fc953b7ffb2b7f5898a1df";
+type FixtureAppData = { appCode: string; version: string };
 
 function ipfsClient(callback: (request: any) => any) {
   return new IpfsClient({
@@ -22,7 +23,8 @@ describe("callback HTTP transport", () => {
     });
 
     const result = await client.fetchAppDataFromCid(CID);
-    expect(result.document.appCode).toBe("CoW Swap");
+    const document = result.value.document as FixtureAppData;
+    expect(document.appCode).toBe("CoW Swap");
   });
 
   test("fetches app-data by hash through client callback", async () => {
@@ -33,7 +35,8 @@ describe("callback HTTP transport", () => {
     }));
 
     const result = await client.fetchAppDataFromHex(HASH);
-    expect(result.document.version).toBe("0.7.0");
+    const document = result.value.document as FixtureAppData;
+    expect(document.version).toBe("0.7.0");
   });
 
   test("keeps callback registration internal to the client", async () => {
@@ -43,7 +46,8 @@ describe("callback HTTP transport", () => {
     });
     const result = await client.fetchAppDataFromCid(CID);
 
-    expect(result.document.appCode).toBe("CoW Swap");
+    const document = result.value.document as FixtureAppData;
+    expect(document.appCode).toBe("CoW Swap");
   });
 
   test("maps callback HTTP status failures to typed errors", async () => {

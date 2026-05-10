@@ -52,10 +52,10 @@ export default {
       return Response.json({ chains: Array.from(supportedChainIds()) });
     }
     if (url.pathname === "/cid") {
-      return Response.json({ cid: appDataHexToCid(ORDER.appData) });
+      return Response.json({ cid: appDataHexToCid(ORDER.appData).value });
     }
     if (url.pathname === "/uid") {
-      return Response.json(computeOrderUid(ORDER, 1, OWNER));
+      return Response.json(computeOrderUid(ORDER, 1, OWNER).value);
     }
 
     return new Response("not found", { status: 404 });

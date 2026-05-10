@@ -54,7 +54,8 @@ fn unsupported_chain_returns_typed_error() {
     let value = error_json(error);
 
     assert_eq!(value["kind"], "unsupportedChain");
-    assert_eq!(value["chain_id"], CHAIN_UNSUPPORTED);
+    assert_eq!(value["schemaVersion"], "v1");
+    assert_eq!(value["chainId"], CHAIN_UNSUPPORTED);
 }
 
 #[wasm_bindgen_test]
@@ -71,8 +72,18 @@ fn deployment_addresses_use_schema_envelope() {
     let value = json(deployment_addresses(CHAIN_MAINNET, None).unwrap());
 
     assert_eq!(value["schemaVersion"], "v1");
-    assert!(value["settlement"].as_str().unwrap().starts_with("0x"));
-    assert!(value["vaultRelayer"].as_str().unwrap().starts_with("0x"));
+    assert!(
+        value["value"]["settlement"]
+            .as_str()
+            .unwrap()
+            .starts_with("0x")
+    );
+    assert!(
+        value["value"]["vaultRelayer"]
+            .as_str()
+            .unwrap()
+            .starts_with("0x")
+    );
 }
 
 #[wasm_bindgen_test]
@@ -80,9 +91,12 @@ fn order_typed_data_serializes_to_expected_js_shape() {
     let value = json(order_typed_data(wasm_order_input(), CHAIN_MAINNET).unwrap());
 
     assert_eq!(value["schemaVersion"], "v1");
-    assert_eq!(value["primaryType"], "Order");
-    assert_eq!(value["domain"]["chainId"], CHAIN_MAINNET);
-    assert_eq!(value["message"]["sellToken"], crate::common::ADDR_SELL);
+    assert_eq!(value["value"]["primaryType"], "Order");
+    assert_eq!(value["value"]["domain"]["chainId"], CHAIN_MAINNET);
+    assert_eq!(
+        value["value"]["message"]["sellToken"],
+        crate::common::ADDR_SELL
+    );
 }
 
 #[wasm_bindgen_test]
@@ -100,8 +114,8 @@ fn compute_order_uid_returns_uid_and_digest_strings() {
         json(compute_order_uid(wasm_order_input(), CHAIN_MAINNET, ADDR_OWNER.to_owned()).unwrap());
 
     assert_eq!(value["schemaVersion"], "v1");
-    assert_eq!(value["orderUid"].as_str().unwrap().len(), 114);
-    assert_eq!(value["orderDigest"].as_str().unwrap().len(), 66);
+    assert_eq!(value["value"]["orderUid"].as_str().unwrap().len(), 114);
+    assert_eq!(value["value"]["orderDigest"].as_str().unwrap().len(), 66);
 }
 
 #[wasm_bindgen_test]
@@ -119,8 +133,8 @@ fn app_data_doc_returns_versioned_document() {
     let value = json(app_data_doc(wasm_app_data_input()).unwrap());
 
     assert_eq!(value["schemaVersion"], "v1");
-    assert_eq!(value["document"]["appCode"], "CoW Swap");
-    assert_eq!(value["document"]["version"], "0.7.0");
+    assert_eq!(value["value"]["document"]["appCode"], "CoW Swap");
+    assert_eq!(value["value"]["document"]["version"], "0.7.0");
 }
 
 #[wasm_bindgen_test]
@@ -128,9 +142,9 @@ fn app_data_info_returns_cid_hash_and_content() {
     let value = json(app_data_info(wasm_app_data_input()).unwrap());
 
     assert_eq!(value["schemaVersion"], "v1");
-    assert_eq!(value["cid"], CID_APP_DATA);
-    assert_eq!(value["appDataHex"], HASH_APP_DATA);
-    assert_eq!(value["appDataContent"], APP_DATA_CONTENT);
+    assert_eq!(value["value"]["cid"], CID_APP_DATA);
+    assert_eq!(value["value"]["appDataHex"], HASH_APP_DATA);
+    assert_eq!(value["value"]["appDataContent"], APP_DATA_CONTENT);
 }
 
 #[wasm_bindgen_test]
@@ -138,8 +152,8 @@ fn app_data_validation_succeeds_for_canonical_doc() {
     let value = json(validate_app_data_doc(wasm_app_data_input()).unwrap());
 
     assert_eq!(value["schemaVersion"], "v1");
-    assert_eq!(value["success"], true);
-    assert!(value["errors"].is_null());
+    assert_eq!(value["value"]["success"], true);
+    assert!(value["value"].get("errors").is_none());
 }
 
 #[wasm_bindgen_test]
@@ -159,8 +173,14 @@ fn app_data_input_rejects_non_object_metadata() {
 
 #[wasm_bindgen_test]
 fn app_data_hex_and_cid_round_trip() {
-    let cid = app_data_hex_to_cid(HASH_APP_DATA.to_owned()).unwrap();
-    let hash = cid_to_app_data_hex(cid.clone()).unwrap();
+    let cid = json(app_data_hex_to_cid(HASH_APP_DATA.to_owned()).unwrap())["value"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let hash = json(cid_to_app_data_hex(cid.clone()).unwrap())["value"]
+        .as_str()
+        .unwrap()
+        .to_owned();
 
     assert_eq!(cid, CID_APP_DATA);
     assert_eq!(hash, HASH_APP_DATA);

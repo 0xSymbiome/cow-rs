@@ -49,7 +49,7 @@ async fn client_owned_callback_survives_until_request_resolves() {
     );
     let lifetime = json(js_sys::eval("globalThis.__cowCallbackLifetime").unwrap());
 
-    assert_eq!(value["document"]["appCode"], "CoW Swap");
+    assert_eq!(value["value"]["document"]["appCode"], "CoW Swap");
     assert_eq!(lifetime["calls"], 1);
     assert_eq!(lifetime["seenHandle"], false);
 }

@@ -2,8 +2,9 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(typescript_custom_section)]
 const CALLBACK_TYPES: &str = r#"
-export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE";
+export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 export type Value = unknown;
+export type SdkError = WasmError;
 
 export interface CowFetchRequest {
   method: CowFetchMethod;
@@ -17,8 +18,8 @@ export interface CowFetchRequest {
 export interface CowFetchResponse {
   status: number;
   statusText?: string;
-  headers: Record<string, string>;
-  body: string;
+  headers?: Record<string, string>;
+  body?: string;
 }
 
 export type CowFetchCallback = (

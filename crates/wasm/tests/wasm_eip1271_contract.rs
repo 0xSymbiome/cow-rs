@@ -35,10 +35,14 @@ fn json(value: JsValue) -> Value {
 
 fn expected_uid() -> String {
     json(compute_order_uid(wasm_order_input(), CHAIN_MAINNET, ADDR_OWNER.to_owned()).unwrap())
-        ["orderUid"]
+        ["value"]["orderUid"]
         .as_str()
         .unwrap()
         .to_owned()
+}
+
+fn envelope_string(value: JsValue) -> String {
+    json(value)["value"].as_str().unwrap().to_owned()
 }
 
 #[wasm_bindgen_test]
@@ -47,8 +51,9 @@ fn eip1271_payload_matches_native_rust() {
         .to_unsigned_order()
         .unwrap();
     let native = cow_sdk_signing::eip1271_signature_payload(&order, ECDSA_SIGNATURE).unwrap();
-    let exported =
-        eip1271_signature_payload_export(wasm_order_input(), ECDSA_SIGNATURE.to_owned()).unwrap();
+    let exported = envelope_string(
+        eip1271_signature_payload_export(wasm_order_input(), ECDSA_SIGNATURE.to_owned()).unwrap(),
+    );
 
     assert_eq!(exported, native);
     assert_eq!(exported, EIP1271_SIGNATURE);
@@ -58,8 +63,9 @@ fn eip1271_payload_matches_native_rust() {
 fn eip1271_payload_matches_recorded_typescript_sdk_vector() {
     let vector: UpstreamVector =
         serde_json::from_str(include_str!("fixtures/eip1271_upstream_vector.json")).unwrap();
-    let exported =
-        eip1271_signature_payload_export(wasm_order_input(), vector.ecdsa_signature).unwrap();
+    let exported = envelope_string(
+        eip1271_signature_payload_export(wasm_order_input(), vector.ecdsa_signature).unwrap(),
+    );
 
     assert_eq!(exported, vector.eip1271_signature);
 }
@@ -78,8 +84,8 @@ async fn sign_order_with_eip1271_returns_eip1271_scheme() {
         .unwrap(),
     );
 
-    assert_eq!(signed["signingScheme"], "eip1271");
-    assert_eq!(signed["signature"], EIP1271_SIGNATURE);
+    assert_eq!(signed["value"]["signingScheme"], "eip1271");
+    assert_eq!(signed["value"]["signature"], EIP1271_SIGNATURE);
 }
 
 #[wasm_bindgen_test]
@@ -96,7 +102,7 @@ async fn sign_order_with_eip1271_uid_equals_generated_order_id_as_str() {
         .unwrap(),
     );
 
-    assert_eq!(signed["orderUid"], expected_uid());
+    assert_eq!(signed["value"]["orderUid"], expected_uid());
 }
 
 #[wasm_bindgen_test]
@@ -113,7 +119,7 @@ async fn sign_order_with_eip1271_from_field_is_owner() {
         .unwrap(),
     );
 
-    assert_eq!(signed["from"], ADDR_OWNER);
+    assert_eq!(signed["value"]["from"], ADDR_OWNER);
 }
 
 #[wasm_bindgen_test]
@@ -158,7 +164,7 @@ async fn custom_eip1271_callback_signature_is_used_verbatim() {
 
     assert_eq!(request["owner"], ADDR_OWNER);
     assert_eq!(request["chainId"], CHAIN_MAINNET);
-    assert_eq!(signed["signature"], "0x1234");
+    assert_eq!(signed["value"]["signature"], "0x1234");
 }
 
 #[wasm_bindgen_test]

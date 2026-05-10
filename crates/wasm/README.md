@@ -89,9 +89,10 @@ map. Consumers should import public subpaths such as `./cloudflare` and
 
 All DTOs that cross the wasm ABI are represented in TypeScript declarations.
 The committed declaration snapshots for the web, bundler, and nodejs targets
-are compared during validation so export drift is visible. The package export
-verification script also checks that every exported target exists and that
-declaration files carry the required TypeScript library references.
+live under `crates/wasm/snapshots/raw/` and are compared during validation so
+export drift is visible. The package export verification script also checks
+that every exported target exists and that declaration files carry the required
+TypeScript library references.
 
 ## Error Contract
 

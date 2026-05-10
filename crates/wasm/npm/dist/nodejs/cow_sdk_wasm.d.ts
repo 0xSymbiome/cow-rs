@@ -2,8 +2,9 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE";
+export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 export type Value = unknown;
+export type SdkError = WasmError;
 
 export interface CowFetchRequest {
     method: CowFetchMethod;
@@ -17,8 +18,8 @@ export interface CowFetchRequest {
 export interface CowFetchResponse {
     status: number;
     statusText?: string;
-    headers: Record<string, string>;
-    body: string;
+    headers?: Record<string, string>;
+    body?: string;
 }
 
 export type CowFetchCallback = (
@@ -103,10 +104,6 @@ export interface AppDataDocInput {
  */
 export interface AppDataDocDto {
     /**
-     * Schema version.
-     */
-    schemaVersion: SchemaVersion;
-    /**
      * App-data document.
      */
     document: Value;
@@ -116,10 +113,6 @@ export interface AppDataDocDto {
  * App-data info output.
  */
 export interface AppDataInfoDto {
-    /**
-     * Schema version.
-     */
-    schemaVersion: SchemaVersion;
     /**
      * CID representation.
      */
@@ -138,10 +131,6 @@ export interface AppDataInfoDto {
  * App-data validation result.
  */
 export interface ValidationResultDto {
-    /**
-     * Schema version.
-     */
-    schemaVersion: SchemaVersion;
     /**
      * Whether validation succeeded.
      */
@@ -179,10 +168,6 @@ export interface CowEip1271SignRequest {
  */
 export interface DeploymentAddressesDto {
     /**
-     * Schema version.
-     */
-    schemaVersion: SchemaVersion;
-    /**
      * Settlement contract.
      */
     settlement: string;
@@ -211,13 +196,27 @@ export interface Eip1193Request {
 }
 
 /**
+ * Explicit raw GraphQL query input.
+ */
+export interface SubgraphQueryInput {
+    /**
+     * Raw GraphQL document.
+     */
+    query: string;
+    /**
+     * Optional GraphQL variables.
+     */
+    variables?: Value;
+    /**
+     * Optional operation name.
+     */
+    operationName?: string;
+}
+
+/**
  * Generated order UID output.
  */
 export interface GeneratedOrderUidDto {
-    /**
-     * Schema version.
-     */
-    schemaVersion: SchemaVersion;
     /**
      * Compact order UID.
      */
@@ -231,7 +230,7 @@ export interface GeneratedOrderUidDto {
 /**
  * JS-visible typed error envelope for every wasm export.
  */
-export type WasmError = { kind: "invalidInput"; message: string; field?: string } | { kind: "unknownEnumValue"; field: string; value: string } | { kind: "unsupportedChain"; chain_id: number } | { kind: "walletRequest"; method: string; code?: number; message: string; data?: Value } | { kind: "transport"; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; code?: string; message: string } | { kind: "subgraph"; message: string } | { kind: "signing"; message: string } | { kind: "appData"; class?: string; message: string } | { kind: "cancelled" } | { kind: "internal"; message: string };
+export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; message: string } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; raw: Value };
 
 /**
  * Order input shared by signing and UID exports.
@@ -293,13 +292,200 @@ export interface OrderInput {
 export type OrderKindDto = "sell" | "buy";
 
 /**
+ * Orderbook order-creation input.
+ */
+export interface OrderCreationInput {
+    /**
+     * Sell-token address.
+     */
+    sellToken: string;
+    /**
+     * Buy-token address.
+     */
+    buyToken: string;
+    /**
+     * Optional receiver.
+     */
+    receiver?: string;
+    /**
+     * Sell amount.
+     */
+    sellAmount: string;
+    /**
+     * Buy amount.
+     */
+    buyAmount: string;
+    /**
+     * Absolute UNIX expiry timestamp.
+     */
+    validTo: number;
+    /**
+     * Inline app-data payload.
+     */
+    appData?: string;
+    /**
+     * App-data hash.
+     */
+    appDataHash?: string;
+    /**
+     * Order-level fee amount. The orderbook accepts only zero.
+     */
+    feeAmount?: string;
+    /**
+     * Strict balance-check flag.
+     */
+    fullBalanceCheck?: boolean;
+    /**
+     * Order side.
+     */
+    kind: OrderKindDto;
+    /**
+     * Whether partial fills are allowed.
+     */
+    partiallyFillable?: boolean;
+    /**
+     * Sell-token balance source.
+     */
+    sellTokenBalance?: TokenBalanceDto;
+    /**
+     * Buy-token balance destination.
+     */
+    buyTokenBalance?: TokenBalanceDto;
+    /**
+     * Signature scheme.
+     */
+    signingScheme: string;
+    /**
+     * Raw signature.
+     */
+    signature: string;
+    /**
+     * Effective owner.
+     */
+    from: string;
+    /**
+     * Optional quote id.
+     */
+    quoteId?: number;
+}
+
+/**
+ * Orderbook quote request input.
+ */
+export interface OrderQuoteRequestInput {
+    /**
+     * Sell-token address.
+     */
+    sellToken: string;
+    /**
+     * Buy-token address.
+     */
+    buyToken: string;
+    /**
+     * Optional explicit receiver.
+     */
+    receiver?: string;
+    /**
+     * Quote owner.
+     */
+    from: string;
+    /**
+     * Quote side.
+     */
+    kind: OrderKindDto;
+    /**
+     * Sell amount before fee for sell quotes.
+     */
+    sellAmountBeforeFee?: string;
+    /**
+     * Buy amount after fee for buy quotes.
+     */
+    buyAmountAfterFee?: string;
+    /**
+     * Relative validity duration in seconds.
+     */
+    validFor?: number;
+    /**
+     * Absolute UNIX expiry timestamp.
+     */
+    validTo?: number;
+    /**
+     * Inline app-data payload.
+     */
+    appData?: string;
+    /**
+     * App-data hash.
+     */
+    appDataHash?: string;
+    /**
+     * Whether partial fills are allowed.
+     */
+    partiallyFillable?: boolean;
+    /**
+     * Sell-token balance source.
+     */
+    sellTokenBalance?: TokenBalanceDto;
+    /**
+     * Buy-token balance destination.
+     */
+    buyTokenBalance?: TokenBalanceDto;
+    /**
+     * Quote-quality mode.
+     */
+    priceQuality?: string;
+    /**
+     * Expected signing scheme.
+     */
+    signingScheme?: string;
+    /**
+     * Whether the eventual order is expected to be on-chain.
+     */
+    onchainOrder?: boolean;
+    /**
+     * Optional verification gas limit.
+     */
+    verificationGasLimit?: number;
+    /**
+     * Optional request timeout in milliseconds.
+     */
+    timeout?: number;
+}
+
+/**
+ * Partner-fee input accepted by trading swap parameters.
+ */
+export type PartnerFeeInput = PartnerFeePolicyInput | PartnerFeePolicyInput[];
+
+/**
+ * Partner-fee policy input for trading swap parameters.
+ */
+export interface PartnerFeePolicyInput {
+    /**
+     * Volume fee in basis points.
+     */
+    volumeBps?: number;
+    /**
+     * Surplus fee in basis points.
+     */
+    surplusBps?: number;
+    /**
+     * Price-improvement fee in basis points.
+     */
+    priceImprovementBps?: number;
+    /**
+     * Maximum volume fee in basis points.
+     */
+    maxVolumeBps?: number;
+    /**
+     * Fee recipient address.
+     */
+    recipient: string;
+}
+
+/**
  * Signed order DTO returned by wallet callback exports.
  */
 export interface SignedOrderDto {
-    /**
-     * Schema version.
-     */
-    schemaVersion: SchemaVersion;
     /**
      * Compact order UID.
      */
@@ -354,24 +540,74 @@ export interface SignedCancellationsInput {
 export type TokenBalanceDto = "erc20" | "external" | "internal";
 
 /**
- * Transparent JSON input for orderbook order creations.
+ * Trading swap-parameter input.
  */
-export type OrderCreationInput = Value;
-
-/**
- * Transparent JSON input for orderbook quote requests.
- */
-export type OrderQuoteRequestInput = Value;
-
-/**
- * Transparent JSON input for subgraph raw queries.
- */
-export type SubgraphQueryInput = Value;
-
-/**
- * Transparent JSON input for trading swap parameters.
- */
-export type SwapParametersInput = Value;
+export interface SwapParametersInput {
+    /**
+     * Order side.
+     */
+    kind: OrderKindDto;
+    /**
+     * Optional owner override.
+     */
+    owner?: string;
+    /**
+     * Sell-token address.
+     */
+    sellToken: string;
+    /**
+     * Sell-token decimals.
+     */
+    sellTokenDecimals: number;
+    /**
+     * Buy-token address.
+     */
+    buyToken: string;
+    /**
+     * Buy-token decimals.
+     */
+    buyTokenDecimals: number;
+    /**
+     * Amount interpreted according to `kind`.
+     */
+    amount: string;
+    /**
+     * Optional environment override.
+     */
+    env?: string;
+    /**
+     * Whether partial fills are allowed.
+     */
+    partiallyFillable?: boolean;
+    /**
+     * Sell-token balance source.
+     */
+    sellTokenBalance?: TokenBalanceDto;
+    /**
+     * Buy-token balance destination.
+     */
+    buyTokenBalance?: TokenBalanceDto;
+    /**
+     * Optional slippage tolerance in basis points.
+     */
+    slippageBps?: number;
+    /**
+     * Optional receiver override.
+     */
+    receiver?: string;
+    /**
+     * Optional relative validity duration.
+     */
+    validFor?: number;
+    /**
+     * Optional absolute UNIX expiry timestamp.
+     */
+    validTo?: number;
+    /**
+     * Optional partner-fee metadata.
+     */
+    partnerFee?: PartnerFeeInput;
+}
 
 /**
  * Typed-data domain DTO.
@@ -399,10 +635,6 @@ export interface TypedDataDomainDto {
  * Typed-data envelope DTO.
  */
 export interface TypedDataEnvelopeDto {
-    /**
-     * Schema version.
-     */
-    schemaVersion: SchemaVersion;
     /**
      * Domain metadata.
      */
@@ -436,9 +668,9 @@ export interface TypedDataFieldDto {
 }
 
 /**
- * Version tag carried by wasm output envelopes.
+ * Version tag carried by wasm output and error envelopes.
  */
-export type SchemaVersion = "v1";
+export type SchemaVersion = "v1" | "__unknown";
 
 /**
  * Versioned output envelope.
@@ -464,11 +696,11 @@ export class IpfsClient {
     /**
      * Fetches and parses an app-data document by CID.
      */
-    fetchAppDataFromCid(cid: string): Promise<any>;
+    fetchAppDataFromCid(cid: string): Promise<WasmEnvelope<AppDataDocDto>>;
     /**
      * Fetches and parses an app-data document by app-data hash.
      */
-    fetchAppDataFromHex(app_data_hex: string): Promise<any>;
+    fetchAppDataFromHex(appDataHex: string): Promise<WasmEnvelope<AppDataDocDto>>;
     /**
      * Creates an IPFS client from a single config object.
      */
@@ -484,7 +716,7 @@ export class OrderBookClient {
     /**
      * Cancels orders through a signed cancellation payload.
      */
-    cancelOrders(signed: SignedCancellationsInput): Promise<any>;
+    cancelOrders(signed: SignedCancellationsInput): Promise<WasmEnvelope<{ cancelled: true }>>;
     /**
      * Fetches a token's native price.
      */
@@ -492,7 +724,7 @@ export class OrderBookClient {
     /**
      * Fetches an order by UID.
      */
-    getOrder(order_uid: string): Promise<any>;
+    getOrder(orderUid: string): Promise<any>;
     /**
      * Fetches orders owned by an address.
      */
@@ -504,7 +736,7 @@ export class OrderBookClient {
     /**
      * Fetches trades for an order UID.
      */
-    getTrades(order_uid: string): Promise<any>;
+    getTrades(orderUid: string): Promise<any>;
     /**
      * Creates an orderbook client from a single config object.
      */
@@ -512,11 +744,11 @@ export class OrderBookClient {
     /**
      * Submits a signed order.
      */
-    sendOrder(signed: SignedOrderDto): Promise<string>;
+    sendOrder(signed: SignedOrderDto): Promise<WasmEnvelope<string>>;
     /**
      * Submits a raw order-creation payload.
      */
-    sendOrderCreation(input: OrderCreationInput): Promise<string>;
+    sendOrderCreation(input: OrderCreationInput): Promise<WasmEnvelope<string>>;
 }
 
 /**
@@ -564,11 +796,11 @@ export class TradingClient {
     /**
      * Quotes, signs, and posts a swap order through a typed-data callback.
      */
-    postSwapOrder(params: SwapParametersInput, owner: string, signer_callback: Function): Promise<any>;
+    postSwapOrder(params: SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback): Promise<any>;
     /**
      * Quotes and posts a swap order with a custom EIP-1271 signature callback.
      */
-    postSwapOrderWithEip1271(params: SwapParametersInput, owner: string, custom_callback: Function): Promise<any>;
+    postSwapOrderWithEip1271(params: SwapParametersInput, owner: string, customCallback: CustomEip1271Callback): Promise<any>;
 }
 
 /**
@@ -579,87 +811,87 @@ export function __cow_sdk_wasm_init(): void;
 /**
  * Builds an app-data document without hashing it.
  */
-export function appDataDoc(doc: AppDataDocInput): any;
+export function appDataDoc(doc: AppDataDocInput): WasmEnvelope<AppDataDocDto>;
 
 /**
  * Converts an app-data hash to an IPFS CID.
  */
-export function appDataHexToCid(app_data_hex: string): string;
+export function appDataHexToCid(appDataHex: string): WasmEnvelope<string>;
 
 /**
  * Returns deterministic app-data content, hash, and CID.
  */
-export function appDataInfo(doc: AppDataDocInput): any;
+export function appDataInfo(doc: AppDataDocInput): WasmEnvelope<AppDataInfoDto>;
 
 /**
  * Converts an IPFS CID to an app-data hash.
  */
-export function cidToAppDataHex(cid: string): string;
+export function cidToAppDataHex(cid: string): WasmEnvelope<string>;
 
 /**
  * Computes the compact order UID and digest.
  */
-export function computeOrderUid(input: OrderInput, chain_id: number, owner: string): any;
+export function computeOrderUid(input: OrderInput, chainId: number, owner: string): WasmEnvelope<GeneratedOrderUidDto>;
 
 /**
  * Returns canonical deployment addresses for a chain and environment.
  */
-export function deploymentAddresses(chain_id: number, env?: string | null): any;
+export function deploymentAddresses(chainId: number, env?: string | null): WasmEnvelope<DeploymentAddressesDto>;
 
 /**
  * Computes the EIP-712 domain separator for a supported chain.
  */
-export function domainSeparator(chain_id: number): string;
+export function domainSeparator(chainId: number): string;
 
 /**
  * Encodes a CoW EIP-1271 payload from an ECDSA signature.
  */
-export function eip1271SignaturePayload(input: OrderInput, ecdsa_signature: string): string;
+export function eip1271SignaturePayload(input: OrderInput, ecdsaSignature: string): WasmEnvelope<string>;
 
 /**
  * Builds signer-facing order typed data.
  */
-export function orderTypedData(input: OrderInput, chain_id: number): any;
+export function orderTypedData(input: OrderInput, chainId: number): WasmEnvelope<TypedDataEnvelopeDto>;
 
 /**
  * Signs a cancellation digest through an explicit `eth_sign` callback.
  */
-export function signCancellationEthSignDigest(order_uids: string[], chain_id: number, digest_signer: Function): Promise<any>;
+export function signCancellationEthSignDigest(orderUids: string[], chainId: number, digestSigner: DigestSignerCallback): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
 /**
  * Signs cancellation typed data through an EIP-1193 callback.
  */
-export function signCancellationWithEip1193(order_uids: string[], chain_id: number, owner: string, request_callback: Function): Promise<any>;
+export function signCancellationWithEip1193(orderUids: string[], chainId: number, owner: string, requestCallback: Eip1193RequestCallback): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
 /**
  * Signs cancellation typed data through a typed-data callback.
  */
-export function signCancellationWithTypedDataSigner(order_uids: string[], chain_id: number, typed_data_signer: Function): Promise<any>;
+export function signCancellationWithTypedDataSigner(orderUids: string[], chainId: number, typedDataSigner: TypedDataSignerCallback): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
 /**
  * Signs an order digest through an explicit `eth_sign` callback.
  */
-export function signOrderEthSignDigest(input: OrderInput, chain_id: number, owner: string, digest_signer: Function): Promise<any>;
+export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner: string, digestSigner: DigestSignerCallback): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through a custom EIP-1271 callback.
  */
-export function signOrderWithCustomEip1271(input: OrderInput, chain_id: number, owner: string, custom_callback: Function): Promise<any>;
+export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, owner: string, customCallback: CustomEip1271Callback): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through an EIP-1193 request callback.
  */
-export function signOrderWithEip1193(input: OrderInput, chain_id: number, owner: string, request_callback: Function): Promise<any>;
+export function signOrderWithEip1193(input: OrderInput, chainId: number, owner: string, requestCallback: Eip1193RequestCallback): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through typed-data ECDSA and wraps it as EIP-1271.
  */
-export function signOrderWithEip1271(input: OrderInput, chain_id: number, owner: string, typed_data_signer: Function): Promise<any>;
+export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through a typed-data callback.
  */
-export function signOrderWithTypedDataSigner(input: OrderInput, chain_id: number, owner: string, typed_data_signer: Function): Promise<any>;
+export function signOrderWithTypedDataSigner(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Returns supported EVM chain ids.
@@ -669,7 +901,7 @@ export function supportedChainIds(): Uint32Array;
 /**
  * Validates an app-data document against the embedded schemas.
  */
-export function validateAppDataDoc(doc: AppDataDocInput): any;
+export function validateAppDataDoc(doc: AppDataDocInput): WasmEnvelope<ValidationResultDto>;
 
 /**
  * Returns the wasm crate version.

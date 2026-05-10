@@ -17,7 +17,7 @@ class IpfsClient {
     /**
      * Fetches and parses an app-data document by CID.
      * @param {string} cid
-     * @returns {Promise<any>}
+     * @returns {WasmEnvelope<AppDataDocDto>}
      */
     fetchAppDataFromCid(cid) {
         const ptr0 = passStringToWasm0(cid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
@@ -27,11 +27,11 @@ class IpfsClient {
     }
     /**
      * Fetches and parses an app-data document by app-data hash.
-     * @param {string} app_data_hex
-     * @returns {Promise<any>}
+     * @param {string} appDataHex
+     * @returns {WasmEnvelope<AppDataDocDto>}
      */
-    fetchAppDataFromHex(app_data_hex) {
-        const ptr0 = passStringToWasm0(app_data_hex, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    fetchAppDataFromHex(appDataHex) {
+        const ptr0 = passStringToWasm0(appDataHex, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.ipfsclient_fetchAppDataFromHex(this.__wbg_ptr, ptr0, len0);
         return takeObject(ret);
@@ -78,7 +78,7 @@ class OrderBookClient {
     /**
      * Cancels orders through a signed cancellation payload.
      * @param {SignedCancellationsInput} signed
-     * @returns {Promise<any>}
+     * @returns {WasmEnvelope<{ cancelled: true }>}
      */
     cancelOrders(signed) {
         const ret = wasm.orderbookclient_cancelOrders(this.__wbg_ptr, addHeapObject(signed));
@@ -97,11 +97,11 @@ class OrderBookClient {
     }
     /**
      * Fetches an order by UID.
-     * @param {string} order_uid
+     * @param {string} orderUid
      * @returns {Promise<any>}
      */
-    getOrder(order_uid) {
-        const ptr0 = passStringToWasm0(order_uid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    getOrder(orderUid) {
+        const ptr0 = passStringToWasm0(orderUid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.orderbookclient_getOrder(this.__wbg_ptr, ptr0, len0);
         return takeObject(ret);
@@ -128,11 +128,11 @@ class OrderBookClient {
     }
     /**
      * Fetches trades for an order UID.
-     * @param {string} order_uid
+     * @param {string} orderUid
      * @returns {Promise<any>}
      */
-    getTrades(order_uid) {
-        const ptr0 = passStringToWasm0(order_uid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+    getTrades(orderUid) {
+        const ptr0 = passStringToWasm0(orderUid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.orderbookclient_getTrades(this.__wbg_ptr, ptr0, len0);
         return takeObject(ret);
@@ -161,7 +161,7 @@ class OrderBookClient {
     /**
      * Submits a signed order.
      * @param {SignedOrderDto} signed
-     * @returns {Promise<string>}
+     * @returns {WasmEnvelope<string>}
      */
     sendOrder(signed) {
         const ret = wasm.orderbookclient_sendOrder(this.__wbg_ptr, addHeapObject(signed));
@@ -170,7 +170,7 @@ class OrderBookClient {
     /**
      * Submits a raw order-creation payload.
      * @param {OrderCreationInput} input
-     * @returns {Promise<string>}
+     * @returns {WasmEnvelope<string>}
      */
     sendOrderCreation(input) {
         const ret = wasm.orderbookclient_sendOrderCreation(this.__wbg_ptr, addHeapObject(input));
@@ -302,26 +302,26 @@ class TradingClient {
      * Quotes, signs, and posts a swap order through a typed-data callback.
      * @param {SwapParametersInput} params
      * @param {string} owner
-     * @param {Function} signer_callback
+     * @param {TypedDataSignerCallback} signerCallback
      * @returns {Promise<any>}
      */
-    postSwapOrder(params, owner, signer_callback) {
+    postSwapOrder(params, owner, signerCallback) {
         const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.tradingclient_postSwapOrder(this.__wbg_ptr, addHeapObject(params), ptr0, len0, addHeapObject(signer_callback));
+        const ret = wasm.tradingclient_postSwapOrder(this.__wbg_ptr, addHeapObject(params), ptr0, len0, addHeapObject(signerCallback));
         return takeObject(ret);
     }
     /**
      * Quotes and posts a swap order with a custom EIP-1271 signature callback.
      * @param {SwapParametersInput} params
      * @param {string} owner
-     * @param {Function} custom_callback
+     * @param {CustomEip1271Callback} customCallback
      * @returns {Promise<any>}
      */
-    postSwapOrderWithEip1271(params, owner, custom_callback) {
+    postSwapOrderWithEip1271(params, owner, customCallback) {
         const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.tradingclient_postSwapOrderWithEip1271(this.__wbg_ptr, addHeapObject(params), ptr0, len0, addHeapObject(custom_callback));
+        const ret = wasm.tradingclient_postSwapOrderWithEip1271(this.__wbg_ptr, addHeapObject(params), ptr0, len0, addHeapObject(customCallback));
         return takeObject(ret);
     }
 }
@@ -339,7 +339,7 @@ exports.__cow_sdk_wasm_init = __cow_sdk_wasm_init;
 /**
  * Builds an app-data document without hashing it.
  * @param {AppDataDocInput} doc
- * @returns {any}
+ * @returns {WasmEnvelope<AppDataDocDto>}
  */
 function appDataDoc(doc) {
     try {
@@ -360,33 +360,24 @@ exports.appDataDoc = appDataDoc;
 
 /**
  * Converts an app-data hash to an IPFS CID.
- * @param {string} app_data_hex
- * @returns {string}
+ * @param {string} appDataHex
+ * @returns {WasmEnvelope<string>}
  */
-function appDataHexToCid(app_data_hex) {
-    let deferred3_0;
-    let deferred3_1;
+function appDataHexToCid(appDataHex) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passStringToWasm0(app_data_hex, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const ptr0 = passStringToWasm0(appDataHex, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
         wasm.appDataHexToCid(retptr, ptr0, len0);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-        var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
-        var ptr2 = r0;
-        var len2 = r1;
-        if (r3) {
-            ptr2 = 0; len2 = 0;
-            throw takeObject(r2);
+        if (r2) {
+            throw takeObject(r1);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        return takeObject(r0);
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_export4(deferred3_0, deferred3_1, 1);
     }
 }
 exports.appDataHexToCid = appDataHexToCid;
@@ -394,7 +385,7 @@ exports.appDataHexToCid = appDataHexToCid;
 /**
  * Returns deterministic app-data content, hash, and CID.
  * @param {AppDataDocInput} doc
- * @returns {any}
+ * @returns {WasmEnvelope<AppDataInfoDto>}
  */
 function appDataInfo(doc) {
     try {
@@ -416,11 +407,9 @@ exports.appDataInfo = appDataInfo;
 /**
  * Converts an IPFS CID to an app-data hash.
  * @param {string} cid
- * @returns {string}
+ * @returns {WasmEnvelope<string>}
  */
 function cidToAppDataHex(cid) {
-    let deferred3_0;
-    let deferred3_1;
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         const ptr0 = passStringToWasm0(cid, wasm.__wbindgen_export, wasm.__wbindgen_export2);
@@ -429,19 +418,12 @@ function cidToAppDataHex(cid) {
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-        var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
-        var ptr2 = r0;
-        var len2 = r1;
-        if (r3) {
-            ptr2 = 0; len2 = 0;
-            throw takeObject(r2);
+        if (r2) {
+            throw takeObject(r1);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        return takeObject(r0);
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_export4(deferred3_0, deferred3_1, 1);
     }
 }
 exports.cidToAppDataHex = cidToAppDataHex;
@@ -449,16 +431,16 @@ exports.cidToAppDataHex = cidToAppDataHex;
 /**
  * Computes the compact order UID and digest.
  * @param {OrderInput} input
- * @param {number} chain_id
+ * @param {number} chainId
  * @param {string} owner
- * @returns {any}
+ * @returns {WasmEnvelope<GeneratedOrderUidDto>}
  */
-function computeOrderUid(input, chain_id, owner) {
+function computeOrderUid(input, chainId, owner) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
-        wasm.computeOrderUid(retptr, addHeapObject(input), chain_id, ptr0, len0);
+        wasm.computeOrderUid(retptr, addHeapObject(input), chainId, ptr0, len0);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
@@ -474,16 +456,16 @@ exports.computeOrderUid = computeOrderUid;
 
 /**
  * Returns canonical deployment addresses for a chain and environment.
- * @param {number} chain_id
+ * @param {number} chainId
  * @param {string | null} [env]
- * @returns {any}
+ * @returns {WasmEnvelope<DeploymentAddressesDto>}
  */
-function deploymentAddresses(chain_id, env) {
+function deploymentAddresses(chainId, env) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         var ptr0 = isLikeNone(env) ? 0 : passStringToWasm0(env, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         var len0 = WASM_VECTOR_LEN;
-        wasm.deploymentAddresses(retptr, chain_id, ptr0, len0);
+        wasm.deploymentAddresses(retptr, chainId, ptr0, len0);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
@@ -499,15 +481,15 @@ exports.deploymentAddresses = deploymentAddresses;
 
 /**
  * Computes the EIP-712 domain separator for a supported chain.
- * @param {number} chain_id
+ * @param {number} chainId
  * @returns {string}
  */
-function domainSeparator(chain_id) {
+function domainSeparator(chainId) {
     let deferred2_0;
     let deferred2_1;
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.domainSeparator(retptr, chain_id);
+        wasm.domainSeparator(retptr, chainId);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
@@ -531,33 +513,24 @@ exports.domainSeparator = domainSeparator;
 /**
  * Encodes a CoW EIP-1271 payload from an ECDSA signature.
  * @param {OrderInput} input
- * @param {string} ecdsa_signature
- * @returns {string}
+ * @param {string} ecdsaSignature
+ * @returns {WasmEnvelope<string>}
  */
-function eip1271SignaturePayload(input, ecdsa_signature) {
-    let deferred3_0;
-    let deferred3_1;
+function eip1271SignaturePayload(input, ecdsaSignature) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        const ptr0 = passStringToWasm0(ecdsa_signature, wasm.__wbindgen_export, wasm.__wbindgen_export2);
+        const ptr0 = passStringToWasm0(ecdsaSignature, wasm.__wbindgen_export, wasm.__wbindgen_export2);
         const len0 = WASM_VECTOR_LEN;
         wasm.eip1271SignaturePayload(retptr, addHeapObject(input), ptr0, len0);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
-        var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
-        var ptr2 = r0;
-        var len2 = r1;
-        if (r3) {
-            ptr2 = 0; len2 = 0;
-            throw takeObject(r2);
+        if (r2) {
+            throw takeObject(r1);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        return takeObject(r0);
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_export4(deferred3_0, deferred3_1, 1);
     }
 }
 exports.eip1271SignaturePayload = eip1271SignaturePayload;
@@ -565,13 +538,13 @@ exports.eip1271SignaturePayload = eip1271SignaturePayload;
 /**
  * Builds signer-facing order typed data.
  * @param {OrderInput} input
- * @param {number} chain_id
- * @returns {any}
+ * @param {number} chainId
+ * @returns {WasmEnvelope<TypedDataEnvelopeDto>}
  */
-function orderTypedData(input, chain_id) {
+function orderTypedData(input, chainId) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.orderTypedData(retptr, addHeapObject(input), chain_id);
+        wasm.orderTypedData(retptr, addHeapObject(input), chainId);
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
@@ -587,48 +560,48 @@ exports.orderTypedData = orderTypedData;
 
 /**
  * Signs a cancellation digest through an explicit `eth_sign` callback.
- * @param {string[]} order_uids
- * @param {number} chain_id
- * @param {Function} digest_signer
- * @returns {Promise<any>}
+ * @param {string[]} orderUids
+ * @param {number} chainId
+ * @param {DigestSignerCallback} digestSigner
+ * @returns {WasmEnvelope<SignedCancellationsInput>}
  */
-function signCancellationEthSignDigest(order_uids, chain_id, digest_signer) {
-    const ptr0 = passArrayJsValueToWasm0(order_uids, wasm.__wbindgen_export);
+function signCancellationEthSignDigest(orderUids, chainId, digestSigner) {
+    const ptr0 = passArrayJsValueToWasm0(orderUids, wasm.__wbindgen_export);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.signCancellationEthSignDigest(ptr0, len0, chain_id, addHeapObject(digest_signer));
+    const ret = wasm.signCancellationEthSignDigest(ptr0, len0, chainId, addHeapObject(digestSigner));
     return takeObject(ret);
 }
 exports.signCancellationEthSignDigest = signCancellationEthSignDigest;
 
 /**
  * Signs cancellation typed data through an EIP-1193 callback.
- * @param {string[]} order_uids
- * @param {number} chain_id
+ * @param {string[]} orderUids
+ * @param {number} chainId
  * @param {string} owner
- * @param {Function} request_callback
- * @returns {Promise<any>}
+ * @param {Eip1193RequestCallback} requestCallback
+ * @returns {WasmEnvelope<SignedCancellationsInput>}
  */
-function signCancellationWithEip1193(order_uids, chain_id, owner, request_callback) {
-    const ptr0 = passArrayJsValueToWasm0(order_uids, wasm.__wbindgen_export);
+function signCancellationWithEip1193(orderUids, chainId, owner, requestCallback) {
+    const ptr0 = passArrayJsValueToWasm0(orderUids, wasm.__wbindgen_export);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.signCancellationWithEip1193(ptr0, len0, chain_id, ptr1, len1, addHeapObject(request_callback));
+    const ret = wasm.signCancellationWithEip1193(ptr0, len0, chainId, ptr1, len1, addHeapObject(requestCallback));
     return takeObject(ret);
 }
 exports.signCancellationWithEip1193 = signCancellationWithEip1193;
 
 /**
  * Signs cancellation typed data through a typed-data callback.
- * @param {string[]} order_uids
- * @param {number} chain_id
- * @param {Function} typed_data_signer
- * @returns {Promise<any>}
+ * @param {string[]} orderUids
+ * @param {number} chainId
+ * @param {TypedDataSignerCallback} typedDataSigner
+ * @returns {WasmEnvelope<SignedCancellationsInput>}
  */
-function signCancellationWithTypedDataSigner(order_uids, chain_id, typed_data_signer) {
-    const ptr0 = passArrayJsValueToWasm0(order_uids, wasm.__wbindgen_export);
+function signCancellationWithTypedDataSigner(orderUids, chainId, typedDataSigner) {
+    const ptr0 = passArrayJsValueToWasm0(orderUids, wasm.__wbindgen_export);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.signCancellationWithTypedDataSigner(ptr0, len0, chain_id, addHeapObject(typed_data_signer));
+    const ret = wasm.signCancellationWithTypedDataSigner(ptr0, len0, chainId, addHeapObject(typedDataSigner));
     return takeObject(ret);
 }
 exports.signCancellationWithTypedDataSigner = signCancellationWithTypedDataSigner;
@@ -636,15 +609,15 @@ exports.signCancellationWithTypedDataSigner = signCancellationWithTypedDataSigne
 /**
  * Signs an order digest through an explicit `eth_sign` callback.
  * @param {OrderInput} input
- * @param {number} chain_id
+ * @param {number} chainId
  * @param {string} owner
- * @param {Function} digest_signer
- * @returns {Promise<any>}
+ * @param {DigestSignerCallback} digestSigner
+ * @returns {WasmEnvelope<SignedOrderDto>}
  */
-function signOrderEthSignDigest(input, chain_id, owner, digest_signer) {
+function signOrderEthSignDigest(input, chainId, owner, digestSigner) {
     const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.signOrderEthSignDigest(addHeapObject(input), chain_id, ptr0, len0, addHeapObject(digest_signer));
+    const ret = wasm.signOrderEthSignDigest(addHeapObject(input), chainId, ptr0, len0, addHeapObject(digestSigner));
     return takeObject(ret);
 }
 exports.signOrderEthSignDigest = signOrderEthSignDigest;
@@ -652,15 +625,15 @@ exports.signOrderEthSignDigest = signOrderEthSignDigest;
 /**
  * Signs an order through a custom EIP-1271 callback.
  * @param {OrderInput} input
- * @param {number} chain_id
+ * @param {number} chainId
  * @param {string} owner
- * @param {Function} custom_callback
- * @returns {Promise<any>}
+ * @param {CustomEip1271Callback} customCallback
+ * @returns {WasmEnvelope<SignedOrderDto>}
  */
-function signOrderWithCustomEip1271(input, chain_id, owner, custom_callback) {
+function signOrderWithCustomEip1271(input, chainId, owner, customCallback) {
     const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.signOrderWithCustomEip1271(addHeapObject(input), chain_id, ptr0, len0, addHeapObject(custom_callback));
+    const ret = wasm.signOrderWithCustomEip1271(addHeapObject(input), chainId, ptr0, len0, addHeapObject(customCallback));
     return takeObject(ret);
 }
 exports.signOrderWithCustomEip1271 = signOrderWithCustomEip1271;
@@ -668,15 +641,15 @@ exports.signOrderWithCustomEip1271 = signOrderWithCustomEip1271;
 /**
  * Signs an order through an EIP-1193 request callback.
  * @param {OrderInput} input
- * @param {number} chain_id
+ * @param {number} chainId
  * @param {string} owner
- * @param {Function} request_callback
- * @returns {Promise<any>}
+ * @param {Eip1193RequestCallback} requestCallback
+ * @returns {WasmEnvelope<SignedOrderDto>}
  */
-function signOrderWithEip1193(input, chain_id, owner, request_callback) {
+function signOrderWithEip1193(input, chainId, owner, requestCallback) {
     const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.signOrderWithEip1193(addHeapObject(input), chain_id, ptr0, len0, addHeapObject(request_callback));
+    const ret = wasm.signOrderWithEip1193(addHeapObject(input), chainId, ptr0, len0, addHeapObject(requestCallback));
     return takeObject(ret);
 }
 exports.signOrderWithEip1193 = signOrderWithEip1193;
@@ -684,15 +657,15 @@ exports.signOrderWithEip1193 = signOrderWithEip1193;
 /**
  * Signs an order through typed-data ECDSA and wraps it as EIP-1271.
  * @param {OrderInput} input
- * @param {number} chain_id
+ * @param {number} chainId
  * @param {string} owner
- * @param {Function} typed_data_signer
- * @returns {Promise<any>}
+ * @param {TypedDataSignerCallback} typedDataSigner
+ * @returns {WasmEnvelope<SignedOrderDto>}
  */
-function signOrderWithEip1271(input, chain_id, owner, typed_data_signer) {
+function signOrderWithEip1271(input, chainId, owner, typedDataSigner) {
     const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.signOrderWithEip1271(addHeapObject(input), chain_id, ptr0, len0, addHeapObject(typed_data_signer));
+    const ret = wasm.signOrderWithEip1271(addHeapObject(input), chainId, ptr0, len0, addHeapObject(typedDataSigner));
     return takeObject(ret);
 }
 exports.signOrderWithEip1271 = signOrderWithEip1271;
@@ -700,15 +673,15 @@ exports.signOrderWithEip1271 = signOrderWithEip1271;
 /**
  * Signs an order through a typed-data callback.
  * @param {OrderInput} input
- * @param {number} chain_id
+ * @param {number} chainId
  * @param {string} owner
- * @param {Function} typed_data_signer
- * @returns {Promise<any>}
+ * @param {TypedDataSignerCallback} typedDataSigner
+ * @returns {WasmEnvelope<SignedOrderDto>}
  */
-function signOrderWithTypedDataSigner(input, chain_id, owner, typed_data_signer) {
+function signOrderWithTypedDataSigner(input, chainId, owner, typedDataSigner) {
     const ptr0 = passStringToWasm0(owner, wasm.__wbindgen_export, wasm.__wbindgen_export2);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.signOrderWithTypedDataSigner(addHeapObject(input), chain_id, ptr0, len0, addHeapObject(typed_data_signer));
+    const ret = wasm.signOrderWithTypedDataSigner(addHeapObject(input), chainId, ptr0, len0, addHeapObject(typedDataSigner));
     return takeObject(ret);
 }
 exports.signOrderWithTypedDataSigner = signOrderWithTypedDataSigner;
@@ -735,7 +708,7 @@ exports.supportedChainIds = supportedChainIds;
 /**
  * Validates an app-data document against the embedded schemas.
  * @param {AppDataDocInput} doc
- * @returns {any}
+ * @returns {WasmEnvelope<ValidationResultDto>}
  */
 function validateAppDataDoc(doc) {
     try {
@@ -1031,7 +1004,7 @@ function __wbg_get_imports() {
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wasm_bindgen_func_elem_3654(a, state0.b, arg0, arg1);
+                        return __wasm_bindgen_func_elem_3793(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -1154,17 +1127,17 @@ function __wbg_get_imports() {
         },
         __wbindgen_cast_0000000000000001: function(arg0, arg1) {
             // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 1, ret: Externref, inner_ret: Some(Externref) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_903);
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_987);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000002: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 381, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3646);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [Externref], shim_idx: 388, ret: Result(Unit), inner_ret: Some(Result(Unit)) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3785);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000003: function(arg0, arg1) {
-            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [], shim_idx: 353, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3307);
+            // Cast intrinsic for `Closure(Closure { owned: true, function: Function { arguments: [], shim_idx: 360, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
+            const ret = makeMutClosure(arg0, arg1, __wasm_bindgen_func_elem_3446);
             return addHeapObject(ret);
         },
         __wbindgen_cast_0000000000000004: function(arg0) {
@@ -1201,19 +1174,19 @@ function __wbg_get_imports() {
     };
 }
 
-function __wasm_bindgen_func_elem_3307(arg0, arg1) {
-    wasm.__wasm_bindgen_func_elem_3307(arg0, arg1);
+function __wasm_bindgen_func_elem_3446(arg0, arg1) {
+    wasm.__wasm_bindgen_func_elem_3446(arg0, arg1);
 }
 
-function __wasm_bindgen_func_elem_903(arg0, arg1, arg2) {
-    const ret = wasm.__wasm_bindgen_func_elem_903(arg0, arg1, addHeapObject(arg2));
+function __wasm_bindgen_func_elem_987(arg0, arg1, arg2) {
+    const ret = wasm.__wasm_bindgen_func_elem_987(arg0, arg1, addHeapObject(arg2));
     return takeObject(ret);
 }
 
-function __wasm_bindgen_func_elem_3646(arg0, arg1, arg2) {
+function __wasm_bindgen_func_elem_3785(arg0, arg1, arg2) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.__wasm_bindgen_func_elem_3646(retptr, arg0, arg1, addHeapObject(arg2));
+        wasm.__wasm_bindgen_func_elem_3785(retptr, arg0, arg1, addHeapObject(arg2));
         var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
         var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
         if (r1) {
@@ -1224,8 +1197,8 @@ function __wasm_bindgen_func_elem_3646(arg0, arg1, arg2) {
     }
 }
 
-function __wasm_bindgen_func_elem_3654(arg0, arg1, arg2, arg3) {
-    wasm.__wasm_bindgen_func_elem_3654(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wasm_bindgen_func_elem_3793(arg0, arg1, arg2, arg3) {
+    wasm.__wasm_bindgen_func_elem_3793(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 const IpfsClientFinalization = (typeof FinalizationRegistry === 'undefined')

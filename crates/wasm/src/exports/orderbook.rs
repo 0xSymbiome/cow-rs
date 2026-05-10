@@ -3,15 +3,16 @@ use cow_sdk_orderbook::{
     GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderCancellations, OrderCreation,
 };
 use cow_sdk_pure_helpers as pure;
-use serde_json::{Value, json};
+use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 use crate::exports::{
     dto::{
         OrderCreationInput, OrderInput, OrderQuoteRequestInput, SignedCancellationsInput,
-        SignedOrderDto, WasmEnvelope, ecdsa_signing_scheme, from_json_value,
-        orderbook_signing_scheme, parse_chain, parse_order, to_js_value,
+        SignedOrderDto, ecdsa_signing_scheme, from_json_value, orderbook_signing_scheme,
+        parse_chain, parse_order, to_js_value,
     },
+    envelope::WasmEnvelope,
     errors::WasmError,
     transport::{configured_fetch_transport, optional_string, optional_timeout, required_u32},
 };
@@ -52,26 +53,35 @@ impl OrderBookClient {
     }
 
     /// Submits a signed order.
-    #[wasm_bindgen(js_name = "sendOrder")]
-    pub async fn send_order(&self, signed: SignedOrderDto) -> Result<String, JsValue> {
+    #[wasm_bindgen(js_name = "sendOrder", unchecked_return_type = "WasmEnvelope<string>")]
+    pub async fn send_order(&self, signed: SignedOrderDto) -> Result<JsValue, JsValue> {
         orderbook_send_order(&self.inner, signed).await
     }
 
     /// Submits a raw order-creation payload.
-    #[wasm_bindgen(js_name = "sendOrderCreation")]
-    pub async fn send_order_creation(&self, input: OrderCreationInput) -> Result<String, JsValue> {
+    #[wasm_bindgen(
+        js_name = "sendOrderCreation",
+        unchecked_return_type = "WasmEnvelope<string>"
+    )]
+    pub async fn send_order_creation(&self, input: OrderCreationInput) -> Result<JsValue, JsValue> {
         orderbook_send_order_creation(&self.inner, input).await
     }
 
     /// Fetches an order by UID.
     #[wasm_bindgen(js_name = "getOrder")]
-    pub async fn get_order(&self, order_uid: String) -> Result<JsValue, JsValue> {
+    pub async fn get_order(
+        &self,
+        #[wasm_bindgen(js_name = orderUid)] order_uid: String,
+    ) -> Result<JsValue, JsValue> {
         orderbook_get_order(&self.inner, order_uid).await
     }
 
     /// Fetches trades for an order UID.
     #[wasm_bindgen(js_name = "getTrades")]
-    pub async fn get_trades(&self, order_uid: String) -> Result<JsValue, JsValue> {
+    pub async fn get_trades(
+        &self,
+        #[wasm_bindgen(js_name = orderUid)] order_uid: String,
+    ) -> Result<JsValue, JsValue> {
         orderbook_get_trades(&self.inner, order_uid).await
     }
 
@@ -88,7 +98,10 @@ impl OrderBookClient {
     }
 
     /// Cancels orders through a signed cancellation payload.
-    #[wasm_bindgen(js_name = "cancelOrders")]
+    #[wasm_bindgen(
+        js_name = "cancelOrders",
+        unchecked_return_type = "WasmEnvelope<{ cancelled: true }>"
+    )]
     pub async fn cancel_orders(
         &self,
         signed: SignedCancellationsInput,
@@ -117,7 +130,7 @@ async fn orderbook_get_quote(
     inner: &OrderBookApi,
     request: OrderQuoteRequestInput,
 ) -> Result<JsValue, JsValue> {
-    let request = from_json_value("quote", request.value)?;
+    let request = from_json_value("quote", request.into_value()?)?;
     let response = inner
         .get_quote(&request)
         .await
@@ -128,25 +141,27 @@ async fn orderbook_get_quote(
 async fn orderbook_send_order(
     inner: &OrderBookApi,
     signed: SignedOrderDto,
-) -> Result<String, JsValue> {
+) -> Result<JsValue, JsValue> {
     let request = order_creation_from_signed(signed)?;
-    inner
+    let uid = inner
         .send_order(&request)
         .await
         .map(|uid| uid.as_str().to_owned())
-        .map_err(|error| WasmError::from(error).into_js())
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(uid))
 }
 
 async fn orderbook_send_order_creation(
     inner: &OrderBookApi,
     input: OrderCreationInput,
-) -> Result<String, JsValue> {
-    let request = from_json_value("order", input.value)?;
-    inner
+) -> Result<JsValue, JsValue> {
+    let request = from_json_value("order", input.into_value()?)?;
+    let uid = inner
         .send_order(&request)
         .await
         .map(|uid| uid.as_str().to_owned())
-        .map_err(|error| WasmError::from(error).into_js())
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(uid))
 }
 
 async fn orderbook_get_order(inner: &OrderBookApi, order_uid: String) -> Result<JsValue, JsValue> {
@@ -256,9 +271,4 @@ fn is_zero_address(address: &Address) -> bool {
     address
         .as_str()
         .eq_ignore_ascii_case("0x0000000000000000000000000000000000000000")
-}
-
-#[allow(dead_code)]
-fn value_envelope(value: Value) -> WasmEnvelope<Value> {
-    WasmEnvelope::v1(value)
 }

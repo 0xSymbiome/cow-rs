@@ -47,7 +47,7 @@ async fn ipfs_client_fetches_app_data_from_cid() {
     );
 
     assert_eq!(value["schemaVersion"], "v1");
-    assert_eq!(value["document"]["appCode"], "CoW Swap");
+    assert_eq!(value["value"]["document"]["appCode"], "CoW Swap");
 }
 
 #[wasm_bindgen_test]
@@ -65,7 +65,7 @@ async fn ipfs_client_fetches_app_data_from_hex() {
             .unwrap(),
     );
 
-    assert_eq!(value["document"]["version"], "0.7.0");
+    assert_eq!(value["value"]["document"]["version"], "0.7.0");
 }
 
 #[wasm_bindgen_test]
@@ -106,7 +106,7 @@ async fn ipfs_client_keeps_internal_callback_registration_alive() {
             .unwrap(),
     );
 
-    assert_eq!(value["document"]["appCode"], "CoW Swap");
+    assert_eq!(value["value"]["document"]["appCode"], "CoW Swap");
 }
 
 #[wasm_bindgen_test]

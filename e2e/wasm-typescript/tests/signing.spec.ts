@@ -14,7 +14,7 @@ const SIGNATURE =
   "0x111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222221b";
 
 function orderUid() {
-  return computeOrderUid(ORDER, 1, OWNER).orderUid;
+  return computeOrderUid(ORDER, 1, OWNER).value.orderUid;
 }
 
 describe("callback signing", () => {
@@ -24,8 +24,9 @@ describe("callback signing", () => {
       return SIGNATURE;
     });
 
-    expect(signed.signingScheme).toBe("eip712");
-    expect(signed.from).toBe(OWNER);
+    expect(signed.schemaVersion).toBe("v1");
+    expect(signed.value.signingScheme).toBe("eip712");
+    expect(signed.value.from).toBe(OWNER);
   });
 
   test("signs an order through EIP-1193 callback", async () => {
@@ -35,7 +36,7 @@ describe("callback signing", () => {
       return SIGNATURE;
     });
 
-    expect(signed.signingScheme).toBe("eip712");
+    expect(signed.value.signingScheme).toBe("eip712");
   });
 
   test("signs an order digest with eth_sign scheme", async () => {
@@ -44,7 +45,7 @@ describe("callback signing", () => {
       return SIGNATURE;
     });
 
-    expect(signed.signingScheme).toBe("ethsign");
+    expect(signed.value.signingScheme).toBe("ethsign");
   });
 
   test("signs typed-data cancellations", async () => {
@@ -54,8 +55,8 @@ describe("callback signing", () => {
       return SIGNATURE;
     });
 
-    expect(signed.orderUids).toEqual([uid]);
-    expect(signed.signingScheme).toBe("eip712");
+    expect(signed.value.orderUids).toEqual([uid]);
+    expect(signed.value.signingScheme).toBe("eip712");
   });
 
   test("signs EIP-1193 cancellations", async () => {
@@ -65,7 +66,7 @@ describe("callback signing", () => {
       return SIGNATURE;
     });
 
-    expect(signed.orderUids).toEqual([uid]);
+    expect(signed.value.orderUids).toEqual([uid]);
   });
 
   test("signs digest cancellations", async () => {
@@ -75,6 +76,6 @@ describe("callback signing", () => {
       return SIGNATURE;
     });
 
-    expect(signed.signingScheme).toBe("ethsign");
+    expect(signed.value.signingScheme).toBe("ethsign");
   });
 });

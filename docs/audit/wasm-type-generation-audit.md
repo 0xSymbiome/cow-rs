@@ -1,7 +1,7 @@
 # WASM Type Generation Audit
 
 Status: Current
-Last reviewed: 2026-05-09
+Last reviewed: 2026-05-10
 Owning surface: `cow-sdk-wasm` DTO exports, tsify-derived TypeScript declarations, and npm declaration snapshots
 Refresh trigger: Changes to exported DTOs, `tsify` usage, wasm-pack targets, declaration snapshots, or package export targets
 Related docs:
@@ -36,16 +36,16 @@ committed e2e fixtures.
 ### tsify Policy
 
 Types that cross the wasm ABI live in the `exports` module tree and derive the
-TypeScript declaration shape there. Host-safe protocol helpers live in `pure`
-modules and are tested without wasm32-only dependencies.
+TypeScript declaration shape there. Host-safe protocol helpers live in the
+`cow-sdk-pure-helpers` crate and are tested without wasm32-only dependencies.
 
 ### Snapshot Gate
 
-The committed `cow_sdk_wasm_web.d.ts`, `cow_sdk_wasm_bundler.d.ts`, and
-`cow_sdk_wasm_nodejs.d.ts` snapshots represent the public TypeScript contract
-for default targets. A declaration that uses `[Symbol.dispose]` must include
-the `esnext.disposable` reference so editor and TypeScript compiler defaults do
-not report false errors.
+The committed `crates/wasm/snapshots/raw/` declarations for web, bundler, and
+nodejs represent the public TypeScript contract for default targets. A
+declaration that uses `[Symbol.dispose]` must include the `esnext.disposable`
+reference so editor and TypeScript compiler defaults do not report false
+errors.
 
 ### Package Export Verification
 
@@ -57,12 +57,13 @@ metadata in `dist`, and checks declaration files for the disposable reference.
 
 Primary implementation points:
 
-- `crates/wasm/src/pure/`
+- `crates/pure-helpers/src/`
 - `crates/wasm/src/exports/dto.rs`
 - `crates/wasm/src/exports/callbacks.rs`
-- `crates/wasm/snapshots/cow_sdk_wasm_web.d.ts`
-- `crates/wasm/snapshots/cow_sdk_wasm_bundler.d.ts`
-- `crates/wasm/snapshots/cow_sdk_wasm_nodejs.d.ts`
+- `crates/wasm/src/exports/envelope.rs`
+- `crates/wasm/snapshots/raw/cow_sdk_wasm_web.d.ts`
+- `crates/wasm/snapshots/raw/cow_sdk_wasm_bundler.d.ts`
+- `crates/wasm/snapshots/raw/cow_sdk_wasm_nodejs.d.ts`
 - `crates/wasm/npm/scripts/build.sh`
 - `crates/wasm/npm/scripts/verify-exports.mjs`
 
@@ -73,6 +74,8 @@ Primary regression coverage:
 - `crates/wasm/tests/wasm_surface_contract.rs::order_typed_data_serializes_to_expected_js_shape`
 - `crates/wasm/tests/wasm_surface_contract.rs::wasm_version_matches_crate_version`
 - `crates/wasm/tests/wasm_error_abi_contract.rs::invalid_input_variant_round_trips`
+- `crates/wasm/tests/wasm_envelope_contract.rs::envelope_serializes_schema_version_and_payload`
+- `crates/wasm/tests/wasm_snapshot_surface_contract.rs::generated_type_declarations_version_errors_and_outputs`
 - `crates/wasm/tests/wasm_fail_closed_contract.rs::package_template_exposes_cloudflare_wasm_subpath`
 - `e2e/wasm-typescript/tests/signing.spec.ts`
 
@@ -84,4 +87,3 @@ wasm-pack test crates/wasm --headless --chrome
 bash crates/wasm/npm/scripts/build.sh
 node crates/wasm/npm/scripts/verify-exports.mjs
 ```
-

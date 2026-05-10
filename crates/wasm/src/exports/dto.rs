@@ -9,37 +9,6 @@ use wasm_bindgen::prelude::*;
 
 use crate::exports::errors::WasmError;
 
-/// Version tag carried by wasm output envelopes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(rename_all = "camelCase")]
-#[non_exhaustive]
-pub enum SchemaVersion {
-    /// Current schema version.
-    V1,
-}
-
-/// Versioned output envelope.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(rename_all = "camelCase")]
-pub struct WasmEnvelope<T> {
-    /// Schema version.
-    pub schema_version: SchemaVersion,
-    /// Envelope payload.
-    pub value: T,
-}
-
-impl<T> WasmEnvelope<T> {
-    /// Wraps a payload in a v1 envelope.
-    pub const fn v1(value: T) -> Self {
-        Self {
-            schema_version: SchemaVersion::V1,
-            value,
-        }
-    }
-}
-
 /// Order side accepted by wasm order inputs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
@@ -197,8 +166,6 @@ impl From<AppDataDocInput> for pure::dto::AppDataDocInput {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneratedOrderUidDto {
-    /// Schema version.
-    pub schema_version: SchemaVersion,
     /// Compact order UID.
     #[serde(rename = "orderUid")]
     pub order_uid: String,
@@ -209,7 +176,6 @@ pub struct GeneratedOrderUidDto {
 impl From<pure::dto::GeneratedOrderUidDto> for GeneratedOrderUidDto {
     fn from(value: pure::dto::GeneratedOrderUidDto) -> Self {
         Self {
-            schema_version: SchemaVersion::V1,
             order_uid: value.order_uid,
             order_digest: value.order_digest,
         }
@@ -267,8 +233,6 @@ impl From<&TypedDataField> for TypedDataFieldDto {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct TypedDataEnvelopeDto {
-    /// Schema version.
-    pub schema_version: SchemaVersion,
     /// Domain metadata.
     pub domain: TypedDataDomainDto,
     /// Primary type.
@@ -283,7 +247,6 @@ impl TypedDataEnvelopeDto {
     /// Builds a DTO from the shared typed-data payload.
     pub fn from_payload(payload: &TypedDataPayload) -> Result<Self, WasmError> {
         Ok(Self {
-            schema_version: SchemaVersion::V1,
             domain: TypedDataDomainDto::from(&payload.domain),
             primary_type: payload.primary_type.clone(),
             types: payload
@@ -316,8 +279,6 @@ impl TypedDataEnvelopeDto {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct SignedOrderDto {
-    /// Schema version.
-    pub schema_version: SchemaVersion,
     /// Compact order UID.
     #[serde(rename = "orderUid")]
     pub order_uid: String,
@@ -341,18 +302,13 @@ pub struct SignedOrderDto {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct AppDataDocDto {
-    /// Schema version.
-    pub schema_version: SchemaVersion,
     /// App-data document.
     pub document: Value,
 }
 
 impl From<Value> for AppDataDocDto {
     fn from(value: Value) -> Self {
-        Self {
-            schema_version: SchemaVersion::V1,
-            document: value,
-        }
+        Self { document: value }
     }
 }
 
@@ -361,8 +317,6 @@ impl From<Value> for AppDataDocDto {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct AppDataInfoDto {
-    /// Schema version.
-    pub schema_version: SchemaVersion,
     /// CID representation.
     pub cid: String,
     /// Deterministic app-data content.
@@ -374,7 +328,6 @@ pub struct AppDataInfoDto {
 impl From<pure::dto::AppDataInfoDto> for AppDataInfoDto {
     fn from(value: pure::dto::AppDataInfoDto) -> Self {
         Self {
-            schema_version: SchemaVersion::V1,
             cid: value.cid,
             app_data_content: value.app_data_content,
             app_data_hex: value.app_data_hex,
@@ -387,8 +340,6 @@ impl From<pure::dto::AppDataInfoDto> for AppDataInfoDto {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidationResultDto {
-    /// Schema version.
-    pub schema_version: SchemaVersion,
     /// Whether validation succeeded.
     pub success: bool,
     /// Errors when validation failed.
@@ -399,7 +350,6 @@ pub struct ValidationResultDto {
 impl From<pure::dto::ValidationResultDto> for ValidationResultDto {
     fn from(value: pure::dto::ValidationResultDto) -> Self {
         Self {
-            schema_version: SchemaVersion::V1,
             success: value.success,
             errors: value.errors,
         }
@@ -411,8 +361,6 @@ impl From<pure::dto::ValidationResultDto> for ValidationResultDto {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 pub struct DeploymentAddressesDto {
-    /// Schema version.
-    pub schema_version: SchemaVersion,
     /// Settlement contract.
     pub settlement: String,
     /// Vault relayer contract.
@@ -424,7 +372,6 @@ pub struct DeploymentAddressesDto {
 impl From<pure::dto::DeploymentAddresses> for DeploymentAddressesDto {
     fn from(value: pure::dto::DeploymentAddresses) -> Self {
         Self {
-            schema_version: SchemaVersion::V1,
             settlement: value.settlement,
             vault_relayer: value.vault_relayer,
             eth_flow: value.eth_flow,
@@ -463,6 +410,7 @@ pub struct CowFetchResponse {
     #[serde(default)]
     pub headers: HashMap<String, String>,
     /// Body text.
+    #[serde(default)]
     pub body: String,
 }
 
@@ -507,40 +455,230 @@ pub struct SignedCancellationsInput {
     pub signing_scheme: String,
 }
 
-/// Transparent JSON input for orderbook quote requests.
+/// Orderbook quote request input.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(transparent)]
+#[serde(rename_all = "camelCase")]
 pub struct OrderQuoteRequestInput {
-    /// Raw JSON value.
-    pub value: Value,
+    /// Sell-token address.
+    pub sell_token: String,
+    /// Buy-token address.
+    pub buy_token: String,
+    /// Optional explicit receiver.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receiver: Option<String>,
+    /// Quote owner.
+    pub from: String,
+    /// Quote side.
+    pub kind: OrderKindDto,
+    /// Sell amount before fee for sell quotes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sell_amount_before_fee: Option<String>,
+    /// Buy amount after fee for buy quotes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub buy_amount_after_fee: Option<String>,
+    /// Relative validity duration in seconds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub valid_for: Option<u32>,
+    /// Absolute UNIX expiry timestamp.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub valid_to: Option<u32>,
+    /// Inline app-data payload.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app_data: Option<String>,
+    /// App-data hash.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app_data_hash: Option<String>,
+    /// Whether partial fills are allowed.
+    #[serde(default)]
+    pub partially_fillable: bool,
+    /// Sell-token balance source.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sell_token_balance: Option<TokenBalanceDto>,
+    /// Buy-token balance destination.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub buy_token_balance: Option<TokenBalanceDto>,
+    /// Quote-quality mode.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub price_quality: Option<String>,
+    /// Expected signing scheme.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub signing_scheme: Option<String>,
+    /// Whether the eventual order is expected to be on-chain.
+    #[serde(default)]
+    pub onchain_order: bool,
+    /// Optional verification gas limit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verification_gas_limit: Option<u64>,
+    /// Optional request timeout in milliseconds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timeout: Option<u64>,
 }
 
-/// Transparent JSON input for orderbook order creations.
+impl OrderQuoteRequestInput {
+    pub(crate) fn into_value(self) -> Result<Value, WasmError> {
+        serde_json::to_value(self).map_err(WasmError::from)
+    }
+}
+
+/// Orderbook order-creation input.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(transparent)]
+#[serde(rename_all = "camelCase")]
 pub struct OrderCreationInput {
-    /// Raw JSON value.
-    pub value: Value,
+    /// Sell-token address.
+    pub sell_token: String,
+    /// Buy-token address.
+    pub buy_token: String,
+    /// Optional receiver.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receiver: Option<String>,
+    /// Sell amount.
+    pub sell_amount: String,
+    /// Buy amount.
+    pub buy_amount: String,
+    /// Absolute UNIX expiry timestamp.
+    pub valid_to: u32,
+    /// Inline app-data payload.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app_data: Option<String>,
+    /// App-data hash.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app_data_hash: Option<String>,
+    /// Order-level fee amount. The orderbook accepts only zero.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fee_amount: Option<String>,
+    /// Strict balance-check flag.
+    #[serde(default)]
+    pub full_balance_check: bool,
+    /// Order side.
+    pub kind: OrderKindDto,
+    /// Whether partial fills are allowed.
+    #[serde(default)]
+    pub partially_fillable: bool,
+    /// Sell-token balance source.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sell_token_balance: Option<TokenBalanceDto>,
+    /// Buy-token balance destination.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub buy_token_balance: Option<TokenBalanceDto>,
+    /// Signature scheme.
+    pub signing_scheme: String,
+    /// Raw signature.
+    pub signature: String,
+    /// Effective owner.
+    pub from: String,
+    /// Optional quote id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quote_id: Option<i64>,
 }
 
-/// Transparent JSON input for trading swap parameters.
+impl OrderCreationInput {
+    pub(crate) fn into_value(self) -> Result<Value, WasmError> {
+        serde_json::to_value(self).map_err(WasmError::from)
+    }
+}
+
+/// Partner-fee policy input for trading swap parameters.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct PartnerFeePolicyInput {
+    /// Volume fee in basis points.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub volume_bps: Option<u16>,
+    /// Surplus fee in basis points.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub surplus_bps: Option<u16>,
+    /// Price-improvement fee in basis points.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub price_improvement_bps: Option<u16>,
+    /// Maximum volume fee in basis points.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_volume_bps: Option<u16>,
+    /// Fee recipient address.
+    pub recipient: String,
+}
+
+/// Partner-fee input accepted by trading swap parameters.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(untagged)]
+pub enum PartnerFeeInput {
+    /// Single partner-fee policy.
+    Single(PartnerFeePolicyInput),
+    /// Ordered partner-fee policies.
+    Multiple(Vec<PartnerFeePolicyInput>),
+}
+
+/// Trading swap-parameter input.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(transparent)]
+#[serde(rename_all = "camelCase")]
 pub struct SwapParametersInput {
-    /// Raw JSON value.
-    pub value: Value,
+    /// Order side.
+    pub kind: OrderKindDto,
+    /// Optional owner override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner: Option<String>,
+    /// Sell-token address.
+    pub sell_token: String,
+    /// Sell-token decimals.
+    pub sell_token_decimals: u8,
+    /// Buy-token address.
+    pub buy_token: String,
+    /// Buy-token decimals.
+    pub buy_token_decimals: u8,
+    /// Amount interpreted according to `kind`.
+    pub amount: String,
+    /// Optional environment override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub env: Option<String>,
+    /// Whether partial fills are allowed.
+    #[serde(default)]
+    pub partially_fillable: bool,
+    /// Sell-token balance source.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sell_token_balance: Option<TokenBalanceDto>,
+    /// Buy-token balance destination.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub buy_token_balance: Option<TokenBalanceDto>,
+    /// Optional slippage tolerance in basis points.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub slippage_bps: Option<u32>,
+    /// Optional receiver override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receiver: Option<String>,
+    /// Optional relative validity duration.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub valid_for: Option<u32>,
+    /// Optional absolute UNIX expiry timestamp.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub valid_to: Option<u32>,
+    /// Optional partner-fee metadata.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub partner_fee: Option<PartnerFeeInput>,
 }
 
-/// Transparent JSON input for subgraph raw queries.
+impl SwapParametersInput {
+    pub(crate) fn into_value(self) -> Result<Value, WasmError> {
+        serde_json::to_value(self).map_err(WasmError::from)
+    }
+}
+
+/// Explicit raw GraphQL query input.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(transparent)]
+#[serde(rename_all = "camelCase")]
 pub struct SubgraphQueryInput {
-    /// Raw JSON value.
-    pub value: Value,
+    /// Raw GraphQL document.
+    pub query: String,
+    /// Optional GraphQL variables.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub variables: Option<Value>,
+    /// Optional operation name.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub operation_name: Option<String>,
 }
 
 pub(crate) fn parse_order(input: OrderInput) -> Result<cow_sdk_core::UnsignedOrder, WasmError> {

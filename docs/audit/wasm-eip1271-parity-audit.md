@@ -1,7 +1,7 @@
 # WASM EIP-1271 Parity Audit
 
 Status: Current
-Last reviewed: 2026-05-09
+Last reviewed: 2026-05-10
 Owning surface: `cow-sdk-wasm` EIP-1271 payload helpers and smart-account signing callbacks
 Refresh trigger: Changes to EIP-1271 payload construction, smart-account callback shapes, UID/digest string handling, signature normalization, or upstream parity fixtures
 Related docs:
@@ -59,7 +59,7 @@ arrays.
 
 Primary implementation points:
 
-- `crates/wasm/src/pure/eip1271.rs`
+- `crates/pure-helpers/src/signing.rs`
 - `crates/wasm/src/exports/eip1271.rs`
 - `crates/wasm/src/exports/signing.rs`
 - `crates/wasm/tests/fixtures/eip1271_upstream_vector.json`
@@ -83,4 +83,3 @@ cargo test -p cow-sdk-wasm --test host_pure_helpers
 wasm-pack test crates/wasm --headless --chrome
 pnpm --dir e2e/wasm-typescript test
 ```
-

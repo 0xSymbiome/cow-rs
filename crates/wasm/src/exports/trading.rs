@@ -11,8 +11,9 @@ use js_sys::Function;
 use wasm_bindgen::prelude::*;
 
 use crate::exports::{
-    dto::{SwapParametersInput, WasmEnvelope, from_json_value, parse_chain, to_js_value},
+    dto::{SwapParametersInput, from_json_value, parse_chain, to_js_value},
     eip1271::{Eip1271CallbackGuard, RegisteredEip1271Provider},
+    envelope::WasmEnvelope,
     errors::WasmError,
     orderbook::build_orderbook,
     signing::{JsTypedDataSigner, OwnerOnlySigner},
@@ -66,6 +67,7 @@ impl TradingClient {
         &self,
         params: SwapParametersInput,
         owner: String,
+        #[wasm_bindgen(js_name = signerCallback, unchecked_param_type = "TypedDataSignerCallback")]
         signer_callback: Function,
     ) -> Result<JsValue, JsValue> {
         trading_post_swap_order(&self.inner, params, owner, signer_callback).await
@@ -77,6 +79,7 @@ impl TradingClient {
         &self,
         params: SwapParametersInput,
         owner: String,
+        #[wasm_bindgen(js_name = customCallback, unchecked_param_type = "CustomEip1271Callback")]
         custom_callback: Function,
     ) -> Result<JsValue, JsValue> {
         trading_post_swap_order_with_eip1271(
@@ -113,7 +116,7 @@ async fn trading_get_quote(
     inner: &TradingSdk,
     params: SwapParametersInput,
 ) -> Result<JsValue, JsValue> {
-    let params: TradeParameters = from_json_value("params", params.value)?;
+    let params: TradeParameters = from_json_value("params", params.into_value()?)?;
     let quote = inner
         .get_quote_only(params, None)
         .await
@@ -128,7 +131,7 @@ async fn trading_post_swap_order(
     signer_callback: Function,
 ) -> Result<JsValue, JsValue> {
     let owner = parse_address("owner", owner)?;
-    let mut params: TradeParameters = from_json_value("params", params.value)?;
+    let mut params: TradeParameters = from_json_value("params", params.into_value()?)?;
     params.owner = Some(owner.clone());
     let signer = JsTypedDataSigner::new(owner, signer_callback);
     let result = inner
@@ -146,7 +149,7 @@ async fn trading_post_swap_order_with_eip1271(
     custom_callback: Function,
 ) -> Result<JsValue, JsValue> {
     let owner_address = parse_address("owner", owner.clone())?;
-    let mut params: TradeParameters = from_json_value("params", params.value)?;
+    let mut params: TradeParameters = from_json_value("params", params.into_value()?)?;
     params.owner = Some(owner_address.clone());
     let guard = Eip1271CallbackGuard::register(custom_callback)?;
     let provider = Arc::new(RegisteredEip1271Provider::new(

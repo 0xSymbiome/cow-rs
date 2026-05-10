@@ -1,7 +1,7 @@
 # WASM Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-09
+Last reviewed: 2026-05-10
 Owning surface: `cow-sdk-wasm` TypeScript-callable wasm-bindgen crate, npm package layout, and JavaScript callback runtime boundary
 Refresh trigger: Changes to `crates/wasm/src/**`, wasm-pack package exports, runtime support claims, wallet callback shapes, or the `JsCallbackHttpTransport` contract
 Related docs:
@@ -78,7 +78,7 @@ dynamic WebAssembly compilation or streaming instantiation APIs.
 
 Primary implementation points:
 
-- `crates/wasm/src/pure/`
+- `crates/pure-helpers/src/`
 - `crates/wasm/src/exports/`
 - `crates/wasm/npm/package.template.json`
 - `crates/wasm/npm/scripts/build.sh`
@@ -107,4 +107,3 @@ wasm-pack test crates/wasm --headless --chrome
 pnpm --dir e2e/wasm-typescript test
 pnpm --dir e2e/wasm-typescript-cf test
 ```
-

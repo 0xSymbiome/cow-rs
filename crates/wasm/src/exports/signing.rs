@@ -12,6 +12,7 @@ use crate::exports::{
         Eip1193Request, OrderInput, SignedCancellationsInput, SignedOrderDto, TypedDataEnvelopeDto,
         parse_chain, parse_order, parse_owner, to_js_value, typed_data_json,
     },
+    envelope::WasmEnvelope,
     errors::WasmError,
 };
 
@@ -136,24 +137,32 @@ impl AsyncSigner for OwnerOnlySigner {
 }
 
 /// Signs an order through a typed-data callback.
-#[wasm_bindgen(js_name = "signOrderWithTypedDataSigner")]
+#[wasm_bindgen(
+    js_name = "signOrderWithTypedDataSigner",
+    unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
+)]
 pub async fn sign_order_with_typed_data_signer(
     input: OrderInput,
-    chain_id: u32,
+    #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     owner: String,
+    #[wasm_bindgen(js_name = typedDataSigner, unchecked_param_type = "TypedDataSignerCallback")]
     typed_data_signer: Function,
 ) -> Result<JsValue, JsValue> {
     let signed =
         sign_order_with_callback(input, chain_id, owner, typed_data_signer, "eip712").await?;
-    to_js_value(&signed)
+    to_js_value(&WasmEnvelope::v1(signed))
 }
 
 /// Signs an order through an EIP-1193 request callback.
-#[wasm_bindgen(js_name = "signOrderWithEip1193")]
+#[wasm_bindgen(
+    js_name = "signOrderWithEip1193",
+    unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
+)]
 pub async fn sign_order_with_eip1193(
     input: OrderInput,
-    chain_id: u32,
+    #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     owner: String,
+    #[wasm_bindgen(js_name = requestCallback, unchecked_param_type = "Eip1193RequestCallback")]
     request_callback: Function,
 ) -> Result<JsValue, JsValue> {
     let order = parse_order(input.clone())?;
@@ -175,15 +184,19 @@ pub async fn sign_order_with_eip1193(
     let signature = await_callback_string(&request_callback, value, "eth_signTypedData_v4").await?;
     let signature = normalize_signature(&signature)?;
     let signed = build_signed_order(input, chain, owner_address, typed_data, signature, "eip712")?;
-    to_js_value(&signed)
+    to_js_value(&WasmEnvelope::v1(signed))
 }
 
 /// Signs an order digest through an explicit `eth_sign` callback.
-#[wasm_bindgen(js_name = "signOrderEthSignDigest")]
+#[wasm_bindgen(
+    js_name = "signOrderEthSignDigest",
+    unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
+)]
 pub async fn sign_order_eth_sign_digest(
     input: OrderInput,
-    chain_id: u32,
+    #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     owner: String,
+    #[wasm_bindgen(js_name = digestSigner, unchecked_param_type = "DigestSignerCallback")]
     digest_signer: Function,
 ) -> Result<JsValue, JsValue> {
     let order = parse_order(input.clone())?;
@@ -207,14 +220,18 @@ pub async fn sign_order_eth_sign_digest(
         "ethsign",
         None,
     );
-    to_js_value(&signed)
+    to_js_value(&WasmEnvelope::v1(signed))
 }
 
 /// Signs cancellation typed data through a typed-data callback.
-#[wasm_bindgen(js_name = "signCancellationWithTypedDataSigner")]
+#[wasm_bindgen(
+    js_name = "signCancellationWithTypedDataSigner",
+    unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
+)]
 pub async fn sign_cancellation_with_typed_data_signer(
-    order_uids: Vec<String>,
-    chain_id: u32,
+    #[wasm_bindgen(js_name = orderUids)] order_uids: Vec<String>,
+    #[wasm_bindgen(js_name = chainId)] chain_id: u32,
+    #[wasm_bindgen(js_name = typedDataSigner, unchecked_param_type = "TypedDataSignerCallback")]
     typed_data_signer: Function,
 ) -> Result<JsValue, JsValue> {
     let (uids, payload, _digest) = cancellation_payload(order_uids, chain_id)?;
@@ -226,19 +243,23 @@ pub async fn sign_cancellation_with_typed_data_signer(
     )
     .await?;
     let signature = normalize_signature(&signature)?;
-    to_js_value(&SignedCancellationsInput {
+    to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
         order_uids: uid_strings(&uids),
         signature,
         signing_scheme: "eip712".to_owned(),
-    })
+    }))
 }
 
 /// Signs cancellation typed data through an EIP-1193 callback.
-#[wasm_bindgen(js_name = "signCancellationWithEip1193")]
+#[wasm_bindgen(
+    js_name = "signCancellationWithEip1193",
+    unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
+)]
 pub async fn sign_cancellation_with_eip1193(
-    order_uids: Vec<String>,
-    chain_id: u32,
+    #[wasm_bindgen(js_name = orderUids)] order_uids: Vec<String>,
+    #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     owner: String,
+    #[wasm_bindgen(js_name = requestCallback, unchecked_param_type = "Eip1193RequestCallback")]
     request_callback: Function,
 ) -> Result<JsValue, JsValue> {
     let owner = parse_owner(&owner)?;
@@ -257,18 +278,22 @@ pub async fn sign_cancellation_with_eip1193(
     )
     .await?;
     let signature = normalize_signature(&signature)?;
-    to_js_value(&SignedCancellationsInput {
+    to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
         order_uids: uid_strings(&uids),
         signature,
         signing_scheme: "eip712".to_owned(),
-    })
+    }))
 }
 
 /// Signs a cancellation digest through an explicit `eth_sign` callback.
-#[wasm_bindgen(js_name = "signCancellationEthSignDigest")]
+#[wasm_bindgen(
+    js_name = "signCancellationEthSignDigest",
+    unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
+)]
 pub async fn sign_cancellation_eth_sign_digest(
-    order_uids: Vec<String>,
-    chain_id: u32,
+    #[wasm_bindgen(js_name = orderUids)] order_uids: Vec<String>,
+    #[wasm_bindgen(js_name = chainId)] chain_id: u32,
+    #[wasm_bindgen(js_name = digestSigner, unchecked_param_type = "DigestSignerCallback")]
     digest_signer: Function,
 ) -> Result<JsValue, JsValue> {
     let (uids, _payload, digest) = cancellation_payload(order_uids, chain_id)?;
@@ -279,11 +304,11 @@ pub async fn sign_cancellation_eth_sign_digest(
     )
     .await?;
     let signature = normalize_signature(&signature)?;
-    to_js_value(&SignedCancellationsInput {
+    to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
         order_uids: uid_strings(&uids),
         signature,
         signing_scheme: "ethsign".to_owned(),
-    })
+    }))
 }
 
 pub(crate) async fn await_callback_string(
@@ -321,6 +346,7 @@ pub(crate) fn wallet_js_error(method: &'static str, error: JsValue) -> JsValue {
         .ok()
         .and_then(|data| serde_wasm_bindgen::from_value(data).ok());
     WasmError::WalletRequest {
+        schema_version: crate::exports::SchemaVersion::V1,
         method: method.to_owned(),
         code,
         message,
@@ -346,7 +372,6 @@ pub(crate) fn signed_order_from_parts(
     quote_id: Option<i64>,
 ) -> SignedOrderDto {
     SignedOrderDto {
-        schema_version: crate::exports::dto::SchemaVersion::V1,
         order_uid: generated.order_id.as_str().to_owned(),
         signature,
         signing_scheme: signing_scheme.to_owned(),

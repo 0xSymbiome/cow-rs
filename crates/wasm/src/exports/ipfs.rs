@@ -8,6 +8,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::exports::{
     dto::{AppDataDocDto, to_js_value},
+    envelope::WasmEnvelope,
     errors::WasmError,
     transport::{configured_fetch_transport, optional_string, optional_timeout},
 };
@@ -65,14 +66,23 @@ impl IpfsClient {
     }
 
     /// Fetches and parses an app-data document by CID.
-    #[wasm_bindgen(js_name = "fetchAppDataFromCid")]
+    #[wasm_bindgen(
+        js_name = "fetchAppDataFromCid",
+        unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
+    )]
     pub async fn fetch_app_data_from_cid(&self, cid: String) -> Result<JsValue, JsValue> {
         fetch_doc_from_cid_with_adapter(&cid, self.ipfs_uri.as_deref(), &self.adapter).await
     }
 
     /// Fetches and parses an app-data document by app-data hash.
-    #[wasm_bindgen(js_name = "fetchAppDataFromHex")]
-    pub async fn fetch_app_data_from_hex(&self, app_data_hex: String) -> Result<JsValue, JsValue> {
+    #[wasm_bindgen(
+        js_name = "fetchAppDataFromHex",
+        unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
+    )]
+    pub async fn fetch_app_data_from_hex(
+        &self,
+        #[wasm_bindgen(js_name = appDataHex)] app_data_hex: String,
+    ) -> Result<JsValue, JsValue> {
         fetch_doc_from_hex_with_adapter(&app_data_hex, self.ipfs_uri.as_deref(), &self.adapter)
             .await
     }
@@ -86,7 +96,7 @@ async fn fetch_doc_from_cid_with_adapter(
     let document = pure::app_data::fetch_doc_from_cid(cid, adapter, ipfs_uri)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
-    to_js_value(&AppDataDocDto::from(document))
+    to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))
 }
 
 async fn fetch_doc_from_hex_with_adapter(
@@ -97,7 +107,7 @@ async fn fetch_doc_from_hex_with_adapter(
     let document = cow_sdk_app_data::fetch_doc_from_app_data_hex(app_data_hex, adapter, ipfs_uri)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
-    to_js_value(&AppDataDocDto::from(document))
+    to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))
 }
 
 fn transport_to_app_data_error(error: TransportError) -> AppDataError {

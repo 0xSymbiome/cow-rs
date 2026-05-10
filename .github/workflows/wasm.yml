@@ -131,9 +131,9 @@ jobs:
           fi
       - name: Check TypeScript declaration snapshots
         run: |
-          diff -u crates/wasm/snapshots/cow_sdk_wasm_web.d.ts crates/wasm/npm/dist/web/cow_sdk_wasm.d.ts
-          diff -u crates/wasm/snapshots/cow_sdk_wasm_bundler.d.ts crates/wasm/npm/dist/bundler/cow_sdk_wasm.d.ts
-          diff -u crates/wasm/snapshots/cow_sdk_wasm_nodejs.d.ts crates/wasm/npm/dist/nodejs/cow_sdk_wasm.d.ts
+          diff -u crates/wasm/snapshots/raw/cow_sdk_wasm_web.d.ts crates/wasm/npm/dist/web/cow_sdk_wasm.d.ts
+          diff -u crates/wasm/snapshots/raw/cow_sdk_wasm_bundler.d.ts crates/wasm/npm/dist/bundler/cow_sdk_wasm.d.ts
+          diff -u crates/wasm/snapshots/raw/cow_sdk_wasm_nodejs.d.ts crates/wasm/npm/dist/nodejs/cow_sdk_wasm.d.ts
       # Source ref: actions/upload-artifact@v4
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

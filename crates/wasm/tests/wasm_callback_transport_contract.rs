@@ -54,7 +54,7 @@ async fn callback_transport_receives_request_dto_with_signal() {
             .as_bool()
             .unwrap();
 
-    assert_eq!(value["document"]["appCode"], "CoW Swap");
+    assert_eq!(value["value"]["document"]["appCode"], "CoW Swap");
     assert_eq!(request["method"], "GET");
     assert_eq!(
         request["url"],

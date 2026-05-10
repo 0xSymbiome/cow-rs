@@ -13,7 +13,7 @@ const EIP1271_SIGNATURE =
 
 describe("EIP-1271 helpers", () => {
   test("encodes an EIP-1271 signature payload", () => {
-    expect(eip1271SignaturePayload(ORDER, SIGNATURE)).toBe(EIP1271_SIGNATURE);
+    expect(eip1271SignaturePayload(ORDER, SIGNATURE).value).toBe(EIP1271_SIGNATURE);
   });
 
   test("signs through typed data callback and wraps EIP-1271", async () => {
@@ -22,8 +22,9 @@ describe("EIP-1271 helpers", () => {
       return SIGNATURE;
     });
 
-    expect(signed.signingScheme).toBe("eip1271");
-    expect(signed.signature).toBe(EIP1271_SIGNATURE);
+    expect(signed.schemaVersion).toBe("v1");
+    expect(signed.value.signingScheme).toBe("eip1271");
+    expect(signed.value.signature).toBe(EIP1271_SIGNATURE);
   });
 
   test("uses a custom EIP-1271 signature callback verbatim", async () => {
@@ -33,7 +34,7 @@ describe("EIP-1271 helpers", () => {
       return "0x1234";
     });
 
-    expect(signed.signature).toBe("0x1234");
-    expect(signed.signingScheme).toBe("eip1271");
+    expect(signed.value.signature).toBe("0x1234");
+    expect(signed.value.signingScheme).toBe("eip1271");
   });
 });

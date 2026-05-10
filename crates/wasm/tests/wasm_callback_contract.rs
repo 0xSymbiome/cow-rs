@@ -30,7 +30,7 @@ fn json(value: JsValue) -> Value {
 fn generated_order_uid() -> String {
     let value =
         json(compute_order_uid(wasm_order_input(), CHAIN_MAINNET, ADDR_OWNER.to_owned()).unwrap());
-    value["orderUid"].as_str().unwrap().to_owned()
+    value["value"]["orderUid"].as_str().unwrap().to_owned()
 }
 
 #[wasm_bindgen_test]
@@ -56,7 +56,7 @@ async fn typed_data_signer_receives_order_envelope() {
 
     assert_eq!(envelope["primaryType"], "Order");
     assert_eq!(envelope["domain"]["chainId"], CHAIN_MAINNET);
-    assert_eq!(signed["signingScheme"], "eip712");
+    assert_eq!(signed["value"]["signingScheme"], "eip712");
 }
 
 #[wasm_bindgen_test]
@@ -76,7 +76,7 @@ async fn typed_data_signer_normalizes_modern_v_signatures() {
         .unwrap(),
     );
 
-    assert_eq!(signed["signature"], ECDSA_SIGNATURE);
+    assert_eq!(signed["value"]["signature"], ECDSA_SIGNATURE);
 
     let signer = callback(
         "envelope",
@@ -93,7 +93,7 @@ async fn typed_data_signer_normalizes_modern_v_signatures() {
         .unwrap(),
     );
 
-    assert_eq!(signed["signature"], ECDSA_SIGNATURE_RECOVERY_28);
+    assert_eq!(signed["value"]["signature"], ECDSA_SIGNATURE_RECOVERY_28);
 }
 
 #[wasm_bindgen_test]
@@ -119,7 +119,7 @@ async fn eip1193_request_uses_eth_sign_typed_data_v4() {
 
     assert_eq!(request["method"], "eth_signTypedData_v4");
     assert_eq!(request["params"][0], ADDR_OWNER);
-    assert_eq!(signed["signingScheme"], "eip712");
+    assert_eq!(signed["value"]["signingScheme"], "eip712");
 }
 
 #[wasm_bindgen_test]
@@ -202,7 +202,7 @@ async fn eth_sign_digest_callback_receives_digest() {
     let digest = js_sys::eval("globalThis.__cowDigest").unwrap();
 
     assert_eq!(digest.as_string().unwrap().len(), 66);
-    assert_eq!(signed["signingScheme"], "ethsign");
+    assert_eq!(signed["value"]["signingScheme"], "ethsign");
 }
 
 #[wasm_bindgen_test]
@@ -223,8 +223,8 @@ async fn typed_cancellation_signer_returns_order_uids() {
     let envelope = json(js_sys::eval("globalThis.__cowCancel").unwrap());
 
     assert_eq!(envelope["primaryType"], "OrderCancellations");
-    assert_eq!(signed["orderUids"][0], order_uid);
-    assert_eq!(signed["signingScheme"], "eip712");
+    assert_eq!(signed["value"]["orderUids"][0], order_uid);
+    assert_eq!(signed["value"]["signingScheme"], "eip712");
 }
 
 #[wasm_bindgen_test]
@@ -251,7 +251,7 @@ async fn eip1193_cancellation_callback_shape_is_stable() {
 
     assert_eq!(request["method"], "eth_signTypedData_v4");
     assert_eq!(request["params"][0], ADDR_OWNER);
-    assert_eq!(signed["signingScheme"], "eip712");
+    assert_eq!(signed["value"]["signingScheme"], "eip712");
 }
 
 #[wasm_bindgen_test]
@@ -272,7 +272,7 @@ async fn eth_sign_cancellation_callback_receives_digest() {
     let digest = js_sys::eval("globalThis.__cowCancelDigest").unwrap();
 
     assert_eq!(digest.as_string().unwrap().len(), 66);
-    assert_eq!(signed["signingScheme"], "ethsign");
+    assert_eq!(signed["value"]["signingScheme"], "ethsign");
 }
 
 #[wasm_bindgen_test]

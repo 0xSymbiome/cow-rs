@@ -52,35 +52,42 @@ describe("node package surface", () => {
 
   test("builds order typed data", () => {
     const typedData = orderTypedData(ORDER, 1);
-    expect(typedData.primaryType).toBe("Order");
-    expect(typedData.domain.chainId).toBe(1);
-    expect(typedData.message.sellToken).toBe(ORDER.sellToken);
+    expect(typedData.schemaVersion).toBe("v1");
+    const value = typedData.value;
+    expect(value.primaryType).toBe("Order");
+    expect(value.domain.chainId).toBe(1);
+    expect((value.message as { sellToken: string }).sellToken).toBe(ORDER.sellToken);
   });
 
   test("computes canonical order UID output", () => {
     const generated = computeOrderUid(ORDER, 1, OWNER);
-    expect(generated.orderUid).toMatch(/^0x[0-9a-f]{112}$/);
-    expect(generated.orderDigest).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(generated.schemaVersion).toBe("v1");
+    expect(generated.value.orderUid).toMatch(/^0x[0-9a-f]{112}$/);
+    expect(generated.value.orderDigest).toMatch(/^0x[0-9a-f]{64}$/);
   });
 
   test("resolves deployment addresses", () => {
     const addresses = deploymentAddresses(1);
-    expect(addresses.settlement).toMatch(/^0x[0-9a-fA-F]{40}$/);
-    expect(addresses.vaultRelayer).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(addresses.schemaVersion).toBe("v1");
+    expect(addresses.value.settlement).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(addresses.value.vaultRelayer).toMatch(/^0x[0-9a-fA-F]{40}$/);
   });
 
   test("round-trips app-data hash and CID", () => {
-    expect(appDataHexToCid(ORDER.appData)).toBe(CID);
-    expect(cidToAppDataHex(CID)).toBe(ORDER.appData);
+    expect(appDataHexToCid(ORDER.appData).value).toBe(CID);
+    expect(cidToAppDataHex(CID).value).toBe(ORDER.appData);
   });
 
   test("returns app-data info", () => {
     const info = appDataInfo(APP_DATA_DOC);
-    expect(info.cid).toBe(CID);
-    expect(info.appDataHex).toBe(ORDER.appData);
+    expect(info.schemaVersion).toBe("v1");
+    expect(info.value.cid).toBe(CID);
+    expect(info.value.appDataHex).toBe(ORDER.appData);
   });
 
   test("validates app-data document", () => {
-    expect(validateAppDataDoc(APP_DATA_DOC).success).toBe(true);
+    const result = validateAppDataDoc(APP_DATA_DOC);
+    expect(result.schemaVersion).toBe("v1");
+    expect(result.value.success).toBe(true);
   });
 });

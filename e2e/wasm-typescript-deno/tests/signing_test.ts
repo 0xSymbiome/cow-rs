@@ -50,7 +50,7 @@ Deno.test({
   ignore: !denoEnabled(),
   async fn() {
     const sdk = await loadDenoTarget();
-    const cid = sdk.appDataHexToCid(ORDER.appData);
+    const cid = sdk.appDataHexToCid(ORDER.appData).value;
     if (cid !== "f01551b20337aa6e6c2a7a0d1eb79a35ebd88b08fc963d5f7a3fc953b7ffb2b7f5898a1df") {
       throw new Error("CID mismatch");
     }
@@ -62,7 +62,7 @@ Deno.test({
   ignore: !denoEnabled(),
   async fn() {
     const sdk = await loadDenoTarget();
-    const uid = sdk.computeOrderUid(ORDER, 1, OWNER).orderUid;
+    const uid = sdk.computeOrderUid(ORDER, 1, OWNER).value.orderUid;
     if (!/^0x[0-9a-f]{112}$/.test(uid)) {
       throw new Error("UID shape mismatch");
     }
@@ -75,7 +75,7 @@ Deno.test({
   async fn() {
     const sdk = await loadDenoTarget();
     const signed = await sdk.signOrderWithTypedDataSigner(ORDER, 1, OWNER, () => SIGNATURE);
-    if (signed.signingScheme !== "eip712") {
+    if (signed.value.signingScheme !== "eip712") {
       throw new Error("signing scheme mismatch");
     }
   }

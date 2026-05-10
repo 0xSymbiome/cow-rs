@@ -19,6 +19,7 @@ use crate::exports::{
         CowEip1271SignRequest, OrderInput, SignedOrderDto, TypedDataEnvelopeDto, parse_chain,
         parse_order, parse_owner, to_js_value,
     },
+    envelope::WasmEnvelope,
     errors::WasmError,
     signing::{await_callback_string, js_error_to_string, signed_order_from_parts},
 };
@@ -138,22 +139,30 @@ impl Drop for Eip1271CallbackGuard {
 }
 
 /// Encodes a CoW EIP-1271 payload from an ECDSA signature.
-#[wasm_bindgen(js_name = "eip1271SignaturePayload")]
+#[wasm_bindgen(
+    js_name = "eip1271SignaturePayload",
+    unchecked_return_type = "WasmEnvelope<string>"
+)]
 pub fn eip1271_signature_payload_export(
     input: OrderInput,
-    ecdsa_signature: String,
-) -> Result<String, JsValue> {
+    #[wasm_bindgen(js_name = ecdsaSignature)] ecdsa_signature: String,
+) -> Result<JsValue, JsValue> {
     let order = parse_order(input)?;
-    pure::signing::eip1271_signature_payload(&order, &ecdsa_signature)
-        .map_err(|error| WasmError::from(error).into_js())
+    let payload = pure::signing::eip1271_signature_payload(&order, &ecdsa_signature)
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(payload))
 }
 
 /// Signs an order through typed-data ECDSA and wraps it as EIP-1271.
-#[wasm_bindgen(js_name = "signOrderWithEip1271")]
+#[wasm_bindgen(
+    js_name = "signOrderWithEip1271",
+    unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
+)]
 pub async fn sign_order_with_eip1271(
     input: OrderInput,
-    chain_id: u32,
+    #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     owner: String,
+    #[wasm_bindgen(js_name = typedDataSigner, unchecked_param_type = "TypedDataSignerCallback")]
     typed_data_signer: Function,
 ) -> Result<JsValue, JsValue> {
     let order = parse_order(input.clone())?;
@@ -177,15 +186,19 @@ pub async fn sign_order_with_eip1271(
         .map_err(|error| WasmError::from(error).into_js())?;
     let signed: SignedOrderDto =
         signed_order_from_parts(generated, owner, typed_data, signature, "eip1271", None);
-    to_js_value(&signed)
+    to_js_value(&WasmEnvelope::v1(signed))
 }
 
 /// Signs an order through a custom EIP-1271 callback.
-#[wasm_bindgen(js_name = "signOrderWithCustomEip1271")]
+#[wasm_bindgen(
+    js_name = "signOrderWithCustomEip1271",
+    unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
+)]
 pub async fn sign_order_with_custom_eip1271(
     input: OrderInput,
-    chain_id: u32,
+    #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     owner: String,
+    #[wasm_bindgen(js_name = customCallback, unchecked_param_type = "CustomEip1271Callback")]
     custom_callback: Function,
 ) -> Result<JsValue, JsValue> {
     let order = parse_order(input.clone())?;
@@ -212,7 +225,7 @@ pub async fn sign_order_with_custom_eip1271(
         "eip1271",
         None,
     );
-    to_js_value(&signed)
+    to_js_value(&WasmEnvelope::v1(signed))
 }
 
 fn lookup_eip1271_callback(id: Eip1271CallbackId) -> Option<Function> {
@@ -238,8 +251,5 @@ fn allocate_eip1271_callback_id() -> Result<Eip1271CallbackId, JsValue> {
         }
     }
 
-    Err(WasmError::Internal {
-        message: "EIP-1271 callback handle space exhausted".to_owned(),
-    }
-    .into_js())
+    Err(WasmError::internal("EIP-1271 callback handle space exhausted").into_js())
 }
