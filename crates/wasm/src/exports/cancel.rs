@@ -1,11 +1,12 @@
 use std::{future::Future, time::Duration};
 
 use cow_sdk_core::{Cancellable, CancellationToken};
+#[cfg(feature = "transport-policy")]
 use cow_sdk_transport_policy::TransportPolicy;
 use js_sys::Reflect;
 use wasm_bindgen::{JsCast, closure::Closure, prelude::*};
 
-use crate::exports::{errors::WasmError, transport::duration_from_timeout_ms};
+use crate::exports::errors::WasmError;
 
 #[wasm_bindgen]
 extern "C" {
@@ -93,6 +94,7 @@ impl Drop for AbortBridge {
 /// Parsed per-call options plus the owned cancellation bridge for the call.
 pub(crate) struct ClientCallScope {
     bridge: AbortBridge,
+    #[cfg_attr(not(feature = "transport-policy"), allow(dead_code))]
     timeout: Option<Duration>,
 }
 
@@ -113,6 +115,7 @@ impl ClientCallScope {
         Ok(Self { bridge, timeout })
     }
 
+    #[cfg_attr(not(feature = "transport-policy"), allow(dead_code))]
     pub(crate) const fn timeout(&self) -> Option<Duration> {
         self.timeout
     }
@@ -137,6 +140,7 @@ where
     result.map_err(JsCallError::into_js)
 }
 
+#[cfg(feature = "transport-policy")]
 pub(crate) fn transport_policy_with_timeout(
     policy: &TransportPolicy,
     timeout: Option<Duration>,
@@ -160,6 +164,20 @@ pub(crate) fn signing_wallet_timeout_ms(options: Option<&JsValue>) -> Result<Opt
         return Err(WasmError::invalid("walletConfig", "expected an object").into_js());
     }
     optional_timeout_ms(&wallet_config, "timeoutMs")
+}
+
+pub(crate) fn duration_from_timeout_ms(
+    timeout_ms: Option<u32>,
+) -> Result<Option<Duration>, JsValue> {
+    match timeout_ms {
+        Some(ms) if ms > i32::MAX as u32 => Err(WasmError::invalid(
+            "timeoutMs",
+            format!("timeout {ms} ms exceeds the supported setTimeout range"),
+        )
+        .into_js()),
+        Some(ms) => Ok(Some(Duration::from_millis(u64::from(ms)))),
+        None => Ok(None),
+    }
 }
 
 pub(crate) fn optional_timeout_ms(

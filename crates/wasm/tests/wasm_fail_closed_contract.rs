@@ -149,10 +149,17 @@ async fn empty_cancellation_rejects_before_wallet_callback() {
 }
 
 #[wasm_bindgen_test]
-fn package_template_exposes_cloudflare_wasm_subpath() {
-    let template = include_str!("../npm/package.template.json");
+fn flavour_descriptor_exposes_cloudflare_wasm_subpath() {
+    let descriptor: Value = serde_json::from_str(include_str!("../npm/flavours.json")).unwrap();
+    let cloudflare = descriptor["flavours"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|flavour| flavour["name"] == "cloudflare")
+        .unwrap();
 
-    assert!(template.contains("\"./cloudflare/wasm\""));
+    assert_eq!(cloudflare["rawWasmSubpath"], "./cloudflare/wasm");
+    assert_eq!(cloudflare["targets"], serde_json::json!(["web"]));
 }
 
 #[wasm_bindgen_test]

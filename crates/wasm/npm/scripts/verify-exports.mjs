@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(scriptDir, "..");
 const packagePath = join(packageRoot, "package.json");
+const flavoursPath = join(packageRoot, "flavours.json");
 
 function fail(message) {
   console.error(`verify-exports: ${message}`);
@@ -46,6 +47,31 @@ if (!existsSync(packagePath)) {
 }
 
 const manifest = JSON.parse(readFileSync(packagePath, "utf8"));
+const descriptor = JSON.parse(readFileSync(flavoursPath, "utf8"));
+const expectedExports = new Set(
+  descriptor.flavours.flatMap((flavour) =>
+    flavour.rawWasmSubpath ? [flavour.subpath, flavour.rawWasmSubpath] : [flavour.subpath]
+  )
+);
+
+for (const forbidden of ["./web", "./bundler", "./nodejs"]) {
+  if (Object.hasOwn(manifest.exports, forbidden)) {
+    fail(`raw wasm-pack target subpath must not be exported: ${forbidden}`);
+  }
+}
+
+for (const key of Object.keys(manifest.exports)) {
+  if (!expectedExports.has(key)) {
+    fail(`unexpected package export: ${key}`);
+  }
+}
+
+for (const key of expectedExports) {
+  if (!Object.hasOwn(manifest.exports, key)) {
+    fail(`missing package export: ${key}`);
+  }
+}
+
 const targets = [
   manifest.main,
   manifest.module,

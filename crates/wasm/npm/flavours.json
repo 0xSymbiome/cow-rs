@@ -1,0 +1,76 @@
+{
+  "flavours": [
+    {
+      "name": "default",
+      "features": [
+        "orderbook",
+        "signing",
+        "app-data",
+        "ipfs",
+        "cancellation",
+        "transport-policy",
+        "trading",
+        "subgraph"
+      ],
+      "targets": ["web", "bundler", "nodejs"],
+      "rawBudgetMiB": 3.0,
+      "brotliBudgetKiB": 800,
+      "subpath": "."
+    },
+    {
+      "name": "orderbook",
+      "features": [
+        "orderbook",
+        "signing",
+        "cancellation",
+        "transport-policy"
+      ],
+      "targets": ["web", "bundler", "nodejs"],
+      "rawBudgetMiB": 1.5,
+      "brotliBudgetKiB": 500,
+      "subpath": "./orderbook"
+    },
+    {
+      "name": "signing",
+      "features": ["signing"],
+      "targets": ["web", "bundler", "nodejs"],
+      "rawBudgetMiB": 0.9,
+      "brotliBudgetKiB": 300,
+      "subpath": "./signing"
+    },
+    {
+      "name": "full",
+      "features": [
+        "orderbook",
+        "signing",
+        "app-data",
+        "ipfs",
+        "cancellation",
+        "transport-policy",
+        "trading",
+        "subgraph"
+      ],
+      "targets": ["web", "bundler", "nodejs"],
+      "rawBudgetMiB": 3.0,
+      "brotliBudgetKiB": 1000,
+      "subpath": "./full"
+    },
+    {
+      "name": "cloudflare",
+      "features": [
+        "orderbook",
+        "signing",
+        "app-data",
+        "cancellation",
+        "transport-policy",
+        "trading"
+      ],
+      "targets": ["web"],
+      "rawBudgetMiB": 3.0,
+      "brotliBudgetKiB": 800,
+      "gzipBudgetMiB": 3.0,
+      "subpath": "./cloudflare",
+      "rawWasmSubpath": "./cloudflare/wasm"
+    }
+  ]
+}

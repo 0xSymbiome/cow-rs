@@ -1,8 +1,7 @@
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(typescript_custom_section)]
-const CALLBACK_TYPES: &str = r#"
-export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+const COMMON_TYPES: &str = r#"
 export type Value = unknown;
 export type SdkError = WasmError;
 
@@ -10,7 +9,11 @@ export interface SdkClientOptions {
   timeoutMs?: number;
   signal?: AbortSignal;
 }
+"#;
 
+#[cfg(feature = "signing")]
+#[wasm_bindgen(typescript_custom_section)]
+const SIGNING_TYPES: &str = r#"
 export interface WalletConfig {
   timeoutMs?: number;
 }
@@ -18,6 +21,35 @@ export interface WalletConfig {
 export interface SigningOptions extends SdkClientOptions {
   walletConfig?: WalletConfig;
 }
+
+export type TypedDataSignerCallback = (
+  envelope: TypedDataEnvelopeDto,
+) => Promise<string> | string;
+
+export type Eip1193RequestCallback = (
+  request: { method: string; params?: unknown[] },
+) => Promise<unknown> | unknown;
+
+export type DigestSignerCallback = (
+  digest: string,
+) => Promise<string> | string;
+
+export type CowEip1271SignCallback = (
+  request: CowEip1271SignRequest,
+) => Promise<string> | string;
+
+export type CustomEip1271Callback = CowEip1271SignCallback;
+"#;
+
+#[cfg(any(
+    feature = "orderbook",
+    feature = "subgraph",
+    feature = "ipfs",
+    feature = "trading"
+))]
+#[wasm_bindgen(typescript_custom_section)]
+const HTTP_TYPES: &str = r#"
+export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 export interface CowFetchRequest {
   method: CowFetchMethod;
@@ -39,32 +71,22 @@ export type CowFetchCallback = (
   request: CowFetchRequest,
 ) => Promise<CowFetchResponse> | CowFetchResponse;
 
-export type TypedDataSignerCallback = (
-  envelope: TypedDataEnvelopeDto,
-) => Promise<string> | string;
-
-export type Eip1193RequestCallback = (
-  request: { method: string; params?: unknown[] },
-) => Promise<unknown> | unknown;
-
-export type DigestSignerCallback = (
-  digest: string,
-) => Promise<string> | string;
-
-export type CowEip1271SignCallback = (
-  request: CowEip1271SignRequest,
-) => Promise<string> | string;
-
-export type CustomEip1271Callback = CowEip1271SignCallback;
-
-export type ContractReadCallback = (
-  request: ContractCallDto,
-) => Promise<string> | string;
-
 export type HttpTransportConfig =
   | { kind: "fetch"; fetch?: typeof globalThis.fetch }
   | { kind: "callback"; callback: CowFetchCallback };
+"#;
 
+#[cfg(feature = "trading")]
+#[wasm_bindgen(typescript_custom_section)]
+const TRADING_CALLBACK_TYPES: &str = r#"
+export type ContractReadCallback = (
+  request: ContractCallDto,
+) => Promise<string> | string;
+"#;
+
+#[cfg(feature = "orderbook")]
+#[wasm_bindgen(typescript_custom_section)]
+const ORDERBOOK_CONFIG_TYPES: &str = r#"
 export interface OrderBookClientConfig {
   chainId: number;
   env?: string | null;
@@ -73,7 +95,11 @@ export interface OrderBookClientConfig {
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
 }
+"#;
 
+#[cfg(feature = "subgraph")]
+#[wasm_bindgen(typescript_custom_section)]
+const SUBGRAPH_CONFIG_TYPES: &str = r#"
 export interface SubgraphClientConfig {
   chainId: number;
   apiKey: string;
@@ -81,7 +107,11 @@ export interface SubgraphClientConfig {
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
 }
+"#;
 
+#[cfg(feature = "trading")]
+#[wasm_bindgen(typescript_custom_section)]
+const TRADING_CONFIG_TYPES: &str = r#"
 export interface TradingClientConfig {
   chainId: number;
   env?: string | null;
@@ -91,7 +121,11 @@ export interface TradingClientConfig {
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
 }
+"#;
 
+#[cfg(feature = "ipfs")]
+#[wasm_bindgen(typescript_custom_section)]
+const IPFS_CONFIG_TYPES: &str = r#"
 export interface IpfsClientConfig {
   ipfsUri?: string | null;
   transport: HttpTransportConfig;

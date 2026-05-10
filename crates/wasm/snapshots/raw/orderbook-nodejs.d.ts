@@ -1,14 +1,17 @@
+/// <reference lib="esnext.disposable" />
 /* tslint:disable */
 /* eslint-disable */
 
-export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-export type Value = unknown;
-export type SdkError = WasmError;
-
-export interface SdkClientOptions {
-    timeoutMs?: number;
-    signal?: AbortSignal;
+export interface OrderBookClientConfig {
+    chainId: number;
+    env?: string | null;
+    apiKey?: string | null;
+    transport: HttpTransportConfig;
+    transportPolicy?: TransportPolicyConfig | null;
+    timeoutMs?: number | null;
 }
+
+
 
 export interface WalletConfig {
     timeoutMs?: number;
@@ -17,6 +20,28 @@ export interface WalletConfig {
 export interface SigningOptions extends SdkClientOptions {
     walletConfig?: WalletConfig;
 }
+
+export type TypedDataSignerCallback = (
+envelope: TypedDataEnvelopeDto,
+) => Promise<string> | string;
+
+export type Eip1193RequestCallback = (
+request: { method: string; params?: unknown[] },
+) => Promise<unknown> | unknown;
+
+export type DigestSignerCallback = (
+digest: string,
+) => Promise<string> | string;
+
+export type CowEip1271SignCallback = (
+request: CowEip1271SignRequest,
+) => Promise<string> | string;
+
+export type CustomEip1271Callback = CowEip1271SignCallback;
+
+
+
+export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 export interface CowFetchRequest {
     method: CowFetchMethod;
@@ -38,178 +63,20 @@ export type CowFetchCallback = (
 request: CowFetchRequest,
 ) => Promise<CowFetchResponse> | CowFetchResponse;
 
-export type TypedDataSignerCallback = (
-envelope: TypedDataEnvelopeDto,
-) => Promise<string> | string;
-
-export type Eip1193RequestCallback = (
-request: { method: string; params?: unknown[] },
-) => Promise<unknown> | unknown;
-
-export type DigestSignerCallback = (
-digest: string,
-) => Promise<string> | string;
-
-export type CowEip1271SignCallback = (
-request: CowEip1271SignRequest,
-) => Promise<string> | string;
-
-export type CustomEip1271Callback = CowEip1271SignCallback;
-
-export type ContractReadCallback = (
-request: ContractCallDto,
-) => Promise<string> | string;
-
 export type HttpTransportConfig =
 | { kind: "fetch"; fetch?: typeof globalThis.fetch }
 | { kind: "callback"; callback: CowFetchCallback };
 
-export interface OrderBookClientConfig {
-    chainId: number;
-    env?: string | null;
-    apiKey?: string | null;
-    transport: HttpTransportConfig;
-    transportPolicy?: TransportPolicyConfig | null;
-    timeoutMs?: number | null;
-}
-
-export interface SubgraphClientConfig {
-    chainId: number;
-    apiKey: string;
-    transport: HttpTransportConfig;
-    transportPolicy?: TransportPolicyConfig | null;
-    timeoutMs?: number | null;
-}
-
-export interface TradingClientConfig {
-    chainId: number;
-    env?: string | null;
-    appCode: string;
-    apiKey?: string | null;
-    transport: HttpTransportConfig;
-    transportPolicy?: TransportPolicyConfig | null;
-    timeoutMs?: number | null;
-}
-
-export interface IpfsClientConfig {
-    ipfsUri?: string | null;
-    transport: HttpTransportConfig;
-    transportPolicy?: TransportPolicyConfig | null;
-    timeoutMs?: number | null;
-}
 
 
-/**
- * Allowance helper parameters.
- */
-export interface AllowanceParametersInput {
-    /**
-     * ERC-20 token address.
-     */
-    tokenAddress: string;
-    /**
-     * Owner whose allowance should be inspected.
-     */
-    owner: string;
-    /**
-     * Optional chain-id override.
-     */
-    chainId?: number;
-    /**
-     * Optional environment override.
-     */
-    env?: string;
-    /**
-     * Optional vault-relayer deployment override.
-     */
-    vaultRelayerOverride?: string;
+export type Value = unknown;
+export type SdkError = WasmError;
+
+export interface SdkClientOptions {
+    timeoutMs?: number;
+    signal?: AbortSignal;
 }
 
-/**
- * App-data document input.
- */
-export interface AppDataDocInput {
-    /**
-     * Application code.
-     */
-    appCode: string;
-    /**
-     * Metadata object.
-     */
-    metadata: Value;
-    /**
-     * Schema version.
-     */
-    version: string;
-    /**
-     * Optional environment label.
-     */
-    environment?: string;
-}
-
-/**
- * App-data document output.
- */
-export interface AppDataDocDto {
-    /**
-     * App-data document.
-     */
-    document: Value;
-}
-
-/**
- * App-data info output.
- */
-export interface AppDataInfoDto {
-    /**
-     * CID representation.
-     */
-    cid: string;
-    /**
-     * Deterministic app-data content.
-     */
-    appDataContent: string;
-    /**
-     * App-data hash.
-     */
-    appDataHex: string;
-}
-
-/**
- * App-data validation result.
- */
-export interface ValidationResultDto {
-    /**
-     * Whether validation succeeded.
-     */
-    success: boolean;
-    /**
-     * Errors when validation failed.
-     */
-    errors?: string;
-}
-
-/**
- * Contract-read callback request.
- */
-export interface ContractCallDto {
-    /**
-     * Target contract address.
-     */
-    address: string;
-    /**
-     * ABI method name.
-     */
-    method: string;
-    /**
-     * JSON ABI fragment.
-     */
-    abiJson: string;
-    /**
-     * JSON-encoded function arguments.
-     */
-    argsJson: string;
-}
 
 /**
  * Custom EIP-1271 callback request.
@@ -306,132 +173,6 @@ export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; me
  * Jitter strategy accepted by JS client constructors.
  */
 export type JitterStrategyConfig = "none" | "full" | "equal" | "decorrelated";
-
-/**
- * Limit-order parameters accepted by trading posting helpers.
- */
-export interface LimitTradeParametersInput {
-    /**
-     * Order side.
-     */
-    kind: OrderKindDto;
-    /**
-     * Optional owner override.
-     */
-    owner?: string;
-    /**
-     * Sell-token address.
-     */
-    sellToken: string;
-    /**
-     * Sell-token decimals.
-     */
-    sellTokenDecimals: number;
-    /**
-     * Buy-token address.
-     */
-    buyToken: string;
-    /**
-     * Buy-token decimals.
-     */
-    buyTokenDecimals: number;
-    /**
-     * Sell amount before transformations.
-     */
-    sellAmount: string;
-    /**
-     * Buy amount before transformations.
-     */
-    buyAmount: string;
-    /**
-     * Optional quote id.
-     */
-    quoteId?: number;
-    /**
-     * Optional environment override.
-     */
-    env?: string;
-    /**
-     * Optional settlement-contract overrides keyed by chain id.
-     */
-    settlementContractOverride?: Map<number, string>;
-    /**
-     * Optional `EthFlow` contract overrides keyed by chain id.
-     */
-    ethFlowContractOverride?: Map<number, string>;
-    /**
-     * Whether partial fills are allowed.
-     */
-    partiallyFillable?: boolean;
-    /**
-     * Sell-token balance source.
-     */
-    sellTokenBalance?: TokenBalanceDto;
-    /**
-     * Buy-token balance destination.
-     */
-    buyTokenBalance?: TokenBalanceDto;
-    /**
-     * Optional slippage tolerance in basis points.
-     */
-    slippageBps?: number;
-    /**
-     * Optional receiver override.
-     */
-    receiver?: string;
-    /**
-     * Optional relative validity duration.
-     */
-    validFor?: number;
-    /**
-     * Optional absolute UNIX expiry timestamp.
-     */
-    validTo?: number;
-    /**
-     * Optional partner-fee metadata.
-     */
-    partnerFee?: PartnerFeeInput;
-}
-
-/**
- * Minimal quote-results payload accepted by `TradingClient.postSwapOrderFromQuote`.
- */
-export interface QuoteResultsInput {
-    /**
-     * Order returned by a previous quote response.
-     */
-    orderToSign: OrderInput;
-    /**
-     * Upstream quote response reference.
-     */
-    quoteResponse?: QuoteResponseRefInput;
-    /**
-     * Direct quote id fallback.
-     */
-    quoteId?: number;
-}
-
-/**
- * Native-currency sell transaction bundle.
- */
-export interface BuiltSellNativeCurrencyTxDto {
-    /**
-     * Deterministic order UID.
-     */
-    orderUid: string;
-    /**
-     * Transaction request to submit.
-     */
-    transaction: TransactionRequestDto;
-    /**
-     * Unsigned order encoded by the transaction.
-     */
-    orderToSign: OrderInput;
-    /**
-     * Effective order owner.
-     */
-    from: string;
-}
 
 /**
  * Order input shared by signing and UID exports.
@@ -693,47 +434,6 @@ export interface PaginationOptions {
 }
 
 /**
- * Partner-fee input accepted by trading swap parameters.
- */
-export type PartnerFeeInput = PartnerFeePolicyInput | PartnerFeePolicyInput[];
-
-/**
- * Partner-fee policy input for trading swap parameters.
- */
-export interface PartnerFeePolicyInput {
-    /**
-     * Volume fee in basis points.
-     */
-    volumeBps?: number;
-    /**
-     * Surplus fee in basis points.
-     */
-    surplusBps?: number;
-    /**
-     * Price-improvement fee in basis points.
-     */
-    priceImprovementBps?: number;
-    /**
-     * Maximum volume fee in basis points.
-     */
-    maxVolumeBps?: number;
-    /**
-     * Fee recipient address.
-     */
-    recipient: string;
-}
-
-/**
- * Quote-response reference accepted by quote-derived posting helpers.
- */
-export interface QuoteResponseRefInput {
-    /**
-     * Upstream quote id.
-     */
-    id?: number;
-}
-
-/**
  * Rate-limiter bucket scope accepted by JS client constructors.
  */
 export type LimiterScopeConfig = "global" | "perHost";
@@ -851,76 +551,6 @@ export interface TradesQueryInput {
      * Pagination limit.
      */
     limit?: number;
-}
-
-/**
- * Trading swap-parameter input.
- */
-export interface SwapParametersInput {
-    /**
-     * Order side.
-     */
-    kind: OrderKindDto;
-    /**
-     * Optional owner override.
-     */
-    owner?: string;
-    /**
-     * Sell-token address.
-     */
-    sellToken: string;
-    /**
-     * Sell-token decimals.
-     */
-    sellTokenDecimals: number;
-    /**
-     * Buy-token address.
-     */
-    buyToken: string;
-    /**
-     * Buy-token decimals.
-     */
-    buyTokenDecimals: number;
-    /**
-     * Amount interpreted according to `kind`.
-     */
-    amount: string;
-    /**
-     * Optional environment override.
-     */
-    env?: string;
-    /**
-     * Whether partial fills are allowed.
-     */
-    partiallyFillable?: boolean;
-    /**
-     * Sell-token balance source.
-     */
-    sellTokenBalance?: TokenBalanceDto;
-    /**
-     * Buy-token balance destination.
-     */
-    buyTokenBalance?: TokenBalanceDto;
-    /**
-     * Optional slippage tolerance in basis points.
-     */
-    slippageBps?: number;
-    /**
-     * Optional receiver override.
-     */
-    receiver?: string;
-    /**
-     * Optional relative validity duration.
-     */
-    validFor?: number;
-    /**
-     * Optional absolute UNIX expiry timestamp.
-     */
-    validTo?: number;
-    /**
-     * Optional partner-fee metadata.
-     */
-    partnerFee?: PartnerFeeInput;
 }
 
 /**
@@ -1050,26 +680,6 @@ export interface WasmEnvelope<T> {
 
 
 /**
- * IPFS client backed by an explicitly configured HTTP transport.
- */
-export class IpfsClient {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Fetches and parses an app-data document by CID.
-     */
-    fetchAppDataFromCid(cid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataDocDto>>;
-    /**
-     * Fetches and parses an app-data document by app-data hash.
-     */
-    fetchAppDataFromHex(appDataHex: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataDocDto>>;
-    /**
-     * Creates an IPFS client from a single config object.
-     */
-    constructor(config: IpfsClientConfig);
-}
-
-/**
  * Orderbook client backed by an explicitly configured HTTP transport.
  */
 export class OrderBookClient {
@@ -1118,92 +728,9 @@ export class OrderBookClient {
 }
 
 /**
- * Subgraph client backed by an explicitly configured HTTP transport.
- */
-export class SubgraphClient {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Fetches daily volume rows.
-     */
-    getLastDaysVolume(days: number, options?: SdkClientOptions | null): Promise<any>;
-    /**
-     * Fetches hourly volume rows.
-     */
-    getLastHoursVolume(hours: number, options?: SdkClientOptions | null): Promise<any>;
-    /**
-     * Fetches aggregate totals.
-     */
-    getTotals(options?: SdkClientOptions | null): Promise<any>;
-    /**
-     * Creates a subgraph client from a single config object.
-     */
-    constructor(config: SubgraphClientConfig);
-    /**
-     * Runs a raw GraphQL query.
-     */
-    runQuery(request: SubgraphQueryInput, options?: SdkClientOptions | null): Promise<any>;
-}
-
-/**
- * Trading facade backed by an explicitly configured HTTP transport.
- */
-export class TradingClient {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Builds the transaction for a native-currency sell order.
-     */
-    buildSellNativeCurrencyTx(order: OrderInput, quoteId: bigint, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<BuiltSellNativeCurrencyTxDto>>;
-    /**
-     * Reads CoW Protocol allowance through a read-only contract callback.
-     */
-    getCowProtocolAllowance(params: AllowanceParametersInput, readContractCallback: ContractReadCallback, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
-    /**
-     * Fetches a quote without submitting an order.
-     */
-    getQuote(params: SwapParametersInput, options?: SdkClientOptions | null): Promise<any>;
-    /**
-     * Creates a trading client from a single config object.
-     */
-    constructor(config: TradingClientConfig);
-    /**
-     * Signs and posts a limit order through a typed-data callback.
-     */
-    postLimitOrder(params: LimitTradeParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<any>;
-    /**
-     * Quotes, signs, and posts a swap order through a typed-data callback.
-     */
-    postSwapOrder(params: SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<any>;
-    /**
-     * Signs and posts a previously quoted swap order.
-     */
-    postSwapOrderFromQuote(quoteResults: QuoteResultsInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<any>;
-    /**
-     * Quotes and posts a swap order with a custom EIP-1271 signature callback.
-     */
-    postSwapOrderWithEip1271(params: SwapParametersInput, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<any>;
-}
-
-/**
  * Initializes the wasm crate's panic hook once.
  */
 export function __cow_sdk_wasm_init(): void;
-
-/**
- * Builds an app-data document without hashing it.
- */
-export function appDataDoc(doc: AppDataDocInput): WasmEnvelope<AppDataDocDto>;
-
-/**
- * Converts an app-data hash to an IPFS CID.
- */
-export function appDataHexToCid(appDataHex: string): WasmEnvelope<string>;
-
-/**
- * Returns deterministic app-data content, hash, and CID.
- */
-export function appDataInfo(doc: AppDataDocInput): WasmEnvelope<AppDataInfoDto>;
 
 /**
  * Builds a settlement cancellation transaction for an order UID.
@@ -1214,11 +741,6 @@ export function buildCancelOrderTx(params: OrderTraderParametersInput): WasmEnve
  * Builds a settlement pre-sign transaction for an order UID.
  */
 export function buildPresignTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>;
-
-/**
- * Converts an IPFS CID to an app-data hash.
- */
-export function cidToAppDataHex(cid: string): WasmEnvelope<string>;
 
 /**
  * Computes the compact order UID and digest.
@@ -1289,11 +811,6 @@ export function signOrderWithTypedDataSigner(input: OrderInput, chainId: number,
  * Returns supported EVM chain ids.
  */
 export function supportedChainIds(): Uint32Array;
-
-/**
- * Validates an app-data document against the embedded schemas.
- */
-export function validateAppDataDoc(doc: AppDataDocInput): WasmEnvelope<ValidationResultDto>;
 
 /**
  * Returns the wasm crate version.

@@ -3,14 +3,18 @@ use wasm_bindgen::prelude::*;
 use cow_sdk_pure_helpers as pure;
 
 use crate::exports::{
-    dto::{
-        AppDataDocDto, AppDataDocInput, AppDataInfoDto, DeploymentAddressesDto,
-        GeneratedOrderUidDto, TypedDataEnvelopeDto, ValidationResultDto, parse_chain, parse_order,
-        parse_owner, to_js_value,
-    },
+    dto::{DeploymentAddressesDto, to_js_value},
     envelope::WasmEnvelope,
     errors::WasmError,
 };
+
+#[cfg(feature = "signing")]
+use crate::exports::dto::{
+    GeneratedOrderUidDto, TypedDataEnvelopeDto, parse_chain, parse_order, parse_owner,
+};
+
+#[cfg(feature = "app-data")]
+use crate::exports::dto::{AppDataDocDto, AppDataDocInput, AppDataInfoDto, ValidationResultDto};
 
 /// Computes the EIP-712 domain separator for a supported chain.
 #[wasm_bindgen(js_name = "domainSeparator")]
@@ -21,6 +25,7 @@ pub fn domain_separator(
 }
 
 /// Builds signer-facing order typed data.
+#[cfg(feature = "signing")]
 #[wasm_bindgen(
     js_name = "orderTypedData",
     unchecked_return_type = "WasmEnvelope<TypedDataEnvelopeDto>"
@@ -39,6 +44,7 @@ pub fn order_typed_data(
 }
 
 /// Computes the compact order UID and digest.
+#[cfg(feature = "signing")]
 #[wasm_bindgen(
     js_name = "computeOrderUid",
     unchecked_return_type = "WasmEnvelope<GeneratedOrderUidDto>"
@@ -79,6 +85,7 @@ pub fn deployment_addresses(
 }
 
 /// Returns deterministic app-data content, hash, and CID.
+#[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "appDataInfo",
     unchecked_return_type = "WasmEnvelope<AppDataInfoDto>"
@@ -94,6 +101,7 @@ pub fn app_data_info(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
 }
 
 /// Validates an app-data document against the embedded schemas.
+#[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "validateAppDataDoc",
     unchecked_return_type = "WasmEnvelope<ValidationResultDto>"
@@ -108,6 +116,7 @@ pub fn validate_app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
 }
 
 /// Builds an app-data document without hashing it.
+#[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "appDataDoc",
     unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
@@ -119,6 +128,7 @@ pub fn app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
 }
 
 /// Converts an app-data hash to an IPFS CID.
+#[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "appDataHexToCid",
     unchecked_return_type = "WasmEnvelope<string>"
@@ -132,6 +142,7 @@ pub fn app_data_hex_to_cid(
 }
 
 /// Converts an IPFS CID to an app-data hash.
+#[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "cidToAppDataHex",
     unchecked_return_type = "WasmEnvelope<string>"

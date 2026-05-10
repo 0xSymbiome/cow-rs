@@ -1,9 +1,4 @@
-use std::sync::Arc;
-
-use async_trait::async_trait;
-use cow_sdk_core::UnsignedOrder;
 use cow_sdk_pure_helpers as pure;
-use cow_sdk_trading::{Eip1271SignatureProvider, TradingError};
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
 
@@ -18,26 +13,9 @@ use crate::exports::{
     signing::{await_callback_string, signed_order_from_parts},
 };
 
-/// EIP-1271 provider that holds only a resolved ECDSA signature.
-pub struct ResolvedEip1271Provider {
-    signature: String,
-}
-
-impl ResolvedEip1271Provider {
-    /// Creates a provider from a resolved ECDSA signature.
-    #[must_use]
-    pub fn new(signature: String) -> Self {
-        Self { signature }
-    }
-}
-
-#[async_trait(?Send)]
-impl Eip1271SignatureProvider for ResolvedEip1271Provider {
-    async fn sign(&self, order_to_sign: &UnsignedOrder) -> Result<String, TradingError> {
-        pure::signing::eip1271_signature_payload(order_to_sign, &self.signature)
-            .map_err(TradingError::from)
-    }
-}
+/// Rust-only marker for the resolved EIP-1271 signing path.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ResolvedEip1271Provider;
 
 /// Encodes a CoW EIP-1271 payload from an ECDSA signature.
 #[wasm_bindgen(
@@ -84,10 +62,7 @@ pub async fn sign_order_with_eip1271(
             wallet_timeout_ms,
         )
         .await?;
-        let provider = Arc::new(ResolvedEip1271Provider::new(ecdsa_signature));
-        let signature = provider
-            .sign(&order)
-            .await
+        let signature = pure::signing::eip1271_signature_payload(&order, &ecdsa_signature)
             .map_err(|error| WasmError::from(error).into_js())?;
         let generated = pure::signing::generate_order_id(chain, &order, &owner)
             .map_err(|error| WasmError::from(error).into_js())?;

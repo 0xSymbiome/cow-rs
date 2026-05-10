@@ -1,15 +1,20 @@
-use std::{
-    collections::{BTreeMap, HashMap},
-    time::Duration,
-};
+use std::collections::{BTreeMap, HashMap};
+#[cfg(feature = "transport-policy")]
+use std::time::Duration;
 
 use cow_sdk_core::{TypedDataDomain, TypedDataField, TypedDataPayload};
-use cow_sdk_pure_helpers::{self as pure, errors::PureError};
+use cow_sdk_pure_helpers as pure;
+#[cfg(feature = "orderbook")]
+use cow_sdk_pure_helpers::errors::PureError;
+#[cfg(feature = "transport-policy")]
 use cow_sdk_transport_policy::{
     JitterStrategy, LimiterScope, RequestRateLimiter, RetryPolicy, TransportPolicy,
 };
+#[cfg(feature = "transport-policy")]
 use js_sys::Reflect;
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+#[cfg(any(feature = "orderbook", feature = "trading"))]
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tsify::Tsify;
 use wasm_bindgen::{JsValue, prelude::*};
@@ -142,6 +147,7 @@ impl From<&cow_sdk_core::UnsignedOrder> for OrderInput {
 }
 
 /// App-data document input.
+#[cfg(feature = "app-data")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -157,6 +163,7 @@ pub struct AppDataDocInput {
     pub environment: Option<String>,
 }
 
+#[cfg(feature = "app-data")]
 impl From<AppDataDocInput> for pure::dto::AppDataDocInput {
     fn from(value: AppDataDocInput) -> Self {
         Self {
@@ -305,6 +312,7 @@ pub struct SignedOrderDto {
 }
 
 /// App-data document output.
+#[cfg(feature = "app-data")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -313,6 +321,7 @@ pub struct AppDataDocDto {
     pub document: Value,
 }
 
+#[cfg(feature = "app-data")]
 impl From<Value> for AppDataDocDto {
     fn from(value: Value) -> Self {
         Self { document: value }
@@ -320,6 +329,7 @@ impl From<Value> for AppDataDocDto {
 }
 
 /// App-data info output.
+#[cfg(feature = "app-data")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -332,6 +342,7 @@ pub struct AppDataInfoDto {
     pub app_data_hex: String,
 }
 
+#[cfg(feature = "app-data")]
 impl From<pure::dto::AppDataInfoDto> for AppDataInfoDto {
     fn from(value: pure::dto::AppDataInfoDto) -> Self {
         Self {
@@ -343,6 +354,7 @@ impl From<pure::dto::AppDataInfoDto> for AppDataInfoDto {
 }
 
 /// App-data validation result.
+#[cfg(feature = "app-data")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -354,6 +366,7 @@ pub struct ValidationResultDto {
     pub errors: Option<String>,
 }
 
+#[cfg(feature = "app-data")]
 impl From<pure::dto::ValidationResultDto> for ValidationResultDto {
     fn from(value: pure::dto::ValidationResultDto) -> Self {
         Self {
@@ -422,6 +435,7 @@ pub struct CowFetchResponse {
 }
 
 /// Retry-policy override accepted by JS client constructors.
+#[cfg(feature = "transport-policy")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -442,6 +456,7 @@ pub struct RetryPolicyConfig {
 }
 
 /// Rate-limiter bucket scope accepted by JS client constructors.
+#[cfg(feature = "transport-policy")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -452,6 +467,7 @@ pub enum LimiterScopeConfig {
     PerHost,
 }
 
+#[cfg(feature = "transport-policy")]
 impl From<LimiterScopeConfig> for LimiterScope {
     fn from(value: LimiterScopeConfig) -> Self {
         match value {
@@ -461,6 +477,7 @@ impl From<LimiterScopeConfig> for LimiterScope {
     }
 }
 
+#[cfg(feature = "transport-policy")]
 impl From<LimiterScope> for LimiterScopeConfig {
     fn from(value: LimiterScope) -> Self {
         match value {
@@ -472,6 +489,7 @@ impl From<LimiterScope> for LimiterScopeConfig {
 }
 
 /// Request-rate limiter override accepted by JS client constructors.
+#[cfg(feature = "transport-policy")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -488,6 +506,7 @@ pub struct RequestRateLimiterConfig {
 }
 
 /// Jitter strategy accepted by JS client constructors.
+#[cfg(feature = "transport-policy")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -502,6 +521,7 @@ pub enum JitterStrategyConfig {
     Decorrelated,
 }
 
+#[cfg(feature = "transport-policy")]
 impl From<JitterStrategyConfig> for JitterStrategy {
     fn from(value: JitterStrategyConfig) -> Self {
         match value {
@@ -513,6 +533,7 @@ impl From<JitterStrategyConfig> for JitterStrategy {
     }
 }
 
+#[cfg(feature = "transport-policy")]
 impl From<JitterStrategy> for JitterStrategyConfig {
     fn from(value: JitterStrategy) -> Self {
         match value {
@@ -526,6 +547,7 @@ impl From<JitterStrategy> for JitterStrategyConfig {
 }
 
 /// Transport-policy override accepted by JS client constructors.
+#[cfg(feature = "transport-policy")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -547,6 +569,7 @@ pub struct TransportPolicyConfig {
     pub tracing_enabled: Option<bool>,
 }
 
+#[cfg(feature = "transport-policy")]
 impl TransportPolicyConfig {
     /// Applies this JS-facing override to a client-specific default policy.
     pub fn apply_to_policy(self, base: TransportPolicy) -> Result<TransportPolicy, WasmError> {
@@ -581,6 +604,7 @@ impl TransportPolicyConfig {
     }
 }
 
+#[cfg(feature = "transport-policy")]
 fn apply_retry_config(
     config: Option<RetryPolicyConfig>,
     base: &RetryPolicy,
@@ -611,6 +635,7 @@ fn apply_retry_config(
     builder.build()
 }
 
+#[cfg(feature = "transport-policy")]
 impl RequestRateLimiterConfig {
     fn apply_to_rate_limiter(self, base: &RequestRateLimiter) -> RequestRateLimiter {
         let mut builder = RequestRateLimiter::builder()
@@ -633,6 +658,7 @@ impl RequestRateLimiterConfig {
     }
 }
 
+#[cfg(feature = "transport-policy")]
 pub(crate) fn transport_policy_from_config(
     config: &JsValue,
     default_policy: TransportPolicy,
@@ -656,6 +682,7 @@ pub(crate) fn transport_policy_from_config(
     Ok(policy)
 }
 
+#[cfg(feature = "transport-policy")]
 fn optional_js_value(value: &JsValue, field: &'static str) -> Result<Option<JsValue>, JsValue> {
     let value = Reflect::get(value, &JsValue::from_str(field))
         .map_err(|error| WasmError::invalid(field, js_message(&error)).into_js())?;
@@ -666,6 +693,7 @@ fn optional_js_value(value: &JsValue, field: &'static str) -> Result<Option<JsVa
     }
 }
 
+#[cfg(feature = "transport-policy")]
 fn js_message(value: &JsValue) -> String {
     Reflect::get(value, &JsValue::from_str("message"))
         .ok()
@@ -716,6 +744,7 @@ pub struct SignedCancellationsInput {
 }
 
 /// Orderbook quote request input.
+#[cfg(feature = "orderbook")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -775,6 +804,7 @@ pub struct OrderQuoteRequestInput {
     pub timeout: Option<u64>,
 }
 
+#[cfg(feature = "orderbook")]
 impl OrderQuoteRequestInput {
     pub(crate) fn into_value(self) -> Result<Value, WasmError> {
         serde_json::to_value(self).map_err(WasmError::from)
@@ -782,6 +812,7 @@ impl OrderQuoteRequestInput {
 }
 
 /// Orderbook order-creation input.
+#[cfg(feature = "orderbook")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -833,6 +864,7 @@ pub struct OrderCreationInput {
     pub quote_id: Option<i64>,
 }
 
+#[cfg(feature = "orderbook")]
 impl OrderCreationInput {
     pub(crate) fn into_value(self) -> Result<Value, WasmError> {
         serde_json::to_value(self).map_err(WasmError::from)
@@ -872,6 +904,7 @@ pub struct TradesQueryInput {
 }
 
 /// Quote-response reference accepted by quote-derived posting helpers.
+#[cfg(feature = "trading")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -882,6 +915,7 @@ pub struct QuoteResponseRefInput {
 }
 
 /// Minimal quote-results payload accepted by `TradingClient.postSwapOrderFromQuote`.
+#[cfg(feature = "trading")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -896,6 +930,7 @@ pub struct QuoteResultsInput {
     pub quote_id: Option<i64>,
 }
 
+#[cfg(feature = "trading")]
 impl QuoteResultsInput {
     /// Returns the quote id supplied by either supported input shape.
     #[must_use]
@@ -908,6 +943,7 @@ impl QuoteResultsInput {
 }
 
 /// Partner-fee policy input for trading swap parameters.
+#[cfg(feature = "trading")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -929,6 +965,7 @@ pub struct PartnerFeePolicyInput {
 }
 
 /// Partner-fee input accepted by trading swap parameters.
+#[cfg(feature = "trading")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(untagged)]
@@ -940,6 +977,7 @@ pub enum PartnerFeeInput {
 }
 
 /// Trading swap-parameter input.
+#[cfg(feature = "trading")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -988,6 +1026,7 @@ pub struct SwapParametersInput {
     pub partner_fee: Option<PartnerFeeInput>,
 }
 
+#[cfg(feature = "trading")]
 impl SwapParametersInput {
     pub(crate) fn into_value(self) -> Result<Value, WasmError> {
         serde_json::to_value(self).map_err(WasmError::from)
@@ -995,6 +1034,7 @@ impl SwapParametersInput {
 }
 
 /// Limit-order parameters accepted by trading posting helpers.
+#[cfg(feature = "trading")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -1054,6 +1094,7 @@ pub struct LimitTradeParametersInput {
     pub partner_fee: Option<PartnerFeeInput>,
 }
 
+#[cfg(feature = "trading")]
 impl LimitTradeParametersInput {
     pub(crate) fn into_value(self) -> Result<Value, WasmError> {
         serde_json::to_value(self).map_err(WasmError::from)
@@ -1082,13 +1123,8 @@ pub struct OrderTraderParametersInput {
     pub eth_flow_contract_override: Option<BTreeMap<u64, String>>,
 }
 
-impl OrderTraderParametersInput {
-    pub(crate) fn into_value(self) -> Result<Value, WasmError> {
-        serde_json::to_value(self).map_err(WasmError::from)
-    }
-}
-
 /// Allowance helper parameters.
+#[cfg(feature = "trading")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -1108,6 +1144,7 @@ pub struct AllowanceParametersInput {
     pub vault_relayer_override: Option<String>,
 }
 
+#[cfg(feature = "trading")]
 impl AllowanceParametersInput {
     pub(crate) fn into_value(self) -> Result<Value, WasmError> {
         serde_json::to_value(self).map_err(WasmError::from)
@@ -1115,6 +1152,7 @@ impl AllowanceParametersInput {
 }
 
 /// Contract-read callback request.
+#[cfg(feature = "trading")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -1129,6 +1167,7 @@ pub struct ContractCallDto {
     pub args_json: String,
 }
 
+#[cfg(feature = "trading")]
 impl From<&cow_sdk_core::ContractCall> for ContractCallDto {
     fn from(value: &cow_sdk_core::ContractCall) -> Self {
         Self {
@@ -1171,6 +1210,7 @@ impl From<&cow_sdk_core::TransactionRequest> for TransactionRequestDto {
 }
 
 /// Native-currency sell transaction bundle.
+#[cfg(feature = "trading")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -1221,6 +1261,7 @@ pub(crate) fn to_js_value<T: Serialize>(value: &T) -> Result<JsValue, JsValue> {
         .map_err(|error| WasmError::from(error).into_js())
 }
 
+#[cfg(any(feature = "orderbook", feature = "trading"))]
 pub(crate) fn from_json_value<T: DeserializeOwned>(
     field: &'static str,
     value: Value,
@@ -1229,6 +1270,7 @@ pub(crate) fn from_json_value<T: DeserializeOwned>(
         .map_err(|error| WasmError::invalid(field, error.to_string()).into_js())
 }
 
+#[cfg(feature = "orderbook")]
 pub(crate) fn orderbook_signing_scheme(
     value: &str,
 ) -> Result<cow_sdk_orderbook::SigningScheme, WasmError> {
@@ -1244,6 +1286,7 @@ pub(crate) fn orderbook_signing_scheme(
     }
 }
 
+#[cfg(feature = "orderbook")]
 pub(crate) fn ecdsa_signing_scheme(
     value: &str,
 ) -> Result<cow_sdk_orderbook::EcdsaSigningScheme, WasmError> {

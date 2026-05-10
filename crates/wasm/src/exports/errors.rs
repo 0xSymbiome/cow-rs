@@ -1,11 +1,16 @@
+#[cfg(feature = "app-data")]
 use cow_sdk_app_data::AppDataError;
 use cow_sdk_core::{
     Cancelled, REDACTED_PLACEHOLDER, Redacted, TransportError, redact_response_body,
 };
+#[cfg(feature = "orderbook")]
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_pure_helpers::errors::PureError;
+#[cfg(feature = "signing")]
 use cow_sdk_signing::SigningError;
+#[cfg(feature = "subgraph")]
 use cow_sdk_subgraph::SubgraphError;
+#[cfg(feature = "trading")]
 use cow_sdk_trading::TradingError;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -273,6 +278,7 @@ impl From<TransportError> for WasmError {
     }
 }
 
+#[cfg(feature = "app-data")]
 impl From<AppDataError> for WasmError {
     fn from(value: AppDataError) -> Self {
         match value {
@@ -293,6 +299,7 @@ impl From<AppDataError> for WasmError {
     }
 }
 
+#[cfg(feature = "signing")]
 impl From<SigningError> for WasmError {
     fn from(value: SigningError) -> Self {
         Self::Signing {
@@ -302,6 +309,7 @@ impl From<SigningError> for WasmError {
     }
 }
 
+#[cfg(feature = "orderbook")]
 impl From<OrderbookError> for WasmError {
     fn from(value: OrderbookError) -> Self {
         match value {
@@ -332,6 +340,7 @@ impl From<OrderbookError> for WasmError {
     }
 }
 
+#[cfg(feature = "subgraph")]
 impl From<SubgraphError> for WasmError {
     fn from(value: SubgraphError) -> Self {
         match value {
@@ -346,6 +355,7 @@ impl From<SubgraphError> for WasmError {
     }
 }
 
+#[cfg(feature = "trading")]
 impl From<TradingError> for WasmError {
     fn from(value: TradingError) -> Self {
         match value {
@@ -390,6 +400,7 @@ impl From<cow_sdk_core::CoreError> for WasmError {
     }
 }
 
+#[cfg(feature = "signing")]
 impl From<cow_sdk_contracts::ContractsError> for WasmError {
     fn from(value: cow_sdk_contracts::ContractsError) -> Self {
         match value {

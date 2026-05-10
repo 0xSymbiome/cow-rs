@@ -1,14 +1,19 @@
-use cow_sdk_contracts::{ContractId, Registry, normalized_ecdsa_signature};
+use cow_sdk_contracts::normalized_ecdsa_signature;
+#[cfg(feature = "cancellation")]
+use cow_sdk_contracts::{ContractId, Registry};
 use std::{cell::RefCell, rc::Rc};
 
+use cow_sdk_core::{Address, AsyncDigestSigner, AsyncEip1193};
+#[cfg(feature = "cancellation")]
+use cow_sdk_core::{Amount, Hash32, HexData, OrderUid, TransactionRequest};
+#[cfg(feature = "trading")]
 use cow_sdk_core::{
-    Address, Amount, AsyncDigestSigner, AsyncEip1193, AsyncOwner, AsyncTypedDataSigner, Hash32,
-    HexData, OrderUid, ProtocolOptions, TransactionRequest, TypedDataDomain, TypedDataField,
-    TypedDataPayload,
+    AsyncOwner, AsyncTypedDataSigner, TypedDataDomain, TypedDataField, TypedDataPayload,
 };
 use cow_sdk_pure_helpers as pure;
+use cow_sdk_signing::GeneratedOrderId;
+#[cfg(feature = "cancellation")]
 use cow_sdk_signing::order_cancellations_typed_data_payload;
-use cow_sdk_trading::GAS_LIMIT_DEFAULT;
 use js_sys::{Array, Function, Promise, Reflect};
 use serde_json::json;
 use wasm_bindgen::{JsCast, closure::Closure, prelude::*};
@@ -17,21 +22,30 @@ use wasm_bindgen_futures::JsFuture;
 use crate::exports::{
     cancel::{ClientCallScope, SigningOptions, run_with_client_options, signing_wallet_timeout_ms},
     dto::{
-        Eip1193Request, OrderInput, OrderTraderParametersInput, SignedCancellationsInput,
-        SignedOrderDto, TransactionRequestDto, TypedDataEnvelopeDto, from_json_value, parse_chain,
-        parse_order, parse_owner, to_js_value, typed_data_json,
+        Eip1193Request, OrderInput, SignedOrderDto, TypedDataEnvelopeDto, parse_chain, parse_order,
+        parse_owner, to_js_value, typed_data_json,
     },
     envelope::WasmEnvelope,
     errors::WasmError,
 };
 
+#[cfg(feature = "cancellation")]
+use crate::exports::dto::{
+    OrderTraderParametersInput, SignedCancellationsInput, TransactionRequestDto,
+};
+
+#[cfg(feature = "cancellation")]
+const GAS_LIMIT_DEFAULT: u32 = 150_000;
+
 /// Asynchronous typed-data signer backed by a JavaScript callback.
+#[cfg(feature = "trading")]
 pub(crate) struct JsTypedDataSigner {
     owner: Address,
     callback: Function,
     wallet_timeout_ms: Option<u32>,
 }
 
+#[cfg(feature = "trading")]
 impl JsTypedDataSigner {
     pub(crate) const fn new(
         owner: Address,
@@ -46,6 +60,7 @@ impl JsTypedDataSigner {
     }
 }
 
+#[cfg(feature = "trading")]
 impl AsyncOwner for JsTypedDataSigner {
     type Error = String;
 
@@ -54,6 +69,7 @@ impl AsyncOwner for JsTypedDataSigner {
     }
 }
 
+#[cfg(feature = "trading")]
 impl AsyncTypedDataSigner for JsTypedDataSigner {
     type Error = String;
 
@@ -268,30 +284,29 @@ pub async fn sign_order_eth_sign_digest(
 }
 
 /// Builds a settlement pre-sign transaction for an order UID.
+#[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "buildPresignTx",
     unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
 )]
 pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
-    let params: cow_sdk_trading::OrderTraderParameters =
-        from_json_value("params", params.into_value()?)?;
-    let tx = order_uid_transaction(&params, "setPreSignature(bytes,bool)", true)?;
+    let tx = order_uid_transaction(params, "setPreSignature(bytes,bool)", true)?;
     to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
 
 /// Builds a settlement cancellation transaction for an order UID.
+#[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "buildCancelOrderTx",
     unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
 )]
 pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
-    let params: cow_sdk_trading::OrderTraderParameters =
-        from_json_value("params", params.into_value()?)?;
-    let tx = order_uid_transaction(&params, "invalidateOrder(bytes)", false)?;
+    let tx = order_uid_transaction(params, "invalidateOrder(bytes)", false)?;
     to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
 
 /// Signs cancellation typed data through a typed-data callback.
+#[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "signCancellationWithTypedDataSigner",
     unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
@@ -327,6 +342,7 @@ pub async fn sign_cancellation_with_typed_data_signer(
 }
 
 /// Signs cancellation typed data through an EIP-1193 callback.
+#[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "signCancellationWithEip1193",
     unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
@@ -366,6 +382,7 @@ pub async fn sign_cancellation_with_eip1193(
 }
 
 /// Signs a cancellation digest through an explicit `eth_sign` callback.
+#[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "signCancellationEthSignDigest",
     unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
@@ -470,7 +487,7 @@ pub(crate) fn js_message(value: &JsValue) -> String {
 }
 
 pub(crate) fn signed_order_from_parts(
-    generated: cow_sdk_signing::GeneratedOrderId,
+    generated: GeneratedOrderId,
     owner: Address,
     typed_data: TypedDataEnvelopeDto,
     signature: String,
@@ -529,6 +546,7 @@ fn build_signed_order(
     ))
 }
 
+#[cfg(feature = "cancellation")]
 fn cancellation_payload(
     order_uids: Vec<String>,
     chain_id: u32,
@@ -555,30 +573,29 @@ fn cancellation_payload(
     Ok((uids, payload, digest))
 }
 
+#[cfg(feature = "cancellation")]
 fn order_uid_transaction(
-    params: &cow_sdk_trading::OrderTraderParameters,
+    params: OrderTraderParametersInput,
     selector: &'static str,
     include_bool: bool,
 ) -> Result<TransactionRequest, JsValue> {
     let chain_id = params
         .chain_id
         .ok_or_else(|| WasmError::invalid("chainId", "chainId is required").into_js())?;
-    let mut options = ProtocolOptions::new();
-    if let Some(env) = params.env {
-        options = options.with_env(env);
-    }
-    if let Some(overrides) = params.settlement_contract_override.clone() {
-        options = options.with_settlement_contract_override(overrides);
-    }
-    if let Some(overrides) = params.eth_flow_contract_override.clone() {
-        options = options.with_eth_flow_contract_override(overrides);
-    }
-    let env = options.env.unwrap_or(cow_sdk_core::CowEnv::Prod);
-    let settlement = options
+    let chain = parse_chain(chain_id)?;
+    let env = pure::chains::env_from_str(params.env.as_deref())
+        .map_err(|error| WasmError::from(error).into_js())?;
+    let settlement = params
         .settlement_contract_override
         .as_ref()
-        .and_then(|overrides| overrides.get(&u64::from(chain_id)).cloned())
-        .or_else(|| Registry::default().address(ContractId::Settlement, chain_id, env))
+        .and_then(|overrides| overrides.get(&u64::from(chain_id)))
+        .map(|address| {
+            Address::new(address.clone()).map_err(|error| {
+                WasmError::invalid("settlementContractOverride", error.to_string()).into_js()
+            })
+        })
+        .transpose()?
+        .or_else(|| Registry::default().address(ContractId::Settlement, chain, env))
         .ok_or_else(|| {
             WasmError::invalid(
                 "chainId",
@@ -600,11 +617,13 @@ fn order_uid_transaction(
     Ok(tx)
 }
 
+#[cfg(feature = "cancellation")]
 fn default_gas_limit() -> Result<Amount, JsValue> {
     Amount::new(GAS_LIMIT_DEFAULT.to_string())
         .map_err(|error| WasmError::invalid("gasLimit", error.to_string()).into_js())
 }
 
+#[cfg(feature = "cancellation")]
 fn encode_selector_and_dynamic_bytes(signature: &str, bytes_hex: &str) -> Result<String, JsValue> {
     let selector = selector_bytes(signature)?;
     let bytes = decode_hex_field("bytes", bytes_hex)?;
@@ -616,6 +635,7 @@ fn encode_selector_and_dynamic_bytes(signature: &str, bytes_hex: &str) -> Result
     Ok(format!("0x{}", hex::encode(encoded)))
 }
 
+#[cfg(feature = "cancellation")]
 fn encode_selector_and_dynamic_bytes_bool(
     signature: &str,
     bytes_hex: &str,
@@ -632,6 +652,7 @@ fn encode_selector_and_dynamic_bytes_bool(
     Ok(format!("0x{}", hex::encode(encoded)))
 }
 
+#[cfg(feature = "cancellation")]
 fn selector_bytes(signature: &str) -> Result<[u8; 4], JsValue> {
     let selector = cow_sdk_contracts::function_magic_value(signature);
     let bytes = decode_hex_field("selector", &selector)?;
@@ -640,6 +661,7 @@ fn selector_bytes(signature: &str) -> Result<[u8; 4], JsValue> {
     Ok(out)
 }
 
+#[cfg(feature = "cancellation")]
 fn decode_hex_field(field: &'static str, value: &str) -> Result<Vec<u8>, JsValue> {
     let Some(stripped) = value.strip_prefix("0x") else {
         return Err(WasmError::invalid(field, "hex value must start with 0x").into_js());
@@ -647,24 +669,28 @@ fn decode_hex_field(field: &'static str, value: &str) -> Result<Vec<u8>, JsValue
     hex::decode(stripped).map_err(|error| WasmError::invalid(field, error.to_string()).into_js())
 }
 
+#[cfg(feature = "cancellation")]
 fn encode_usize_word(value: usize) -> [u8; 32] {
     let mut out = [0u8; 32];
     out[24..].copy_from_slice(&(value as u64).to_be_bytes());
     out
 }
 
+#[cfg(feature = "cancellation")]
 fn encode_bool_word(value: bool) -> [u8; 32] {
     let mut out = [0u8; 32];
     out[31] = u8::from(value);
     out
 }
 
+#[cfg(feature = "cancellation")]
 fn pad_to_word(mut bytes: Vec<u8>) -> Vec<u8> {
     let padding = (32 - (bytes.len() % 32)) % 32;
     bytes.extend(std::iter::repeat_n(0u8, padding));
     bytes
 }
 
+#[cfg(feature = "cancellation")]
 fn uid_strings(uids: &[OrderUid]) -> Vec<String> {
     uids.iter().map(|uid| uid.as_str().to_owned()).collect()
 }

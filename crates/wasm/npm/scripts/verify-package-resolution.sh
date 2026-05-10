@@ -35,19 +35,33 @@ cd "${tmp_dir}"
 npm init -y >/dev/null
 npm install "${package_root}/${tarball}" >/dev/null
 
-PACKAGE_NAME="${package_name}" node - <<'NODE'
+PACKAGE_NAME="${package_name}" FLAVOURS_JSON="${package_root}/flavours.json" node - <<'NODE'
 const { createRequire } = require("node:module");
+const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
 const name = process.env.PACKAGE_NAME;
+const descriptor = JSON.parse(readFileSync(process.env.FLAVOURS_JSON, "utf8"));
 const moduleRequire = createRequire(join(process.cwd(), "resolve.cjs"));
-for (const subpath of ["", "/nodejs"]) {
+for (const flavour of descriptor.flavours) {
+  if (!flavour.targets.includes("nodejs")) {
+    continue;
+  }
+  const subpath = flavour.subpath === "." ? "" : flavour.subpath.slice(1);
   moduleRequire.resolve(`${name}${subpath}`);
 }
 NODE
 
-PACKAGE_NAME="${package_name}" node --input-type=module - <<'NODE'
+PACKAGE_NAME="${package_name}" FLAVOURS_JSON="${package_root}/flavours.json" node --input-type=module - <<'NODE'
+import { readFileSync } from "node:fs";
+
 const name = process.env.PACKAGE_NAME;
-for (const subpath of ["/web", "/bundler", "/cloudflare", "/cloudflare/wasm"]) {
+const descriptor = JSON.parse(readFileSync(process.env.FLAVOURS_JSON, "utf8"));
+const subpaths = descriptor.flavours.flatMap((flavour) => {
+  const subpath = flavour.subpath === "." ? "" : flavour.subpath.slice(1);
+  const rawWasmSubpath = flavour.rawWasmSubpath ? flavour.rawWasmSubpath.slice(1) : null;
+  return rawWasmSubpath ? [subpath, rawWasmSubpath] : [subpath];
+});
+for (const subpath of subpaths) {
   await import.meta.resolve(`${name}${subpath}`);
 }
 NODE

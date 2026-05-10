@@ -29,17 +29,51 @@ crate-type = ["cdylib", "rlib"]
 workspace = true
 
 [features]
-default = []
+default = ["flavor-default"]
+orderbook = ["dep:cow-sdk-orderbook", "transport-policy"]
+signing = ["dep:cow-sdk-contracts", "dep:cow-sdk-signing"]
+app-data = ["dep:cow-sdk-app-data"]
+ipfs = ["app-data", "transport-policy"]
+cancellation = ["signing"]
+transport-policy = ["dep:cow-sdk-transport-policy"]
+trading = ["orderbook", "signing", "app-data", "dep:cow-sdk-trading"]
+subgraph = ["dep:cow-sdk-subgraph", "transport-policy"]
+flavor-default = [
+    "orderbook",
+    "signing",
+    "app-data",
+    "ipfs",
+    "cancellation",
+    "transport-policy",
+    "trading",
+    "subgraph",
+]
+flavor-orderbook = [
+    "orderbook",
+    "signing",
+    "cancellation",
+    "transport-policy",
+]
+flavor-signing = ["signing"]
+flavor-full = ["flavor-default"]
+flavor-cloudflare = [
+    "orderbook",
+    "signing",
+    "app-data",
+    "cancellation",
+    "transport-policy",
+    "trading",
+]
 tracing = ["dep:tracing"]
 
 [dependencies]
 alloy-primitives.workspace = true
 async-trait.workspace = true
-cow-sdk-app-data = { path = "../app-data", version = "0.1.0" }
-cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
+cow-sdk-app-data = { path = "../app-data", version = "0.1.0", optional = true }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0", optional = true }
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 cow-sdk-pure-helpers = { path = "../pure-helpers", version = "0.1.0" }
-cow-sdk-signing = { path = "../signing", version = "0.1.0" }
+cow-sdk-signing = { path = "../signing", version = "0.1.0", optional = true }
 hex.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -49,10 +83,10 @@ tracing = { workspace = true, optional = true }
 # tsify is target-gated under wasm32 because the js feature pulls wasm-bindgen and serde-wasm-bindgen which would contradict the native facade invariant if placed in target-agnostic dependencies
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook.workspace = true
-cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0" }
-cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0" }
-cow-sdk-trading = { path = "../trading", version = "0.1.0" }
-cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0" }
+cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0", optional = true }
+cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0", optional = true }
+cow-sdk-trading = { path = "../trading", version = "0.1.0", optional = true }
+cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0", optional = true }
 getrandom = { workspace = true }
 js-sys.workspace = true
 serde-wasm-bindgen.workspace = true

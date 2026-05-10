@@ -1,14 +1,29 @@
+/// <reference lib="esnext.disposable" />
 /* tslint:disable */
 /* eslint-disable */
 
-export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-export type Value = unknown;
-export type SdkError = WasmError;
-
-export interface SdkClientOptions {
-    timeoutMs?: number;
-    signal?: AbortSignal;
+export interface OrderBookClientConfig {
+    chainId: number;
+    env?: string | null;
+    apiKey?: string | null;
+    transport: HttpTransportConfig;
+    transportPolicy?: TransportPolicyConfig | null;
+    timeoutMs?: number | null;
 }
+
+
+
+export interface TradingClientConfig {
+    chainId: number;
+    env?: string | null;
+    appCode: string;
+    apiKey?: string | null;
+    transport: HttpTransportConfig;
+    transportPolicy?: TransportPolicyConfig | null;
+    timeoutMs?: number | null;
+}
+
+
 
 export interface WalletConfig {
     timeoutMs?: number;
@@ -17,6 +32,34 @@ export interface WalletConfig {
 export interface SigningOptions extends SdkClientOptions {
     walletConfig?: WalletConfig;
 }
+
+export type TypedDataSignerCallback = (
+envelope: TypedDataEnvelopeDto,
+) => Promise<string> | string;
+
+export type Eip1193RequestCallback = (
+request: { method: string; params?: unknown[] },
+) => Promise<unknown> | unknown;
+
+export type DigestSignerCallback = (
+digest: string,
+) => Promise<string> | string;
+
+export type CowEip1271SignCallback = (
+request: CowEip1271SignRequest,
+) => Promise<string> | string;
+
+export type CustomEip1271Callback = CowEip1271SignCallback;
+
+
+
+export type ContractReadCallback = (
+request: ContractCallDto,
+) => Promise<string> | string;
+
+
+
+export type CowFetchMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 export interface CowFetchRequest {
     method: CowFetchMethod;
@@ -38,64 +81,18 @@ export type CowFetchCallback = (
 request: CowFetchRequest,
 ) => Promise<CowFetchResponse> | CowFetchResponse;
 
-export type TypedDataSignerCallback = (
-envelope: TypedDataEnvelopeDto,
-) => Promise<string> | string;
-
-export type Eip1193RequestCallback = (
-request: { method: string; params?: unknown[] },
-) => Promise<unknown> | unknown;
-
-export type DigestSignerCallback = (
-digest: string,
-) => Promise<string> | string;
-
-export type CowEip1271SignCallback = (
-request: CowEip1271SignRequest,
-) => Promise<string> | string;
-
-export type CustomEip1271Callback = CowEip1271SignCallback;
-
-export type ContractReadCallback = (
-request: ContractCallDto,
-) => Promise<string> | string;
-
 export type HttpTransportConfig =
 | { kind: "fetch"; fetch?: typeof globalThis.fetch }
 | { kind: "callback"; callback: CowFetchCallback };
 
-export interface OrderBookClientConfig {
-    chainId: number;
-    env?: string | null;
-    apiKey?: string | null;
-    transport: HttpTransportConfig;
-    transportPolicy?: TransportPolicyConfig | null;
-    timeoutMs?: number | null;
-}
 
-export interface SubgraphClientConfig {
-    chainId: number;
-    apiKey: string;
-    transport: HttpTransportConfig;
-    transportPolicy?: TransportPolicyConfig | null;
-    timeoutMs?: number | null;
-}
 
-export interface TradingClientConfig {
-    chainId: number;
-    env?: string | null;
-    appCode: string;
-    apiKey?: string | null;
-    transport: HttpTransportConfig;
-    transportPolicy?: TransportPolicyConfig | null;
-    timeoutMs?: number | null;
-}
+export type Value = unknown;
+export type SdkError = WasmError;
 
-export interface IpfsClientConfig {
-    ipfsUri?: string | null;
-    transport: HttpTransportConfig;
-    transportPolicy?: TransportPolicyConfig | null;
-    timeoutMs?: number | null;
+export interface SdkClientOptions {
+    timeoutMs?: number;
+    signal?: AbortSignal;
 }
 
 
@@ -1050,26 +1047,6 @@ export interface WasmEnvelope<T> {
 
 
 /**
- * IPFS client backed by an explicitly configured HTTP transport.
- */
-export class IpfsClient {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Fetches and parses an app-data document by CID.
-     */
-    fetchAppDataFromCid(cid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataDocDto>>;
-    /**
-     * Fetches and parses an app-data document by app-data hash.
-     */
-    fetchAppDataFromHex(appDataHex: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataDocDto>>;
-    /**
-     * Creates an IPFS client from a single config object.
-     */
-    constructor(config: IpfsClientConfig);
-}
-
-/**
  * Orderbook client backed by an explicitly configured HTTP transport.
  */
 export class OrderBookClient {
@@ -1115,34 +1092,6 @@ export class OrderBookClient {
      * Submits a raw order-creation payload.
      */
     sendOrderCreation(input: OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
-}
-
-/**
- * Subgraph client backed by an explicitly configured HTTP transport.
- */
-export class SubgraphClient {
-    free(): void;
-    [Symbol.dispose](): void;
-    /**
-     * Fetches daily volume rows.
-     */
-    getLastDaysVolume(days: number, options?: SdkClientOptions | null): Promise<any>;
-    /**
-     * Fetches hourly volume rows.
-     */
-    getLastHoursVolume(hours: number, options?: SdkClientOptions | null): Promise<any>;
-    /**
-     * Fetches aggregate totals.
-     */
-    getTotals(options?: SdkClientOptions | null): Promise<any>;
-    /**
-     * Creates a subgraph client from a single config object.
-     */
-    constructor(config: SubgraphClientConfig);
-    /**
-     * Runs a raw GraphQL query.
-     */
-    runQuery(request: SubgraphQueryInput, options?: SdkClientOptions | null): Promise<any>;
 }
 
 /**
@@ -1305,9 +1254,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly __cow_sdk_wasm_init: () => void;
-    readonly __wbg_ipfsclient_free: (a: number, b: number) => void;
     readonly __wbg_orderbookclient_free: (a: number, b: number) => void;
-    readonly __wbg_subgraphclient_free: (a: number, b: number) => void;
     readonly __wbg_tradingclient_free: (a: number, b: number) => void;
     readonly appDataDoc: (a: number, b: number) => void;
     readonly appDataHexToCid: (a: number, b: number, c: number) => void;
@@ -1319,9 +1266,6 @@ export interface InitOutput {
     readonly deploymentAddresses: (a: number, b: number, c: number, d: number) => void;
     readonly domainSeparator: (a: number, b: number) => void;
     readonly eip1271SignaturePayload: (a: number, b: number, c: number, d: number) => void;
-    readonly ipfsclient_fetchAppDataFromCid: (a: number, b: number, c: number, d: number) => number;
-    readonly ipfsclient_fetchAppDataFromHex: (a: number, b: number, c: number, d: number) => number;
-    readonly ipfsclient_new: (a: number, b: number) => void;
     readonly orderTypedData: (a: number, b: number, c: number) => void;
     readonly orderbookclient_cancelOrders: (a: number, b: number, c: number) => number;
     readonly orderbookclient_getNativePrice: (a: number, b: number, c: number, d: number) => number;
@@ -1341,11 +1285,6 @@ export interface InitOutput {
     readonly signOrderWithEip1193: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly signOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly signOrderWithTypedDataSigner: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-    readonly subgraphclient_getLastDaysVolume: (a: number, b: number, c: number) => number;
-    readonly subgraphclient_getLastHoursVolume: (a: number, b: number, c: number) => number;
-    readonly subgraphclient_getTotals: (a: number, b: number) => number;
-    readonly subgraphclient_new: (a: number, b: number) => void;
-    readonly subgraphclient_runQuery: (a: number, b: number, c: number) => number;
     readonly supportedChainIds: (a: number) => void;
     readonly tradingclient_buildSellNativeCurrencyTx: (a: number, b: number, c: bigint, d: number, e: number, f: number) => number;
     readonly tradingclient_getCowProtocolAllowance: (a: number, b: number, c: number, d: number) => number;
@@ -1357,10 +1296,10 @@ export interface InitOutput {
     readonly tradingclient_postSwapOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly validateAppDataDoc: (a: number, b: number) => void;
     readonly wasmVersion: (a: number) => void;
-    readonly __wasm_bindgen_func_elem_11711: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_11719: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1326: (a: number, b: number, c: number) => number;
-    readonly __wasm_bindgen_func_elem_11632: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_11162: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_11170: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1166: (a: number, b: number, c: number) => number;
+    readonly __wasm_bindgen_func_elem_11083: (a: number, b: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;
