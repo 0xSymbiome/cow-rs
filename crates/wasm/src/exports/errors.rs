@@ -42,6 +42,8 @@ pub enum WasmError {
     UnknownEnumValue {
         /// Error schema version.
         schema_version: SchemaVersion,
+        /// Human-readable recovery guidance.
+        message: String,
         /// Field name.
         field: String,
         /// Rejected value.
@@ -51,6 +53,8 @@ pub enum WasmError {
     UnsupportedChain {
         /// Error schema version.
         schema_version: SchemaVersion,
+        /// Human-readable recovery guidance.
+        message: String,
         /// Numeric chain id.
         chain_id: u32,
     },
@@ -73,6 +77,8 @@ pub enum WasmError {
     WalletTimeout {
         /// Error schema version.
         schema_version: SchemaVersion,
+        /// Human-readable recovery guidance.
+        message: String,
         /// Timeout in milliseconds.
         timeout_ms: u32,
     },
@@ -132,6 +138,8 @@ pub enum WasmError {
     ForbiddenInteraction {
         /// Error schema version.
         schema_version: SchemaVersion,
+        /// Human-readable recovery guidance.
+        message: String,
         /// Rejected target address.
         target: String,
         /// Human-readable reason.
@@ -141,6 +149,8 @@ pub enum WasmError {
     Cancelled {
         /// Error schema version.
         schema_version: SchemaVersion,
+        /// Human-readable recovery guidance.
+        message: String,
     },
     /// Internal serialization or invariant failure.
     Internal {
@@ -154,6 +164,8 @@ pub enum WasmError {
     Unknown {
         /// Error schema version.
         schema_version: SchemaVersion,
+        /// Human-readable recovery guidance.
+        message: String,
         /// Raw unrecognized error value.
         raw: Value,
     },
@@ -169,19 +181,23 @@ impl WasmError {
     }
 
     pub(crate) fn invalid(field: impl Into<String>, message: impl Into<String>) -> Self {
+        let field = field.into();
+        let message = invalid_input_message(&field, message.into());
         Self::InvalidInput {
             schema_version: SchemaVersion::V1,
-            field: Some(field.into()),
-            message: message.into(),
+            field: Some(field),
+            message,
         }
     }
 
     pub(crate) fn wallet(method: impl Into<String>, message: impl Into<String>) -> Self {
+        let method = method.into();
+        let message = wallet_request_message(&method, message.into());
         Self::WalletRequest {
             schema_version: SchemaVersion::V1,
-            method: method.into(),
+            method,
             code: None,
-            message: message.into(),
+            message,
             data: None,
         }
     }
@@ -189,6 +205,7 @@ impl WasmError {
     pub(crate) fn wallet_timeout(timeout_ms: u32) -> Self {
         Self::WalletTimeout {
             schema_version: SchemaVersion::V1,
+            message: wallet_timeout_message(timeout_ms),
             timeout_ms,
         }
     }
@@ -196,13 +213,14 @@ impl WasmError {
     pub(crate) fn cancelled() -> Self {
         Self::Cancelled {
             schema_version: SchemaVersion::V1,
+            message: cancelled_message(),
         }
     }
 
     pub(crate) fn internal(message: impl Into<String>) -> Self {
         Self::Internal {
             schema_version: SchemaVersion::V1,
-            message: message.into(),
+            message: internal_message(message.into()),
         }
     }
 }
@@ -218,16 +236,18 @@ impl From<PureError> for WasmError {
         match value {
             PureError::InvalidInput { field, message } => Self::InvalidInput {
                 schema_version: SchemaVersion::V1,
+                message: invalid_input_message(&field, message),
                 field: Some(field),
-                message,
             },
             PureError::UnknownEnumValue { field, value } => Self::UnknownEnumValue {
                 schema_version: SchemaVersion::V1,
+                message: unknown_enum_message(&field, &value),
                 field,
                 value,
             },
             PureError::UnsupportedChain { chain_id } => Self::UnsupportedChain {
                 schema_version: SchemaVersion::V1,
+                message: unsupported_chain_message(chain_id),
                 chain_id,
             },
             error => Self::internal(error.to_string()),
@@ -241,7 +261,7 @@ impl From<TransportError> for WasmError {
             TransportError::Transport { class, detail } => Self::Transport {
                 schema_version: SchemaVersion::V1,
                 class: class.to_string(),
-                message: detail.to_string(),
+                message: transport_message(&class.to_string(), detail.to_string()),
                 status: None,
                 headers: None,
                 body: None,
@@ -249,7 +269,7 @@ impl From<TransportError> for WasmError {
             TransportError::Configuration { message } => Self::Transport {
                 schema_version: SchemaVersion::V1,
                 class: "builder".to_owned(),
-                message: message.to_string(),
+                message: transport_message("builder", message.to_string()),
                 status: None,
                 headers: None,
                 body: None,
@@ -261,7 +281,7 @@ impl From<TransportError> for WasmError {
             } => Self::Transport {
                 schema_version: SchemaVersion::V1,
                 class: "status".to_owned(),
-                message: format!("HTTP {status}"),
+                message: http_status_message(status),
                 status: Some(status),
                 headers: Some(redact_header_pairs(headers)),
                 body: Some(redact_response_body(body.as_inner())),
@@ -269,7 +289,7 @@ impl From<TransportError> for WasmError {
             error => Self::Transport {
                 schema_version: SchemaVersion::V1,
                 class: "other".to_owned(),
-                message: error.to_string(),
+                message: transport_message("other", error.to_string()),
                 status: None,
                 headers: None,
                 body: None,
@@ -285,15 +305,16 @@ impl From<AppDataError> for WasmError {
             AppDataError::Transport { class, detail } => Self::AppData {
                 schema_version: SchemaVersion::V1,
                 class: Some(class.to_string()),
-                message: detail.to_string(),
+                message: app_data_message(Some(&class.to_string()), detail.to_string()),
             },
             AppDataError::Cancelled => Self::Cancelled {
                 schema_version: SchemaVersion::V1,
+                message: cancelled_message(),
             },
             error => Self::AppData {
                 schema_version: SchemaVersion::V1,
                 class: None,
-                message: error.to_string(),
+                message: app_data_message(None, error.to_string()),
             },
         }
     }
@@ -304,7 +325,7 @@ impl From<SigningError> for WasmError {
     fn from(value: SigningError) -> Self {
         Self::Signing {
             schema_version: SchemaVersion::V1,
-            message: value.to_string(),
+            message: signing_message(value.to_string()),
         }
     }
 }
@@ -316,25 +337,26 @@ impl From<OrderbookError> for WasmError {
             OrderbookError::Transport { class, detail } => Self::Transport {
                 schema_version: SchemaVersion::V1,
                 class: class.to_string(),
-                message: detail.to_string(),
+                message: transport_message(&class.to_string(), detail.to_string()),
                 status: None,
                 headers: None,
                 body: None,
             },
             OrderbookError::Cancelled => Self::Cancelled {
                 schema_version: SchemaVersion::V1,
+                message: cancelled_message(),
             },
             OrderbookError::Rejected {
                 status, rejection, ..
             } => Self::Orderbook {
                 schema_version: SchemaVersion::V1,
                 code: Some(status.as_u16().to_string()),
-                message: rejection.to_string(),
+                message: orderbook_rejection_message(status.as_u16(), rejection.to_string()),
             },
             error => Self::Orderbook {
                 schema_version: SchemaVersion::V1,
                 code: None,
-                message: error.to_string(),
+                message: orderbook_message(error.to_string()),
             },
         }
     }
@@ -346,10 +368,11 @@ impl From<SubgraphError> for WasmError {
         match value {
             SubgraphError::Cancelled => Self::Cancelled {
                 schema_version: SchemaVersion::V1,
+                message: cancelled_message(),
             },
             error => Self::Subgraph {
                 schema_version: SchemaVersion::V1,
-                message: error.to_string(),
+                message: subgraph_message(error.to_string()),
             },
         }
     }
@@ -361,6 +384,7 @@ impl From<TradingError> for WasmError {
         match value {
             TradingError::Cancelled => Self::Cancelled {
                 schema_version: SchemaVersion::V1,
+                message: cancelled_message(),
             },
             TradingError::Orderbook(error) => Self::from(error),
             TradingError::AppData(error) => Self::from(error),
@@ -368,7 +392,7 @@ impl From<TradingError> for WasmError {
             error => Self::Orderbook {
                 schema_version: SchemaVersion::V1,
                 code: None,
-                message: error.to_string(),
+                message: orderbook_message(error.to_string()),
             },
         }
     }
@@ -378,6 +402,7 @@ impl From<Cancelled> for WasmError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled {
             schema_version: SchemaVersion::V1,
+            message: cancelled_message(),
         }
     }
 }
@@ -407,13 +432,14 @@ impl From<cow_sdk_contracts::ContractsError> for WasmError {
             cow_sdk_contracts::ContractsError::ForbiddenInteractionTarget { target } => {
                 Self::ForbiddenInteraction {
                     schema_version: SchemaVersion::V1,
+                    message: forbidden_interaction_message(target.as_str()),
                     target: target.as_str().to_owned(),
                     reason: "forbidden settlement interaction target".to_owned(),
                 }
             }
             error => Self::Signing {
                 schema_version: SchemaVersion::V1,
-                message: error.to_string(),
+                message: signing_message(error.to_string()),
             },
         }
     }
@@ -424,4 +450,103 @@ fn redact_header_pairs(headers: Vec<(String, Redacted<String>)>) -> Vec<[String;
         .into_iter()
         .map(|(name, _)| [name, REDACTED_PLACEHOLDER.to_owned()])
         .collect()
+}
+
+fn invalid_input_message(field: &str, detail: String) -> String {
+    format!(
+        "Invalid `{field}`: {detail}. Check the value supplied for `{field}` and retry with a valid SDK input."
+    )
+}
+
+fn unknown_enum_message(field: &str, value: &str) -> String {
+    format!(
+        "Unsupported value `{value}` for `{field}`. Use one of the documented values for this field."
+    )
+}
+
+fn unsupported_chain_message(chain_id: u32) -> String {
+    format!(
+        "Unsupported chain ID {chain_id}. Call supportedChainIds() before constructing requests and route unsupported networks to another integration."
+    )
+}
+
+fn wallet_request_message(method: &str, detail: String) -> String {
+    format!(
+        "Wallet request `{method}` failed: {detail}. Verify the wallet is connected, on the requested chain, and allowed to sign this request."
+    )
+}
+
+fn wallet_timeout_message(timeout_ms: u32) -> String {
+    format!(
+        "Wallet request timed out after {timeout_ms} ms. Increase walletConfig.timeoutMs or ask the user to approve the wallet request before the timeout."
+    )
+}
+
+fn transport_message(class: &str, detail: String) -> String {
+    format!(
+        "HTTP transport `{class}` failed: {detail}. Check network reachability, request URL, timeout, and callback response shape."
+    )
+}
+
+fn http_status_message(status: u16) -> String {
+    format!(
+        "Orderbook transport returned HTTP {status}. Check the request payload, chain/environment, API key, and redacted response body."
+    )
+}
+
+#[cfg(feature = "orderbook")]
+fn orderbook_rejection_message(status: u16, detail: String) -> String {
+    format!(
+        "Orderbook rejected the request with HTTP {status}: {detail}. Verify balances, allowances, quote validity, signature, and order parameters before retrying."
+    )
+}
+
+#[cfg(feature = "orderbook")]
+fn orderbook_message(detail: String) -> String {
+    format!(
+        "Orderbook operation failed: {detail}. Verify the request payload, chain/environment, transport configuration, and order state."
+    )
+}
+
+#[cfg(feature = "subgraph")]
+fn subgraph_message(detail: String) -> String {
+    format!(
+        "Subgraph request failed: {detail}. Check chain support, query shape, API key, and endpoint availability."
+    )
+}
+
+#[cfg(feature = "signing")]
+fn signing_message(detail: String) -> String {
+    format!(
+        "Signing operation failed: {detail}. Verify the order fields, chain ID, owner address, and signature callback output."
+    )
+}
+
+#[cfg(feature = "app-data")]
+fn app_data_message(class: Option<&str>, detail: String) -> String {
+    match class {
+        Some(class) => format!(
+            "App-data `{class}` operation failed: {detail}. Verify the app-data document, CID/hash, transport callback, and IPFS endpoint."
+        ),
+        None => format!(
+            "App-data operation failed: {detail}. Verify the app-data document, CID/hash, and schema version."
+        ),
+    }
+}
+
+fn forbidden_interaction_message(target: &str) -> String {
+    format!(
+        "Forbidden settlement interaction target `{target}`. Remove this target from settlement interactions before signing or submitting the order."
+    )
+}
+
+fn cancelled_message() -> String {
+    "Operation was cancelled. Create a fresh AbortController or retry without an already-aborted signal."
+        .to_owned()
+}
+
+fn internal_message(detail: String) -> String {
+    format!(
+        "SDK internal error: {detail}. This indicates serialization or invariant failure; retry with the same inputs only after checking the reported input shape."
+    )
 }

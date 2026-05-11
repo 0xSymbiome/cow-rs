@@ -192,7 +192,12 @@ fn invalid_cid_returns_typed_error() {
     let value = error_json(error);
 
     assert_eq!(value["kind"], "appData");
-    assert_eq!(value["message"], "invalid cid format");
+    assert!(
+        value["message"]
+            .as_str()
+            .unwrap()
+            .contains("invalid cid format")
+    );
 }
 
 #[wasm_bindgen_test]

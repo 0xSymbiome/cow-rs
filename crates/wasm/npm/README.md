@@ -210,3 +210,9 @@ public TypeScript surface for each flavor. Key exports include:
   `deploymentAddresses`, `supportedChainIds`, `appDataInfo`,
   `validateAppDataDoc`, `appDataDoc`, `appDataHexToCid`,
   `cidToAppDataHex`, `wasmVersion`.
+
+## Migration from `@cowprotocol/cow-sdk`
+
+See [Migration From @cowprotocol/cow-sdk](../../../docs/migration-from-cowprotocol-cow-sdk.md)
+for side-by-side guidance on adapter setup, orderbook clients, signing
+callbacks, Cloudflare Workers, error handling, and import selection.

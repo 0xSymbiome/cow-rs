@@ -1,0 +1,22 @@
+{
+  "name": "cow-sdk-wasm-example-node-viem",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "pnpm run build && vitest run"
+  },
+  "dependencies": {
+    "cow-sdk-wasm-local": "file:../../crates/wasm/npm",
+    "viem": "2.48.11"
+  },
+  "devDependencies": {
+    "@types/node": "25.6.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.5"
+  }
+}

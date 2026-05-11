@@ -31,6 +31,7 @@ fn unknown_enum_variant_round_trips() {
     let value = round_trip(json!({
         "schemaVersion": "v1",
         "kind": "unknownEnumValue",
+        "message": "Unsupported value `swap` for `kind`. Use one of the documented values for this field.",
         "field": "kind",
         "value": "swap"
     }));
@@ -44,11 +45,18 @@ fn unsupported_chain_variant_round_trips() {
     let value = round_trip(json!({
         "schemaVersion": "v1",
         "kind": "unsupportedChain",
+        "message": "Unsupported chain ID 13337. Call supportedChainIds() before constructing requests and route unsupported networks to another integration.",
         "chainId": 13337
     }));
 
     assert_eq!(value["kind"], "unsupportedChain");
     assert_eq!(value["chainId"], 13337);
+    assert!(
+        value["message"]
+            .as_str()
+            .unwrap()
+            .contains("supportedChainIds")
+    );
 }
 
 #[wasm_bindgen_test]
@@ -72,11 +80,18 @@ fn wallet_timeout_variant_round_trips() {
     let value = round_trip(json!({
         "schemaVersion": "v1",
         "kind": "walletTimeout",
+        "message": "Wallet request timed out after 250 ms. Increase walletConfig.timeoutMs or ask the user to approve the wallet request before the timeout.",
         "timeoutMs": 250
     }));
 
     assert_eq!(value["kind"], "walletTimeout");
     assert_eq!(value["timeoutMs"], 250);
+    assert!(
+        value["message"]
+            .as_str()
+            .unwrap()
+            .contains("walletConfig.timeoutMs")
+    );
 }
 
 #[wasm_bindgen_test]
@@ -132,6 +147,7 @@ fn forbidden_interaction_variant_round_trips() {
     let value = round_trip(json!({
         "schemaVersion": "v1",
         "kind": "forbiddenInteraction",
+        "message": "Forbidden settlement interaction target `0x1111111111111111111111111111111111111111`. Remove this target from settlement interactions before signing or submitting the order.",
         "target": "0x1111111111111111111111111111111111111111",
         "reason": "forbidden settlement interaction target"
     }));
@@ -152,6 +168,12 @@ fn contracts_forbidden_interaction_maps_to_typed_error() {
 
     assert_eq!(value["schemaVersion"], "v1");
     assert_eq!(value["kind"], "forbiddenInteraction");
+    assert!(
+        value["message"]
+            .as_str()
+            .unwrap()
+            .contains("Remove this target")
+    );
     assert_eq!(
         value["target"],
         "0x1111111111111111111111111111111111111111"
@@ -159,10 +181,21 @@ fn contracts_forbidden_interaction_maps_to_typed_error() {
 }
 
 #[wasm_bindgen_test]
-fn cancelled_variant_has_schema_version_only() {
-    let value = round_trip(json!({ "schemaVersion": "v1", "kind": "cancelled" }));
+fn cancelled_variant_carries_actionable_message() {
+    let value = round_trip(json!({
+        "schemaVersion": "v1",
+        "kind": "cancelled",
+        "message": "Operation was cancelled. Create a fresh AbortController or retry without an already-aborted signal."
+    }));
 
-    assert_eq!(value, json!({ "schemaVersion": "v1", "kind": "cancelled" }));
+    assert_eq!(value["schemaVersion"], "v1");
+    assert_eq!(value["kind"], "cancelled");
+    assert!(
+        value["message"]
+            .as_str()
+            .unwrap()
+            .contains("AbortController")
+    );
 }
 
 #[wasm_bindgen_test]
@@ -170,6 +203,7 @@ fn unknown_sentinel_round_trips_raw_payload() {
     let value = round_trip(json!({
         "schemaVersion": "__unknown",
         "kind": "__unknown",
+        "message": "SDK received an unrecognized error variant. Inspect raw and update the SDK if the variant is now documented.",
         "raw": { "kind": "futureVariant", "detail": "unknown" }
     }));
 

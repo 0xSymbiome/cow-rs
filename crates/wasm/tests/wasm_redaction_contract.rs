@@ -30,7 +30,9 @@ fn transport_connect_error_uses_redacted_message() {
 
     assert_eq!(value["kind"], "transport");
     assert_eq!(value["schemaVersion"], "v1");
-    assert_eq!(value["message"], "[redacted]");
+    let message = value["message"].as_str().unwrap();
+    assert!(message.contains("[redacted]"));
+    assert!(!message.contains(SECRET_URL));
     assert!(!value.to_string().contains("secret"));
 }
 
@@ -43,7 +45,9 @@ fn transport_configuration_error_uses_redacted_message() {
 
     assert_eq!(value["class"], "builder");
     assert_eq!(value["schemaVersion"], "v1");
-    assert_eq!(value["message"], "[redacted]");
+    let message = value["message"].as_str().unwrap();
+    assert!(message.contains("[redacted]"));
+    assert!(!message.contains(SECRET_URL));
 }
 
 #[wasm_bindgen_test]
@@ -75,7 +79,9 @@ fn app_data_transport_error_redacts_detail() {
 
     assert_eq!(value["kind"], "appData");
     assert_eq!(value["schemaVersion"], "v1");
-    assert_eq!(value["message"], "[redacted]");
+    let message = value["message"].as_str().unwrap();
+    assert!(message.contains("[redacted]"));
+    assert!(!message.contains(SECRET_URL));
 }
 
 #[wasm_bindgen_test]

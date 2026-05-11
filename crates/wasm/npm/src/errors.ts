@@ -2,8 +2,8 @@ import type { SchemaVersion } from "./envelope.js";
 
 export type SdkError =
   | { schemaVersion: "v1"; kind: "invalidInput"; message: string; field?: string }
-  | { schemaVersion: "v1"; kind: "unknownEnumValue"; field: string; value: string }
-  | { schemaVersion: "v1"; kind: "unsupportedChain"; chainId: number }
+  | { schemaVersion: "v1"; kind: "unknownEnumValue"; message: string; field: string; value: string }
+  | { schemaVersion: "v1"; kind: "unsupportedChain"; message: string; chainId: number }
   | {
       schemaVersion: "v1";
       kind: "walletRequest";
@@ -12,7 +12,7 @@ export type SdkError =
       message: string;
       data?: unknown;
     }
-  | { schemaVersion: "v1"; kind: "walletTimeout"; timeoutMs: number }
+  | { schemaVersion: "v1"; kind: "walletTimeout"; message: string; timeoutMs: number }
   | {
       schemaVersion: "v1";
       kind: "transport";
@@ -26,10 +26,10 @@ export type SdkError =
   | { schemaVersion: "v1"; kind: "subgraph"; message: string }
   | { schemaVersion: "v1"; kind: "signing"; message: string }
   | { schemaVersion: "v1"; kind: "appData"; class?: string; message: string }
-  | { schemaVersion: "v1"; kind: "forbiddenInteraction"; target: string; reason: string }
-  | { schemaVersion: "v1"; kind: "cancelled" }
+  | { schemaVersion: "v1"; kind: "forbiddenInteraction"; message: string; target: string; reason: string }
+  | { schemaVersion: "v1"; kind: "cancelled"; message: string }
   | { schemaVersion: "v1"; kind: "internal"; message: string }
-  | { schemaVersion: SchemaVersion; kind: "__unknown"; raw: unknown };
+  | { schemaVersion: SchemaVersion; kind: "__unknown"; message: string; raw: unknown };
 
 const knownKinds = new Set([
   "invalidInput",
@@ -59,35 +59,41 @@ export function normalizeError(raw: unknown): SdkError {
         return {
           schemaVersion,
           kind: "__unknown",
+          message: unknownMessage(),
           raw: normalized.raw ?? raw
         };
       }
 
-      return {
+      return withActionableMessage({
         ...normalized,
         schemaVersion,
         kind
-      } as SdkError;
+      } as SdkError);
     }
 
     if (kind) {
       return {
         schemaVersion: normalized.schemaVersion === "__unknown" ? "__unknown" : "v1",
         kind: "__unknown",
+        message: unknownMessage(),
         raw
       };
     }
   }
 
   if (raw instanceof Error) {
-    return { schemaVersion: "v1", kind: "internal", message: raw.message };
+    return { schemaVersion: "v1", kind: "internal", message: internalMessage(raw.message) };
   }
 
-  return { schemaVersion: "v1", kind: "internal", message: String(raw) };
+  return { schemaVersion: "v1", kind: "internal", message: internalMessage(String(raw)) };
 }
 
 export function cancelledError(): SdkError {
-  return { schemaVersion: "v1", kind: "cancelled" };
+  return {
+    schemaVersion: "v1",
+    kind: "cancelled",
+    message: "Operation was cancelled. Create a fresh AbortController or retry without an already-aborted signal."
+  };
 }
 
 export function invalidInput(field: string, reason: string): SdkError {
@@ -95,7 +101,7 @@ export function invalidInput(field: string, reason: string): SdkError {
     schemaVersion: "v1",
     kind: "invalidInput",
     field,
-    message: reason
+    message: `Invalid \`${field}\`: ${reason}. Check the value supplied for \`${field}\` and retry with a valid SDK input.`
   };
 }
 
@@ -124,4 +130,50 @@ function copyField(
     target[to] = source[from];
   }
   delete target[from];
+}
+
+function withActionableMessage(error: SdkError): SdkError {
+  if ("message" in error && typeof error.message === "string" && error.message.length > 0) {
+    return error;
+  }
+
+  switch (error.kind) {
+    case "unknownEnumValue":
+      return {
+        ...error,
+        message: `Unsupported value \`${error.value}\` for \`${error.field}\`. Use one of the documented values for this field.`
+      };
+    case "unsupportedChain":
+      return {
+        ...error,
+        message: `Unsupported chain ID ${error.chainId}. Call supportedChainIds() before constructing requests and route unsupported networks to another integration.`
+      };
+    case "walletTimeout":
+      return {
+        ...error,
+        message: `Wallet request timed out after ${error.timeoutMs} ms. Increase walletConfig.timeoutMs or ask the user to approve the wallet request before the timeout.`
+      };
+    case "forbiddenInteraction":
+      return {
+        ...error,
+        message: `Forbidden settlement interaction target \`${error.target}\`. Remove this target from settlement interactions before signing or submitting the order.`
+      };
+    case "cancelled":
+      return cancelledError();
+    case "__unknown":
+      return {
+        ...error,
+        message: unknownMessage()
+      };
+    default:
+      return error;
+  }
+}
+
+function internalMessage(detail: string): string {
+  return `SDK internal error: ${detail}. This indicates serialization or invariant failure; retry with the same inputs only after checking the reported input shape.`;
+}
+
+function unknownMessage(): string {
+  return "SDK received an unrecognized error variant. Inspect raw, preserve it in logs without credentials, and update the SDK if the variant is now documented.";
 }

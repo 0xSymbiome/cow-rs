@@ -182,7 +182,7 @@ async fn eip1193_rejection_maps_to_wallet_error() {
     let value = json(error);
 
     assert_eq!(value["kind"], "walletRequest");
-    assert_eq!(value["message"], "async denial");
+    assert!(value["message"].as_str().unwrap().contains("async denial"));
 }
 
 #[wasm_bindgen_test]
@@ -200,7 +200,12 @@ async fn typed_data_callback_non_string_return_is_rejected() {
     let value = json(error);
 
     assert_eq!(value["kind"], "walletRequest");
-    assert_eq!(value["message"], "callback did not return a string");
+    assert!(
+        value["message"]
+            .as_str()
+            .unwrap()
+            .contains("callback did not return a string")
+    );
 }
 
 #[wasm_bindgen_test]

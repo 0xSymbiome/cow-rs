@@ -16,6 +16,9 @@ on:
       - 'e2e/wasm-typescript/**'
       - 'e2e/wasm-typescript-cf/**'
       - 'e2e/wasm-typescript-deno/**'
+      - 'examples/wasm-typescript-node-viem/**'
+      - 'examples/wasm-typescript-browser-mm/**'
+      - 'examples/wasm-typescript-cloudflare-proxy/**'
       - 'rust-toolchain.toml'
       - 'scripts/policy-maintainer/**'
       - 'tests/**'
@@ -34,6 +37,9 @@ on:
       - 'e2e/wasm-typescript/**'
       - 'e2e/wasm-typescript-cf/**'
       - 'e2e/wasm-typescript-deno/**'
+      - 'examples/wasm-typescript-node-viem/**'
+      - 'examples/wasm-typescript-browser-mm/**'
+      - 'examples/wasm-typescript-cloudflare-proxy/**'
       - 'rust-toolchain.toml'
       - 'scripts/policy-maintainer/**'
       - 'tests/**'
@@ -395,6 +401,96 @@ jobs:
       - name: Run Workers Vitest
         run: pnpm --dir e2e/wasm-typescript-cf run test
 
+  example-node-viem:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - wasm-package-staging
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22', '24']
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: actions/download-artifact@v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: cow-sdk-wasm-npm
+          path: crates/wasm/npm
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ matrix.node-version }}
+      # Source ref: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Install Node viem example dependencies
+        run: pnpm --dir examples/wasm-typescript-node-viem install --frozen-lockfile
+      - name: Test Node viem example
+        run: pnpm --dir examples/wasm-typescript-node-viem test
+
+  example-browser-mm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - wasm-package-staging
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: actions/download-artifact@v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: cow-sdk-wasm-npm
+          path: crates/wasm/npm
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Source ref: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Install browser MetaMask example dependencies
+        run: pnpm --dir examples/wasm-typescript-browser-mm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm --dir examples/wasm-typescript-browser-mm exec playwright install --with-deps chromium
+      - name: Test browser MetaMask example
+        run: pnpm --dir examples/wasm-typescript-browser-mm test
+
+  example-cloudflare-proxy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - wasm-package-staging
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: actions/download-artifact@v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: cow-sdk-wasm-npm
+          path: crates/wasm/npm
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Source ref: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Install Cloudflare proxy example dependencies
+        run: pnpm --dir examples/wasm-typescript-cloudflare-proxy install --frozen-lockfile
+      - name: Test Cloudflare proxy example
+        run: pnpm --dir examples/wasm-typescript-cloudflare-proxy test
+
   npm-tarball-verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -438,6 +534,9 @@ jobs:
       - playwright-bundler
       - type-check
       - workers-vitest
+      - example-node-viem
+      - example-browser-mm
+      - example-cloudflare-proxy
       - npm-tarball-verify
     steps:
       # Source ref: re-actors/alls-green@release/v1

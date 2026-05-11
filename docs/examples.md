@@ -44,6 +44,19 @@ Use the WASM examples when you need browser-facing verification surfaces.
 For the two-tier browser-runtime proof posture these consoles follow, see
 [Browser-runtime proof posture](browser-runtime-proof-posture.md).
 
+## TypeScript WASM Package Examples
+
+Use these examples when you are integrating the TypeScript-callable WASM package
+from JavaScript or TypeScript runtimes. The examples use a repository-local
+package alias before publication; application code should replace it with the
+final `<published-cow-sdk-wasm-package>` package name.
+
+| Runtime | Example | Purpose |
+| --- | --- | --- |
+| Node.js 22 or 24 with viem | [`wasm-typescript-node-viem`](../examples/wasm-typescript-node-viem/README.md) | Sign an order through viem's EIP-1193 request path |
+| Browser with MetaMask injection | [`wasm-typescript-browser-mm`](../examples/wasm-typescript-browser-mm/README.md) | Sign an order with `window.ethereum` and `eth_signTypedData_v4` |
+| Cloudflare Workers | [`wasm-typescript-cloudflare-proxy`](../examples/wasm-typescript-cloudflare-proxy/README.md) | Initialize the Cloudflare flavor and proxy orderbook requests |
+
 ## Adding A WASM Console
 
 WASM consoles under `examples/wasm/` are verification dashboards, not
@@ -112,6 +125,8 @@ Every console ships with:
   the facade crate to deterministic signed-order output.
 - Continue with native examples for trading, signing, app-data, and transport
   workflows.
+- Use the TypeScript WASM package examples for Node.js, browser-wallet, or
+  Cloudflare Worker integration.
 - Use `cow-sdk-subgraph` examples when you need read-only subgraph access.
 - Use the SDK verification console when you need browser-hosted WASM proof.
 - Use the browser wallet console when you need explicit wallet authorization

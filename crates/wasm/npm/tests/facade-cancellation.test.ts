@@ -18,9 +18,10 @@ describe("facade cancellation", () => {
     const controller = new AbortController();
     controller.abort();
 
-    await expect(client.fetchAppDataFromCid(CID, { signal: controller.signal })).rejects.toEqual({
+    await expect(client.fetchAppDataFromCid(CID, { signal: controller.signal })).rejects.toMatchObject({
       schemaVersion: "v1",
-      kind: "cancelled"
+      kind: "cancelled",
+      message: expect.stringContaining("AbortController")
     });
     expect(called).toBe(false);
     client.dispose();

@@ -34,3 +34,15 @@ cargo run-deterministic-examples
 facade and browser-wallet support.
 
 See [WASM examples](wasm/README.md) for the WASM example index.
+
+## TypeScript WASM Package
+
+The TypeScript-callable WASM package examples cover the main JavaScript host
+patterns:
+
+- `wasm-typescript-node-viem/` signs through viem's EIP-1193 request path.
+- `wasm-typescript-browser-mm/` signs through a MetaMask-style injected wallet.
+- `wasm-typescript-cloudflare-proxy/` initializes the Cloudflare flavor and
+  proxies orderbook requests from a Worker.
+
+Each example has its own README and `pnpm test` check.
