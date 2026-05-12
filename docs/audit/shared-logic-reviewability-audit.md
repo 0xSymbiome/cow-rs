@@ -1,7 +1,7 @@
 # Shared Logic Reviewability Audit
 
 Status: Current  
-Last reviewed: 2026-04-21  
+Last reviewed: 2026-05-12
 Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary  
 Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, or boundary-specific order DTO separation that materially affect correctness or reviewability  
 Related docs:
@@ -55,8 +55,8 @@ Trading keeps ergonomic public entry points while routing workflow logic
 through async implementation paths. Shared advanced-parameter extraction lives
 in:
 
-- `crates/trading/src/post.rs::swap_additional_params`
-- `crates/trading/src/post.rs::limit_additional_params`
+- `crates/trading/src/post/generic.rs::swap_additional_params`
+- `crates/trading/src/post/generic.rs::limit_additional_params`
 
 ### Boundary-Specific Order DTO Separation
 

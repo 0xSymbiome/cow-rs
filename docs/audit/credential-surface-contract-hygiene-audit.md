@@ -127,7 +127,7 @@ Primary implementation points:
 - `crates/browser-wallet/src/wallet.rs`
 - `crates/trading/src/types/options.rs`
 - `crates/trading/src/quote.rs`
-- `crates/trading/src/post.rs`
+- `crates/trading/src/post/generic.rs`
 - `crates/trading/src/slippage.rs`
 
 Primary regression coverage:

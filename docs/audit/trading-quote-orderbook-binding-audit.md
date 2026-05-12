@@ -60,7 +60,7 @@ Primary implementation points:
 - `crates/orderbook/src/api.rs`
 - `crates/trading/src/types/overrides.rs`
 - `crates/trading/src/quote.rs`
-- `crates/trading/src/post.rs`
+- `crates/trading/src/post/from_quote.rs`
 
 Primary regression coverage:
 

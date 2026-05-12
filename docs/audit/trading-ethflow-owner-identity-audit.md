@@ -134,7 +134,7 @@ triggering a false rejection.
 Primary implementation points:
 
 - `crates/trading/src/onchain.rs`
-- `crates/trading/src/post.rs`
+- `crates/trading/src/post/native.rs`
 - `crates/trading/src/validation.rs`
 - `crates/core/src/types/identity.rs` (`Address`)
 

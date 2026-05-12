@@ -49,7 +49,7 @@ This audit covers:
   `TradingAppDataInfo`
 - the submission-seam derivation of `app_data_signer` consumed by
   `OrderBoundsValidator::validate` on the quote-to-post path at
-  `crates/trading/src/post.rs`
+  `crates/trading/src/post/generic.rs`
 
 It does not cover the direct-build app-data path used by
 `cow_sdk_trading::build_app_data` (covered by the parity fixture
@@ -160,7 +160,7 @@ introducing another merge or rewrite step on the quote-to-post path.
 Primary implementation points:
 
 - `crates/trading/src/quote.rs`
-- `crates/trading/src/post.rs`
+- `crates/trading/src/post/generic.rs`
 - `crates/trading/src/lib.rs`
 - `crates/app-data/src/types.rs`
 - `crates/app-data/src/schema.rs`

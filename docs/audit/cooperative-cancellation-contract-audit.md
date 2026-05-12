@@ -129,7 +129,7 @@ Primary implementation points:
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/error.rs`
 - `crates/trading/src/sdk/mod.rs`, `crates/trading/src/sdk/*.rs`
-- `crates/trading/src/post.rs`
+- `crates/trading/src/post/mod.rs`, `crates/trading/src/post/*.rs`
 - `crates/trading/src/error.rs`
 - `crates/trading/src/wait.rs`
 - `crates/signing/src/errors.rs`

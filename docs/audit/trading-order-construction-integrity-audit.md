@@ -89,7 +89,7 @@ Primary implementation points:
 - `crates/trading/src/error.rs`
 - `crates/trading/src/order.rs`
 - `crates/trading/src/parameters.rs`
-- `crates/trading/src/post.rs`
+- `crates/trading/src/post/{swap,limit,native}.rs`
 - `crates/trading/src/quote.rs`
 - `crates/trading/src/sdk/{post,helpers}.rs`
 - `crates/trading/src/types/trade.rs`
