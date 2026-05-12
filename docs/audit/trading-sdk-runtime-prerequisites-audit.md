@@ -83,7 +83,7 @@ helpers that do not consume that contract.
 
 Primary implementation points:
 
-- `crates/trading/src/sdk.rs`
+- `crates/trading/src/sdk/builder.rs`
 - `crates/trading/src/types/trader.rs`
 - `crates/trading/src/types/options.rs`
 - `crates/trading/src/onchain.rs`

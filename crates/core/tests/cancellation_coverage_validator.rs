@@ -12,7 +12,7 @@ use syn::{Expr, ImplItem, Item, Lit, Member, Type, Visibility};
 
 struct Surface {
     type_name: &'static str,
-    source_path: &'static str,
+    source_paths: &'static [&'static str],
     table_path: &'static str,
     seed_methods: &'static [&'static str],
 }
@@ -20,19 +20,19 @@ struct Surface {
 const SURFACES: &[Surface] = &[
     Surface {
         type_name: "OrderBookApi",
-        source_path: "crates/orderbook/src/api.rs",
+        source_paths: &["crates/orderbook/src/api.rs"],
         table_path: "crates/orderbook/tests/cancellation_composition_contract.rs",
         seed_methods: &["get_version"],
     },
     Surface {
         type_name: "SubgraphApi",
-        source_path: "crates/subgraph/src/api.rs",
+        source_paths: &["crates/subgraph/src/api.rs"],
         table_path: "crates/subgraph/tests/cancellation_composition_contract.rs",
         seed_methods: &["get_totals"],
     },
     Surface {
         type_name: "TradingSdk",
-        source_path: "crates/trading/src/sdk.rs",
+        source_paths: &["crates/trading/src/sdk"],
         table_path: "crates/trading/tests/cancellation_composition_contract.rs",
         seed_methods: &["get_quote_only"],
     },
@@ -43,7 +43,7 @@ fn cancellation_tables_cover_every_public_async_method() {
     let root = workspace_root();
 
     for surface in SURFACES {
-        let public_async = public_async_methods(&root.join(surface.source_path), surface.type_name);
+        let public_async = public_async_methods(&root, surface.source_paths, surface.type_name);
         let table_methods = cancellation_table_methods(&root.join(surface.table_path));
         assert!(
             !table_methods.is_empty(),
@@ -78,12 +78,74 @@ fn cancellation_tables_cover_every_public_async_method() {
     }
 }
 
+#[test]
+fn trading_sdk_source_directory_aggregates_public_async_methods() {
+    let root = workspace_root();
+    let public_async = public_async_methods(&root, &["crates/trading/src/sdk"], "TradingSdk");
+    let expected = [
+        "approve_cow_protocol_async",
+        "get_cow_protocol_allowance_async",
+        "get_order",
+        "get_pre_sign_transaction_async",
+        "get_quote_only",
+        "get_quote_results",
+        "get_quote_results_async",
+        "off_chain_cancel_order",
+        "off_chain_cancel_order_async",
+        "on_chain_cancel_order",
+        "on_chain_cancel_order_async",
+        "post_limit_order",
+        "post_limit_order_async",
+        "post_swap_order",
+        "post_swap_order_async",
+        "post_swap_order_from_quote",
+        "post_swap_order_from_quote_async",
+    ]
+    .into_iter()
+    .map(ToOwned::to_owned)
+    .collect::<BTreeSet<_>>();
+
+    assert_eq!(
+        public_async, expected,
+        "TradingSdk directory scan must preserve the reviewed cancellation surface",
+    );
+}
+
 fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .and_then(Path::parent)
         .expect("core crate must live under workspace crates directory")
         .to_path_buf()
+}
+
+fn source_files(root: &Path, source_paths: &[&str]) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+
+    for source_path in source_paths {
+        let path = root.join(source_path);
+        if path.is_dir() {
+            let entries = fs::read_dir(&path)
+                .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
+            for entry in entries {
+                let entry = entry.unwrap_or_else(|error| {
+                    panic!("failed to read entry under {}: {error}", path.display())
+                });
+                let entry_path = entry.path();
+                if entry_path
+                    .extension()
+                    .is_some_and(|extension| extension == "rs")
+                {
+                    files.push(entry_path);
+                }
+            }
+        } else {
+            files.push(path);
+        }
+    }
+
+    files.sort();
+    files
 }
 
 fn parse_file(path: &Path) -> syn::File {
@@ -94,10 +156,10 @@ fn parse_file(path: &Path) -> syn::File {
     })
 }
 
-fn public_async_methods(path: &Path, type_name: &str) -> BTreeSet<String> {
-    parse_file(path)
-        .items
+fn public_async_methods(root: &Path, source_paths: &[&str], type_name: &str) -> BTreeSet<String> {
+    source_files(root, source_paths)
         .into_iter()
+        .flat_map(|path| parse_file(&path).items)
         .filter_map(|item| match item {
             Item::Impl(item_impl)
                 if item_impl.trait_.is_none()

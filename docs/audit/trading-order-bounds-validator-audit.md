@@ -197,7 +197,7 @@ Primary implementation points:
 - `crates/trading/src/validation.rs`
 - `crates/trading/src/parameters.rs`
 - `crates/trading/src/post.rs`
-- `crates/trading/src/sdk.rs`
+- `crates/trading/src/sdk/post.rs`
 - `crates/core/src/types/amount.rs` (`Amount::is_zero`)
 - `fuzz/fuzz_targets/fuzz_order_bounds_validator.rs`
 

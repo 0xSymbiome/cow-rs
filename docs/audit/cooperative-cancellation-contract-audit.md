@@ -1,7 +1,7 @@
 # Cooperative Cancellation Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-11
+Last reviewed: 2026-05-12
 Owning surface: Cross-cutting cooperative cancellation across `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, native Alloy adapters, and `cow-sdk-wasm` callback transport
 Refresh trigger: Changes to the `Cancellable` combinator, to the `CancellationToken` re-export, to the canonical long-running public methods on client surfaces, to wasm abort/timeout bridging, or to the `From<Cancelled>` bridges on typed error aggregates
 Related docs:
@@ -128,7 +128,7 @@ Primary implementation points:
 - `crates/orderbook/src/error.rs`
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/error.rs`
-- `crates/trading/src/sdk.rs`
+- `crates/trading/src/sdk/mod.rs`, `crates/trading/src/sdk/*.rs`
 - `crates/trading/src/post.rs`
 - `crates/trading/src/error.rs`
 - `crates/trading/src/wait.rs`

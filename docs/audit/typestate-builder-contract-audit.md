@@ -114,7 +114,7 @@ the expected compile error and its stderr fixture.
 ### Trading SDK Construction
 
 `TradingSdkBuilder<ChainIdState, AppCodeState>` lives at
-`crates/trading/src/sdk.rs`. The fluent chain-id and app-code setters move
+`crates/trading/src/sdk/builder.rs`. The fluent chain-id and app-code setters move
 the builder from unset to set marker states. `build_ready()` is implemented
 only on `(ChainIdSet, AppCodeSet)` and returns `TradingSdk`; `build_helper_only()`
 is implemented once `ChainIdSet` is present and returns `HelperOnlySdk`, which
@@ -162,7 +162,7 @@ Primary implementation points:
 - `crates/orderbook/src/api.rs`
 - `crates/subgraph/src/builder.rs`
 - `crates/subgraph/src/api.rs`
-- `crates/trading/src/sdk.rs`
+- `crates/trading/src/sdk/builder.rs`
 - `crates/trading/src/types/app_code.rs`
 - `crates/alloy-provider/src/builder.rs`
 - `crates/alloy-signer/src/builder.rs`
