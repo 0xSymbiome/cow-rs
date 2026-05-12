@@ -378,6 +378,66 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Partner fee policy variants can grow with upstream partner fee semantics.
+  - name: OrderKindDto
+    file: crates/pure-helpers/src/dto.rs
+    line: 18
+    category: protocol-fixed-exhaustive
+    expected_marker: exhaustive
+    reason: Pure helper order-kind DTO mirrors the fixed CoW order side wire values.
+  - name: TokenBalanceDto
+    file: crates/pure-helpers/src/dto.rs
+    line: 37
+    category: sdk-local-state
+    expected_marker: exhaustive
+    reason: Pure helper balance DTO accepts only the SDK-supported balance tags and maps unsupported buy paths to typed errors.
+  - name: PureError
+    file: crates/pure-helpers/src/errors.rs
+    line: 10
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Pure helper diagnostics can grow as additional host-safe validation paths are added.
+  - name: OrderKindDto
+    file: crates/wasm/src/exports/dto.rs
+    line: 28
+    category: protocol-fixed-exhaustive
+    expected_marker: exhaustive
+    reason: Wasm order-kind DTO mirrors the fixed CoW order side wire values.
+  - name: TokenBalanceDto
+    file: crates/wasm/src/exports/dto.rs
+    line: 48
+    category: sdk-local-state
+    expected_marker: exhaustive
+    reason: Wasm balance DTO accepts only the SDK-supported balance tags exported to JavaScript callers.
+  - name: LimiterScopeConfig
+    file: crates/wasm/src/exports/dto.rs
+    line: 463
+    category: sdk-local-state
+    expected_marker: exhaustive
+    reason: Wasm limiter-scope config is a closed JavaScript override surface for the currently supported SDK buckets.
+  - name: JitterStrategyConfig
+    file: crates/wasm/src/exports/dto.rs
+    line: 513
+    category: sdk-local-state
+    expected_marker: exhaustive
+    reason: Wasm jitter config is a closed JavaScript override surface for the currently supported SDK retry strategies.
+  - name: PartnerFeeInput
+    file: crates/wasm/src/exports/dto.rs
+    line: 972
+    category: sdk-local-state
+    expected_marker: exhaustive
+    reason: Wasm partner-fee input accepts the SDK-owned single-or-multiple shapes currently supported by trading helpers.
+  - name: SchemaVersion
+    file: crates/wasm/src/exports/envelope.rs
+    line: 10
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Wasm envelope schema versions can grow additively as export contracts evolve.
+  - name: WasmError
+    file: crates/wasm/src/exports/errors.rs
+    line: 30
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Wasm export diagnostics can grow as additional fallible helper paths are exposed.
   - name: RegistryError
     file: crates/contracts/src/deployments/registry.rs
     line: 204

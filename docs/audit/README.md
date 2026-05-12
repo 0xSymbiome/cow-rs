@@ -111,6 +111,7 @@ If the reviewed surface did not change, leave the audit alone.
 | [WASM Public API Stability Audit](wasm-public-api-stability-audit.md) | Standing audit | `cow-sdk-wasm` facade declarations, package exports, config shapes, and error envelopes | Facade declaration snapshots, raw export denylist, single-object constructors, transport policy config, and schema-versioned errors | Current | 2026-05-11 |
 | [WASM Schema Versioning Policy Audit](wasm-schema-versioning-policy-audit.md) | Standing audit | `cow-sdk-wasm` JavaScript-visible success and error envelopes | `schemaVersion` output fields, unknown-variant sentinel behavior, facade error normalization, and versioned declaration evidence | Current | 2026-05-11 |
 | [WASM Facade Architecture Audit](wasm-facade-architecture-audit.md) | Standing audit | TypeScript facade modules under `crates/wasm/npm/src/**` | Public facade ownership, raw binding boundary, resource cleanup, runtime flavor declarations, and package resolution tests | Current | 2026-05-11 |
+| [cow-sdk-wasm Comparative Benchmark Validation Note](cow-sdk-wasm-comparative-benchmark-validation-note.md) | Validation note | `cow-sdk-wasm` crate and npm package | Bundle-size, correctness-parity, latency, primitive-performance, boundary-cost, and workflow-decomposition comparison against upstream TypeScript SDK references | Current | 2026-05-12 |
 
 ## App-Data And Dependencies
 
@@ -159,7 +160,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Unsafe-Code Policy Audit](unsafe-code-policy-audit.md) | Standing audit | Workspace `unsafe_code = deny` lint declared in `Cargo.toml` workspace lint section | Workspace unsafe-code deny lint, crate lint adoption, public-path source posture, and clippy enforcement | Current | 2026-04-23 |
-| [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site, including native Alloy adapter conversion, trading receipt-wait helpers, wasm exports, pure helpers, and allowlist coverage | Current | 2026-05-11 |
+| [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site, including native Alloy adapter conversion, trading receipt-wait helpers, wasm exports, pure helpers, and allowlist coverage | Current | 2026-05-12 |
 | [Workflow Security Audit](workflow-security-audit.md) | Standing audit | Every `.github/workflows/*.yml` file | SHA-pinned third-party actions, explicit permissions, reviewed action source refs, and guarded `pull_request_target` use | Current | 2026-05-08 |
 
 ## Cross-Cutting Reviewability And Contract Hygiene

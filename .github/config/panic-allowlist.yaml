@@ -76,20 +76,8 @@ allowed:
     item: OrderBookApiBuilder::build
     reason: Typestate terminal methods guarantee required transport or validated default transport inputs.
   - file: crates/orderbook/src/request.rs
-    item: JitterStrategy::delay_for
-    reason: Jitter offset is explicitly capped to u64::MAX before conversion.
-  - file: crates/orderbook/src/request.rs
-    item: RequestPolicy::base_backoff_delay
-    reason: Retry exponent is clamped to a u32-safe range before conversion.
-  - file: crates/orderbook/src/request.rs
-    item: OrderBookTransportPolicy::default
-    reason: Static orderbook user-agent is a repository-owned valid header literal.
-  - file: crates/orderbook/src/request.rs
     item: ResponseEnvelope::json
     reason: Test-only response envelope helper serializes serde_json::Value fixtures.
-  - file: crates/orderbook/src/request.rs
-    item: delay_for
-    reason: Millisecond delay is clamped to u32::MAX before conversion.
   - file: crates/orderbook/src/transform.rs
     item: native_token_address
     reason: Native token sentinel literal is static and validated by the Address constructor.
@@ -102,9 +90,6 @@ allowed:
   - file: crates/signing/src/order_signing.rs
     item: buy_balance_name
     reason: Signing balance mapping covers every currently representable buy-balance variant.
-  - file: crates/subgraph/src/api.rs
-    item: SubgraphTransportPolicy::default
-    reason: Static subgraph user-agent is a repository-owned valid header literal.
   - file: crates/subgraph/src/builder.rs
     item: SubgraphApiBuilder::finish
     reason: Typestate terminal methods guarantee chain and API key markers are present before finish.
@@ -132,6 +117,30 @@ allowed:
   - file: crates/trading/src/parameters.rs
     item: native_sentinel
     reason: Native currency sentinel is a repository-owned valid EVM address literal.
+  - file: crates/trading/src/wait.rs
+    item: delay_for
+    reason: Millisecond polling delay is clamped to u32::MAX before wasm timer conversion.
   - file: crates/trading/src/validation.rs
     item: native_sentinel
     reason: Native currency sentinel is a repository-owned valid EVM address literal.
+  - file: crates/transport-policy/src/jitter.rs
+    item: bounded_offset
+    reason: Jitter offset is explicitly capped to u64::MAX before conversion.
+  - file: crates/transport-policy/src/policy.rs
+    item: TransportPolicy::default_orderbook
+    reason: Static orderbook user-agent is a repository-owned valid header literal.
+  - file: crates/transport-policy/src/policy.rs
+    item: TransportPolicy::default_subgraph
+    reason: Static subgraph user-agent is a repository-owned valid header literal.
+  - file: crates/transport-policy/src/policy.rs
+    item: TransportPolicy::default_trading
+    reason: Static trading user-agent is a repository-owned valid header literal.
+  - file: crates/transport-policy/src/policy.rs
+    item: TransportPolicy::default_ipfs
+    reason: Static IPFS user-agent is a repository-owned valid header literal.
+  - file: crates/transport-policy/src/retry.rs
+    item: RetryPolicy::base_backoff_delay
+    reason: Retry exponent is clamped to a u32-safe range before conversion.
+  - file: crates/transport-policy/src/time.rs
+    item: sleep
+    reason: Millisecond retry delay is clamped to u32::MAX before wasm timer conversion.

@@ -126,7 +126,14 @@ impl RetryPolicy {
         retry_after(headers, now).map_or(backoff, |retry_after| backoff.max(retry_after.delay()))
     }
 
+    /// Returns the uncluttered exponential retry delay before jitter.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the bounded retry exponent cannot be represented as
+    /// `u32`.
     fn base_backoff_delay(&self, attempt_index: usize) -> Duration {
+        // SAFETY: the exponent is clamped to at most 6 before conversion.
         let exponent = u32::try_from(attempt_index.saturating_sub(1).min(6))
             .expect("backoff exponent is clamped to a u32-safe range");
         self.base_delay

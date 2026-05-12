@@ -92,6 +92,12 @@ impl Default for JitterStrategy {
     }
 }
 
+/// Returns a deterministic jitter offset within `window`.
+///
+/// # Panics
+///
+/// Panics only if the explicitly capped modulo result cannot be represented as
+/// `u64`.
 fn bounded_offset(seed: u64, attempt_index: usize, window: Duration) -> Duration {
     let window_ms = window.as_millis();
     if window_ms == 0 {
@@ -100,6 +106,8 @@ fn bounded_offset(seed: u64, attempt_index: usize, window: Duration) -> Duration
     let bounded_window = window_ms.saturating_add(1).min(u128::from(u64::MAX));
     let attempt = u64::try_from(attempt_index).unwrap_or(u64::MAX);
     let offset = u128::from(splitmix64(seed ^ attempt)) % bounded_window;
+    // SAFETY: `bounded_window` is capped to `u64::MAX`, so the modulo result is
+    // always representable as `u64`.
     Duration::from_millis(u64::try_from(offset).expect("jitter offset is capped to u64"))
 }
 

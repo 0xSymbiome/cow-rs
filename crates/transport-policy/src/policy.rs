@@ -62,6 +62,8 @@ impl TransportPolicy {
     #[must_use]
     pub fn default_orderbook() -> Self {
         Self {
+            // SAFETY: this crate-owned user-agent literal is static and
+            // validated by the HTTP header parser.
             client: HttpClientPolicy::new(DEFAULT_ORDERBOOK_USER_AGENT)
                 .expect("static orderbook user-agent must remain valid"),
             retry: RetryPolicy::builder()
@@ -81,6 +83,8 @@ impl TransportPolicy {
     #[must_use]
     pub fn default_subgraph() -> Self {
         Self {
+            // SAFETY: this crate-owned user-agent literal is static and
+            // validated by the HTTP header parser.
             client: HttpClientPolicy::new(DEFAULT_SUBGRAPH_USER_AGENT)
                 .expect("static subgraph user-agent must remain valid"),
             retry: RetryPolicy::builder()
@@ -104,6 +108,8 @@ impl TransportPolicy {
     #[must_use]
     pub fn default_trading() -> Self {
         Self {
+            // SAFETY: this crate-owned user-agent literal is static and
+            // validated by the HTTP header parser.
             client: HttpClientPolicy::new(DEFAULT_TRADING_USER_AGENT)
                 .expect("static trading user-agent must remain valid"),
             retry: RetryPolicy::builder()
@@ -127,6 +133,8 @@ impl TransportPolicy {
     #[must_use]
     pub fn default_ipfs() -> Self {
         Self {
+            // SAFETY: this crate-owned user-agent literal is static and
+            // validated by the HTTP header parser.
             client: HttpClientPolicy::new(DEFAULT_IPFS_USER_AGENT)
                 .expect("static IPFS user-agent must remain valid")
                 .without_timeout(),

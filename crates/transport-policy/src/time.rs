@@ -21,6 +21,7 @@ pub async fn sleep(duration: Duration) {
 
     #[cfg(target_arch = "wasm32")]
     {
+        // SAFETY: clamp before converting for the wasm timer API.
         let millis = u32::try_from(duration.as_millis().min(u128::from(u32::MAX)))
             .expect("millisecond delay is clamped to `u32::MAX`");
         TimeoutFuture::new(millis).await;

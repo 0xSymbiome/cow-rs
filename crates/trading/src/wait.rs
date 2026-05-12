@@ -274,6 +274,12 @@ where
     }
 }
 
+/// Sleeps for the supplied polling delay on the active target.
+///
+/// # Panics
+///
+/// Panics only on `wasm32` if the explicitly clamped millisecond duration
+/// cannot be represented by the timer API.
 async fn delay_for(duration: Duration) {
     #[cfg(not(target_arch = "wasm32"))]
     {
