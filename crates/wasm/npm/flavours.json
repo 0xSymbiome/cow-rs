@@ -68,7 +68,8 @@
       "targets": ["web"],
       "rawBudgetMiB": 3.0,
       "brotliBudgetKiB": 800,
-      "gzipBudgetMiB": 3.0,
+      "gzipFailBytes": 3000000,
+      "gzipWarnBytes": 2700000,
       "subpath": "./cloudflare",
       "rawWasmSubpath": "./cloudflare/wasm"
     }

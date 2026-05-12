@@ -55,7 +55,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   CARGO_TERM_COLOR: always
   NODE_VERSION: '24'
-  PNPM_VERSION: '9.15.0'
+  PNPM_VERSION: '11.0.9'
 
 jobs:
   rust-checks:

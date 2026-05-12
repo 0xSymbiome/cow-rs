@@ -1,7 +1,7 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-05-09
+Last reviewed: 2026-05-11
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, or browser-wallet alloy advisory posture
 Related docs:
@@ -9,6 +9,7 @@ Related docs:
 - [CID Dependency Audit](cid-dependency-audit.md)
 - [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
 - [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
+- [WASM Component Model Future Prep Audit](wasm-component-model-future-prep-audit.md)
 - [Release Checklist](../release-checklist.md)
 - [Verification Guide](../verification-guide.md)
 
@@ -32,6 +33,8 @@ This audit covers:
 - the report-only alloy release-candidate canary and its failure response
 - the `cow-sdk-wasm` wasm32 dependency exclusion list for browser-wallet,
   native Alloy, reqwest, and hyper families
+- the pure-helper crate dependency boundary that keeps deterministic wasm
+  helpers free of JavaScript FFI dependencies
 
 It does not cover broader dependency-freshness reporting, license or source
 policy details beyond the blocking gate split, or unrelated crate-specific
@@ -57,6 +60,7 @@ architecture reviews.
 | Native Alloy two-family lockfile | The workspace lockfile keeps reviewed Alloy runtime crates on `2.0.4` and Alloy Core ABI crates on `1.5.7`, with exactly one resolved version per listed crate | Conforms |
 | Alloy canary failures | Scheduled canary failures are triaged as upstream-compatibility reports, with local pins changed only after ordinary quality gates pass and without dependency-policy waivers | Conforms |
 | `cow-sdk-wasm` wasm32 tree | The wasm32 dependency graph excludes `cow-sdk-browser-wallet`, `cow-sdk-alloy*`, `alloy-provider`, reqwest, and hyper families; `tokio` is limited to the existing cancellation-token path | Conforms |
+| Pure-helper FFI boundary | `cow-sdk-pure-helpers` remains independent of wasm-bindgen, `js-sys`, `web-sys`, and `serde-wasm-bindgen` | Conforms |
 
 ## Current Contract
 
@@ -212,6 +216,10 @@ test reads cargo metadata for the wasm32 target and fails if any forbidden
 crate appears in the dependency closure. This keeps the TypeScript-callable
 crate browser-safe and preserves the native Alloy adapter boundary.
 
+`cow-sdk-pure-helpers` is a pure Rust dependency boundary for deterministic
+wasm helper logic. Its tests reject JavaScript FFI imports so helper extraction
+does not pull wasm-bindgen concerns into reusable protocol code.
+
 ## Evidence
 
 Primary implementation points:
@@ -234,6 +242,8 @@ Primary implementation points:
 - `docs/audit/cid-dependency-audit.md`
 - `docs/audit/browser-wallet-alloy-dependency-audit.md`
 - `crates/wasm/Cargo.toml`
+- `crates/pure-helpers/Cargo.toml`
+- `crates/pure-helpers/tests/no_ffi_imports.rs`
 - `crates/browser-wallet/Cargo.toml`
 - `crates/contracts/Cargo.toml`
 - `crates/orderbook/Cargo.toml`
@@ -255,5 +265,6 @@ cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo check --workspace --all-features --target wasm32-unknown-unknown
 cargo test -p cow-rs-workspace-tests --test dependency_default_features_audit
+cargo test -p cow-sdk-pure-helpers --test no_ffi_imports
 bash scripts/check-release-docs-agree.sh
 ```

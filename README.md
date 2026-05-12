@@ -22,10 +22,12 @@ contracts.
 | You are building... | Choose | Why |
 | --- | --- | --- |
 | MEV bot, market maker, solver, analytics job, or treasury automation in Rust | `cow-sdk` | Native Rust facade over typed transport, signing, orderbook, and trading crates |
-| Browser dapp embedding "swap with CoW" through TypeScript | `<published-cow-sdk-wasm-package>` | TypeScript facade over deterministic Rust helpers with wallet callbacks |
-| Browser dapp that only needs orderbook plus signing | `<published-cow-sdk-wasm-package>/orderbook` | Smaller wasm flavor for quote, post, lookup, trade, and cancellation flows |
-| Node.js 22 or 24 backend service | `<published-cow-sdk-wasm-package>` | Node target works with explicit fetch or callback transport |
-| Cloudflare Worker proxying orderbook calls | `<published-cow-sdk-wasm-package>/cloudflare` | Worker-compatible package flavor and explicit wasm module initialization |
+| Standard browser dapp or CowSwap-style UI in TypeScript | Upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) | Substantially smaller bundle at equivalent feature subsets; mature web ecosystem fit |
+| TypeScript service that needs deterministic Rust signing parity | `<published-cow-sdk-wasm-package>` | TypeScript facade over deterministic Rust helpers with wallet callbacks; byte-for-byte parity with the Rust signing path |
+| Single-source-of-truth Rust + TypeScript embedding | `<published-cow-sdk-wasm-package>` | One implementation across Rust and JavaScript runtimes |
+| Browser dapp that only needs orderbook plus signing (smaller WASM bundle preferred over the upstream TS SDK) | `<published-cow-sdk-wasm-package>/orderbook` | Smaller wasm flavor for quote, post, lookup, trade, and cancellation flows |
+| Node.js 22 or 24 LTS backend service that needs Rust signing parity | `<published-cow-sdk-wasm-package>` | Node target works with explicit fetch or callback transport |
+| Cloudflare Worker proxying orderbook calls | `<published-cow-sdk-wasm-package>/cloudflare` | Size-compatible with current Workers Free compressed-size limit at the time of measurement; full Workers support pending release-bundle and startup validation |
 | Signer service or HSM proxy | `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, deployment, and version helpers without HTTP clients |
 | Native Rust app using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in provider and signer adapters without widening the default facade |
 | Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm path; not the JavaScript-callable npm package |
@@ -39,11 +41,12 @@ contracts.
 | Native Rust services, bots, solvers, analytics | `cow-sdk` | Native HTTP transport, signing, trading, orderbook, and subgraph surfaces. |
 | Native Rust apps using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in Alloy provider and signer adapters without widening the default facade. |
 | Rust apps that compile to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm wallet and fetch plumbing; not the JavaScript-callable package. |
-| TypeScript apps with viem, ethers, wagmi, or EIP-1193 wallets | `<published-cow-sdk-wasm-package>` | Wallet stack-agnostic callbacks and the full facade surface. |
+| Standard browser dapp or CowSwap-style UI in TypeScript | Upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) | Substantially smaller bundle at equivalent feature subsets; mature web ecosystem fit. |
+| TypeScript apps that need byte-for-byte Rust signing parity (viem, ethers, wagmi, or EIP-1193 wallets) | `<published-cow-sdk-wasm-package>` | Wallet stack-agnostic callbacks and the full facade surface. |
 | Browser dapps with a smaller bundle target | `<published-cow-sdk-wasm-package>/orderbook` | Orderbook and signing subset with a smaller raw wasm budget. |
 | Signer services or HSM proxies | `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, and deployment helpers without HTTP clients. |
 | Node.js 22 or 24 LTS backends | `<published-cow-sdk-wasm-package>` | Node target works without browser polyfills when transport is configured. |
-| Cloudflare Workers | `<published-cow-sdk-wasm-package>/cloudflare` plus `<published-cow-sdk-wasm-package>/cloudflare/wasm` | Worker-compatible web target with explicit module initialization. |
+| Cloudflare Workers | `<published-cow-sdk-wasm-package>/cloudflare` plus `<published-cow-sdk-wasm-package>/cloudflare/wasm` | Worker-compatible web target with explicit module initialization. Size-compatible with current Workers Free compressed-size limit at the time of measurement; full Workers support pending release-bundle and startup validation. |
 | Deno | `<published-cow-sdk-wasm-package>` | Experimental build-only support; validate in your own runtime before production use. |
 | Non-JS wasm consumers, WASI, WebAssembly components, TinyGo, Blazor, AssemblyScript guests, or no_std | Out of scope for 0.1.0 | Use native Rust crates where possible; the npm package targets JavaScript hosts. |
 <!-- runtime-routing:end -->

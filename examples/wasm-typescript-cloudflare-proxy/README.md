@@ -8,6 +8,15 @@ The repository-local project imports `cow-sdk-wasm-local` from the workspace so
 the example can run before publication. In an application, replace that module
 specifier with the final `<published-cow-sdk-wasm-package>` package name.
 
+This is one specialized deployment shape. For most browser dapps, web apps,
+and CowSwap-style UIs, the upstream
+[`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
+is the recommended choice. The cloudflare flavor's compressed artifact is
+below the current Cloudflare Workers Free compressed-size limit at the time
+of measurement; full Workers support requires release-bundle verification
+(via `wrangler deploy --dry-run`) and Worker startup measurement against
+Cloudflare's 1-second startup limit.
+
 ## Run
 
 ```text

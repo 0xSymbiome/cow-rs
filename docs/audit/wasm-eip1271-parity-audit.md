@@ -1,13 +1,16 @@
 # WASM EIP-1271 Parity Audit
 
 Status: Current
-Last reviewed: 2026-05-10
+Last reviewed: 2026-05-11
 Owning surface: `cow-sdk-wasm` EIP-1271 payload helpers and smart-account signing callbacks
 Refresh trigger: Changes to EIP-1271 payload construction, smart-account callback shapes, UID/digest string handling, signature normalization, or upstream parity fixtures
 Related docs:
 - [ADR 0039](../adr/0039-typescript-callable-wasm-sdk-surface.md)
 - [ADR 0040](../adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
+- [ADR 0045](../adr/0045-async-signer-trait-narrowing.md)
 - [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md)
+- [WASM Callback Shape Design Audit](wasm-callback-shape-design-audit.md)
+- [cow-sdk-wasm Comparative Benchmark Validation Note](cow-sdk-wasm-comparative-benchmark-validation-note.md)
 - [PROPERTIES.md](../../PROPERTIES.md)
 
 ## Scope
@@ -32,6 +35,7 @@ wallet-vendor UI flows.
 | Facade-resolves-callback | JavaScript supplies the final signature, while Rust stores only a pure resolved provider | Conforms |
 | UID and digest strings | Cross-ABI DTOs reuse canonical `as_str()` output instead of re-encoding bytes | Conforms |
 | Signature validation | Malformed ECDSA signatures fail before being surfaced as signed orders | Conforms |
+| Capability split | Custom EIP-1271 signing uses a dedicated callback and does not require a broad wallet signer object | Conforms |
 
 ## Current Contract
 

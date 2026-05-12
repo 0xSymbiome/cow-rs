@@ -7,6 +7,16 @@
 //! consumers through typed DTOs and explicit JavaScript callbacks for
 //! wallet, signer, and HTTP transport.
 //!
+//! The crate is appropriate for specialized cases: deterministic Rust
+//! signing parity, single-source-of-truth Rust + TypeScript embedding,
+//! Cloudflare Workers (size-compatible at the time of measurement; full
+//! Workers support pending release-bundle and startup validation), and
+//! embeddable signing helpers. For most browser dapps and standard
+//! TypeScript applications, the upstream `@cowprotocol/cow-sdk`
+//! TypeScript SDK is the recommended choice because of its smaller
+//! bundle size at equivalent feature subsets. The crate-level README
+//! covers the consumer routing matrix.
+//!
 //! The crate separates runtime-neutral helpers from the JavaScript binding
 //! surface:
 //!

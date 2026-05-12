@@ -46,9 +46,15 @@ public and runtime shape of `cow-rs`.
 | [0036](0036-alloy-signer-adapter.md) | Accepted | Ship a native Alloy local signer adapter behind an opt-in native crate. |
 | [0037](0037-alloy-umbrella-adapter.md) | Accepted | Compose the native Alloy provider and local signer into one wallet-capable client. |
 | [0038](0038-transaction-lifecycle-types.md) | Accepted (amended) | Split transaction broadcast acknowledgement from mined receipt observation. |
-| [0039](0039-typescript-callable-wasm-sdk-surface.md) | Accepted | Keep the TypeScript-callable WASM SDK surface as an additive leaf crate. |
-| [0040](0040-wallet-provider-callback-boundary-for-js-consumers.md) | Accepted | Keep wallet and provider interop behind typed JavaScript callbacks. |
-| [0041](0041-transport-policy-l3-layering.md) | Accepted | Share retry, rate-limit, cooldown, and classification policy across HTTP clients. |
+| [0039](0039-typescript-callable-wasm-sdk-surface.md) | Accepted (amended) | Keep the TypeScript-callable WASM SDK surface as an additive leaf crate. |
+| [0040](0040-wallet-provider-callback-boundary-for-js-consumers.md) | Accepted (amended) | Keep wallet and provider interop behind typed JavaScript callbacks. |
+| [0041](0041-transport-policy-l3-layering.md) | Accepted (amended) | Share retry, rate-limit, cooldown, and classification policy across HTTP clients. |
+| [0042](0042-pure-helpers-extraction.md) | Accepted | Extract pure WASM helpers into `cow-sdk-pure-helpers`. |
+| [0043](0043-callback-registry-internalization.md) | Accepted | Keep WASM callback registries internal to client constructors. |
+| [0044](0044-bundle-size-profile-and-flavor-builds.md) | Accepted | Ship feature-scoped WASM flavor builds from one package. |
+| [0045](0045-async-signer-trait-narrowing.md) | Accepted | Narrow async signer capabilities by operation. |
+| [0046](0046-transport-policy-js-exposure.md) | Accepted | Expose transport policy configuration to JavaScript clients. |
+| [0054](0054-typescript-facade-architecture.md) | Accepted | Make the TypeScript facade the public WASM package surface. |
 
 ## When To Write An ADR
 

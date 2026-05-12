@@ -93,6 +93,33 @@ instantiation entry points. Deno is optional experimental and runs only through
 the opt-in Deno package target. Bun, Vercel Edge, and Fly.io are documented as
 best-effort without a CI support claim.
 
+The runtime evidence boundary that this proof posture covers is intentionally
+narrow:
+
+- Browser bundler evidence is bounded to the bundlers exercised in the
+  release pipeline; bundler-matrix completion is documented as a future
+  refresh.
+- Node.js LTS support targets the lines listed in the package's
+  `engines.node` range; production applications should use Active LTS or
+  Maintenance LTS releases per Node's official guidance. Performance
+  characteristics on a specific Node version are recorded as point-in-time
+  diagnostic measurements rather than LTS-channel performance evidence.
+- Cloudflare Workers support is split into two gates that this proof
+  posture treats independently. The compressed-size gate is enforced on
+  every release build (the cloudflare flavor's gzip artifact is verified
+  against an explicit byte budget that tracks Cloudflare's published
+  Workers Free compressed-size limit). Worker startup time and bundle
+  deployment behavior are separate operational gates that production
+  consumers verify with `wrangler deploy --dry-run` and the
+  `startup_time_ms` telemetry Wrangler reports against Cloudflare's
+  1-second startup limit.
+- Browser LCP figures cited in support material are derived from a
+  deterministic bandwidth-model proxy; real Lighthouse measurements on
+  Linux are tracked as a future refresh.
+
+Runtime claims beyond these boundaries are not made by the shipped
+artifacts.
+
 ## Related
 
 - [ADR 0007: Bounded Browser Wallet Support And Current Browser Runtime Contract](adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)

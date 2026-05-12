@@ -1,11 +1,11 @@
 # ADR 0041: Share Transport Policy Across HTTP Clients
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-05-08
-- Last reviewed: 2026-05-08
+- Last reviewed: 2026-05-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, retry, layering
-- Related: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md)
+- Related: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0046](0046-transport-policy-js-exposure.md)
 
 ## Decision
 
@@ -14,6 +14,11 @@ transport-error classification behavior lives in `cow-sdk-transport-policy`.
 The crate sits above `cow-sdk-core::HttpTransport` and below typed clients.
 `OrderBookApiBuilder` and `SubgraphApiBuilder` accept the shared
 `TransportPolicy` through `.transport_policy(...)`.
+
+The TypeScript-callable package exposes the same policy through a typed
+`TransportPolicyConfig` on JavaScript client constructors. Omitting the config
+preserves Rust defaults; invalid policy values fail during constructor
+validation.
 
 ## Why
 
@@ -30,14 +35,16 @@ of separate client-specific policy wrappers.
 
 ## Must Remain True
 
-- Public surface: typed clients consume `TransportPolicy`; moved policy types
-  are not re-exported from orderbook or subgraph.
+- Public surface: typed Rust clients consume `TransportPolicy`; JavaScript
+  clients consume `TransportPolicyConfig`; moved policy types are not
+  re-exported from orderbook or subgraph.
 - Runtime and support: retryable statuses remain `408`, `425`, `429`, `500`,
   `502`, `503`, and `504`; `Retry-After` is honored for `429` and `503`;
   rate-limit state remains instance-scoped.
 - Validation and review: the transport-policy crate must test default
   orderbook and subgraph policy stability, no-retry behavior, jitter bounds,
-  per-host limiter keying, status completeness, and classifier totality.
+  per-host limiter keying, status completeness, classifier totality, and
+  TypeScript config translation for wasm clients.
 - Cost: callers that used orderbook-specific or subgraph-specific policy names
   must switch to `cow-sdk-transport-policy::TransportPolicy`.
 
@@ -56,3 +63,8 @@ of separate client-specific policy wrappers.
 - [Architecture](../architecture.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0019](0019-http-transport-sole-dispatch.md)
+- [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
+
+**Proven by:**
+
+- [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)

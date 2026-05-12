@@ -1,8 +1,8 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-09
-Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, and Pinata upload-trait headers across orderbook, subgraph, browser-wallet, core, contracts, signing, trading, app-data, and the SDK facade
+Last reviewed: 2026-05-11
+Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, Pinata upload-trait headers, wasm error envelopes, and the SDK facade
 Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without a redacting storage type
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
@@ -11,6 +11,7 @@ Related docs:
 - [Typestate Builder Contract Audit](typestate-builder-contract-audit.md)
 - [Verification Matrix](../verification-matrix.md)
 - [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
+- [WASM Public API Stability Audit](wasm-public-api-stability-audit.md)
 
 ## Scope
 

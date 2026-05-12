@@ -24,9 +24,17 @@ Use [Getting Started](getting-started.md) for facade-first Rust flows,
 boundaries, and [Architecture](architecture.md) for crate ownership and
 contracts-test entry points.
 
-For JavaScript and TypeScript consumers, `cow-sdk-wasm` provides the
-wasm-bindgen package surface, callback wallet boundary, callback HTTP
-transport, and runtime-specific npm exports. See
+For JavaScript and TypeScript consumers, the routing depends on the use
+case. For standard browser dapps, web apps, and CowSwap-style UIs, the
+upstream
+[`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
+TypeScript SDK is the recommended choice; it is substantially smaller at
+equivalent feature subsets. For specialized cases — deterministic Rust
+signing parity, single-source-of-truth Rust + TypeScript embedding, or
+Cloudflare Workers (size-compatible at the time of measurement; full Workers
+support pending release-bundle and startup validation) — `cow-sdk-wasm`
+provides a wasm-bindgen package surface, callback wallet boundary, callback
+HTTP transport, and runtime-specific npm exports. See
 [Architecture](architecture.md#typescript-callable-wasm-surface),
 [Integrations](integrations.md#typescript-and-javascript-runtime-boundary),
 and [cow-sdk-wasm](../crates/wasm/README.md).

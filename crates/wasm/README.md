@@ -10,6 +10,29 @@ The crate is a peer leaf of the native Rust facade. It wraps existing
 `cow-sdk-orderbook`, `cow-sdk-subgraph`, and `cow-sdk-trading` helpers instead
 of reimplementing protocol primitives.
 
+## When to use
+
+`cow-sdk-wasm` is appropriate for specialized cases:
+
+- **Deterministic Rust signing parity**: JavaScript or TypeScript apps that
+  need byte-for-byte parity with the Rust SDK's EIP-712 + EIP-1271 signing
+  path.
+- **Single-source-of-truth Rust + TypeScript embedding**: applications that
+  run cow-rs in both a Rust service and a TypeScript web consumer, where one
+  implementation eliminates protocol-drift bugs.
+- **Cloudflare Workers**: the `./cloudflare` flavor (size-compatible with
+  the current Workers Free compressed-size limit at the time of measurement;
+  full Workers support pending release-bundle and startup validation per
+  the Cloudflare Workers section below).
+- **Embeddable signing helper**: the `./signing` flavor is the smallest and
+  may be embedded in a larger TypeScript application.
+
+For most browser dapps, web apps, CowSwap-style UIs, and standard
+TypeScript applications, the upstream
+[`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
+TypeScript SDK is the recommended choice; it is substantially smaller at
+equivalent feature subsets.
+
 ## Install
 
 The npm package name is selected at publication time and rendered into the
@@ -84,6 +107,14 @@ malformed response, or abort.
 Cloudflare Workers use the web-target package output through the package export
 map. Consumers should import public subpaths such as `./cloudflare` and
 `./cloudflare/wasm`; nested build-output paths are not public API.
+
+The cloudflare flavor's gzip-compressed artifact is below the current
+Cloudflare Workers Free compressed-size limit at the time of measurement; the
+release pipeline enforces an explicit byte budget on every build. Full Workers
+support still requires release-bundle verification with `wrangler deploy
+--dry-run` and Worker startup measurement against Cloudflare's 1-second
+startup limit. Cloudflare's published platform limits are at
+`https://developers.cloudflare.com/workers/platform/limits/`.
 
 ## TypeScript Declarations
 

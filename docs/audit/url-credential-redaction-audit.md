@@ -1,14 +1,15 @@
 # URL Credential Redaction Audit
 
 Status: Current
-Last reviewed: 2026-05-09
-Owning surface: Credential-bearing URL storage and dispatch boundaries across core, orderbook, subgraph, browser-wallet, and app-data
-Refresh trigger: Changes to URL-bearing public configuration fields, browser wallet add-chain URL payload construction, IPFS URI dispatch, or the `RedactedUrlMap` and `RedactedOptionalUrlMap` contracts
+Last reviewed: 2026-05-11
+Owning surface: Credential-bearing URL storage and dispatch boundaries across core, orderbook, subgraph, browser-wallet, app-data, and wasm error conversion
+Refresh trigger: Changes to URL-bearing public configuration fields, browser wallet add-chain URL payload construction, IPFS URI dispatch, wasm transport-error mapping, or the `RedactedUrlMap` and `RedactedOptionalUrlMap` contracts
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [Credential Surface Audit](credential-surface-audit.md)
 - [Verification Matrix](../verification-matrix.md)
 - [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
+- [WASM Public API Stability Audit](wasm-public-api-stability-audit.md)
 
 ## Scope
 

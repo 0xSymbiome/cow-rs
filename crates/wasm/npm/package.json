@@ -18,7 +18,7 @@
     "eip-1193",
     "eip-1271"
   ],
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@11.0.9",
   "type": "module",
   "main": "./dist/default/index.cjs",
   "module": "./dist/default/index.mjs",

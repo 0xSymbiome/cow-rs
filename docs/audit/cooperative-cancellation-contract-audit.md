@@ -1,14 +1,15 @@
 # Cooperative Cancellation Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-09
-Owning surface: Cross-cutting cooperative cancellation across `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, and `cow-sdk-trading`
-Refresh trigger: Changes to the `Cancellable` combinator, to the `CancellationToken` re-export, to the canonical long-running public methods on the three client surfaces, or to the `From<Cancelled>` bridges on the typed error aggregates
+Last reviewed: 2026-05-11
+Owning surface: Cross-cutting cooperative cancellation across `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, native Alloy adapters, and `cow-sdk-wasm` callback transport
+Refresh trigger: Changes to the `Cancellable` combinator, to the `CancellationToken` re-export, to the canonical long-running public methods on client surfaces, to wasm abort/timeout bridging, or to the `From<Cancelled>` bridges on typed error aggregates
 Related docs:
 - [ADR 0005](../adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [ADR 0010](../adr/0010-runtime-neutral-async-and-transport-posture.md)
 - [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
+- [WASM Callback Shape Design Audit](wasm-callback-shape-design-audit.md)
 - [Architecture](../architecture.md)
 - [Observability](../observability.md)
 
@@ -154,10 +155,13 @@ Primary regression coverage:
 - `crates/alloy-provider/tests/cancellation_contract.rs`
 - `crates/alloy-signer/tests/cancellation_contract.rs`
 - `crates/alloy/tests/cancellation_contract.rs`
-- `crates/wasm/tests/wasm_callback_transport_contract.rs::callback_receives_request_dto_with_signal`
-- `crates/wasm/tests/wasm_callback_transport_contract.rs::callback_abort_error_maps_to_timeout`
-- `crates/wasm/tests/wasm_callback_transport_contract.rs::numeric_timer_handle_is_cleared`
-- `crates/wasm/tests/wasm_callback_transport_contract.rs::object_timer_handle_is_cleared`
+- `crates/wasm/tests/wasm_callback_transport_contract.rs::callback_transport_receives_request_dto_with_signal`
+- `crates/wasm/tests/wasm_callback_transport_contract.rs::timeout_overflow_fails_before_dispatch`
+- `crates/wasm/tests/wasm_cancellation_contract.rs::abort_bridge_removes_listener_after_success`
+- `crates/wasm/tests/wasm_cancellation_contract.rs::abort_bridge_removes_listener_after_callback_throw`
+- `crates/wasm/tests/wasm_cancellation_contract.rs::abort_bridge_removes_listener_after_callback_reject`
+- `crates/wasm/tests/wasm_cancellation_contract.rs::abort_bridge_removes_listener_after_parse_error`
+- `crates/wasm/tests/wasm_cancellation_contract.rs::abort_bridge_removes_listener_after_timeout_overflow`
 
 Validation surface:
 
@@ -179,4 +183,5 @@ cargo test -p cow-sdk-trading
 cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo build --target wasm32-unknown-unknown -p cow-sdk
+wasm-pack test crates/wasm --headless --chrome
 ```

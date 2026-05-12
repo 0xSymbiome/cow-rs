@@ -99,8 +99,17 @@ flowchart TD
 
 ## TypeScript-Callable WASM Surface
 
-`cow-sdk-wasm` is a peer leaf, not a replacement for the native facade. Its
-surface has four layers: pure helpers for deterministic protocol output,
+`cow-sdk-wasm` is a peer leaf, not a replacement for the native facade and
+not a replacement for the upstream `@cowprotocol/cow-sdk` TypeScript SDK.
+For most browser dapps and standard TypeScript applications, the upstream
+TypeScript SDK is the recommended choice because of its smaller bundle size
+at equivalent feature subsets. `cow-sdk-wasm` is appropriate for specialized
+cases — deterministic Rust signing parity, single-source-of-truth Rust +
+TypeScript embedding, and Cloudflare Workers (size-compatible at the time of
+measurement; full Workers support pending release-bundle and startup
+validation).
+
+Its surface has four layers: pure helpers for deterministic protocol output,
 wallet and signer callback exports, orderbook plus subgraph plus IPFS clients,
 and trading clients. The crate reuses the same Rust helpers that native
 consumers call, then crosses into JavaScript only at typed wasm-bindgen
@@ -129,11 +138,12 @@ flowchart TD
 | Native Rust services, bots, solvers, analytics | `cow-sdk` | Native HTTP transport, signing, trading, orderbook, and subgraph surfaces. |
 | Native Rust apps using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in Alloy provider and signer adapters without widening the default facade. |
 | Rust apps that compile to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm wallet and fetch plumbing; not the JavaScript-callable package. |
-| TypeScript apps with viem, ethers, wagmi, or EIP-1193 wallets | `<published-cow-sdk-wasm-package>` | Wallet stack-agnostic callbacks and the full facade surface. |
+| Standard browser dapp or CowSwap-style UI in TypeScript | Upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) | Substantially smaller bundle at equivalent feature subsets; mature web ecosystem fit. |
+| TypeScript apps that need byte-for-byte Rust signing parity (viem, ethers, wagmi, or EIP-1193 wallets) | `<published-cow-sdk-wasm-package>` | Wallet stack-agnostic callbacks and the full facade surface. |
 | Browser dapps with a smaller bundle target | `<published-cow-sdk-wasm-package>/orderbook` | Orderbook and signing subset with a smaller raw wasm budget. |
 | Signer services or HSM proxies | `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, and deployment helpers without HTTP clients. |
 | Node.js 22 or 24 LTS backends | `<published-cow-sdk-wasm-package>` | Node target works without browser polyfills when transport is configured. |
-| Cloudflare Workers | `<published-cow-sdk-wasm-package>/cloudflare` plus `<published-cow-sdk-wasm-package>/cloudflare/wasm` | Worker-compatible web target with explicit module initialization. |
+| Cloudflare Workers | `<published-cow-sdk-wasm-package>/cloudflare` plus `<published-cow-sdk-wasm-package>/cloudflare/wasm` | Worker-compatible web target with explicit module initialization. Size-compatible with current Workers Free compressed-size limit at the time of measurement; full Workers support pending release-bundle and startup validation. |
 | Deno | `<published-cow-sdk-wasm-package>` | Experimental build-only support; validate in your own runtime before production use. |
 | Non-JS wasm consumers, WASI, WebAssembly components, TinyGo, Blazor, AssemblyScript guests, or no_std | Out of scope for 0.1.0 | Use native Rust crates where possible; the npm package targets JavaScript hosts. |
 <!-- runtime-routing:end -->

@@ -22,10 +22,9 @@ function formatBytes(bytes) {
   return `${bytes} B`;
 }
 
-function checkBudget({ label, actual, budget, flavour, target }) {
-  const ratio = actual / budget;
-  if (actual > budget) {
-    const message = `${flavour}/${target} ${label} ${formatBytes(actual)} exceeds budget ${formatBytes(budget)}`;
+function checkBudget({ label, actual, failBudget, warnBudget, flavour, target }) {
+  if (actual > failBudget) {
+    const message = `${flavour}/${target} ${label} ${formatBytes(actual)} exceeds fail budget ${formatBytes(failBudget)}`;
     if (softWarn) {
       console.warn(`warning: ${message}`);
     } else {
@@ -35,17 +34,40 @@ function checkBudget({ label, actual, budget, flavour, target }) {
     return;
   }
 
-  if (ratio >= warningRatio) {
+  const warnThreshold = warnBudget ?? Math.floor(failBudget * warningRatio);
+  if (actual >= warnThreshold) {
+    const ratio = (actual / failBudget) * 100;
     console.warn(
-      `warning: ${flavour}/${target} ${label} ${formatBytes(actual)} is ${(ratio * 100).toFixed(1)}% of budget ${formatBytes(budget)}`
+      `warning: ${flavour}/${target} ${label} ${formatBytes(actual)} is ${ratio.toFixed(1)}% of fail budget ${formatBytes(failBudget)}`
     );
   }
+}
+
+function resolveGzipBudget(flavour) {
+  // Prefer explicit byte budgets when present (the canonical shape per
+  // crates/wasm/npm/flavours.json — cloudflare flavor uses gzipFailBytes
+  // + gzipWarnBytes to track Cloudflare Workers' published 3 MB
+  // compressed-size limit without MiB / MB ambiguity).
+  if (typeof flavour.gzipFailBytes === "number") {
+    return {
+      failBudget: flavour.gzipFailBytes,
+      warnBudget: typeof flavour.gzipWarnBytes === "number"
+        ? flavour.gzipWarnBytes
+        : null
+    };
+  }
+  // Backward-compatible MiB-based fallback for flavors that have not
+  // migrated to the byte budget yet.
+  if (typeof flavour.gzipBudgetMiB === "number") {
+    return { failBudget: bytesFromMiB(flavour.gzipBudgetMiB), warnBudget: null };
+  }
+  return null;
 }
 
 for (const flavour of descriptor.flavours) {
   const rawBudget = bytesFromMiB(flavour.rawBudgetMiB);
   const brotliBudget = bytesFromKiB(flavour.brotliBudgetKiB);
-  const gzipBudget = flavour.gzipBudgetMiB ? bytesFromMiB(flavour.gzipBudgetMiB) : null;
+  const gzipBudget = resolveGzipBudget(flavour);
 
   for (const target of flavour.targets) {
     const wasmPath = join(
@@ -63,20 +85,22 @@ for (const flavour of descriptor.flavours) {
     console.log(
       `${flavour.name}/${target}: ${(rawBytes / 1024 / 1024).toFixed(2)} MiB raw / ${Math.ceil(
         brotliBytes / 1024
-      )} KiB brotli / ${Math.ceil(gzipBytes / 1024)} KiB gzip`
+      )} KiB brotli / ${gzipBytes} B gzip`
     );
 
     checkBudget({
       label: "raw size",
       actual: rawBytes,
-      budget: rawBudget,
+      failBudget: rawBudget,
+      warnBudget: null,
       flavour: flavour.name,
       target
     });
     checkBudget({
       label: "brotli size",
       actual: brotliBytes,
-      budget: brotliBudget,
+      failBudget: brotliBudget,
+      warnBudget: null,
       flavour: flavour.name,
       target
     });
@@ -84,7 +108,8 @@ for (const flavour of descriptor.flavours) {
       checkBudget({
         label: "gzip size",
         actual: gzipBytes,
-        budget: gzipBudget,
+        failBudget: gzipBudget.failBudget,
+        warnBudget: gzipBudget.warnBudget,
         flavour: flavour.name,
         target
       });

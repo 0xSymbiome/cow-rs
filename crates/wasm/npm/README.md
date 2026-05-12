@@ -105,6 +105,34 @@ const signed = await signOrderWithEip1193(
 );
 ```
 
+### Browser with MetaMask `eth_signTypedData_v4`
+
+When the wallet exposes the typed-data JSON-RPC method directly, callers can
+pass the envelope to `eth_signTypedData_v4` from inside the typed-data signer
+callback. The helper hands the callback a typed-data envelope; the callback is
+responsible for serializing the envelope's `types` map and returning the
+signature string.
+
+```ts
+import { signOrderWithTypedDataSigner } from "<published-cow-sdk-wasm-package>";
+
+const [owner] = await window.ethereum.request({ method: "eth_requestAccounts" });
+
+const signed = await signOrderWithTypedDataSigner(order, 1, owner, async (envelope) => {
+  const types = envelope.types instanceof Map
+    ? Object.fromEntries(envelope.types)
+    : envelope.types;
+  const signature = await window.ethereum.request({
+    method: "eth_signTypedData_v4",
+    params: [owner, JSON.stringify({ ...envelope, types })]
+  });
+  if (typeof signature !== "string") {
+    throw new Error("wallet did not return a signature");
+  }
+  return signature;
+});
+```
+
 ### Cloudflare Worker
 
 ```ts
@@ -161,7 +189,14 @@ The current measured release artifacts are:
 | orderbook | 0.98 MiB | 321 KiB | 426 KiB | 1.5 MiB raw / 500 KiB brotli |
 | signing | 0.43 MiB | 150 KiB | 183 KiB | 0.9 MiB raw / 300 KiB brotli |
 | full | 2.97 MiB | 790 KiB | 1129 KiB | 3.0 MiB raw / 1000 KiB brotli |
-| cloudflare | 2.88 MiB | 768 KiB | 1095 KiB | 3.0 MiB raw / 800 KiB brotli / 3.0 MiB gzip |
+| cloudflare | 2.88 MiB | 768 KiB | 1095 KiB | 3.0 MiB raw / 800 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
+
+The cloudflare flavor's gzip-compressed artifact is below the current
+Cloudflare Workers Free compressed-size limit at the time of measurement.
+Full Workers support still requires release-bundle verification and Worker
+startup measurement; the release pipeline enforces the gzip byte budget on
+every build, but Wrangler deployment and `startup_time_ms` telemetry are
+separate operational gates.
 
 Cloudflare Workers cold starts are runtime-sensitive. The package treats
 300 ms as the warning threshold, 500 ms as the release gate, and 1 second as
@@ -211,8 +246,22 @@ public TypeScript surface for each flavor. Key exports include:
   `validateAppDataDoc`, `appDataDoc`, `appDataHexToCid`,
   `cidToAppDataHex`, `wasmVersion`.
 
-## Migration from `@cowprotocol/cow-sdk`
+## When to use this package vs the upstream TypeScript SDK
 
-See [Migration From @cowprotocol/cow-sdk](../../../docs/migration-from-cowprotocol-cow-sdk.md)
-for side-by-side guidance on adapter setup, orderbook clients, signing
-callbacks, Cloudflare Workers, error handling, and import selection.
+For most browser dapps, web apps, and CowSwap-style UIs, the upstream
+[`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
+is the recommended choice; it is substantially smaller at equivalent feature
+subsets. This package is appropriate for specialized cases:
+
+- TypeScript services that need byte-for-byte parity with the Rust SDK's
+  EIP-712 + EIP-1271 signing path.
+- Single-source-of-truth Rust + TypeScript embedding (one implementation
+  across both runtimes).
+- Cloudflare Workers (size-compatible with the current Workers Free
+  compressed-size limit at the time of measurement; full Workers support
+  pending release-bundle and startup validation).
+- Embeddable signing helpers (the `./signing` flavor is the smallest).
+
+The "When to use this SDK" table at the top of this README routes consumers
+by use case. The Quickstart sections above show the supported import shapes
+for the most common runtimes.

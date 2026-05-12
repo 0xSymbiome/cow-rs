@@ -46,10 +46,21 @@ For the two-tier browser-runtime proof posture these consoles follow, see
 
 ## TypeScript WASM Package Examples
 
-Use these examples when you are integrating the TypeScript-callable WASM package
-from JavaScript or TypeScript runtimes. The examples use a repository-local
-package alias before publication; application code should replace it with the
-final `<published-cow-sdk-wasm-package>` package name.
+These are specialized examples. For most browser dapps, web apps, and
+CowSwap-style UIs, the upstream
+[`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
+TypeScript SDK is the recommended choice; it is substantially smaller at
+equivalent feature subsets. Use the examples below when you are integrating
+the TypeScript-callable WASM package from JavaScript or TypeScript runtimes
+for specialized cases — deterministic Rust signing parity, single-source-of-
+truth Rust + TypeScript embedding, or Cloudflare Workers (size-compatible
+with the current Workers Free compressed-size limit at the time of
+measurement; full Workers support pending release-bundle and startup
+validation).
+
+The examples use a repository-local package alias before publication;
+application code should replace it with the final
+`<published-cow-sdk-wasm-package>` package name.
 
 | Runtime | Example | Purpose |
 | --- | --- | --- |

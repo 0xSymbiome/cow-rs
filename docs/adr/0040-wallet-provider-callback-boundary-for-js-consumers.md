@@ -1,10 +1,11 @@
 # ADR 0040: Keep Wallet And Provider Interop Behind Typed JavaScript Callbacks
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-05-09
+- Last reviewed: 2026-05-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, wallet, provider, callback-boundary, eip1271
-- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md)
+- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0043](0043-callback-registry-internalization.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
 
 ## Decision
 
@@ -17,9 +18,11 @@ need custom contract-wallet behavior.
 Callback dispatch uses `Promise::resolve` so plain return values, native
 Promises, and thenables share the JavaScript `await` semantic. SDK-owned
 timeouts use `globalThis.AbortController`; the request DTO is assembled with
-`Reflect::set` so `request.signal` remains a live `AbortSignal`. The fetch
-callback registry is scoped to one wasm module instance, reserves zero, and
-uses idempotent handle disposal.
+`Reflect::set` so `request.signal` remains a live `AbortSignal`. Per-call
+options carry `signal` and `timeoutMs`, and signing methods carry
+`walletConfig.timeoutMs` for wallet-owned requests. The fetch callback registry
+is internal to the owning client and is not exposed through public handle
+types.
 
 ## Why
 
@@ -37,9 +40,11 @@ cross the public error envelope.
 - Runtime and support: ECDSA signatures normalize to legacy `27` / `28`
   recovery bytes; callback results are awaited through `Promise::resolve`;
   `AbortSignal` is passed by reference, not serialized.
-- Validation and review: registry handles are local to a wasm module instance;
-  disposed handles fail with a typed configuration error; callback throws,
-  rejects, malformed responses, and aborts map to typed `WasmError` variants.
+- Validation and review: registry state is local to a wasm module instance and
+  hidden from public declarations; callback throws, rejects, malformed
+  responses, timeouts, and aborts map to typed `WasmError` variants.
+- Cleanup: callback retention, abort listeners, and timeout handles are dropped
+  on success and failure paths.
 - Cost: hosts must provide callbacks explicitly instead of receiving a bundled
   wallet adapter, but the SDK avoids freezing one JavaScript provider stack.
 
@@ -56,11 +61,12 @@ cross the public error envelope.
 
 - [cow-sdk-wasm README](../../crates/wasm/README.md)
 - [Integrations](../integrations.md)
+- [WASM Callback Shape Design Audit](../audit/wasm-callback-shape-design-audit.md)
 - [WASM EIP-1271 Parity Audit](../audit/wasm-eip1271-parity-audit.md)
 - [wasm-bindgen guide](https://rustwasm.github.io/docs/wasm-bindgen/)
 
 **Proven by:**
 
 - [WASM Surface Audit](../audit/wasm-surface-audit.md)
+- [WASM Callback Shape Design Audit](../audit/wasm-callback-shape-design-audit.md)
 - [WASM EIP-1271 Parity Audit](../audit/wasm-eip1271-parity-audit.md)
-

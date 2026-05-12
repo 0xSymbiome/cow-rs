@@ -14,6 +14,17 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- Added a cow-sdk-wasm comparative benchmark validation note at
+  `docs/audit/cow-sdk-wasm-comparative-benchmark-validation-note.md`
+  documenting the measured package-size, correctness, runtime, and
+  support-boundary tradeoffs against the upstream `@cowprotocol/cow-sdk`
+  TypeScript SDK. The note is `Status: Current` with a defined refresh-
+  trigger lifecycle.
+- Added a consumer routing matrix to `README.md`,
+  `docs/getting-started.md`, `docs/integrations.md`, and
+  `crates/wasm/README.md` clarifying when the WASM package fits a use case
+  versus when the upstream TypeScript SDK is the recommended choice.
+
 - `cow-sdk-transport-policy` now owns shared HTTP retry, rate-limit,
   `Retry-After`, jitter, and transport-error classification policy for
   orderbook and subgraph clients. The `cow-sdk` facade exposes the policy
@@ -28,6 +39,12 @@ The first functional crate-family release begins at `0.1.0`.
   The staged npm package layout includes web, bundler, nodejs, Cloudflare, and
   optional Deno export targets, declaration snapshots, package export
   verification, and a placeholder-name publish guard.
+
+- The TypeScript-callable WASM package now has public architecture records,
+  standing audits, and property rows for pure-helper extraction, internal
+  callback registries, per-flavor package builds, narrowed signer callbacks,
+  JavaScript transport policy configuration, and the TypeScript facade as the
+  stable public package surface.
 
 - A runnable native cancellation example demonstrates
   `Cancellable::cancel_with(&token)` against a delayed orderbook response.
@@ -625,6 +642,36 @@ The first functional crate-family release begins at `0.1.0`.
   that omits credential-bearing query strings from observability sinks.
 
 ### Changed
+
+- Clarified public guidance so cow-sdk-wasm is positioned as a specialized
+  Rust-parity TypeScript-callable surface, while the upstream
+  `@cowprotocol/cow-sdk` TypeScript SDK remains the recommended option for
+  standard browser dapps, web apps, CowSwap-style UIs, and most TypeScript
+  applications.
+- Updated Cloudflare Workers guidance to separate compressed-size
+  compatibility (the cloudflare flavor's gzip artifact is below the current
+  Cloudflare Workers Free compressed-size limit at the time of measurement)
+  from Worker startup and deployment validation (separate refresh gates
+  tracked in the validation note). The package release gate enforces an
+  explicit byte budget for the cloudflare flavor's gzip size that tracks
+  Cloudflare's currently published Workers limits.
+- Amended `docs/adr/0039-typescript-callable-wasm-sdk-surface.md` and
+  `docs/adr/0044-bundle-size-profile-and-flavor-builds.md` with positioning
+  paragraphs clarifying that cow-sdk-wasm is the canonical TypeScript-
+  callable surface for cow-rs's WASM package — not the default CoW Protocol
+  TypeScript SDK for consumers — and cross-linked the new comparative
+  benchmark validation note as evidence.
+- Refreshed `docs/audit/wasm-performance-budget-audit.md` with comparative
+  context, the byte-budget gate description, and the explicit release-bundle
+  and startup-time gates that remain separate from the size gate.
+- Updated `docs/browser-runtime-proof-posture.md` to bound runtime proof to
+  the environments the release pipeline currently exercises (Node 22 and
+  Node 24 as the supported LTS lines, with Node 25 measurements documented
+  as point-in-time diagnostic; esbuild as the only exercised bundler; size-
+  compatible Cloudflare Workers gate; modeled LCP only).
+- Updated `docs/providers/README.md` so TypeScript consumer guidance
+  recommends the upstream `@cowprotocol/cow-sdk` for standard browser dapps,
+  with cow-sdk-wasm appropriate for specialized cases.
 
 - CI hardening adds a forbidden-import gate for `cow-sdk-wasm`, centralizes the
   standard nextest runner on Ubuntu, macOS, and Windows with
@@ -1658,6 +1705,12 @@ The first functional crate-family release begins at `0.1.0`.
 - No public APIs are deprecated ahead of the first functional release.
 
 ### Removed
+
+- Removed the migration guide at `docs/migration-from-cowprotocol-cow-sdk.md`.
+  Specialized adoption guidance now lives with the WASM package docs under
+  "When to use" and the consumer routing matrix; salvaged technical content
+  (typed-data callback patterns including the `eth_signTypedData_v4`
+  example) was moved into `crates/wasm/npm/README.md`.
 
 - `cow-sdk-app-data`'s sync `IpfsFetchTransport::get` has been removed in
   favor of the async equivalent.

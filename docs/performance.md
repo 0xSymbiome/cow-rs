@@ -57,10 +57,20 @@ of these order-of-magnitude boundaries.
 
 ## WASM Package Size And Startup Budgets
 
-The TypeScript-callable package is built from release artifacts with the
-workspace size profile and a `wasm-opt -Oz` post-pass. The package publishes
-one npm package with flavor-specific subpath exports, so consumers can choose
-the smallest runtime surface that covers their workflow.
+The TypeScript-callable package trades bundle size for deterministic Rust
+signing parity, single-source-of-truth Rust + TypeScript embedding, and
+Cloudflare Worker compatibility. For most browser dapps and standard
+TypeScript applications, the upstream
+[`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
+TypeScript SDK is substantially smaller at equivalent feature subsets; see
+the [comparative benchmark validation note](audit/cow-sdk-wasm-comparative-benchmark-validation-note.md)
+for the measured tradeoff. Use the size table below to decide whether the
+specializations justify the bundle for a given use case.
+
+The package is built from release artifacts with the workspace size profile
+and a `wasm-opt -Oz` post-pass. The package publishes one npm package with
+flavor-specific subpath exports, so consumers can choose the smallest runtime
+surface that covers their workflow.
 
 | Flavor | Public import | Raw wasm | Brotli | Gzip | Release gate |
 | --- | --- | ---: | ---: | ---: | --- |
@@ -68,11 +78,14 @@ the smallest runtime surface that covers their workflow.
 | orderbook | `<published-cow-sdk-wasm-package>/orderbook` | 0.98 MiB | 321 KiB | 426 KiB | 1.5 MiB raw / 500 KiB brotli |
 | signing | `<published-cow-sdk-wasm-package>/signing` | 0.43 MiB | 150 KiB | 183 KiB | 0.9 MiB raw / 300 KiB brotli |
 | full | `<published-cow-sdk-wasm-package>/full` | 2.97 MiB | 790 KiB | 1129 KiB | 3.0 MiB raw / 1000 KiB brotli |
-| cloudflare | `<published-cow-sdk-wasm-package>/cloudflare` | 2.88 MiB | 768 KiB | 1095 KiB | 3.0 MiB raw / 800 KiB brotli / 3.0 MiB gzip |
+| cloudflare | `<published-cow-sdk-wasm-package>/cloudflare` | 2.88 MiB | 768 KiB | 1095 KiB | 3.0 MiB raw / 800 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
 The raw and compressed measurements above come from the current package build
 pipeline after optimization. The gate values are enforced per flavor so the
-default and Worker surfaces cannot grow silently.
+default and Worker surfaces cannot grow silently. The cloudflare flavor's gzip
+budget tracks Cloudflare's published Workers Free compressed-size limit at the
+time of measurement; the byte budget avoids MB / MiB ambiguity against the
+external platform contract.
 
 ### Cloudflare Worker Cold Starts
 
