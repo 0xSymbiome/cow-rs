@@ -1,7 +1,7 @@
 # Trading Orderbook Context Audit
 
 Status: Current  
-Last reviewed: 2026-04-21  
+Last reviewed: 2026-05-12
 Owning surface: `cow-sdk-trading` runtime authority for orderbook-bound helpers  
 Refresh trigger: Changes to orderbook-bound quote, post, or off-chain cancellation helpers, or to chain and environment resolution when an orderbook client is injected  
 Related docs:
@@ -60,7 +60,9 @@ caller-resolved authority model.
 
 Primary implementation points:
 
-- `crates/trading/src/types.rs`
+- `crates/trading/src/types/trader.rs`
+- `crates/trading/src/types/context.rs`
+- `crates/trading/src/types/options.rs`
 - `crates/trading/src/sdk.rs`
 - `crates/trading/src/quote.rs`
 - `crates/trading/src/post.rs`

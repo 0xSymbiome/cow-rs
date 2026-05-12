@@ -1,7 +1,7 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current
-Last reviewed: 2026-05-04
+Last reviewed: 2026-05-12
 Owning surface: `cow-sdk-trading` ready-state `TradingSdk` construction, helper-only `HelperOnlySdk` construction, and helper-specific prerequisite contract
 Refresh trigger: Changes to ready-state `TradingSdk` builder terminals, helper-only setup entry points, method-specific prerequisite enforcement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`
 Related docs:
@@ -84,7 +84,8 @@ helpers that do not consume that contract.
 Primary implementation points:
 
 - `crates/trading/src/sdk.rs`
-- `crates/trading/src/types.rs`
+- `crates/trading/src/types/trader.rs`
+- `crates/trading/src/types/options.rs`
 - `crates/trading/src/onchain.rs`
 - `crates/sdk/src/prelude.rs`
 - `crates/sdk/src/lib.rs`

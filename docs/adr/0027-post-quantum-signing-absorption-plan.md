@@ -62,7 +62,7 @@ creating a breaking match exhaustiveness change for downstream code.
 - [Parity matrix signing and contract rows](../parity-matrix.md#workspace-parity-map)
 - [Contracts signature boundary](../../crates/contracts/src/signature.rs)
 - [Orderbook signing scheme boundary](../../crates/orderbook/src/types/enums.rs)
-- [Trading EIP-1271 signature provider](../../crates/trading/src/types.rs)
+- [Trading EIP-1271 signature provider](../../crates/trading/src/types/seams.rs)
 
 **Proven by:**
 

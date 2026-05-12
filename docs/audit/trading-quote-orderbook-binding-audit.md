@@ -1,7 +1,7 @@
 # Trading Quote Orderbook Binding Audit
 
 Status: Current  
-Last reviewed: 2026-04-21  
+Last reviewed: 2026-05-12
 Owning surface: `cow-sdk-trading` quote-origin runtime binding for quote-derived posting  
 Refresh trigger: Changes to `QuoteResults` binding capture, `post_swap_order_from_quote*` submission validation, or serialization and reuse semantics for quote-derived posting state  
 Related docs:
@@ -58,7 +58,7 @@ orderbook client to be reused through another.
 Primary implementation points:
 
 - `crates/orderbook/src/api.rs`
-- `crates/trading/src/types.rs`
+- `crates/trading/src/types/overrides.rs`
 - `crates/trading/src/quote.rs`
 - `crates/trading/src/post.rs`
 

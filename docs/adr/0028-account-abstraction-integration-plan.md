@@ -71,7 +71,7 @@ dependencies in read-only flows and keeps order ownership reviewable.
 - [Parity scope surface boundaries](../parity-scope.md#surface-boundaries)
 - [Verification matrix crate contracts](../verification-matrix.md#crate-contracts)
 - [Core provider traits](../../crates/core/src/traits/provider.rs)
-- [Trading EIP-1271 signature provider](../../crates/trading/src/types.rs)
+- [Trading EIP-1271 signature provider](../../crates/trading/src/types/seams.rs)
 - See also: ADR 0024, ADR 0031, ADR 0039, and ADR 0040.
 
 **Proven by:**

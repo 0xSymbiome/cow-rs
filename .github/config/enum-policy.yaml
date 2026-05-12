@@ -55,8 +55,8 @@ enums:
     expected_marker: non_exhaustive
     reason: Submission classes mirror services-owned order submission semantics.
   - name: AppCodeError
-    file: crates/trading/src/types.rs
-    line: 44
+    file: crates/trading/src/types/app_code.rs
+    line: 21
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: App-code validation diagnostics can grow if new source-backed integration identifier checks are added.

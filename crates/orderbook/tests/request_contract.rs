@@ -11,12 +11,14 @@ use cow_sdk_core::Amount;
 use cow_sdk_core::{
     Cancellable, HttpClientPolicy, HttpTransport, ReqwestTransport, ReqwestTransportConfig,
 };
+use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_orderbook::error::classify_reqwest_error;
 use cow_sdk_orderbook::request::{
     FetchParams, HttpMethod, OrderBookApiError, ResponseBody, ResponseEnvelope, execute_empty_with,
     execute_json_with, request_empty, request_json, request_text,
 };
-use cow_sdk_orderbook::{CowEnv, OrderbookError, SupportedChainId};
+#[cfg(feature = "tracing")]
+use cow_sdk_orderbook::{CowEnv, SupportedChainId};
 #[cfg(feature = "tracing")]
 use cow_sdk_orderbook::{OrderCreation, OrderQuoteRequest, QuoteSide, SigningScheme};
 use cow_sdk_transport_policy::{
@@ -72,10 +74,9 @@ use wiremock::{
 
 #[cfg(feature = "tracing")]
 use crate::common::{
-    build_orderbook_api_with_base_url, sample_buy_token, sample_order_uid, sample_owner,
-    sample_quote_response_json, sample_signature,
+    build_orderbook_api_with_base_url, default_context, sample_buy_token, sample_order_uid,
+    sample_owner, sample_quote_response_json, sample_signature,
 };
-use crate::common::{build_orderbook_api_with_policy, default_context};
 
 #[tokio::test]
 async fn request_policy_defaults_match_fixture_contract() {
@@ -200,45 +201,46 @@ async fn request_json_retries_429_and_preserves_headers_on_each_attempt() {
     assert_eq!(attempts.load(Ordering::SeqCst), 2);
 }
 
-#[tokio::test(flavor = "current_thread", start_paused = true)]
+#[tokio::test]
 async fn retry_after_backoff_wait_can_be_cancelled_before_next_attempt() {
-    let server = MockServer::start().await;
     let attempts = Arc::new(AtomicUsize::new(0));
     let first_retryable_response = Arc::new(Notify::new());
 
-    Mock::given(method("GET"))
-        .and(path("/api/v1/version"))
-        .respond_with({
-            let attempts = attempts.clone();
-            let first_retryable_response = first_retryable_response.clone();
-            move |_request: &Request| {
+    let retry = RetryPolicy::builder()
+        .max_attempts(2)
+        .base_delay(Duration::from_millis(250))
+        .max_delay(Duration::from_millis(250))
+        .jitter(JitterStrategy::none())
+        .build();
+    let limiter = default_limiter();
+    let token = cow_sdk_core::CancellationToken::new();
+    let token_for_call = token.clone();
+    let attempts_for_call = attempts.clone();
+    let first_retryable_response_for_call = first_retryable_response.clone();
+
+    let call = tokio::spawn(async move {
+        execute_json_with::<serde_json::Value, _, _>(&retry, &limiter, move || {
+            let attempts = attempts_for_call.clone();
+            let first_retryable_response = first_retryable_response_for_call.clone();
+            async move {
                 let attempt = attempts.fetch_add(1, Ordering::SeqCst);
                 if attempt == 0 {
                     first_retryable_response.notify_one();
-                    ResponseTemplate::new(TOO_MANY_REQUESTS)
-                        .insert_header("Retry-After", "30")
-                        .set_body_json(json!({
+                    Ok(ResponseEnvelope::json(
+                        TOO_MANY_REQUESTS,
+                        &json!({
                             "errorType": "RateLimited",
                             "description": "retry after cancellation boundary"
-                        }))
+                        }),
+                    ))
                 } else {
-                    ResponseTemplate::new(200).set_body_string("v1.2.3")
+                    Ok(ResponseEnvelope::json(200, &json!({ "version": "v1.2.3" })))
                 }
             }
         })
-        .mount(&server)
-        .await;
-
-    let transport_policy = TransportPolicy::default().with_retry(retry_policy_no_jitter(2));
-    let api = build_orderbook_api_with_policy(
-        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
-        transport_policy,
-    )
-    .with_env_base_url(CowEnv::Prod, server.uri());
-    let token = cow_sdk_core::CancellationToken::new();
-    let token_for_call = token.clone();
-
-    let call = tokio::spawn(async move { api.get_version().cancel_with(&token_for_call).await });
+        .cancel_with(&token_for_call)
+        .await
+    });
     first_retryable_response.notified().await;
     assert_eq!(
         attempts.load(Ordering::SeqCst),
@@ -248,7 +250,10 @@ async fn retry_after_backoff_wait_can_be_cancelled_before_next_attempt() {
     token.cancel();
     let result = call.await.expect("request task must not panic");
 
-    assert!(matches!(result, Err(OrderbookError::Cancelled)));
+    assert!(
+        matches!(result, Err(OrderbookError::Cancelled)),
+        "expected cancellation during retry backoff, got {result:?}"
+    );
     assert_eq!(
         attempts.load(Ordering::SeqCst),
         1,

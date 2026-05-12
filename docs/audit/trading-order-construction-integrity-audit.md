@@ -1,7 +1,7 @@
 # Trading Order Construction Integrity Audit
 
 Status: Current
-Last reviewed: 2026-05-02
+Last reviewed: 2026-05-12
 Owning surface: `cow-sdk-trading` order assembly, injected-orderbook builder terminal parity, and recoverable-signature posting boundary
 Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` builder terminals with injected orderbooks, recoverable-signature posting validation, upstream services `crates/shared/src/order_validation.rs` same-token semantics, the `TradeParameters::validate` / `LimitTradeParameters::validate` same-token predicate, or the `scripts/check-services-drift.sh` Semantic Surfaces section
 Related docs:
@@ -92,7 +92,9 @@ Primary implementation points:
 - `crates/trading/src/post.rs`
 - `crates/trading/src/quote.rs`
 - `crates/trading/src/sdk.rs`
-- `crates/trading/src/types.rs`
+- `crates/trading/src/types/trade.rs`
+- `crates/trading/src/types/advanced.rs`
+- `crates/trading/src/types/overrides.rs`
 - `crates/trading/src/validation.rs`
 
 Primary regression coverage:

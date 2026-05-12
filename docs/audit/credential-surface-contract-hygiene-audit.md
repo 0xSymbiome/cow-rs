@@ -125,7 +125,7 @@ Primary implementation points:
 - `crates/subgraph/src/builder.rs`
 - `crates/subgraph/src/error.rs`
 - `crates/browser-wallet/src/wallet.rs`
-- `crates/trading/src/types.rs`
+- `crates/trading/src/types/options.rs`
 - `crates/trading/src/quote.rs`
 - `crates/trading/src/post.rs`
 - `crates/trading/src/slippage.rs`
