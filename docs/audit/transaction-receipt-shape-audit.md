@@ -1,7 +1,7 @@
 # Transaction Receipt Shape Audit
 
 Status: Current
-Last reviewed: 2026-05-07
+Last reviewed: 2026-05-12
 Owning surface: `cow-sdk-core` transaction lifecycle types and adapter receipt conversions
 Refresh trigger: ADR 0038 - transaction lifecycle types
 Related docs:
@@ -59,7 +59,7 @@ present malformed values for `status`, `blockNumber`, `blockHash`, `gasUsed`,
 
 Primary implementation points:
 
-- `crates/core/src/traits.rs`
+- `crates/core/src/traits/transaction.rs`
 - `crates/alloy/src/handle.rs`
 - `crates/alloy-provider/src/conversion.rs`
 - `crates/browser-wallet/src/provider.rs`

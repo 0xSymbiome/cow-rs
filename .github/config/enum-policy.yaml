@@ -169,8 +169,8 @@ enums:
     expected_marker: non_exhaustive
     reason: Alloy client diagnostics can grow as composed provider and signer capabilities expand.
   - name: TransactionStatus
-    file: crates/core/src/traits.rs
-    line: 197
+    file: crates/core/src/traits/transaction.rs
+    line: 70
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Receipt-capable providers may expose additional terminal transaction states over time.

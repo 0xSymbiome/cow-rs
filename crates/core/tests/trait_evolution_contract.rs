@@ -1,4 +1,16 @@
-const CORE_TRAITS_SOURCE: &str = include_str!("../src/traits.rs");
+const CORE_TRAITS_SOURCE: &str = concat!(
+    include_str!("../src/traits/typed_data.rs"),
+    "\n",
+    include_str!("../src/traits/transaction.rs"),
+    "\n",
+    include_str!("../src/traits/contract.rs"),
+    "\n",
+    include_str!("../src/traits/signer.rs"),
+    "\n",
+    include_str!("../src/traits/provider.rs"),
+    "\n",
+    include_str!("../src/traits/transport.rs"),
+);
 const HTTP_TRANSPORT_SOURCE: &str = include_str!("../src/transport/http.rs");
 
 #[test]

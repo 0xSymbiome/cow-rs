@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-27
-- Last reviewed: 2026-05-09
+- Last reviewed: 2026-05-12
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: account-abstraction, provider, signing, eip1271, eip4337, eip7702, eip7212
 - Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
@@ -70,7 +70,7 @@ dependencies in read-only flows and keeps order ownership reviewable.
 - [Adapting alloy providers](../providers/adapting-alloy.md)
 - [Parity scope surface boundaries](../parity-scope.md#surface-boundaries)
 - [Verification matrix crate contracts](../verification-matrix.md#crate-contracts)
-- [Core provider traits](../../crates/core/src/traits.rs)
+- [Core provider traits](../../crates/core/src/traits/provider.rs)
 - [Trading EIP-1271 signature provider](../../crates/trading/src/types.rs)
 - See also: ADR 0024, ADR 0031, ADR 0039, and ADR 0040.
 
