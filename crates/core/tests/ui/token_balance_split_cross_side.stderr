@@ -8,7 +8,7 @@ error[E0308]: mismatched types
    |         ^^^^^^^^^^^ expected `BuyTokenDestination`, found `SellTokenSource`
    |
 note: associated function defined here
-  --> src/types.rs
+  --> src/types/order.rs
    |
    |     pub const fn new(
    |                  ^^^

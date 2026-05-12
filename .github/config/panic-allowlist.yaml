@@ -51,19 +51,19 @@ allowed:
   - file: crates/core/src/redaction.rs
     item: strip_credential_tokens
     reason: Redaction offsets are computed from in-bounds string match indices.
-  - file: crates/core/src/types.rs
+  - file: crates/core/src/types/identity.rs
     item: Address::from_bytes
     reason: Hex encoder only emits ASCII hex plus the 0x prefix.
-  - file: crates/core/src/types.rs
+  - file: crates/core/src/types/identity.rs
     item: AppDataHash::from_bytes
     reason: Hex encoder only emits ASCII hex plus the 0x prefix.
-  - file: crates/core/src/types.rs
+  - file: crates/core/src/types/identity.rs
     item: Hash32::from_bytes
     reason: Hex encoder only emits ASCII hex plus the 0x prefix.
-  - file: crates/core/src/types.rs
+  - file: crates/core/src/types/identity.rs
     item: OrderUid::from_bytes
     reason: Hex encoder only emits ASCII hex plus the 0x prefix.
-  - file: crates/core/src/types.rs
+  - file: crates/core/src/types/hex.rs
     item: decode_nibble
     reason: decode_nibble is only called after hex validation constrains each byte to a valid nibble.
   - file: crates/orderbook/src/builder.rs

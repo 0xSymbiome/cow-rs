@@ -1,7 +1,7 @@
 # Trading EthFlow Owner Identity Audit
 
 Status: Current
-Last reviewed: 2026-04-22
+Last reviewed: 2026-05-12
 Owning surface: `cow-sdk-trading` EthFlow submission seam,
 including the `EthFlowTransaction` bundle shape, the
 `get_eth_flow_transaction_async` owner resolution, and the
@@ -136,7 +136,7 @@ Primary implementation points:
 - `crates/trading/src/onchain.rs`
 - `crates/trading/src/post.rs`
 - `crates/trading/src/validation.rs`
-- `crates/core/src/types.rs` (`Address`)
+- `crates/core/src/types/identity.rs` (`Address`)
 
 Primary regression coverage:
 

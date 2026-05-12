@@ -1,7 +1,7 @@
 # Trading Order-Bounds Validator Audit
 
 Status: Current
-Last reviewed: 2026-05-02
+Last reviewed: 2026-05-12
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
 `OrderValidityBounds`, `SubmissionClass`, `ClientRejection`,
 `AmountSide`, and the `TradingError::ClientRejected` lifting variant.
@@ -198,7 +198,7 @@ Primary implementation points:
 - `crates/trading/src/parameters.rs`
 - `crates/trading/src/post.rs`
 - `crates/trading/src/sdk.rs`
-- `crates/core/src/types.rs` (`Amount::is_zero`)
+- `crates/core/src/types/amount.rs` (`Amount::is_zero`)
 - `fuzz/fuzz_targets/fuzz_order_bounds_validator.rs`
 
 Primary regression coverage:

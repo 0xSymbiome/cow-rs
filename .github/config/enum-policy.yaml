@@ -181,20 +181,20 @@ enums:
     expected_marker: non_exhaustive
     reason: Receipt wait helper diagnostics can grow as polling and provider semantics expand.
   - name: OrderKind
-    file: crates/core/src/types.rs
-    line: 1255
+    file: crates/core/src/types/order.rs
+    line: 31
     category: protocol-fixed-exhaustive
     expected_marker: exhaustive
     reason: Encoded as keccak256("buy") and keccak256("sell") in the EIP-712 order type.
   - name: SellTokenSource
-    file: crates/core/src/types.rs
-    line: 1270
+    file: crates/core/src/types/order.rs
+    line: 46
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Token balance sources are protocol-facing and may grow with upstream settlement semantics.
   - name: BuyTokenDestination
-    file: crates/core/src/types.rs
-    line: 1291
+    file: crates/core/src/types/order.rs
+    line: 67
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Token balance destinations are protocol-facing and may grow with upstream settlement semantics.
