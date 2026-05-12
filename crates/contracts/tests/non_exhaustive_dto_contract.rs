@@ -20,7 +20,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 const CONTRACT_SIGNATURE_SOURCE: &str = include_str!("../src/signature.rs");
-const ORDERBOOK_TYPES_SOURCE: &str = include_str!("../../orderbook/src/types.rs");
+const ORDERBOOK_TYPES_SOURCE: &str = include_str!("../../orderbook/src/types/enums.rs");
 
 const ADDR1: &str = "0x1111111111111111111111111111111111111111";
 const ADDR2: &str = "0x2222222222222222222222222222222222222222";

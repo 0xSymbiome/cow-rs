@@ -201,9 +201,9 @@ list_model_structs() {
 }
 
 list_cow_structs() {
-  local types_file="$1"
-  [ -f "$types_file" ] || tool_fail "cow-rs types file not found: $types_file"
-  grep -hoE '^pub struct [A-Za-z][A-Za-z0-9_]*[[:space:]]*\{' "$types_file" \
+  local types_dir="$1"
+  [ -d "$types_dir" ] || tool_fail "cow-rs types directory not found: $types_dir"
+  grep -hoE '^pub struct [A-Za-z][A-Za-z0-9_]*[[:space:]]*\{' "$types_dir"/*.rs \
     | awk '{ print $3 }' \
     | sort -u
 }
@@ -249,9 +249,10 @@ extract_model_fields() {
 }
 
 extract_cow_fields() {
-  local types_file="$1"
+  local types_dir="$1"
   local struct_name="$2"
-  extract_struct_fields_from_files "$struct_name" "$types_file"
+  [ -d "$types_dir" ] || tool_fail "cow-rs types directory not found: $types_dir"
+  extract_struct_fields_from_files "$struct_name" "$types_dir"/*.rs
 }
 
 dto_pairs() {
@@ -445,7 +446,7 @@ contracts_upstream="$(resolve_upstream_dir "contracts" "upstream contracts" "$co
 cow_sdk_upstream="$(resolve_upstream_dir "cow-sdk" "upstream cow-sdk" "$cow_sdk_upstream_arg" "$cow_sdk_pin")" || exit $?
 
 rejection_file="$cow_rs_root/crates/orderbook/src/rejection.rs"
-types_file="$cow_rs_root/crates/orderbook/src/types.rs"
+types_dir="$cow_rs_root/crates/orderbook/src/types"
 config_file="$cow_rs_root/crates/core/src/config/chains.rs"
 local_openapi="$cow_rs_root/parity/openapi/services-orderbook.yml"
 services_openapi="$services_upstream/crates/orderbook/openapi.yml"
@@ -529,7 +530,7 @@ while IFS='|' read -r upstream_struct cow_struct; do
   dto_pair_count=$((dto_pair_count + 1))
 
   upstream_fields="$(extract_model_fields "$services_upstream" "$upstream_struct")"
-  cow_fields="$(extract_cow_fields "$types_file" "$cow_struct")"
+  cow_fields="$(extract_cow_fields "$types_dir" "$cow_struct")"
 
   if [ -z "$upstream_fields" ] || [ -z "$cow_fields" ]; then
     continue
@@ -554,7 +555,7 @@ while IFS='|' read -r upstream_struct cow_struct; do
     field_type="${field#*:}"
     dto_rows="${dto_rows}| ${upstream_struct} -> ${cow_struct} | field-only-in-cow-rs | \`${field_name}\` | \`${field_type}\` |"$'\n'
   done <<< "$cow_only"
-done < <(dto_pairs "$services_upstream" "$types_file")
+done < <(dto_pairs "$services_upstream" "$types_dir")
 
 [ "$dto_pair_count" -gt 0 ] || tool_fail "no comparable DTO struct pairs found"
 

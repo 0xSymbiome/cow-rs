@@ -119,7 +119,7 @@ Primary implementation points:
 - `crates/core/src/redaction.rs`
 - `crates/app-data/src/types.rs`
 - `crates/orderbook/src/error.rs`
-- `crates/orderbook/src/types.rs`
+- `crates/orderbook/src/types/mod.rs`
 - `crates/orderbook/src/builder.rs`
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/builder.rs`

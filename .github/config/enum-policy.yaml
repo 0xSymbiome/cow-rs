@@ -205,38 +205,38 @@ enums:
     expected_marker: non_exhaustive
     reason: Subgraph diagnostic surface can grow as transport and GraphQL checks expand.
   - name: PriceQuality
-    file: crates/orderbook/src/types.rs
-    line: 107
+    file: crates/orderbook/src/types/enums.rs
+    line: 7
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Orderbook quote quality labels are services-controlled.
   - name: SigningScheme
-    file: crates/orderbook/src/types.rs
-    line: 121
+    file: crates/orderbook/src/types/enums.rs
+    line: 21
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Orderbook signing schemes track protocol and services-supported signature families.
   - name: EcdsaSigningScheme
-    file: crates/orderbook/src/types.rs
-    line: 140
+    file: crates/orderbook/src/types/enums.rs
+    line: 40
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: ECDSA signing scheme variants track upstream orderbook wire tags.
   - name: OrderClass
-    file: crates/orderbook/src/types.rs
-    line: 152
+    file: crates/orderbook/src/types/enums.rs
+    line: 52
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Order class tags are services-owned wire values.
   - name: OrderStatus
-    file: crates/orderbook/src/types.rs
-    line: 166
+    file: crates/orderbook/src/types/enums.rs
+    line: 66
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Order status tags are services-owned wire values.
   - name: CompetitionOrderStatusKind
-    file: crates/orderbook/src/types.rs
-    line: 1503
+    file: crates/orderbook/src/types/auction.rs
+    line: 133
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Competition order status tags are controlled by upstream auction services.

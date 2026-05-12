@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-27
-- Last reviewed: 2026-05-08
+- Last reviewed: 2026-05-12
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, signatures, compatibility, eip1271, eip7212
 - Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
@@ -61,7 +61,7 @@ creating a breaking match exhaustiveness change for downstream code.
 - [Parity scope surface boundaries](../parity-scope.md#surface-boundaries)
 - [Parity matrix signing and contract rows](../parity-matrix.md#workspace-parity-map)
 - [Contracts signature boundary](../../crates/contracts/src/signature.rs)
-- [Orderbook signing scheme boundary](../../crates/orderbook/src/types.rs)
+- [Orderbook signing scheme boundary](../../crates/orderbook/src/types/enums.rs)
 - [Trading EIP-1271 signature provider](../../crates/trading/src/types.rs)
 
 **Proven by:**

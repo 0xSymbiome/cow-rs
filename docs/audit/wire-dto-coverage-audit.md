@@ -1,7 +1,7 @@
 # Wire DTO Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-04
+Last reviewed: 2026-05-12
 Owning surface: cow-sdk-orderbook DTO coverage
 Refresh trigger: changes to `parity/openapi/services-orderbook.yml`, changes to `parity/openapi/coverage.yaml`, source-lock refreshes for the services OpenAPI, or public field changes on covered orderbook request or response DTOs
 Related docs:
@@ -76,10 +76,10 @@ and the auction-side `quote`.
 
 | DTO type | Source file and Rust type | Audit verdict | Fixture path | Last reviewed |
 | --- | --- | --- | --- | --- |
-| `OrderCreation` | `crates/orderbook/src/types.rs::cow_sdk_orderbook::OrderCreation` | Conforms | `parity/fixtures/orderbook-requests/order_creation.json` | 2026-05-04 |
-| `OrderQuoteRequest` | `crates/orderbook/src/types.rs::cow_sdk_orderbook::OrderQuoteRequest` | Conforms | `parity/fixtures/orderbook-requests/order_quote_request.json` | 2026-05-04 |
+| `OrderCreation` | `crates/orderbook/src/types/order.rs::cow_sdk_orderbook::OrderCreation` | Conforms | `parity/fixtures/orderbook-requests/order_creation.json` | 2026-05-12 |
+| `OrderQuoteRequest` | `crates/orderbook/src/types/quote.rs::cow_sdk_orderbook::OrderQuoteRequest` | Conforms | `parity/fixtures/orderbook-requests/order_quote_request.json` | 2026-05-12 |
 | `AppDataObject` PUT payload | `crates/orderbook/src/api.rs::cow_sdk_orderbook::AppDataObject` | Conforms | `parity/fixtures/orderbook-requests/app_data_put.json` | 2026-05-04 |
-| `OrderCancellations` | `crates/orderbook/src/types.rs::cow_sdk_orderbook::OrderCancellations` | Conforms | `parity/fixtures/orderbook-requests/order_cancellations.json` | 2026-05-04 |
+| `OrderCancellations` | `crates/orderbook/src/types/order.rs::cow_sdk_orderbook::OrderCancellations` | Conforms | `parity/fixtures/orderbook-requests/order_cancellations.json` | 2026-05-12 |
 
 Request payload semantics reviewed against the services revision pinned in
 `parity/source-lock.yaml`:
@@ -112,7 +112,11 @@ remaining only locally reproducible.
 
 Primary implementation points:
 
-- `crates/orderbook/src/types.rs`
+- `crates/orderbook/src/types/order.rs`
+- `crates/orderbook/src/types/quote.rs`
+- `crates/orderbook/src/types/prices.rs`
+- `crates/orderbook/src/types/lists.rs`
+- `crates/orderbook/src/types/auction.rs`
 - `crates/orderbook/src/api.rs`
 - `scripts/parity-maintainer/src/openapi_coverage.rs`
 - `.github/workflows/_quality-gate.yml`

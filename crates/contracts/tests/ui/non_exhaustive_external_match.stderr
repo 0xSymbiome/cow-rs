@@ -43,7 +43,7 @@ error[E0004]: non-exhaustive patterns: `_` not covered
    |           ^^^^^^ pattern `_` not covered
    |
 note: `cow_sdk_orderbook::SigningScheme` defined here
-  --> $WORKSPACE/crates/orderbook/src/types.rs
+  --> $WORKSPACE/crates/orderbook/src/types/enums.rs
    |
    | pub enum SigningScheme {
    | ^^^^^^^^^^^^^^^^^^^^^^

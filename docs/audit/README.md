@@ -124,13 +124,13 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and release preflight authority | Source-lock commit pins, upstream freshness disclosure, Alloy runtime/core dependency provenance, publication preflight metadata, historical snapshot scope, and refresh ownership | Current | 2026-05-08 |
+| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and release preflight authority | Source-lock commit pins, upstream freshness disclosure, Alloy runtime/core dependency provenance, publication preflight metadata, historical snapshot scope, and refresh ownership | Current | 2026-05-12 |
 
 ## Orderbook Wire DTO Coverage
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | OpenAPI-vendored orderbook response DTO inventories, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-05-04 |
+| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | OpenAPI-vendored orderbook response DTO inventories, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-05-12 |
 
 ## Transport And Routing
 

@@ -124,11 +124,16 @@ pub enum OrderbookRejection {
 ",
     );
     write_file(
-        &cow_root.join("crates/orderbook/src/types.rs"),
+        &cow_root.join("crates/orderbook/src/types/prices.rs"),
         r"
 pub struct AppDataObject {
     pub full_app_data: String,
 }
+",
+    );
+    write_file(
+        &cow_root.join("crates/orderbook/src/types/order.rs"),
+        r"
 
 pub struct OrderCancellations {
     pub order_uids: Vec<String>,
@@ -142,6 +147,11 @@ pub struct OrderCreation {
     pub fee_amount: String,
     pub signature: String,
 }
+",
+    );
+    write_file(
+        &cow_root.join("crates/orderbook/src/types/quote.rs"),
+        r"
 
 pub struct OrderQuoteRequest {
     pub sell_token: String,

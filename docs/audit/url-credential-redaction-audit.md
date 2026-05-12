@@ -89,7 +89,7 @@ Primary implementation points:
 - `crates/core/src/redaction.rs`
 - `crates/core/src/config/hosts.rs`
 - `crates/orderbook/src/builder.rs`
-- `crates/orderbook/src/types.rs`
+- `crates/orderbook/src/types/mod.rs`
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/builder.rs`
 - `crates/browser-wallet/src/wallet.rs`
