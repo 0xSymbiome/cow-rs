@@ -446,7 +446,7 @@ cow_sdk_upstream="$(resolve_upstream_dir "cow-sdk" "upstream cow-sdk" "$cow_sdk_
 
 rejection_file="$cow_rs_root/crates/orderbook/src/rejection.rs"
 types_file="$cow_rs_root/crates/orderbook/src/types.rs"
-config_file="$cow_rs_root/crates/core/src/config.rs"
+config_file="$cow_rs_root/crates/core/src/config/chains.rs"
 local_openapi="$cow_rs_root/parity/openapi/services-orderbook.yml"
 services_openapi="$services_upstream/crates/orderbook/openapi.yml"
 [ -f "$local_openapi" ] || tool_fail "cow-rs services OpenAPI snapshot not found: $local_openapi"

@@ -1,7 +1,7 @@
 # Credential Surface Contract Hygiene Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-05-12
 Owning surface: Cross-cutting credential redaction and typed partner-fee public boundary across core, app-data, orderbook, subgraph, and trading
 Refresh trigger: Changes to public credential-bearing configs, URL-bearing public configuration fields, subgraph route identity or request-failure context, the `Redacted<T>` newtype contract, external host-policy validation, the transport `From<reqwest::Error>` conversion classifiers, or typed partner-fee request boundaries
 Related docs:
@@ -115,7 +115,7 @@ transport proceeds.
 
 Primary implementation points:
 
-- `crates/core/src/config.rs`
+- `crates/core/src/config/hosts.rs`
 - `crates/core/src/redaction.rs`
 - `crates/app-data/src/types.rs`
 - `crates/orderbook/src/error.rs`

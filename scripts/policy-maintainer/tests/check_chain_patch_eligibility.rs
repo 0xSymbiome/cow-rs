@@ -1,8 +1,8 @@
 use policy_maintainer::check_chain_patch_eligibility::{analyze_diff, validate_diff};
 
 const CHAIN_DIFF: &str = "\
-diff --git a/crates/core/src/config.rs b/crates/core/src/config.rs
-+++ b/crates/core/src/config.rs
+diff --git a/crates/core/src/config/chains.rs b/crates/core/src/config/chains.rs
++++ b/crates/core/src/config/chains.rs
 @@
 +    Testnet = 12345,
 ";

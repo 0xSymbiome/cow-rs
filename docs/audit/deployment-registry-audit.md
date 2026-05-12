@@ -1,7 +1,7 @@
 # Deployment Registry Audit
 
 Status: Current
-Last reviewed: 2026-05-04
+Last reviewed: 2026-05-12
 Re-review by: 2026-08-02
 Owning surface: `cow-sdk-contracts` deployment registry and provenance manifest
 Refresh trigger: Changes to `crates/contracts/registry.toml`, `crates/contracts/deployment-provenance.yaml`, the compile-time validator in `build.rs`, the `registry-confirm` live-confirmation contract, deployed addresses, or supported chains
@@ -74,17 +74,17 @@ reviewed authority.
 
 | Chain | `SupportedChainId` variant | Numeric chain id | Deployment provenance | Services metadata | TypeScript SDK source | Wrapped native token | Last reviewed |
 | --- | --- | ---: | --- | --- | --- | --- | --- |
-| Ethereum Mainnet | `Mainnet` | 1 | `crates/contracts/deployment-provenance.yaml:5` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5075` | `packages/config/src/chains/const/chainIds.ts:21`; `README.md:19` | `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2` (`crates/core/src/config.rs:41`) | 2026-05-04 |
-| BNB Smart Chain | `Bnb` | 56 | `crates/contracts/deployment-provenance.yaml:40` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5083` | `packages/config/src/chains/const/chainIds.ts:27`; `README.md:20` | `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c` (`crates/core/src/config.rs:55`) | 2026-05-04 |
-| Gnosis Chain | `GnosisChain` | 100 | `crates/contracts/deployment-provenance.yaml:75` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5087` | `packages/config/src/chains/const/chainIds.ts:22`; `README.md:21` | `0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d` (`crates/core/src/config.rs:43`) | 2026-05-04 |
-| Polygon PoS | `Polygon` | 137 | `crates/contracts/deployment-provenance.yaml:110` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5091` | `packages/config/src/chains/const/chainIds.ts:26`; `README.md:22` | `0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270` (`crates/core/src/config.rs:51`) | 2026-05-04 |
-| Base | `Base` | 8453 | `crates/contracts/deployment-provenance.yaml:145` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5095` | `packages/config/src/chains/const/chainIds.ts:24`; `README.md:23` | `0x4200000000000000000000000000000000000006` (`crates/core/src/config.rs:47`) | 2026-05-04 |
-| Plasma | `Plasma` | 9745 | `crates/contracts/deployment-provenance.yaml:180` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5099` | `packages/config/src/chains/const/chainIds.ts:28`; `README.md:24` | `0x6100e367285b01f48d07953803a2d8dca5d19873` (`crates/core/src/config.rs:57`) | 2026-05-04 |
-| Arbitrum One | `ArbitrumOne` | 42161 | `crates/contracts/deployment-provenance.yaml:214` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5103` | `packages/config/src/chains/const/chainIds.ts:23`; `README.md:25` | `0x82aF49447D8a07e3bd95BD0d56f35241523fBab1` (`crates/core/src/config.rs:45`) | 2026-05-04 |
-| Avalanche C-Chain | `Avalanche` | 43114 | `crates/contracts/deployment-provenance.yaml:249` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5107` | `packages/config/src/chains/const/chainIds.ts:25`; `README.md:26` | `0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7` (`crates/core/src/config.rs:53`) | 2026-05-04 |
-| Ink | `Ink` | 57073 | `crates/contracts/deployment-provenance.yaml:284` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5111` | `packages/config/src/chains/const/chainIds.ts:30`; `README.md:27` | `0x4200000000000000000000000000000000000006` (`crates/core/src/config.rs:47`) | 2026-05-04 |
-| Linea | `Linea` | 59144 | `crates/contracts/deployment-provenance.yaml:318` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5115` | `packages/config/src/chains/const/chainIds.ts:29`; `README.md:28` | `0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f` (`crates/core/src/config.rs:59`) | 2026-05-04 |
-| Sepolia (Ethereum testnet) | `Sepolia` | 11155111 | `crates/contracts/deployment-provenance.yaml:352` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5119` | `packages/config/src/chains/const/chainIds.ts:31`; `README.md:29` | `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14` (`crates/core/src/config.rs:49`) | 2026-05-04 |
+| Ethereum Mainnet | `Mainnet` | 1 | `crates/contracts/deployment-provenance.yaml:5` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5075` | `packages/config/src/chains/const/chainIds.ts:21`; `README.md:19` | `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2` (`crates/core/src/config/chains.rs:11`) | 2026-05-04 |
+| BNB Smart Chain | `Bnb` | 56 | `crates/contracts/deployment-provenance.yaml:40` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5083` | `packages/config/src/chains/const/chainIds.ts:27`; `README.md:20` | `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c` (`crates/core/src/config/chains.rs:25`) | 2026-05-04 |
+| Gnosis Chain | `GnosisChain` | 100 | `crates/contracts/deployment-provenance.yaml:75` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5087` | `packages/config/src/chains/const/chainIds.ts:22`; `README.md:21` | `0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d` (`crates/core/src/config/chains.rs:13`) | 2026-05-04 |
+| Polygon PoS | `Polygon` | 137 | `crates/contracts/deployment-provenance.yaml:110` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5091` | `packages/config/src/chains/const/chainIds.ts:26`; `README.md:22` | `0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270` (`crates/core/src/config/chains.rs:21`) | 2026-05-04 |
+| Base | `Base` | 8453 | `crates/contracts/deployment-provenance.yaml:145` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5095` | `packages/config/src/chains/const/chainIds.ts:24`; `README.md:23` | `0x4200000000000000000000000000000000000006` (`crates/core/src/config/chains.rs:17`) | 2026-05-04 |
+| Plasma | `Plasma` | 9745 | `crates/contracts/deployment-provenance.yaml:180` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5099` | `packages/config/src/chains/const/chainIds.ts:28`; `README.md:24` | `0x6100e367285b01f48d07953803a2d8dca5d19873` (`crates/core/src/config/chains.rs:27`) | 2026-05-04 |
+| Arbitrum One | `ArbitrumOne` | 42161 | `crates/contracts/deployment-provenance.yaml:214` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5103` | `packages/config/src/chains/const/chainIds.ts:23`; `README.md:25` | `0x82aF49447D8a07e3bd95BD0d56f35241523fBab1` (`crates/core/src/config/chains.rs:15`) | 2026-05-04 |
+| Avalanche C-Chain | `Avalanche` | 43114 | `crates/contracts/deployment-provenance.yaml:249` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5107` | `packages/config/src/chains/const/chainIds.ts:25`; `README.md:26` | `0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7` (`crates/core/src/config/chains.rs:23`) | 2026-05-04 |
+| Ink | `Ink` | 57073 | `crates/contracts/deployment-provenance.yaml:284` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5111` | `packages/config/src/chains/const/chainIds.ts:30`; `README.md:27` | `0x4200000000000000000000000000000000000006` (`crates/core/src/config/chains.rs:17`) | 2026-05-04 |
+| Linea | `Linea` | 59144 | `crates/contracts/deployment-provenance.yaml:318` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5115` | `packages/config/src/chains/const/chainIds.ts:29`; `README.md:28` | `0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f` (`crates/core/src/config/chains.rs:29`) | 2026-05-04 |
+| Sepolia (Ethereum testnet) | `Sepolia` | 11155111 | `crates/contracts/deployment-provenance.yaml:352` | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5119` | `packages/config/src/chains/const/chainIds.ts:31`; `README.md:29` | `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14` (`crates/core/src/config/chains.rs:19`) | 2026-05-04 |
 
 ### Live Confirmation
 
@@ -128,7 +128,7 @@ Selector probes are currently disabled for all rows; the release evidence is the
 Primary implementation points:
 
 - `crates/contracts/src/deployments/registry.rs`
-- `crates/core/src/config.rs`
+- `crates/core/src/config/chains.rs`
 - `crates/contracts/registry.toml`
 - `crates/contracts/deployment-provenance.yaml`
 - `crates/contracts/build.rs`

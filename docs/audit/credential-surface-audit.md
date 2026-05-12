@@ -1,7 +1,7 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-11
+Last reviewed: 2026-05-12
 Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, Pinata upload-trait headers, wasm error envelopes, and the SDK facade
 Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without a redacting storage type
 Related docs:
@@ -69,7 +69,7 @@ the same redaction rule.
 
 ### Host-Policy Failures
 
-`crates/core/src/config.rs` owns `ExternalHostPolicy` and
+`crates/core/src/config/hosts.rs` owns `ExternalHostPolicy` and
 `HostPolicyError`. Orderbook and subgraph builders validate explicit service
 endpoint overrides against canonical hosts by default. Rejections retain only
 the host component wrapped in `Redacted<String>`, while parse failures collapse
@@ -113,7 +113,7 @@ needs the raw bytes must opt in to unwrap them and the boundary's default
 Primary implementation points:
 
 - `crates/orderbook/src/builder.rs`
-- `crates/core/src/config.rs`
+- `crates/core/src/config/hosts.rs`
 - `crates/core/src/redaction.rs`
 - `crates/core/src/errors.rs`
 - `crates/core/src/transport/error.rs`

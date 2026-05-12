@@ -106,7 +106,7 @@ fn write_cow_fixture_tree(cow_root: &Path) {
         "openapi: 3.0.3\ninfo:\n  title: fixture\n",
     );
     write_file(
-        &cow_root.join("crates/core/src/config.rs"),
+        &cow_root.join("crates/core/src/config/chains.rs"),
         r"
 pub enum SupportedChainId {
     Mainnet = 1,

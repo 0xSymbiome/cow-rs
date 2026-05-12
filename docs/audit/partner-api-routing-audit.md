@@ -1,7 +1,7 @@
 # Partner API Routing Audit
 
 Status: Current  
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-12
 Owning surface: `cow-sdk-core` route selection and `cow-sdk-orderbook` partner header assembly  
 Refresh trigger: Changes to `ApiContext` partner-route selection, API-key validation, `X-API-Key` header construction, partner endpoint family activation, or orderbook host-policy composition
 Related docs:
@@ -60,7 +60,7 @@ only after the configured host is canonical or explicitly reviewed.
 
 Primary implementation points:
 
-- `crates/core/src/config.rs`
+- `crates/core/src/config/env.rs`
 - `crates/orderbook/src/api.rs`
 
 Primary regression coverage:

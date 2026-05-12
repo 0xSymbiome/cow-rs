@@ -52,7 +52,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) | Standing audit | `cow-sdk-contracts` `alloy::sol!`-generated binding surfaces | Byte-identity parity on the shipped settlement, vault-relayer, EthFlow, EIP-1967 proxy, ERC-20 / ERC-20 Permit bindings, and the shared EIP-712 domain-separator fixture | Current | 2026-05-01 |
-| [Deployment Registry Audit](deployment-registry-audit.md) | Standing audit | `cow-sdk-contracts::Registry` typed deployment authority | Typed `(ContractId, SupportedChainId, CowEnv)` key, embedded TOML manifest, per-chain provenance, compile-time validation, and override composition | Current | 2026-05-04 |
+| [Deployment Registry Audit](deployment-registry-audit.md) | Standing audit | `cow-sdk-contracts::Registry` typed deployment authority | Typed `(ContractId, SupportedChainId, CowEnv)` key, embedded TOML manifest, per-chain provenance, compile-time validation, and override composition | Current | 2026-05-12 |
 
 ## HTTP Transport And Construction
 
@@ -136,7 +136,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Partner API Routing Audit](partner-api-routing-audit.md) | Standing audit | `cow-sdk-core` route selection and `cow-sdk-orderbook` partner header assembly | Local partner-route activation and `X-API-Key` request construction | Current | 2026-05-01 |
+| [Partner API Routing Audit](partner-api-routing-audit.md) | Standing audit | `cow-sdk-core` route selection and `cow-sdk-orderbook` partner header assembly | Local partner-route activation and `X-API-Key` request construction | Current | 2026-05-12 |
 
 ## Trading Runtime Authority
 
@@ -167,8 +167,8 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, URL-bearing config redaction, native Alloy key/URL redaction, host-policy failures, `Redacted<T>` wrapper, transport error redaction, and typed user policy | Current | 2026-05-06 |
-| [Credential Surface Audit](credential-surface-audit.md) | Standing audit | Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, Pinata upload-trait headers, wasm error envelopes, and the SDK facade | Redacted credential storage plus sanitized host-policy failures, typed-redacted public error diagnostics, typed-redacted Pinata headers, and redacted JS-visible `WasmError` diagnostics | Current | 2026-05-11 |
-| [URL Credential Redaction Audit](url-credential-redaction-audit.md) | Standing audit | URL-bearing public configuration across core, orderbook, subgraph, browser-wallet, app-data, native Alloy adapters, and wasm error conversion | Redacting URL map and URL value wrappers for public diagnostics with explicit raw dispatch access at HTTP, wallet, Alloy RPC, and wasm error seams | Current | 2026-05-11 |
+| [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, URL-bearing config redaction, native Alloy key/URL redaction, host-policy failures, `Redacted<T>` wrapper, transport error redaction, and typed user policy | Current | 2026-05-12 |
+| [Credential Surface Audit](credential-surface-audit.md) | Standing audit | Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, Pinata upload-trait headers, wasm error envelopes, and the SDK facade | Redacted credential storage plus sanitized host-policy failures, typed-redacted public error diagnostics, typed-redacted Pinata headers, and redacted JS-visible `WasmError` diagnostics | Current | 2026-05-12 |
+| [URL Credential Redaction Audit](url-credential-redaction-audit.md) | Standing audit | URL-bearing public configuration across core, orderbook, subgraph, browser-wallet, app-data, native Alloy adapters, and wasm error conversion | Redacting URL map and URL value wrappers for public diagnostics with explicit raw dispatch access at HTTP, wallet, Alloy RPC, and wasm error seams | Current | 2026-05-12 |
 | [Shared Logic Reviewability Audit](shared-logic-reviewability-audit.md) | Standing audit | Orderbook, signing, and trading shared-logic reviewability boundary | Shared request execution, signing payload preparation, thin posting wrappers, and justified DTO separation | Current | 2026-04-21 |
 | [Cooperative Cancellation Contract Audit](cooperative-cancellation-contract-audit.md) | Standing audit | Cross-cutting cooperative cancellation across core, orderbook, subgraph, trading, native Alloy adapters, and wasm callback transport | Shared `CancellationToken` re-export, the `Cancellable` extension-trait combinator, typed `Cancelled` variants, biased-poll drop semantics, trading receipt-wait helpers, native Alloy adapter calls, and wasm callback timeout abort handling | Current | 2026-05-11 |

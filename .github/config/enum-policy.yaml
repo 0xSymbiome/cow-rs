@@ -319,32 +319,32 @@ enums:
     expected_marker: non_exhaustive
     reason: Core error aggregation can grow with new shared primitives.
   - name: SupportedChainId
-    file: crates/core/src/config.rs
-    line: 97
+    file: crates/core/src/config/chains.rs
+    line: 67
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Supported chains grow as upstream deployment authority expands.
   - name: CowEnv
-    file: crates/core/src/config.rs
-    line: 210
+    file: crates/core/src/config/env.rs
+    line: 24
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Environment tags are protocol and services deployment concepts.
   - name: ExternalHostPolicy
-    file: crates/core/src/config.rs
-    line: 242
+    file: crates/core/src/config/hosts.rs
+    line: 26
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: SDK host policy modes can grow as reviewed runtime trust modes are added.
   - name: UrlParseFailureClass
-    file: crates/core/src/config.rs
-    line: 269
+    file: crates/core/src/config/hosts.rs
+    line: 53
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: URL parse failure partitions can grow with new redaction and validation checks.
   - name: HostPolicyError
-    file: crates/core/src/config.rs
-    line: 307
+    file: crates/core/src/config/hosts.rs
+    line: 91
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Host policy diagnostics can grow as external routing validation expands.

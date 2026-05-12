@@ -136,7 +136,7 @@ pub fn analyze_diff(diff: &str) -> ChainPatchReport {
         }
         let added = line.trim_start_matches('+').trim();
         match current_file.as_str() {
-            "crates/core/src/config.rs" => {
+            "crates/core/src/config/chains.rs" => {
                 if let Some(chain_id) = parse_supported_chain_variant(added) {
                     added_chain_ids.insert(chain_id);
                 }
@@ -208,7 +208,7 @@ fn git_diff(repo_root: &Path, base_ref: &str) -> anyhow::Result<String> {
             "--unified=0",
             &format!("{base_ref}...HEAD"),
             "--",
-            "crates/core/src/config.rs",
+            "crates/core/src/config/chains.rs",
             "crates/contracts/registry.toml",
             "parity/source-lock.yaml",
         ])
