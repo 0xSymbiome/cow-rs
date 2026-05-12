@@ -283,8 +283,8 @@ enums:
     expected_marker: non_exhaustive
     reason: Protocol signature payload families can grow without breaking downstream matches.
   - name: InteractionStage
-    file: crates/contracts/src/settlement.rs
-    line: 72
+    file: crates/contracts/src/settlement/mod.rs
+    line: 70
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Settlement interaction stages are protocol-facing and may grow with upstream contracts.

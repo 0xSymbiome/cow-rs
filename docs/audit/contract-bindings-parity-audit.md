@@ -1,7 +1,7 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-12
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a drift in the committed Solidity excerpt under `crates/contracts/abi/**/*.sol`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
@@ -52,7 +52,7 @@ provider.
 
 ### Binding Families
 
-`GPv2Settlement` (`crates/contracts/src/settlement.rs`) carries the
+`GPv2Settlement` (`crates/contracts/src/settlement/mod.rs`) carries the
 `settle`, `invalidateOrder(bytes)`, `setPreSignature`, trade-struct,
 and interaction-struct surface against the mainnet-deployed
 `0x9008D19f58AAbD9eD0D60971565AA8510560ab41` contract.
@@ -164,7 +164,9 @@ Mainnet Vault role hashes for `manageUserBalance` and `batchSwap`.
 
 Primary implementation points:
 
-- `crates/contracts/src/settlement.rs`
+- `crates/contracts/src/settlement/mod.rs`
+- `crates/contracts/src/settlement/encoder.rs`
+- `crates/contracts/src/settlement/codec.rs`
 - `crates/contracts/src/interaction.rs`
 - `crates/contracts/src/errors.rs`
 - `crates/contracts/src/vault.rs`

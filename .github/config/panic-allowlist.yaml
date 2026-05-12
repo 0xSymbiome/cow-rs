@@ -42,10 +42,10 @@ allowed:
   - file: crates/contracts/src/primitives.rs
     item: buy_balance_name
     reason: In-crate balance mapping covers every currently representable settlement buy-balance variant.
-  - file: crates/contracts/src/settlement.rs
+  - file: crates/contracts/src/settlement/codec.rs
     item: encode_order_flags
     reason: Flag encoding masks only the currently supported typed balance variants.
-  - file: crates/contracts/src/settlement.rs
+  - file: crates/contracts/src/settlement/codec.rs
     item: decode_order_flags
     reason: Bit masks are constrained before reaching unreachable arms.
   - file: crates/core/src/redaction.rs

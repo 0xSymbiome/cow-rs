@@ -21,7 +21,7 @@ pragma abicoder v2;
 //
 // This file is documentation-only: it preserves upstream provenance for
 // reviewers and IDEs. The Rust bindings derived from the same signatures
-// live in `crates/contracts/src/settlement.rs`.
+// live in `crates/contracts/src/settlement/mod.rs`.
 
 interface IGPv2Settlement {
     struct TradeData {
