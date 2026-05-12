@@ -63,6 +63,7 @@ fn limiter(
         .build()
 }
 use serde_json::json;
+use tokio::sync::Notify;
 use tokio::time::{sleep, timeout};
 use wiremock::{
     Mock, MockServer, Request, ResponseTemplate,
@@ -203,14 +204,17 @@ async fn request_json_retries_429_and_preserves_headers_on_each_attempt() {
 async fn retry_after_backoff_wait_can_be_cancelled_before_next_attempt() {
     let server = MockServer::start().await;
     let attempts = Arc::new(AtomicUsize::new(0));
+    let first_retryable_response = Arc::new(Notify::new());
 
     Mock::given(method("GET"))
         .and(path("/api/v1/version"))
         .respond_with({
             let attempts = attempts.clone();
+            let first_retryable_response = first_retryable_response.clone();
             move |_request: &Request| {
                 let attempt = attempts.fetch_add(1, Ordering::SeqCst);
                 if attempt == 0 {
+                    first_retryable_response.notify_one();
                     ResponseTemplate::new(TOO_MANY_REQUESTS)
                         .insert_header("Retry-After", "30")
                         .set_body_json(json!({
@@ -234,24 +238,15 @@ async fn retry_after_backoff_wait_can_be_cancelled_before_next_attempt() {
     let token = cow_sdk_core::CancellationToken::new();
     let token_for_call = token.clone();
 
-    let call = api.get_version().cancel_with(&token_for_call);
-    let trigger = async {
-        for _ in 0..100 {
-            if attempts.load(Ordering::SeqCst) == 1 {
-                break;
-            }
-            tokio::task::yield_now().await;
-        }
-        assert_eq!(
-            attempts.load(Ordering::SeqCst),
-            1,
-            "the first retryable response must be observed before cancellation"
-        );
-        tokio::time::sleep(Duration::from_millis(50)).await;
-        token.cancel();
-    };
-
-    let (result, ()) = tokio::join!(call, trigger);
+    let call = tokio::spawn(async move { api.get_version().cancel_with(&token_for_call).await });
+    first_retryable_response.notified().await;
+    assert_eq!(
+        attempts.load(Ordering::SeqCst),
+        1,
+        "the first retryable response must be observed before cancellation"
+    );
+    token.cancel();
+    let result = call.await.expect("request task must not panic");
 
     assert!(matches!(result, Err(OrderbookError::Cancelled)));
     assert_eq!(
