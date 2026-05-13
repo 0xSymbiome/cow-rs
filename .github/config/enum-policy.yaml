@@ -2,13 +2,13 @@ version: 1
 enums:
   - name: SdkError
     file: crates/sdk/src/lib.rs
-    line: 110
+    line: 157
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Facade error aggregation can grow as leaf crate capabilities are added.
   - name: ErrorClass
     file: crates/sdk/src/lib.rs
-    line: 144
+    line: 191
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Public diagnostic partition can grow with new facade error classes.
@@ -104,7 +104,7 @@ enums:
     reason: Request limiter bucket scopes can grow as additional routing policies are added.
   - name: TransportPolicyBuildError
     file: crates/transport-policy/src/policy.rs
-    line: 153
+    line: 221
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Transport policy builder diagnostics can grow with new validation knobs.

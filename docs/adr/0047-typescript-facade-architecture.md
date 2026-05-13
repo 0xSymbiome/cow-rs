@@ -1,4 +1,4 @@
-# ADR 0054: Make The TypeScript Facade The Public WASM Package Surface
+# ADR 0047: Make The TypeScript Facade The Public WASM Package Surface
 
 - Status: Accepted
 - Date: 2026-05-11

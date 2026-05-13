@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, crate-boundary, pure-helpers, component-model
-- Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0054](0054-typescript-facade-architecture.md)
+- Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0047](0047-typescript-facade-architecture.md)
 
 ## Decision
 

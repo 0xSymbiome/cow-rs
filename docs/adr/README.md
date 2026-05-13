@@ -54,7 +54,7 @@ public and runtime shape of `cow-rs`.
 | [0044](0044-bundle-size-profile-and-flavor-builds.md) | Accepted | Ship feature-scoped WASM flavor builds from one package. |
 | [0045](0045-async-signer-trait-narrowing.md) | Accepted | Narrow async signer capabilities by operation. |
 | [0046](0046-transport-policy-js-exposure.md) | Accepted | Expose transport policy configuration to JavaScript clients. |
-| [0054](0054-typescript-facade-architecture.md) | Accepted | Make the TypeScript facade the public WASM package surface. |
+| [0047](0047-typescript-facade-architecture.md) | Accepted | Make the TypeScript facade the public WASM package surface. |
 
 ## When To Write An ADR
 

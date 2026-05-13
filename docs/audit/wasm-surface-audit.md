@@ -11,7 +11,7 @@ Related docs:
 - [ADR 0043](../adr/0043-callback-registry-internalization.md)
 - [ADR 0044](../adr/0044-bundle-size-profile-and-flavor-builds.md)
 - [ADR 0046](../adr/0046-transport-policy-js-exposure.md)
-- [ADR 0054](../adr/0054-typescript-facade-architecture.md)
+- [ADR 0047](../adr/0047-typescript-facade-architecture.md)
 - [WASM Type Generation Audit](wasm-type-generation-audit.md)
 - [WASM EIP-1271 Parity Audit](wasm-eip1271-parity-audit.md)
 - [WASM Callback Shape Design Audit](wasm-callback-shape-design-audit.md)

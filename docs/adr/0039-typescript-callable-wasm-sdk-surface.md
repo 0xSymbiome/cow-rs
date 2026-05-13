@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-12
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, typescript, public-surface, additive-leaf-crates
-- Related: [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0037](0037-alloy-umbrella-adapter.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0042](0042-pure-helpers-extraction.md), [ADR 0043](0043-callback-registry-internalization.md), [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), [ADR 0046](0046-transport-policy-js-exposure.md), [ADR 0054](0054-typescript-facade-architecture.md)
+- Related: [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0037](0037-alloy-umbrella-adapter.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0042](0042-pure-helpers-extraction.md), [ADR 0043](0043-callback-registry-internalization.md), [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), [ADR 0046](0046-transport-policy-js-exposure.md), [ADR 0047](0047-typescript-facade-architecture.md)
 
 ## Decision
 

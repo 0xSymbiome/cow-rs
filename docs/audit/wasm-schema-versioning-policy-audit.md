@@ -5,7 +5,7 @@ Last reviewed: 2026-05-11
 Owning surface: `cow-sdk-wasm` JavaScript-visible success and error envelopes, schema-version fields, and unknown-variant escape hatches
 Refresh trigger: Changes to `WasmError`, `SdkError`, envelope serialization, schema-version constants, unknown variant handling, or TypeScript facade error normalization
 Related docs:
-- [ADR 0054](../adr/0054-typescript-facade-architecture.md)
+- [ADR 0047](../adr/0047-typescript-facade-architecture.md)
 - [WASM Public API Stability Audit](wasm-public-api-stability-audit.md)
 - [PROPERTIES.md](../../PROPERTIES.md)
 

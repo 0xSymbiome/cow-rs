@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-12
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, npm, bundle-size, package-flavors
-- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0054](0054-typescript-facade-architecture.md)
+- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0047](0047-typescript-facade-architecture.md)
 
 ## Decision
 

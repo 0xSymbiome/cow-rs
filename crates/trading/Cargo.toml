@@ -22,7 +22,14 @@ workspace = true
 
 [features]
 default = []
-tracing = ["dep:tracing"]
+tracing = [
+  "dep:tracing",
+  "cow-sdk-app-data/tracing",
+  "cow-sdk-contracts/tracing",
+  "cow-sdk-core/tracing",
+  "cow-sdk-orderbook/tracing",
+  "cow-sdk-signing/tracing",
+]
 
 [dependencies]
 async-trait.workspace = true

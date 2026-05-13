@@ -95,7 +95,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          allowed_legacy='check-release-docs-agree.sh|check-services-drift.sh'
+          allowed_legacy='check-release-docs-agree.sh|check-services-drift.sh|check-audit-index-agreement.sh'
           found="$(
             find scripts -maxdepth 2 -type f \( -name '*.sh' -o -name '*.ps1' \) \
               | grep -Ev "/(${allowed_legacy})$" || true

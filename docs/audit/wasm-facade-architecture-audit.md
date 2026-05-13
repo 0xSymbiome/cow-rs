@@ -7,7 +7,7 @@ Refresh trigger: Changes to facade source, raw binding adapters, disposal behavi
 Related docs:
 - [ADR 0039](../adr/0039-typescript-callable-wasm-sdk-surface.md)
 - [ADR 0043](../adr/0043-callback-registry-internalization.md)
-- [ADR 0054](../adr/0054-typescript-facade-architecture.md)
+- [ADR 0047](../adr/0047-typescript-facade-architecture.md)
 
 ## Scope
 

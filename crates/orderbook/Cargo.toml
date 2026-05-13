@@ -22,7 +22,7 @@ workspace = true
 
 [features]
 default = []
-tracing = ["dep:tracing", "cow-sdk-transport-policy/tracing"]
+tracing = ["dep:tracing", "cow-sdk-core/tracing", "cow-sdk-transport-policy/tracing"]
 
 [dependencies]
 cow-sdk-core = { path = "../core", version = "0.1.0" }

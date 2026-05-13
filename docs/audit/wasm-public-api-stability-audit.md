@@ -9,7 +9,7 @@ Related docs:
 - [ADR 0041](../adr/0041-transport-policy-l3-layering.md)
 - [ADR 0044](../adr/0044-bundle-size-profile-and-flavor-builds.md)
 - [ADR 0046](../adr/0046-transport-policy-js-exposure.md)
-- [ADR 0054](../adr/0054-typescript-facade-architecture.md)
+- [ADR 0047](../adr/0047-typescript-facade-architecture.md)
 - [PROPERTIES.md](../../PROPERTIES.md)
 
 ## Scope
