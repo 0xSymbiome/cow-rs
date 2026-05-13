@@ -128,7 +128,7 @@ Primary implementation points:
 - `crates/trading/src/types/options.rs`
 - `crates/trading/src/quote.rs`
 - `crates/trading/src/post/generic.rs`
-- `crates/trading/src/slippage.rs`
+- `crates/trading/src/slippage/policy.rs`
 
 Primary regression coverage:
 

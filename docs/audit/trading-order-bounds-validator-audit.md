@@ -193,7 +193,7 @@ before callers can sign or inspect the cancellation transaction.
 Primary implementation points:
 
 - `crates/trading/src/onchain.rs`
-- `crates/trading/src/slippage.rs`
+- `crates/trading/src/slippage/amounts.rs`
 - `crates/trading/src/validation.rs`
 - `crates/trading/src/parameters.rs`
 - `crates/trading/src/post/generic.rs`
