@@ -68,7 +68,8 @@ wallet and are not SDK-owned orderbook or subgraph service endpoints, so
 
 Primary implementation points:
 
-- `crates/browser-wallet/src/provider.rs`
+- `crates/browser-wallet/src/provider/builder.rs`
+- `crates/browser-wallet/src/provider/origin.rs`
 - `crates/browser-wallet/src/wallet/detect.rs`
 - `crates/browser-wallet/src/wallet/mod.rs`
 - `crates/browser-wallet/src/error.rs`

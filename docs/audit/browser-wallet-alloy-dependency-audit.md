@@ -1,7 +1,7 @@
 # Browser-Wallet Alloy Dependency Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-05-13
 Owning surface: `cow-sdk-browser-wallet` typed EIP-1193 contract-call bridge and its `alloy-primitives` / `alloy-dyn-abi` / `alloy-json-abi` ABI helpers
 Refresh trigger: Upstream movement in the alloy family (new major, dropped transitive dependency), a new reviewed warning surfacing through the alloy toolchain, or a new maintained successor to the affected proc-macro deps
 Related docs:
@@ -60,8 +60,9 @@ The current browser-wallet contract-call bridge uses:
   looking up functions by name
 
 These three crates replace the previously unmaintained `ethabi 18.0.0`
-dependency. The swap is isolated to `crates/browser-wallet/src/provider.rs`
-plus the matching workspace and crate manifests.
+dependency. The swap is isolated to
+`crates/browser-wallet/src/provider/async_provider.rs` plus the matching
+workspace and crate manifests.
 
 ### Public API Boundary
 
@@ -112,7 +113,7 @@ arguments from that change.
 
 Primary implementation points:
 
-- `crates/browser-wallet/src/provider.rs`
+- `crates/browser-wallet/src/provider/async_provider.rs`
 - `crates/browser-wallet/Cargo.toml`
 - `Cargo.toml` (workspace dependencies)
 - `.github/config/deny.toml`

@@ -1,410 +1,17 @@
-//! Typed EIP-1193 provider bridge and `AsyncProvider` implementation.
-//!
-//! This module keeps browser-wallet request execution typed and local to the leaf crate. It does
-//! not expose a generic raw wallet-RPC passthrough beyond the transport seam used by the typed
-//! provider and signer adapters.
-
-use std::{cell::RefCell, fmt, rc::Rc};
-
 use alloy_dyn_abi::{DynSolType, DynSolValue, FunctionExt, JsonAbiExt};
 use alloy_json_abi::{JsonAbi, Param};
 use alloy_primitives::{Address as AlloyAddress, B256, I256, U256};
-use async_trait::async_trait;
 use num_bigint::BigUint;
 use serde_json::{Map, Value, json};
 
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, AsyncSigningProvider, BlockHash, BlockInfo, ChainId,
-    ContractCall, ContractHandle, HexData, Redacted, TransactionHash, TransactionReceipt,
-    TransactionRequest, TransactionStatus,
+    Address, Amount, AsyncProvider, BlockHash, BlockInfo, ChainId, ContractCall, ContractHandle,
+    HexData, TransactionHash, TransactionReceipt, TransactionRequest, TransactionStatus,
 };
 
-use crate::{
-    BrowserWalletError, EventLog, WalletEvent, WalletSession,
-    events::{WalletRuntimeBindingHandle, update_wallet_session},
-    signer::Eip1193Signer,
-};
+use crate::BrowserWalletError;
 
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait(?Send))]
-/// Transport seam for typed EIP-1193 browser-wallet requests.
-///
-/// Implementors are responsible for method dispatch, request serialization, and optional session
-/// listener attachment. The public SDK surface remains typed at the provider and signer layers,
-/// while browser-runtime interop details stay private to the leaf crate.
-pub trait Eip1193Transport {
-    /// Returns the human-readable wallet label for session and event reporting.
-    fn label(&self) -> &str;
-    /// Executes one wallet request and returns the decoded JSON result.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`BrowserWalletError`] when the wallet rejects the request, reports an RPC error, or
-    /// returns data that cannot be represented as JSON.
-    async fn request(
-        &self,
-        method: &str,
-        params: Option<Value>,
-    ) -> Result<Value, BrowserWalletError>;
-
-    /// Optionally attaches runtime-native session listeners for provider-emitted events.
-    fn attach_session_sync(
-        &self,
-        _session: Rc<RefCell<WalletSession>>,
-        _events: EventLog,
-    ) -> Option<WalletRuntimeBindingHandle> {
-        None
-    }
-}
-
-/// Reviewed origin label for an EIP-1193 provider binding.
-///
-/// The value can be a browser origin or an EIP-6963 reverse-DNS identifier.
-/// Its debug and display representations are redacted; use [`Origin::as_str`]
-/// only when the caller deliberately needs the raw value.
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub struct Origin(String);
-
-impl Origin {
-    /// Creates a non-empty provider origin label.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`BrowserWalletError`] when the origin is empty or contains
-    /// control characters.
-    pub fn new(value: impl Into<String>) -> Result<Self, BrowserWalletError> {
-        let value = value.into();
-        let trimmed = value.trim();
-        if trimmed.is_empty() {
-            return Err(BrowserWalletError::InvalidProviderOrigin {
-                message: "provider origin must not be empty".to_owned().into(),
-            });
-        }
-        if trimmed.chars().any(char::is_control) {
-            return Err(BrowserWalletError::InvalidProviderOrigin {
-                message: "provider origin must not contain control characters"
-                    .to_owned()
-                    .into(),
-            });
-        }
-        if !origin_scheme_is_documented(trimmed) {
-            return Err(BrowserWalletError::InvalidProviderOrigin {
-                message:
-                    "provider origin scheme must be http, https, test, transport, or reverse-DNS"
-                        .to_owned()
-                        .into(),
-            });
-        }
-        Ok(Self(trimmed.to_owned()))
-    }
-
-    /// Returns the raw provider origin label.
-    #[must_use]
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-fn origin_scheme_is_documented(value: &str) -> bool {
-    let Some((scheme, _)) = value.split_once(':') else {
-        return true;
-    };
-    matches!(
-        scheme.to_ascii_lowercase().as_str(),
-        "http" | "https" | "test" | "transport"
-    )
-}
-
-impl fmt::Debug for Origin {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Redacted::new(self.0.clone()).fmt(f)
-    }
-}
-
-impl fmt::Display for Origin {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Redacted::new(self.0.clone()).fmt(f)
-    }
-}
-
-/// Trust-aware builder for typed EIP-1193 providers.
-///
-/// Providers discovered through EIP-6963 should be built with a detected
-/// origin supplied by the discovery flow. Anonymous providers must opt in
-/// through [`Self::with_trusted_origin`] before construction succeeds.
-pub struct Eip1193ProviderBuilder {
-    transport: Rc<dyn Eip1193Transport>,
-    detected_origin: Option<Origin>,
-    trusted_origins: Vec<Origin>,
-}
-
-impl fmt::Debug for Eip1193ProviderBuilder {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Eip1193ProviderBuilder")
-            .field("wallet_label", &self.transport.label())
-            .field("detected_origin", &self.detected_origin)
-            .field("trusted_origins", &self.trusted_origins)
-            .finish_non_exhaustive()
-    }
-}
-
-impl Eip1193ProviderBuilder {
-    /// Creates a provider builder from one typed EIP-1193 transport.
-    #[must_use]
-    pub fn new<T>(transport: T) -> Self
-    where
-        T: Eip1193Transport + 'static,
-    {
-        Self::from_shared(Rc::new(transport))
-    }
-
-    pub(crate) fn from_shared(transport: Rc<dyn Eip1193Transport>) -> Self {
-        Self {
-            transport,
-            detected_origin: None,
-            trusted_origins: Vec::new(),
-        }
-    }
-
-    pub(crate) fn with_detected_origin(mut self, origin: Origin) -> Self {
-        self.detected_origin = Some(origin);
-        self
-    }
-
-    /// Adds an explicitly reviewed origin for an anonymous EIP-1193 provider.
-    #[must_use]
-    pub fn with_trusted_origin(mut self, origin: Origin) -> Self {
-        self.trusted_origins.push(origin);
-        self
-    }
-
-    /// Builds a typed EIP-1193 provider.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`BrowserWalletError::UntrustedProviderOrigin`] when the
-    /// provider was not discovered through EIP-6963 and no explicit trusted
-    /// origin was supplied.
-    pub fn build(self) -> Result<Eip1193Provider, BrowserWalletError> {
-        let events = EventLog::default();
-        let session = Rc::new(RefCell::new(WalletSession::new(
-            false,
-            None,
-            Vec::new(),
-            None,
-            self.transport.label().to_owned(),
-        )));
-        self.build_with_session(session, events)
-    }
-
-    pub(crate) fn build_with_session(
-        self,
-        session: Rc<RefCell<WalletSession>>,
-        events: EventLog,
-    ) -> Result<Eip1193Provider, BrowserWalletError> {
-        let origin = self.trusted_origin()?;
-        {
-            let mut session_state = session.borrow_mut();
-            self.transport
-                .label()
-                .clone_into(&mut session_state.wallet_label);
-        }
-        Ok(Eip1193Provider::new(
-            self.transport,
-            session,
-            events,
-            origin,
-        ))
-    }
-
-    fn trusted_origin(&self) -> Result<Option<Origin>, BrowserWalletError> {
-        if let Some(origin) = &self.detected_origin {
-            return Ok(Some(origin.clone()));
-        }
-
-        if let Some(origin) = self.trusted_origins.first() {
-            warn_wallet_origin(origin, true);
-            return Ok(Some(origin.clone()));
-        }
-
-        warn_anonymous_wallet_origin();
-        Err(BrowserWalletError::UntrustedProviderOrigin {
-            origin: Redacted::new("<anonymous>".to_owned()),
-        })
-    }
-}
-
-/// Typed browser-wallet provider that implements [`cow_sdk_core::AsyncProvider`]
-/// and [`cow_sdk_core::AsyncSigningProvider`].
-#[derive(Clone)]
-pub struct Eip1193Provider {
-    transport: Rc<dyn Eip1193Transport>,
-    session: Rc<RefCell<WalletSession>>,
-    events: EventLog,
-    origin: Option<Origin>,
-    _runtime_binding: Option<WalletRuntimeBindingHandle>,
-}
-
-impl fmt::Debug for Eip1193Provider {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let session = self.session.borrow().clone();
-        f.debug_struct("Eip1193Provider")
-            .field("wallet_label", &session.wallet_label)
-            .field("session", &session)
-            .field("origin", &self.origin)
-            .finish_non_exhaustive()
-    }
-}
-
-impl Eip1193Provider {
-    pub(crate) fn new(
-        transport: Rc<dyn Eip1193Transport>,
-        session: Rc<RefCell<WalletSession>>,
-        events: EventLog,
-        origin: Option<Origin>,
-    ) -> Self {
-        let runtime_binding = transport.attach_session_sync(session.clone(), events.clone());
-        Self {
-            transport,
-            session,
-            events,
-            origin,
-            _runtime_binding: runtime_binding,
-        }
-    }
-
-    /// Returns the current normalized wallet session snapshot.
-    #[must_use]
-    pub fn session(&self) -> WalletSession {
-        self.session.borrow().clone()
-    }
-
-    pub(crate) fn events(&self) -> EventLog {
-        self.events.clone()
-    }
-
-    /// Returns the reviewed provider origin label, if one was captured at construction.
-    #[must_use]
-    pub const fn origin(&self) -> Option<&Origin> {
-        self.origin.as_ref()
-    }
-
-    /// Returns the currently selected wallet account, when available.
-    #[must_use]
-    pub fn selected_account(&self) -> Option<Address> {
-        self.session.borrow().selected_account.clone()
-    }
-
-    /// Clears the cached wallet session state while preserving the wallet label.
-    #[must_use]
-    pub fn reset_session(&self) -> WalletSession {
-        let wallet_label = self.session.borrow().wallet_label.clone();
-        self.update_session(move |session| {
-            *session = WalletSession::new(false, None, Vec::new(), None, wallet_label);
-        });
-        self.session()
-    }
-
-    /// Queries wallet accounts and updates the cached session state.
-    ///
-    /// When `interactive` is `true`, this uses `eth_requestAccounts` and may trigger a wallet
-    /// authorization prompt. When it is `false`, this uses `eth_accounts` and performs a passive
-    /// account lookup only.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when the wallet rejects the request or returns a malformed account list.
-    pub async fn query_accounts(
-        &self,
-        interactive: bool,
-    ) -> Result<Vec<Address>, BrowserWalletError> {
-        let method = if interactive {
-            "eth_requestAccounts"
-        } else {
-            "eth_accounts"
-        };
-        let value = self.request(method, None).await?;
-        let accounts = parse_address_array(&value, method)?;
-        self.update_session(|session| {
-            session.connected = !accounts.is_empty();
-            session.accounts.clone_from(&accounts);
-            session.selected_account = accounts.first().cloned();
-        });
-        Ok(accounts)
-    }
-
-    /// Queries the connected chain id and updates the cached session state.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error when the wallet rejects `eth_chainId` or returns a malformed chain id.
-    pub async fn query_chain_id(&self) -> Result<ChainId, BrowserWalletError> {
-        let value = self.request("eth_chainId", None).await?;
-        let chain_id = parse_chain_id_value(&value, "eth_chainId")?;
-        self.update_session(|session| {
-            session.chain_id = Some(chain_id);
-        });
-        Ok(chain_id)
-    }
-
-    pub(crate) async fn request(
-        &self,
-        method: &str,
-        params: Option<Value>,
-    ) -> Result<Value, BrowserWalletError> {
-        self.events.push(WalletEvent::RequestStarted {
-            method: method.to_owned(),
-        });
-        match self.transport.request(method, params).await {
-            Ok(value) => {
-                self.events.push(WalletEvent::RequestSucceeded {
-                    method: method.to_owned(),
-                });
-                Ok(value)
-            }
-            Err(error) => {
-                self.events.push(WalletEvent::RequestFailed {
-                    method: method.to_owned(),
-                    message: error.to_string(),
-                });
-                Err(error)
-            }
-        }
-    }
-
-    pub(crate) fn update_session<F>(&self, updater: F)
-    where
-        F: FnOnce(&mut WalletSession),
-    {
-        update_wallet_session(&self.session, &self.events, None, updater);
-    }
-}
-
-#[cfg(feature = "tracing")]
-fn warn_wallet_origin(origin: &Origin, allowed: bool) {
-    tracing::warn!(
-        target: "cow_sdk::trust",
-        origin = ?Redacted::new(origin.as_str().to_owned()),
-        allowed,
-        "non-discovered EIP-1193 provider origin evaluated"
-    );
-}
-
-#[cfg(not(feature = "tracing"))]
-fn warn_wallet_origin(_origin: &Origin, _allowed: bool) {}
-
-#[cfg(feature = "tracing")]
-fn warn_anonymous_wallet_origin() {
-    tracing::warn!(
-        target: "cow_sdk::trust",
-        origin = ?Redacted::new("<anonymous>".to_owned()),
-        allowed = false,
-        "anonymous EIP-1193 provider rejected"
-    );
-}
-
-#[cfg(not(feature = "tracing"))]
-fn warn_anonymous_wallet_origin() {}
+use super::Eip1193Provider;
 
 #[allow(async_fn_in_trait)]
 impl AsyncProvider for Eip1193Provider {
@@ -527,37 +134,7 @@ impl AsyncProvider for Eip1193Provider {
     }
 }
 
-#[allow(async_fn_in_trait)]
-impl AsyncSigningProvider for Eip1193Provider {
-    type Signer = Eip1193Signer;
-
-    async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        let account_hint = if signer_hint.trim().is_empty() {
-            None
-        } else {
-            Some(Address::new(signer_hint.trim())?)
-        };
-        if let Some(expected) = &account_hint {
-            let accounts = if self.session.borrow().accounts.is_empty() {
-                self.query_accounts(false).await?
-            } else {
-                self.session.borrow().accounts.clone()
-            };
-            if !accounts
-                .iter()
-                .any(|candidate| candidate.normalized_key() == expected.normalized_key())
-            {
-                return Err(BrowserWalletError::malformed_response(
-                    "create_signer",
-                    format!("wallet does not expose account {}", expected.as_str()),
-                ));
-            }
-        }
-        Ok(Eip1193Signer::new(self.clone(), account_hint))
-    }
-}
-
-pub(crate) fn hex_quantity(value: &str) -> Result<String, BrowserWalletError> {
+pub fn hex_quantity(value: &str) -> Result<String, BrowserWalletError> {
     let parsed = value
         .strip_prefix("0x")
         .map_or_else(
@@ -577,10 +154,7 @@ pub(crate) fn hex_quantity(value: &str) -> Result<String, BrowserWalletError> {
     clippy::option_if_let_else,
     reason = "both hex and decimal branches wrap a multi-line map_err closure that constructs the same malformed_response error; the if let/else form keeps the two parse-radix paths visually parallel instead of nesting duplicated error construction inside two map_or_else closures"
 )]
-pub(crate) fn parse_chain_id_value(
-    value: &Value,
-    method: &str,
-) -> Result<ChainId, BrowserWalletError> {
+pub fn parse_chain_id_value(value: &Value, method: &str) -> Result<ChainId, BrowserWalletError> {
     match value {
         Value::String(raw) => {
             if let Some(stripped) = raw.strip_prefix("0x") {
@@ -603,7 +177,7 @@ pub(crate) fn parse_chain_id_value(
     }
 }
 
-pub(crate) fn parse_quantity_to_decimal(
+pub fn parse_quantity_to_decimal(
     value: &Value,
     method: &str,
 ) -> Result<Amount, BrowserWalletError> {
@@ -782,7 +356,10 @@ fn expect_string(value: &Value, method: &str) -> Result<String, BrowserWalletErr
         .ok_or_else(|| BrowserWalletError::malformed_response(method, "expected string response"))
 }
 
-fn parse_address_array(value: &Value, method: &str) -> Result<Vec<Address>, BrowserWalletError> {
+pub(super) fn parse_address_array(
+    value: &Value,
+    method: &str,
+) -> Result<Vec<Address>, BrowserWalletError> {
     let items = value.as_array().ok_or_else(|| {
         BrowserWalletError::malformed_response(method, "expected an array of addresses")
     })?;
@@ -801,7 +378,7 @@ fn parse_address_array(value: &Value, method: &str) -> Result<Vec<Address>, Brow
         .collect()
 }
 
-pub(crate) fn transaction_to_rpc(
+pub fn transaction_to_rpc(
     tx: &TransactionRequest,
     from: Option<&Address>,
 ) -> Result<Value, BrowserWalletError> {
@@ -1141,7 +718,7 @@ fn parse_i256(value: &Value, method: &str) -> Result<I256, BrowserWalletError> {
     }
 }
 
-pub(crate) fn decode_hex(value: &str, method: &str) -> Result<Vec<u8>, BrowserWalletError> {
+fn decode_hex(value: &str, method: &str) -> Result<Vec<u8>, BrowserWalletError> {
     let stripped = value.strip_prefix("0x").ok_or_else(|| {
         BrowserWalletError::malformed_response(method, "hex value must be 0x-prefixed")
     })?;
