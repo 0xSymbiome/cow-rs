@@ -367,14 +367,14 @@ enums:
     expected_marker: non_exhaustive
     reason: App-data diagnostics can grow as schema and transport validation expands.
   - name: PartnerFee
-    file: crates/app-data/src/types.rs
-    line: 354
+    file: crates/app-data/src/types/partner_fee.rs
+    line: 12
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Partner fee wire families are services-facing and may grow additively.
   - name: PartnerFeePolicy
-    file: crates/app-data/src/types.rs
-    line: 433
+    file: crates/app-data/src/types/partner_fee.rs
+    line: 94
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Partner fee policy variants can grow with upstream partner fee semantics.

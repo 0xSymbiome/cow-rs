@@ -1,7 +1,7 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-13
 Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, Pinata upload-trait headers, wasm error envelopes, and the SDK facade
 Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, or any new credential-bearing surface that lands without a redacting storage type
 Related docs:
@@ -128,7 +128,7 @@ Primary implementation points:
 - `crates/orderbook/src/error.rs`
 - `crates/orderbook/src/rejection.rs`
 - `crates/orderbook/src/request.rs`
-- `crates/app-data/src/types.rs`
+- `crates/app-data/src/types/ipfs.rs`
 - `crates/app-data/src/errors.rs`
 - `crates/app-data/src/pinning.rs`
 - `crates/sdk/src/lib.rs`

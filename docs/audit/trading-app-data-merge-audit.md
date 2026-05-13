@@ -1,7 +1,7 @@
 # Trading App-Data Merge Audit
 
 Status: Current
-Last reviewed: 2026-05-08
+Last reviewed: 2026-05-13
 Owning surface: `cow-sdk-trading` quote-to-post app-data edit path,
 including the public `merge_and_seal_app_data` and
 `params_from_doc` helpers, the private typed merge with its
@@ -162,7 +162,7 @@ Primary implementation points:
 - `crates/trading/src/quote.rs`
 - `crates/trading/src/post/generic.rs`
 - `crates/trading/src/lib.rs`
-- `crates/app-data/src/types.rs`
+- `crates/app-data/src/types/partner_fee.rs`
 - `crates/app-data/src/schema.rs`
 - `crates/sdk/src/prelude.rs`
 

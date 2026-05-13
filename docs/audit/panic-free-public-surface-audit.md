@@ -1,7 +1,7 @@
 # Panic-Free Public Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-13
 Owning surface: every `crates/*/src/**/*.rs` file accessible from the published public API
 Refresh trigger: any ADR 0033 panic-policy change, panic-allowlist addition, or new `expect`, `unwrap`, or `panic!` site on a path reachable from the published public API
 Related docs:
@@ -41,7 +41,7 @@ Documented public runtime sites:
 
 | Sites | Rationale |
 | --- | --- |
-| `crates/app-data/src/schema.rs:32`; `crates/app-data/src/types.rs:367` | Typed app-data and partner-fee structures serialize through owned `serde` implementations; failure would mean the shipped Rust types stopped being JSON-serializable. |
+| `crates/app-data/src/schema.rs:32`; `crates/app-data/src/types/partner_fee.rs:51` | Typed app-data and partner-fee structures serialize through owned `serde` implementations; failure would mean the shipped Rust types stopped being JSON-serializable. |
 | `crates/app-data/src/schema.rs:148`; `crates/app-data/src/schema.rs:172`; `crates/app-data/src/schema.rs:187`; `crates/app-data/src/schema.rs:196` | App-data schemas are embedded from crate-owned files; path and JSON validity are release artifacts rather than caller input. |
 | `crates/browser-wallet/src/mock.rs:68`; `crates/browser-wallet/src/wallet.rs:212`; `crates/browser-wallet/src/wallet.rs:946` | Built-in mock address and chain/native-currency metadata are static literals validated by the same constructors used for caller-supplied values. |
 | `crates/contracts/src/deploy.rs:108`; `crates/contracts/src/deploy.rs:111`; `crates/contracts/src/deploy.rs:114`; `crates/contracts/src/deployments/registry.rs:67`; `crates/signing/src/domain.rs:46`; `crates/trading/src/allowance.rs:12`; `crates/trading/src/onchain.rs:483`; `crates/trading/src/onchain.rs:500`; `crates/trading/src/order.rs:310` | Canonical deployment lookups are backed by the embedded registry manifest; malformed or missing rows are gated by the registry parser and build-time validation before normal public use. |

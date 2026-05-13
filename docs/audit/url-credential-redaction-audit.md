@@ -1,7 +1,7 @@
 # URL Credential Redaction Audit
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-13
 Owning surface: Credential-bearing URL storage and dispatch boundaries across core, orderbook, subgraph, browser-wallet, app-data, and wasm error conversion
 Refresh trigger: Changes to URL-bearing public configuration fields, browser wallet add-chain URL payload construction, IPFS URI dispatch, wasm transport-error mapping, or the `RedactedUrlMap` and `RedactedOptionalUrlMap` contracts
 Related docs:
@@ -93,7 +93,7 @@ Primary implementation points:
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/builder.rs`
 - `crates/browser-wallet/src/wallet.rs`
-- `crates/app-data/src/types.rs`
+- `crates/app-data/src/types/ipfs.rs`
 - `crates/app-data/src/fetch.rs`
 - `crates/app-data/src/pinning.rs`
 - `crates/wasm/src/exports/errors.rs`
