@@ -397,32 +397,32 @@ enums:
     expected_marker: non_exhaustive
     reason: Pure helper diagnostics can grow as additional host-safe validation paths are added.
   - name: OrderKindDto
-    file: crates/wasm/src/exports/dto.rs
-    line: 28
+    file: crates/wasm/src/exports/dto/core.rs
+    line: 12
     category: protocol-fixed-exhaustive
     expected_marker: exhaustive
     reason: Wasm order-kind DTO mirrors the fixed CoW order side wire values.
   - name: TokenBalanceDto
-    file: crates/wasm/src/exports/dto.rs
-    line: 48
+    file: crates/wasm/src/exports/dto/core.rs
+    line: 32
     category: sdk-local-state
     expected_marker: exhaustive
     reason: Wasm balance DTO accepts only the SDK-supported balance tags exported to JavaScript callers.
   - name: LimiterScopeConfig
-    file: crates/wasm/src/exports/dto.rs
-    line: 463
+    file: crates/wasm/src/exports/dto/transport.rs
+    line: 81
     category: sdk-local-state
     expected_marker: exhaustive
     reason: Wasm limiter-scope config is a closed JavaScript override surface for the currently supported SDK buckets.
   - name: JitterStrategyConfig
-    file: crates/wasm/src/exports/dto.rs
-    line: 513
+    file: crates/wasm/src/exports/dto/transport.rs
+    line: 131
     category: sdk-local-state
     expected_marker: exhaustive
     reason: Wasm jitter config is a closed JavaScript override surface for the currently supported SDK retry strategies.
   - name: PartnerFeeInput
-    file: crates/wasm/src/exports/dto.rs
-    line: 972
+    file: crates/wasm/src/exports/dto/trading.rs
+    line: 81
     category: sdk-local-state
     expected_marker: exhaustive
     reason: Wasm partner-fee input accepts the SDK-owned single-or-multiple shapes currently supported by trading helpers.

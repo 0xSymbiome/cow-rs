@@ -1,7 +1,7 @@
 # WASM Component Model Future Prep Audit
 
 Status: Current
-Last reviewed: 2026-05-11
+Last reviewed: 2026-05-13
 Owning surface: `cow-sdk-pure-helpers` host-safe helper crate and the deterministic helper boundary consumed by `cow-sdk-wasm`
 Refresh trigger: Changes to `crates/pure-helpers/**`, helper DTO envelopes, wasm helper exports, or any dependency that introduces JavaScript FFI into the pure-helper crate
 Related docs:
@@ -63,7 +63,8 @@ Primary implementation points:
 - `crates/pure-helpers/Cargo.toml`
 - `crates/pure-helpers/README.md`
 - `crates/wasm/src/exports/chains.rs`
-- `crates/wasm/src/exports/dto.rs`
+- `crates/wasm/src/exports/dto/` (core, app-data, signing, transport,
+  orderbook, trading, contracts, and subgraph DTO modules)
 - `crates/wasm/src/exports/eip1271.rs`
 - `crates/wasm/src/exports/signing.rs`
 

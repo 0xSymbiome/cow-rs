@@ -1,7 +1,7 @@
 # WASM Type Generation Audit
 
 Status: Current
-Last reviewed: 2026-05-11
+Last reviewed: 2026-05-13
 Owning surface: `cow-sdk-wasm` DTO exports, tsify-derived TypeScript declarations, and npm declaration snapshots
 Refresh trigger: Changes to exported DTOs, `tsify` usage, wasm-pack targets, declaration snapshots, or package export targets
 Related docs:
@@ -69,7 +69,7 @@ metadata in `dist`, and checks declaration files for the disposable reference.
 Primary implementation points:
 
 - `crates/pure-helpers/src/`
-- `crates/wasm/src/exports/dto.rs`
+- `crates/wasm/src/exports/dto/` (domain DTO modules)
 - `crates/wasm/src/exports/callbacks.rs`
 - `crates/wasm/src/exports/envelope.rs`
 - `crates/wasm/snapshots/raw/cow_sdk_wasm_web.d.ts`
