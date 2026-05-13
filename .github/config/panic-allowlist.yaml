@@ -18,13 +18,13 @@ allowed:
   - file: crates/browser-wallet/src/mock.rs
     item: MockState::default
     reason: Static mock account literals are repository-owned validated EVM addresses.
-  - file: crates/browser-wallet/src/wallet.rs
+  - file: crates/browser-wallet/src/wallet/chain.rs
     item: WalletChainParameters::for_supported_chain
     reason: Built-in chain metadata is static and shares the same validator as user-supplied metadata.
-  - file: crates/browser-wallet/src/wallet.rs
+  - file: crates/browser-wallet/src/wallet/mod.rs
     item: BrowserWallet::from_transport_or_panic
     reason: Panic-named constructor is documented as panic-on-invalid for explicitly trusted Rust transports.
-  - file: crates/browser-wallet/src/wallet.rs
+  - file: crates/browser-wallet/src/wallet/chain.rs
     item: known_wallet_native_currency
     reason: Built-in native-currency metadata is static and validated by construction.
   - file: crates/contracts/src/deploy.rs

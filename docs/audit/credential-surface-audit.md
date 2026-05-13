@@ -120,7 +120,7 @@ Primary implementation points:
 - `crates/subgraph/src/builder.rs`
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/error.rs`
-- `crates/browser-wallet/src/wallet.rs`
+- `crates/browser-wallet/src/wallet/chain.rs`
 - `crates/browser-wallet/src/error.rs`
 - `crates/contracts/src/errors.rs`
 - `crates/signing/src/errors.rs`

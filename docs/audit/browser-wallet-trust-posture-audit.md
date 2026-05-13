@@ -1,7 +1,7 @@
 # Browser Wallet Trust Posture Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-13
 Owning surface: `cow-sdk-browser-wallet` EIP-1193 provider construction and wallet chain-management URL payloads
 Refresh trigger: Changes to EIP-1193 provider construction, EIP-6963 discovery metadata, wallet origin handling, chain-management URL validation, or browser-wallet error redaction
 Related docs:
@@ -69,7 +69,8 @@ wallet and are not SDK-owned orderbook or subgraph service endpoints, so
 Primary implementation points:
 
 - `crates/browser-wallet/src/provider.rs`
-- `crates/browser-wallet/src/wallet.rs`
+- `crates/browser-wallet/src/wallet/detect.rs`
+- `crates/browser-wallet/src/wallet/mod.rs`
 - `crates/browser-wallet/src/error.rs`
 
 Primary regression coverage:

@@ -1,7 +1,7 @@
 # Browser Wallet Chain Coherence Audit
 
 Status: Current  
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-13
 Owning surface: `cow-sdk-browser-wallet` chain-bound signer and typed chain-management contract  
 Refresh trigger: Changes to `BrowserWallet::signer_for_chain`, typed-data chain validation, chain-switch helpers, or shipped browser-wallet proof surfaces  
 Related docs:
@@ -78,7 +78,8 @@ Primary implementation points:
 - `crates/browser-wallet/src/mock.rs`
 - `crates/browser-wallet/src/error.rs`
 - `crates/browser-wallet/src/signer.rs`
-- `crates/browser-wallet/src/wallet.rs`
+- `crates/browser-wallet/src/wallet/chain_mgmt.rs`
+- `crates/browser-wallet/src/wallet/chain.rs`
 - `examples/wasm/browser-wallet-console/src/lib.rs`
 
 Primary regression coverage:

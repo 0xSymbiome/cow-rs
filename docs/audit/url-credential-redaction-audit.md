@@ -92,7 +92,7 @@ Primary implementation points:
 - `crates/orderbook/src/types/mod.rs`
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/builder.rs`
-- `crates/browser-wallet/src/wallet.rs`
+- `crates/browser-wallet/src/wallet/chain.rs`
 - `crates/app-data/src/types/ipfs.rs`
 - `crates/app-data/src/fetch.rs`
 - `crates/app-data/src/pinning.rs`

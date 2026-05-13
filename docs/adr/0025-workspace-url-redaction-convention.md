@@ -47,7 +47,7 @@ requires raw URL access to happen through explicit accessors at dispatch seams.
 ## Links
 
 - [Core redaction wrappers](../../crates/core/src/redaction.rs)
-- [Browser wallet chain parameters](../../crates/browser-wallet/src/wallet.rs)
+- [Browser wallet chain parameters](../../crates/browser-wallet/src/wallet/chain.rs)
 
 **Proven by:**
 

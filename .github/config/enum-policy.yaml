@@ -13,14 +13,14 @@ enums:
     expected_marker: non_exhaustive
     reason: Public diagnostic partition can grow with new facade error classes.
   - name: InjectedWalletDiscoverySource
-    file: crates/browser-wallet/src/wallet.rs
-    line: 27
+    file: crates/browser-wallet/src/wallet/discovery.rs
+    line: 17
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Browser wallet discovery channels are controlled by evolving browser wallet standards.
   - name: WalletChainChangeKind
-    file: crates/browser-wallet/src/wallet.rs
-    line: 359
+    file: crates/browser-wallet/src/wallet/chain.rs
+    line: 243
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Wallet chain-management outcomes can grow with EIP-1193 wallet behavior.

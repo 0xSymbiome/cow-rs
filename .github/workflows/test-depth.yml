@@ -157,7 +157,10 @@ jobs:
               cargo mutants -p cow-sdk-subgraph -p cow-sdk-browser-wallet \
                 --file crates/subgraph/src/api.rs \
                 --file crates/subgraph/src/types.rs \
-                --file crates/browser-wallet/src/wallet.rs \
+                --file crates/browser-wallet/src/wallet/mod.rs \
+                --file crates/browser-wallet/src/wallet/discovery.rs \
+                --file crates/browser-wallet/src/wallet/chain.rs \
+                --file crates/browser-wallet/src/wallet/chain_mgmt.rs \
                 --file crates/browser-wallet/src/provider.rs \
                 --file crates/browser-wallet/src/error.rs \
                 --annotations none \
