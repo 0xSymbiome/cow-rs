@@ -57,7 +57,7 @@ contract while keeping the key available for deliberate downstream use.
 
 ### URL Configuration
 
-`crates/core/src/redaction.rs` owns the shared URL-map redaction types.
+`crates/core/src/redaction/wrappers.rs` owns the shared URL-map redaction types.
 `ApiContext`, `ApiContextOverride`, `SubgraphConfig`,
 `SubgraphApiBuilder`, `WalletChainParameters`, and `IpfsConfig` store
 credential-bearing URL values in redacting wrappers. Public debug and
@@ -114,7 +114,7 @@ Primary implementation points:
 
 - `crates/orderbook/src/builder.rs`
 - `crates/core/src/config/hosts.rs`
-- `crates/core/src/redaction.rs`
+- `crates/core/src/redaction/wrappers.rs`
 - `crates/core/src/errors.rs`
 - `crates/core/src/transport/error.rs`
 - `crates/subgraph/src/builder.rs`

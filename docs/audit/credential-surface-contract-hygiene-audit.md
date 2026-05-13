@@ -116,7 +116,7 @@ transport proceeds.
 Primary implementation points:
 
 - `crates/core/src/config/hosts.rs`
-- `crates/core/src/redaction.rs`
+- `crates/core/src/redaction/wrappers.rs`
 - `crates/app-data/src/types/ipfs.rs`
 - `crates/orderbook/src/error.rs`
 - `crates/orderbook/src/types/mod.rs`

@@ -48,7 +48,7 @@ allowed:
   - file: crates/contracts/src/settlement/codec.rs
     item: decode_order_flags
     reason: Bit masks are constrained before reaching unreachable arms.
-  - file: crates/core/src/redaction.rs
+  - file: crates/core/src/redaction/body.rs
     item: strip_credential_tokens
     reason: Redaction offsets are computed from in-bounds string match indices.
   - file: crates/core/src/types/identity.rs

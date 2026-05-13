@@ -86,7 +86,8 @@ remain redacted across `Debug`, `Display`, and serialized error output.
 
 Primary implementation points:
 
-- `crates/core/src/redaction.rs`
+- `crates/core/src/redaction/wrappers.rs`
+- `crates/core/src/redaction/body.rs`
 - `crates/core/src/config/hosts.rs`
 - `crates/orderbook/src/builder.rs`
 - `crates/orderbook/src/types/mod.rs`
