@@ -35,7 +35,7 @@ This audit covers:
   `cow_sdk_trading::params_from_doc(base_doc) ->
   Result<AppDataParams, TradingError>`
 - the private typed merge
-  `cow_sdk_trading::quote::merge_app_data_params(base, override) ->
+  `cow_sdk_trading::app_data::merge_app_data_params(base, override) ->
   AppDataParams` and its hooks-replacement rule on
   `metadata.hooks`
 - the `AppDataParams::metadata_wire_value` lift that puts typed
@@ -159,7 +159,7 @@ introducing another merge or rewrite step on the quote-to-post path.
 
 Primary implementation points:
 
-- `crates/trading/src/quote.rs`
+- `crates/trading/src/app_data.rs`
 - `crates/trading/src/post/generic.rs`
 - `crates/trading/src/lib.rs`
 - `crates/app-data/src/types/partner_fee.rs`

@@ -127,6 +127,7 @@ Primary implementation points:
 - `crates/browser-wallet/src/wallet/chain.rs`
 - `crates/trading/src/types/options.rs`
 - `crates/trading/src/quote.rs`
+- `crates/trading/src/app_data.rs`
 - `crates/trading/src/post/generic.rs`
 - `crates/trading/src/slippage/policy.rs`
 

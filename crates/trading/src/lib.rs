@@ -12,6 +12,8 @@ pub use cow_sdk_orderbook::{OrderbookClient, OrderbookRuntimeBinding};
 
 /// Allowance reads, approval transactions, and approval submission helpers.
 pub mod allowance;
+/// Trading app-data generation and quote-to-post merge helpers.
+pub mod app_data;
 /// Opt-in quote-cache seam with pass-through and TTL reference implementations.
 pub mod cache;
 /// Off-chain cancellation helpers.
@@ -26,7 +28,7 @@ pub mod order;
 pub mod parameters;
 /// Quote-to-post orchestration helpers.
 pub mod post;
-/// Quote construction, app-data generation, and quote-request precedence helpers.
+/// Quote construction and quote-request precedence helpers.
 pub mod quote;
 /// High-level `TradingSdk` facade and builder.
 pub mod sdk;
@@ -44,6 +46,7 @@ pub use allowance::{
     approval_transaction, approve_cow_protocol, approve_cow_protocol_async,
     get_cow_protocol_allowance, get_cow_protocol_allowance_async,
 };
+pub use app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
 pub use cache::{InMemoryQuoteCache, NoopQuoteCache, QuoteCache, QuoteCacheKey};
 pub use cancel::{off_chain_cancel_order, off_chain_cancel_order_async};
 pub use error::{OrderbookContextValue, TradingError};
@@ -64,10 +67,7 @@ pub use post::{
     post_swap_order, post_swap_order_async, post_swap_order_from_quote,
     post_swap_order_from_quote_async,
 };
-pub use quote::{
-    build_app_data, get_quote_only, get_quote_results, get_quote_results_async,
-    merge_and_seal_app_data, params_from_doc,
-};
+pub use quote::{get_quote_only, get_quote_results, get_quote_results_async};
 pub use sdk::{
     AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, HelperOnlySdk, TradingSdk,
     TradingSdkBuilder,
