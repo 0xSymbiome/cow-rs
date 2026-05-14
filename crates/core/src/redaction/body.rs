@@ -44,6 +44,25 @@ fn strip_credential_tokens(input: &str) -> String {
     let mut offset = 0;
 
     while offset < input.len() {
+        // Order matters: JWT and Bearer detectors run before the URL scheme
+        // detector because a JWT body is all alphanumeric and would otherwise
+        // be misclassified as a valid URL scheme prefix and preserved verbatim
+        // ahead of the userinfo redaction. The credential_value_span detector
+        // runs last because its key-prefix copy is the only path that re-emits
+        // input bytes verbatim, and it routes those bytes through a recursive
+        // strip_credential_tokens call.
+        if let Some(end) = jwt_token_end(input, offset) {
+            output.push_str(REDACTED_PLACEHOLDER);
+            offset = end;
+            continue;
+        }
+
+        if let Some(end) = bearer_token_end(input, offset) {
+            output.push_str(REDACTED_PLACEHOLDER);
+            offset = end;
+            continue;
+        }
+
         if let Some(redaction) = url_userinfo_span(input, offset) {
             output.push_str(&input[offset..redaction.value_start]);
             output.push_str(REDACTED_PLACEHOLDER);
@@ -51,14 +70,24 @@ fn strip_credential_tokens(input: &str) -> String {
             continue;
         }
 
-        if let Some(end) = jwt_token_end(input, offset) {
+        if let Some(redaction) = userinfo_only_span(input, offset) {
+            output.push_str(&input[offset..redaction.value_start]);
             output.push_str(REDACTED_PLACEHOLDER);
-            offset = end;
+            offset = redaction.value_end;
             continue;
         }
 
         if let Some(redaction) = credential_value_span(input, offset) {
-            output.push_str(&input[offset..redaction.value_start]);
+            // Recursively scan the key prefix so a JWT or bearer-shaped
+            // substring embedded inside the credential key itself is
+            // redacted before the verbatim copy reaches the output. The
+            // recursive substring is strictly shorter than the surrounding
+            // input, and credential_value_span cannot fire on a substring
+            // that ends inside the value's opening quote, so recursion is
+            // bounded.
+            output.push_str(&strip_credential_tokens(
+                &input[offset..redaction.value_start],
+            ));
             output.push_str(REDACTED_PLACEHOLDER);
             offset = redaction.value_end;
             continue;
@@ -181,9 +210,13 @@ fn is_credential_key(key: &str) -> bool {
         || normalized == "xapikey"
         || normalized == "token"
         || normalized == "secret"
+        || normalized == "password"
         || normalized.contains("apikey")
         || normalized.contains("token")
         || normalized.contains("secret")
+        || normalized.contains("password")
+        || normalized.contains("authorization")
+        || normalized.contains("bearer")
 }
 
 fn normalized_key(key: &str) -> String {
@@ -242,6 +275,79 @@ fn jwt_token_end(input: &str, offset: usize) -> Option<usize> {
     }
 
     (end - offset >= 23).then_some(end)
+}
+
+/// Detects a bare `://userinfo@host` span at `offset` and returns the byte
+/// range of the userinfo so the scanner can replace it with the redaction
+/// placeholder. Fires only when the input at `offset` literally begins with
+/// `://` — i.e., the scheme prefix (if any) has already been emitted as
+/// verbatim bytes by the scanner. Closes two evasion paths the stricter
+/// `url_userinfo_span` cannot cover on its own:
+///
+/// * A mangled or non-ASCII scheme prefix (`https\xc3\xb6://user:pass@host`)
+///   makes the strict scheme check fail, so the scanner emits the prefix
+///   byte-by-byte and lands at the `:` of `://` with `offset` pointing at
+///   the colon. This detector fires there and redacts the userinfo.
+/// * A credential-keyed value followed immediately by a URL fragment
+///   (`apiKey=secret://user:pass@host`) leaves the scanner at the `:` of
+///   `://` after `credential_value_span` consumes the credential. The
+///   strict `url_userinfo_span` returns `None` here because the previous
+///   byte was a credential-value character. This detector fires
+///   independently.
+fn userinfo_only_span(input: &str, offset: usize) -> Option<ValueRedaction> {
+    if !input[offset..].starts_with("://") {
+        return None;
+    }
+
+    let authority_start = offset + 3;
+    let mut authority_end = authority_start;
+    while let Some(byte) = input.as_bytes().get(authority_end).copied() {
+        if byte.is_ascii_whitespace() || matches!(byte, b'/' | b'?' | b'#' | b'"' | b'\'') {
+            break;
+        }
+        authority_end += 1;
+    }
+
+    let at = input[authority_start..authority_end].find('@')? + authority_start;
+    (at > authority_start).then_some(ValueRedaction {
+        value_start: authority_start,
+        value_end: at,
+    })
+}
+
+/// Detects a `Bearer <token>` span anywhere in the input and returns the byte
+/// offset one past the end of the token. Mirrors [`jwt_token_end`] for the
+/// bearer-scheme case so opaque bearer tokens are redacted even when they are
+/// echoed in a freeform response body rather than embedded under an
+/// `authorization` key.
+///
+/// The detector fires whenever:
+/// - the `Bearer` keyword (case-insensitive) appears at the current offset,
+///   regardless of the preceding byte. The earlier word-boundary guard was
+///   removed after fuzzing demonstrated that an attacker can defeat it by
+///   prepending arbitrary characters (e.g. `"toBearer secret-..."`) — real
+///   partner-response text rarely contains `Bearer <token>` substrings
+///   unless the token actually is a credential;
+/// - the keyword is followed by at least one ASCII whitespace separator
+///   (so `BearerFoo` does not match);
+/// - the trailing token is at least 4 credential-value characters long (so
+///   `Bearer .` or `Bearer ?` does not match).
+fn bearer_token_end(input: &str, offset: usize) -> Option<usize> {
+    let after_bearer = advance_ascii_case_insensitive(input, offset, "bearer")?;
+    let token_start = skip_ascii_whitespace(input, after_bearer);
+    if token_start == after_bearer {
+        return None;
+    }
+
+    let mut end = token_start;
+    while let Some(byte) = input.as_bytes().get(end).copied() {
+        if !is_credential_value_char(byte) {
+            break;
+        }
+        end += 1;
+    }
+
+    (end - token_start >= 4).then_some(end)
 }
 
 fn find_unescaped_byte(input: &str, offset: usize, target: u8) -> Option<usize> {

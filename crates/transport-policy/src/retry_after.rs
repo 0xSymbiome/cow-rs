@@ -103,18 +103,23 @@ fn days_from_civil(year: i32, month: u32, day: u32) -> Option<i64> {
         return None;
     }
 
-    let adjusted_year = year - i32::from(month <= 2);
+    // Promote every intermediate to i64 so an attacker-controlled
+    // `Retry-After: <imf-fixdate>` header carrying an out-of-range year
+    // (the wire format admits any decimal year) cannot panic the
+    // checked-arithmetic-disabled release build with an `i32` overflow on
+    // `era * 146_097` or `year_of_era * 365`.
+    let adjusted_year = i64::from(year) - i64::from(month <= 2);
     let era = if adjusted_year >= 0 {
         adjusted_year
     } else {
         adjusted_year - 399
     } / 400;
     let year_of_era = adjusted_year - era * 400;
-    let month_prime = month.cast_signed() + if month > 2 { -3 } else { 9 };
-    let day_of_year = (153 * month_prime + 2) / 5 + day.cast_signed() - 1;
+    let month_prime = i64::from(month.cast_signed()) + if month > 2 { -3 } else { 9 };
+    let day_of_year = (153 * month_prime + 2) / 5 + i64::from(day.cast_signed()) - 1;
     let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
 
-    Some(i64::from(era * 146_097 + day_of_era - 719_468))
+    Some(era * 146_097 + day_of_era - 719_468)
 }
 
 const fn days_in_month(year: i32, month: u32) -> u32 {

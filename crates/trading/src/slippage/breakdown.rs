@@ -77,6 +77,19 @@ pub(super) fn get_protocol_fee_amount(
     let fee_amount = parse_integer("feeAmount", &quote.network_cost_amount().to_string())?;
     let denominator_base = BigInt::from(ONE_HUNDRED_BPS * PROTOCOL_FEE_BPS_SCALE);
 
+    // Reject protocol-fee values at or above 100%: on the sell path that
+    // would zero the `denominator_base - protocol_fee_bps_big` divisor and
+    // panic the typed math; on every path it represents a fee that consumes
+    // the entire order, which the public surface does not support.
+    if protocol_fee_bps_big >= denominator_base {
+        return Err(TradingError::InvalidInput {
+            field: "protocolFeeBps",
+            reason: cow_sdk_core::ValidationReason::OutOfRange {
+                details: "protocol fee must be strictly less than 100%",
+            },
+        });
+    }
+
     if quote.kind == OrderKind::Sell {
         let denominator = &denominator_base - &protocol_fee_bps_big;
         Ok((buy_amount * protocol_fee_bps_big) / denominator)
