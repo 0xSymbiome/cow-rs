@@ -287,7 +287,7 @@ retrying. The local backoff supports jitter strategies through
 `RetryPolicy::with_jitter`, and callers can select an explicit no-jitter
 strategy for deterministic tests. The native cooldown contract is exercised by
 `crates/orderbook/tests/api_contract.rs::service_unavailable_retry_after_header_delays_retry_for_at_least_server_cooldown`,
-the parser boundary is covered by `crates/transport-policy/tests/policy_tests.rs`,
+the parser boundary is covered by `crates/transport-policy/tests/policy_contract.rs` and `crates/transport-policy/tests/retry_after_contract.rs`,
 and the retry-event contract is covered by
 `crates/orderbook/tests/request_contract.rs::tracing_contract::execute_with_emits_retry_events_with_status_and_transport_error_fields`.
 

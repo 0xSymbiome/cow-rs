@@ -182,6 +182,9 @@ Primary regression coverage:
 
 - `crates/core/tests/transport_contract.rs`
 - `crates/transport-wasm/tests/parity_contract.rs`
+- `crates/transport-policy/tests/retry_after_contract.rs`
+- `crates/transport-policy/tests/classify_contract.rs::network_error_kind_mapping_round_trip_is_total`
+- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_031_retry_after_helper_is_case_insensitive`
 - `crates/orderbook/src/request.rs` (`tests::parse_retry_after_covers_documented_boundary_matrix`)
 - `crates/orderbook/tests/request_contract.rs::seeded_jitter_decorrelates_parallel_retry_waits`
 - `crates/orderbook/tests/request_contract.rs::tracing_contract::execute_with_emits_retry_events_with_status_and_transport_error_fields`
