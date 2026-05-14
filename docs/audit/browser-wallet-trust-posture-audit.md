@@ -1,7 +1,7 @@
 # Browser Wallet Trust Posture Audit
 
 Status: Current
-Last reviewed: 2026-05-13
+Last reviewed: 2026-05-14
 Owning surface: `cow-sdk-browser-wallet` EIP-1193 provider construction and wallet chain-management URL payloads
 Refresh trigger: Changes to EIP-1193 provider construction, EIP-6963 discovery metadata, wallet origin handling, chain-management URL validation, or browser-wallet error redaction
 Related docs:
@@ -81,6 +81,9 @@ Primary regression coverage:
 - `crates/browser-wallet/tests/provider_contract.rs::trusted_origin_accepts_documented_schemes_and_rejects_others`
 - `crates/browser-wallet/tests/provider_contract.rs::wallet_add_chain_payload_urls_are_not_subject_to_external_host_policy`
 - `crates/browser-wallet/tests/wallet_contract.rs::chain_parameters_public_debug_and_serialize_redact_url_credentials`
+- `crates/browser-wallet/tests/origin_contract.rs`
+- `crates/browser-wallet/tests/async_signing_provider_contract.rs`
+- `crates/browser-wallet/tests/signer_contract.rs`
 
 Validation surface:
 

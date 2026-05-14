@@ -67,4 +67,6 @@ of separate client-specific policy wrappers.
 
 **Proven by:**
 
+- [Transport Policy Coverage Audit](../audit/transport-policy-coverage-audit.md)
+- [HTTP Transport Contract Audit](../audit/http-transport-contract-audit.md)
 - [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
