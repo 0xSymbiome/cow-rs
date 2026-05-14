@@ -1,9 +1,9 @@
 # HTTP Transport Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-08
+Last reviewed: 2026-05-14
 Owning surface: `cow-sdk-core::HttpTransport` trait and the `ReqwestTransport` (native) and `FetchTransport` (browser) default adapters, including the sole-dispatch contract that binds every live REST or GraphQL call from `cow-sdk-orderbook` and `cow-sdk-subgraph` to the injected transport
-Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the orderbook retry-orchestrator backoff schedule, jitter policy, retry tracing events, or `Retry-After` honor contract; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderBookApi` or `SubgraphApi` bypass `self.transport`
+Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the orderbook retry-orchestrator backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, or the `Retry-After` IMF-fixdate civil-day arithmetic; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderBookApi` or `SubgraphApi` bypass `self.transport`
 Related docs:
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0019](../adr/0019-http-transport-sole-dispatch.md)
@@ -120,11 +120,15 @@ The shared transport policy reads `Retry-After` from
 delta-seconds and HTTP-date forms, parse failures fall back to the
 local exponential backoff schedule, and successful parses hold the
 retry loop for the larger of the jittered local backoff and the
-server-supplied cooldown. `RetryPolicy::with_jitter` accepts an
-explicit `JitterStrategy`; `JitterStrategy::none` keeps deterministic
-wait schedules available for tests and controlled callers. The retry
-loop continues to honor the existing `max_attempts` limit and
-per-attempt timeout contract for both orderbook and subgraph clients.
+server-supplied cooldown. The HTTP-date branch performs its civil-day
+arithmetic in `i64` so an attacker-controlled year value cannot panic
+the retry loop through integer overflow; out-of-range timestamps fall
+back to local backoff through the documented `checked_mul` guard.
+`RetryPolicy::with_jitter` accepts an explicit `JitterStrategy`;
+`JitterStrategy::none` keeps deterministic wait schedules available
+for tests and controlled callers. The retry loop continues to honor
+the existing `max_attempts` limit and per-attempt timeout contract
+for both orderbook and subgraph clients.
 
 When the `tracing` feature is enabled, every retry decision emits a
 `debug` event with `attempt_index`, `backoff_ms`, and either `status`

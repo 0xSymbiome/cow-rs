@@ -1,12 +1,14 @@
 # Fuzz Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-13
+Last reviewed: 2026-05-14
 Owning surface: the standalone `cow-sdk-fuzz` crate (`fuzz/`) and every
 `cargo-fuzz` target it ships against the published SDK crates
 Refresh trigger: any new public untrusted-input surface, retired fuzz
-target, changed seed contract, change to the fuzz dependency set, or
-change to the workspace quality-gate step that compiles the fuzz crate
+target, changed seed contract, change to the fuzz dependency set,
+change to the workspace quality-gate step that compiles the fuzz crate,
+or refreshed empirical-run evidence after a scheduled sweep finds and
+fixes a new panic class
 Related docs:
 - [PROPERTIES.md](../../PROPERTIES.md)
 - [ADR 0011](../adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
@@ -180,6 +182,44 @@ normalization pipeline. The boundary is recorded in the target
 doc-comment headers and in this audit, so a future refresh that adds
 an async runtime or expands the public surface can close the gap with
 no further design change.
+
+### Empirical Run Evidence
+
+A scheduled-equivalent sweep run on a Linux x86-64 host (8-way parallel,
+10-minute budget per target, `timeout=10` per input) covered every one
+of the 46 targets without producing a panic. Earlier iterations of the
+same sweep surfaced three real SDK defects on attacker-controlled
+surfaces and three over-strict fuzz-target assertions, all of which
+were corrected before the clean run:
+
+- `redact_response_body` was strengthened against URL userinfo with
+  mangled or non-ASCII scheme prefixes, bare `Bearer <token>` strings
+  outside the `Authorization` key context, JWT payloads embedded inside
+  credential-key positions, and partial or corrupted credential key
+  names. The detector pipeline is now layered as JWT, Bearer, strict
+  URL, bare userinfo, and credential-keyed value with recursive key
+  prefix scanning.
+- `parse_retry_after` was promoted to `i64` civil-day arithmetic so an
+  attacker-controlled IMF-fixdate year value cannot panic the retry
+  loop with an `i32` multiplication overflow; the caller's
+  `checked_mul`/`checked_add` chain provides the final downstream guard.
+- `calculate_quote_amounts_and_costs` was given an explicit
+  `protocol_fee_bps >= 100%` guard so an out-of-range partner protocol
+  fee returns a typed `InvalidInput` error rather than panicking on the
+  sell path through a `BigInt` divide-by-zero.
+
+The three fuzz-target invariants that were corrected are documented in
+the target source headers: `fuzz_subgraph_graphql_error_decode` and
+`fuzz_hex_quantity_helpers` no longer assert round-trip equality on
+`Redacted<T>` fields (the wrapper's `Serialize` impl deliberately
+writes the sanitized placeholder rather than the inner value), and
+`fuzz_stringify_deterministic` no longer asserts byte-level canonical
+JSON idempotence on arbitrary `serde_json::Value` inputs (a literal
+like `3e+23` cannot round-trip bit-identically through `f64` because
+the shortest-representation rendering can vary by one ULP across
+parse-then-render cycles). The shipped canonical-form stability is
+verified by the parity fixture and `crates/app-data/tests/property_contract.rs`
+unit tests on realistic inputs.
 
 ## Evidence
 

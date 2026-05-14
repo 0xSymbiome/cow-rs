@@ -1,9 +1,9 @@
 # Credential Surface Contract Hygiene Audit
 
 Status: Current
-Last reviewed: 2026-05-13
+Last reviewed: 2026-05-14
 Owning surface: Cross-cutting credential redaction and typed partner-fee public boundary across core, app-data, orderbook, subgraph, and trading
-Refresh trigger: Changes to public credential-bearing configs, URL-bearing public configuration fields, subgraph route identity or request-failure context, the `Redacted<T>` newtype contract, external host-policy validation, the transport `From<reqwest::Error>` conversion classifiers, or typed partner-fee request boundaries
+Refresh trigger: Changes to public credential-bearing configs, URL-bearing public configuration fields, subgraph route identity or request-failure context, the `Redacted<T>` newtype contract, external host-policy validation, the transport `From<reqwest::Error>` conversion classifiers, the `redact_response_body` token-detection layers, or typed partner-fee request boundaries
 Related docs:
 - [ADR 0005](../adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)

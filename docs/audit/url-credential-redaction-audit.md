@@ -1,9 +1,9 @@
 # URL Credential Redaction Audit
 
 Status: Current
-Last reviewed: 2026-05-13
+Last reviewed: 2026-05-14
 Owning surface: Credential-bearing URL storage and dispatch boundaries across core, orderbook, subgraph, browser-wallet, app-data, and wasm error conversion
-Refresh trigger: Changes to URL-bearing public configuration fields, browser wallet add-chain URL payload construction, IPFS URI dispatch, wasm transport-error mapping, or the `RedactedUrlMap` and `RedactedOptionalUrlMap` contracts
+Refresh trigger: Changes to URL-bearing public configuration fields, browser wallet add-chain URL payload construction, IPFS URI dispatch, wasm transport-error mapping, the `RedactedUrlMap` and `RedactedOptionalUrlMap` contracts, or the `redact_response_body` token-detection layers
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [Credential Surface Audit](credential-surface-audit.md)
@@ -33,6 +33,7 @@ where they share the same `Redacted<T>` storage contract.
 | Native Alloy URLs | Provider and umbrella builders store configured RPC URLs behind redacting state and debug output never prints credentials or query secrets | Conforms |
 | App-data IPFS URIs | IPFS URI config fields redact in public debug, display, and serialization while fetch and upload policies use raw URI bytes | Conforms |
 | WASM transport errors | `From<TransportError> for WasmError` uses display-safe transport messages and redacted response bodies before crossing the JavaScript ABI | Conforms |
+| Response-body scanner detection | JWT and Bearer scheme detectors run before the URL detector; bare userinfo, strict URL, and credential-keyed value detectors each cover a distinct evasion shape; the credential-key matcher uses substring matching for `apikey`, `token`, `secret`, `password`, `authorization`, and `bearer` and recursively scans key prefixes for embedded credentials | Conforms |
 
 ## Current Contract
 
@@ -81,6 +82,36 @@ JavaScript-visible `WasmError` envelope through `Display` and
 `cow_sdk_core::redact_response_body`. It does not call `Redacted::into_inner`
 for JS-visible detail, so URL credentials and secret-shaped response snippets
 remain redacted across `Debug`, `Display`, and serialized error output.
+
+### Response-Body Scanner Detection Layers
+
+`cow_sdk_core::redact_response_body` runs a single-pass byte-offset scanner
+over an arbitrary response-body string and replaces every credential-shaped
+span with the sanitized placeholder. The detection layers run in the
+documented order so a more specific pattern never gets reclassified as a
+more general one:
+
+1. JWT-shaped tokens (`eyJ` prefix followed by at least 23 credential-value
+   characters) are matched first so an opaque JSON Web Token surrounded by
+   URL syntax cannot get re-interpreted as a URL scheme prefix and ship
+   verbatim ahead of userinfo redaction.
+2. `Bearer <token>` schemes are matched anywhere in the input, with no
+   word-boundary constraint, so a partner response that echoes
+   `someBearer secret-...` or repeats the keyword inside a freeform key
+   still has its trailing token redacted.
+3. Strict URLs (`scheme://userinfo@host`) are matched when the scheme is a
+   contiguous IANA-shaped identifier (alphanumeric plus `+`, `-`, or `.`).
+   The userinfo span gets the sanitized placeholder while the scheme and
+   host bytes are retained for diagnostics.
+4. Bare userinfo (`://user:pass@host` with no preceding scheme word) is
+   matched as a separate pass so a mangled or non-ASCII scheme prefix that
+   defeats the strict URL detector still ships with the userinfo stripped.
+5. Credential-keyed values (`key=value` and `key:value`) match when the
+   normalized key name contains `apikey`, `token`, `secret`, `password`,
+   `authorization`, or `bearer`, or matches the canonical name exactly.
+   The key prefix is recursively redacted before the value is replaced,
+   so a credential key carrying an embedded JWT or URL userinfo also
+   sheds its inner credential material rather than copying through.
 
 ## Evidence
 
