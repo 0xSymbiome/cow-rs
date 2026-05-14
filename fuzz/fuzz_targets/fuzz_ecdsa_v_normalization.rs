@@ -2,6 +2,7 @@
 
 //! Fuzz target for canonical ECDSA `v`-byte normalization.
 //!
+//! **Property:** `PROP-CON-005`.
 //! Drives arbitrary 65-byte signatures through
 //! [`cow_sdk_contracts::normalized_ecdsa_signature`] and asserts the
 //! following invariants:

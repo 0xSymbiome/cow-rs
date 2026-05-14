@@ -2,6 +2,7 @@
 
 //! Fuzz target for the `CoW` signature classifier and decoders.
 //!
+//! **Property:** `PROP-CON-009`.
 //! Exercises three public entry points in
 //! [`cow_sdk_contracts::signature`]:
 //!

@@ -2,6 +2,7 @@
 
 //! Fuzz target for `CoWSwapEthFlow.createOrder(EthFlowOrderData)` round-trip.
 //!
+//! **Property:** `PROP-CON-016`.
 //! Drives arbitrary `EthFlowOrderData` field combinations through the
 //! `alloy::sol!`-generated `ICoWSwapEthFlow::createOrderCall` encoder,
 //! decodes the produced bytes back through the matching decoder, and

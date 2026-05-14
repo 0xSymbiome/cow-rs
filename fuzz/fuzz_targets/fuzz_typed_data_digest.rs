@@ -2,6 +2,7 @@
 
 //! Fuzz target for the EIP-712 typed-data digest pipeline.
 //!
+//! **Property:** `PROP-SIG-005`.
 //! Builds a plausible [`UnsignedOrder`] field vector plus a
 //! [`TypedDataDomain`] from arbitrary input, converts it into the
 //! contract-side [`Order`] representation, and hashes it through

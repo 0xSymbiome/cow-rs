@@ -31,6 +31,23 @@ fuzz_target!(|body: &[u8]| {
                 rejection.to_string(),
                 "typed orderbook rejection Display must be deterministic",
             );
+            assert!(
+                !rendered.contains('\0'),
+                "typed orderbook rejection Display must not carry raw null bytes: {rendered}",
+            );
+            let debug = format!("{rejection:?}");
+            assert_eq!(
+                debug,
+                format!("{rejection:?}"),
+                "typed orderbook rejection Debug must be deterministic",
+            );
+            let reparsed = parse_rejection(status, body)
+                .expect("re-parsing the same body must reproduce the typed rejection");
+            assert_eq!(
+                reparsed.to_string(),
+                rendered,
+                "parse_rejection must be deterministic on identical input",
+            );
         }
     }
 });

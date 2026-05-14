@@ -2,6 +2,7 @@
 
 //! Fuzz target for `GPv2Settlement.settle(...)` ABI encoding.
 //!
+//! **Property:** `PROP-CON-013`.
 //! Drives arbitrary `(tokens, clearingPrices, trades, interactions)`
 //! tuples through the `alloy::sol!`-generated
 //! `IGPv2Settlement::settleCall` encoder and asserts:
@@ -154,13 +155,13 @@ fuzz_target!(|input: FuzzInput| {
         stage(input.post_interactions),
     ];
 
-    let encoded = IGPv2Settlement::settleCall {
-        tokens,
-        clearingPrices: clearing_prices,
-        trades,
-        interactions,
-    }
-    .abi_encode();
+    let call = IGPv2Settlement::settleCall {
+        tokens: tokens.clone(),
+        clearingPrices: clearing_prices.clone(),
+        trades: trades.clone(),
+        interactions: interactions.clone(),
+    };
+    let encoded = call.abi_encode();
 
     let canonical_selector: [u8; 4] = {
         let signature = "settle(address[],uint256[],(uint256,uint256,address,uint256,uint256,uint32,bytes32,uint256,uint256,uint256,bytes)[],(address,uint256,bytes)[][3])";
@@ -177,4 +178,32 @@ fuzz_target!(|input: FuzzInput| {
         encoded.len() >= 4 + 4 * 32,
         "settle call-data must be at least selector + four dynamic-argument offsets",
     );
+
+    // Decoder round-trip: the encoded bytes must decode back through the matching
+    // decoder and re-encoding the decoded value must produce byte-identical
+    // call-data. This proves the ABI encoder and decoder are inverses on every
+    // well-typed input shape, and that the encoded representation is canonical.
+    let decoded = IGPv2Settlement::settleCall::abi_decode_validate(&encoded)
+        .expect("settle call-data must round-trip through the matching decoder");
+    let re_encoded = decoded.abi_encode();
+    assert_eq!(
+        encoded, re_encoded,
+        "settle encoder must produce byte-identical call-data after a decode/encode round-trip",
+    );
+
+    // Encoder determinism: re-encoding the original tuple a second time must
+    // also produce the same bytes — the canonical ABI encoding is a function
+    // of the typed input only.
+    let original_re_encoded = IGPv2Settlement::settleCall {
+        tokens,
+        clearingPrices: clearing_prices,
+        trades,
+        interactions,
+    }
+    .abi_encode();
+    assert_eq!(
+        encoded, original_re_encoded,
+        "settle encoder must be deterministic for identical typed input",
+    );
+    let _ = call;
 });

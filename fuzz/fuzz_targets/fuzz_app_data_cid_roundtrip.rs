@@ -2,6 +2,7 @@
 
 //! Fuzz target for the app-data CID pipeline.
 //!
+//! **Property:** `PROP-APP-001`.
 //! Exercises two public helpers in [`cow_sdk_app_data::cid`]:
 //!
 //! * [`app_data_hex_to_cid`] — CIDv1 over the keccak-256 multihash

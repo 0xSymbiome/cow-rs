@@ -1,0 +1,69 @@
+#![no_main]
+
+//! Fuzz target for the canonical-JSON renderer.
+//!
+//! **Surface:** `cow_sdk_app_data::stringify_deterministic`.
+//! **Property:** `PROP-APP-003`.
+//! **Seed contract:** corpus inputs cover canonical app-data document
+//! shapes (objects, nested objects, arrays mixed with scalars), boundary
+//! values (null, empty object, empty array, single-character strings,
+//! large integers), and adversarial inputs (Unicode escapes, deeply
+//! nested arrays, non-JSON bytes that exercise the early-return path).
+//! **Corpus README:** `../corpus/fuzz_stringify_deterministic/README.md`.
+//!
+//! The target invariants are:
+//!
+//! * `stringify_deterministic` never panics for any well-formed
+//!   `serde_json::Value` derived from raw fuzz bytes.
+//! * For every `Ok(s)`, `serde_json::from_str::<Value>(&s)` re-parses to a
+//!   value semantically equivalent to the original input.
+//! * Idempotence: `stringify(parse(stringify(v))) == stringify(v)`.
+//! * The renderer is deterministic: invoking it twice on the same value
+//!   produces the same string.
+
+use cow_sdk_app_data::stringify_deterministic;
+use libfuzzer_sys::fuzz_target;
+use serde_json::Value;
+
+const MAX_FUZZ_INPUT: usize = 4096;
+
+fuzz_target!(|data: &[u8]| {
+    let data = &data[..data.len().min(MAX_FUZZ_INPUT)];
+
+    let Ok(value) = serde_json::from_slice::<Value>(data) else {
+        return;
+    };
+
+    let first = stringify_deterministic(&value);
+    let second = stringify_deterministic(&value);
+    assert_eq!(
+        first.is_ok(),
+        second.is_ok(),
+        "stringify_deterministic must be deterministic on identical input",
+    );
+
+    let Ok(rendered) = first else {
+        return;
+    };
+    let second_rendered = second.expect("determinism check above already proved Ok");
+    assert_eq!(
+        rendered, second_rendered,
+        "stringify_deterministic must produce byte-identical output on identical input",
+    );
+
+    // Round-trip: the rendered string must reparse to a semantically equivalent value.
+    let reparsed: Value = serde_json::from_str(&rendered)
+        .expect("stringify_deterministic output must reparse as valid JSON");
+    assert_eq!(
+        reparsed, value,
+        "stringify_deterministic output must reparse to a value equal to the input",
+    );
+
+    // Idempotence: stringify(parse(stringify(v))) == stringify(v).
+    let twice = stringify_deterministic(&reparsed)
+        .expect("re-rendering a reparsed canonical value must succeed");
+    assert_eq!(
+        twice, rendered,
+        "stringify_deterministic must be idempotent over parse and render",
+    );
+});

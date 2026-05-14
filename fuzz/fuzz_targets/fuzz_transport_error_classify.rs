@@ -82,8 +82,11 @@ fn classify_input(input: TransportInput) -> TransportError {
     if !(200..=299).contains(&input.status) {
         return TransportError::HttpStatus {
             status: input.status,
-            headers,
-            body: redacted_body,
+            headers: headers
+                .into_iter()
+                .map(|(name, value)| (name, value.into()))
+                .collect(),
+            body: redacted_body.into(),
         };
     }
 
@@ -91,13 +94,13 @@ fn classify_input(input: TransportInput) -> TransportError {
         name.trim().is_empty() || name.contains('\n') || value.contains('\n')
     }) {
         return TransportError::Configuration {
-            message: "invalid transport header material".to_owned(),
+            message: "invalid transport header material".to_owned().into(),
         };
     }
 
     TransportError::Transport {
         class: transport_class(input.class_hint),
-        detail: redacted_body,
+        detail: redacted_body.into(),
     }
 }
 
@@ -113,13 +116,64 @@ fn assert_public_error_is_sanitized(error: &TransportError) {
             !public.contains("apiKey=secret") && !public.contains("token=secret"),
             "transport error public output leaked credential query material: {public}",
         );
+        assert!(
+            !contains_credential_key_value(public),
+            "transport error public output leaked credential key=value material: {public}",
+        );
+        assert!(
+            !contains_bearer_prefix(public),
+            "transport error public output leaked Bearer token material: {public}",
+        );
+        assert!(
+            !contains_jwt_prefix(public),
+            "transport error public output leaked JWT-shaped material: {public}",
+        );
     }
+    assert_eq!(
+        rendered,
+        format!("{error}"),
+        "transport error Display must be deterministic",
+    );
+    assert_eq!(
+        debug,
+        format!("{error:?}"),
+        "transport error Debug must be deterministic",
+    );
 }
 
 fn contains_userinfo_url(value: &str) -> bool {
     value
         .split_ascii_whitespace()
         .any(|part| part.contains("://user:pass@"))
+}
+
+fn contains_credential_key_value(value: &str) -> bool {
+    let lowered = value.to_ascii_lowercase();
+    const CREDENTIAL_KEYS: &[&str] = &[
+        "apikey=secret",
+        "api_key=secret",
+        "x-api-key=secret",
+        "password=secret",
+        "secret=secret",
+        "authorization: secret",
+    ];
+    CREDENTIAL_KEYS.iter().any(|needle| lowered.contains(needle))
+}
+
+fn contains_bearer_prefix(value: &str) -> bool {
+    value.contains("Bearer secret")
+}
+
+fn contains_jwt_prefix(value: &str) -> bool {
+    value
+        .split(|c: char| !c.is_ascii_alphanumeric() && c != '_' && c != '-')
+        .any(|token| {
+            token.starts_with("eyJ")
+                && token.len() >= 26
+                && token.chars().all(|c| {
+                    c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.'
+                })
+        })
 }
 
 fn transport_class(value: u8) -> TransportErrorClass {

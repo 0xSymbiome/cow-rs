@@ -2,6 +2,7 @@
 
 //! Fuzz target for `GPv2VaultRelayer.transferFromAccounts(Transfer[])`.
 //!
+//! **Property:** `PROP-CON-015`.
 //! Drives arbitrary `Vec<Transfer>` slices (1 to [`MAX_TRANSFERS`]
 //! entries) through the `alloy::sol!`-generated
 //! `IGPv2VaultRelayer::transferFromAccountsCall` encoder and asserts:

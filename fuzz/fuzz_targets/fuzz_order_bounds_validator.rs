@@ -167,12 +167,21 @@ fn assert_well_defined(outcome: &Result<(), ClientRejection>) {
         | Err(ClientRejection::ZeroAmount { .. })
         | Err(ClientRejection::OwnerMismatch { .. })
         | Err(ClientRejection::InvalidPartnerFee { .. }) => {}
-        Err(_) => {}
+        Err(other) => panic!(
+            "OrderBoundsValidator returned an unenumerated ClientRejection variant; \
+             extend the typed match in fuzz_order_bounds_validator before accepting \
+             new variants on the public surface: {other:?}"
+        ),
     }
     if let Err(rejection) = outcome {
+        let display = rejection.to_string();
         assert!(
-            !rejection.to_string().is_empty(),
+            !display.is_empty(),
             "typed rejection display must stay non-empty"
+        );
+        assert!(
+            !display.contains('\n') && !display.contains('\0'),
+            "typed rejection display must not carry raw newline or null bytes: {display}"
         );
     }
 }

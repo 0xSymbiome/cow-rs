@@ -22,6 +22,8 @@ cow-sdk-signing = { path = "../crates/signing" }
 cow-sdk-app-data = { path = "../crates/app-data" }
 cow-sdk-subgraph = { path = "../crates/subgraph" }
 cow-sdk-trading = { path = "../crates/trading" }
+cow-sdk-transport-policy = { path = "../crates/transport-policy" }
+cow-sdk-browser-wallet = { path = "../crates/browser-wallet" }
 
 [[bin]]
 name = "fuzz_order_uid_pack_unpack"
@@ -131,6 +133,216 @@ bench = false
 [[bin]]
 name = "fuzz_transport_error_classify"
 path = "fuzz_targets/fuzz_transport_error_classify.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_redact_response_body"
+path = "fuzz_targets/fuzz_redact_response_body.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_amount_parse"
+path = "fuzz_targets/fuzz_amount_parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_signed_amount_parse"
+path = "fuzz_targets/fuzz_signed_amount_parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_core_identity_validators"
+path = "fuzz_targets/fuzz_core_identity_validators.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_valid_to_relative"
+path = "fuzz_targets/fuzz_valid_to_relative.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_decimal_amount_from_whole_approx"
+path = "fuzz_targets/fuzz_decimal_amount_from_whole_approx.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_hash_order_cancellations"
+path = "fuzz_targets/fuzz_hash_order_cancellations.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_normalize_ecdsa_signature_str"
+path = "fuzz_targets/fuzz_normalize_ecdsa_signature_str.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_decode_magic_value_response"
+path = "fuzz_targets/fuzz_decode_magic_value_response.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_signing_domain_separator"
+path = "fuzz_targets/fuzz_signing_domain_separator.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_calculate_total_fee"
+path = "fuzz_targets/fuzz_calculate_total_fee.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_decoded_body_canonical_status_text"
+path = "fuzz_targets/fuzz_decoded_body_canonical_status_text.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_append_query_string"
+path = "fuzz_targets/fuzz_append_query_string.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_orderbook_rejection_code"
+path = "fuzz_targets/fuzz_orderbook_rejection_code.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_cid_to_app_data_hex"
+path = "fuzz_targets/fuzz_cid_to_app_data_hex.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_partner_fee_from_value"
+path = "fuzz_targets/fuzz_partner_fee_from_value.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_flashloan_hints"
+path = "fuzz_targets/fuzz_flashloan_hints.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_hook_list_deserialize"
+path = "fuzz_targets/fuzz_hook_list_deserialize.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_schema_version_is_semver"
+path = "fuzz_targets/fuzz_schema_version_is_semver.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_stringify_deterministic"
+path = "fuzz_targets/fuzz_stringify_deterministic.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_app_data_size_limit"
+path = "fuzz_targets/fuzz_app_data_size_limit.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_app_data_params_from_doc"
+path = "fuzz_targets/fuzz_app_data_params_from_doc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_parse_retry_after"
+path = "fuzz_targets/fuzz_parse_retry_after.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_retry_policy_delay"
+path = "fuzz_targets/fuzz_retry_policy_delay.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_jitter_delay_for_attempt"
+path = "fuzz_targets/fuzz_jitter_delay_for_attempt.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_hex_quantity_helpers"
+path = "fuzz_targets/fuzz_hex_quantity_helpers.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_json_to_dyn_value"
+path = "fuzz_targets/fuzz_json_to_dyn_value.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_transaction_to_rpc"
+path = "fuzz_targets/fuzz_transaction_to_rpc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_slippage_amounts"
+path = "fuzz_targets/fuzz_slippage_amounts.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_slippage_policy_helpers"
+path = "fuzz_targets/fuzz_slippage_policy_helpers.rs"
 test = false
 doc = false
 bench = false

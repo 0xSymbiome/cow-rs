@@ -1,5 +1,23 @@
 #![no_main]
 
+//! Fuzz target for `Signature::recover_ecdsa_address`.
+//!
+//! **Property:** `PROP-CON-012`.
+//!
+//! Drives arbitrary 32-byte digests, 65-byte ECDSA signatures, and a
+//! scheme-selector byte through `Signature::recover_ecdsa_address` and
+//! asserts:
+//!
+//! * Every accepted output is a 20-byte `0x`-prefixed address.
+//! * Every rejection falls into the typed error partition
+//!   (`InvalidSignatureRecoveryByte`, `SignatureRecovery`,
+//!   `InvalidSignatureLength`, `DecodeHex`, `InvalidHexPrefix`,
+//!   `InvalidDecodedLength`) rather than panicking or returning a
+//!   broader untyped error.
+//!
+//! The structured-input width is bounded by the `Arbitrary` derive on
+//! the `Input` struct (98 bytes per run).
+
 use arbitrary::Arbitrary;
 use cow_sdk_contracts::{ContractsError, Signature, SigningScheme};
 use cow_sdk_core::Hash32;
@@ -25,11 +43,37 @@ fuzz_target!(|input: Input| {
         data: format!("0x{}", hex::encode(input.signature)),
     };
 
-    match signature.recover_ecdsa_address(&digest) {
-        Ok(address) => {
-            assert_eq!(address.byte_length(), 20);
-            assert!(address.as_str().starts_with("0x"));
+    let first = signature.recover_ecdsa_address(&digest);
+    let second = signature.recover_ecdsa_address(&digest);
+    match (&first, &second) {
+        (Ok(left), Ok(right)) => {
+            assert_eq!(
+                left.as_str(),
+                right.as_str(),
+                "recover_ecdsa_address must be deterministic for identical input",
+            );
+            assert_eq!(left.byte_length(), 20, "recovered address must be 20 bytes");
+            assert!(
+                left.as_str().starts_with("0x"),
+                "recovered address must be 0x-prefixed",
+            );
+            assert_eq!(
+                left.as_str().len(),
+                42,
+                "recovered address must be exactly 42 characters (0x + 40 hex)",
+            );
+            assert!(
+                left.as_str()[2..].chars().all(|c| c.is_ascii_hexdigit()),
+                "recovered address tail must be ASCII hex only",
+            );
         }
+        (Err(_), Err(_)) => {}
+        _ => panic!(
+            "recover_ecdsa_address must be deterministic; got first={first:?} second={second:?}",
+        ),
+    }
+    match first {
+        Ok(_) => {}
         Err(
             ContractsError::InvalidSignatureRecoveryByte { .. }
             | ContractsError::SignatureRecovery { .. }

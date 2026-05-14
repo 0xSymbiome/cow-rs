@@ -2,6 +2,7 @@
 
 //! Fuzz target for the subgraph GraphQL error decoder.
 //!
+//! **Property:** `PROP-SBG-002`.
 //! Exercises the serde-derived decoder for
 //! [`SubgraphGraphQlError`] by feeding arbitrary byte sequences as
 //! candidate UTF-8 JSON documents. Two shapes are covered:
@@ -57,6 +58,25 @@ fuzz_target!(|data: &[u8]| {
             single.locations.len(),
             decoded_again.locations.len(),
             "GraphQL error locations array length must survive the serde round-trip",
+        );
+        assert_eq!(
+            single.locations, decoded_again.locations,
+            "GraphQL error locations entries must survive the serde round-trip byte-identically",
+        );
+        assert_eq!(
+            single.extensions, decoded_again.extensions,
+            "GraphQL error extensions must survive the serde round-trip",
+        );
+        assert_eq!(
+            single, decoded_again,
+            "GraphQL error struct must survive the serde round-trip in full",
+        );
+        // Encoder idempotency: re-encoding the decoded value yields the same bytes.
+        let re_encoded_twice = serde_json::to_vec(&decoded_again)
+            .expect("re-encoding the round-tripped value must succeed");
+        assert_eq!(
+            re_encoded, re_encoded_twice,
+            "serde_json::to_vec must be deterministic for the round-tripped value",
         );
     }
 

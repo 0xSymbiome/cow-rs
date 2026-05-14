@@ -1,0 +1,1 @@
+upstream echoed https://user:pass@example.test/orders?apiKey=secret123

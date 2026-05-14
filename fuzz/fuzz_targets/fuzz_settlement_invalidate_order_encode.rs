@@ -2,6 +2,7 @@
 
 //! Fuzz target for `GPv2Settlement.invalidateOrder(bytes)` ABI encoding.
 //!
+//! **Property:** `PROP-CON-014`.
 //! Feeds arbitrary bytes through the `alloy::sol!`-generated
 //! `IGPv2Settlement::invalidateOrderCall` encoder and asserts:
 //!

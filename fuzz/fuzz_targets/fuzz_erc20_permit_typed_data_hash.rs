@@ -2,6 +2,7 @@
 
 //! Fuzz target for the EIP-2612 `permit_typed_data_hash` envelope.
 //!
+//! **Property:** `PROP-CON-017`.
 //! Drives arbitrary `Eip712Domain` and `IERC20Permit::Permit` shapes
 //! through the public `permit_typed_data_hash` helper and compares the
 //! result against a hand-computed reference digest built from the

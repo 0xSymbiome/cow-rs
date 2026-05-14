@@ -2,6 +2,7 @@
 
 //! Fuzz target for the `OrderUid` pack / extract round-trip.
 //!
+//! **Property:** `PROP-CON-007`.
 //! The target takes arbitrary bytes, maps the first 56 bytes onto the
 //! documented `OrderUid` layout (32-byte digest, 20-byte owner, 4-byte
 //! big-endian `valid_to`), packs the triple through
