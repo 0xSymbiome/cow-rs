@@ -1,7 +1,7 @@
 # Alloy Umbrella Adapter Audit
 
 Status: Current
-Last reviewed: 2026-05-07
+Last reviewed: 2026-05-14
 Owning surface: `cow-sdk-alloy` `AlloyClient`, its builder, its `AsyncProvider` implementation, and its owned signer handle
 Refresh trigger: ADR 0038 - transaction lifecycle types, or changes to the umbrella public API, `AsyncProvider`, `AsyncSigningProvider`, `AsyncSigner`, wallet-filler transaction submission, typed-data conversion, chain-coherence validation, read-contract conversion parity, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
 Related docs:
@@ -54,6 +54,9 @@ operator reliability, or smart-account signing.
 
 - `crates/alloy/tests/asyncprovider_contract.rs`
 - `crates/alloy/tests/asyncsigningprovider_contract.rs`
+- `crates/alloy/tests/builder_contract.rs`
+- `crates/alloy/tests/error_contract.rs`
+- `crates/alloy/tests/read_contract_contract.rs`
 - `crates/alloy/tests/eip712_reference_vectors.rs`
 - `crates/alloy/tests/no_broadcast_for_sign_transaction.rs`
 - `crates/alloy/tests/send_transaction_does_not_wait_for_confirmation.rs`

@@ -1,7 +1,7 @@
 # Alloy Provider Adapter Audit
 
 Status: Current
-Last reviewed: 2026-05-07
+Last reviewed: 2026-05-14
 Owning surface: `cow-sdk-alloy-provider` `RpcAlloyProvider`, its builder, and its `AsyncProvider` implementation
 Refresh trigger: ADR 0038 - rich receipt population, or changes to the provider public API, the `AsyncProvider` trait, transport classification, the `read_contract` algorithm, the workspace Alloy runtime pin, or the crate dependency boundary
 Related docs:
@@ -119,6 +119,9 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/alloy-provider/tests/asyncprovider_contract.rs`
+- `crates/alloy-provider/tests/builder_contract.rs`
+- `crates/alloy-provider/tests/error_class_contract.rs`
+- `crates/alloy-provider/tests/seam_contract.rs`
 - `crates/alloy-provider/src/conversion.rs::tests::alloy_to_cow_receipt_populates_status_success`
 - `crates/alloy-provider/src/conversion.rs::tests::alloy_to_cow_receipt_populates_status_reverted`
 - `crates/alloy-provider/src/conversion.rs::tests::alloy_to_cow_receipt_returns_none_status_for_post_state_receipt`
