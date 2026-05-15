@@ -50,13 +50,19 @@ pub trait ErrorClassifier {
 }
 
 /// Classifier for native `reqwest` transport errors.
-#[cfg(feature = "reqwest-classifier")]
-#[cfg_attr(docsrs, doc(cfg(feature = "reqwest-classifier")))]
+#[cfg(all(feature = "reqwest-classifier", not(target_arch = "wasm32")))]
+#[cfg_attr(
+    docsrs,
+    doc(cfg(all(feature = "reqwest-classifier", not(target_arch = "wasm32"))))
+)]
 #[derive(Debug, Default, Clone, Copy)]
 pub struct ReqwestErrorClassifier;
 
-#[cfg(feature = "reqwest-classifier")]
-#[cfg_attr(docsrs, doc(cfg(feature = "reqwest-classifier")))]
+#[cfg(all(feature = "reqwest-classifier", not(target_arch = "wasm32")))]
+#[cfg_attr(
+    docsrs,
+    doc(cfg(all(feature = "reqwest-classifier", not(target_arch = "wasm32"))))
+)]
 impl ErrorClassifier for ReqwestErrorClassifier {
     type Error = reqwest::Error;
 

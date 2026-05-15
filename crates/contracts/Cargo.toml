@@ -34,6 +34,7 @@ hex.workspace = true
 num-bigint.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+serde_yaml.workspace = true
 sha3.workspace = true
 thiserror.workspace = true
 toml.workspace = true
@@ -45,6 +46,7 @@ getrandom = { workspace = true }
 [build-dependencies]
 serde.workspace = true
 serde_yaml.workspace = true
+sha2.workspace = true
 toml.workspace = true
 
 [dev-dependencies]

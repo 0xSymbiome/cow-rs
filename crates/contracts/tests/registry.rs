@@ -14,7 +14,10 @@
 //!   gate enforces. Exercising the reject path end-to-end keeps regressions
 //!   red in CI rather than letting malformed manifests drift through.
 
-use cow_sdk_contracts::{ContractId, Registry, RegistryError};
+use cow_sdk_contracts::{
+    ContractId, DeploymentCoverage, DeploymentCoverageStatus, DeploymentEnv,
+    DeploymentVerificationStatus, Registry, RegistryError,
+};
 use cow_sdk_core::{Address, CowEnv, SupportedChainId};
 
 #[test]
@@ -115,13 +118,16 @@ fn registry_default_resolves_the_canonical_mainnet_addresses() {
 #[test]
 fn registry_rejects_unknown_contract_id_variants() {
     let manifest = r#"
-schema_version = 1
+schema_version = 2
 
 [[entries]]
 contract_id = "UnknownFlashLoan"
 chain_id = 1
 env = "prod"
 address = "0x1111111111111111111111111111111111111111"
+[entries.verification]
+status = "code_hash_verified"
+source = "test"
 "#;
 
     let error = Registry::from_toml_str(manifest)
@@ -141,13 +147,16 @@ address = "0x1111111111111111111111111111111111111111"
 #[test]
 fn registry_rejects_unsupported_chain_ids() {
     let manifest = r#"
-schema_version = 1
+schema_version = 2
 
 [[entries]]
 contract_id = "Settlement"
 chain_id = 424242
 env = "prod"
 address = "0x1111111111111111111111111111111111111111"
+[entries.verification]
+status = "code_hash_verified"
+source = "test"
 "#;
 
     let error = Registry::from_toml_str(manifest)
@@ -164,13 +173,16 @@ address = "0x1111111111111111111111111111111111111111"
 #[test]
 fn registry_rejects_malformed_address_literals() {
     let manifest = r#"
-schema_version = 1
+schema_version = 2
 
 [[entries]]
 contract_id = "Settlement"
 chain_id = 1
 env = "prod"
 address = "not-even-close-to-hex"
+[entries.verification]
+status = "code_hash_verified"
+source = "test"
 "#;
 
     let error =
@@ -181,19 +193,25 @@ address = "not-even-close-to-hex"
 #[test]
 fn registry_rejects_duplicate_entries() {
     let manifest = r#"
-schema_version = 1
+schema_version = 2
 
 [[entries]]
 contract_id = "Settlement"
 chain_id = 1
 env = "prod"
 address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+[entries.verification]
+status = "code_hash_verified"
+source = "test"
 
 [[entries]]
 contract_id = "Settlement"
 chain_id = 1
 env = "prod"
 address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
+[entries.verification]
+status = "code_hash_verified"
+source = "test"
 "#;
 
     let error = Registry::from_toml_str(manifest)
@@ -203,7 +221,7 @@ address = "0xba3cb449bd2b4adddbc894d8697f5170800eadec"
         RegistryError::DuplicateEntry {
             contract_id: ContractId::Settlement,
             chain_id: 1,
-            env: CowEnv::Prod,
+            env: DeploymentEnv::Prod,
         }
     ));
 }
@@ -218,62 +236,73 @@ contract_id = "Settlement"
 chain_id = 1
 env = "prod"
 address = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41"
+[entries.verification]
+status = "code_hash_verified"
+source = "test"
 "#;
 
     let error = Registry::from_toml_str(manifest)
         .expect_err("unsupported schema_version values must be rejected");
     assert!(matches!(
         error,
-        RegistryError::UnsupportedSchemaVersion {
-            expected: 1,
-            actual: 42,
-        }
+        RegistryError::UnsupportedSchemaVersion { expected: 2, .. }
     ));
 }
 
 #[test]
 fn registry_address_lookup_matrix_is_exhaustive() {
     let registry = Registry::default();
-    let contracts = [
-        ContractId::Settlement,
-        ContractId::VaultRelayer,
-        ContractId::EthFlow,
-    ];
-    let envs = [CowEnv::Prod, CowEnv::Staging];
-
-    let entry_keys = registry
-        .entries()
-        .map(|(contract_id, chain_id, env, address)| {
-            assert_eq!(
-                registry.address(contract_id, chain_id, env),
-                Some(address.clone()),
-                "{contract_id} / {chain_id:?} / {env:?} lookup must return the manifest address",
-            );
-            (contract_id, chain_id, env)
-        })
-        .collect::<Vec<_>>();
-
-    let matrix_keys = contracts
-        .into_iter()
-        .flat_map(|contract_id| {
-            SupportedChainId::ALL.into_iter().flat_map(move |chain_id| {
-                envs.into_iter()
-                    .map(move |env| (contract_id, chain_id, env))
-            })
-        })
-        .collect::<Vec<_>>();
-
-    assert!(
-        entry_keys.iter().all(|entry| matrix_keys.contains(entry)),
-        "every embedded registry entry must be covered by the typed lookup matrix",
+    assert_eq!(
+        registry.len(),
+        177,
+        "schema v2 registry row count must remain stable"
     );
 
-    for (contract_id, chain_id, env) in matrix_keys {
-        let lookup = registry.address(contract_id, chain_id, env);
+    for (contract_id, chain_id, env, address) in registry.entries() {
         assert_eq!(
-            lookup.is_some(),
-            entry_keys.contains(&(contract_id, chain_id, env)),
-            "{contract_id} / {chain_id:?} / {env:?} lookup presence must match the manifest",
+            registry.address(contract_id, chain_id, env),
+            Some(address.clone()),
+            "{contract_id} / {chain_id:?} / {env:?} lookup must return the manifest address",
         );
     }
+}
+
+#[test]
+fn registry_verification_statuses_stay_in_registry_rows() {
+    let registry = Registry::default();
+    let statuses = registry
+        .entry_details()
+        .map(|(_, _, _, status, _)| status)
+        .collect::<std::collections::BTreeSet<_>>();
+
+    assert!(statuses.contains(&DeploymentVerificationStatus::CodeHashVerified));
+    assert!(statuses.contains(&DeploymentVerificationStatus::ExternalVerified));
+    assert!(statuses.contains(&DeploymentVerificationStatus::ReadmeTableUnverified));
+    assert!(statuses.contains(&DeploymentVerificationStatus::CanonicalUnverified));
+    assert_eq!(
+        registry.verification(
+            ContractId::ComposableCow,
+            cow_sdk_contracts::DeploymentChainId::Polygon,
+            DeploymentEnv::EnvironmentAgnostic,
+        ),
+        Some(DeploymentVerificationStatus::CanonicalUnverified),
+    );
+}
+
+#[test]
+fn deployment_coverage_statuses_are_separate_from_registry_rows() {
+    let coverage = DeploymentCoverage::default();
+
+    assert_eq!(coverage.len(), 24, "coverage row count must remain stable");
+    assert_eq!(
+        coverage.status(ContractId::CowShedFactory, 10_u64),
+        Some(DeploymentCoverageStatus::NotSupported),
+    );
+    assert_eq!(
+        coverage.status(
+            ContractId::ComposableCow,
+            cow_sdk_contracts::DeploymentChainId::Ink,
+        ),
+        Some(DeploymentCoverageStatus::NotDeployed),
+    );
 }

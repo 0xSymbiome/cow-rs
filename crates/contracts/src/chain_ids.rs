@@ -26,3 +26,23 @@ const SUPPORTED_CHAIN_IDS: [u64; 11] = [
     59_144,     // Linea
     11_155_111, // Sepolia
 ];
+
+#[allow(
+    dead_code,
+    reason = "consumed by build.rs via include!; deployment registry schema v2 \
+tracks coverage-only and capability-only chains separately from runtime-supported chains"
+)]
+const DEPLOYMENT_CHAIN_IDS: [u64; 12] = [
+    1,          // Mainnet
+    56,         // Bnb
+    100,        // GnosisChain
+    137,        // Polygon
+    8453,       // Base
+    9745,       // Plasma
+    42_161,     // ArbitrumOne
+    43_114,     // Avalanche
+    57_073,     // Ink
+    59_144,     // Linea
+    11_155_111, // Sepolia
+    232,        // Lens
+];

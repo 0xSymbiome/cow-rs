@@ -1,7 +1,7 @@
 //! Chain-keyed registry of canonical CoW Protocol contract deployments.
 //!
 //! The module ships the typed authority for resolving a deployed contract
-//! address from the `(ContractId, SupportedChainId, CowEnv)` key triple.
+//! address from the `(ContractId, DeploymentChainId, DeploymentEnv)` key triple.
 //! [`Registry::default`] loads the manifest committed at
 //! `crates/contracts/registry.toml`; [`Registry::address`] is the primary
 //! lookup API.
@@ -12,8 +12,16 @@
 //! of failures is visible to downstream consumers who pipe their own TOML
 //! into the loader.
 
+mod chain_id;
 mod contract_id;
+mod coverage;
+mod env;
 mod registry;
+mod verification;
 
+pub use chain_id::{DeploymentChainId, DeploymentChainIdError};
 pub use contract_id::ContractId;
+pub use coverage::{DeploymentCoverage, DeploymentCoverageError, DeploymentCoverageStatus};
+pub use env::DeploymentEnv;
 pub use registry::{Registry, RegistryError};
+pub use verification::DeploymentVerificationStatus;

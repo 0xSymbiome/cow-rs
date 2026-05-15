@@ -440,7 +440,7 @@ enums:
     reason: Wasm export diagnostics can grow as additional fallible helper paths are exposed.
   - name: RegistryError
     file: crates/contracts/src/deployments/registry.rs
-    line: 204
+    line: 294
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Registry parser diagnostics can grow as manifest validation expands.
@@ -450,3 +450,102 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Deployed contract identifiers can grow with upstream deployment authority.
+  - name: DeploymentChainId
+    file: crates/contracts/src/deployments/chain_id.rs
+    line: 16
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Deployment evidence can add chains independently from runtime orderbook support.
+  - name: DeploymentEnv
+    file: crates/contracts/src/deployments/env.rs
+    line: 10
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Deployment environment taxonomy can grow with upstream deployment authority.
+  - name: DeploymentVerificationStatus
+    file: crates/contracts/src/deployments/verification.rs
+    line: 9
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Registry-row verification modes can grow as new evidence authorities are accepted.
+  - name: DeploymentCoverageStatus
+    file: crates/contracts/src/deployments/coverage.rs
+    line: 15
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Coverage-only absence reasons can grow independently from registry verification.
+  - name: DeploymentCoverageError
+    file: crates/contracts/src/deployments/coverage.rs
+    line: 170
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Coverage parser diagnostics can grow as manifest validation expands.
+  - name: Eip1271SignatureError
+    file: crates/signing/src/eip1271/error.rs
+    line: 7
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Custom EIP-1271 provider diagnostics can grow with signing-owned provider checks.
+  - name: CowShedVersion
+    file: crates/cow-shed/src/version.rs
+    line: 0
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: COW Shed version variants can grow as new deployed-bytecode versions land upstream; reserved for the COW Shed helper crate body landing.
+    planned: true
+  - name: CowShedError
+    file: crates/cow-shed/src/error.rs
+    line: 0
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: COW Shed proxy and hook diagnostics can grow as account-abstraction helpers expand; reserved for the COW Shed helper crate body landing.
+    planned: true
+  - name: ComposableError
+    file: crates/composable/src/error.rs
+    line: 0
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Composable conditional-order builder diagnostics can grow as new handler types and pre-flight validations land; reserved for the composable helper crate body landing.
+    planned: true
+  - name: PollResult
+    file: crates/composable/src/poll_result.rs
+    line: 0
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: ComposableCoW conditional-order poll outcome taxonomy can grow as upstream handler surface expands; reserved for the composable helper crate body landing.
+    planned: true
+  - name: TwapStatus
+    file: crates/composable/src/types/twap_status.rs
+    line: 0
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: TWAP runtime status taxonomy can grow as new part-lifecycle observations are added; reserved for the composable helper crate body landing.
+    planned: true
+  - name: OwnerKind
+    file: crates/composable/src/owner_kind.rs
+    line: 0
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Conditional-order owner identity kinds can grow as new smart-account shapes are recognized; reserved for the composable helper crate body landing.
+    planned: true
+  - name: HookPosition
+    file: crates/cow-shed/src/hook_position.rs
+    line: 0
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: COW Shed hook position taxonomy can grow with new pre and post slot variants; reserved for the COW Shed helper crate body landing.
+    planned: true
+  - name: Nonce
+    file: crates/cow-shed/src/nonce.rs
+    line: 0
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: COW Shed nonce strong-type is a typed wrapper; the wrapping shape may grow with derivation variants; reserved for the COW Shed helper crate body landing.
+    planned: true
+  - name: Deadline
+    file: crates/cow-shed/src/deadline.rs
+    line: 0
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: COW Shed deadline strong-type is a typed wrapper; the wrapping shape may grow with clock-source variants; reserved for the COW Shed helper crate body landing.
+    planned: true

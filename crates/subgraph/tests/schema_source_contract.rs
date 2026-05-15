@@ -10,11 +10,13 @@ fn subgraph_schema_sources_are_pinned_and_test_only() {
 
     for source in [
         "remote: https://github.com/cowprotocol/cow-sdk.git",
+        "remote: https://github.com/cowprotocol/composable-cow.git",
+        "remote: https://github.com/cowdao-grants/cow-shed.git",
+        "remote: https://github.com/cowprotocol/watch-tower.git",
         "commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
-        "packages/subgraph/src/api.ts",
-        "packages/subgraph/src/api.spec.ts",
-        "packages/subgraph/src/graphql.ts",
-        "packages/subgraph/src/queries.ts",
+        "packages/cow-shed/src/const.ts",
+        "src/ComposableCoW.sol",
+        "src/COWShedFactory.sol",
     ] {
         assert!(source_lock.contains(source), "missing source {source}");
     }

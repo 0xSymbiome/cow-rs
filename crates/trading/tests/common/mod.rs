@@ -21,9 +21,10 @@ use cow_sdk_orderbook::{
     AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
     OrderbookError,
 };
+use cow_sdk_signing::eip1271::{Eip1271SignatureError, Eip1271SignatureProvider};
 use cow_sdk_trading::{
-    Eip1271SignatureProvider, EthFlowOrderExistsChecker, OrderbookClient,
-    SlippageSuggestionProvider, SlippageToleranceRequest, SlippageToleranceResponse, TradingError,
+    EthFlowOrderExistsChecker, OrderbookClient, SlippageSuggestionProvider,
+    SlippageToleranceRequest, SlippageToleranceResponse, TradingError,
 };
 
 pub const WETH: &str = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
@@ -691,7 +692,7 @@ impl Eip1271SignatureProvider for MockEip1271Provider {
     async fn sign(
         &self,
         _order_to_sign: &cow_sdk_core::UnsignedOrder,
-    ) -> Result<String, TradingError> {
+    ) -> Result<String, Eip1271SignatureError> {
         Ok("0x7e57c0de".to_owned())
     }
 }

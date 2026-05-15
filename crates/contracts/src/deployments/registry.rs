@@ -1,7 +1,7 @@
 //! Chain-keyed registry of canonical `CoW` Protocol contract deployments.
 //!
 //! [`Registry`] is the single in-crate authority for resolving a deployed
-//! contract address from the `(ContractId, SupportedChainId, CowEnv)` key
+//! contract address from the `(ContractId, DeploymentChainId, DeploymentEnv)` key
 //! triple. [`Registry::default`] loads the manifest committed at
 //! `crates/contracts/registry.toml` (embedded into the crate binary at
 //! compile time through `include_str!`) and [`Registry::address`] is the
@@ -16,20 +16,20 @@
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
-use cow_sdk_core::{Address, CowEnv, SupportedChainId};
+use cow_sdk_core::Address;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use super::ContractId;
+use super::{ContractId, DeploymentChainId, DeploymentEnv, DeploymentVerificationStatus};
 
 /// Reviewed TOML-schema version carried at the head of every manifest.
-const SCHEMA_VERSION: u32 = 1;
+const SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct RegistryKey {
     contract_id: ContractId,
-    chain_id: SupportedChainId,
-    env: CowEnv,
+    chain_id: DeploymentChainId,
+    env: DeploymentEnv,
 }
 
 impl Ord for RegistryKey {
@@ -37,7 +37,7 @@ impl Ord for RegistryKey {
         self.contract_id
             .cmp(&other.contract_id)
             .then_with(|| self.chain_id.cmp(&other.chain_id))
-            .then_with(|| self.env.as_str().cmp(other.env.as_str()))
+            .then_with(|| self.env.cmp(&other.env))
     }
 }
 
@@ -54,11 +54,11 @@ const EMBEDDED_REGISTRY_TOML: &str = include_str!("../../registry.toml");
 ///
 /// The backing storage is a [`BTreeMap`] so iteration order is
 /// deterministic across audits and so CI diffs remain stable. Keys are the
-/// `(ContractId, SupportedChainId, CowEnv)` triple; values are typed
-/// [`Address`] handles that have already passed the validator.
+/// `(ContractId, DeploymentChainId, DeploymentEnv)` triple; values are typed
+/// [`RegistryEntry`] handles that have already passed the validator.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Registry {
-    entries: BTreeMap<RegistryKey, Address>,
+    entries: BTreeMap<RegistryKey, RegistryEntry>,
 }
 
 impl Default for Registry {
@@ -79,20 +79,61 @@ impl Default for Registry {
 impl Registry {
     /// Returns the deployed address registered for the supplied identifier
     /// tuple, or [`None`] when no matching entry is present.
+    ///
+    /// Environment-agnostic contracts can be looked up with either
+    /// [`DeploymentEnv::EnvironmentAgnostic`] or a concrete `CowEnv`; concrete
+    /// environments fall back to the shared row only for contracts that are
+    /// declared environment-agnostic.
     #[must_use]
     pub fn address(
         &self,
         contract_id: ContractId,
-        chain_id: SupportedChainId,
-        env: CowEnv,
+        chain_id: impl Into<DeploymentChainId>,
+        env: impl Into<DeploymentEnv>,
     ) -> Option<Address> {
+        self.entry(contract_id, chain_id, env)
+            .map(|entry| entry.address.clone())
+    }
+
+    /// Returns the verification status for the supplied identifier tuple.
+    #[must_use]
+    pub fn verification(
+        &self,
+        contract_id: ContractId,
+        chain_id: impl Into<DeploymentChainId>,
+        env: impl Into<DeploymentEnv>,
+    ) -> Option<DeploymentVerificationStatus> {
+        self.entry(contract_id, chain_id, env)
+            .map(|entry| entry.verification)
+    }
+
+    fn entry(
+        &self,
+        contract_id: ContractId,
+        chain_id: impl Into<DeploymentChainId>,
+        env: impl Into<DeploymentEnv>,
+    ) -> Option<&RegistryEntry> {
+        let chain_id = chain_id.into();
+        let env = env.into();
         self.entries
             .get(&RegistryKey {
                 contract_id,
                 chain_id,
                 env,
             })
-            .cloned()
+            .or_else(|| {
+                if contract_id.is_environment_agnostic()
+                    && env != DeploymentEnv::EnvironmentAgnostic
+                {
+                    self.entries.get(&RegistryKey {
+                        contract_id,
+                        chain_id,
+                        env: DeploymentEnv::EnvironmentAgnostic,
+                    })
+                } else {
+                    None
+                }
+            })
     }
 
     /// Returns a sorted view of every `(ContractId, SupportedChainId, CowEnv)`
@@ -101,10 +142,33 @@ impl Registry {
     /// the complete manifest.
     pub fn entries(
         &self,
-    ) -> impl Iterator<Item = (ContractId, SupportedChainId, CowEnv, &Address)> + '_ {
+    ) -> impl Iterator<Item = (ContractId, DeploymentChainId, DeploymentEnv, &Address)> + '_ {
         self.entries
             .iter()
-            .map(|(key, address)| (key.contract_id, key.chain_id, key.env, address))
+            .map(|(key, entry)| (key.contract_id, key.chain_id, key.env, &entry.address))
+    }
+
+    /// Returns every entry with its verification status in deterministic order.
+    pub fn entry_details(
+        &self,
+    ) -> impl Iterator<
+        Item = (
+            ContractId,
+            DeploymentChainId,
+            DeploymentEnv,
+            DeploymentVerificationStatus,
+            &Address,
+        ),
+    > + '_ {
+        self.entries.iter().map(|(key, entry)| {
+            (
+                key.contract_id,
+                key.chain_id,
+                key.env,
+                entry.verification,
+                &entry.address,
+            )
+        })
     }
 
     /// Number of registered entries in this registry.
@@ -130,17 +194,20 @@ impl Registry {
     pub fn with_override(
         mut self,
         contract_id: ContractId,
-        chain_id: SupportedChainId,
-        env: CowEnv,
+        chain_id: impl Into<DeploymentChainId>,
+        env: impl Into<DeploymentEnv>,
         address: Address,
     ) -> Self {
         self.entries.insert(
             RegistryKey {
                 contract_id,
-                chain_id,
-                env,
+                chain_id: chain_id.into(),
+                env: env.into(),
             },
-            address,
+            RegistryEntry {
+                address,
+                verification: DeploymentVerificationStatus::CanonicalUnverified,
+            },
         );
         self
     }
@@ -167,14 +234,15 @@ impl Registry {
             });
         }
 
-        let mut entries: BTreeMap<RegistryKey, Address> = BTreeMap::new();
+        let mut entries: BTreeMap<RegistryKey, RegistryEntry> = BTreeMap::new();
         for row in manifest.entries {
-            let chain_id = SupportedChainId::try_from(row.chain_id).map_err(|_| {
+            let chain_id = DeploymentChainId::try_from(row.chain_id).map_err(|_| {
                 RegistryError::UnsupportedChainId {
                     contract_id: row.contract_id,
                     chain_id: row.chain_id,
                 }
             })?;
+            validate_env_scope(row.contract_id, row.env)?;
             let address =
                 Address::new(&row.address).map_err(|source| RegistryError::InvalidAddress {
                     contract_id: row.contract_id,
@@ -188,7 +256,16 @@ impl Registry {
                 chain_id,
                 env: row.env,
             };
-            if entries.insert(key, address).is_some() {
+            if entries
+                .insert(
+                    key,
+                    RegistryEntry {
+                        address,
+                        verification: row.verification.status,
+                    },
+                )
+                .is_some()
+            {
                 return Err(RegistryError::DuplicateEntry {
                     contract_id: row.contract_id,
                     chain_id: row.chain_id,
@@ -234,6 +311,14 @@ pub enum RegistryError {
         /// Raw chain id value that failed the `SupportedChainId` check.
         chain_id: u64,
     },
+    /// A manifest row used an environment scope not allowed for its contract family.
+    #[error("invalid environment `{env}` for `{contract_id}` registry entry")]
+    InvalidEnvironmentScope {
+        /// Contract identifier on the offending row.
+        contract_id: ContractId,
+        /// Environment value copied from the manifest row.
+        env: DeploymentEnv,
+    },
     /// A manifest row carried a malformed deployment address.
     #[error(
         "invalid address `{address}` on `{contract_id}` / chain {chain_id} / {env:?}: {message}"
@@ -244,7 +329,7 @@ pub enum RegistryError {
         /// Raw chain id value copied from the manifest row.
         chain_id: u64,
         /// Environment value copied from the manifest row.
-        env: CowEnv,
+        env: DeploymentEnv,
         /// Raw address literal that failed the 20-byte hex check.
         address: String,
         /// Redacted detail from the address validator.
@@ -258,8 +343,27 @@ pub enum RegistryError {
         /// Raw chain id value shared by the duplicated rows.
         chain_id: u64,
         /// Environment value shared by the duplicated rows.
-        env: CowEnv,
+        env: DeploymentEnv,
     },
+}
+
+fn validate_env_scope(contract_id: ContractId, env: DeploymentEnv) -> Result<(), RegistryError> {
+    let allowed = if contract_id.is_environment_agnostic() {
+        env == DeploymentEnv::EnvironmentAgnostic
+    } else {
+        matches!(env, DeploymentEnv::Prod | DeploymentEnv::Staging)
+    };
+    if allowed {
+        Ok(())
+    } else {
+        Err(RegistryError::InvalidEnvironmentScope { contract_id, env })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RegistryEntry {
+    address: Address,
+    verification: DeploymentVerificationStatus,
 }
 
 #[derive(Debug, Deserialize)]
@@ -275,6 +379,14 @@ struct ManifestSchema {
 struct ManifestEntry {
     contract_id: ContractId,
     chain_id: u64,
-    env: CowEnv,
+    env: DeploymentEnv,
     address: String,
+    verification: ManifestVerification,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct ManifestVerification {
+    status: DeploymentVerificationStatus,
+    source: String,
 }

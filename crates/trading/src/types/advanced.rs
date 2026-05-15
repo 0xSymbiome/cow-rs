@@ -3,11 +3,9 @@ use std::{fmt, sync::Arc};
 use cow_sdk_app_data::AppDataParams;
 use cow_sdk_core::Amount;
 use cow_sdk_orderbook::SigningScheme;
+use cow_sdk_signing::eip1271::Eip1271SignatureProvider;
 
-use super::{
-    Eip1271SignatureProvider, EthFlowOrderExistsChecker, QuoteRequestOverride,
-    SlippageSuggestionProvider,
-};
+use super::{EthFlowOrderExistsChecker, QuoteRequestOverride, SlippageSuggestionProvider};
 
 /// Optional knobs applied after quoting and before final submission.
 #[derive(Clone, Default)]

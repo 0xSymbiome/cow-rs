@@ -351,7 +351,14 @@ where
         SigningScheme::PreSign => Ok((from.as_str().to_owned(), SigningScheme::PreSign)),
         SigningScheme::Eip1271 => {
             if let Some(provider) = &additional_params.custom_eip1271_signature {
-                let signature = provider.sign(order_to_sign).await?;
+                let signature =
+                    provider
+                        .sign(order_to_sign)
+                        .await
+                        .map_err(|error| TradingError::Signer {
+                            operation: "eip1271_signature",
+                            message: error.to_string().into(),
+                        })?;
                 Ok((signature, SigningScheme::Eip1271))
             } else {
                 let signing_result =

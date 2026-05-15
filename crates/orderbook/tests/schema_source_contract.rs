@@ -4,14 +4,13 @@ fn orderbook_schema_sources_are_pinned_and_test_only() {
     let parity_scope = include_str!("../../../docs/parity-scope.md");
 
     for source in [
-        "remote: https://github.com/cowprotocol/services.git",
-        "commit: 0720b9bc15138ecc362078f505d0e3ba1c7b9883",
-        "crates/orderbook/openapi.yml",
-        "crates/shared/src/order_validation.rs",
-        "crates/orderbook/src/app_data.rs",
-        "packages/order-book/src/types.ts",
-        "packages/order-book/src/api.ts",
-        "packages/order-book/src/request.ts",
+        "remote: https://github.com/cowprotocol/cow-sdk.git",
+        "remote: https://github.com/cowprotocol/composable-cow.git",
+        "remote: https://github.com/cowdao-grants/cow-shed.git",
+        "remote: https://github.com/cowprotocol/watch-tower.git",
+        "packages/cow-shed/src/const.ts",
+        "src/ComposableCoW.sol",
+        "src/COWShedFactory.sol",
     ] {
         assert!(source_lock.contains(source), "missing source {source}");
     }

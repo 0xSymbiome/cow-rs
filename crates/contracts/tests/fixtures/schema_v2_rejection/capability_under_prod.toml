@@ -1,0 +1,11 @@
+schema_version = 2
+
+[[entries]]
+contract_id = "ComposableCow"
+chain_id = 137
+env = "prod"
+address = "0x386E033F268F6c3c6fcB8EF2822ed8391Bab8C9A"
+
+[entries.verification]
+status = "canonical_unverified"
+source = "schema-v2-test"

@@ -17,8 +17,11 @@ pub mod retry_after;
 pub mod status;
 pub mod time;
 
-#[cfg(feature = "reqwest-classifier")]
-#[cfg_attr(docsrs, doc(cfg(feature = "reqwest-classifier")))]
+#[cfg(all(feature = "reqwest-classifier", not(target_arch = "wasm32")))]
+#[cfg_attr(
+    docsrs,
+    doc(cfg(all(feature = "reqwest-classifier", not(target_arch = "wasm32"))))
+)]
 pub use classify::ReqwestErrorClassifier;
 pub use classify::{ErrorClassifier, NetworkErrorKind};
 pub use jitter::JitterStrategy;

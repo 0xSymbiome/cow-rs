@@ -289,7 +289,7 @@ impl SettlementEncoder {
             .entries()
             .filter(|(contract_id, entry_chain_id, _, address)| {
                 *contract_id == ContractId::Settlement
-                    && *entry_chain_id == chain_id
+                    && *entry_chain_id == chain_id.into()
                     && *address == &self.domain.verifying_contract
             })
             .map(|(_, _, env, _)| env);

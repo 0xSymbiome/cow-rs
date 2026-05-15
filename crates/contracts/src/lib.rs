@@ -48,7 +48,10 @@ pub use deploy::{
     ContractAddresses, ContractName, DEPLOYER_CONTRACT, SALT, deployment_address_hash_input,
     deployment_for_chain, deterministic_deployment_address,
 };
-pub use deployments::{ContractId, Registry, RegistryError};
+pub use deployments::{
+    ContractId, DeploymentChainId, DeploymentCoverage, DeploymentCoverageError,
+    DeploymentCoverageStatus, DeploymentEnv, DeploymentVerificationStatus, Registry, RegistryError,
+};
 pub use erc20::{IERC20, IERC20Permit, PERMIT_TYPE_HASH, permit_typed_data_hash};
 pub use errors::ContractsError;
 pub use eth_flow::{

@@ -65,18 +65,6 @@ pub mod prelude;
 
 pub use prelude::*;
 
-#[cfg(all(
-    any(
-        feature = "alloy",
-        feature = "alloy-provider",
-        feature = "alloy-signer"
-    ),
-    target_arch = "wasm32"
-))]
-compile_error!(
-    "the alloy / alloy-provider / alloy-signer features on cow-sdk are for native targets only; wasm targets should use cow-sdk-browser-wallet for signing and consumer-supplied EIP-1193 providers for RPC reads."
-);
-
 #[cfg(all(feature = "alloy", not(target_arch = "wasm32")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloy")))]
 pub use cow_sdk_alloy as alloy;
@@ -105,8 +93,11 @@ pub mod http {
         TransportPolicyBuildError, TransportPolicyBuilder, is_retryable_status, parse_retry_after,
     };
 
-    #[cfg(feature = "http-classifier")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "http-classifier")))]
+    #[cfg(all(feature = "http-classifier", not(target_arch = "wasm32")))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(all(feature = "http-classifier", not(target_arch = "wasm32"))))
+    )]
     pub use cow_sdk_transport_policy::ReqwestErrorClassifier;
 }
 /// Transport-error classification shared across transport-capable crates.

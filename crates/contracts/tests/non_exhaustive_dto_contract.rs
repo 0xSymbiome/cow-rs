@@ -487,6 +487,13 @@ fn enum_policy_manifest_entries_match_expected_markers() {
     );
 
     for entry in policy.enums {
+        if entry.planned {
+            // Reserved entry: the source-of-truth Rust definition lands in a
+            // later capability landing. Skip the file/line check; the
+            // parity-maintainer `validate-enum-policy` subcommand checks the
+            // catalog presence separately.
+            continue;
+        }
         let source_path = repo_root.join(&entry.file);
         let source = std::fs::read_to_string(&source_path)
             .unwrap_or_else(|error| panic!("failed to read {}: {error}", source_path.display()));
@@ -521,6 +528,8 @@ struct EnumPolicyEntry {
     name: String,
     file: String,
     expected_marker: String,
+    #[serde(default)]
+    planned: bool,
 }
 
 fn assert_enum_has_non_exhaustive(source: &str, enum_name: &str) {

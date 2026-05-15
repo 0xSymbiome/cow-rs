@@ -39,11 +39,6 @@
     reason = "helper modules keep crate-private visibility explicit"
 )]
 
-#[cfg(target_arch = "wasm32")]
-compile_error!(
-    "the alloy / alloy-provider / alloy-signer features on cow-sdk are for native targets only; cow-sdk-alloy is native-only, and wasm targets should use cow-sdk-browser-wallet for signing and consumer-supplied EIP-1193 providers for RPC reads."
-);
-
 #[cfg(not(target_arch = "wasm32"))]
 mod builder;
 #[cfg(not(target_arch = "wasm32"))]
@@ -70,6 +65,8 @@ pub use error::{AlloyClientError, AlloyClientErrorClass};
 pub use handle::AlloyClientSignerHandle;
 
 /// Native Alloy provider leaf namespace.
+#[cfg(not(target_arch = "wasm32"))]
 pub use cow_sdk_alloy_provider as provider;
 /// Native Alloy signer leaf namespace.
+#[cfg(not(target_arch = "wasm32"))]
 pub use cow_sdk_alloy_signer as signer;

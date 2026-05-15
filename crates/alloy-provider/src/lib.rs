@@ -25,11 +25,6 @@
     reason = "helper modules keep crate-private visibility explicit while __seam exposes public wrappers"
 )]
 
-#[cfg(target_arch = "wasm32")]
-compile_error!(
-    "the alloy / alloy-provider / alloy-signer features on cow-sdk are for native targets only; cow-sdk-alloy-provider is native-only, and wasm targets should use cow-sdk-browser-wallet for signing and consumer-supplied EIP-1193 providers for RPC reads."
-);
-
 #[cfg(not(target_arch = "wasm32"))]
 mod builder;
 #[cfg(not(target_arch = "wasm32"))]

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use cow_sdk_core::{OrderDigest, OrderUid, UnsignedOrder};
+use cow_sdk_core::{OrderDigest, OrderUid};
 
 use super::{SlippageToleranceRequest, SlippageToleranceResponse};
 use crate::TradingError;
@@ -34,16 +34,4 @@ pub trait EthFlowOrderExistsChecker: Send + Sync {
         order_id: &OrderUid,
         order_digest: &OrderDigest,
     ) -> Result<bool, TradingError>;
-}
-
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-/// Custom EIP-1271 signature provider used during order submission.
-pub trait Eip1271SignatureProvider: Send + Sync {
-    /// Produces an order signature payload for the provided unsigned order.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError`] when signing fails.
-    async fn sign(&self, order_to_sign: &UnsignedOrder) -> Result<String, TradingError>;
 }
