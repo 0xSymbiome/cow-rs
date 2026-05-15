@@ -6,7 +6,7 @@
 #
 # ADRs 0029-0033 are accepted and covered by the blocking ADR coverage lane.
 
-version: 1
+version: 2
 
 principles:
   - id: 1
@@ -78,5 +78,10 @@ principles:
     name: Minimum-Viable Panic Surface
     primary_adr: "0033"
     supporting_adrs: []
+
+  - id: 16
+    name: Off-Chain Orchestration Boundary
+    primary_adr: "0048"
+    supporting_adrs: ["0010", "0024", "0049", "0050", "0051"]
 
 out_of_scope_adrs: []

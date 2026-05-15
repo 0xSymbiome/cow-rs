@@ -11,11 +11,10 @@ Pinned sources live in `parity/source-lock.yaml`.
 
 | Producer | Pinned role | Used for |
 | --- | --- | --- |
-| `cowprotocol/cow-sdk` | Primary | SDK ergonomics, trading flows, orderbook client shape, app-data behavior, subgraph query shape, and root facade evidence |
-| `cowprotocol/contracts` | Primary | Contract hashing, order UID packing, signatures, settlement encoding, and ABI-level behavior |
-| `cowprotocol/services` | Reference-only | Orderbook OpenAPI, order validation behavior, and app-data service behavior where the TypeScript SDK delegates to service contracts |
-| `alloy-rs/alloy` | Dependency evidence | Native Alloy runtime producer paths for provider, wallet, transport, network, RPC, and signer runtime crates |
-| `alloy-rs/core` | Dependency evidence | Native Alloy ABI/core producer paths for primitives, Solidity bindings, JSON ABI, and dynamic ABI support |
+| `cowprotocol/cow-sdk` | Primary | SDK package configuration, COW Shed TypeScript constants, and shared package-level deployment evidence |
+| `cowprotocol/composable-cow` | Primary capability evidence | Composable-order Solidity excerpts, deployment rows, selector fixtures, EIP-1271 payload shapes, and watch-tower boundary evidence |
+| `cowdao-grants/cow-shed` | Primary capability evidence | COW Shed Solidity excerpts, proxy creation-code bytes, factory address derivation, hook signature shape, and version-call evidence |
+| `cowprotocol/watch-tower` | Reference-only boundary evidence | Off-chain orchestration behavior used to define what remains outside the SDK |
 
 Local upstream checkout paths are optional validation inputs. When they are
 used, they must be independent git checkouts or worktrees at the pinned
@@ -51,16 +50,24 @@ buckets:
    schema validation, CID-to-hex conversion, and hex-to-CID conversion.
 7. **IPFS app-data fetch**: fetch by CID and fetch by app-data hash through an
    injected HTTP transport.
-8. **Deployment registry**: chain and environment addresses for Settlement,
-   VaultRelayer, EthFlow, and AllowListAuth.
+8. **Deployment registry**: chain and environment addresses for GPv2,
+   composable-order, and COW Shed contract families, with deployment coverage
+   records for not-deployed and unsupported chain evidence.
 9. **Runtime support**: browser bundlers, Node.js 22 and 24 LTS, Cloudflare
    Workers, and experimental Deno builds.
 10. **Cancellation and timeouts**: per-call `signal`, per-call `timeoutMs`, and
     wallet callback `walletConfig.timeoutMs`.
 
 The 0.1.0 scope does not claim total method-for-method parity with the
-upstream TypeScript SDK. Deferred capability families should use the upstream
-packages until their `cow-rs` leaf crates and package flavors ship.
+upstream TypeScript SDK. Composable conditional-order helpers and the COW
+Shed account-abstraction proxy ship as first-release readiness: reserved
+leaf manifests, deployment evidence, ABI excerpts, parity fixtures, and
+governing ADRs are in scope, with full ergonomic helper bodies arriving in
+the additive landings that follow. Capability families that are explicitly
+deferred for 0.1.0 (cross-chain bridging order construction, hook-trampoline
+bytecode chaining, ecosystem provider adapters outside Alloy, and other
+items listed under Out-Of-Scope below) should continue to use the upstream
+packages until their dedicated `cow-rs` leaf crates land.
 
 ## Surface Boundaries
 
@@ -77,6 +84,8 @@ packages until their `cow-rs` leaf crates and package flavors ship.
 | HTTP transport policy | `cow-sdk-transport-policy` | Retry, rate-limit, cooldown, jitter, and transport-classification behavior shared by typed HTTP clients |
 | Native Alloy adapters | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Alloy runtime and Alloy Core source-lock pins, adapter contract tests, transaction broadcast / receipt shape invariants, and native examples |
 | TypeScript-callable WASM | `cow-sdk-wasm` | Native Rust helper parity for typed-data, UID, digest, app-data, EIP-1271 payloads, orderbook/subgraph/IPFS/trading DTO shape, npm declaration snapshots, and upstream TypeScript SDK EIP-1271 vector coverage |
+| Composable orders | `cow-sdk-composable` reserved manifest | Composable-CoW source locks, Solidity excerpts, selector and EIP-1271 blob fixtures, handler revert fixtures, and watch-tower boundary documentation |
+| COW Shed | `cow-sdk-cow-shed` reserved manifest | COW Shed source locks, Solidity excerpts, proxy creation-code bytes, CREATE2 address fixtures, EIP-712 hook fixtures, and version-call evidence |
 
 ## Schema Evidence Policy
 
@@ -126,6 +135,9 @@ The Rust SDK ships in scope:
   `cow-sdk-alloy`)
 - TypeScript-callable wasm-bindgen bindings (`cow-sdk-wasm`) with typed
   JavaScript callbacks for wallet, signer, EIP-1271, and HTTP dispatch
+- composable-order and COW Shed readiness evidence, including reserved crate
+  manifests, contract excerpts, deployment taxonomy rows, fixture artifacts, and
+  audit records
 
 Native Alloy transaction parity is scoped to the SDK trait contract, not to
 re-exporting Alloy's full transaction surface. The composed signer returns
@@ -133,10 +145,9 @@ re-exporting Alloy's full transaction surface. The composed signer returns
 and provider receipt lookup populates `TransactionReceipt` fields that the SDK
 models: status, block number, block hash, gas used, sender, and recipient.
 
-The first release does **not** ship the capability families below. Each is a
-candidate for additive follow-up under ADR 0008 (additive optional
-ecosystems). The release target for each is opportunity-driven and is not
-committed in this scope statement.
+The first release does **not** ship every helper crate body below. Reserved
+manifests, provenance, and compatibility fixtures are in scope where listed,
+while full ergonomic helper APIs remain additive under ADR 0008.
 
 ### Bridging
 
@@ -147,14 +158,17 @@ API surface stabilises.
 
 ### Composable orders
 
-Composable-CoW order construction. Deferred; not in scope for the first
-release. Implementation depends on `cowprotocol/composable-cow` contract
-maturity.
+Composable-CoW readiness is in scope through the reserved
+`cow-sdk-composable` manifest, deployment evidence, ABI excerpts, selector
+fixtures, handler fixtures, and EIP-1271 signature blob fixtures. Full
+order-construction helpers remain additive.
 
 ### Cow-shed
 
-Delegated proxy account management. Deferred; not in scope for the first
-release. Tracked alongside account abstraction work governed by ADR 0028.
+COW Shed readiness is in scope through the reserved `cow-sdk-cow-shed`
+manifest, deployment evidence, proxy creation-code hash validation,
+CREATE2 address fixtures, hook digest fixtures, and version-call evidence.
+Full delegated proxy account helpers remain additive.
 
 ### Flash loans
 

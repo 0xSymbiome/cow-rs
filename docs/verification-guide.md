@@ -126,6 +126,40 @@ to binary reproducibility for the WebAssembly artifacts.
 
 The `cargo tree --invert alloy-provider` package list, the `cargo audit --deny ... --ignore RUSTSEC-...` ignore-token list, each ignored RustSec rationale entry, and the browser-wallet Playwright install browser set are guarded against their source-of-truth files by `scripts/check-release-docs-agree.sh`.
 
+### Deployment And Capability Evidence
+
+Contract deployment verification is split into addressable registry evidence
+and non-addressable coverage evidence. Registry rows carry one of four
+verification statuses:
+
+- `CodeHashVerified`: an endpoint probe matched committed code-hash evidence
+- `ExternalVerified`: a third-party verifier or explorer attested the bytecode
+- `ReadmeTableUnverified`: the row is sourced from an upstream README table and
+  has not yet been independently probed
+- `CanonicalUnverified`: the row is canonical source evidence, but no committed
+  hash or external attestation is available
+
+Coverage rows carry not-deployed, not-supported, or out-of-scope status and do
+not resolve through `Registry::address`. The review procedure is:
+
+1. Confirm `registry.toml` and `deployment-provenance.yaml` have identical
+   `(contract, chain, environment, address, verification)` rows.
+2. For code-hash rows, probe bytecode with `eth_getCode`, hash the returned
+   code, and compare it to the committed evidence.
+3. For external rows, inspect the named explorer or attestation source and
+   confirm the address, chain, and contract family match.
+4. For canonical-unverified rows, confirm the address comes from the pinned
+   source-lock commit and leave the status unchanged until probe evidence is
+   committed.
+5. For not-deployed coverage, confirm the probe returned empty bytecode.
+6. For unsupported coverage, confirm the chain is outside the Rust runtime
+   support set and is not present in the registry.
+
+COW Shed adds one extra bytecode check: proxy creation-code files under the
+contracts ABI directory carry neighboring SHA-256 files, and `build.rs`
+validates those bytes before fixture-based CREATE2 address derivation is
+trusted.
+
 ### CI Architecture Gates
 
 The workflow layer carries three static architecture gates in addition to the

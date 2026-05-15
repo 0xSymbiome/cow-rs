@@ -19,14 +19,16 @@ cancellation, provider-neutral runtime seams, browser wallet support, opt-in
 native Alloy provider and signer support, and deterministic native and WASM
 examples.
 
-## Next Planned Capabilities
+## In-Flight Account-Abstraction And Composable Capabilities
 
-The next planned capability group focuses on `cow-shed` integration, depending
-on implementation capacity and review scope.
+The current capability group prepares COW Shed and composable-order support.
+The shipped readiness surface includes source pins, deployment provenance,
+schema v2 registry and coverage taxonomy, COW Shed proxy bytecode evidence,
+reserved crate manifests, ABI excerpts, parity fixtures, and audit records.
 
 ## Composable Order Capabilities
 
-The following capability group is planned around two parallel tracks:
+The following capability group continues around two parallel tracks:
 
 - composable orders, including TWAP support
 - an EIP-2612 permit signing wrapper for typed permit calldata and hook

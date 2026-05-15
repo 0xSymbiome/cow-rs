@@ -14,6 +14,11 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- Added schema v2 deployment registry readiness for composable and COW Shed
+  contracts, including separated verification and coverage taxonomies,
+  pinned helper source evidence, reserved leaf crate manifests, and public
+  ADR/audit records for the orchestration and signing boundaries.
+
 - Added a cow-sdk-wasm comparative benchmark validation note at
   `docs/audit/cow-sdk-wasm-comparative-benchmark-validation-note.md`
   documenting the measured package-size, correctness, runtime, and

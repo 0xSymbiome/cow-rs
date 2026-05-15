@@ -51,6 +51,29 @@ The root facade exposes matching features named `alloy-provider`,
 `wasm32-unknown-unknown`; browser integrations should use
 `cow-sdk-browser-wallet`.
 
+## Composable And COW Shed Readiness
+
+The composable-order and COW Shed surfaces are prepared as typed Rust evidence
+before their full helper crate bodies are exposed. The readiness layer improves
+on directly copying TypeScript package behavior in seven concrete ways:
+
+- deployment addresses resolve through one typed schema v2 registry rather than
+  package-local constants
+- not-deployed and unsupported chains live in a coverage manifest instead of
+  being mixed into addressable rows
+- EIP-1271 custom signature production is owned by `cow-sdk-signing`, so trading
+  workflows consume signatures without owning smart-account implementation
+  details
+- Solidity excerpts are committed under the contracts crate and bound through
+  `alloy::sol!`, avoiding hand-written ABI encoders
+- source commits and npm package integrity evidence are pinned together, with
+  public generated documentation treated only as drift signal
+- COW Shed proxy creation-code bytes are hashed at build time before address
+  derivation fixtures are trusted
+- watch-tower behavior is represented as selectors, decoders, and local
+  simulation boundaries; service loops, persistence, notification delivery, and
+  automatic order posting remain outside the SDK
+
 ## The Six Runtime Seams
 
 Import the owning traits from `cow-sdk-core`:

@@ -190,3 +190,15 @@ site carries a `# Panics` rustdoc section on its public function and an inline
 regression contract fails on uncommented additions.
 
 **Anchored by**: [ADR 0033](adr/0033-minimum-viable-panic-surface.md) (primary). Supporting: none.
+
+## Off-Chain Orchestration Boundary
+
+Composable order helpers expose deterministic encoders, decoders, selectors,
+event payloads, and single-call provider operations. They do not embed
+production watcher loops, persistence adapters, notification integrations,
+automatic order posting, or hidden retry schedulers. Long-running orchestration
+belongs to applications and services built on top of the SDK primitives.
+
+**Required**: yes.
+
+**Anchored by**: [ADR 0048](adr/0048-composable-conditional-order-framework.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0050](adr/0050-eip1271-signature-blob-encoding.md).

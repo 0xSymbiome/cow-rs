@@ -83,6 +83,12 @@ flowchart TD
 | `cow-sdk-alloy-provider` | Native Alloy-backed `AsyncProvider` adapter | You need read-only chain RPC through Alloy without a signer dependency. |
 | `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `AsyncSigner` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `AsyncProvider`, `AsyncSigningProvider`, and `AsyncSigner` helper flows. |
+| `cow-sdk-composable` | Reserved manifest for composable-order helpers, with current readiness evidence owned by contracts, signing, docs, and parity fixtures | You need to track the planned composable leaf without pulling an unfinished helper API. |
+| `cow-sdk-cow-shed` | Reserved manifest for COW Shed helpers, with current readiness evidence owned by contracts, signing, docs, and parity fixtures | You need to track the planned account-abstraction leaf without pulling an unfinished helper API. |
+
+The reserved manifests are not workspace members yet and do not expose crate
+bodies. They keep package identity, MSRV, and evidence paths stable while the
+shared registry, ABI, signature, and documentation surfaces remain reviewable.
 
 ## Layering
 
