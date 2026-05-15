@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-05-15T00:00:00Z",
+  "chain_id": 57073,
+  "probes": [
+    {
+      "contract_id": "ComposableCow",
+      "probe": "eth_getCode",
+      "code": "0x",
+      "coverage_status": "not_deployed"
+    },
+    {
+      "contract_id": "CurrentBlockTimestampFactory",
+      "probe": "eth_getCode",
+      "code": "0x",
+      "coverage_status": "not_deployed"
+    },
+    {
+      "contract_id": "ExtensibleFallbackHandler",
+      "probe": "eth_getCode",
+      "code": "0x",
+      "coverage_status": "not_deployed"
+    },
+    {
+      "contract_id": "GoodAfterTimeHandler",
+      "probe": "eth_getCode",
+      "code": "0x",
+      "coverage_status": "not_deployed"
+    },
+    {
+      "contract_id": "PerpetualStableSwapHandler",
+      "probe": "eth_getCode",
+      "code": "0x",
+      "coverage_status": "not_deployed"
+    },
+    {
+      "contract_id": "StopLossHandler",
+      "probe": "eth_getCode",
+      "code": "0x",
+      "coverage_status": "not_deployed"
+    },
+    {
+      "contract_id": "TradeAboveThresholdHandler",
+      "probe": "eth_getCode",
+      "code": "0x",
+      "coverage_status": "not_deployed"
+    },
+    {
+      "contract_id": "TwapHandler",
+      "probe": "eth_getCode",
+      "code": "0x",
+      "coverage_status": "not_deployed"
+    }
+  ]
+}

@@ -1,13 +1,15 @@
 meta:
   schema_version: 3
-  generated_at_utc: 2026-04-29T00:00:00Z
-  purpose: pinned upstream source contract for committed parity fixtures
+  generated_at_utc: 2026-05-15T00:00:00Z
+  purpose: pinned upstream source contract for committed parity fixtures (extended with composable and COW Shed helper sources)
 repositories:
 - id: cow-sdk
   remote: https://github.com/cowprotocol/cow-sdk.git
   commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d
   role: primary
   optional_local_path: <cow-sdk-checkout>
+  pinned_at: 2026-05-15T00:00:00Z
+  pinned_by: cow-rs maintainers
   producer_paths:
   - packages/common/src/adapters/AbstractSigner.ts
   - packages/common/src/adapters/AbstractProviderAdapter.ts
@@ -123,11 +125,16 @@ repositories:
   - packages/sdk/src/typedoc-entry.ts
   - packages/sdk/package.json
   - packages/sdk/README.md
+  - packages/cow-shed/src/const.ts
+  - packages/cow-shed/src/CowShedSdk.ts
+  - packages/config/src/chains/const/contracts.ts
 - id: contracts
   remote: https://github.com/cowprotocol/contracts.git
   commit: c94c595a791681cf8ba7495117dcde397b932885
   role: primary
   optional_local_path: <contracts-checkout>
+  pinned_at: 2026-05-15T00:00:00Z
+  pinned_by: cow-rs maintainers
   producer_paths:
   - src/ts/order.ts
   - src/ts/sign.ts
@@ -147,6 +154,8 @@ repositories:
   commit: 0720b9bc15138ecc362078f505d0e3ba1c7b9883
   role: reference-only
   optional_local_path: <services-checkout>
+  pinned_at: 2026-05-15T00:00:00Z
+  pinned_by: cow-rs maintainers
   producer_paths:
   - crates/orderbook/openapi.yml
   - crates/shared/src/order_validation.rs
@@ -156,6 +165,8 @@ repositories:
   commit: f3fe4cfff0553e9e234a53208bb69b7c222c66e5
   role: dependency
   optional_local_path: <alloy-checkout>
+  pinned_at: 2026-05-15T00:00:00Z
+  pinned_by: cow-rs maintainers
   producer_paths:
   - Cargo.toml
   - crates/consensus/src/lib.rs
@@ -172,6 +183,8 @@ repositories:
   commit: e6b30e4c2407cd1d2ea93e79f2768e5a4f21d266
   role: dependency
   optional_local_path: <alloy-core-checkout>
+  pinned_at: 2026-05-15T00:00:00Z
+  pinned_by: cow-rs maintainers
   producer_paths:
   - Cargo.toml
   - crates/dyn-abi/src/lib.rs
@@ -179,6 +192,54 @@ repositories:
   - crates/primitives/src/lib.rs
   - crates/sol-macro/src/lib.rs
   - crates/sol-types/src/lib.rs
+- id: composable-cow
+  remote: https://github.com/cowprotocol/composable-cow.git
+  commit: 471ca59aa95da1bbf3b03e002de96449bc78e6f0
+  role: primary
+  optional_local_path: <composable-cow-checkout>
+  pinned_at: 2026-05-15T00:00:00Z
+  pinned_by: cow-rs maintainers
+  producer_paths:
+  - networks.json
+  - src/ComposableCoW.sol
+  - src/BaseConditionalOrder.sol
+  - src/types/twap/TWAP.sol
+  - src/types/GoodAfterTime.sol
+  - src/types/StopLoss.sol
+  - src/types/TradeAboveThreshold.sol
+  - src/types/PerpetualStableSwap.sol
+  - src/interfaces/IConditionalOrder.sol
+  - src/interfaces/ISwapGuard.sol
+  - src/interfaces/IValueFactory.sol
+- id: cow-shed
+  remote: https://github.com/cowdao-grants/cow-shed.git
+  commit: 9e01a88e0010314ee1e4c1a822105897a87d3bda
+  role: primary
+  optional_local_path: <cow-shed-checkout>
+  pinned_at: 2026-05-15T00:00:00Z
+  pinned_by: cow-rs maintainers
+  producer_paths:
+  - networks.json
+  - src/COWShed.sol
+  - src/COWShedFactory.sol
+  - src/COWShedForComposableCoW.sol
+  - src/COWShedProxy.sol
+  - src/COWShedStorage.sol
+  - src/ERC1271Forwarder.sol
+  - src/interfaces/ICOWAuthHook.sol
+  - src/interfaces/IERC1271.sol
+  - src/LibAuthenticatedHooks.sol
+- id: watch-tower
+  remote: https://github.com/cowprotocol/watch-tower.git
+  commit: 61eeaec55949337a42e66cb9d2439f400dd4e67a
+  role: reference-only
+  optional_local_path: <watch-tower-checkout>
+  pinned_at: 2026-05-15T00:00:00Z
+  pinned_by: cow-rs maintainers
+  producer_paths:
+  - README.md
+  - src/utils/orderBookApi.ts
+  - src/types/index.ts
 fixtures:
 - surface: core
   file: parity/fixtures/core.json
@@ -520,6 +581,13 @@ validation:
   pinned_upstream_provenance_contract:
   - cargo parity-provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
   - cargo parity-validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
+  - cargo run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-producer-paths --source-lock parity/source-lock.yaml
+  - cargo run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-npm-evidence --artifact parity/source-lock/npm-package-evidence.json
+  - cargo run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-enum-policy
+  - cargo run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-principle-adr-map --version 2
   maintainer_refresh_contract:
   - cargo parity-snapshot --output parity/source-lock.yaml --cow-sdk-root <path> --contracts-root <path> --services-root <path>
   - cargo parity-vendor-app-data-schemas --source-lock parity/source-lock.yaml --cow-sdk-root <path>
+  - cargo strategy-doc-lint
+  - cargo url-provenance-check
+  - cargo audit-refresh check

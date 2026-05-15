@@ -15,6 +15,8 @@
       "targets": ["web", "bundler", "nodejs"],
       "rawBudgetMiB": 3.0,
       "brotliBudgetKiB": 800,
+      "gzipFailBytes": 970000,
+      "gzipWarnBytes": 870000,
       "subpath": "."
     },
     {
@@ -28,6 +30,8 @@
       "targets": ["web", "bundler", "nodejs"],
       "rawBudgetMiB": 1.5,
       "brotliBudgetKiB": 500,
+      "gzipFailBytes": 610000,
+      "gzipWarnBytes": 540000,
       "subpath": "./orderbook"
     },
     {
@@ -36,6 +40,8 @@
       "targets": ["web", "bundler", "nodejs"],
       "rawBudgetMiB": 0.9,
       "brotliBudgetKiB": 300,
+      "gzipFailBytes": 370000,
+      "gzipWarnBytes": 320000,
       "subpath": "./signing"
     },
     {
@@ -53,6 +59,8 @@
       "targets": ["web", "bundler", "nodejs"],
       "rawBudgetMiB": 3.0,
       "brotliBudgetKiB": 1000,
+      "gzipFailBytes": 1220000,
+      "gzipWarnBytes": 1100000,
       "subpath": "./full"
     },
     {

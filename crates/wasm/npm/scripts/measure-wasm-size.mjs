@@ -7,6 +7,7 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(scriptDir, "..");
 const descriptor = JSON.parse(readFileSync(join(packageRoot, "flavours.json"), "utf8"));
 const softWarn = process.argv.includes("--soft-warn");
+const verifyPerFlavor = process.argv.includes("--verify-per-flavor");
 const warningRatio = 0.95;
 let failed = false;
 
@@ -65,9 +66,37 @@ function resolveGzipBudget(flavour) {
 }
 
 for (const flavour of descriptor.flavours) {
+  if (verifyPerFlavor && (!Array.isArray(flavour.targets) || flavour.targets.length === 0)) {
+    console.error(`::error::${flavour.name} does not declare any wasm targets`);
+    failed = true;
+    continue;
+  }
+
   const rawBudget = bytesFromMiB(flavour.rawBudgetMiB);
   const brotliBudget = bytesFromKiB(flavour.brotliBudgetKiB);
   const gzipBudget = resolveGzipBudget(flavour);
+
+  if (verifyPerFlavor) {
+    // Per-flavor three-metric posture: raw + brotli + gzip caps must all be
+    // declared so the gate enforces simultaneous limits across the metrics
+    // that downstream platforms actually charge for. Missing a gzip cap means
+    // the flavor would silently pass at gzip-compressed sizes that exceed
+    // platform limits.
+    if (typeof flavour.rawBudgetMiB !== "number") {
+      console.error(`::error::${flavour.name} is missing rawBudgetMiB`);
+      failed = true;
+    }
+    if (typeof flavour.brotliBudgetKiB !== "number") {
+      console.error(`::error::${flavour.name} is missing brotliBudgetKiB`);
+      failed = true;
+    }
+    if (gzipBudget === null) {
+      console.error(
+        `::error::${flavour.name} is missing a gzip budget (gzipFailBytes or gzipBudgetMiB) — per-flavor three-metric verification requires raw + brotli + gzip caps`
+      );
+      failed = true;
+    }
+  }
 
   for (const target of flavour.targets) {
     const wasmPath = join(
@@ -113,6 +142,14 @@ for (const flavour of descriptor.flavours) {
         flavour: flavour.name,
         target
       });
+    } else if (verifyPerFlavor) {
+      // The per-flavor verifier already reported the missing gzip budget at the
+      // top of the loop, but we surface the per-target context here too so the
+      // CI summary lists every (flavor, target) pair that lacks the cap.
+      console.error(
+        `::error::${flavour.name}/${target} gzip size ${formatBytes(gzipBytes)} cannot be checked because no gzip budget is declared`
+      );
+      failed = true;
     }
   }
 }
