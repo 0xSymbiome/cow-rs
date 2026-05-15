@@ -502,10 +502,9 @@ fn validate_inventory_fields(
         let expected_types = expected_rust_types(inventory_field);
         if !expected_types.is_empty() {
             let rust_type = comparable_type(&rust_field.ty);
-            if !rust_type
-                .as_deref()
-                .is_some_and(|rust_type| expected_types.iter().any(|expected| expected == rust_type))
-            {
+            if !rust_type.as_deref().is_some_and(|rust_type| {
+                expected_types.iter().any(|expected| expected == rust_type)
+            }) {
                 diagnostics.push(Diagnostic {
                     schema: entry.schema.clone(),
                     rust_type: entry.rust_type.clone(),

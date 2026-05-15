@@ -1,13 +1,42 @@
-version: 1
-audits:
+version: 2
+entries:
   - audit: docs/audit/source-lock-provenance-audit.md
-    owning_surface: source-lock provenance and lifecycle preflight authority
+    owning_surface: source-lock provenance
     refresh_triggers:
       paths:
         - parity/source-lock.yaml
-      policies:
-        - lifecycle-preflight-exclusion-policy
       upstreams:
         - https://github.com/cowprotocol/cow-sdk
-        - https://github.com/cowprotocol/contracts
-        - https://github.com/cowprotocol/services
+        - https://github.com/cowprotocol/composable-cow
+        - https://github.com/cowdao-grants/cow-shed
+        - https://github.com/cowprotocol/watch-tower
+  - audit: docs/audit/composable-contract-bindings-audit.md
+    owning_surface: composable contract binding evidence
+    refresh_triggers:
+      paths:
+        - crates/contracts/abi/composable-cow
+        - crates/contracts/registry.toml
+  - audit: docs/audit/composable-watch-tower-boundary-audit.md
+    owning_surface: composable orchestration boundary
+    refresh_triggers:
+      paths:
+        - crates/composable/Cargo.toml
+        - docs/adr/0048-composable-conditional-order-framework.md
+  - audit: docs/audit/cow-shed-contract-bindings-audit.md
+    owning_surface: COW Shed contract binding evidence
+    refresh_triggers:
+      paths:
+        - crates/contracts/abi/cow-shed
+        - parity/cow-shed-invariants.md
+  - audit: docs/audit/cow-shed-app-data-integration-audit.md
+    owning_surface: COW Shed app-data integration
+    refresh_triggers:
+      paths:
+        - crates/cow-shed/Cargo.toml
+        - docs/adr/0049-cow-shed-account-abstraction-proxy.md
+  - audit: docs/audit/lens-chain-evidence-audit.md
+    owning_surface: deployment chain taxonomy
+    refresh_triggers:
+      paths:
+        - crates/contracts/src/deployments/chain_id.rs
+        - crates/contracts/registry.toml

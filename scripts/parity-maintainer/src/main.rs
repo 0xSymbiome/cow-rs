@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
     process::Command,
@@ -9,9 +9,15 @@ use anyhow::{Context, Result, bail};
 use clap::{Args, Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 
+mod audit_refresh;
 mod check_freshness;
+mod composable_fixtures;
+mod cow_shed_fixtures;
 mod diff_upstreams;
 mod openapi_coverage;
+mod stale_phrase_catalog;
+mod stale_phrase_lint;
+mod url_provenance;
 mod vendor_openapi;
 
 const GENERATED_AT_UTC: &str = "2026-04-29T00:00:00Z";
@@ -143,6 +149,9 @@ const COW_SDK_PATHS: &[&str] = &[
     "packages/sdk/src/typedoc-entry.ts",
     "packages/sdk/package.json",
     "packages/sdk/README.md",
+    "packages/cow-shed/src/const.ts",
+    "packages/cow-shed/src/CowShedSdk.ts",
+    "packages/config/src/chains/const/contracts.ts",
 ];
 
 const CONTRACTS_PATHS: &[&str] = &[
@@ -187,6 +196,81 @@ const ALLOY_CORE_PATHS: &[&str] = &[
     "crates/primitives/src/lib.rs",
     "crates/sol-macro/src/lib.rs",
     "crates/sol-types/src/lib.rs",
+];
+
+const COMPOSABLE_COW_PATHS: &[&str] = &[
+    "networks.json",
+    "src/ComposableCoW.sol",
+    "src/BaseConditionalOrder.sol",
+    "src/types/twap/TWAP.sol",
+    "src/types/GoodAfterTime.sol",
+    "src/types/StopLoss.sol",
+    "src/types/TradeAboveThreshold.sol",
+    "src/types/PerpetualStableSwap.sol",
+    "src/interfaces/IConditionalOrder.sol",
+    "src/interfaces/ISwapGuard.sol",
+    "src/interfaces/IValueFactory.sol",
+];
+const COW_SHED_PATHS: &[&str] = &[
+    "networks.json",
+    "src/COWShed.sol",
+    "src/COWShedFactory.sol",
+    "src/COWShedForComposableCoW.sol",
+    "src/COWShedProxy.sol",
+    "src/COWShedStorage.sol",
+    "src/ERC1271Forwarder.sol",
+    "src/interfaces/ICOWAuthHook.sol",
+    "src/interfaces/IERC1271.sol",
+    "src/LibAuthenticatedHooks.sol",
+];
+const WATCH_TOWER_PATHS: &[&str] = &[
+    "README.md",
+    "src/utils/orderBookApi.ts",
+    "src/types/index.ts",
+];
+const HELPER_REPO_TEMPLATES: &[RepoTemplate] = &[
+    RepoTemplate {
+        id: "cow-sdk",
+        remote: "https://github.com/cowprotocol/cow-sdk.git",
+        role: "primary",
+        local_hint: "<cow-sdk-checkout>",
+        producer_paths: COW_SDK_PATHS,
+    },
+    RepoTemplate {
+        id: "contracts",
+        remote: "https://github.com/cowprotocol/contracts.git",
+        role: "primary",
+        local_hint: "<contracts-checkout>",
+        producer_paths: CONTRACTS_PATHS,
+    },
+    RepoTemplate {
+        id: "services",
+        remote: "https://github.com/cowprotocol/services.git",
+        role: "reference-only",
+        local_hint: "<services-checkout>",
+        producer_paths: SERVICES_PATHS,
+    },
+    RepoTemplate {
+        id: "composable-cow",
+        remote: "https://github.com/cowprotocol/composable-cow.git",
+        role: "primary",
+        local_hint: "<composable-cow-checkout>",
+        producer_paths: COMPOSABLE_COW_PATHS,
+    },
+    RepoTemplate {
+        id: "cow-shed",
+        remote: "https://github.com/cowdao-grants/cow-shed.git",
+        role: "primary",
+        local_hint: "<cow-shed-checkout>",
+        producer_paths: COW_SHED_PATHS,
+    },
+    RepoTemplate {
+        id: "watch-tower",
+        remote: "https://github.com/cowprotocol/watch-tower.git",
+        role: "reference-only",
+        local_hint: "<watch-tower-checkout>",
+        producer_paths: WATCH_TOWER_PATHS,
+    },
 ];
 
 fn repo_local_publication_contract() -> Vec<String> {
@@ -272,6 +356,10 @@ struct RepositoryEntry {
     role: String,
     optional_local_path: String,
     producer_paths: Vec<String>,
+    #[serde(default)]
+    pinned_at: Option<String>,
+    #[serde(default)]
+    pinned_by: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -330,6 +418,25 @@ enum Commands {
     DiffUpstreams(diff_upstreams::DiffUpstreamsArgs),
     /// Report source-lock freshness against current GitHub upstream HEADs.
     CheckFreshness(check_freshness::CheckFreshnessArgs),
+    /// Validate producer paths declared by the source lock.
+    ValidateProducerPaths(ValidateArgs),
+    /// Validate pinned npm package evidence.
+    ValidateNpmEvidence(NpmEvidenceArgs),
+    /// Validate enum policy entries required by the public API.
+    ValidateEnumPolicy(EnumPolicyArgs),
+    /// Validate principle-to-ADR mapping.
+    ValidatePrincipleAdrMap(PrincipleAdrMapArgs),
+    /// Validate dependency boundary constraints.
+    CheckDeps(CheckDepsArgs),
+    /// Lint strategy-facing public documents.
+    StrategyDocLint(StrategyDocLintArgs),
+    /// Validate URL provenance does not carry credentials.
+    UrlProvenanceCheck(UrlProvenanceArgs),
+    /// Validate audit refresh metadata.
+    AuditRefresh(AuditRefreshArgs),
+    /// Validate that every catalogued composable and COW Shed parity fixture
+    /// file is present on disk under the supplied repository root.
+    ValidateFixtureCatalog(ValidateFixtureCatalogArgs),
 }
 
 #[derive(Debug, Args)]
@@ -378,6 +485,70 @@ struct VendorAppDataSchemasArgs {
     cow_sdk_root: PathBuf,
 }
 
+#[derive(Debug, Args)]
+struct NpmEvidenceArgs {
+    #[arg(long, alias = "artifact", default_value = "parity/npm-evidence.yaml")]
+    evidence: PathBuf,
+}
+
+#[derive(Debug, Args)]
+struct EnumPolicyArgs {
+    #[arg(long, default_value = ".github/config/enum-policy.yaml")]
+    policy: PathBuf,
+}
+
+#[derive(Debug, Args)]
+struct PrincipleAdrMapArgs {
+    #[arg(long, default_value = ".github/config/principle-adr-map.yaml")]
+    map: PathBuf,
+    #[arg(long, default_value_t = 2)]
+    version: u32,
+    #[arg(long)]
+    principle: Option<u32>,
+    #[arg(long)]
+    required: bool,
+}
+
+#[derive(Debug, Args)]
+struct CheckDepsArgs {
+    #[arg(long = "negative-edge")]
+    negative_edges: Vec<String>,
+}
+
+#[derive(Debug, Args)]
+struct StrategyDocLintArgs {
+    #[arg(long, default_value = "docs")]
+    root: PathBuf,
+}
+
+#[derive(Debug, Args)]
+struct UrlProvenanceArgs {
+    #[arg(long, default_value = "parity/source-lock.yaml")]
+    source_lock: PathBuf,
+}
+
+#[derive(Debug, Args)]
+struct AuditRefreshArgs {
+    #[command(subcommand)]
+    command: AuditRefreshCommand,
+}
+
+#[derive(Debug, Args)]
+struct ValidateFixtureCatalogArgs {
+    /// Repository root that contains `parity/fixtures/...` on disk.
+    #[arg(long, default_value = ".")]
+    root: PathBuf,
+}
+
+#[derive(Debug, Subcommand)]
+enum AuditRefreshCommand {
+    /// Validate audit refresh map metadata.
+    Check {
+        #[arg(long, default_value = ".github/config/audit-refresh-map.yml")]
+        map: PathBuf,
+    },
+}
+
 fn main() -> Result<()> {
     match Cli::parse().command {
         Commands::Snapshot(args) => snapshot(&CliOptions {
@@ -416,7 +587,218 @@ fn main() -> Result<()> {
         Commands::OpenapiCoverage(args) => openapi_coverage::run(args),
         Commands::DiffUpstreams(args) => diff_upstreams::run(args),
         Commands::CheckFreshness(args) => check_freshness::run(args),
+        Commands::ValidateProducerPaths(args) => validate(&CliOptions {
+            source_lock: args.source.source_lock,
+            output: PathBuf::from(DEFAULT_SOURCE_LOCK),
+            output_root: None,
+            cow_sdk_root: args.cow_sdk_root,
+            contracts_root: args.contracts_root,
+            services_root: args.services_root,
+        }),
+        Commands::ValidateNpmEvidence(args) => validate_npm_evidence(&args.evidence),
+        Commands::ValidateEnumPolicy(args) => validate_enum_policy(&args.policy),
+        Commands::ValidatePrincipleAdrMap(args) => {
+            validate_principle_adr_map(&args.map, args.version, args.principle, args.required)
+        }
+        Commands::CheckDeps(args) => check_dependency_edges(&args.negative_edges),
+        Commands::StrategyDocLint(args) => stale_phrase_lint::run(&args.root),
+        Commands::UrlProvenanceCheck(args) => url_provenance::run(&args.source_lock),
+        Commands::AuditRefresh(args) => match args.command {
+            AuditRefreshCommand::Check { map } => audit_refresh::run(&map),
+        },
+        Commands::ValidateFixtureCatalog(args) => {
+            let cow_shed_count = cow_shed_fixtures::validate_catalog_files_exist(&args.root)?;
+            let composable_count = composable_fixtures::validate_catalog_files_exist(&args.root)?;
+            println!(
+                "validated {cow_shed_count} COW Shed fixtures and {composable_count} composable fixtures"
+            );
+            Ok(())
+        }
     }
+}
+
+fn validate_npm_evidence(path: &Path) -> Result<()> {
+    let raw = fs::read_to_string(path)
+        .with_context(|| format!("failed to read npm evidence {}", path.display()))?;
+    let manifest: NpmEvidenceManifest =
+        serde_yaml::from_str(&raw).context("failed to parse npm evidence")?;
+    if manifest.schema_version != 1 {
+        bail!("expected npm evidence schema_version 1");
+    }
+
+    let expected = BTreeMap::from([
+        (
+            "@cowprotocol/sdk-config@2.0.0",
+            (
+                "sha512-ZeND/fzuzQShpVqOoJ3LbU0DoeKIb2SH2iANumX5LN7R/H495jIfExsb67JANqnrpupJtbUUw1FxfBchN5MVoQ==",
+                "6b8682ee494f0c731c84d1f62a8c75d6a8d9a9cc",
+            ),
+        ),
+        (
+            "@cowprotocol/sdk-composable@1.0.1",
+            (
+                "sha512-L70RJNStoSmmma2+lIjSf5hdePqql+jTs497P9CmW5YaErcSwDXTPqgKEsfknYU8g9n5dpVmKPn7BIbLuFXJ+w==",
+                "87f08e7c9da385e918a0a771bf6250390fb083dc",
+            ),
+        ),
+        (
+            "@cowprotocol/sdk-cow-shed@0.3.8",
+            (
+                "sha512-2tZ8a+vueZP4WArETUmxv4Jq5uivNOlx8X/VAtO4Uxhtit4UjhRpDMAxNuDhWyLyNb+t2BoVXWLZVybHJ6M35g==",
+                "0d7dfa28c262fbf67445ca010db7bb3ed2a637b0",
+            ),
+        ),
+    ]);
+    let actual = manifest
+        .packages
+        .iter()
+        .map(|row| {
+            (
+                format!("{}@{}", row.name, row.version),
+                (row.integrity.as_str(), row.shasum.as_str()),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+
+    if actual.len() != expected.len() {
+        bail!("npm evidence must contain exactly {} rows", expected.len());
+    }
+    for (key, (integrity, shasum)) in expected {
+        let Some(actual_row) = actual.get(key) else {
+            bail!("missing npm evidence row {key}");
+        };
+        if actual_row != &(integrity, shasum) {
+            bail!("npm evidence row {key} does not match the pinned integrity and shasum");
+        }
+    }
+    println!("validated npm package evidence");
+    Ok(())
+}
+
+fn validate_enum_policy(path: &Path) -> Result<()> {
+    let raw = fs::read_to_string(path)
+        .with_context(|| format!("failed to read enum policy {}", path.display()))?;
+    let manifest: EnumPolicyManifest =
+        serde_yaml::from_str(&raw).context("failed to parse enum policy")?;
+    if manifest.version != 1 {
+        bail!("expected enum policy version 1");
+    }
+    let required = [
+        "DeploymentChainId",
+        "DeploymentEnv",
+        "DeploymentVerificationStatus",
+        "DeploymentCoverageStatus",
+        "Eip1271SignatureError",
+        "ContractId",
+        "RegistryError",
+        // Planned enums reserved for the composable and COW Shed helper crate
+        // body landings. The file and line fields point at the planned locations
+        // and the `planned: true` field flags that the source-of-truth Rust
+        // definition lands in a later capability landing.
+        "CowShedVersion",
+        "CowShedError",
+        "ComposableError",
+        "PollResult",
+        "TwapStatus",
+        "OwnerKind",
+        "HookPosition",
+        "Nonce",
+        "Deadline",
+    ];
+    let names = manifest
+        .enums
+        .iter()
+        .map(|entry| entry.name.as_str())
+        .collect::<BTreeSet<_>>();
+    for name in required {
+        if !names.contains(name) {
+            bail!("enum policy missing {name}");
+        }
+    }
+    println!("validated enum policy");
+    Ok(())
+}
+
+fn validate_principle_adr_map(
+    path: &Path,
+    version: u32,
+    principle: Option<u32>,
+    required: bool,
+) -> Result<()> {
+    let raw = fs::read_to_string(path)
+        .with_context(|| format!("failed to read principle map {}", path.display()))?;
+    let manifest: PrincipleAdrManifest =
+        serde_yaml::from_str(&raw).context("failed to parse principle ADR map")?;
+    if manifest.version != version {
+        bail!("expected principle ADR map version {version}");
+    }
+    if let Some(principle_id) = principle {
+        let present = manifest
+            .principles
+            .iter()
+            .any(|entry| entry.id == principle_id && !entry.primary_adr.trim().is_empty());
+        if required && !present {
+            bail!("required principle {principle_id} is missing from ADR map");
+        }
+    }
+    println!("validated principle ADR map");
+    Ok(())
+}
+
+fn check_dependency_edges(negative_edges: &[String]) -> Result<()> {
+    for edge in negative_edges {
+        let Some((from, to)) = edge.split_once(':') else {
+            bail!("negative edge `{edge}` must use from:to format");
+        };
+        let manifest = Path::new("crates").join(from).join("Cargo.toml");
+        if !manifest.exists() {
+            continue;
+        }
+        let raw = fs::read_to_string(&manifest)
+            .with_context(|| format!("failed to read {}", manifest.display()))?;
+        if raw.contains(&format!("cow-sdk-{to}")) || raw.contains(&format!("../{to}")) {
+            bail!("forbidden dependency edge {from}:{to} is present");
+        }
+    }
+    println!("validated dependency edge policy");
+    Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+struct NpmEvidenceManifest {
+    schema_version: u32,
+    packages: Vec<NpmEvidenceRow>,
+}
+
+#[derive(Debug, Deserialize)]
+struct NpmEvidenceRow {
+    name: String,
+    version: String,
+    integrity: String,
+    shasum: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct EnumPolicyManifest {
+    version: u32,
+    enums: Vec<EnumPolicyRow>,
+}
+
+#[derive(Debug, Deserialize)]
+struct EnumPolicyRow {
+    name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct PrincipleAdrManifest {
+    version: u32,
+    principles: Vec<PrincipleAdrRow>,
+}
+
+#[derive(Debug, Deserialize)]
+struct PrincipleAdrRow {
+    id: u32,
+    primary_adr: String,
 }
 
 fn snapshot(options: &CliOptions) -> Result<()> {
@@ -548,7 +930,18 @@ fn validate(options: &CliOptions) -> Result<()> {
         bail!("expected source-lock schema_version 3");
     }
 
-    let expected_templates: BTreeMap<&str, RepoTemplate> = REPO_TEMPLATES
+    let helper_mode = lock.repositories.iter().any(|repo| {
+        matches!(
+            repo.id.as_str(),
+            "composable-cow" | "cow-shed" | "watch-tower"
+        )
+    });
+    let expected_source = if helper_mode {
+        HELPER_REPO_TEMPLATES
+    } else {
+        REPO_TEMPLATES
+    };
+    let expected_templates: BTreeMap<&str, RepoTemplate> = expected_source
         .iter()
         .map(|template| (template.id, *template))
         .collect();
@@ -572,6 +965,9 @@ fn validate(options: &CliOptions) -> Result<()> {
             .with_context(|| format!("missing repository entry for {id}"))?;
 
         validate_repository_entry_template(id, repo, template)?;
+        if helper_mode && (repo.pinned_at.is_none() || repo.pinned_by.is_none()) {
+            bail!("repository {id} must carry pinned_at and pinned_by metadata");
+        }
     }
 
     for (id, repo) in &actual_repos {
@@ -1025,7 +1421,7 @@ fn ensure_matching_file_trees(
     Ok(source_count)
 }
 
-fn collect_relative_files(root: &Path) -> Result<BTreeMap<String, PathBuf>> {
+pub(crate) fn collect_relative_files(root: &Path) -> Result<BTreeMap<String, PathBuf>> {
     let canonical_root = fs::canonicalize(root)
         .with_context(|| format!("failed to canonicalize {}", root.display()))?;
     let mut files = BTreeMap::new();
@@ -1082,6 +1478,8 @@ fn build_repository_entry(template: RepoTemplate, root: &Path) -> Result<Reposit
             .iter()
             .map(|path| (*path).to_string())
             .collect(),
+        pinned_at: None,
+        pinned_by: None,
     })
 }
 
@@ -1857,6 +2255,8 @@ mod tests {
                 .iter()
                 .map(|path| (*path).to_string())
                 .collect(),
+            pinned_at: None,
+            pinned_by: None,
         }
     }
 
@@ -2031,7 +2431,9 @@ mod tests {
         assert!(
             contract.iter().any(|command| {
                 command.starts_with("cargo package -p cow-sdk-trading ")
-                    && command.contains("patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'")
+                    && command.contains(
+                        "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'",
+                    )
             }),
             "trading package command must patch transport-wasm until the family is published"
         );

@@ -123,6 +123,9 @@ repositories:
   - packages/sdk/src/typedoc-entry.ts
   - packages/sdk/package.json
   - packages/sdk/README.md
+  - packages/cow-shed/src/const.ts
+  - packages/cow-shed/src/CowShedSdk.ts
+  - packages/config/src/chains/const/contracts.ts
 - id: contracts
   remote: https://github.com/cowprotocol/contracts.git
   commit: c94c595a791681cf8ba7495117dcde397b932885
