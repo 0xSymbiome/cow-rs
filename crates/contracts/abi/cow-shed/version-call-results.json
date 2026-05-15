@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "default_version": "1.0.1",
+  "expected_sdk_version": "CowShedVersion::V1_0_1",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
+      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
+      "proxy_creation_code_sha256": "a5ae2032f88cc54e55962a8093b5049d2ddbd639d569979e6246f04d4513485b"
+    },
+    {
+      "version": "1.0.1",
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "proxy_creation_code_sha256": "2e139e8e1fdd46c4bdedb07adbdc698153d7e79a63bfa765c7f2033a2b5dc842"
+    }
+  ],
+  "version_calls": [
+    {
+      "chain_id": 1,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1",
+      "expected_sdk_version": "CowShedVersion::V1_0_1"
+    },
+    {
+      "chain_id": 56,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1",
+      "expected_sdk_version": "CowShedVersion::V1_0_1"
+    },
+    {
+      "chain_id": 100,
+      "factory": "0x4f4350bf2c74aacd508d598a1ba94ef84378793d",
+      "implementation": "0x62d3a7ff48f9ae1c28a9552a055482f8c63787f8",
+      "decoded_version": "1.0.1",
+      "expected_sdk_version": "CowShedVersion::V1_0_1"
+    },
+    {
+      "chain_id": 137,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1",
+      "expected_sdk_version": "CowShedVersion::V1_0_1"
+    },
+    {
+      "chain_id": 232,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1",
+      "expected_sdk_version": "CowShedVersion::V1_0_1"
+    },
+    {
+      "chain_id": 8453,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1",
+      "expected_sdk_version": "CowShedVersion::V1_0_1"
+    },
+    {
+      "chain_id": 9745,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1",
+      "expected_sdk_version": "CowShedVersion::V1_0_1"
+    },
+    {
+      "chain_id": 42161,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1",
+      "expected_sdk_version": "CowShedVersion::V1_0_1"
+    },
+    {
+      "chain_id": 43114,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1",
+      "expected_sdk_version": "CowShedVersion::V1_0_1"
+    },
+    {
+      "chain_id": 59144,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1",
+      "expected_sdk_version": "CowShedVersion::V1_0_1"
+    },
+    {
+      "chain_id": 11155111,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1",
+      "expected_sdk_version": "CowShedVersion::V1_0_1"
+    }
+  ],
+  "vectors": [
+    {
+      "version": "1.0.1",
+      "user": "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58",
+      "proxy": "0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04"
+    }
+  ],
+  "eip712_type_strings": {
+    "Call": "Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)",
+    "ExecuteHooks": "ExecuteHooks(Call[] calls,bytes32 nonce,uint256 deadline)Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)"
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "rows": [
+    {
+      "chain_id": 1,
+      "version": "1.0.1",
+      "proxy": "0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04",
+      "domain_separator": "0x348ef3cb099421de4ecc01f3436bdb794ef5e4c9e036ce3ccaabd0b7a9bc80ad",
+      "call_type_hash": "0x3fad4ba9aae5ad2d96a46400ed3ee818b640829b240f127d0d98b9430f2aa136",
+      "execute_hooks_type_hash": "0x0da4f06c268cfd5c18a3ea3b26fc8357dd240b89ea101e6b7f7591f029707394",
+      "message": {
+        "calls": [
+          {
+            "target": "0x1111111111111111111111111111111111111111",
+            "value": "0",
+            "callData": "0x12345678",
+            "allowFailure": false,
+            "isDelegateCall": false
+          },
+          {
+            "target": "0x2222222222222222222222222222222222222222",
+            "value": "1",
+            "callData": "0xabcdef",
+            "allowFailure": true,
+            "isDelegateCall": true
+          }
+        ],
+        "nonce": "0x0101010101010101010101010101010101010101010101010101010101010101",
+        "deadline": "1893456000"
+      },
+      "digest": "0xe489e6d7ce9431d0131bb4bf6a5b2919ad6e8da96b6130ff3a93f3bc806eb952"
+    },
+    {
+      "chain_id": 100,
+      "version": "1.0.1",
+      "proxy": "0x597474b9AffD64c545d68EDA005B437fd3C00DD8",
+      "domain_separator": "0xf3208a56ad1f8133e0e196ff03e2704b712d34ff6dc1a04a05107dc79c0f081d",
+      "call_type_hash": "0x3fad4ba9aae5ad2d96a46400ed3ee818b640829b240f127d0d98b9430f2aa136",
+      "execute_hooks_type_hash": "0x0da4f06c268cfd5c18a3ea3b26fc8357dd240b89ea101e6b7f7591f029707394",
+      "message": {
+        "calls": [
+          {
+            "target": "0x1111111111111111111111111111111111111111",
+            "value": "0",
+            "callData": "0x12345678",
+            "allowFailure": false,
+            "isDelegateCall": false
+          },
+          {
+            "target": "0x2222222222222222222222222222222222222222",
+            "value": "1",
+            "callData": "0xabcdef",
+            "allowFailure": true,
+            "isDelegateCall": true
+          }
+        ],
+        "nonce": "0x0101010101010101010101010101010101010101010101010101010101010101",
+        "deadline": "1893456000"
+      },
+      "digest": "0x8334f360ab7364497b2a10d99ea09e125e46c096c23606cae6ace4afaa688865"
+    },
+    {
+      "chain_id": 42161,
+      "version": "1.0.1",
+      "proxy": "0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04",
+      "domain_separator": "0xb89bdf90bf9c36369e6eb41d31eee2c80a49442d49bf020abc47fd964d3b1446",
+      "call_type_hash": "0x3fad4ba9aae5ad2d96a46400ed3ee818b640829b240f127d0d98b9430f2aa136",
+      "execute_hooks_type_hash": "0x0da4f06c268cfd5c18a3ea3b26fc8357dd240b89ea101e6b7f7591f029707394",
+      "message": {
+        "calls": [
+          {
+            "target": "0x1111111111111111111111111111111111111111",
+            "value": "0",
+            "callData": "0x12345678",
+            "allowFailure": false,
+            "isDelegateCall": false
+          },
+          {
+            "target": "0x2222222222222222222222222222222222222222",
+            "value": "1",
+            "callData": "0xabcdef",
+            "allowFailure": true,
+            "isDelegateCall": true
+          }
+        ],
+        "nonce": "0x0101010101010101010101010101010101010101010101010101010101010101",
+        "deadline": "1893456000"
+      },
+      "digest": "0x77a096fa2105acb22bf3848ecb5baeafbbf72ab180c94efaa2ba0ab60c0b27e0"
+    }
+  ]
+}
