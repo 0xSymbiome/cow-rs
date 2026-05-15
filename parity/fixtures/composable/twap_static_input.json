@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "abi_type": "tuple(address sellToken,address buyToken,address receiver,uint256 partSellAmount,uint256 minPartLimit,uint32 t0,uint32 n,uint32 t,uint32 span,bytes32 appData)",
+  "rows": [
+    {
+      "label": "dai-weth-10-parts-1h-300s-span",
+      "inputs": {
+        "twap_data": {
+          "sell_token": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+          "buy_token": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+          "receiver": "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58",
+          "part_sell_amount": "100000000000000000",
+          "min_part_limit": "49000000000000000",
+          "t0": 1710000000,
+          "n": 10,
+          "t": 3600,
+          "span": 300,
+          "app_data": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      },
+      "expected": {
+        "static_input": "0x0000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000076b0340e50bd9883d8b2ca5fd9f52439a9e7cf58000000000000000000000000000000000000000000000000016345785d8a000000000000000000000000000000000000000000000000000000ae153d89fe80000000000000000000000000000000000000000000000000000000000065ec8780000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000e10000000000000000000000000000000000000000000000000000000000000012cbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "upstream_provenance": [
+        {
+          "repo": "composable-cow",
+          "path": "src/types/twap/TWAP.sol"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+[package]
+name = "cow-sdk-composable"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Reserved crate manifest for future CoW Protocol composable order helpers"
+readme = "README.md"
+documentation = "https://docs.rs/cow-sdk-composable"
+homepage = "https://github.com/cowdao-grants/cow-rs"
+keywords = ["cow-protocol", "sdk", "composable", "defi"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[lints]
+workspace = true
+
+[features]
+default = []
+
+[dependencies]

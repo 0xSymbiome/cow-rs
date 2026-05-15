@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "handler": "PerpetualStableSwap",
+  "rows": [
+    {
+      "id": "max-uint256-multiplication",
+      "sell_amount": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+      "price_numerator": "2",
+      "price_denominator": "1",
+      "expected": "overflow_preflight_reject"
+    },
+    {
+      "id": "zero-denominator",
+      "sell_amount": "1000000000000000000",
+      "price_numerator": "1",
+      "price_denominator": "0",
+      "expected": "invalid_ratio_reject"
+    },
+    {
+      "id": "safe-ratio",
+      "sell_amount": "1000000000000000000",
+      "price_numerator": "997",
+      "price_denominator": "1000",
+      "expected": "accepted"
+    }
+  ]
+}

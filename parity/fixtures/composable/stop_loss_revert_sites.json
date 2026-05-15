@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "handler": "StopLoss",
+  "upstream_provenance": [
+    {
+      "repo": "composable-cow",
+      "path": "src/types/StopLoss.sol"
+    }
+  ],
+  "rows": [
+    {
+      "condition": "validTo has elapsed",
+      "reason": "order expired",
+      "classification": "DONT_TRY_AGAIN",
+      "inputs": {
+        "block_timestamp": 1720000000,
+        "valid_to": 1710000000
+      }
+    },
+    {
+      "condition": "oracle returns non-positive price",
+      "reason": "oracle invalid price",
+      "classification": "TRY_NEXT_BLOCK",
+      "inputs": {
+        "oracle_answer": "0"
+      }
+    },
+    {
+      "condition": "oracle timestamp is stale",
+      "reason": "oracle stale price",
+      "classification": "TRY_NEXT_BLOCK",
+      "inputs": {
+        "block_timestamp": 1720000000,
+        "oracle_updated_at": 1719900000,
+        "oracle_max_staleness_seconds": 3600
+      }
+    },
+    {
+      "condition": "strike threshold not reached",
+      "reason": "strike not reached",
+      "classification": "TRY_NEXT_BLOCK",
+      "inputs": {
+        "oracle_answer": "2000",
+        "strike": "1500"
+      }
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "success_code": "SUCCESS",
+  "rows": [
+    {
+      "error": "OrderNotValid(string)",
+      "selector": "0xc8fc2725",
+      "classification": "UNEXPECTED_ERROR"
+    },
+    {
+      "error": "PollTryNextBlock(string)",
+      "selector": "0xd05f3065",
+      "classification": "TRY_NEXT_BLOCK"
+    },
+    {
+      "error": "PollTryAtBlock(uint256,string)",
+      "selector": "0x1fe8506e",
+      "classification": "TRY_ON_BLOCK"
+    },
+    {
+      "error": "PollTryAtEpoch(uint256,string)",
+      "selector": "0x7e334637",
+      "classification": "TRY_AT_EPOCH"
+    },
+    {
+      "error": "PollNever(string)",
+      "selector": "0x981b64cd",
+      "classification": "DONT_TRY_AGAIN"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "handler": "GoodAfterTime",
+  "upstream_provenance": [
+    {
+      "repo": "composable-cow",
+      "path": "src/types/GoodAfterTime.sol"
+    }
+  ],
+  "rows": [
+    {
+      "condition": "before start time",
+      "reason": "too early",
+      "classification": "TRY_AT_EPOCH",
+      "inputs": {
+        "block_timestamp": 1700000000,
+        "start_time": 1710000000
+      }
+    },
+    {
+      "condition": "insufficient sell-token balance",
+      "reason": "balance insufficient",
+      "classification": "TRY_NEXT_BLOCK",
+      "inputs": {
+        "block_timestamp": 1710000001,
+        "start_time": 1710000000,
+        "sell_token_balance": "0",
+        "required_sell_amount": "100000000000000000"
+      }
+    },
+    {
+      "condition": "price checker call reverts",
+      "reason": "price checker failed",
+      "classification": "UNEXPECTED_ERROR",
+      "inputs": {
+        "block_timestamp": 1710000001,
+        "start_time": 1710000000,
+        "price_checker_call_reverts": true
+      }
+    }
+  ]
+}

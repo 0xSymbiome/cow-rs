@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "rows": [
+    {
+      "contract": "ComposableCoW",
+      "signature": "cabinet(address,bytes32)",
+      "selector": "0x1c7662c8"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "create((address,bytes32,bytes),bool)",
+      "selector": "0x6bfae1ca"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "createWithContext((address,bytes32,bytes),address,bytes,bool)",
+      "selector": "0x0d0d9800"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "domainSeparator()",
+      "selector": "0xf698da25"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "getTradeableOrderWithSignature(address,(address,bytes32,bytes),bytes,bytes32[])",
+      "selector": "0x26e0a196"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "hash((address,bytes32,bytes))",
+      "selector": "0x5500079d"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "isValidSafeSignature(address,address,bytes32,bytes32,bytes32,bytes,bytes)",
+      "selector": "0x53f00b14"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "remove(bytes32)",
+      "selector": "0x95bc2673"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "roots(address)",
+      "selector": "0xa4546876"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "setRoot(bytes32,(uint256,bytes))",
+      "selector": "0x1ab0dd9d"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "setRootWithContext(bytes32,(uint256,bytes),address,bytes)",
+      "selector": "0x57f1d41a"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "setSwapGuard(address)",
+      "selector": "0x8f7984ed"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "singleOrders(address,bytes32)",
+      "selector": "0x6108c532"
+    },
+    {
+      "contract": "ComposableCoW",
+      "signature": "swapGuards(address)",
+      "selector": "0x595001b2"
+    },
+    {
+      "contract": "IConditionalOrder",
+      "signature": "getTradeableOrder(address,address,bytes32,bytes,bytes)",
+      "selector": "0xb8296fc4"
+    },
+    {
+      "contract": "IConditionalOrder",
+      "signature": "verify(address,address,bytes32,bytes32,bytes32,bytes,bytes,(address,address,address,uint256,uint256,uint32,bytes32,uint256,bytes32,bool,bytes32,bytes32))",
+      "selector": "0x14a2a784"
+    },
+    {
+      "contract": "ERC165",
+      "signature": "supportsInterface(bytes4)",
+      "selector": "0x01ffc9a7"
+    },
+    {
+      "contract": "CurrentBlockTimestampFactory",
+      "signature": "getValue(bytes)",
+      "selector": "0xb6576bdf"
+    },
+    {
+      "contract": "ERC1271Forwarder",
+      "signature": "isValidSignature(bytes32,bytes)",
+      "selector": "0x1626ba7e"
+    },
+    {
+      "contract": "ERC1271Forwarder",
+      "signature": "composableCoW()",
+      "selector": "0x8b0f4834"
+    },
+    {
+      "contract": "ExtensibleFallbackHandler",
+      "signature": "safeSignature(bytes32,bytes32,bytes,bytes)",
+      "selector": "0x5fd7e97d"
+    }
+  ]
+}
