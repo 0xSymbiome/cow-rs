@@ -6,17 +6,43 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
-description = "Reserved crate manifest for future COW Shed helpers"
+description = "CoW Protocol COW Shed proxy address, EIP-712, and calldata helpers"
 readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-cow-shed"
 homepage = "https://github.com/cowdao-grants/cow-rs"
-keywords = ["cow-protocol", "sdk", "safe", "defi"]
+keywords = ["cow-protocol", "sdk", "cow-shed", "eip712", "hooks"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[package.metadata.docs.rs]
+default-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+all-features = true
 
 [lints]
 workspace = true
 
 [features]
 default = []
+cow-shed-ens = []
+cow-shed-gnosis = []
+with_ens = ["cow-shed-ens"]
 
 [dependencies]
+alloy-primitives.workspace = true
+alloy-sol-types.workspace = true
+cow-sdk-app-data = { path = "../app-data", version = "0.1.0" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+cow-sdk-pure-helpers = { path = "../pure-helpers", version = "0.1.0" }
+cow-sdk-signing = { path = "../signing", version = "0.1.0" }
+hex.workspace = true
+sha3.workspace = true
+thiserror.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { workspace = true }
+
+[dev-dependencies]
+serde.workspace = true
+serde_json.workspace = true
+syn.workspace = true

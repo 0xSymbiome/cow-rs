@@ -14,6 +14,13 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- Added the `cow-sdk-cow-shed` crate with typed COW Shed core types,
+  generated ABI bindings, versioned CREATE2 proxy derivation, EIP-712 domain
+  and message hashing, and calldata builders for hook execution. The crate is
+  a provider-neutral leaf with opt-in ENS and Gnosis bindings, plus parity tests
+  for proxy addresses, selectors, calldata, type hashes, domain separators, and
+  init-code construction.
+
 - Added the composable and COW Shed contract bindings to `cow-sdk-contracts`:
   the deployment registry now binds the composable conditional-order
   framework Solidity excerpts and the COW Shed account-abstraction proxy
