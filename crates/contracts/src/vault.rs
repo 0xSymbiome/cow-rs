@@ -3,10 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::Address;
 
-use crate::{
-    ContractsError,
-    primitives::{keccak256, parse_address_bytes},
-};
+use crate::{ContractsError, primitives::parse_address_bytes};
 
 sol! {
     // Canonical GPv2VaultRelayer ABI surface plus the partial Balancer V2 Vault
@@ -247,5 +244,8 @@ fn role_hash(vault_address: &Address, selector: [u8; 4]) -> Result<String, Contr
     let mut packed = [0u8; 36];
     packed[12..32].copy_from_slice(&address_bytes);
     packed[32..36].copy_from_slice(&selector);
-    Ok(format!("0x{}", hex::encode(keccak256(packed))))
+    Ok(format!(
+        "0x{}",
+        hex::encode(alloy_primitives::keccak256(packed).as_slice())
+    ))
 }

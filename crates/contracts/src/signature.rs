@@ -1,13 +1,13 @@
 use std::fmt;
 
-use alloy_primitives::{B256, Signature as AlloySignature};
+use alloy_primitives::{B256, Signature as AlloySignature, keccak256};
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, AsyncProvider, Hash32, HexData, Provider};
 
 use crate::{
     ContractsError,
-    primitives::{function_selector, keccak256, normalize_hex_payload, parse_hex, parse_hex_exact},
+    primitives::{function_selector, normalize_hex_payload, parse_hex, parse_hex_exact},
 };
 
 /// EIP-1271 success magic value as the canonical `0x`-prefixed hex string
@@ -218,7 +218,7 @@ fn eth_sign_digest_prehash(digest: &Hash32) -> Result<[u8; 32], ContractsError> 
     let mut payload = Vec::with_capacity(60);
     payload.extend_from_slice(b"\x19Ethereum Signed Message:\n32");
     payload.extend_from_slice(&digest_bytes);
-    Ok(keccak256(payload))
+    Ok(keccak256(&payload).0)
 }
 
 fn signature_recovery_error(error: &alloy_primitives::SignatureError) -> ContractsError {

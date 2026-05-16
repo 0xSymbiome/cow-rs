@@ -1,5 +1,5 @@
+use alloy_primitives::keccak256;
 use num_bigint::BigUint;
-use sha3::{Digest, Keccak256};
 
 use cow_sdk_core::{
     Address, AppDataHash, BuyTokenDestination, ChainId, OrderKind, SellTokenSource, TypedDataDomain,
@@ -22,15 +22,8 @@ pub(crate) fn zero_address() -> Address {
     Address::new(ZERO_ADDRESS).expect("static zero address must remain valid")
 }
 
-pub(crate) fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
-    let digest = Keccak256::digest(bytes.as_ref());
-    let mut out = [0u8; 32];
-    out.copy_from_slice(&digest);
-    out
-}
-
 pub(crate) fn keccak256_hex(bytes: impl AsRef<[u8]>) -> String {
-    format!("0x{}", hex::encode(keccak256(bytes)))
+    format!("0x{}", hex::encode(keccak256(bytes).as_slice()))
 }
 
 pub(crate) fn parse_hex(value: &str, field: &'static str) -> Result<Vec<u8>, ContractsError> {
@@ -136,7 +129,7 @@ pub(crate) fn encode_bool(value: bool) -> [u8; 32] {
 }
 
 pub(crate) fn encode_string_hash(value: &str) -> [u8; 32] {
-    keccak256(value.as_bytes())
+    keccak256(value.as_bytes()).0
 }
 
 pub(crate) fn chain_id_bytes(chain_id: ChainId) -> Result<[u8; 32], ContractsError> {
@@ -188,12 +181,12 @@ pub(crate) fn domain_separator(domain: &TypedDataDomain) -> Result<[u8; 32], Con
         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)";
 
     let mut encoded = Vec::with_capacity(32 * 5);
-    encoded.extend_from_slice(&keccak256(DOMAIN_TYPE.as_bytes()));
+    encoded.extend_from_slice(keccak256(DOMAIN_TYPE.as_bytes()).as_slice());
     encoded.extend_from_slice(&encode_string_hash(&domain.name));
     encoded.extend_from_slice(&encode_string_hash(&domain.version));
     encoded.extend_from_slice(&chain_id_bytes(domain.chain_id)?);
     encoded.extend_from_slice(&encode_address(&domain.verifying_contract)?);
-    Ok(keccak256(encoded))
+    Ok(keccak256(encoded).0)
 }
 
 pub(crate) fn typed_data_digest(
@@ -204,7 +197,7 @@ pub(crate) fn typed_data_digest(
     payload.extend_from_slice(&[0x19, 0x01]);
     payload.extend_from_slice(&domain_separator(domain)?);
     payload.extend_from_slice(&struct_hash);
-    Ok(keccak256(payload))
+    Ok(keccak256(payload).0)
 }
 
 pub(crate) fn normalize_hex_payload(

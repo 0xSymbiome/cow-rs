@@ -1,13 +1,27 @@
 # Shared Logic Reviewability Audit
 
 Status: Current  
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-16
 Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary  
-Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, or boundary-specific order DTO separation that materially affect correctness or reviewability  
+Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, boundary-specific order DTO separation, or the canonical primitive-layer invocation paths (keccak256, ABI encoding, hex serde) that materially affect correctness or reviewability  
 Related docs:
 - [ADR 0005](../adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
+
+## Note on canonical primitive layer
+
+Production code across `cow-sdk-contracts`, `cow-sdk-signing`, and
+`cow-sdk-cow-shed` invokes `keccak256` through the single canonical
+`alloy_primitives::keccak256` entry point. Five duplicate workspace
+wrappers were retired in favour of this single invocation path; the
+hand-rolled hand-keccak helpers under `crates/*/tests/` (and one inline
+test-mod oracle in `crates/contracts/src/deploy.rs::tests`) are retained
+under explicit `// SAFETY: hand-rolled oracle that proves the production
+path via byte-identity` annotations so the parity assertions remain
+non-tautological. The shared-logic-reviewability boundary still applies:
+production hashing has exactly one canonical invocation path; oracle
+helpers are quarantined in test modules and explicitly marked as such.
 
 ## Scope
 

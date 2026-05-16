@@ -1,5 +1,6 @@
 use std::fmt;
 
+use alloy_primitives::keccak256;
 use cow_sdk_contracts::{
     ContractsError, Order as ContractsOrder, OrderUidParams, SigningScheme, hash_order,
     normalize_order, normalized_ecdsa_signature, pack_order_uid_params,
@@ -11,7 +12,6 @@ use cow_sdk_core::{
 };
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
-use sha3::{Digest, Keccak256};
 
 use crate::{
     SigningError,
@@ -229,16 +229,15 @@ pub fn eip1271_signature_payload(
         "feeAmount",
         &normalized_order.fee_amount.to_string(),
     )?);
-    encoded.extend_from_slice(&keccak256(
-        order_kind_name(normalized_order.kind).as_bytes(),
-    ));
+    encoded
+        .extend_from_slice(keccak256(order_kind_name(normalized_order.kind).as_bytes()).as_slice());
     encoded.extend_from_slice(&encode_bool(normalized_order.partially_fillable));
-    encoded.extend_from_slice(&keccak256(
-        sell_balance_name(normalized_order.sell_token_balance).as_bytes(),
-    ));
-    encoded.extend_from_slice(&keccak256(
-        buy_balance_name(normalized_order.buy_token_balance).as_bytes(),
-    ));
+    encoded.extend_from_slice(
+        keccak256(sell_balance_name(normalized_order.sell_token_balance).as_bytes()).as_slice(),
+    );
+    encoded.extend_from_slice(
+        keccak256(buy_balance_name(normalized_order.buy_token_balance).as_bytes()).as_slice(),
+    );
     encoded.extend_from_slice(&encode_usize_u256(32 * 13));
     encoded.extend_from_slice(&encode_usize_u256(signature_bytes.len()));
     encoded.extend_from_slice(&signature_bytes);
@@ -435,13 +434,6 @@ const fn padded_len(len: usize) -> usize {
     } else {
         ((len - 1) / 32 + 1) * 32
     }
-}
-
-fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
-    let digest = Keccak256::digest(bytes.as_ref());
-    let mut out = [0u8; 32];
-    out.copy_from_slice(&digest);
-    out
 }
 
 const fn order_kind_name(kind: OrderKind) -> &'static str {

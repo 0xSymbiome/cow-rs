@@ -1,10 +1,10 @@
+use alloy_primitives::keccak256;
 use cow_sdk_contracts::{CANCELLATIONS_TYPE_FIELDS, ContractId, ORDER_TYPE_FIELDS, Registry};
 use cow_sdk_core::{
     Address, CowEnv, ProtocolOptions, SupportedChainId, TypedDataDomain, TypedDataEnvelope,
     TypedDataField, TypedDataPayload, TypedDataTypes, UnsignedOrder,
 };
 use serde::Serialize;
-use sha3::{Digest, Keccak256};
 
 use crate::SigningError;
 
@@ -71,15 +71,17 @@ pub fn domain_separator(
 /// Returns [`SigningError`] if the verifying-contract address cannot be encoded.
 pub fn domain_separator_for(domain: &TypedDataDomain) -> Result<String, SigningError> {
     let mut encoded = Vec::with_capacity(32 * 5);
-    encoded.extend_from_slice(&keccak256(
-        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-            .as_bytes(),
-    ));
-    encoded.extend_from_slice(&keccak256(domain.name.as_bytes()));
-    encoded.extend_from_slice(&keccak256(domain.version.as_bytes()));
+    encoded.extend_from_slice(
+        keccak256(
+            b"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)",
+        )
+        .as_slice(),
+    );
+    encoded.extend_from_slice(keccak256(domain.name.as_bytes()).as_slice());
+    encoded.extend_from_slice(keccak256(domain.version.as_bytes()).as_slice());
     encoded.extend_from_slice(&encode_u256_u64(domain.chain_id));
     encoded.extend_from_slice(&encode_address(&domain.verifying_contract)?);
-    Ok(format!("0x{}", hex::encode(keccak256(encoded))))
+    Ok(format!("0x{}", hex::encode(keccak256(encoded).as_slice())))
 }
 
 /// Builds the typed-data envelope with the fully typed order message body.
@@ -155,13 +157,6 @@ pub(crate) fn typed_data_types(primary_type: &str, fields: Vec<TypedDataField>) 
 pub(crate) fn serialize_message<T: Serialize>(value: &T) -> Result<String, SigningError> {
     serde_json::to_string(value)
         .map_err(|error| SigningError::Serialization(error.to_string().into()))
-}
-
-fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
-    let digest = Keccak256::digest(bytes.as_ref());
-    let mut out = [0u8; 32];
-    out.copy_from_slice(&digest);
-    out
 }
 
 fn encode_u256_u64(value: u64) -> [u8; 32] {

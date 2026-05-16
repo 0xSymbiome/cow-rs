@@ -1,3 +1,4 @@
+use alloy_primitives::keccak256;
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, CowEnv, SupportedChainId};
@@ -5,7 +6,7 @@ use cow_sdk_core::{Address, CowEnv, SupportedChainId};
 use crate::{
     ContractsError,
     deployments::{ContractId, Registry},
-    primitives::{encode_address, keccak256},
+    primitives::encode_address,
 };
 
 /// Deterministic deployment salt used by `CoW` deployments.
@@ -80,9 +81,9 @@ pub fn deterministic_deployment_address(
         20,
     )?);
     create2_payload.extend_from_slice(&salt);
-    create2_payload.extend_from_slice(&keccak256(init_code));
-    let hash = keccak256(create2_payload);
-    Address::new(format!("0x{}", hex::encode(&hash[12..]))).map_err(Into::into)
+    create2_payload.extend_from_slice(keccak256(&init_code).as_slice());
+    let hash = keccak256(&create2_payload);
+    Address::new(format!("0x{}", hex::encode(&hash.as_slice()[12..]))).map_err(Into::into)
 }
 
 /// Returns the canonical production deployment addresses for a supported chain.
@@ -133,12 +134,27 @@ pub fn deployment_address_hash_input(
     for arg in deployment_arguments {
         init_code.extend_from_slice(&crate::primitives::parse_hex(arg, "deploymentArgument")?);
     }
-    Ok(keccak256(init_code))
+    Ok(keccak256(&init_code).0)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sha3::{Digest, Keccak256};
+
+    /// Test-only oracle: hand-rolled keccak256 over `bytes` returning the raw
+    /// `[u8; 32]` digest.
+    ///
+    // SAFETY: hand-rolled oracle that proves the production path via byte-identity.
+    // Production code uses `alloy_primitives::keccak256` per ADR 0052; this test
+    // helper deliberately exercises the underlying `sha3::Keccak256` backend so
+    // the parity assertions below are not tautological alloy-vs-alloy checks.
+    fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
+        let digest = Keccak256::digest(bytes.as_ref());
+        let mut out = [0u8; 32];
+        out.copy_from_slice(&digest);
+        out
+    }
 
     fn sample_init_code_parts() -> (&'static str, Vec<String>) {
         (

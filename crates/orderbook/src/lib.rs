@@ -266,6 +266,6 @@ pub use types::{
     NativePriceResponse, OnchainOrderData, Order, OrderCancellations, OrderClass, OrderCreation,
     OrderInteractions, OrderKind, OrderQuoteRequest, OrderQuoteResponse, OrderStatus, OrderUid,
     PriceQuality, Quote, QuoteAmountsAndCosts, QuoteData, QuoteSide, SellTokenSource,
-    SigningScheme, SolverCompetitionResponse, SolverExecution, SolverSettlement, StoredOrderQuote,
-    SupportedChainId, TotalSurplus, Trade, TransactionHash,
+    SigningScheme, SigningSchemeNotEcdsa, SolverCompetitionResponse, SolverExecution,
+    SolverSettlement, StoredOrderQuote, SupportedChainId, TotalSurplus, Trade, TransactionHash,
 };

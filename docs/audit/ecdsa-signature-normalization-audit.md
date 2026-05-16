@@ -1,16 +1,31 @@
 # ECDSA Signature Normalization Audit
 
 Status: Current
-Last reviewed: 2026-04-27
+Last reviewed: 2026-05-16
 Owning surface: `cow_sdk_contracts::normalized_ecdsa_signature` and `Signature::recover_ecdsa_address`
 Refresh trigger: Changes to the accepted ECDSA recovery-byte set, the
 65-byte length contract, the `InvalidSignatureLength` or
-`InvalidSignatureRecoveryByte` typed error variants, or the signing
+`InvalidSignatureRecoveryByte` typed error variants, the signing
 helpers and recovery helpers that route recoverable signatures through
-this normalizer
+this normalizer, or the canonical keccak256 invocation backend used by
+the EIP-191 prehash builder
 Related docs:
 - [ADR 0022](../adr/0022-ecdsa-signature-v-normalization.md)
 - [ADR 0027](../adr/0027-post-quantum-signing-absorption-plan.md)
+
+## Note on canonical primitive layer
+
+The EIP-191 prehash builder
+(`cow_sdk_contracts::signature::eth_sign_digest_prehash`) hashes the
+`"\x19Ethereum Signed Message:\n32" || digest_bytes` payload through
+`alloy_primitives::keccak256`. The workspace's hand-rolled `keccak256`
+wrappers were retired in favour of this single canonical invocation
+path; behaviour and byte output are unchanged because
+`alloy_primitives::keccak256` wraps the same `sha3::Keccak256` backend
+the wrappers used. The `Signature::recover_ecdsa_address` and
+`normalized_ecdsa_signature` helpers continue to delegate ECDSA
+recovery to the `alloy-primitives` 1.5 secp256k1 recovery API as
+documented in ADR 0022.
 
 ## Scope
 

@@ -2,8 +2,7 @@
 
 pub mod proxy_code;
 
-use alloy_primitives::Address;
-use sha3::{Digest, Keccak256};
+use alloy_primitives::{Address, keccak256};
 
 use crate::CowShedVersion;
 use proxy_code::proxy_creation_code;
@@ -39,7 +38,7 @@ pub fn proxy_of(version: CowShedVersion, factory: Address, user: Address) -> Add
     payload.extend_from_slice(&init_code_hash);
 
     let hash = keccak256(&payload);
-    Address::from_slice(&hash[12..])
+    Address::from_slice(&hash.as_slice()[12..])
 }
 
 /// Returns the implementation used by a version and factory pair.
@@ -69,7 +68,7 @@ pub fn init_code_hash(version: CowShedVersion, implementation: Address, user: Ad
     init_code.extend_from_slice(proxy_creation_code(version));
     init_code.extend_from_slice(&address_word(implementation));
     init_code.extend_from_slice(&address_word(user));
-    keccak256(&init_code)
+    keccak256(&init_code).0
 }
 
 const fn address_eq(left: Address, right: Address) -> bool {
@@ -88,12 +87,5 @@ const fn address_eq(left: Address, right: Address) -> bool {
 pub(crate) fn address_word(address: Address) -> [u8; 32] {
     let mut out = [0_u8; 32];
     out[12..].copy_from_slice(address.as_slice());
-    out
-}
-
-pub(crate) fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
-    let digest = Keccak256::digest(bytes.as_ref());
-    let mut out = [0_u8; 32];
-    out.copy_from_slice(&digest);
     out
 }

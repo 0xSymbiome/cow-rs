@@ -1,3 +1,4 @@
+use alloy_primitives::keccak256;
 use cow_sdk_core::{Address, Hash32, OrderDigest, OrderUid, TypedDataDomain};
 
 use super::{NormalizedOrder, ORDER_TYPE_HASH, ORDER_UID_LENGTH, Order, OrderCancellations};
@@ -5,8 +6,8 @@ use crate::{
     ContractsError,
     primitives::{
         buy_balance_name, encode_address, encode_bool, encode_string_hash, encode_u32,
-        encode_u256_biguint, keccak256, order_kind_name, parse_bytes32_hash, parse_hex_exact,
-        parse_hex32, sell_balance_name, typed_data_digest, zero_address,
+        encode_u256_biguint, order_kind_name, parse_bytes32_hash, parse_hex_exact, parse_hex32,
+        sell_balance_name, typed_data_digest, zero_address,
     },
 };
 
@@ -75,18 +76,18 @@ pub fn hash_order_cancellations(
     domain: &TypedDataDomain,
     cancellations: &OrderCancellations,
 ) -> Result<Hash32, ContractsError> {
-    let type_hash = keccak256("OrderCancellations(bytes[] orderUids)".as_bytes());
+    let type_hash = keccak256(b"OrderCancellations(bytes[] orderUids)");
     let mut concatenated = Vec::with_capacity(cancellations.order_uids.len() * 32);
     for uid in &cancellations.order_uids {
         let bytes = parse_hex_exact(uid.as_str(), "orderUid", ORDER_UID_LENGTH)?;
-        concatenated.extend_from_slice(&keccak256(bytes));
+        concatenated.extend_from_slice(keccak256(&bytes).as_slice());
     }
-    let array_hash = keccak256(concatenated);
+    let array_hash = keccak256(&concatenated);
 
     let mut encoded = Vec::with_capacity(64);
-    encoded.extend_from_slice(&type_hash);
-    encoded.extend_from_slice(&array_hash);
-    let digest = typed_data_digest(domain, keccak256(encoded))?;
+    encoded.extend_from_slice(type_hash.as_slice());
+    encoded.extend_from_slice(array_hash.as_slice());
+    let digest = typed_data_digest(domain, keccak256(&encoded).0)?;
     Hash32::new(format!("0x{}", hex::encode(digest))).map_err(Into::into)
 }
 
@@ -109,7 +110,7 @@ fn order_struct_hash(order: &NormalizedOrder) -> Result<[u8; 32], ContractsError
     encoded.extend_from_slice(&encode_string_hash(buy_balance_name(
         order.buy_token_balance,
     )));
-    Ok(keccak256(encoded))
+    Ok(keccak256(&encoded).0)
 }
 
 const ZERO_ADDRESS_LOWER: &str = "0x0000000000000000000000000000000000000000";
@@ -185,6 +186,10 @@ mod tests {
         out
     }
 
+    // SAFETY: hand-rolled oracle that proves the production path via byte-identity.
+    // Production code uses `alloy_primitives::keccak256` per ADR 0052; this test
+    // helper deliberately exercises the underlying `sha3::Keccak256` backend so
+    // the parity assertions below are not tautological alloy-vs-alloy checks.
     fn keccak_word(value: &str) -> [u8; 32] {
         Keccak256::digest(value.as_bytes()).into()
     }

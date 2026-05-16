@@ -25,6 +25,7 @@ default = []
 tracing = ["dep:tracing"]
 
 [dependencies]
+alloy-primitives.workspace = true
 async-trait.workspace = true
 hex.workspace = true
 http.workspace = true

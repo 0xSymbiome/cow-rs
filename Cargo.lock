@@ -1529,6 +1529,7 @@ dependencies = [
 name = "cow-sdk-core"
 version = "0.1.0"
 dependencies = [
+ "alloy-primitives",
  "async-trait",
  "hex",
  "http",
@@ -1572,7 +1573,9 @@ dependencies = [
 name = "cow-sdk-orderbook"
 version = "0.1.0"
 dependencies = [
+ "alloy-primitives",
  "async-trait",
+ "cow-sdk-contracts",
  "cow-sdk-core",
  "cow-sdk-transport-policy",
  "criterion",
@@ -1609,6 +1612,7 @@ dependencies = [
 name = "cow-sdk-signing"
 version = "0.1.0"
 dependencies = [
+ "alloy-primitives",
  "async-trait",
  "cow-sdk-contracts",
  "cow-sdk-core",

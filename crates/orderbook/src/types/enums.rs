@@ -1,4 +1,7 @@
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
+
+use cow_sdk_contracts::SigningScheme as ContractsSigningScheme;
 
 /// Quote-quality mode accepted by the orderbook quote endpoint.
 #[non_exhaustive]
@@ -43,6 +46,77 @@ pub enum EcdsaSigningScheme {
     Eip712,
     /// `eth_sign` / personal-sign style signature.
     EthSign,
+}
+
+/// Error returned when an orderbook [`SigningScheme`] cannot be narrowed to
+/// the cancellation-only [`EcdsaSigningScheme`] subset.
+///
+/// `PreSign` and `Eip1271` are accepted by the order-creation surface but are
+/// not valid signing schemes for ECDSA cancellation payloads, so the typed
+/// fallible bridge surfaces the rejection instead of silently dropping data.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
+#[error("signing scheme {0:?} is not an ECDSA cancellation scheme")]
+pub struct SigningSchemeNotEcdsa(pub SigningScheme);
+
+impl From<EcdsaSigningScheme> for SigningScheme {
+    fn from(scheme: EcdsaSigningScheme) -> Self {
+        match scheme {
+            EcdsaSigningScheme::Eip712 => Self::Eip712,
+            EcdsaSigningScheme::EthSign => Self::EthSign,
+        }
+    }
+}
+
+impl TryFrom<SigningScheme> for EcdsaSigningScheme {
+    type Error = SigningSchemeNotEcdsa;
+
+    fn try_from(scheme: SigningScheme) -> Result<Self, Self::Error> {
+        match scheme {
+            SigningScheme::Eip712 => Ok(Self::Eip712),
+            SigningScheme::EthSign => Ok(Self::EthSign),
+            other @ (SigningScheme::Eip1271 | SigningScheme::PreSign) => {
+                Err(SigningSchemeNotEcdsa(other))
+            }
+        }
+    }
+}
+
+impl From<SigningScheme> for ContractsSigningScheme {
+    fn from(scheme: SigningScheme) -> Self {
+        match scheme {
+            SigningScheme::Eip712 => Self::Eip712,
+            SigningScheme::EthSign => Self::EthSign,
+            SigningScheme::Eip1271 => Self::Eip1271,
+            SigningScheme::PreSign => Self::PreSign,
+        }
+    }
+}
+
+impl From<ContractsSigningScheme> for SigningScheme {
+    fn from(scheme: ContractsSigningScheme) -> Self {
+        match scheme {
+            ContractsSigningScheme::Eip712 => Self::Eip712,
+            ContractsSigningScheme::EthSign => Self::EthSign,
+            ContractsSigningScheme::Eip1271 => Self::Eip1271,
+            ContractsSigningScheme::PreSign => Self::PreSign,
+            // SAFETY: cow_sdk_contracts::SigningScheme and cow_sdk_orderbook::SigningScheme
+            // share the four variants Eip712, EthSign, Eip1271, PreSign per ADR 0052; the
+            // variant-by-variant parity test in tests/signing_scheme_bridge.rs prevents
+            // drift, and any new variant added upstream must land here in the same patch.
+            _ => unreachable!(
+                "cow_sdk_contracts::SigningScheme variant added without updating the orderbook bridge"
+            ),
+        }
+    }
+}
+
+impl From<EcdsaSigningScheme> for ContractsSigningScheme {
+    fn from(scheme: EcdsaSigningScheme) -> Self {
+        match scheme {
+            EcdsaSigningScheme::Eip712 => Self::Eip712,
+            EcdsaSigningScheme::EthSign => Self::EthSign,
+        }
+    }
 }
 
 /// Order class surfaced by the orderbook API.
