@@ -91,8 +91,69 @@ impl ContractId {
     }
 }
 
+/// Capability contracts that are `EnvironmentAgnostic` per schema v2.
+///
+/// The slice is the single source of truth for which contract identifiers
+/// may appear under `env = environment_agnostic` in `registry.toml`. The
+/// `is_environment_agnostic` accessor consults the same set via a `matches!`
+/// expression so the membership stays in lockstep across the const slice
+/// and the runtime predicate; the build script asserts the slice length is
+/// exactly 11 and that every variant is reachable from
+/// `is_environment_agnostic`.
+pub const ENVIRONMENT_AGNOSTIC_CONTRACTS: &[ContractId] = &[
+    ContractId::ComposableCow,
+    ContractId::ExtensibleFallbackHandler,
+    ContractId::CurrentBlockTimestampFactory,
+    ContractId::TwapHandler,
+    ContractId::GoodAfterTimeHandler,
+    ContractId::StopLossHandler,
+    ContractId::TradeAboveThresholdHandler,
+    ContractId::PerpetualStableSwapHandler,
+    ContractId::CowShedImplementation,
+    ContractId::CowShedFactory,
+    ContractId::CowShedForComposableCow,
+];
+
 impl std::fmt::Display for ContractId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.as_str())
+    }
+}
+
+/// Compile-time assertion: the public `ENVIRONMENT_AGNOSTIC_CONTRACTS`
+/// slice carries exactly 11 entries (the schema-v2 capability contract
+/// set covering the composable conditional-order framework and the COW
+/// Shed account-abstraction proxy). The runtime `contract_id_variants`
+/// test reinforces the invariant; this const-evaluated path catches
+/// drift even before the test runs.
+const _: () = {
+    assert!(
+        ENVIRONMENT_AGNOSTIC_CONTRACTS.len() == 11,
+        "ENVIRONMENT_AGNOSTIC_CONTRACTS must list exactly 11 capability ContractId variants"
+    );
+};
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn environment_agnostic_slice_matches_is_environment_agnostic_predicate() {
+        for variant in ENVIRONMENT_AGNOSTIC_CONTRACTS {
+            assert!(
+                variant.is_environment_agnostic(),
+                "{variant:?} is in ENVIRONMENT_AGNOSTIC_CONTRACTS but is_environment_agnostic() returned false",
+            );
+        }
+        for variant in [
+            ContractId::Settlement,
+            ContractId::VaultRelayer,
+            ContractId::EthFlow,
+        ] {
+            assert!(
+                !variant.is_environment_agnostic(),
+                "{variant:?} is a GPv2 contract but is_environment_agnostic() returned true",
+            );
+        }
     }
 }

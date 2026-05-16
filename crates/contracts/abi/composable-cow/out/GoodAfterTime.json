@@ -1,0 +1,12 @@
+{
+  "_source": "minimal Foundry-artifact-shaped fixture; selectors pinned at pinned composable-cow SHA 471ca59aa95da1bbf3b03e002de96449bc78e6f0; bytecode and ABI sections deliberately omitted (this excerpt is selector-only)",
+  "contractName": "GoodAfterTime",
+  "custom_error_selectors": {
+    "OrderNotValid": "c8fc2725"
+  },
+  "methodIdentifiers": {
+    "getTradeableOrder(address,address,bytes32,bytes,bytes)": "7c11fa3d",
+    "supportsInterface(bytes4)": "01ffc9a7",
+    "verify(address,address,bytes32,bytes32,bytes32,bytes,bytes,(address,address,address,uint256,uint256,bytes32,uint256,uint32,uint32,bytes))": "6e9ed14b"
+  }
+}

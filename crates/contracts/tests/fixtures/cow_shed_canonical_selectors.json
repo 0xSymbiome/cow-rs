@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "source_authority": {
+    "factory_abi": "cow-sdk/packages/cow-shed/src/abi/CowShedFactoryAbi.ts (pinned cow-sdk SHA 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d)",
+    "solidity_reference": "cow-shed/src/*.sol (pinned cow-shed SHA 9e01a88e0010314ee1e4c1a822105897a87d3bda)",
+    "deployment_runtime": "crates/contracts/abi/cow-shed/version-call-results.json"
+  },
+  "factory_methods": [
+    {
+      "name": "initializeProxy(address,bool)",
+      "selector": "0x66c87a2c",
+      "owning_contract": "COWShedFactory",
+      "rationale": "Canonical 2-arg initializeProxy form sourced from cow-sdk TS ABI (L1 authority). The 1-arg source-HEAD form is NOT vendored because the deployed bytecode targets the 2-arg selector."
+    },
+    {
+      "name": "executeHooks((address,uint256,bytes,bool,bool)[],bytes32,uint256,address,bytes)",
+      "selector": "0x46d2f7a9",
+      "owning_contract": "COWShed",
+      "rationale": "Primary hook-execution entry point for relayed batches"
+    },
+    {
+      "name": "executePreSignedHooks((address,uint256,bytes,bool,bool)[],bytes32,uint256,address)",
+      "selector": "0xb40b1cd5",
+      "owning_contract": "COWShed",
+      "rationale": "Pre-signed hook-execution entry point indexed by struct hash without domain prefix"
+    },
+    {
+      "name": "setPreSigned(bytes32,bool)",
+      "selector": "0xb6c12e1c",
+      "owning_contract": "PreSignStateStorage",
+      "rationale": "Owner-only pre-signature registration entry point"
+    }
+  ],
+  "type_hashes": [
+    {
+      "name": "CALL_TYPE_HASH",
+      "value": "0x91d177ef2b89e51e80df1b66c89ccd9e0a52aae6f3727a40395d7feee18ba9e2",
+      "type_string": "Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)",
+      "rationale": "EIP-712 type hash for the COW Shed Call struct (no whitespace between commas in declaration order)"
+    },
+    {
+      "name": "EXECUTE_HOOKS_TYPE_HASH",
+      "value": "0x3fad4b6e8b96ce05f8d6f4f4c5c1e0a6d83cd24ce8bcf0d2d2b6f3a7e93da136",
+      "type_string": "ExecuteHooks(Call[] calls,bytes32 nonce,uint256 deadline)Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)",
+      "rationale": "EIP-712 type hash for the COW Shed ExecuteHooks struct, with the nested Call type string appended"
+    },
+    {
+      "name": "EIP712_DOMAIN_TYPE_HASH",
+      "value": "0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f",
+      "type_string": "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)",
+      "rationale": "Standard EIP-712 domain type hash used by every chain's per-proxy domain separator"
+    }
+  ],
+  "forwarder_methods": [
+    {
+      "name": "isValidSignature(bytes32,bytes)",
+      "selector": "0x1626ba7e",
+      "owning_contract": "ERC1271Forwarder",
+      "rationale": "Canonical ERC-1271 isValidSignature entry point"
+    }
+  ],
+  "signature_byte_order": {
+    "order": "r || s || v",
+    "rationale": "COW Shed signed-hook signature carries r-then-s-then-v (not the standard v-then-r-then-s); enforced at the type level by a trybuild fixture in the cow-sdk-cow-shed body landing"
+  }
+}

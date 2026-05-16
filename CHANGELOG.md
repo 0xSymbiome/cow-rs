@@ -14,6 +14,20 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- Added the composable and COW Shed contract bindings to `cow-sdk-contracts`:
+  the deployment registry now binds the composable conditional-order
+  framework Solidity excerpts and the COW Shed account-abstraction proxy
+  Solidity excerpts, registers eleven new capability contract identifiers
+  (ComposableCow, ExtensibleFallbackHandler, CurrentBlockTimestampFactory,
+  the four non-TWAP handlers, the TWAP handler, the COW Shed
+  implementation, the COW Shed factory, and the Gnosis-only
+  COWShedForComposableCoW forwarder), publishes 111 per-chain capability
+  rows alongside the existing GPv2 rows, and records 24 absence and
+  exclusion records (Ink not-deployed and Optimism not-supported) in the
+  separate coverage manifest. Selector parity tests pin the twelve
+  canonical composable custom-error selectors and the COW Shed
+  signature-verifier muxer interface identifier.
+
 - Added schema v2 deployment registry readiness for composable and COW Shed
   contracts, including separated verification and coverage taxonomies,
   pinned helper source evidence, reserved leaf crate manifests, and public
