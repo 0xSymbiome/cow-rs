@@ -43,6 +43,7 @@ provider.
 | Byte-identity parity | Encoded call-data and hashed payloads match the TypeScript-SDK-derived golden fixtures on every binding | Conforms |
 | Domain separator parity | `cow-sdk-contracts` and `cow-sdk-signing` route every EIP-712 domain separator through `alloy_sol_types::Eip712Domain::separator` and pin the same fixture value | Conforms |
 | Order EIP-712 hashing | The `GPv2 Order` and `OrderCancellations` typed-data structs are macro-emitted via `alloy_sol_types::sol!` and route their signing hashes through `<T as SolStruct>::eip712_signing_hash`; the eight per-chain rows in the order-digest fixture pin the wire-byte contract | Conforms |
+| EIP-1271 payload encoding | The COW EIP-1271 verifier payload `abi.encode(GPv2Order.Data, bytes)` is composed from the macro-emitted `OnchainOrder` sol struct and the raw ECDSA signature via `alloy_sol_types::SolValue::abi_encode_sequence`; the inline regression contract reproduces the canonical 12-word order tuple plus dynamic-bytes tail layout byte-for-byte | Conforms |
 | Boundary matrices | Compact order flags, settlement reader returns, settlement encoder stages, mixed-balance transfers, and multi-trade clearing prices have deterministic regression coverage | Conforms |
 | EIP-1967 derivation | Proxy storage slots match the canonical `keccak256(label) - 1` formula as well as the golden byte payloads | Conforms |
 | Vault role hash parity | Vault-relayer role helpers emit the same packed role hashes as the upstream TypeScript role-grant helpers | Conforms |
@@ -164,6 +165,29 @@ eth-flow, base partner-fee, mainnet zero-app-data edge, and mainnet
 max-amount U256 edge) pin per-row domain separator, struct hash, and
 signing hash so a future change to the order typed-data encoding
 cannot silently move the wire bytes.
+
+The COW EIP-1271 verifier expects `abi.encode(GPv2Order.Data, bytes)`
+as the signature payload. The on-chain `GPv2Order.Data` representation
+stores `kind`, `sellTokenBalance`, and `buyTokenBalance` as `bytes32`
+holding the keccak256 of the canonical label string (matching the
+deployed settlement contract's storage layout), so it is a different
+schema from the EIP-712 typed-data `Order` even though both describe
+the same protocol order. The on-chain schema is macro-emitted via
+`alloy_sol_types::sol!` at
+`crates/signing/src/eip1271/sol_types.rs` as `OnchainOrder`; the
+verifier payload is the Rust tuple alias
+`cow_sdk_signing::OrderAndSignature = (OnchainOrder, Bytes)`.
+`cow_sdk_signing::eip1271_signature_payload` composes the payload
+field-by-field, hashes the on-chain label fields with
+`alloy_primitives::keccak256`, and encodes the tuple via
+`alloy_sol_types::SolValue::abi_encode_sequence` to produce the
+canonical head-and-dynamic-tail wire layout (twelve 32-byte order
+words, then the offset, length, and padded signature bytes). The
+inline regression contract in
+`crates/signing/tests/order_signing_contract.rs` reproduces the
+expected byte layout by hand and pins both the full payload and the
+per-word offsets at `signature` length 65, so any drift in the wire
+layout fails the contract.
 
 Deterministic CREATE2 addresses for the deployer-derived contracts in
 `cow_sdk_contracts::deploy` route through
