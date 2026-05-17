@@ -2,8 +2,8 @@
 
 mod domain;
 mod hash;
-mod type_hashes;
+pub mod sol_types;
 
 pub use domain::cow_shed_domain_separator;
 pub use hash::{execute_hooks_message_hash, hash_to_sign};
-pub use type_hashes::{CALL_TYPE_HASH, EIP712_DOMAIN_TYPE_HASH, EXECUTE_HOOKS_TYPE_HASH};
+pub use sol_types::{Call as SolCall, ExecuteHooks};

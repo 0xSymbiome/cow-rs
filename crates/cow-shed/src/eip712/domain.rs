@@ -1,20 +1,28 @@
-use alloy_primitives::{Address, B256, U256, keccak256};
+use alloy_primitives::{Address, B256, U256};
+use alloy_sol_types::Eip712Domain;
 use cow_sdk_core::ChainId;
 
 use crate::CowShedVersion;
-use crate::address::address_word;
-use crate::eip712::EIP712_DOMAIN_TYPE_HASH;
 
 const DOMAIN_NAME: &str = "COWShed";
 
 /// Computes the COW Shed per-proxy EIP-712 domain separator.
+///
+/// Delegates to [`alloy_sol_types::Eip712Domain::separator`], which composes
+/// the canonical `EIP712Domain(string name,string version,uint256
+/// chainId,address verifyingContract)` type hash with the packed
+/// `(name_hash, version_hash, chain_id_word, verifying_contract_word)`
+/// preimage and returns `keccak256(type_hash || encoded_data)`.
+/// Byte-identical to the prior in-crate encoder; verified by the shared
+/// parity fixture under `parity/fixtures/cow_shed/domain_separator.json`.
 #[must_use]
 pub fn cow_shed_domain_separator(chain: ChainId, version: CowShedVersion, proxy: Address) -> B256 {
-    let mut encoded = Vec::with_capacity(32 * 5);
-    encoded.extend_from_slice(EIP712_DOMAIN_TYPE_HASH.as_slice());
-    encoded.extend_from_slice(keccak256(DOMAIN_NAME.as_bytes()).as_slice());
-    encoded.extend_from_slice(keccak256(version.version_str().as_bytes()).as_slice());
-    encoded.extend_from_slice(&U256::from(chain).to_be_bytes::<32>());
-    encoded.extend_from_slice(&address_word(proxy));
-    keccak256(encoded)
+    Eip712Domain {
+        name: Some(DOMAIN_NAME.into()),
+        version: Some(version.version_str().into()),
+        chain_id: Some(U256::from(chain)),
+        verifying_contract: Some(proxy),
+        salt: None,
+    }
+    .separator()
 }

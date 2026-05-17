@@ -26,8 +26,7 @@ pub mod version;
 pub use address::proxy_of;
 pub use calls::{encode_execute_hooks_calldata, encode_execute_pre_signed_hooks_calldata};
 pub use eip712::{
-    CALL_TYPE_HASH, EIP712_DOMAIN_TYPE_HASH, EXECUTE_HOOKS_TYPE_HASH, cow_shed_domain_separator,
-    execute_hooks_message_hash, hash_to_sign,
+    ExecuteHooks, SolCall, cow_shed_domain_separator, execute_hooks_message_hash, hash_to_sign,
 };
 pub use errors::{CowShedError, SigSource};
 pub use types::{Call, Deadline, Hook, HookList, Nonce, ProxyAddress};

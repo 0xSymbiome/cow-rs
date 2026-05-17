@@ -1,6 +1,7 @@
 use alloy_primitives::{Address, B256, Bytes, U256};
+use alloy_sol_types::SolStruct;
 use cow_sdk_cow_shed::{
-    CALL_TYPE_HASH, Call, CowShedVersion, EXECUTE_HOOKS_TYPE_HASH, cow_shed_domain_separator,
+    Call, CowShedVersion, ExecuteHooks, SolCall, cow_shed_domain_separator,
     execute_hooks_message_hash, hash_to_sign,
 };
 use serde::Deserialize;
@@ -45,9 +46,25 @@ struct FixtureCall {
 fn execute_hooks_digest_matches_reference_vectors() {
     let fixture: Fixture = serde_json::from_str(FIXTURE).expect("digest fixture parses");
 
+    let call_sample = SolCall {
+        target: Address::ZERO,
+        value: U256::ZERO,
+        callData: Bytes::default(),
+        allowFailure: false,
+        isDelegateCall: false,
+    };
+    let exec_sample = ExecuteHooks {
+        calls: vec![],
+        nonce: B256::ZERO,
+        deadline: U256::ZERO,
+    };
+
     for row in fixture.rows {
-        assert_eq!(CALL_TYPE_HASH, b256(&row.call_type_hash));
-        assert_eq!(EXECUTE_HOOKS_TYPE_HASH, b256(&row.execute_hooks_type_hash));
+        assert_eq!(call_sample.eip712_type_hash(), b256(&row.call_type_hash));
+        assert_eq!(
+            exec_sample.eip712_type_hash(),
+            b256(&row.execute_hooks_type_hash)
+        );
 
         let version = parse_version(&row.version);
         let domain = cow_shed_domain_separator(row.chain_id, version, address(&row.proxy));
