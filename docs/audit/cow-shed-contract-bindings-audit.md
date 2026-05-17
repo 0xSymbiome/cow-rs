@@ -44,6 +44,7 @@ app-data crate; that boundary is governed by the
 | Hook type strings | Canonical type strings carry no whitespace between commas in declaration order; the EOA signature byte order is `r || s || v` | Conforms |
 | EIP-712 hashing | Domain separator, struct hash, and signing digest are produced by `alloy_sol_types::Eip712Domain::separator` and `<ExecuteHooks as SolStruct>::eip712_hash_struct`; bytes match the reference parity fixtures | Conforms |
 | Call type identity | The macro-emitted `Call` declared in the canonical sol! block is the single source of truth for typed-data hashing, ABI calldata building, and both proxy and factory interface signatures; the four representative `executeHooks` calldata rows in the parity fixture catalog the wire-byte contract | Conforms |
+| CREATE2 derivation | Proxy address derivation routes through `alloy_primitives::Address::create2` over the per-user salt and the proxy init-code hash; the thirty per-chain, per-user rows in the proxy-address parity fixture catalog the wire-byte contract | Conforms |
 
 ## Current Contract
 
@@ -65,11 +66,11 @@ Per-version proxy creation-code artifacts ship at
 `crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.0.bin` and
 `v1.0.1.bin` with adjacent `.sha256` digest neighbors. The build script
 `crates/contracts/build.rs` reads each `.bin` file, computes SHA-256, and
-compares to the digest neighbor; a mismatch fails the build. The init-code
-hash used at CREATE2 derivation time is computed per call as
-`keccak256(abi.encodePacked(PROXY_CREATION_CODE, abi.encode(implementation, who)))`;
-the `.bin` files store the deployer bytecode prefix and never the full
-init code, so derivation works correctly for any user address.
+compares to the digest neighbor; a mismatch fails the build. The
+init-code hash used at CREATE2 derivation time is computed per call as
+`keccak256(PROXY_CREATION_CODE || abi.encode(implementation, who))`; the
+`.bin` files store the deployer bytecode prefix and never the full init
+code, so derivation works correctly for any user address.
 
 ### Version-call evidence
 
@@ -155,6 +156,27 @@ representative rows in
 three-call medium fan-out, five-call max fan-out, and empty-`callData`
 edge case) lock the wire-byte contract for both the factory
 `executeHooks` and the proxy `executeHooks` ABI calldata paths.
+
+### CREATE2 derivation
+
+Proxy address derivation in
+`crates/cow-shed/src/address/mod.rs::proxy_of` routes through
+[`alloy_primitives::Address::create2`], which assembles the canonical
+EIP-1014 preimage (`0xff || factory || salt || init_code_hash`) and
+keccak256-hashes it internally. The salt is the user address left-padded
+with twelve zero bytes to fill a 32-byte word
+(`user_salt(user)`); the init-code hash concatenates the embedded
+per-version proxy creation code with the canonical ABI encoding of the
+`(implementation, user)` constructor tuple via
+[`alloy_sol_types::SolValue::abi_encode`] and hashes the result with
+[`alloy_primitives::keccak256`]. The implementation address is selected
+by `implementation_for(version, factory)`, which returns the Gnosis
+implementation when `version = 1.0.1` and the factory equals the
+deployed Gnosis factory address, and the default implementation in
+every other case. The thirty rows in
+`parity/fixtures/cow_shed/proxy_addresses.json` (five users across two
+deployed versions across three chains) lock the per-row salt,
+init-code-hash, and proxy-address byte contract.
 
 ## Evidence
 
