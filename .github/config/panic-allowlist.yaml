@@ -30,6 +30,15 @@ allowed:
   - file: crates/contracts/src/deploy.rs
     item: deployment_for_chain
     reason: The embedded registry is compile-time validated to include canonical contracts for every supported chain.
+  - file: crates/contracts/src/deployments/chain_id.rs
+    item: DeploymentChainId::from
+    reason: SupportedChainId is the only producer and the bridge match is exhaustive across the currently supported chains; non-exhaustive future variants must land in the same patch with an explicit policy review.
+  - file: crates/contracts/src/deployments/coverage.rs
+    item: DeploymentCoverage::default
+    reason: The embedded deployment-coverage manifest is validated by build.rs before runtime use.
+  - file: crates/contracts/src/deployments/env.rs
+    item: DeploymentEnv::from
+    reason: CowEnv is the only producer and the bridge match is exhaustive across the currently supported environments; non-exhaustive future variants must land in the same patch with an explicit policy review.
   - file: crates/contracts/src/deployments/registry.rs
     item: Registry::default
     reason: The embedded registry manifest is validated by build.rs before runtime use.
@@ -63,6 +72,18 @@ allowed:
   - file: crates/core/src/types/identity.rs
     item: OrderUid::from_bytes
     reason: Hex encoder only emits ASCII hex plus the 0x prefix.
+  - file: crates/core/src/types/identity_ext.rs
+    item: AlloyAddress::as_str
+    reason: hex_encode_20 only emits ASCII hex characters plus the 0x prefix.
+  - file: crates/core/src/types/identity_ext.rs
+    item: B256::as_str
+    reason: hex_encode_32 only emits ASCII hex characters plus the 0x prefix.
+  - file: crates/core/src/types/identity_ext.rs
+    item: Bytes::new
+    reason: normalize_hex_payload preserves the 0x prefix on every returned value.
+  - file: crates/core/src/types/identity_ext.rs
+    item: FixedBytes::as_str
+    reason: hex_encode_56 only emits ASCII hex characters plus the 0x prefix.
   - file: crates/core/src/types/hex.rs
     item: decode_nibble
     reason: decode_nibble is only called after hex validation constrains each byte to a valid nibble.
@@ -81,6 +102,9 @@ allowed:
   - file: crates/orderbook/src/transform.rs
     item: native_token_address
     reason: Native token sentinel literal is static and validated by the Address constructor.
+  - file: crates/orderbook/src/types/enums.rs
+    item: SigningScheme::from
+    reason: The variant-by-variant SigningScheme bridge parity test prevents drift; any new cow-sdk-contracts SigningScheme variant must land in the same patch.
   - file: crates/signing/src/domain.rs
     item: get_domain
     reason: Canonical settlement address is guaranteed by the validated deployment registry.

@@ -488,64 +488,31 @@ enums:
     reason: Custom EIP-1271 provider diagnostics can grow with signing-owned provider checks.
   - name: CowShedVersion
     file: crates/cow-shed/src/version.rs
-    line: 0
+    line: 6
     category: upstream-growing
     expected_marker: non_exhaustive
-    reason: COW Shed version variants can grow as new deployed-bytecode versions land upstream; reserved for the COW Shed helper crate body landing.
-    planned: true
+    reason: COW Shed version variants can grow as new deployed-bytecode versions land upstream.
+  - name: SigSource
+    file: crates/cow-shed/src/errors.rs
+    line: 10
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: COW Shed signature-source taxonomy can grow as new ECDSA and contract-signature paths are added.
   - name: CowShedError
-    file: crates/cow-shed/src/error.rs
-    line: 0
+    file: crates/cow-shed/src/errors.rs
+    line: 22
     category: sdk-local-state
     expected_marker: non_exhaustive
-    reason: COW Shed proxy and hook diagnostics can grow as account-abstraction helpers expand; reserved for the COW Shed helper crate body landing.
-    planned: true
-  - name: ComposableError
-    file: crates/composable/src/error.rs
-    line: 0
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: Composable conditional-order builder diagnostics can grow as new handler types and pre-flight validations land; reserved for the composable helper crate body landing.
-    planned: true
-  - name: PollResult
-    file: crates/composable/src/poll_result.rs
-    line: 0
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: ComposableCoW conditional-order poll outcome taxonomy can grow as upstream handler surface expands; reserved for the composable helper crate body landing.
-    planned: true
-  - name: TwapStatus
-    file: crates/composable/src/types/twap_status.rs
-    line: 0
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: TWAP runtime status taxonomy can grow as new part-lifecycle observations are added; reserved for the composable helper crate body landing.
-    planned: true
-  - name: OwnerKind
-    file: crates/composable/src/owner_kind.rs
-    line: 0
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Conditional-order owner identity kinds can grow as new smart-account shapes are recognized; reserved for the composable helper crate body landing.
-    planned: true
-  - name: HookPosition
-    file: crates/cow-shed/src/hook_position.rs
-    line: 0
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: COW Shed hook position taxonomy can grow with new pre and post slot variants; reserved for the COW Shed helper crate body landing.
-    planned: true
-  - name: Nonce
-    file: crates/cow-shed/src/nonce.rs
-    line: 0
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: COW Shed nonce strong-type is a typed wrapper; the wrapping shape may grow with derivation variants; reserved for the COW Shed helper crate body landing.
-    planned: true
+    reason: COW Shed proxy and hook diagnostics can grow as account-abstraction helpers expand.
   - name: Deadline
-    file: crates/cow-shed/src/deadline.rs
-    line: 0
+    file: crates/cow-shed/src/types/deadline.rs
+    line: 8
     category: sdk-local-state
     expected_marker: non_exhaustive
-    reason: COW Shed deadline strong-type is a typed wrapper; the wrapping shape may grow with clock-source variants; reserved for the COW Shed helper crate body landing.
-    planned: true
+    reason: COW Shed deadline strong-type is a typed wrapper; the wrapping shape may grow with clock-source variants.
+  - name: Nonce
+    file: crates/cow-shed/src/types/nonce.rs
+    line: 6
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: COW Shed nonce strong-type is a typed wrapper; the wrapping shape may grow with derivation variants.
