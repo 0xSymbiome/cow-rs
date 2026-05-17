@@ -24,7 +24,10 @@ pub mod types;
 pub mod version;
 
 pub use address::proxy_of;
-pub use calls::{encode_execute_hooks_calldata, encode_execute_pre_signed_hooks_calldata};
+pub use calls::{
+    encode_execute_hooks_calldata, encode_execute_pre_signed_hooks_calldata,
+    eoa_signature_from_compact,
+};
 pub use eip712::{
     ExecuteHooks, SolCall, cow_shed_domain_separator, execute_hooks_message_hash, hash_to_sign,
 };

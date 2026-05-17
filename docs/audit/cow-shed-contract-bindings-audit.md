@@ -45,6 +45,7 @@ app-data crate; that boundary is governed by the
 | EIP-712 hashing | Domain separator, struct hash, and signing digest are produced by `alloy_sol_types::Eip712Domain::separator` and `<ExecuteHooks as SolStruct>::eip712_hash_struct`; bytes match the reference parity fixtures | Conforms |
 | Call type identity | The macro-emitted `Call` declared in the canonical sol! block is the single source of truth for typed-data hashing, ABI calldata building, and both proxy and factory interface signatures; the four representative `executeHooks` calldata rows in the parity fixture catalog the wire-byte contract | Conforms |
 | CREATE2 derivation | Proxy address derivation routes through `alloy_primitives::Address::create2` over the per-user salt and the proxy init-code hash; the thirty per-chain, per-user rows in the proxy-address parity fixture catalog the wire-byte contract | Conforms |
+| EOA signature byte order | The ERC-2098 compact signature decoder routes through `alloy_primitives::Signature::from_erc2098` and `Signature::as_bytes`, emitting the canonical 65-byte `r \|\| s \|\| v` layout with `v ∈ {27, 28}`; the four representative rows in the EOA signature byte-order parity fixture catalog the wire-byte contract | Conforms |
 
 ## Current Contract
 
@@ -177,6 +178,25 @@ every other case. The thirty rows in
 `parity/fixtures/cow_shed/proxy_addresses.json` (five users across two
 deployed versions across three chains) lock the per-row salt,
 init-code-hash, and proxy-address byte contract.
+
+### EOA signature byte order
+
+The ERC-2098 compact signature decoder
+`cow_sdk_cow_shed::eoa_signature_from_compact` concatenates the
+caller-supplied `r_compact` and `vs` 32-byte arrays into the 64-byte
+ERC-2098 input and routes through
+[`alloy_primitives::Signature::from_erc2098`], which extracts the
+`y_parity` bit from the high bit of `vs[0]`, masks it out of the
+recovered `s`, and constructs the canonical
+[`alloy_primitives::Signature`].
+[`alloy_primitives::Signature::as_bytes`] then emits the 65-byte
+`r || s || v` layout with `v = 27 + y_parity ∈ {27, 28}`. The four
+representative rows in
+`parity/fixtures/cow_shed/eoa_signature_byte_order.json`
+(`v_27_low_bit`, `v_28_high_bit`, `edge_max_s_value`, and a
+real-shaped `v = 28` signature) carry the matched ERC-2098 compact
+input and the canonical packed signature for each case, locking the
+wire-byte contract end-to-end.
 
 ## Evidence
 

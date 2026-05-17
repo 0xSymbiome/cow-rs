@@ -1,4 +1,4 @@
-use alloy_primitives::{Address, B256, Bytes, U256};
+use alloy_primitives::{Address, B256, Bytes, Signature, U256};
 use alloy_sol_types::SolCall;
 
 use crate::Call;
@@ -19,18 +19,26 @@ pub fn encode_execute_hooks_calldata(
         nonce,
         deadline,
         user: who,
-        signature: eoa_signature_from_compact(r_compact, vs).into(),
+        signature: Bytes::from(eoa_signature_from_compact(&r_compact, &vs).to_vec()),
     };
     Bytes::from(call.abi_encode())
 }
 
-fn eoa_signature_from_compact(r: [u8; 32], mut vs: [u8; 32]) -> Vec<u8> {
-    let v = 27 + (vs[0] >> 7);
-    vs[0] &= 0x7f;
-
-    let mut signature = Vec::with_capacity(65);
-    signature.extend_from_slice(&r);
-    signature.extend_from_slice(&vs);
-    signature.push(v);
-    signature
+/// Decodes an [ERC-2098] compact signature `r || vs` into the canonical
+/// 65-byte `r || s || v` layout with `v ∈ {27, 28}`.
+///
+/// Delegates to [`alloy_primitives::Signature::from_erc2098`] over the
+/// 64-byte concatenation of `r_compact` and `vs`; the alloy primitive
+/// extracts the y-parity bit from the high bit of `vs[0]`, masks it out
+/// of the recovered `s`, and stores the canonical `Signature`.
+/// [`Signature::as_bytes`] then emits the 65-byte `r || s || v` form
+/// with `v = 27 + y_parity`.
+///
+/// [ERC-2098]: https://eips.ethereum.org/EIPS/eip-2098
+#[must_use]
+pub fn eoa_signature_from_compact(r_compact: &[u8; 32], vs: &[u8; 32]) -> [u8; 65] {
+    let mut compact = [0_u8; 64];
+    compact[..32].copy_from_slice(r_compact);
+    compact[32..].copy_from_slice(vs);
+    Signature::from_erc2098(&compact).as_bytes()
 }
