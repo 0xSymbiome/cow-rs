@@ -186,10 +186,11 @@ mod tests {
         out
     }
 
-    // SAFETY: hand-rolled oracle that proves the production path via byte-identity.
-    // Production code uses `alloy_primitives::keccak256` per ADR 0052; this test
-    // helper deliberately exercises the underlying `sha3::Keccak256` backend so
-    // the parity assertions below are not tautological alloy-vs-alloy checks.
+    // Hand-rolled `sha3::Keccak256` helper used by the assertions below.
+    // Crate code routes through `alloy_primitives::keccak256` per
+    // ADR 0052; this helper deliberately runs `sha3::Keccak256` directly
+    // so the parity check compares the crate output against an
+    // independent keccak implementation.
     fn keccak_word(value: &str) -> [u8; 32] {
         Keccak256::digest(value.as_bytes()).into()
     }

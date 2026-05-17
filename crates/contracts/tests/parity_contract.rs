@@ -717,10 +717,11 @@ fn sample_order_uid() -> OrderUid {
     .expect("sample OrderUid packing must succeed")
 }
 
-// SAFETY: hand-rolled oracle that proves the production path via byte-identity.
-// Production code uses `alloy_primitives::keccak256` per ADR 0052; this test
-// helper deliberately exercises the underlying `sha3::Keccak256` backend so
-// the parity assertions in this file are not tautological alloy-vs-alloy checks.
+// Hand-rolled `sha3::Keccak256` helper used by the assertions in this
+// file. Crate code routes through `alloy_primitives::keccak256` per
+// ADR 0052; this helper deliberately runs `sha3::Keccak256` directly so
+// the parity check compares the crate output against an independent
+// keccak implementation.
 fn keccak256(bytes: &[u8]) -> [u8; 32] {
     use sha3::{Digest, Keccak256};
     let digest = Keccak256::digest(bytes);

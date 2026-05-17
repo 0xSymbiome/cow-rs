@@ -43,6 +43,7 @@ app-data crate; that boundary is governed by the
 | Gnosis forwarder gate | The Gnosis-only forwarder is reachable only when the caller selects chain id 100; all other chains return the typed `CowShedError::COWShedForComposableCoWGnosisOnly { chain }` variant | Conforms (contract; helper body lands in a later capability landing) |
 | Hook type strings | Canonical type strings carry no whitespace between commas in declaration order; the EOA signature byte order is `r || s || v` | Conforms |
 | EIP-712 hashing | Domain separator, struct hash, and signing digest are produced by `alloy_sol_types::Eip712Domain::separator` and `<ExecuteHooks as SolStruct>::eip712_hash_struct`; bytes match the reference parity fixtures | Conforms |
+| Call type identity | The macro-emitted `Call` declared in the canonical sol! block is the single source of truth for typed-data hashing, ABI calldata building, and both proxy and factory interface signatures; the four representative `executeHooks` calldata rows in the parity fixture catalog the wire-byte contract | Conforms |
 
 ## Current Contract
 
@@ -105,26 +106,55 @@ preceding three lines of the call site.
 
 ### EIP-712 hashing
 
-The COW Shed EIP-712 hashing path delegates to alloy primitives end-to-end.
-The `Call` and `ExecuteHooks` typed-data structs are declared via the
-`alloy_sol_types::sol!` macro in `crates/cow-shed/src/eip712/sol_types.rs`;
-the macro emits the canonical type strings at expansion time and therefore
-rejects any whitespace insertion or declaration-order swap before the crate
-compiles. `cow_shed_domain_separator` constructs an
-`alloy_sol_types::Eip712Domain` (name `"COWShed"`, the deployed version
-string, the caller-supplied chain id, the proxy address, and no salt) and
-returns `.separator()`; `execute_hooks_message_hash` builds the
-`ExecuteHooks` struct from the input slice and returns
-`<ExecuteHooks as SolStruct>::eip712_hash_struct`; `hash_to_sign` keccaks
-the standard `0x19 || 0x01 || domain_separator || message_hash` envelope
-via `alloy_primitives::keccak256`. Downstream consumers that need the
+The COW Shed EIP-712 hashing path delegates to alloy primitives
+end-to-end. The `Call` and `ExecuteHooks` typed-data structs are
+declared via the `alloy_sol_types::sol!` macro in
+`crates/cow-shed/src/eip712/sol_types.rs`; the macro emits the canonical
+type strings at expansion time and rejects any whitespace insertion or
+declaration-order swap at macro expansion. `cow_shed_domain_separator`
+constructs an `alloy_sol_types::Eip712Domain` (name `"COWShed"`, the
+deployed version string, the caller-supplied chain id, the proxy
+address, and no salt) and returns `.separator()`;
+`execute_hooks_message_hash` builds the `ExecuteHooks` struct from the
+input slice and returns
+`<ExecuteHooks as SolStruct>::eip712_hash_struct`; `hash_to_sign`
+keccaks the standard `0x19 || 0x01 || domain_separator || message_hash`
+envelope via `alloy_primitives::keccak256`. Callers that need the
 EIP-712 type-hash bytes call `<T as SolStruct>::eip712_type_hash` on the
-matching struct. The `parity/fixtures/cow_shed/domain_separator.json` and
-`parity/fixtures/cow_shed/execute_hooks_digest.json` fixtures gate the
-wire-byte-identity contract; the type-hash parity contract test pins the
-macro-emitted accessors to keccak of the canonical type strings via a
-hand-rolled `sha3::Keccak256` oracle so the assertion is not an
-alloy-vs-alloy tautology.
+matching struct. The
+`parity/fixtures/cow_shed/domain_separator.json` and
+`parity/fixtures/cow_shed/execute_hooks_digest.json` fixtures lock the
+wire-byte contract. The type-hash parity contract test asserts the
+macro-emitted accessors equal keccak of the canonical type strings via
+a hand-rolled `sha3::Keccak256` helper, so the assertion runs against an
+independent keccak path rather than the alloy crate's own.
+
+### Call type identity
+
+The COW Shed crate carries one `Call` type definition. The
+macro-emitted `Call` in `crates/cow-shed/src/eip712/sol_types.rs` is the
+single source of truth: the same sol! block declares the canonical
+`ExecuteHooks` typed-data envelope plus the `COWShed` proxy and
+`COWShedFactory` factory interfaces, so the `Call[]` arguments on every
+hook-bearing function (`executeHooks`, `executePreSignedHooks`,
+`isPreSignedHooks`, `preSignHooks`, `trustedExecuteHooks` on the proxy,
+and the factory `executeHooks`) reference the same generated Rust type.
+The `crates/cow-shed/src/bindings/shed.rs` and
+`crates/cow-shed/src/bindings/factory.rs` modules re-export the
+canonical interfaces under
+`cow_sdk_cow_shed::bindings::shed::COWShed` and
+`cow_sdk_cow_shed::bindings::factory::COWShedFactory`, and
+`crates/cow-shed/src/types/call.rs` re-exports the canonical struct as
+the crate-level `cow_sdk_cow_shed::Call` alias. The ergonomic builder
+helpers (`Call::new(target, value, call_data)`, `Call::allow_failure()`,
+`Call::delegate_call()`) live on the `cow_sdk_cow_shed::CallExt`
+extension trait so call-site code reads in snake-case while the
+sol-generated struct keeps its camelCase Solidity field names. The four
+representative rows in
+`parity/fixtures/cow_shed/execute_hooks_calldata.json` (single-call,
+three-call medium fan-out, five-call max fan-out, and empty-`callData`
+edge case) lock the wire-byte contract for both the factory
+`executeHooks` and the proxy `executeHooks` ABI calldata paths.
 
 ## Evidence
 

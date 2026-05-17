@@ -379,10 +379,9 @@ fn from_value_returns_typed_appdata_error_on_bad_input() {
 }
 
 /// Live `trybuild` harness that re-proves the narrowed-bps compile
-/// failure on every `cargo test` run. Replaces the prior
-/// filesystem-presence-plus-snapshot assertions so a regression that
-/// silently widens `volume_bps` back to `u32` fails the test rather
-/// than passing a stale snapshot.
+/// failure on every `cargo test` run. A regression that silently widens
+/// `volume_bps` back to `u32` fails the test rather than passing a
+/// stale snapshot.
 #[test]
 fn partner_fee_bps_width_rejects_wider_integer_literal_at_compile_time() {
     let cases = trybuild::TestCases::new();

@@ -3,7 +3,6 @@ use alloy_sol_types::SolCall;
 
 use crate::Call;
 use crate::bindings::factory::COWShedFactory;
-use crate::calls::binding_calls;
 
 /// Encodes factory `executeHooks` calldata with an EOA compact signature.
 #[must_use]
@@ -16,7 +15,7 @@ pub fn encode_execute_hooks_calldata(
     who: Address,
 ) -> Bytes {
     let call = COWShedFactory::executeHooksCall {
-        calls: binding_calls(calls),
+        calls: calls.to_vec(),
         nonce,
         deadline,
         user: who,

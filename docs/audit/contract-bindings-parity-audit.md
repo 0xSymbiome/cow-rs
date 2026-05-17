@@ -116,27 +116,22 @@ cannot silently move one crate without moving the other.
 
 The `cow_sdk_contracts::primitives::domain_separator` and
 `cow_sdk_contracts::primitives::typed_data_digest` helpers delegate to
-`alloy_sol_types::Eip712Domain::separator` for the domain preimage and to
-`alloy_primitives::keccak256` for the canonical `0x19 0x01 || separator ||
-struct_hash` envelope, rather than carrying a hand-rolled encoder. The
-shared parity fixture is the byte-identity oracle that proves the alloy
-delegation emits the same bytes as the prior in-crate implementation; an
-inline regression test in `primitives.rs` reproduces the EIP-712 encoding
-from first principles and asserts the helper output matches at the byte
-level so the alloy delegation can never silently drift from the
-protocol-specified formula.
+`alloy_sol_types::Eip712Domain::separator` for the domain preimage and
+to `alloy_primitives::keccak256` for the canonical `0x19 0x01 ||
+separator || struct_hash` envelope. The shared parity fixture locks the
+byte contract; an inline regression test in `primitives.rs` reproduces
+the EIP-712 encoding from first principles and asserts the helper
+output matches at the byte level, so the alloy delegation can never
+silently drift from the protocol-specified formula.
 
 Deterministic CREATE2 addresses for the deployer-derived contracts in
 `cow_sdk_contracts::deploy` route through
 `alloy_primitives::Address::create2_from_code`, which assembles the
 canonical EIP-1014 preimage (`0xff || deployer || salt ||
-keccak256(init_code)`) and hashes it internally. The hand-rolled byte
-assembly previously carried by
-`deterministic_deployment_address` retires together with the redundant
-deployer-encode call in `deployment_address_hash_input`. The inline
-oracle tests in `deploy.rs` continue to reconstruct the EIP-1014
-formula by hand and assert byte-identity against the alloy delegation,
-so any silent divergence between the maintained primitive and the
+keccak256(init_code)`) and hashes it internally. The inline regression
+tests in `deploy.rs` reconstruct the EIP-1014 formula by hand and
+assert byte-identity against the alloy delegation, so any silent
+divergence between the maintained primitive and the
 shipped CREATE2 salt + deployer constants is caught at test time.
 
 ### WASM Target Contract

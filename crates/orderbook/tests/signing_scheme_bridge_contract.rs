@@ -10,13 +10,12 @@
 //!   `#[serde(rename_all = "lowercase")]` to match the orderbook HTTP wire
 //!   form (`"eip712"`, `"ethsign"`, `"eip1271"`, `"presign"`).
 //!
-//! Per the alloy-leaning primitive layer deduplication strategy (ADR 0052),
-//! the two enums therefore stay distinct. A `From` / `TryFrom` bridge connects
-//! them so callers can convert losslessly without paying the orphan-rules
-//! tax. This test asserts the bridge is variant-by-variant identity, the
-//! `EcdsaSigningScheme` narrowing round-trips through the parent, and the
-//! fallible inverse rejects the two non-ECDSA variants with the typed
-//! `SigningSchemeNotEcdsa` error.
+//! Per ADR 0052, the two enums stay distinct. A `From` / `TryFrom`
+//! bridge connects them so callers can convert losslessly without paying
+//! the orphan-rules tax. This test asserts the bridge is
+//! variant-by-variant identity, the `EcdsaSigningScheme` narrowing
+//! round-trips through the parent, and the fallible inverse rejects the
+//! two non-ECDSA variants with the typed `SigningSchemeNotEcdsa` error.
 //!
 //! If the upstream contracts crate adds a new `SigningScheme` variant, the
 //! orderbook crate must add the matching variant in the same patch (the

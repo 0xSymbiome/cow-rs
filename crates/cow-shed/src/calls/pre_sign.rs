@@ -3,7 +3,6 @@ use alloy_sol_types::SolCall;
 
 use crate::Call;
 use crate::bindings::shed::COWShed;
-use crate::calls::shed_binding_calls;
 
 /// Encodes proxy `executePreSignedHooks` calldata.
 #[must_use]
@@ -13,7 +12,7 @@ pub fn encode_execute_pre_signed_hooks_calldata(
     deadline: U256,
 ) -> Bytes {
     let call = COWShed::executePreSignedHooksCall {
-        calls: shed_binding_calls(calls),
+        calls: calls.to_vec(),
         nonce,
         deadline,
     };

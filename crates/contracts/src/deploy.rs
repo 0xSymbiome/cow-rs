@@ -74,9 +74,9 @@ pub fn deterministic_deployment_address(
     // keccak256(init_code)`) and the final keccak256 to the maintained
     // primitive. `Address::create2_from_code` computes the init-code hash
     // internally and slices the trailing 20 bytes to form the derived
-    // address. Byte-identical to the prior hand-rolled encoder; the inline
-    // oracle test in this module proves the equivalence against the
-    // canonical EIP-1014 formula reconstructed from first principles.
+    // address. The inline regression test in this module reconstructs the
+    // canonical EIP-1014 formula from first principles and asserts the
+    // helper output matches at the byte level.
     let deployer = Address::new(DEPLOYER_CONTRACT)?;
     let deployer_alloy =
         alloy_primitives::Address::new(crate::primitives::parse_address_bytes(&deployer)?);
@@ -140,13 +140,11 @@ mod tests {
     use super::*;
     use sha3::{Digest, Keccak256};
 
-    /// Test-only oracle: hand-rolled keccak256 over `bytes` returning the raw
-    /// `[u8; 32]` digest.
-    ///
-    // SAFETY: hand-rolled oracle that proves the production path via byte-identity.
-    // Production code uses `alloy_primitives::keccak256` per ADR 0052; this test
-    // helper deliberately exercises the underlying `sha3::Keccak256` backend so
-    // the parity assertions below are not tautological alloy-vs-alloy checks.
+    /// Hand-rolled keccak256 over `bytes` returning the raw `[u8; 32]`
+    /// digest. Crate code routes through `alloy_primitives::keccak256`
+    /// per ADR 0052; this helper deliberately runs `sha3::Keccak256`
+    /// directly so the parity check compares the crate output against an
+    /// independent keccak implementation.
     fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
         let digest = Keccak256::digest(bytes.as_ref());
         let mut out = [0u8; 32];

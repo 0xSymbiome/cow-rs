@@ -190,14 +190,15 @@ pub(crate) fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
 }
 
 pub(crate) fn domain_separator(domain: &TypedDataDomain) -> Result<[u8; 32], ContractsError> {
-    // Delegate to `alloy_sol_types::Eip712Domain::separator`, which constructs
-    // the canonical `EIP712Domain(string name,string version,uint256
-    // chainId,address verifyingContract)` type-hash and the (name_hash,
-    // version_hash, chain_id_word, verifying_contract_word) data preimage and
-    // returns `keccak256(type_hash || encoded_data)`. Byte-identical to the
-    // prior hand-rolled encoder; verified by the inline oracle test
+    // Delegate to `alloy_sol_types::Eip712Domain::separator`, which
+    // constructs the canonical `EIP712Domain(string name,string
+    // version,uint256 chainId,address verifyingContract)` type-hash and
+    // the (name_hash, version_hash, chain_id_word,
+    // verifying_contract_word) data preimage and returns
+    // `keccak256(type_hash || encoded_data)`. The inline regression test
     // `domain_separator_and_typed_data_digest_match_manual_eip712_encoding`
-    // and the shared parity fixture `domain_separator_parity.json`.
+    // and the shared parity fixture `domain_separator_parity.json` lock
+    // the byte contract.
     let addr_bytes = parse_address_bytes(&domain.verifying_contract)?;
     let alloy_domain = Eip712Domain {
         name: Some(domain.name.clone().into()),
@@ -214,8 +215,9 @@ pub(crate) fn typed_data_digest(
     struct_hash: [u8; 32],
 ) -> Result<[u8; 32], ContractsError> {
     // Canonical EIP-712 signing-hash envelope: `keccak256(0x19 || 0x01 ||
-    // domain_separator || struct_hash)`. Fixed-size 66-byte buffer avoids the
-    // Vec allocation; semantics are byte-identical to the prior implementation.
+    // domain_separator || struct_hash)`. The fixed-size 66-byte buffer
+    // mirrors the envelope specification exactly and avoids a `Vec`
+    // allocation on the hot path.
     let separator = domain_separator(domain)?;
     let mut payload = [0u8; 66];
     payload[0] = 0x19;

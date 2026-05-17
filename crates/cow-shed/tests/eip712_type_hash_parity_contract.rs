@@ -4,9 +4,10 @@ use cow_sdk_cow_shed::{ExecuteHooks, SolCall};
 use sha3::{Digest, Keccak256};
 
 /// Asserts the macro-emitted EIP-712 type hashes for the COW Shed
-/// `Call` and `ExecuteHooks` structs equal the keccak of the canonical
-/// EIP-712 type strings. The hand-rolled `Keccak256` oracle proves the
-/// alloy-emitted accessors are not tautological alloy-vs-alloy checks.
+/// `Call` and `ExecuteHooks` structs and the `EIP712Domain` struct equal
+/// the keccak of the canonical EIP-712 type strings. The keccak helper
+/// below runs `sha3::Keccak256` directly so the comparison uses an
+/// independent keccak implementation.
 #[test]
 fn type_hashes_match_canonical_type_strings() {
     let call_sample = SolCall {
@@ -49,12 +50,12 @@ fn type_hashes_match_canonical_type_strings() {
     );
 }
 
-// SAFETY: hand-rolled oracle that proves the production path via byte-identity.
-// Production code uses `alloy_sol_types::SolStruct::eip712_type_hash` and
-// `alloy_sol_types::Eip712Domain::type_hash`; this test helper deliberately
-// exercises the underlying `sha3::Keccak256` backend on the canonical EIP-712
-// type strings so the parity assertions above are not tautological
-// alloy-vs-alloy checks.
+// Hand-rolled `sha3::Keccak256` helper used by the assertions above.
+// Crate code reaches the type hashes through
+// `alloy_sol_types::SolStruct::eip712_type_hash` and
+// `alloy_sol_types::Eip712Domain::type_hash`; this helper deliberately
+// runs `sha3::Keccak256` directly so the parity check compares the
+// macro-emitted accessors against an independent keccak implementation.
 fn keccak(value: &str) -> B256 {
     let digest = Keccak256::digest(value.as_bytes());
     let mut out = [0_u8; 32];

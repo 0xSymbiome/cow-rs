@@ -29,5 +29,5 @@ pub use eip712::{
     ExecuteHooks, SolCall, cow_shed_domain_separator, execute_hooks_message_hash, hash_to_sign,
 };
 pub use errors::{CowShedError, SigSource};
-pub use types::{Call, Deadline, Hook, HookList, Nonce, ProxyAddress};
+pub use types::{Call, CallExt, Deadline, Hook, HookList, Nonce, ProxyAddress};
 pub use version::CowShedVersion;

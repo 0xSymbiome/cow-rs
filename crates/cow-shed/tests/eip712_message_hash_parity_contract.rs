@@ -1,7 +1,7 @@
 use alloy_primitives::{Address, B256, Bytes, U256};
 use alloy_sol_types::SolStruct;
 use cow_sdk_cow_shed::{
-    Call, CowShedVersion, ExecuteHooks, SolCall, cow_shed_domain_separator,
+    Call, CallExt, CowShedVersion, ExecuteHooks, SolCall, cow_shed_domain_separator,
     execute_hooks_message_hash, hash_to_sign,
 };
 use serde::Deserialize;

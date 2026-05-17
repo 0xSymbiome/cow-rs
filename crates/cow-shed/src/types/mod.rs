@@ -4,7 +4,7 @@ mod call;
 mod deadline;
 mod nonce;
 
-pub use call::Call;
+pub use call::{Call, CallExt};
 pub use cow_sdk_app_data::{Hook, HookList};
 pub use deadline::Deadline;
 pub use nonce::Nonce;

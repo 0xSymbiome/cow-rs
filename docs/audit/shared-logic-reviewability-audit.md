@@ -13,15 +13,13 @@ Related docs:
 
 Production code across `cow-sdk-contracts`, `cow-sdk-signing`, and
 `cow-sdk-cow-shed` invokes `keccak256` through the single canonical
-`alloy_primitives::keccak256` entry point. Five duplicate workspace
-wrappers were retired in favour of this single invocation path; the
-hand-rolled hand-keccak helpers under `crates/*/tests/` (and one inline
-test-mod oracle in `crates/contracts/src/deploy.rs::tests`) are retained
-under explicit `// SAFETY: hand-rolled oracle that proves the production
-path via byte-identity` annotations so the parity assertions remain
-non-tautological. The shared-logic-reviewability boundary still applies:
-production hashing has exactly one canonical invocation path; oracle
-helpers are quarantined in test modules and explicitly marked as such.
+`alloy_primitives::keccak256` entry point. Hand-rolled `sha3::Keccak256`
+helpers under `crates/*/tests/` (and one inline test-mod helper in
+`crates/contracts/src/deploy.rs::tests`) are retained so the parity
+assertions compare the crate output against an independent keccak
+implementation. The shared-logic-reviewability boundary still applies:
+crate hashing has exactly one canonical invocation path; the
+independent-keccak helpers are quarantined in test modules.
 
 ## Scope
 

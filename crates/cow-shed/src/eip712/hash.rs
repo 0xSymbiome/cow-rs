@@ -1,22 +1,21 @@
 use alloy_primitives::{B256, U256, keccak256};
 use alloy_sol_types::SolStruct;
 
-use crate::eip712::sol_types::{Call as SolCall, ExecuteHooks};
+use crate::eip712::sol_types::ExecuteHooks;
 use crate::types::Call;
 
 /// Computes the COW Shed `ExecuteHooks` EIP-712 message hash.
 ///
-/// Delegates to [`alloy_sol_types::SolStruct::eip712_hash_struct`] on the
-/// macro-emitted [`ExecuteHooks`] struct (declared in
-/// [`crate::eip712::sol_types`]). The macro emits the canonical
-/// `keccak256(type_hash || encoded_data)` per the EIP-712 specification;
-/// byte-identical to the prior in-crate encoder. The shared parity fixture
-/// at `parity/fixtures/cow_shed/execute_hooks_digest.json` gates the
-/// byte-identity guarantee.
+/// Delegates to [`alloy_sol_types::SolStruct::eip712_hash_struct`] on
+/// the macro-emitted [`ExecuteHooks`] struct declared in
+/// [`crate::eip712::sol_types`]. The macro emits the canonical
+/// `keccak256(type_hash || encoded_data)` per the EIP-712 specification.
+/// The `parity/fixtures/cow_shed/execute_hooks_digest.json` rows lock
+/// the per-row byte contract.
 #[must_use]
 pub fn execute_hooks_message_hash(calls: &[Call], nonce: B256, deadline: U256) -> B256 {
     ExecuteHooks {
-        calls: calls.iter().map(to_sol_call).collect(),
+        calls: calls.to_vec(),
         nonce,
         deadline,
     }
@@ -28,9 +27,9 @@ pub fn execute_hooks_message_hash(calls: &[Call], nonce: B256, deadline: U256) -
 ///
 /// The fixed-size 66-byte buffer mirrors the canonical EIP-712 envelope
 /// specification; the keccak invocation routes through
-/// [`alloy_primitives::keccak256`] per the deduplication baseline. The
-/// parity fixture at `parity/fixtures/cow_shed/execute_hooks_digest.json`
-/// records the expected per-row digest.
+/// [`alloy_primitives::keccak256`]. The
+/// `parity/fixtures/cow_shed/execute_hooks_digest.json` rows record the
+/// expected per-row digest.
 #[must_use]
 pub fn hash_to_sign(domain_separator: B256, message_hash: B256) -> B256 {
     let mut payload = [0_u8; 66];
@@ -39,14 +38,4 @@ pub fn hash_to_sign(domain_separator: B256, message_hash: B256) -> B256 {
     payload[2..34].copy_from_slice(domain_separator.as_slice());
     payload[34..66].copy_from_slice(message_hash.as_slice());
     keccak256(payload)
-}
-
-fn to_sol_call(call: &Call) -> SolCall {
-    SolCall {
-        target: call.target,
-        value: call.value,
-        callData: call.call_data.clone(),
-        allowFailure: call.allow_failure,
-        isDelegateCall: call.is_delegate_call,
-    }
 }

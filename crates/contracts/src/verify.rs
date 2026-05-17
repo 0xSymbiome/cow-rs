@@ -5,10 +5,11 @@
 //! injected [`cow_sdk_core::AsyncProvider`], consulting an
 //! [`Eip1271VerificationCache`] before reaching the chain. The trait is
 //! defined here so the contracts crate can take it as a parameter
-//! without depending on its sibling crates; downstream consumers
-//! typically reach for the trait through `cow_sdk_signing::cache` and
-//! the `NoopEip1271VerificationCache` and `InMemoryEip1271VerificationCache`
-//! impls shipped by signing.
+//! without depending on its sibling crates; callers typically reach for
+//! the trait through `cow_sdk_signing::cache` and the
+//! `NoopEip1271VerificationCache` and
+//! `InMemoryEip1271VerificationCache` implementations in the signing
+//! crate.
 //!
 //! # Cached-value semantics
 //!

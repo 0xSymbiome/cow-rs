@@ -2,7 +2,7 @@ use alloy_primitives::{Address, B256, Bytes, U256};
 use alloy_sol_types::SolCall;
 use cow_sdk_cow_shed::bindings::{COWShed, COWShedFactory};
 use cow_sdk_cow_shed::{
-    Call, encode_execute_hooks_calldata, encode_execute_pre_signed_hooks_calldata,
+    Call, CallExt, encode_execute_hooks_calldata, encode_execute_pre_signed_hooks_calldata,
 };
 use serde::Deserialize;
 
@@ -10,14 +10,18 @@ const FIXTURE: &str = include_str!("../../../parity/fixtures/cow_shed/execute_ho
 
 #[derive(Debug, Deserialize)]
 struct Fixture {
+    rows: Vec<Row>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Row {
+    name: String,
     calls: Vec<FixtureCall>,
     nonce: String,
     deadline: String,
     user: String,
     signature: String,
-    #[serde(rename = "factory_call_data")]
     factory_call_data: String,
-    #[serde(rename = "proxy_call_data")]
     proxy_call_data: String,
 }
 
@@ -34,46 +38,83 @@ struct FixtureCall {
 #[test]
 fn execute_hooks_calldata_matches_and_round_trips() {
     let fixture: Fixture = serde_json::from_str(FIXTURE).expect("calldata fixture parses");
-    let calls = fixture.calls.iter().map(to_call).collect::<Vec<_>>();
-    let signature = bytes(&fixture.signature);
-    let (r, vs) = compact_signature(&signature);
-
-    let encoded = encode_execute_hooks_calldata(
-        &calls,
-        b256(&fixture.nonce),
-        decimal_u256(&fixture.deadline),
-        r,
-        vs,
-        address(&fixture.user),
+    assert!(
+        !fixture.rows.is_empty(),
+        "execute_hooks_calldata fixture must carry at least one row"
     );
-    assert_eq!(encoded, bytes(&fixture.factory_call_data));
 
-    let decoded =
-        COWShedFactory::executeHooksCall::abi_decode(&encoded).expect("factory calldata decodes");
-    assert_eq!(decoded.abi_encode(), encoded.as_ref());
+    for row in &fixture.rows {
+        let calls = row.calls.iter().map(to_call).collect::<Vec<_>>();
+        let signature = bytes(&row.signature);
+        let (r, vs) = compact_signature(&signature);
+
+        let encoded = encode_execute_hooks_calldata(
+            &calls,
+            b256(&row.nonce),
+            decimal_u256(&row.deadline),
+            r,
+            vs,
+            address(&row.user),
+        );
+        assert_eq!(
+            encoded,
+            bytes(&row.factory_call_data),
+            "row {}: factory executeHooks calldata diverges from reference vector",
+            row.name
+        );
+
+        let decoded = COWShedFactory::executeHooksCall::abi_decode(&encoded)
+            .unwrap_or_else(|err| panic!("row {}: factory calldata decodes: {err}", row.name));
+        assert_eq!(
+            decoded.abi_encode(),
+            encoded.as_ref(),
+            "row {}: factory calldata round-trip",
+            row.name
+        );
+    }
 }
 
 #[test]
 fn proxy_execute_hooks_fixture_round_trips() {
     let fixture: Fixture = serde_json::from_str(FIXTURE).expect("calldata fixture parses");
-    let encoded = bytes(&fixture.proxy_call_data);
-    let decoded = COWShed::executeHooksCall::abi_decode(&encoded).expect("proxy calldata decodes");
-    assert_eq!(decoded.abi_encode(), encoded.as_ref());
+    for row in &fixture.rows {
+        let encoded = bytes(&row.proxy_call_data);
+        let decoded = COWShed::executeHooksCall::abi_decode(&encoded)
+            .unwrap_or_else(|err| panic!("row {}: proxy calldata decodes: {err}", row.name));
+        assert_eq!(
+            decoded.abi_encode(),
+            encoded.as_ref(),
+            "row {}: proxy calldata round-trip",
+            row.name
+        );
+    }
 }
 
 #[test]
 fn execute_pre_signed_hooks_calldata_round_trips() {
     let fixture: Fixture = serde_json::from_str(FIXTURE).expect("calldata fixture parses");
-    let calls = fixture.calls.iter().map(to_call).collect::<Vec<_>>();
-    let encoded = encode_execute_pre_signed_hooks_calldata(
-        &calls,
-        b256(&fixture.nonce),
-        decimal_u256(&fixture.deadline),
-    );
-    assert_eq!(&encoded[..4], COWShed::executePreSignedHooksCall::SELECTOR);
-    let decoded = COWShed::executePreSignedHooksCall::abi_decode(&encoded)
-        .expect("pre-signed calldata decodes");
-    assert_eq!(decoded.abi_encode(), encoded.as_ref());
+    for row in &fixture.rows {
+        let calls = row.calls.iter().map(to_call).collect::<Vec<_>>();
+        let encoded = encode_execute_pre_signed_hooks_calldata(
+            &calls,
+            b256(&row.nonce),
+            decimal_u256(&row.deadline),
+        );
+        assert_eq!(
+            &encoded[..4],
+            COWShed::executePreSignedHooksCall::SELECTOR,
+            "row {}: pre-signed selector",
+            row.name
+        );
+        let decoded = COWShed::executePreSignedHooksCall::abi_decode(&encoded)
+            .unwrap_or_else(|err| panic!("row {}: pre-signed calldata decodes: {err}", row.name));
+        assert_eq!(
+            decoded.abi_encode(),
+            encoded.as_ref(),
+            "row {}: pre-signed calldata round-trip",
+            row.name
+        );
+    }
 }
 
 fn to_call(call: &FixtureCall) -> Call {

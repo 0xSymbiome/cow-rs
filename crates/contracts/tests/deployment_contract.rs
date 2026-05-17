@@ -10,10 +10,11 @@ use cow_sdk_core::{CowEnv, SupportedChainId};
 
 use common::fixture_case;
 
-// SAFETY: hand-rolled oracle that proves the production path via byte-identity.
-// Production code uses `alloy_primitives::keccak256` per ADR 0052; this test
-// helper deliberately exercises the underlying `sha3::Keccak256` backend so
-// the parity assertions below are not tautological alloy-vs-alloy checks.
+// Hand-rolled `sha3::Keccak256` helper used by the assertions below.
+// Crate code routes through `alloy_primitives::keccak256` per ADR 0052;
+// this helper deliberately runs `sha3::Keccak256` directly so the parity
+// check compares the crate output against an independent keccak
+// implementation.
 fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
     let digest = Keccak256::digest(bytes.as_ref());
     let mut out = [0u8; 32];
