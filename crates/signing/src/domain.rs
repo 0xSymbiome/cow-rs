@@ -1,8 +1,11 @@
-use alloy_primitives::keccak256;
+use std::str::FromStr;
+
+use alloy_primitives::{Address as AlloyAddress, U256};
+use alloy_sol_types::Eip712Domain;
 use cow_sdk_contracts::{CANCELLATIONS_TYPE_FIELDS, ContractId, ORDER_TYPE_FIELDS, Registry};
 use cow_sdk_core::{
-    Address, CowEnv, ProtocolOptions, SupportedChainId, TypedDataDomain, TypedDataEnvelope,
-    TypedDataField, TypedDataPayload, TypedDataTypes, UnsignedOrder,
+    CowEnv, ProtocolOptions, SupportedChainId, TypedDataDomain, TypedDataEnvelope, TypedDataField,
+    TypedDataPayload, TypedDataTypes, UnsignedOrder,
 };
 use serde::Serialize;
 
@@ -66,22 +69,33 @@ pub fn domain_separator(
 
 /// Computes the domain separator for an explicit typed-data domain.
 ///
+/// Delegates to [`alloy_sol_types::Eip712Domain::separator`], which
+/// composes the canonical `EIP712Domain(string name,string
+/// version,uint256 chainId,address verifyingContract)` type hash with
+/// the packed `(name_hash, version_hash, chain_id_word,
+/// verifying_contract_word)` preimage and returns
+/// `keccak256(type_hash || encoded_data)`. The
+/// `crates/signing/tests/fixtures/domain_separator_parity.json` row
+/// locks the per-chain byte contract.
+///
 /// # Errors
 ///
-/// Returns [`SigningError`] if the verifying-contract address cannot be encoded.
+/// Returns [`SigningError`] if the verifying-contract address cannot be parsed.
 pub fn domain_separator_for(domain: &TypedDataDomain) -> Result<String, SigningError> {
-    let mut encoded = Vec::with_capacity(32 * 5);
-    encoded.extend_from_slice(
-        keccak256(
-            b"EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)",
-        )
-        .as_slice(),
-    );
-    encoded.extend_from_slice(keccak256(domain.name.as_bytes()).as_slice());
-    encoded.extend_from_slice(keccak256(domain.version.as_bytes()).as_slice());
-    encoded.extend_from_slice(&encode_u256_u64(domain.chain_id));
-    encoded.extend_from_slice(&encode_address(&domain.verifying_contract)?);
-    Ok(format!("0x{}", hex::encode(keccak256(encoded).as_slice())))
+    let alloy_addr = AlloyAddress::from_str(domain.verifying_contract.as_str()).map_err(|err| {
+        SigningError::Serialization(format!("verifying contract address: {err}").into())
+    })?;
+    let alloy_domain = Eip712Domain {
+        name: Some(domain.name.clone().into()),
+        version: Some(domain.version.clone().into()),
+        chain_id: Some(U256::from(domain.chain_id)),
+        verifying_contract: Some(alloy_addr),
+        salt: None,
+    };
+    Ok(format!(
+        "0x{}",
+        hex::encode(alloy_domain.separator().as_slice())
+    ))
 }
 
 /// Builds the typed-data envelope with the fully typed order message body.
@@ -159,35 +173,10 @@ pub(crate) fn serialize_message<T: Serialize>(value: &T) -> Result<String, Signi
         .map_err(|error| SigningError::Serialization(error.to_string().into()))
 }
 
-fn encode_u256_u64(value: u64) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[24..].copy_from_slice(&value.to_be_bytes());
-    out
-}
-
-fn encode_address(address: &Address) -> Result<[u8; 32], SigningError> {
-    let Some(stripped) = address.as_str().strip_prefix("0x") else {
-        return Err(SigningError::Serialization(
-            "address must be 0x-prefixed".to_owned().into(),
-        ));
-    };
-    let bytes = hex::decode(stripped).map_err(|_| {
-        SigningError::Serialization("address contains non-hex characters".to_owned().into())
-    })?;
-    if bytes.len() != 20 {
-        return Err(SigningError::Serialization(
-            "address must be 20 bytes".to_owned().into(),
-        ));
-    }
-
-    let mut out = [0u8; 32];
-    out[12..].copy_from_slice(&bytes);
-    Ok(out)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cow_sdk_core::Address;
 
     #[test]
     fn domain_separator_matches_shared_parity_fixture() {

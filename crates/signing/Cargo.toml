@@ -26,6 +26,7 @@ tracing = ["dep:tracing", "cow-sdk-core/tracing", "cow-sdk-contracts/tracing"]
 
 [dependencies]
 alloy-primitives.workspace = true
+alloy-sol-types.workspace = true
 async-trait.workspace = true
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }

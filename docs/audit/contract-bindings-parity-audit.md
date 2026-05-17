@@ -1,7 +1,7 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-05-16
+Last reviewed: 2026-05-17
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a drift in the committed Solidity excerpt under `crates/contracts/abi/**/*.sol`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
@@ -41,7 +41,7 @@ provider.
 | Single binding idiom | Every shipped binding is generated through `alloy::sol!`; no hand-rolled encoder remains in `cow-sdk-contracts` | Conforms |
 | Committed provenance | The Solidity excerpt used to author each binding is committed under `crates/contracts/abi/<family>/` | Conforms |
 | Byte-identity parity | Encoded call-data and hashed payloads match the TypeScript-SDK-derived golden fixtures on every binding | Conforms |
-| Domain separator parity | `cow-sdk-contracts` and `cow-sdk-signing` pin the same EIP-712 domain-separator fixture value | Conforms |
+| Domain separator parity | `cow-sdk-contracts` and `cow-sdk-signing` route every EIP-712 domain separator through `alloy_sol_types::Eip712Domain::separator` and pin the same fixture value | Conforms |
 | Boundary matrices | Compact order flags, settlement reader returns, settlement encoder stages, mixed-balance transfers, and multi-trade clearing prices have deterministic regression coverage | Conforms |
 | EIP-1967 derivation | Proxy storage slots match the canonical `keccak256(label) - 1` formula as well as the golden byte payloads | Conforms |
 | Vault role hash parity | Vault-relayer role helpers emit the same packed role hashes as the upstream TypeScript role-grant helpers | Conforms |
@@ -123,6 +123,16 @@ byte contract; an inline regression test in `primitives.rs` reproduces
 the EIP-712 encoding from first principles and asserts the helper
 output matches at the byte level, so the alloy delegation can never
 silently drift from the protocol-specified formula.
+
+`cow_sdk_signing::domain::domain_separator_for` and the chain-aware
+`cow_sdk_signing::domain::domain_separator` wrapper route through the
+same `alloy_sol_types::Eip712Domain::separator` primitive. The signing
+helper owns the chain-id and protocol-options resolution (settlement
+contract lookup through `cow_sdk_contracts::Registry`) and formats the
+32-byte separator as the lowercase 0x-prefixed hex string that the
+signer-facing API exposes; the EIP-712 algorithm itself is the alloy
+canonical, so the contracts-side and signing-side fixture cases gate
+the same byte contract from both crate boundaries.
 
 Deterministic CREATE2 addresses for the deployer-derived contracts in
 `cow_sdk_contracts::deploy` route through
