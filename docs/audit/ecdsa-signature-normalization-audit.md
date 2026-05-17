@@ -1,7 +1,7 @@
 # ECDSA Signature Normalization Audit
 
 Status: Current
-Last reviewed: 2026-05-16
+Last reviewed: 2026-05-17
 Owning surface: `cow_sdk_contracts::normalized_ecdsa_signature` and `Signature::recover_ecdsa_address`
 Refresh trigger: Changes to the accepted ECDSA recovery-byte set, the
 65-byte length contract, the `InvalidSignatureLength` or
@@ -16,15 +16,28 @@ Related docs:
 ## Note on canonical primitive layer
 
 The EIP-191 prehash builder
-(`cow_sdk_contracts::signature::eth_sign_digest_prehash`) hashes the
-`"\x19Ethereum Signed Message:\n32" || digest_bytes` payload through
-`alloy_primitives::keccak256`. The workspace's hand-rolled `keccak256`
-wrappers were retired in favour of this single canonical invocation
-path; behaviour and byte output are unchanged because
-`alloy_primitives::keccak256` wraps the same `sha3::Keccak256` backend
-the wrappers used. The `Signature::recover_ecdsa_address` and
-`normalized_ecdsa_signature` helpers continue to delegate ECDSA
-recovery to the `alloy-primitives` 1.5 secp256k1 recovery API as
+(`cow_sdk_contracts::signature::eth_sign_digest_prehash`) delegates to
+`alloy_primitives::eip191_hash_message`, which assembles the canonical
+`"\x19Ethereum Signed Message:\n" || ascii_len(msg) || msg` preimage
+and hashes it through `alloy_primitives::keccak256`. For a 32-byte
+digest input the alloy primitive produces the identical 60-byte
+preimage and identical keccak output as the hand-rolled assembler.
+
+`cow_sdk_contracts::normalized_ecdsa_signature` parses the input hex,
+validates the trailing recovery byte against the COW-accepted set
+`{0, 1, 27, 28}` per ADR 0022, then delegates parity normalization to
+`alloy_primitives::Signature::from_raw` plus `Signature::as_bytes`
+which emits the canonical `r || s || (27 + y_parity)` byte layout.
+The pre-validation step preserves the typed
+`ContractsError::InvalidSignatureRecoveryByte` rejection for inputs
+outside the COW-accepted set (the alloy primitive itself accepts
+EIP-155 encoded `v` values starting at 35, a wider input surface than
+the ADR 0022 contract permits). The
+`crates/contracts/tests/v_normalization_contract.rs` fixture-driven
+parity contract pins the byte mapping against
+`parity/fixtures/ecdsa/v_normalization.json`. The
+`Signature::recover_ecdsa_address` helper continues to delegate
+secp256k1 recovery to the `alloy-primitives` 1.5 recovery API as
 documented in ADR 0022.
 
 ## Scope
@@ -134,8 +147,10 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/contracts/tests/signature_contract.rs`
+- `crates/contracts/tests/v_normalization_contract.rs`
 - `crates/contracts/tests/property_contract.rs::signature_codecs_preserve_verifier_and_payload_bytes`
 - `crates/signing/tests/parity_contract.rs::parity_fixture_cases_hold`
+- `parity/fixtures/ecdsa/v_normalization.json`
 - `fuzz/fuzz_targets/fuzz_ecdsa_v_normalization.rs`
 - `fuzz/fuzz_targets/fuzz_recover_ecdsa_address.rs`
 
@@ -143,6 +158,7 @@ Validation surface:
 
 ```text
 cargo test -p cow-sdk-contracts --test signature_contract
+cargo test -p cow-sdk-contracts --test v_normalization_contract
 cargo test -p cow-sdk-contracts --test property_contract
 cargo test -p cow-sdk-signing --test parity_contract
 cargo +nightly fuzz build --fuzz-dir fuzz fuzz_ecdsa_v_normalization

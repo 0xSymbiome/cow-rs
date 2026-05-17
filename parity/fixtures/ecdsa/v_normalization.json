@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "source": "cow_sdk_contracts::normalized_ecdsa_signature canonical v in {0, 1, 27, 28} normalizes to {27, 28} per ADR 0022",
+  "rows": [
+    {
+      "name": "v_0_normalizes_to_27",
+      "inputs": {
+        "raw_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb00"
+      },
+      "expected": {
+        "normalized_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1b"
+      }
+    },
+    {
+      "name": "v_1_normalizes_to_28",
+      "inputs": {
+        "raw_signature": "0xccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd01"
+      },
+      "expected": {
+        "normalized_signature": "0xccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd1c"
+      }
+    },
+    {
+      "name": "v_27_passthrough",
+      "inputs": {
+        "raw_signature": "0x111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222221b"
+      },
+      "expected": {
+        "normalized_signature": "0x111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222221b"
+      }
+    },
+    {
+      "name": "v_28_passthrough",
+      "inputs": {
+        "raw_signature": "0x333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444444444444444444444444444441c"
+      },
+      "expected": {
+        "normalized_signature": "0x333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444444444444444444444444444441c"
+      }
+    },
+    {
+      "name": "zero_rs_with_v_0",
+      "inputs": {
+        "raw_signature": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "normalized_signature": "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001b"
+      }
+    },
+    {
+      "name": "uppercase_hex_input_normalizes_to_lowercase",
+      "inputs": {
+        "raw_signature": "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB1B"
+      },
+      "expected": {
+        "normalized_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1b"
+      }
+    }
+  ]
+}

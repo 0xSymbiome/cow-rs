@@ -1,6 +1,6 @@
 use std::fmt;
 
-use alloy_primitives::{B256, Signature as AlloySignature, keccak256};
+use alloy_primitives::{B256, Signature as AlloySignature};
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, AsyncProvider, Hash32, HexData, Provider};
@@ -215,10 +215,7 @@ fn hash32_bytes(digest: &Hash32) -> Result<[u8; 32], ContractsError> {
 
 fn eth_sign_digest_prehash(digest: &Hash32) -> Result<[u8; 32], ContractsError> {
     let digest_bytes = hash32_bytes(digest)?;
-    let mut payload = Vec::with_capacity(60);
-    payload.extend_from_slice(b"\x19Ethereum Signed Message:\n32");
-    payload.extend_from_slice(&digest_bytes);
-    Ok(keccak256(&payload).0)
+    Ok(alloy_primitives::eip191_hash_message(digest_bytes).0)
 }
 
 fn signature_recovery_error(error: &alloy_primitives::SignatureError) -> ContractsError {
@@ -292,20 +289,35 @@ pub fn decode_signing_scheme(flags: u8) -> Result<SigningScheme, ContractsError>
 /// exactly 65 bytes, or carries an unsupported recovery byte.
 pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> {
     let hex_normalized = normalize_hex_payload(data, "signature")?;
-    let mut bytes = parse_hex(&hex_normalized, "signature")?;
+    let bytes = parse_hex(&hex_normalized, "signature")?;
     if bytes.len() != 65 {
         return Err(ContractsError::InvalidSignatureLength {
             actual: bytes.len(),
         });
     }
-    bytes[64] = match bytes[64] {
-        0 | 27 => 27,
-        1 | 28 => 28,
-        other => {
-            return Err(ContractsError::InvalidSignatureRecoveryByte { value: other });
+    // Pre-validate the recovery byte against the COW-accepted set
+    // {0, 1, 27, 28} per the canonical v normalization contract; the
+    // alloy primitive `Signature::from_raw` accepts EIP-155 encoded v
+    // values (>= 35) and bare {0, 1, 27, 28}, which is a wider input
+    // surface than the COW contract permits.
+    if !matches!(bytes[64], 0 | 1 | 27 | 28) {
+        return Err(ContractsError::InvalidSignatureRecoveryByte { value: bytes[64] });
+    }
+    let signature = AlloySignature::from_raw(&bytes).map_err(|error| match error {
+        alloy_primitives::SignatureError::InvalidParity(value) => {
+            // The pre-check above already rejects every `v` byte outside
+            // the COW-accepted set, so the alloy primitive only sees
+            // values in `{0, 1, 27, 28}` which fit in a `u8` losslessly.
+            // The mask is a defensive clamp that documents the bound.
+            ContractsError::InvalidSignatureRecoveryByte {
+                value: u8::try_from(value & 0xff).unwrap_or_default(),
+            }
         }
-    };
-    Ok(format!("0x{}", hex::encode(bytes)))
+        _ => ContractsError::InvalidSignatureLength {
+            actual: bytes.len(),
+        },
+    })?;
+    Ok(format!("0x{}", hex::encode(signature.as_bytes())))
 }
 
 /// Returns the 4-byte function selector for a Solidity signature.
