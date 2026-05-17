@@ -313,11 +313,23 @@ downstream callers can bring them into scope through a single `use`. The
 trait methods enforce the same `0x`-prefixed lowercase hexadecimal
 contract the cow newtypes do today, so the extension surface is a
 drop-in forward-compatibility shim for the staged collapse of the cow
-identity newtypes onto `alloy_primitives` re-exports per ADR 0052: once a
-future stage retires the cow newtypes in favour of alloy type aliases,
-callsites that already brought the prelude into scope continue to
-resolve `Address::new(value)` style constructors against the trait
-method exposed here without further edit. The contract test at
+identity newtypes onto `alloy_primitives` re-exports per ADR 0052.
+
+The cow identity primitives themselves (`cow_sdk_core::Address`,
+`Hash32`, `AppDataHash`, `HexData`, `OrderUid`) now carry the canonical
+`alloy_primitives` byte-form alongside the cached lowercase hex string
+they accept on the wire. The structs each pair an `inner` field
+(`alloy_primitives::Address`, `B256`, `Bytes`, or `FixedBytes<56>`,
+parsed once at construction) with the `hex` field that the
+`as_str` / `as_bytes` accessors expose to downstream callers. A new
+`as_alloy(&self) -> &alloy_primitives::X` accessor exposes the packed
+byte representation for the `alloy_primitives`-typed signing, contract,
+and provider seams without re-parsing the lowercase hex string. The
+existing `PartialEq` / `Eq` / `Hash` / `PartialOrd` / `Ord` contracts
+collapse onto the packed byte comparison the alloy primitive provides,
+which is equivalent to the documented case-insensitive comparison
+contract because every valid value parses to the same bytes regardless
+of input casing. The contract test at
 `crates/core/tests/wire_format_preservation_contract.rs` locks the
 canonical wire byte sequence for every identity primitive (Address,
 Hash32, AppDataHash, HexData, OrderUid) and asserts that the extension

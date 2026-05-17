@@ -1,5 +1,6 @@
 use std::fmt;
 
+use alloy_primitives::{Address as AlloyAddress, B256, Bytes, FixedBytes};
 use serde::{Deserialize, Serialize};
 
 use super::hex::{
@@ -7,31 +8,30 @@ use super::hex::{
     hex_encode_20, hex_encode_32, hex_encode_56,
 };
 use crate::errors::{CoreError, ValidationError};
+
 /// Numeric EVM chain id.
 pub type ChainId = u64;
 
-/// Validated EVM address string.
+/// Validated EVM address.
 ///
-/// [`PartialEq`], [`Eq`], [`Hash`](std::hash::Hash), [`PartialOrd`], and [`Ord`]
-/// compare addresses case-insensitively so mixed-case hexadecimal variants of the
-/// same address are treated as equal. [`Address::as_str`] preserves the original
-/// input casing exactly, while [`Address::normalized_key`] exposes the lowercase
-/// form used for those comparisons.
+/// The wire form is the protocol-canonical `0x`-prefixed 42-character
+/// hexadecimal string. The struct stores the original input casing on the
+/// [`Address::as_str`] surface so existing call sites keep their exact byte
+/// view through the `&str` accessor, while the canonical alloy
+/// [`alloy_primitives::Address`] primitive (a packed 20-byte representation)
+/// is exposed through [`Address::as_alloy`] for cross-crate interop with the
+/// `alloy_primitives`-typed signing, contract, and provider seams.
 ///
-/// ```compile_fail
-/// use cow_sdk_core::Address;
-///
-/// let _: Address = String::from("0x0000000000000000000000000000000000000001").into();
-/// ```
-///
-/// ```compile_fail
-/// use cow_sdk_core::Address;
-///
-/// let _: Address = "0x0000000000000000000000000000000000000001".into();
-/// ```
+/// [`PartialEq`], [`Eq`], [`Hash`](std::hash::Hash), [`PartialOrd`], and
+/// [`Ord`] compare addresses on their packed 20-byte representation, which is
+/// equivalent to the documented case-insensitive comparison contract because
+/// every valid address parses to the same bytes regardless of input casing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
-pub struct Address(String);
+pub struct Address {
+    inner: AlloyAddress,
+    hex: String,
+}
 
 impl Address {
     /// Creates a validated address from a `0x`-prefixed hexadecimal string.
@@ -43,7 +43,21 @@ impl Address {
     pub fn new(value: impl Into<String>) -> Result<Self, CoreError> {
         let value = value.into();
         validate_hex_field("address", &value, EVM_ADDRESS_HEX_CHARS)?;
-        Ok(Self(value))
+        let stripped = value
+            .strip_prefix("0x")
+            .ok_or(ValidationError::InvalidHexPrefix { field: "address" })?;
+        let bytes = hex::decode(stripped)
+            .map_err(|_| ValidationError::InvalidHexCharacters { field: "address" })?;
+        let array: [u8; 20] = bytes
+            .try_into()
+            .map_err(|_| ValidationError::InvalidHexLength {
+                field: "address",
+                expected: EVM_ADDRESS_HEX_CHARS,
+            })?;
+        Ok(Self {
+            inner: AlloyAddress::from(array),
+            hex: value,
+        })
     }
 
     /// Creates an address from its raw 20-byte representation.
@@ -64,26 +78,40 @@ impl Address {
         let hex_bytes = hex_encode_20(bytes);
         // SAFETY: hex_encode_20 emits only the ASCII bytes `0`, `x`, and
         // lowercase hex digits.
-        let value = String::from_utf8(hex_bytes.to_vec())
+        let hex = String::from_utf8(hex_bytes.to_vec())
             .expect("hex_encode_20 only emits valid ASCII hex characters plus the 0x prefix");
-        Self(value)
+        Self {
+            inner: AlloyAddress::from(bytes),
+            hex,
+        }
     }
 
     /// Returns the original address string.
     ///
     /// The stored string preserves the input casing exactly; equality and
-    /// hashing operate on the lowercase form instead.
+    /// hashing operate on the packed 20-byte representation instead.
     #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.0
+        &self.hex
     }
 
     /// Returns the stored hex string as a byte slice.
     #[inline]
     #[must_use]
     pub const fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
+        self.hex.as_bytes()
+    }
+
+    /// Returns the underlying packed [`alloy_primitives::Address`].
+    ///
+    /// Use this accessor when handing the address to an `alloy_primitives`-
+    /// typed surface (signing, contract bindings, RPC adapters) without
+    /// re-parsing the lowercase hex string.
+    #[inline]
+    #[must_use]
+    pub const fn as_alloy(&self) -> &AlloyAddress {
+        &self.inner
     }
 
     /// Returns the fixed decoded byte length of an EVM address.
@@ -97,14 +125,14 @@ impl Address {
     #[inline]
     #[must_use]
     pub fn normalized_key(&self) -> String {
-        self.0.to_ascii_lowercase()
+        self.hex.to_ascii_lowercase()
     }
 }
 
 impl PartialEq for Address {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.0.eq_ignore_ascii_case(&other.0)
+        self.inner == other.inner
     }
 }
 
@@ -120,19 +148,14 @@ impl PartialOrd for Address {
 impl Ord for Address {
     #[inline]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.0
-            .bytes()
-            .map(|byte| byte.to_ascii_lowercase())
-            .cmp(other.0.bytes().map(|byte| byte.to_ascii_lowercase()))
+        self.inner.cmp(&other.inner)
     }
 }
 
 impl std::hash::Hash for Address {
     #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        for byte in self.0.as_bytes() {
-            state.write_u8(byte.to_ascii_lowercase());
-        }
+        self.inner.hash(state);
     }
 }
 
@@ -154,7 +177,7 @@ impl TryFrom<&str> for Address {
 
 impl From<Address> for String {
     fn from(value: Address) -> Self {
-        value.0
+        value.hex
     }
 }
 
@@ -172,20 +195,17 @@ impl fmt::Display for Address {
 
 /// Validated hex payload used for calldata and byte blobs.
 ///
-/// ```compile_fail
-/// use cow_sdk_core::HexData;
-///
-/// let _: HexData = String::from("0x1234").into();
-/// ```
-///
-/// ```compile_fail
-/// use cow_sdk_core::HexData;
-///
-/// let _: HexData = "0x1234".into();
-/// ```
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+/// The wire form is the protocol-canonical `0x`-prefixed lowercase
+/// hexadecimal string. The struct caches the input string on the
+/// [`HexData::as_str`] surface and exposes the canonical
+/// [`alloy_primitives::Bytes`] primitive through [`HexData::as_alloy`] for
+/// cross-crate interop.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
-pub struct HexData(String);
+pub struct HexData {
+    inner: Bytes,
+    hex: String,
+}
 
 impl HexData {
     /// Creates validated hex data from a `0x`-prefixed hexadecimal string.
@@ -199,40 +219,88 @@ impl HexData {
     /// contains non-hex characters.
     pub fn new(value: impl Into<String>) -> Result<Self, CoreError> {
         let value = normalize_hex_payload("hex_data", &value.into())?;
-        Ok(Self(value))
+        let stripped = value
+            .strip_prefix("0x")
+            .ok_or(ValidationError::InvalidHexPrefix { field: "hex_data" })?;
+        let bytes = hex::decode(stripped)
+            .map_err(|_| ValidationError::InvalidHexCharacters { field: "hex_data" })?;
+        Ok(Self {
+            inner: Bytes::from(bytes),
+            hex: value,
+        })
     }
 
     /// Returns the canonical empty payload.
     #[must_use]
     pub fn empty() -> Self {
-        Self("0x".to_owned())
+        Self {
+            inner: Bytes::new(),
+            hex: "0x".to_owned(),
+        }
     }
 
     /// Returns the original hex string.
     #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.0
+        &self.hex
     }
 
     /// Returns the stored hex string as a byte slice.
     #[inline]
     #[must_use]
     pub const fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
+        self.hex.as_bytes()
+    }
+
+    /// Returns the underlying [`alloy_primitives::Bytes`] payload.
+    #[inline]
+    #[must_use]
+    pub const fn as_alloy(&self) -> &Bytes {
+        &self.inner
     }
 
     /// Returns the decoded byte length of the payload.
     #[inline]
     #[must_use]
-    pub const fn byte_length(&self) -> usize {
-        (self.0.len() - 2) / 2
+    pub fn byte_length(&self) -> usize {
+        self.inner.len()
     }
 }
 
 impl Default for HexData {
     fn default() -> Self {
         Self::empty()
+    }
+}
+
+impl PartialEq for HexData {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.inner == other.inner
+    }
+}
+
+impl Eq for HexData {}
+
+impl PartialOrd for HexData {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for HexData {
+    #[inline]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.inner.cmp(&other.inner)
+    }
+}
+
+impl std::hash::Hash for HexData {
+    #[inline]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.inner.hash(state);
     }
 }
 
@@ -254,7 +322,7 @@ impl TryFrom<&str> for HexData {
 
 impl From<HexData> for String {
     fn from(value: HexData) -> Self {
-        value.0
+        value.hex
     }
 }
 
@@ -270,27 +338,20 @@ impl fmt::Display for HexData {
     }
 }
 
-/// Validated 32-byte app-data hash string.
+/// Validated 32-byte app-data hash.
 ///
-/// ```compile_fail
-/// use cow_sdk_core::AppDataHash;
-///
-/// let _: AppDataHash =
-///     String::from("0x0000000000000000000000000000000000000000000000000000000000000000")
-///         .into();
-/// ```
-///
-/// ```compile_fail
-/// use cow_sdk_core::AppDataHash;
-///
-/// let _: AppDataHash =
-///     "0x0000000000000000000000000000000000000000000000000000000000000000".into();
-/// ```
+/// The wire form is the protocol-canonical `0x`-prefixed 66-character
+/// lowercase hexadecimal string. The struct caches the input string and
+/// exposes the canonical [`alloy_primitives::B256`] primitive through
+/// [`AppDataHash::as_alloy`] for cross-crate interop.
 #[doc(alias = "app-data")]
 #[doc(alias = "AppData")]
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
-pub struct AppDataHash(String);
+pub struct AppDataHash {
+    inner: B256,
+    hex: String,
+}
 
 impl AppDataHash {
     /// Creates a validated app-data hash from a `0x`-prefixed 32-byte hex string.
@@ -302,7 +363,24 @@ impl AppDataHash {
     pub fn new(value: impl Into<String>) -> Result<Self, CoreError> {
         let value = value.into();
         validate_hex_field("app_data_hash", &value, APP_DATA_HASH_HEX_CHARS)?;
-        Ok(Self(value))
+        let stripped = value
+            .strip_prefix("0x")
+            .ok_or(ValidationError::InvalidHexPrefix {
+                field: "app_data_hash",
+            })?;
+        let bytes = hex::decode(stripped).map_err(|_| ValidationError::InvalidHexCharacters {
+            field: "app_data_hash",
+        })?;
+        let array: [u8; 32] = bytes
+            .try_into()
+            .map_err(|_| ValidationError::InvalidHexLength {
+                field: "app_data_hash",
+                expected: APP_DATA_HASH_HEX_CHARS,
+            })?;
+        Ok(Self {
+            inner: B256::from(array),
+            hex: value,
+        })
     }
 
     /// Creates an app-data hash from its raw 32-byte representation.
@@ -323,23 +401,33 @@ impl AppDataHash {
         let hex_bytes = hex_encode_32(bytes);
         // SAFETY: hex_encode_32 emits only the ASCII bytes `0`, `x`, and
         // lowercase hex digits.
-        let value = String::from_utf8(hex_bytes.to_vec())
+        let hex = String::from_utf8(hex_bytes.to_vec())
             .expect("hex_encode_32 only emits valid ASCII hex characters plus the 0x prefix");
-        Self(value)
+        Self {
+            inner: B256::from(bytes),
+            hex,
+        }
     }
 
     /// Returns the original hash string.
     #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.0
+        &self.hex
     }
 
     /// Returns the stored hex string as a byte slice.
     #[inline]
     #[must_use]
     pub const fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
+        self.hex.as_bytes()
+    }
+
+    /// Returns the underlying [`alloy_primitives::B256`] hash.
+    #[inline]
+    #[must_use]
+    pub const fn as_alloy(&self) -> &B256 {
+        &self.inner
     }
 
     /// Returns the fixed decoded byte length of an app-data hash.
@@ -347,6 +435,36 @@ impl AppDataHash {
     #[must_use]
     pub const fn byte_length(&self) -> usize {
         APP_DATA_HASH_HEX_CHARS / 2
+    }
+}
+
+impl PartialEq for AppDataHash {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.inner == other.inner
+    }
+}
+
+impl Eq for AppDataHash {}
+
+impl PartialOrd for AppDataHash {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for AppDataHash {
+    #[inline]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.inner.cmp(&other.inner)
+    }
+}
+
+impl std::hash::Hash for AppDataHash {
+    #[inline]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.inner.hash(state);
     }
 }
 
@@ -368,7 +486,7 @@ impl TryFrom<&str> for AppDataHash {
 
 impl From<AppDataHash> for String {
     fn from(value: AppDataHash) -> Self {
-        value.0
+        value.hex
     }
 }
 
@@ -389,23 +507,16 @@ pub type AppDataHex = AppDataHash;
 
 /// Generic validated 32-byte hash wrapper for user-domain and contract surfaces.
 ///
-/// ```compile_fail
-/// use cow_sdk_core::Hash32;
-///
-/// let _: Hash32 =
-///     String::from("0x0000000000000000000000000000000000000000000000000000000000000000")
-///         .into();
-/// ```
-///
-/// ```compile_fail
-/// use cow_sdk_core::Hash32;
-///
-/// let _: Hash32 =
-///     "0x0000000000000000000000000000000000000000000000000000000000000000".into();
-/// ```
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+/// The wire form is the protocol-canonical `0x`-prefixed 66-character
+/// lowercase hexadecimal string. The struct caches the input string and
+/// exposes the canonical [`alloy_primitives::B256`] primitive through
+/// [`Hash32::as_alloy`] for cross-crate interop.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
-pub struct Hash32(String);
+pub struct Hash32 {
+    inner: B256,
+    hex: String,
+}
 
 impl Hash32 {
     /// Creates a validated 32-byte hash from a `0x`-prefixed hex string.
@@ -417,7 +528,21 @@ impl Hash32 {
     pub fn new(value: impl Into<String>) -> Result<Self, CoreError> {
         let value = value.into();
         validate_hex_field("hash32", &value, HASH32_HEX_CHARS)?;
-        Ok(Self(value))
+        let stripped = value
+            .strip_prefix("0x")
+            .ok_or(ValidationError::InvalidHexPrefix { field: "hash32" })?;
+        let bytes = hex::decode(stripped)
+            .map_err(|_| ValidationError::InvalidHexCharacters { field: "hash32" })?;
+        let array: [u8; 32] = bytes
+            .try_into()
+            .map_err(|_| ValidationError::InvalidHexLength {
+                field: "hash32",
+                expected: HASH32_HEX_CHARS,
+            })?;
+        Ok(Self {
+            inner: B256::from(array),
+            hex: value,
+        })
     }
 
     /// Creates a 32-byte hash from its raw 32-byte representation.
@@ -438,23 +563,33 @@ impl Hash32 {
         let hex_bytes = hex_encode_32(bytes);
         // SAFETY: hex_encode_32 emits only the ASCII bytes `0`, `x`, and
         // lowercase hex digits.
-        let value = String::from_utf8(hex_bytes.to_vec())
+        let hex = String::from_utf8(hex_bytes.to_vec())
             .expect("hex_encode_32 only emits valid ASCII hex characters plus the 0x prefix");
-        Self(value)
+        Self {
+            inner: B256::from(bytes),
+            hex,
+        }
     }
 
     /// Returns the original hash string.
     #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.0
+        &self.hex
     }
 
     /// Returns the stored hex string as a byte slice.
     #[inline]
     #[must_use]
     pub const fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
+        self.hex.as_bytes()
+    }
+
+    /// Returns the underlying [`alloy_primitives::B256`] hash.
+    #[inline]
+    #[must_use]
+    pub const fn as_alloy(&self) -> &B256 {
+        &self.inner
     }
 
     /// Returns the fixed decoded byte length of a 32-byte hash.
@@ -462,6 +597,36 @@ impl Hash32 {
     #[must_use]
     pub const fn byte_length(&self) -> usize {
         HASH32_HEX_CHARS / 2
+    }
+}
+
+impl PartialEq for Hash32 {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.inner == other.inner
+    }
+}
+
+impl Eq for Hash32 {}
+
+impl PartialOrd for Hash32 {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Hash32 {
+    #[inline]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.inner.cmp(&other.inner)
+    }
+}
+
+impl std::hash::Hash for Hash32 {
+    #[inline]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.inner.hash(state);
     }
 }
 
@@ -483,7 +648,7 @@ impl TryFrom<&str> for Hash32 {
 
 impl From<Hash32> for String {
     fn from(value: Hash32) -> Self {
-        value.0
+        value.hex
     }
 }
 
@@ -506,30 +671,21 @@ pub type BlockHash = Hash32;
 /// Order digest alias.
 pub type OrderDigest = Hash32;
 
-/// Validated `CoW` order UID string.
+/// Validated `CoW` order UID.
 ///
-/// ```compile_fail
-/// use cow_sdk_core::OrderUid;
-///
-/// let _: OrderUid = String::from(
-///     "0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710",
-/// )
-/// .into();
-/// ```
-///
-/// ```compile_fail
-/// use cow_sdk_core::OrderUid;
-///
-/// let _: OrderUid =
-///     "0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710"
-///         .into();
-/// ```
+/// The wire form is the protocol-canonical `0x`-prefixed 114-character
+/// lowercase hexadecimal string. The struct caches the input string and
+/// exposes the canonical [`alloy_primitives::FixedBytes<56>`] primitive
+/// through [`OrderUid::as_alloy`] for cross-crate interop.
 #[doc(alias = "UID")]
 #[doc(alias = "Uid")]
 #[doc(alias = "order-id")]
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
-pub struct OrderUid(String);
+pub struct OrderUid {
+    inner: FixedBytes<56>,
+    hex: String,
+}
 
 impl OrderUid {
     /// Creates a validated order UID from a `0x`-prefixed 56-byte hex string.
@@ -541,7 +697,21 @@ impl OrderUid {
     pub fn new(value: impl Into<String>) -> Result<Self, CoreError> {
         let value = value.into();
         validate_hex_field("order_uid", &value, ORDER_UID_HEX_CHARS)?;
-        Ok(Self(value))
+        let stripped = value
+            .strip_prefix("0x")
+            .ok_or(ValidationError::InvalidHexPrefix { field: "order_uid" })?;
+        let bytes = hex::decode(stripped)
+            .map_err(|_| ValidationError::InvalidHexCharacters { field: "order_uid" })?;
+        let array: [u8; 56] = bytes
+            .try_into()
+            .map_err(|_| ValidationError::InvalidHexLength {
+                field: "order_uid",
+                expected: ORDER_UID_HEX_CHARS,
+            })?;
+        Ok(Self {
+            inner: FixedBytes::<56>::from(array),
+            hex: value,
+        })
     }
 
     /// Creates an order UID from its raw 56-byte representation.
@@ -562,23 +732,33 @@ impl OrderUid {
         let hex_bytes = hex_encode_56(bytes);
         // SAFETY: hex_encode_56 emits only the ASCII bytes `0`, `x`, and
         // lowercase hex digits.
-        let value = String::from_utf8(hex_bytes.to_vec())
+        let hex = String::from_utf8(hex_bytes.to_vec())
             .expect("hex_encode_56 only emits valid ASCII hex characters plus the 0x prefix");
-        Self(value)
+        Self {
+            inner: FixedBytes::<56>::from(bytes),
+            hex,
+        }
     }
 
     /// Returns the original order UID string.
     #[inline]
     #[must_use]
     pub fn as_str(&self) -> &str {
-        &self.0
+        &self.hex
     }
 
     /// Returns the stored hex string as a byte slice.
     #[inline]
     #[must_use]
     pub const fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
+        self.hex.as_bytes()
+    }
+
+    /// Returns the underlying [`alloy_primitives::FixedBytes<56>`] UID.
+    #[inline]
+    #[must_use]
+    pub const fn as_alloy(&self) -> &FixedBytes<56> {
+        &self.inner
     }
 
     /// Returns the fixed decoded byte length of an order UID.
@@ -586,6 +766,36 @@ impl OrderUid {
     #[must_use]
     pub const fn byte_length(&self) -> usize {
         ORDER_UID_HEX_CHARS / 2
+    }
+}
+
+impl PartialEq for OrderUid {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.inner == other.inner
+    }
+}
+
+impl Eq for OrderUid {}
+
+impl PartialOrd for OrderUid {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for OrderUid {
+    #[inline]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.inner.cmp(&other.inner)
+    }
+}
+
+impl std::hash::Hash for OrderUid {
+    #[inline]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.inner.hash(state);
     }
 }
 
@@ -607,7 +817,7 @@ impl TryFrom<&str> for OrderUid {
 
 impl From<OrderUid> for String {
     fn from(value: OrderUid) -> Self {
-        value.0
+        value.hex
     }
 }
 
