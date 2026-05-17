@@ -7,8 +7,7 @@
 //! field names and decimal-string `gasLimit` representation.
 
 use cow_sdk_core::{Address, HexData};
-use serde::de::Error as _;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
 /// Typed `metadata.hooks` value with pre- and post-interaction hook lists.
 #[non_exhaustive]
@@ -55,7 +54,7 @@ pub struct Hook {
     /// Calldata supplied to the hook target.
     pub call_data: HexData,
     /// Gas limit for the hook, serialized as the schema's decimal string.
-    #[serde(with = "gas_limit_serde")]
+    #[serde(with = "alloy_serde::displayfromstr")]
     pub gas_limit: u64,
     /// Optional dApp identifier attached to the hook.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -79,30 +78,5 @@ impl Hook {
     pub fn with_dapp_id(mut self, dapp_id: impl Into<String>) -> Self {
         self.dapp_id = Some(dapp_id.into());
         self
-    }
-}
-
-mod gas_limit_serde {
-    use super::*;
-
-    #[allow(
-        clippy::trivially_copy_pass_by_ref,
-        reason = "serde with-module serializers receive a reference to the field value"
-    )]
-    pub(super) fn serialize<S>(gas_limit: &u64, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&gas_limit.to_string())
-    }
-
-    pub(super) fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let value = String::deserialize(deserializer)?;
-        value
-            .parse::<u64>()
-            .map_err(|_| D::Error::custom("gasLimit must be a decimal u64 string"))
     }
 }

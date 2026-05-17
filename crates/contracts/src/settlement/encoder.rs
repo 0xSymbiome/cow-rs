@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
+use alloy_primitives::Bytes;
 use alloy_sol_types::SolCall;
-use bytes::Bytes;
 
 use cow_sdk_core::{Address, Amount, SupportedChainId, TypedDataDomain};
 

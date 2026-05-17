@@ -1,9 +1,9 @@
+use alloy_primitives::Bytes;
 use alloy_sol_types::{
     SolCall,
     private::{Address as SolAddress, FixedBytes, U256},
     sol,
 };
-use bytes::Bytes;
 use cow_sdk_contracts::{
     BatchSwapStep, ContractAddresses, ContractName, Eip1271SignatureData,
     Eip1271VerificationRequest, EthFlowOrderData, GrantRoleCall, Interaction, InteractionLike,

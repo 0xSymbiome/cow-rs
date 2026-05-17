@@ -1,6 +1,6 @@
 mod common;
 
-use bytes::Bytes;
+use alloy_primitives::Bytes;
 use cow_sdk_contracts::{BatchSwapStep, Order, Signature, Swap, SwapEncoder, encode_swap_step};
 use cow_sdk_core::{
     Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, TypedDataDomain,
@@ -160,6 +160,6 @@ fn swap_step_user_data_round_trips_byte_equal_through_the_encoder() {
     assert_eq!(
         cloned.as_ptr(),
         step.user_data.as_ptr(),
-        "bytes::Bytes clone must reference the same backing allocation"
+        "alloy_primitives::Bytes clone must reference the same backing allocation"
     );
 }

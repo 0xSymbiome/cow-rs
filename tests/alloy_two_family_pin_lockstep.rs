@@ -59,6 +59,7 @@ fn alloy_two_family_pin_lockstep() {
         "alloy-dyn-abi".to_owned(),
         "alloy-json-abi".to_owned(),
         "alloy-primitives".to_owned(),
+        "alloy-serde".to_owned(),
         "alloy-sol-macro".to_owned(),
         "alloy-sol-types".to_owned(),
     ]);

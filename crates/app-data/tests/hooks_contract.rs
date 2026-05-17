@@ -153,8 +153,9 @@ fn malformed_hook_gas_limit_rejects_at_typed_boundary() {
     let error = serde_json::from_value::<HookList>(malformed)
         .expect_err("non-decimal gasLimit must fail typed parsing");
 
+    let rendered = error.to_string();
     assert!(
-        error.to_string().contains("gasLimit"),
-        "typed parse error must identify the gasLimit field, got {error:?}",
+        rendered.contains("invalid digit"),
+        "typed parse error must surface the underlying decimal-string parse failure, got {error:?}",
     );
 }

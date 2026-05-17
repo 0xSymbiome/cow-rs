@@ -12,7 +12,7 @@
 
 mod common;
 
-use bytes::Bytes;
+use alloy_primitives::Bytes;
 use cow_sdk_contracts::{
     ContractId, ContractsError, InteractionLike, InteractionStage, Registry, SettlementEncoder,
     normalize_interaction, normalize_interactions,
@@ -116,12 +116,12 @@ fn interaction_calldata_clone_shares_backing_allocation() {
     let cloned = interaction.call_data.clone();
     assert_eq!(
         cloned, interaction.call_data,
-        "bytes::Bytes clone must preserve the original byte sequence"
+        "alloy_primitives::Bytes clone must preserve the original byte sequence"
     );
     assert_eq!(
         cloned.as_ptr(),
         interaction.call_data.as_ptr(),
-        "bytes::Bytes clone must reference the same backing allocation"
+        "alloy_primitives::Bytes clone must reference the same backing allocation"
     );
 }
 

@@ -28,6 +28,7 @@ tracing = ["dep:tracing"]
 alloy-dyn-abi = { workspace = true, features = ["eip712"] }
 alloy-json-abi.workspace = true
 alloy-primitives.workspace = true
+alloy-serde.workspace = true
 async-trait.workspace = true
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 hex.workspace = true

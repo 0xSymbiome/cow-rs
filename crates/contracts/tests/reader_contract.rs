@@ -16,7 +16,7 @@ mod common;
 
 use sha3::{Digest, Keccak256};
 
-use bytes::Bytes;
+use alloy_primitives::Bytes;
 use cow_sdk_contracts::{
     AllowListReader, InteractionStage, SettlementReader, TradeSimulation,
     TradeSimulationBalanceDelta, TradeSimulationResult, TradeSimulator,

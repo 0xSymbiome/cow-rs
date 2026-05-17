@@ -40,7 +40,6 @@ pub mod vault;
 /// Cache-aware EIP-1271 signature verification path.
 pub mod verify;
 
-mod bytes_serde;
 mod chain_ids;
 mod primitives;
 

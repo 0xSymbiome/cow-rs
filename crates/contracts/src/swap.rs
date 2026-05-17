@@ -1,4 +1,4 @@
-use bytes::Bytes;
+use alloy_primitives::Bytes;
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, Amount, TypedDataDomain};
@@ -24,20 +24,17 @@ pub struct Swap {
     /// Swap amount.
     pub amount: Amount,
     /// Optional user data encoded as hex.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "crate::bytes_serde::option_hex_bytes"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub user_data: Option<Bytes>,
 }
 
 /// Encoded Balancer batch-swap step.
 ///
-/// Encoded user data is carried as [`bytes::Bytes`] so encoder pipelines that
-/// evaluate multiple swap candidates share a single backing allocation through
-/// reference-counted clones. The JSON wire form remains the `0x`-prefixed
-/// hexadecimal string accepted by downstream consumers.
+/// Encoded user data is carried as [`alloy_primitives::Bytes`] so encoder
+/// pipelines that evaluate multiple swap candidates share a single backing
+/// allocation through reference-counted clones. The JSON wire form remains the
+/// `0x`-prefixed lowercase hexadecimal string accepted by downstream consumers;
+/// the alloy primitive carries that wire serde natively.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -51,7 +48,6 @@ pub struct BatchSwapStep {
     /// Swap amount.
     pub amount: Amount,
     /// Encoded user data.
-    #[serde(with = "crate::bytes_serde::hex_bytes")]
     pub user_data: Bytes,
 }
 

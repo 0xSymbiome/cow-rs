@@ -1,15 +1,15 @@
-use bytes::Bytes;
+use alloy_primitives::Bytes;
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, Amount};
 
 /// Fully normalized settlement interaction.
 ///
-/// The calldata payload is stored as [`bytes::Bytes`] so encoder pipelines that
-/// fan the same payload across multiple settlement candidates share a single
-/// backing allocation through reference-counted clones. The JSON wire form
-/// remains the `0x`-prefixed hexadecimal string accepted by downstream
-/// consumers.
+/// The calldata payload is stored as [`alloy_primitives::Bytes`] so encoder
+/// pipelines that fan the same payload across multiple settlement candidates
+/// share a single backing allocation through reference-counted clones. The JSON
+/// wire form remains the `0x`-prefixed lowercase hexadecimal string accepted by
+/// downstream consumers; the alloy primitive carries that wire serde natively.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -19,15 +19,15 @@ pub struct Interaction {
     /// Native value transferred with the call.
     pub value: Amount,
     /// Encoded calldata.
-    #[serde(with = "crate::bytes_serde::hex_bytes")]
     pub call_data: Bytes,
 }
 
 /// Partially specified interaction accepted by higher-level encoders.
 ///
-/// Optional calldata is carried as [`Option`] over [`bytes::Bytes`] so callers
-/// can build interaction proposals without materializing empty-buffer
-/// placeholders and without losing the cheap-clone property during encoding.
+/// Optional calldata is carried as [`Option`] over [`alloy_primitives::Bytes`]
+/// so callers can build interaction proposals without materializing
+/// empty-buffer placeholders and without losing the cheap-clone property during
+/// encoding.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -38,11 +38,7 @@ pub struct InteractionLike {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<Amount>,
     /// Optional calldata. Missing values normalize to an empty buffer.
-    #[serde(
-        default,
-        skip_serializing_if = "Option::is_none",
-        with = "crate::bytes_serde::option_hex_bytes"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub call_data: Option<Bytes>,
 }
 

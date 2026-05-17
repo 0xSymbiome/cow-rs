@@ -1,6 +1,11 @@
+use std::str::FromStr;
+
+use alloy_primitives::Bytes as AlloyBytes;
+use alloy_sol_types::SolCall;
 use cow_sdk_contracts::eth_flow::{
     EthFlowOrderData, encode_create_order_calldata, encode_invalidate_order_calldata,
 };
+use cow_sdk_contracts::settlement::IGPv2Settlement;
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
     Address, Amount, AsyncSigner, HexData, ProtocolOptions, Signer, SupportedChainId,
@@ -555,15 +560,25 @@ fn encode_set_pre_signature(
     order_uid: &cow_sdk_core::OrderUid,
     enabled: bool,
 ) -> Result<String, TradingError> {
-    encode_selector_and_dynamic_bytes_bool(
-        "setPreSignature(bytes,bool)",
-        order_uid.as_str(),
-        enabled,
-    )
+    let call = IGPv2Settlement::setPreSignatureCall {
+        orderUid: order_uid_bytes(order_uid)?,
+        signed: enabled,
+    };
+    Ok(format!("0x{}", hex::encode(call.abi_encode())))
 }
 
 fn encode_invalidate_order_uid(order_uid: &cow_sdk_core::OrderUid) -> Result<String, TradingError> {
-    encode_selector_and_dynamic_bytes("invalidateOrder(bytes)", order_uid.as_str())
+    let call = IGPv2Settlement::invalidateOrderCall {
+        orderUid: order_uid_bytes(order_uid)?,
+    };
+    Ok(format!("0x{}", hex::encode(call.abi_encode())))
+}
+
+fn order_uid_bytes(order_uid: &cow_sdk_core::OrderUid) -> Result<AlloyBytes, TradingError> {
+    AlloyBytes::from_str(order_uid.as_str()).map_err(|_| TradingError::InvalidNumeric {
+        field: "orderUid",
+        value: order_uid.as_str().to_owned().into(),
+    })
 }
 
 fn encode_ethflow_create_order(
@@ -593,73 +608,4 @@ fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError
     );
     let encoded = encode_invalidate_order_calldata(&payload)?;
     Ok(format!("0x{}", hex::encode(encoded)))
-}
-
-fn encode_selector_and_dynamic_bytes(
-    signature: &str,
-    bytes_hex: &str,
-) -> Result<String, TradingError> {
-    let selector = selector_bytes(signature)?;
-    let bytes = decode_hex_field("bytes", bytes_hex)?;
-    let mut encoded = Vec::new();
-    encoded.extend_from_slice(&selector);
-    encoded.extend_from_slice(&encode_usize_word(32));
-    encoded.extend_from_slice(&encode_usize_word(bytes.len()));
-    encoded.extend_from_slice(&pad_to_word(bytes));
-    Ok(format!("0x{}", hex::encode(encoded)))
-}
-
-fn encode_selector_and_dynamic_bytes_bool(
-    signature: &str,
-    bytes_hex: &str,
-    flag: bool,
-) -> Result<String, TradingError> {
-    let selector = selector_bytes(signature)?;
-    let bytes = decode_hex_field("bytes", bytes_hex)?;
-    let mut encoded = Vec::new();
-    encoded.extend_from_slice(&selector);
-    encoded.extend_from_slice(&encode_usize_word(64));
-    encoded.extend_from_slice(&encode_bool_word(flag));
-    encoded.extend_from_slice(&encode_usize_word(bytes.len()));
-    encoded.extend_from_slice(&pad_to_word(bytes));
-    Ok(format!("0x{}", hex::encode(encoded)))
-}
-
-fn selector_bytes(signature: &str) -> Result<[u8; 4], TradingError> {
-    let selector = cow_sdk_contracts::function_magic_value(signature);
-    let bytes = decode_hex_field("selector", &selector)?;
-    let mut out = [0u8; 4];
-    out.copy_from_slice(&bytes);
-    Ok(out)
-}
-
-fn decode_hex_field(field: &'static str, value: &str) -> Result<Vec<u8>, TradingError> {
-    let Some(stripped) = value.strip_prefix("0x") else {
-        return Err(TradingError::InvalidNumeric {
-            field,
-            value: value.to_owned().into(),
-        });
-    };
-    hex::decode(stripped).map_err(|_| TradingError::InvalidNumeric {
-        field,
-        value: value.to_owned().into(),
-    })
-}
-
-fn encode_usize_word(value: usize) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[24..].copy_from_slice(&(value as u64).to_be_bytes());
-    out
-}
-
-fn encode_bool_word(value: bool) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[31] = u8::from(value);
-    out
-}
-
-fn pad_to_word(mut bytes: Vec<u8>) -> Vec<u8> {
-    let padding = (32 - (bytes.len() % 32)) % 32;
-    bytes.extend(std::iter::repeat_n(0u8, padding));
-    bytes
 }

@@ -199,6 +199,30 @@ assert byte-identity against the alloy delegation, so any silent
 divergence between the maintained primitive and the
 shipped CREATE2 salt + deployer constants is caught at test time.
 
+The `cow-sdk-trading` on-chain transaction helpers build the
+`setPreSignature(bytes,bool)` and `invalidateOrder(bytes)` settlement
+calldata by composing `IGPv2Settlement::setPreSignatureCall` and
+`IGPv2Settlement::invalidateOrderCall` and routing the encoding through
+`<C as alloy_sol_types::SolCall>::abi_encode`, the same canonical path
+the `cow-sdk-contracts` parity contract gates. No hand-rolled selector,
+dynamic-bytes offset, or word-padding helpers remain in the trading
+crate for these two calls; the trading layer consumes the
+`IGPv2Settlement` sol! bindings cross-crate and inherits the
+byte-identity contract automatically. The pinned fixture rows
+`contracts-settlement-set-presignature-calldata` and
+`contracts-settlement-invalidate-order-calldata` in
+`parity/fixtures/contracts.json` lock the wire bytes for both calls, so
+any drift in the upstream sol! emitter surfaces in the contracts-side
+regression before it can reach the trading-side transaction builder.
+The `EthFlowTransaction` create and invalidate helpers continue to
+route through `cow_sdk_contracts::eth_flow::encode_create_order_calldata`
+and `encode_invalidate_order_calldata`, which themselves call
+`ICoWSwapEthFlow::createOrderCall.abi_encode` and
+`ICoWSwapEthFlow::invalidateOrderCall.abi_encode` inside the contracts
+crate, so every settlement-bound and EthFlow-bound calldata the trading
+public surface emits is now produced by an `alloy::sol!`-generated
+encoder.
+
 ### WASM Target Contract
 
 `crates/contracts/Cargo.toml` keeps the `alloy-primitives` `k256` path
@@ -245,6 +269,38 @@ appends the 4-byte method selector, and hashes the resulting 36-byte payload.
 `contracts-vault-role-hashes-match-upstream-typescript` pins the canonical
 Mainnet Vault role hashes for `manageUserBalance` and `batchSwap`.
 
+### Wire Serde
+
+The DTO fields that carry hex-encoded byte payloads on the JSON wire route
+through `alloy_primitives::Bytes`, whose native `Serialize` / `Deserialize`
+impl emits and parses the canonical `0x`-prefixed lowercase hexadecimal
+string the protocol's TypeScript SDK consumes. The migrated fields are
+`Interaction.call_data` and `InteractionLike.call_data` in
+`crates/contracts/src/interaction.rs`, and `BatchSwapStep.user_data` and
+`Swap.user_data` in `crates/contracts/src/swap.rs`. No bespoke `#[serde(with =
+"...")]` adapter is interposed on the `Bytes`-typed fields; the alloy
+primitive owns the canonical wire form. The `cow-sdk-contracts` parity
+fixtures that exercise these fields (settlement calldata stages, batch-swap
+user data, and the interaction encoder stage matrices) stay green
+byte-identically across the migration, so the typed value contract and the
+wire byte contract remain locked together.
+
+Two related cross-workspace wire-serde surfaces follow the same
+alloy-canonical pattern and are referenced here because their byte
+contracts share the protocol's TypeScript-SDK-derived fixture authority.
+`cow_sdk_app_data::metadata::Hook.gas_limit` carries the protocol's
+decimal-string `gasLimit` envelope through `#[serde(with =
+"alloy_serde::displayfromstr")]`, which serializes any `Display + FromStr`
+type into the same JSON-string-of-decimal-digits the hooks fixture
+`parity/fixtures/app_data/hooks_v1.14.0.json` pins. The
+`cow-sdk-browser-wallet` provider helpers
+`provider::async_provider::hex_quantity` and `parse_chain_id_value` parse
+the EIP-1474 hex-quantity wire form through
+`alloy_primitives::U256::from_str_radix` and format the canonical
+`0x`-prefixed lowercase hex via the U256 `LowerHex` impl, replacing the
+previous hand-rolled `BigUint` parser path with the canonical alloy
+primitive.
+
 ## Evidence
 
 Primary implementation points:
@@ -260,6 +316,7 @@ Primary implementation points:
 - `crates/contracts/src/erc20.rs`
 - `crates/contracts/src/primitives.rs`
 - `crates/contracts/Cargo.toml`
+- `crates/trading/src/onchain.rs`
 - `crates/contracts/abi/settlement/`
 - `crates/contracts/abi/vault-relayer/`
 - `crates/contracts/abi/eth-flow/`
@@ -285,6 +342,8 @@ Primary regression coverage:
 - `crates/contracts/tests/vault_contract.rs::vault_role_hashes_match_the_canonical_solidity_packed_layout`
 - `crates/contracts/src/primitives.rs::tests::domain_separator_matches_shared_parity_fixture`
 - `crates/signing/src/domain.rs::tests::domain_separator_matches_shared_parity_fixture`
+- `crates/trading/tests/onchain_contract.rs`
+- `crates/trading/tests/parity_contract.rs`
 
 Validation surface:
 
@@ -298,4 +357,6 @@ cargo test -p cow-sdk-contracts domain_separator_matches_shared_parity_fixture
 cargo test -p cow-sdk-signing domain_separator_matches_shared_parity_fixture
 cargo build --target wasm32-unknown-unknown -p cow-sdk
 cargo clippy -p cow-sdk-contracts --all-targets --all-features -- -D warnings
+cargo test -p cow-sdk-trading --all-features --tests
+cargo clippy -p cow-sdk-trading --all-targets --all-features -- -D warnings
 ```

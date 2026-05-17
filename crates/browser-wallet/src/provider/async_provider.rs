@@ -138,43 +138,39 @@ pub fn hex_quantity(value: &str) -> Result<String, BrowserWalletError> {
     let parsed = value
         .strip_prefix("0x")
         .map_or_else(
-            || BigUint::parse_bytes(value.as_bytes(), 10),
-            |stripped| BigUint::parse_bytes(stripped.as_bytes(), 16),
+            || U256::from_str_radix(value, 10),
+            |stripped| U256::from_str_radix(stripped, 16),
         )
-        .ok_or_else(|| BrowserWalletError::serialization(format!("invalid quantity `{value}`")))?;
+        .map_err(|_| BrowserWalletError::serialization(format!("invalid quantity `{value}`")))?;
 
-    if parsed == BigUint::default() {
-        Ok("0x0".to_owned())
-    } else {
-        Ok(format!("0x{}", parsed.to_str_radix(16)))
-    }
+    Ok(format!("0x{parsed:x}"))
 }
 
-#[allow(
-    clippy::option_if_let_else,
-    reason = "both hex and decimal branches wrap a multi-line map_err closure that constructs the same malformed_response error; the if let/else form keeps the two parse-radix paths visually parallel instead of nesting duplicated error construction inside two map_or_else closures"
-)]
 pub fn parse_chain_id_value(value: &Value, method: &str) -> Result<ChainId, BrowserWalletError> {
-    match value {
-        Value::String(raw) => {
-            if let Some(stripped) = raw.strip_prefix("0x") {
-                u64::from_str_radix(stripped, 16).map_err(|error| {
-                    BrowserWalletError::malformed_response(method, error.to_string())
-                })
-            } else {
-                raw.parse::<u64>().map_err(|error| {
-                    BrowserWalletError::malformed_response(method, error.to_string())
-                })
-            }
-        }
-        Value::Number(number) => number.as_u64().ok_or_else(|| {
+    let parsed = match value {
+        Value::String(raw) => raw
+            .strip_prefix("0x")
+            .map_or_else(
+                || U256::from_str_radix(raw, 10),
+                |stripped| U256::from_str_radix(stripped, 16),
+            )
+            .map_err(|error| BrowserWalletError::malformed_response(method, error.to_string()))?,
+        Value::Number(number) => U256::from(number.as_u64().ok_or_else(|| {
             BrowserWalletError::malformed_response(method, "expected a u64-compatible number")
-        }),
-        other => Err(BrowserWalletError::malformed_response(
+        })?),
+        other => {
+            return Err(BrowserWalletError::malformed_response(
+                method,
+                format!("expected string or number chain id, received {other}"),
+            ));
+        }
+    };
+    u64::try_from(parsed).map_err(|_| {
+        BrowserWalletError::malformed_response(
             method,
-            format!("expected string or number chain id, received {other}"),
-        )),
-    }
+            format!("chain id `{value}` exceeds u64 bounds"),
+        )
+    })
 }
 
 pub fn parse_quantity_to_decimal(
