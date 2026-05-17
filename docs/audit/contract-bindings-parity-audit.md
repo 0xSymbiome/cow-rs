@@ -126,6 +126,19 @@ from first principles and asserts the helper output matches at the byte
 level so the alloy delegation can never silently drift from the
 protocol-specified formula.
 
+Deterministic CREATE2 addresses for the deployer-derived contracts in
+`cow_sdk_contracts::deploy` route through
+`alloy_primitives::Address::create2_from_code`, which assembles the
+canonical EIP-1014 preimage (`0xff || deployer || salt ||
+keccak256(init_code)`) and hashes it internally. The hand-rolled byte
+assembly previously carried by
+`deterministic_deployment_address` retires together with the redundant
+deployer-encode call in `deployment_address_hash_input`. The inline
+oracle tests in `deploy.rs` continue to reconstruct the EIP-1014
+formula by hand and assert byte-identity against the alloy delegation,
+so any silent divergence between the maintained primitive and the
+shipped CREATE2 salt + deployer constants is caught at test time.
+
 ### WASM Target Contract
 
 `crates/contracts/Cargo.toml` keeps the `alloy-primitives` `k256` path

@@ -6,7 +6,6 @@ use cow_sdk_core::{Address, CowEnv, SupportedChainId};
 use crate::{
     ContractsError,
     deployments::{ContractId, Registry},
-    primitives::encode_address,
 };
 
 /// Deterministic deployment salt used by `CoW` deployments.
@@ -71,19 +70,19 @@ pub fn deterministic_deployment_address(
         init_code.extend_from_slice(&crate::primitives::parse_hex(arg, "deploymentArgument")?);
     }
 
+    // Delegate the EIP-1014 byte assembly (`0xff || deployer || salt ||
+    // keccak256(init_code)`) and the final keccak256 to the maintained
+    // primitive. `Address::create2_from_code` computes the init-code hash
+    // internally and slices the trailing 20 bytes to form the derived
+    // address. Byte-identical to the prior hand-rolled encoder; the inline
+    // oracle test in this module proves the equivalence against the
+    // canonical EIP-1014 formula reconstructed from first principles.
     let deployer = Address::new(DEPLOYER_CONTRACT)?;
-    let salt = crate::primitives::parse_hex_exact(SALT, "salt", 32)?;
-    let mut create2_payload = Vec::with_capacity(85);
-    create2_payload.push(0xff);
-    create2_payload.extend_from_slice(&crate::primitives::parse_hex_exact(
-        deployer.as_str(),
-        "deployer",
-        20,
-    )?);
-    create2_payload.extend_from_slice(&salt);
-    create2_payload.extend_from_slice(keccak256(&init_code).as_slice());
-    let hash = keccak256(&create2_payload);
-    Address::new(format!("0x{}", hex::encode(&hash.as_slice()[12..]))).map_err(Into::into)
+    let deployer_alloy =
+        alloy_primitives::Address::new(crate::primitives::parse_address_bytes(&deployer)?);
+    let salt = crate::primitives::parse_hex32(SALT, "salt")?;
+    let derived = deployer_alloy.create2_from_code(salt, &init_code);
+    Address::new(format!("0x{}", hex::encode(derived.as_slice()))).map_err(Into::into)
 }
 
 /// Returns the canonical production deployment addresses for a supported chain.
@@ -124,12 +123,11 @@ pub fn deployment_for_chain(chain_id: u64) -> Result<ContractAddresses, Contract
 /// # Errors
 ///
 /// Returns [`ContractsError`] when bytecode or constructor arguments are not
-/// valid hex, or when deployer address validation fails.
+/// valid hex.
 pub fn deployment_address_hash_input(
     bytecode: &str,
     deployment_arguments: &[String],
 ) -> Result<[u8; 32], ContractsError> {
-    let _ = encode_address(&Address::new(DEPLOYER_CONTRACT)?)?;
     let mut init_code = crate::primitives::parse_hex(bytecode, "bytecode")?;
     for arg in deployment_arguments {
         init_code.extend_from_slice(&crate::primitives::parse_hex(arg, "deploymentArgument")?);
