@@ -301,6 +301,29 @@ the EIP-1474 hex-quantity wire form through
 previous hand-rolled `BigUint` parser path with the canonical alloy
 primitive.
 
+### Identity Primitive Extensions
+
+The `cow_sdk_core::types::identity_ext` module defines sealed extension
+traits (`AddressExt`, `Hash32Ext`, `HexDataExt`, `OrderUidExt`) that
+expose the cow-side identity accessors (`new`, `from_bytes`, `as_str`,
+`as_slice`, `byte_length`, `normalized_key`) directly on the canonical
+`alloy_primitives` types (`Address`, `B256`, `Bytes`, `FixedBytes<56>`).
+The prelude at `cow_sdk_core::prelude` re-exports the four traits so
+downstream callers can bring them into scope through a single `use`. The
+trait methods enforce the same `0x`-prefixed lowercase hexadecimal
+contract the cow newtypes do today, so the extension surface is a
+drop-in forward-compatibility shim for the staged collapse of the cow
+identity newtypes onto `alloy_primitives` re-exports per ADR 0052: once a
+future stage retires the cow newtypes in favour of alloy type aliases,
+callsites that already brought the prelude into scope continue to
+resolve `Address::new(value)` style constructors against the trait
+method exposed here without further edit. The contract test at
+`crates/core/tests/wire_format_preservation_contract.rs` locks the
+canonical wire byte sequence for every identity primitive (Address,
+Hash32, AppDataHash, HexData, OrderUid) and asserts that the extension
+trait surface mirrors the cow inherent surface byte-for-byte, so the
+wire form stays pinned across the migration.
+
 ## Evidence
 
 Primary implementation points:
@@ -344,6 +367,8 @@ Primary regression coverage:
 - `crates/signing/src/domain.rs::tests::domain_separator_matches_shared_parity_fixture`
 - `crates/trading/tests/onchain_contract.rs`
 - `crates/trading/tests/parity_contract.rs`
+- `crates/core/tests/wire_format_preservation_contract.rs`
+- `crates/core/src/types/identity_ext.rs::tests`
 
 Validation surface:
 

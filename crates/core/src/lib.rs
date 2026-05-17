@@ -11,6 +11,13 @@ pub mod cancellation;
 pub mod config;
 /// Common validation and configuration errors used by the foundational crates.
 pub mod errors;
+/// Convenient prelude that brings the identity extension traits into scope.
+///
+/// Callsites bringing the prelude into scope keep their
+/// `Address::new(value)` / `Hash32Ext::as_str(&value)` style accessors
+/// stable across the upcoming alloy-primitive collapse for the cow
+/// identity newtypes (Stage A of ADR 0052).
+pub mod prelude;
 /// Typed redaction wrapper for secret-bearing configuration fields.
 pub mod redaction;
 /// Runtime-neutral signer, provider, and typed-data trait contracts.

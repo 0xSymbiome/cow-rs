@@ -2,6 +2,8 @@
 
 pub use self::{amount::*, hex::*, identity::*, order::*, quote::*, validity::*};
 
+pub mod identity_ext;
+
 mod amount;
 mod hex;
 mod identity;
