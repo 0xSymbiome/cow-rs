@@ -30,6 +30,7 @@ reqwest-classifier = ["dep:reqwest"]
 async-trait.workspace = true
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 http.workspace = true
+httpdate.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

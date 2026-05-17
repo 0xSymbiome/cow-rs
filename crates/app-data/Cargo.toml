@@ -34,6 +34,7 @@ jsonschema.workspace = true
 multibase.workspace = true
 multihash = "0.19.3"
 serde = { workspace = true, features = ["derive"] }
+serde_jcs.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
 sha3.workspace = true
 thiserror.workspace = true

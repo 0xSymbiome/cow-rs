@@ -1,16 +1,15 @@
 //! Behavior tests for the `Retry-After` header parser.
 //!
 //! These tests assert observable semantics of `parse_retry_after` for both
-//! delta-seconds and IMF-fixdate forms. They complement
+//! delta-seconds and HTTP-date forms. They complement
 //! `fuzz/fuzz_targets/fuzz_retry_after_parse` which guarantees byte-level
 //! robustness; the cases below pin the documented branches at fixed inputs.
 //!
-//! The parser is the only public surface of `retry_after.rs`; every helper
-//! (`parse_http_date`, `parse_http_month`, `parse_http_time`,
-//! `days_from_civil`, `days_in_month`, `is_leap_year`, `unix_timestamp`) is
-//! private. Each test below drives the relevant private branch through the
-//! public `parse_retry_after(value, now)` boundary, so the coverage gain is
-//! attributable to behavior the SDK actually documents.
+//! `parse_retry_after` is the only public surface of `retry_after.rs`; the
+//! HTTP-date parse path delegates to `httpdate::parse_http_date` per RFC 7231
+//! section 7.1.1.1. Each test below drives the relevant accept/reject branch
+//! through the public `parse_retry_after(value, now)` boundary, so the
+//! coverage gain is attributable to behavior the SDK actually documents.
 
 use std::time::{Duration, SystemTime};
 
@@ -155,9 +154,15 @@ fn parse_retry_after_rejects_invalid_month_name() {
 #[test]
 fn parse_retry_after_accepts_every_calendar_month() {
     // Use 2026 (non-leap) and day 15 to avoid leap-year and 30-vs-31 issues.
+    // httpdate validates the weekday against the actual calendar date, so the
+    // table pins the correct weekday for the fifteenth of each 2026 month.
+    let day_of_week = [
+        "Thu", "Sun", "Sun", "Wed", "Fri", "Mon", "Wed", "Sat", "Tue", "Thu", "Sun", "Tue",
+    ];
     for (idx, name) in MONTH_NAMES.iter().enumerate() {
         let month = u32::try_from(idx).expect("month index fits in u32") + 1;
-        let input = format!("Wed, 15 {name} 2026 00:00:00 GMT");
+        let weekday = day_of_week[idx];
+        let input = format!("{weekday}, 15 {name} 2026 00:00:00 GMT");
         let parsed = parse_retry_after(&input, EPOCH)
             .unwrap_or_else(|| panic!("month {name} must parse: {input}"));
         let delay = parsed.delay().as_secs();
@@ -220,31 +225,61 @@ fn parse_retry_after_rejects_day_31_in_30_day_months() {
 
 #[test]
 fn parse_retry_after_rejects_dates_before_unix_epoch() {
-    // The parser computes `days_from_civil` for any year in the wire format,
-    // but `retry_at <= now` clamps anything at or before `now` to zero. With
-    // now == UNIX_EPOCH, every pre-epoch date must clamp to ZERO, not return
-    // `None`. (See the past-date branch in `parse_retry_after`.)
-    let parsed = parse_retry_after("Fri, 31 Dec 1969 23:59:59 GMT", EPOCH)
-        .expect("pre-epoch IMF-fixdate parses but clamps to zero");
-    assert_eq!(parsed, RetryAfter::new(Duration::ZERO));
+    // The upstream `httpdate::parse_http_date` rejects HTTP-date values
+    // before the Unix epoch outright (the parser bottom-limits the in-range
+    // year set to 1970), so `parse_retry_after` surfaces every pre-epoch
+    // value as the documented `None` ("ignore the header") rather than as a
+    // zero-delay clamp. 1969-12-31 fell on a Wednesday on the Gregorian
+    // calendar.
+    assert!(parse_retry_after("Wed, 31 Dec 1969 23:59:59 GMT", EPOCH).is_none());
+}
+
+/// Zeller-style day-of-week table for a Gregorian (year, month, day),
+/// returning the three-letter IMF-fixdate weekday name. Reproduces the
+/// proptest's calendar arithmetic without a `chrono` dev-dependency.
+#[allow(
+    clippy::many_single_char_names,
+    reason = "Zeller's congruence is published with single-letter component names; longer names would obscure the canonical formula"
+)]
+fn weekday_short(year: i32, month: u32, day: u32) -> &'static str {
+    // Treat January and February as months 13 and 14 of the previous year.
+    let (shifted_year, shifted_month) = if month < 3 {
+        (year - 1, month + 12)
+    } else {
+        (year, month)
+    };
+    let k = shifted_year.rem_euclid(100);
+    let j = shifted_year.div_euclid(100);
+    // Zeller's congruence: h = 0 → Saturday, 1 → Sunday, ... 6 → Friday.
+    let m = i32::try_from(shifted_month).expect("month fits in i32");
+    let d = i32::try_from(day).expect("day fits in i32");
+    let h = (d + (13 * (m + 1)) / 5 + k + k / 4 + j / 4 + 5 * j).rem_euclid(7);
+    ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"]
+        [usize::try_from(h).expect("zeller residue is 0..7")]
 }
 
 proptest! {
     /// Consecutive valid days produce timestamps that differ by exactly 86400s.
     ///
-    /// This pins `days_from_civil` against itself across a wide year range
-    /// without needing a `chrono` dev-dependency. We restrict to days 1..=27
-    /// so that `day + 1` is always valid regardless of month length.
+    /// This pins the underlying HTTP-date parser against itself across a wide
+    /// year range without needing a `chrono` dev-dependency. We restrict to
+    /// days 1..=27 so that `day + 1` is always valid regardless of month
+    /// length. The Zeller helper above pins the weekday-of-date to keep
+    /// `httpdate::parse_http_date` happy with the IMF-fixdate weekday
+    /// validation.
     #[test]
-    fn days_from_civil_property_consecutive_days_differ_by_86400_seconds(
+    fn parse_retry_after_consecutive_days_differ_by_86400_seconds(
         year in 1971_i32..=2100_i32,
         month_idx in 0_usize..12_usize,
         day in 1_u32..=27_u32,
     ) {
+        let month_index = u32::try_from(month_idx).expect("month index fits in u32") + 1;
         let month = MONTH_NAMES[month_idx];
-        let first = format!("Wed, {day:02} {month} {year} 00:00:00 GMT");
+        let first_weekday = weekday_short(year, month_index, day);
         let second_day = day + 1;
-        let second = format!("Wed, {second_day:02} {month} {year} 00:00:00 GMT");
+        let second_weekday = weekday_short(year, month_index, second_day);
+        let first = format!("{first_weekday}, {day:02} {month} {year} 00:00:00 GMT");
+        let second = format!("{second_weekday}, {second_day:02} {month} {year} 00:00:00 GMT");
 
         let parsed_first = parse_retry_after(&first, EPOCH)
             .map(|r| r.delay().as_secs())

@@ -224,15 +224,23 @@ fn approaching_size_limit(bytes_used: usize, max_bytes: usize) -> bool {
     bytes_used >= threshold
 }
 
-/// Serializes an app-data document with deterministic object-key ordering.
+/// Serializes an app-data document as RFC 8785 canonical JSON via
+/// [`serde_jcs::to_string`].
+///
+/// The output applies UTF-16 code-unit key ordering, decimal-only number
+/// serialisation, and the canonical insignificant-whitespace rules
+/// specified by RFC 8785 (JSON Canonicalization Scheme). ASCII-only
+/// documents serialise byte-identically to the previous bytewise key
+/// ordering; documents whose object keys carry characters whose UTF-16
+/// representation diverges from their UTF-8 byte ordering now match the
+/// canonical RFC 8785 form, closing a latent gap with the upstream
+/// `@cowprotocol/cow-sdk` TypeScript implementation.
 ///
 /// # Errors
 ///
-/// Returns [`AppDataError::Json`] if any string escaping step fails.
+/// Returns [`AppDataError::Json`] if the canonicalisation pass fails.
 pub fn stringify_deterministic(value: &AppDataDoc) -> Result<String, AppDataError> {
-    let mut rendered = String::new();
-    write_canonical_json(value, &mut rendered)?;
-    Ok(rendered)
+    serde_jcs::to_string(value).map_err(AppDataError::from)
 }
 
 const fn ensure_document_under_size_limit(
@@ -261,43 +269,6 @@ fn ensure_valid_document(document: &AppDataDoc) -> Result<(), AppDataError> {
             details: "document failed the embedded JSON schema validation",
         },
     })
-}
-
-fn write_canonical_json(value: &Value, out: &mut String) -> Result<(), AppDataError> {
-    match value {
-        Value::Null => out.push_str("null"),
-        Value::Bool(boolean) => out.push_str(if *boolean { "true" } else { "false" }),
-        Value::Number(number) => out.push_str(&number.to_string()),
-        Value::String(string) => {
-            out.push_str(&serde_json::to_string(string).map_err(AppDataError::from)?);
-        }
-        Value::Array(array) => {
-            out.push('[');
-            for (index, item) in array.iter().enumerate() {
-                if index > 0 {
-                    out.push(',');
-                }
-                write_canonical_json(item, out)?;
-            }
-            out.push(']');
-        }
-        Value::Object(object) => {
-            out.push('{');
-            let mut entries = object.iter().collect::<Vec<_>>();
-            entries.sort_by(|left, right| left.0.cmp(right.0));
-            for (index, (key, item)) in entries.into_iter().enumerate() {
-                if index > 0 {
-                    out.push(',');
-                }
-                out.push_str(&serde_json::to_string(key).map_err(AppDataError::from)?);
-                out.push(':');
-                write_canonical_json(item, out)?;
-            }
-            out.push('}');
-        }
-    }
-
-    Ok(())
 }
 
 /// Returns only the app-data hex digest.

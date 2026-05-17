@@ -12,6 +12,32 @@ The first functional crate-family release begins at `0.1.0`.
 
 ## [Unreleased]
 
+### Fixed
+
+- App-data canonical JSON serialisation now sorts object keys by UTF-16 code
+  unit value per RFC 8785 (JSON Canonicalization Scheme), via `serde_jcs`.
+  This closes a latent divergence with the upstream `@cowprotocol/cow-sdk`
+  TypeScript canonical form for documents whose object keys carry code points
+  whose UTF-16 ordering and UTF-8 byte ordering disagree (for example
+  non-BMP code points that sort after most BMP code points in UTF-8 byte
+  ordering but before them in UTF-16 code-unit ordering). Documents with
+  ASCII-only object keys are unchanged; documents with non-ASCII keys may
+  now hash to a different canonical CID than before. The new parity fixture
+  `parity/fixtures/app_data/canonical_json_utf16.json` pins the canonical
+  output and the matching app-data CID for the documented divergence.
+
+- HTTP `Retry-After` header parsing now delegates to `httpdate::parse_http_date`
+  per RFC 7231 section 7.1.1.1, which additionally accepts the legacy RFC 850
+  date form (`Sunday, 06-Nov-94 08:49:37 GMT`) and the ANSI C `asctime`
+  date form (`Sun Nov  6 08:49:37 1994`) that the previous IMF-fixdate-only
+  parser rejected. Pre-1970 HTTP-date values now surface as the documented
+  `None` ("ignore the header") path rather than as a zero-delay clamp,
+  matching the upstream parser's rejection of pre-epoch dates. The new
+  parity fixtures `parity/fixtures/retry_after/imf_fixdate_accept.json`,
+  `parity/fixtures/retry_after/imf_fixdate_reject.json`, and
+  `parity/fixtures/retry_after/legacy_rfc850.json` pin the accept and
+  reject byte contracts.
+
 ### Added
 
 - Added the `cow-sdk-cow-shed` crate with typed COW Shed core types,

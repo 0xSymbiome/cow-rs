@@ -1,0 +1,20 @@
+{
+  "schema_version": 2,
+  "description": "RFC 8785 canonical JSON output for an app-data document whose object keys span code points whose UTF-16 code-unit ordering diverges from their UTF-8 byte ordering. The previous hand-rolled stringify_deterministic sorted keys bytewise; serde_jcs::to_string sorts by UTF-16 code unit per RFC 8785 section 3.2.3. The two orderings agree for ASCII-only keys (every other parity fixture under parity/fixtures/app_data/ stays green); the divergence is documented and locked here.",
+  "@source_ref": "RFC 8785 section 3.2.3 (object key ordering)",
+  "cases": [
+    {
+      "id": "app-data-canonical-json-utf16-non-bmp-supersedes-bytewise",
+      "description": "Document with two non-ASCII keys: U+1D552 (mathematical double-struck small a, non-BMP, UTF-16 first code unit 0xD835) and U+FB03 (Latin small ligature ffi, BMP, UTF-16 code unit 0xFB03). The non-BMP key sorts FIRST under UTF-16 ordering (0xD835 < 0xFB03), but the previous bytewise sort placed the BMP key first (UTF-8 byte 0xEF < 0xF0). The fixture pins the new RFC 8785 canonical form.",
+      "inputs": {
+        "document": {
+          "ﬃ": "ligature",
+          "𝕒": "math"
+        }
+      },
+      "expected": {
+        "canonical": "{\"𝕒\":\"math\",\"ﬃ\":\"ligature\"}"
+      }
+    }
+  ]
+}

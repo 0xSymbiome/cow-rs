@@ -1,9 +1,9 @@
 # Transport Policy Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-14
-Owning surface: `cow-sdk-transport-policy` public retry, jitter, rate-limit, classification, and `Retry-After` parser surfaces, including the deterministic civil-day arithmetic on `retry_after.rs` and the bounded-jitter contract on `jitter.rs`
-Refresh trigger: Changes to any public function on `cow-sdk-transport-policy`; changes to `RetryPolicy`, `JitterStrategy`, `RequestRateLimiter`, `RetryAfter`, `NetworkErrorKind`, or `ErrorClassifier`; changes to the `Retry-After` IMF-fixdate civil-day arithmetic; changes to the `parse_retry_after` accept/reject contract; changes to the workspace `Retry-After` cooldown honor rule documented in `http-transport-contract-audit.md`
+Last reviewed: 2026-05-17
+Owning surface: `cow-sdk-transport-policy` public retry, jitter, rate-limit, classification, and `Retry-After` parser surfaces, including the HTTP-date delegation to `httpdate::parse_http_date` on `retry_after.rs` and the bounded-jitter contract on `jitter.rs`
+Refresh trigger: Changes to any public function on `cow-sdk-transport-policy`; changes to `RetryPolicy`, `JitterStrategy`, `RequestRateLimiter`, `RetryAfter`, `NetworkErrorKind`, or `ErrorClassifier`; changes to the `Retry-After` HTTP-date delegation or its expected accept/reject contract; changes to the workspace `Retry-After` cooldown honor rule documented in `http-transport-contract-audit.md`
 Related docs:
 - [ADR 0041](../adr/0041-transport-policy-l3-layering.md)
 - [ADR 0033](../adr/0033-minimum-viable-panic-surface.md)
@@ -16,13 +16,16 @@ Related docs:
 This audit covers:
 
 - the `parse_retry_after` accept/reject contract on every documented branch
-  (delta-seconds, IMF-fixdate future and past clamp, empty and whitespace and
+  (delta-seconds, HTTP-date future and past clamp, empty and whitespace and
   garbage rejection, weekday-without-comma and non-GMT timezone rejection,
   trailing-token and truncation rejection, non-numeric components, invalid
   month names, every calendar month, out-of-range time components, leap-year
-  rules, day-31 in 30-day months, pre-epoch clamp)
-- the `retry_after.rs` civil-day arithmetic panic-free posture under any
-  attacker-controlled year value through `i64` promotion
+  rules, day-31 in 30-day months, pre-epoch clamp, and the three RFC 7231
+  HTTP-date forms accepted via `httpdate::parse_http_date` — IMF-fixdate,
+  legacy RFC 850, and ANSI C `asctime`)
+- the `retry_after.rs` HTTP-date delegation to the upstream `httpdate` crate
+  and the parity fixture corpus under `parity/fixtures/retry_after/`
+  pinning every accept and reject row
 - the `JitterStrategy` delay window invariants for every variant (`None`,
   `Full`, `Equal`, `Decorrelated`) including the zero-base-delay short-circuit
 - the `RetryPolicy` decision points (`should_retry_status`,
@@ -45,27 +48,39 @@ covered separately, or the wasm-target build path.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Retry-After parser | `parse_retry_after` accepts delta-seconds and IMF-fixdate values, rejects every documented malformed shape, and the civil-day arithmetic stays panic-free under any attacker-controlled year value through `i64` promotion | Conforms |
+| Retry-After parser | `parse_retry_after` accepts delta-seconds and every RFC 7231 HTTP-date form (IMF-fixdate, legacy RFC 850, ANSI C `asctime`) via `httpdate::parse_http_date`, rejects every documented malformed shape, and the parity fixture corpus under `parity/fixtures/retry_after/` pins the accept and reject byte contracts | Conforms |
 | Jitter window | Every `JitterStrategy` variant returns a delay within the documented `[0, max_delay]` window; `None` returns the capped base delay; `Equal` preserves at least half the capped base delay; the zero-window short-circuit returns `Duration::ZERO` across every strategy | Conforms |
 | Retry decision points | `should_retry_status` matches the public `RETRYABLE_STATUSES` list; `should_retry_network` retries only `Timeout`, `Connect`, `Request`, and `Other`; backoff clamps at `max_delay` once the exponent saturates; the case-insensitive `Retry-After` helper honours `429` and `503` and ignores other statuses; `max_attempts(0)` clamps to `1` | Conforms |
 | Rate-limit scope | `PerHost` scope keys by `Url::host_str`; `Global` scope uses the constant `"global"` key; `unlimited()` never delays or errors; `acquire_global` shares one bucket; pre-cancelled tokens short-circuit before sleeping the limiter interval | Conforms |
 | Error classifier | `NetworkErrorKind::from_transport_error_class` is total across every `TransportErrorClass` variant including `Redirect` and `Upgrade` through the wildcard arm; the optional reqwest classifier maps real `reqwest::Error` shapes into the same partition | Conforms |
-| Panic-free posture | The `Retry-After` IMF-fixdate civil-day arithmetic promotes every intermediate to `i64` so an attacker-controlled out-of-range year cannot overflow the retry loop; documented panic-allowlist entries on `jitter.rs::bounded_offset` and `transport-policy/src/policy.rs` static-UA constructors stay justified | Conforms |
+| Panic-free posture | The `Retry-After` HTTP-date path delegates to `httpdate::parse_http_date`, an upstream maintained crate that surfaces malformed input as a typed `Err` rather than a panic, so an attacker-controlled `Retry-After` header value cannot panic the retry loop; documented panic-allowlist entries on `jitter.rs::bounded_offset` and `transport-policy/src/policy.rs` static-UA constructors stay justified | Conforms |
 
 ## Current Contract
 
 ### Retry-After Parser
 
 `parse_retry_after(value, now)` is the only public entry point on
-`retry_after.rs`. Every helper inside (`parse_http_date`, `parse_http_month`,
-`parse_http_time`, `days_from_civil`, `days_in_month`, `is_leap_year`,
-`unix_timestamp`) is private and is exercised exclusively through the public
-boundary. Delta-seconds inputs are accepted when the trimmed value is composed
-solely of ASCII digits; surrounding whitespace is trimmed before dispatch.
-IMF-fixdate inputs are validated against the documented format
-(`<weekday>, <day> <Mmm> <year> <HH>:<MM>:<SS> GMT`). Past or epoch-equal
-dates clamp to `Duration::ZERO`. Civil-day arithmetic promotes every
-intermediate to `i64` so out-of-range year values cannot overflow.
+`retry_after.rs`. Delta-seconds inputs are accepted when the trimmed value is
+composed solely of ASCII digits; surrounding whitespace is trimmed before
+dispatch. HTTP-date inputs delegate to `httpdate::parse_http_date`, which
+accepts the three forms enumerated in RFC 7231 section 7.1.1.1:
+
+- IMF-fixdate, e.g. `Sun, 06 Nov 1994 08:49:37 GMT`;
+- legacy RFC 850, e.g. `Sunday, 06-Nov-94 08:49:37 GMT`;
+- ANSI C `asctime`, e.g. `Sun Nov  6 08:49:37 1994`.
+
+In-range past dates and epoch-equal dates clamp to `Duration::ZERO`.
+Pre-epoch HTTP-date values surface as `None` because the upstream
+`httpdate` parser rejects every date strictly before 1970-01-01 outright,
+which collapses cleanly into the "ignore the header" path the
+retry decision points already honour. Any other malformed input that the
+upstream parser rejects also surfaces as `None`.
+The parity fixture corpus at `parity/fixtures/retry_after/` pins three
+files: `imf_fixdate_accept.json` (every accept row carries the canonical
+Unix timestamp the HTTP-date resolves to), `imf_fixdate_reject.json`
+(every reject row must surface as `None`), and `legacy_rfc850.json` (the
+RFC 850 capability gain documented in the `## [Unreleased]` block of
+`CHANGELOG.md`).
 
 ### Jitter Window
 
@@ -132,6 +147,10 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/transport-policy/tests/retry_after_contract.rs`
+- `crates/transport-policy/tests/retry_after_fixture_contract.rs`
+- `parity/fixtures/retry_after/imf_fixdate_accept.json`
+- `parity/fixtures/retry_after/imf_fixdate_reject.json`
+- `parity/fixtures/retry_after/legacy_rfc850.json`
 - `crates/transport-policy/tests/classify_contract.rs::network_error_kind_mapping_round_trip_is_total`
 - `crates/transport-policy/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_invalid_url_to_builder_or_request`
 - `crates/transport-policy/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_unreachable_host_to_connect_or_timeout`

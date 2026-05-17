@@ -1,0 +1,57 @@
+{
+  "schema_version": 2,
+  "description": "Retry-After RFC 850 legacy date-form accept cases. These rows exercise the capability gain that landed when parse_retry_after migrated to httpdate::parse_http_date: the previous hand-rolled IMF-fixdate parser rejected this form, while RFC 7231 section 7.1.1.1 admits it for backwards compatibility with the obsolete RFC 850 wire syntax. The two-digit year is interpreted per the documented sliding-window rule (years 70-99 map to 19xx; years 00-69 map to 20xx).",
+  "@source_ref": "RFC 850 section 2.1.4 (date-time syntax)",
+  "cases": [
+    {
+      "id": "retry-after-rfc850-rfc7231-example",
+      "description": "Canonical RFC 7231 RFC 850 example — same instant as the IMF-fixdate canonical example, distinct wire syntax.",
+      "inputs": {
+        "raw_header": "Sunday, 06-Nov-94 08:49:37 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 784111777
+      }
+    },
+    {
+      "id": "retry-after-rfc850-late-1990s",
+      "description": "Two-digit year 99 maps to 1999 under the documented sliding-window rule.",
+      "inputs": {
+        "raw_header": "Sunday, 07-Mar-99 12:00:00 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 920808000
+      }
+    },
+    {
+      "id": "retry-after-rfc850-early-1970s",
+      "description": "End of 1973 — exercises an early-decade two-digit-year branch where 73 maps to 1973.",
+      "inputs": {
+        "raw_header": "Monday, 31-Dec-73 23:59:59 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 126230399
+      }
+    },
+    {
+      "id": "retry-after-rfc850-near-epoch",
+      "description": "End of 1970 + one second — close to the epoch boundary inside the RFC 850 accept range.",
+      "inputs": {
+        "raw_header": "Thursday, 31-Dec-70 00:00:01 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 31449601
+      }
+    },
+    {
+      "id": "retry-after-rfc850-y2038-window",
+      "description": "Year 38 maps to 2038 under the sliding-window rule and the resulting timestamp is exactly the i32 signed boundary commonly known as the Y2038 instant.",
+      "inputs": {
+        "raw_header": "Tuesday, 19-Jan-38 03:14:07 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 2147483647
+      }
+    }
+  ]
+}

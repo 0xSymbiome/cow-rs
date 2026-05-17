@@ -1,9 +1,9 @@
 # CID Dependency Audit
 
 Status: Current
-Last reviewed: 2026-05-08
-Owning surface: `cow-sdk-app-data` CID encoding and published dependency boundary
-Refresh trigger: Changes to CID dependencies, the supported CID encoding, or the published dependency posture for the app-data stack
+Last reviewed: 2026-05-17
+Owning surface: `cow-sdk-app-data` CID encoding, canonical-JSON serialisation, and published dependency boundary
+Refresh trigger: Changes to CID dependencies, the canonical-JSON dependency, the supported CID encoding, or the published dependency posture for the app-data stack
 Related docs:
 - [Dependency Gate Audit](dependency-gate-audit.md)
 - [Verification Guide](../verification-guide.md)
@@ -14,6 +14,7 @@ Related docs:
 This audit covers:
 
 - the CID and multihash dependencies used by `cow-sdk-app-data`
+- the canonical-JSON dependency that the CID derivation rides on
 - the supported app-data CID construction path
 - published-upstream dependency posture for the maintained CID stack
 - fail-closed handling for malformed app-data hex and unsupported CID
@@ -40,6 +41,15 @@ The current app-data crate uses:
 - `multihash` for explicit multihash wrapping
 - `multibase` for lowercase base16 CID rendering
 - `sha3` for deterministic app-data digest generation
+- `serde_jcs` for RFC 8785 canonical-JSON serialisation of the document
+  whose bytes feed the `sha3` digest input
+
+The canonical-JSON pass runs through `serde_jcs::to_string` so the key
+ordering follows the RFC 8785 UTF-16 code-unit rule; this closes a latent
+divergence with the upstream `@cowprotocol/cow-sdk` TypeScript canonical
+form for documents whose object keys carry non-ASCII code points where
+UTF-16 ordering and UTF-8 byte ordering disagree. ASCII-only documents
+serialise byte-identically under both orderings.
 
 ### Supported Input Boundary
 
@@ -93,6 +103,8 @@ Primary regression coverage:
 - `crates/app-data/tests/cid_contract.rs::unsupported_and_malformed_cids_are_rejected`
 - `crates/app-data/tests/cid_contract.rs::cid_rejects_non_keccak256_multihash_codecs`
 - `crates/app-data/tests/v0_cid_is_out_of_scope.rs::v0_cid_is_rejected_by_cid_to_app_data_hex`
+- `crates/app-data/tests/canonical_json_contract.rs::canonical_json_utf16_corpus_serialises_to_expected_canonical_bytes`
+- `parity/fixtures/app_data/canonical_json_utf16.json`
 
 Validation surface:
 
