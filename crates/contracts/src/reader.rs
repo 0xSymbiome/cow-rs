@@ -7,7 +7,7 @@ use cow_sdk_core::{
 use crate::{
     ContractsError,
     interaction::{InteractionLike, normalize_interactions},
-    primitives::{buy_balance_name, keccak256_hex, sell_balance_name, zero_address},
+    primitives::{buy_balance_name, sell_balance_name, zero_address},
     settlement::InteractionStage,
 };
 
@@ -294,9 +294,15 @@ where
 }
 
 fn sell_balance_id(balance: SellTokenSource) -> String {
-    keccak256_hex(sell_balance_name(balance).as_bytes())
+    format!(
+        "{}",
+        alloy_primitives::keccak256(sell_balance_name(balance).as_bytes())
+    )
 }
 
 fn buy_balance_id(balance: BuyTokenDestination) -> String {
-    keccak256_hex(buy_balance_name(balance).as_bytes())
+    format!(
+        "{}",
+        alloy_primitives::keccak256(buy_balance_name(balance).as_bytes())
+    )
 }

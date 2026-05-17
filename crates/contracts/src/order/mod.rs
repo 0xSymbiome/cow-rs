@@ -4,17 +4,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::primitives::ORDER_UID_LENGTH_BYTES;
 
+pub use self::sol_cancellations::OrderCancellations as GPv2OrderCancellations;
+pub use self::sol_types::Order as GPv2Order;
 pub use self::{hash::*, types::*, uid::*};
 
 mod hash;
+pub(crate) mod sol_cancellations;
+pub(crate) mod sol_types;
 mod types;
 mod uid;
 
 /// Sentinel address used by the protocol to represent native ETH buys.
 pub const BUY_ETH_ADDRESS: &str = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-/// EIP-712 order type hash used for struct hashing.
-pub const ORDER_TYPE_HASH: &str =
-    "0xd5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489";
 /// Encoded order UID length in bytes.
 pub const ORDER_UID_LENGTH: usize = ORDER_UID_LENGTH_BYTES;
 

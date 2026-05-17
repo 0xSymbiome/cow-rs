@@ -61,8 +61,8 @@ pub use interaction::{
     Interaction, InteractionLike, normalize_interaction, normalize_interactions,
 };
 pub use order::{
-    BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, NormalizedOrder, ORDER_TYPE_FIELDS,
-    ORDER_TYPE_HASH, ORDER_UID_LENGTH, Order, OrderCancellations, OrderTypeField, OrderUidParams,
+    BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, GPv2Order, GPv2OrderCancellations, NormalizedOrder,
+    ORDER_TYPE_FIELDS, ORDER_UID_LENGTH, Order, OrderCancellations, OrderTypeField, OrderUidParams,
     compute_order_uid, extract_order_uid_params, hash_order, hash_order_cancellation,
     hash_order_cancellations, normalize_order, pack_order_uid_params,
 };

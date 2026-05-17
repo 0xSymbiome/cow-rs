@@ -42,6 +42,7 @@ provider.
 | Committed provenance | The Solidity excerpt used to author each binding is committed under `crates/contracts/abi/<family>/` | Conforms |
 | Byte-identity parity | Encoded call-data and hashed payloads match the TypeScript-SDK-derived golden fixtures on every binding | Conforms |
 | Domain separator parity | `cow-sdk-contracts` and `cow-sdk-signing` route every EIP-712 domain separator through `alloy_sol_types::Eip712Domain::separator` and pin the same fixture value | Conforms |
+| Order EIP-712 hashing | The `GPv2 Order` and `OrderCancellations` typed-data structs are macro-emitted via `alloy_sol_types::sol!` and route their signing hashes through `<T as SolStruct>::eip712_signing_hash`; the eight per-chain rows in the order-digest fixture pin the wire-byte contract | Conforms |
 | Boundary matrices | Compact order flags, settlement reader returns, settlement encoder stages, mixed-balance transfers, and multi-trade clearing prices have deterministic regression coverage | Conforms |
 | EIP-1967 derivation | Proxy storage slots match the canonical `keccak256(label) - 1` formula as well as the golden byte payloads | Conforms |
 | Vault role hash parity | Vault-relayer role helpers emit the same packed role hashes as the upstream TypeScript role-grant helpers | Conforms |
@@ -133,6 +134,36 @@ contract lookup through `cow_sdk_contracts::Registry`) and formats the
 signer-facing API exposes; the EIP-712 algorithm itself is the alloy
 canonical, so the contracts-side and signing-side fixture cases gate
 the same byte contract from both crate boundaries.
+
+The `GPv2` order and batch-cancellation EIP-712 schemas are
+macro-emitted via `alloy_sol_types::sol!` at
+`crates/contracts/src/order/sol_types.rs` (`Order`) and
+`crates/contracts/src/order/sol_cancellations.rs`
+(`OrderCancellations`). Both structs are re-exported publicly at the
+crate root as `cow_sdk_contracts::GPv2Order` and
+`cow_sdk_contracts::GPv2OrderCancellations`. The macro emits the
+canonical EIP-712 type strings at expansion time:
+`Order(address sellToken,address buyToken,address receiver,uint256
+sellAmount,uint256 buyAmount,uint32 validTo,bytes32 appData,uint256
+feeAmount,string kind,bool partiallyFillable,string sellTokenBalance,
+string buyTokenBalance)` keccak-hashes to the deployed protocol
+constant
+`0xd5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489`
+and `OrderCancellations(bytes[] orderUids)` keccak-hashes to the
+canonical batch-cancellation type hash. Callers route order signing
+hashes through `<GPv2Order as SolStruct>::eip712_signing_hash` and
+batch-cancellation signing hashes through
+`<GPv2OrderCancellations as SolStruct>::eip712_signing_hash`; the
+public functions `cow_sdk_contracts::hash_order`,
+`cow_sdk_contracts::hash_order_cancellation`, and
+`cow_sdk_contracts::hash_order_cancellations` are thin wrappers over
+that alloy path. The eight representative rows in
+`parity/fixtures/eip712/order_digests.json` (vanilla mainnet sell and
+buy, gnosis chain native-in, sepolia partial fill, arbitrum one
+eth-flow, base partner-fee, mainnet zero-app-data edge, and mainnet
+max-amount U256 edge) pin per-row domain separator, struct hash, and
+signing hash so a future change to the order typed-data encoding
+cannot silently move the wire bytes.
 
 Deterministic CREATE2 addresses for the deployer-derived contracts in
 `cow_sdk_contracts::deploy` route through

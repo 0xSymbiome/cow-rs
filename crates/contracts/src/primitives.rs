@@ -1,10 +1,6 @@
-use alloy_primitives::{U256, keccak256};
-use alloy_sol_types::Eip712Domain;
-use num_bigint::BigUint;
+use alloy_primitives::keccak256;
 
-use cow_sdk_core::{
-    Address, AppDataHash, BuyTokenDestination, ChainId, OrderKind, SellTokenSource, TypedDataDomain,
-};
+use cow_sdk_core::{Address, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource};
 
 use crate::ContractsError;
 
@@ -21,10 +17,6 @@ pub(crate) fn zero_address() -> Address {
     // SAFETY: ZERO_ADDRESS is a reviewed protocol literal with the exact EVM
     // address shape.
     Address::new(ZERO_ADDRESS).expect("static zero address must remain valid")
-}
-
-pub(crate) fn keccak256_hex(bytes: impl AsRef<[u8]>) -> String {
-    format!("0x{}", hex::encode(keccak256(bytes).as_slice()))
 }
 
 pub(crate) fn parse_hex(value: &str, field: &'static str) -> Result<Vec<u8>, ContractsError> {
@@ -71,84 +63,6 @@ pub(crate) fn parse_hex32(value: &str, field: &'static str) -> Result<[u8; 32], 
     Ok(out)
 }
 
-pub(crate) fn encode_address(address: &Address) -> Result<[u8; 32], ContractsError> {
-    let mut out = [0u8; 32];
-    out[12..].copy_from_slice(&parse_address_bytes(address)?);
-    Ok(out)
-}
-
-pub(crate) fn encode_u32(value: u32) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[28..].copy_from_slice(&value.to_be_bytes());
-    out
-}
-
-// Production callsites in `domain_separator` were retired when the EIP-712
-// domain hashing collapsed onto `alloy_sol_types::Eip712Domain::separator`.
-// The remaining test coverage continues to assert the numeric-overflow
-// behavior; the function itself retires together with the other ABI-word
-// builders when `encode_address` is replaced with `SolValue::abi_encode` in
-// the order-hash collapse.
-#[allow(dead_code)]
-pub(crate) fn encode_u256_str(
-    field: &'static str,
-    value: &str,
-) -> Result<[u8; 32], ContractsError> {
-    let parsed = value
-        .strip_prefix("0x")
-        .map_or_else(
-            || BigUint::parse_bytes(value.as_bytes(), 10),
-            |stripped| BigUint::parse_bytes(stripped.as_bytes(), 16),
-        )
-        .ok_or_else(|| ContractsError::InvalidNumeric {
-            field,
-            value: value.to_owned().into(),
-        })?;
-
-    encode_u256_biguint_inner(field, &parsed, || value.to_owned())
-}
-
-pub(crate) fn encode_u256_biguint(value: &BigUint) -> Result<[u8; 32], ContractsError> {
-    encode_u256_biguint_inner("amount", value, || value.to_str_radix(10))
-}
-
-fn encode_u256_biguint_inner(
-    field: &'static str,
-    value: &BigUint,
-    display: impl FnOnce() -> String,
-) -> Result<[u8; 32], ContractsError> {
-    let bytes = value.to_bytes_be();
-    if bytes.len() > 32 {
-        return Err(ContractsError::NumericOverflow {
-            field,
-            value: display().into(),
-        });
-    }
-
-    let mut out = [0u8; 32];
-    out[32 - bytes.len()..].copy_from_slice(&bytes);
-    Ok(out)
-}
-
-pub(crate) fn encode_bool(value: bool) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[31] = u8::from(value);
-    out
-}
-
-pub(crate) fn encode_string_hash(value: &str) -> [u8; 32] {
-    keccak256(value.as_bytes()).0
-}
-
-// Production callsite in `domain_separator` was retired when the EIP-712
-// domain hashing collapsed onto `alloy_sol_types::Eip712Domain::separator`.
-// Retires alongside the other ABI-word builders when the order-hash collapse
-// lands.
-#[allow(dead_code)]
-pub(crate) fn chain_id_bytes(chain_id: ChainId) -> Result<[u8; 32], ContractsError> {
-    encode_u256_str("chainId", &chain_id.to_string())
-}
-
 pub(crate) const fn order_kind_name(kind: OrderKind) -> &'static str {
     match kind {
         OrderKind::Buy => "buy",
@@ -189,44 +103,6 @@ pub(crate) fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
     }
 }
 
-pub(crate) fn domain_separator(domain: &TypedDataDomain) -> Result<[u8; 32], ContractsError> {
-    // Delegate to `alloy_sol_types::Eip712Domain::separator`, which
-    // constructs the canonical `EIP712Domain(string name,string
-    // version,uint256 chainId,address verifyingContract)` type-hash and
-    // the (name_hash, version_hash, chain_id_word,
-    // verifying_contract_word) data preimage and returns
-    // `keccak256(type_hash || encoded_data)`. The inline regression test
-    // `domain_separator_and_typed_data_digest_match_manual_eip712_encoding`
-    // and the shared parity fixture `domain_separator_parity.json` lock
-    // the byte contract.
-    let addr_bytes = parse_address_bytes(&domain.verifying_contract)?;
-    let alloy_domain = Eip712Domain {
-        name: Some(domain.name.clone().into()),
-        version: Some(domain.version.clone().into()),
-        chain_id: Some(U256::from(domain.chain_id)),
-        verifying_contract: Some(alloy_primitives::Address::new(addr_bytes)),
-        salt: None,
-    };
-    Ok(alloy_domain.separator().0)
-}
-
-pub(crate) fn typed_data_digest(
-    domain: &TypedDataDomain,
-    struct_hash: [u8; 32],
-) -> Result<[u8; 32], ContractsError> {
-    // Canonical EIP-712 signing-hash envelope: `keccak256(0x19 || 0x01 ||
-    // domain_separator || struct_hash)`. The fixed-size 66-byte buffer
-    // mirrors the envelope specification exactly and avoids a `Vec`
-    // allocation on the hot path.
-    let separator = domain_separator(domain)?;
-    let mut payload = [0u8; 66];
-    payload[0] = 0x19;
-    payload[1] = 0x01;
-    payload[2..34].copy_from_slice(&separator);
-    payload[34..66].copy_from_slice(&struct_hash);
-    Ok(keccak256(payload).0)
-}
-
 pub(crate) fn normalize_hex_payload(
     value: &str,
     field: &'static str,
@@ -243,23 +119,9 @@ pub(crate) fn function_selector(signature: &str) -> [u8; 4] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sha3::{Digest, Keccak256};
-
-    fn u256_word_from_u64(value: u64) -> [u8; 32] {
-        let mut out = [0u8; 32];
-        out[24..].copy_from_slice(&value.to_be_bytes());
-        out
-    }
-
-    fn address_word(address: &Address) -> [u8; 32] {
-        let mut out = [0u8; 32];
-        let decoded = hex::decode(address.as_str().trim_start_matches("0x")).unwrap();
-        out[12..].copy_from_slice(&decoded);
-        out
-    }
 
     #[test]
-    fn hex_parsers_and_scalar_encoders_preserve_exact_abi_words() {
+    fn hex_parsers_round_trip_typed_byte_arrays() {
         let address = Address::new("0x1234567890abcdef1234567890abcdef12345678").unwrap();
         let app_data =
             AppDataHash::new("0xabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd")
@@ -287,115 +149,11 @@ mod tests {
             .unwrap(),
             [0xaa; 32]
         );
-        assert_eq!(encode_address(&address).unwrap(), address_word(&address));
-        assert_eq!(encode_u32(0x0102_0304), {
-            let mut out = [0u8; 32];
-            out[28..].copy_from_slice(&0x0102_0304u32.to_be_bytes());
-            out
-        });
-        assert_eq!(
-            encode_u256_str(
-                "amount",
-                "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            )
-            .unwrap(),
-            [0xff; 32]
-        );
-        assert!(
-            encode_u256_str(
-                "amount",
-                "0x01ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-            )
-            .is_err()
-        );
-        assert_eq!(encode_bool(false), [0u8; 32]);
-        assert_eq!(encode_bool(true)[31], 1);
         assert_eq!(order_kind_name(OrderKind::Buy), "buy");
         assert_eq!(order_kind_name(OrderKind::Sell), "sell");
-        assert_eq!(chain_id_bytes(1).unwrap(), u256_word_from_u64(1));
         assert_eq!(
             normalize_hex_payload("0xABcd", "payload").unwrap(),
             "0xabcd"
         );
-        let expected_string_hash: [u8; 32] = Keccak256::digest(b"hello").into();
-        assert_eq!(encode_string_hash("hello"), expected_string_hash);
-    }
-
-    #[test]
-    fn domain_separator_and_typed_data_digest_match_manual_eip712_encoding() {
-        let domain = TypedDataDomain::new(
-            "Gnosis Protocol".to_owned(),
-            "v2".to_owned(),
-            1,
-            Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
-        );
-        let struct_hash = [0x55; 32];
-
-        let mut encoded = Vec::new();
-        encoded.extend_from_slice(&Keccak256::digest(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                .as_bytes(),
-        ));
-        encoded.extend_from_slice(&Keccak256::digest(domain.name.as_bytes()));
-        encoded.extend_from_slice(&Keccak256::digest(domain.version.as_bytes()));
-        encoded.extend_from_slice(&u256_word_from_u64(domain.chain_id));
-        encoded.extend_from_slice(&address_word(&domain.verifying_contract));
-        let expected_separator: [u8; 32] = Keccak256::digest(&encoded).into();
-
-        let mut digest_payload = Vec::with_capacity(66);
-        digest_payload.extend_from_slice(&[0x19, 0x01]);
-        digest_payload.extend_from_slice(&expected_separator);
-        digest_payload.extend_from_slice(&struct_hash);
-        let expected_digest: [u8; 32] = Keccak256::digest(&digest_payload).into();
-
-        assert_eq!(domain_separator(&domain).unwrap(), expected_separator);
-        assert_eq!(
-            typed_data_digest(&domain, struct_hash).unwrap(),
-            expected_digest
-        );
-    }
-
-    #[test]
-    fn domain_separator_matches_shared_parity_fixture() {
-        let (domain, expected_separator) = domain_separator_parity_fixture();
-        let actual_separator = format!("0x{}", hex::encode(domain_separator(&domain).unwrap()));
-
-        assert_eq!(actual_separator, expected_separator);
-    }
-
-    fn domain_separator_parity_fixture() -> (TypedDataDomain, String) {
-        const FIXTURE: &str = include_str!("../tests/fixtures/domain_separator_parity.json");
-
-        let fixture: serde_json::Value =
-            serde_json::from_str(FIXTURE).expect("domain separator fixture must parse");
-        assert_eq!(fixture["schema_version"].as_u64(), Some(1));
-
-        let case = &fixture["case"];
-        let name = case["name"]
-            .as_str()
-            .expect("fixture case must carry name")
-            .to_owned();
-        let version = case["version"]
-            .as_str()
-            .expect("fixture case must carry version")
-            .to_owned();
-        let chain_id = case["chain_id"]
-            .as_u64()
-            .expect("fixture case must carry chain_id");
-        let verifying_contract = Address::new(
-            case["verifying_contract"]
-                .as_str()
-                .expect("fixture case must carry verifying_contract"),
-        )
-        .expect("fixture verifying_contract must be a valid address");
-        let expected_separator = case["domain_separator"]
-            .as_str()
-            .expect("fixture case must carry domain_separator")
-            .to_owned();
-
-        (
-            TypedDataDomain::new(name, version, chain_id, verifying_contract),
-            expected_separator,
-        )
     }
 }

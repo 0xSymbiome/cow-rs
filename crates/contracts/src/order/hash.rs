@@ -1,15 +1,14 @@
-use alloy_primitives::keccak256;
+use std::str::FromStr;
+
+use alloy_primitives::{Address as AlloyAddress, B256, Bytes as AlloyBytes, U256};
+use alloy_sol_types::{Eip712Domain, SolStruct};
 use cow_sdk_core::{Address, Hash32, OrderDigest, OrderUid, TypedDataDomain};
 
-use super::{NormalizedOrder, ORDER_TYPE_HASH, ORDER_UID_LENGTH, Order, OrderCancellations};
-use crate::{
-    ContractsError,
-    primitives::{
-        buy_balance_name, encode_address, encode_bool, encode_string_hash, encode_u32,
-        encode_u256_biguint, order_kind_name, parse_bytes32_hash, parse_hex_exact, parse_hex32,
-        sell_balance_name, typed_data_digest, zero_address,
-    },
-};
+use super::sol_cancellations::OrderCancellations as SolOrderCancellations;
+use super::sol_types::Order as SolOrder;
+use super::{NormalizedOrder, ORDER_UID_LENGTH, Order, OrderCancellations};
+use crate::ContractsError;
+use crate::primitives::{buy_balance_name, order_kind_name, sell_balance_name, zero_address};
 
 /// Normalizes an order into its canonical contract hashing form.
 ///
@@ -47,12 +46,23 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
 
 /// Computes the EIP-712 digest for an order.
 ///
+/// Delegates to [`alloy_sol_types::SolStruct::eip712_signing_hash`] on
+/// the macro-emitted [`crate::order::sol_types::Order`] struct, which
+/// composes the canonical
+/// `keccak256(0x19 || 0x01 || domain_separator || struct_hash)`
+/// envelope per the EIP-712 specification.
+/// The `parity/fixtures/eip712/order_digests.json` rows lock the
+/// per-row byte contract.
+///
 /// # Errors
 ///
-/// Returns [`ContractsError`] if normalization or struct hashing fails.
+/// Returns [`ContractsError`] if order normalization or address parsing fails.
 pub fn hash_order(domain: &TypedDataDomain, order: &Order) -> Result<OrderDigest, ContractsError> {
-    let digest = typed_data_digest(domain, order_struct_hash(&normalize_order(order)?)?)?;
-    OrderDigest::new(format!("0x{}", hex::encode(digest))).map_err(Into::into)
+    let normalized = normalize_order(order)?;
+    let sol_order = sol_order_from_normalized(&normalized)?;
+    let alloy_domain = alloy_domain_from(domain)?;
+    let digest = sol_order.eip712_signing_hash(&alloy_domain);
+    OrderDigest::new(format!("0x{}", hex::encode(digest.as_slice()))).map_err(Into::into)
 }
 
 /// Computes the EIP-712 digest for a single order cancellation.
@@ -69,48 +79,106 @@ pub fn hash_order_cancellation(
 
 /// Computes the EIP-712 digest for a batch order cancellation payload.
 ///
+/// Delegates to [`alloy_sol_types::SolStruct::eip712_signing_hash`] on
+/// the macro-emitted
+/// [`crate::order::sol_cancellations::OrderCancellations`] struct.
+///
 /// # Errors
 ///
-/// Returns [`ContractsError`] if UID decoding or typed-data hashing fails.
+/// Returns [`ContractsError`] if UID decoding or address parsing fails.
 pub fn hash_order_cancellations(
     domain: &TypedDataDomain,
     cancellations: &OrderCancellations,
 ) -> Result<Hash32, ContractsError> {
-    let type_hash = keccak256(b"OrderCancellations(bytes[] orderUids)");
-    let mut concatenated = Vec::with_capacity(cancellations.order_uids.len() * 32);
-    for uid in &cancellations.order_uids {
-        let bytes = parse_hex_exact(uid.as_str(), "orderUid", ORDER_UID_LENGTH)?;
-        concatenated.extend_from_slice(keccak256(&bytes).as_slice());
-    }
-    let array_hash = keccak256(&concatenated);
-
-    let mut encoded = Vec::with_capacity(64);
-    encoded.extend_from_slice(type_hash.as_slice());
-    encoded.extend_from_slice(array_hash.as_slice());
-    let digest = typed_data_digest(domain, keccak256(&encoded).0)?;
-    Hash32::new(format!("0x{}", hex::encode(digest))).map_err(Into::into)
+    let order_uids = cancellations
+        .order_uids
+        .iter()
+        .map(decode_order_uid_bytes)
+        .collect::<Result<Vec<_>, _>>()?;
+    let sol_cancellations = SolOrderCancellations {
+        orderUids: order_uids,
+    };
+    let alloy_domain = alloy_domain_from(domain)?;
+    let digest = sol_cancellations.eip712_signing_hash(&alloy_domain);
+    Hash32::new(format!("0x{}", hex::encode(digest.as_slice()))).map_err(Into::into)
 }
 
-fn order_struct_hash(order: &NormalizedOrder) -> Result<[u8; 32], ContractsError> {
-    let mut encoded = Vec::with_capacity(32 * 13);
-    encoded.extend_from_slice(&parse_hex32(ORDER_TYPE_HASH, "orderTypeHash")?);
-    encoded.extend_from_slice(&encode_address(&order.sell_token)?);
-    encoded.extend_from_slice(&encode_address(&order.buy_token)?);
-    encoded.extend_from_slice(&encode_address(&order.receiver)?);
-    encoded.extend_from_slice(&encode_u256_biguint(order.sell_amount.as_biguint())?);
-    encoded.extend_from_slice(&encode_u256_biguint(order.buy_amount.as_biguint())?);
-    encoded.extend_from_slice(&encode_u32(order.valid_to));
-    encoded.extend_from_slice(&parse_bytes32_hash(&order.app_data)?);
-    encoded.extend_from_slice(&encode_u256_biguint(order.fee_amount.as_biguint())?);
-    encoded.extend_from_slice(&encode_string_hash(order_kind_name(order.kind)));
-    encoded.extend_from_slice(&encode_bool(order.partially_fillable));
-    encoded.extend_from_slice(&encode_string_hash(sell_balance_name(
-        order.sell_token_balance,
-    )));
-    encoded.extend_from_slice(&encode_string_hash(buy_balance_name(
-        order.buy_token_balance,
-    )));
-    Ok(keccak256(&encoded).0)
+fn sol_order_from_normalized(order: &NormalizedOrder) -> Result<SolOrder, ContractsError> {
+    Ok(SolOrder {
+        sellToken: parse_alloy_address(&order.sell_token)?,
+        buyToken: parse_alloy_address(&order.buy_token)?,
+        receiver: parse_alloy_address(&order.receiver)?,
+        sellAmount: biguint_to_u256("sellAmount", order.sell_amount.as_biguint())?,
+        buyAmount: biguint_to_u256("buyAmount", order.buy_amount.as_biguint())?,
+        validTo: order.valid_to,
+        appData: parse_b256(order.app_data.as_str(), "appData")?,
+        feeAmount: biguint_to_u256("feeAmount", order.fee_amount.as_biguint())?,
+        kind: order_kind_name(order.kind).to_owned(),
+        partiallyFillable: order.partially_fillable,
+        sellTokenBalance: sell_balance_name(order.sell_token_balance).to_owned(),
+        buyTokenBalance: buy_balance_name(order.buy_token_balance).to_owned(),
+    })
+}
+
+fn alloy_domain_from(domain: &TypedDataDomain) -> Result<Eip712Domain, ContractsError> {
+    Ok(Eip712Domain {
+        name: Some(domain.name.clone().into()),
+        version: Some(domain.version.clone().into()),
+        chain_id: Some(U256::from(domain.chain_id)),
+        verifying_contract: Some(parse_alloy_address(&domain.verifying_contract)?),
+        salt: None,
+    })
+}
+
+fn parse_alloy_address(address: &Address) -> Result<AlloyAddress, ContractsError> {
+    AlloyAddress::from_str(address.as_str()).map_err(|_| ContractsError::InvalidDecodedLength {
+        field: "address",
+        expected: 20,
+        actual: 0,
+    })
+}
+
+fn parse_b256(value: &str, field: &'static str) -> Result<B256, ContractsError> {
+    B256::from_str(value).map_err(|_| ContractsError::InvalidDecodedLength {
+        field,
+        expected: 32,
+        actual: 0,
+    })
+}
+
+fn biguint_to_u256(
+    field: &'static str,
+    value: &num_bigint::BigUint,
+) -> Result<U256, ContractsError> {
+    let bytes = value.to_bytes_be();
+    if bytes.len() > 32 {
+        return Err(ContractsError::NumericOverflow {
+            field,
+            value: value.to_str_radix(10).into(),
+        });
+    }
+    let mut buf = [0_u8; 32];
+    buf[32 - bytes.len()..].copy_from_slice(&bytes);
+    Ok(U256::from_be_bytes(buf))
+}
+
+fn decode_order_uid_bytes(uid: &OrderUid) -> Result<AlloyBytes, ContractsError> {
+    let stripped = uid
+        .as_str()
+        .strip_prefix("0x")
+        .ok_or(ContractsError::InvalidHexPrefix { field: "orderUid" })?;
+    let bytes = hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
+        field: "orderUid",
+        source,
+    })?;
+    if bytes.len() != ORDER_UID_LENGTH {
+        return Err(ContractsError::InvalidDecodedLength {
+            field: "orderUid",
+            expected: ORDER_UID_LENGTH,
+            actual: bytes.len(),
+        });
+    }
+    Ok(AlloyBytes::from(bytes))
 }
 
 const ZERO_ADDRESS_LOWER: &str = "0x0000000000000000000000000000000000000000";
@@ -209,8 +277,10 @@ mod tests {
     }
 
     fn manual_struct_hash(order: &NormalizedOrder) -> [u8; 32] {
+        const ORDER_TYPE_STRING: &[u8] = b"Order(address sellToken,address buyToken,address receiver,uint256 sellAmount,uint256 buyAmount,uint32 validTo,bytes32 appData,uint256 feeAmount,string kind,bool partiallyFillable,string sellTokenBalance,string buyTokenBalance)";
         let mut encoded = Vec::new();
-        encoded.extend_from_slice(&hex::decode(ORDER_TYPE_HASH.trim_start_matches("0x")).unwrap());
+        let type_hash: [u8; 32] = Keccak256::digest(ORDER_TYPE_STRING).into();
+        encoded.extend_from_slice(&type_hash);
         encoded.extend_from_slice(&encode_address_word(&order.sell_token));
         encoded.extend_from_slice(&encode_address_word(&order.buy_token));
         encoded.extend_from_slice(&encode_address_word(&order.receiver));
@@ -245,10 +315,8 @@ mod tests {
         digest_payload.extend_from_slice(&expected_struct_hash);
         let expected_digest = Keccak256::digest(&digest_payload);
 
-        assert_eq!(
-            order_struct_hash(&normalized).unwrap(),
-            expected_struct_hash
-        );
+        let sol_order = sol_order_from_normalized(&normalized).unwrap();
+        assert_eq!(sol_order.eip712_hash_struct().0, expected_struct_hash);
         assert_eq!(
             hash_order(&domain, &order).unwrap().as_str(),
             format!("0x{}", hex::encode(expected_digest))

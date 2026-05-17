@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "source": "alloy_sol_types::SolStruct::eip712_signing_hash on GPv2 Order",
+  "order_type_hash": "0xd5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489",
+  "rows": [
+    {
+      "name": "vanilla_mainnet_sell",
+      "domain": {
+        "name": "Gnosis Protocol",
+        "version": "v2",
+        "chain_id": 1,
+        "verifying_contract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41"
+      },
+      "order": {
+        "sellToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "buyToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "receiver": "0x1111111111111111111111111111111111111111",
+        "sellAmount": "1000000",
+        "buyAmount": "1000000000000000000",
+        "validTo": 1700000000,
+        "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+        "feeAmount": "5000",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20"
+      },
+      "expected": {
+        "domain_separator": "0xc078f884a2676e1345748b1feace7b0abee5d00ecadb6e574dcdd109a63e8943",
+        "order_struct_hash": "0x0c1c44c1e41260a8346410101cf3e0a7f8f8a603d30a856871f6298594bb384d",
+        "signing_hash": "0x25e103a04789a3e9d7021f58561252531a431b5f9aec525e4f8b353fe9dccd51"
+      }
+    },
+    {
+      "name": "vanilla_mainnet_buy",
+      "domain": {
+        "name": "Gnosis Protocol",
+        "version": "v2",
+        "chain_id": 1,
+        "verifying_contract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41"
+      },
+      "order": {
+        "sellToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "buyToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "receiver": "0x2222222222222222222222222222222222222222",
+        "sellAmount": "1000000000000000000",
+        "buyAmount": "1000000",
+        "validTo": 1710000000,
+        "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+        "feeAmount": "2500",
+        "kind": "buy",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20"
+      },
+      "expected": {
+        "domain_separator": "0xc078f884a2676e1345748b1feace7b0abee5d00ecadb6e574dcdd109a63e8943",
+        "order_struct_hash": "0xcbe00533027cedeb5d41d5c1a0ce01b123619240c088d842f513d360994d9ee4",
+        "signing_hash": "0x02d1908c20838befbefa82132fa832d40557b8c976e39f1c8f285b5e389f2cf8"
+      }
+    },
+    {
+      "name": "gnosis_chain_sell_native_in",
+      "domain": {
+        "name": "Gnosis Protocol",
+        "version": "v2",
+        "chain_id": 100,
+        "verifying_contract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41"
+      },
+      "order": {
+        "sellToken": "0x177127622c4a00f3d409b75571e12cb3c8973d3c",
+        "buyToken": "0xe91d153e0b41518a2ce8dd3d7944fa863463a97d",
+        "receiver": "0x1111111111111111111111111111111111111111",
+        "sellAmount": "1000000000000000000",
+        "buyAmount": "2000000000000000000",
+        "validTo": 1720000000,
+        "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+        "feeAmount": "0",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "external",
+        "buyTokenBalance": "internal"
+      },
+      "expected": {
+        "domain_separator": "0x8f05589c4b810bc2f706854508d66d447cd971f8354a4bb0b3471ceb0a466bc7",
+        "order_struct_hash": "0xd1ed983043cedf2b5e6a715e1fd22cf5489c0bf252890e5366d119f2e361e934",
+        "signing_hash": "0xfd75f00d0a10cc5779f89c3480ff168ef18110199d8de3355f9d80c18a2876df"
+      }
+    },
+    {
+      "name": "sepolia_partial_fill",
+      "domain": {
+        "name": "Gnosis Protocol",
+        "version": "v2",
+        "chain_id": 11155111,
+        "verifying_contract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41"
+      },
+      "order": {
+        "sellToken": "0xbe72e441bf55620febc26715db68d3494213d8cb",
+        "buyToken": "0x0000000000000000000000000000000000000000",
+        "receiver": "0x2222222222222222222222222222222222222222",
+        "sellAmount": "2000000000000000000",
+        "buyAmount": "1000000000000000000",
+        "validTo": 1730000000,
+        "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+        "feeAmount": "1000",
+        "kind": "sell",
+        "partiallyFillable": true,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20"
+      },
+      "expected": {
+        "domain_separator": "0xdaee378bd0eb30ddf479272accf91761e697bc00e067a268f95f1d2732ed230b",
+        "order_struct_hash": "0x17b4683ce7bbef6da7d6314008b0a7ea07dbcbcbed66c053fb492287e5a68c6b",
+        "signing_hash": "0x252512b39cb6a95ee8a0f4ac884c5be9368750b914b17da9a25d2812aff97772"
+      }
+    },
+    {
+      "name": "arbitrum_one_eth_flow",
+      "domain": {
+        "name": "Gnosis Protocol",
+        "version": "v2",
+        "chain_id": 42161,
+        "verifying_contract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41"
+      },
+      "order": {
+        "sellToken": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1",
+        "buyToken": "0x912ce59144191c1204e64559fe8253a0e49e6548",
+        "receiver": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "sellAmount": "1000000000000000000",
+        "buyAmount": "900000000000000000",
+        "validTo": 1740000000,
+        "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+        "feeAmount": "0",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20"
+      },
+      "expected": {
+        "domain_separator": "0x69d78e7a7cafcaf924483f99f65e8f4e303a99a446db7ab319f9d40e940bced2",
+        "order_struct_hash": "0x27812a468f0dfc873c1f6af0dc8131986e618844537b7b226fe7b090b24e2754",
+        "signing_hash": "0x5ee7f173d33f85912d0d8187fecdde6cc64aa962335c3cb22196babfc69a11f1"
+      }
+    },
+    {
+      "name": "base_partner_fee",
+      "domain": {
+        "name": "Gnosis Protocol",
+        "version": "v2",
+        "chain_id": 8453,
+        "verifying_contract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41"
+      },
+      "order": {
+        "sellToken": "0x4200000000000000000000000000000000000006",
+        "buyToken": "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca",
+        "receiver": "0x1111111111111111111111111111111111111111",
+        "sellAmount": "1000000000000000000",
+        "buyAmount": "2500000000",
+        "validTo": 1750000000,
+        "appData": "0x1111111111111111111111111111111111111111111111111111111111111111",
+        "feeAmount": "7500",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20"
+      },
+      "expected": {
+        "domain_separator": "0xd72ffa789b6fae41254d0b5a13e6e1e92ed947ec6a251edf1cf0b6c02c257b4b",
+        "order_struct_hash": "0xf55e8c584899fe4a70f42e9a497cbe1b11c24f97e7b7c4c29a8eb87ea8304049",
+        "signing_hash": "0x77b55a7e280a2b34579ffeb4efdbf4ffc8a2d8f95e1464a307735037b6f53f40"
+      }
+    },
+    {
+      "name": "mainnet_appdata_zero",
+      "domain": {
+        "name": "Gnosis Protocol",
+        "version": "v2",
+        "chain_id": 1,
+        "verifying_contract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41"
+      },
+      "order": {
+        "sellToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "buyToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "receiver": "0x1111111111111111111111111111111111111111",
+        "sellAmount": "1000000",
+        "buyAmount": "1000000000000000000",
+        "validTo": 1760000000,
+        "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "feeAmount": "0",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20"
+      },
+      "expected": {
+        "domain_separator": "0xc078f884a2676e1345748b1feace7b0abee5d00ecadb6e574dcdd109a63e8943",
+        "order_struct_hash": "0xbcf908ebd6c8b2ed471138fdc79330bbbba72425e1923f2639896315b62276a5",
+        "signing_hash": "0x56e36e842f03d9fa255536392c8a81620d318a8e72fa3b4843a8ebaba23b481a"
+      }
+    },
+    {
+      "name": "mainnet_max_amounts",
+      "domain": {
+        "name": "Gnosis Protocol",
+        "version": "v2",
+        "chain_id": 1,
+        "verifying_contract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41"
+      },
+      "order": {
+        "sellToken": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        "buyToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "receiver": "0x1111111111111111111111111111111111111111",
+        "sellAmount": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+        "buyAmount": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+        "validTo": 4294967295,
+        "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+        "feeAmount": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+        "kind": "buy",
+        "partiallyFillable": true,
+        "sellTokenBalance": "internal",
+        "buyTokenBalance": "internal"
+      },
+      "expected": {
+        "domain_separator": "0xc078f884a2676e1345748b1feace7b0abee5d00ecadb6e574dcdd109a63e8943",
+        "order_struct_hash": "0x58b86aef83f40eb7edbec58b0d146c9a409f76b989384b84c6b824f6f87130d6",
+        "signing_hash": "0x6775eabb2053c11660a44e56817035c12ceaea8928d0b63e70c8c9160a693d53"
+      }
+    }
+  ]
+}

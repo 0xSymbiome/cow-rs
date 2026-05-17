@@ -14,12 +14,20 @@
 
 mod common;
 
+use alloy_sol_types::SolStruct;
 use cow_sdk_contracts::{
-    BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, ContractId, ORDER_TYPE_FIELDS, ORDER_TYPE_HASH,
-    Order, OrderCancellations, OrderFlags, OrderUidParams, Registry, compute_order_uid,
+    BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, ContractId, GPv2Order, ORDER_TYPE_FIELDS, Order,
+    OrderCancellations, OrderFlags, OrderUidParams, Registry, compute_order_uid,
     decode_order_flags, encode_order_flags, extract_order_uid_params, hash_order,
     hash_order_cancellation, hash_order_cancellations, normalize_order, pack_order_uid_params,
 };
+
+fn gpv2_order_type_hash_hex() -> String {
+    format!(
+        "0x{}",
+        hex::encode(GPv2Order::default().eip712_type_hash().as_slice())
+    )
+}
 use cow_sdk_core::{
     Address, Amount, AppDataHex, BuyTokenDestination, CowEnv, OrderKind, SellTokenSource,
     SupportedChainId, TypedDataDomain, UnsignedOrder,
@@ -121,8 +129,9 @@ fn order_contract_matches_fixture_and_normalization_rules() {
     );
 
     let type_hash = fixture_case("contracts-order-type-hash");
+    let actual_type_hash = gpv2_order_type_hash_hex();
     assert_eq!(
-        ORDER_TYPE_HASH,
+        actual_type_hash,
         type_hash["expected"]["hash"].as_str().unwrap()
     );
 
