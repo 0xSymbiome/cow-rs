@@ -1,4 +1,5 @@
-use alloy_primitives::keccak256;
+use alloy_primitives::{U256, keccak256};
+use alloy_sol_types::Eip712Domain;
 use num_bigint::BigUint;
 
 use cow_sdk_core::{
@@ -82,6 +83,13 @@ pub(crate) fn encode_u32(value: u32) -> [u8; 32] {
     out
 }
 
+// Production callsites in `domain_separator` were retired when the EIP-712
+// domain hashing collapsed onto `alloy_sol_types::Eip712Domain::separator`.
+// The remaining test coverage continues to assert the numeric-overflow
+// behavior; the function itself retires together with the other ABI-word
+// builders when `encode_address` is replaced with `SolValue::abi_encode` in
+// the order-hash collapse.
+#[allow(dead_code)]
 pub(crate) fn encode_u256_str(
     field: &'static str,
     value: &str,
@@ -132,6 +140,11 @@ pub(crate) fn encode_string_hash(value: &str) -> [u8; 32] {
     keccak256(value.as_bytes()).0
 }
 
+// Production callsite in `domain_separator` was retired when the EIP-712
+// domain hashing collapsed onto `alloy_sol_types::Eip712Domain::separator`.
+// Retires alongside the other ABI-word builders when the order-hash collapse
+// lands.
+#[allow(dead_code)]
 pub(crate) fn chain_id_bytes(chain_id: ChainId) -> Result<[u8; 32], ContractsError> {
     encode_u256_str("chainId", &chain_id.to_string())
 }
@@ -177,26 +190,38 @@ pub(crate) fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
 }
 
 pub(crate) fn domain_separator(domain: &TypedDataDomain) -> Result<[u8; 32], ContractsError> {
-    const DOMAIN_TYPE: &str =
-        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)";
-
-    let mut encoded = Vec::with_capacity(32 * 5);
-    encoded.extend_from_slice(keccak256(DOMAIN_TYPE.as_bytes()).as_slice());
-    encoded.extend_from_slice(&encode_string_hash(&domain.name));
-    encoded.extend_from_slice(&encode_string_hash(&domain.version));
-    encoded.extend_from_slice(&chain_id_bytes(domain.chain_id)?);
-    encoded.extend_from_slice(&encode_address(&domain.verifying_contract)?);
-    Ok(keccak256(encoded).0)
+    // Delegate to `alloy_sol_types::Eip712Domain::separator`, which constructs
+    // the canonical `EIP712Domain(string name,string version,uint256
+    // chainId,address verifyingContract)` type-hash and the (name_hash,
+    // version_hash, chain_id_word, verifying_contract_word) data preimage and
+    // returns `keccak256(type_hash || encoded_data)`. Byte-identical to the
+    // prior hand-rolled encoder; verified by the inline oracle test
+    // `domain_separator_and_typed_data_digest_match_manual_eip712_encoding`
+    // and the shared parity fixture `domain_separator_parity.json`.
+    let addr_bytes = parse_address_bytes(&domain.verifying_contract)?;
+    let alloy_domain = Eip712Domain {
+        name: Some(domain.name.clone().into()),
+        version: Some(domain.version.clone().into()),
+        chain_id: Some(U256::from(domain.chain_id)),
+        verifying_contract: Some(alloy_primitives::Address::new(addr_bytes)),
+        salt: None,
+    };
+    Ok(alloy_domain.separator().0)
 }
 
 pub(crate) fn typed_data_digest(
     domain: &TypedDataDomain,
     struct_hash: [u8; 32],
 ) -> Result<[u8; 32], ContractsError> {
-    let mut payload = Vec::with_capacity(66);
-    payload.extend_from_slice(&[0x19, 0x01]);
-    payload.extend_from_slice(&domain_separator(domain)?);
-    payload.extend_from_slice(&struct_hash);
+    // Canonical EIP-712 signing-hash envelope: `keccak256(0x19 || 0x01 ||
+    // domain_separator || struct_hash)`. Fixed-size 66-byte buffer avoids the
+    // Vec allocation; semantics are byte-identical to the prior implementation.
+    let separator = domain_separator(domain)?;
+    let mut payload = [0u8; 66];
+    payload[0] = 0x19;
+    payload[1] = 0x01;
+    payload[2..34].copy_from_slice(&separator);
+    payload[34..66].copy_from_slice(&struct_hash);
     Ok(keccak256(payload).0)
 }
 

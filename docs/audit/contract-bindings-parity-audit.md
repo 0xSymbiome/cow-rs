@@ -1,7 +1,7 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-16
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a drift in the committed Solidity excerpt under `crates/contracts/abi/**/*.sol`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
@@ -113,6 +113,18 @@ under both `crates/contracts/tests/fixtures/` and
 `crates/signing/tests/fixtures/`. The contracts test and the signing test read
 the same expected separator so a future change to typed-data domain encoding
 cannot silently move one crate without moving the other.
+
+The `cow_sdk_contracts::primitives::domain_separator` and
+`cow_sdk_contracts::primitives::typed_data_digest` helpers delegate to
+`alloy_sol_types::Eip712Domain::separator` for the domain preimage and to
+`alloy_primitives::keccak256` for the canonical `0x19 0x01 || separator ||
+struct_hash` envelope, rather than carrying a hand-rolled encoder. The
+shared parity fixture is the byte-identity oracle that proves the alloy
+delegation emits the same bytes as the prior in-crate implementation; an
+inline regression test in `primitives.rs` reproduces the EIP-712 encoding
+from first principles and asserts the helper output matches at the byte
+level so the alloy delegation can never silently drift from the
+protocol-specified formula.
 
 ### WASM Target Contract
 
