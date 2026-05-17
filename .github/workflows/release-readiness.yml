@@ -8,8 +8,7 @@ on:
         required: false
         type: boolean
         default: true
-  schedule:
-    - cron: '0 6 * * 1'
+  # schedule: weekly cron paused during pre-publication; restore the schedule: block when ready
 
 permissions:
   contents: read

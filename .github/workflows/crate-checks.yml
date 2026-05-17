@@ -2,8 +2,7 @@ name: crate-checks
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '30 3 * * 2'
+  # schedule: weekly cron paused during pre-publication; restore the schedule: block when ready
 
 permissions: {}
 

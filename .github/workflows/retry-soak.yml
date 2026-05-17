@@ -1,8 +1,7 @@
 name: retry-soak
 
 on:
-  schedule:
-    - cron: '35 3 * * *'
+  # schedule: daily cron paused during pre-publication; restore the schedule: block when ready
   workflow_dispatch: {}
 
 permissions:

@@ -17,8 +17,7 @@ on:
           - core
           - orderbook-trading
           - subgraph-browser-wallet
-  schedule:
-    - cron: '15 4 * * 4'
+  # schedule: weekly cron paused during pre-publication; restore the schedule: block when ready
 
 permissions:
   actions: read

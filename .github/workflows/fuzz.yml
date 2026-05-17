@@ -8,8 +8,7 @@ name: fuzz
 # releases. If a real defect is found, the fix lands through its own change
 # set rather than being patched into this workflow.
 on:
-  schedule:
-    - cron: '0 5 * * 5'
+  # schedule: weekly cron paused during pre-publication; restore the schedule: block when ready
   workflow_dispatch:
 
 permissions:

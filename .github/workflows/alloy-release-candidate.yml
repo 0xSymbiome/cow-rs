@@ -2,8 +2,7 @@ name: alloy-release-candidate
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '30 6 * * 1'
+  # schedule: weekly cron paused during pre-publication; restore the schedule: block when ready
 
 permissions:
   contents: read

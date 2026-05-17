@@ -1,9 +1,7 @@
 name: parity-drift
 
 on:
-  schedule:
-    # Weekly on Monday 06:00 UTC; matches the release-readiness cadence.
-    - cron: '0 6 * * 1'
+  # schedule: weekly cron paused during pre-publication; restore the schedule: block when ready
   workflow_dispatch: {}
 
 permissions:

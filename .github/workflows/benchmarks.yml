@@ -1,10 +1,7 @@
 name: benchmarks
 
 on:
-  schedule:
-    # Weekly cadence on Mondays at 06:00 UTC. Non-blocking; results are only
-    # uploaded as build artifacts so this workflow never gates PRs or releases.
-    - cron: '0 6 * * 1'
+  # schedule: weekly cron paused during pre-publication; restore the schedule: block when ready
   workflow_dispatch:
 
 permissions:
