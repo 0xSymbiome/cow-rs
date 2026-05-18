@@ -471,25 +471,57 @@ jobs:
       - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
         with:
           tool: cargo-audit
-      - name: Verify alloy-* workspace pins on same minor
+      - name: Verify alloy-* workspace pins by family
         shell: bash
         run: |
           set -euo pipefail
-          alloy_lines="$(grep -E '^alloy-[a-z-]+[[:space:]]*=' Cargo.toml || true)"
-          if [ -z "$alloy_lines" ]; then
-            echo "::error::no alloy-* workspace pins found in Cargo.toml" >&2
-            exit 1
+          # Upstream alloy publishes two coordinated release trains:
+          #   - alloy-core (1.x): alloy-primitives, alloy-sol-types,
+          #     alloy-sol-macro, alloy-dyn-abi, alloy-json-abi, alloy-serde
+          #   - alloy runtime (2.x): alloy-consensus, alloy-network,
+          #     alloy-provider, alloy-signer*, alloy-transport*,
+          #     alloy-rpc-types-eth, alloy-json-rpc
+          # Each family must be internally consistent on major.minor; the
+          # cross-family lockfile lockstep is enforced by
+          # tests/alloy_two_family_lockfile_invariant.rs.
+          core_re='^alloy-(primitives|sol-types|sol-macro|dyn-abi|json-abi|serde)[[:space:]]*='
+          runtime_re='^alloy-(consensus|network|provider|signer-local|signer|transport-http|transport|rpc-types-eth|json-rpc)[[:space:]]*='
+
+          extract_minors() {
+            local pattern="$1"
+            grep -E "$pattern" Cargo.toml \
+              | sed -nE 's/^alloy-[a-z-]+[[:space:]]*=[[:space:]]*(\{[[:space:]]*version[[:space:]]*=[[:space:]]*)?"([0-9]+\.[0-9]+).*/\2/p' \
+              | sort -u
+          }
+
+          check_family() {
+            local label="$1" pattern="$2" minors count
+            minors="$(extract_minors "$pattern")"
+            count="$(printf '%s\n' "$minors" | grep -c . || true)"
+            case "$count" in
+              0) echo "::error::no $label alloy-* pins matched in Cargo.toml" >&2
+                 return 1 ;;
+              1) echo "$label pins all on $minors" ;;
+              *) echo "::error::$label pins disagree on major.minor:" >&2
+                 printf '%s\n' "$minors" >&2
+                 grep -E "$pattern" Cargo.toml >&2
+                 return 1 ;;
+            esac
+          }
+
+          failures=0
+          check_family "alloy-core" "$core_re" || failures=1
+          check_family "alloy runtime" "$runtime_re" || failures=1
+
+          unclassified="$(grep -E '^alloy-[a-z-]+[[:space:]]*=' Cargo.toml \
+            | grep -Ev "$core_re|$runtime_re" || true)"
+          if [ -n "$unclassified" ]; then
+            echo "::error::unclassified alloy-* pin(s); update the family regexes in _quality-gate.yml:" >&2
+            printf '%s\n' "$unclassified" >&2
+            failures=1
           fi
-          pins="$(printf '%s\n' "$alloy_lines" | sed -nE 's/^alloy-[a-z-]+[[:space:]]*=[[:space:]]*(\{[[:space:]]*version[[:space:]]*=[[:space:]]*)?"([0-9]+\.[0-9]+).*/\2/p' | sort -u)"
-          alloy_count="$(printf '%s\n' "$alloy_lines" | grep -c .)"
-          parsed_count="$(printf '%s\n' "$alloy_lines" | sed -nE 's/^alloy-[a-z-]+[[:space:]]*=[[:space:]]*(\{[[:space:]]*version[[:space:]]*=[[:space:]]*)?"([0-9]+\.[0-9]+).*/\2/p' | grep -c .)"
-          pin_count="$(printf '%s\n' "$pins" | grep -c .)"
-          if [ "$parsed_count" -ne "$alloy_count" ] || [ "$pin_count" -ne 1 ]; then
-            echo "alloy-* pins disagree on major.minor or could not be parsed:" >&2
-            grep -E '^alloy-[a-z-]+[[:space:]]*=' Cargo.toml >&2
-            exit 1
-          fi
-          echo "alloy-* pins all on $pins"
+
+          exit "$failures"
       - name: Verify WASM inner workspace pins match root
         shell: bash
         run: |
