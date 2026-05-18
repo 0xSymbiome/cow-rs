@@ -329,20 +329,47 @@ jobs:
         # uniquely covers: tarball file inclusion, manifest
         # publishability, and version availability against
         # `crates.io`.
+        #
+        # The `WORKSPACE_PATCHES` bash array names every workspace
+        # crate (including dev-dep-only and optional-feature-gated
+        # entries) so cargo can resolve each one back to its
+        # `crates/<name>/` source rather than searching `crates.io`
+        # for a `0.1.0` placeholder that the registry returns only as
+        # a `0.0.1-reserved.0` name reservation. Applying the full
+        # set to every command keeps the resolver happy regardless of
+        # which subset a particular crate references, and cargo
+        # silently ignores patches it does not need.
         run: |
-          cargo publish --dry-run --no-verify -p cow-sdk-core --allow-dirty
-          cargo publish --dry-run --no-verify -p cow-sdk-contracts --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'"
-          cargo publish --dry-run --no-verify -p cow-sdk-app-data --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-          cargo publish --dry-run --no-verify -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-          cargo publish --dry-run --no-verify -p cow-sdk-signing --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
-          cargo publish --dry-run --no-verify -p cow-sdk-subgraph --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-          cargo publish --dry-run --no-verify -p cow-sdk-transport-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-          cargo publish --dry-run --no-verify -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
-          cargo publish --dry-run --no-verify -p cow-sdk-alloy-provider --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-          cargo publish --dry-run --no-verify -p cow-sdk-alloy-signer --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
-          cargo publish --dry-run --no-verify -p cow-sdk-alloy --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'"
-          cargo publish --dry-run --no-verify -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-          cargo publish --dry-run --no-verify -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'" --config "patch.crates-io.cow-sdk-alloy.path='crates/alloy'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'"
+          WORKSPACE_PATCHES=(
+            --config "patch.crates-io.cow-sdk-alloy.path='crates/alloy'"
+            --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'"
+            --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'"
+            --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'"
+            --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
+            --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
+            --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+            --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'"
+            --config "patch.crates-io.cow-sdk-pure-helpers.path='crates/pure-helpers'"
+            --config "patch.crates-io.cow-sdk-signing.path='crates/signing'"
+            --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'"
+            --config "patch.crates-io.cow-sdk-trading.path='crates/trading'"
+            --config "patch.crates-io.cow-sdk-transport-policy.path='crates/transport-policy'"
+            --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
+            --config "patch.crates-io.cow-sdk-wasm.path='crates/wasm'"
+          )
+          cargo publish --dry-run --no-verify -p cow-sdk-core --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-contracts --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-app-data --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-orderbook --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-signing --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-subgraph --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-transport-wasm --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-trading --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-alloy-provider --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-alloy-signer --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-alloy --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-browser-wallet --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk --allow-dirty "${WORKSPACE_PATCHES[@]}"
 
   ci-success:
     if: always()
