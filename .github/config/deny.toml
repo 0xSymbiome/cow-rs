@@ -9,6 +9,7 @@ unused-ignored-advisory = "allow"
 # this list so advisory tolerances cannot drift between tools.
 ignore = [
   { id = "RUSTSEC-2024-0436", reason = "Unmaintained `paste` is reachable only through the alloy-sol-macro and alloy-primitives proc-macro subtrees and does not compile runtime code; tracked in docs/audit/browser-wallet-alloy-dependency-audit.md. Next re-review on or before 2026-08-11 (90 days from 2026-05-13)." },
+  { id = "RUSTSEC-2024-0388", reason = "Unmaintained `derivative` is reachable only through the ark-ff / ruint / nybbles / alloy-trie subtree pulled by the alloy-consensus native adapter family; the crate is a derive-macro helper that does not compile into runtime cow-sdk code; tracked in docs/audit/dependency-gate-audit.md. Next re-review on or before 2026-08-16 (90 days from 2026-05-18)." },
 ]
 
 [bans]

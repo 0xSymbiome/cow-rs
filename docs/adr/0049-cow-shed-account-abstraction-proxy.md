@@ -127,7 +127,7 @@ helper drops the version, distinct `CowShedVersion` inputs collapse to the
 same proxy address and the regression fails.
 
 The Gnosis-only forwarder gate ships as a typed error variant rather than a
-runtime panic because mis-chain calls are a caller bug that the type system
+runtime panic because wrong-chain calls are a caller bug that the type system
 can surface. The chain check happens in the constructor; downstream methods
 see only an already-validated forwarder handle.
 

@@ -15,3 +15,12 @@ allowed:
   - file: crates/contracts/src/deployments/registry.rs
     item: ManifestEntry
     reason: Build-time TOML manifest entry; unknown fields indicate a repository bug.
+  - file: crates/contracts/src/deployments/registry.rs
+    item: ManifestVerification
+    reason: Build-time TOML manifest verification block; unknown fields indicate a repository bug.
+  - file: crates/contracts/src/deployments/coverage.rs
+    item: CoverageManifest
+    reason: Build-time YAML deployment-coverage manifest; unknown fields indicate a repository bug.
+  - file: crates/contracts/src/deployments/coverage.rs
+    item: DeploymentCoverageRecord
+    reason: Build-time YAML deployment-coverage row; unknown fields indicate a repository bug.

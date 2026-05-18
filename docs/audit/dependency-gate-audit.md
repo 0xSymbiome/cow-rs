@@ -88,9 +88,15 @@ Routine CI and release-readiness apply the same split dependency contract:
 `cargo deny check --config .github/config/deny.toml` owns policy on allowed
 sources, licenses, curated duplicate-version tolerances, and yanked advisory
 handling, while `cargo audit --deny unsound --deny unmaintained` blocks RustSec
-vulnerabilities plus unsound and unmaintained advisories. One identifier is
-currently tolerated with a documented revisit trigger:
+vulnerabilities plus unsound and unmaintained advisories. Two identifiers are
+currently tolerated with documented revisit triggers:
 
+- `RUSTSEC-2024-0388` — `derivative` is reachable only through the
+  `ark-ff` / `ruint` / `nybbles` / `alloy-trie` subtree pulled by the
+  `alloy-consensus` native adapter family. The crate is a derive-macro helper
+  and does not compile into runtime `cow-sdk` code. Revisit when the alloy
+  consensus stack drops `derivative` or when an actively-maintained drop-in
+  replacement lands upstream.
 - `RUSTSEC-2024-0436` — covered by
   [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
 

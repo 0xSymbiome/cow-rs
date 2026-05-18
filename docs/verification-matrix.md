@@ -61,7 +61,7 @@ Use it with:
 | `cargo fmt --all --check` | Formatting gate for consistent public diffs |
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
 | `cargo deny check --config .github/config/deny.toml` | Blocking advisory, license, source, and duplicate-version policy gate |
-| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0436` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate; `scripts/check-release-docs-agree.sh` keeps the ignore-token list aligned with the release checklist and `.github/config/deny.toml`, and requires a dependency-gate audit rationale for every ignored RustSec token. |
+| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate; `scripts/check-release-docs-agree.sh` keeps the ignore-token list aligned with the release checklist and `.github/config/deny.toml`, and requires a dependency-gate audit rationale for every ignored RustSec token. |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo test -p cow-rs-workspace-tests` | Workspace policy tests for MSRV alignment, root dependency default-feature review, nested Alloy pin lockstep, and native Alloy adapter composition coverage |
 | `cargo test -p cow-sdk-alloy --test send_transaction_does_not_wait_for_confirmation` | Native Alloy submission timing gate that rejects hidden receipt polling during broadcast |

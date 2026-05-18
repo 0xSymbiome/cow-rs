@@ -6,6 +6,8 @@ extend-exclude = [
   "Cargo.toml",
   "Cargo.lock",
   "*.json",
+  "crates/contracts/abi/**",
+  "fuzz/corpus/**",
 ]
 
 [default]
@@ -25,5 +27,6 @@ extend-ignore-re = [
 [default.extend-words]
 BA = "BA"
 bimap = "bimap"
+propert = "propert"
 ser = "ser"
 typ = "typ"

@@ -6,7 +6,7 @@
 #
 # ADRs 0029-0033 are accepted and covered by the blocking ADR coverage lane.
 
-version: 2
+version: 1
 
 principles:
   - id: 1
@@ -84,4 +84,22 @@ principles:
     primary_adr: "0048"
     supporting_adrs: ["0010", "0024", "0049", "0050", "0051"]
 
-out_of_scope_adrs: []
+out_of_scope_adrs:
+  # ADRs scoped to specific crate-topology, adapter, ecosystem, and audit
+  # contracts rather than to a standing principle. Each entry remains an
+  # accepted architecture decision; relocating one into a principle's
+  # supporting set is a documentation-only refresh.
+  - "0034"  # Settlement interaction encoder target policy lives under the contract bindings audit lane.
+  - "0035"  # Alloy provider adapter shape is governed by the alloy major-release plan and the alloy-provider invariant gate.
+  - "0036"  # Alloy signer adapter shape is governed by the alloy major-release plan and the alloy-signer invariant gate.
+  - "0037"  # Alloy umbrella adapter shape is governed by the alloy major-release plan.
+  - "0038"  # Transaction lifecycle types are typed adapter surface details under the alloy-provider adapter.
+  - "0039"  # TypeScript-callable wasm SDK surface is governed by the wasm-imports gate and the wasm flavour-matrix.
+  - "0040"  # Wallet provider callback boundary is governed by the browser-wallet audit lane and EIP-1271 verification cache audit.
+  - "0041"  # Transport policy L3 layering is governed by the transport-policy coverage audit.
+  - "0042"  # Pure helpers crate extraction is a crate-topology decision documented in the architecture guide.
+  - "0043"  # Callback registry internalization is a crate-topology decision documented in the architecture guide.
+  - "0044"  # Bundle size profile and flavour builds are governed by the wasm flavour-matrix gate.
+  - "0045"  # Async signer trait narrowing is a typed adapter surface detail under the alloy-signer adapter.
+  - "0046"  # Transport policy JS exposure is governed by the wasm-imports gate and the transport-policy coverage audit.
+  - "0047"  # TypeScript facade architecture is documented under the public docs and examples lanes.

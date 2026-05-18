@@ -691,17 +691,13 @@ fn validate_enum_policy(path: &Path) -> Result<()> {
         "Eip1271SignatureError",
         "ContractId",
         "RegistryError",
-        // Planned enums reserved for the composable and COW Shed helper crate
-        // body landings. The file and line fields point at the planned locations
-        // and the `planned: true` field flags that the source-of-truth Rust
-        // definition lands in a later capability landing.
+        // COW Shed helper crate body enums. The composable helper crate body
+        // adds ComposableError, PollResult, TwapStatus, OwnerKind, and
+        // HookPosition; restore those names here in the same change set that
+        // lands the composable crate source.
         "CowShedVersion",
         "CowShedError",
-        "ComposableError",
-        "PollResult",
-        "TwapStatus",
-        "OwnerKind",
-        "HookPosition",
+        "SigSource",
         "Nonce",
         "Deadline",
     ];
