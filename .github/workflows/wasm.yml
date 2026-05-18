@@ -339,7 +339,7 @@ jobs:
           # ChromeDriver when the working set spikes.
           sudo swapoff -a
           sudo rm -f /mnt/swapfile
-          sudo fallocate -l 8G /mnt/swapfile
+          sudo fallocate -l 12G /mnt/swapfile
           sudo chmod 600 /mnt/swapfile
           sudo mkswap /mnt/swapfile
           sudo swapon /mnt/swapfile
@@ -383,7 +383,15 @@ jobs:
           console.log(`WASM_BINDGEN_TEST_CHROMEDRIVER=${webdriver["cow:wasmRunner"].chromedriver}`);
           JS
       - name: Test cow-sdk-wasm in headless Chrome
-        run: wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER" crates/wasm
+        # `--release` builds the wasm32 test binary under the workspace
+        # release profile (`opt-level = "z"`, `lto = "fat"`,
+        # `strip = "symbols"`), which is several times smaller than the
+        # `opt-level = 1` dev-profile output that the prior mitigation
+        # produced. The smaller binary lowers the resident-memory peak
+        # that headless Chrome and ChromeDriver have to share with the
+        # test process, which is the dominant cause of the SIGKILL
+        # signal the runner has been sending to ChromeDriver mid-handshake.
+        run: wasm-pack test --release --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER" crates/wasm
 
   vitest-nodejs:
     runs-on: ubuntu-latest

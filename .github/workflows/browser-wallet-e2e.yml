@@ -112,7 +112,7 @@ jobs:
           # SIGKILL to ChromeDriver when the working set spikes.
           sudo swapoff -a
           sudo rm -f /mnt/swapfile
-          sudo fallocate -l 8G /mnt/swapfile
+          sudo fallocate -l 12G /mnt/swapfile
           sudo chmod 600 /mnt/swapfile
           sudo mkswap /mnt/swapfile
           sudo swapon /mnt/swapfile
@@ -157,7 +157,15 @@ jobs:
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: crates/browser-wallet
-        run: wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
+        # `--release` builds the wasm32 test binary under the workspace
+        # release profile (`opt-level = "z"`, `lto = "fat"`,
+        # `strip = "symbols"`), several times smaller than the
+        # `opt-level = 1` dev-profile output the earlier mitigation
+        # produced. Headless Chrome and ChromeDriver share the runner
+        # memory budget with the loaded wasm; a smaller binary keeps
+        # both resident through the handshake so the kernel does not
+        # send SIGKILL to ChromeDriver during the test setup.
+        run: wasm-pack test --release --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
 
       - name: Build SDK for wasm with browser wallet
         run: cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
@@ -181,7 +189,9 @@ jobs:
         env:
           WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
         working-directory: examples/wasm/browser-wallet-console
-        run: wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
+        # Release-profile wasm32 test binary for the same SIGKILL
+        # avoidance reason documented on the direct-bridge test above.
+        run: wasm-pack test --release --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
 
       - name: Install browser wallet e2e dependencies
         run: bun install --cwd e2e/browser-wallet --frozen-lockfile
