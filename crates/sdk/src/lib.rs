@@ -60,6 +60,18 @@
 #![warn(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+#[cfg(all(
+    target_arch = "wasm32",
+    any(
+        feature = "alloy",
+        feature = "alloy-provider",
+        feature = "alloy-signer"
+    )
+))]
+compile_error!(
+    "the alloy / alloy-provider / alloy-signer features on cow-sdk are for native targets only"
+);
+
 /// Curated re-exports for the default `cow-sdk` facade.
 pub mod prelude;
 

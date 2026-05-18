@@ -32,6 +32,10 @@
 //! No `alloy_*` type appears in any `pub fn` signature across the workspace.
 
 #![warn(missing_docs)]
+#![allow(
+    clippy::redundant_pub_crate,
+    reason = "Explicit pub(crate) markers inside private provider helpers document cross-module use and satisfy the unreachable_pub posture used by public-api-lints."
+)]
 
 /// Browser-wallet error and RPC failure types.
 pub mod error;

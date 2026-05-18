@@ -41,14 +41,26 @@ mod sealed {
         pub(super) chain_id: ChainId,
     }
 
+    #[allow(
+        unnameable_types,
+        reason = "Sealed trait pattern intentionally hides the marker; downstream impls are gated by orphan rules."
+    )]
     pub trait SealedTransport {}
     impl SealedTransport for TransportUnset {}
     impl SealedTransport for HttpTransport {}
 
+    #[allow(
+        unnameable_types,
+        reason = "Sealed trait pattern intentionally hides the marker; downstream impls are gated by orphan rules."
+    )]
     pub trait SealedKeySource {}
     impl SealedKeySource for KeySourceUnset {}
     impl SealedKeySource for PrivateKeySource {}
 
+    #[allow(
+        unnameable_types,
+        reason = "Sealed trait pattern intentionally hides the marker; downstream impls are gated by orphan rules."
+    )]
     pub trait SealedChain {}
     impl SealedChain for ChainUnset {}
     impl SealedChain for ChainSet {}

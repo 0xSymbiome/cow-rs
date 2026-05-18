@@ -65,6 +65,7 @@ pub mod __seam {
 
     /// Classified Alloy JSON-RPC or transport error detail.
     #[non_exhaustive]
+    #[derive(Debug)]
     pub enum RpcErrorClassification {
         /// Transport-layer classification with redacted detail.
         Transport {

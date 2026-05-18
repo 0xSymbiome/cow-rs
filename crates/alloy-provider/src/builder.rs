@@ -18,6 +18,10 @@ mod sealed {
         pub(super) url: cow_sdk_core::Redacted<reqwest::Url>,
     }
 
+    #[allow(
+        unnameable_types,
+        reason = "Sealed trait pattern intentionally hides the marker; downstream impls are gated by orphan rules."
+    )]
     pub trait SealedTransport {}
 
     impl SealedTransport for TransportUnset {}

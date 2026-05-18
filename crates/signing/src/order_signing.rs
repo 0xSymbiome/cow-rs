@@ -203,8 +203,8 @@ pub fn generate_order_id(
 /// Encodes the `CoW` EIP-1271 verifier payload for an existing ECDSA signature.
 ///
 /// Delegates to [`alloy_sol_types::SolValue::abi_encode`] on the
-/// macro-emitted [`OrderAndSignature`] struct declared in
-/// [`crate::eip1271::sol_types`]. The struct mirrors the on-chain
+/// macro-emitted `OrderAndSignature` struct declared in the
+/// `eip1271::sol_types` module. The struct mirrors the on-chain
 /// `GPv2Order.Data` schema (with `bytes32` `kind`,
 /// `sellTokenBalance`, and `buyTokenBalance` fields holding the
 /// keccak256 of the canonical label string) plus the raw ECDSA

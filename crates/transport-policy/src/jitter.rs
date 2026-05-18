@@ -11,11 +11,20 @@ pub enum JitterStrategy {
     /// Leave retry delays unchanged.
     None,
     /// Pick a delay uniformly across the full base-delay window.
-    Full { seed: u64 },
+    Full {
+        /// Deterministic seed for the full-jitter RNG.
+        seed: u64,
+    },
     /// Preserve half of the base delay and jitter the remaining half.
-    Equal { seed: u64 },
+    Equal {
+        /// Deterministic seed for the equal-jitter RNG.
+        seed: u64,
+    },
     /// Add a deterministic decorrelated offset bounded by half the base delay.
-    Decorrelated { seed: u64 },
+    Decorrelated {
+        /// Deterministic seed for the decorrelated-jitter RNG.
+        seed: u64,
+    },
 }
 
 impl JitterStrategy {

@@ -43,6 +43,15 @@ mod sealed {
 
     /// Sealed marker trait keeping the cow identity-extension traits
     /// implementable only by the canonical alloy primitive types.
+    ///
+    /// The trait is intentionally unnameable from outside this crate so the
+    /// sealed-trait idiom holds; downstream crates cannot synthesise their
+    /// own `Sealed` impls for foreign types, and the orphan rules already
+    /// prevent them from impl-ing it for the canonical alloy primitives.
+    #[allow(
+        unnameable_types,
+        reason = "Sealed trait pattern intentionally hides the marker; downstream impls are gated by orphan rules."
+    )]
     pub trait Sealed {}
 
     impl Sealed for AlloyAddress {}
@@ -115,8 +124,17 @@ impl AddressExt for AlloyAddress {
         Self::from(bytes)
     }
 
+    /// Returns the canonical lowercase `0x`-prefixed 42-character hex string.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if `hex_encode_20` ever emits non-ASCII bytes. The encoder
+    /// shipped in this crate writes exclusively ASCII hex digits plus the `0x`
+    /// prefix, so this panic cannot be reached from an unmodified binary.
     fn as_str(&self) -> String {
         let hex_bytes = hex_encode_20(self.0.0);
+        // SAFETY: hex_encode_20 only emits ASCII hex characters plus the 0x
+        // prefix, which is valid UTF-8 by construction.
         String::from_utf8(hex_bytes.to_vec())
             .expect("hex_encode_20 only emits ASCII hex characters plus the 0x prefix")
     }
@@ -176,8 +194,17 @@ impl Hash32Ext for B256 {
         Self::from(bytes)
     }
 
+    /// Returns the canonical lowercase `0x`-prefixed 66-character hex string.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if `hex_encode_32` ever emits non-ASCII bytes. The encoder
+    /// shipped in this crate writes exclusively ASCII hex digits plus the `0x`
+    /// prefix, so this panic cannot be reached from an unmodified binary.
     fn as_str(&self) -> String {
         let hex_bytes = hex_encode_32(self.0);
+        // SAFETY: hex_encode_32 only emits ASCII hex characters plus the 0x
+        // prefix, which is valid UTF-8 by construction.
         String::from_utf8(hex_bytes.to_vec())
             .expect("hex_encode_32 only emits ASCII hex characters plus the 0x prefix")
     }
@@ -212,9 +239,27 @@ pub trait HexDataExt: sealed::Sealed + Sized {
 }
 
 impl HexDataExt for Bytes {
+    /// Creates a validated hex payload from a `0x`-prefixed hex string.
+    ///
+    /// Odd-length payloads are left-padded with one zero nibble so the stored
+    /// value remains canonical byte-aligned hex.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed, or
+    /// contains non-hex characters.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if `normalize_hex_payload` ever returns a string without
+    /// the canonical `0x` prefix. The shipped implementation re-prefixes
+    /// every accepted payload before returning, so this panic cannot be
+    /// reached from an unmodified binary.
     fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
         let raw = value.as_ref();
         let normalized = normalize_hex_payload("hex_data", raw)?;
+        // SAFETY: normalize_hex_payload preserves the leading 0x prefix on
+        // every successfully validated payload.
         let stripped = normalized
             .strip_prefix("0x")
             .expect("normalize_hex_payload preserves the 0x prefix");
@@ -286,8 +331,17 @@ impl OrderUidExt for FixedBytes<56> {
         Self::from(bytes)
     }
 
+    /// Returns the canonical lowercase `0x`-prefixed 114-character hex string.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if `hex_encode_56` ever emits non-ASCII bytes. The encoder
+    /// shipped in this crate writes exclusively ASCII hex digits plus the `0x`
+    /// prefix, so this panic cannot be reached from an unmodified binary.
     fn as_str(&self) -> String {
         let hex_bytes = hex_encode_56(self.0);
+        // SAFETY: hex_encode_56 only emits ASCII hex characters plus the 0x
+        // prefix, which is valid UTF-8 by construction.
         String::from_utf8(hex_bytes.to_vec())
             .expect("hex_encode_56 only emits ASCII hex characters plus the 0x prefix")
     }

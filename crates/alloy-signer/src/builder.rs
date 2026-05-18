@@ -12,6 +12,7 @@ mod sealed {
     use cow_sdk_core::ChainId;
 
     /// Typestate marker indicating no key source has been selected.
+    #[derive(Debug)]
     pub struct KeySourceUnset {
         _private: (),
     }
@@ -23,11 +24,13 @@ mod sealed {
     }
 
     /// Typestate marker indicating a private-key source has been selected.
+    #[derive(Debug)]
     pub struct PrivateKeySource {
         pub(super) signer: PrivateKeySigner,
     }
 
     /// Typestate marker indicating no chain id has been selected.
+    #[derive(Debug)]
     pub struct ChainUnset {
         _private: (),
     }
@@ -39,14 +42,23 @@ mod sealed {
     }
 
     /// Typestate marker indicating a chain id has been selected.
+    #[derive(Debug)]
     pub struct ChainSet {
         pub(super) chain_id: ChainId,
     }
 
+    #[allow(
+        unnameable_types,
+        reason = "Sealed trait pattern intentionally hides the marker; downstream impls are gated by orphan rules."
+    )]
     pub trait SealedKeySource {}
     impl SealedKeySource for KeySourceUnset {}
     impl SealedKeySource for PrivateKeySource {}
 
+    #[allow(
+        unnameable_types,
+        reason = "Sealed trait pattern intentionally hides the marker; downstream impls are gated by orphan rules."
+    )]
     pub trait SealedChain {}
     impl SealedChain for ChainUnset {}
     impl SealedChain for ChainSet {}
@@ -69,6 +81,7 @@ impl ChainState for ChainSet {}
 /// `K` tracks the key-source axis and `C` tracks the chain-id axis. The
 /// [`build`](LocalAlloyKeystoreSignerBuilder::build) method is available only
 /// after both axes have been selected.
+#[derive(Debug)]
 #[must_use]
 pub struct LocalAlloyKeystoreSignerBuilder<K = KeySourceUnset, C = ChainUnset>
 where

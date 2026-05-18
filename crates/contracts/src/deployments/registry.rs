@@ -55,7 +55,7 @@ const EMBEDDED_REGISTRY_TOML: &str = include_str!("../../registry.toml");
 /// The backing storage is a [`BTreeMap`] so iteration order is
 /// deterministic across audits and so CI diffs remain stable. Keys are the
 /// `(ContractId, DeploymentChainId, DeploymentEnv)` triple; values are typed
-/// [`RegistryEntry`] handles that have already passed the validator.
+/// `RegistryEntry` handles that have already passed the validator.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Registry {
     entries: BTreeMap<RegistryKey, RegistryEntry>,

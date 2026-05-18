@@ -58,6 +58,35 @@ pub enum EcdsaSigningScheme {
 #[error("signing scheme {0:?} is not an ECDSA cancellation scheme")]
 pub struct SigningSchemeNotEcdsa(pub SigningScheme);
 
+impl From<ContractsSigningScheme> for SigningScheme {
+    /// Bridges a [`ContractsSigningScheme`] protocol tag onto the orderbook
+    /// wire-form enum.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if a future [`ContractsSigningScheme`] variant is added
+    /// upstream without a corresponding orderbook variant landing in this
+    /// match. The non-exhaustive wildcard arm exists solely to satisfy the
+    /// compiler across crate boundaries; the variant-by-variant bridge parity
+    /// test prevents drift, so any new variant must land here in the same
+    /// patch.
+    fn from(scheme: ContractsSigningScheme) -> Self {
+        match scheme {
+            ContractsSigningScheme::Eip712 => Self::Eip712,
+            ContractsSigningScheme::EthSign => Self::EthSign,
+            ContractsSigningScheme::Eip1271 => Self::Eip1271,
+            ContractsSigningScheme::PreSign => Self::PreSign,
+            // SAFETY: cow_sdk_contracts::SigningScheme and cow_sdk_orderbook::SigningScheme
+            // share the four variants Eip712, EthSign, Eip1271, PreSign per ADR 0052; the
+            // variant-by-variant parity test in tests/signing_scheme_bridge.rs prevents
+            // drift, and any new variant added upstream must land here in the same patch.
+            _ => unreachable!(
+                "cow_sdk_contracts::SigningScheme variant added without updating the orderbook bridge"
+            ),
+        }
+    }
+}
+
 impl From<EcdsaSigningScheme> for SigningScheme {
     fn from(scheme: EcdsaSigningScheme) -> Self {
         match scheme {
@@ -88,24 +117,6 @@ impl From<SigningScheme> for ContractsSigningScheme {
             SigningScheme::EthSign => Self::EthSign,
             SigningScheme::Eip1271 => Self::Eip1271,
             SigningScheme::PreSign => Self::PreSign,
-        }
-    }
-}
-
-impl From<ContractsSigningScheme> for SigningScheme {
-    fn from(scheme: ContractsSigningScheme) -> Self {
-        match scheme {
-            ContractsSigningScheme::Eip712 => Self::Eip712,
-            ContractsSigningScheme::EthSign => Self::EthSign,
-            ContractsSigningScheme::Eip1271 => Self::Eip1271,
-            ContractsSigningScheme::PreSign => Self::PreSign,
-            // SAFETY: cow_sdk_contracts::SigningScheme and cow_sdk_orderbook::SigningScheme
-            // share the four variants Eip712, EthSign, Eip1271, PreSign per ADR 0052; the
-            // variant-by-variant parity test in tests/signing_scheme_bridge.rs prevents
-            // drift, and any new variant added upstream must land here in the same patch.
-            _ => unreachable!(
-                "cow_sdk_contracts::SigningScheme variant added without updating the orderbook bridge"
-            ),
         }
     }
 }

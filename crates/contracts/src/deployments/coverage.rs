@@ -66,7 +66,17 @@ pub struct DeploymentCoverage {
 }
 
 impl Default for DeploymentCoverage {
+    /// Parses the embedded deployment-coverage manifest.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the embedded deployment-coverage YAML stops matching the
+    /// build-validated schema. The shipped manifest is validated by `build.rs`
+    /// before the crate compiles, so this panic cannot be reached from an
+    /// unmodified binary.
     fn default() -> Self {
+        // SAFETY: build.rs validates the committed deployment-coverage
+        // manifest before the crate is compiled.
         Self::from_yaml_str(include_str!("../../deployment-coverage.yaml"))
             .expect("embedded deployment coverage must be valid - build.rs gates the shape")
     }

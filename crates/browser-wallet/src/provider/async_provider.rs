@@ -134,7 +134,7 @@ impl AsyncProvider for Eip1193Provider {
     }
 }
 
-pub fn hex_quantity(value: &str) -> Result<String, BrowserWalletError> {
+pub(crate) fn hex_quantity(value: &str) -> Result<String, BrowserWalletError> {
     let parsed = value
         .strip_prefix("0x")
         .map_or_else(
@@ -146,7 +146,10 @@ pub fn hex_quantity(value: &str) -> Result<String, BrowserWalletError> {
     Ok(format!("0x{parsed:x}"))
 }
 
-pub fn parse_chain_id_value(value: &Value, method: &str) -> Result<ChainId, BrowserWalletError> {
+pub(crate) fn parse_chain_id_value(
+    value: &Value,
+    method: &str,
+) -> Result<ChainId, BrowserWalletError> {
     let parsed = match value {
         Value::String(raw) => raw
             .strip_prefix("0x")
@@ -173,7 +176,7 @@ pub fn parse_chain_id_value(value: &Value, method: &str) -> Result<ChainId, Brow
     })
 }
 
-pub fn parse_quantity_to_decimal(
+pub(crate) fn parse_quantity_to_decimal(
     value: &Value,
     method: &str,
 ) -> Result<Amount, BrowserWalletError> {
@@ -374,7 +377,7 @@ pub(super) fn parse_address_array(
         .collect()
 }
 
-pub fn transaction_to_rpc(
+pub(crate) fn transaction_to_rpc(
     tx: &TransactionRequest,
     from: Option<&Address>,
 ) -> Result<Value, BrowserWalletError> {

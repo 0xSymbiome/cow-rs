@@ -65,6 +65,16 @@ impl DeploymentChainId {
 }
 
 impl From<SupportedChainId> for DeploymentChainId {
+    /// Bridges a [`SupportedChainId`] runtime tag onto the deployment-evidence
+    /// chain enum.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if a future [`SupportedChainId`] variant is added upstream
+    /// without a corresponding deployment-evidence chain landing in this
+    /// match. The non-exhaustive wildcard arm exists solely to satisfy the
+    /// compiler across crate boundaries; any new chain must land in the same
+    /// patch as this match arm and is gated by reviewer policy.
     fn from(value: SupportedChainId) -> Self {
         match value {
             SupportedChainId::Mainnet => Self::Mainnet,
@@ -82,6 +92,11 @@ impl From<SupportedChainId> for DeploymentChainId {
                 unreachable_patterns,
                 reason = "SupportedChainId is non_exhaustive across crate boundaries"
             )]
+            // SAFETY: SupportedChainId is the sole producer for this bridge.
+            // Every currently supported chain has an explicit match arm above.
+            // Reaching the wildcard would require a new SupportedChainId variant
+            // landing without a matching deployment-evidence chain in the same
+            // patch, which the reviewer policy prevents.
             _ => unreachable!("unsupported future chain id cannot be converted without review"),
         }
     }
