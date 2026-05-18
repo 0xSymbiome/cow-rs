@@ -3,15 +3,27 @@ retries = { backoff = "exponential", count = 2, delay = "2s", jitter = true }
 slow-timeout = { period = "30s", terminate-after = 3 }
 
 # Tests that spawn `cargo build` against a per-test sub-workspace (the
-# trybuild `ui` and `compile_fail` harnesses) contend with the surrounding
-# workspace for cargo's package-cache and build-directory locks. The actual
-# nested build is typically sub-second once the locks are free, but waiting
-# in line under the default 90 s terminate window kills tests that would
-# otherwise pass. Run them through a dedicated test-group that serializes
-# them and widen the terminate window so contested locks cannot terminate
-# a build that is about to finish.
+# trybuild `ui` and `compile_fail` harnesses, plus contract-named test
+# binaries that wrap a single `trybuild::TestCases` invocation) contend
+# with the surrounding workspace for cargo's package-cache and
+# build-directory locks. The actual nested build is typically sub-second
+# once the locks are free, but waiting in line under the default 90 s
+# terminate window kills tests that would otherwise pass. Run them
+# through a dedicated test-group that serializes them and widen the
+# terminate window so contested locks cannot terminate a build that is
+# about to finish.
+#
+# The filter covers three shapes:
+#   * the canonical `ui` and `compile_fail` test binaries that crates
+#     adopted from the start (alloy, alloy-signer, alloy-provider, sdk,
+#     trading, contracts, signing);
+#   * later trybuild harnesses that live in contract-named test binaries
+#     and identify themselves by the `_at_compile_time` suffix on the
+#     `#[test]` function (the partner-fee width witness in
+#     `cow-sdk-app-data` and the token-balance cross-side coercion
+#     witness in `cow-sdk-core` both follow this convention).
 [[profile.default.overrides]]
-filter = 'binary(=ui) + binary(=compile_fail)'
+filter = 'binary(=ui) + binary(=compile_fail) + test(/_at_compile_time$/)'
 test-group = 'trybuild'
 slow-timeout = { period = '60s', terminate-after = 4 }
 
