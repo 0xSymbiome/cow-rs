@@ -94,7 +94,6 @@ fuzz/corpus/*
 !fuzz/corpus/fuzz_vault_relayer_transfer_from_accounts_encode/*
 fuzz/artifacts/
 fuzz/target/
-fuzz/Cargo.lock
 playwright-report/
 test-results/
 pkg/

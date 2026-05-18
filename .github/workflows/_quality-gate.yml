@@ -317,7 +317,7 @@ jobs:
       - name: Check native showcase examples
         run: cargo check --manifest-path examples/native/Cargo.toml --examples
       - name: Check fuzz crate against the stable toolchain
-        run: cargo check --manifest-path fuzz/Cargo.toml
+        run: cargo check --manifest-path fuzz/Cargo.toml --locked
 
   nextest:
     name: nextest (${{ matrix.os }})
