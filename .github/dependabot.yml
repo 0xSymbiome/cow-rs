@@ -1,47 +1,102 @@
 version: 2
 
-updates:
-  - package-ecosystem: cargo
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: Etc/UTC
-    open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - rust
-    commit-message:
-      prefix: chore
-      prefix-development: chore
-      include: scope
-    groups:
-      cargo-patch:
-        applies-to: version-updates
-        update-types:
-          - patch
-      cargo-security:
-        applies-to: security-updates
-        patterns:
-          - "*"
-
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: monthly
-      day: monday
-      time: "06:00"
-      timezone: Etc/UTC
-    open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - github-actions
-    commit-message:
-      prefix: ci
-      include: scope
-    groups:
-      github-actions-all:
-        applies-to: version-updates
-        patterns:
-          - "*"
+# Dependabot is paused pre-publication.
+#
+# Rationale (recorded 2026-05-18):
+#
+#   1. The SDK has not yet published an initial release tag. There are
+#      no downstream consumers waiting on patch releases, so routine
+#      version bumps are noise.
+#   2. Reachable RUSTSEC advisories are already gated by `cargo audit`
+#      and `cargo deny` in `docs/release-checklist.md`; the security
+#      posture does not depend on Dependabot pre-publication.
+#   3. The workspace pins the alloy-core family at 1.5.7 and the
+#      alloy runtime family at 2.0.4 as a coordinated two-family
+#      lockstep. Coordinated alloy bumps follow
+#      `docs/alloy-major-release-runbook.md`; unilateral bumps to
+#      individual alloy crates fail
+#      `tests/alloy_two_family_lockfile_invariant.rs` and the workflow
+#      alloy-pin family validator in `.github/workflows/_quality-gate.yml`.
+#   4. The workspace is mid-migration onto alloy-leaning primitives.
+#      Bumping crates that the migration is actively retiring (most
+#      notably `sha3`) is wasted work that the next task in the
+#      migration cascade reverses.
+#
+# When to re-enable:
+#
+#   - The workspace has cut an initial public release tag.
+#   - The remaining alloy-leaning primitive layer migration tasks have
+#     closed (`sha3` retired as a workspace dep, every workspace crate
+#     using `alloy_primitives::keccak256` for production hashing).
+#   - The CI workflow stack has been stable through at least one
+#     post-release maintenance window.
+#
+# How to re-enable (the post-publication recommended posture):
+#
+#   - Uncomment the `updates:` block below.
+#   - Keep the `ignore:` lists for the alloy-core and alloy-runtime
+#     families: those bump through the alloy major release runbook,
+#     not through Dependabot.
+#   - Keep the lower `open-pull-requests-limit` and the
+#     `versioning-strategy: lockfile-only` on the cargo ecosystem so
+#     only security-driven bumps surface as PRs.
+#   - Keep github-actions on a `quarterly` interval with
+#     `open-pull-requests-limit: 1` so the action matrix is bumped in
+#     reviewable increments rather than 11-at-a-time bulk PRs.
+#
+# updates:
+#   - package-ecosystem: cargo
+#     directory: /
+#     schedule:
+#       interval: weekly
+#       day: monday
+#       time: "06:00"
+#       timezone: Etc/UTC
+#     open-pull-requests-limit: 2
+#     labels:
+#       - dependencies
+#       - rust
+#     commit-message:
+#       prefix: chore
+#       prefix-development: chore
+#       include: scope
+#     versioning-strategy: lockfile-only
+#     groups:
+#       cargo-security:
+#         applies-to: security-updates
+#         patterns:
+#           - "*"
+#     ignore:
+#       # alloy-core family — coordinated bumps only, per
+#       # docs/alloy-major-release-runbook.md.
+#       - dependency-name: "alloy-primitives"
+#       - dependency-name: "alloy-sol-types"
+#       - dependency-name: "alloy-sol-macro"
+#       - dependency-name: "alloy-dyn-abi"
+#       - dependency-name: "alloy-json-abi"
+#       - dependency-name: "alloy-serde"
+#       # alloy runtime family — same runbook.
+#       - dependency-name: "alloy-consensus"
+#       - dependency-name: "alloy-network"
+#       - dependency-name: "alloy-provider"
+#       - dependency-name: "alloy-signer"
+#       - dependency-name: "alloy-signer-local"
+#       - dependency-name: "alloy-transport"
+#       - dependency-name: "alloy-transport-http"
+#       - dependency-name: "alloy-rpc-types-eth"
+#       - dependency-name: "alloy-json-rpc"
+#
+#   - package-ecosystem: github-actions
+#     directory: /
+#     schedule:
+#       interval: quarterly
+#       day: monday
+#       time: "06:00"
+#       timezone: Etc/UTC
+#     open-pull-requests-limit: 1
+#     labels:
+#       - dependencies
+#       - github-actions
+#     commit-message:
+#       prefix: ci
+#       include: scope
