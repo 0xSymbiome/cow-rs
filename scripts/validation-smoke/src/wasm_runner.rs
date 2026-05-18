@@ -565,6 +565,14 @@ fn write_webdriver_json(
                 "--headless=new",
                 "--disable-gpu",
                 "--no-sandbox",
+                // GitHub `ubuntu-latest` runners ship a 64 MB `/dev/shm`,
+                // which Chrome uses as the default backing store for its
+                // shared-memory IPC. A single renderer process easily
+                // exhausts that and the kernel SIGKILLs Chrome (and the
+                // attached ChromeDriver supervisor). Routing shmem to
+                // `/tmp` keeps headless Chrome alive under CI memory
+                // pressure.
+                "--disable-dev-shm-usage",
                 // ChromeDriver 132+ blocks the local wasm-bindgen-test web
                 // server (a different loopback port) from talking to the
                 // browser unless the runner explicitly allow-lists its
