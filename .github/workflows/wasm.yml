@@ -219,11 +219,27 @@ jobs:
           const fs = require("node:fs");
           const { spawnSync } = require("node:child_process");
           const descriptor = JSON.parse(fs.readFileSync("crates/wasm/npm/flavours.json", "utf8"));
+          // `__wasm_bindgen_func_elem_<n>` declarations are
+          // wasm-bindgen-generated function-table entries whose numeric
+          // suffix is reshuffled every time the wasm output changes for
+          // unrelated reasons. The opaque table elements are not part
+          // of the consumer-facing TypeScript surface, so suppressing
+          // hunks where every changed line matches that prefix avoids
+          // noisy snapshot failures while still asserting drift on
+          // every other declaration. The regex is written in basic
+          // regular-expression syntax because GNU diff's `-I` flag
+          // does not accept extended regex; `\+` is the BRE form of
+          // one-or-more and `[[:space:]]` covers leading indentation.
+          const ignoreFuncElem = "^[[:space:]]*readonly __wasm_bindgen_func_elem_[0-9]\\+:";
           for (const flavour of descriptor.flavours) {
             for (const target of flavour.targets) {
               const snapshot = `crates/wasm/snapshots/raw/${flavour.name}-${target}.d.ts`;
               const generated = `crates/wasm/npm/dist/raw/${flavour.name}-${target}/cow_sdk_wasm.d.ts`;
-              const result = spawnSync("diff", ["-u", snapshot, generated], { stdio: "inherit" });
+              const result = spawnSync(
+                "diff",
+                ["-u", "-I", ignoreFuncElem, snapshot, generated],
+                { stdio: "inherit" }
+              );
               if (result.status !== 0) {
                 process.exit(result.status);
               }
@@ -260,14 +276,32 @@ jobs:
     needs:
       - rust-checks
     env:
-      # Strip debuginfo from dev / test builds in CI only. The wasm32
-      # test build plus headless Chrome plus ChromeDriver together
-      # exhaust the ubuntu-latest runner memory budget; multi-GB debug
-      # sections in test binaries are the largest single contributor.
-      # CI does not run a debugger against these binaries, so dropping
-      # the symbols is free.
+      # Compile-profile knobs that keep the wasm32 test binaries small
+      # enough for the ubuntu-latest runner to keep headless Chrome and
+      # ChromeDriver resident at the same time. The disk-reclaim step
+      # below frees toolchain bytes; these knobs shrink the actual test
+      # binaries that get loaded into memory:
+      #   * `*_DEBUG=0` drops the multi-GB debug sections that the
+      #     unoptimised default profile emits and that no CI step
+      #     consumes;
+      #   * `*_OPT_LEVEL=1` turns on basic codegen optimisations so the
+      #     emitted wasm shrinks several-fold compared to the default
+      #     unoptimised output, without paying the full release-mode
+      #     LTO cost;
+      #   * `CARGO_INCREMENTAL=0` skips per-crate incremental
+      #     metadata, which otherwise accumulates on disk and inflates
+      #     peak resident memory across the matrix;
+      #   * `CARGO_BUILD_JOBS=2` caps the parallel rustc fan-out so
+      #     several heavy codegen units do not race headless Chrome
+      #     for the same memory budget.
+      # All four knobs are CI-only; nothing else runs a debugger
+      # against the produced binaries, so the lost symbols are free.
       CARGO_PROFILE_DEV_DEBUG: "0"
       CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_PROFILE_DEV_OPT_LEVEL: "1"
+      CARGO_PROFILE_TEST_OPT_LEVEL: "1"
+      CARGO_INCREMENTAL: "0"
+      CARGO_BUILD_JOBS: "2"
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -292,6 +326,25 @@ jobs:
           sudo apt-get clean || true
           echo "Disk usage after reclaim:"
           df -h /
+      - name: Expand swap headroom
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Memory before:"
+          free -h
+          # The default ubuntu-latest swapfile is small relative to the
+          # peak wasm32 test compile plus headless Chrome footprint.
+          # Replace it with a larger backing file so the kernel pages
+          # cold compile state out instead of sending SIGKILL to
+          # ChromeDriver when the working set spikes.
+          sudo swapoff -a
+          sudo rm -f /mnt/swapfile
+          sudo fallocate -l 8G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          echo "Memory after:"
+          free -h
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
       - name: Install wasm32-unknown-unknown on the workspace-pinned toolchain
