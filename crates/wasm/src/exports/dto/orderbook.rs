@@ -171,6 +171,7 @@ pub struct TradesQueryInput {
     pub limit: Option<u32>,
 }
 
+#[cfg(feature = "orderbook")]
 pub fn orderbook_signing_scheme(
     value: &str,
 ) -> Result<cow_sdk_orderbook::SigningScheme, WasmError> {
