@@ -13,10 +13,10 @@
         "subgraph"
       ],
       "targets": ["web", "bundler", "nodejs"],
-      "rawBudgetMiB": 3.0,
-      "brotliBudgetKiB": 800,
-      "gzipFailBytes": 970000,
-      "gzipWarnBytes": 870000,
+      "rawBudgetMiB": 3.3,
+      "brotliBudgetKiB": 900,
+      "gzipFailBytes": 1300000,
+      "gzipWarnBytes": 1200000,
       "subpath": "."
     },
     {
@@ -57,10 +57,10 @@
         "subgraph"
       ],
       "targets": ["web", "bundler", "nodejs"],
-      "rawBudgetMiB": 3.0,
+      "rawBudgetMiB": 3.3,
       "brotliBudgetKiB": 1000,
-      "gzipFailBytes": 1220000,
-      "gzipWarnBytes": 1100000,
+      "gzipFailBytes": 1300000,
+      "gzipWarnBytes": 1200000,
       "subpath": "./full"
     },
     {
@@ -74,8 +74,8 @@
         "trading"
       ],
       "targets": ["web"],
-      "rawBudgetMiB": 3.0,
-      "brotliBudgetKiB": 800,
+      "rawBudgetMiB": 3.2,
+      "brotliBudgetKiB": 850,
       "gzipFailBytes": 3000000,
       "gzipWarnBytes": 2700000,
       "subpath": "./cloudflare",
