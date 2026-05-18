@@ -284,6 +284,6 @@ fn bash_executable() -> &'static str {
 }
 
 #[cfg(not(windows))]
-fn bash_executable() -> &'static str {
+const fn bash_executable() -> &'static str {
     "bash"
 }
