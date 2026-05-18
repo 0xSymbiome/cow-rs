@@ -72,9 +72,11 @@ fn prop_tpp_005_request_rate_limiter_uses_host_keys_for_per_host_scope() {
 #[cfg(feature = "reqwest-classifier")]
 #[test]
 fn prop_tpp_006_reqwest_error_classifier_is_total() {
+    // The bracketed token is not a valid IPv6 literal so the URL fails at
+    // the builder layer and no real network traffic is attempted.
     let client = reqwest::Client::new();
     let error = client
-        .request(reqwest::Method::GET, "http://[invalid ipv6]/")
+        .request(reqwest::Method::GET, "https://[invalid ipv6]/")
         .build()
         .expect_err("malformed URL must fail at the builder layer");
 

@@ -5,11 +5,15 @@ use cow_sdk_subgraph::{SubgraphError, SubgraphRequestErrorContext, error::classi
 
 #[test]
 fn transport_variant_carries_typed_class_and_sanitized_detail() {
+    // The bracketed host token is not a valid IPv6 literal so the URL
+    // fails at the builder layer and no real network traffic is attempted.
+    // The query payload is a deterministic redaction fixture used only to
+    // verify the classifier strips it before returning.
     let client = reqwest::Client::new();
     let raw_error = client
         .request(
             reqwest::Method::GET,
-            "http://[invalid ipv6]/private?api_key=secret",
+            "https://[invalid ipv6]/private?api_key=redaction-fixture-token",
         )
         .build()
         .expect_err("malformed URL must produce a builder-layer reqwest error");
@@ -40,9 +44,9 @@ fn transport_variant_carries_typed_class_and_sanitized_detail() {
     assert_eq!(context.chain_id, u64::from(SupportedChainId::Mainnet));
     assert!(
         !details.as_inner().contains("api_key")
-            && !details.as_inner().contains("secret")
-            && !details.as_inner().contains("http://"),
-        "transport details must not expose URL fragments or query secrets: {details}",
+            && !details.as_inner().contains("redaction-fixture-token")
+            && !details.as_inner().contains("https://"),
+        "transport details must not expose URL fragments or query payload: {details}",
     );
     assert!(
         error.to_string().contains("builder"),

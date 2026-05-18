@@ -47,12 +47,13 @@ mod reqwest_classifier {
 
     /// A malformed URL at build-time yields a `Builder` or `Request` error,
     /// never `Other`. This pins the documented `is_builder` / `is_request`
-    /// branches of the classifier.
+    /// branches of the classifier. The bracketed token is not a valid IPv6
+    /// literal so no real network traffic is attempted at any layer.
     #[test]
     fn reqwest_classifier_maps_invalid_url_to_builder_or_request() {
         let client = reqwest::Client::new();
         let error = client
-            .request(reqwest::Method::GET, "http://[invalid ipv6]/")
+            .request(reqwest::Method::GET, "https://[invalid ipv6]/")
             .build()
             .expect_err("malformed URL must fail at the builder layer");
 

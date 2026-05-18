@@ -744,10 +744,21 @@ fn assert_non_empty(label: &str, channel: &str, rendered: &str) {
 }
 
 fn assert_no_secret(label: &str, channel: &str, rendered: &str) {
-    for secret in [URL_SECRET, AUTH_SECRET, PRIVATE_KEY_SECRET, PEM_SECRET] {
+    // The fixtures below are deterministic redaction sentinels chosen to
+    // exercise URL, bearer-token, private-key, and PEM redaction paths.
+    // The assertion message references each fixture by name rather than
+    // by value so the failure log carries enough context to localise the
+    // regression without re-emitting the fixture text.
+    let fixtures: &[(&str, &str)] = &[
+        ("URL_SECRET", URL_SECRET),
+        ("AUTH_SECRET", AUTH_SECRET),
+        ("PRIVATE_KEY_SECRET", PRIVATE_KEY_SECRET),
+        ("PEM_SECRET", PEM_SECRET),
+    ];
+    for (fixture_name, fixture) in fixtures {
         assert!(
-            !rendered.contains(secret),
-            "{label} {channel} leaked secret substring {secret:?} in {rendered:?}"
+            !rendered.contains(fixture),
+            "{label} {channel} leaked the {fixture_name} fixture in rendering"
         );
     }
 }

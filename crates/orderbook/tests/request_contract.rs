@@ -832,9 +832,13 @@ async fn api_errors_keep_plain_text_payloads_out_of_the_json_decoder() {
 
 #[tokio::test]
 async fn reqwest_error_classification_strips_url_query_and_host() {
-    let secret_host = "invalid-orderbook-host-for-redaction-regression.test";
-    let secret_key = "super-secret-api-key-should-never-leak";
-    let url = format!("http://{secret_host}/v1/auction?api_key={secret_key}");
+    // Synthetic redaction fixture values. The host is a `.test` reserved
+    // TLD per RFC 6761 (never resolves) and the token is a deterministic
+    // sentinel used only to verify the classifier strips identifying
+    // payload before returning. No real network traffic is intended.
+    let unreachable_host = "invalid-orderbook-host-for-redaction-regression.test";
+    let redaction_fixture_token = "redaction-regression-fixture-token-0001";
+    let url = format!("https://{unreachable_host}/v1/auction?api_key={redaction_fixture_token}");
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_millis(200))
@@ -848,19 +852,19 @@ async fn reqwest_error_classification_strips_url_query_and_host() {
 
     let (class, detail) = classify_reqwest_error(raw_error);
     assert!(
-        !detail.contains(secret_host),
+        !detail.contains(unreachable_host),
         "classified transport error must strip the host: {detail}"
     );
     assert!(
-        !detail.contains(secret_key),
-        "classified transport error must strip query-string secrets: {detail}"
+        !detail.contains(redaction_fixture_token),
+        "classified transport error must strip query-string payload: {detail}"
     );
     assert!(
         !detail.contains("api_key"),
         "classified transport error must strip query parameter names: {detail}"
     );
     assert!(
-        !detail.contains("http://"),
+        !detail.contains("https://"),
         "classified transport error must not include the URL scheme prefix: {detail}"
     );
     let class_prefix = class.as_str();
@@ -881,10 +885,12 @@ fn orderbook_transport_error_from_conversion_classifies_without_url_exposure() {
     let builder_error = reqwest::Url::parse("not a url").unwrap_err();
     let message = format!("builder-error-fixture: {builder_error}");
     // Route a synthetic reqwest error through OrderbookError by triggering an
-    // invalid URL inside reqwest::Client::get so the redaction path is covered.
+    // invalid URL inside reqwest::Client::get so the redaction path is
+    // covered. The bracketed token is not a valid IPv6 literal so no real
+    // network traffic is attempted at any layer.
     let client = reqwest::Client::new();
     let err = client
-        .request(reqwest::Method::GET, "http://[invalid ipv6]/")
+        .request(reqwest::Method::GET, "https://[invalid ipv6]/")
         .build()
         .expect_err("malformed URL must produce a builder-layer reqwest error");
 

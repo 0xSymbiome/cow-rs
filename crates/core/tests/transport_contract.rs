@@ -400,10 +400,12 @@ async fn reqwest_transport_is_dyn_compatible_behind_arc() {
 #[tokio::test]
 async fn connect_failure_through_invalid_url_classifies_as_builder() {
     // An invalid URL bypasses the resolver and forces `reqwest` to surface
-    // a builder-layer error at request construction time.
+    // a builder-layer error at request construction time. The host is
+    // syntactically malformed (the bracketed token is not a valid IPv6
+    // literal), so no real network traffic is attempted at any layer.
     let client = reqwest::Client::new();
     let builder_error = client
-        .request(reqwest::Method::GET, "http://[invalid ipv6]/")
+        .request(reqwest::Method::GET, "https://[invalid ipv6]/")
         .build()
         .expect_err("malformed URL must produce a builder-layer reqwest error");
 
