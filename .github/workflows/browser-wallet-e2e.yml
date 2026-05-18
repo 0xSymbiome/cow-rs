@@ -132,35 +132,32 @@ jobs:
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.14.0 --locked
 
-      - name: Install Firefox and geckodriver
+      # Source ref: browser-actions/setup-firefox@v1.7.2
+      - name: Set up Firefox
         # The earlier `--release` plus disk-reclaim plus 12 GB swap plus
         # `opt-level = 1` mitigations all left the headless Chrome path
         # SIGKILL-ing ChromeDriver mid-handshake on the ubuntu-latest
-        # runner, even after the wasm32 test binary shrank to its
+        # runner even after the wasm32 test binary shrank to its
         # smallest viable form. The signature pattern is well known on
         # Chrome 148 / wasm-bindgen-test 0.3.x in GitHub Actions and is
         # not memory pressure: the same release-profile binary lands
-        # cleanly under Firefox + geckodriver. Pin both to specific
-        # builds from Mozilla's CDN so the headless runtime is
-        # reproducible from one run to the next; the GeckoDriver
-        # release line is independent from the Firefox ESR train so
-        # the two pins evolve separately.
-        env:
-          FIREFOX_VERSION: '128.0esr'
-          GECKODRIVER_VERSION: 'v0.36.0'
-        shell: bash
-        run: |
-          set -euo pipefail
-          wget -q -O /tmp/firefox.tar.xz \
-            "https://ftp.mozilla.org/pub/firefox/releases/${FIREFOX_VERSION}/linux-x86_64/en-US/firefox-${FIREFOX_VERSION}.tar.xz"
-          sudo tar -xJf /tmp/firefox.tar.xz -C /opt/
-          sudo ln -sf /opt/firefox/firefox /usr/local/bin/firefox
-          firefox --version
-          wget -q -O /tmp/geckodriver.tar.gz \
-            "https://github.com/mozilla/geckodriver/releases/download/${GECKODRIVER_VERSION}/geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz"
-          sudo tar -xzf /tmp/geckodriver.tar.gz -C /usr/local/bin/
-          sudo chmod +x /usr/local/bin/geckodriver
-          geckodriver --version
+        # cleanly under Firefox + geckodriver. The two browser-actions
+        # actions are the standard way to land both binaries on the
+        # runner (ubuntu-latest no longer ships Firefox), they cache
+        # the binaries between runs, and they prepend `firefox-path` /
+        # geckodriver to `PATH` automatically.
+        uses: browser-actions/setup-firefox@8058e910ee76e74bb76b7b2e5b61a55b3a65ed78
+        with:
+          firefox-version: latest-esr
+
+      # Source ref: browser-actions/setup-geckodriver@latest 2026-04-29
+      # (the `latest` branch hosts the prebuilt `index.js`; the
+      # `master` branch only ships the TypeScript source.)
+      - name: Set up geckodriver
+        uses: browser-actions/setup-geckodriver@fac5b0424c584257f32cf12c5eb4ba86014c34f8
+        with:
+          geckodriver-version: '0.36.0'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test browser-wallet crate
         run: cargo test -p cow-sdk-browser-wallet
@@ -169,12 +166,9 @@ jobs:
         working-directory: crates/browser-wallet
         # `--release` keeps the workspace release-profile binary
         # (`opt-level = "z"`, `lto = "fat"`, `strip = "symbols"`); the
-        # `--firefox` switch routes wasm-pack through the geckodriver
-        # path installed in the Install Firefox step above. The
-        # `--geckodriver` flag pins the exact binary so the runner
-        # cannot silently fall back to a system geckodriver from a
-        # later release line.
-        run: wasm-pack test --release --headless --firefox --geckodriver /usr/local/bin/geckodriver
+        # `--firefox` switch routes wasm-pack through geckodriver,
+        # which the setup-geckodriver step placed on `PATH`.
+        run: wasm-pack test --release --headless --firefox
 
       - name: Build SDK for wasm with browser wallet
         run: cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
@@ -192,8 +186,8 @@ jobs:
       - name: Run browser wallet console wasm-bindgen tests in headless Firefox
         working-directory: examples/wasm/browser-wallet-console
         # Release-profile wasm32 test binary routed through the same
-        # pinned geckodriver as the direct-bridge test above.
-        run: wasm-pack test --release --headless --firefox --geckodriver /usr/local/bin/geckodriver
+        # PATH-resolved geckodriver as the direct-bridge test above.
+        run: wasm-pack test --release --headless --firefox
 
       - name: Install browser wallet e2e dependencies
         run: bun install --cwd e2e/browser-wallet --frozen-lockfile

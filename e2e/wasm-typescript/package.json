@@ -19,6 +19,8 @@
   "devDependencies": {
     "@playwright/test": "1.59.1",
     "@types/node": "25.6.2",
+    "esbuild": "0.28.0",
+    "rollup": "4.60.4",
     "typescript": "6.0.3",
     "vite": "8.0.11",
     "vite-plugin-top-level-await": "1.6.0",

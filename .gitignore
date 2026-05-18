@@ -104,3 +104,4 @@ crates/wasm/pkg/
 crates/wasm/npm/dist/
 crates/wasm/npm/package.json
 crates/wasm/npm/*.tgz
+e2e/wasm-typescript/dist/
