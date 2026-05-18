@@ -182,7 +182,11 @@ test("orderbook network failures surface as visible errors", async ({ page }) =>
 
   await expect(page.locator("#orderbook-output")).toContainText("Error", { timeout: 20_000 });
   await expect(page.locator("#orderbook-output")).toContainText("transport error");
-  await expect(page.locator("#orderbook-output")).toContainText("mock network failure");
+  // The SDK redacts the upstream fetch error message by construction --
+  // untrusted upstream text may carry URLs, hostnames, or credentials --
+  // so the user-visible detail is the sentinel rather than the raw cause.
+  await expect(page.locator("#orderbook-output")).toContainText("[redacted]");
+  await expect(page.locator("#orderbook-output")).not.toContainText("mock network failure");
   expect(requestIssues).toEqual([]);
 });
 

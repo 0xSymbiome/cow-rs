@@ -549,9 +549,11 @@ async fn rejected_chain_switch_requests_map_to_typed_browser_wallet_errors() {
         error,
         BrowserWalletError::ChainNotAdded {
             chain_id: u64::from(SupportedChainId::Base),
-            method: "wallet_switchEthereumChain".to_owned(),
+            method: "wallet_switchEthereumChain".to_owned().into(),
             code: 4902,
-            message: "fixture wallet does not know the requested chain".to_owned(),
+            message: "fixture wallet does not know the requested chain"
+                .to_owned()
+                .into(),
         }
     );
 
