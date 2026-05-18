@@ -19,14 +19,14 @@ version: 2
 #      alloy-pin family validator in `.github/workflows/_quality-gate.yml`.
 #   4. The workspace is mid-migration onto alloy-leaning primitives.
 #      Bumping crates that the migration is actively retiring (most
-#      notably `sha3`) is wasted work that the next task in the
-#      migration cascade reverses.
+#      notably `sha3`) is wasted work that subsequent migration commits
+#      reverse.
 #
 # When to re-enable:
 #
 #   - The workspace has cut an initial public release tag.
-#   - The remaining alloy-leaning primitive layer migration tasks have
-#     closed (`sha3` retired as a workspace dep, every workspace crate
+#   - The remaining alloy-leaning primitive layer migration has
+#     landed (`sha3` retired as a workspace dep, every workspace crate
 #     using `alloy_primitives::keccak256` for production hashing).
 #   - The CI workflow stack has been stable through at least one
 #     post-release maintenance window.

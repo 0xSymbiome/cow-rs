@@ -1,0 +1,5 @@
+# Normalize line endings for files whose byte-exact contents are
+# compared by tests. Snapshot fixtures must stay LF on every host so
+# `include_str!` produces identical bytes across Windows, macOS, and
+# Linux checkouts.
+*.snap text eol=lf
