@@ -238,7 +238,21 @@ async fn mount_slow_response(case: &CancellationCase, server: &MockServer) {
 }
 
 async fn wait_until_request_is_in_flight(server: &MockServer) {
-    for _ in 0..100 {
+    // The enclosing test runs under `tokio::test(flavor = "current_thread",
+    // start_paused = true)`. With paused tokio time, the reqwest client's
+    // HTTP transmission and wiremock's request ingestion proceed on the
+    // real wall clock while every tokio sleep on the test's runtime
+    // auto-advances when no other task is pending. A pure `yield_now`
+    // poll therefore burns through its iteration budget faster than the
+    // operating-system scheduler can deliver the request bytes on a busy
+    // CI runner, which is why this helper previously flaked under heavy
+    // load on every test target. The new shape couples the poll to a
+    // real-time deadline measured from `std::time::Instant`, which the
+    // paused tokio clock cannot accelerate, and yields the runtime
+    // between polls so wiremock's task on the same single-threaded
+    // executor can drain the inbound queue.
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
         let requests = server
             .received_requests()
             .await
@@ -246,10 +260,12 @@ async fn wait_until_request_is_in_flight(server: &MockServer) {
         if !requests.is_empty() {
             return;
         }
+        assert!(
+            Instant::now() < deadline,
+            "slow orderbook mock did not observe the request before cancellation"
+        );
         tokio::task::yield_now().await;
     }
-
-    panic!("slow orderbook mock did not observe the request before cancellation");
 }
 
 fn path_quote() -> String {
