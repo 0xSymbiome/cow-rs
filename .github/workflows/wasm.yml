@@ -67,8 +67,14 @@ jobs:
           persist-credentials: false
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          targets: wasm32-unknown-unknown
+      - name: Install wasm32-unknown-unknown on the workspace-pinned toolchain
+        # The dtolnay action defaults to its @stable channel and installs
+        # the wasm32 target on stable. Cargo then runs under the workspace
+        # rust-toolchain.toml override (1.94.1), which does not have the
+        # target, producing E0463 "can't find crate for std". Running
+        # `rustup target add` from the workspace dir resolves the override
+        # first, so the target lands on the actual toolchain cargo uses.
+        run: rustup target add wasm32-unknown-unknown
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Install Binaryen
@@ -136,8 +142,14 @@ jobs:
           persist-credentials: false
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          targets: wasm32-unknown-unknown
+      - name: Install wasm32-unknown-unknown on the workspace-pinned toolchain
+        # The dtolnay action defaults to its @stable channel and installs
+        # the wasm32 target on stable. Cargo then runs under the workspace
+        # rust-toolchain.toml override (1.94.1), which does not have the
+        # target, producing E0463 "can't find crate for std". Running
+        # `rustup target add` from the workspace dir resolves the override
+        # first, so the target lands on the actual toolchain cargo uses.
+        run: rustup target add wasm32-unknown-unknown
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Install Binaryen
@@ -254,8 +266,14 @@ jobs:
           persist-credentials: false
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          targets: wasm32-unknown-unknown
+      - name: Install wasm32-unknown-unknown on the workspace-pinned toolchain
+        # The dtolnay action defaults to its @stable channel and installs
+        # the wasm32 target on stable. Cargo then runs under the workspace
+        # rust-toolchain.toml override (1.94.1), which does not have the
+        # target, producing E0463 "can't find crate for std". Running
+        # `rustup target add` from the workspace dir resolves the override
+        # first, so the target lands on the actual toolchain cargo uses.
+        run: rustup target add wasm32-unknown-unknown
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Install Binaryen

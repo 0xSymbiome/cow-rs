@@ -22,12 +22,15 @@ jobs:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
+          # fetch-depth: 0 pulls the full history of the PR head SHA,
+          # which includes the PR base SHA as an ancestor by construction.
+          # The validator below references the base purely by SHA via
+          # `${base}..${head}`, so no follow-up `git fetch` is needed --
+          # and adding one would fail under `persist-credentials: false`,
+          # which strips the token after checkout completes.
           fetch-depth: 0
           persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Fetch base commit
-        run: git fetch --no-tags origin ${{ github.event.pull_request.base.ref }}
 
       - name: Validate commit messages
         shell: bash

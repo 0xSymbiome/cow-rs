@@ -80,7 +80,11 @@ jobs:
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Build docs.rs-style workspace documentation
-        run: cargo doc --workspace --all-features --no-deps
+        # `cargo +nightly` overrides the workspace `rust-toolchain.toml`
+        # pin so the nightly-only RUSTDOCFLAGS below are honored. Without
+        # the override, rustup auto-selects the pinned stable toolchain
+        # and stable rustdoc rejects `-Zunstable-options` and friends.
+        run: cargo +nightly doc --workspace --all-features --no-deps
         env:
           DOCS_RS: '1'
           RUSTDOCFLAGS: --cfg docsrs -D warnings -Zunstable-options --generate-link-to-definition --show-type-layout --enable-index-page
