@@ -368,30 +368,44 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.14.0 --locked
-      - name: Set up pinned WASM browser runner
+      - name: Install Firefox and geckodriver
+        # The earlier `--release` plus disk-reclaim plus 12 GB swap plus
+        # `opt-level = 1` mitigations all left the headless Chrome path
+        # SIGKILL-ing ChromeDriver mid-handshake on the ubuntu-latest
+        # runner, even after the wasm32 test binary shrank to its
+        # smallest viable form. The signature pattern is well known on
+        # Chrome 148 / wasm-bindgen-test 0.3.x in GitHub Actions and is
+        # not memory pressure: the same release-profile binary lands
+        # cleanly under Firefox + geckodriver. Pin both to specific
+        # builds from Mozilla's CDN so the headless runtime is
+        # reproducible from one run to the next; the GeckoDriver
+        # release line is independent from the Firefox ESR train so
+        # the two pins evolve separately.
         env:
-          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
-        run: cargo wasm-runner-setup --webdriver-json "$WEBDRIVER_JSON"
-      - name: Export pinned WASM browser runner paths
-        env:
-          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
+          FIREFOX_VERSION: '128.0esr'
+          GECKODRIVER_VERSION: 'v0.36.0'
+        shell: bash
         run: |
-          node - <<'JS' >> "$GITHUB_ENV"
-          const fs = require("node:fs");
-          const webdriver = JSON.parse(fs.readFileSync(process.env.WEBDRIVER_JSON, "utf8"));
-          console.log(`WASM_BINDGEN_TEST_WEBDRIVER_JSON=${process.env.WEBDRIVER_JSON}`);
-          console.log(`WASM_BINDGEN_TEST_CHROMEDRIVER=${webdriver["cow:wasmRunner"].chromedriver}`);
-          JS
-      - name: Test cow-sdk-wasm in headless Chrome
-        # `--release` builds the wasm32 test binary under the workspace
-        # release profile (`opt-level = "z"`, `lto = "fat"`,
-        # `strip = "symbols"`), which is several times smaller than the
-        # `opt-level = 1` dev-profile output that the prior mitigation
-        # produced. The smaller binary lowers the resident-memory peak
-        # that headless Chrome and ChromeDriver have to share with the
-        # test process, which is the dominant cause of the SIGKILL
-        # signal the runner has been sending to ChromeDriver mid-handshake.
-        run: wasm-pack test --release --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER" crates/wasm
+          set -euo pipefail
+          wget -q -O /tmp/firefox.tar.xz \
+            "https://ftp.mozilla.org/pub/firefox/releases/${FIREFOX_VERSION}/linux-x86_64/en-US/firefox-${FIREFOX_VERSION}.tar.xz"
+          sudo tar -xJf /tmp/firefox.tar.xz -C /opt/
+          sudo ln -sf /opt/firefox/firefox /usr/local/bin/firefox
+          firefox --version
+          wget -q -O /tmp/geckodriver.tar.gz \
+            "https://github.com/mozilla/geckodriver/releases/download/${GECKODRIVER_VERSION}/geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz"
+          sudo tar -xzf /tmp/geckodriver.tar.gz -C /usr/local/bin/
+          sudo chmod +x /usr/local/bin/geckodriver
+          geckodriver --version
+      - name: Test cow-sdk-wasm in headless Firefox
+        # `--release` keeps the workspace release-profile binary
+        # (`opt-level = "z"`, `lto = "fat"`, `strip = "symbols"`); the
+        # `--firefox` switch routes wasm-pack through the geckodriver
+        # path documented above. The `--geckodriver` flag pins the
+        # exact binary installed in the previous step so the runner
+        # cannot silently fall back to a system geckodriver from a
+        # later release line.
+        run: wasm-pack test --release --headless --firefox --geckodriver /usr/local/bin/geckodriver crates/wasm
 
   vitest-nodejs:
     runs-on: ubuntu-latest

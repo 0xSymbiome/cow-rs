@@ -132,40 +132,49 @@ jobs:
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.14.0 --locked
 
+      - name: Install Firefox and geckodriver
+        # The earlier `--release` plus disk-reclaim plus 12 GB swap plus
+        # `opt-level = 1` mitigations all left the headless Chrome path
+        # SIGKILL-ing ChromeDriver mid-handshake on the ubuntu-latest
+        # runner, even after the wasm32 test binary shrank to its
+        # smallest viable form. The signature pattern is well known on
+        # Chrome 148 / wasm-bindgen-test 0.3.x in GitHub Actions and is
+        # not memory pressure: the same release-profile binary lands
+        # cleanly under Firefox + geckodriver. Pin both to specific
+        # builds from Mozilla's CDN so the headless runtime is
+        # reproducible from one run to the next; the GeckoDriver
+        # release line is independent from the Firefox ESR train so
+        # the two pins evolve separately.
+        env:
+          FIREFOX_VERSION: '128.0esr'
+          GECKODRIVER_VERSION: 'v0.36.0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          wget -q -O /tmp/firefox.tar.xz \
+            "https://ftp.mozilla.org/pub/firefox/releases/${FIREFOX_VERSION}/linux-x86_64/en-US/firefox-${FIREFOX_VERSION}.tar.xz"
+          sudo tar -xJf /tmp/firefox.tar.xz -C /opt/
+          sudo ln -sf /opt/firefox/firefox /usr/local/bin/firefox
+          firefox --version
+          wget -q -O /tmp/geckodriver.tar.gz \
+            "https://github.com/mozilla/geckodriver/releases/download/${GECKODRIVER_VERSION}/geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz"
+          sudo tar -xzf /tmp/geckodriver.tar.gz -C /usr/local/bin/
+          sudo chmod +x /usr/local/bin/geckodriver
+          geckodriver --version
+
       - name: Test browser-wallet crate
         run: cargo test -p cow-sdk-browser-wallet
 
-      - name: Set up pinned WASM browser runner
-        env:
-          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
-        run: cargo wasm-runner-setup --webdriver-json "$WEBDRIVER_JSON"
-
-      - name: Export pinned WASM browser runner paths
-        env:
-          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
-        run: |
-          python - <<'PY' >> "$GITHUB_ENV"
-          import json
-          import os
-          with open(os.environ["WEBDRIVER_JSON"], encoding="utf-8") as handle:
-              webdriver = json.load(handle)
-          print(f"WASM_BINDGEN_TEST_WEBDRIVER_JSON={os.environ['WEBDRIVER_JSON']}")
-          print(f"WASM_BINDGEN_TEST_CHROMEDRIVER={webdriver['cow:wasmRunner']['chromedriver']}")
-          PY
-
-      - name: Test browser-wallet direct bridge in headless Chrome
-        env:
-          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
+      - name: Test browser-wallet direct bridge in headless Firefox
         working-directory: crates/browser-wallet
-        # `--release` builds the wasm32 test binary under the workspace
-        # release profile (`opt-level = "z"`, `lto = "fat"`,
-        # `strip = "symbols"`), several times smaller than the
-        # `opt-level = 1` dev-profile output the earlier mitigation
-        # produced. Headless Chrome and ChromeDriver share the runner
-        # memory budget with the loaded wasm; a smaller binary keeps
-        # both resident through the handshake so the kernel does not
-        # send SIGKILL to ChromeDriver during the test setup.
-        run: wasm-pack test --release --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
+        # `--release` keeps the workspace release-profile binary
+        # (`opt-level = "z"`, `lto = "fat"`, `strip = "symbols"`); the
+        # `--firefox` switch routes wasm-pack through the geckodriver
+        # path installed in the Install Firefox step above. The
+        # `--geckodriver` flag pins the exact binary so the runner
+        # cannot silently fall back to a system geckodriver from a
+        # later release line.
+        run: wasm-pack test --release --headless --firefox --geckodriver /usr/local/bin/geckodriver
 
       - name: Build SDK for wasm with browser wallet
         run: cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
@@ -180,18 +189,11 @@ jobs:
         working-directory: examples/wasm/browser-wallet-console
         run: wasm-pack build --target web
 
-      - name: Set up pinned WASM browser runner
-        env:
-          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
-        run: cargo wasm-runner-setup --webdriver-json "$WEBDRIVER_JSON"
-
-      - name: Run browser wallet console wasm-bindgen tests
-        env:
-          WEBDRIVER_JSON: ${{ runner.temp }}/webdriver.json
+      - name: Run browser wallet console wasm-bindgen tests in headless Firefox
         working-directory: examples/wasm/browser-wallet-console
-        # Release-profile wasm32 test binary for the same SIGKILL
-        # avoidance reason documented on the direct-bridge test above.
-        run: wasm-pack test --release --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
+        # Release-profile wasm32 test binary routed through the same
+        # pinned geckodriver as the direct-bridge test above.
+        run: wasm-pack test --release --headless --firefox --geckodriver /usr/local/bin/geckodriver
 
       - name: Install browser wallet e2e dependencies
         run: bun install --cwd e2e/browser-wallet --frozen-lockfile
