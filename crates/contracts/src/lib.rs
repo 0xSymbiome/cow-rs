@@ -1,4 +1,4 @@
-#![cfg_attr(doctest, doc = include_str!("../README.md"))]
+#![cfg_attr(any(doctest, docsrs), doc = include_str!("../README.md"))]
 
 //! Low-level `CoW` Protocol contract helpers for hashing, settlement encoding,
 //! signature verification, and deployment metadata.

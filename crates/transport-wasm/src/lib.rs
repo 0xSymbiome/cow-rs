@@ -1,3 +1,5 @@
+#![cfg_attr(any(doctest, docsrs), doc = include_str!("../README.md"))]
+
 //! Browser-native `HttpTransport` implementation for the `cow-sdk` family.
 //!
 //! This crate ships `FetchTransport`, a `wasm32`-only implementation of

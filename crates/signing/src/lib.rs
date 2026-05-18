@@ -1,4 +1,4 @@
-#![cfg_attr(doctest, doc = include_str!("../README.md"))]
+#![cfg_attr(any(doctest, docsrs), doc = include_str!("../README.md"))]
 
 //! Explicit `CoW` Protocol signing helpers.
 //!

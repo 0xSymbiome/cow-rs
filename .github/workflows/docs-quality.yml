@@ -100,17 +100,33 @@ jobs:
                   super().__init__()
                   self.headings = []
                   self.current = None
+                  # Rustdoc prefixes each heading with an <a class="doc-anchor">
+                  # element whose text is a section glyph (e.g. §). That glyph
+                  # is presentation chrome, not part of the README heading
+                  # the smoke check is asserting. Track when we are inside the
+                  # doc-anchor element and skip its character data so the
+                  # extracted heading text matches the README contents.
+                  self.in_doc_anchor = False
 
               def handle_starttag(self, tag, attrs):
+                  attrs_dict = dict(attrs)
                   if re.fullmatch(r"h[1-6]", tag):
-                      attrs = dict(attrs)
                       self.current = {
                           "tag": tag,
-                          "id": attrs.get("id", ""),
+                          "id": attrs_dict.get("id", ""),
                           "parts": [],
                       }
+                  elif (
+                      tag == "a"
+                      and self.current
+                      and "doc-anchor" in attrs_dict.get("class", "").split()
+                  ):
+                      self.in_doc_anchor = True
 
               def handle_endtag(self, tag):
+                  if tag == "a" and self.in_doc_anchor:
+                      self.in_doc_anchor = False
+                      return
                   if self.current and self.current["tag"] == tag:
                       text = " ".join(
                           part.strip() for part in self.current["parts"] if part.strip()
@@ -119,7 +135,7 @@ jobs:
                       self.current = None
 
               def handle_data(self, data):
-                  if self.current:
+                  if self.current and not self.in_doc_anchor:
                       self.current["parts"].append(data)
 
           def canonical_anchor(heading):
