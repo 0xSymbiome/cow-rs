@@ -45,11 +45,41 @@ jobs:
   browser-wallet:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      # Strip debuginfo from dev / test builds in CI only. The wasm32
+      # browser-wallet test build plus host-target cargo test plus
+      # headless Chrome plus ChromeDriver together exhaust the
+      # ubuntu-latest runner memory budget; multi-GB debug sections in
+      # test binaries are the largest single contributor. CI does not
+      # run a debugger against these binaries, so dropping the symbols
+      # is free.
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           persist-credentials: false
+      - name: Reclaim runner disk space
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Disk usage before reclaim:"
+          df -h /
+          # Microsoft pre-installs ~30 GB of toolchains we do not use
+          # for this Rust workspace. Removing them gives the
+          # host-target test compile, the wasm32 test compile, and the
+          # headless Chrome session enough headroom that the kernel
+          # OOM killer stops sending SIGKILL to ChromeDriver during
+          # wasm-pack test runs.
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          sudo apt-get clean || true
+          echo "Disk usage after reclaim:"
+          df -h /
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
