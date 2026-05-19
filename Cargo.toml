@@ -67,7 +67,7 @@ alloy-consensus = { version = "2.0.4", default-features = false }
 alloy-json-rpc = { version = "2.0.4", default-features = false }
 alloy-json-abi = { version = "1.5.7", default-features = false, features = ["serde_json"] }
 alloy-network = { version = "2.0.4", default-features = false }
-alloy-primitives = { version = "1.5.7", default-features = false }
+alloy-primitives = { version = "1.5.7", default-features = false, features = ["serde"] }
 alloy-provider = { version = "2.0.4", default-features = false, features = ["reqwest", "reqwest-rustls-tls"] }
 alloy-rpc-types-eth = { version = "2.0.4", default-features = false, features = ["serde"] }
 alloy-signer = { version = "2.0.4", default-features = false }

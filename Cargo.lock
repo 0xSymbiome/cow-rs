@@ -1559,7 +1559,9 @@ dependencies = [
  "tokio-util",
  "tracing",
  "trybuild",
+ "tsify",
  "url",
+ "wasm-bindgen",
  "wiremock",
 ]
 
