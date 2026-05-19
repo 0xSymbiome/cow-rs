@@ -12,11 +12,32 @@
 `cow_sdk_core` adopts `alloy_primitives` and `alloy_sol_types` as the
 canonical primitive and EIP-712 / ABI layer across the workspace.
 
-The cow-named public types `Address`, `Hash32`, `AppDataHash`,
-`TransactionHash`, `BlockHash`, `OrderDigest`, `HexData`, `OrderUid`,
-`Amount`, `SignedAmount`, and `TypedDataDomain` resolve to re-exports of
-`alloy_primitives::{Address, B256, Bytes, FixedBytes<56>, U256, I256}`
-and `alloy_sol_types::Eip712Domain` respectively.
+The cow-named identity types `Address`, `Hash32`, `AppDataHash`,
+`HexData`, and `OrderUid` and the cow-named numeric types `Amount` and
+`SignedAmount` are cow-owned `#[repr(transparent)]` newtypes over the
+corresponding `alloy_primitives` type. The type-aliased derivative
+hashes `TransactionHash`, `BlockHash`, and `OrderDigest` re-route
+through `Hash32`. `TypedDataDomain` is the cow struct that already
+ships in the working tree (`name: String`, `version: String`,
+`chain_id: ChainId`, `verifying_contract: Address`, no `salt`),
+preserved as-is; the cow struct's cow-owned `Serialize` impl emits the
+EIP-1193 `eth_signTypedData_v4` wire shape directly (numeric
+`chainId`, required `verifyingContract`, no `salt`) and an
+`into_alloy_domain()` adapter method converts to
+`alloy_sol_types::Eip712Domain` at the EIP-712 hashing seam.
+`Address`, `Amount`, and `SignedAmount` carry cow-owned
+`Display`/`Serialize`/`Deserialize` impls; the other four byte-typed
+identity newtypes forward to alloy defaults that already match the
+cow lowercase wire form. The cow newtype layer preserves the Rust
+type-system distinction between same-width byte primitives that the
+cow capability crates rely on (`Hash32` vs `AppDataHash` vs the
+digest-shaped fields embedded in DTOs) and preserves the
+strict-decimal-only fail-closed wire-form contract for `Amount` and
+`SignedAmount` on the `Deserialize` boundary (the constructors stay
+lenient — accepting both decimal and `0x`-prefixed hex — to preserve
+the existing observed behavior), while keeping bit-for-bit layout
+compatibility with the underlying alloy primitive (zero-cost
+conversion at the adapter boundary via `.0` or `From::from(...)`).
 
 Hand-rolled `keccak256`, `domain_separator`, `typed_data_digest`,
 EIP-712 type strings, EIP-191 message wrappers, CREATE2 derivation,
@@ -65,25 +86,64 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
 - Public surface: the cow-named public types `Address`, `Hash32`,
   `AppDataHash`, `HexData`, `OrderUid`, `Amount`, `SignedAmount`, and
   `TypedDataDomain` resolve through `cow_sdk_core::types::*` at their
-  existing paths. `Hash32`, `HexData`, `OrderUid`, `AppDataHash`,
-  `Amount`, and `SignedAmount` are `pub type` aliases over
-  `alloy_primitives::B256`, `alloy_primitives::Bytes`,
-  `alloy_primitives::FixedBytes<56>`, `alloy_primitives::B256`,
+  existing paths. `Address`, `Hash32`, `AppDataHash`, `HexData`,
+  `OrderUid`, `Amount`, and `SignedAmount` are cow-owned
+  `#[repr(transparent)]` newtypes around `alloy_primitives::Address`,
+  `alloy_primitives::B256`, `alloy_primitives::B256`,
+  `alloy_primitives::Bytes`, `alloy_primitives::FixedBytes<56>`,
   `alloy_primitives::U256`, and `alloy_primitives::I256` respectively.
-  `Address` is a `repr(transparent)` newtype around
-  `alloy_primitives::Address` whose cow-owned `Display` and
-  `Serialize` impls emit lowercase 0x-prefixed hex (see Cost below for
-  the wire-format rationale). `TypedDataDomain` resolves to
-  `alloy_sol_types::Eip712Domain`. Extension traits (`AddressExt`,
-  `OrderUidExt`, `Hash32Ext`, `AppDataHashExt`, `HexDataExt`,
-  `AmountExt`, `SignedAmountExt`) carry the cow-specific accessor
-  methods (`as_str`, `new`, `to_cid`, `to_str_radix_10`,
-  `to_str_radix_16`, `zero`, `is_zero`); the `cow_sdk_core::prelude`
-  re-export brings these traits into scope. The blocking
-  `cargo-semver-checks` lane on `cow-sdk-core`, `cow-sdk-contracts`,
-  `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`,
-  `cow-sdk-trading`, `cow-sdk-subgraph`, `cow-sdk-browser-wallet`,
-  and `cow-sdk-transport-wasm` reports no breaking changes.
+  `Address`, `Amount`, and `SignedAmount` carry cow-owned `Display`,
+  `Serialize`, and `Deserialize` impls — `Address` because alloy's
+  default `Display` is EIP-55 checksum casing and the cow wire form
+  is lowercase, and `Amount`/`SignedAmount` because alloy's default
+  `Serialize` for `U256` is hex (not decimal) and alloy's `FromStr`
+  for `Uint`/`Signed` prefix-sniffs four radices. The cow
+  strict-decimal-only fail-closed contract for `Amount` and
+  `SignedAmount` applies only to the `Deserialize` wire boundary;
+  the cow `Amount::new` and `SignedAmount::new` constructors remain
+  lenient (accept both decimal and `0x`-prefixed hex) to preserve the
+  existing constructor contract. `Hash32`, `AppDataHash`, `HexData`,
+  and `OrderUid` forward `Display`, `Serialize`, and `Deserialize`
+  to the underlying alloy primitive whose defaults already match the
+  cow lowercase wire form. Each newtype carries cow-defined inherent
+  methods for the canonical accessor surface (`new`, `from_bytes`,
+  `to_hex_string`, `as_slice`, `as_alloy`, `into_alloy`, `zero`,
+  `is_zero`, `byte_length`, plus `to_cid` on `AppDataHash` and
+  `normalized_key` on `Address`). The owned hex-string accessor is
+  named `to_hex_string(&self) -> String` (following the Rust stdlib
+  convention that `to_*` returns owned and `as_*` returns a borrow);
+  the prior cached-struct `as_str(&self) -> &str` shape retires and
+  the legacy callsites are normalized to the canonical accessor for
+  each use case (`Display`, `as_slice`, `is_zero`, `to_string`, or
+  `to_hex_string` where the hex form is required explicitly).
+  Bit-for-bit layout compatibility with the underlying alloy
+  primitive is preserved through the `repr(transparent)`
+  representation; conversion at the alloy seam is free at runtime
+  through `From::from(addr).into()` (canonical) or `.0` access
+  (escape hatch). `TransactionHash`, `BlockHash`, and `OrderDigest`
+  are `pub type` aliases over `Hash32`. `TypedDataDomain` is the cow
+  struct that already ships in the working tree (`name: String`,
+  `version: String`, `chain_id: ChainId`, `verifying_contract:
+  Address`, no `salt`); the cow struct's cow-owned `Serialize` impl
+  emits the EIP-1193 `eth_signTypedData_v4` wire shape directly
+  (numeric `chainId`, required `verifyingContract`, no `salt`) and
+  the cow struct carries an `into_alloy_domain(&self) ->
+  alloy_sol_types::Eip712Domain` adapter method for the EIP-712
+  hashing seam. The cow identity and numeric newtypes carry cow-owned
+  `Tsify` derives (via the `tsify` crate at version `0.5`) for
+  wasm-bindgen so the TypeScript declaration shape does not depend
+  on alloy primitives implementing `Tsify`. The `cow_sdk_core::prelude`
+  re-export ships the cow newtypes directly; the prior `AddressExt`,
+  `Hash32Ext`, `AppDataHashExt`, `HexDataExt`, `OrderUidExt`,
+  `AmountExt`, and `SignedAmountExt` extension traits are retired
+  entirely because the cow newtypes carry their accessor surface as
+  inherent methods. The `cargo-semver-checks` lane on
+  `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`,
+  `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`,
+  `cow-sdk-subgraph`, `cow-sdk-browser-wallet`, and
+  `cow-sdk-transport-wasm` reports no breaking changes against the
+  unpublished baseline (the lane runs as drift-detection against
+  `main` until the first published release).
 - Runtime and support: `cow-sdk-core`, `cow-sdk-contracts`,
   `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-cow-shed`, and
   `cow-sdk-composable` may depend directly on `alloy-primitives`,
@@ -118,26 +178,44 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   16). `docs/audit/transport-policy-coverage-audit.md` reflects the
   `httpdate` dispatch; `docs/audit/cid-dependency-audit.md` names
   `serde_jcs` among the dependency-coverage rows.
-- Cost: the `Address` lowercase wire-format invariant
-  (`docs/performance.md` § Address Equality, `docs/deployments.md`
-  doctests) is preserved through the `repr(transparent)` newtype's
-  cow-owned `Display` and `Serialize` impls.
-  `alloy_primitives::Address::Display` defaults to EIP-55 checksum
-  casing, so a plain type alias would silently break the wire
-  contract; the `repr(transparent)` newtype keeps the bit-for-bit
-  layout of `alloy_primitives::Address` while owning the trait
-  surface that emits the canonical lowercase 0x-prefixed hex. The
-  `Amount` and `SignedAmount` decimal-string wire format is
-  preserved through `#[serde(with = "alloy_serde::displayfromstr")]`
-  on every cow DTO field of these types; per-field annotation is the
-  canonical pattern across the workspace because it keeps the wire
-  shape reviewable at the field declaration site. The `AmountExt`
-  accessor surface ships its final shape directly: `to_str_radix_10()`
-  and `to_str_radix_16()` are the radix accessors, with no parametric
-  `to_str_radix(N)` variant. The workspace surface dependency on
-  alloy widens beyond the native adapter crates; the cow-rs
-  contracts, signing, and orderbook parity fixture suites must run
-  in full as part of any alloy-major rehearsal so the alloy-core
+- Cost: every cow newtype carries a cow-owned inherent-method
+  accessor surface (`new`, `from_bytes`, `to_hex_string`, `as_slice`,
+  `as_alloy`, `into_alloy`, `zero`, `is_zero`, `byte_length`, plus
+  `to_cid` on `AppDataHash` and `normalized_key` on `Address`).
+  `Address`, `Amount`, and `SignedAmount` additionally carry a
+  cow-owned trait surface (`Display`, `Serialize`, `Deserialize`);
+  `Hash32`, `AppDataHash`, `HexData`, and `OrderUid` forward to alloy
+  defaults via `#[serde(transparent)]` and a one-line `Display`
+  delegate, saving roughly 150-200 lines of re-implementation.
+  `Amount` and `SignedAmount` additionally carry cow-owned operator
+  overloads (`Add`, `Sub`, `Mul`, `AddAssign`, etc.) that delegate to
+  the inner `U256`/`I256` so existing arithmetic callsites work
+  verbatim. The `repr(transparent)` representation keeps the layout
+  bit-for-bit identical to the underlying alloy primitive, so
+  conversion at the alloy boundary is free at runtime through
+  `From::from(...).into()` (canonical) or `.0` access (escape hatch).
+  The trait + inherent surface costs roughly 70-100 lines per newtype
+  on the cow-owned-trait family (`Address`, `Amount`, `SignedAmount`)
+  and roughly 30-40 lines per newtype on the alloy-forwarding family
+  (`Hash32`, `AppDataHash`, `HexData`, `OrderUid`) — net roughly
+  500-600 lines of newtype code in `crates/core/src/types/`. In
+  exchange for retiring the historical `String`-backed identity
+  newtype layer, the `crates/core/src/types/identity_ext.rs`
+  extension-trait surface, the cow-side `crates/core/src/types/hex.rs`
+  helpers, the cached `inner + hex` half-state on every identity
+  type, the cow-side hex helpers in
+  `crates/contracts/src/primitives.rs`, and the cow-alloy conversion
+  helpers across `crates/alloy-provider/src/conversion.rs` and
+  `crates/alloy/src/conversion.rs`. The cow→alloy `TypedDataDomain`
+  adapter at `crates/alloy-signer/src/conversion.rs` simplifies from
+  207 lines to a focused `into_alloy_domain()` helper (~30 lines)
+  rather than deleting entirely — the cow `TypedDataDomain` stays the
+  canonical in-memory shape and owns its `Serialize` impl, but the
+  EIP-712 hashing seam still needs a cow→alloy struct adapter and
+  that adapter lives in the alloy-signer crate. The workspace surface
+  dependency on alloy widens beyond the native adapter crates; the
+  cow-rs contracts, signing, and orderbook parity fixture suites must
+  run in full as part of any alloy-major rehearsal so the alloy-core
   surface is re-validated at every major-version absorption.
 
 ## Alternatives Rejected
@@ -158,15 +236,43 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   re-exports collapses the parallel implementations onto canonical
   alloy entry points and resolves the reviewability boundary at the
   type system.
-- Wrap alloy types in a second cow-named newtype layer for every
-  cow-named type: rejected. Wrapping every type reproduces the
-  maintenance cost of the original string newtypes (every accessor
-  method must be rewritten on the wrapper). The decision adopts
-  `pub type` aliases for `Hash32`, `HexData`, `OrderUid`,
-  `AppDataHash`, `Amount`, and `SignedAmount`, and a
-  `repr(transparent)` newtype for `Address` because the lowercase
-  `Display` wire contract requires a cow-owned `Display` /
-  `Serialize` impl that the type-alias path cannot provide.
+- Use `pub type` aliases for the byte-typed identity types without
+  `repr(transparent)` newtype wrappers: rejected. The all-aliases
+  shape would seamlessly interoperate with the alloy ecosystem but at
+  the cost of conflating cow domain types that share an underlying
+  byte width — `Hash32` and `AppDataHash` would both become
+  `alloy_primitives::B256` at the Rust type level, and `HexData`
+  would become `alloy_primitives::Bytes`. The cow codebase relies on
+  the Rust type system to distinguish these in function signatures
+  and DTO field types across the orderbook, trading, app-data,
+  signing, and composable crates (over 750 identity-type occurrences
+  across more than 130 files, including 22 multi-parameter
+  constructor signatures where compile-time argument-swap detection
+  is the safety guarantee). The `repr(transparent)` newtype shape
+  preserves the type distinction while keeping bit-for-bit layout
+  compatibility (zero-cost conversion at the adapter boundary). The
+  all-aliases shape would also require an extension-trait surface to
+  attach cow-specific accessor methods (orphan rules forbid inherent
+  methods on external types), introducing method-resolution
+  ambiguity between extension traits that target the same alloy
+  primitive.
+- Use `pub type` aliases for the numeric types `Amount` and
+  `SignedAmount` (with per-DTO-field
+  `#[serde(with = "alloy_serde::displayfromstr")]`): rejected. The
+  alias approach would require annotating roughly 100 DTO fields
+  across the capability crates; missing the annotation on any single
+  field would silently flip the wire form from decimal to
+  alloy-default hex. More critically, alloy's underlying
+  `ruint::Uint::FromStr` prefix-sniffs four radices (`0x`, `0o`,
+  `0b`, plus uppercase variants), so the `displayfromstr` mitigation
+  widens the input grammar for both `Amount` and `SignedAmount`
+  deserialization — relaxing cow's strict-decimal fail-closed
+  contract. Only a cow-owned `Deserialize` impl closes the gap, and
+  the cleanest place for that impl is on a cow newtype rather than
+  on a per-DTO-field serde helper. The cow newtype approach matches
+  the design language already chosen for the byte-typed identity
+  family and replaces every per-field annotation with two cow-owned
+  trait implementations.
 - Use `alloy-primitives` directly without re-export: rejected.
   Public-API stability requires the cow-named import path
   `cow_sdk_core::Address` to continue resolving. Re-export via

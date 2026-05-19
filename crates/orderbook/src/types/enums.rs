@@ -78,8 +78,9 @@ impl From<ContractsSigningScheme> for SigningScheme {
             ContractsSigningScheme::PreSign => Self::PreSign,
             // SAFETY: cow_sdk_contracts::SigningScheme and cow_sdk_orderbook::SigningScheme
             // share the four variants Eip712, EthSign, Eip1271, PreSign per ADR 0052; the
-            // variant-by-variant parity test in tests/signing_scheme_bridge.rs prevents
-            // drift, and any new variant added upstream must land here in the same patch.
+            // variant-by-variant parity test in tests/signing_scheme_bridge_contract.rs
+            // prevents drift, and any new variant added upstream must land here in the
+            // same patch.
             _ => unreachable!(
                 "cow_sdk_contracts::SigningScheme variant added without updating the orderbook bridge"
             ),

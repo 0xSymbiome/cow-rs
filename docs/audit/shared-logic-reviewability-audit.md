@@ -104,33 +104,48 @@ between variants is invisible to a reviewer who only reads one site.
   surface, and a per-variant parity test prevents drift if any
   upstream variant is added or renamed.
 - **Identity wire-form preservation**: the cow-named identity types
-  (`Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`) carry a
-  permanent wire-form regression contract in
-  `crates/core/tests/wire_format_preservation_contract.rs` that pins
-  the canonical lowercase 0x-prefixed hex emission against both the
-  cow inherent accessors and the `cow_sdk_core::prelude` extension
-  traits, so changes to the underlying primitive backing cannot
-  silently drift the wire format.
-- **String-newtype consolidation**: the historical
-  `Address(String)` / `Hash32(String)` / `AppDataHash(String)` /
-  `HexData(String)` / `OrderUid(String)` / `Amount(BigUint)` /
-  `SignedAmount(BigInt)` newtype layer is being collapsed onto
-  `alloy_primitives` re-exports per
-  [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md);
-  the newtype layer was the structural reason the workspace
-  previously had to carry `keccak256` wrappers, `parse_u256`
-  parsers, and `encode_address` helpers in every consuming crate
-  (each accessor read round-tripped through hex parsing). Typed
-  re-exports collapse these parallel implementations onto the
-  canonical alloy entry points and resolve the reviewability
-  boundary at the type system.
+  (`Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`) and the
+  cow-named numeric types (`Amount`, `SignedAmount`) resolve to
+  cow-owned `#[repr(transparent)]` newtypes over the corresponding
+  `alloy_primitives` type per
+  [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md).
+  Each newtype's `Display` and serde impls emit the canonical wire
+  form (lowercase 0x-prefixed hex for byte-typed identities;
+  strict-decimal for `Amount` and `SignedAmount`); the cow inherent
+  `to_hex_string()` returns the same form. The wire-format preservation
+  invariant is pinned by
+  `crates/core/tests/wire_format_preservation_contract.rs` and the
+  parity fixtures under `parity/fixtures/`, so changes to the
+  underlying primitive backing cannot silently drift the wire
+  format. `Address` carries a cow-owned `Display` impl because
+  `alloy_primitives::Address::Display` defaults to EIP-55 checksum
+  casing and the cow wire form is lowercase; `Amount` and
+  `SignedAmount` carry cow-owned `Serialize`/`Deserialize` impls
+  because alloy's `U256::Serialize` emits hex and alloy's
+  `ruint::Uint::FromStr` accepts four radices, both of which would
+  silently relax the cow strict-decimal-only fail-closed contract.
 
 The canonical primitive-layer migration is incremental; the
 `parse_hex` family in `crates/contracts/src/primitives.rs`, the
-`parse_u256_quantity` duplicates across the alloy-adapter crates, and
-the `cow_to_alloy_*` helpers in `crates/alloy-provider/src/conversion.rs`
-remain pending and will retire as the cow identity newtypes collapse
-to their final `pub type` and `repr(transparent)` shapes per ADR 0052.
+`parse_u256_quantity` duplicates across the alloy-adapter crates,
+the `cow_to_alloy_*` helpers in
+`crates/alloy-provider/src/conversion.rs`, and the
+`crates/core/src/types/hex.rs` cow-side hex helpers remain pending
+and will retire as the cow identity and numeric newtypes land their
+final `#[repr(transparent)]` shape per ADR 0052.
+`TypedDataDomain` remains a cow-owned struct (preserved as-is from
+the current working tree); the cow struct owns its
+`Serialize`/`Deserialize` impls and emits the canonical EIP-1193
+`eth_signTypedData_v4` wire shape directly (numeric `chainId`,
+required `verifyingContract`, no `salt`), so no bridge-side JSON
+coercion is required. The
+`crates/alloy-signer/src/conversion.rs` cow-to-alloy
+`TypedDataDomain` adapter remains in place as a thin
+`into_alloy_domain()` accessor (≈30 LoC); it simplifies but does not
+retire, because the cow struct deliberately owns the wire shape and
+is intentionally independent of the alloy `Eip712Domain` field
+layout (which is `Option<_>` for every field and uses `U256` for
+`chainId`).
 
 ## Evidence
 

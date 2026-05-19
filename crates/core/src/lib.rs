@@ -11,12 +11,9 @@ pub mod cancellation;
 pub mod config;
 /// Common validation and configuration errors used by the foundational crates.
 pub mod errors;
-/// Convenient prelude that brings the identity extension traits into scope.
-///
-/// Callsites bringing the prelude into scope keep their
-/// `Address::new(value)` / `Hash32Ext::as_str(&value)` style accessors
-/// stable across the upcoming alloy-primitive collapse for the cow
-/// identity newtypes (Stage A of ADR 0052).
+/// Convenient prelude that brings the identity extension traits into
+/// scope so callsites reach the canonical accessor surface established
+/// by ADR 0052 for the alloy-backed cow identity types.
 pub mod prelude;
 /// Typed redaction wrapper for secret-bearing configuration fields.
 pub mod redaction;
