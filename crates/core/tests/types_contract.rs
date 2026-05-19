@@ -47,9 +47,14 @@ fn shared_type_contract_matches_core_fixture() {
         "byte_length must match the fixed EVM address width"
     );
     assert_eq!(
-        checksummed.as_bytes().len(),
+        checksummed.to_hex_string().len(),
         42,
-        "as_bytes exposes the stored hex string as a byte slice"
+        "to_hex_string emits the canonical lowercase 0x-prefixed 42-character form"
+    );
+    assert_eq!(
+        checksummed.as_slice().len(),
+        20,
+        "as_slice exposes the raw 20-byte representation"
     );
 
     let token_case = fixture["cases"]
@@ -152,7 +157,7 @@ fn from_bytes_constructors_match_string_based_equivalents_byte_for_byte() {
         "Address::from_bytes must match the case-insensitive Address::new equivalent"
     );
     assert_eq!(
-        from_bytes_address.as_str(),
+        from_bytes_address.to_hex_string(),
         "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
         "Address::from_bytes must produce the canonical lowercase hex form"
     );
@@ -355,12 +360,12 @@ fn typed_primitives_normalize_and_fail_closed() {
     assert_eq!(SignedAmount::new("0").unwrap().as_str(), "0");
     assert!(SignedAmount::new("0x5").is_err());
 
-    assert_eq!(HexData::new("0xabc").unwrap().as_str(), "0x0abc");
-    assert_eq!(HexData::empty().as_str(), "0x");
+    assert_eq!(HexData::new("0xabc").unwrap().to_hex_string(), "0x0abc");
+    assert_eq!(HexData::empty().to_hex_string(), "0x");
     assert!(HexData::new("1234").is_err());
 
     let hash = Hash32::new(format!("0x{}", "ab".repeat(32))).unwrap();
-    assert_eq!(hash.as_str().len(), 66);
+    assert_eq!(hash.to_hex_string().len(), 66);
     assert!(Hash32::new("0x1234").is_err());
 }
 

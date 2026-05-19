@@ -43,15 +43,15 @@ where
     P::Error: std::fmt::Display,
 {
     let spender = vault_relayer_override
-        .cloned()
+        .copied()
         .unwrap_or_else(|| resolve_vault_relayer(chain_id, env));
-    let args_json =
-        serde_json::to_string(&(owner.as_str(), spender.as_str())).map_err(|error| {
+    let args_json = serde_json::to_string(&(owner.to_hex_string(), spender.to_hex_string()))
+        .map_err(|error| {
             TradingError::Contracts(cow_sdk_contracts::ContractsError::Serialization(error))
         })?;
     let raw = provider
         .read_contract(&ContractCall::new(
-            token_address.clone(),
+            *token_address,
             "allowance".to_owned(),
             ERC20_ALLOWANCE_ABI_JSON.to_owned(),
             args_json,
@@ -83,15 +83,15 @@ where
     P::Error: std::fmt::Display,
 {
     let spender = vault_relayer_override
-        .cloned()
+        .copied()
         .unwrap_or_else(|| resolve_vault_relayer(chain_id, env));
-    let args_json =
-        serde_json::to_string(&(owner.as_str(), spender.as_str())).map_err(|error| {
+    let args_json = serde_json::to_string(&(owner.to_hex_string(), spender.to_hex_string()))
+        .map_err(|error| {
             TradingError::Contracts(cow_sdk_contracts::ContractsError::Serialization(error))
         })?;
     let raw = provider
         .read_contract(&ContractCall::new(
-            token_address.clone(),
+            *token_address,
             "allowance".to_owned(),
             ERC20_ALLOWANCE_ABI_JSON.to_owned(),
             args_json,
@@ -120,10 +120,9 @@ pub fn approval_transaction(
 ) -> Result<TransactionRequest, TradingError> {
     let spender = params
         .vault_relayer_override
-        .clone()
         .unwrap_or_else(|| resolve_vault_relayer(chain_id, env));
     Ok(TransactionRequest::new(
-        Some(params.token_address.clone()),
+        Some(params.token_address),
         Some(cow_sdk_core::HexData::new(encode_approve_call(
             &spender,
             &params.amount,
@@ -188,7 +187,7 @@ fn encode_approve_call(spender: &Address, amount: &Amount) -> Result<String, Tra
     let selector = cow_sdk_contracts::function_magic_value(ERC20_APPROVE_SIGNATURE);
     let mut encoded = Vec::new();
     encoded.extend_from_slice(&decode_hex_field(&selector)?);
-    encoded.extend_from_slice(&encode_address_word(spender)?);
+    encoded.extend_from_slice(&encode_address_word(spender));
     encoded.extend_from_slice(&encode_uint_word(amount)?);
     Ok(format!("0x{}", hex::encode(encoded)))
 }
@@ -206,17 +205,11 @@ fn decode_hex_field(value: &str) -> Result<Vec<u8>, TradingError> {
     })
 }
 
-fn encode_address_word(address: &Address) -> Result<[u8; 32], TradingError> {
-    let bytes = decode_hex_field(address.as_str())?;
-    if bytes.len() != 20 {
-        return Err(TradingError::InvalidNumeric {
-            field: "address",
-            value: address.as_str().to_owned().into(),
-        });
-    }
+fn encode_address_word(address: &Address) -> [u8; 32] {
+    let bytes = address.into_alloy().0.0;
     let mut out = [0u8; 32];
     out[12..].copy_from_slice(&bytes);
-    Ok(out)
+    out
 }
 
 fn encode_uint_word(value: &Amount) -> Result<[u8; 32], TradingError> {

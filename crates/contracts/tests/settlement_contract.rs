@@ -288,10 +288,7 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
     ];
 
     encoder
-        .encode_order_refunds(&OrderRefunds::new(
-            vec![uids[0].clone()],
-            vec![uids[1].clone()],
-        ))
+        .encode_order_refunds(&OrderRefunds::new(vec![uids[0]], vec![uids[1]]))
         .unwrap();
 
     let post = encoder.interactions().unwrap()[InteractionStage::Post as usize].clone();
@@ -356,11 +353,11 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
     )
     .unwrap();
     assert_eq!(
-        decoded.sell_token.as_str(),
+        decoded.sell_token.to_hex_string(),
         "0x1111111111111111111111111111111111111111"
     );
     assert_eq!(
-        decoded.buy_token.as_str(),
+        decoded.buy_token.to_hex_string(),
         "0x2222222222222222222222222222222222222222"
     );
     assert!(decode_order(&trade, &[]).is_err());
@@ -389,7 +386,7 @@ fn order_refund_call_data_matches_the_canonical_abi_byte_layout() {
 
     let mut encoder = SettlementEncoder::new(sample_domain());
     encoder
-        .encode_order_refunds(&OrderRefunds::new(vec![uid.clone()], vec![uid.clone()]))
+        .encode_order_refunds(&OrderRefunds::new(vec![uid], vec![uid]))
         .unwrap();
 
     let post = encoder.interactions().unwrap()[InteractionStage::Post as usize].clone();
@@ -483,15 +480,21 @@ fn settlement_encoder_stage_order_pre_intra_post() {
 
     let grouped = encoder.interactions().unwrap();
     assert_eq!(
-        grouped[InteractionStage::Pre as usize][0].target.as_str(),
+        grouped[InteractionStage::Pre as usize][0]
+            .target
+            .to_hex_string(),
         "0x1111111111111111111111111111111111111111"
     );
     assert_eq!(
-        grouped[InteractionStage::Intra as usize][0].target.as_str(),
+        grouped[InteractionStage::Intra as usize][0]
+            .target
+            .to_hex_string(),
         "0x2222222222222222222222222222222222222222"
     );
     assert_eq!(
-        grouped[InteractionStage::Post as usize][0].target.as_str(),
+        grouped[InteractionStage::Post as usize][0]
+            .target
+            .to_hex_string(),
         "0x3333333333333333333333333333333333333333"
     );
 }

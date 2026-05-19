@@ -400,7 +400,6 @@ fn assert_trade_quote_id_matches_parent_quote_response(id: &str, expected: &Valu
         &quote_response.quote,
         quote_response
             .from
-            .clone()
             .expect("quote response fixture includes from"),
         None,
         SigningScheme::Eip712,
@@ -423,7 +422,7 @@ fn assert_trade_quote_id_matches_parent_quote_response(id: &str, expected: &Valu
     ))
     .expect("trade fixture must deserialize");
     assert_eq!(
-        trade.order_uid.as_str(),
+        trade.order_uid.to_hex_string(),
         expected_trade_uid,
         "case {id}: trade history linkage remains keyed by order UID",
     );
@@ -673,7 +672,7 @@ fn assert_ethflow_transform(id: &str, expected: &Value) {
         serde_json::from_value(payload).expect("ethflow order must decode");
     let transformed = cow_sdk_orderbook::transform_order(order).expect("transform must succeed");
     assert_eq!(
-        transformed.owner.as_str(),
+        transformed.owner.to_hex_string(),
         "0x8888888888888888888888888888888888888888",
         "case {id}: EthFlow owner must route through onchainUser",
     );
@@ -682,7 +681,7 @@ fn assert_ethflow_transform(id: &str, expected: &Value) {
         "case {id}: EthFlow validTo must route through ethflowData.userValidTo",
     );
     assert_eq!(
-        transformed.sell_token.as_str().to_lowercase(),
+        transformed.sell_token.to_hex_string().to_lowercase(),
         EVM_NATIVE_CURRENCY_ADDRESS.to_lowercase(),
         "case {id}: EthFlow sellToken must be rewritten to the native ETH address",
     );

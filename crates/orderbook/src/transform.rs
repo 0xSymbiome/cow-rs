@@ -21,7 +21,7 @@ pub fn transform_order(mut order: Order) -> Result<Order, OrderbookError> {
     if let Some(ethflow_data) = &order.ethflow_data {
         order.valid_to = ethflow_data.user_valid_to;
         if let Some(onchain_user) = &order.onchain_user {
-            order.owner = onchain_user.clone();
+            order.owner = *onchain_user;
         }
         order.sell_token = native_token_address();
     }
@@ -59,10 +59,11 @@ pub fn calculate_total_fee(executed_fee: Option<&str>) -> Result<Amount, Orderbo
     })
 }
 
-/// Returns the order UID as a string slice for transport-layer interpolation.
+/// Returns the canonical lowercase hex form of an order UID for
+/// transport-layer interpolation.
 #[must_use]
-pub fn ensure_order_uid(uid: &OrderUid) -> &str {
-    uid.as_str()
+pub fn ensure_order_uid(uid: &OrderUid) -> String {
+    uid.to_hex_string()
 }
 
 fn validate_decimal(value: &str) -> Result<(), OrderbookError> {

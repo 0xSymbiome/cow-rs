@@ -92,7 +92,7 @@ impl Registry {
         env: impl Into<DeploymentEnv>,
     ) -> Option<Address> {
         self.entry(contract_id, chain_id, env)
-            .map(|entry| entry.address.clone())
+            .map(|entry| entry.address)
     }
 
     /// Returns the verification status for the supplied identifier tuple.

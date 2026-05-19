@@ -53,7 +53,7 @@ impl AsyncSigner for AlloyClientSignerHandle {
     type Error = AlloyClientError;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
-        Ok(self.inner.signer_address.clone())
+        Ok(self.inner.signer_address)
     }
 
     async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {

@@ -1,11 +1,8 @@
 //! Strongly typed user-domain values used across the SDK surface.
 
-pub use self::{amount::*, hex::*, identity::*, order::*, quote::*, validity::*};
-
-pub mod identity_ext;
+pub use self::{amount::*, identity::*, order::*, quote::*, validity::*};
 
 mod amount;
-mod hex;
 mod identity;
 mod order;
 mod quote;
@@ -31,9 +28,9 @@ mod tests {
         let fee_amount = Amount::new("5").unwrap();
 
         let from_builder = UnsignedOrder::new(
-            sell_token.clone(),
-            buy_token.clone(),
-            receiver.clone(),
+            sell_token,
+            buy_token,
+            receiver,
             sell_amount.clone(),
             buy_amount.clone(),
             valid_to,
@@ -44,7 +41,7 @@ mod tests {
             SellTokenSource::Erc20,
             BuyTokenDestination::Erc20,
         )
-        .with_receiver(receiver.clone())
+        .with_receiver(receiver)
         .with_app_data(app_data.clone())
         .with_fee_amount(fee_amount.clone())
         .with_partially_fillable(true)

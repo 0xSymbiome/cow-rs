@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use alloy_primitives::Bytes as AlloyBytes;
 use alloy_sol_types::SolCall;
 use cow_sdk_contracts::eth_flow::{
@@ -87,7 +85,7 @@ where
     let settlement = resolve_settlement_address(chain_id, options);
     let mut tx = TransactionRequest::new(
         Some(settlement),
-        Some(HexData::new(encode_set_pre_signature(order_uid, true)?)?),
+        Some(HexData::new(encode_set_pre_signature(order_uid, true))?),
         Some(Amount::zero()),
         None,
     );
@@ -132,7 +130,7 @@ where
     let settlement = resolve_settlement_address(chain_id, options);
     let mut tx = TransactionRequest::new(
         Some(settlement),
-        Some(HexData::new(encode_set_pre_signature(order_uid, true)?)?),
+        Some(HexData::new(encode_set_pre_signature(order_uid, true))?),
         Some(Amount::zero()),
         None,
     );
@@ -219,7 +217,7 @@ where
             operation: "get_address",
             message: error.to_string().into(),
         })?;
-    let owner = from.clone();
+    let owner = from;
     let mut adjusted = crate::adjust_ethflow_limit_parameters(chain_id, params);
     if adjusted.slippage_bps.is_none() {
         adjusted.slippage_bps = Some(crate::default_slippage_bps(chain_id, true));
@@ -325,7 +323,7 @@ where
     } else {
         TransactionRequest::new(
             Some(resolve_settlement_address(chain_id, options)),
-            Some(HexData::new(encode_invalidate_order_uid(&order.uid)?)?),
+            Some(HexData::new(encode_invalidate_order_uid(&order.uid))?),
             Some(Amount::zero()),
             None,
         )
@@ -372,7 +370,7 @@ where
     } else {
         TransactionRequest::new(
             Some(resolve_settlement_address(chain_id, options)),
-            Some(HexData::new(encode_invalidate_order_uid(&order.uid)?)?),
+            Some(HexData::new(encode_invalidate_order_uid(&order.uid))?),
             Some(Amount::zero()),
             None,
         )
@@ -504,7 +502,7 @@ fn resolve_settlement_address(
 ) -> Address {
     options
         .and_then(|opts| opts.settlement_contract_override.as_ref())
-        .and_then(|override_map| override_map.get(&u64::from(chain_id)).cloned())
+        .and_then(|override_map| override_map.get(&u64::from(chain_id)).copied())
         .unwrap_or_else(|| {
             let env = options
                 .and_then(|opts| opts.env)
@@ -530,7 +528,7 @@ fn resolve_eth_flow_address(
 ) -> Address {
     options
         .and_then(|opts| opts.eth_flow_contract_override.as_ref())
-        .and_then(|override_map| override_map.get(&u64::from(chain_id)).cloned())
+        .and_then(|override_map| override_map.get(&u64::from(chain_id)).copied())
         .unwrap_or_else(|| {
             let env = options
                 .and_then(|opts| opts.env)
@@ -556,29 +554,23 @@ fn default_gas_limit() -> Amount {
     Amount::new(GAS_LIMIT_DEFAULT.to_string()).expect("static gas limit literal must remain valid")
 }
 
-fn encode_set_pre_signature(
-    order_uid: &cow_sdk_core::OrderUid,
-    enabled: bool,
-) -> Result<String, TradingError> {
+fn encode_set_pre_signature(order_uid: &cow_sdk_core::OrderUid, enabled: bool) -> String {
     let call = IGPv2Settlement::setPreSignatureCall {
-        orderUid: order_uid_bytes(order_uid)?,
+        orderUid: order_uid_bytes(order_uid),
         signed: enabled,
     };
-    Ok(format!("0x{}", hex::encode(call.abi_encode())))
+    format!("0x{}", hex::encode(call.abi_encode()))
 }
 
-fn encode_invalidate_order_uid(order_uid: &cow_sdk_core::OrderUid) -> Result<String, TradingError> {
+fn encode_invalidate_order_uid(order_uid: &cow_sdk_core::OrderUid) -> String {
     let call = IGPv2Settlement::invalidateOrderCall {
-        orderUid: order_uid_bytes(order_uid)?,
+        orderUid: order_uid_bytes(order_uid),
     };
-    Ok(format!("0x{}", hex::encode(call.abi_encode())))
+    format!("0x{}", hex::encode(call.abi_encode()))
 }
 
-fn order_uid_bytes(order_uid: &cow_sdk_core::OrderUid) -> Result<AlloyBytes, TradingError> {
-    AlloyBytes::from_str(order_uid.as_str()).map_err(|_| TradingError::InvalidNumeric {
-        field: "orderUid",
-        value: order_uid.as_str().to_owned().into(),
-    })
+fn order_uid_bytes(order_uid: &cow_sdk_core::OrderUid) -> AlloyBytes {
+    AlloyBytes::from(order_uid.as_slice().to_vec())
 }
 
 fn encode_ethflow_create_order(
@@ -591,12 +583,9 @@ fn encode_ethflow_create_order(
 }
 
 fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError> {
-    let receiver = order
-        .receiver
-        .clone()
-        .unwrap_or_else(|| order.owner.clone());
+    let receiver = order.receiver.unwrap_or(order.owner);
     let payload = EthFlowOrderData::new(
-        order.buy_token.clone(),
+        order.buy_token,
         receiver,
         order.sell_amount.clone(),
         order.buy_amount.clone(),

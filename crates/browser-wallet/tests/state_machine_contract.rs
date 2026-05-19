@@ -34,7 +34,7 @@ async fn wallet_session_state_machine_keeps_reset_and_refresh_boundaries_explici
     assert_eq!(connected.accounts.len(), 1);
     assert_eq!(
         connected.selected_account,
-        connected.accounts.first().cloned()
+        connected.accounts.first().copied()
     );
     assert_eq!(
         connected.chain_id,
@@ -56,7 +56,7 @@ async fn wallet_session_state_machine_keeps_reset_and_refresh_boundaries_explici
     assert_eq!(restored.accounts.len(), 1);
     assert_eq!(
         restored.selected_account,
-        restored.accounts.first().cloned()
+        restored.accounts.first().copied()
     );
     assert_eq!(
         restored.chain_id,
@@ -74,13 +74,13 @@ async fn wallet_event_state_machine_tracks_disconnect_and_explicit_reconnect() {
         .connect()
         .await
         .expect("initial connect should succeed deterministically");
-    transport.emit_accounts_changed(vec![alternate.clone()]);
+    transport.emit_accounts_changed(vec![alternate]);
     transport.emit_chain_changed(u64::from(SupportedChainId::Mainnet));
 
     let updated = wallet.session();
     assert!(updated.connected);
-    assert_eq!(updated.accounts, vec![alternate.clone()]);
-    assert_eq!(updated.selected_account, Some(alternate.clone()));
+    assert_eq!(updated.accounts, vec![alternate]);
+    assert_eq!(updated.selected_account, Some(alternate));
     assert_eq!(updated.chain_id, Some(u64::from(SupportedChainId::Mainnet)));
 
     transport.emit_disconnected(Some("provider disconnected".to_owned()));

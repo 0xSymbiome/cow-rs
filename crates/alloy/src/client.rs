@@ -11,12 +11,12 @@ use cow_sdk_core::{
     HexData, TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
+use alloy_primitives::U256;
+
 use crate::{
     builder::AlloyClientBuilder,
     conversion::{
-        alloy_to_cow_block_info, alloy_to_cow_receipt, cow_block_tag_to_alloy,
-        cow_request_to_alloy, cow_to_alloy_address, cow_to_alloy_hash, hex_data_from_bytes,
-        parse_u256_quantity,
+        alloy_to_cow_block_info, alloy_to_cow_receipt, cow_block_tag_to_alloy, cow_request_to_alloy,
     },
     error::AlloyClientError,
     handle::AlloyClientSignerHandle,
@@ -72,7 +72,7 @@ impl AlloyClient {
     /// Returns the signer address cached at construction time.
     #[must_use]
     pub fn signer_address(&self) -> Address {
-        self.inner.signer_address.clone()
+        self.inner.signer_address
     }
 
     /// Returns the chain id bound to the signer at construction time.
@@ -123,17 +123,16 @@ impl AsyncProvider for AlloyClient {
     }
 
     async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
-        let address = cow_to_alloy_address(address)?;
         let bytes = self
             .inner
             .provider
-            .get_code_at(address)
+            .get_code_at(*address.as_alloy())
             .await
             .map_err(AlloyClientError::from_alloy_transport)?;
         if bytes.is_empty() {
             Ok(None)
         } else {
-            Ok(Some(hex_data_from_bytes(bytes.as_ref())?))
+            Ok(Some(HexData::from(bytes)))
         }
     }
 
@@ -141,24 +140,32 @@ impl AsyncProvider for AlloyClient {
         &self,
         transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
-        let hash = cow_to_alloy_hash(transaction_hash)?;
-        self.inner
+        let receipt = self
+            .inner
             .provider
-            .get_transaction_receipt(hash)
+            .get_transaction_receipt(*transaction_hash.as_alloy())
             .await
             .map_err(AlloyClientError::from_alloy_transport)?
-            .map(|receipt| alloy_to_cow_receipt(&receipt).map_err(AlloyClientError::from))
-            .transpose()
+            .map(|receipt| alloy_to_cow_receipt(&receipt));
+        Ok(receipt)
     }
 
     async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
-        let address = cow_to_alloy_address(address)?;
-        let slot =
-            parse_u256_quantity(slot, "storage slot").map_err(AlloyClientError::Validation)?;
+        let slot = slot
+            .strip_prefix("0x")
+            .map_or_else(
+                || U256::from_str_radix(slot, 10),
+                |hex| U256::from_str_radix(hex, 16),
+            )
+            .map_err(|error| {
+                AlloyClientError::Validation(format!(
+                    "storage slot `{slot}` is not a valid U256: {error}"
+                ))
+            })?;
         let value = self
             .inner
             .provider
-            .get_storage_at(address, slot)
+            .get_storage_at(*address.as_alloy(), slot)
             .await
             .map_err(AlloyClientError::from_alloy_transport)?;
         HexData::new(format!("0x{value:064x}"))
@@ -173,7 +180,7 @@ impl AsyncProvider for AlloyClient {
             .call(tx)
             .await
             .map_err(AlloyClientError::from_alloy_transport)?;
-        hex_data_from_bytes(bytes.as_ref())
+        Ok(HexData::from(bytes))
     }
 
     async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
@@ -191,7 +198,7 @@ impl AsyncProvider for AlloyClient {
             .ok_or_else(|| {
                 AlloyClientError::Validation(format!("block `{block_tag}` not found on remote"))
             })?;
-        Ok(alloy_to_cow_block_info(&block)?)
+        Ok(alloy_to_cow_block_info(&block))
     }
 
     async fn get_contract(
@@ -199,7 +206,7 @@ impl AsyncProvider for AlloyClient {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 

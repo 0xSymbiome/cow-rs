@@ -1,6 +1,6 @@
 use alloy_dyn_abi::{DynSolType, DynSolValue, FunctionExt, JsonAbiExt};
 use alloy_json_abi::{JsonAbi, Param};
-use alloy_primitives::{Address as AlloyAddress, B256, I256, U256};
+use alloy_primitives::{B256, I256, U256};
 use num_bigint::BigUint;
 use serde_json::{Map, Value, json};
 
@@ -23,7 +23,10 @@ impl AsyncProvider for Eip1193Provider {
 
     async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
         let value = self
-            .request("eth_getCode", Some(json!([address.as_str(), "latest"])))
+            .request(
+                "eth_getCode",
+                Some(json!([address.to_hex_string(), "latest"])),
+            )
             .await?;
         let code = expect_string(&value, "eth_getCode")?;
         if code == "0x" || code == "0x0" {
@@ -40,7 +43,7 @@ impl AsyncProvider for Eip1193Provider {
         let value = self
             .request(
                 "eth_getTransactionReceipt",
-                Some(json!([transaction_hash.as_str()])),
+                Some(json!([transaction_hash.to_hex_string()])),
             )
             .await?;
         if value.is_null() {
@@ -53,7 +56,7 @@ impl AsyncProvider for Eip1193Provider {
         let value = self
             .request(
                 "eth_getStorageAt",
-                Some(json!([address.as_str(), slot, "latest"])),
+                Some(json!([address.to_hex_string(), slot, "latest"])),
             )
             .await?;
         HexData::new(expect_string(&value, "eth_getStorageAt")?).map_err(Into::into)
@@ -85,7 +88,7 @@ impl AsyncProvider for Eip1193Provider {
             .request(
                 "eth_call",
                 Some(json!([{
-                    "to": request.address.as_str(),
+                    "to": request.address.to_hex_string(),
                     "data": format!("0x{}", hex::encode(input)),
                 }, "latest"])),
             )
@@ -130,7 +133,7 @@ impl AsyncProvider for Eip1193Provider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 
@@ -383,13 +386,13 @@ pub(crate) fn transaction_to_rpc(
 ) -> Result<Value, BrowserWalletError> {
     let mut object = Map::new();
     if let Some(from) = from {
-        object.insert("from".to_owned(), Value::String(from.as_str().to_owned()));
+        object.insert("from".to_owned(), Value::String(from.to_hex_string()));
     }
     if let Some(to) = &tx.to {
-        object.insert("to".to_owned(), Value::String(to.as_str().to_owned()));
+        object.insert("to".to_owned(), Value::String(to.to_hex_string()));
     }
     if let Some(data) = &tx.data {
-        object.insert("data".to_owned(), Value::String(data.as_str().to_owned()));
+        object.insert("data".to_owned(), Value::String(data.to_hex_string()));
     }
     if let Some(value) = &tx.value {
         object.insert(
@@ -510,8 +513,7 @@ fn json_to_dyn_value(
                 BrowserWalletError::malformed_response(method, "address must be a string")
             })?;
             let address = Address::new(address)?;
-            let bytes = decode_hex(address.as_str(), method)?;
-            Ok(DynSolValue::Address(AlloyAddress::from_slice(&bytes)))
+            Ok(DynSolValue::Address(address.into_alloy()))
         }
         DynSolType::Uint(bits) => Ok(DynSolValue::Uint(parse_u256(value, method)?, *bits)),
         DynSolType::Int(bits) => Ok(DynSolValue::Int(parse_i256(value, method)?, *bits)),
@@ -754,7 +756,7 @@ mod tests {
         let from = Address::new("0x4444444444444444444444444444444444444444").unwrap();
         let to = Address::new("0x1111111111111111111111111111111111111111").unwrap();
         let tx = TransactionRequest::new(
-            Some(to.clone()),
+            Some(to),
             Some(HexData::new("0x1234").unwrap()),
             Some(Amount::new("21").unwrap()),
             Some(Amount::new("21000").unwrap()),
@@ -763,8 +765,8 @@ mod tests {
         assert_eq!(
             transaction_to_rpc(&tx, Some(&from)).unwrap(),
             json!({
-                "from": from.as_str(),
-                "to": to.as_str(),
+                "from": from.to_hex_string(),
+                "to": to.to_hex_string(),
                 "data": "0x1234",
                 "value": "0x15",
                 "gas": "0x5208",
@@ -779,7 +781,7 @@ mod tests {
         assert_eq!(
             transaction_to_rpc(&TransactionRequest::default(), Some(&from)).unwrap(),
             json!({
-                "from": from.as_str(),
+                "from": from.to_hex_string(),
             })
         );
     }

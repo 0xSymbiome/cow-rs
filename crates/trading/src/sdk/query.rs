@@ -19,7 +19,7 @@ impl TradingSdk {
                 chain = ?params.chain_id,
                 env = ?params.env,
                 endpoint = "trading.get_order",
-                order_uid = params.order_uid.as_str(),
+                order_uid = %params.order_uid,
             ),
         ),
     )]

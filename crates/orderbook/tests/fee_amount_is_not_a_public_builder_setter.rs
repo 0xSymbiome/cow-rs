@@ -24,8 +24,8 @@ fn order_creation_wire_emits_fee_amount_zero_exactly_once() {
         .expect("literal address must parse");
 
     let order = OrderCreation::new(
-        address.clone(),
-        address.clone(),
+        address,
+        address,
         amount("1000"),
         amount("900"),
         1_700_000_000,
@@ -59,8 +59,8 @@ fn order_creation_from_quote_zeroes_fee_amount_on_submission() {
             .expect("literal app-data hash must parse");
 
     let quote = QuoteData::new(
-        address.clone(),
-        address.clone(),
+        address,
+        address,
         amount("1000"),
         amount("900"),
         1_700_000_000,

@@ -1,22 +1,16 @@
-//! Convenience prelude bringing the identity extension traits into
+//! Convenience prelude bringing the canonical cow identity newtypes into
 //! scope.
 //!
-//! The traits in this prelude
-//! ([`AddressExt`](crate::types::identity_ext::AddressExt),
-//! [`Hash32Ext`](crate::types::identity_ext::Hash32Ext),
-//! [`HexDataExt`](crate::types::identity_ext::HexDataExt),
-//! [`OrderUidExt`](crate::types::identity_ext::OrderUidExt)) expose the
-//! cow-side identity accessors (`new`, `from_bytes`, `as_str`, etc.) on
-//! the canonical [`alloy_primitives`] types. The prelude is the
-//! forward-compatible foundation for the staged collapse of the cow
-//! identity newtypes onto `alloy_primitives` per ADR 0052: once a
-//! future stage retires the cow newtypes in favour of alloy type
-//! aliases, callsites that already brought the prelude into scope
-//! continue to resolve `Address::new(value)` style constructors against
-//! the trait methods exposed here.
+//! The prelude re-exports the four byte-typed cow newtypes
+//! ([`Address`], [`Hash32`], [`HexData`], [`OrderUid`]). Each is a
+//! strict `#[repr(transparent)]` wrapper around the corresponding
+//! `alloy_primitives` type per ADR 0052,
+//! carrying the canonical accessor surface (`new`, `from_bytes`,
+//! `to_hex_string`, `write_into`, `as_slice`, `as_alloy`, `into_alloy`,
+//! `zero`, `is_zero`, `byte_length`) as inherent methods on the newtype.
 //!
-//! Today the cow newtypes still keep their own inherent methods; the
-//! prelude is therefore additive and does not change any existing
-//! resolution path.
+//! `AppDataHash`, `Amount`, and `SignedAmount` will join this re-export
+//! hub when their strict-newtype migration lands in a later cascade
+//! boundary.
 
-pub use crate::types::identity_ext::{AddressExt, Hash32Ext, HexDataExt, OrderUidExt};
+pub use crate::types::{Address, Hash32, HexData, OrderUid};

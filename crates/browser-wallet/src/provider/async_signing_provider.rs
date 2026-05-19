@@ -26,7 +26,10 @@ impl AsyncSigningProvider for Eip1193Provider {
             {
                 return Err(BrowserWalletError::malformed_response(
                     "create_signer",
-                    format!("wallet does not expose account {}", expected.as_str()),
+                    format!(
+                        "wallet does not expose account {}",
+                        expected.to_hex_string()
+                    ),
                 ));
             }
         }

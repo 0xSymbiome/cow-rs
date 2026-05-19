@@ -152,7 +152,7 @@ fn order_contract_matches_fixture_and_normalization_rules() {
     let order = sample_order();
     let normalized = normalize_order(&order).unwrap();
     assert_eq!(
-        normalized.receiver.as_str(),
+        normalized.receiver.to_hex_string(),
         "0x0000000000000000000000000000000000000000"
     );
     assert_eq!(normalized.sell_token_balance, SellTokenSource::Erc20);
@@ -169,7 +169,7 @@ fn order_hash_and_uid_helpers_are_consistent() {
     let domain = sample_domain();
 
     let order_hash = hash_order(&domain, &order).unwrap();
-    assert_eq!(order_hash.as_str().len(), 66);
+    assert_eq!(order_hash.to_hex_string().len(), 66);
     assert_eq!(hash_order(&domain, &order).unwrap(), order_hash);
 
     let owner = Address::new("0x1111111111111111111111111111111111111111").unwrap();
@@ -177,7 +177,7 @@ fn order_hash_and_uid_helpers_are_consistent() {
 
     let uid_case = fixture_case("contracts-order-uid-length");
     assert_eq!(
-        uid.as_str().trim_start_matches("0x").len(),
+        uid.to_hex_string().trim_start_matches("0x").len(),
         usize::try_from(uid_case["expected"]["hex_chars"].as_u64().unwrap())
             .expect("fixture uid length must fit in usize")
     );
@@ -187,22 +187,15 @@ fn order_hash_and_uid_helpers_are_consistent() {
     assert_eq!(extracted.valid_to, order.valid_to);
     assert_eq!(extracted.order_digest, order_hash);
 
-    let roundtrip = pack_order_uid_params(&OrderUidParams::new(
-        order_hash.clone(),
-        owner.clone(),
-        order.valid_to,
-    ))
-    .unwrap();
+    let roundtrip =
+        pack_order_uid_params(&OrderUidParams::new(order_hash, owner, order.valid_to)).unwrap();
     assert_eq!(roundtrip, uid);
 
     let cancellation = hash_order_cancellation(&domain, &uid).unwrap();
-    let batch = hash_order_cancellations(
-        &domain,
-        &OrderCancellations::new(vec![uid.clone(), roundtrip.clone()]),
-    )
-    .unwrap();
-    assert_eq!(cancellation.as_str().len(), 66);
-    assert_eq!(batch.as_str().len(), 66);
+    let batch =
+        hash_order_cancellations(&domain, &OrderCancellations::new(vec![uid, roundtrip])).unwrap();
+    assert_eq!(cancellation.to_hex_string().len(), 66);
+    assert_eq!(batch.to_hex_string().len(), 66);
     assert_ne!(cancellation, batch);
 }
 
@@ -228,7 +221,7 @@ fn unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit(
 
     assert_eq!(contract.sell_token, unsigned.sell_token);
     assert_eq!(contract.buy_token, unsigned.buy_token);
-    assert_eq!(contract.receiver, Some(unsigned.receiver.clone()));
+    assert_eq!(contract.receiver, Some(unsigned.receiver));
     assert_eq!(contract.sell_amount, unsigned.sell_amount);
     assert_eq!(contract.buy_amount, unsigned.buy_amount);
     assert_eq!(contract.valid_to, unsigned.valid_to);
@@ -272,16 +265,16 @@ fn canonical_unsigned_order_path_matches_upstream_signing_fixture_digest_and_uid
     let owner = Address::new(UPSTREAM_SEPOLIA_ORDER_OWNER).unwrap();
 
     let digest = hash_order(&domain, &order).unwrap();
-    assert_eq!(digest.as_str(), UPSTREAM_SEPOLIA_ORDER_DIGEST);
+    assert_eq!(digest.to_hex_string(), UPSTREAM_SEPOLIA_ORDER_DIGEST);
 
     let uid = compute_order_uid(&domain, &order, &owner).unwrap();
-    assert_eq!(uid.as_str(), UPSTREAM_SEPOLIA_ORDER_UID);
+    assert_eq!(uid.to_hex_string(), UPSTREAM_SEPOLIA_ORDER_UID);
 
     let unpacked = extract_order_uid_params(&uid).unwrap();
     assert_eq!(unpacked.owner, owner);
     assert_eq!(unpacked.valid_to, unsigned.valid_to);
     assert_eq!(
-        unpacked.order_digest.as_str(),
+        unpacked.order_digest.to_hex_string(),
         UPSTREAM_SEPOLIA_ORDER_DIGEST
     );
 }

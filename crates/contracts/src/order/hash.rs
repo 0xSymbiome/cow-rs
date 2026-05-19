@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
-use alloy_primitives::{Address as AlloyAddress, B256, Bytes as AlloyBytes, U256};
+use alloy_primitives::{B256, Bytes as AlloyBytes, U256};
 use alloy_sol_types::{Eip712Domain, SolStruct};
 use cow_sdk_core::{Address, Hash32, OrderDigest, OrderUid, TypedDataDomain};
 
 use super::sol_cancellations::OrderCancellations as SolOrderCancellations;
 use super::sol_types::Order as SolOrder;
-use super::{NormalizedOrder, ORDER_UID_LENGTH, Order, OrderCancellations};
+use super::{NormalizedOrder, Order, OrderCancellations};
 use crate::ContractsError;
 use crate::primitives::{buy_balance_name, order_kind_name, sell_balance_name, zero_address};
 
@@ -29,9 +29,9 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
     }
 
     Ok(NormalizedOrder::new(
-        order.sell_token.clone(),
-        order.buy_token.clone(),
-        order.receiver.clone().unwrap_or_else(zero_address),
+        order.sell_token,
+        order.buy_token,
+        order.receiver.unwrap_or_else(zero_address),
         order.sell_amount.clone(),
         order.buy_amount.clone(),
         order.valid_to,
@@ -60,7 +60,7 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
 pub fn hash_order(domain: &TypedDataDomain, order: &Order) -> Result<OrderDigest, ContractsError> {
     let normalized = normalize_order(order)?;
     let sol_order = sol_order_from_normalized(&normalized)?;
-    let alloy_domain = alloy_domain_from(domain)?;
+    let alloy_domain = alloy_domain_from(domain);
     let digest = sol_order.eip712_signing_hash(&alloy_domain);
     OrderDigest::new(format!("0x{}", hex::encode(digest.as_slice()))).map_err(Into::into)
 }
@@ -74,7 +74,7 @@ pub fn hash_order_cancellation(
     domain: &TypedDataDomain,
     order_uid: &OrderUid,
 ) -> Result<Hash32, ContractsError> {
-    hash_order_cancellations(domain, &OrderCancellations::new(vec![order_uid.clone()]))
+    hash_order_cancellations(domain, &OrderCancellations::new(vec![*order_uid]))
 }
 
 /// Computes the EIP-712 digest for a batch order cancellation payload.
@@ -94,20 +94,20 @@ pub fn hash_order_cancellations(
         .order_uids
         .iter()
         .map(decode_order_uid_bytes)
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Vec<_>>();
     let sol_cancellations = SolOrderCancellations {
         orderUids: order_uids,
     };
-    let alloy_domain = alloy_domain_from(domain)?;
+    let alloy_domain = alloy_domain_from(domain);
     let digest = sol_cancellations.eip712_signing_hash(&alloy_domain);
     Hash32::new(format!("0x{}", hex::encode(digest.as_slice()))).map_err(Into::into)
 }
 
 fn sol_order_from_normalized(order: &NormalizedOrder) -> Result<SolOrder, ContractsError> {
     Ok(SolOrder {
-        sellToken: parse_alloy_address(&order.sell_token)?,
-        buyToken: parse_alloy_address(&order.buy_token)?,
-        receiver: parse_alloy_address(&order.receiver)?,
+        sellToken: *order.sell_token.as_alloy(),
+        buyToken: *order.buy_token.as_alloy(),
+        receiver: *order.receiver.as_alloy(),
         sellAmount: biguint_to_u256("sellAmount", order.sell_amount.as_biguint())?,
         buyAmount: biguint_to_u256("buyAmount", order.buy_amount.as_biguint())?,
         validTo: order.valid_to,
@@ -120,22 +120,14 @@ fn sol_order_from_normalized(order: &NormalizedOrder) -> Result<SolOrder, Contra
     })
 }
 
-fn alloy_domain_from(domain: &TypedDataDomain) -> Result<Eip712Domain, ContractsError> {
-    Ok(Eip712Domain {
+fn alloy_domain_from(domain: &TypedDataDomain) -> Eip712Domain {
+    Eip712Domain {
         name: Some(domain.name.clone().into()),
         version: Some(domain.version.clone().into()),
         chain_id: Some(U256::from(domain.chain_id)),
-        verifying_contract: Some(parse_alloy_address(&domain.verifying_contract)?),
+        verifying_contract: Some(*domain.verifying_contract.as_alloy()),
         salt: None,
-    })
-}
-
-fn parse_alloy_address(address: &Address) -> Result<AlloyAddress, ContractsError> {
-    AlloyAddress::from_str(address.as_str()).map_err(|_| ContractsError::InvalidDecodedLength {
-        field: "address",
-        expected: 20,
-        actual: 0,
-    })
+    }
 }
 
 fn parse_b256(value: &str, field: &'static str) -> Result<B256, ContractsError> {
@@ -162,23 +154,8 @@ fn biguint_to_u256(
     Ok(U256::from_be_bytes(buf))
 }
 
-fn decode_order_uid_bytes(uid: &OrderUid) -> Result<AlloyBytes, ContractsError> {
-    let stripped = uid
-        .as_str()
-        .strip_prefix("0x")
-        .ok_or(ContractsError::InvalidHexPrefix { field: "orderUid" })?;
-    let bytes = hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
-        field: "orderUid",
-        source,
-    })?;
-    if bytes.len() != ORDER_UID_LENGTH {
-        return Err(ContractsError::InvalidDecodedLength {
-            field: "orderUid",
-            expected: ORDER_UID_LENGTH,
-            actual: bytes.len(),
-        });
-    }
-    Ok(AlloyBytes::from(bytes))
+fn decode_order_uid_bytes(uid: &OrderUid) -> AlloyBytes {
+    AlloyBytes::from(uid.as_slice().to_vec())
 }
 
 const ZERO_ADDRESS_LOWER: &str = "0x0000000000000000000000000000000000000000";
@@ -229,7 +206,7 @@ mod tests {
 
     fn encode_address_word(address: &Address) -> [u8; 32] {
         let mut out = [0u8; 32];
-        let decoded = hex::decode(address.as_str().trim_start_matches("0x")).unwrap();
+        let decoded = hex::decode(address.to_hex_string().trim_start_matches("0x")).unwrap();
         out[12..].copy_from_slice(&decoded);
         out
     }
@@ -318,7 +295,7 @@ mod tests {
         let sol_order = sol_order_from_normalized(&normalized).unwrap();
         assert_eq!(sol_order.eip712_hash_struct().0, expected_struct_hash);
         assert_eq!(
-            hash_order(&domain, &order).unwrap().as_str(),
+            hash_order(&domain, &order).unwrap().to_hex_string(),
             format!("0x{}", hex::encode(expected_digest))
         );
     }

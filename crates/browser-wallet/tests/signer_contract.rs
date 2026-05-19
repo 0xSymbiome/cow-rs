@@ -173,7 +173,7 @@ async fn account_returns_hint_when_signer_was_constructed_with_explicit_account(
     let primary = Address::new(PRIMARY_ACCOUNT).unwrap();
     let transport = MockEip1193Transport::sepolia();
     transport.set_connected(true);
-    transport.set_accounts(vec![primary.clone()]);
+    transport.set_accounts(vec![primary]);
     let wallet = BrowserWallet::from_transport_or_panic(transport);
     wallet.connect().await.expect("connect succeeds");
     let signer = wallet

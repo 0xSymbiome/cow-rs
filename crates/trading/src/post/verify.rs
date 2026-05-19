@@ -19,7 +19,7 @@ pub fn eip1271_order_verification_request(
         cow_sdk_contracts::hash_order(&domain, &cow_sdk_contracts::Order::from(order_to_sign))?;
 
     Ok(cow_sdk_contracts::Eip1271VerificationRequest::new(
-        verification.verifier.clone(),
+        verification.verifier,
         digest,
         verification.signature.clone(),
     ))

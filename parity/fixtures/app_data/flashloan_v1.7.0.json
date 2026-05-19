@@ -1,7 +1,7 @@
 {
   "amount": "2000000000000000000",
-  "liquidityProvider": "0xb50201558B00496A145fE76f7424749556E326D8",
-  "protocolAdapter": "0x1186B5ad42E3e6d6c6901FC53b4A367540E6EcFE",
-  "receiver": "0x1186B5ad42E3e6d6c6901FC53b4A367540E6EcFE",
-  "token": "0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d"
+  "liquidityProvider": "0xb50201558b00496a145fe76f7424749556e326d8",
+  "protocolAdapter": "0x1186b5ad42e3e6d6c6901fc53b4a367540e6ecfe",
+  "receiver": "0x1186b5ad42e3e6d6c6901fc53b4a367540e6ecfe",
+  "token": "0xe91d153e0b41518a2ce8dd3d7944fa863463a97d"
 }

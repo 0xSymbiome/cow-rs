@@ -15,10 +15,7 @@ use num_bigint::BigUint;
 
 use cow_sdk_core::{Address, Amount, AppDataHash, UnsignedOrder};
 
-use crate::{
-    ContractsError,
-    primitives::{parse_address_bytes, parse_bytes32_hash},
-};
+use crate::ContractsError;
 
 sol! {
     // Canonical CoWSwapEthFlow ABI surface. Signatures are reproduced verbatim
@@ -111,8 +108,8 @@ impl EthFlowOrderData {
     #[must_use]
     pub fn from_unsigned_order(order: &UnsignedOrder, quote_id: i64) -> Self {
         Self::new(
-            order.buy_token.clone(),
-            order.receiver.clone(),
+            order.buy_token,
+            order.receiver,
             order.sell_amount.clone(),
             order.buy_amount.clone(),
             order.app_data.clone(),
@@ -172,9 +169,9 @@ fn to_sol_struct(
         Ok(U256::from_be_bytes(buf))
     }
 
-    let buy_token_bytes = parse_address_bytes(&order.buy_token)?;
-    let receiver_bytes = parse_address_bytes(&order.receiver)?;
-    let app_data_bytes = parse_bytes32_hash(&order.app_data)?;
+    let buy_token_bytes = order.buy_token.into_alloy().0.0;
+    let receiver_bytes = order.receiver.into_alloy().0.0;
+    let app_data_bytes = order.app_data.as_alloy().0;
 
     Ok(ICoWSwapEthFlow::EthFlowOrderData {
         buyToken: SolAddress::from(buy_token_bytes),

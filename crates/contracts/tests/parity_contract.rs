@@ -748,7 +748,7 @@ fn assert_calldata_hex(id: &str, actual_bytes: &[u8], expected_hex: &str) {
 fn parse_address_bytes(address: &Address) -> [u8; 20] {
     let hex_bytes = hex::decode(
         address
-            .as_str()
+            .to_hex_string()
             .strip_prefix("0x")
             .expect("Address must carry a 0x prefix"),
     )
@@ -779,7 +779,7 @@ fn sample_secondary_order_uid() -> OrderUid {
 
 fn order_uid_as_sol_bytes(uid: &OrderUid) -> SolBytes {
     let hex_bytes = hex::decode(
-        uid.as_str()
+        uid.to_hex_string()
             .strip_prefix("0x")
             .expect("OrderUid must carry a 0x prefix"),
     )
@@ -989,7 +989,7 @@ fn assert_settlement_clearing_prices_multi_trade(id: &str, expected: &Value) {
         encoder
             .tokens()
             .iter()
-            .map(Address::as_str)
+            .map(Address::to_hex_string)
             .collect::<Vec<_>>(),
         expected_tokens,
         "case {id}: token registry order must follow first-seen trade order",

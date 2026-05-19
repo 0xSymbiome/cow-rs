@@ -104,7 +104,7 @@ impl TradeParameters {
 
     /// Returns a copy with an explicit owner override.
     #[must_use]
-    pub fn with_owner(mut self, owner: Address) -> Self {
+    pub const fn with_owner(mut self, owner: Address) -> Self {
         self.owner = Some(owner);
         self
     }
@@ -118,7 +118,7 @@ impl TradeParameters {
 
     /// Returns a copy with an explicit receiver override.
     #[must_use]
-    pub fn with_receiver(mut self, receiver: Address) -> Self {
+    pub const fn with_receiver(mut self, receiver: Address) -> Self {
         self.receiver = Some(receiver);
         self
     }
@@ -272,7 +272,7 @@ impl LimitTradeParameters {
 
     /// Returns a copy with an explicit owner override.
     #[must_use]
-    pub fn with_owner(mut self, owner: Address) -> Self {
+    pub const fn with_owner(mut self, owner: Address) -> Self {
         self.owner = Some(owner);
         self
     }
@@ -293,7 +293,7 @@ impl LimitTradeParameters {
 
     /// Returns a copy with an explicit receiver override.
     #[must_use]
-    pub fn with_receiver(mut self, receiver: Address) -> Self {
+    pub const fn with_receiver(mut self, receiver: Address) -> Self {
         self.receiver = Some(receiver);
         self
     }

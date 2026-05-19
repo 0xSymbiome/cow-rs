@@ -116,7 +116,7 @@ impl SwapAdvancedSettings {
 
     /// Returns a copy with explicit quote-request overrides attached.
     #[must_use]
-    pub fn with_quote_request(mut self, overrides: QuoteRequestOverride) -> Self {
+    pub const fn with_quote_request(mut self, overrides: QuoteRequestOverride) -> Self {
         self.quote_request = Some(overrides);
         self
     }
@@ -178,7 +178,7 @@ impl LimitOrderAdvancedSettings {
 
     /// Returns a copy with explicit quote-request overrides attached.
     #[must_use]
-    pub fn with_quote_request(mut self, overrides: QuoteRequestOverride) -> Self {
+    pub const fn with_quote_request(mut self, overrides: QuoteRequestOverride) -> Self {
         self.quote_request = Some(overrides);
         self
     }

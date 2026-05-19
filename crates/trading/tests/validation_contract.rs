@@ -25,7 +25,8 @@ const FROM: &str = "0x1111111111111111111111111111111111111111";
 const SELL_TOKEN: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const BUY_TOKEN: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 const ZERO_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
-const WETH: &str = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+// Canonical lowercase 0x-prefixed wire form (PROP-WB-004 / ADR 0052).
+const WETH: &str = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 const OTHER_OWNER: &str = "0x2222222222222222222222222222222222222222";
 const NOW: u64 = 1_700_000_000;
 const VALID_TO: u32 = 1_700_003_600;
@@ -253,7 +254,7 @@ fn buy_side_paired_weth_sell_and_native_buy_rejects_through_weth_configured_vali
     match error {
         ClientRejection::SameBuyAndSellToken { token } => {
             assert_eq!(
-                token.as_str(),
+                token.to_hex_string(),
                 WETH,
                 "rejection must surface the WETH address"
             );

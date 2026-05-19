@@ -33,7 +33,7 @@ async fn send_transaction_does_not_dispatch_get_transaction_receipt() {
         .await
         .unwrap();
 
-    assert_eq!(broadcast.transaction_hash.as_str(), HASH);
+    assert_eq!(broadcast.transaction_hash.to_hex_string(), HASH);
     let methods = recorded_methods(&methods);
     assert!(
         methods

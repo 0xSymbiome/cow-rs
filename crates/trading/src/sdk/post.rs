@@ -79,7 +79,7 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
-        params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
+        params.owner = params.owner.or(self.trader_defaults.owner);
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
         crate::post::post_swap_order_async_with_bounds(
@@ -252,7 +252,7 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
-        params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
+        params.owner = params.owner.or(self.trader_defaults.owner);
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
         crate::post::post_limit_order_async_with_bounds(

@@ -48,13 +48,13 @@ async fn parse_receipt_populates_every_field_from_post_byzantium_response() {
         .unwrap()
         .expect("receipt available");
 
-    assert_eq!(receipt.transaction_hash.as_str(), HASH_1);
+    assert_eq!(receipt.transaction_hash.to_hex_string(), HASH_1);
     assert_eq!(receipt.status, Some(TransactionStatus::Success));
     assert_eq!(receipt.block_number, Some(1234));
-    assert_eq!(receipt.block_hash.unwrap().as_str(), BLOCK_HASH_2);
+    assert_eq!(receipt.block_hash.unwrap().to_hex_string(), BLOCK_HASH_2);
     assert_eq!(receipt.gas_used.unwrap().to_string(), "21000");
-    assert_eq!(receipt.from.unwrap().as_str(), FROM_ADDR);
-    assert_eq!(receipt.to.unwrap().as_str(), TO_ADDR);
+    assert_eq!(receipt.from.unwrap().to_hex_string(), FROM_ADDR);
+    assert_eq!(receipt.to.unwrap().to_hex_string(), TO_ADDR);
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -77,7 +77,7 @@ async fn parse_receipt_handles_pre_byzantium_absent_status() {
 
     assert_eq!(receipt.status, None);
     assert_eq!(receipt.block_number, Some(1));
-    assert_eq!(receipt.block_hash.unwrap().as_str(), BLOCK_HASH_4);
+    assert_eq!(receipt.block_hash.unwrap().to_hex_string(), BLOCK_HASH_4);
     assert_eq!(receipt.gas_used, None);
     assert_eq!(receipt.from, None);
     assert_eq!(receipt.to, None);
@@ -106,7 +106,7 @@ async fn parse_receipt_handles_contract_creation_no_to() {
         .expect("receipt available");
 
     assert!(receipt.to.is_none());
-    assert_eq!(receipt.from.unwrap().as_str(), FROM_ADDR);
+    assert_eq!(receipt.from.unwrap().to_hex_string(), FROM_ADDR);
 }
 
 #[tokio::test(flavor = "current_thread")]

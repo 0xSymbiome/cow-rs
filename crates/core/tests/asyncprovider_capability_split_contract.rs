@@ -33,7 +33,7 @@ impl AsyncProvider for ReadOnlyProvider {
         &self,
         transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
-        Ok(Some(TransactionReceipt::new(transaction_hash.clone())))
+        Ok(Some(TransactionReceipt::new(*transaction_hash)))
     }
 
     async fn get_storage_at(
@@ -61,7 +61,7 @@ impl AsyncProvider for ReadOnlyProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 
@@ -74,7 +74,7 @@ impl AsyncSigner for DirectAsyncSigner {
     type Error = TestError;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
-        Ok(self.address.clone())
+        Ok(self.address)
     }
 
     async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
@@ -185,7 +185,7 @@ impl Signer for SyncSigner {
     }
 
     fn get_address(&self) -> Result<Address, Self::Error> {
-        Ok(self.address.clone())
+        Ok(self.address)
     }
 
     fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
@@ -248,7 +248,7 @@ impl Provider for SyncProvider {
         &self,
         transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
-        Ok(Some(TransactionReceipt::new(transaction_hash.clone())))
+        Ok(Some(TransactionReceipt::new(*transaction_hash)))
     }
 
     fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
@@ -284,7 +284,7 @@ impl Provider for SyncProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 

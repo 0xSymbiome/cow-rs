@@ -154,7 +154,7 @@ impl OrderQuoteRequest {
 
     /// Returns a copy of this request with an explicit receiver.
     #[must_use]
-    pub fn with_receiver(mut self, receiver: Address) -> Self {
+    pub const fn with_receiver(mut self, receiver: Address) -> Self {
         self.receiver = Some(receiver);
         self
     }
@@ -456,7 +456,7 @@ impl QuoteData {
 
     /// Returns a copy of this payload with an explicit receiver.
     #[must_use]
-    pub fn with_receiver(mut self, receiver: Address) -> Self {
+    pub const fn with_receiver(mut self, receiver: Address) -> Self {
         self.receiver = Some(receiver);
         self
     }
@@ -521,7 +521,7 @@ impl OrderQuoteResponse {
 
     /// Returns a copy of this response with an explicit owner address.
     #[must_use]
-    pub fn with_from(mut self, from: Address) -> Self {
+    pub const fn with_from(mut self, from: Address) -> Self {
         self.from = Some(from);
         self
     }

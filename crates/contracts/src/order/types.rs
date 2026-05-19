@@ -251,9 +251,9 @@ impl OrderCancellations {
 impl From<&cow_sdk_core::UnsignedOrder> for Order {
     fn from(order: &cow_sdk_core::UnsignedOrder) -> Self {
         Self::new(
-            order.sell_token.clone(),
-            order.buy_token.clone(),
-            Some(order.receiver.clone()),
+            order.sell_token,
+            order.buy_token,
+            Some(order.receiver),
             order.sell_amount.clone(),
             order.buy_amount.clone(),
             order.valid_to,

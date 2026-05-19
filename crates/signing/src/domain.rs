@@ -1,6 +1,4 @@
-use std::str::FromStr;
-
-use alloy_primitives::{Address as AlloyAddress, U256};
+use alloy_primitives::U256;
 use alloy_sol_types::Eip712Domain;
 use cow_sdk_contracts::{CANCELLATIONS_TYPE_FIELDS, ContractId, ORDER_TYPE_FIELDS, Registry};
 use cow_sdk_core::{
@@ -37,7 +35,7 @@ pub fn get_domain(
         .unwrap_or(CowEnv::Prod);
     let override_address = options
         .and_then(|options| options.settlement_contract_override.as_ref())
-        .and_then(|addresses| addresses.get(&u64::from(chain_id)).cloned());
+        .and_then(|addresses| addresses.get(&u64::from(chain_id)).copied());
 
     Ok(TypedDataDomain::new(
         "Gnosis Protocol".to_owned(),
@@ -82,9 +80,7 @@ pub fn domain_separator(
 ///
 /// Returns [`SigningError`] if the verifying-contract address cannot be parsed.
 pub fn domain_separator_for(domain: &TypedDataDomain) -> Result<String, SigningError> {
-    let alloy_addr = AlloyAddress::from_str(domain.verifying_contract.as_str()).map_err(|err| {
-        SigningError::Serialization(format!("verifying contract address: {err}").into())
-    })?;
+    let alloy_addr = *domain.verifying_contract.as_alloy();
     let alloy_domain = Eip712Domain {
         name: Some(domain.name.clone().into()),
         version: Some(domain.version.clone().into()),

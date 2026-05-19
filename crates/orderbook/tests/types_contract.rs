@@ -171,7 +171,7 @@ fn quote_request_validate_rejects_verification_gas_limit_without_eip1271() {
 #[test]
 fn orders_and_trades_requests_keep_upstream_defaults() {
     let owner = sample_owner();
-    let orders = GetOrdersRequest::new(owner.clone());
+    let orders = GetOrdersRequest::new(owner);
     let trades_by_owner = GetTradesRequest::by_owner(owner);
     let trades_by_uid = GetTradesRequest::by_order_uid(sample_order_uid());
 
@@ -218,7 +218,7 @@ fn order_creation_from_quote_keeps_quote_shape_and_quote_id() {
     assert!(quote_value.get("signature").is_none());
     assert!(quote_value.get("from").is_none());
     assert_eq!(order_value["signature"], json!(sample_signature()));
-    assert_eq!(order_value["from"], json!(sample_owner().as_str()));
+    assert_eq!(order_value["from"], json!(sample_owner().to_hex_string()));
 }
 
 #[test]
@@ -251,9 +251,9 @@ fn order_creation_full_balance_check_is_opt_in_on_the_wire() {
 fn quote_response_accepts_full_app_data_echo_when_hash_is_present() {
     let response = serde_json::from_value::<cow_sdk_orderbook::OrderQuoteResponse>(json!({
         "quote": {
-            "sellToken": sample_owner().as_str(),
-            "buyToken": sample_buy_token().as_str(),
-            "receiver": sample_owner().as_str(),
+            "sellToken": sample_owner().to_hex_string(),
+            "buyToken": sample_buy_token().to_hex_string(),
+            "receiver": sample_owner().to_hex_string(),
             "sellAmount": "1000",
             "buyAmount": "900",
             "validTo": 1_700_000_000,
@@ -265,7 +265,7 @@ fn quote_response_accepts_full_app_data_echo_when_hash_is_present() {
             "sellTokenBalance": "erc20",
             "buyTokenBalance": "erc20"
         },
-        "from": sample_owner().as_str(),
+        "from": sample_owner().to_hex_string(),
         "expiration": "2026-04-08T10:00:00Z",
         "id": 42,
         "verified": true

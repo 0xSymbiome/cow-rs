@@ -211,8 +211,10 @@ proptest! {
     /// [`addresses_equal`], `normalized_key`, and [`std::hash::Hash`]
     /// implementations all treat the three renderings as the same address.
     /// `HashMap` and `HashSet` lookups must agree with the equality rule
-    /// across every casing variant, and the stored string form must
-    /// preserve the original input casing exactly.
+    /// across every casing variant. The cow `Address` canonicalises every
+    /// input to its lowercase 0x-prefixed hex form per ADR 0052; the
+    /// stored string form is the lowercase canonical form, not the
+    /// original input casing.
     #[test]
     fn address_case_normalization_holds_across_hash_and_equality(
         bytes in address_bytes(),
@@ -226,11 +228,11 @@ proptest! {
         let lowercase_address = Address::new(&lowercase).unwrap();
         let uppercase_address = Address::new(&uppercase).unwrap();
 
-        prop_assert_eq!(mixed_address.as_str(), &mixed);
+        prop_assert_eq!(mixed_address.to_hex_string(), lowercase.clone());
 
-        let roundtrip: String = mixed_address.clone().into();
-        prop_assert_eq!(&roundtrip, &mixed);
-        prop_assert_eq!(Address::new(roundtrip).unwrap(), mixed_address.clone());
+        let roundtrip = mixed_address.to_hex_string();
+        prop_assert_eq!(&roundtrip, &lowercase);
+        prop_assert_eq!(Address::new(roundtrip).unwrap(), mixed_address);
 
         prop_assert_eq!(&mixed_address, &lowercase_address);
         prop_assert_eq!(&uppercase_address, &lowercase_address);
@@ -240,14 +242,14 @@ proptest! {
         prop_assert!(addresses_equal(&uppercase_address, &lowercase_address));
 
         let mut map = HashMap::new();
-        map.insert(mixed_address.clone(), "value");
+        map.insert(mixed_address, "value");
         prop_assert_eq!(map.get(&lowercase_address), Some(&"value"));
         prop_assert_eq!(map.get(&uppercase_address), Some(&"value"));
 
         let mut set = HashSet::new();
-        set.insert(mixed_address.clone());
-        set.insert(lowercase_address.clone());
-        set.insert(uppercase_address.clone());
+        set.insert(mixed_address);
+        set.insert(lowercase_address);
+        set.insert(uppercase_address);
         prop_assert_eq!(set.len(), 1);
     }
 
@@ -320,12 +322,12 @@ proptest! {
         let mixed = render_mixed_case(&bytes, &casing);
 
         let hash = Hash32::new(&canonical).unwrap();
-        prop_assert_eq!(hash.as_str(), &canonical);
+        prop_assert_eq!(hash.to_hex_string(), canonical.clone());
 
         let hash_mixed = Hash32::new(&mixed).unwrap();
-        prop_assert_eq!(hash_mixed.as_str(), &mixed);
+        prop_assert_eq!(hash_mixed.to_hex_string(), canonical.clone());
 
-        let rebuilt = Hash32::new(hash.as_str()).unwrap();
+        let rebuilt = Hash32::new(hash.to_hex_string()).unwrap();
         prop_assert_eq!(rebuilt, hash);
     }
 
@@ -363,8 +365,8 @@ proptest! {
         let canonical = format!("0x{}", hex::encode(bytes));
 
         let uid = OrderUid::new(&canonical).unwrap();
-        prop_assert_eq!(uid.as_str(), &canonical);
-        prop_assert_eq!(OrderUid::new(uid.as_str()).unwrap(), uid);
+        prop_assert_eq!(uid.to_hex_string(), canonical.clone());
+        prop_assert_eq!(OrderUid::new(uid.to_hex_string()).unwrap(), uid);
 
         prop_assert!(OrderUid::new(&malformed).is_err(), "malformed = {malformed}");
     }
@@ -375,13 +377,13 @@ proptest! {
     #[test]
     fn hex_data_accepts_empty_payload_and_preserves_valid_inputs(bytes in any::<[u8; 32]>()) {
         let empty = HexData::empty();
-        prop_assert_eq!(empty.as_str(), "0x");
+        prop_assert_eq!(empty.to_hex_string(), "0x".to_owned());
         prop_assert_eq!(HexData::default(), empty);
 
         let canonical = format!("0x{}", hex::encode(bytes));
         let data = HexData::new(&canonical).unwrap();
-        prop_assert_eq!(data.as_str(), &canonical);
-        prop_assert_eq!(HexData::new(data.as_str()).unwrap(), data);
+        prop_assert_eq!(data.to_hex_string(), canonical.clone());
+        prop_assert_eq!(HexData::new(data.to_hex_string()).unwrap(), data);
     }
 
     /// [`token_id`] is deterministic for identical `(chain, address)`

@@ -65,7 +65,7 @@ pub fn deployment_addresses(
         registry
             .address(contract_id, chain, env)
             .ok_or_else(|| PureError::invalid("chainId", "deployment is not configured"))
-            .map(|address| address.as_str().to_owned())
+            .map(|addr| addr.to_hex_string())
     };
 
     Ok(DeploymentAddresses {

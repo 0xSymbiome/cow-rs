@@ -5,10 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, AsyncProvider, Hash32, HexData, Provider};
 
-use crate::{
-    ContractsError,
-    primitives::{function_selector, normalize_hex_payload, parse_hex, parse_hex_exact},
-};
+use crate::{ContractsError, primitives::function_selector};
 
 /// EIP-1271 success magic value as the canonical `0x`-prefixed hex string
 /// form documented by the protocol.
@@ -187,12 +184,12 @@ impl Signature {
         };
 
         let normalized = normalized_ecdsa_signature(data)?;
-        let signature_bytes = parse_hex_exact(&normalized, "signature", 65)?;
+        let signature_bytes = decode_hex_exact(&normalized, "signature", 65)?;
         let signature = AlloySignature::from_raw(&signature_bytes)
             .map_err(|error| signature_recovery_error(&error))?;
         let prehash = match scheme {
-            SigningScheme::Eip712 => hash32_bytes(digest)?,
-            SigningScheme::EthSign => eth_sign_digest_prehash(digest)?,
+            SigningScheme::Eip712 => hash32_bytes(digest),
+            SigningScheme::EthSign => eth_sign_digest_prehash(digest),
             _ => return Err(ContractsError::SignatureSchemeNotEcdsa),
         };
         let recovered = signature
@@ -202,20 +199,12 @@ impl Signature {
     }
 }
 
-fn hash32_bytes(digest: &Hash32) -> Result<[u8; 32], ContractsError> {
-    let bytes = parse_hex_exact(digest.as_str(), "digest", 32)?;
-    bytes
-        .try_into()
-        .map_err(|bytes: Vec<u8>| ContractsError::InvalidDecodedLength {
-            field: "digest",
-            expected: 32,
-            actual: bytes.len(),
-        })
+const fn hash32_bytes(digest: &Hash32) -> [u8; 32] {
+    digest.into_alloy().0
 }
 
-fn eth_sign_digest_prehash(digest: &Hash32) -> Result<[u8; 32], ContractsError> {
-    let digest_bytes = hash32_bytes(digest)?;
-    Ok(alloy_primitives::eip191_hash_message(digest_bytes).0)
+fn eth_sign_digest_prehash(digest: &Hash32) -> [u8; 32] {
+    alloy_primitives::eip191_hash_message(hash32_bytes(digest)).0
 }
 
 fn signature_recovery_error(error: &alloy_primitives::SignatureError) -> ContractsError {
@@ -233,8 +222,8 @@ pub fn encode_eip1271_signature_data(
     data: &Eip1271SignatureData,
 ) -> Result<String, ContractsError> {
     let mut payload = Vec::new();
-    payload.extend_from_slice(&parse_hex_exact(data.verifier.as_str(), "verifier", 20)?);
-    payload.extend_from_slice(&parse_hex(&data.signature, "signature")?);
+    payload.extend_from_slice(&data.verifier.into_alloy().0.0);
+    payload.extend_from_slice(&decode_hex(&data.signature, "signature")?);
     Ok(format!("0x{}", hex::encode(payload)))
 }
 
@@ -248,7 +237,7 @@ pub fn encode_eip1271_signature_data(
 pub fn decode_eip1271_signature_data(
     signature: &str,
 ) -> Result<Eip1271SignatureData, ContractsError> {
-    let bytes = parse_hex(signature, "signature")?;
+    let bytes = decode_hex(signature, "signature")?;
     if bytes.len() < 20 {
         return Err(ContractsError::InvalidEip1271SignatureData);
     }
@@ -288,8 +277,7 @@ pub fn decode_signing_scheme(flags: u8) -> Result<SigningScheme, ContractsError>
 /// Returns [`ContractsError`] if the signature is not valid hex, is not
 /// exactly 65 bytes, or carries an unsupported recovery byte.
 pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> {
-    let hex_normalized = normalize_hex_payload(data, "signature")?;
-    let bytes = parse_hex(&hex_normalized, "signature")?;
+    let bytes = decode_hex(data, "signature")?;
     if bytes.len() != 65 {
         return Err(ContractsError::InvalidSignatureLength {
             actual: bytes.len(),
@@ -358,10 +346,13 @@ where
     ensure_contract_code(provider, &request.verifier)?;
     let raw = provider
         .read_contract(&cow_sdk_core::ContractCall::new(
-            request.verifier.clone(),
+            request.verifier,
             "isValidSignature".to_owned(),
             EIP1271_IS_VALID_SIGNATURE_ABI_JSON.to_owned(),
-            serde_json::to_string(&(request.digest.as_str(), request.signature.as_str()))?,
+            serde_json::to_string(&(
+                request.digest.to_hex_string(),
+                request.signature.to_hex_string(),
+            ))?,
         ))
         .map_err(|error| ContractsError::Eip1271Provider {
             operation: "read_contract",
@@ -387,7 +378,7 @@ where
         Ok(())
     } else {
         Err(ContractsError::UnsupportedEip1271Verifier {
-            verifier: verifier.clone(),
+            verifier: *verifier,
         })
     }
 }
@@ -413,13 +404,13 @@ where
         Ok(())
     } else {
         Err(ContractsError::UnsupportedEip1271Verifier {
-            verifier: verifier.clone(),
+            verifier: *verifier,
         })
     }
 }
 
 fn has_contract_code(code: Option<&HexData>) -> bool {
-    matches!(code, Some(code) if code.as_str() != "0x")
+    matches!(code, Some(code) if !code.is_empty())
 }
 
 fn ensure_magic_value(raw: &str) -> Result<(), ContractsError> {
@@ -445,7 +436,7 @@ pub(crate) fn decode_magic_value_response(raw: &str) -> Result<[u8; 4], Contract
         Err(_) => raw.to_owned(),
     };
 
-    let bytes = parse_hex_exact(&candidate, "magicValue", 4).map_err(|_| {
+    let bytes = decode_hex_exact(&candidate, "magicValue", 4).map_err(|_| {
         ContractsError::MalformedEip1271Response {
             response: raw.to_owned().into(),
         }
@@ -453,4 +444,31 @@ pub(crate) fn decode_magic_value_response(raw: &str) -> Result<[u8; 4], Contract
     let mut out = [0u8; 4];
     out.copy_from_slice(&bytes);
     Ok(out)
+}
+
+/// Decodes a `0x`-prefixed hex string into raw bytes, mapping prefix and
+/// character errors onto the contracts-side typed error surface.
+fn decode_hex(value: &str, field: &'static str) -> Result<Vec<u8>, ContractsError> {
+    let stripped = value
+        .strip_prefix("0x")
+        .ok_or(ContractsError::InvalidHexPrefix { field })?;
+    hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source })
+}
+
+/// Decodes a `0x`-prefixed hex string and asserts it decodes to exactly
+/// `expected` bytes.
+fn decode_hex_exact(
+    value: &str,
+    field: &'static str,
+    expected: usize,
+) -> Result<Vec<u8>, ContractsError> {
+    let bytes = decode_hex(value, field)?;
+    if bytes.len() != expected {
+        return Err(ContractsError::InvalidDecodedLength {
+            field,
+            expected,
+            actual: bytes.len(),
+        });
+    }
+    Ok(bytes)
 }

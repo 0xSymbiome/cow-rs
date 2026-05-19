@@ -1,10 +1,7 @@
 use cow_sdk_core::{Address, OrderDigest, OrderUid, TypedDataDomain};
 
 use super::{ORDER_UID_LENGTH, Order, OrderUidParams, hash::hash_order};
-use crate::{
-    ContractsError,
-    primitives::{parse_hex_exact, parse_hex32},
-};
+use crate::ContractsError;
 
 /// Computes the encoded order UID for an order and owner.
 ///
@@ -19,7 +16,7 @@ pub fn compute_order_uid(
 ) -> Result<OrderUid, ContractsError> {
     pack_order_uid_params(&OrderUidParams::new(
         hash_order(domain, order)?,
-        owner.clone(),
+        *owner,
         order.valid_to,
     ))
 }
@@ -32,13 +29,13 @@ pub fn compute_order_uid(
 /// fixed byte lengths required by the UID format.
 #[inline]
 pub fn pack_order_uid_params(params: &OrderUidParams) -> Result<OrderUid, ContractsError> {
-    let digest = parse_hex32(params.order_digest.as_str(), "orderDigest")?;
-    let owner = parse_hex_exact(params.owner.as_str(), "owner", 20)?;
+    let digest = params.order_digest.into_alloy().0;
+    let owner = params.owner.into_alloy().0.0;
     let mut out = [0u8; ORDER_UID_LENGTH];
     out[..32].copy_from_slice(&digest);
     out[32..52].copy_from_slice(&owner);
     out[52..56].copy_from_slice(&params.valid_to.to_be_bytes());
-    OrderUid::new(format!("0x{}", hex::encode(out))).map_err(Into::into)
+    Ok(OrderUid::from_bytes(out))
 }
 
 /// Extracts structured order UID components from a compact UID string.
@@ -48,7 +45,7 @@ pub fn pack_order_uid_params(params: &OrderUidParams) -> Result<OrderUid, Contra
 /// Returns [`ContractsError`] if the UID cannot be decoded into the expected format.
 #[inline]
 pub fn extract_order_uid_params(order_uid: &OrderUid) -> Result<OrderUidParams, ContractsError> {
-    let bytes = parse_hex_exact(order_uid.as_str(), "orderUid", ORDER_UID_LENGTH)?;
+    let bytes = order_uid.as_slice();
     if bytes.len() != ORDER_UID_LENGTH {
         return Err(ContractsError::InvalidOrderUidLength {
             actual: bytes.len(),

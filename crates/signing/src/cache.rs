@@ -238,7 +238,7 @@ where
             let oldest_key = write
                 .iter()
                 .min_by_key(|(_, value)| value.inserted_at)
-                .map(|(key, _)| key.clone());
+                .map(|(key, _)| *key);
             match oldest_key {
                 Some(key) => {
                     write.remove(&key);

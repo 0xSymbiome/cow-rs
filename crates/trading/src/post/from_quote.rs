@@ -128,7 +128,7 @@ where
         let base_params = params_from_doc(&quote_results.app_data_info.doc)?;
         (quote_results.app_data_info.clone(), base_params)
     };
-    let app_data_signer = merged_params.signer.clone();
+    let app_data_signer = merged_params.signer;
     let params = apply_settings_to_limit_trade_parameters(
         &swap_params_to_limit_order_params(
             &quote_results.trade_parameters,

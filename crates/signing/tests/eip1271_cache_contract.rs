@@ -53,8 +53,8 @@ fn noop_cache_always_misses_and_never_records_writes() {
     let verifier = sample_address(0);
     let key_digest = digest(1);
 
-    assert_eq!(cache.get(verifier.clone(), key_digest), None);
-    cache.put(verifier.clone(), key_digest, true);
+    assert_eq!(cache.get(verifier, key_digest), None);
+    cache.put(verifier, key_digest, true);
     assert_eq!(cache.get(verifier, key_digest), None);
 }
 
@@ -75,10 +75,10 @@ fn in_memory_cache_round_trips_a_recorded_outcome() {
     let verifier = sample_address(1);
     let key_digest = digest(7);
 
-    assert_eq!(cache.get(verifier.clone(), key_digest), None);
-    cache.put(verifier.clone(), key_digest, true);
-    assert_eq!(cache.get(verifier.clone(), key_digest), Some(true));
-    cache.put(verifier.clone(), key_digest, false);
+    assert_eq!(cache.get(verifier, key_digest), None);
+    cache.put(verifier, key_digest, true);
+    assert_eq!(cache.get(verifier, key_digest), Some(true));
+    cache.put(verifier, key_digest, false);
     assert_eq!(cache.get(verifier, key_digest), Some(false));
 }
 
@@ -88,8 +88,8 @@ fn in_memory_cache_respects_ttl_expiry() {
     let verifier = sample_address(2);
     let key_digest = digest(3);
 
-    cache.put(verifier.clone(), key_digest, true);
-    assert_eq!(cache.get(verifier.clone(), key_digest), Some(true));
+    cache.put(verifier, key_digest, true);
+    assert_eq!(cache.get(verifier, key_digest), Some(true));
     sleep(Duration::from_millis(80));
     assert_eq!(cache.get(verifier, key_digest), None);
 }
@@ -106,9 +106,9 @@ fn cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one() {
     let verifier = sample_address(8);
     let key_digest = digest(9);
 
-    cache.put(verifier.clone(), key_digest, true);
+    cache.put(verifier, key_digest, true);
     clock.set(start + Duration::from_secs(4 * 60 + 59) + Duration::from_millis(999));
-    assert_eq!(cache.get(verifier.clone(), key_digest), Some(true));
+    assert_eq!(cache.get(verifier, key_digest), Some(true));
 
     clock.set(start + Duration::from_secs(5 * 60) + Duration::from_millis(1));
     assert_eq!(cache.get(verifier, key_digest), None);
@@ -119,15 +119,15 @@ fn in_memory_cache_evicts_oldest_entry_when_capacity_is_exceeded() {
     let cache = InMemoryEip1271VerificationCache::new(Duration::from_secs(60), 2);
     let verifier = sample_address(3);
 
-    cache.put(verifier.clone(), digest(1), true);
+    cache.put(verifier, digest(1), true);
     sleep(Duration::from_millis(2));
-    cache.put(verifier.clone(), digest(2), true);
+    cache.put(verifier, digest(2), true);
     sleep(Duration::from_millis(2));
-    cache.put(verifier.clone(), digest(3), true);
+    cache.put(verifier, digest(3), true);
 
     assert_eq!(cache.len(), 2);
-    assert_eq!(cache.get(verifier.clone(), digest(1)), None);
-    assert_eq!(cache.get(verifier.clone(), digest(2)), Some(true));
+    assert_eq!(cache.get(verifier, digest(1)), None);
+    assert_eq!(cache.get(verifier, digest(2)), Some(true));
     assert_eq!(cache.get(verifier, digest(3)), Some(true));
 }
 
@@ -135,7 +135,7 @@ fn in_memory_cache_evicts_oldest_entry_when_capacity_is_exceeded() {
 async fn cache_skips_every_non_cacheable_error_class() {
     let verifier = sample_address(7);
     let request = Eip1271VerificationRequest::new(
-        verifier.clone(),
+        verifier,
         Hash32::from_bytes(digest(0xA5)),
         HexData::new("0x1234").unwrap(),
     );
@@ -179,7 +179,7 @@ async fn cache_skips_every_non_cacheable_error_class() {
 async fn eip1271_eoa_verifier_does_not_cache() {
     let verifier = sample_address(6);
     let request = Eip1271VerificationRequest::new(
-        verifier.clone(),
+        verifier,
         Hash32::from_bytes(digest(0x66)),
         HexData::new("0x1234").unwrap(),
     );
@@ -229,8 +229,8 @@ async fn in_memory_cache_is_thread_safe_under_concurrent_probe_and_populate_load
             for probe in 0..PROBES {
                 let key_digest = digest(u8::try_from(probe).unwrap() % KEY_SPACE);
                 let result = (probe + task_id) % 2 == 0;
-                cache.put(verifier.clone(), key_digest, result);
-                let _ = cache.get(verifier.clone(), key_digest);
+                cache.put(verifier, key_digest, result);
+                let _ = cache.get(verifier, key_digest);
             }
         }));
     }
@@ -257,7 +257,7 @@ async fn in_memory_cache_is_thread_safe_under_concurrent_probe_and_populate_load
     for verifier in verifiers {
         for probe in 0..KEY_SPACE {
             assert!(
-                cache.get(verifier.clone(), digest(probe)).is_some(),
+                cache.get(verifier, digest(probe)).is_some(),
                 "every populated (verifier, digest) key must be observable \
                  after the concurrent hammer joins (verifier={verifier:?}, probe={probe})",
             );
@@ -493,6 +493,6 @@ impl AsyncProvider for ScenarioProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }

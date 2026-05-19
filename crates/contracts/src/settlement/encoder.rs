@@ -94,17 +94,10 @@ impl SettlementEncoder {
             if order_uids.is_empty() {
                 continue;
             }
-            let encoded_uids = order_uids
+            let encoded_uids: Vec<alloy_sol_types::private::Bytes> = order_uids
                 .iter()
-                .map(|uid| {
-                    crate::primitives::parse_hex_exact(
-                        uid.as_str(),
-                        "orderUid",
-                        crate::order::ORDER_UID_LENGTH,
-                    )
-                    .map(alloy_sol_types::private::Bytes::from)
-                })
-                .collect::<Result<Vec<_>, _>>()?;
+                .map(|uid| alloy_sol_types::private::Bytes::from(uid.as_slice().to_vec()))
+                .collect();
             let call_data = match kind {
                 OrderRefundKind::FilledAmount => IGPv2Settlement::freeFilledAmountStorageCall {
                     orderUids: encoded_uids,
@@ -116,7 +109,7 @@ impl SettlementEncoder {
                 .abi_encode(),
             };
             interactions.push(Interaction::new(
-                self.domain.verifying_contract.clone(),
+                self.domain.verifying_contract,
                 Amount::zero(),
                 Bytes::from(call_data),
             ));
@@ -143,9 +136,7 @@ impl SettlementEncoder {
                 normalized
                     .get(&token.normalized_key())
                     .cloned()
-                    .ok_or_else(|| ContractsError::MissingClearingPrice {
-                        token: token.clone(),
-                    })
+                    .ok_or_else(|| ContractsError::MissingClearingPrice { token: *token })
             })
             .collect()
     }
@@ -194,7 +185,7 @@ impl SettlementEncoder {
             .is_some_and(|target| interaction.target == target)
         {
             return Err(ContractsError::ForbiddenInteractionTarget {
-                target: interaction.target.clone(),
+                target: interaction.target,
             });
         }
         self.interactions[stage as usize].push(normalize_interaction(interaction));

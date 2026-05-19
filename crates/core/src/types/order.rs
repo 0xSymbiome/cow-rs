@@ -235,7 +235,7 @@ impl UnsignedOrder {
 
     /// Returns a copy of this order with a different receiver.
     #[must_use]
-    pub fn with_receiver(mut self, receiver: Address) -> Self {
+    pub const fn with_receiver(mut self, receiver: Address) -> Self {
         self.receiver = receiver;
         self
     }

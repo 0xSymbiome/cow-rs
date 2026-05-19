@@ -48,7 +48,7 @@ impl TradingSdk {
                 chain = ?params.chain_id,
                 env = ?params.env,
                 endpoint = "trading.get_pre_sign_transaction_async",
-                order_uid = params.order_uid.as_str(),
+                order_uid = %params.order_uid,
             ),
         ),
     )]

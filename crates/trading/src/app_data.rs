@@ -209,10 +209,7 @@ pub(crate) fn merge_app_data_params(
             .environment
             .clone()
             .or_else(|| base.environment.clone()),
-        override_params
-            .signer
-            .clone()
-            .or_else(|| base.signer.clone()),
+        override_params.signer.or(base.signer),
         override_params
             .flashloan
             .clone()

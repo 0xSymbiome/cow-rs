@@ -158,7 +158,7 @@ fn order_to_sign_receiver_falls_back_to_from_when_zero_or_unset() {
     let from = address(OWNER);
 
     let order = get_order_to_sign(
-        OrderToSignParams::new(SupportedChainId::Sepolia, from.clone(), false)
+        OrderToSignParams::new(SupportedChainId::Sepolia, from, false)
             .with_apply_costs_slippage_and_fees(false),
         &params,
         &app_data_hash(),

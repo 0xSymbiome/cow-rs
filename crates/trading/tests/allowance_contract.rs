@@ -45,8 +45,8 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
             .args_json,
     )
     .expect("args json must remain valid");
-    assert_eq!(args.0, address(OWNER).as_str());
-    assert_eq!(args.1, expected_spender.as_str());
+    assert_eq!(args.0, address(OWNER).to_hex_string());
+    assert_eq!(args.1, expected_spender.to_hex_string());
 
     let custom = address(ALT_RECEIVER);
     let tx = approval_transaction(
@@ -56,27 +56,22 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
         )
         .with_chain_id(SupportedChainId::Sepolia)
         .with_env(CowEnv::Prod)
-        .with_vault_relayer_override(custom.clone()),
+        .with_vault_relayer_override(custom),
         SupportedChainId::Mainnet,
         CowEnv::Staging,
     )
     .expect("approval transaction should build");
 
     assert_eq!(tx.to, Some(address(COW)));
-    assert!(
-        tx.data
-            .as_ref()
-            .map(cow_sdk_core::HexData::as_str)
-            .unwrap_or_default()
-            .to_lowercase()
-            .contains(
-                custom
-                    .as_str()
-                    .trim_start_matches("0x")
-                    .to_lowercase()
-                    .as_str()
-            )
-    );
+    let data_lower = tx
+        .data
+        .as_ref()
+        .map(cow_sdk_core::HexData::to_hex_string)
+        .unwrap_or_default()
+        .to_lowercase();
+    let custom_lower = custom.to_hex_string();
+    let custom_inner = custom_lower.trim_start_matches("0x").to_lowercase();
+    assert!(data_lower.contains(&custom_inner));
 }
 
 #[test]
@@ -95,7 +90,7 @@ fn approval_submission_returns_transaction_hash() {
     )
     .expect("approval send should succeed");
 
-    assert_eq!(tx_hash.as_str(), crate::common::TX_HASH);
+    assert_eq!(tx_hash.to_hex_string(), crate::common::TX_HASH);
 }
 
 #[test]
@@ -118,7 +113,7 @@ fn approval_transaction_accepts_max_uint256_amount() {
     assert!(
         tx.data
             .as_ref()
-            .map(cow_sdk_core::HexData::as_str)
+            .map(cow_sdk_core::HexData::to_hex_string)
             .unwrap_or_default()
             .ends_with(&"f".repeat(64))
     );

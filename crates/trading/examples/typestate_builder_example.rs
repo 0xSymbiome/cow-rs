@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ready_sdk = TradingSdkBuilder::new()
         .with_chain_id(SupportedChainId::Mainnet)
         .with_app_code("cow-rs/typestate-example")
-        .with_owner(owner.clone())
+        .with_owner(owner)
         .build_ready()?;
     println!(
         "ready sdk built through the typestate path for chain {:?}",

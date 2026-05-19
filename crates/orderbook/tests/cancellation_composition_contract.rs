@@ -277,11 +277,11 @@ fn path_orders() -> String {
 }
 
 fn path_order() -> String {
-    format!("/api/v1/orders/{}", sample_order_uid().as_str())
+    format!("/api/v1/orders/{}", sample_order_uid().to_hex_string())
 }
 
 fn path_account_orders() -> String {
-    format!("/api/v1/account/{}/orders", sample_owner().as_str())
+    format!("/api/v1/account/{}/orders", sample_owner().to_hex_string())
 }
 
 fn path_tx_orders() -> String {
@@ -293,15 +293,24 @@ fn path_trades() -> String {
 }
 
 fn path_order_status() -> String {
-    format!("/api/v1/orders/{}/status", sample_order_uid().as_str())
+    format!(
+        "/api/v1/orders/{}/status",
+        sample_order_uid().to_hex_string()
+    )
 }
 
 fn path_native_price() -> String {
-    format!("/api/v1/token/{}/native_price", sample_owner().as_str())
+    format!(
+        "/api/v1/token/{}/native_price",
+        sample_owner().to_hex_string()
+    )
 }
 
 fn path_total_surplus() -> String {
-    format!("/api/v1/users/{}/total_surplus", sample_owner().as_str())
+    format!(
+        "/api/v1/users/{}/total_surplus",
+        sample_owner().to_hex_string()
+    )
 }
 
 fn path_app_data() -> String {

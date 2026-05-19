@@ -85,13 +85,13 @@ impl Eip1193Signer {
     async fn account(&self) -> Result<Address, BrowserWalletError> {
         self.ensure_expected_chain().await?;
         if let Some(address) = &self.account_hint {
-            return Ok(address.clone());
+            return Ok(*address);
         }
         if let Some(address) = self.provider.selected_account() {
             return Ok(address);
         }
         let accounts = self.provider.query_accounts(false).await?;
-        accounts.first().cloned().ok_or_else(|| {
+        accounts.first().copied().ok_or_else(|| {
             BrowserWalletError::malformed_response(
                 "eth_accounts",
                 "wallet does not currently expose any account",
@@ -138,7 +138,7 @@ impl AsyncSigner for Eip1193Signer {
                 "personal_sign",
                 Some(json!([
                     format!("0x{}", hex::encode(message)),
-                    account.as_str()
+                    account.to_hex_string()
                 ])),
             )
             .await?;
@@ -179,7 +179,7 @@ impl AsyncSigner for Eip1193Signer {
             .provider
             .request(
                 "eth_signTypedData_v4",
-                Some(json!([account.as_str(), typed_data])),
+                Some(json!([account.to_hex_string(), typed_data])),
             )
             .await?;
         value.as_str().map(str::to_owned).ok_or_else(|| {

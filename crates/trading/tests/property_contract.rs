@@ -161,7 +161,7 @@ fn same_token_validation_class_is_buy_side_only() {
     let now = 1_700_000_000;
     let mut buy_order = order_template();
     buy_order.valid_to = u32::try_from(now + 3_600).expect("valid_to must fit in u32");
-    buy_order.buy_token = buy_order.sell_token.clone();
+    buy_order.buy_token = buy_order.sell_token;
     buy_order.kind = OrderKind::Buy;
 
     let buy_outcome = validator.validate(&buy_order, SigningScheme::Eip712, None, now, false);
@@ -205,7 +205,7 @@ proptest! {
         let outcome_now = validator.validate(
             &order,
             scheme,
-            app_data_signer.clone(),
+            app_data_signer,
             now,
             is_eth_flow,
         );

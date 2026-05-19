@@ -70,7 +70,7 @@ impl InteractionLike {
 #[must_use]
 pub fn normalize_interaction(interaction: &InteractionLike) -> Interaction {
     Interaction::new(
-        interaction.target.clone(),
+        interaction.target,
         interaction.value.clone().unwrap_or_else(Amount::zero),
         interaction.call_data.clone().unwrap_or_default(),
     )

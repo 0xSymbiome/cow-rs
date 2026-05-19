@@ -1,7 +1,7 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-05-17
+Last reviewed: 2026-05-19
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a drift in the committed Solidity excerpt under `crates/contracts/abi/**/*.sol`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
@@ -301,40 +301,79 @@ the EIP-1474 hex-quantity wire form through
 previous hand-rolled `BigUint` parser path with the canonical alloy
 primitive.
 
-### Identity Primitive Extensions
+### Identity Primitive Newtypes
 
-The `cow_sdk_core::types::identity_ext` module defines sealed extension
-traits (`AddressExt`, `Hash32Ext`, `HexDataExt`, `OrderUidExt`) that
-expose the cow-side identity accessors (`new`, `from_bytes`, `as_str`,
-`as_slice`, `byte_length`, `normalized_key`) directly on the canonical
-`alloy_primitives` types (`Address`, `B256`, `Bytes`, `FixedBytes<56>`).
-The prelude at `cow_sdk_core::prelude` re-exports the four traits so
-downstream callers can bring them into scope through a single `use`. The
-trait methods enforce the same `0x`-prefixed lowercase hexadecimal
-contract the cow newtypes do today, so the extension surface is a
-drop-in forward-compatibility shim for the staged collapse of the cow
-identity newtypes onto `alloy_primitives` re-exports per ADR 0052.
+The cow identity primitives collapse onto strict `#[repr(transparent)]`
+newtypes over the canonical `alloy_primitives` byte types.
+`cow_sdk_core::Address` wraps `alloy_primitives::Address`; `Hash32`,
+`OrderDigest`, and `BlockHash` wrap `alloy_primitives::B256`; `HexData`
+wraps `alloy_primitives::Bytes`; `OrderUid` wraps
+`alloy_primitives::FixedBytes<56>`. The cached `{ inner, hex }` struct
+layout from the previous parity revision has been retired for these four
+newtype families, along with the `identity_ext` extension trait module
+and the `cow_sdk_core::types::hex` encoder helpers that backed it.
+`AppDataHash` intentionally keeps the cached layout because the
+app-data wire envelope demands stable `as_str()` borrowing across the
+SDK.
 
-The cow identity primitives themselves (`cow_sdk_core::Address`,
-`Hash32`, `AppDataHash`, `HexData`, `OrderUid`) now carry the canonical
-`alloy_primitives` byte-form alongside the cached lowercase hex string
-they accept on the wire. The structs each pair an `inner` field
-(`alloy_primitives::Address`, `B256`, `Bytes`, or `FixedBytes<56>`,
-parsed once at construction) with the `hex` field that the
-`as_str` / `as_bytes` accessors expose to downstream callers. A new
-`as_alloy(&self) -> &alloy_primitives::X` accessor exposes the packed
-byte representation for the `alloy_primitives`-typed signing, contract,
-and provider seams without re-parsing the lowercase hex string. The
-existing `PartialEq` / `Eq` / `Hash` / `PartialOrd` / `Ord` contracts
-collapse onto the packed byte comparison the alloy primitive provides,
-which is equivalent to the documented case-insensitive comparison
-contract because every valid value parses to the same bytes regardless
-of input casing. The contract test at
-`crates/core/tests/wire_format_preservation_contract.rs` locks the
-canonical wire byte sequence for every identity primitive (Address,
-Hash32, AppDataHash, HexData, OrderUid) and asserts that the extension
-trait surface mirrors the cow inherent surface byte-for-byte, so the
-wire form stays pinned across the migration.
+Construction stays through the existing `new(&str) -> Result<Self, _>`
+factories; the strict newtypes parse once at construction and reject
+malformed input with the same error variants the previous layout
+emitted. Display, Serialize, and Deserialize impls are cow-owned on
+`Address` (lowercase 0x-prefixed canonical, matching the deployed
+protocol convention) and alloy-forwarding on `Hash32`, `OrderDigest`,
+`BlockHash`, `HexData`, and `OrderUid` via `#[serde(transparent)]`. The
+inherent stdlib-style accessor is renamed `as_str() -> &str` to
+`to_hex_string() -> String` so callers receive an owned string that
+honors the canonical lowercase encoding contract without depending on
+internal caching. The new
+`write_into(&self, f: &mut impl core::fmt::Write) -> core::fmt::Result`
+accessor provides a zero-allocation path for the hot tracing and JSON
+emission seams that previously borrowed the cached hex string. The
+internal `pub` tuple-struct field carries a rustdoc-documented
+escape-hatch caveat: it is reachable for advanced callers but is
+explicitly not part of the API stability contract, and the safe
+accessors (`as_alloy`, `into_alloy`, `to_hex_string`, `write_into`,
+`as_slice`) cover every supported workflow.
+
+Equality, hash, and ordering on the strict newtypes collapse onto the
+underlying alloy byte comparison, which is equivalent to the previous
+case-insensitive contract because every valid input parses to the same
+bytes regardless of input casing. The seam helpers in
+`cow_sdk_alloy_provider` and `cow_sdk_alloy` consume the packed bytes
+directly through `*value.as_alloy()` and `value.into_alloy()`, replacing
+the previous `cow_to_alloy_address` / `cow_to_alloy_hash` /
+`alloy_address_to_cow_address` / `hex_data_from_bytes` /
+`decode_0x_hex` / `parse_u256_quantity` adapter helpers, which are
+removed. The cow-side hex helpers in `cow_sdk_contracts::primitives`
+(`parse_hex`, `parse_hex_exact`, `parse_address_bytes`,
+`parse_bytes32_hash`, `parse_hex32`, `normalize_hex_payload`) are
+removed in the same change set; consumer modules
+(`contracts::deploy`, `contracts::eth_flow`, `contracts::proxy`,
+`contracts::signature`, `contracts::settlement::codec`,
+`contracts::vault`) now route directly through the cow newtype
+`into_alloy` / `as_alloy` accessors and the `alloy_primitives::hex`
+decode entry point. Each remaining cow contracts helper that wraps a
+byte-typed value (`parse_alloy_address`, `hash32_bytes`,
+`decode_order_uid_bytes`, `decode_digest_key`, `address_to_sol`,
+`encode_address_word`, `order_uid_bytes`, `role_hash`,
+`alloy_to_cow_receipt`, `alloy_to_cow_block_info`, `alloy_domain_from`,
+`build_eip712_domain`) is infallible by construction and returns the
+wrapped value directly, with no `Result` indirection. The contract tests
+at `crates/core/tests/wire_format_preservation_contract.rs` lock the
+canonical wire byte sequence for every identity primitive
+(`Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`) and pin the
+`write_into` / `to_hex_string` byte-parity property against the four
+strict newtypes, so the canonical lowercase hex contract stays
+byte-identical across the migration.
+
+The four byte-typed cow newtypes carry a wasm-target Tsify derive
+(`#[cfg_attr(target_family = "wasm", derive(tsify::Tsify))]` with the
+`into_wasm_abi`, `from_wasm_abi`, and `type = "string"` attributes) so
+the canonical lowercase hex string is the wasm-bindgen ABI shape for any
+future binding that exposes a cow identity newtype across the JS
+boundary. The non-wasm targets pick up no extra dependency surface; the
+derive is gated entirely behind `target_family = "wasm"`.
 
 ## Evidence
 
@@ -380,7 +419,7 @@ Primary regression coverage:
 - `crates/trading/tests/onchain_contract.rs`
 - `crates/trading/tests/parity_contract.rs`
 - `crates/core/tests/wire_format_preservation_contract.rs`
-- `crates/core/src/types/identity_ext.rs::tests`
+- `crates/core/tests/property_contract.rs`
 
 Validation surface:
 

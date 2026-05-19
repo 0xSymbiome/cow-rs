@@ -27,10 +27,12 @@ use cow_sdk_trading::{
     SlippageToleranceRequest, SlippageToleranceResponse, TradingError,
 };
 
-pub const WETH: &str = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
-pub const COW: &str = "0x0625aFB445C3B6B7B929342a04A22599fd5dBB59";
-pub const OWNER: &str = "0xc8c753Ee51E8Fc80e199AB297fB575634a1aC1d3";
-pub const ALT_RECEIVER: &str = "0x974cAa59E49682CdA0aD2BbE82983419A2ECC400";
+// Canonical lowercase 0x-prefixed wire form per PROP-WB-004; cow Address
+// canonicalizes input casing at construction (ADR 0052).
+pub const WETH: &str = "0xfff9976782d46cc05630d1f6ebab18b2324d6b14";
+pub const COW: &str = "0x0625afb445c3b6b7b929342a04a22599fd5dbb59";
+pub const OWNER: &str = "0xc8c753ee51e8fc80e199ab297fb575634a1ac1d3";
+pub const ALT_RECEIVER: &str = "0x974caa59e49682cda0ad2bbe82983419a2ecc400";
 pub const CUSTOM_SETTLEMENT: &str = "0x13579bdf2468ace013579bdf2468ace013579bdf";
 pub const CUSTOM_ETHFLOW: &str = "0x2468ace013579bdf2468ace013579bdf2468ace0";
 pub const TX_HASH: &str = "0x13579bdf2468ace013579bdf2468ace013579bdf2468ace013579bdf2468ace0";
@@ -251,10 +253,7 @@ impl OrderbookClient for MockOrderbook {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.sent_orders.push(request.clone());
-        Ok(state
-            .order_id
-            .clone()
-            .expect("test order id remains configured"))
+        Ok(state.order_id.expect("test order id remains configured"))
     }
 
     async fn send_signed_order_cancellations(
@@ -324,7 +323,7 @@ impl AsyncSigner for CountingSigner {
     type Error = String;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
-        Ok(self.address.clone())
+        Ok(self.address)
     }
 
     async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
@@ -438,7 +437,7 @@ impl Signer for MockSigner {
     fn connect(&mut self, _provider: Self::Provider) {}
 
     fn get_address(&self) -> Result<Address, Self::Error> {
-        Ok(self.address.clone())
+        Ok(self.address)
     }
 
     fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
@@ -471,7 +470,7 @@ impl Signer for MockSigner {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.sent_transactions.push(tx.clone());
-        Ok(TransactionBroadcast::new(state.tx_hash.clone()))
+        Ok(TransactionBroadcast::new(state.tx_hash))
     }
 
     fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
@@ -637,7 +636,7 @@ impl Provider for MockProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 
@@ -840,7 +839,7 @@ impl AsyncSigner for FakeSigner {
     ) -> Result<TransactionBroadcast, Self::Error> {
         match self.outcome.as_ref() {
             FakeSignerOutcome::Broadcast(transaction_hash) => {
-                Ok(TransactionBroadcast::new(transaction_hash.clone()))
+                Ok(TransactionBroadcast::new(*transaction_hash))
             }
             FakeSignerOutcome::Error(error) => Err(*error),
         }
@@ -983,6 +982,6 @@ impl AsyncProvider for FakeProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }

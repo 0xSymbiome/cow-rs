@@ -100,9 +100,9 @@ where
     P::Error: fmt::Display,
     C: Eip1271VerificationCache + ?Sized,
 {
-    let digest_key = decode_digest_key(&request.digest)?;
+    let digest_key = decode_digest_key(&request.digest);
 
-    if let Some(cached) = cache.get(request.verifier.clone(), digest_key) {
+    if let Some(cached) = cache.get(request.verifier, digest_key) {
         #[cfg(feature = "tracing")]
         tracing::debug!(
             target: "cow_sdk::verify_eip1271",
@@ -125,18 +125,20 @@ where
     }
     code_result?;
 
-    let args_json =
-        match serde_json::to_string(&(request.digest.as_str(), request.signature.as_str())) {
-            Ok(args_json) => args_json,
-            Err(error) => {
-                #[cfg(feature = "tracing")]
-                emit_cache_skip_event();
-                return Err(ContractsError::from(error));
-            }
-        };
+    let args_json = match serde_json::to_string(&(
+        request.digest.to_hex_string(),
+        request.signature.to_hex_string(),
+    )) {
+        Ok(args_json) => args_json,
+        Err(error) => {
+            #[cfg(feature = "tracing")]
+            emit_cache_skip_event();
+            return Err(ContractsError::from(error));
+        }
+    };
     let raw = provider
         .read_contract(&cow_sdk_core::ContractCall::new(
-            request.verifier.clone(),
+            request.verifier,
             "isValidSignature".to_owned(),
             EIP1271_IS_VALID_SIGNATURE_ABI_JSON.to_owned(),
             args_json,
@@ -153,7 +155,7 @@ where
 
     let outcome = ensure_magic_value(&raw);
     if let Some(cached) = cacheable_verification_outcome(&outcome) {
-        cache.put(request.verifier.clone(), digest_key, cached);
+        cache.put(request.verifier, digest_key, cached);
         #[cfg(feature = "tracing")]
         tracing::debug!(
             target: "cow_sdk::verify_eip1271",
@@ -224,25 +226,8 @@ const fn cache_hit_to_result(cached: bool) -> Result<(), ContractsError> {
     }
 }
 
-fn decode_digest_key(digest: &cow_sdk_core::Hash32) -> Result<[u8; 32], ContractsError> {
-    let stripped = digest
-        .as_str()
-        .strip_prefix("0x")
-        .ok_or(ContractsError::InvalidHexPrefix { field: "digest" })?;
-    let bytes = hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
-        field: "digest",
-        source,
-    })?;
-    if bytes.len() != 32 {
-        return Err(ContractsError::InvalidDecodedLength {
-            field: "digest",
-            expected: 32,
-            actual: bytes.len(),
-        });
-    }
-    let mut out = [0u8; 32];
-    out.copy_from_slice(&bytes);
-    Ok(out)
+const fn decode_digest_key(digest: &cow_sdk_core::Hash32) -> [u8; 32] {
+    digest.into_alloy().0
 }
 
 fn ensure_magic_value(raw: &str) -> Result<(), ContractsError> {

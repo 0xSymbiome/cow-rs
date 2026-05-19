@@ -105,7 +105,7 @@ impl MockState {
             json!(
                 self.accounts
                     .iter()
-                    .map(Address::as_str)
+                    .map(Address::to_hex_string)
                     .collect::<Vec<_>>()
             )
         } else {

@@ -86,7 +86,7 @@ impl Eip1193Provider {
     /// Returns the currently selected wallet account, when available.
     #[must_use]
     pub fn selected_account(&self) -> Option<Address> {
-        self.session.borrow().selected_account.clone()
+        self.session.borrow().selected_account
     }
 
     /// Clears the cached wallet session state while preserving the wallet label.
@@ -122,7 +122,7 @@ impl Eip1193Provider {
         self.update_session(|session| {
             session.connected = !accounts.is_empty();
             session.accounts.clone_from(&accounts);
-            session.selected_account = accounts.first().cloned();
+            session.selected_account = accounts.first().copied();
         });
         Ok(accounts)
     }

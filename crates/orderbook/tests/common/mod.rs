@@ -101,9 +101,9 @@ pub fn sample_tx_hash() -> &'static str {
 
 pub fn sample_order_json(uid: &OrderUid) -> Value {
     json!({
-        "sellToken": sample_owner().as_str(),
-        "buyToken": sample_buy_token().as_str(),
-        "receiver": sample_owner().as_str(),
+        "sellToken": sample_owner().to_hex_string(),
+        "buyToken": sample_buy_token().to_hex_string(),
+        "receiver": sample_owner().to_hex_string(),
         "sellAmount": "1234567890",
         "buyAmount": "1200000000",
         "validTo": 1_700_000_000,
@@ -117,28 +117,28 @@ pub fn sample_order_json(uid: &OrderUid) -> Value {
         "buyTokenBalance": "erc20",
         "signingScheme": "eip712",
         "signature": "0x1234",
-        "owner": sample_owner().as_str(),
-        "uid": uid.as_str(),
+        "owner": sample_owner().to_hex_string(),
+        "uid": uid.to_hex_string(),
         "creationDate": "2020-12-03T18:35:18.814523Z",
         "executedSellAmount": "100",
         "executedSellAmountBeforeFees": "99",
         "executedBuyAmount": "90",
         "executedFee": "20",
         "executedFeeAmount": "0",
-        "executedFeeToken": sample_owner().as_str(),
+        "executedFeeToken": sample_owner().to_hex_string(),
         "invalidated": false,
         "status": "open",
         "class": "market",
         "isLiquidityOrder": false,
-        "settlementContract": sample_owner().as_str()
+        "settlementContract": sample_owner().to_hex_string()
     })
 }
 
 pub fn sample_ethflow_order_json(uid: &OrderUid) -> Value {
     json!({
-        "sellToken": sample_owner().as_str(),
-        "buyToken": sample_buy_token().as_str(),
-        "receiver": sample_owner().as_str(),
+        "sellToken": sample_owner().to_hex_string(),
+        "buyToken": sample_buy_token().to_hex_string(),
+        "receiver": sample_owner().to_hex_string(),
         "sellAmount": "1234567890",
         "buyAmount": "1200000000",
         "validTo": 4_294_967_295u32,
@@ -151,17 +151,17 @@ pub fn sample_ethflow_order_json(uid: &OrderUid) -> Value {
         "signingScheme": "eip712",
         "signature": "0x1234",
         "owner": "0xba3cb449bd2b4adddbc894d8697f5170800eadec",
-        "uid": uid.as_str(),
+        "uid": uid.to_hex_string(),
         "creationDate": "2020-12-03T18:35:18.814523Z",
         "executedSellAmountBeforeFees": "100",
         "executedFeeAmount": "0",
-        "settlementContract": sample_owner().as_str(),
+        "settlementContract": sample_owner().to_hex_string(),
         "executedSellAmount": "100",
         "executedBuyAmount": "90",
         "executedFee": "10",
         "status": "open",
         "class": "market",
-        "onchainUser": sample_owner().as_str(),
+        "onchainUser": sample_owner().to_hex_string(),
         "ethflowData": {
             "refundTxHash": null,
             "userValidTo": 1_700_000_123u32
@@ -172,9 +172,9 @@ pub fn sample_ethflow_order_json(uid: &OrderUid) -> Value {
 pub fn sample_quote_response_json() -> Value {
     json!({
         "quote": {
-            "sellToken": sample_owner().as_str(),
-            "buyToken": sample_buy_token().as_str(),
-            "receiver": sample_owner().as_str(),
+            "sellToken": sample_owner().to_hex_string(),
+            "buyToken": sample_buy_token().to_hex_string(),
+            "receiver": sample_owner().to_hex_string(),
             "sellAmount": "1000",
             "buyAmount": "900",
             "validTo": 1_700_000_000,
@@ -185,7 +185,7 @@ pub fn sample_quote_response_json() -> Value {
             "sellTokenBalance": "erc20",
             "buyTokenBalance": "erc20"
         },
-        "from": sample_owner().as_str(),
+        "from": sample_owner().to_hex_string(),
         "expiration": "2026-04-08T10:00:00Z",
         "id": 42,
         "verified": true,
@@ -197,10 +197,10 @@ pub fn sample_trade_json() -> Value {
     json!({
         "blockNumber": 1,
         "logIndex": 0,
-        "orderUid": sample_order_uid().as_str(),
-        "owner": sample_owner().as_str(),
-        "sellToken": sample_owner().as_str(),
-        "buyToken": sample_buy_token().as_str(),
+        "orderUid": sample_order_uid().to_hex_string(),
+        "owner": sample_owner().to_hex_string(),
+        "sellToken": sample_owner().to_hex_string(),
+        "buyToken": sample_buy_token().to_hex_string(),
         "sellAmount": "1000",
         "sellAmountBeforeFees": "990",
         "buyAmount": "900",

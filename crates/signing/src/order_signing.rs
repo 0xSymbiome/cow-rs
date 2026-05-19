@@ -1,7 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-use alloy_primitives::{Address as AlloyAddress, B256, Bytes as AlloyBytes, U256, keccak256};
+use alloy_primitives::{B256, Bytes as AlloyBytes, U256, keccak256};
 use alloy_sol_types::SolValue;
 use cow_sdk_contracts::{
     ContractsError, Order as ContractsOrder, OrderUidParams, SigningScheme, hash_order,
@@ -188,11 +188,8 @@ pub fn generate_order_id(
 ) -> Result<GeneratedOrderId, SigningError> {
     let domain = get_domain(chain_id, options)?;
     let order_digest = hash_order(&domain, &contracts_order(order))?;
-    let order_id = pack_order_uid_params(&OrderUidParams::new(
-        order_digest.clone(),
-        owner.clone(),
-        order.valid_to,
-    ))?;
+    let order_id =
+        pack_order_uid_params(&OrderUidParams::new(order_digest, *owner, order.valid_to))?;
 
     Ok(GeneratedOrderId {
         order_id,
@@ -225,9 +222,9 @@ pub fn eip1271_signature_payload(
     let signature_bytes = decode_hex(&signature, "ecdsaSignature")?;
 
     let onchain_order = OnchainOrder {
-        sellToken: parse_alloy_address(normalized.sell_token.as_str())?,
-        buyToken: parse_alloy_address(normalized.buy_token.as_str())?,
-        receiver: parse_alloy_address(normalized.receiver.as_str())?,
+        sellToken: *normalized.sell_token.as_alloy(),
+        buyToken: *normalized.buy_token.as_alloy(),
+        receiver: *normalized.receiver.as_alloy(),
         sellAmount: biguint_to_u256("sellAmount", normalized.sell_amount.as_biguint())?,
         buyAmount: biguint_to_u256("buyAmount", normalized.buy_amount.as_biguint())?,
         validTo: normalized.valid_to,
@@ -325,7 +322,7 @@ fn order_signing_payload(
 
     Ok(OrderSigningPayload {
         payload: order_typed_data_payload(chain_id, order, options)?,
-        digest: digest.as_str().to_owned(),
+        digest: digest.to_hex_string(),
     })
 }
 
@@ -373,16 +370,6 @@ fn decode_hex(value: &str, field: &'static str) -> Result<Vec<u8>, SigningError>
         return Err(ContractsError::InvalidHexPrefix { field }.into());
     };
     hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source }.into())
-}
-
-fn parse_alloy_address(value: &str) -> Result<AlloyAddress, SigningError> {
-    AlloyAddress::from_str(value).map_err(|_| {
-        SigningError::from(ContractsError::InvalidDecodedLength {
-            field: "address",
-            expected: 20,
-            actual: 0,
-        })
-    })
 }
 
 fn parse_b256(value: &str, field: &'static str) -> Result<B256, SigningError> {

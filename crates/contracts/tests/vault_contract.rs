@@ -83,7 +83,8 @@ fn vault_role_calls_and_grant_flow_are_stable() {
             .all(|call| call.authorizer_abi_json == abi_json)
     );
     assert!(calls.iter().all(
-        |call| serde_json::from_str::<Vec<String>>(&call.args_json).unwrap()[1] == relayer.as_str()
+        |call| serde_json::from_str::<Vec<String>>(&call.args_json).unwrap()[1]
+            == relayer.to_hex_string()
     ));
 
     let mut granted = Vec::new();
@@ -106,8 +107,8 @@ fn vault_role_calls_and_grant_flow_are_stable() {
 #[test]
 fn vault_role_hashes_match_the_canonical_solidity_packed_layout() {
     let vault = Address::new(MAINNET_VAULT_ADDRESS).unwrap();
-    let vault_bytes =
-        hex::decode(vault.as_str().trim_start_matches("0x")).expect("vault literal must decode");
+    let vault_bytes = hex::decode(vault.to_hex_string().trim_start_matches("0x"))
+        .expect("vault literal must decode");
 
     let roles = required_vault_roles(&vault).unwrap();
     assert_eq!(roles.len(), EXPECTED_MAINNET_VAULT_ROLES.len());
@@ -146,6 +147,6 @@ fn vault_role_hashes_match_the_canonical_solidity_packed_layout() {
         let args = serde_json::from_str::<Vec<String>>(&call.args_json).unwrap();
         assert_eq!(args.len(), 2);
         assert_eq!(args[0], expected_hash);
-        assert_eq!(args[1], relayer.as_str());
+        assert_eq!(args[1], relayer.to_hex_string());
     }
 }

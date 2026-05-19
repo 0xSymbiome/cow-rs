@@ -106,7 +106,7 @@ impl OrderPostingResult {
 
     /// Returns a copy of this result with an explicit transaction hash.
     #[must_use]
-    pub fn with_tx_hash(mut self, tx_hash: TransactionHash) -> Self {
+    pub const fn with_tx_hash(mut self, tx_hash: TransactionHash) -> Self {
         self.tx_hash = Some(tx_hash);
         self
     }

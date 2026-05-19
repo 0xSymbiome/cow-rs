@@ -19,10 +19,14 @@ use cow_sdk_core::{Address, Amount, ValidationReason};
 use serde_json::{Value, json};
 
 const FIXTURE_PATH: &str = "../../parity/fixtures/app_data/flashloan_v1.7.0.json";
-const LIQUIDITY_PROVIDER: &str = "0xb50201558B00496A145fE76f7424749556E326D8";
-const PROTOCOL_ADAPTER: &str = "0x1186B5ad42E3e6d6c6901FC53b4A367540E6EcFE";
-const RECEIVER: &str = "0x1186B5ad42E3e6d6c6901FC53b4A367540E6EcFE";
-const TOKEN: &str = "0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d";
+// The reviewed golden sample is now stored in the canonical lowercase
+// 0x-prefixed wire form per PROP-WB-004; the cow Address newtype canonicalizes
+// every input to lowercase at construction (ADR 0052) so the fixture and the
+// constants below stay aligned with the runtime serialization shape.
+const LIQUIDITY_PROVIDER: &str = "0xb50201558b00496a145fe76f7424749556e326d8";
+const PROTOCOL_ADAPTER: &str = "0x1186b5ad42e3e6d6c6901fc53b4a367540e6ecfe";
+const RECEIVER: &str = "0x1186b5ad42e3e6d6c6901fc53b4a367540e6ecfe";
+const TOKEN: &str = "0xe91d153e0b41518a2ce8dd3d7944fa863463a97d";
 const AMOUNT: &str = "2000000000000000000";
 const ZERO_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
 
@@ -62,10 +66,13 @@ fn fixture_golden_sample_roundtrips_byte_identically() {
         "FlashloanHints must roundtrip the reviewed fixture byte-identically",
     );
     assert_eq!(parsed.amount.to_string(), AMOUNT);
-    assert_eq!(parsed.liquidity_provider.as_str(), LIQUIDITY_PROVIDER);
-    assert_eq!(parsed.protocol_adapter.as_str(), PROTOCOL_ADAPTER);
-    assert_eq!(parsed.receiver.as_str(), RECEIVER);
-    assert_eq!(parsed.token.as_str(), TOKEN);
+    assert_eq!(
+        parsed.liquidity_provider.to_hex_string(),
+        LIQUIDITY_PROVIDER
+    );
+    assert_eq!(parsed.protocol_adapter.to_hex_string(), PROTOCOL_ADAPTER);
+    assert_eq!(parsed.receiver.to_hex_string(), RECEIVER);
+    assert_eq!(parsed.token.to_hex_string(), TOKEN);
 }
 
 #[test]
@@ -73,7 +80,7 @@ fn valid_hints_validate_and_match_the_golden_sample_shape() {
     let hints = sample_hints();
     hints.validate().expect("valid hints must validate");
     assert_eq!(hints.amount.to_string(), AMOUNT);
-    assert_eq!(hints.liquidity_provider.as_str(), LIQUIDITY_PROVIDER);
+    assert_eq!(hints.liquidity_provider.to_hex_string(), LIQUIDITY_PROVIDER);
 }
 
 #[test]

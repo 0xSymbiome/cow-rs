@@ -57,7 +57,7 @@ fn ecdsa_signature_for_prehash(signing_key: &SigningKey, prehash: &[u8; 32]) -> 
 }
 
 fn cow_eth_sign_prehash(digest: &Hash32) -> [u8; 32] {
-    let digest_bytes = hex::decode(digest.as_str().trim_start_matches("0x")).unwrap();
+    let digest_bytes = hex::decode(digest.to_hex_string().trim_start_matches("0x")).unwrap();
     let mut payload = Vec::with_capacity(60);
     payload.extend_from_slice(b"\x19Ethereum Signed Message:\n32");
     payload.extend_from_slice(&digest_bytes);
@@ -202,7 +202,7 @@ impl AsyncProvider for AsyncMockProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 
@@ -261,7 +261,7 @@ fn eip1271_signature_payloads_roundtrip_with_variable_lengths() {
         "0x1234",
         "0x29a674dfc87f8c78fc2bfbcbe8ffdd435091a6a84bc7761db72a45da453d73ac41c5ce28eceb34be73fddc12a5d04af6e736405e41b613aeefeed3db8122420c1b",
     ] {
-        let data = Eip1271SignatureData::new(verifier.clone(), signature.to_owned());
+        let data = Eip1271SignatureData::new(verifier, signature.to_owned());
 
         let encoded = encode_eip1271_signature_data(&data).unwrap();
         let decoded = decode_eip1271_signature_data(&encoded).unwrap();
@@ -285,11 +285,9 @@ fn signature_helpers_preserve_public_contract_surface() {
         )
         .unwrap(),
     };
-    let pre_sign = Signature::PreSign {
-        owner: signer.clone(),
-    };
+    let pre_sign = Signature::PreSign { owner: signer };
     let eip1271 = Signature::Eip1271 {
-        data: Eip1271SignatureData::new(signer.clone(), "0x1234".to_owned()),
+        data: Eip1271SignatureData::new(signer, "0x1234".to_owned()),
     };
 
     assert_eq!(ecdsa.scheme(), SigningScheme::Eip712);
@@ -342,7 +340,7 @@ fn recover_ecdsa_address_rejects_non_ecdsa_variants() {
     let digest = Hash32::new(format!("0x{}", "11".repeat(32))).unwrap();
     let verifier = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
     let eip1271 = Signature::Eip1271 {
-        data: Eip1271SignatureData::new(verifier.clone(), "0x1234".to_owned()),
+        data: Eip1271SignatureData::new(verifier, "0x1234".to_owned()),
     };
     let pre_sign = Signature::PreSign { owner: verifier };
 
@@ -437,7 +435,7 @@ fn eip1271_verification_reads_contract_code_and_magic_value() {
     verify_eip1271_signature(
         &provider,
         &Eip1271VerificationRequest::new(
-            verifier.clone(),
+            verifier,
             Hash32::new(format!("0x{}", "11".repeat(32))).unwrap(),
             HexData::new("0x1234").unwrap(),
         ),
@@ -461,7 +459,7 @@ fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
     let missing = verify_eip1271_signature(
         &provider,
         &Eip1271VerificationRequest::new(
-            verifier.clone(),
+            verifier,
             Hash32::new(format!("0x{}", "22".repeat(32))).unwrap(),
             HexData::new("0x").unwrap(),
         ),
@@ -469,7 +467,7 @@ fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
     .unwrap_err();
     match &missing {
         ContractsError::UnsupportedEip1271Verifier { verifier: got } => {
-            assert_eq!(got.as_str(), verifier.as_str());
+            assert_eq!(got.to_hex_string(), verifier.to_hex_string());
         }
         other => panic!("expected UnsupportedEip1271Verifier, got {other:?}"),
     }
@@ -504,7 +502,7 @@ fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
     let malformed = verify_eip1271_signature(
         &provider,
         &Eip1271VerificationRequest::new(
-            verifier.clone(),
+            verifier,
             Hash32::new(format!("0x{}", "44".repeat(32))).unwrap(),
             HexData::new("0x1234").unwrap(),
         ),
@@ -551,7 +549,7 @@ async fn async_eip1271_verification_reads_contract_code_and_magic_value() {
     verify_eip1271_signature_async(
         &provider,
         &Eip1271VerificationRequest::new(
-            verifier.clone(),
+            verifier,
             Hash32::new(format!("0x{}", "11".repeat(32))).unwrap(),
             HexData::new("0x1234").unwrap(),
         ),
@@ -573,7 +571,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
     let missing = verify_eip1271_signature_async(
         &provider,
         &Eip1271VerificationRequest::new(
-            verifier.clone(),
+            verifier,
             Hash32::new(format!("0x{}", "22".repeat(32))).unwrap(),
             HexData::new("0x1234").unwrap(),
         ),
@@ -583,7 +581,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
     .unwrap_err();
     match &missing {
         ContractsError::UnsupportedEip1271Verifier { verifier: got } => {
-            assert_eq!(got.as_str(), verifier.as_str());
+            assert_eq!(got.to_hex_string(), verifier.to_hex_string());
         }
         other => panic!("expected UnsupportedEip1271Verifier, got {other:?}"),
     }
@@ -593,7 +591,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
     let transport = verify_eip1271_signature_async(
         &provider,
         &Eip1271VerificationRequest::new(
-            verifier.clone(),
+            verifier,
             Hash32::new(format!("0x{}", "33".repeat(32))).unwrap(),
             HexData::new("0x1234").unwrap(),
         ),

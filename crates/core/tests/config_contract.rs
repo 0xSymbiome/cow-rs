@@ -159,7 +159,7 @@ fn protocol_constants_surface_byte_equivalent_addresses_across_every_accessor() 
             "every wrapped-native address must decode into 20 bytes for chain {chain:?}"
         );
         assert!(
-            wrapped.address.as_str().starts_with("0x"),
+            wrapped.address.to_hex_string().starts_with("0x"),
             "every wrapped-native address must stay 0x-prefixed for chain {chain:?}"
         );
     }

@@ -1530,7 +1530,7 @@ fn assert_sdk_contract_override_precedence(case_id: &str, expected: &Value) {
         .settlement_contract_override
         .as_ref()
         .and_then(|map| map.get(&u64::from(SupportedChainId::Sepolia)))
-        .cloned()
+        .copied()
         .unwrap_or_else(|| {
             panic!("case {case_id}: trader override must expose a resolved address")
         });
@@ -1552,7 +1552,7 @@ fn assert_sdk_contract_override_precedence(case_id: &str, expected: &Value) {
         .settlement_contract_override
         .as_ref()
         .and_then(|map| map.get(&u64::from(SupportedChainId::Sepolia)))
-        .cloned()
+        .copied()
         .unwrap_or_else(|| {
             panic!("case {case_id}: call-level override must expose a resolved address")
         });

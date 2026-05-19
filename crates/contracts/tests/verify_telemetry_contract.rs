@@ -37,7 +37,7 @@ async fn verifier_emits_canonical_span_and_safe_miss_store_events() {
 
     verify_eip1271_signature_async(
         &provider,
-        &verification_request(verifier.clone(), "11"),
+        &verification_request(verifier, "11"),
         &TestCache::default(),
     )
     .await
@@ -49,7 +49,8 @@ async fn verifier_emits_canonical_span_and_safe_miss_store_events() {
         .find(|span| span.name() == "verify.eip1271")
         .unwrap_or_else(|| panic!("verify.eip1271 span must be emitted: {spans:#?}"));
     assert_eq!(span.target(), "cow_sdk::verify_eip1271");
-    assert_eq!(span.field("verifier"), Some(verifier.as_str()));
+    let verifier_hex = verifier.to_hex_string();
+    assert_eq!(span.field("verifier"), Some(verifier_hex.as_str()));
     assert_no_forbidden_fields(span);
 
     let events = capture.events();

@@ -423,12 +423,12 @@ proptest! {
         owner in address_strategy(),
         valid_to in any::<u32>(),
     ) {
-        let params = OrderUidParams::new(digest.clone(), owner.clone(), valid_to);
+        let params = OrderUidParams::new(digest, owner, valid_to);
         let uid = pack_order_uid_params(&params).unwrap();
         let extracted = extract_order_uid_params(&uid).unwrap();
 
-        prop_assert_eq!(extracted.order_digest.as_str(), digest.as_str());
-        prop_assert_eq!(extracted.owner.as_str(), owner.as_str());
+        prop_assert_eq!(extracted.order_digest.to_hex_string(), digest.to_hex_string());
+        prop_assert_eq!(extracted.owner.to_hex_string(), owner.to_hex_string());
         prop_assert_eq!(extracted.valid_to, valid_to);
     }
 
@@ -443,10 +443,10 @@ proptest! {
     ) {
         let first = compute_order_uid(&domain, &order, &owner).unwrap();
         let second = compute_order_uid(&domain, &order, &owner).unwrap();
-        prop_assert_eq!(first.as_str(), second.as_str());
+        prop_assert_eq!(first.to_hex_string(), second.to_hex_string());
 
         let extracted = extract_order_uid_params(&first).unwrap();
-        prop_assert_eq!(extracted.owner.as_str(), owner.as_str());
+        prop_assert_eq!(extracted.owner.to_hex_string(), owner.to_hex_string());
         prop_assert_eq!(extracted.valid_to, order.valid_to);
     }
 
@@ -466,10 +466,10 @@ proptest! {
 
         let hash = hash_order(&domain, &order).unwrap();
         let equivalent_hash = hash_order(&domain, &equivalent).unwrap();
-        prop_assert_eq!(hash.as_str(), equivalent_hash.as_str());
+        prop_assert_eq!(hash.to_hex_string(), equivalent_hash.to_hex_string());
 
         let repeat = hash_order(&domain, &order).unwrap();
-        prop_assert_eq!(repeat.as_str(), hash.as_str());
+        prop_assert_eq!(repeat.to_hex_string(), hash.to_hex_string());
     }
 
     /// [`hash_order`] is invariant across address case variants on every
@@ -485,7 +485,7 @@ proptest! {
             let upper = format!(
                 "0x{}",
                 address
-                    .as_str()
+                    .to_hex_string()
                     .trim_start_matches("0x")
                     .to_ascii_uppercase()
             );
@@ -501,7 +501,7 @@ proptest! {
 
         let hash_original = hash_order(&domain, &order).unwrap();
         let hash_upper = hash_order(&domain, &uppercase_order).unwrap();
-        prop_assert_eq!(hash_original.as_str(), hash_upper.as_str());
+        prop_assert_eq!(hash_original.to_hex_string(), hash_upper.to_hex_string());
     }
 
     /// [`encode_trade`] / [`decode_order`] / [`decode_trade_flags`]
@@ -603,7 +603,7 @@ proptest! {
         );
 
         let encoded = encode_eip1271_signature_data(&Eip1271SignatureData::new(
-            verifier.clone(),
+            verifier,
             signature.clone(),
         ))
         .unwrap();
@@ -614,7 +614,7 @@ proptest! {
         prop_assert_eq!(encoded.len(), 2 + ((20 + byte_len) * 2));
 
         let encoded_bytes = hex::decode(encoded.trim_start_matches("0x")).unwrap();
-        let verifier_bytes = hex::decode(verifier.as_str().trim_start_matches("0x")).unwrap();
+        let verifier_bytes = hex::decode(verifier.to_hex_string().trim_start_matches("0x")).unwrap();
         prop_assert_eq!(encoded_bytes.len(), 20 + byte_len);
         prop_assert_eq!(&encoded_bytes[..20], verifier_bytes.as_slice());
         prop_assert_eq!(&encoded_bytes[20..], payload_bytes.as_slice());

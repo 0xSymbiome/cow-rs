@@ -77,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut offset = 0_u32;
 
     loop {
-        let mut request = GetOrdersRequest::new(owner.clone());
+        let mut request = GetOrdersRequest::new(owner);
         request.offset = offset;
         request.limit = PAGE_SIZE;
 
@@ -109,7 +109,10 @@ async fn mount_page(
     orders: Vec<serde_json::Value>,
 ) {
     Mock::given(method("GET"))
-        .and(path(format!("/api/v1/account/{}/orders", owner.as_str())))
+        .and(path(format!(
+            "/api/v1/account/{}/orders",
+            owner.to_hex_string()
+        )))
         .and(query_param("offset", offset.to_string()))
         .and(query_param("limit", limit.to_string()))
         .respond_with(ResponseTemplate::new(200).set_body_json(orders))
@@ -124,7 +127,7 @@ fn order_fixture(uid: &str) -> serde_json::Value {
     json!({
         "creationDate": "2025-01-21T12:55:14Z",
         "owner": OWNER,
-        "uid": uid.as_str(),
+        "uid": uid.to_hex_string(),
         "availableBalance": "0",
         "executedBuyAmount": "0",
         "executedSellAmount": "0",

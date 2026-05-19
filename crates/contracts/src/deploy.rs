@@ -65,9 +65,9 @@ pub fn deterministic_deployment_address(
     bytecode: &str,
     deployment_arguments: &[String],
 ) -> Result<Address, ContractsError> {
-    let mut init_code = crate::primitives::parse_hex(bytecode, "bytecode")?;
+    let mut init_code = decode_hex_field(bytecode, "bytecode")?;
     for arg in deployment_arguments {
-        init_code.extend_from_slice(&crate::primitives::parse_hex(arg, "deploymentArgument")?);
+        init_code.extend_from_slice(&decode_hex_field(arg, "deploymentArgument")?);
     }
 
     // Delegate the EIP-1014 byte assembly (`0xff || deployer || salt ||
@@ -78,11 +78,27 @@ pub fn deterministic_deployment_address(
     // canonical EIP-1014 formula from first principles and asserts the
     // helper output matches at the byte level.
     let deployer = Address::new(DEPLOYER_CONTRACT)?;
-    let deployer_alloy =
-        alloy_primitives::Address::new(crate::primitives::parse_address_bytes(&deployer)?);
-    let salt = crate::primitives::parse_hex32(SALT, "salt")?;
+    let deployer_alloy = deployer.into_alloy();
+    let salt_bytes = decode_hex_field(SALT, "salt")?;
+    let salt: [u8; 32] =
+        salt_bytes
+            .try_into()
+            .map_err(|raw: Vec<u8>| ContractsError::InvalidDecodedLength {
+                field: "salt",
+                expected: 32,
+                actual: raw.len(),
+            })?;
     let derived = deployer_alloy.create2_from_code(salt, &init_code);
     Address::new(format!("0x{}", hex::encode(derived.as_slice()))).map_err(Into::into)
+}
+
+/// Decodes a `0x`-prefixed hex string into raw bytes, mapping prefix and
+/// character errors onto the contracts-side typed error surface.
+fn decode_hex_field(value: &str, field: &'static str) -> Result<Vec<u8>, ContractsError> {
+    let stripped = value
+        .strip_prefix("0x")
+        .ok_or(ContractsError::InvalidHexPrefix { field })?;
+    hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source })
 }
 
 /// Returns the canonical production deployment addresses for a supported chain.
@@ -128,9 +144,9 @@ pub fn deployment_address_hash_input(
     bytecode: &str,
     deployment_arguments: &[String],
 ) -> Result<[u8; 32], ContractsError> {
-    let mut init_code = crate::primitives::parse_hex(bytecode, "bytecode")?;
+    let mut init_code = decode_hex_field(bytecode, "bytecode")?;
     for arg in deployment_arguments {
-        init_code.extend_from_slice(&crate::primitives::parse_hex(arg, "deploymentArgument")?);
+        init_code.extend_from_slice(&decode_hex_field(arg, "deploymentArgument")?);
     }
     Ok(keccak256(&init_code).0)
 }
@@ -189,7 +205,7 @@ mod tests {
         assert_eq!(
             deterministic_deployment_address(bytecode, &deployment_arguments)
                 .unwrap()
-                .as_str(),
+                .to_hex_string(),
             format!("0x{}", hex::encode(&expected[12..]))
         );
     }

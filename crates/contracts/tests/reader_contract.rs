@@ -126,7 +126,7 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
     );
 
     let simulator = TradeSimulator {
-        settlement_address: settlement_reader.settlement_address.clone(),
+        settlement_address: settlement_reader.settlement_address,
         settlement_abi_json: settlement_reader.settlement_abi_json.clone(),
         simulator_address: Address::new("0x6666666666666666666666666666666666666666").unwrap(),
         simulator_abi_json: serde_json::to_string(&["function simulateTrade(tuple,tuple[3])"])

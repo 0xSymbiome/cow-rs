@@ -70,28 +70,28 @@ impl QuoteRequestOverride {
 
     /// Returns a copy with an explicit sell-token replacement.
     #[must_use]
-    pub fn with_sell_token(mut self, sell_token: Address) -> Self {
+    pub const fn with_sell_token(mut self, sell_token: Address) -> Self {
         self.sell_token = Some(sell_token);
         self
     }
 
     /// Returns a copy with an explicit buy-token replacement.
     #[must_use]
-    pub fn with_buy_token(mut self, buy_token: Address) -> Self {
+    pub const fn with_buy_token(mut self, buy_token: Address) -> Self {
         self.buy_token = Some(buy_token);
         self
     }
 
     /// Returns a copy with an explicit receiver replacement.
     #[must_use]
-    pub fn with_receiver(mut self, receiver: Address) -> Self {
+    pub const fn with_receiver(mut self, receiver: Address) -> Self {
         self.receiver = Some(receiver);
         self
     }
 
     /// Returns a copy with an explicit quote owner.
     #[must_use]
-    pub fn with_from(mut self, from: Address) -> Self {
+    pub const fn with_from(mut self, from: Address) -> Self {
         self.from = Some(from);
         self
     }
@@ -214,7 +214,7 @@ pub(crate) struct QuoteRequestParameterTargets<'a> {
     pub buy_token_balance: &'a mut BuyTokenDestination,
 }
 
-pub(crate) fn apply_quote_request_parameter_overrides(
+pub(crate) const fn apply_quote_request_parameter_overrides(
     targets: &mut QuoteRequestParameterTargets<'_>,
     request_override: Option<&QuoteRequestOverride>,
 ) {
@@ -223,16 +223,16 @@ pub(crate) fn apply_quote_request_parameter_overrides(
     };
 
     if let Some(sell_token_override) = &request_override.sell_token {
-        *targets.sell_token = sell_token_override.clone();
+        *targets.sell_token = *sell_token_override;
     }
     if let Some(buy_token_override) = &request_override.buy_token {
-        *targets.buy_token = buy_token_override.clone();
+        *targets.buy_token = *buy_token_override;
     }
     if let Some(receiver_override) = &request_override.receiver {
-        *targets.receiver = Some(receiver_override.clone());
+        *targets.receiver = Some(*receiver_override);
     }
     if let Some(from_override) = &request_override.from {
-        *targets.owner = Some(from_override.clone());
+        *targets.owner = Some(*from_override);
     }
     if let Some(valid_for_override) = request_override.valid_for {
         *targets.valid_for = Some(valid_for_override);

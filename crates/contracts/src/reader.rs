@@ -241,7 +241,7 @@ where
         let normalized_trade = serde_json::json!({
             "sellToken": trade.sell_token,
             "buyToken": trade.buy_token,
-            "receiver": trade.receiver.clone().unwrap_or_else(zero_address),
+            "receiver": trade.receiver.unwrap_or_else(zero_address),
             "sellAmount": trade.sell_amount,
             "buyAmount": trade.buy_amount,
             "sellTokenBalance": sell_balance_id(trade.sell_token_balance.unwrap_or_default()),
@@ -276,7 +276,7 @@ where
 {
     provider
         .read_contract(&ContractCall::new(
-            reader_address.clone(),
+            *reader_address,
             method.to_owned(),
             reader_abi_json.to_owned(),
             serde_json::json!({

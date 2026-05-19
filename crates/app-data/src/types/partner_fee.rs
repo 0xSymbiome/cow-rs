@@ -338,7 +338,7 @@ fn validate_recipient(field: &'static str, recipient: &Address) -> Result<(), Ap
     Ok(())
 }
 
-fn address_zero() -> Address {
+const fn address_zero() -> Address {
     Address::from_bytes([0u8; 20])
 }
 
@@ -351,9 +351,8 @@ mod tests {
         let recipient = Address::new("0x1111111111111111111111111111111111111111")
             .expect("test recipient must be valid");
         let fee = PartnerFee::from(vec![
-            PartnerFeePolicy::surplus(250, 100, recipient.clone())
-                .expect("surplus policy must validate"),
-            PartnerFeePolicy::volume(42, recipient.clone()).expect("volume policy must validate"),
+            PartnerFeePolicy::surplus(250, 100, recipient).expect("surplus policy must validate"),
+            PartnerFeePolicy::volume(42, recipient).expect("volume policy must validate"),
         ]);
 
         let value = fee.to_value();
@@ -365,11 +364,11 @@ mod tests {
                 {
                     "surplusBps": 250,
                     "maxVolumeBps": 100,
-                    "recipient": recipient.as_str()
+                    "recipient": recipient.to_hex_string()
                 },
                 {
                     "volumeBps": 42,
-                    "recipient": recipient.as_str()
+                    "recipient": recipient.to_hex_string()
                 }
             ])
         );

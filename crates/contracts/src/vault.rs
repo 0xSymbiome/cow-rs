@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::Address;
 
-use crate::{ContractsError, primitives::parse_address_bytes};
+use crate::ContractsError;
 
 sol! {
     // Canonical GPv2VaultRelayer ABI surface plus the partial Balancer V2 Vault
@@ -174,7 +174,7 @@ pub fn required_vault_roles(
     VAULT_ROLE_SOURCES
         .iter()
         .map(|(method, selector)| {
-            let role = role_hash(vault_address, *selector)?;
+            let role = role_hash(vault_address, *selector);
             Ok(RequiredVaultRole::new(
                 (*method).to_owned(),
                 format!("0x{}", hex::encode(selector)),
@@ -199,10 +199,10 @@ pub fn required_vault_role_calls(
         .into_iter()
         .map(|role| {
             Ok(GrantRoleCall::new(
-                authorizer_address.clone(),
+                *authorizer_address,
                 authorizer_abi_json.to_owned(),
                 "grantRole".to_owned(),
-                serde_json::to_string(&(role.role, vault_relayer.clone()))?,
+                serde_json::to_string(&(role.role, *vault_relayer))?,
             ))
         })
         .collect()
@@ -239,13 +239,13 @@ where
     Ok(())
 }
 
-fn role_hash(vault_address: &Address, selector: [u8; 4]) -> Result<String, ContractsError> {
-    let address_bytes = parse_address_bytes(vault_address)?;
+fn role_hash(vault_address: &Address, selector: [u8; 4]) -> String {
+    let address_bytes = vault_address.into_alloy().0.0;
     let mut packed = [0u8; 36];
     packed[12..32].copy_from_slice(&address_bytes);
     packed[32..36].copy_from_slice(&selector);
-    Ok(format!(
+    format!(
         "0x{}",
         hex::encode(alloy_primitives::keccak256(packed).as_slice())
-    ))
+    )
 }

@@ -65,7 +65,7 @@ async fn get_block_accepts_latest_tag() {
 
     let block = provider.get_block("latest").await.unwrap();
     assert_eq!(block.number, 42);
-    assert_eq!(block.hash.unwrap().as_str(), HASH);
+    assert_eq!(block.hash.unwrap().to_hex_string(), HASH);
 }
 
 #[tokio::test]
@@ -98,13 +98,13 @@ async fn get_transaction_receipt_returns_rich_receipt() {
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(receipt.transaction_hash.as_str(), HASH);
+    assert_eq!(receipt.transaction_hash.to_hex_string(), HASH);
     assert_eq!(receipt.status, Some(TransactionStatus::Success));
     assert_eq!(receipt.block_number, Some(42));
-    assert_eq!(receipt.block_hash.unwrap().as_str(), HASH);
+    assert_eq!(receipt.block_hash.unwrap().to_hex_string(), HASH);
     assert_eq!(receipt.gas_used, Some(Amount::from(21_000u64)));
-    assert_eq!(receipt.from.unwrap().as_str(), ADDRESS);
-    assert_eq!(receipt.to.unwrap().as_str(), ADDRESS);
+    assert_eq!(receipt.from.unwrap().to_hex_string(), ADDRESS);
+    assert_eq!(receipt.to.unwrap().to_hex_string(), ADDRESS);
 }
 
 #[tokio::test]
@@ -119,10 +119,10 @@ async fn get_transaction_receipt_populates_status_block_gas_from_to() {
 
     assert_eq!(receipt.status, Some(TransactionStatus::Success));
     assert_eq!(receipt.block_number, Some(1234));
-    assert_eq!(receipt.block_hash.unwrap().as_str(), HASH);
+    assert_eq!(receipt.block_hash.unwrap().to_hex_string(), HASH);
     assert_eq!(receipt.gas_used, Some(Amount::from(30_000u64)));
-    assert_eq!(receipt.from.unwrap().as_str(), ADDRESS);
-    assert_eq!(receipt.to.unwrap().as_str(), ADDRESS);
+    assert_eq!(receipt.from.unwrap().to_hex_string(), ADDRESS);
+    assert_eq!(receipt.to.unwrap().to_hex_string(), ADDRESS);
 }
 
 #[tokio::test]
@@ -135,7 +135,7 @@ async fn call_returns_hex_data() {
         Some(Amount::from(21_000u32)),
     );
 
-    assert_eq!(provider.call(&tx).await.unwrap().as_str(), "0x1234");
+    assert_eq!(provider.call(&tx).await.unwrap().to_hex_string(), "0x1234");
 }
 
 #[tokio::test]

@@ -1,13 +1,14 @@
 # cow-sdk-core
 
-Shared [CoW Protocol](https://cow.fi) core types, validated primitives,
-configuration, and runtime-neutral trait contracts used across the
-`cow-rs` crate family.
+Shared [CoW Protocol](https://cow.fi) core types and runtime-neutral
+trait contracts.
 
-This is a foundational crate. Most consumers reach these types through
-the top-level [`cow-sdk`](https://crates.io/crates/cow-sdk) facade
-re-exports; depend on this crate directly when you are building a sibling
-leaf crate or implementing a custom `Signer` or `Provider` adapter.
+The crate ships validated primitive types, environment and chain
+configuration, and the trait shapes used across the `cow-rs` crate
+family. Most consumers reach these types through the top-level
+[`cow-sdk`](https://crates.io/crates/cow-sdk) facade re-exports;
+depend on this crate directly when you are building a sibling leaf
+crate or implementing a custom `Signer` or `Provider` adapter.
 
 The core runtime traits split transaction lifecycle states explicitly:
 `TransactionBroadcast` is the signer-side broadcast acknowledgement, while
@@ -27,7 +28,7 @@ cow-sdk-core = "0.1"
 use cow_sdk_core::{Address, SupportedChainId, addresses_equal};
 
 let address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
-assert_eq!(address.normalized_key(), address.as_str());
+assert_eq!(address.normalized_key(), address.to_hex_string());
 assert!(addresses_equal(&address, &address));
 let _chain = SupportedChainId::Sepolia;
 ```

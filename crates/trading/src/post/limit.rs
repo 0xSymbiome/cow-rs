@@ -95,7 +95,7 @@ where
 {
     let app_data_signer = advanced_settings
         .and_then(|settings| settings.app_data.as_ref())
-        .and_then(|params| params.signer.clone());
+        .and_then(|params| params.signer);
 
     let mut params = apply_settings_to_limit_trade_parameters(
         params,

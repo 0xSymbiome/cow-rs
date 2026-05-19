@@ -29,7 +29,7 @@ fn single_and_batch_cancellation_signing_are_first_class() {
     let signer = MockSigner::new();
     let order_uid = sample_order_uid();
     let batch_uids = vec![
-        order_uid.clone(),
+        order_uid,
         cow_sdk_core::OrderUid::new(
             "0x1aaa7dddecccc04cc101a121e3eed017eab4d3927c045d407d5ad6700eea2bf7fb3c7eb936caa12b5a884d612393969a557d430764060343",
         )
@@ -64,7 +64,8 @@ fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
 
     assert_eq!(payload.primary_type, ORDER_CANCELLATIONS_PRIMARY_TYPE);
     assert_eq!(payload.types["OrderCancellations"][0].kind, "bytes[]");
-    assert!(payload.message.contains(order_uid.as_str()));
+    let order_uid_hex = order_uid.to_hex_string();
+    assert!(payload.message.contains(&order_uid_hex));
 
     sign_order_cancellation(&order_uid, SupportedChainId::Sepolia, &signer, None).unwrap();
     assert_eq!(signer.calls.borrow().typed_data.len(), 1);
@@ -75,10 +76,10 @@ fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
     assert!(
         signer.calls.borrow().typed_data[0]
             .value_json
-            .contains(order_uid.as_str())
+            .contains(&order_uid_hex)
     );
 
-    let batch_uids = vec![order_uid.clone()];
+    let batch_uids = vec![order_uid];
     sign_order_cancellations_with_scheme(
         &batch_uids,
         SupportedChainId::Sepolia,
@@ -95,7 +96,7 @@ fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
     .unwrap();
     assert_eq!(
         format!("0x{}", hex::encode(&signer.calls.borrow().messages[0])),
-        expected_digest.as_str()
+        expected_digest.to_hex_string()
     );
 }
 
@@ -177,11 +178,12 @@ mod tracing_contract {
         .expect("cancellation signing should succeed");
 
         let events = capture.events();
+        let expected_uid = order_uid.to_hex_string();
         assert!(
             events.iter().any(|event| {
                 event.target == "cow_sdk::signing"
                     && event.level == Level::DEBUG
-                    && event.field("order_uid") == Some(order_uid.as_str())
+                    && event.field("order_uid") == Some(expected_uid.as_str())
                     && event.field("order_uid_count") == Some("1")
             }),
             "cancellation signing must emit a debug event with the UID field: {events:#?}"

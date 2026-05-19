@@ -161,7 +161,7 @@ impl TransactionReceipt {
 
     /// Sets the block hash that included the transaction.
     #[must_use]
-    pub fn with_block_hash(mut self, block_hash: BlockHash) -> Self {
+    pub const fn with_block_hash(mut self, block_hash: BlockHash) -> Self {
         self.block_hash = Some(block_hash);
         self
     }
@@ -175,14 +175,14 @@ impl TransactionReceipt {
 
     /// Sets the sender address.
     #[must_use]
-    pub fn with_from(mut self, from: Address) -> Self {
+    pub const fn with_from(mut self, from: Address) -> Self {
         self.from = Some(from);
         self
     }
 
     /// Sets the destination address.
     #[must_use]
-    pub fn with_to(mut self, to: Address) -> Self {
+    pub const fn with_to(mut self, to: Address) -> Self {
         self.to = Some(to);
         self
     }

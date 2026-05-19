@@ -2,10 +2,51 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
     errors::ValidationError,
-    types::{Address, ChainId, TokenInfo, hex_decode_20},
+    types::{Address, ChainId, TokenInfo},
 };
 
 use super::TOKEN_LIST_IMAGES_PATH;
+
+/// Decodes a `0x`-prefixed 42-character hex literal into a 20-byte array at
+/// compile time. Used only for the canonical wrapped-native-token address
+/// constants declared in this module.
+///
+/// # Panics
+///
+/// Panics at compile time when the input is not exactly 42 characters, is
+/// missing the `0x` prefix, or contains a non-hex character.
+const fn hex_decode_20(hex: &str) -> [u8; 20] {
+    let bytes = hex.as_bytes();
+    assert!(
+        bytes.len() == 42,
+        "hex_decode_20 requires a 42-character input"
+    );
+    assert!(
+        bytes[0] == b'0' && bytes[1] == b'x',
+        "hex_decode_20 requires a 0x prefix"
+    );
+    let mut out = [0u8; 20];
+    let mut i = 0;
+    while i < 20 {
+        out[i] = (decode_nibble(bytes[2 + 2 * i]) << 4) | decode_nibble(bytes[2 + 2 * i + 1]);
+        i += 1;
+    }
+    out
+}
+
+/// Decodes one ASCII hex nibble for the [`hex_decode_20`] compile-time helper.
+///
+/// # Panics
+///
+/// Panics when `c` is not an ASCII hex digit.
+const fn decode_nibble(c: u8) -> u8 {
+    match c {
+        b'0'..=b'9' => c - b'0',
+        b'a'..=b'f' => c - b'a' + 10,
+        b'A'..=b'F' => c - b'A' + 10,
+        _ => panic!("hex nibble must be 0-9, a-f, or A-F"),
+    }
+}
 
 const WRAPPED_NATIVE_MAINNET_BYTES: [u8; 20] =
     hex_decode_20("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");

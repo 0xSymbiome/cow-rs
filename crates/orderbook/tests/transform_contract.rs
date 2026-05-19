@@ -88,7 +88,7 @@ fn order_fixture_matches_openapi_inventory() {
     );
 
     assert_eq!(
-        order.settlement_contract.as_str(),
+        order.settlement_contract.to_hex_string(),
         "0x0000000000000000000000000000000000000006"
     );
     assert_eq!(order.is_liquidity_order, Some(false));
@@ -232,7 +232,7 @@ fn onchain_order_data_fixture_matches_openapi_inventory() {
     );
 
     assert_eq!(
-        data.sender.as_str(),
+        data.sender.to_hex_string(),
         "0x0000000000000000000000000000000000000005"
     );
     assert_eq!(data.placement_error.as_deref(), Some("none"));
@@ -308,7 +308,10 @@ fn ethflow_transform_rewrites_owner_sell_token_and_valid_to() {
     let transformed = transform_order(order).expect("ethflow order must transform");
 
     assert_eq!(transformed.owner, sample_owner());
-    assert_eq!(transformed.sell_token.as_str(), EVM_NATIVE_CURRENCY_ADDRESS);
+    assert_eq!(
+        transformed.sell_token.to_hex_string(),
+        EVM_NATIVE_CURRENCY_ADDRESS
+    );
     assert_eq!(transformed.valid_to, 1_700_000_123);
     assert_eq!(transformed.total_fee, amount("10"));
 }

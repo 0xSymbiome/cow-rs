@@ -124,19 +124,20 @@ fn override_with_only_signer_survives_into_wire_doc() {
     let base_doc = sealed_base_doc(base_params_with_quote_metadata());
     let signer = address(OWNER);
 
-    let override_params = AppDataParams::default().with_signer(signer.clone());
+    let override_params = AppDataParams::default().with_signer(signer);
 
     let (info, merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
         .expect("typed merge must succeed with signer-only override");
 
     assert_eq!(
         merged_params.signer,
-        Some(signer.clone()),
+        Some(signer),
         "override signer must survive the typed merge"
     );
+    let signer_hex = signer.to_hex_string();
     assert_eq!(
         info.doc["metadata"]["signer"].as_str(),
-        Some(signer.as_str()),
+        Some(signer_hex.as_str()),
         "wire doc must carry metadata.signer lifted from the typed field"
     );
     assert_eq!(
@@ -161,15 +162,16 @@ fn override_with_only_signer_survives_into_wire_doc() {
 fn merge_preserves_override_signer_byte_identical() {
     let base_doc = sealed_base_doc(base_params_with_quote_metadata());
     let signer = address(OWNER);
-    let override_params = AppDataParams::default().with_signer(signer.clone());
+    let override_params = AppDataParams::default().with_signer(signer);
 
     let (info, merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
         .expect("typed merge with signer override must succeed");
 
-    assert_eq!(merged_params.signer, Some(signer.clone()));
+    assert_eq!(merged_params.signer, Some(signer));
+    let signer_hex = signer.to_hex_string();
     assert_eq!(
         info.doc["metadata"]["signer"].as_str(),
-        Some(signer.as_str()),
+        Some(signer_hex.as_str()),
         "override signer must be carried to the wire byte-identical",
     );
 }
@@ -246,20 +248,21 @@ fn override_with_both_signer_and_flashloan_survives() {
     let hints = sample_flashloan();
 
     let override_params = AppDataParams::default()
-        .with_signer(signer.clone())
+        .with_signer(signer)
         .with_flashloan(hints.clone());
 
     let (info, merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
         .expect("typed merge must succeed with signer and flashloan override");
 
-    assert_eq!(merged_params.signer, Some(signer.clone()));
+    assert_eq!(merged_params.signer, Some(signer));
     assert_eq!(merged_params.flashloan, Some(hints.clone()));
 
     let flashloan_value =
         serde_json::to_value(&hints).expect("flash-loan hints must reserialize through serde");
+    let signer_hex = signer.to_hex_string();
     assert_eq!(
         info.doc["metadata"]["signer"].as_str(),
-        Some(signer.as_str()),
+        Some(signer_hex.as_str()),
         "wire doc must carry the typed signer field",
     );
     assert_eq!(
@@ -365,12 +368,12 @@ async fn base_doc_signer_triggers_appdata_from_mismatch_when_from_differs() {
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let base_signer = address(OWNER);
     let submission_owner = address(ALT_RECEIVER);
-    let signer = MockSigner::new(submission_owner.clone());
+    let signer = MockSigner::new(submission_owner);
     let mut trade = sample_trade_parameters(OrderKind::Sell);
-    trade.owner = Some(submission_owner.clone());
+    trade.owner = Some(submission_owner);
 
     let advanced_at_quote = SwapAdvancedSettings::new()
-        .with_app_data(AppDataParams::default().with_signer(base_signer.clone()));
+        .with_app_data(AppDataParams::default().with_signer(base_signer));
 
     let quote_results = get_quote_results(
         &trade,
@@ -465,12 +468,12 @@ async fn base_doc_signer_matches_from_passes_validation() {
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let base_signer = address(OWNER);
-    let signer = MockSigner::new(base_signer.clone());
+    let signer = MockSigner::new(base_signer);
     let mut trade = sample_trade_parameters(OrderKind::Sell);
-    trade.owner = Some(base_signer.clone());
+    trade.owner = Some(base_signer);
 
     let advanced_at_quote = SwapAdvancedSettings::new()
-        .with_app_data(AppDataParams::default().with_signer(base_signer.clone()));
+        .with_app_data(AppDataParams::default().with_signer(base_signer));
 
     let quote_results = get_quote_results(
         &trade,
@@ -496,14 +499,14 @@ async fn override_signer_supersedes_base_signer() {
     let trader = sample_trader_parameters();
     let orderbook_a = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let override_signer = address(THIRD_OWNER);
-    let signer_c = MockSigner::new(override_signer.clone());
+    let signer_c = MockSigner::new(override_signer);
     let mut trade_c = sample_trade_parameters(OrderKind::Sell);
-    trade_c.owner = Some(override_signer.clone());
+    trade_c.owner = Some(override_signer);
 
     let advanced_at_quote = SwapAdvancedSettings::new()
         .with_app_data(AppDataParams::default().with_signer(address(OWNER)));
     let advanced_at_post = SwapAdvancedSettings::new()
-        .with_app_data(AppDataParams::default().with_signer(override_signer.clone()));
+        .with_app_data(AppDataParams::default().with_signer(override_signer));
 
     let quote_results_c = get_quote_results(
         &trade_c,
@@ -528,9 +531,9 @@ async fn override_signer_supersedes_base_signer() {
     // AppdataFromMismatch surfacing the override signer.
     let orderbook_b = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let base_signer = address(OWNER);
-    let signer_a = MockSigner::new(base_signer.clone());
+    let signer_a = MockSigner::new(base_signer);
     let mut trade_a = sample_trade_parameters(OrderKind::Sell);
-    trade_a.owner = Some(base_signer.clone());
+    trade_a.owner = Some(base_signer);
 
     let quote_results_a = get_quote_results(
         &trade_a,

@@ -68,8 +68,8 @@ fn build_order_body(
     params: &LimitTradeParameters,
 ) -> OrderCreation {
     let mut order_body = OrderCreation::new(
-        order_to_sign.sell_token.clone(),
-        order_to_sign.buy_token.clone(),
+        order_to_sign.sell_token,
+        order_to_sign.buy_token,
         order_to_sign.sell_amount.clone(),
         order_to_sign.buy_amount.clone(),
         order_to_sign.valid_to,
@@ -78,7 +78,7 @@ fn build_order_body(
         signature,
         from,
     )
-    .with_receiver(order_to_sign.receiver.clone())
+    .with_receiver(order_to_sign.receiver)
     .with_app_data(app_data.full_app_data.clone())
     .with_app_data_hash(app_data.app_data_keccak256.clone())
     .with_partially_fillable(order_to_sign.partially_fillable)
@@ -173,8 +173,7 @@ where
     };
     let from = params
         .owner
-        .clone()
-        .or_else(|| signer_address.clone())
+        .or(signer_address)
         .ok_or(TradingError::MissingSubmissionOwner)?;
     if matches!(
         requested_scheme,
@@ -205,7 +204,7 @@ where
     let order_to_sign = get_order_to_sign(
         crate::order::OrderToSignParams {
             chain_id,
-            from: from.clone(),
+            from,
             is_ethflow: false,
             network_costs_amount: additional_params.network_costs_amount.clone(),
             apply_costs_slippage_and_fees: additional_params
@@ -222,7 +221,7 @@ where
         app_data,
         requested_scheme,
         String::new(),
-        from.clone(),
+        from,
         &params,
     );
     let validator =
@@ -348,7 +347,7 @@ where
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     match scheme {
-        SigningScheme::PreSign => Ok((from.as_str().to_owned(), SigningScheme::PreSign)),
+        SigningScheme::PreSign => Ok((from.to_hex_string(), SigningScheme::PreSign)),
         SigningScheme::Eip1271 => {
             if let Some(provider) = &additional_params.custom_eip1271_signature {
                 let signature =

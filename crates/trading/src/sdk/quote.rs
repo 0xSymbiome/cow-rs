@@ -33,7 +33,7 @@ impl TradingSdk {
         mut params: TradeParameters,
         advanced_settings: Option<&SwapAdvancedSettings>,
     ) -> Result<QuoteResults, TradingError> {
-        params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
+        params.owner = params.owner.or(self.trader_defaults.owner);
         let owner = self.resolve_quote_owner(&params, advanced_settings)?;
         let (quoter, orderbook) = self.resolve_quoter(owner, params.env)?;
 
@@ -110,7 +110,7 @@ impl TradingSdk {
         S: AsyncSigner,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
-        params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
+        params.owner = params.owner.or(self.trader_defaults.owner);
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
         get_quote_results_async(

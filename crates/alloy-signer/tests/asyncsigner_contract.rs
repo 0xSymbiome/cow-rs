@@ -18,7 +18,7 @@ async fn get_address_matches_known_vector() {
     let signer = test_signer();
 
     assert_eq!(
-        signer.get_address().await.unwrap().as_str(),
+        signer.get_address().await.unwrap().to_hex_string(),
         EXPECTED_ADDRESS
     );
 }

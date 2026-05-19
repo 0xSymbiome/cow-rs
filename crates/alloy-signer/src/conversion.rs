@@ -6,7 +6,7 @@ use alloy_dyn_abi::{
     DynSolType,
     eip712::{PropertyDef, Resolver, TypeDef, TypedData},
 };
-use alloy_primitives::{Address as AlloyAddress, Signature, U256};
+use alloy_primitives::{Signature, U256};
 use alloy_sol_types::Eip712Domain;
 use cow_sdk_core::{TypedDataDomain, TypedDataField, TypedDataPayload};
 
@@ -39,7 +39,7 @@ pub(crate) fn cow_flat_to_alloy_typed_data(
 pub(crate) fn cow_typed_data_payload_to_alloy(
     payload: &TypedDataPayload,
 ) -> Result<TypedData, String> {
-    let domain = build_eip712_domain(&payload.domain)?;
+    let domain = build_eip712_domain(&payload.domain);
     let resolver = build_resolver(&payload.types, &payload.primary_type)?;
     let message = serde_json::from_str(payload.message_json())
         .map_err(|error| format!("typed-data message JSON parse error: {error}"))?;
@@ -56,22 +56,14 @@ pub(crate) fn cow_typed_data_payload_to_alloy(
     Ok(typed)
 }
 
-fn build_eip712_domain(domain: &TypedDataDomain) -> Result<Eip712Domain, String> {
-    let verifying_contract: AlloyAddress =
-        domain.verifying_contract.as_str().parse().map_err(|_| {
-            format!(
-                "EIP-712 domain verifying_contract `{}` is not a valid address",
-                domain.verifying_contract.as_str()
-            )
-        })?;
-
-    Ok(Eip712Domain {
+fn build_eip712_domain(domain: &TypedDataDomain) -> Eip712Domain {
+    Eip712Domain {
         name: Some(Cow::Owned(domain.name.clone())),
         version: Some(Cow::Owned(domain.version.clone())),
         chain_id: Some(U256::from(domain.chain_id)),
-        verifying_contract: Some(verifying_contract),
+        verifying_contract: Some(*domain.verifying_contract.as_alloy()),
         salt: None,
-    })
+    }
 }
 
 fn build_resolver(

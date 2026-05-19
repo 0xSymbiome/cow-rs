@@ -249,10 +249,7 @@ fn assert_domain_resolution_precedence(id: &str, expected: &Value) {
     // settlementContractOverride wins over env defaults.
     let override_addr = Address::new("0x1234567890123456789012345678901234567890").unwrap();
     let mut map = BTreeMap::new();
-    map.insert(
-        ChainId::from(SupportedChainId::Mainnet),
-        override_addr.clone(),
-    );
+    map.insert(ChainId::from(SupportedChainId::Mainnet), override_addr);
     let overridden_domain = get_domain(
         SupportedChainId::Mainnet,
         Some(
@@ -397,8 +394,10 @@ fn assert_generate_order_id(id: &str, expected: &Value) {
     // The packed UID trails the owner address (bytes 32..52) and the order
     // valid_to (bytes 52..56) so asserting the suffix matches proves both
     // inputs are propagated through the UID construction.
-    let uid_hex = generated.order_id.as_str().trim_start_matches("0x");
-    let owner_hex = owner.as_str().trim_start_matches("0x").to_lowercase();
+    let uid_string = generated.order_id.to_hex_string();
+    let uid_hex = uid_string.trim_start_matches("0x");
+    let owner_string = owner.to_hex_string();
+    let owner_hex = owner_string.trim_start_matches("0x").to_lowercase();
     assert!(
         uid_hex.to_lowercase().contains(&owner_hex),
         "case {id}: packed UID must embed the owner bytes",

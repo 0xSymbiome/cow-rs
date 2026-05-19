@@ -113,7 +113,7 @@ impl LimitTradeParameters {
 #[must_use]
 pub fn is_ethflow_order(sell_token: &Address) -> bool {
     sell_token
-        .as_str()
+        .to_hex_string()
         .eq_ignore_ascii_case(EVM_NATIVE_CURRENCY_ADDRESS)
 }
 
@@ -151,10 +151,10 @@ pub fn swap_params_to_limit_order_params(
 ) -> Result<LimitTradeParameters, TradingError> {
     Ok(LimitTradeParameters {
         kind: trade_parameters.kind,
-        owner: trade_parameters.owner.clone(),
-        sell_token: trade_parameters.sell_token.clone(),
+        owner: trade_parameters.owner,
+        sell_token: trade_parameters.sell_token,
         sell_token_decimals: trade_parameters.sell_token_decimals,
-        buy_token: trade_parameters.buy_token.clone(),
+        buy_token: trade_parameters.buy_token,
         buy_token_decimals: trade_parameters.buy_token_decimals,
         sell_amount: quote_response.quote.sell_amount.clone(),
         buy_amount: quote_response.quote.buy_amount.clone(),
@@ -166,7 +166,7 @@ pub fn swap_params_to_limit_order_params(
         sell_token_balance: quote_response.quote.sell_token_balance,
         buy_token_balance: quote_response.quote.buy_token_balance,
         slippage_bps: trade_parameters.slippage_bps,
-        receiver: trade_parameters.receiver.clone(),
+        receiver: trade_parameters.receiver,
         valid_for: trade_parameters.valid_for,
         valid_to: trade_parameters.valid_to,
         partner_fee: trade_parameters.partner_fee.clone(),
@@ -197,9 +197,8 @@ pub fn get_order_to_sign(
     let network_costs_amount = params.network_costs_amount.unwrap_or_else(Amount::zero);
     let receiver = limit_parameters
         .receiver
-        .clone()
         .filter(|receiver| !is_zero_address(receiver))
-        .unwrap_or_else(|| params.from.clone());
+        .unwrap_or(params.from);
     let valid_to = if let Some(valid_to) = limit_parameters.valid_to {
         valid_to
     } else {
@@ -227,8 +226,8 @@ pub fn get_order_to_sign(
         .unwrap_or_else(|| default_slippage_bps(params.chain_id, params.is_ethflow));
     let (sell_amount_to_use, buy_amount_to_use) = if params.apply_costs_slippage_and_fees {
         let quote = cow_sdk_orderbook::QuoteData::new(
-            limit_parameters.sell_token.clone(),
-            limit_parameters.buy_token.clone(),
+            limit_parameters.sell_token,
+            limit_parameters.buy_token,
             limit_parameters.sell_amount.clone(),
             limit_parameters.buy_amount.clone(),
             valid_to,
@@ -236,7 +235,7 @@ pub fn get_order_to_sign(
             limit_parameters.kind,
         )
         .with_network_cost_amount(network_costs_amount)
-        .with_receiver(receiver.clone())
+        .with_receiver(receiver)
         .with_partially_fillable(limit_parameters.partially_fillable)
         .with_sell_token_balance(limit_parameters.sell_token_balance)
         .with_buy_token_balance(limit_parameters.buy_token_balance);
@@ -265,8 +264,8 @@ pub fn get_order_to_sign(
     };
 
     Ok(UnsignedOrder::new(
-        limit_parameters.sell_token.clone(),
-        limit_parameters.buy_token.clone(),
+        limit_parameters.sell_token,
+        limit_parameters.buy_token,
         receiver,
         sell_amount_to_use,
         buy_amount_to_use,
@@ -305,7 +304,7 @@ pub async fn calculate_unique_order_id(
 ) -> Result<GeneratedOrderId, TradingError> {
     let owner = options
         .and_then(|opts| opts.eth_flow_contract_override.as_ref())
-        .and_then(|override_map| override_map.get(&u64::from(chain_id)).cloned())
+        .and_then(|override_map| override_map.get(&u64::from(chain_id)).copied())
         .unwrap_or_else(|| {
             let env = options.and_then(|opts| opts.env).unwrap_or(CowEnv::Prod);
             // SAFETY: Registry::default parses the build-validated embedded
@@ -356,7 +355,5 @@ fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
 }
 
 fn is_zero_address(address: &Address) -> bool {
-    address
-        .as_str()
-        .eq_ignore_ascii_case("0x0000000000000000000000000000000000000000")
+    address.is_zero()
 }

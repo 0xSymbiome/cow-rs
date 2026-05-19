@@ -37,11 +37,8 @@ where
 {
     let mut effective_trade_parameters =
         apply_advanced_settings_to_trade_parameters(trade_parameters, advanced_settings)?;
-    let account = effective_trade_parameters
-        .owner
-        .clone()
-        .unwrap_or_else(|| trader.account.clone());
-    effective_trade_parameters.owner = Some(account.clone());
+    let account = effective_trade_parameters.owner.unwrap_or(trader.account);
+    effective_trade_parameters.owner = Some(account);
     let mut effective_trader = trader.clone();
     effective_trader.account = account;
 
@@ -110,7 +107,7 @@ where
 {
     let mut effective_trade_parameters =
         apply_advanced_settings_to_trade_parameters(trade_parameters, advanced_settings)?;
-    let account = match effective_trade_parameters.owner.clone() {
+    let account = match effective_trade_parameters.owner {
         Some(owner) => owner,
         None => signer
             .get_address()
@@ -120,7 +117,7 @@ where
                 message: error.to_string().into(),
             })?,
     };
-    effective_trade_parameters.owner = Some(account.clone());
+    effective_trade_parameters.owner = Some(account);
     let quoter = QuoterParameters {
         chain_id: trader.chain_id,
         app_code: trader.app_code.clone(),
@@ -274,7 +271,7 @@ fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, Tr
     let order_to_sign = get_order_to_sign(
         crate::order::OrderToSignParams {
             chain_id: inputs.trader.chain_id,
-            from: inputs.trader.account.clone(),
+            from: inputs.trader.account,
             is_ethflow: inputs.is_ethflow,
             network_costs_amount: Some(inputs.quote_response.quote.network_cost_amount().clone()),
             apply_costs_slippage_and_fees: true,
@@ -339,18 +336,15 @@ fn build_quote_request(
     app_data_info: &TradingAppDataInfo,
     request_override: Option<&QuoteRequestOverride>,
 ) -> Result<OrderQuoteRequest, TradingError> {
-    let receiver = trade_parameters
-        .receiver
-        .clone()
-        .unwrap_or_else(|| trader.account.clone());
+    let receiver = trade_parameters.receiver.unwrap_or(trader.account);
     let side = match trade_parameters.kind {
         cow_sdk_core::OrderKind::Sell => QuoteSide::sell(trade_parameters.amount.clone()),
         cow_sdk_core::OrderKind::Buy => QuoteSide::buy(trade_parameters.amount.clone()),
     };
     let mut request = OrderQuoteRequest::new(
-        trade_parameters.sell_token.clone(),
-        trade_parameters.buy_token.clone(),
-        trader.account.clone(),
+        trade_parameters.sell_token,
+        trade_parameters.buy_token,
+        trader.account,
         side,
     )
     .with_receiver(receiver)
@@ -388,7 +382,7 @@ fn build_quote_request(
     Ok(request)
 }
 
-fn apply_quote_request_override(
+const fn apply_quote_request_override(
     request: &mut OrderQuoteRequest,
     request_override: Option<&QuoteRequestOverride>,
 ) {
@@ -397,13 +391,13 @@ fn apply_quote_request_override(
     };
 
     if let Some(sell_token) = &request_override.sell_token {
-        request.sell_token = sell_token.clone();
+        request.sell_token = *sell_token;
     }
     if let Some(buy_token) = &request_override.buy_token {
-        request.buy_token = buy_token.clone();
+        request.buy_token = *buy_token;
     }
     if let Some(receiver) = &request_override.receiver {
-        request.receiver = Some(receiver.clone());
+        request.receiver = Some(*receiver);
     }
     if let Some(valid_for) = request_override.valid_for {
         request.valid_for = Some(valid_for);
@@ -414,7 +408,7 @@ fn apply_quote_request_override(
         request.valid_for = None;
     }
     if let Some(from) = &request_override.from {
-        request.from = from.clone();
+        request.from = *from;
     }
     if let Some(price_quality) = request_override.price_quality {
         request.price_quality = price_quality;

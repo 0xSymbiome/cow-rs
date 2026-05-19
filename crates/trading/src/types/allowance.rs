@@ -51,7 +51,7 @@ impl AllowanceParameters {
 
     /// Returns a copy with an explicit vault-relayer deployment override.
     #[must_use]
-    pub fn with_vault_relayer_override(mut self, address: Address) -> Self {
+    pub const fn with_vault_relayer_override(mut self, address: Address) -> Self {
         self.vault_relayer_override = Some(address);
         self
     }
@@ -106,7 +106,7 @@ impl ApprovalParameters {
 
     /// Returns a copy with an explicit vault-relayer deployment override.
     #[must_use]
-    pub fn with_vault_relayer_override(mut self, address: Address) -> Self {
+    pub const fn with_vault_relayer_override(mut self, address: Address) -> Self {
         self.vault_relayer_override = Some(address);
         self
     }

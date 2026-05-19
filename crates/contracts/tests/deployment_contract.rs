@@ -51,7 +51,7 @@ fn deployment_constants_and_create2_address_match_fixture_contract() {
     let hash = keccak256(payload);
     let expected = format!("0x{}", hex::encode(&hash[12..]));
 
-    assert_eq!(actual.as_str(), expected);
+    assert_eq!(actual.to_hex_string(), expected);
 }
 
 #[test]
@@ -135,7 +135,7 @@ fn registry_canonical_addresses_are_bound_to_the_reviewed_create2_salt_contract(
     assert_eq!(
         deterministic_deployment_address(bytecode, &args)
             .unwrap()
-            .as_str(),
+            .to_hex_string(),
         format!("0x{}", hex::encode(&expected[12..]))
     );
 }

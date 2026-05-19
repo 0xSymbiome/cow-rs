@@ -105,7 +105,7 @@ fn domain_separator_is_stable_hex() {
 #[test]
 fn order_input_parses_to_unsigned_order() {
     let order = host_order_input().to_unsigned_order().unwrap();
-    assert_eq!(order.sell_token.as_str(), ADDR_SELL);
+    assert_eq!(order.sell_token.to_hex_string(), ADDR_SELL);
     assert_eq!(order.kind, cow_sdk_core::OrderKind::Sell);
 }
 
@@ -228,8 +228,8 @@ fn generated_order_uid_uses_canonical_strings() {
     let owner = Address::new(ADDR_OWNER).unwrap();
     let generated = signing::generate_order_id(chain, &order, &owner).unwrap();
     let dto = uid::generated_order_uid_dto(&generated);
-    assert_eq!(dto.order_uid, generated.order_id.as_str());
-    assert_eq!(dto.order_digest, generated.order_digest.as_str());
+    assert_eq!(dto.order_uid, generated.order_id.to_hex_string());
+    assert_eq!(dto.order_digest, generated.order_digest.to_hex_string());
     assert_eq!(dto.order_uid.len(), 114);
     assert_eq!(dto.order_digest.len(), 66);
 }

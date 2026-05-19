@@ -428,7 +428,7 @@ async fn post_swap_order_same_buy_sell_token_does_not_upload_or_sign() {
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = CountingSigner::new(address(OWNER));
     let mut params = sample_limit_parameters(OrderKind::Buy);
-    params.buy_token = params.sell_token.clone();
+    params.buy_token = params.sell_token;
 
     let error = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
         .await
@@ -451,7 +451,7 @@ async fn post_swap_order_sell_side_same_buy_sell_token_uploads_signs_and_submits
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = MockSigner::default();
     let mut params = sample_limit_parameters(OrderKind::Sell);
-    params.buy_token = params.sell_token.clone();
+    params.buy_token = params.sell_token;
 
     let result = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
         .await
@@ -598,7 +598,7 @@ async fn async_order_level_eip1271_verification_is_explicit_and_reuses_contract_
         &order_to_sign,
         trader.chain_id,
         &cow_sdk_trading::types::Eip1271VerificationParameters::new(
-            verifier.clone(),
+            verifier,
             HexData::new("0x7e57c0de").unwrap(),
         ),
         Some(&protocol_options_from_trader(&trader)),
@@ -740,7 +740,7 @@ async fn ethflow_validation_rejects_mismatched_signer() {
         &trader,
         &signer,
         cow_sdk_trading::OrderValidityBounds::SERVICES_DEFAULT,
-        Some(mismatched_signer.clone()),
+        Some(mismatched_signer),
     )
     .await
     .expect_err("mismatched app-data signer must trigger a typed rejection");

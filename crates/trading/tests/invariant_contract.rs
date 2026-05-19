@@ -273,22 +273,22 @@ async fn ethflow_calldata_preserves_uint256_boundary_values() {
         );
         assert_eq!(transaction.order_to_sign.buy_amount.to_string(), buy_amount);
         assert_eq!(
-            hex_word_to_biguint(calldata_word(data.as_str(), 2)),
+            hex_word_to_biguint(calldata_word(&data.to_hex_string(), 2)),
             BigUint::parse_bytes(sell_amount.as_bytes(), 10).unwrap()
         );
         assert_eq!(
-            hex_word_to_biguint(calldata_word(data.as_str(), 3)),
+            hex_word_to_biguint(calldata_word(&data.to_hex_string(), 3)),
             BigUint::parse_bytes(buy_amount.as_bytes(), 10).unwrap()
         );
         // The canonical upstream EthFlowOrder.Data tuple lays validTo out at
         // word index 6 and quoteId at word index 8; intermediate words carry
         // appData, feeAmount, and partiallyFillable.
         assert_eq!(
-            hex_word_to_biguint(calldata_word(data.as_str(), 6)),
+            hex_word_to_biguint(calldata_word(&data.to_hex_string(), 6)),
             BigUint::from(valid_to)
         );
         assert_eq!(
-            hex_word_to_biguint(calldata_word(data.as_str(), 8)),
+            hex_word_to_biguint(calldata_word(&data.to_hex_string(), 8)),
             BigUint::from(quote_id as u64)
         );
     }
@@ -355,20 +355,9 @@ async fn quote_results_preserve_generated_override_shape_across_request_and_orde
             swap_params_to_limit_order_params(&result.trade_parameters, &result.quote_response)
                 .expect("quote result should remain convertible into limit params");
 
-        let expected_owner = quote_request
-            .from
-            .clone()
-            .or_else(|| trade.owner.clone())
-            .unwrap_or_else(|| signer.address.clone());
-        let expected_trade_receiver = quote_request
-            .receiver
-            .clone()
-            .or_else(|| trade.receiver.clone());
-        let expected_request_receiver = Some(
-            expected_trade_receiver
-                .clone()
-                .unwrap_or_else(|| expected_owner.clone()),
-        );
+        let expected_owner = quote_request.from.or(trade.owner).unwrap_or(signer.address);
+        let expected_trade_receiver = quote_request.receiver.or(trade.receiver);
+        let expected_request_receiver = Some(expected_trade_receiver.unwrap_or(expected_owner));
         let (expected_valid_for, expected_valid_to) =
             if let Some(valid_for) = quote_request.valid_for {
                 (Some(valid_for), None)
@@ -381,7 +370,7 @@ async fn quote_results_preserve_generated_override_shape_across_request_and_orde
             .partially_fillable
             .unwrap_or(trade.partially_fillable);
 
-        assert_eq!(result.trade_parameters.owner, Some(expected_owner.clone()));
+        assert_eq!(result.trade_parameters.owner, Some(expected_owner));
         assert_eq!(request.from, expected_owner);
         assert_eq!(result.trade_parameters.receiver, expected_trade_receiver);
         assert_eq!(request.receiver, expected_request_receiver);
@@ -399,7 +388,7 @@ async fn quote_results_preserve_generated_override_shape_across_request_and_orde
         }
         assert_eq!(
             result.order_to_sign.receiver,
-            expected_trade_receiver.unwrap_or_else(|| request.from.clone())
+            expected_trade_receiver.unwrap_or(request.from)
         );
         assert_eq!(limit.owner, result.trade_parameters.owner);
         assert_eq!(limit.sell_token, result.trade_parameters.sell_token);

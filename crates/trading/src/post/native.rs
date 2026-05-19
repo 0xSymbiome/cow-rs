@@ -117,10 +117,10 @@ where
     )
     .await?;
 
-    let preview_from = tx.from.clone();
+    let preview_from = tx.from;
     let preview = OrderCreation::new(
-        tx.order_to_sign.sell_token.clone(),
-        tx.order_to_sign.buy_token.clone(),
+        tx.order_to_sign.sell_token,
+        tx.order_to_sign.buy_token,
         tx.order_to_sign.sell_amount.clone(),
         tx.order_to_sign.buy_amount.clone(),
         tx.order_to_sign.valid_to,

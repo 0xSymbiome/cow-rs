@@ -34,12 +34,9 @@ fn domain_resolution_honors_default_env_staging_and_override_precedence() {
             &ProtocolOptions::new()
                 .with_env(CowEnv::Staging)
                 .with_settlement_contract_override(
-                    [(
-                        u64::from(SupportedChainId::Mainnet),
-                        override_address.clone(),
-                    )]
-                    .into_iter()
-                    .collect(),
+                    [(u64::from(SupportedChainId::Mainnet), override_address)]
+                        .into_iter()
+                        .collect(),
                 ),
         ),
     )
@@ -66,7 +63,7 @@ fn typed_data_domain_and_separator_match_fixture_contract() {
         &typed.domain.name,
         &typed.domain.version,
         typed.domain.chain_id,
-        typed.domain.verifying_contract.as_str(),
+        &typed.domain.verifying_contract.to_hex_string(),
     );
 
     assert_eq!(

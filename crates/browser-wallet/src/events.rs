@@ -182,7 +182,7 @@ pub(crate) fn apply_provider_event(
             update_wallet_session(session, events, None, |session| {
                 session.connected = !accounts.is_empty();
                 session.accounts.clone_from(&accounts);
-                session.selected_account = accounts.first().cloned();
+                session.selected_account = accounts.first().copied();
             });
         }
         WalletProviderEvent::ChainChanged { chain_id } => {

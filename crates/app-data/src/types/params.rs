@@ -153,7 +153,7 @@ impl AppDataParams {
 
     /// Returns a copy with a typed signer metadata value.
     #[must_use]
-    pub fn with_signer(mut self, signer: Address) -> Self {
+    pub const fn with_signer(mut self, signer: Address) -> Self {
         self.signer = Some(signer);
         self
     }
@@ -191,10 +191,7 @@ impl AppDataParams {
     pub fn metadata_wire_value(&self) -> Result<Value, AppDataError> {
         let mut metadata = self.metadata.clone();
         if let Some(signer) = &self.signer {
-            metadata.insert(
-                "signer".to_owned(),
-                Value::String(signer.as_str().to_owned()),
-            );
+            metadata.insert("signer".to_owned(), Value::String(signer.to_hex_string()));
         }
         if let Some(flashloan) = &self.flashloan {
             metadata.insert(

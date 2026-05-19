@@ -1021,7 +1021,9 @@ mod tracing_contract {
             .await;
         Mock::given(method("POST"))
             .and(path("/api/v1/orders"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(sample_order_uid().as_str()))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(sample_order_uid().to_hex_string()),
+            )
             .mount(&server)
             .await;
 
@@ -1053,7 +1055,7 @@ mod tracing_contract {
             .await
             .expect("order submission should succeed");
 
-        assert_eq!(uid.as_str(), sample_order_uid().as_str());
+        assert_eq!(uid.to_hex_string(), sample_order_uid().to_hex_string());
         let spans = capture.spans();
         assert!(
             spans.iter().any(|span| {

@@ -93,7 +93,7 @@ let receipt = match submit_and_wait_for_receipt(
     }) => {
         return Err(format!(
             "approval receipt {} was not observed after {:?}",
-            transaction_hash.as_str(),
+            transaction_hash.to_hex_string(),
             elapsed
         )
         .into());

@@ -188,7 +188,7 @@ impl OrderBookApi {
         Ok(format!(
             "{}/api/v1/orders/{}",
             self.effective_base_url()?,
-            order_uid.as_str()
+            order_uid.to_hex_string()
         ))
     }
 
@@ -352,13 +352,13 @@ impl OrderBookApi {
                 env = ?self.context().env,
                 endpoint = "/api/v1/orders/:uid",
                 method = "GET",
-                order_uid = order_uid.as_str(),
+                order_uid = order_uid.to_hex_string(),
             ),
         ),
     )]
     pub async fn get_order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
         let params = FetchParams::new(
-            format!("/api/v1/orders/{}", order_uid.as_str()),
+            format!("/api/v1/orders/{}", order_uid.to_hex_string()),
             HttpMethod::Get,
         );
         let order: Order = self.fetch_json(params).await?;
@@ -386,7 +386,7 @@ impl OrderBookApi {
                 env = ?self.context().env,
                 endpoint = "/api/v1/orders/:uid",
                 method = "GET",
-                order_uid = order_uid.as_str(),
+                order_uid = order_uid.to_hex_string(),
             ),
         ),
     )]
@@ -430,7 +430,7 @@ impl OrderBookApi {
                 env = ?self.context().env,
                 endpoint = "/api/v1/account/:owner/orders",
                 method = "GET",
-                owner = request.owner.as_str(),
+                owner = request.owner.to_hex_string(),
             ),
         ),
     )]
@@ -439,7 +439,7 @@ impl OrderBookApi {
         request: &GetOrdersRequest,
     ) -> Result<Vec<Order>, OrderbookError> {
         let params = FetchParams::new(
-            format!("/api/v1/account/{}/orders", request.owner.as_str()),
+            format!("/api/v1/account/{}/orders", request.owner.to_hex_string()),
             HttpMethod::Get,
         )
         .with_query("offset", request.offset.to_string())
@@ -519,11 +519,11 @@ impl OrderBookApi {
         let mut params = FetchParams::new("/api/v2/trades", HttpMethod::Get);
 
         if let Some(owner) = &request.owner {
-            params = params.with_query("owner", owner.as_str().to_owned());
+            params = params.with_query("owner", owner.to_hex_string());
         }
 
         if let Some(order_uid) = &request.order_uid {
-            params = params.with_query("orderUid", order_uid.as_str().to_owned());
+            params = params.with_query("orderUid", order_uid.to_hex_string());
         }
 
         let params = params
@@ -550,7 +550,7 @@ impl OrderBookApi {
                 env = ?self.context().env,
                 endpoint = "/api/v1/orders/:uid/status",
                 method = "GET",
-                order_uid = order_uid.as_str(),
+                order_uid = order_uid.to_hex_string(),
             ),
         ),
     )]
@@ -559,7 +559,7 @@ impl OrderBookApi {
         order_uid: &OrderUid,
     ) -> Result<CompetitionOrderStatus, OrderbookError> {
         let params = FetchParams::new(
-            format!("/api/v1/orders/{}/status", order_uid.as_str()),
+            format!("/api/v1/orders/{}/status", order_uid.to_hex_string()),
             HttpMethod::Get,
         );
 
@@ -591,7 +591,7 @@ impl OrderBookApi {
         token: &crate::types::Address,
     ) -> Result<NativePriceResponse, OrderbookError> {
         let params = FetchParams::new(
-            format!("/api/v1/token/{}/native_price", token.as_str()),
+            format!("/api/v1/token/{}/native_price", token.to_hex_string()),
             HttpMethod::Get,
         );
 
@@ -615,7 +615,7 @@ impl OrderBookApi {
                 env = ?self.context().env,
                 endpoint = "/api/v1/users/:address/total_surplus",
                 method = "GET",
-                owner = owner.as_str(),
+                owner = owner.to_hex_string(),
             ),
         ),
     )]
@@ -624,7 +624,7 @@ impl OrderBookApi {
         owner: &crate::types::Address,
     ) -> Result<TotalSurplus, OrderbookError> {
         let params = FetchParams::new(
-            format!("/api/v1/users/{}/total_surplus", owner.as_str()),
+            format!("/api/v1/users/{}/total_surplus", owner.to_hex_string()),
             HttpMethod::Get,
         );
 

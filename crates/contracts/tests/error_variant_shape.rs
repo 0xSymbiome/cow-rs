@@ -17,9 +17,7 @@ const fn assert_typed_magic_value_bytes(_: [u8; 4]) {}
 fn missing_clearing_price_carries_typed_token_address() {
     let token =
         Address::new("0x1111111111111111111111111111111111111111").expect("literal must parse");
-    let error = ContractsError::MissingClearingPrice {
-        token: token.clone(),
-    };
+    let error = ContractsError::MissingClearingPrice { token };
 
     let ContractsError::MissingClearingPrice { token: extracted } = &error else {
         panic!("expected MissingClearingPrice variant, got {error:?}");
@@ -29,7 +27,7 @@ fn missing_clearing_price_carries_typed_token_address() {
 
     assert_eq!(
         error.to_string(),
-        format!("missing clearing price for token {}", token.as_str()),
+        format!("missing clearing price for token {}", token.to_hex_string()),
     );
 }
 
@@ -113,9 +111,7 @@ fn invalid_decoded_length_variant_carries_structured_field_expected_and_actual_f
 fn forbidden_interaction_target_carries_typed_target_address() {
     let target =
         Address::new("0x1111111111111111111111111111111111111111").expect("literal must parse");
-    let error = ContractsError::ForbiddenInteractionTarget {
-        target: target.clone(),
-    };
+    let error = ContractsError::ForbiddenInteractionTarget { target };
 
     let ContractsError::ForbiddenInteractionTarget { target: extracted } = &error else {
         panic!("expected ForbiddenInteractionTarget variant, got {error:?}");
@@ -126,7 +122,7 @@ fn forbidden_interaction_target_carries_typed_target_address() {
         error.to_string(),
         format!(
             "forbidden settlement interaction target: {}",
-            target.as_str()
+            target.to_hex_string()
         ),
     );
 }

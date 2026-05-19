@@ -35,16 +35,18 @@ fn proxy_constants_and_storage_readers_match_contract_surface() {
     );
 
     assert_eq!(
-        implementation_address(&provider, &proxy).unwrap().as_str(),
+        implementation_address(&provider, &proxy)
+            .unwrap()
+            .to_hex_string(),
         "0x1111111111111111111111111111111111111111"
     );
     assert_eq!(
-        admin_address(&provider, &proxy).unwrap().as_str(),
+        admin_address(&provider, &proxy).unwrap().to_hex_string(),
         "0x2222222222222222222222222222222222222222"
     );
     assert_eq!(
-        owner_address(&provider, &proxy).unwrap().as_str(),
-        admin_address(&provider, &proxy).unwrap().as_str(),
+        owner_address(&provider, &proxy).unwrap().to_hex_string(),
+        admin_address(&provider, &proxy).unwrap().to_hex_string(),
         "owner_address is the legacy alias for admin_address",
     );
 }

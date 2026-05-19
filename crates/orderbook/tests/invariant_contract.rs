@@ -264,7 +264,7 @@ fn trades_request_filter_xor_is_never_silently_normalized() {
         let mut rng = CaseRng::new(seed + 4_001);
         let owner = rng.next_bool().then(sample_owner);
         let order_uid = rng.next_bool().then(sample_order_uid);
-        let request = GetTradesRequest::new(owner.clone(), order_uid.clone())
+        let request = GetTradesRequest::new(owner, order_uid)
             .with_offset(rng.next_u32() % 500)
             .with_limit(1 + (rng.next_u32() % 100));
 

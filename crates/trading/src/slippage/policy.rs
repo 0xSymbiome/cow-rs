@@ -202,8 +202,8 @@ pub async fn resolve_slippage_suggestion(
 
     let request = crate::SlippageToleranceRequest {
         chain_id,
-        sell_token: trade_parameters.sell_token.clone(),
-        buy_token: trade_parameters.buy_token.clone(),
+        sell_token: trade_parameters.sell_token,
+        buy_token: trade_parameters.buy_token,
         sell_amount: Some(if amounts.is_sell {
             amounts.before_all_fees.sell_amount
         } else {

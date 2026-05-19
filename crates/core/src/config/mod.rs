@@ -13,7 +13,12 @@ mod protocol;
 /// All supported `CoW` API environments.
 pub const ENVS_LIST: [CowEnv; 2] = [CowEnv::Prod, CowEnv::Staging];
 /// Sentinel address used by `CoW` Protocol to represent the native chain asset.
-pub const EVM_NATIVE_CURRENCY_ADDRESS: &str = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+///
+/// Stored in the canonical lowercase 0x-prefixed wire form per PROP-WB-004 so it
+/// compares byte-identically against any [`Address`](crate::Address) constructed
+/// from the same logical value; alloy address checksum casing is parsed and
+/// normalized by the cow newtype at construction.
+pub const EVM_NATIVE_CURRENCY_ADDRESS: &str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 /// Default timeout applied to HTTP-backed SDK clients.
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(10);
 /// Default user-agent applied by the native HTTP transport.

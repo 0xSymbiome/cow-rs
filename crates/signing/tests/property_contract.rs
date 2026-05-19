@@ -130,7 +130,8 @@ fn domain_and_changed_strategy() -> impl Strategy<Value = (TypedDataDomain, Type
             1 => changed.version.push_str(".1"),
             2 => changed.chain_id = changed.chain_id.saturating_add(1),
             _ => {
-                let current = changed.verifying_contract.as_str().trim_start_matches("0x");
+                let hex_string = changed.verifying_contract.to_hex_string();
+                let current = hex_string.trim_start_matches("0x");
                 let mut bytes = hex::decode(current).unwrap();
                 bytes[19] ^= 1;
                 if bytes.iter().all(|byte| *byte == 0) {
@@ -238,7 +239,7 @@ fn chain_with_protocol_options_strategy()
                         }
                         if want_override {
                             let mut overrides = BTreeMap::new();
-                            overrides.insert(u64::from(chain), override_address.clone());
+                            overrides.insert(u64::from(chain), override_address);
                             options = options.with_settlement_contract_override(overrides);
                         }
                         Some(options)
@@ -334,7 +335,7 @@ proptest! {
         prop_assert_eq!(message_calls.messages.len(), 1);
         prop_assert_eq!(
             format!("0x{}", hex::encode(&message_calls.messages[0])),
-            expected_digest.as_str().to_owned(),
+            expected_digest.to_hex_string().clone(),
         );
     }
 
@@ -387,7 +388,7 @@ proptest! {
         prop_assert_eq!(message_calls.messages.len(), 1);
         prop_assert_eq!(
             format!("0x{}", hex::encode(&message_calls.messages[0])),
-            expected_digest.as_str().to_owned(),
+            expected_digest.to_hex_string().clone(),
         );
     }
 

@@ -197,9 +197,9 @@ impl OrderCreation {
         signature: impl Into<String>,
     ) -> Self {
         Self {
-            sell_token: quote.sell_token.clone(),
-            buy_token: quote.buy_token.clone(),
-            receiver: receiver.or_else(|| quote.receiver.clone()),
+            sell_token: quote.sell_token,
+            buy_token: quote.buy_token,
+            receiver: receiver.or(quote.receiver),
             sell_amount: quote.sell_amount.clone(),
             buy_amount: quote.buy_amount.clone(),
             valid_to: quote.valid_to,
@@ -220,7 +220,7 @@ impl OrderCreation {
 
     /// Returns a copy of this submission payload with an explicit receiver.
     #[must_use]
-    pub fn with_receiver(mut self, receiver: Address) -> Self {
+    pub const fn with_receiver(mut self, receiver: Address) -> Self {
         self.receiver = Some(receiver);
         self
     }
@@ -583,7 +583,7 @@ impl ExecutedProtocolFee {
 
     /// Returns a copy carrying the fee token.
     #[must_use]
-    pub fn with_token(mut self, token: Address) -> Self {
+    pub const fn with_token(mut self, token: Address) -> Self {
         self.token = Some(token);
         self
     }

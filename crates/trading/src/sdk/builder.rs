@@ -192,7 +192,7 @@ impl<C, A> TradingSdkBuilder<C, A> {
 
     /// Returns a copy of this builder with a default owner.
     #[must_use]
-    pub fn with_owner(mut self, owner: Address) -> Self {
+    pub const fn with_owner(mut self, owner: Address) -> Self {
         self.trader_defaults.owner = Some(owner);
         self
     }

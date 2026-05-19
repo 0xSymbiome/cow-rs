@@ -25,9 +25,9 @@ impl TradingSdk {
     ) -> Result<Address, TradingError> {
         advanced_settings
             .and_then(|settings| settings.quote_request.as_ref())
-            .and_then(|override_request| override_request.from.clone())
-            .or_else(|| params.owner.clone())
-            .or_else(|| self.trader_defaults.owner.clone())
+            .and_then(|override_request| override_request.from)
+            .or(params.owner)
+            .or(self.trader_defaults.owner)
             .ok_or(TradingError::MissingOwner)
     }
 
@@ -109,7 +109,7 @@ impl TradingSdk {
             PartialTraderParameters {
                 chain_id: Some(orderbook.chain_id),
                 app_code: self.trader_defaults.app_code.clone(),
-                owner: self.trader_defaults.owner.clone(),
+                owner: self.trader_defaults.owner,
                 env: Some(orderbook.env),
                 settlement_contract_override: self
                     .trader_defaults

@@ -3,12 +3,12 @@
 use alloy_dyn_abi::{DynSolType, DynSolValue, FunctionExt, JsonAbiExt};
 use alloy_json_abi::{Function, JsonAbi, Param};
 use alloy_network::{Ethereum, TransactionBuilder};
-use alloy_primitives::{Address as AlloyAddress, B256, Bytes, I256, U256};
+use alloy_primitives::{B256, Bytes, I256, U256};
 use alloy_provider::{DynProvider, Provider};
 use cow_sdk_core::{Address, ContractCall};
 use serde_json::Value;
 
-use crate::{conversion::decode_0x_hex, error::AlloyClientError};
+use crate::error::AlloyClientError;
 
 /// Executes the canonical read-contract algorithm through an Alloy provider.
 pub(crate) async fn execute_read_contract(
@@ -30,16 +30,7 @@ pub(crate) async fn execute_read_contract(
             request.method
         ))
     })?;
-    let to = request
-        .address
-        .as_str()
-        .parse::<AlloyAddress>()
-        .map_err(|_| {
-            AlloyClientError::Validation(format!(
-                "ContractCall.address `{}` is not a valid 20-byte hex address",
-                request.address.as_str()
-            ))
-        })?;
+    let to = *request.address.as_alloy();
     let tx = alloy_rpc_types_eth::TransactionRequest::default()
         .with_to(to)
         .with_input(Bytes::from(calldata));
@@ -172,10 +163,7 @@ fn json_to_dyn_value(
                 AlloyClientError::Validation(format!("method `{method}`: address must be a string"))
             })?;
             let address = Address::new(address)?;
-            let bytes = decode_0x_hex(address.as_str()).map_err(|error| {
-                AlloyClientError::Validation(format!("method `{method}`: {error}"))
-            })?;
-            Ok(DynSolValue::Address(AlloyAddress::from_slice(&bytes)))
+            Ok(DynSolValue::Address(address.into_alloy()))
         }
         DynSolType::Uint(bits) => Ok(DynSolValue::Uint(parse_u256(value, method)?, *bits)),
         DynSolType::Int(bits) => Ok(DynSolValue::Int(parse_i256(value, method)?, *bits)),
@@ -300,8 +288,16 @@ fn dyn_value_to_json(value: &DynSolValue) -> Result<Value, AlloyClientError> {
 
 fn bytes_from_json(value: &Value, method: &str) -> Result<Vec<u8>, AlloyClientError> {
     match value {
-        Value::String(raw) => decode_0x_hex(raw)
-            .map_err(|error| AlloyClientError::Validation(format!("method `{method}`: {error}"))),
+        Value::String(raw) => {
+            let stripped = raw.strip_prefix("0x").ok_or_else(|| {
+                AlloyClientError::Validation(format!(
+                    "method `{method}`: hex value must be 0x-prefixed"
+                ))
+            })?;
+            alloy_primitives::hex::decode(stripped).map_err(|error| {
+                AlloyClientError::Validation(format!("method `{method}`: {error}"))
+            })
+        }
         Value::Array(items) => items
             .iter()
             .map(|item| {

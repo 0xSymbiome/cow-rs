@@ -6,13 +6,13 @@ use alloy_dyn_abi::{
     DynSolType,
     eip712::{PropertyDef, Resolver, TypeDef, TypedData},
 };
-use alloy_primitives::{Address as AlloyAddress, Signature, U256};
+use alloy_primitives::{Signature, U256};
 use alloy_sol_types::Eip712Domain;
-use cow_sdk_core::{HexData, TypedDataDomain, TypedDataField, TypedDataPayload};
+use cow_sdk_core::{TypedDataDomain, TypedDataField, TypedDataPayload};
 
 pub(crate) use cow_sdk_alloy_provider::__seam::{
     alloy_to_cow_block_info, alloy_to_cow_receipt, cow_block_tag_to_alloy, cow_request_to_alloy,
-    cow_to_alloy_address, cow_to_alloy_hash, rpc_error_to_class_and_detail,
+    rpc_error_to_class_and_detail,
 };
 
 /// Converts legacy flat typed-data fields into Alloy's dynamic typed-data shape.
@@ -44,7 +44,7 @@ pub(crate) fn cow_flat_to_alloy_typed_data(
 pub(crate) fn cow_typed_data_payload_to_alloy(
     payload: &TypedDataPayload,
 ) -> Result<TypedData, String> {
-    let domain = build_eip712_domain(&payload.domain)?;
+    let domain = build_eip712_domain(&payload.domain);
     let resolver = build_resolver(&payload.types, &payload.primary_type)?;
     let message = serde_json::from_str(payload.message_json())
         .map_err(|error| format!("typed-data message JSON parse error: {error}"))?;
@@ -61,22 +61,14 @@ pub(crate) fn cow_typed_data_payload_to_alloy(
     Ok(typed)
 }
 
-fn build_eip712_domain(domain: &TypedDataDomain) -> Result<Eip712Domain, String> {
-    let verifying_contract: AlloyAddress =
-        domain.verifying_contract.as_str().parse().map_err(|_| {
-            format!(
-                "EIP-712 domain verifying_contract `{}` is not a valid address",
-                domain.verifying_contract.as_str()
-            )
-        })?;
-
-    Ok(Eip712Domain {
+fn build_eip712_domain(domain: &TypedDataDomain) -> Eip712Domain {
+    Eip712Domain {
         name: Some(Cow::Owned(domain.name.clone())),
         version: Some(Cow::Owned(domain.version.clone())),
         chain_id: Some(U256::from(domain.chain_id)),
-        verifying_contract: Some(verifying_contract),
+        verifying_contract: Some(*domain.verifying_contract.as_alloy()),
         salt: None,
-    })
+    }
 }
 
 fn build_resolver(
@@ -128,29 +120,4 @@ pub(crate) fn alloy_signature_to_hex(
 ) -> Result<String, cow_sdk_contracts::ContractsError> {
     let raw = format!("0x{}", hex::encode(signature.as_bytes()));
     cow_sdk_contracts::normalized_ecdsa_signature(&raw)
-}
-
-pub(crate) fn parse_u256_quantity(value: &str, field: &str) -> Result<U256, String> {
-    value.strip_prefix("0x").map_or_else(
-        || {
-            U256::from_str_radix(value, 10)
-                .map_err(|error| format!("{field} `{value}` is not a valid U256: {error}"))
-        },
-        |hex| {
-            U256::from_str_radix(hex, 16)
-                .map_err(|error| format!("{field} `{value}` is not a valid U256: {error}"))
-        },
-    )
-}
-
-pub(crate) fn hex_data_from_bytes(bytes: &[u8]) -> Result<HexData, crate::AlloyClientError> {
-    HexData::new(format!("0x{}", hex::encode(bytes)))
-        .map_err(|error| crate::AlloyClientError::Internal(format!("hex conversion: {error}")))
-}
-
-pub(crate) fn decode_0x_hex(value: &str) -> Result<Vec<u8>, String> {
-    let stripped = value
-        .strip_prefix("0x")
-        .ok_or_else(|| "hex value must be 0x-prefixed".to_owned())?;
-    hex::decode(stripped).map_err(|error| error.to_string())
 }

@@ -9,12 +9,12 @@ use cow_sdk_core::{
     TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
+use alloy_primitives::U256;
+
 use crate::{
     builder::RpcAlloyProviderBuilder,
     conversion::{
-        alloy_to_cow_block_info, alloy_to_cow_receipt, cow_block_tag_to_alloy,
-        cow_request_to_alloy, cow_to_alloy_address, cow_to_alloy_hash, hex_data_from_bytes,
-        parse_u256_quantity,
+        alloy_to_cow_block_info, alloy_to_cow_receipt, cow_block_tag_to_alloy, cow_request_to_alloy,
     },
     error::AsyncProviderError,
     read_contract::execute_read_contract,
@@ -83,16 +83,15 @@ impl AsyncProvider for RpcAlloyProvider {
     }
 
     async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
-        let address = cow_to_alloy_address(address)?;
         let bytes = self
             .inner()
-            .get_code_at(address)
+            .get_code_at(*address.as_alloy())
             .await
             .map_err(AsyncProviderError::from_alloy_transport)?;
         if bytes.is_empty() {
             Ok(None)
         } else {
-            Ok(Some(hex_data_from_bytes(bytes.as_ref())?))
+            Ok(Some(HexData::from(bytes)))
         }
     }
 
@@ -100,21 +99,30 @@ impl AsyncProvider for RpcAlloyProvider {
         &self,
         transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
-        let hash = cow_to_alloy_hash(transaction_hash)?;
-        self.inner()
-            .get_transaction_receipt(hash)
+        let receipt = self
+            .inner()
+            .get_transaction_receipt(*transaction_hash.as_alloy())
             .await
             .map_err(AsyncProviderError::from_alloy_transport)?
-            .map(|receipt| alloy_to_cow_receipt(&receipt))
-            .transpose()
+            .map(|receipt| alloy_to_cow_receipt(&receipt));
+        Ok(receipt)
     }
 
     async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
-        let address = cow_to_alloy_address(address)?;
-        let slot = parse_u256_quantity(slot, "storage slot")?;
+        let slot = slot
+            .strip_prefix("0x")
+            .map_or_else(
+                || U256::from_str_radix(slot, 10),
+                |hex| U256::from_str_radix(hex, 16),
+            )
+            .map_err(|error| {
+                AsyncProviderError::Validation(format!(
+                    "storage slot `{slot}` is not a valid U256: {error}"
+                ))
+            })?;
         let value = self
             .inner()
-            .get_storage_at(address, slot)
+            .get_storage_at(*address.as_alloy(), slot)
             .await
             .map_err(AsyncProviderError::from_alloy_transport)?;
         HexData::new(format!("0x{value:064x}"))
@@ -128,7 +136,7 @@ impl AsyncProvider for RpcAlloyProvider {
             .call(tx)
             .await
             .map_err(AsyncProviderError::from_alloy_transport)?;
-        hex_data_from_bytes(bytes.as_ref())
+        Ok(HexData::from(bytes))
     }
 
     async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
@@ -145,7 +153,7 @@ impl AsyncProvider for RpcAlloyProvider {
             .ok_or_else(|| {
                 AsyncProviderError::Validation(format!("block `{block_tag}` not found on remote"))
             })?;
-        alloy_to_cow_block_info(&block)
+        Ok(alloy_to_cow_block_info(&block))
     }
 
     async fn get_contract(
@@ -153,6 +161,6 @@ impl AsyncProvider for RpcAlloyProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }

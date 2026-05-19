@@ -48,7 +48,7 @@ async fn provider_with_accounts(accounts: Vec<Address>) -> cow_sdk_browser_walle
 #[tokio::test(flavor = "current_thread")]
 async fn create_signer_with_empty_hint_falls_back_to_wallet_selected_account() {
     let primary = Address::new(PRIMARY_ACCOUNT).unwrap();
-    let provider = provider_with_accounts(vec![primary.clone()]).await;
+    let provider = provider_with_accounts(vec![primary]).await;
 
     let signer = provider
         .create_signer("")
@@ -66,7 +66,7 @@ async fn create_signer_with_empty_hint_falls_back_to_wallet_selected_account() {
 #[tokio::test(flavor = "current_thread")]
 async fn create_signer_with_whitespace_hint_trims_to_empty_and_falls_back() {
     let primary = Address::new(PRIMARY_ACCOUNT).unwrap();
-    let provider = provider_with_accounts(vec![primary.clone()]).await;
+    let provider = provider_with_accounts(vec![primary]).await;
 
     let signer = provider
         .create_signer("   \t \n  ")
@@ -80,7 +80,7 @@ async fn create_signer_with_whitespace_hint_trims_to_empty_and_falls_back() {
 async fn create_signer_with_valid_hint_in_wallet_accounts_returns_signer_bound_to_hint() {
     let primary = Address::new(PRIMARY_ACCOUNT).unwrap();
     let other = Address::new(OTHER_ACCOUNT).unwrap();
-    let provider = provider_with_accounts(vec![primary.clone(), other.clone()]).await;
+    let provider = provider_with_accounts(vec![primary, other]).await;
 
     let signer = provider
         .create_signer(OTHER_ACCOUNT)
@@ -128,7 +128,7 @@ async fn create_signer_queries_wallet_when_session_accounts_are_empty() {
     let transport = MockEip1193Transport::sepolia();
     transport.set_connected(true);
     let primary = Address::new(PRIMARY_ACCOUNT).unwrap();
-    transport.set_accounts(vec![primary.clone()]);
+    transport.set_accounts(vec![primary]);
     let wallet = BrowserWallet::from_transport_or_panic(transport);
     // No `wallet.connect().await` here — the session accounts cache is
     // empty, forcing the query path inside `create_signer`.

@@ -64,7 +64,7 @@ impl Signer for MockSigner {
     fn connect(&mut self, _provider: Self::Provider) {}
 
     fn get_address(&self) -> Result<Address, Self::Error> {
-        Ok(self.address.clone())
+        Ok(self.address)
     }
 
     fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {

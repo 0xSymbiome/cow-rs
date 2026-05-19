@@ -122,13 +122,13 @@ fn transaction_receipt_struct_carries_rich_fields() {
     let to = Address::new("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb").unwrap();
 
     let from_parts = TransactionReceipt::from_parts(
-        transaction_hash.clone(),
+        transaction_hash,
         Some(TransactionStatus::Success),
         Some(123),
-        Some(block_hash.clone()),
+        Some(block_hash),
         Some(Amount::from(21_000u64)),
-        Some(from.clone()),
-        Some(to.clone()),
+        Some(from),
+        Some(to),
     );
     let from_builders = TransactionReceipt::new(transaction_hash)
         .with_status(TransactionStatus::Success)

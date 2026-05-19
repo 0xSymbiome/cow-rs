@@ -408,7 +408,7 @@ where
 /// let provider = WalletProvider;
 /// let signer = provider.create_signer("primary").await.unwrap();
 /// assert_eq!(
-///     signer.get_address().await.unwrap().as_str(),
+///     signer.get_address().await.unwrap().to_hex_string(),
 ///     "0x1111111111111111111111111111111111111111"
 /// );
 /// # }

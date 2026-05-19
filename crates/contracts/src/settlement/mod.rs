@@ -288,7 +288,7 @@ impl TokenRegistry {
             return *index;
         }
         let index = self.tokens.len();
-        self.tokens.push(token.clone());
+        self.tokens.push(*token);
         self.token_map.insert(key, index);
         index
     }

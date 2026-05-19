@@ -123,7 +123,7 @@ impl PartialTraderParameters {
 
     /// Returns a copy with an explicit default owner.
     #[must_use]
-    pub fn with_owner(mut self, owner: Address) -> Self {
+    pub const fn with_owner(mut self, owner: Address) -> Self {
         self.owner = Some(owner);
         self
     }

@@ -252,16 +252,16 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
         .cloned()
         .expect("approval transaction must be sent");
 
-    assert_eq!(approval_hash.as_str(), crate::common::TX_HASH);
+    assert_eq!(approval_hash.to_hex_string(), crate::common::TX_HASH);
     assert!(
         sent.data
             .as_ref()
-            .map(cow_sdk_core::HexData::as_str)
+            .map(cow_sdk_core::HexData::to_hex_string)
             .unwrap_or_default()
             .to_lowercase()
             .contains(
                 address(ALT_RECEIVER)
-                    .as_str()
+                    .to_hex_string()
                     .trim_start_matches("0x")
                     .to_lowercase()
                     .as_str()
@@ -306,7 +306,7 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
         )
         .await
         .expect("async approval should succeed");
-    assert_eq!(approval_hash.as_str(), crate::common::TX_HASH);
+    assert_eq!(approval_hash.to_hex_string(), crate::common::TX_HASH);
 }
 
 #[tokio::test]
@@ -367,7 +367,7 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
         .cloned()
         .expect("cancellation transaction must be sent");
 
-    assert_eq!(tx_hash.as_str(), crate::common::TX_HASH);
+    assert_eq!(tx_hash.to_hex_string(), crate::common::TX_HASH);
     assert_eq!(sent.to, Some(address(CUSTOM_ETHFLOW)));
 }
 
@@ -465,13 +465,22 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
         .expect("ethflow cancellation transaction must include call data");
 
     assert_eq!(sent.to, Some(address(CUSTOM_ETHFLOW)));
-    assert_eq!(calldata_word(data.as_str(), 2), uint256_word(&high_sell));
-    assert_eq!(calldata_word(data.as_str(), 3), uint256_word(&high_buy));
+    assert_eq!(
+        calldata_word(&data.to_hex_string(), 2),
+        uint256_word(&high_sell)
+    );
+    assert_eq!(
+        calldata_word(&data.to_hex_string(), 3),
+        uint256_word(&high_buy)
+    );
     // The canonical upstream EthFlowOrder.Data tuple places the `appData`
     // bytes32 at word index 4; the fixture order pins that hash, so confirm
     // the ABI layout carries it through the cancellation call-data unmodified.
     let app_data_without_prefix = crate::common::APP_DATA_HASH.trim_start_matches("0x");
-    assert_eq!(calldata_word(data.as_str(), 4), app_data_without_prefix);
+    assert_eq!(
+        calldata_word(&data.to_hex_string(), 4),
+        app_data_without_prefix
+    );
 }
 
 #[cfg(target_arch = "wasm32")]

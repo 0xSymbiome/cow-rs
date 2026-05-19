@@ -200,7 +200,7 @@ impl OrderBoundsValidator {
     /// through [`ClientRejection::SameBuyAndSellToken`] on buy-side orders
     /// to mirror the reviewed services token-pair guard.
     #[must_use]
-    pub fn with_weth_address(mut self, weth_address: Address) -> Self {
+    pub const fn with_weth_address(mut self, weth_address: Address) -> Self {
         self.weth_address = Some(weth_address);
         self
     }
@@ -286,7 +286,7 @@ impl OrderBoundsValidator {
         {
             return Err(ClientRejection::AppdataFromMismatch {
                 appdata_signer,
-                from: order.from.clone(),
+                from: order.from,
             });
         }
 
@@ -309,18 +309,14 @@ impl OrderBoundsValidator {
             }
         }
         if sell_token == buy_token && kind == OrderKind::Buy {
-            return Err(ClientRejection::SameBuyAndSellToken {
-                token: sell_token.clone(),
-            });
+            return Err(ClientRejection::SameBuyAndSellToken { token: *sell_token });
         }
         if let Some(weth) = self.weth_address.as_ref()
             && sell_token == weth
             && buy_token == &native_sentinel()
             && kind == OrderKind::Buy
         {
-            return Err(ClientRejection::SameBuyAndSellToken {
-                token: weth.clone(),
-            });
+            return Err(ClientRejection::SameBuyAndSellToken { token: *weth });
         }
         Ok(())
     }
@@ -368,7 +364,7 @@ fn native_sentinel() -> Address {
         .expect("EVM_NATIVE_CURRENCY_ADDRESS must remain a valid address literal")
 }
 
-fn zero_address() -> Address {
+const fn zero_address() -> Address {
     Address::from_bytes([0u8; 20])
 }
 
@@ -409,8 +405,8 @@ pub fn assert_owner_matches_signer(
 ) -> Result<(), ClientRejection> {
     if expected != recovered {
         return Err(ClientRejection::OwnerMismatch {
-            expected: expected.clone(),
-            recovered: recovered.clone(),
+            expected: *expected,
+            recovered: *recovered,
         });
     }
     Ok(())

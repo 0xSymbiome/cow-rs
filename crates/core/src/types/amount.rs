@@ -6,8 +6,10 @@ use std::{
 use num_bigint::{BigInt, BigUint};
 use serde::{Deserialize, Serialize};
 
-use super::hex::U256_MAX_BITS;
 use crate::errors::{CoreError, ValidationError};
+
+/// Maximum bit width accepted for unsigned protocol quantities.
+const U256_MAX_BITS: u64 = 256;
 /// Canonical non-negative `uint256` quantity rendered in the smallest token unit.
 ///
 /// `Amount` is the typed boundary for atomic token values on every

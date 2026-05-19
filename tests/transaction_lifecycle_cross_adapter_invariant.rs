@@ -30,7 +30,7 @@ async fn alloy_send_transaction_does_not_poll_for_receipt() {
         .await
         .unwrap();
 
-    assert_eq!(broadcast.transaction_hash.as_str(), HASH);
+    assert_eq!(broadcast.transaction_hash.to_hex_string(), HASH);
     let methods = recorded_methods(&methods);
     assert!(
         methods
@@ -57,7 +57,7 @@ async fn browser_wallet_send_transaction_does_not_poll_for_receipt() {
         .unwrap();
 
     assert_eq!(
-        broadcast.transaction_hash.as_str(),
+        broadcast.transaction_hash.to_hex_string(),
         format!("0x{}", "33".repeat(32))
     );
     let methods = transport
@@ -235,13 +235,16 @@ fn receipt_response() -> Value {
 }
 
 fn assert_rich_receipt(receipt: &cow_sdk_core::TransactionReceipt) {
-    assert_eq!(receipt.transaction_hash.as_str(), HASH);
+    assert_eq!(receipt.transaction_hash.to_hex_string(), HASH);
     assert_eq!(receipt.status, Some(TransactionStatus::Success));
     assert_eq!(receipt.block_number, Some(1234));
-    assert_eq!(receipt.block_hash.as_ref().unwrap().as_str(), HASH);
+    assert_eq!(receipt.block_hash.as_ref().unwrap().to_hex_string(), HASH);
     assert_eq!(receipt.gas_used, Some(Amount::from(21_000u64)));
-    assert_eq!(receipt.from.as_ref().unwrap().as_str(), WALLET_ADDRESS);
-    assert_eq!(receipt.to.as_ref().unwrap().as_str(), ADDRESS);
+    assert_eq!(
+        receipt.from.as_ref().unwrap().to_hex_string(),
+        WALLET_ADDRESS
+    );
+    assert_eq!(receipt.to.as_ref().unwrap().to_hex_string(), ADDRESS);
 }
 
 fn recorded_methods(methods: &Arc<Mutex<Vec<String>>>) -> Vec<String> {

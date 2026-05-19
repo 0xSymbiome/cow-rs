@@ -137,7 +137,7 @@ fn legacy_bps_object_parses_as_volume_for_services_parity() {
             recipient,
         }) => {
             assert_eq!(volume_bps, 100);
-            assert_eq!(recipient.as_str(), RECIPIENT_B);
+            assert_eq!(recipient.to_hex_string(), RECIPIENT_B);
         }
         other => panic!("legacy shape must map to Volume, got {other:?}"),
     }

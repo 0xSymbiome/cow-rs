@@ -171,7 +171,7 @@ where
     #[cfg(feature = "tracing")]
     tracing::debug!(
         target: "cow_sdk::signing",
-        order_uid = %order_uids.first().map_or("<empty>", OrderUid::as_str),
+        order_uid = %order_uids.first().map(OrderUid::to_hex_string).as_deref().unwrap_or("<empty>"),
         order_uid_count = order_uids.len(),
         "signing order cancellation",
     );
@@ -216,7 +216,7 @@ where
     #[cfg(feature = "tracing")]
     tracing::debug!(
         target: "cow_sdk::signing",
-        order_uid = %order_uids.first().map_or("<empty>", OrderUid::as_str),
+        order_uid = %order_uids.first().map(OrderUid::to_hex_string).as_deref().unwrap_or("<empty>"),
         order_uid_count = order_uids.len(),
         "signing order cancellation",
     );
@@ -254,7 +254,7 @@ where
     #[cfg(feature = "tracing")]
     tracing::debug!(
         target: "cow_sdk::signing",
-        order_uid = %order_uids.first().map_or("<empty>", OrderUid::as_str),
+        order_uid = %order_uids.first().map(OrderUid::to_hex_string).as_deref().unwrap_or("<empty>"),
         order_uid_count = order_uids.len(),
         "signing order cancellation",
     );
@@ -306,6 +306,6 @@ fn cancellation_signing_payload(
 
     Ok(CancellationSigningPayload {
         payload,
-        digest: digest.as_str().to_owned(),
+        digest: digest.to_hex_string(),
     })
 }

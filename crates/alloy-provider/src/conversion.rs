@@ -2,41 +2,12 @@
 
 use alloy_consensus::{BlockHeader as _, TxReceipt as _};
 use alloy_network::TransactionBuilder;
-use alloy_primitives::{Address as AlloyAddress, B256, U256};
+use alloy_primitives::U256;
 use alloy_rpc_types_eth::{BlockId, BlockNumberOrTag, TransactionRequest as AlloyTransaction};
 use cow_sdk_core::{
-    Address, Amount, BlockHash, BlockInfo, HexData, TransactionHash, TransactionReceipt,
-    TransactionRequest, TransactionStatus,
+    Address, Amount, BlockHash, BlockInfo, TransactionHash, TransactionReceipt, TransactionRequest,
+    TransactionStatus,
 };
-
-use crate::error::AsyncProviderError;
-
-/// Converts a `cow-sdk-core` address into Alloy's address type.
-pub(crate) fn cow_to_alloy_address(address: &Address) -> Result<AlloyAddress, AsyncProviderError> {
-    address.as_str().parse::<AlloyAddress>().map_err(|_| {
-        AsyncProviderError::Validation(format!("address `{}` failed alloy parse", address.as_str()))
-    })
-}
-
-/// Converts an Alloy address into the core address newtype.
-pub(crate) fn alloy_address_to_cow_address(
-    address: &AlloyAddress,
-) -> Result<Address, AsyncProviderError> {
-    Address::new(format!("{address:#x}"))
-        .map_err(|error| AsyncProviderError::Internal(format!("address conversion: {error}")))
-}
-
-/// Converts a `cow-sdk-core` transaction hash into Alloy's hash type.
-pub(crate) fn cow_to_alloy_hash(
-    transaction_hash: &TransactionHash,
-) -> Result<B256, AsyncProviderError> {
-    transaction_hash.as_str().parse::<B256>().map_err(|_| {
-        AsyncProviderError::Validation(format!(
-            "transaction hash `{}` failed alloy parse",
-            transaction_hash.as_str()
-        ))
-    })
-}
 
 /// Converts a core transaction request into an Alloy transaction request.
 pub(crate) fn cow_request_to_alloy(
@@ -44,11 +15,10 @@ pub(crate) fn cow_request_to_alloy(
 ) -> Result<AlloyTransaction, String> {
     let mut alloy_tx = AlloyTransaction::default();
     if let Some(to) = &request.to {
-        alloy_tx = alloy_tx.with_to(cow_to_alloy_address(to).map_err(|error| error.to_string())?);
+        alloy_tx = alloy_tx.with_to(*to.as_alloy());
     }
     if let Some(data) = &request.data {
-        let bytes = decode_0x_hex(data.as_str()).map_err(|error| format!("data: {error}"))?;
-        alloy_tx = alloy_tx.with_input(bytes);
+        alloy_tx = alloy_tx.with_input(data.as_alloy().clone());
     }
     if let Some(value) = &request.value {
         let amount = U256::from_str_radix(&value.to_string(), 10)
@@ -76,7 +46,7 @@ pub(crate) fn cow_block_tag_to_alloy(tag: &str) -> Result<BlockId, String> {
         "safe" => BlockNumberOrTag::Safe,
         value if value.starts_with("0x") && value.len() == 66 => {
             let hash = value
-                .parse::<B256>()
+                .parse::<alloy_primitives::B256>()
                 .map_err(|_| format!("block hash `{value}` is not a valid B256"))?;
             return Ok(BlockId::Hash(hash.into()));
         }
@@ -103,9 +73,8 @@ pub(crate) fn cow_block_tag_to_alloy(tag: &str) -> Result<BlockId, String> {
 /// contract-creation transactions.
 pub(crate) fn alloy_to_cow_receipt(
     receipt: &alloy_rpc_types_eth::TransactionReceipt,
-) -> Result<TransactionReceipt, AsyncProviderError> {
-    let transaction_hash = TransactionHash::new(format!("0x{:x}", receipt.transaction_hash))
-        .map_err(|error| AsyncProviderError::Internal(format!("hash conversion: {error}")))?;
+) -> TransactionReceipt {
+    let transaction_hash = TransactionHash::from(receipt.transaction_hash);
 
     let status = receipt
         .inner
@@ -119,19 +88,11 @@ pub(crate) fn alloy_to_cow_receipt(
             }
         });
 
-    let block_hash = receipt
-        .block_hash
-        .map(|hash| BlockHash::new(format!("0x{hash:x}")))
-        .transpose()
-        .map_err(|error| AsyncProviderError::Internal(format!("block-hash conversion: {error}")))?;
-    let from = Some(alloy_address_to_cow_address(&receipt.from)?);
-    let to = receipt
-        .to
-        .as_ref()
-        .map(alloy_address_to_cow_address)
-        .transpose()?;
+    let block_hash = receipt.block_hash.map(BlockHash::from);
+    let from = Some(Address::from(receipt.from));
+    let to = receipt.to.map(Address::from);
 
-    Ok(TransactionReceipt::from_parts(
+    TransactionReceipt::from_parts(
         transaction_hash,
         status,
         receipt.block_number,
@@ -139,48 +100,14 @@ pub(crate) fn alloy_to_cow_receipt(
         Some(Amount::from(receipt.gas_used)),
         from,
         to,
-    ))
-}
-
-/// Converts an Alloy block response into the core block-info contract.
-pub(crate) fn alloy_to_cow_block_info(
-    block: &alloy_rpc_types_eth::Block,
-) -> Result<BlockInfo, AsyncProviderError> {
-    let number = block.header.number();
-    let hash = cow_sdk_core::BlockHash::new(format!("0x{:x}", block.header.hash))
-        .map_err(|error| AsyncProviderError::Internal(format!("hash conversion: {error}")))?;
-    Ok(BlockInfo::new(number, Some(hash)))
-}
-
-pub(crate) fn parse_u256_quantity(value: &str, field: &str) -> Result<U256, AsyncProviderError> {
-    value.strip_prefix("0x").map_or_else(
-        || {
-            U256::from_str_radix(value, 10).map_err(|error| {
-                AsyncProviderError::Validation(format!(
-                    "{field} `{value}` is not a valid U256: {error}"
-                ))
-            })
-        },
-        |hex| {
-            U256::from_str_radix(hex, 16).map_err(|error| {
-                AsyncProviderError::Validation(format!(
-                    "{field} `{value}` is not a valid U256: {error}"
-                ))
-            })
-        },
     )
 }
 
-pub(crate) fn hex_data_from_bytes(bytes: &[u8]) -> Result<HexData, AsyncProviderError> {
-    HexData::new(format!("0x{}", hex::encode(bytes)))
-        .map_err(|error| AsyncProviderError::Internal(format!("hex conversion: {error}")))
-}
-
-pub(crate) fn decode_0x_hex(value: &str) -> Result<Vec<u8>, String> {
-    let stripped = value
-        .strip_prefix("0x")
-        .ok_or_else(|| "hex value must be 0x-prefixed".to_owned())?;
-    hex::decode(stripped).map_err(|error| error.to_string())
+/// Converts an Alloy block response into the core block-info contract.
+pub(crate) fn alloy_to_cow_block_info(block: &alloy_rpc_types_eth::Block) -> BlockInfo {
+    let number = block.header.number();
+    let hash = BlockHash::from(block.header.hash);
+    BlockInfo::new(number, Some(hash))
 }
 
 #[cfg(test)]
@@ -199,22 +126,22 @@ mod tests {
     fn alloy_to_cow_receipt_populates_status_success() {
         let receipt = alloy_receipt(&json!({ "status": "0x1" }));
 
-        let cow_receipt = alloy_to_cow_receipt(&receipt).unwrap();
+        let cow_receipt = alloy_to_cow_receipt(&receipt);
 
-        assert_eq!(cow_receipt.transaction_hash.as_str(), HASH_1);
+        assert_eq!(cow_receipt.transaction_hash.to_hex_string(), HASH_1);
         assert_eq!(cow_receipt.status, Some(TransactionStatus::Success));
         assert_eq!(cow_receipt.block_number, Some(1234));
-        assert_eq!(cow_receipt.block_hash.unwrap().as_str(), BLOCK_HASH);
+        assert_eq!(cow_receipt.block_hash.unwrap().to_hex_string(), BLOCK_HASH);
         assert_eq!(cow_receipt.gas_used, Some(Amount::from(21_000u64)));
-        assert_eq!(cow_receipt.from.unwrap().as_str(), FROM_ADDR);
-        assert_eq!(cow_receipt.to.unwrap().as_str(), TO_ADDR);
+        assert_eq!(cow_receipt.from.unwrap().to_hex_string(), FROM_ADDR);
+        assert_eq!(cow_receipt.to.unwrap().to_hex_string(), TO_ADDR);
     }
 
     #[test]
     fn alloy_to_cow_receipt_populates_status_reverted() {
         let receipt = alloy_receipt(&json!({ "status": "0x0" }));
 
-        let cow_receipt = alloy_to_cow_receipt(&receipt).unwrap();
+        let cow_receipt = alloy_to_cow_receipt(&receipt);
 
         assert_eq!(cow_receipt.status, Some(TransactionStatus::Reverted));
     }
@@ -224,7 +151,7 @@ mod tests {
         let receipt = alloy_receipt(&json!({ "root": ROOT_HASH }));
         assert_eq!(receipt.inner.status_or_post_state().as_eip658(), None);
 
-        let cow_receipt = alloy_to_cow_receipt(&receipt).unwrap();
+        let cow_receipt = alloy_to_cow_receipt(&receipt);
 
         assert_eq!(cow_receipt.status, None);
     }
@@ -233,10 +160,10 @@ mod tests {
     fn alloy_to_cow_receipt_handles_contract_creation_no_to() {
         let receipt = alloy_receipt_with_to(&json!({ "status": "0x1" }), &Value::Null);
 
-        let cow_receipt = alloy_to_cow_receipt(&receipt).unwrap();
+        let cow_receipt = alloy_to_cow_receipt(&receipt);
 
         assert!(cow_receipt.to.is_none());
-        assert_eq!(cow_receipt.from.unwrap().as_str(), FROM_ADDR);
+        assert_eq!(cow_receipt.from.unwrap().to_hex_string(), FROM_ADDR);
     }
 
     fn alloy_receipt(status_or_root: &Value) -> AlloyTransactionReceipt {

@@ -346,13 +346,13 @@ async fn transport_events_keep_wallet_session_synchronized() {
         cow_sdk_core::Address::new("0x5555555555555555555555555555555555555555").unwrap();
 
     transport.emit_connected(Some(u64::from(SupportedChainId::Sepolia)));
-    transport.emit_accounts_changed(vec![alternate.clone()]);
+    transport.emit_accounts_changed(vec![alternate]);
     transport.emit_chain_changed(u64::from(SupportedChainId::Mainnet));
 
     let session = wallet.session();
     assert!(session.connected);
-    assert_eq!(session.selected_account, Some(alternate.clone()));
-    assert_eq!(session.accounts, vec![alternate.clone()]);
+    assert_eq!(session.selected_account, Some(alternate));
+    assert_eq!(session.accounts, vec![alternate]);
     assert_eq!(session.chain_id, Some(u64::from(SupportedChainId::Mainnet)));
 
     transport.emit_disconnected(Some("provider disconnected".to_owned()));
@@ -368,7 +368,7 @@ async fn transport_events_keep_wallet_session_synchronized() {
         |event| matches!(event, WalletEvent::Connected { chain_id } if *chain_id == Some(u64::from(SupportedChainId::Sepolia)))
     ));
     assert!(events.iter().any(
-        |event| matches!(event, WalletEvent::AccountsChanged { accounts } if accounts == &vec![alternate.clone()])
+        |event| matches!(event, WalletEvent::AccountsChanged { accounts } if accounts == &vec![alternate])
     ));
     assert!(events.iter().any(
         |event| matches!(event, WalletEvent::ChainChanged { chain_id } if *chain_id == u64::from(SupportedChainId::Mainnet))

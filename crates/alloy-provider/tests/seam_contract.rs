@@ -16,32 +16,34 @@ use cow_sdk_alloy_provider::__seam;
 use cow_sdk_core::{Address, TransactionHash};
 
 #[test]
-fn seam_cow_to_alloy_address_round_trips_a_validated_address() {
+fn cow_newtype_address_exposes_alloy_primitive_directly() {
+    // The cow `Address` newtype is `#[repr(transparent)]` over the alloy
+    // primitive per ADR 0052, so `as_alloy()` returns a borrowed
+    // `alloy_primitives::Address` without any conversion cost. The seam
+    // helper that previously did this conversion is retired; consumers
+    // use `as_alloy()` / `into_alloy()` directly.
     let address = Address::new("0x0000000000000000000000000000000000000001")
         .expect("static valid address parses");
-    let alloy_address = __seam::cow_to_alloy_address(&address)
-        .expect("seam converts a validated address without error");
+    let alloy_address = *address.as_alloy();
 
-    // The Alloy primitive must agree with the core string form (case-insensitive).
     let rendered = format!("{alloy_address:#x}");
     assert_eq!(
         rendered.to_ascii_lowercase(),
-        address.as_str().to_ascii_lowercase(),
+        address.to_hex_string().to_ascii_lowercase(),
     );
 }
 
 #[test]
-fn seam_cow_to_alloy_hash_round_trips_a_validated_transaction_hash() {
+fn cow_newtype_transaction_hash_exposes_alloy_primitive_directly() {
     let hash =
         TransactionHash::new("0x0101010101010101010101010101010101010101010101010101010101010101")
             .expect("static valid transaction hash parses");
-    let alloy_hash =
-        __seam::cow_to_alloy_hash(&hash).expect("seam converts a validated hash without error");
+    let alloy_hash = *hash.as_alloy();
 
     let rendered = format!("{alloy_hash:#x}");
     assert_eq!(
         rendered.to_ascii_lowercase(),
-        hash.as_str().to_ascii_lowercase(),
+        hash.to_hex_string().to_ascii_lowercase(),
     );
 }
 

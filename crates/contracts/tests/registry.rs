@@ -73,6 +73,8 @@ fn registry_default_covers_every_supported_chain_in_at_least_one_env() {
 fn registry_default_resolves_the_canonical_mainnet_addresses() {
     let registry = Registry::default();
 
+    // Canonical lowercase 0x-prefixed wire form per PROP-WB-004; cow Address
+    // canonicalizes to lowercase at construction (ADR 0052).
     assert_eq!(
         registry
             .address(
@@ -81,8 +83,8 @@ fn registry_default_resolves_the_canonical_mainnet_addresses() {
                 CowEnv::Prod
             )
             .expect("settlement/prod/mainnet must be registered")
-            .as_str(),
-        "0x9008D19f58AAbD9eD0D60971565AA8510560ab41",
+            .to_hex_string(),
+        "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
     );
     assert_eq!(
         registry
@@ -92,8 +94,8 @@ fn registry_default_resolves_the_canonical_mainnet_addresses() {
                 CowEnv::Staging,
             )
             .expect("settlement/staging/mainnet must be registered")
-            .as_str(),
-        "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13",
+            .to_hex_string(),
+        "0xf553d092b50bdcbdded1a99af2ca29fbe5e2cb13",
     );
     assert_eq!(
         registry
@@ -103,14 +105,14 @@ fn registry_default_resolves_the_canonical_mainnet_addresses() {
                 CowEnv::Prod,
             )
             .expect("vault-relayer/prod/mainnet must be registered")
-            .as_str(),
-        "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110",
+            .to_hex_string(),
+        "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110",
     );
     assert_eq!(
         registry
             .address(ContractId::EthFlow, SupportedChainId::Mainnet, CowEnv::Prod)
             .expect("eth-flow/prod/mainnet must be registered")
-            .as_str(),
+            .to_hex_string(),
         "0xba3cb449bd2b4adddbc894d8697f5170800eadec",
     );
 }
@@ -261,7 +263,7 @@ fn registry_address_lookup_matrix_is_exhaustive() {
     for (contract_id, chain_id, env, address) in registry.entries() {
         assert_eq!(
             registry.address(contract_id, chain_id, env),
-            Some(address.clone()),
+            Some(*address),
             "{contract_id} / {chain_id:?} / {env:?} lookup must return the manifest address",
         );
     }

@@ -23,7 +23,7 @@ impl TradingSdk {
                 chain = ?params.chain_id,
                 env = ?params.env,
                 endpoint = "trading.off_chain_cancel_order",
-                order_uid = params.order_uid.as_str(),
+                order_uid = %params.order_uid,
             ),
         ),
     )]
@@ -56,7 +56,7 @@ impl TradingSdk {
                 chain = ?params.chain_id,
                 env = ?params.env,
                 endpoint = "trading.off_chain_cancel_order_async",
-                order_uid = params.order_uid.as_str(),
+                order_uid = %params.order_uid,
             ),
         ),
     )]
@@ -103,7 +103,7 @@ impl TradingSdk {
                 chain = ?params.chain_id,
                 env = ?params.env,
                 endpoint = "trading.on_chain_cancel_order",
-                order_uid = params.order_uid.as_str(),
+                order_uid = %params.order_uid,
             ),
         ),
     )]
@@ -138,7 +138,7 @@ impl TradingSdk {
                 chain = ?params.chain_id,
                 env = ?params.env,
                 endpoint = "trading.on_chain_cancel_order_async",
-                order_uid = params.order_uid.as_str(),
+                order_uid = %params.order_uid,
             ),
         ),
     )]

@@ -26,7 +26,7 @@ impl Signer for MockSigner {
     }
 
     fn get_address(&self) -> Result<Address, Self::Error> {
-        Ok(self.address.clone())
+        Ok(self.address)
     }
 
     fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
@@ -83,9 +83,7 @@ impl Provider for MockProvider {
     }
 
     fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
-        Ok(Some(
-            HexData::new(format!("0x{}", address.as_str().trim_start_matches("0x"))).unwrap(),
-        ))
+        Ok(Some(HexData::new(address.to_hex_string()).unwrap()))
     }
 
     fn get_transaction_receipt(
@@ -93,7 +91,7 @@ impl Provider for MockProvider {
         transaction_hash: &cow_sdk_core::TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
         Ok(Some(
-            TransactionReceipt::new(transaction_hash.clone())
+            TransactionReceipt::new(*transaction_hash)
                 .with_status(TransactionStatus::Success)
                 .with_block_number(42)
                 .with_block_hash(Hash32::new(format!("0x{}", "ba".repeat(32))).unwrap())
@@ -139,7 +137,7 @@ impl Provider for MockProvider {
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 
@@ -266,7 +264,7 @@ fn assert_signer_contracts(
 ) {
     active_signer.connect("rpc://local".to_owned());
     assert_eq!(
-        Signer::get_address(active_signer).unwrap().as_str(),
+        Signer::get_address(active_signer).unwrap().to_hex_string(),
         "0x1111111111111111111111111111111111111111"
     );
     assert_eq!(
@@ -549,14 +547,14 @@ async fn sync_runtime_contracts_gain_async_compatibility_through_blanket_impls()
         AsyncSigner::get_address(&async_signer)
             .await
             .unwrap()
-            .as_str(),
+            .to_hex_string(),
         "0x9999999999999999999999999999999999999999"
     );
     assert_eq!(
         AsyncOwner::get_address(&async_signer)
             .await
             .unwrap()
-            .as_str(),
+            .to_hex_string(),
         "0x9999999999999999999999999999999999999999"
     );
     assert_eq!(

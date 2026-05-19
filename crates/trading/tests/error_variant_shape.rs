@@ -20,8 +20,8 @@ fn client_rejection_owner_mismatch_carries_typed_addresses() {
     let signer =
         Address::new("0x2222222222222222222222222222222222222222").expect("literal must parse");
     let rejection = ClientRejection::OwnerMismatch {
-        expected: owner.clone(),
-        recovered: signer.clone(),
+        expected: owner,
+        recovered: signer,
     };
     let error: TradingError = rejection.into();
 
@@ -39,7 +39,7 @@ fn client_rejection_owner_mismatch_carries_typed_addresses() {
 
     let rendered = error.to_string();
     assert!(
-        rendered.contains(owner.as_str()) && rendered.contains(signer.as_str()),
+        rendered.contains(&owner.to_hex_string()) && rendered.contains(&signer.to_hex_string()),
         "ClientRejection::OwnerMismatch must render the typed addresses, got: {rendered}",
     );
 }

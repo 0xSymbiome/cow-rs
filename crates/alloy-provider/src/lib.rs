@@ -61,8 +61,6 @@ pub use provider::RpcAlloyProvider;
 pub mod __seam {
     use cow_sdk_core::{BlockInfo, Redacted, TransactionReceipt, TransportErrorClass};
 
-    use crate::AsyncProviderError;
-
     /// Classified Alloy JSON-RPC or transport error detail.
     #[non_exhaustive]
     #[derive(Debug)]
@@ -107,20 +105,6 @@ pub mod __seam {
         }
     }
 
-    /// Converts a `cow-sdk-core` address into Alloy's address type.
-    pub fn cow_to_alloy_address(
-        address: &cow_sdk_core::Address,
-    ) -> Result<alloy_primitives::Address, AsyncProviderError> {
-        crate::conversion::cow_to_alloy_address(address)
-    }
-
-    /// Converts a `cow-sdk-core` transaction hash into Alloy's hash type.
-    pub fn cow_to_alloy_hash(
-        transaction_hash: &cow_sdk_core::TransactionHash,
-    ) -> Result<alloy_primitives::B256, AsyncProviderError> {
-        crate::conversion::cow_to_alloy_hash(transaction_hash)
-    }
-
     /// Converts a core transaction request into an Alloy transaction request.
     pub fn cow_request_to_alloy(
         request: &cow_sdk_core::TransactionRequest,
@@ -134,16 +118,16 @@ pub mod __seam {
     }
 
     /// Converts an Alloy transaction receipt into the core receipt contract.
+    #[must_use]
     pub fn alloy_to_cow_receipt(
         receipt: &alloy_rpc_types_eth::TransactionReceipt,
-    ) -> Result<TransactionReceipt, AsyncProviderError> {
+    ) -> TransactionReceipt {
         crate::conversion::alloy_to_cow_receipt(receipt)
     }
 
     /// Converts an Alloy block response into the core block-info contract.
-    pub fn alloy_to_cow_block_info(
-        block: &alloy_rpc_types_eth::Block,
-    ) -> Result<BlockInfo, AsyncProviderError> {
+    #[must_use]
+    pub fn alloy_to_cow_block_info(block: &alloy_rpc_types_eth::Block) -> BlockInfo {
         crate::conversion::alloy_to_cow_block_info(block)
     }
 

@@ -8,7 +8,7 @@ use crate::dto::GeneratedOrderUidDto;
 #[must_use]
 pub fn generated_order_uid_dto(generated: &GeneratedOrderId) -> GeneratedOrderUidDto {
     GeneratedOrderUidDto {
-        order_uid: generated.order_id.as_str().to_owned(),
-        order_digest: generated.order_digest.as_str().to_owned(),
+        order_uid: generated.order_id.to_hex_string(),
+        order_digest: generated.order_digest.to_hex_string(),
     }
 }

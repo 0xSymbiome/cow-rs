@@ -212,7 +212,7 @@ impl From<&TypedDataDomain> for TypedDataDomainDto {
             name: value.name.clone(),
             version: value.version.clone(),
             chain_id: value.chain_id,
-            verifying_contract: value.verifying_contract.as_str().to_owned(),
+            verifying_contract: value.verifying_contract.to_hex_string(),
         }
     }
 }
@@ -315,7 +315,7 @@ impl From<ValidationResult> for ValidationResultDto {
 ///
 /// Returns [`PureError`] when the address is malformed.
 pub fn parse_address(field: &str, value: &str) -> Result<Address, PureError> {
-    Address::new(value.to_owned()).map_err(|error| PureError::invalid(field, error.to_string()))
+    Address::new(value).map_err(|error| PureError::invalid(field, error.to_string()))
 }
 
 pub(crate) fn parse_amount(field: &str, value: &str) -> Result<Amount, PureError> {

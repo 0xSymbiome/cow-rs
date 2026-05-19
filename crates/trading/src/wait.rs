@@ -148,16 +148,10 @@ where
                 elapsed,
             } => write!(
                 f,
-                "receipt for {} not observed after {:?}",
-                transaction_hash.as_str(),
-                elapsed
+                "receipt for {transaction_hash} not observed after {elapsed:?}"
             ),
             Self::Reverted { receipt } => {
-                write!(
-                    f,
-                    "transaction {} reverted",
-                    receipt.transaction_hash.as_str()
-                )
+                write!(f, "transaction {} reverted", receipt.transaction_hash)
             }
             Self::Cancelled(_) => f.write_str("operation cancelled"),
         }
@@ -265,7 +259,7 @@ where
         let elapsed = started_at.elapsed();
         if elapsed >= options.timeout {
             return Err(WaitError::Timeout {
-                transaction_hash: transaction_hash.clone(),
+                transaction_hash: *transaction_hash,
                 elapsed,
             });
         }

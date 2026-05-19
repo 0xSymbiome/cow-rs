@@ -197,8 +197,14 @@ async fn ethflow_transaction_encodes_high_bit_uint256_amounts_as_unsigned_words(
         .as_ref()
         .expect("ethflow transaction must include call data");
 
-    assert_eq!(calldata_word(data.as_str(), 2), uint256_word(&high_sell));
-    assert_eq!(calldata_word(data.as_str(), 3), uint256_word(&high_buy));
+    assert_eq!(
+        calldata_word(&data.to_hex_string(), 2),
+        uint256_word(&high_sell)
+    );
+    assert_eq!(
+        calldata_word(&data.to_hex_string(), 3),
+        uint256_word(&high_buy)
+    );
 }
 
 #[tokio::test]
@@ -232,7 +238,7 @@ async fn ethflow_transaction_sign_extends_negative_quote_id_in_the_encoded_tuple
         .expect("ethflow transaction must include call data");
 
     assert_eq!(
-        calldata_word(data.as_str(), 8),
+        calldata_word(&data.to_hex_string(), 8),
         "f".repeat(64),
         "negative int64 quote id must sign-extend to a full 256-bit two's-complement word",
     );
@@ -301,5 +307,5 @@ fn cancel_order_onchain_sends_transaction_and_returns_hash() {
     let tx_hash = cancel_order_onchain(&signer, SupportedChainId::Sepolia, &regular_order(), None)
         .expect("onchain cancellation should send");
 
-    assert_eq!(tx_hash.as_str(), crate::common::TX_HASH);
+    assert_eq!(tx_hash.to_hex_string(), crate::common::TX_HASH);
 }

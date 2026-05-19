@@ -151,7 +151,7 @@ fn explicit_env_base_url_override_precedes_context_base_urls() {
             .expect("explicit env override should win"),
         format!(
             "https://override.example/xdai/api/v1/orders/{}",
-            uid.as_str()
+            uid.to_hex_string()
         )
     );
 }
@@ -330,13 +330,19 @@ fn order_link_uses_chain_aware_urls_for_gnosis_and_mainnet() {
         gnosis
             .get_order_link(&uid)
             .expect("gnosis order link should resolve"),
-        format!("https://api.cow.fi/xdai/api/v1/orders/{}", uid.as_str())
+        format!(
+            "https://api.cow.fi/xdai/api/v1/orders/{}",
+            uid.to_hex_string()
+        )
     );
     assert_eq!(
         mainnet
             .get_order_link(&uid)
             .expect("mainnet order link should resolve"),
-        format!("https://api.cow.fi/mainnet/api/v1/orders/{}", uid.as_str())
+        format!(
+            "https://api.cow.fi/mainnet/api/v1/orders/{}",
+            uid.to_hex_string()
+        )
     );
 }
 
@@ -347,7 +353,7 @@ async fn get_orders_uses_default_pagination_and_transforms_orders() {
     Mock::given(method("GET"))
         .and(path(format!(
             "/api/v1/account/{}/orders",
-            sample_owner().as_str()
+            sample_owner().to_hex_string()
         )))
         .and(query_param("offset", "0"))
         .and(query_param("limit", "1000"))
@@ -381,7 +387,7 @@ async fn account_orders_pagination_boundary_table() {
         Mock::given(method("GET"))
             .and(path(format!(
                 "/api/v1/account/{}/orders",
-                sample_owner().as_str()
+                sample_owner().to_hex_string()
             )))
             .and(query_param("offset", offset.to_string()))
             .and(query_param("limit", limit.to_string()))
@@ -412,7 +418,7 @@ async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() 
     let server = MockServer::start().await;
     Mock::given(method("GET"))
         .and(path("/api/v2/trades"))
-        .and(query_param("owner", sample_owner().as_str()))
+        .and(query_param("owner", sample_owner().to_hex_string()))
         .and(query_param("offset", "0"))
         .and(query_param("limit", "10"))
         .respond_with(ResponseTemplate::new(200).set_body_json(vec![sample_trade_json()]))
@@ -544,7 +550,7 @@ async fn order_lookup_falls_back_to_staging_only_on_404() {
     let uid = sample_order_uid();
 
     Mock::given(method("GET"))
-        .and(path(format!("/api/v1/orders/{}", uid.as_str())))
+        .and(path(format!("/api/v1/orders/{}", uid.to_hex_string())))
         .respond_with(ResponseTemplate::new(404).set_body_json(json!({
             "errorType": "NotFound",
             "description": "missing in prod"
@@ -552,7 +558,7 @@ async fn order_lookup_falls_back_to_staging_only_on_404() {
         .mount(&prod)
         .await;
     Mock::given(method("GET"))
-        .and(path(format!("/api/v1/orders/{}", uid.as_str())))
+        .and(path(format!("/api/v1/orders/{}", uid.to_hex_string())))
         .respond_with(ResponseTemplate::new(200).set_body_json(sample_order_json(&uid)))
         .mount(&staging)
         .await;
@@ -618,7 +624,7 @@ async fn native_price_surplus_solver_competition_and_auction_routes_are_covered(
     Mock::given(method("GET"))
         .and(path(format!(
             "/api/v1/token/{}/native_price",
-            sample_owner().as_str()
+            sample_owner().to_hex_string()
         )))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "price": 0.0004 })))
         .mount(&server)
@@ -626,7 +632,7 @@ async fn native_price_surplus_solver_competition_and_auction_routes_are_covered(
     Mock::given(method("GET"))
         .and(path(format!(
             "/api/v1/users/{}/total_surplus",
-            sample_owner().as_str()
+            sample_owner().to_hex_string()
         )))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "totalSurplus": "100000000"
@@ -702,7 +708,10 @@ async fn get_order_status_route_is_typed() {
     let server = MockServer::start().await;
     let uid = sample_order_uid();
     Mock::given(method("GET"))
-        .and(path(format!("/api/v1/orders/{}/status", uid.as_str())))
+        .and(path(format!(
+            "/api/v1/orders/{}/status",
+            uid.to_hex_string()
+        )))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "type": "open",
             "value": null
@@ -1047,7 +1056,7 @@ mod recording_transport {
         let calls = recorder.observed();
         assert_eq!(calls.len(), 1);
         assert_eq!(calls[0].method, "GET");
-        assert!(calls[0].url.contains(uid.as_str()));
+        assert!(calls[0].url.contains(uid.to_hex_string().as_str()));
         assert!(calls[0].body.is_empty());
         assert!(calls[0].has_timeout);
     }
@@ -1056,7 +1065,7 @@ mod recording_transport {
     async fn orderbook_send_order_dispatches_through_injected_transport() {
         let recorder = RecordingTransport::new([
             Canned::Ok(sample_quote_response_json().to_string()),
-            Canned::Ok(format!("\"{}\"", sample_order_uid().as_str())),
+            Canned::Ok(format!("\"{}\"", sample_order_uid().to_hex_string())),
         ]);
         let api = api_with_recorder(recorder.clone());
 
@@ -1083,7 +1092,7 @@ mod recording_transport {
             .await
             .expect("send_order must succeed through the injected transport");
 
-        assert_eq!(uid.as_str(), sample_order_uid().as_str());
+        assert_eq!(uid.to_hex_string(), sample_order_uid().to_hex_string());
         let calls = recorder.observed();
         assert_eq!(calls.len(), 2);
         assert_eq!(calls[0].method, "POST");

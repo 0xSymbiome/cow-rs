@@ -156,7 +156,7 @@ mod tests {
         let signer = test_signer();
 
         assert_eq!(
-            signer.get_address().await.unwrap().as_str(),
+            signer.get_address().await.unwrap().to_hex_string(),
             "0x70997970c51812dc3a010c7d01b50e0d17dc79c8"
         );
     }

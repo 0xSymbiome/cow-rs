@@ -122,15 +122,15 @@ fn swap_encoder_tokens_preserve_unique_registry_order() {
     encoder.encode_swap_step(&[
         Swap::new(
             format!("0x{}", "11".repeat(32)),
-            weth.clone(),
-            dai.clone(),
+            weth,
+            dai,
             Amount::new("1").unwrap(),
             None,
         ),
         Swap::new(
             format!("0x{}", "22".repeat(32)),
-            dai.clone(),
-            usdc.clone(),
+            dai,
+            usdc,
             Amount::new("2").unwrap(),
             Some(bytes_from_hex_literal("0x1234")),
         ),

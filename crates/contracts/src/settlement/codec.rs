@@ -4,7 +4,6 @@ use crate::{
     ContractsError,
     interaction::Interaction,
     order::{NormalizedOrder, Order},
-    primitives::normalize_hex_payload,
     signature::{Signature, decode_signing_scheme, encode_eip1271_signature_data},
 };
 
@@ -135,10 +134,23 @@ pub fn decode_trade_flags(encoded: u8) -> Result<TradeFlags, ContractsError> {
 /// Returns [`ContractsError`] if signature normalization or EIP-1271 encoding fails.
 pub fn encode_signature_data(signature: &Signature) -> Result<String, ContractsError> {
     match signature {
-        Signature::Ecdsa { data, .. } => normalize_hex_payload(data, "signature"),
+        Signature::Ecdsa { data, .. } => normalize_signature_hex(data),
         Signature::Eip1271 { data } => encode_eip1271_signature_data(data),
-        Signature::PreSign { owner } => Ok(owner.as_str().to_owned()),
+        Signature::PreSign { owner } => Ok(owner.to_hex_string()),
     }
+}
+
+/// Decodes a `0x`-prefixed hex string and re-encodes it as canonical lowercase
+/// hex so the wire form stays byte-identical regardless of input casing.
+fn normalize_signature_hex(value: &str) -> Result<String, ContractsError> {
+    let stripped = value
+        .strip_prefix("0x")
+        .ok_or(ContractsError::InvalidHexPrefix { field: "signature" })?;
+    let bytes = hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
+        field: "signature",
+        source,
+    })?;
+    Ok(format!("0x{}", hex::encode(bytes)))
 }
 
 /// Encodes a normalized order, signature, and execution into a settlement trade.
@@ -155,7 +167,7 @@ pub fn encode_trade(
     Ok(Trade::new(
         tokens.index(&order.sell_token),
         tokens.index(&order.buy_token),
-        order.receiver.clone(),
+        order.receiver,
         order.sell_amount.clone(),
         order.buy_amount.clone(),
         order.valid_to,
@@ -195,22 +207,20 @@ pub(super) fn encode_settle_call(
         Ok(U256::from_be_bytes(buf))
     }
 
-    fn address_to_sol(address: &Address) -> Result<SolAddress, ContractsError> {
-        let bytes = crate::primitives::parse_hex_exact(address.as_str(), "address", 20)?;
-        let mut buf = [0u8; 20];
-        buf.copy_from_slice(&bytes);
-        Ok(SolAddress::from(buf))
+    const fn address_to_sol(address: &Address) -> SolAddress {
+        *address.as_alloy()
     }
 
     fn hex_to_bytes(value: &str, field: &'static str) -> Result<SolBytes, ContractsError> {
-        let bytes = crate::primitives::parse_hex(value, field)?;
+        let stripped = value
+            .strip_prefix("0x")
+            .ok_or(ContractsError::InvalidHexPrefix { field })?;
+        let bytes =
+            hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source })?;
         Ok(SolBytes::from(bytes))
     }
 
-    let sol_tokens = tokens
-        .iter()
-        .map(address_to_sol)
-        .collect::<Result<Vec<_>, _>>()?;
+    let sol_tokens: Vec<_> = tokens.iter().map(address_to_sol).collect();
     let sol_clearing_prices = clearing_prices
         .iter()
         .map(amount_to_u256)
@@ -220,11 +230,11 @@ pub(super) fn encode_settle_call(
         .iter()
         .map(
             |trade| -> Result<IGPv2Settlement::TradeData, ContractsError> {
-                let app_data_bytes = crate::primitives::parse_bytes32_hash(&trade.app_data)?;
+                let app_data_bytes = trade.app_data.as_alloy().0;
                 Ok(IGPv2Settlement::TradeData {
                     sellTokenIndex: U256::from(trade.sell_token_index),
                     buyTokenIndex: U256::from(trade.buy_token_index),
-                    receiver: address_to_sol(&trade.receiver)?,
+                    receiver: address_to_sol(&trade.receiver),
                     sellAmount: amount_to_u256(&trade.sell_amount)?,
                     buyAmount: amount_to_u256(&trade.buy_amount)?,
                     validTo: trade.valid_to,
@@ -246,7 +256,7 @@ pub(super) fn encode_settle_call(
             .map(
                 |interaction| -> Result<IGPv2Settlement::InteractionData, ContractsError> {
                     Ok(IGPv2Settlement::InteractionData {
-                        target: address_to_sol(&interaction.target)?,
+                        target: address_to_sol(&interaction.target),
                         value: amount_to_u256(&interaction.value)?,
                         callData: SolBytes::copy_from_slice(&interaction.call_data),
                     })
@@ -279,9 +289,9 @@ pub fn decode_order(trade: &Trade, tokens: &[Address]) -> Result<Order, Contract
     }
     let flags = decode_order_flags(trade.flags)?;
     Ok(Order::new(
-        tokens[trade.sell_token_index].clone(),
-        tokens[trade.buy_token_index].clone(),
-        Some(trade.receiver.clone()),
+        tokens[trade.sell_token_index],
+        tokens[trade.buy_token_index],
+        Some(trade.receiver),
         trade.sell_amount.clone(),
         trade.buy_amount.clone(),
         trade.valid_to,

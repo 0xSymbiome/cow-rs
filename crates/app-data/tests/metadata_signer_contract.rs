@@ -32,7 +32,11 @@ fn typed_signer_field_emits_into_metadata_of_generated_document() {
     let reparsed: AppDataParams =
         serde_json::from_value(doc).expect("generated doc must round-trip through AppDataParams");
     assert_eq!(
-        reparsed.signer.as_ref().map(Address::as_str),
+        reparsed
+            .signer
+            .as_ref()
+            .map(Address::to_hex_string)
+            .as_deref(),
         Some(SIGNER_ADDRESS),
         "generated document must carry the typed metadata signer",
     );
@@ -50,7 +54,11 @@ fn typed_signer_field_survives_appdataparams_roundtrip() {
     let params: AppDataParams = serde_json::from_value(input)
         .expect("AppDataParams must parse typed signer through metadata");
     assert_eq!(
-        params.signer.as_ref().map(Address::as_str),
+        params
+            .signer
+            .as_ref()
+            .map(Address::to_hex_string)
+            .as_deref(),
         Some(SIGNER_ADDRESS),
     );
     assert!(
@@ -62,7 +70,11 @@ fn typed_signer_field_survives_appdataparams_roundtrip() {
     let reparsed: AppDataParams = serde_json::from_value(reserialized)
         .expect("re-serialized AppDataParams must round-trip back through deserialize");
     assert_eq!(
-        reparsed.signer.as_ref().map(Address::as_str),
+        reparsed
+            .signer
+            .as_ref()
+            .map(Address::to_hex_string)
+            .as_deref(),
         Some(SIGNER_ADDRESS),
         "AppDataParams must emit metadata.signer on the wire so a re-parse recovers it",
     );
@@ -98,7 +110,11 @@ fn open_ended_metadata_keys_other_than_signer_and_flashloan_survive_roundtrip() 
     let params: AppDataParams = serde_json::from_value(input)
         .expect("AppDataParams must parse typed signer alongside open-ended metadata");
     assert_eq!(
-        params.signer.as_ref().map(Address::as_str),
+        params
+            .signer
+            .as_ref()
+            .map(Address::to_hex_string)
+            .as_deref(),
         Some(SIGNER_ADDRESS),
     );
     assert_eq!(
@@ -147,7 +163,10 @@ fn metadata_signer_typed_slot_and_open_map_path_yield_same_value() {
         .and_then(|metadata| metadata.get(SIGNER_KEY))
         .and_then(Value::as_str);
 
-    assert_eq!(typed.signer.as_ref().map(Address::as_str), open_map_value);
+    assert_eq!(
+        typed.signer.as_ref().map(Address::to_hex_string).as_deref(),
+        open_map_value
+    );
     assert!(
         !typed.metadata.contains_key(SIGNER_KEY),
         "typed signer must move out of the open metadata map after parse",

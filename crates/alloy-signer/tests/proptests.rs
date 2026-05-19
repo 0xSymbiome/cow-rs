@@ -96,9 +96,9 @@ fn order_digest(order: &UnsignedOrder) -> Hash32 {
     hash_order(
         &get_domain(SupportedChainId::Mainnet, None).unwrap(),
         &ContractsOrder::new(
-            order.sell_token.clone(),
-            order.buy_token.clone(),
-            Some(order.receiver.clone()),
+            order.sell_token,
+            order.buy_token,
+            Some(order.receiver),
             order.sell_amount.clone(),
             order.buy_amount.clone(),
             order.valid_to,

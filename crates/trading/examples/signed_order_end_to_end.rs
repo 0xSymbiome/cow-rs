@@ -68,7 +68,7 @@ mod native {
             sell_quote_response(),
         ));
 
-        let signer = ExampleSigner::new(owner.clone());
+        let signer = ExampleSigner::new(owner);
 
         // Builder path: every builder method shown below is public. Calling
         // `.build_ready()` is only possible after `appCode` and chain authority
@@ -78,7 +78,7 @@ mod native {
             .with_trader_defaults(PartialTraderParameters::default())
             .with_chain_id(SupportedChainId::Sepolia)
             .with_app_code("cow-rs-signed-order-example")
-            .with_owner(owner.clone())
+            .with_owner(owner)
             .with_orderbook_client(orderbook)
             .build_ready()
             .map_err(TradingErrorReport::from)?;
@@ -95,7 +95,7 @@ mod native {
             .await
             .map_err(TradingErrorReport::from)?;
 
-        println!("order_id={}", posting.order_id.as_str());
+        println!("order_id={}", posting.order_id.to_hex_string());
         println!("signing_scheme={:?}", posting.signing_scheme);
         println!(
             "signature_prefix={}",
@@ -114,7 +114,7 @@ mod native {
             18,
             Amount::new("100000000000000000").expect("example amount literal must be valid"),
         )
-        .with_owner(owner.clone())
+        .with_owner(*owner)
         .with_sell_token_balance(SellTokenSource::Erc20)
         .with_buy_token_balance(BuyTokenDestination::Erc20)
         .with_slippage_bps(50)
@@ -252,7 +252,7 @@ mod native {
         fn connect(&mut self, _provider: Self::Provider) {}
 
         fn get_address(&self) -> Result<Address, Self::Error> {
-            Ok(self.address.clone())
+            Ok(self.address)
         }
 
         fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {

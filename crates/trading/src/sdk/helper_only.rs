@@ -69,7 +69,7 @@ impl HelperOnlySdk {
                 chain = ?params.chain_id,
                 env = ?params.env,
                 endpoint = "trading.helper_only.get_pre_sign_transaction_async",
-                order_uid = params.order_uid.as_str(),
+                order_uid = %params.order_uid,
             ),
         ),
     )]
@@ -104,7 +104,7 @@ impl HelperOnlySdk {
                 chain = ?params.chain_id,
                 env = ?params.env,
                 endpoint = "trading.helper_only.on_chain_cancel_order",
-                order_uid = params.order_uid.as_str(),
+                order_uid = %params.order_uid,
             ),
         ),
     )]
@@ -137,7 +137,7 @@ impl HelperOnlySdk {
                 chain = ?params.chain_id,
                 env = ?params.env,
                 endpoint = "trading.helper_only.on_chain_cancel_order_async",
-                order_uid = params.order_uid.as_str(),
+                order_uid = %params.order_uid,
             ),
         ),
     )]
@@ -318,7 +318,7 @@ impl HelperOnlySdk {
             PartialTraderParameters {
                 chain_id: Some(orderbook.chain_id),
                 app_code: self.trader_defaults.app_code.clone(),
-                owner: self.trader_defaults.owner.clone(),
+                owner: self.trader_defaults.owner,
                 env: Some(orderbook.env),
                 settlement_contract_override: self
                     .trader_defaults

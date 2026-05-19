@@ -26,5 +26,5 @@ pub fn smoke_hash_and_uid() -> Result<String, Box<dyn std::error::Error>> {
     let generated = generate_order_id(SupportedChainId::Sepolia, &order, &owner, None)?;
 
     assert_eq!(typed.primary_type, ORDER_PRIMARY_TYPE);
-    Ok(generated.order_id.as_str().to_owned())
+    Ok(generated.order_id.to_hex_string())
 }

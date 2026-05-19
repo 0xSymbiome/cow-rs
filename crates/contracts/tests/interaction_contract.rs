@@ -46,7 +46,7 @@ fn interaction_normalization_applies_zero_value_call_defaults() {
     let fixture = fixture_case("contracts-interaction-defaults");
     let target = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
 
-    let normalized = normalize_interaction(&InteractionLike::new(target.clone(), None, None));
+    let normalized = normalize_interaction(&InteractionLike::new(target, None, None));
     assert_eq!(normalized.target, target);
     assert_eq!(
         normalized.value.to_string(),
@@ -62,7 +62,7 @@ fn interaction_normalization_applies_zero_value_call_defaults() {
     );
 
     let explicit = normalize_interaction(&InteractionLike::new(
-        normalized.target.clone(),
+        normalized.target,
         Some(Amount::new("42").unwrap()),
         Some(bytes_from_hex_literal("0x12345678")),
     ));
@@ -141,7 +141,7 @@ fn interaction_encoder_rejects_vault_relayer_target_for_canonical_settlement_dom
 
             let error = encoder
                 .encode_interaction(
-                    &InteractionLike::new(vault_relayer.clone(), None, None),
+                    &InteractionLike::new(vault_relayer, None, None),
                     InteractionStage::Intra,
                 )
                 .unwrap_err();
@@ -166,7 +166,7 @@ fn interaction_encoder_accepts_non_vault_target_for_canonical_settlement_domain(
 
     encoder
         .encode_interaction(
-            &InteractionLike::new(target.clone(), None, None),
+            &InteractionLike::new(target, None, None),
             InteractionStage::Intra,
         )
         .unwrap();
@@ -188,11 +188,11 @@ fn interaction_encoder_does_not_cross_match_chain_or_env() {
     let staging_vault_relayer = registry
         .address(ContractId::VaultRelayer, chain_id, CowEnv::Staging)
         .expect("canonical staging vault relayer must be registered");
-    let mut prod_encoder = SettlementEncoder::new(settlement_domain(chain_id, settlement.clone()));
+    let mut prod_encoder = SettlementEncoder::new(settlement_domain(chain_id, settlement));
 
     prod_encoder
         .encode_interaction(
-            &InteractionLike::new(staging_vault_relayer.clone(), None, None),
+            &InteractionLike::new(staging_vault_relayer, None, None),
             InteractionStage::Intra,
         )
         .unwrap();
@@ -234,7 +234,7 @@ fn interaction_encoder_neutral_for_unknown_custom_settlement_domain() {
 
     encoder
         .encode_interaction(
-            &InteractionLike::new(vault_relayer.clone(), None, None),
+            &InteractionLike::new(vault_relayer, None, None),
             InteractionStage::Intra,
         )
         .unwrap();

@@ -434,7 +434,7 @@ impl AsyncProvider for SlowAsyncProvider {
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
         self.wait().await;
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
+        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 

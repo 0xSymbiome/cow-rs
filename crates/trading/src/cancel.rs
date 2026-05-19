@@ -84,7 +84,7 @@ where
             });
         }
     };
-    let body = OrderCancellations::new(vec![params.order_uid.clone()], signing.signature)
+    let body = OrderCancellations::new(vec![params.order_uid], signing.signature)
         .with_signing_scheme(scheme);
 
     orderbook.send_signed_order_cancellations(&body).await?;

@@ -35,9 +35,7 @@ fn validate_distinct_tokens(
     kind: OrderKind,
 ) -> Result<(), ClientRejection> {
     if sell_token == buy_token && kind == OrderKind::Buy {
-        return Err(ClientRejection::SameBuyAndSellToken {
-            token: sell_token.clone(),
-        });
+        return Err(ClientRejection::SameBuyAndSellToken { token: *sell_token });
     }
     Ok(())
 }

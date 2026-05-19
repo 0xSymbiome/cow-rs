@@ -14,7 +14,8 @@ use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
 use cow_sdk_trading::{ClientRejection, LimitTradeParameters, TradeParameters};
 
 const SELL_TOKEN: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-const WETH: &str = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+// Canonical lowercase 0x-prefixed wire form (PROP-WB-004 / ADR 0052).
+const WETH: &str = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
 fn address(hex: &str) -> Address {
     Address::new(hex).expect("fixture address must be valid")

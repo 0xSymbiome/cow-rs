@@ -15,8 +15,8 @@ async fn read_contract_uint256_allowance_matches_browser_wallet_shape() {
         "allowance".to_owned(),
         ERC20_ALLOWANCE_ABI.to_owned(),
         serde_json::to_string(&[
-            Address::from_bytes([0x11; 20]).as_str(),
-            Address::from_bytes([0x22; 20]).as_str(),
+            Address::from_bytes([0x11; 20]).to_hex_string(),
+            Address::from_bytes([0x22; 20]).to_hex_string(),
         ])
         .unwrap(),
     );
