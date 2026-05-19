@@ -37,7 +37,7 @@ pub async fn post_sell_native_currency_order<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_sell_native_currency_order_async(
         orderbook,
@@ -96,7 +96,7 @@ pub async fn post_sell_native_currency_order_async<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     validate_orderbook_context(orderbook, Some(trader.chain_id), trader.env)?;
     validate_orderbook_env_context(orderbook, params.env)?;

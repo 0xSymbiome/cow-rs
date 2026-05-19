@@ -368,6 +368,10 @@ fn contracts_and_signing_errors_redact_secret_bearing_messages() {
             operation: "sign_typed_data",
             message: secret_payload().into(),
         },
+        SigningError::SignerRejection {
+            label: "typed-data signature",
+            code: 4001,
+        },
         SigningError::UnsupportedSignerGeneratedScheme {
             scheme: cow_sdk::signing::SigningScheme::Eip1271,
         },

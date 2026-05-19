@@ -20,7 +20,7 @@ impl TradingSdk {
     ) -> Result<cow_sdk_core::TransactionRequest, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
@@ -59,7 +59,7 @@ impl TradingSdk {
     ) -> Result<cow_sdk_core::TransactionRequest, TradingError>
     where
         S: AsyncSigner,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader

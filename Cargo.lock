@@ -1340,6 +1340,7 @@ dependencies = [
  "cow-sdk-alloy-provider",
  "cow-sdk-browser-wallet",
  "cow-sdk-core",
+ "cow-sdk-signing",
  "cow-sdk-trading",
  "serde_json",
  "tokio",

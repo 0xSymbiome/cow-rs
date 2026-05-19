@@ -2,8 +2,8 @@ use std::fmt;
 
 use cow_sdk_contracts::{OrderCancellations, SigningScheme};
 use cow_sdk_core::{
-    AsyncDigestSigner, AsyncTypedDataSigner, OrderUid, ProtocolOptions, Signer, SupportedChainId,
-    TypedDataPayload,
+    AsyncDigestSigner, AsyncTypedDataSigner, OrderUid, ProtocolOptions, Signer, SignerError,
+    SupportedChainId, TypedDataPayload,
 };
 
 use crate::{
@@ -33,7 +33,7 @@ pub fn sign_order_cancellation<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: Signer,
-    S::Error: fmt::Display,
+    S::Error: fmt::Display + SignerError,
 {
     sign_order_cancellation_with_scheme(order_uid, chain_id, signer, SigningScheme::Eip712, options)
 }
@@ -51,7 +51,7 @@ pub async fn sign_order_cancellation_async<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: AsyncTypedDataSigner,
-    S::Error: fmt::Display,
+    S::Error: fmt::Display + SignerError,
 {
     sign_order_cancellations_async(std::slice::from_ref(order_uid), chain_id, signer, options).await
 }
@@ -81,7 +81,7 @@ pub fn sign_order_cancellation_with_scheme<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: Signer,
-    S::Error: fmt::Display,
+    S::Error: fmt::Display + SignerError,
 {
     sign_order_cancellations_with_scheme(
         std::slice::from_ref(order_uid),
@@ -117,7 +117,7 @@ pub async fn sign_order_cancellation_with_scheme_async<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
-    <S as AsyncTypedDataSigner>::Error: fmt::Display,
+    <S as AsyncTypedDataSigner>::Error: fmt::Display + SignerError,
 {
     sign_order_cancellations_with_scheme_async(
         std::slice::from_ref(order_uid),
@@ -142,7 +142,7 @@ pub fn sign_order_cancellations<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: Signer,
-    S::Error: fmt::Display,
+    S::Error: fmt::Display + SignerError,
 {
     sign_order_cancellations_with_scheme(
         order_uids,
@@ -166,7 +166,7 @@ pub async fn sign_order_cancellations_async<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: AsyncTypedDataSigner,
-    S::Error: fmt::Display,
+    S::Error: fmt::Display + SignerError,
 {
     #[cfg(feature = "tracing")]
     tracing::debug!(
@@ -211,7 +211,7 @@ pub fn sign_order_cancellations_with_scheme<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: Signer,
-    S::Error: fmt::Display,
+    S::Error: fmt::Display + SignerError,
 {
     #[cfg(feature = "tracing")]
     tracing::debug!(
@@ -249,7 +249,7 @@ pub async fn sign_order_cancellations_with_scheme_async<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
-    <S as AsyncTypedDataSigner>::Error: fmt::Display,
+    <S as AsyncTypedDataSigner>::Error: fmt::Display + SignerError,
 {
     #[cfg(feature = "tracing")]
     tracing::debug!(

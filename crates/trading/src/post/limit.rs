@@ -27,7 +27,7 @@ pub async fn post_limit_order<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_limit_order_async_with_bounds(
         params,
@@ -60,7 +60,7 @@ pub async fn post_limit_order_async<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_limit_order_async_with_bounds(
         params,
@@ -91,7 +91,7 @@ pub async fn post_limit_order_async_with_bounds<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let app_data_signer = advanced_settings
         .and_then(|settings| settings.app_data.as_ref())

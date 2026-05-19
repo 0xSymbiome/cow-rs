@@ -14,6 +14,7 @@ cow-sdk-alloy = { path = "../crates/alloy", version = "0.1.0" }
 cow-sdk-alloy-provider = { path = "../crates/alloy-provider", version = "0.1.0" }
 cow-sdk-browser-wallet = { path = "../crates/browser-wallet", version = "0.1.0" }
 cow-sdk-core = { path = "../crates/core", version = "0.1.0" }
+cow-sdk-signing = { path = "../crates/signing", version = "0.1.0" }
 cow-sdk-trading = { path = "../crates/trading", version = "0.1.0" }
 serde_json.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
@@ -71,3 +72,7 @@ path = "transaction_lifecycle_cross_adapter_invariant.rs"
 [[test]]
 name = "wasm_dependency_invariant"
 path = "wasm_dependency_invariant.rs"
+
+[[test]]
+name = "signer_rejection_propagation_invariant"
+path = "signer_rejection_propagation_invariant.rs"

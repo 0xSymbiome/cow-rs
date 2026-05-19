@@ -352,6 +352,8 @@ mod native {
         Unsupported(&'static str),
     }
 
+    impl cow_sdk_core::SignerError for ExampleSignerError {}
+
     /// Thin wrapper around [`TradingError`] used to plug the trading error type
     /// into `Box<dyn Error>` without adding an explicit `impl From` on the
     /// upstream type.

@@ -320,3 +320,59 @@ where
         AsyncSigner::sign_message(self, digest).await
     }
 }
+
+/// Optional structured classification for typed signer errors.
+///
+/// Implementations expose only the deterministic, non-sensitive
+/// EIP-1193 provider error code so the surrounding signing crate can
+/// route a method-aware rejection label to downstream consumers
+/// without coupling to backend-specific error representations or to
+/// the upstream error's `Display` shape. Returning `None` from every
+/// variant — the default — lets the caller fall back to its existing
+/// redacted `Display` path so unrelated signer failures continue to
+/// redact in full.
+///
+/// The single exposed code carries the standardised EIP-1193
+/// numeric provider error class (`4001` for user rejections, `4100`
+/// for unauthorised, `4900` for disconnected, etc.). EIP-1193
+/// defines these codes as public protocol classifications, so the
+/// trait deliberately exposes the numeric code without any
+/// implementer-controlled wallet message.
+///
+/// Implementers should match only on their own typed rejection
+/// variants and return the code already carried in the variant's
+/// `code` field — they should not parse strings, perform string
+/// matching against `Display`, or wrap arbitrary failures as
+/// rejections. The contract is checked by per-crate
+/// `signer_error_trait_contract` tests that pin the value returned
+/// for every variant the implementer carries.
+pub trait SignerError {
+    /// Returns the EIP-1193 provider error code when this error
+    /// represents a user-driven rejection of the signing request,
+    /// or `None` for every other class of failure.
+    ///
+    /// The default returns `None` so an implementer can adopt the
+    /// trait without immediately enumerating every variant; the
+    /// caller treats `None` as "fall back to the redacted `Display`
+    /// path".
+    #[must_use]
+    fn user_rejection_code(&self) -> Option<i32> {
+        None
+    }
+}
+
+/// Courtesy implementation for the canonical test-signer `Error`
+/// type. Production signer error types should opt in with their own
+/// typed `match` over the variants that represent EIP-1193 rejections
+/// rather than rely on this passthrough.
+impl SignerError for String {}
+
+/// Courtesy implementation for borrowed message errors so tests and
+/// signing helpers that accept `&str` keep the same default
+/// classification posture as owned `String` errors.
+impl SignerError for &str {}
+
+/// Courtesy implementation for the never-error case so signers that
+/// cannot fail are still callable through the signing helpers without
+/// adding a redundant per-test impl.
+impl SignerError for core::convert::Infallible {}

@@ -44,7 +44,7 @@ pub async fn post_cow_protocol_trade<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_cow_protocol_trade_async(
         orderbook,
@@ -121,7 +121,7 @@ pub async fn post_cow_protocol_trade_async<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     validate_orderbook_context(orderbook, Some(trader.chain_id), trader.env)?;
     validate_orderbook_env_context(orderbook, params.env)?;
@@ -345,7 +345,7 @@ async fn sign_order_for_submission<S>(
 ) -> Result<(String, SigningScheme), TradingError>
 where
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     match scheme {
         SigningScheme::PreSign => Ok((from.as_str().to_owned(), SigningScheme::PreSign)),

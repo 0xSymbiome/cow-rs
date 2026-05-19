@@ -53,7 +53,7 @@ pub use tokio_util::sync::CancellationToken;
 pub use traits::{
     AsyncDigestSigner, AsyncEip1193, AsyncOwner, AsyncProvider, AsyncSigner, AsyncSigningProvider,
     AsyncTypedDataSigner, BlockInfo, ContractCall, ContractHandle, GraphTransport,
-    PinningTransport, Provider, Signer, TransactionBroadcast, TransactionReceipt,
+    PinningTransport, Provider, Signer, SignerError, TransactionBroadcast, TransactionReceipt,
     TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataEnvelope, TypedDataField,
     TypedDataPayload, TypedDataTypes,
 };

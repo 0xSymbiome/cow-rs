@@ -30,6 +30,8 @@ impl fmt::Display for MockSignerError {
     }
 }
 
+impl cow_sdk_core::SignerError for MockSignerError {}
+
 #[derive(Clone)]
 pub struct MockSigner {
     pub address: Address,

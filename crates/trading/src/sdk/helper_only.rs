@@ -41,7 +41,7 @@ impl HelperOnlySdk {
     ) -> Result<cow_sdk_core::TransactionRequest, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
@@ -80,7 +80,7 @@ impl HelperOnlySdk {
     ) -> Result<cow_sdk_core::TransactionRequest, TradingError>
     where
         S: AsyncSigner,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
@@ -115,7 +115,7 @@ impl HelperOnlySdk {
     ) -> Result<TransactionHash, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         self.on_chain_cancel_order_async(params, signer).await
     }
@@ -148,7 +148,7 @@ impl HelperOnlySdk {
     ) -> Result<TransactionHash, TradingError>
     where
         S: AsyncSigner,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, orderbook) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
 
@@ -254,7 +254,7 @@ impl HelperOnlySdk {
     ) -> Result<TransactionHash, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
@@ -292,7 +292,7 @@ impl HelperOnlySdk {
     ) -> Result<TransactionHash, TradingError>
     where
         S: AsyncSigner,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader

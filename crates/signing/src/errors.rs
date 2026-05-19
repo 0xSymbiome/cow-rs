@@ -23,6 +23,23 @@ pub enum SigningError {
         /// Signer error message.
         message: Redacted<String>,
     },
+    /// The signer reported a structured user rejection of the request,
+    /// typically corresponding to EIP-1193 provider error code 4001.
+    ///
+    /// The fields are deterministic, non-sensitive classifications:
+    /// `label` names the high-level operation the user declined
+    /// (`"typed-data signature"`, `"message signature"`, etc.) and
+    /// `code` carries the EIP-1193 numeric code so downstream
+    /// consumers can render the standard provider error class without
+    /// inspecting backend-specific strings.
+    #[error("User rejected {label} ({code})")]
+    SignerRejection {
+        /// High-level operation label derived from the signing-helper
+        /// call site (e.g. `"typed-data signature"`).
+        label: &'static str,
+        /// EIP-1193 provider error code reported by the wallet.
+        code: i32,
+    },
     /// Local signer generation only supports ECDSA-style schemes.
     #[error(
         "local signer-generated signatures only support EIP712 and ETHSIGN; received {scheme:?}"

@@ -36,7 +36,7 @@ impl TradingSdk {
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         self.post_swap_order_async(params, signer, advanced_settings)
             .await
@@ -77,7 +77,7 @@ impl TradingSdk {
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: AsyncSigner,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
@@ -122,7 +122,7 @@ impl TradingSdk {
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         self.post_swap_order_from_quote_async(quote_results, signer, advanced_settings)
             .await
@@ -164,7 +164,7 @@ impl TradingSdk {
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: AsyncSigner,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, orderbook) =
             self.resolve_orderbook_trader(None, quote_results.trade_parameters.env)?;
@@ -209,7 +209,7 @@ impl TradingSdk {
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         self.post_limit_order_async(params, signer, advanced_settings)
             .await
@@ -250,7 +250,7 @@ impl TradingSdk {
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: AsyncSigner,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;

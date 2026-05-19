@@ -55,6 +55,11 @@ public and runtime shape of `cow-rs`.
 | [0045](0045-async-signer-trait-narrowing.md) | Accepted | Narrow async signer capabilities by operation. |
 | [0046](0046-transport-policy-js-exposure.md) | Accepted | Expose transport policy configuration to JavaScript clients. |
 | [0047](0047-typescript-facade-architecture.md) | Accepted | Make the TypeScript facade the public WASM package surface. |
+| [0048](0048-composable-conditional-order-framework.md) | Accepted | Ship the composable conditional-order framework as an additive leaf crate behind the `composable` feature, bounded by the watch-tower boundary. |
+| [0049](0049-cow-shed-account-abstraction-proxy.md) | Accepted | Ship COW Shed account-abstraction proxy support as an additive leaf crate behind the `cow-shed` feature. |
+| [0050](0050-eip1271-signature-blob-encoding.md) | Accepted | Recognise exactly two EIP-1271 payload shapes through distinct encoder entry points selected at signer construction. |
+| [0051](0051-signing-owned-eip1271-signature-provider-trait.md) | Accepted | Own `Eip1271SignatureProvider` in `cow-sdk-signing` and forbid any downstream re-export so the canonical path stays single-rooted. |
+| [0053](0053-typed-signer-rejection-classification.md) | Accepted | Classify EIP-1193 user rejections through a shared `cow_sdk_core::SignerError` trait so the signing crate emits a typed `SigningError::SignerRejection` variant across signer implementations. |
 
 ## When To Write An ADR
 

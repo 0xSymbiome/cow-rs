@@ -218,6 +218,29 @@ impl fmt::Display for AlloyClientError {
 
 impl Error for AlloyClientError {}
 
+/// `AlloyClient` composes a local-key signer with the alloy HTTP
+/// provider and never surfaces an EIP-1193 wallet rejection: the
+/// signer holds the key locally, so the user-prompt flow that
+/// produces EIP-1193 4001 simply does not exist on this adapter.
+/// The trait returns `None` for every variant so the signing crate
+/// routes every umbrella failure through the redacted
+/// `SigningError::Signer` path. New rejection-class variants must
+/// extend this impl alongside the new variant.
+impl cow_sdk_core::SignerError for AlloyClientError {
+    fn user_rejection_code(&self) -> Option<i32> {
+        match self {
+            Self::Validation(_)
+            | Self::Transport { .. }
+            | Self::Remote { .. }
+            | Self::Signing { .. }
+            | Self::PendingTransaction { .. }
+            | Self::UnsupportedTransactionRequest { .. }
+            | Self::Cancelled
+            | Self::Internal(_) => None,
+        }
+    }
+}
+
 impl From<cow_sdk_core::CoreError> for AlloyClientError {
     fn from(error: cow_sdk_core::CoreError) -> Self {
         Self::Validation(error.to_string())

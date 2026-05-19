@@ -146,7 +146,7 @@ pub fn approve_cow_protocol<S>(
 ) -> Result<TransactionHash, TradingError>
 where
     S: Signer,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let tx = approval_transaction(params, chain_id, env)?;
     signer
@@ -171,7 +171,7 @@ pub async fn approve_cow_protocol_async<S>(
 ) -> Result<TransactionHash, TradingError>
 where
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let tx = approval_transaction(params, chain_id, env)?;
     signer

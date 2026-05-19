@@ -73,7 +73,7 @@ impl TradingSdk {
     ) -> Result<QuoteResults, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         self.get_quote_results_async(params, signer, advanced_settings)
             .await
@@ -108,7 +108,7 @@ impl TradingSdk {
     ) -> Result<QuoteResults, TradingError>
     where
         S: AsyncSigner,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         params.owner = params.owner.or_else(|| self.trader_defaults.owner.clone());
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;

@@ -30,7 +30,7 @@ pub async fn post_swap_order_from_quote<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_swap_order_from_quote_async_with_bounds(
         quote_results,
@@ -79,7 +79,7 @@ pub async fn post_swap_order_from_quote_async<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_swap_order_from_quote_async_with_bounds(
         quote_results,
@@ -111,7 +111,7 @@ pub async fn post_swap_order_from_quote_async_with_bounds<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     validate_quote_orderbook_binding(orderbook, quote_results.orderbook_binding.as_ref())?;
 

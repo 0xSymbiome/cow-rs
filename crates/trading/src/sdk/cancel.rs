@@ -34,7 +34,7 @@ impl TradingSdk {
     ) -> Result<bool, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         self.off_chain_cancel_order_async(params, signer).await
     }
@@ -67,7 +67,7 @@ impl TradingSdk {
     ) -> Result<bool, TradingError>
     where
         S: AsyncSigner,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, orderbook) = self.resolve_orderbook_trader(params.chain_id, params.env)?;
         let effective_params = OrderTraderParameters {
@@ -114,7 +114,7 @@ impl TradingSdk {
     ) -> Result<TransactionHash, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         self.on_chain_cancel_order_async(params, signer).await
     }
@@ -149,7 +149,7 @@ impl TradingSdk {
     ) -> Result<TransactionHash, TradingError>
     where
         S: AsyncSigner,
-        S::Error: std::fmt::Display,
+        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, orderbook) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
 

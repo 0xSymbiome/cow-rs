@@ -82,7 +82,7 @@ pub fn get_pre_sign_transaction<S>(
 ) -> Result<TransactionRequest, TradingError>
 where
     S: Signer,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let settlement = resolve_settlement_address(chain_id, options);
     let mut tx = TransactionRequest::new(
@@ -127,7 +127,7 @@ pub async fn get_pre_sign_transaction_async<S>(
 ) -> Result<TransactionRequest, TradingError>
 where
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let settlement = resolve_settlement_address(chain_id, options);
     let mut tx = TransactionRequest::new(
@@ -172,7 +172,7 @@ pub async fn get_eth_flow_transaction<S>(
 ) -> Result<EthFlowTransaction, TradingError>
 where
     S: Signer,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     get_eth_flow_transaction_async(
         app_data_keccak256,
@@ -210,7 +210,7 @@ pub async fn get_eth_flow_transaction_async<S>(
 ) -> Result<EthFlowTransaction, TradingError>
 where
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let from = signer
         .get_address()
@@ -313,7 +313,7 @@ pub fn onchain_cancellation_transaction<S>(
 ) -> Result<TransactionRequest, TradingError>
 where
     S: Signer,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let mut tx = if order.ethflow_data.is_some() {
         TransactionRequest::new(
@@ -360,7 +360,7 @@ pub async fn onchain_cancellation_transaction_async<S>(
 ) -> Result<TransactionRequest, TradingError>
 where
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let mut tx = if order.ethflow_data.is_some() {
         TransactionRequest::new(
@@ -404,7 +404,7 @@ pub fn cancel_order_onchain<S>(
 ) -> Result<TransactionHash, TradingError>
 where
     S: Signer,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let tx = onchain_cancellation_transaction(signer, chain_id, order, options)?;
     let broadcast = signer
@@ -429,7 +429,7 @@ pub async fn cancel_order_onchain_async<S>(
 ) -> Result<TransactionHash, TradingError>
 where
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let tx = onchain_cancellation_transaction_async(signer, chain_id, order, options).await?;
     let broadcast = signer

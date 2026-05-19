@@ -26,7 +26,7 @@ pub async fn post_swap_order<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_swap_order_with_bounds(
         trade_parameters,
@@ -59,7 +59,7 @@ pub async fn post_swap_order_with_bounds<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_swap_order_async_with_bounds(
         trade_parameters,
@@ -90,7 +90,7 @@ pub async fn post_swap_order_async<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_swap_order_async_with_bounds(
         trade_parameters,
@@ -122,7 +122,7 @@ pub async fn post_swap_order_async_with_bounds<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: AsyncSigner,
-    S::Error: std::fmt::Display,
+    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let quote_results = crate::get_quote_results_async(
         trade_parameters,

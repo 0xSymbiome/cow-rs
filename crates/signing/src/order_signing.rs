@@ -9,8 +9,8 @@ use cow_sdk_contracts::{
 };
 use cow_sdk_core::{
     Address, AsyncDigestSigner, AsyncTypedDataSigner, BuyTokenDestination, OrderDigest, OrderKind,
-    OrderUid, ProtocolOptions, SellTokenSource, Signer, SupportedChainId, TypedDataPayload,
-    UnsignedOrder,
+    OrderUid, ProtocolOptions, SellTokenSource, Signer, SignerError, SupportedChainId,
+    TypedDataPayload, UnsignedOrder,
 };
 use serde::{Deserialize, Serialize};
 
@@ -82,7 +82,7 @@ pub fn sign_order<S>(
 ) -> Result<SigningResult, SigningError>
 where
     S: Signer,
-    S::Error: fmt::Display,
+    S::Error: fmt::Display + SignerError,
 {
     sign_order_with_scheme(order, chain_id, signer, SigningScheme::Eip712, options)
 }
@@ -100,7 +100,7 @@ pub async fn sign_order_async<S>(
 ) -> Result<SigningResult, SigningError>
 where
     S: AsyncTypedDataSigner,
-    S::Error: fmt::Display,
+    S::Error: fmt::Display + SignerError,
 {
     let payload = order_signing_payload(order, chain_id, options)?;
     let signature = signer
@@ -138,7 +138,7 @@ pub fn sign_order_with_scheme<S>(
 ) -> Result<SigningResult, SigningError>
 where
     S: Signer,
-    S::Error: fmt::Display,
+    S::Error: fmt::Display + SignerError,
 {
     let payload = order_signing_payload(order, chain_id, options)?;
     sign_with_scheme(signer, scheme, &payload.payload, &payload.digest)
@@ -169,7 +169,7 @@ pub async fn sign_order_with_scheme_async<S>(
 ) -> Result<SigningResult, SigningError>
 where
     S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
-    <S as AsyncTypedDataSigner>::Error: fmt::Display,
+    <S as AsyncTypedDataSigner>::Error: fmt::Display + SignerError,
 {
     let payload = order_signing_payload(order, chain_id, options)?;
     sign_with_scheme_async(signer, scheme, &payload.payload, &payload.digest).await
@@ -251,7 +251,7 @@ pub(crate) fn sign_with_scheme<S>(
 ) -> Result<SigningResult, SigningError>
 where
     S: Signer,
-    S::Error: fmt::Display,
+    S::Error: fmt::Display + SignerError,
 {
     if !scheme.is_ecdsa() {
         return Err(SigningError::UnsupportedSignerGeneratedScheme { scheme });
@@ -286,7 +286,7 @@ pub(crate) async fn sign_with_scheme_async<S>(
 ) -> Result<SigningResult, SigningError>
 where
     S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
-    <S as AsyncTypedDataSigner>::Error: fmt::Display,
+    <S as AsyncTypedDataSigner>::Error: fmt::Display + SignerError,
 {
     if !scheme.is_ecdsa() {
         return Err(SigningError::UnsupportedSignerGeneratedScheme { scheme });
@@ -333,10 +333,38 @@ pub(crate) fn contracts_order(order: &UnsignedOrder) -> ContractsOrder {
     ContractsOrder::from(order)
 }
 
-pub(crate) fn signer_error<E: fmt::Display>(operation: &'static str, error: E) -> SigningError {
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "callers move the upstream signer error into this helper at the \
+              `.map_err` boundary; consuming the value keeps the failure path \
+              free of additional borrows."
+)]
+pub(crate) fn signer_error<E: fmt::Display + SignerError>(
+    operation: &'static str,
+    error: E,
+) -> SigningError {
+    if let Some(code) = error.user_rejection_code() {
+        return SigningError::SignerRejection {
+            label: signer_operation_label(operation),
+            code,
+        };
+    }
     SigningError::Signer {
         operation,
         message: error.to_string().into(),
+    }
+}
+
+/// Maps the static signing-helper call-site identifier to the
+/// human-readable operation label rendered in
+/// [`SigningError::SignerRejection`]. The labels are intentionally
+/// concise and product-facing so downstream consoles can render the
+/// rejection without inspecting backend-specific strings.
+fn signer_operation_label(operation: &str) -> &'static str {
+    match operation {
+        "sign_typed_data_payload" | "sign_typed_data" => "typed-data signature",
+        "sign_message" | "sign_digest" => "message signature",
+        _ => "signing request",
     }
 }
 
@@ -418,5 +446,107 @@ fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
         // SAFETY: every currently supported signing balance destination is
         // mapped above; new variants must extend this typed-data codec.
         _ => unreachable!("BuyTokenDestination variants are exhaustively covered"),
+    }
+}
+
+#[cfg(test)]
+mod signer_error_tests {
+    use super::*;
+
+    /// Minimal typed signer error used to exercise the `signer_error`
+    /// helper against the [`SignerError`] trait without pulling in
+    /// any downstream signer crate. The wrapper carries an optional
+    /// rejection code so each test pins the exact classification the
+    /// trait should expose for the helper to consume.
+    #[derive(Debug, Clone)]
+    struct FakeSignerError {
+        message: &'static str,
+        rejection_code: Option<i32>,
+    }
+
+    impl fmt::Display for FakeSignerError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.write_str(self.message)
+        }
+    }
+
+    impl SignerError for FakeSignerError {
+        fn user_rejection_code(&self) -> Option<i32> {
+            self.rejection_code
+        }
+    }
+
+    #[test]
+    fn signer_error_routes_typed_rejection_to_structured_variant() {
+        let upstream = FakeSignerError {
+            message: "wallet rejected; opaque",
+            rejection_code: Some(4001),
+        };
+        let error = signer_error("sign_typed_data_payload", upstream);
+        match error {
+            SigningError::SignerRejection { label, code } => {
+                assert_eq!(label, "typed-data signature");
+                assert_eq!(code, 4001);
+            }
+            other => panic!("expected SignerRejection, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn signer_error_propagates_non_4001_rejection_codes_verbatim() {
+        let upstream = FakeSignerError {
+            message: "wallet account disconnected",
+            rejection_code: Some(4900),
+        };
+        let error = signer_error("sign_typed_data_payload", upstream);
+        match error {
+            SigningError::SignerRejection { label, code } => {
+                assert_eq!(label, "typed-data signature");
+                assert_eq!(code, 4900);
+            }
+            other => panic!("expected SignerRejection, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn signer_error_falls_back_to_redacted_signer_for_unclassified_errors() {
+        let upstream = FakeSignerError {
+            message: "signer hardware module busy",
+            rejection_code: None,
+        };
+        let error = signer_error("sign_typed_data_payload", upstream);
+        match error {
+            SigningError::Signer { operation, message } => {
+                assert_eq!(operation, "sign_typed_data_payload");
+                assert_eq!(message.as_inner(), "signer hardware module busy");
+            }
+            other => panic!("expected Signer, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn signer_rejection_display_renders_user_facing_label_and_code() {
+        let rendered = SigningError::SignerRejection {
+            label: "typed-data signature",
+            code: 4001,
+        }
+        .to_string();
+        assert!(rendered.contains("User rejected typed-data signature"));
+        assert!(rendered.contains("(4001)"));
+    }
+
+    #[test]
+    fn signer_operation_label_maps_known_operations() {
+        assert_eq!(
+            signer_operation_label("sign_typed_data_payload"),
+            "typed-data signature"
+        );
+        assert_eq!(
+            signer_operation_label("sign_typed_data"),
+            "typed-data signature"
+        );
+        assert_eq!(signer_operation_label("sign_message"), "message signature");
+        assert_eq!(signer_operation_label("sign_digest"), "message signature");
+        assert_eq!(signer_operation_label("sign_unknown_op"), "signing request");
     }
 }

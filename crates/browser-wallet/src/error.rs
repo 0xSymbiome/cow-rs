@@ -285,6 +285,27 @@ impl BrowserWalletError {
     }
 }
 
+/// Exposes the EIP-1193 provider error code carried by the
+/// `UserRejectedRequest` variant so the signing crate can route the
+/// rejection through `cow_sdk_signing::SigningError::SignerRejection`.
+/// Every other variant returns `None` and falls through to the
+/// signing crate's redacted display path.
+///
+/// The match is exhaustive over every typed rejection-class variant
+/// the wallet error carries today; new EIP-1193 rejection variants
+/// must add a row here so the classification contract stays pinned
+/// against the typed error surface (and not against the `Display`
+/// shape). Pinning lives in
+/// `crates/browser-wallet/tests/signer_error_trait_contract.rs`.
+impl cow_sdk_core::SignerError for BrowserWalletError {
+    fn user_rejection_code(&self) -> Option<i32> {
+        match self {
+            Self::UserRejectedRequest { code, .. } => Some(*code),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

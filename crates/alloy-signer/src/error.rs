@@ -146,6 +146,30 @@ impl From<cow_sdk_core::Cancelled> for AsyncSignerError {
     }
 }
 
+/// `LocalAlloyKeystoreSigner` operates on a locally-held private key
+/// and never goes through an EIP-1193 provider, so no variant of
+/// `AsyncSignerError` can represent a user rejection in the sense
+/// EIP-1193 defines (codes `4001`, `4100`, etc.). The trait impl
+/// returns `None` for every variant, which routes every leaf-signer
+/// failure through the redacted `SigningError::Signer` path. If a
+/// future alloy-signer variant ever represents an EIP-1193 rejection
+/// surfaced by an external transport, the new code must extend this
+/// impl alongside the new variant so the signing crate can re-classify
+/// it. The contract is pinned by
+/// `crates/alloy-signer/tests/signer_error_trait_contract.rs`.
+impl cow_sdk_core::SignerError for AsyncSignerError {
+    fn user_rejection_code(&self) -> Option<i32> {
+        match self {
+            Self::Validation(_)
+            | Self::Signing { .. }
+            | Self::ProviderRequired { .. }
+            | Self::Unsupported(_)
+            | Self::Cancelled
+            | Self::Internal(_) => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use cow_sdk_core::Redacted;
