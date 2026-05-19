@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-05-19
 - Last reviewed: 2026-05-19
+- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, error-surface, eip-1193, browser-wallet, alloy, classification
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
 

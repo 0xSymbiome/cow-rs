@@ -1,25 +1,14 @@
 # Shared Logic Reviewability Audit
 
 Status: Current  
-Last reviewed: 2026-05-16
-Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary  
-Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, boundary-specific order DTO separation, or the canonical primitive-layer invocation paths (keccak256, ABI encoding, hex serde) that materially affect correctness or reviewability  
+Last reviewed: 2026-05-19
+Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary, plus the canonical primitive-layer invocation paths shared across the cow-rs workspace  
+Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, boundary-specific order DTO separation, or the canonical primitive-layer invocation paths (keccak256, U256 and quantity parsing, address encoding, hex serde, typed-primitive bridges, and identity-wire-form preservation) that materially affect correctness or reviewability  
 Related docs:
 - [ADR 0005](../adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
+- [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
-
-## Note on canonical primitive layer
-
-Production code across `cow-sdk-contracts`, `cow-sdk-signing`, and
-`cow-sdk-cow-shed` invokes `keccak256` through the single canonical
-`alloy_primitives::keccak256` entry point. Hand-rolled `sha3::Keccak256`
-helpers under `crates/*/tests/` (and one inline test-mod helper in
-`crates/contracts/src/deploy.rs::tests`) are retained so the parity
-assertions compare the crate output against an independent keccak
-implementation. The shared-logic-reviewability boundary still applies:
-crate hashing has exactly one canonical invocation path; the
-independent-keccak helpers are quarantined in test modules.
 
 ## Scope
 
@@ -30,6 +19,9 @@ This audit covers:
   empty responses
 - order signing and cancellation signing payload preparation
 - trading posting wrapper paths
+- canonical primitive-layer invocation across the cow-rs workspace
+  (keccak256, U256 and quantity parsing, address encoding, hex serde,
+  typed-primitive bridges, and identity-wire-form preservation)
 - generated or schema-derived artifacts as a separate category
 
 It does not cover style-only cleanup notes, generic refactor wishlists, or unrelated
@@ -44,6 +36,7 @@ internal refactors that do not affect correctness or reviewability.
 | Shared signing payload preparation | Share payload construction between sync and async signing paths | Conforms |
 | Thin trading posting wrappers | Keep ergonomic entry points thin and route workflow logic through the async implementation path | Conforms |
 | Boundary-specific order DTO separation | Retain distinct DTOs only where ABI, API, normalized, or user-domain boundaries differ materially | Conforms |
+| Canonical primitive-layer invocation | Use one canonical entry point per shared primitive across the workspace, with parallel implementations consolidated under typed `alloy_primitives` re-exports per ADR 0052 | In progress |
 
 ## Current Contract
 
@@ -85,6 +78,60 @@ different:
 Generated or schema-derived artifacts remain internal or test-only and are not
 part of the public SDK API.
 
+### Canonical Primitive Layer Invocation
+
+Every shared primitive in production code routes through one canonical
+entry point. The contract applies to every cow-rs crate that consumes
+the primitive; parallel implementations are a reviewability hazard
+because each variant must be re-verified independently and any drift
+between variants is invisible to a reviewer who only reads one site.
+
+- **keccak256**: production code across `cow-sdk-contracts`,
+  `cow-sdk-signing`, and `cow-sdk-cow-shed` invokes
+  `alloy_primitives::keccak256` directly. Hand-rolled
+  `sha3::Keccak256` helpers remain only inside `crates/*/tests/` (and
+  one inline test-mod helper in
+  `crates/contracts/src/deploy.rs::tests`) so the parity assertions
+  compare the crate output against an independent keccak
+  implementation. Each retained test helper carries a `// SAFETY:`
+  comment naming its independent-oracle purpose.
+- **SigningScheme**: the cow-protocol-side
+  `cow_sdk_contracts::SigningScheme` (repr-u8) and the wire-side
+  `cow_sdk_orderbook::SigningScheme` (`serde(rename_all =
+  "lowercase")`) carry distinct wire formats and so remain separate
+  types. A typed `From` / `TryFrom` bridge in
+  `crates/orderbook/src/types/enums.rs` is the canonical conversion
+  surface, and a per-variant parity test prevents drift if any
+  upstream variant is added or renamed.
+- **Identity wire-form preservation**: the cow-named identity types
+  (`Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`) carry a
+  permanent wire-form regression contract in
+  `crates/core/tests/wire_format_preservation_contract.rs` that pins
+  the canonical lowercase 0x-prefixed hex emission against both the
+  cow inherent accessors and the `cow_sdk_core::prelude` extension
+  traits, so changes to the underlying primitive backing cannot
+  silently drift the wire format.
+- **String-newtype consolidation**: the historical
+  `Address(String)` / `Hash32(String)` / `AppDataHash(String)` /
+  `HexData(String)` / `OrderUid(String)` / `Amount(BigUint)` /
+  `SignedAmount(BigInt)` newtype layer is being collapsed onto
+  `alloy_primitives` re-exports per
+  [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md);
+  the newtype layer was the structural reason the workspace
+  previously had to carry `keccak256` wrappers, `parse_u256`
+  parsers, and `encode_address` helpers in every consuming crate
+  (each accessor read round-tripped through hex parsing). Typed
+  re-exports collapse these parallel implementations onto the
+  canonical alloy entry points and resolve the reviewability
+  boundary at the type system.
+
+The canonical primitive-layer migration is incremental; the
+`parse_hex` family in `crates/contracts/src/primitives.rs`, the
+`parse_u256_quantity` duplicates across the alloy-adapter crates, and
+the `cow_to_alloy_*` helpers in `crates/alloy-provider/src/conversion.rs`
+remain pending and will retire as the cow identity newtypes collapse
+to their final `pub type` and `repr(transparent)` shapes per ADR 0052.
+
 ## Evidence
 
 Primary regression coverage:
@@ -97,6 +144,8 @@ Primary regression coverage:
 - `crates/trading/tests/post_contract.rs::limit_posting_sync_signer_wrapper_matches_async_suffix_path`
 - `crates/contracts/tests/order_contract.rs::unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit`
 - `crates/orderbook/tests/types_contract.rs::order_creation_from_quote_keeps_quote_shape_and_quote_id`
+- `crates/orderbook/tests/signing_scheme_bridge_contract.rs`
+- `crates/core/tests/wire_format_preservation_contract.rs`
 
 Validation surface:
 

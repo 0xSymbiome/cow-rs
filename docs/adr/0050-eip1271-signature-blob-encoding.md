@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-05-15
 - Last reviewed: 2026-05-15
+- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: eip-1271, signature-encoding, composable, safe-muxer, erc1271-forwarder
 - Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md)
 

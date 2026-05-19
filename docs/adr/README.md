@@ -59,6 +59,7 @@ public and runtime shape of `cow-rs`.
 | [0049](0049-cow-shed-account-abstraction-proxy.md) | Accepted | Ship COW Shed account-abstraction proxy support as an additive leaf crate behind the `cow-shed` feature. |
 | [0050](0050-eip1271-signature-blob-encoding.md) | Accepted | Recognise exactly two EIP-1271 payload shapes through distinct encoder entry points selected at signer construction. |
 | [0051](0051-signing-owned-eip1271-signature-provider-trait.md) | Accepted | Own `Eip1271SignatureProvider` in `cow-sdk-signing` and forbid any downstream re-export so the canonical path stays single-rooted. |
+| [0052](0052-alloy-primitives-canonical-primitive-layer.md) | Accepted | Adopt `alloy_primitives` (`Address`, `B256`, `Bytes`, `FixedBytes<N>`, `U256`, `I256`) and `alloy_sol_types` (`sol!`, `SolStruct::eip712_signing_hash`, `SolType::abi_encode`) as the canonical primitive and EIP-712 / ABI layer across the workspace, replacing hand-rolled `Address(String)` / `Hash32(String)` / `AppDataHash(String)` / `HexData(String)` / `OrderUid(String)` / `Amount(BigUint)` / `SignedAmount(BigInt)` newtypes with typed re-exports while preserving wire byte identity, parity fixture coverage, and the Solidity-compatible signature posture from ADR 0022. |
 | [0053](0053-typed-signer-rejection-classification.md) | Accepted | Classify EIP-1193 user rejections through a shared `cow_sdk_core::SignerError` trait so the signing crate emits a typed `SigningError::SignerRejection` variant across signer implementations. |
 
 ## When To Write An ADR

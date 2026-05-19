@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-05-15
 - Last reviewed: 2026-05-15
+- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: eip-1271, signing, trait-ownership, additive-leaf-crates
 - Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md)
 
