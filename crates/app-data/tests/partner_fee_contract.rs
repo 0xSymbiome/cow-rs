@@ -369,6 +369,46 @@ fn constructors_reject_zero_address_recipient() {
 }
 
 #[test]
+fn partner_fee_validate_rejects_invalid_single_and_multiple_payloads() {
+    let invalid_single = PartnerFee::Single(PartnerFeePolicy::Volume {
+        volume_bps: 0,
+        recipient: address(RECIPIENT_A),
+    });
+    let single_error = invalid_single
+        .validate()
+        .expect_err("single partner-fee payload must delegate to policy validation");
+    assert!(matches!(
+        single_error,
+        AppDataError::InvalidPartnerFee {
+            field: "partnerFee.volumeBps",
+            reason: ValidationReason::OutOfRange { .. },
+        }
+    ));
+
+    let invalid_multiple = PartnerFee::Multiple(vec![
+        PartnerFeePolicy::Volume {
+            volume_bps: 50,
+            recipient: address(RECIPIENT_A),
+        },
+        PartnerFeePolicy::Surplus {
+            surplus_bps: 500,
+            max_volume_bps: 0,
+            recipient: address(RECIPIENT_B),
+        },
+    ]);
+    let multiple_error = invalid_multiple
+        .validate()
+        .expect_err("multiple partner-fee payloads must validate every policy");
+    assert!(matches!(
+        multiple_error,
+        AppDataError::InvalidPartnerFee {
+            field: "partnerFee.maxVolumeBps",
+            reason: ValidationReason::OutOfRange { .. },
+        }
+    ));
+}
+
+#[test]
 fn from_value_returns_typed_appdata_error_on_bad_input() {
     let bad: Value = json!({ "volumeBps": "not-a-number", "recipient": RECIPIENT_A });
     let error = PartnerFee::from_value(bad).expect_err("bad shape must fail closed");

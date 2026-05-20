@@ -1,21 +1,8 @@
 use alloy_primitives::keccak256;
 
-use cow_sdk_core::{Address, BuyTokenDestination, OrderKind, SellTokenSource};
+use cow_sdk_core::{BuyTokenDestination, OrderKind, SellTokenSource};
 
-pub(crate) const ZERO_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
 pub(crate) const ORDER_UID_LENGTH_BYTES: usize = 56;
-
-/// Returns the EVM zero address constant.
-///
-/// # Panics
-///
-/// Panics only if the crate-owned zero-address literal stops being a valid
-/// EVM address.
-pub(crate) fn zero_address() -> Address {
-    // SAFETY: ZERO_ADDRESS is a reviewed protocol literal with the exact EVM
-    // address shape.
-    Address::new(ZERO_ADDRESS).expect("static zero address must remain valid")
-}
 
 pub(crate) const fn order_kind_name(kind: OrderKind) -> &'static str {
     match kind {

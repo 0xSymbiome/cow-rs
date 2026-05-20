@@ -438,6 +438,8 @@ fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
 
 #[cfg(test)]
 mod signer_error_tests {
+    use std::{collections::BTreeMap, sync::Mutex};
+
     use super::*;
 
     /// Minimal typed signer error used to exercise the `signer_error`
@@ -461,6 +463,93 @@ mod signer_error_tests {
         fn user_rejection_code(&self) -> Option<i32> {
             self.rejection_code
         }
+    }
+
+    #[derive(Default)]
+    struct RecordingAsyncSigner {
+        typed_data_messages: Mutex<Vec<String>>,
+        digest_messages: Mutex<Vec<Vec<u8>>>,
+    }
+
+    impl AsyncTypedDataSigner for RecordingAsyncSigner {
+        type Error = FakeSignerError;
+
+        async fn sign_typed_data(
+            &self,
+            _domain: &cow_sdk_core::TypedDataDomain,
+            _fields: &[cow_sdk_core::TypedDataField],
+            value_json: &str,
+        ) -> Result<String, Self::Error> {
+            self.typed_data_messages
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(value_json.to_owned());
+            Ok(test_signature("aa"))
+        }
+    }
+
+    impl AsyncDigestSigner for RecordingAsyncSigner {
+        type Error = FakeSignerError;
+
+        async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error> {
+            self.digest_messages
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(digest.to_vec());
+            Ok(test_signature("bb"))
+        }
+    }
+
+    fn test_signature(byte: &str) -> String {
+        format!("0x{}1b", byte.repeat(64))
+    }
+
+    fn test_payload() -> TypedDataPayload {
+        let domain = cow_sdk_core::TypedDataDomain::new(
+            "Gnosis Protocol".to_owned(),
+            "v2".to_owned(),
+            1,
+            Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
+        );
+        let fields = vec![cow_sdk_core::TypedDataField::new(
+            "sellToken".to_owned(),
+            "address".to_owned(),
+        )];
+        TypedDataPayload::new(
+            domain,
+            "Order".to_owned(),
+            BTreeMap::from([("Order".to_owned(), fields)]),
+            "{\"sellToken\":\"0x1111111111111111111111111111111111111111\"}".to_owned(),
+        )
+    }
+
+    #[tokio::test]
+    async fn async_sign_with_scheme_routes_eip712_to_typed_data_signer() {
+        let signer = RecordingAsyncSigner::default();
+        let payload = test_payload();
+
+        let result = sign_with_scheme_async(&signer, SigningScheme::Eip712, &payload, "0x")
+            .await
+            .expect("EIP-712 async signing must use the typed-data signer path");
+
+        assert_eq!(result.signing_scheme, SigningScheme::Eip712);
+        assert_eq!(result.signature, test_signature("aa"));
+        assert_eq!(
+            signer
+                .typed_data_messages
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .as_slice(),
+            ["{\"sellToken\":\"0x1111111111111111111111111111111111111111\"}"],
+        );
+        assert!(
+            signer
+                .digest_messages
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .is_empty(),
+            "EIP-712 signing must not route through digest signing",
+        );
     }
 
     #[test]

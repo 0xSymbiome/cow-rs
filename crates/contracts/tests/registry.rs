@@ -15,7 +15,7 @@
 //!   red in CI rather than letting malformed manifests drift through.
 
 use cow_sdk_contracts::{
-    ContractId, DeploymentCoverage, DeploymentCoverageStatus, DeploymentEnv,
+    ContractId, DeploymentChainId, DeploymentCoverage, DeploymentCoverageStatus, DeploymentEnv,
     DeploymentVerificationStatus, Registry, RegistryError,
 };
 use cow_sdk_core::{Address, CowEnv, SupportedChainId};
@@ -270,6 +270,92 @@ fn registry_address_lookup_matrix_is_exhaustive() {
 }
 
 #[test]
+fn empty_registry_manifest_exposes_empty_state() {
+    let registry = Registry::from_toml_str("schema_version = 2\n")
+        .expect("entry-less manifests are valid for parser consumers");
+
+    assert!(registry.is_empty());
+    assert_eq!(registry.len(), 0);
+    assert!(registry.entries().next().is_none());
+    assert_eq!(
+        registry.address(
+            ContractId::Settlement,
+            SupportedChainId::Mainnet,
+            CowEnv::Prod,
+        ),
+        None,
+    );
+}
+
+#[test]
+fn registry_override_replaces_only_the_requested_key() {
+    let canonical = Registry::default();
+    let override_address = Address::new("0x1212121212121212121212121212121212121212").unwrap();
+    let overridden = canonical.clone().with_override(
+        ContractId::Settlement,
+        SupportedChainId::Mainnet,
+        CowEnv::Prod,
+        override_address,
+    );
+
+    assert_eq!(
+        overridden.address(
+            ContractId::Settlement,
+            SupportedChainId::Mainnet,
+            CowEnv::Prod,
+        ),
+        Some(override_address),
+    );
+    assert_eq!(
+        overridden.verification(
+            ContractId::Settlement,
+            SupportedChainId::Mainnet,
+            CowEnv::Prod,
+        ),
+        Some(DeploymentVerificationStatus::CanonicalUnverified),
+    );
+    assert_ne!(
+        canonical.address(
+            ContractId::Settlement,
+            SupportedChainId::Mainnet,
+            CowEnv::Prod,
+        ),
+        Some(override_address),
+        "with_override must not mutate the source registry",
+    );
+}
+
+#[test]
+fn concrete_env_lookup_does_not_fallback_for_environment_scoped_contracts() {
+    let env_agnostic_settlement =
+        Address::new("0x3434343434343434343434343434343434343434").unwrap();
+    let registry = Registry::default().with_override(
+        ContractId::Settlement,
+        DeploymentChainId::Lens,
+        DeploymentEnv::EnvironmentAgnostic,
+        env_agnostic_settlement,
+    );
+
+    assert_eq!(
+        registry.address(
+            ContractId::Settlement,
+            DeploymentChainId::Lens,
+            DeploymentEnv::EnvironmentAgnostic,
+        ),
+        Some(env_agnostic_settlement),
+    );
+    assert_eq!(
+        registry.address(
+            ContractId::Settlement,
+            DeploymentChainId::Lens,
+            DeploymentEnv::Prod,
+        ),
+        None,
+        "prod/staging contracts must not borrow environment-agnostic rows",
+    );
+}
+
+#[test]
 fn registry_verification_statuses_stay_in_registry_rows() {
     let registry = Registry::default();
     let statuses = registry
@@ -296,9 +382,17 @@ fn deployment_coverage_statuses_are_separate_from_registry_rows() {
     let coverage = DeploymentCoverage::default();
 
     assert_eq!(coverage.len(), 24, "coverage row count must remain stable");
+    assert!(
+        !coverage.is_empty(),
+        "embedded coverage must carry reviewed rows"
+    );
     assert_eq!(
         coverage.status(ContractId::CowShedFactory, 10_u64),
         Some(DeploymentCoverageStatus::NotSupported),
+    );
+    assert_eq!(
+        coverage.evidence(ContractId::CowShedFactory, 10_u64),
+        Some("Optimism is not part of the pinned cow-shed deployment set."),
     );
     assert_eq!(
         coverage.status(
@@ -307,4 +401,69 @@ fn deployment_coverage_statuses_are_separate_from_registry_rows() {
         ),
         Some(DeploymentCoverageStatus::NotDeployed),
     );
+    assert!(
+        coverage
+            .records()
+            .any(|(contract_id, chain_id, status, evidence)| {
+                contract_id == ContractId::CowShedFactory
+                    && chain_id == 10
+                    && status == DeploymentCoverageStatus::NotSupported
+                    && evidence == "Optimism is not part of the pinned cow-shed deployment set."
+            }),
+        "coverage records iterator must expose the same evidence as direct lookup",
+    );
+}
+
+#[test]
+fn empty_coverage_manifest_exposes_empty_state() {
+    let coverage = DeploymentCoverage::from_yaml_str("schema_version: 2\ncoverage: []\n")
+        .expect("entry-less coverage manifests are valid for parser consumers");
+
+    assert!(coverage.is_empty());
+    assert_eq!(coverage.len(), 0);
+    assert!(coverage.records().next().is_none());
+    assert_eq!(coverage.evidence(ContractId::CowShedFactory, 10_u64), None);
+}
+
+#[test]
+fn deployment_manifest_labels_have_stable_display_spellings() {
+    for (env, expected) in [
+        (DeploymentEnv::Prod, "prod"),
+        (DeploymentEnv::Staging, "staging"),
+        (DeploymentEnv::EnvironmentAgnostic, "environment_agnostic"),
+    ] {
+        assert_eq!(env.as_str(), expected);
+        assert_eq!(env.to_string(), expected);
+    }
+
+    for (status, expected) in [
+        (
+            DeploymentVerificationStatus::CodeHashVerified,
+            "code_hash_verified",
+        ),
+        (
+            DeploymentVerificationStatus::ExternalVerified,
+            "external_verified",
+        ),
+        (
+            DeploymentVerificationStatus::ReadmeTableUnverified,
+            "readme_table_unverified",
+        ),
+        (
+            DeploymentVerificationStatus::CanonicalUnverified,
+            "canonical_unverified",
+        ),
+    ] {
+        assert_eq!(status.as_str(), expected);
+        assert_eq!(status.to_string(), expected);
+    }
+
+    for (status, expected) in [
+        (DeploymentCoverageStatus::NotDeployed, "not_deployed"),
+        (DeploymentCoverageStatus::NotSupported, "not_supported"),
+        (DeploymentCoverageStatus::OutOfScope, "out_of_scope"),
+    ] {
+        assert_eq!(status.as_str(), expected);
+        assert_eq!(status.to_string(), expected);
+    }
 }

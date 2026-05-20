@@ -443,4 +443,57 @@ mod tests {
             "0x4444444444444444444444444444444444444444"
         );
     }
+
+    #[test]
+    fn settle_call_preserves_max_u256_amounts_and_signature_bytes() {
+        let tokens = [
+            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            Address::new("0x2222222222222222222222222222222222222222").unwrap(),
+        ];
+        let max_u256 = Amount::from_atoms(
+            (num_bigint::BigUint::from(1u8) << 256usize) - num_bigint::BigUint::from(1u8),
+        );
+        let trade = Trade::new(
+            0,
+            1,
+            Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+            Amount::new("10").unwrap(),
+            Amount::new("20").unwrap(),
+            123,
+            AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                .unwrap(),
+            Amount::new("1").unwrap(),
+            0,
+            Amount::new("10").unwrap(),
+            "0xabcdef".to_owned(),
+        );
+
+        let call = encode_settle_call(
+            &tokens,
+            &[max_u256],
+            std::slice::from_ref(&trade),
+            &[Vec::new(), Vec::new(), Vec::new()],
+        )
+        .expect("maximum uint256 clearing price must encode");
+
+        assert_eq!(call.clearingPrices[0].to_be_bytes::<32>(), [0xff; 32]);
+        assert_eq!(call.trades[0].signature.as_ref(), &[0xab, 0xcd, 0xef]);
+
+        let overflow = Amount::from_atoms(num_bigint::BigUint::from(1u8) << 256usize);
+        let Err(error) = encode_settle_call(
+            &tokens,
+            &[overflow],
+            std::slice::from_ref(&trade),
+            &[Vec::new(), Vec::new(), Vec::new()],
+        ) else {
+            panic!("amounts wider than uint256 must fail before ABI encoding");
+        };
+        assert!(matches!(
+            error,
+            ContractsError::NumericOverflow {
+                field: "amount",
+                ..
+            }
+        ));
+    }
 }

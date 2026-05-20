@@ -1,6 +1,5 @@
 //! Deployment coverage records for intentionally absent contracts.
 
-use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
@@ -39,24 +38,10 @@ impl std::fmt::Display for DeploymentCoverageStatus {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct CoverageKey {
     contract_id: ContractId,
     chain_id: u64,
-}
-
-impl Ord for CoverageKey {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.contract_id
-            .cmp(&other.contract_id)
-            .then_with(|| self.chain_id.cmp(&other.chain_id))
-    }
-}
-
-impl PartialOrd for CoverageKey {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 /// Embedded deployment coverage matrix.

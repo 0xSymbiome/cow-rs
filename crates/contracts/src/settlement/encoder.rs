@@ -10,7 +10,6 @@ use crate::{
     deployments::{ContractId, Registry},
     interaction::{Interaction, InteractionLike, normalize_interaction},
     order::{Order, extract_order_uid_params, normalize_order},
-    primitives::zero_address,
     signature::Signature,
 };
 
@@ -256,7 +255,7 @@ impl SettlementEncoder {
             "unused".to_owned(),
             "unused".to_owned(),
             0,
-            zero_address(),
+            Address::zero(),
         ));
         for interaction in interactions {
             encoder.encode_interaction(interaction, InteractionStage::Intra)?;

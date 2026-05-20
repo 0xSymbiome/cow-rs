@@ -13,7 +13,6 @@
 //! TOML into [`Registry::from_toml_str`] without inviting panics. The
 //! runtime parser surfaces every failure mode as a typed [`RegistryError`].
 
-use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
 use cow_sdk_core::Address;
@@ -25,26 +24,11 @@ use super::{ContractId, DeploymentChainId, DeploymentEnv, DeploymentVerification
 /// Reviewed TOML-schema version carried at the head of every manifest.
 const SCHEMA_VERSION: u32 = 2;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct RegistryKey {
     contract_id: ContractId,
     chain_id: DeploymentChainId,
     env: DeploymentEnv,
-}
-
-impl Ord for RegistryKey {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.contract_id
-            .cmp(&other.contract_id)
-            .then_with(|| self.chain_id.cmp(&other.chain_id))
-            .then_with(|| self.env.cmp(&other.env))
-    }
-}
-
-impl PartialOrd for RegistryKey {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 /// Canonical registry data embedded from `crates/contracts/registry.toml`.

@@ -42,6 +42,11 @@ fn every_capability_contract_id_has_canonical_as_str_arm() {
             actual, *expected,
             "ContractId::{variant:?}.as_str() must return `{expected}`, got `{actual}`"
         );
+        assert_eq!(
+            variant.to_string(),
+            *expected,
+            "ContractId::{variant:?} Display must match the manifest spelling",
+        );
     }
 }
 

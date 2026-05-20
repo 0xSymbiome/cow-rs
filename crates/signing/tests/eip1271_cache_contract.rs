@@ -70,6 +70,23 @@ fn in_memory_cache_default_ttl_and_capacity_match_documented_constants() {
 }
 
 #[test]
+fn in_memory_cache_reports_population_and_clear_state() {
+    let cache = InMemoryEip1271VerificationCache::default();
+    let verifier = sample_address(4);
+    let key_digest = digest(4);
+
+    cache.put(verifier, key_digest, true);
+    assert!(!cache.is_empty());
+    assert_eq!(cache.len(), 1);
+    assert_eq!(cache.get(verifier, key_digest), Some(true));
+
+    cache.clear();
+    assert!(cache.is_empty());
+    assert_eq!(cache.len(), 0);
+    assert_eq!(cache.get(verifier, key_digest), None);
+}
+
+#[test]
 fn in_memory_cache_round_trips_a_recorded_outcome() {
     let cache = InMemoryEip1271VerificationCache::default();
     let verifier = sample_address(1);
@@ -109,6 +126,13 @@ fn cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one() {
     cache.put(verifier, key_digest, true);
     clock.set(start + Duration::from_secs(4 * 60 + 59) + Duration::from_millis(999));
     assert_eq!(cache.get(verifier, key_digest), Some(true));
+
+    clock.set(start + Duration::from_secs(5 * 60));
+    assert_eq!(
+        cache.get(verifier, key_digest),
+        Some(true),
+        "cache entries remain valid at the exact TTL boundary",
+    );
 
     clock.set(start + Duration::from_secs(5 * 60) + Duration::from_millis(1));
     assert_eq!(cache.get(verifier, key_digest), None);

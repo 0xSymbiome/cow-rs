@@ -323,4 +323,31 @@ mod tests {
             "negative int64 quote id must sign-extend to a full 256-bit two's-complement word",
         );
     }
+
+    #[test]
+    fn u256_amount_encoding_accepts_max_value_and_rejects_overflow() {
+        let max_u256 = (BigUint::from(1u8) << 256usize) - BigUint::from(1u8);
+        let mut max_order = sample_order();
+        max_order.sell_amount = Amount::from_atoms(max_u256);
+
+        let encoded = encode_create_order_calldata(&max_order)
+            .expect("the largest 256-bit amount must remain ABI-encodable");
+        assert_eq!(
+            word_hex(&encoded, 2),
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "sellAmount must preserve all 32 bytes of the maximum uint256",
+        );
+
+        let mut overflow_order = sample_order();
+        overflow_order.sell_amount = Amount::from_atoms(BigUint::from(1u8) << 256usize);
+        let error = encode_create_order_calldata(&overflow_order)
+            .expect_err("amounts wider than uint256 must fail before ABI encoding");
+        assert!(matches!(
+            error,
+            ContractsError::NumericOverflow {
+                field: "sellAmount",
+                ..
+            }
+        ));
+    }
 }

@@ -37,6 +37,21 @@ fn generation_and_schema_lookup_follow_pinned_contract() {
 }
 
 #[test]
+fn app_data_params_builders_preserve_top_level_wire_fields() {
+    let params = AppDataParams::default()
+        .with_app_code("solver-integration")
+        .with_environment("staging-canary");
+
+    assert_eq!(params.app_code.as_deref(), Some("solver-integration"));
+    assert_eq!(params.environment.as_deref(), Some("staging-canary"));
+
+    let generated = generate_app_data_doc(params);
+    assert_eq!(generated["appCode"], json!("solver-integration"));
+    assert_eq!(generated["environment"], json!("staging-canary"));
+    assert_eq!(generated["metadata"], json!({}));
+}
+
+#[test]
 fn validation_supports_latest_docs_and_rejects_invalid_metadata() {
     let valid = validate_app_data_doc(&app_data_doc_custom());
     assert!(valid.success, "{valid:?}");

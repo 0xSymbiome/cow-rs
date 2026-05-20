@@ -135,6 +135,23 @@ async fn async_sign_order_paths_match_sync_signing_behavior() {
         .unwrap();
     assert_eq!(typed_result.signing_scheme, SigningScheme::Eip712);
     assert_eq!(typed_result.signature, signer.typed_data_signature);
+    {
+        let calls = signer.calls.borrow();
+        assert_eq!(calls.typed_data.len(), 1);
+        assert!(calls.messages.is_empty());
+        assert_eq!(calls.typed_data[0].domain.chain_id, 11_155_111);
+        assert_eq!(
+            calls.typed_data[0].value_json,
+            serde_json::to_string(&order).unwrap()
+        );
+        assert!(
+            calls.typed_data[0]
+                .fields
+                .iter()
+                .any(|field| field.name == "sellToken" && field.kind == "address"),
+            "async EIP-712 signing must route the order typed-data fields to sign_typed_data",
+        );
+    }
 
     let ethsign_result = sign_order_with_scheme_async(
         &order,
@@ -147,6 +164,8 @@ async fn async_sign_order_paths_match_sync_signing_behavior() {
     .unwrap();
     assert_eq!(ethsign_result.signing_scheme, SigningScheme::EthSign);
     assert_eq!(ethsign_result.signature, signer.message_signature);
+    assert_eq!(signer.calls.borrow().typed_data.len(), 1);
+    assert_eq!(signer.calls.borrow().messages.len(), 1);
 }
 
 #[test]

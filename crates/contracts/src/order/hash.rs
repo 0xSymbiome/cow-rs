@@ -8,7 +8,7 @@ use super::sol_cancellations::OrderCancellations as SolOrderCancellations;
 use super::sol_types::Order as SolOrder;
 use super::{NormalizedOrder, Order, OrderCancellations};
 use crate::ContractsError;
-use crate::primitives::{buy_balance_name, order_kind_name, sell_balance_name, zero_address};
+use crate::primitives::{buy_balance_name, order_kind_name, sell_balance_name};
 
 /// Normalizes an order into its canonical contract hashing form.
 ///
@@ -31,7 +31,7 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
     Ok(NormalizedOrder::new(
         order.sell_token,
         order.buy_token,
-        order.receiver.unwrap_or_else(zero_address),
+        order.receiver.unwrap_or_else(Address::zero),
         order.sell_amount.clone(),
         order.buy_amount.clone(),
         order.valid_to,
@@ -298,5 +298,22 @@ mod tests {
             hash_order(&domain, &order).unwrap().to_hex_string(),
             format!("0x{}", hex::encode(expected_digest))
         );
+    }
+
+    #[test]
+    fn cancellation_hash_and_uid_decoding_preserve_single_uid_bytes() {
+        let domain = sample_domain();
+        let uid = OrderUid::new(
+            "0xdaaa7dddec9ad04cc101a121e3eed017eab4d3927c045d407d5ad6700eea2bf7fb3c7eb936caa12b5a884d612393969a557d430764060343",
+        )
+        .unwrap();
+
+        let decoded = decode_order_uid_bytes(&uid);
+        assert_eq!(decoded.as_ref(), uid.as_slice());
+
+        let single = hash_order_cancellation(&domain, &uid).unwrap();
+        let batch = hash_order_cancellations(&domain, &OrderCancellations::new(vec![uid])).unwrap();
+        assert_eq!(single, batch);
+        assert_ne!(single, Hash32::from_bytes([0u8; 32]));
     }
 }

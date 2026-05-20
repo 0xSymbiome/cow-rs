@@ -1,6 +1,6 @@
 mod common;
 
-use std::{cell::RefCell, fmt, rc::Rc};
+use std::{cell::RefCell, fmt, rc::Rc, sync::Mutex};
 
 use alloy_primitives::Address as AlloyAddress;
 use cow_sdk_contracts::{
@@ -25,6 +25,35 @@ impl Eip1271VerificationCache for NoCache {
         None
     }
     fn put(&self, _verifier: Address, _digest: [u8; 32], _result: bool) {}
+}
+
+#[derive(Default)]
+struct RecordingCache {
+    hit: Mutex<Option<bool>>,
+    writes: Mutex<Vec<(Address, [u8; 32], bool)>>,
+}
+
+impl RecordingCache {
+    const fn with_hit(hit: Option<bool>) -> Self {
+        Self {
+            hit: Mutex::new(hit),
+            writes: Mutex::new(Vec::new()),
+        }
+    }
+
+    fn writes(&self) -> Vec<(Address, [u8; 32], bool)> {
+        self.writes.lock().unwrap().clone()
+    }
+}
+
+impl Eip1271VerificationCache for RecordingCache {
+    fn get(&self, _verifier: Address, _digest: [u8; 32]) -> Option<bool> {
+        *self.hit.lock().unwrap()
+    }
+
+    fn put(&self, verifier: Address, digest: [u8; 32], result: bool) {
+        self.writes.lock().unwrap().push((verifier, digest, result));
+    }
 }
 
 use common::{MockProvider, fixture_case};
@@ -561,6 +590,110 @@ async fn async_eip1271_verification_reads_contract_code_and_magic_value() {
     let call = provider.calls.borrow().last().cloned().unwrap();
     assert_eq!(call.address, verifier);
     assert_eq!(call.method, "isValidSignature");
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn async_eip1271_cache_hit_false_fails_closed_without_provider_call() {
+    let provider = AsyncMockProvider::new();
+    let verifier = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
+    let cache = RecordingCache::with_hit(Some(false));
+
+    let error = verify_eip1271_signature_async(
+        &provider,
+        &Eip1271VerificationRequest::new(
+            verifier,
+            Hash32::from_bytes([0x66; 32]),
+            HexData::new("0x1234").unwrap(),
+        ),
+        &cache,
+    )
+    .await
+    .expect_err("cached invalid EIP-1271 result must fail closed");
+
+    assert!(matches!(
+        error,
+        ContractsError::Eip1271MagicValueMismatch {
+            expected: [0x16, 0x26, 0xba, 0x7e],
+            actual: [0, 0, 0, 0],
+        }
+    ));
+    assert!(
+        provider.calls.borrow().is_empty(),
+        "cache hits must not call the verifier contract",
+    );
+    assert!(
+        cache.writes().is_empty(),
+        "cache hits must not rewrite the cache entry",
+    );
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn async_eip1271_verification_caches_only_magic_value_outcomes_by_digest() {
+    let provider = AsyncMockProvider::new();
+    let verifier = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
+    provider.set_code(Some("0x6001600055"));
+    let cache = RecordingCache::default();
+
+    provider.set_response("\"0x1626ba7e\"");
+    verify_eip1271_signature_async(
+        &provider,
+        &Eip1271VerificationRequest::new(
+            verifier,
+            Hash32::from_bytes([0x77; 32]),
+            HexData::new("0x1234").unwrap(),
+        ),
+        &cache,
+    )
+    .await
+    .expect("valid magic value must verify");
+    assert_eq!(cache.writes(), vec![(verifier, [0x77; 32], true)]);
+
+    provider.set_response("\"0xffffffff\"");
+    let mismatch = verify_eip1271_signature_async(
+        &provider,
+        &Eip1271VerificationRequest::new(
+            verifier,
+            Hash32::from_bytes([0x78; 32]),
+            HexData::new("0x1234").unwrap(),
+        ),
+        &cache,
+    )
+    .await
+    .expect_err("wrong magic value must fail closed");
+    assert!(matches!(
+        mismatch,
+        ContractsError::Eip1271MagicValueMismatch {
+            expected: [0x16, 0x26, 0xba, 0x7e],
+            actual: [0xff, 0xff, 0xff, 0xff],
+        }
+    ));
+    assert_eq!(
+        cache.writes(),
+        vec![(verifier, [0x77; 32], true), (verifier, [0x78; 32], false)]
+    );
+
+    provider.set_response("{\"unexpected\":true}");
+    let before_malformed = cache.writes();
+    let malformed = verify_eip1271_signature_async(
+        &provider,
+        &Eip1271VerificationRequest::new(
+            verifier,
+            Hash32::from_bytes([0x79; 32]),
+            HexData::new("0x1234").unwrap(),
+        ),
+        &cache,
+    )
+    .await
+    .expect_err("malformed responses must not be cached as verifier outcomes");
+    assert!(matches!(
+        malformed,
+        ContractsError::MalformedEip1271Response { .. }
+    ));
+    assert_eq!(
+        cache.writes(),
+        before_malformed,
+        "non-cacheable verifier errors must not be stored",
+    );
 }
 
 #[tokio::test(flavor = "current_thread")]
