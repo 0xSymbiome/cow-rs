@@ -6,6 +6,7 @@
 
 mod common;
 
+use alloy_primitives::U256;
 use cow_sdk_core::{
     AddressPerChain, Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId,
 };
@@ -13,7 +14,6 @@ use cow_sdk_trading::{
     GAS_LIMIT_DEFAULT, PostTradeAdditionalParams, cancel_order_onchain, get_eth_flow_transaction,
     get_pre_sign_transaction, onchain_cancellation_transaction,
 };
-use num_bigint::BigUint;
 
 use crate::common::{
     CUSTOM_ETHFLOW, CUSTOM_SETTLEMENT, MockSigner, address, app_data_hash, ethflow_order,
@@ -28,8 +28,12 @@ fn calldata_word(data: &str, index: usize) -> String {
     stripped[start..start + 64].to_owned()
 }
 
-fn uint256_word(value: &BigUint) -> String {
-    format!("{value:064x}")
+fn uint256_word(value: &U256) -> String {
+    // Test oracle helper: format the cow uint256 value as the 32-byte
+    // big-endian ABI word that the production encoder emits. The
+    // `to_be_bytes::<32>()` byte stream is hex-encoded to the canonical
+    // 64-character zero-padded lowercase form.
+    hex::encode(value.to_be_bytes::<32>())
 }
 
 fn set_estimated_gas(signer: &MockSigner, estimate: u64) {
@@ -129,7 +133,7 @@ async fn ethflow_transaction_uses_wrapped_native_value_margin_and_ethflow_overri
     );
     assert_eq!(
         transaction.transaction.value,
-        Some(transaction.order_to_sign.sell_amount.clone())
+        Some(transaction.order_to_sign.sell_amount)
     );
     assert_eq!(
         transaction.transaction.gas_limit,
@@ -170,14 +174,12 @@ async fn eth_flow_gas_estimate_applies_documented_floor_overhead() {
 async fn ethflow_transaction_encodes_high_bit_uint256_amounts_as_unsigned_words() {
     let signer = MockSigner::default();
     let trader = sample_trader_parameters();
-    let high_sell: BigUint = BigUint::from(1u8) << 255u32;
-    let high_buy = &high_sell + BigUint::from(1u8);
+    let high_sell: U256 = U256::from(1u8) << 255usize;
+    let high_buy = high_sell + U256::from(1u8);
     let mut params = sample_limit_parameters(OrderKind::Sell);
     params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
-    params.sell_amount =
-        Amount::new(high_sell.to_str_radix(10)).expect("2^255 amount literal must remain valid");
-    params.buy_amount =
-        Amount::new(high_buy.to_str_radix(10)).expect("2^255 + 1 amount literal must remain valid");
+    params.sell_amount = Amount::from_u256(high_sell);
+    params.buy_amount = Amount::from_u256(high_buy);
     params.quote_id = Some(3);
     params.valid_to = Some(1_234_567_890);
 

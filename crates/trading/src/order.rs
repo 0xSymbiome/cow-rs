@@ -1,4 +1,4 @@
-use num_bigint::BigInt;
+use alloy_primitives::aliases::I512;
 
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
@@ -20,7 +20,14 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use web_time::{SystemTime, UNIX_EPOCH};
 
 /// Inputs that control how an unsigned order is derived for signing or posting.
-#[derive(Debug, Clone)]
+///
+/// Every field is `Copy`-bounded (`SupportedChainId`, `Address`, the cow
+/// `Amount` newtype, `bool`, `f64`, and the `Option` wrappers thereof),
+/// so the struct is `Copy` itself. The public helper
+/// [`get_order_to_sign`] therefore takes the typed bag by value without
+/// the usual pass-by-reference dance — calling code composes the struct
+/// literal at the call site and the by-value move is bit-for-bit free.
+#[derive(Debug, Clone, Copy)]
 #[non_exhaustive]
 pub struct OrderToSignParams {
     /// Active chain id.
@@ -60,7 +67,7 @@ impl OrderToSignParams {
 
     /// Returns a copy with an explicit network-cost amount.
     #[must_use]
-    pub fn with_network_costs_amount(mut self, amount: Amount) -> Self {
+    pub const fn with_network_costs_amount(mut self, amount: Amount) -> Self {
         self.network_costs_amount = Some(amount);
         self
     }
@@ -156,8 +163,8 @@ pub fn swap_params_to_limit_order_params(
         sell_token_decimals: trade_parameters.sell_token_decimals,
         buy_token: trade_parameters.buy_token,
         buy_token_decimals: trade_parameters.buy_token_decimals,
-        sell_amount: quote_response.quote.sell_amount.clone(),
-        buy_amount: quote_response.quote.buy_amount.clone(),
+        sell_amount: quote_response.quote.sell_amount,
+        buy_amount: quote_response.quote.buy_amount,
         quote_id: quote_response.id,
         env: trade_parameters.env,
         settlement_contract_override: trade_parameters.settlement_contract_override.clone(),
@@ -228,10 +235,10 @@ pub fn get_order_to_sign(
         let quote = cow_sdk_orderbook::QuoteData::new(
             limit_parameters.sell_token,
             limit_parameters.buy_token,
-            limit_parameters.sell_amount.clone(),
-            limit_parameters.buy_amount.clone(),
+            limit_parameters.sell_amount,
+            limit_parameters.buy_amount,
             valid_to,
-            app_data_keccak256.clone(),
+            *app_data_keccak256,
             limit_parameters.kind,
         )
         .with_network_cost_amount(network_costs_amount)
@@ -257,10 +264,7 @@ pub fn get_order_to_sign(
         };
         (sell_amount, buy_amount)
     } else {
-        (
-            limit_parameters.sell_amount.clone(),
-            limit_parameters.buy_amount.clone(),
-        )
+        (limit_parameters.sell_amount, limit_parameters.buy_amount)
     };
 
     Ok(UnsignedOrder::new(
@@ -270,7 +274,7 @@ pub fn get_order_to_sign(
         sell_amount_to_use,
         buy_amount_to_use,
         valid_to,
-        app_data_keccak256.clone(),
+        *app_data_keccak256,
         Amount::zero(),
         limit_parameters.kind,
         limit_parameters.partially_fillable,
@@ -343,7 +347,7 @@ pub async fn calculate_unique_order_id(
 
 fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
     let amount = parse_integer("buyAmount", &value.to_string())?;
-    if amount <= BigInt::from(0) {
+    if amount <= I512::ZERO {
         return Err(TradingError::InvalidInput {
             field: "buyAmount",
             reason: cow_sdk_core::ValidationReason::OutOfRange {
@@ -351,7 +355,7 @@ fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
             },
         });
     }
-    Amount::new((amount - BigInt::from(1)).to_string()).map_err(Into::into)
+    Amount::new((amount - I512::ONE).to_string()).map_err(Into::into)
 }
 
 fn is_zero_address(address: &Address) -> bool {

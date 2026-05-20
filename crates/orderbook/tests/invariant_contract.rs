@@ -215,7 +215,7 @@ fn quote_request_app_data_and_pagination_shape_roundtrip_without_normalization()
         if let Some(app_data) = inline_app_data.clone() {
             request = request.with_app_data(app_data);
         }
-        if let Some(hash) = app_data_hash.clone() {
+        if let Some(hash) = app_data_hash {
             request = request.with_app_data_hash(hash);
         }
 

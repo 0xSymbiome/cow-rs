@@ -36,14 +36,14 @@ impl SlippageToleranceRequest {
 
     /// Returns a copy of this request with an explicit sell amount.
     #[must_use]
-    pub fn with_sell_amount(mut self, sell_amount: Amount) -> Self {
+    pub const fn with_sell_amount(mut self, sell_amount: Amount) -> Self {
         self.sell_amount = Some(sell_amount);
         self
     }
 
     /// Returns a copy of this request with an explicit buy amount.
     #[must_use]
-    pub fn with_buy_amount(mut self, buy_amount: Amount) -> Self {
+    pub const fn with_buy_amount(mut self, buy_amount: Amount) -> Self {
         self.buy_amount = Some(buy_amount);
         self
     }

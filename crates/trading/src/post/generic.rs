@@ -70,8 +70,8 @@ fn build_order_body(
     let mut order_body = OrderCreation::new(
         order_to_sign.sell_token,
         order_to_sign.buy_token,
-        order_to_sign.sell_amount.clone(),
-        order_to_sign.buy_amount.clone(),
+        order_to_sign.sell_amount,
+        order_to_sign.buy_amount,
         order_to_sign.valid_to,
         order_to_sign.kind,
         scheme,
@@ -80,7 +80,7 @@ fn build_order_body(
     )
     .with_receiver(order_to_sign.receiver)
     .with_app_data(app_data.full_app_data.clone())
-    .with_app_data_hash(app_data.app_data_keccak256.clone())
+    .with_app_data_hash(app_data.app_data_keccak256)
     .with_partially_fillable(order_to_sign.partially_fillable)
     .with_sell_token_balance(order_to_sign.sell_token_balance)
     .with_buy_token_balance(order_to_sign.buy_token_balance);
@@ -206,7 +206,7 @@ where
             chain_id,
             from,
             is_ethflow: false,
-            network_costs_amount: additional_params.network_costs_amount.clone(),
+            network_costs_amount: additional_params.network_costs_amount,
             apply_costs_slippage_and_fees: additional_params
                 .apply_costs_slippage_and_fees
                 .unwrap_or(true),

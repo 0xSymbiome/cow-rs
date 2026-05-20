@@ -63,7 +63,7 @@ pub struct OrderCreation {
     pub quote_id: Option<i64>,
 }
 
-fn order_creation_zero_fee_amount() -> Amount {
+const fn order_creation_zero_fee_amount() -> Amount {
     Amount::zero()
 }
 
@@ -200,11 +200,11 @@ impl OrderCreation {
             sell_token: quote.sell_token,
             buy_token: quote.buy_token,
             receiver: receiver.or(quote.receiver),
-            sell_amount: quote.sell_amount.clone(),
-            buy_amount: quote.buy_amount.clone(),
+            sell_amount: quote.sell_amount,
+            buy_amount: quote.buy_amount,
             valid_to: quote.valid_to,
             app_data: None,
-            app_data_hash: Some(quote.app_data.clone()),
+            app_data_hash: Some(quote.app_data),
             fee_amount: order_creation_zero_fee_amount(),
             full_balance_check: false,
             kind: quote.kind,
@@ -234,7 +234,7 @@ impl OrderCreation {
 
     /// Returns a copy of this submission payload with an explicit app-data hash.
     #[must_use]
-    pub fn with_app_data_hash(mut self, app_data_hash: AppDataHash) -> Self {
+    pub const fn with_app_data_hash(mut self, app_data_hash: AppDataHash) -> Self {
         self.app_data_hash = Some(app_data_hash);
         self
     }
@@ -519,21 +519,21 @@ impl Quote {
 
     /// Returns a copy carrying a sell amount.
     #[must_use]
-    pub fn with_sell_amount(mut self, sell_amount: Amount) -> Self {
+    pub const fn with_sell_amount(mut self, sell_amount: Amount) -> Self {
         self.sell_amount = Some(sell_amount);
         self
     }
 
     /// Returns a copy carrying a buy amount.
     #[must_use]
-    pub fn with_buy_amount(mut self, buy_amount: Amount) -> Self {
+    pub const fn with_buy_amount(mut self, buy_amount: Amount) -> Self {
         self.buy_amount = Some(buy_amount);
         self
     }
 
     /// Returns a copy carrying a fee amount.
     #[must_use]
-    pub fn with_fee(mut self, fee: Amount) -> Self {
+    pub const fn with_fee(mut self, fee: Amount) -> Self {
         self.fee = Some(fee);
         self
     }
@@ -576,7 +576,7 @@ impl ExecutedProtocolFee {
 
     /// Returns a copy carrying the fee amount.
     #[must_use]
-    pub fn with_amount(mut self, amount: Amount) -> Self {
+    pub const fn with_amount(mut self, amount: Amount) -> Self {
         self.amount = Some(amount);
         self
     }

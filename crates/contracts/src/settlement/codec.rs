@@ -168,11 +168,11 @@ pub fn encode_trade(
         tokens.index(&order.sell_token),
         tokens.index(&order.buy_token),
         order.receiver,
-        order.sell_amount.clone(),
-        order.buy_amount.clone(),
+        order.sell_amount,
+        order.buy_amount,
         order.valid_to,
-        order.app_data.clone(),
-        order.fee_amount.clone(),
+        order.app_data,
+        order.fee_amount,
         encode_trade_flags(&TradeFlags::new(
             order.kind,
             order.partially_fillable,
@@ -180,7 +180,7 @@ pub fn encode_trade(
             order.buy_token_balance,
             signature.scheme(),
         ))?,
-        execution.executed_amount.clone(),
+        execution.executed_amount,
         encode_signature_data(signature)?,
     ))
 }
@@ -194,17 +194,14 @@ pub(super) fn encode_settle_call(
 ) -> Result<IGPv2Settlement::settleCall, ContractsError> {
     use alloy_sol_types::private::{Address as SolAddress, Bytes as SolBytes, FixedBytes, U256};
 
-    fn amount_to_u256(amount: &Amount) -> Result<U256, ContractsError> {
-        let bytes = amount.as_biguint().to_bytes_be();
-        if bytes.len() > 32 {
-            return Err(ContractsError::NumericOverflow {
-                field: "amount",
-                value: amount.to_string().into(),
-            });
-        }
-        let mut buf = [0u8; 32];
-        buf[32 - bytes.len()..].copy_from_slice(&bytes);
-        Ok(U256::from_be_bytes(buf))
+    // The cow `Amount` newtype is `#[repr(transparent)]` over
+    // `alloy_primitives::U256` per ADR 0052, so the conversion to the
+    // sol `U256` surface is an infallible deref of the inner U256 with
+    // no intermediate bigint allocation. The historical
+    // `amount_to_u256` overflow guard collapses to a no-op because
+    // `Amount` cannot carry a value beyond `U256::MAX`.
+    const fn amount_to_u256(amount: &Amount) -> U256 {
+        *amount.as_u256()
     }
 
     const fn address_to_sol(address: &Address) -> SolAddress {
@@ -221,10 +218,7 @@ pub(super) fn encode_settle_call(
     }
 
     let sol_tokens: Vec<_> = tokens.iter().map(address_to_sol).collect();
-    let sol_clearing_prices = clearing_prices
-        .iter()
-        .map(amount_to_u256)
-        .collect::<Result<Vec<_>, _>>()?;
+    let sol_clearing_prices: Vec<_> = clearing_prices.iter().map(amount_to_u256).collect();
 
     let sol_trades = trades
         .iter()
@@ -235,13 +229,13 @@ pub(super) fn encode_settle_call(
                     sellTokenIndex: U256::from(trade.sell_token_index),
                     buyTokenIndex: U256::from(trade.buy_token_index),
                     receiver: address_to_sol(&trade.receiver),
-                    sellAmount: amount_to_u256(&trade.sell_amount)?,
-                    buyAmount: amount_to_u256(&trade.buy_amount)?,
+                    sellAmount: amount_to_u256(&trade.sell_amount),
+                    buyAmount: amount_to_u256(&trade.buy_amount),
                     validTo: trade.valid_to,
                     appData: FixedBytes::from(app_data_bytes),
-                    feeAmount: amount_to_u256(&trade.fee_amount)?,
+                    feeAmount: amount_to_u256(&trade.fee_amount),
                     flags: U256::from(trade.flags),
-                    executedAmount: amount_to_u256(&trade.executed_amount)?,
+                    executedAmount: amount_to_u256(&trade.executed_amount),
                     signature: hex_to_bytes(&trade.signature, "signature")?,
                 })
             },
@@ -257,7 +251,7 @@ pub(super) fn encode_settle_call(
                 |interaction| -> Result<IGPv2Settlement::InteractionData, ContractsError> {
                     Ok(IGPv2Settlement::InteractionData {
                         target: address_to_sol(&interaction.target),
-                        value: amount_to_u256(&interaction.value)?,
+                        value: amount_to_u256(&interaction.value),
                         callData: SolBytes::copy_from_slice(&interaction.call_data),
                     })
                 },
@@ -292,11 +286,11 @@ pub fn decode_order(trade: &Trade, tokens: &[Address]) -> Result<Order, Contract
         tokens[trade.sell_token_index],
         tokens[trade.buy_token_index],
         Some(trade.receiver),
-        trade.sell_amount.clone(),
-        trade.buy_amount.clone(),
+        trade.sell_amount,
+        trade.buy_amount,
         trade.valid_to,
-        trade.app_data.clone(),
-        trade.fee_amount.clone(),
+        trade.app_data,
+        trade.fee_amount,
         flags.kind,
         flags.partially_fillable,
         Some(flags.sell_token_balance),
@@ -446,13 +440,17 @@ mod tests {
 
     #[test]
     fn settle_call_preserves_max_u256_amounts_and_signature_bytes() {
+        // The cow `Amount` newtype is `#[repr(transparent)]` over
+        // `alloy_primitives::U256` per ADR 0052, so the `uint256` ceiling
+        // is enforced by the type system: an `Amount` greater than
+        // `U256::MAX` is unconstructible, and the historical
+        // `ContractsError::NumericOverflow` arm at the ABI encoding
+        // boundary collapses into a compile-time impossibility.
         let tokens = [
             Address::new("0x1111111111111111111111111111111111111111").unwrap(),
             Address::new("0x2222222222222222222222222222222222222222").unwrap(),
         ];
-        let max_u256 = Amount::from_atoms(
-            (num_bigint::BigUint::from(1u8) << 256usize) - num_bigint::BigUint::from(1u8),
-        );
+        let max_u256 = Amount::from_u256(alloy_primitives::U256::MAX);
         let trade = Trade::new(
             0,
             1,
@@ -478,22 +476,5 @@ mod tests {
 
         assert_eq!(call.clearingPrices[0].to_be_bytes::<32>(), [0xff; 32]);
         assert_eq!(call.trades[0].signature.as_ref(), &[0xab, 0xcd, 0xef]);
-
-        let overflow = Amount::from_atoms(num_bigint::BigUint::from(1u8) << 256usize);
-        let Err(error) = encode_settle_call(
-            &tokens,
-            &[overflow],
-            std::slice::from_ref(&trade),
-            &[Vec::new(), Vec::new(), Vec::new()],
-        ) else {
-            panic!("amounts wider than uint256 must fail before ABI encoding");
-        };
-        assert!(matches!(
-            error,
-            ContractsError::NumericOverflow {
-                field: "amount",
-                ..
-            }
-        ));
     }
 }

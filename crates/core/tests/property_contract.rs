@@ -21,12 +21,13 @@
 
 use std::collections::{HashMap, HashSet};
 
+use alloy_primitives::{I256, U256};
 use cow_sdk_core::{
     Address, Amount, AppDataHex, ChainId, DecimalAmount, Hash32, HexData, OrderUid, SignedAmount,
     SupportedChainId, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
     addresses_equal, token_id,
 };
-use num_bigint::{BigInt, BigUint, Sign};
+use num_bigint::BigUint;
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
 
@@ -79,20 +80,20 @@ fn atom_amount_bytes() -> impl Strategy<Value = [u8; 32]> {
     any::<[u8; 32]>()
 }
 
-/// Strategy that emits arbitrary signed 256-bit-class values for
-/// [`SignedAmount`] coverage.
-fn signed_amount_value_strategy() -> impl Strategy<Value = BigInt> {
-    (atom_amount_bytes(), any::<bool>()).prop_map(|(bytes, is_negative)| {
-        let sign = if is_negative { Sign::Minus } else { Sign::Plus };
-        BigInt::from_bytes_be(sign, &bytes)
-    })
+/// Strategy that emits arbitrary `I256` values across the full signed
+/// 256-bit range. Sampling re-interprets the unsigned 32-byte payload
+/// as a two's-complement [`I256`], so every representable bit pattern
+/// — including both extremes `I256::MIN` and `I256::MAX` — appears
+/// with equal probability.
+fn signed_amount_value_strategy() -> impl Strategy<Value = I256> {
+    atom_amount_bytes().prop_map(|bytes| I256::from_raw(U256::from_be_bytes(bytes)))
 }
 
 /// Strategy that emits valid signed-decimal strings including redundant
 /// leading zeroes so [`SignedAmount::new`] normalization is exercised.
 fn signed_amount_input_strategy() -> impl Strategy<Value = String> {
     (signed_amount_value_strategy(), 0usize..=4usize).prop_map(|(value, leading_zeroes)| {
-        let canonical = value.to_str_radix(10);
+        let canonical = value.to_string();
         let (prefix, digits) = canonical
             .strip_prefix('-')
             .map_or(("", canonical.as_str()), |digits| ("-", digits));
@@ -100,14 +101,9 @@ fn signed_amount_input_strategy() -> impl Strategy<Value = String> {
     })
 }
 
-/// Curated signed-amount literals that pin the historical decimal-string
-/// wire form across zero, sign, `i128`, and 256-bit-class boundaries.
+/// Curated signed-amount literals that pin the canonical decimal-string
+/// wire form across zero, sign, `i128`, and `I256` boundary values.
 fn curated_signed_amount_inputs() -> Vec<String> {
-    let positive_255 = (BigInt::from(1u8) << 255usize) - BigInt::from(1u8);
-    let negative_255 = -(BigInt::from(1u8) << 255usize);
-    let positive_256 = (BigInt::from(1u8) << 256usize) + BigInt::from(12_345u32);
-    let negative_256 = -positive_256.clone();
-
     vec![
         "0".to_owned(),
         "-0".to_owned(),
@@ -117,10 +113,8 @@ fn curated_signed_amount_inputs() -> Vec<String> {
         "-00042".to_owned(),
         i128::MAX.to_string(),
         i128::MIN.to_string(),
-        positive_255.to_str_radix(10),
-        negative_255.to_str_radix(10),
-        positive_256.to_str_radix(10),
-        negative_256.to_str_radix(10),
+        I256::MAX.to_string(),
+        I256::MIN.to_string(),
     ]
 }
 
@@ -266,9 +260,9 @@ proptest! {
     /// output, and round-trips through its own string form.
     #[test]
     fn amount_canonical_decimal_matches_hex_equivalent(bytes in atom_amount_bytes()) {
-        let value = BigUint::from_bytes_be(&bytes);
-        let canonical = value.to_str_radix(10);
-        let hex_form = format!("0x{}", value.to_str_radix(16));
+        let value = U256::from_be_bytes(bytes);
+        let canonical = value.to_string();
+        let hex_form = format!("{value:#x}");
 
         let from_decimal = Amount::new(&canonical).unwrap();
         let from_hex = Amount::new(&hex_form).unwrap();
@@ -279,7 +273,7 @@ proptest! {
         let roundtrip = Amount::new(from_decimal.to_string()).unwrap();
         prop_assert_eq!(&roundtrip, &from_decimal);
 
-        prop_assert_eq!(from_decimal.as_biguint(), &value);
+        prop_assert_eq!(from_decimal.as_u256(), &value);
     }
 
     /// [`Amount::new`] fails closed on every malformed input shape the
@@ -297,16 +291,21 @@ proptest! {
         bytes in atom_amount_bytes(),
         multiplier in 0u8..=4u8,
     ) {
-        let left = Amount::from_atoms(BigUint::from_bytes_be(&bytes));
-        let right = Amount::from_atoms(BigUint::from(multiplier));
-        let product = left.as_biguint() * right.as_biguint();
+        let left = Amount::from_u256(U256::from_be_bytes(bytes));
+        let right = Amount::from_u256(U256::from(multiplier));
+        // Cross-check the typed checked-mul against an arbitrary-width
+        // `BigUint` oracle so the U256 overflow boundary is observable
+        // independently of the implementation under test.
+        let left_big = BigUint::from_bytes_be(&bytes);
+        let right_big = BigUint::from(u32::from(multiplier));
+        let product = &left_big * &right_big;
 
         prop_assert_eq!(
             left.checked_mul(&right).is_some(),
             product.bits() <= 256,
         );
 
-        let max = Amount::from_atoms((BigUint::from(1u8) << 256usize) - BigUint::from(1u8));
+        let max = Amount::from_u256(U256::MAX);
         let two = Amount::from(2u32);
         prop_assert!(max.checked_mul(&two).is_none());
     }
@@ -348,8 +347,8 @@ proptest! {
         let canonical = format!("0x{}", hex::encode(bytes));
 
         let app_data = AppDataHex::new(&canonical).unwrap();
-        prop_assert_eq!(app_data.as_str(), &canonical);
-        prop_assert_eq!(AppDataHex::new(app_data.as_str()).unwrap(), app_data);
+        prop_assert_eq!(app_data.to_hex_string(), canonical.clone());
+        prop_assert_eq!(AppDataHex::new(app_data.to_hex_string()).unwrap(), app_data);
 
         prop_assert!(AppDataHex::new(&malformed).is_err(), "malformed = {malformed}");
     }
@@ -408,44 +407,44 @@ proptest! {
         prop_assert_ne!(token_id(chain_a, &address_a), token_id(chain_b, &address_a));
     }
 
-    /// [`Amount::from_atoms`] preserves the originating [`BigUint`]
-    /// input, round-trips through the canonical decimal-string Serde
-    /// form, and accepts the same value constructed through
-    /// [`Amount::new`].
+    /// [`Amount::from_u256`] preserves the originating [`U256`] input,
+    /// round-trips through the canonical decimal-string Serde form, and
+    /// accepts the same value constructed through [`Amount::new`].
     #[test]
-    fn amount_roundtrips_through_biguint_and_wire_string(bytes in atom_amount_bytes()) {
-        let value = BigUint::from_bytes_be(&bytes);
-        let canonical = value.to_str_radix(10);
+    fn amount_roundtrips_through_u256_and_wire_string(bytes in atom_amount_bytes()) {
+        let value = U256::from_be_bytes(bytes);
+        let canonical = value.to_string();
 
-        let amount = Amount::from_atoms(value.clone());
-        prop_assert_eq!(amount.as_biguint(), &value);
+        let amount = Amount::from_u256(value);
+        prop_assert_eq!(amount.as_u256(), &value);
 
-        let round_trip_big_uint: BigUint = amount.clone().into();
-        prop_assert_eq!(&round_trip_big_uint, &value);
+        let round_trip_u256: U256 = amount.into();
+        prop_assert_eq!(round_trip_u256, value);
 
         prop_assert_eq!(amount.to_string(), canonical.clone());
 
         let serialized = serde_json::to_string(&amount).unwrap();
         let deserialized: Amount = serde_json::from_str(&serialized).unwrap();
-        prop_assert_eq!(deserialized.as_biguint(), &value);
+        prop_assert_eq!(deserialized.as_u256(), &value);
 
         let from_new = Amount::new(canonical.clone()).unwrap();
         prop_assert_eq!(from_new, amount);
     }
 
     /// [`SignedAmount::new`] canonicalizes valid decimal inputs while
-    /// preserving the typed `BigInt` storage and remaining idempotent
+    /// preserving the typed `I256` storage and remaining idempotent
     /// across its own string form.
     #[test]
     fn signed_amount_roundtrip_is_idempotent(input in signed_amount_input_strategy()) {
         let amount = SignedAmount::new(&input).unwrap();
         let canonical = amount.to_string();
 
-        prop_assert_eq!(amount.as_bigint().to_str_radix(10), canonical.as_str());
-        prop_assert_eq!(amount.as_str(), canonical.as_str());
+        // The cow newtype's `Display` impl is the canonical decimal-string
+        // wire form; the inner `I256` accessor exposes the same value.
+        prop_assert_eq!(amount.as_i256().to_string(), canonical.clone());
 
         let rebuilt = SignedAmount::new(canonical.clone()).unwrap();
-        prop_assert_eq!(rebuilt.clone(), amount);
+        prop_assert_eq!(rebuilt, amount);
         prop_assert_eq!(rebuilt.to_string(), canonical);
     }
 
@@ -472,13 +471,13 @@ proptest! {
         bytes in atom_amount_bytes(),
         decimals in 0u8..=30u8,
     ) {
-        let atoms = BigUint::from_bytes_be(&bytes);
-        let amount = DecimalAmount::new(atoms.clone(), decimals);
+        let atoms = U256::from_be_bytes(bytes);
+        let amount = DecimalAmount::new(atoms, decimals);
 
         prop_assert_eq!(amount.atoms(), &atoms);
         prop_assert_eq!(amount.decimals(), decimals);
 
-        let rebuilt = DecimalAmount::new(amount.atoms().clone(), amount.decimals());
+        let rebuilt = DecimalAmount::new(*amount.atoms(), amount.decimals());
         prop_assert_eq!(&rebuilt, &amount);
 
         let extracted = amount.into_atoms();
@@ -491,20 +490,20 @@ proptest! {
     #[test]
     fn decimal_amount_from_whole_approx_handles_boundary_inputs(decimals in 0u8..=30u8) {
         let zero = DecimalAmount::from_whole_approx(0.0, decimals);
-        prop_assert_eq!(zero.atoms(), &BigUint::from(0u32));
+        prop_assert_eq!(zero.atoms(), &U256::ZERO);
         prop_assert_eq!(zero.decimals(), decimals);
 
         let negative = DecimalAmount::from_whole_approx(-1.5, decimals);
-        prop_assert_eq!(negative.atoms(), &BigUint::from(0u32));
+        prop_assert_eq!(negative.atoms(), &U256::ZERO);
 
         let nan = DecimalAmount::from_whole_approx(f64::NAN, decimals);
-        prop_assert_eq!(nan.atoms(), &BigUint::from(0u32));
+        prop_assert_eq!(nan.atoms(), &U256::ZERO);
 
         let infinity = DecimalAmount::from_whole_approx(f64::INFINITY, decimals);
-        prop_assert!(infinity.atoms() <= &BigUint::from(u128::MAX));
+        prop_assert!(infinity.atoms() <= &U256::from(u128::MAX));
 
         let one_token = DecimalAmount::from_whole_approx(1.0, 18);
-        let expected = BigUint::from(10u128.pow(18));
+        let expected = U256::from(10u128.pow(18));
         prop_assert_eq!(one_token.atoms(), &expected);
         prop_assert!((one_token.to_f64_approx() - 1.0).abs() < 1e-12);
     }

@@ -12,6 +12,7 @@
 
 mod common;
 
+use alloy_primitives::U256;
 use cow_sdk_core::{Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId};
 use cow_sdk_orderbook::PriceQuality;
 use cow_sdk_trading::{
@@ -19,7 +20,6 @@ use cow_sdk_trading::{
     QuoteRequestOverride, QuoterParameters, SwapAdvancedSettings, get_eth_flow_transaction,
     get_quote_results, suggest_slippage_bps, swap_params_to_limit_order_params,
 };
-use num_bigint::BigUint;
 
 use crate::common::{
     ALT_RECEIVER, CUSTOM_SETTLEMENT, MockOrderbook, MockSigner, OWNER, address, app_data_hash,
@@ -71,13 +71,22 @@ fn trader() -> QuoterParameters {
 }
 
 fn generated_uint256_decimal(rng: &mut CaseRng, max_bytes: usize) -> String {
-    let mut bytes = vec![0u8; 1 + (rng.next_u64() as usize % max_bytes.max(1))];
-    rng.fill(&mut bytes);
-    if bytes.iter().all(|byte| *byte == 0) {
-        let last = bytes.len() - 1;
-        bytes[last] = 1;
+    // Right-align the sampled bytes into a fixed 32-byte big-endian buffer
+    // before feeding `U256::from_be_bytes`, which is generic over a
+    // `BYTES` const parameter and needs an exact array length. Producing
+    // shorter sampled lengths preserves the upstream invariant that the
+    // generated value occasionally fits in a smaller byte width without
+    // breaking the U256 parse contract.
+    let len = 1 + (rng.next_u64() as usize % max_bytes.max(1));
+    let mut sampled = vec![0u8; len];
+    rng.fill(&mut sampled);
+    if sampled.iter().all(|byte| *byte == 0) {
+        let last = sampled.len() - 1;
+        sampled[last] = 1;
     }
-    BigUint::from_bytes_be(&bytes).to_string()
+    let mut buffer = [0u8; 32];
+    buffer[32 - len..].copy_from_slice(&sampled);
+    U256::from_be_bytes(buffer).to_string()
 }
 
 fn generated_quote(kind: OrderKind, rng: &mut CaseRng) -> cow_sdk_orderbook::OrderQuoteResponse {
@@ -143,8 +152,8 @@ fn calldata_word(data: &str, index: usize) -> &str {
     &stripped[start..start + 64]
 }
 
-fn hex_word_to_biguint(word: &str) -> BigUint {
-    BigUint::parse_bytes(word.as_bytes(), 16).expect("encoded calldata words must remain hex")
+fn hex_word_to_u256(word: &str) -> U256 {
+    U256::from_str_radix(word, 16).expect("encoded calldata words must remain hex")
 }
 
 #[test]
@@ -273,23 +282,23 @@ async fn ethflow_calldata_preserves_uint256_boundary_values() {
         );
         assert_eq!(transaction.order_to_sign.buy_amount.to_string(), buy_amount);
         assert_eq!(
-            hex_word_to_biguint(calldata_word(&data.to_hex_string(), 2)),
-            BigUint::parse_bytes(sell_amount.as_bytes(), 10).unwrap()
+            hex_word_to_u256(calldata_word(&data.to_hex_string(), 2)),
+            U256::from_str_radix(&sell_amount, 10).unwrap()
         );
         assert_eq!(
-            hex_word_to_biguint(calldata_word(&data.to_hex_string(), 3)),
-            BigUint::parse_bytes(buy_amount.as_bytes(), 10).unwrap()
+            hex_word_to_u256(calldata_word(&data.to_hex_string(), 3)),
+            U256::from_str_radix(&buy_amount, 10).unwrap()
         );
         // The canonical upstream EthFlowOrder.Data tuple lays validTo out at
         // word index 6 and quoteId at word index 8; intermediate words carry
         // appData, feeAmount, and partiallyFillable.
         assert_eq!(
-            hex_word_to_biguint(calldata_word(&data.to_hex_string(), 6)),
-            BigUint::from(valid_to)
+            hex_word_to_u256(calldata_word(&data.to_hex_string(), 6)),
+            U256::from(valid_to)
         );
         assert_eq!(
-            hex_word_to_biguint(calldata_word(&data.to_hex_string(), 8)),
-            BigUint::from(quote_id as u64)
+            hex_word_to_u256(calldata_word(&data.to_hex_string(), 8)),
+            U256::from(quote_id as u64)
         );
     }
 }

@@ -455,8 +455,7 @@ proptest! {
         let data_start = 32 * 14;
         let expected_padding = padded_len(signature_bytes.len());
 
-        let app_data_bytes = hex::decode(order.app_data.as_str().trim_start_matches("0x")).unwrap();
-        prop_assert_eq!(&encoded[32 * 6..32 * 7], app_data_bytes.as_slice());
+        prop_assert_eq!(&encoded[32 * 6..32 * 7], order.app_data.as_slice());
         prop_assert_eq!(
             decode_u256_word(&encoded[offset_word_start..offset_word_start + 32]),
             32 * 13,

@@ -1,5 +1,7 @@
 //! `read_contract` ABI encode, dispatch, decode, and JSON conversion.
 
+use std::str::FromStr;
+
 use alloy_dyn_abi::{DynSolType, DynSolValue, FunctionExt, JsonAbiExt};
 use alloy_json_abi::{Function, JsonAbi, Param};
 use alloy_network::{Ethereum, TransactionBuilder};
@@ -330,22 +332,18 @@ fn parse_u256(value: &Value, method: &str) -> Result<U256, AsyncProviderError> {
             )));
         }
     };
-    raw.strip_prefix("0x").map_or_else(
-        || {
-            U256::from_str_radix(&raw, 10).map_err(|error| {
-                AsyncProviderError::Validation(format!(
-                    "method `{method}`: invalid integer `{raw}`: {error}"
-                ))
-            })
-        },
-        |hex| {
-            U256::from_str_radix(hex, 16).map_err(|error| {
-                AsyncProviderError::Validation(format!(
-                    "method `{method}`: invalid integer `{raw}`: {error}"
-                ))
-            })
-        },
-    )
+    // Parses the JSON-shaped integer argument the caller supplied for an
+    // ABI `uint` parameter on the read-contract call surface. Delegates
+    // to `alloy_primitives::U256::from_str`, which recognises both the
+    // canonical decimal form (`"123"`) and the `0x`-prefixed hex form
+    // (`"0x7b"`) callers idiomatically pass through the cow read-contract
+    // argument JSON. The historical hand-rolled four-radix sniffer is
+    // retired in favour of the canonical alloy parser per ADR 0052.
+    U256::from_str(&raw).map_err(|error| {
+        AsyncProviderError::Validation(format!(
+            "method `{method}`: invalid integer `{raw}`: {error}"
+        ))
+    })
 }
 
 fn parse_i256(value: &Value, method: &str) -> Result<I256, AsyncProviderError> {

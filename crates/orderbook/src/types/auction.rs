@@ -190,7 +190,7 @@ impl SolverExecution {
 
     /// Returns a copy with explicit executed amounts.
     #[must_use]
-    pub fn with_executed_amounts(mut self, amounts: ExecutedAmounts) -> Self {
+    pub const fn with_executed_amounts(mut self, amounts: ExecutedAmounts) -> Self {
         self.executed_amounts = Some(amounts);
         self
     }

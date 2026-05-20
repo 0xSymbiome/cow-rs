@@ -39,7 +39,7 @@ fn bench_get_order_to_sign(c: &mut Criterion) {
     c.bench_function("get_order_to_sign", |b| {
         b.iter(|| {
             let order = get_order_to_sign(
-                black_box(params.clone()),
+                black_box(params),
                 black_box(&parameters),
                 black_box(&app_data_hash),
             )

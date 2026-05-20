@@ -82,13 +82,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
             "effectiveSellToken": ethflow.order_to_sign.sell_token.to_hex_string(),
             "buyToken": ethflow.order_to_sign.buy_token.to_hex_string(),
             "quoteId": params.quote_id,
-            "appDataHash": app_data.app_data_keccak256.as_str()
+            "appDataHash": app_data.app_data_keccak256.to_hex_string()
         },
         "nativeSellPosting": {
             "orderId": submitted.order_id.to_hex_string(),
             "txHash": submitted.tx_hash.as_ref().map(|hash| hash.to_hex_string()),
             "signingScheme": format!("{:?}", submitted.signing_scheme),
-            "uploadedAppDataHash": upload.0.as_str(),
+            "uploadedAppDataHash": upload.0.to_hex_string(),
             "uploadedAppDataPreview": text_preview(&upload.1, 96),
             "uploadedAppDataEntries": state.uploads.len()
         }

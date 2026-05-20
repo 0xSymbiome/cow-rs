@@ -160,7 +160,7 @@ impl AppDataParams {
 
     /// Returns a copy with typed flash-loan hint metadata.
     #[must_use]
-    pub fn with_flashloan(mut self, flashloan: crate::metadata::FlashloanHints) -> Self {
+    pub const fn with_flashloan(mut self, flashloan: crate::metadata::FlashloanHints) -> Self {
         self.flashloan = Some(flashloan);
         self
     }

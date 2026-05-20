@@ -1213,7 +1213,7 @@ async fn assert_ethflow_transaction_contract_selection(case_id: &str, expected: 
     );
     assert_eq!(
         tx.transaction.value,
-        Some(tx.order_to_sign.sell_amount.clone()),
+        Some(tx.order_to_sign.sell_amount),
         "case {case_id}: transaction.value must equal order_to_sign.sell_amount",
     );
     assert_eq!(

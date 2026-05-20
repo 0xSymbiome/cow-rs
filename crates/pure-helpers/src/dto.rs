@@ -319,7 +319,7 @@ pub fn parse_address(field: &str, value: &str) -> Result<Address, PureError> {
 }
 
 pub(crate) fn parse_amount(field: &str, value: &str) -> Result<Amount, PureError> {
-    Amount::new(value.to_owned()).map_err(|error| PureError::invalid(field, error.to_string()))
+    Amount::new(value).map_err(|error| PureError::invalid(field, error.to_string()))
 }
 
 fn convert_types(types: &TypedDataTypes) -> BTreeMap<String, Vec<TypedDataFieldDto>> {

@@ -13,11 +13,11 @@
 
 mod common;
 
+use alloy_primitives::U256;
 use cow_sdk_contracts::{ContractsError, decode_eip1271_signature_data};
 use cow_sdk_core::OrderKind;
 use cow_sdk_signing::SigningError;
 use cow_sdk_signing::eip1271_signature_payload;
-use num_bigint::BigUint;
 use sha3::{Digest, Keccak256};
 
 use common::{fixture_case, sample_order, sample_signature};
@@ -79,7 +79,7 @@ fn independent_payload(order: &cow_sdk_core::UnsignedOrder, ecdsa_signature: &st
     encoded.extend_from_slice(&encode_u256(&order.sell_amount.to_string()));
     encoded.extend_from_slice(&encode_u256(&order.buy_amount.to_string()));
     encoded.extend_from_slice(&encode_u32(order.valid_to));
-    encoded.extend_from_slice(&parse_hex32(order.app_data.as_str()));
+    encoded.extend_from_slice(&parse_hex32(&order.app_data.to_hex_string()));
     encoded.extend_from_slice(&encode_u256(&order.fee_amount.to_string()));
     encoded.extend_from_slice(&keccak256(match order.kind {
         OrderKind::Buy => b"buy".as_slice(),
@@ -133,11 +133,13 @@ fn encode_bool(value: bool) -> [u8; 32] {
 }
 
 fn encode_u256(value: &str) -> [u8; 32] {
-    let parsed = BigUint::parse_bytes(value.as_bytes(), 10).unwrap();
-    let bytes = parsed.to_bytes_be();
-    let mut out = [0u8; 32];
-    out[32 - bytes.len()..].copy_from_slice(&bytes);
-    out
+    // Test oracle helper: parses a decimal-string into the canonical
+    // 32-byte big-endian `U256` word. The cow newtype migration drops
+    // the historical BigUint dependency in favour of the alloy primitive
+    // surface per ADR 0052.
+    U256::from_str_radix(value, 10)
+        .expect("test fixture value must parse to U256")
+        .to_be_bytes::<32>()
 }
 
 fn encode_usize(value: usize) -> [u8; 32] {

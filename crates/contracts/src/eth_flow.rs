@@ -11,11 +11,8 @@
 //! lives under `crates/contracts/abi/eth-flow/` for provenance.
 
 use alloy_sol_types::{SolCall, sol};
-use num_bigint::BigUint;
 
 use cow_sdk_core::{Address, Amount, AppDataHash, UnsignedOrder};
-
-use crate::ContractsError;
 
 sol! {
     // Canonical CoWSwapEthFlow ABI surface. Signatures are reproduced verbatim
@@ -106,14 +103,14 @@ impl EthFlowOrderData {
     /// Builds an `EthFlowOrderData` payload from a pre-signature unsigned order
     /// and the originating quote id.
     #[must_use]
-    pub fn from_unsigned_order(order: &UnsignedOrder, quote_id: i64) -> Self {
+    pub const fn from_unsigned_order(order: &UnsignedOrder, quote_id: i64) -> Self {
         Self::new(
             order.buy_token,
             order.receiver,
-            order.sell_amount.clone(),
-            order.buy_amount.clone(),
-            order.app_data.clone(),
-            order.fee_amount.clone(),
+            order.sell_amount,
+            order.buy_amount,
+            order.app_data,
+            order.fee_amount,
             order.valid_to,
             order.partially_fillable,
             quote_id,
@@ -124,13 +121,15 @@ impl EthFlowOrderData {
 /// Returns the ABI-encoded `createOrder(EthFlowOrderData)` call-data for the
 /// `CoWSwapEthFlow` contract.
 ///
-/// # Errors
-///
-/// Returns [`ContractsError`] if any typed value cannot be represented on the
-/// wire (for example, a sell or buy amount that exceeds 256 bits).
-pub fn encode_create_order_calldata(order: &EthFlowOrderData) -> Result<Vec<u8>, ContractsError> {
-    let sol_order = to_sol_struct(order)?;
-    Ok(ICoWSwapEthFlow::createOrderCall { order: sol_order }.abi_encode())
+/// Infallible: the cow [`Amount`] / [`AppDataHash`] newtypes enforce the
+/// `uint256` and 32-byte boundaries at construction per ADR 0052, so the
+/// alloy-sol `abi_encode` call cannot fail by construction.
+#[must_use]
+pub fn encode_create_order_calldata(order: &EthFlowOrderData) -> Vec<u8> {
+    ICoWSwapEthFlow::createOrderCall {
+        order: to_sol_struct(order),
+    }
+    .abi_encode()
 }
 
 /// Returns the ABI-encoded `invalidateOrder(EthFlowOrderData)` call-data for the
@@ -140,50 +139,41 @@ pub fn encode_create_order_calldata(order: &EthFlowOrderData) -> Result<Vec<u8>,
 /// call: `EthFlow` on-chain cancellation takes the full order payload back,
 /// while the settlement-level invalidation only needs the packed UID.
 ///
-/// # Errors
-///
-/// Returns [`ContractsError`] if any typed value cannot be represented on the
-/// wire (for example, a sell or buy amount that exceeds 256 bits).
-pub fn encode_invalidate_order_calldata(
-    order: &EthFlowOrderData,
-) -> Result<Vec<u8>, ContractsError> {
-    let sol_order = to_sol_struct(order)?;
-    Ok(ICoWSwapEthFlow::invalidateOrderCall { order: sol_order }.abi_encode())
+/// Infallible: the cow [`Amount`] / [`AppDataHash`] newtypes enforce the
+/// `uint256` and 32-byte boundaries at construction per ADR 0052, so the
+/// alloy-sol `abi_encode` call cannot fail by construction.
+#[must_use]
+pub fn encode_invalidate_order_calldata(order: &EthFlowOrderData) -> Vec<u8> {
+    ICoWSwapEthFlow::invalidateOrderCall {
+        order: to_sol_struct(order),
+    }
+    .abi_encode()
 }
 
-fn to_sol_struct(
-    order: &EthFlowOrderData,
-) -> Result<ICoWSwapEthFlow::EthFlowOrderData, ContractsError> {
-    use alloy_sol_types::private::{Address as SolAddress, FixedBytes, U256};
+fn to_sol_struct(order: &EthFlowOrderData) -> ICoWSwapEthFlow::EthFlowOrderData {
+    use alloy_sol_types::private::{Address as SolAddress, FixedBytes};
 
-    fn biguint_to_u256(name: &'static str, value: &BigUint) -> Result<U256, ContractsError> {
-        let bytes = value.to_bytes_be();
-        if bytes.len() > 32 {
-            return Err(ContractsError::NumericOverflow {
-                field: name,
-                value: value.to_str_radix(10).into(),
-            });
-        }
-        let mut buf = [0u8; 32];
-        buf[32 - bytes.len()..].copy_from_slice(&bytes);
-        Ok(U256::from_be_bytes(buf))
-    }
-
+    // The cow `Amount` newtype is `#[repr(transparent)]` over
+    // `alloy_primitives::U256`, so the conversion to the sol `U256`
+    // surface is a single deref of the inner U256 with no intermediate
+    // bigint allocation and no overflow guard required. The same holds
+    // for `AppDataHash` over `B256`, so `as_alloy().0` exposes the
+    // packed 32-byte payload directly.
     let buy_token_bytes = order.buy_token.into_alloy().0.0;
     let receiver_bytes = order.receiver.into_alloy().0.0;
     let app_data_bytes = order.app_data.as_alloy().0;
 
-    Ok(ICoWSwapEthFlow::EthFlowOrderData {
+    ICoWSwapEthFlow::EthFlowOrderData {
         buyToken: SolAddress::from(buy_token_bytes),
         receiver: SolAddress::from(receiver_bytes),
-        sellAmount: biguint_to_u256("sellAmount", order.sell_amount.as_biguint())?,
-        buyAmount: biguint_to_u256("buyAmount", order.buy_amount.as_biguint())?,
+        sellAmount: *order.sell_amount.as_u256(),
+        buyAmount: *order.buy_amount.as_u256(),
         appData: FixedBytes::from(app_data_bytes),
-        feeAmount: biguint_to_u256("feeAmount", order.fee_amount.as_biguint())?,
+        feeAmount: *order.fee_amount.as_u256(),
         validTo: order.valid_to,
         partiallyFillable: order.partially_fillable,
         quoteId: order.quote_id,
-    })
+    }
 }
 
 #[cfg(test)]
@@ -228,7 +218,7 @@ mod tests {
     #[test]
     fn create_order_calldata_starts_with_the_canonical_upstream_selector() {
         let order = sample_order();
-        let encoded = encode_create_order_calldata(&order).expect("sample order must encode");
+        let encoded = encode_create_order_calldata(&order);
         assert_eq!(
             &encoded[..4],
             canonical_create_order_selector(),
@@ -247,7 +237,7 @@ mod tests {
     #[test]
     fn invalidate_order_calldata_starts_with_the_canonical_upstream_selector() {
         let order = sample_order();
-        let encoded = encode_invalidate_order_calldata(&order).expect("sample order must encode");
+        let encoded = encode_invalidate_order_calldata(&order);
         assert_eq!(
             &encoded[..4],
             canonical_invalidate_order_selector(),
@@ -263,7 +253,7 @@ mod tests {
     #[test]
     fn encoded_struct_head_follows_the_upstream_field_order() {
         let order = sample_order();
-        let encoded = encode_create_order_calldata(&order).expect("sample order must encode");
+        let encoded = encode_create_order_calldata(&order);
 
         // word 0: buyToken (right-aligned 20-byte address)
         assert_eq!(
@@ -316,7 +306,7 @@ mod tests {
     fn negative_quote_id_sign_extends_to_the_full_256_bit_word() {
         let mut order = sample_order();
         order.quote_id = -1;
-        let encoded = encode_create_order_calldata(&order).expect("sample order must encode");
+        let encoded = encode_create_order_calldata(&order);
         let word_hex = hex::encode(&encoded[4 + 8 * 32..4 + 9 * 32]);
         assert_eq!(
             word_hex, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
@@ -325,29 +315,22 @@ mod tests {
     }
 
     #[test]
-    fn u256_amount_encoding_accepts_max_value_and_rejects_overflow() {
-        let max_u256 = (BigUint::from(1u8) << 256usize) - BigUint::from(1u8);
+    fn u256_amount_encoding_preserves_max_value() {
+        // The cow `Amount` newtype is `#[repr(transparent)]` over
+        // `alloy_primitives::U256` per ADR 0052, so the `uint256` ceiling
+        // is enforced by the type system at construction and the
+        // ABI-encoded sellAmount cannot exceed 32 bytes; the historical
+        // `Amount::from_atoms(BigUint::from(1u8) << 256usize)` overflow
+        // arm collapses into a compile-time impossibility and is no
+        // longer needed at runtime.
         let mut max_order = sample_order();
-        max_order.sell_amount = Amount::from_atoms(max_u256);
+        max_order.sell_amount = Amount::from_u256(alloy_primitives::U256::MAX);
 
-        let encoded = encode_create_order_calldata(&max_order)
-            .expect("the largest 256-bit amount must remain ABI-encodable");
+        let encoded = encode_create_order_calldata(&max_order);
         assert_eq!(
             word_hex(&encoded, 2),
             "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
             "sellAmount must preserve all 32 bytes of the maximum uint256",
         );
-
-        let mut overflow_order = sample_order();
-        overflow_order.sell_amount = Amount::from_atoms(BigUint::from(1u8) << 256usize);
-        let error = encode_create_order_calldata(&overflow_order)
-            .expect_err("amounts wider than uint256 must fail before ABI encoding");
-        assert!(matches!(
-            error,
-            ContractsError::NumericOverflow {
-                field: "sellAmount",
-                ..
-            }
-        ));
     }
 }

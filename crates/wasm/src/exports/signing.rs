@@ -249,7 +249,7 @@ pub async fn sign_order_with_eip1193(
         let signature = requester
             .request(
                 "eth_signTypedData_v4",
-                &[owner_address.as_str().to_owned(), typed_data_string],
+                &[owner_address.to_hex_string(), typed_data_string],
             )
             .await?;
         let signature = normalize_signature(&signature)?;
@@ -298,8 +298,13 @@ pub async fn sign_order_eth_sign_digest(
         )?;
         let generated = pure::signing::generate_order_id(chain, &order, &owner_address)
             .map_err(|error| WasmError::from(error).into_js())?;
-        let digest = hex::decode(generated.order_digest.as_str().trim_start_matches("0x"))
-            .map_err(|error| WasmError::invalid("digest", error.to_string()).into_js())?;
+        let digest = hex::decode(
+            generated
+                .order_digest
+                .to_hex_string()
+                .trim_start_matches("0x"),
+        )
+        .map_err(|error| WasmError::invalid("digest", error.to_string()).into_js())?;
         let signer = JsDigestSigner::new(digest_signer, wallet_timeout_ms);
         let signature = signer
             .sign_digest(&digest)
@@ -442,7 +447,7 @@ pub async fn sign_cancellation_with_eip1193(
         let signature = requester
             .request(
                 "eth_signTypedData_v4",
-                &[owner.as_str().to_owned(), typed_data_string],
+                &[owner.to_hex_string(), typed_data_string],
             )
             .await?;
         let signature = normalize_signature(&signature)?;
@@ -483,7 +488,7 @@ pub async fn sign_cancellation_eth_sign_digest(
     let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
     run_with_client_options(scope, async move {
         let (uids, _payload, digest) = cancellation_payload(order_uids, chain_id)?;
-        let digest_bytes = hex::decode(digest.as_str().trim_start_matches("0x"))
+        let digest_bytes = hex::decode(digest.to_hex_string().trim_start_matches("0x"))
             .map_err(|error| WasmError::invalid("digest", error.to_string()).into_js())?;
         let signer = JsDigestSigner::new(digest_signer, wallet_timeout_ms);
         let signature = signer
@@ -579,11 +584,11 @@ pub(crate) fn signed_order_from_parts(
     quote_id: Option<i64>,
 ) -> SignedOrderDto {
     SignedOrderDto {
-        order_uid: generated.order_id.as_str().to_owned(),
+        order_uid: generated.order_id.to_hex_string(),
         signature,
         signing_scheme: signing_scheme.to_owned(),
-        from: owner.as_str().to_owned(),
-        order_digest: generated.order_digest.as_str().to_owned(),
+        from: owner.to_hex_string(),
+        order_digest: generated.order_digest.to_hex_string(),
         typed_data,
         quote_id,
     }
@@ -776,7 +781,7 @@ fn pad_to_word(mut bytes: Vec<u8>) -> Vec<u8> {
 
 #[cfg(feature = "cancellation")]
 fn uid_strings(uids: &[OrderUid]) -> Vec<String> {
-    uids.iter().map(|uid| uid.as_str().to_owned()).collect()
+    uids.iter().map(|uid| uid.to_hex_string()).collect()
 }
 
 struct WalletTimeoutGuard {

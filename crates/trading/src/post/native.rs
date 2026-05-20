@@ -121,8 +121,8 @@ where
     let preview = OrderCreation::new(
         tx.order_to_sign.sell_token,
         tx.order_to_sign.buy_token,
-        tx.order_to_sign.sell_amount.clone(),
-        tx.order_to_sign.buy_amount.clone(),
+        tx.order_to_sign.sell_amount,
+        tx.order_to_sign.buy_amount,
         tx.order_to_sign.valid_to,
         tx.order_to_sign.kind,
         SigningScheme::Eip1271,

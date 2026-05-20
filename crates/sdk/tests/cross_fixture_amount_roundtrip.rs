@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use cow_sdk_core::Amount;
-use num_bigint::BigUint;
 use serde_json::Value;
 
 const CORE_FIXTURE: &str = include_str!("../../../parity/fixtures/core.json");
@@ -27,7 +26,12 @@ fn cross_fixture_amount_roundtrip() {
         "fixtures must expose at least one amount-shaped string"
     );
 
-    let mut by_literal: HashMap<String, (String, String, BigUint)> = HashMap::new();
+    // The cow `Amount` newtype is `#[repr(transparent)]` over
+    // `alloy_primitives::U256` per ADR 0052, so cross-fixture parity is
+    // checked at the typed level: two fixtures that share an amount
+    // literal must decode to the same typed `Amount`, which by the
+    // newtype's `Eq` / `Ord` impls compares the inner U256 bit-for-bit.
+    let mut by_literal: HashMap<String, (String, String, Amount)> = HashMap::new();
     for (fixture, path, amount_str) in all_amounts {
         let amount = Amount::new(&amount_str).unwrap_or_else(|err| panic!("{path}: {err}"));
         assert_eq!(
@@ -36,12 +40,11 @@ fn cross_fixture_amount_roundtrip() {
             "{path}: amount string did not round-trip byte-identically"
         );
 
-        let atoms = amount.as_biguint().clone();
-        match by_literal.insert(amount_str, (fixture.clone(), path.clone(), atoms.clone())) {
-            Some((prior_fixture, prior_path, prior_atoms)) if prior_fixture != fixture => {
+        match by_literal.insert(amount_str, (fixture.clone(), path.clone(), amount)) {
+            Some((prior_fixture, prior_path, prior_amount)) if prior_fixture != fixture => {
                 assert_eq!(
-                    prior_atoms, atoms,
-                    "{path} and {prior_path} disagree on the decoded BigUint amount"
+                    prior_amount, amount,
+                    "{path} and {prior_path} disagree on the decoded Amount"
                 );
             }
             _ => {}

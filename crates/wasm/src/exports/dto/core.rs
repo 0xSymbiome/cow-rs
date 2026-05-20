@@ -108,7 +108,7 @@ impl From<&cow_sdk_core::UnsignedOrder> for OrderInput {
             sell_amount: value.sell_amount.to_string(),
             buy_amount: value.buy_amount.to_string(),
             valid_to: value.valid_to,
-            app_data: value.app_data.as_str().to_owned(),
+            app_data: value.app_data.to_hex_string(),
             fee_amount: value.fee_amount.to_string(),
             kind: match value.kind {
                 cow_sdk_core::OrderKind::Sell => OrderKindDto::Sell,

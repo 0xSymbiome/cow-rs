@@ -242,14 +242,14 @@ impl UnsignedOrder {
 
     /// Returns a copy of this order with a different app-data hash.
     #[must_use]
-    pub fn with_app_data(mut self, app_data: AppDataHash) -> Self {
+    pub const fn with_app_data(mut self, app_data: AppDataHash) -> Self {
         self.app_data = app_data;
         self
     }
 
     /// Returns a copy of this order with a different fee amount.
     #[must_use]
-    pub fn with_fee_amount(mut self, fee_amount: Amount) -> Self {
+    pub const fn with_fee_amount(mut self, fee_amount: Amount) -> Self {
         self.fee_amount = fee_amount;
         self
     }

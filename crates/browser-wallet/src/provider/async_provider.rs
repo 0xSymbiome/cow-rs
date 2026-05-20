@@ -1,7 +1,8 @@
+use std::str::FromStr;
+
 use alloy_dyn_abi::{DynSolType, DynSolValue, FunctionExt, JsonAbiExt};
 use alloy_json_abi::{JsonAbi, Param};
 use alloy_primitives::{B256, I256, U256};
-use num_bigint::BigUint;
 use serde_json::{Map, Value, json};
 
 use cow_sdk_core::{
@@ -669,25 +670,14 @@ fn parse_u256(value: &Value, method: &str) -> Result<U256, BrowserWalletError> {
             ));
         }
     };
-    let normalized = raw
-        .strip_prefix("0x")
-        .map_or_else(
-            || BigUint::parse_bytes(raw.as_bytes(), 10),
-            |stripped| BigUint::parse_bytes(stripped.as_bytes(), 16),
-        )
-        .ok_or_else(|| {
-            BrowserWalletError::malformed_response(method, format!("invalid integer `{raw}`"))
-        })?;
-    let bytes = normalized.to_bytes_be();
-    if bytes.len() > 32 {
-        return Err(BrowserWalletError::malformed_response(
-            method,
-            format!("integer `{raw}` exceeds uint256 bounds"),
-        ));
-    }
-    let mut padded = [0u8; 32];
-    padded[32 - bytes.len()..].copy_from_slice(&bytes);
-    Ok(U256::from_be_bytes(padded))
+    // Delegates to `alloy_primitives::U256::from_str`, which recognises
+    // both the canonical decimal and `0x`-prefixed hex forms used by the
+    // JSON-RPC `eth_call` response shape and enforces the `uint256`
+    // ceiling at parse time. The historical BigUint→`uint256` bound
+    // check collapses into a single `from_str` call per ADR 0052.
+    U256::from_str(&raw).map_err(|error| {
+        BrowserWalletError::malformed_response(method, format!("invalid integer `{raw}`: {error}"))
+    })
 }
 
 fn parse_i256(value: &Value, method: &str) -> Result<I256, BrowserWalletError> {

@@ -1,3 +1,4 @@
+use alloy_primitives::{I256, U256};
 use cow_sdk_core::{
     Address, Amount, Amounts, AppDataHex, BuyTokenDestination, Costs, DecimalAmount, FeeComponent,
     Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderKind, OrderUid,
@@ -5,7 +6,6 @@ use cow_sdk_core::{
     VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
     addresses_equal, token_id,
 };
-use num_bigint::{BigInt, BigUint};
 
 fn core_fixture() -> serde_json::Value {
     serde_json::from_str(include_str!("../../../parity/fixtures/core.json"))
@@ -199,43 +199,42 @@ fn from_bytes_constructors_match_string_based_equivalents_byte_for_byte() {
 
 #[test]
 fn typed_amount_and_decimal_amount_expose_semantic_accessors() {
-    let amount = Amount::from_atoms(BigUint::from(1_000_000_000_000_000_000u128));
+    let amount = Amount::from_u256(U256::from(1_000_000_000_000_000_000u128));
     assert_eq!(amount.to_string(), "1000000000000000000");
-    assert_eq!(
-        amount.as_biguint(),
-        &BigUint::from(1_000_000_000_000_000_000u128)
-    );
+    assert_eq!(amount.as_u256(), &U256::from(1_000_000_000_000_000_000u128));
 
     let parsed: Amount = "1000000000000000000".try_into().unwrap();
     assert_eq!(parsed, amount);
 
-    let decimal = DecimalAmount::new(BigUint::from(1_000_000_000_000_000_000u128), 18);
+    let decimal = DecimalAmount::new(U256::from(1_000_000_000_000_000_000u128), 18);
     assert_eq!(decimal.decimals(), 18);
-    assert_eq!(
-        decimal.atoms(),
-        &BigUint::from(1_000_000_000_000_000_000u128)
-    );
+    assert_eq!(decimal.atoms(), &U256::from(1_000_000_000_000_000_000u128));
     assert!((decimal.to_f64_approx() - 1.0).abs() < 1e-12);
 
     let clamped = DecimalAmount::from_whole_approx(-0.5, 18);
-    assert_eq!(clamped.atoms(), &BigUint::from(0u32));
+    assert_eq!(clamped.atoms(), &U256::ZERO);
 }
 
 #[test]
 fn amount_addition_is_commutative_across_curated_boundaries() {
+    // The fifth boundary value (`U256::MAX - 1`) is the largest value that
+    // can still participate in a non-overflowing pairwise sum with
+    // `Amount::from(1u32)`. Combined with `Amount::from(u128::MAX)`,
+    // `u64::MAX`, `1u32`, and zero this exercises the full `U256` storage
+    // range without crossing the `uint256` ceiling.
     let boundaries = [
         Amount::zero(),
         Amount::from(1u32),
         Amount::from(u64::MAX),
         Amount::from(u128::MAX),
-        Amount::from_atoms(BigUint::from(1u8) << 256usize),
+        Amount::from_u256(U256::MAX - U256::from(u128::MAX) - U256::from(1u8)),
     ];
 
-    for left in &boundaries {
-        for right in &boundaries {
+    for &left in &boundaries {
+        for &right in &boundaries {
             assert_eq!(
-                left.clone() + right.clone(),
-                right.clone() + left.clone(),
+                left + right,
+                right + left,
                 "Amount addition must be commutative for {left} and {right}"
             );
         }
@@ -244,14 +243,16 @@ fn amount_addition_is_commutative_across_curated_boundaries() {
 
 #[test]
 fn amount_addition_is_associative_for_curated_triple() {
-    let a = Amount::from_atoms((BigUint::from(1u8) << 128usize) + BigUint::from(7u32));
-    let b = Amount::from_atoms((BigUint::from(1u8) << 192usize) + BigUint::from(11u32));
-    let c = Amount::from_atoms((BigUint::from(1u8) << 255usize) + BigUint::from(13u32));
+    let a = Amount::from_u256((U256::from(1u8) << 128usize) + U256::from(7u32));
+    let b = Amount::from_u256((U256::from(1u8) << 192usize) + U256::from(11u32));
+    // `c` deliberately stays below `1 << 255` so the curated triple sum
+    // (~`1 << 255 + 1 << 192 + 1 << 128`) does not exceed `U256::MAX`.
+    let c = Amount::from_u256((U256::from(1u8) << 254usize) + U256::from(13u32));
 
     assert_eq!(
-        (a.clone() + b.clone()) + c.clone(),
+        (a + b) + c,
         a + (b + c),
-        "Amount addition must delegate to associative BigUint addition"
+        "Amount addition must delegate to associative U256 addition"
     );
 }
 
@@ -264,27 +265,27 @@ fn amount_checked_arithmetic_preserves_option_shape() {
     assert_eq!(
         small.checked_add(&large),
         Some(Amount::from(18u32)),
-        "checked_add must return Some for regular BigUint inputs"
+        "checked_add must return Some for in-range U256 inputs"
     );
     assert_eq!(
-        large.clone() - small.clone(),
-        Some(Amount::from(4u32)),
-        "Sub must return Some when the result is non-negative"
-    );
-    assert_eq!(
-        small.clone() - large.clone(),
-        None,
-        "Sub must return None instead of underflowing"
+        large - small,
+        Amount::from(4u32),
+        "Sub must delegate to the inner U256 and return the typed difference",
     );
     assert_eq!(
         small.checked_sub(&large),
         None,
-        "checked_sub must expose underflow through the Option boundary"
+        "checked_sub must expose underflow through the Option boundary",
+    );
+    assert_eq!(
+        small.saturating_sub(&large),
+        Amount::zero(),
+        "saturating_sub must clamp underflow to zero instead of wrapping",
     );
     assert_eq!(
         large.checked_mul(&factor),
         Some(Amount::from(33u32)),
-        "checked_mul must return Some for normal BigUint inputs"
+        "checked_mul must return Some for in-range U256 inputs"
     );
 
     let mut running = small;
@@ -356,8 +357,8 @@ fn typed_primitives_normalize_and_fail_closed() {
     assert!(Amount::new("abc").is_err());
     assert!(Amount::new(format!("0x1{}", "0".repeat(64))).is_err());
 
-    assert_eq!(SignedAmount::new("-0005").unwrap().as_str(), "-5");
-    assert_eq!(SignedAmount::new("0").unwrap().as_str(), "0");
+    assert_eq!(SignedAmount::new("-0005").unwrap().to_string(), "-5");
+    assert_eq!(SignedAmount::new("0").unwrap().to_string(), "0");
     assert!(SignedAmount::new("0x5").is_err());
 
     assert_eq!(HexData::new("0xabc").unwrap().to_hex_string(), "0x0abc");
@@ -370,34 +371,31 @@ fn typed_primitives_normalize_and_fail_closed() {
 }
 
 #[test]
-fn signed_amount_typed_accessors_preserve_bigint_storage() {
-    let big_value = (BigInt::from(1u8) << 255usize) + BigInt::from(7u8);
-    let canonical = big_value.to_str_radix(10);
-    let amount = SignedAmount::from_bigint(big_value.clone());
+fn signed_amount_typed_accessors_preserve_i256_storage() {
+    // Largest representable positive `I256` value: `2^255 - 1`. The cow
+    // newtype storage is `#[repr(transparent)]` over `I256`, so every
+    // bit pattern fits in 32 bytes and the accessor surface returns
+    // borrowed / owned `I256` views without intermediate parsing.
+    let value = I256::MAX;
+    let canonical = value.to_string();
+    let amount = SignedAmount::from_i256(value);
 
-    assert_eq!(amount.as_bigint(), &big_value);
-    assert_eq!(amount.as_str(), canonical);
+    assert_eq!(amount.as_i256(), &value);
     assert_eq!(amount.to_string(), canonical);
-    assert_eq!(amount.into_bigint(), big_value);
+    assert_eq!(amount.into_i256(), value);
 }
 
 #[test]
-fn signed_amount_add_and_sub_delegate_to_bigint() {
+fn signed_amount_add_and_sub_delegate_to_i256() {
     let a = SignedAmount::new("7").unwrap();
     let b = SignedAmount::new("-3").unwrap();
     let c = SignedAmount::new("12").unwrap();
 
-    assert_eq!(a.clone() + b.clone(), SignedAmount::new("4").unwrap());
-    assert_eq!(b.clone() + a.clone(), SignedAmount::new("4").unwrap());
-    assert_eq!(
-        (a.clone() + b.clone()) + c.clone(),
-        a.clone() + (b.clone() + c.clone())
-    );
-    assert_eq!(
-        a.clone() + SignedAmount::zero(),
-        SignedAmount::new("7").unwrap()
-    );
-    assert_eq!(a.clone() - a.clone(), SignedAmount::zero());
+    assert_eq!(a + b, SignedAmount::new("4").unwrap());
+    assert_eq!(b + a, SignedAmount::new("4").unwrap());
+    assert_eq!((a + b) + c, a + (b + c));
+    assert_eq!(a + SignedAmount::zero(), SignedAmount::new("7").unwrap());
+    assert_eq!(a - a, SignedAmount::zero());
 
     let mut total = a;
     total += b;
@@ -408,26 +406,29 @@ fn signed_amount_add_and_sub_delegate_to_bigint() {
 }
 
 #[test]
-fn signed_amount_checked_arithmetic_returns_bigint_results() {
+fn signed_amount_checked_arithmetic_returns_i256_results() {
     let lhs = SignedAmount::new("-12345678901234567890").unwrap();
     let rhs = SignedAmount::new("9876543210").unwrap();
-    let multiplier = SignedAmount::from_bigint((BigInt::from(1u8) << 256usize) + BigInt::from(9u8));
+    // A 10^9 multiplier keeps `rhs * multiplier` well inside the `I256`
+    // representable range while still exercising the full 64-bit-class
+    // arithmetic surface.
+    let multiplier = SignedAmount::from_i256(I256::try_from(1_000_000_000i64).unwrap());
 
     let sum = lhs.checked_add(&rhs).unwrap();
     assert_eq!(
-        sum.into_bigint(),
-        lhs.as_bigint().checked_add(rhs.as_bigint()).unwrap()
+        sum.into_i256(),
+        lhs.as_i256().checked_add(*rhs.as_i256()).unwrap()
     );
 
     let difference = lhs.checked_sub(&rhs).unwrap();
     assert_eq!(
-        difference.into_bigint(),
-        lhs.as_bigint().checked_sub(rhs.as_bigint()).unwrap()
+        difference.into_i256(),
+        lhs.as_i256().checked_sub(*rhs.as_i256()).unwrap()
     );
 
     let product = rhs.checked_mul(&multiplier).unwrap();
     assert_eq!(
-        product.into_bigint(),
-        rhs.as_bigint().checked_mul(multiplier.as_bigint()).unwrap()
+        product.into_i256(),
+        rhs.as_i256().checked_mul(*multiplier.as_i256()).unwrap()
     );
 }

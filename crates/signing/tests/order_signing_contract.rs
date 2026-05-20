@@ -15,12 +15,14 @@ mod common;
 
 use cow_sdk_contracts::{Order as ContractsOrder, OrderUidParams, SigningScheme, hash_order};
 use cow_sdk_core::{Address, Amount, SupportedChainId};
+use std::str::FromStr;
+
+use alloy_primitives::U256;
 use cow_sdk_signing::{
     GeneratedOrderId, ORDER_PRIMARY_TYPE, SigningError, eip1271_signature_payload,
     generate_order_id, get_domain, order_typed_data, order_typed_data_payload, sign_order,
     sign_order_async, sign_order_with_scheme, sign_order_with_scheme_async,
 };
-use num_bigint::BigUint;
 use sha3::{Digest, Keccak256};
 
 use common::{MockSigner, fixture_case, sample_order};
@@ -232,7 +234,7 @@ fn eip1271_signature_payload_matches_the_manual_contract_encoding() {
     expected.extend_from_slice(&encode_u256_word(&order.sell_amount.to_string()));
     expected.extend_from_slice(&encode_u256_word(&order.buy_amount.to_string()));
     expected.extend_from_slice(&encode_u32_word(order.valid_to));
-    expected.extend_from_slice(&encode_bytes32_word(order.app_data.as_str()));
+    expected.extend_from_slice(&encode_bytes32_word(&order.app_data.to_hex_string()));
     expected.extend_from_slice(&encode_u256_word(&order.fee_amount.to_string()));
     expected.extend_from_slice(&keccak_word("sell"));
     expected.extend_from_slice(&encode_bool_word(order.partially_fillable));
@@ -262,7 +264,7 @@ fn eip1271_signature_payload_keeps_full_bytes32_app_data_and_exact_word_padding(
     let app_data_word_offset = 32 * 6;
     assert_eq!(
         &encoded[app_data_word_offset..app_data_word_offset + 32],
-        &parse_hex_word(order.app_data.as_str(), 32)
+        &parse_hex_word(&order.app_data.to_hex_string(), 32)
     );
 
     let dynamic_length_offset = 32 * 13;
@@ -286,11 +288,11 @@ fn contracts_order(order: &cow_sdk_core::UnsignedOrder) -> ContractsOrder {
         order.sell_token,
         order.buy_token,
         Some(order.receiver),
-        order.sell_amount.clone(),
-        order.buy_amount.clone(),
+        order.sell_amount,
+        order.buy_amount,
         order.valid_to,
-        order.app_data.clone(),
-        order.fee_amount.clone(),
+        order.app_data,
+        order.fee_amount,
         order.kind,
         order.partially_fillable,
         Some(order.sell_token_balance),
@@ -323,18 +325,13 @@ fn encode_u32_word(value: u32) -> [u8; 32] {
 }
 
 fn encode_u256_word(value: &str) -> [u8; 32] {
-    let parsed = if let Some(stripped) = value.strip_prefix("0x") {
-        BigUint::parse_bytes(stripped.as_bytes(), 16)
-    } else {
-        BigUint::parse_bytes(value.as_bytes(), 10)
-    }
-    .unwrap();
-    let bytes = parsed.to_bytes_be();
-    assert!(bytes.len() <= 32);
-
-    let mut out = [0u8; 32];
-    out[32 - bytes.len()..].copy_from_slice(&bytes);
-    out
+    // Test oracle helper: `U256::from_str` recognises both the decimal
+    // and `0x`-prefixed hex forms used by the parity fixtures. The cow
+    // newtype migration drops the historical BigUint dependency in
+    // favour of the alloy primitive surface per ADR 0052.
+    U256::from_str(value)
+        .expect("test fixture value must parse to U256")
+        .to_be_bytes::<32>()
 }
 
 fn encode_usize_word(value: usize) -> [u8; 32] {

@@ -582,14 +582,14 @@ async fn app_data_transport_helpers_use_get_and_put_hash_routes() {
     let hash = sample_app_data_hash();
 
     Mock::given(method("GET"))
-        .and(path(format!("/api/v1/app_data/{}", hash.as_str())))
+        .and(path(format!("/api/v1/app_data/{}", hash.to_hex_string())))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "fullAppData": "{\"metadata\":true}"
         })))
         .mount(&server)
         .await;
     Mock::given(method("PUT"))
-        .and(path(format!("/api/v1/app_data/{}", hash.as_str())))
+        .and(path(format!("/api/v1/app_data/{}", hash.to_hex_string())))
         .and(body_partial_json(
             json!({ "fullAppData": "{\"metadata\":true}" }),
         ))

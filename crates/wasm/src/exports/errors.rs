@@ -432,8 +432,8 @@ impl From<cow_sdk_contracts::ContractsError> for WasmError {
             cow_sdk_contracts::ContractsError::ForbiddenInteractionTarget { target } => {
                 Self::ForbiddenInteraction {
                     schema_version: SchemaVersion::V1,
-                    message: forbidden_interaction_message(target.as_str()),
-                    target: target.as_str().to_owned(),
+                    message: forbidden_interaction_message(&target.to_hex_string()),
+                    target: target.to_hex_string(),
                     reason: "forbidden settlement interaction target".to_owned(),
                 }
             }

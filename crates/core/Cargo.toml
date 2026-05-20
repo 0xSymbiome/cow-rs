@@ -29,7 +29,6 @@ alloy-primitives.workspace = true
 async-trait.workspace = true
 hex.workspace = true
 http.workspace = true
-num-bigint.workspace = true
 pin-project-lite.workspace = true
 serde.workspace = true
 thiserror.workspace = true
@@ -45,6 +44,7 @@ tsify.workspace = true
 wasm-bindgen.workspace = true
 
 [dev-dependencies]
+num-bigint.workspace = true
 proptest.workspace = true
 serde_json.workspace = true
 syn.workspace = true

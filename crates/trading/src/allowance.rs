@@ -1,4 +1,4 @@
-use cow_sdk_contracts::{ContractId, Registry};
+use cow_sdk_contracts::{ContractId, Registry, encode_address_word};
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, ContractCall, Provider, Signer, SupportedChainId,
     TransactionHash, TransactionRequest,
@@ -188,7 +188,7 @@ fn encode_approve_call(spender: &Address, amount: &Amount) -> Result<String, Tra
     let mut encoded = Vec::new();
     encoded.extend_from_slice(&decode_hex_field(&selector)?);
     encoded.extend_from_slice(&encode_address_word(spender));
-    encoded.extend_from_slice(&encode_uint_word(amount)?);
+    encoded.extend_from_slice(&encode_uint_word(amount));
     Ok(format!("0x{}", hex::encode(encoded)))
 }
 
@@ -205,24 +205,14 @@ fn decode_hex_field(value: &str) -> Result<Vec<u8>, TradingError> {
     })
 }
 
-fn encode_address_word(address: &Address) -> [u8; 32] {
-    let bytes = address.into_alloy().0.0;
-    let mut out = [0u8; 32];
-    out[12..].copy_from_slice(&bytes);
-    out
-}
-
-fn encode_uint_word(value: &Amount) -> Result<[u8; 32], TradingError> {
-    let bytes = value.as_biguint().to_bytes_be();
-    if bytes.len() > 32 {
-        return Err(TradingError::NumericOverflow {
-            field: "uint256",
-            value: value.to_string().into(),
-        });
-    }
-    let mut out = [0u8; 32];
-    out[32 - bytes.len()..].copy_from_slice(&bytes);
-    Ok(out)
+const fn encode_uint_word(value: &Amount) -> [u8; 32] {
+    // The cow `Amount` newtype is `#[repr(transparent)]` over
+    // `alloy_primitives::U256` per ADR 0052, so the uint256 ceiling is
+    // enforced at construction and the conversion to a 32-byte
+    // big-endian word is the bit-for-bit `U256::to_be_bytes::<32>()`
+    // form; the historical overflow guard collapses to a constant-true
+    // invariant.
+    value.as_u256().to_be_bytes::<32>()
 }
 
 fn decode_allowance_result(raw: &str) -> Result<Amount, TradingError> {
@@ -235,6 +225,6 @@ fn decode_allowance_result(raw: &str) -> Result<Amount, TradingError> {
                 details: "response must be a string or number",
             },
         }),
-        Err(_) => Ok(Amount::new(raw.to_owned())?),
+        Err(_) => Ok(Amount::new(raw)?),
     }
 }

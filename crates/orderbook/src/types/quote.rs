@@ -182,7 +182,7 @@ impl OrderQuoteRequest {
 
     /// Returns a copy of this request with an explicit app-data hash.
     #[must_use]
-    pub fn with_app_data_hash(mut self, app_data_hash: AppDataHash) -> Self {
+    pub const fn with_app_data_hash(mut self, app_data_hash: AppDataHash) -> Self {
         self.app_data_hash = Some(app_data_hash);
         self
     }
@@ -409,7 +409,7 @@ impl QuoteData {
     /// orderbook wire on deserialization.
     #[must_use]
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    pub const fn new(
         sell_token: Address,
         buy_token: Address,
         sell_amount: Amount,
@@ -443,14 +443,14 @@ impl QuoteData {
 
     /// Returns a copy of this payload with an explicit network-cost amount.
     #[must_use]
-    pub fn with_network_cost_amount(mut self, value: Amount) -> Self {
+    pub const fn with_network_cost_amount(mut self, value: Amount) -> Self {
         self.fee_amount = value;
         self
     }
 
     /// Sets the network-cost amount echoed by the orderbook `/quote`
     /// response, mutating the payload in place.
-    pub fn set_network_cost_amount(&mut self, value: Amount) {
+    pub const fn set_network_cost_amount(&mut self, value: Amount) {
         self.fee_amount = value;
     }
 

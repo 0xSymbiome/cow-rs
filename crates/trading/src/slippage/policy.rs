@@ -1,4 +1,4 @@
-use num_bigint::BigInt;
+use alloy_primitives::aliases::I512;
 
 use cow_sdk_core::{Amount, SupportedChainId};
 use cow_sdk_orderbook::{OrderQuoteResponse, PriceQuality};
@@ -49,7 +49,7 @@ pub fn suggest_slippage_from_fee(
 ) -> Result<Amount, TradingError> {
     let fee_amount = parse_integer("feeAmount", fee_amount)?;
 
-    if fee_amount < BigInt::from(0) {
+    if fee_amount < I512::ZERO {
         return Err(TradingError::InvalidInput {
             field: "feeAmount",
             reason: cow_sdk_core::ValidationReason::OutOfRange {
@@ -88,7 +88,7 @@ pub fn suggest_slippage_from_volume(
     )?;
     let sell_amount = if is_sell { sell_after } else { sell_before };
 
-    if sell_amount <= BigInt::from(0) {
+    if sell_amount <= I512::ZERO {
         return Err(TradingError::InvalidInput {
             field: "sellAmount",
             reason: cow_sdk_core::ValidationReason::OutOfRange {

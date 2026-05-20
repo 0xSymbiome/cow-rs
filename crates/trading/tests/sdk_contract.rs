@@ -3,6 +3,7 @@ mod common;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use alloy_primitives::U256;
 use cow_sdk_core::{AddressPerChain, Amount, CowEnv, SupportedChainId};
 #[cfg(target_arch = "wasm32")]
 use cow_sdk_orderbook::OrderBookApi;
@@ -14,7 +15,6 @@ use cow_sdk_trading::{
 };
 #[cfg(target_arch = "wasm32")]
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
-use num_bigint::BigUint;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
@@ -34,8 +34,11 @@ fn calldata_word(data: &str, index: usize) -> String {
     stripped[start..start + 64].to_owned()
 }
 
-fn uint256_word(value: &BigUint) -> String {
-    format!("{value:064x}")
+fn uint256_word(value: &U256) -> String {
+    // Test oracle helper: emit the canonical 32-byte big-endian ABI
+    // word for the cow uint256 value as a 64-character zero-padded
+    // lowercase hex string.
+    hex::encode(value.to_be_bytes::<32>())
 }
 
 #[tokio::test]
@@ -419,12 +422,11 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
         SupportedChainId::Sepolia,
         sell_quote_response(),
     ));
-    let high_sell: BigUint = BigUint::from(1u8) << 255u32;
-    let high_buy = &high_sell + BigUint::from(1u8);
+    let high_sell: U256 = U256::from(1u8) << 255usize;
+    let high_buy = high_sell + U256::from(1u8);
     let mut order = ethflow_order();
-    order.sell_amount =
-        Amount::new(high_sell.to_str_radix(10)).expect("high sell amount must parse");
-    order.buy_amount = Amount::new(high_buy.to_str_radix(10)).expect("high buy amount must parse");
+    order.sell_amount = Amount::from_u256(high_sell);
+    order.buy_amount = Amount::from_u256(high_buy);
     orderbook.push_order(order);
 
     let signer = MockSigner::default();

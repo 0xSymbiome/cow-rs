@@ -656,7 +656,7 @@ impl OrderBookApi {
         app_data_hash: &AppDataHash,
     ) -> Result<AppDataObject, OrderbookError> {
         let params = FetchParams::new(
-            format!("/api/v1/app_data/{}", app_data_hash.as_str()),
+            format!("/api/v1/app_data/{}", app_data_hash.to_hex_string()),
             HttpMethod::Get,
         );
 
@@ -691,7 +691,7 @@ impl OrderBookApi {
         full_app_data: &str,
     ) -> Result<AppDataObject, OrderbookError> {
         let params = FetchParams::new(
-            format!("/api/v1/app_data/{}", app_data_hash.as_str()),
+            format!("/api/v1/app_data/{}", app_data_hash.to_hex_string()),
             HttpMethod::Put,
         )
         .with_body(json!({ "fullAppData": full_app_data }));

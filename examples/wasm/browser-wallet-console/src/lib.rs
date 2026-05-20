@@ -731,7 +731,7 @@ impl OrderbookClient for MockBrowserOrderbook {
             .lock()
             .unwrap()
             .uploads
-            .push((app_data_hash.as_str().to_owned(), full_app_data.to_owned()));
+            .push((app_data_hash.to_hex_string(), full_app_data.to_owned()));
         Ok(AppDataObject::new(full_app_data))
     }
 }

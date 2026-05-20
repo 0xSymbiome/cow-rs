@@ -60,7 +60,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "mode": "simulated-transport",
         "quote": {
             "suggestedSlippageBps": quote.suggested_slippage_bps,
-            "appDataHex": quote.app_data_info.app_data_keccak256.as_str()
+            "appDataHex": quote.app_data_info.app_data_keccak256.to_hex_string()
         },
         "post": {
             "orderId": post_result.order_id.to_hex_string(),

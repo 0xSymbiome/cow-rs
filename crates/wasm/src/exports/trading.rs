@@ -543,7 +543,7 @@ async fn trading_build_sell_native_currency_tx(
     let order = parse_order(input)?;
     if !order
         .sell_token
-        .as_str()
+        .to_hex_string()
         .eq_ignore_ascii_case(EVM_NATIVE_CURRENCY_ADDRESS)
     {
         return Err(WasmError::invalid(
@@ -568,10 +568,7 @@ async fn trading_build_sell_native_currency_tx(
     let payload = EthFlowOrderData::from_unsigned_order(&order, quote_id);
     let data = HexData::new(format!(
         "0x{}",
-        hex::encode(
-            encode_create_order_calldata(&payload)
-                .map_err(|error| WasmError::from(error).into_js())?
-        )
+        hex::encode(encode_create_order_calldata(&payload))
     ))
     .map_err(|error| WasmError::from(error).into_js())?;
     let generated = cow_sdk_trading::calculate_unique_order_id(chain, &order, None, Some(&options))
@@ -580,14 +577,14 @@ async fn trading_build_sell_native_currency_tx(
     let tx = TransactionRequest::new(
         Some(eth_flow),
         Some(data),
-        Some(order.sell_amount.clone()),
+        Some(order.sell_amount),
         Some(default_gas_limit()?),
     );
     let result = BuiltSellNativeCurrencyTxDto {
-        order_uid: generated.order_id.as_str().to_owned(),
+        order_uid: generated.order_id.to_hex_string(),
         transaction: TransactionRequestDto::from(&tx),
         order_to_sign: OrderInput::from(&order),
-        from: from.as_str().to_owned(),
+        from: from.to_hex_string(),
     };
     to_js_value(&WasmEnvelope::v1(result))
 }
@@ -634,7 +631,7 @@ async fn trading_post_swap_order_with_eip1271(
     let request = CowEip1271SignRequest {
         order: OrderInput::from(&quote.order_to_sign),
         typed_data: typed_data.clone(),
-        owner: owner_address.as_str().to_owned(),
+        owner: owner_address.to_hex_string(),
         chain_id,
     };
     let signature = await_callback_string(

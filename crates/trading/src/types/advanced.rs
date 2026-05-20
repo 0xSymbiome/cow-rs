@@ -42,7 +42,7 @@ impl PostTradeAdditionalParams {
 
     /// Returns a copy with an explicit network-costs amount.
     #[must_use]
-    pub fn with_network_costs_amount(mut self, amount: Amount) -> Self {
+    pub const fn with_network_costs_amount(mut self, amount: Amount) -> Self {
         self.network_costs_amount = Some(amount);
         self
     }

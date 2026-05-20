@@ -314,7 +314,10 @@ fn path_total_surplus() -> String {
 }
 
 fn path_app_data() -> String {
-    format!("/api/v1/app_data/{}", sample_app_data_hash().as_str())
+    format!(
+        "/api/v1/app_data/{}",
+        sample_app_data_hash().to_hex_string()
+    )
 }
 
 fn path_solver_competition_by_auction_id() -> String {

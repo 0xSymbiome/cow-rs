@@ -301,7 +301,7 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
         .with_check_eth_flow_order_exists(Arc::new(MockEthFlowChecker {
             results: collision_results.clone(),
         }))
-        .with_network_costs_amount(sell_quote_response().quote.network_cost_amount().clone())
+        .with_network_costs_amount(*sell_quote_response().quote.network_cost_amount())
         .with_custom_eip1271_signature(Arc::new(MockEip1271Provider));
 
     let result = post_sell_native_currency_order(
@@ -669,7 +669,7 @@ fn ethflow_additional_params(
         .with_check_eth_flow_order_exists(Arc::new(MockEthFlowChecker {
             results: Arc::new(Mutex::new(Vec::new())),
         }))
-        .with_network_costs_amount(quote.quote.network_cost_amount().clone())
+        .with_network_costs_amount(*quote.quote.network_cost_amount())
         .with_custom_eip1271_signature(Arc::new(MockEip1271Provider))
 }
 

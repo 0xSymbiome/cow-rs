@@ -43,6 +43,8 @@ pub mod verify;
 mod chain_ids;
 mod primitives;
 
+pub use primitives::encode_address_word;
+
 pub use deploy::{
     ContractAddresses, ContractName, DEPLOYER_CONTRACT, SALT, deployment_address_hash_input,
     deployment_for_chain, deterministic_deployment_address,

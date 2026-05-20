@@ -349,7 +349,7 @@ fn eth_flow_order_data_new_preserves_abi_shape() {
         7,
     );
 
-    let actual = encode_create_order_calldata(&order).expect("EthFlow calldata must encode");
+    let actual = encode_create_order_calldata(&order);
     let expected = LocalEthFlow::createOrderCall {
         order: LocalEthFlow::EthFlowOrderData {
             buyToken: SolAddress::from([0x11; 20]),

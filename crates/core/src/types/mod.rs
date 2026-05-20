@@ -31,10 +31,10 @@ mod tests {
             sell_token,
             buy_token,
             receiver,
-            sell_amount.clone(),
-            buy_amount.clone(),
+            sell_amount,
+            buy_amount,
             valid_to,
-            app_data.clone(),
+            app_data,
             Amount::zero(),
             OrderKind::Sell,
             false,
@@ -42,8 +42,8 @@ mod tests {
             BuyTokenDestination::Erc20,
         )
         .with_receiver(receiver)
-        .with_app_data(app_data.clone())
-        .with_fee_amount(fee_amount.clone())
+        .with_app_data(app_data)
+        .with_fee_amount(fee_amount)
         .with_partially_fillable(true)
         .with_sell_token_balance(SellTokenSource::External)
         .with_buy_token_balance(BuyTokenDestination::Internal);

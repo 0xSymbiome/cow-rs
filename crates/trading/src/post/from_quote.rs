@@ -142,13 +142,7 @@ where
         signing_scheme: advanced_settings
             .and_then(|settings| settings.quote_request.as_ref())
             .and_then(|request| request.signing_scheme),
-        network_costs_amount: Some(
-            quote_results
-                .quote_response
-                .quote
-                .network_cost_amount()
-                .clone(),
-        ),
+        network_costs_amount: Some(*quote_results.quote_response.quote.network_cost_amount()),
         ..additional
     };
 

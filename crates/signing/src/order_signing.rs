@@ -1,7 +1,6 @@
 use std::fmt;
-use std::str::FromStr;
 
-use alloy_primitives::{B256, Bytes as AlloyBytes, U256, keccak256};
+use alloy_primitives::{Bytes as AlloyBytes, keccak256};
 use alloy_sol_types::SolValue;
 use cow_sdk_contracts::{
     ContractsError, Order as ContractsOrder, OrderUidParams, SigningScheme, hash_order,
@@ -221,15 +220,21 @@ pub fn eip1271_signature_payload(
     let signature = normalized_ecdsa_signature(ecdsa_signature)?;
     let signature_bytes = decode_hex(&signature, "ecdsaSignature")?;
 
+    // The cow `Amount` newtype is `#[repr(transparent)]` over
+    // `alloy_primitives::U256` and `AppDataHash` over
+    // `alloy_primitives::B256` per ADR 0052, so the conversions to the
+    // sol-typed surface are a single deref of the inner alloy primitive
+    // with no intermediate bigint allocation and no overflow guard
+    // required.
     let onchain_order = OnchainOrder {
         sellToken: *normalized.sell_token.as_alloy(),
         buyToken: *normalized.buy_token.as_alloy(),
         receiver: *normalized.receiver.as_alloy(),
-        sellAmount: biguint_to_u256("sellAmount", normalized.sell_amount.as_biguint())?,
-        buyAmount: biguint_to_u256("buyAmount", normalized.buy_amount.as_biguint())?,
+        sellAmount: *normalized.sell_amount.as_u256(),
+        buyAmount: *normalized.buy_amount.as_u256(),
         validTo: normalized.valid_to,
-        appData: parse_b256(normalized.app_data.as_str(), "appData")?,
-        feeAmount: biguint_to_u256("feeAmount", normalized.fee_amount.as_biguint())?,
+        appData: *normalized.app_data.as_alloy(),
+        feeAmount: *normalized.fee_amount.as_u256(),
         kind: keccak256(order_kind_name(normalized.kind).as_bytes()),
         partiallyFillable: normalized.partially_fillable,
         sellTokenBalance: keccak256(sell_balance_name(normalized.sell_token_balance).as_bytes()),
@@ -370,30 +375,6 @@ fn decode_hex(value: &str, field: &'static str) -> Result<Vec<u8>, SigningError>
         return Err(ContractsError::InvalidHexPrefix { field }.into());
     };
     hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source }.into())
-}
-
-fn parse_b256(value: &str, field: &'static str) -> Result<B256, SigningError> {
-    B256::from_str(value).map_err(|_| {
-        SigningError::from(ContractsError::InvalidDecodedLength {
-            field,
-            expected: 32,
-            actual: 0,
-        })
-    })
-}
-
-fn biguint_to_u256(field: &'static str, value: &num_bigint::BigUint) -> Result<U256, SigningError> {
-    let bytes = value.to_bytes_be();
-    if bytes.len() > 32 {
-        return Err(ContractsError::NumericOverflow {
-            field,
-            value: value.to_str_radix(10).into(),
-        }
-        .into());
-    }
-    let mut buf = [0_u8; 32];
-    buf[32 - bytes.len()..].copy_from_slice(&bytes);
-    Ok(U256::from_be_bytes(buf))
 }
 
 const fn order_kind_name(kind: OrderKind) -> &'static str {

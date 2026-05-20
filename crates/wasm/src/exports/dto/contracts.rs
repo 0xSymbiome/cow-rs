@@ -49,7 +49,7 @@ pub struct ContractCallDto {
 impl From<&cow_sdk_core::ContractCall> for ContractCallDto {
     fn from(value: &cow_sdk_core::ContractCall) -> Self {
         Self {
-            address: value.address.as_str().to_owned(),
+            address: value.address.to_hex_string(),
             method: value.method.clone(),
             abi_json: value.abi_json.clone(),
             args_json: value.args_json.clone(),

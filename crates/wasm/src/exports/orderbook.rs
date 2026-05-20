@@ -384,7 +384,7 @@ async fn orderbook_send_order(
     let uid = inner
         .send_order(&request)
         .await
-        .map(|uid| uid.as_str().to_owned())
+        .map(|uid| uid.to_hex_string())
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(uid))
 }
@@ -397,7 +397,7 @@ async fn orderbook_send_order_creation(
     let uid = inner
         .send_order(&request)
         .await
-        .map(|uid| uid.as_str().to_owned())
+        .map(|uid| uid.to_hex_string())
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(uid))
 }
@@ -534,6 +534,6 @@ fn parse_address(field: &'static str, value: String) -> Result<Address, JsValue>
 
 fn is_zero_address(address: &Address) -> bool {
     address
-        .as_str()
+        .to_hex_string()
         .eq_ignore_ascii_case("0x0000000000000000000000000000000000000000")
 }

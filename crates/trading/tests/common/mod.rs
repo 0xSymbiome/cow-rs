@@ -131,8 +131,8 @@ pub fn sample_limit_parameters(kind: OrderKind) -> cow_sdk_trading::LimitTradePa
         buy_quote_response()
     };
 
-    let sell_amount = quote.quote.sell_amount.clone();
-    let buy_amount = quote.quote.buy_amount.clone();
+    let sell_amount = quote.quote.sell_amount;
+    let buy_amount = quote.quote.buy_amount;
     let mut params = cow_sdk_trading::LimitTradeParameters::new(
         kind,
         address(WETH),
@@ -292,7 +292,7 @@ impl OrderbookClient for MockOrderbook {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .uploads
-            .push((app_data_hash.clone(), full_app_data.to_owned()));
+            .push((*app_data_hash, full_app_data.to_owned()));
         Ok(AppDataObject::new(full_app_data.to_owned()))
     }
 }

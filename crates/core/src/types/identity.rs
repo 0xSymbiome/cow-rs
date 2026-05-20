@@ -418,41 +418,66 @@ impl TryFrom<&str> for HexData {
     }
 }
 
-// --- AppDataHash (cached two-field layout; pending strict-newtype migration alongside Amount/SignedAmount) -------------
+// --- AppDataHash ----------------------------------------------------------
 
 /// Validated 32-byte app-data hash.
 ///
 /// The wire form is the protocol-canonical `0x`-prefixed 66-character
-/// lowercase hexadecimal string. The struct caches the input string and
-/// exposes the canonical [`alloy_primitives::B256`] primitive through
-/// [`AppDataHash::as_alloy`] for cross-crate interop.
+/// lowercase hexadecimal string. The newtype is `#[repr(transparent)]`
+/// over [`alloy_primitives::B256`], so the in-memory layout is
+/// bit-for-bit identical to the alloy primitive and conversion at the
+/// alloy seam is free at runtime through [`AppDataHash::as_alloy`]
+/// (borrowed), [`AppDataHash::into_alloy`] (owned), or [`From`] /
+/// [`Into`].
 ///
-/// Note: this type intentionally retains the cached two-field layout so
-/// the [`AppDataHash`] migration can land coherently alongside the
-/// [`Amount`](super::Amount) and [`SignedAmount`](super::SignedAmount) cow
-/// newtypes in a later cascade boundary. The four sibling byte-typed
-/// identity types ([`Address`], [`Hash32`], [`HexData`], [`OrderUid`])
-/// ship as strict `#[repr(transparent)]` newtypes per ADR 0052;
-/// [`AppDataHash`] will join them at the next cascade boundary.
+/// `AppDataHash` forwards [`Serialize`] / [`Deserialize`] to the inner
+/// [`alloy_primitives::B256`] via `#[serde(transparent)]` because the
+/// alloy lowercase 0x-prefixed default already matches the cow wire
+/// form. [`fmt::Display`] is a one-line delegate to the inner primitive
+/// for the same reason.
+///
+/// Equality, hash, and ordering derive from the packed 32-byte
+/// representation, which is equivalent to the documented
+/// case-insensitive comparison contract because every valid value parses
+/// to the same bytes regardless of input casing.
 #[doc(alias = "app-data")]
 #[doc(alias = "AppData")]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(try_from = "String", into = "String")]
-pub struct AppDataHash {
-    inner: B256,
-    hex: String,
-}
+#[repr(transparent)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize,
+)]
+#[serde(transparent)]
+#[cfg_attr(target_family = "wasm", derive(tsify::Tsify))]
+#[cfg_attr(
+    target_family = "wasm",
+    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+)]
+pub struct AppDataHash(
+    /// Escape hatch only: prefer [`AppDataHash::as_alloy`] (borrowed) or
+    /// [`AppDataHash::into_alloy`] (owned) for forward compatibility per
+    /// ADR 0052. The `.0` field is `pub` to match the canonical
+    /// [`alloy_primitives::wrap_fixed_bytes!`] pattern and to keep the
+    /// `#[repr(transparent)]` bit-for-bit layout contract visible at the
+    /// type system, but it is not part of the long-term API contract. A
+    /// future cascade may seal this field through a documented
+    /// deprecation cycle if a runtime validation invariant requires it;
+    /// consumers who rely on `.0` accept the forward-compatibility risk.
+    pub B256,
+);
 
 impl AppDataHash {
+    /// Raw decoded byte length of an app-data hash.
+    pub const BYTE_LENGTH: usize = 32;
+
     /// Creates a validated app-data hash from a `0x`-prefixed 32-byte hex string.
     ///
     /// # Errors
     ///
     /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed, has
     /// the wrong length, or contains non-hex characters.
-    pub fn new(value: impl Into<String>) -> Result<Self, CoreError> {
-        let value = value.into();
-        validate_hex_field("app_data_hash", &value, APP_DATA_HASH_HEX_CHARS)?;
+    pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
+        let value = value.as_ref();
+        validate_hex_field("app_data_hash", value, APP_DATA_HASH_HEX_CHARS)?;
         let stripped = value
             .strip_prefix("0x")
             .ok_or(ValidationError::InvalidHexPrefix {
@@ -467,91 +492,129 @@ impl AppDataHash {
                 field: "app_data_hash",
                 expected: APP_DATA_HASH_HEX_CHARS,
             })?;
-        Ok(Self {
-            inner: B256::from(array),
-            hex: value,
-        })
+        Ok(Self(B256::from(array)))
     }
 
     /// Creates an app-data hash from its raw 32-byte representation.
+    #[inline]
+    #[must_use]
+    pub const fn from_bytes(bytes: [u8; 32]) -> Self {
+        Self(B256::new(bytes))
+    }
+
+    /// Returns the canonical lowercase 0x-prefixed hex form as an owned
+    /// [`String`].
     ///
-    /// The input bytes are encoded into the canonical lowercase hex form
-    /// via `alloy_primitives::B256`'s `LowerHex` impl, so this path is
-    /// total over every possible `[u8; 32]` input and never panics.
+    /// Follows the Rust stdlib naming convention: `to_*` returns an owned
+    /// value; `as_*` returns a borrow. For the allocation-free path that
+    /// writes the canonical form into a caller-provided formatter without
+    /// intermediate allocation, see [`AppDataHash::write_into`].
     #[inline]
     #[must_use]
-    pub fn from_bytes(bytes: [u8; 32]) -> Self {
-        let inner = B256::from(bytes);
-        Self {
-            hex: format!("{inner:#x}"),
-            inner,
-        }
+    pub fn to_hex_string(&self) -> String {
+        format!("{:#x}", self.0)
     }
 
-    /// Returns the canonical 0x-prefixed lowercase hex form as a borrowed
-    /// `&str`.
+    /// Writes the canonical lowercase 0x-prefixed hex form into the given
+    /// formatter without allocating.
     ///
-    /// Note: [`AppDataHash`] retains the cached-layout `as_str` accessor
-    /// while it awaits its strict-newtype migration alongside
-    /// [`Amount`](super::Amount) and [`SignedAmount`](super::SignedAmount).
-    /// The sibling byte-typed types ([`Address`], [`Hash32`], [`HexData`],
-    /// [`OrderUid`]) expose [`Address::to_hex_string`] (owned) and
-    /// [`Address::write_into`] (zero-alloc) per the stdlib naming convention.
+    /// # Errors
+    ///
+    /// Returns the same [`fmt::Error`] the caller's formatter raises; the
+    /// cow body itself is infallible.
     #[inline]
-    #[must_use]
-    pub fn as_str(&self) -> &str {
-        &self.hex
+    pub fn write_into(&self, f: &mut impl FmtWrite) -> fmt::Result {
+        write!(f, "{:#x}", self.0)
     }
 
-    /// Returns the stored hex string as a byte slice.
+    /// Returns the raw 32 bytes of the hash as a borrowed slice.
     #[inline]
     #[must_use]
-    pub const fn as_bytes(&self) -> &[u8] {
-        self.hex.as_bytes()
+    pub const fn as_slice(&self) -> &[u8] {
+        self.0.as_slice()
     }
 
-    /// Returns the underlying [`alloy_primitives::B256`] hash.
+    /// Returns the underlying packed [`alloy_primitives::B256`].
+    ///
+    /// Use this accessor when handing the hash to an
+    /// `alloy_primitives`-typed surface (contract bindings, EIP-712 hash
+    /// composition) without re-parsing the lowercase hex string.
     #[inline]
     #[must_use]
     pub const fn as_alloy(&self) -> &B256 {
-        &self.inner
+        &self.0
+    }
+
+    /// Returns the underlying packed [`alloy_primitives::B256`] by value.
+    #[inline]
+    #[must_use]
+    pub const fn into_alloy(self) -> B256 {
+        self.0
+    }
+
+    /// Returns the zero app-data hash.
+    #[inline]
+    #[must_use]
+    pub const fn zero() -> Self {
+        Self(B256::ZERO)
+    }
+
+    /// Returns `true` when this is the zero app-data hash.
+    #[inline]
+    #[must_use]
+    pub fn is_zero(&self) -> bool {
+        self.0 == B256::ZERO
     }
 
     /// Returns the fixed decoded byte length of an app-data hash.
     #[inline]
     #[must_use]
     pub const fn byte_length(&self) -> usize {
-        APP_DATA_HASH_HEX_CHARS / 2
+        Self::BYTE_LENGTH
+    }
+
+    /// Returns the canonical `CIDv1` multibase representation of this
+    /// app-data hash.
+    ///
+    /// The cow protocol emits app-data CIDs as the `cidv1 + raw + keccak-256`
+    /// triple, multibase-encoded in `base16` lowercase per ADR 0044.
+    /// The serialised form is `f` (the base16-lowercase multibase prefix)
+    /// followed by `01 55 1b 20` (CID version 1, raw codec, keccak-256
+    /// multihash code, 32-byte digest length) and the 32 bytes of the
+    /// inner [`alloy_primitives::B256`] hash. The cow protocol layer
+    /// integration at `crates/app-data/src/cid.rs` produces the same
+    /// string for the same input digest.
+    #[must_use]
+    pub fn to_cid(&self) -> String {
+        let mut cid_bytes = [0u8; 4 + Self::BYTE_LENGTH];
+        cid_bytes[0] = 0x01; // CID version 1
+        cid_bytes[1] = 0x55; // raw multicodec
+        cid_bytes[2] = 0x1b; // keccak-256 multihash code
+        cid_bytes[3] = 0x20; // 32-byte multihash digest length
+        cid_bytes[4..].copy_from_slice(self.as_slice());
+        format!("f{}", hex::encode(cid_bytes))
     }
 }
 
-impl PartialEq for AppDataHash {
+impl From<B256> for AppDataHash {
     #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        self.inner == other.inner
+    fn from(value: B256) -> Self {
+        Self(value)
     }
 }
 
-impl Eq for AppDataHash {}
-
-impl PartialOrd for AppDataHash {
+impl From<AppDataHash> for B256 {
     #[inline]
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
+    fn from(value: AppDataHash) -> Self {
+        value.0
     }
 }
 
-impl Ord for AppDataHash {
-    #[inline]
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.inner.cmp(&other.inner)
-    }
-}
+impl FromStr for AppDataHash {
+    type Err = CoreError;
 
-impl std::hash::Hash for AppDataHash {
-    #[inline]
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.inner.hash(state);
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::new(s)
     }
 }
 
@@ -559,7 +622,7 @@ impl TryFrom<String> for AppDataHash {
     type Error = CoreError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::new(value)
+        Self::new(value.as_str())
     }
 }
 
@@ -567,25 +630,13 @@ impl TryFrom<&str> for AppDataHash {
     type Error = CoreError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Self::new(value.to_owned())
-    }
-}
-
-impl From<AppDataHash> for String {
-    fn from(value: AppDataHash) -> Self {
-        value.hex
-    }
-}
-
-impl AsRef<str> for AppDataHash {
-    fn as_ref(&self) -> &str {
-        self.as_str()
+        Self::new(value)
     }
 }
 
 impl fmt::Display for AppDataHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
+        fmt::Display::fmt(&self.0, f)
     }
 }
 

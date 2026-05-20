@@ -246,7 +246,7 @@ where
             chain_id,
             from,
             is_ethflow: true,
-            network_costs_amount: additional_params.network_costs_amount.clone(),
+            network_costs_amount: additional_params.network_costs_amount,
             apply_costs_slippage_and_fees: additional_params
                 .apply_costs_slippage_and_fees
                 .unwrap_or(true),
@@ -269,8 +269,8 @@ where
             adjusted
                 .quote_id
                 .ok_or(TradingError::MissingQuoteId("EthFlow transaction"))?,
-        )?)?),
-        Some(order_to_sign.sell_amount.clone()),
+        ))?),
+        Some(order_to_sign.sell_amount),
         None,
     );
     let gas = signer
@@ -316,7 +316,7 @@ where
     let mut tx = if order.ethflow_data.is_some() {
         TransactionRequest::new(
             Some(resolve_eth_flow_address(chain_id, options)),
-            Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
+            Some(HexData::new(encode_ethflow_invalidate_order(order))?),
             Some(Amount::zero()),
             None,
         )
@@ -363,7 +363,7 @@ where
     let mut tx = if order.ethflow_data.is_some() {
         TransactionRequest::new(
             Some(resolve_eth_flow_address(chain_id, options)),
-            Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
+            Some(HexData::new(encode_ethflow_invalidate_order(order))?),
             Some(Amount::zero()),
             None,
         )
@@ -573,28 +573,26 @@ fn order_uid_bytes(order_uid: &cow_sdk_core::OrderUid) -> AlloyBytes {
     AlloyBytes::from(order_uid.as_slice().to_vec())
 }
 
-fn encode_ethflow_create_order(
-    order: &cow_sdk_core::UnsignedOrder,
-    quote_id: i64,
-) -> Result<String, TradingError> {
+fn encode_ethflow_create_order(order: &cow_sdk_core::UnsignedOrder, quote_id: i64) -> String {
     let payload = EthFlowOrderData::from_unsigned_order(order, quote_id);
-    let encoded = encode_create_order_calldata(&payload)?;
-    Ok(format!("0x{}", hex::encode(encoded)))
+    format!("0x{}", hex::encode(encode_create_order_calldata(&payload)))
 }
 
-fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError> {
+fn encode_ethflow_invalidate_order(order: &Order) -> String {
     let receiver = order.receiver.unwrap_or(order.owner);
     let payload = EthFlowOrderData::new(
         order.buy_token,
         receiver,
-        order.sell_amount.clone(),
-        order.buy_amount.clone(),
-        order.app_data.clone(),
+        order.sell_amount,
+        order.buy_amount,
+        order.app_data,
         Amount::zero(),
         order.valid_to,
         false,
         0,
     );
-    let encoded = encode_invalidate_order_calldata(&payload)?;
-    Ok(format!("0x{}", hex::encode(encoded)))
+    format!(
+        "0x{}",
+        hex::encode(encode_invalidate_order_calldata(&payload))
+    )
 }

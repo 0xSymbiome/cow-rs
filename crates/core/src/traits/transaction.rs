@@ -168,7 +168,7 @@ impl TransactionReceipt {
 
     /// Sets the gas used by the transaction.
     #[must_use]
-    pub fn with_gas_used(mut self, gas_used: Amount) -> Self {
+    pub const fn with_gas_used(mut self, gas_used: Amount) -> Self {
         self.gas_used = Some(gas_used);
         self
     }

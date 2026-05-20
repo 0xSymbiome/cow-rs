@@ -1,6 +1,4 @@
-use std::str::FromStr;
-
-use alloy_primitives::{B256, Bytes as AlloyBytes, U256};
+use alloy_primitives::{Bytes as AlloyBytes, U256};
 use alloy_sol_types::{Eip712Domain, SolStruct};
 use cow_sdk_core::{Address, Hash32, OrderDigest, OrderUid, TypedDataDomain};
 
@@ -32,11 +30,11 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
         order.sell_token,
         order.buy_token,
         order.receiver.unwrap_or_else(Address::zero),
-        order.sell_amount.clone(),
-        order.buy_amount.clone(),
+        order.sell_amount,
+        order.buy_amount,
         order.valid_to,
-        order.app_data.clone(),
-        order.fee_amount.clone(),
+        order.app_data,
+        order.fee_amount,
         order.kind,
         order.partially_fillable,
         order.sell_token_balance.unwrap_or_default(),
@@ -59,7 +57,7 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
 /// Returns [`ContractsError`] if order normalization or address parsing fails.
 pub fn hash_order(domain: &TypedDataDomain, order: &Order) -> Result<OrderDigest, ContractsError> {
     let normalized = normalize_order(order)?;
-    let sol_order = sol_order_from_normalized(&normalized)?;
+    let sol_order = sol_order_from_normalized(&normalized);
     let alloy_domain = alloy_domain_from(domain);
     let digest = sol_order.eip712_signing_hash(&alloy_domain);
     OrderDigest::new(format!("0x{}", hex::encode(digest.as_slice()))).map_err(Into::into)
@@ -103,21 +101,27 @@ pub fn hash_order_cancellations(
     Hash32::new(format!("0x{}", hex::encode(digest.as_slice()))).map_err(Into::into)
 }
 
-fn sol_order_from_normalized(order: &NormalizedOrder) -> Result<SolOrder, ContractsError> {
-    Ok(SolOrder {
+fn sol_order_from_normalized(order: &NormalizedOrder) -> SolOrder {
+    // The cow `Amount` newtype is `#[repr(transparent)]` over
+    // `alloy_primitives::U256` and `AppDataHash` over
+    // `alloy_primitives::B256` per ADR 0052, so the conversions to the
+    // sol-typed surface are a single deref of the inner alloy primitive
+    // with no intermediate bigint allocation and no overflow guard
+    // required.
+    SolOrder {
         sellToken: *order.sell_token.as_alloy(),
         buyToken: *order.buy_token.as_alloy(),
         receiver: *order.receiver.as_alloy(),
-        sellAmount: biguint_to_u256("sellAmount", order.sell_amount.as_biguint())?,
-        buyAmount: biguint_to_u256("buyAmount", order.buy_amount.as_biguint())?,
+        sellAmount: *order.sell_amount.as_u256(),
+        buyAmount: *order.buy_amount.as_u256(),
         validTo: order.valid_to,
-        appData: parse_b256(order.app_data.as_str(), "appData")?,
-        feeAmount: biguint_to_u256("feeAmount", order.fee_amount.as_biguint())?,
+        appData: *order.app_data.as_alloy(),
+        feeAmount: *order.fee_amount.as_u256(),
         kind: order_kind_name(order.kind).to_owned(),
         partiallyFillable: order.partially_fillable,
         sellTokenBalance: sell_balance_name(order.sell_token_balance).to_owned(),
         buyTokenBalance: buy_balance_name(order.buy_token_balance).to_owned(),
-    })
+    }
 }
 
 fn alloy_domain_from(domain: &TypedDataDomain) -> Eip712Domain {
@@ -130,30 +134,6 @@ fn alloy_domain_from(domain: &TypedDataDomain) -> Eip712Domain {
     }
 }
 
-fn parse_b256(value: &str, field: &'static str) -> Result<B256, ContractsError> {
-    B256::from_str(value).map_err(|_| ContractsError::InvalidDecodedLength {
-        field,
-        expected: 32,
-        actual: 0,
-    })
-}
-
-fn biguint_to_u256(
-    field: &'static str,
-    value: &num_bigint::BigUint,
-) -> Result<U256, ContractsError> {
-    let bytes = value.to_bytes_be();
-    if bytes.len() > 32 {
-        return Err(ContractsError::NumericOverflow {
-            field,
-            value: value.to_str_radix(10).into(),
-        });
-    }
-    let mut buf = [0_u8; 32];
-    buf[32 - bytes.len()..].copy_from_slice(&bytes);
-    Ok(U256::from_be_bytes(buf))
-}
-
 fn decode_order_uid_bytes(uid: &OrderUid) -> AlloyBytes {
     AlloyBytes::from(uid.as_slice().to_vec())
 }
@@ -164,12 +144,13 @@ const ZERO_ADDRESS_LOWER: &str = "0x0000000000000000000000000000000000000000";
 mod tests {
     use super::*;
     use crate::deployments::{ContractId, Registry};
+    use crate::encode_address_word;
     use cow_sdk_core::{
         Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderKind, SellTokenSource,
         SupportedChainId,
     };
-    use num_bigint::BigUint;
     use sha3::{Digest, Keccak256};
+    use std::str::FromStr;
 
     fn sample_domain() -> TypedDataDomain {
         TypedDataDomain::new(
@@ -204,25 +185,14 @@ mod tests {
         )
     }
 
-    fn encode_address_word(address: &Address) -> [u8; 32] {
-        let mut out = [0u8; 32];
-        let decoded = hex::decode(address.to_hex_string().trim_start_matches("0x")).unwrap();
-        out[12..].copy_from_slice(&decoded);
-        out
-    }
-
     fn encode_u256_word(value: &str) -> [u8; 32] {
-        let parsed = value
-            .strip_prefix("0x")
-            .map_or_else(
-                || BigUint::parse_bytes(value.as_bytes(), 10),
-                |stripped| BigUint::parse_bytes(stripped.as_bytes(), 16),
-            )
-            .unwrap();
-        let bytes = parsed.to_bytes_be();
-        let mut out = [0u8; 32];
-        out[32 - bytes.len()..].copy_from_slice(&bytes);
-        out
+        // Test oracle helper: `U256::from_str` recognises both the decimal
+        // and `0x`-prefixed hex forms used by the parity fixtures, so the
+        // cow newtype migration drops the historical BigUint dependency
+        // without losing the dual-radix surface.
+        U256::from_str(value)
+            .expect("test fixture value must parse to U256")
+            .to_be_bytes::<32>()
     }
 
     fn encode_u32_word(value: u32) -> [u8; 32] {
@@ -264,9 +234,7 @@ mod tests {
         encoded.extend_from_slice(&encode_u256_word(&order.sell_amount.to_string()));
         encoded.extend_from_slice(&encode_u256_word(&order.buy_amount.to_string()));
         encoded.extend_from_slice(&encode_u32_word(order.valid_to));
-        encoded.extend_from_slice(
-            &hex::decode(order.app_data.as_str().trim_start_matches("0x")).unwrap(),
-        );
+        encoded.extend_from_slice(order.app_data.as_slice());
         encoded.extend_from_slice(&encode_u256_word(&order.fee_amount.to_string()));
         encoded.extend_from_slice(&keccak_word("sell"));
         encoded.extend_from_slice(&{
@@ -292,7 +260,7 @@ mod tests {
         digest_payload.extend_from_slice(&expected_struct_hash);
         let expected_digest = Keccak256::digest(&digest_payload);
 
-        let sol_order = sol_order_from_normalized(&normalized).unwrap();
+        let sol_order = sol_order_from_normalized(&normalized);
         assert_eq!(sol_order.eip712_hash_struct().0, expected_struct_hash);
         assert_eq!(
             hash_order(&domain, &order).unwrap().to_hex_string(),

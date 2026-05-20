@@ -258,7 +258,7 @@ fn quote_response_accepts_full_app_data_echo_when_hash_is_present() {
             "buyAmount": "900",
             "validTo": 1_700_000_000,
             "appData": "{\"appCode\":\"cow-rs/wasm-console\",\"version\":\"1.14.0\"}",
-            "appDataHash": sample_app_data_hash().as_str(),
+            "appDataHash": sample_app_data_hash().to_hex_string(),
             "feeAmount": "10",
             "kind": "sell",
             "partiallyFillable": false,

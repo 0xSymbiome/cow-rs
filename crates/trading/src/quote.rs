@@ -273,7 +273,7 @@ fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, Tr
             chain_id: inputs.trader.chain_id,
             from: inputs.trader.account,
             is_ethflow: inputs.is_ethflow,
-            network_costs_amount: Some(inputs.quote_response.quote.network_cost_amount().clone()),
+            network_costs_amount: Some(*inputs.quote_response.quote.network_cost_amount()),
             apply_costs_slippage_and_fees: true,
             protocol_fee_bps: sanitize_protocol_fee_bps(
                 inputs.quote_response.protocol_fee_bps.as_deref(),
@@ -338,8 +338,8 @@ fn build_quote_request(
 ) -> Result<OrderQuoteRequest, TradingError> {
     let receiver = trade_parameters.receiver.unwrap_or(trader.account);
     let side = match trade_parameters.kind {
-        cow_sdk_core::OrderKind::Sell => QuoteSide::sell(trade_parameters.amount.clone()),
-        cow_sdk_core::OrderKind::Buy => QuoteSide::buy(trade_parameters.amount.clone()),
+        cow_sdk_core::OrderKind::Sell => QuoteSide::sell(trade_parameters.amount),
+        cow_sdk_core::OrderKind::Buy => QuoteSide::buy(trade_parameters.amount),
     };
     let mut request = OrderQuoteRequest::new(
         trade_parameters.sell_token,
@@ -349,7 +349,7 @@ fn build_quote_request(
     )
     .with_receiver(receiver)
     .with_app_data(app_data_info.full_app_data.clone())
-    .with_app_data_hash(app_data_info.app_data_keccak256.clone())
+    .with_app_data_hash(app_data_info.app_data_keccak256)
     .with_price_quality(PriceQuality::Optimal);
 
     if trade_parameters.partially_fillable {

@@ -71,7 +71,7 @@ impl InteractionLike {
 pub fn normalize_interaction(interaction: &InteractionLike) -> Interaction {
     Interaction::new(
         interaction.target,
-        interaction.value.clone().unwrap_or_else(Amount::zero),
+        interaction.value.unwrap_or_else(Amount::zero),
         interaction.call_data.clone().unwrap_or_default(),
     )
 }

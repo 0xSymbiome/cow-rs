@@ -1041,8 +1041,7 @@ fn assert_ethflow_create_order_calldata(id: &str, expected: &Value) {
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
 
-    let call_data = encode_create_order_calldata(&sample_ethflow_order())
-        .expect("sample EthFlow order must encode");
+    let call_data = encode_create_order_calldata(&sample_ethflow_order());
 
     assert_calldata_hex(id, &call_data, expected_hex);
 }
@@ -1052,8 +1051,7 @@ fn assert_ethflow_invalidate_order_calldata(id: &str, expected: &Value) {
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
 
-    let call_data = encode_invalidate_order_calldata(&sample_ethflow_order())
-        .expect("sample EthFlow order must encode");
+    let call_data = encode_invalidate_order_calldata(&sample_ethflow_order());
 
     assert_calldata_hex(id, &call_data, expected_hex);
 }

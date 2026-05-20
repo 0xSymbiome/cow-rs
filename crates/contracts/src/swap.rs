@@ -180,8 +180,8 @@ impl SwapEncoder {
         let order = crate::order::normalize_order(order)?;
         let limit_amount = swap_execution.map_or_else(
             || match order.kind {
-                cow_sdk_core::OrderKind::Sell => order.buy_amount.clone(),
-                cow_sdk_core::OrderKind::Buy => order.sell_amount.clone(),
+                cow_sdk_core::OrderKind::Sell => order.buy_amount,
+                cow_sdk_core::OrderKind::Buy => order.sell_amount,
             },
             |execution| execution.limit_amount,
         );
@@ -213,7 +213,7 @@ pub fn encode_swap_step(tokens: &mut TokenRegistry, swap: &Swap) -> BatchSwapSte
         swap.pool_id.clone(),
         tokens.index(&swap.asset_in),
         tokens.index(&swap.asset_out),
-        swap.amount.clone(),
+        swap.amount,
         swap.user_data.clone().unwrap_or_default(),
     )
 }
