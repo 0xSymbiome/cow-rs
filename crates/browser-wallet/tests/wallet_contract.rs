@@ -25,12 +25,17 @@ use cow_sdk_core::{
 };
 
 fn supported_domain(chain_id: SupportedChainId) -> TypedDataDomain {
-    TypedDataDomain::new(
-        "Gnosis Protocol".to_owned(),
-        "v2".to_owned(),
-        u64::from(chain_id),
-        cow_sdk_core::Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
-    )
+    TypedDataDomain {
+        name: Some("Gnosis Protocol".into()),
+        version: Some("v2".into()),
+        chain_id: Some(alloy_primitives::U256::from(u64::from(chain_id))),
+        verifying_contract: Some(
+            *cow_sdk_core::Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
+                .unwrap()
+                .as_alloy(),
+        ),
+        salt: None,
+    }
 }
 
 fn typed_field(name: &str, kind: &str) -> TypedDataField {

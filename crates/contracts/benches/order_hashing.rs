@@ -7,18 +7,20 @@ use cow_sdk_core::{
 };
 
 fn sample_domain() -> TypedDataDomain {
-    TypedDataDomain::new(
-        "Gnosis Protocol".to_owned(),
-        "v2".to_owned(),
-        1,
-        Registry::default()
-            .address(
-                ContractId::Settlement,
-                SupportedChainId::Mainnet,
-                CowEnv::Prod,
-            )
-            .expect("canonical settlement address is registered for every supported chain"),
-    )
+    let verifying_contract = Registry::default()
+        .address(
+            ContractId::Settlement,
+            SupportedChainId::Mainnet,
+            CowEnv::Prod,
+        )
+        .expect("canonical settlement address is registered for every supported chain");
+    TypedDataDomain {
+        name: Some("Gnosis Protocol".into()),
+        version: Some("v2".into()),
+        chain_id: Some(alloy_primitives::U256::from(1u64)),
+        verifying_contract: Some(*verifying_contract.as_alloy()),
+        salt: None,
+    }
 }
 
 fn sample_order() -> Order {

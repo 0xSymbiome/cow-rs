@@ -80,30 +80,36 @@ fuzz_target!(|input: FuzzInput| {
 });
 
 fn build_domain(input: &FuzzInput) -> TypedDataDomain {
-    TypedDataDomain::new(
-        bounded_ascii(input.name_seed, input.name_len),
-        bounded_ascii(input.version_seed, input.version_len),
-        ChainId::from(input.chain_id),
-        Address::from_bytes(input.verifying_contract),
-    )
+    TypedDataDomain {
+        name: Some(bounded_ascii(input.name_seed, input.name_len).into()),
+        version: Some(bounded_ascii(input.version_seed, input.version_len).into()),
+        chain_id: Some(alloy_primitives::U256::from(ChainId::from(input.chain_id))),
+        verifying_contract: Some(*Address::from_bytes(input.verifying_contract).as_alloy()),
+        salt: None,
+    }
 }
 
 fn mutate_domain(input: &FuzzInput) -> TypedDataDomain {
     let mut mutated = build_domain(input);
     match input.mutation_selector % 4 {
         0 => {
-            mutated.name = format!("{}X", mutated.name);
+            let current = mutated.name.as_deref().unwrap_or_default().to_owned();
+            mutated.name = Some(format!("{current}X").into());
         }
         1 => {
-            mutated.version = format!("{}Y", mutated.version);
+            let current = mutated.version.as_deref().unwrap_or_default().to_owned();
+            mutated.version = Some(format!("{current}Y").into());
         }
         2 => {
-            mutated.chain_id = mutated.chain_id.wrapping_add(1);
+            let current = mutated
+                .chain_id
+                .unwrap_or(alloy_primitives::U256::ZERO);
+            mutated.chain_id = Some(current.wrapping_add(alloy_primitives::U256::from(1u64)));
         }
         _ => {
             let mut bytes = input.verifying_contract;
             bytes[0] = bytes[0].wrapping_add(1);
-            mutated.verifying_contract = Address::from_bytes(bytes);
+            mutated.verifying_contract = Some(*Address::from_bytes(bytes).as_alloy());
         }
     }
     mutated

@@ -44,13 +44,24 @@ fn domain_resolution_honors_default_env_staging_and_override_precedence() {
 
     assert_eq!(
         default_domain.verifying_contract,
-        Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap()
+        Some(
+            *Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
+                .unwrap()
+                .as_alloy()
+        )
     );
     assert_eq!(
         staging_domain.verifying_contract,
-        Address::new("0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13").unwrap()
+        Some(
+            *Address::new("0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13")
+                .unwrap()
+                .as_alloy()
+        )
     );
-    assert_eq!(override_domain.verifying_contract, override_address);
+    assert_eq!(
+        override_domain.verifying_contract,
+        Some(*override_address.as_alloy())
+    );
 }
 
 #[test]
@@ -59,12 +70,27 @@ fn typed_data_domain_and_separator_match_fixture_contract() {
     let order = sample_order();
     let typed = order_typed_data(SupportedChainId::Mainnet, &order, None).unwrap();
     let separator = domain_separator(SupportedChainId::Mainnet, None).unwrap();
-    let expected = independent_domain_separator(
-        &typed.domain.name,
-        &typed.domain.version,
-        typed.domain.chain_id,
-        &typed.domain.verifying_contract.to_hex_string(),
-    );
+    let name = typed
+        .domain
+        .name
+        .as_deref()
+        .expect("cow EIP-712 domain always sets name");
+    let version = typed
+        .domain
+        .version
+        .as_deref()
+        .expect("cow EIP-712 domain always sets version");
+    let chain_id_u256 = typed
+        .domain
+        .chain_id
+        .expect("cow EIP-712 domain always sets chainId");
+    let chain_id = u64::try_from(chain_id_u256).expect("cow EIP-712 chainId fits in u64");
+    let verifying_contract = typed
+        .domain
+        .verifying_contract
+        .expect("cow EIP-712 domain always sets verifyingContract");
+    let verifying_contract_hex = format!("0x{}", hex::encode(verifying_contract));
+    let expected = independent_domain_separator(name, version, chain_id, &verifying_contract_hex);
 
     assert_eq!(
         typed.types["EIP712Domain"]

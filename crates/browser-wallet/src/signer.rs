@@ -73,10 +73,20 @@ impl Eip1193Signer {
             return Ok(());
         };
         let expected_chain_id = u64::from(expected_chain_id);
-        if payload.domain.chain_id != expected_chain_id {
+        let payload_chain_id_u256 = payload.domain.chain_id.ok_or_else(|| {
+            BrowserWalletError::serialization(
+                "EIP-1193 typed-data domain requires chainId; cow construction always sets it",
+            )
+        })?;
+        let payload_chain_id = u64::try_from(payload_chain_id_u256).map_err(|_| {
+            BrowserWalletError::serialization(format!(
+                "EIP-1193 typed-data domain chainId {payload_chain_id_u256} exceeds the supported `u64` range",
+            ))
+        })?;
+        if payload_chain_id != expected_chain_id {
             return Err(BrowserWalletError::TypedDataChainMismatch {
                 expected_chain_id,
-                typed_data_chain_id: payload.domain.chain_id,
+                typed_data_chain_id: payload_chain_id,
             });
         }
         Ok(())
@@ -244,8 +254,9 @@ fn typed_data_request(payload: &TypedDataPayload) -> Result<Value, BrowserWallet
         )));
     }
 
-    let domain = serde_json::to_value(&payload.domain)
+    let mut domain = serde_json::to_value(&payload.domain)
         .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
+    coerce_eip1193_domain(&mut domain)?;
     let types = serde_json::to_value(&payload.types)
         .map_err(|error| BrowserWalletError::serialization(error.to_string()))?;
     let message = serde_json::from_str::<Value>(payload.message_json())
@@ -257,6 +268,78 @@ fn typed_data_request(payload: &TypedDataPayload) -> Result<Value, BrowserWallet
         "domain": domain,
         "message": message,
     }))
+}
+
+/// Post-processes the serde-emitted JSON for an EIP-712 domain so the
+/// payload matches the EIP-1193 `eth_signTypedData_v4` wire shape.
+///
+/// The cow [`cow_sdk_core::TypedDataDomain`] is aliased onto
+/// [`alloy_sol_types::Eip712Domain`], whose default `Serialize` impl
+/// emits `chainId` as a hex string (`"0x1"`) and may emit a `salt`
+/// field. The EIP-1193 request shape that injected wallets expect
+/// requires `chainId` as a JSON Number, requires `verifyingContract`,
+/// and does not carry `salt`. This helper coerces the cow JSON in
+/// place so every injected-wallet bridge receives the same canonical
+/// shape regardless of the upstream alloy `Eip712Domain` defaults.
+///
+/// The coercion is unconditional so a future change to the alloy
+/// `Eip712Domain` `Serialize` defaults stays absorbed at the cow
+/// boundary.
+fn coerce_eip1193_domain(domain: &mut Value) -> Result<(), BrowserWalletError> {
+    let object = domain.as_object_mut().ok_or_else(|| {
+        BrowserWalletError::serialization(
+            "EIP-1193 typed-data domain must serialise to a JSON object",
+        )
+    })?;
+
+    // The cow `TypedDataDomain` always sets `verifyingContract`. A
+    // missing-or-null field on the wire here indicates a serialization
+    // regression and must surface as a typed error before the request
+    // hits the wallet.
+    match object.get("verifyingContract") {
+        Some(value) if !value.is_null() => {}
+        _ => {
+            return Err(BrowserWalletError::serialization(
+                "EIP-1193 typed-data domain requires verifyingContract",
+            ));
+        }
+    }
+
+    if let Some(chain_id) = object.get("chainId").cloned() {
+        let coerced = match chain_id {
+            Value::String(text) => {
+                let trimmed = text
+                    .strip_prefix("0x")
+                    .or_else(|| text.strip_prefix("0X"))
+                    .unwrap_or(text.as_str());
+                let parsed = u64::from_str_radix(trimmed, 16).map_err(|error| {
+                    BrowserWalletError::serialization(format!(
+                        "EIP-1193 typed-data domain chainId `{text}` is not a 0x-prefixed hex u64: {error}",
+                    ))
+                })?;
+                Value::from(parsed)
+            }
+            Value::Number(_) => chain_id,
+            Value::Null => {
+                return Err(BrowserWalletError::serialization(
+                    "EIP-1193 typed-data domain chainId must not be null",
+                ));
+            }
+            other => {
+                return Err(BrowserWalletError::serialization(format!(
+                    "EIP-1193 typed-data domain chainId must be a number or hex string, got {other}",
+                )));
+            }
+        };
+        object.insert("chainId".to_owned(), coerced);
+    }
+
+    // Cow construction never sets `salt`; alloy's `skip_serializing_if`
+    // keeps it absent in the common path. Strip defensively in case a
+    // future alloy default change starts emitting it.
+    object.remove("salt");
+
+    Ok(())
 }
 
 fn compatibility_typed_data_payload(

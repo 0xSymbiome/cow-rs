@@ -486,12 +486,17 @@ mod signer_error_tests {
     }
 
     fn test_payload() -> TypedDataPayload {
-        let domain = cow_sdk_core::TypedDataDomain::new(
-            "Gnosis Protocol".to_owned(),
-            "v2".to_owned(),
-            1,
-            Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
-        );
+        let domain = cow_sdk_core::TypedDataDomain {
+            name: Some("Gnosis Protocol".into()),
+            version: Some("v2".into()),
+            chain_id: Some(alloy_primitives::U256::from(1u64)),
+            verifying_contract: Some(
+                *Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
+                    .unwrap()
+                    .as_alloy(),
+            ),
+            salt: None,
+        };
         let fields = vec![cow_sdk_core::TypedDataField::new(
             "sellToken".to_owned(),
             "address".to_owned(),

@@ -1,5 +1,4 @@
 use alloy_primitives::U256;
-use alloy_sol_types::Eip712Domain;
 use cow_sdk_contracts::{CANCELLATIONS_TYPE_FIELDS, ContractId, ORDER_TYPE_FIELDS, Registry};
 use cow_sdk_core::{
     CowEnv, ProtocolOptions, SupportedChainId, TypedDataDomain, TypedDataEnvelope, TypedDataField,
@@ -37,19 +36,22 @@ pub fn get_domain(
         .and_then(|options| options.settlement_contract_override.as_ref())
         .and_then(|addresses| addresses.get(&u64::from(chain_id)).copied());
 
-    Ok(TypedDataDomain::new(
-        "Gnosis Protocol".to_owned(),
-        "v2".to_owned(),
-        chain_id.into(),
-        override_address.unwrap_or_else(|| {
-            // SAFETY: Registry::default parses the build-validated embedded
-            // manifest, which must include settlement addresses for supported
-            // chain/environment pairs.
-            Registry::default()
-                .address(ContractId::Settlement, chain_id, env)
-                .expect("canonical settlement address is registered for every supported chain/env")
-        }),
-    ))
+    let verifying_contract = override_address.unwrap_or_else(|| {
+        // SAFETY: Registry::default parses the build-validated embedded
+        // manifest, which must include settlement addresses for supported
+        // chain/environment pairs.
+        Registry::default()
+            .address(ContractId::Settlement, chain_id, env)
+            .expect("canonical settlement address is registered for every supported chain/env")
+    });
+
+    Ok(TypedDataDomain {
+        name: Some("Gnosis Protocol".into()),
+        version: Some("v2".into()),
+        chain_id: Some(U256::from(u64::from(chain_id))),
+        verifying_contract: Some(*verifying_contract.as_alloy()),
+        salt: None,
+    })
 }
 
 /// Computes the domain separator for a chain and optional protocol overrides.
@@ -78,20 +80,17 @@ pub fn domain_separator(
 ///
 /// # Errors
 ///
-/// Returns [`SigningError`] if the verifying-contract address cannot be parsed.
+/// Always returns `Ok`. The signature preserves [`Result`] so existing
+/// `?`-propagating callsites continue to compose unchanged after the
+/// cow [`TypedDataDomain`] aliased onto
+/// [`alloy_sol_types::Eip712Domain`] removed the verifying-contract
+/// parse step the previous body performed.
+#[allow(
+    clippy::unnecessary_wraps,
+    reason = "preserve the Result signature so existing `?` callsites continue to compose; the cow TypedDataDomain is now alloy_sol_types::Eip712Domain and the separator computation is infallible"
+)]
 pub fn domain_separator_for(domain: &TypedDataDomain) -> Result<String, SigningError> {
-    let alloy_addr = *domain.verifying_contract.as_alloy();
-    let alloy_domain = Eip712Domain {
-        name: Some(domain.name.clone().into()),
-        version: Some(domain.version.clone().into()),
-        chain_id: Some(U256::from(domain.chain_id)),
-        verifying_contract: Some(alloy_addr),
-        salt: None,
-    };
-    Ok(format!(
-        "0x{}",
-        hex::encode(alloy_domain.separator().as_slice())
-    ))
+    Ok(format!("0x{}", hex::encode(domain.separator().as_slice())))
 }
 
 /// Builds the typed-data envelope with the fully typed order message body.
@@ -213,7 +212,13 @@ mod tests {
             .to_owned();
 
         (
-            TypedDataDomain::new(name, version, chain_id, verifying_contract),
+            TypedDataDomain {
+                name: Some(name.into()),
+                version: Some(version.into()),
+                chain_id: Some(U256::from(chain_id)),
+                verifying_contract: Some(*verifying_contract.as_alloy()),
+                salt: None,
+            },
             expected_separator,
         )
     }

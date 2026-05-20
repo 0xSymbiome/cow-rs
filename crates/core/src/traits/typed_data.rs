@@ -2,40 +2,29 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::types::{Address, ChainId};
 /// Typed-data domain metadata used for EIP-712 signing.
-#[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TypedDataDomain {
-    /// Human-readable protocol name.
-    pub name: String,
-    /// Domain version string.
-    pub version: String,
-    /// Numeric chain id for the typed-data domain.
-    pub chain_id: ChainId,
-    /// Contract address used as the domain verifier.
-    pub verifying_contract: Address,
-}
-
-impl TypedDataDomain {
-    /// Creates typed-data domain metadata for EIP-712 signing.
-    #[inline]
-    #[must_use]
-    pub const fn new(
-        name: String,
-        version: String,
-        chain_id: ChainId,
-        verifying_contract: Address,
-    ) -> Self {
-        Self {
-            name,
-            version,
-            chain_id,
-            verifying_contract,
-        }
-    }
-}
+///
+/// Aliased onto [`alloy_sol_types::Eip712Domain`] so the cow primitive
+/// layer routes through one canonical EIP-712 domain shape across the
+/// SDK and the `alloy-sol-types` reference implementation. Construct
+/// values with the [`alloy_sol_types::eip712_domain!`] macro or a
+/// direct struct-literal expression:
+///
+/// ```rust
+/// use alloy_primitives::{Address, U256, address};
+/// use alloy_sol_types::Eip712Domain;
+/// use cow_sdk_core::TypedDataDomain;
+///
+/// let domain: TypedDataDomain = Eip712Domain {
+///     name: Some("Gnosis Protocol".into()),
+///     version: Some("v2".into()),
+///     chain_id: Some(U256::from(1u64)),
+///     verifying_contract: Some(address!("9008D19f58AAbD9eD0D60971565AA8510560ab41")),
+///     salt: None,
+/// };
+/// # let _ = domain;
+/// ```
+pub type TypedDataDomain = alloy_sol_types::Eip712Domain;
 
 /// A single EIP-712 typed-data field descriptor.
 #[non_exhaustive]

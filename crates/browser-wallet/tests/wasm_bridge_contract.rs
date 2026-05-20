@@ -730,16 +730,17 @@ fn order_payload(chain_id: SupportedChainId) -> TypedDataPayload {
         .collect(),
     );
 
+    let verifying_contract =
+        cow_sdk_core::Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
+            .expect("static contract address must stay valid");
     TypedDataPayload::new(
-        TypedDataDomain::new(
-            "Gnosis Protocol".to_owned(),
-            "v2".to_owned(),
-            u64::from(chain_id),
-            cow_sdk_core::Address::new(
-                "0x9008D19f58AAbD9eD0D60971565AA8510560ab41",
-            )
-            .expect("static contract address must stay valid"),
-        ),
+        TypedDataDomain {
+            name: Some("Gnosis Protocol".into()),
+            version: Some("v2".into()),
+            chain_id: Some(alloy_primitives::U256::from(u64::from(chain_id))),
+            verifying_contract: Some(*verifying_contract.as_alloy()),
+            salt: None,
+        },
         "Order".to_owned(),
         types,
         r#"{"sellToken":"0x1111111111111111111111111111111111111111","buyToken":"0x2222222222222222222222222222222222222222","receiver":"0x3333333333333333333333333333333333333333","sellAmount":"1","buyAmount":"2","validTo":1,"appData":"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","feeAmount":"0","kind":"sell","partiallyFillable":false,"sellTokenBalance":"erc20","buyTokenBalance":"erc20"}"#.to_owned(),

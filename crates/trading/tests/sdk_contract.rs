@@ -137,15 +137,16 @@ async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can
         .expect("injected client context should supply chain and env");
 
     assert_eq!(result.trade_parameters.env, Some(CowEnv::Staging));
+    let expected_verifying_contract = cow_sdk_contracts::Registry::default()
+        .address(
+            cow_sdk_contracts::ContractId::Settlement,
+            SupportedChainId::Sepolia,
+            CowEnv::Staging,
+        )
+        .expect("canonical settlement address is registered for sepolia staging");
     assert_eq!(
         result.order_typed_data.domain.verifying_contract,
-        cow_sdk_contracts::Registry::default()
-            .address(
-                cow_sdk_contracts::ContractId::Settlement,
-                SupportedChainId::Sepolia,
-                CowEnv::Staging
-            )
-            .expect("canonical settlement address is registered for sepolia staging")
+        Some(*expected_verifying_contract.as_alloy()),
     );
 }
 

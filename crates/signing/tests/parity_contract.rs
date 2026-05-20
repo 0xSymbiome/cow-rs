@@ -260,7 +260,8 @@ fn assert_domain_resolution_precedence(id: &str, expected: &Value) {
     )
     .expect("override domain must resolve");
     assert_eq!(
-        overridden_domain.verifying_contract, override_addr,
+        overridden_domain.verifying_contract,
+        Some(*override_addr.as_alloy()),
         "case {id}: {override_marker} must override the resolved verifying contract",
     );
 }
