@@ -85,11 +85,11 @@ fuzz_target!(|input: PolicyInput| {
         fee_second.is_ok(),
         "suggest_slippage_from_fee must be deterministic on identical input",
     );
-    if let Ok(amount) = fee_first {
-        assert!(
-            amount.as_biguint().bits() <= 256,
-            "suggest_slippage_from_fee accepted a result above uint256",
-        );
+    if let Ok(_amount) = fee_first {
+        // `Amount` is `#[repr(transparent)]` over `alloy_primitives::U256`
+        // per ADR 0052; the uint256 ceiling is enforced by the type
+        // system, so the historical `bits() <= 256` runtime guard
+        // collapses to a constant-true invariant.
     }
 
     // suggest_slippage_from_volume: never panics; results stay within uint256.
@@ -111,11 +111,11 @@ fuzz_target!(|input: PolicyInput| {
         vol_second.is_ok(),
         "suggest_slippage_from_volume must be deterministic on identical input",
     );
-    if let Ok(amount) = vol_first {
-        assert!(
-            amount.as_biguint().bits() <= 256,
-            "suggest_slippage_from_volume accepted a result above uint256",
-        );
+    if let Ok(_amount) = vol_first {
+        // `Amount` is `#[repr(transparent)]` over `alloy_primitives::U256`
+        // per ADR 0052; the uint256 ceiling is enforced by the type
+        // system, so the historical `bits() <= 256` runtime guard
+        // collapses to a constant-true invariant.
     }
 
     // Documented adversarial guard: NaN / Inf / negative protocol fees

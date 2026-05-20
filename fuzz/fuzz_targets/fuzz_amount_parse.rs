@@ -15,10 +15,9 @@
 //! every accepted value round-trips through its string form, stays within
 //! the `uint256` bit-width, and is deterministic on identical input.
 
+use alloy_primitives::U256;
 use cow_sdk_core::Amount;
 use libfuzzer_sys::fuzz_target;
-
-const U256_BITS: u64 = 256;
 
 fuzz_target!(|data: &[u8]| {
     let raw = String::from_utf8_lossy(data).into_owned();
@@ -39,8 +38,14 @@ fuzz_target!(|data: &[u8]| {
     }
 
     if let Ok(amount) = first {
+        // The cow `Amount` newtype is `#[repr(transparent)]` over
+        // `alloy_primitives::U256` per ADR 0052, so the
+        // documented 256-bit boundary is enforced at construction:
+        // every value the parser accepts is `<= U256::MAX` by
+        // construction and the explicit bit-width assertion collapses
+        // into a constant invariant.
         assert!(
-            amount.as_biguint().bits() <= U256_BITS,
+            *amount.as_u256() <= U256::MAX,
             "Amount::new accepted a value that exceeds the documented 256-bit boundary",
         );
 
@@ -52,9 +57,9 @@ fuzz_target!(|data: &[u8]| {
             "Amount::new round-trip through canonical decimal string must be stable",
         );
 
-        // The hex literal `0x{biguint:x}` and the canonical decimal form must
-        // parse to the same typed amount when the canonical form is non-empty.
-        let hex_literal = format!("0x{}", amount.as_biguint().to_str_radix(16));
+        // The hex literal `{u256:#x}` and the canonical decimal form must
+        // parse to the same typed amount.
+        let hex_literal = format!("{:#x}", amount.as_u256());
         let from_hex = Amount::new(hex_literal)
             .expect("hex literal derived from an accepted Amount must re-parse");
         assert_eq!(

@@ -92,26 +92,13 @@ fuzz_target!(|input: SlippageInput| {
     // The documented `Amount` boundary guarantees non-negative values; the
     // typed wrapper enforces this on construction, so every stage must
     // parse as a non-negative BigUint.
-    for stage in [
-        &amounts.before_all_fees,
-        &amounts.before_network_costs,
-        &amounts.after_protocol_fees,
-        &amounts.after_network_costs,
-        &amounts.after_partner_fees,
-        &amounts.after_slippage,
-        &amounts.amounts_to_sign,
-    ] {
-        // `Amount::as_biguint()` returns a non-negative BigUint; the
-        // documented uint256 cap is enforced at construction.
-        assert!(
-            stage.sell_amount.as_biguint().bits() <= 256,
-            "calculate_quote_amounts_and_costs accepted a sell amount above uint256",
-        );
-        assert!(
-            stage.buy_amount.as_biguint().bits() <= 256,
-            "calculate_quote_amounts_and_costs accepted a buy amount above uint256",
-        );
-    }
+    // `Amount` is `#[repr(transparent)]` over `alloy_primitives::U256`
+    // per ADR 0052; the uint256 ceiling is enforced by the type system
+    // at construction, so the historical per-stage `bits() <= 256`
+    // runtime guards collapse to constant-true invariants. The
+    // cross-stage ordering assertion below remains meaningful because
+    // it compares typed `Amount` values rather than asserting absolute
+    // bit width.
 
     if amounts.is_sell {
         assert_eq!(
@@ -119,8 +106,7 @@ fuzz_target!(|input: SlippageInput| {
             "sell-sided amounts_to_sign.sell_amount must equal before_all_fees.sell_amount",
         );
         assert!(
-            amounts.amounts_to_sign.buy_amount.as_biguint()
-                <= amounts.after_partner_fees.buy_amount.as_biguint(),
+            amounts.amounts_to_sign.buy_amount <= amounts.after_partner_fees.buy_amount,
             "sell-sided amounts_to_sign.buy_amount must not exceed after_partner_fees.buy_amount",
         );
     }
