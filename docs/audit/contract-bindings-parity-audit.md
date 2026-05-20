@@ -1,7 +1,7 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-05-20
+Last reviewed: 2026-05-21
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a drift in the committed Solidity excerpt under `crates/contracts/abi/**/*.sol`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
@@ -424,6 +424,47 @@ derive is gated entirely behind `target_family = "wasm"`. The
 together, so a single `use cow_sdk_core::prelude::*;` brings every
 strict newtype into scope per ADR 0052.
 
+### EIP-712 Domain Alias
+
+`cow_sdk_core::TypedDataDomain` is a `pub type` alias over
+`alloy_sol_types::Eip712Domain` per ADR 0052. The previous cow-owned
+struct shape (`{ name: String, version: String, chain_id: ChainId,
+verifying_contract: Address }`) is retired entirely. Cow callers
+construct the domain either through `alloy_sol_types::eip712_domain!`
+for compile-time-known constants or through the alloy struct-literal
+form `alloy_sol_types::Eip712Domain { name: Some(_), version: Some(_),
+chain_id: Some(U256::from(chain_id_u64)), verifying_contract:
+Some(verifying_contract_addr), salt: None }` for runtime-computed
+values. The cow constructor `TypedDataDomain::new(...)` is removed; no
+`#[deprecated]` shim ships because the SDK is pre-release.
+
+The `crates/alloy-signer/src/conversion.rs` cow-to-alloy `TypedData`
+bridge module retires; the `mod conversion;` declaration drops from
+`crates/alloy-signer/src/lib.rs`. The two helpers the alloy-signer
+crate previously called (`cow_flat_to_alloy_typed_data` and
+`cow_typed_data_payload_to_alloy`) are reborn as
+`typed_data_from_flat_fields` and `typed_data_from_payload` inside
+`crates/alloy-signer/src/signer.rs`, both of which now consume
+`payload.domain` directly because the cow type IS
+`alloy_sol_types::Eip712Domain`. The `Resolver`-building plus
+ECDSA-hex normalizer helpers inline alongside.
+
+The cow JSON wire shape for the EIP-1193 `eth_signTypedData_v4` request
+stays preserved at the browser-wallet seam. The alloy `Eip712Domain`
+`Serialize` impl emits `chainId` as a `0x`-prefixed hex string and may
+include a `salt` field; the EIP-1193 spec the injected wallets accept
+requires a JSON Number `chainId`, a required `verifyingContract`, and
+no `salt`. `crates/browser-wallet/src/signer.rs::typed_data_request`
+post-processes the alloy-serialised JSON in place: parses the `0x`-hex
+chainId into a `u64` Number, asserts `verifyingContract` is present
+and non-null, and strips `salt` if present. The bridge coercion runs
+unconditionally so any future change to the alloy `Eip712Domain`
+serialize defaults stays absorbed at the cow boundary. The
+`signer_contract.rs::typed_data_request_emits_domain_with_numeric_chain_id_and_required_verifying_contract`
+contract test exercises the coercion on both mainnet chainId 1 and
+sepolia chainId 11155111 inputs and asserts the canonical EIP-1193
+shape.
+
 ## Evidence
 
 Primary implementation points:
@@ -469,6 +510,7 @@ Primary regression coverage:
 - `crates/trading/tests/parity_contract.rs`
 - `crates/core/tests/wire_format_preservation_contract.rs`
 - `crates/core/tests/property_contract.rs`
+- `crates/browser-wallet/tests/signer_contract.rs::typed_data_request_emits_domain_with_numeric_chain_id_and_required_verifying_contract`
 
 Validation surface:
 
