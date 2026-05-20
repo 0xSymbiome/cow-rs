@@ -52,7 +52,7 @@ impl From<&TypedDataDomain> for TypedDataDomainDto {
             name: value.name.clone(),
             version: value.version.clone(),
             chain_id: value.chain_id,
-            verifying_contract: value.verifying_contract.as_str().to_owned(),
+            verifying_contract: value.verifying_contract.to_hex_string(),
         }
     }
 }

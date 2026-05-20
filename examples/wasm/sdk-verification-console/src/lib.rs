@@ -46,7 +46,7 @@ pub fn supported_chains_json() -> Result<String, JsValue> {
                 "name": chain_label(chain_id),
                 "apiPath": chain_id.api_path(),
                 "wrappedNative": {
-                    "address": wrapped.address.as_str(),
+                    "address": wrapped.address.to_hex_string(),
                     "symbol": wrapped.symbol,
                     "decimals": wrapped.decimals
                 }
@@ -93,25 +93,25 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
             .map_err(|error| to_js_error(error.to_string()))?,
         "sdkConstructed": sdk.trader_defaults().chain_id == Some(chain_id),
         "wrappedNative": {
-            "address": wrapped_native.address.as_str(),
+            "address": wrapped_native.address.to_hex_string(),
             "symbol": wrapped_native.symbol,
             "decimals": wrapped_native.decimals
         },
         "deployment": {
-            "settlement": deployment.settlement.as_str(),
-            "vaultRelayer": deployment.vault_relayer.as_str(),
-            "ethFlow": deployment.eth_flow.as_str()
+            "settlement": deployment.settlement.to_hex_string(),
+            "vaultRelayer": deployment.vault_relayer.to_hex_string(),
+            "ethFlow": deployment.eth_flow.to_hex_string()
         },
         "sampleOrder": {
-            "sellToken": order.sell_token.as_str(),
-            "buyToken": order.buy_token.as_str(),
-            "receiver": order.receiver.as_str()
+            "sellToken": order.sell_token.to_hex_string(),
+            "buyToken": order.buy_token.to_hex_string(),
+            "receiver": order.receiver.to_hex_string()
         },
         "sampleOrderNotes": {
             "sellToken": "Selected-chain wrapped native token.",
             "buyToken": "Static USDC example address used only for deterministic previews."
         },
-        "orderId": generated.order_id.as_str()
+        "orderId": generated.order_id.to_hex_string()
     }))
 }
 
@@ -253,12 +253,12 @@ pub fn order_envelope_preview_json(
             "name": typed.domain.name,
             "version": typed.domain.version,
             "chainId": typed.domain.chain_id,
-            "verifyingContract": typed.domain.verifying_contract.as_str()
+            "verifyingContract": typed.domain.verifying_contract.to_hex_string()
         },
         "types": typed.types,
         "message": typed.message,
         "digest": generated.order_digest,
-        "orderId": generated.order_id.as_str()
+        "orderId": generated.order_id.to_hex_string()
     }))
 }
 

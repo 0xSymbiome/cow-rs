@@ -63,7 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             "appDataHex": quote.app_data_info.app_data_keccak256.as_str()
         },
         "post": {
-            "orderId": post_result.order_id.as_str(),
+            "orderId": post_result.order_id.to_hex_string(),
             "signatureLength": post_result.signature.len(),
             "uploadedAppDataCount": orderbook_state.uploads.len(),
             "sentOrderCount": orderbook_state.sent_orders.len()
@@ -73,7 +73,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             "approvalTxHash": approval_tx_hash,
             "approvalContractRead": provider_state.last_contract_call.as_ref().map(|call| {
                 json!({
-                    "address": call.address.as_str(),
+                    "address": call.address.to_hex_string(),
                     "method": call.method
                 })
             })

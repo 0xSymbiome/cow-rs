@@ -102,9 +102,9 @@ impl From<OrderInput> for pure::dto::OrderInput {
 impl From<&cow_sdk_core::UnsignedOrder> for OrderInput {
     fn from(value: &cow_sdk_core::UnsignedOrder) -> Self {
         Self {
-            sell_token: value.sell_token.as_str().to_owned(),
-            buy_token: value.buy_token.as_str().to_owned(),
-            receiver: Some(value.receiver.as_str().to_owned()),
+            sell_token: value.sell_token.to_hex_string(),
+            buy_token: value.buy_token.to_hex_string(),
+            receiver: Some(value.receiver.to_hex_string()),
             sell_amount: value.sell_amount.to_string(),
             buy_amount: value.buy_amount.to_string(),
             valid_to: value.valid_to,

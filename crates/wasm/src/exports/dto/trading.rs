@@ -6,9 +6,8 @@ use serde_json::Value;
 use tsify::Tsify;
 use wasm_bindgen::prelude::*;
 
-use super::OrderInput;
 #[cfg(feature = "trading")]
-use super::{OrderKindDto, TokenBalanceDto};
+use super::{OrderInput, OrderKindDto, TokenBalanceDto};
 #[cfg(feature = "trading")]
 use crate::exports::errors::WasmError;
 

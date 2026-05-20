@@ -35,8 +35,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             "buyAmount": quote.quote_response.quote.buy_amount
         },
         "request": {
-            "from": request.from.as_str(),
-            "receiver": request.receiver.as_ref().map(|address| address.as_str()),
+            "from": request.from.to_hex_string(),
+            "receiver": request.receiver.as_ref().map(|address| address.to_hex_string()),
             "priceQuality": format!("{:?}", request.price_quality)
         }
     });

@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
         "surface": "cow-sdk::alloy::AlloyClient",
         "chainId": client.get_chain_id().await?,
-        "signer": signer.get_address().await?.as_str(),
+        "signer": signer.get_address().await?.to_hex_string(),
         "messageSignatureBytes": (signature.len() - 2) / 2
     });
     println!("{}", serde_json::to_string_pretty(&report)?);

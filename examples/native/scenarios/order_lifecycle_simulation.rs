@@ -32,8 +32,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "surface": "cow-sdk::TradingSdk::order_lifecycle",
         "mode": "simulated-transport",
         "order": {
-            "uid": order.uid.as_str(),
-            "owner": order.owner.as_str(),
+            "uid": order.uid.to_hex_string(),
+            "owner": order.owner.to_hex_string(),
             "status": format!("{:?}", order.status),
             "kind": format!("{:?}", order.kind)
         },

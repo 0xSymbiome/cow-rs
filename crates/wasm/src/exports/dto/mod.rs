@@ -45,9 +45,16 @@ pub use self::transport::{
     TransportPolicyConfig,
 };
 
+#[cfg(any(
+    feature = "signing",
+    feature = "orderbook",
+    feature = "trading",
+    feature = "subgraph"
+))]
 pub(crate) use self::core::{parse_chain, parse_order, parse_owner};
 #[cfg(feature = "orderbook")]
 pub(crate) use self::orderbook::{ecdsa_signing_scheme, orderbook_signing_scheme};
+#[cfg(feature = "signing")]
 pub(crate) use self::signing::typed_data_json;
 #[cfg(feature = "transport-policy")]
 pub(crate) use self::transport::transport_policy_from_config;

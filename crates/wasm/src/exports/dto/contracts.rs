@@ -79,7 +79,7 @@ pub struct TransactionRequestDto {
 impl From<&cow_sdk_core::TransactionRequest> for TransactionRequestDto {
     fn from(value: &cow_sdk_core::TransactionRequest) -> Self {
         Self {
-            to: value.to.as_ref().map(|address| address.as_str().to_owned()),
+            to: value.to.as_ref().map(cow_sdk_core::Address::to_hex_string),
             data: value.data.as_ref().map(ToString::to_string),
             value: value.value.as_ref().map(ToString::to_string),
             gas_limit: value.gas_limit.as_ref().map(ToString::to_string),

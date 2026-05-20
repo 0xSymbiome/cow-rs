@@ -14,8 +14,8 @@ use cow_sdk_examples_native::support::{
     sample_quote_response, sample_trader_parameters, text_preview,
 };
 
-fn call_data_prefix(data: &HexData) -> &str {
-    text_preview(data.as_str(), 10)
+fn call_data_prefix(data: &HexData) -> String {
+    text_preview(&data.to_hex_string(), 10).to_owned()
 }
 
 fn sample_ethflow_order() -> cow_sdk::orderbook::Order {
@@ -85,8 +85,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "surface": "cow-sdk::trading::get_pre_sign_transaction + cow-sdk::TradingSdk::on_chain_cancel_order",
         "mode": "simulated-transport",
         "preSignTransaction": {
-            "orderUid": order_uid.as_str(),
-            "contract": pre_sign.to.as_ref().map(|address| address.as_str()),
+            "orderUid": order_uid.to_hex_string(),
+            "contract": pre_sign.to.as_ref().map(|address| address.to_hex_string()),
             "value": pre_sign.value.as_ref().map(ToString::to_string),
             "gasLimit": pre_sign.gas_limit.as_ref().map(ToString::to_string),
             "callDataPrefix": call_data_prefix(
@@ -99,7 +99,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "cancellationPreview": {
             "regularOrder": {
                 "route": "settlement",
-                "contract": regular_preview.to.as_ref().map(|address| address.as_str()),
+                "contract": regular_preview.to.as_ref().map(|address| address.to_hex_string()),
                 "callDataPrefix": call_data_prefix(
                     regular_preview
                         .data
@@ -109,7 +109,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             },
             "ethFlowOrder": {
                 "route": "eth-flow",
-                "contract": ethflow_preview.to.as_ref().map(|address| address.as_str()),
+                "contract": ethflow_preview.to.as_ref().map(|address| address.to_hex_string()),
                 "callDataPrefix": call_data_prefix(
                     ethflow_preview
                         .data
@@ -121,8 +121,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "cancellationDispatch": {
             "regularOrder": {
                 "route": "settlement",
-                "txHash": regular_hash.as_str(),
-                "contract": regular_sent.to.as_ref().map(|address| address.as_str()),
+                "txHash": regular_hash.to_hex_string(),
+                "contract": regular_sent.to.as_ref().map(|address| address.to_hex_string()),
                 "gasLimit": regular_sent.gas_limit.as_ref().map(ToString::to_string),
                 "callDataPrefix": call_data_prefix(
                     regular_sent
@@ -133,8 +133,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             },
             "ethFlowOrder": {
                 "route": "eth-flow",
-                "txHash": ethflow_hash.as_str(),
-                "contract": ethflow_sent.to.as_ref().map(|address| address.as_str()),
+                "txHash": ethflow_hash.to_hex_string(),
+                "contract": ethflow_sent.to.as_ref().map(|address| address.to_hex_string()),
                 "gasLimit": ethflow_sent.gas_limit.as_ref().map(ToString::to_string),
                 "callDataPrefix": call_data_prefix(
                     ethflow_sent

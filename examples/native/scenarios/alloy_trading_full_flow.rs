@@ -68,7 +68,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
         "surface": "cow-sdk::alloy::AlloyClient with TradingSdk",
         "allowance": allowance,
-        "approvalTxHash": approval_receipt.transaction_hash.as_str(),
+        "approvalTxHash": approval_receipt.transaction_hash.to_hex_string(),
         "approvalStatus": format!("{:?}", approval_receipt.status),
         "approvalBlockNumber": approval_receipt.block_number,
         "approvalGasUsed": approval_receipt.gas_used,

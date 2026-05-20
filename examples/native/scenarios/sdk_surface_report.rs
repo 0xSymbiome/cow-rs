@@ -38,12 +38,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         "sdkConstructed": sdk.trader_defaults().chain_id == Some(chain_id),
         "chainId": u64::from(chain_id),
         "deployment": {
-            "settlement": deployment.settlement.as_str(),
-            "vaultRelayer": deployment.vault_relayer.as_str(),
-            "ethFlow": deployment.eth_flow.as_str()
+            "settlement": deployment.settlement.to_hex_string(),
+            "vaultRelayer": deployment.vault_relayer.to_hex_string(),
+            "ethFlow": deployment.eth_flow.to_hex_string()
         },
         "wrappedNative": {
-            "address": wrapped_native.address.as_str(),
+            "address": wrapped_native.address.to_hex_string(),
             "symbol": wrapped_native.symbol,
             "decimals": wrapped_native.decimals
         },
@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             "primaryType": typed_order.primary_type,
             "domainName": typed_order.domain.name,
             "digest": generated_order.order_digest,
-            "orderId": generated_order.order_id.as_str()
+            "orderId": generated_order.order_id.to_hex_string()
         }
     });
 

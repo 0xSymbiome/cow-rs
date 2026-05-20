@@ -16,27 +16,6 @@ const ORDER_UID_HEX_CHARS: usize = 112;
 /// Hex character count for a 32-byte hash without the `0x` prefix.
 const HASH32_HEX_CHARS: usize = 64;
 
-const HEX_ALPHABET: [u8; 16] = *b"0123456789abcdef";
-
-/// Returns the canonical `0x`-prefixed lowercase hex encoding of a 32-byte input.
-///
-/// Used by [`AppDataHash::from_bytes`] which retains the cached two-field
-/// layout pending the strict-newtype migration alongside `Amount` /
-/// `SignedAmount`.
-const fn hex_encode_32(bytes: [u8; 32]) -> [u8; 66] {
-    let mut out = [0u8; 66];
-    out[0] = b'0';
-    out[1] = b'x';
-    let mut i = 0;
-    while i < 32 {
-        let byte = bytes[i];
-        out[2 + 2 * i] = HEX_ALPHABET[(byte >> 4) as usize];
-        out[2 + 2 * i + 1] = HEX_ALPHABET[(byte & 0x0F) as usize];
-        i += 1;
-    }
-    out
-}
-
 /// Numeric EVM chain id.
 pub type ChainId = u64;
 
@@ -497,24 +476,15 @@ impl AppDataHash {
     /// Creates an app-data hash from its raw 32-byte representation.
     ///
     /// The input bytes are encoded into the canonical lowercase hex form
-    /// without re-validating the character set, so this path is intended
-    /// for protocol constants and other inputs whose byte-level shape is
-    /// already known to the caller.
-    ///
-    /// # Panics
-    ///
-    /// Never panics in practice; the internal UTF-8 assertion exists only
-    /// to keep the constructor free of `unsafe` code while still asserting
-    /// the ASCII-only invariant produced by [`hex_encode_32`].
+    /// via `alloy_primitives::B256`'s `LowerHex` impl, so this path is
+    /// total over every possible `[u8; 32]` input and never panics.
     #[inline]
     #[must_use]
     pub fn from_bytes(bytes: [u8; 32]) -> Self {
-        let hex_bytes = hex_encode_32(bytes);
-        let hex = String::from_utf8(hex_bytes.to_vec())
-            .expect("hex_encode_32 only emits valid ASCII hex characters plus the 0x prefix");
+        let inner = B256::from(bytes);
         Self {
-            inner: B256::from(bytes),
-            hex,
+            hex: format!("{inner:#x}"),
+            inner,
         }
     }
 

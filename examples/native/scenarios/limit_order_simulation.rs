@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "surface": "cow-sdk::TradingSdk::post_limit_order",
         "mode": "simulated-transport",
         "result": {
-            "orderId": posted.order_id.as_str(),
+            "orderId": posted.order_id.to_hex_string(),
             "signatureLength": posted.signature.len(),
             "signingScheme": format!("{:?}", posted.signing_scheme)
         },

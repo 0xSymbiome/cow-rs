@@ -55,13 +55,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
         "surface": "transaction lifecycle",
         "shapeA": {
-            "receiptHash": helper_receipt.transaction_hash.as_str(),
+            "receiptHash": helper_receipt.transaction_hash.to_hex_string(),
             "status": format!("{:?}", helper_receipt.status),
             "blockNumber": helper_receipt.block_number,
             "gasUsed": helper_receipt.gas_used,
         },
         "shapeB": {
-            "broadcastHash": broadcast.transaction_hash.as_str(),
+            "broadcastHash": broadcast.transaction_hash.to_hex_string(),
             "receiptRequestsDuringBroadcast": shape_b_methods
                 .iter()
                 .filter(|method| method.as_str() == "eth_getTransactionReceipt")

@@ -16,6 +16,12 @@ use super::TOKEN_LIST_IMAGES_PATH;
 /// Panics at compile time when the input is not exactly 42 characters, is
 /// missing the `0x` prefix, or contains a non-hex character.
 const fn hex_decode_20(hex: &str) -> [u8; 20] {
+    // SAFETY: the only callers of this helper are the
+    // `WRAPPED_NATIVE_*_BYTES` const declarations below, which are
+    // repository-owned 42-character `0x`-prefixed hex literals. The
+    // length, prefix, and per-nibble assertions therefore fire only as
+    // compile-time guards if the constants are ever edited into an
+    // invalid form.
     let bytes = hex.as_bytes();
     assert!(
         bytes.len() == 42,
@@ -40,6 +46,10 @@ const fn hex_decode_20(hex: &str) -> [u8; 20] {
 ///
 /// Panics when `c` is not an ASCII hex digit.
 const fn decode_nibble(c: u8) -> u8 {
+    // SAFETY: this helper is only reachable from `hex_decode_20` above,
+    // which feeds it bytes drawn from the repository-owned wrapped-native
+    // token hex constants. The non-hex fallback therefore acts as a
+    // compile-time invariant guard rather than a runtime failure mode.
     match c {
         b'0'..=b'9' => c - b'0',
         b'a'..=b'f' => c - b'a' + 10,

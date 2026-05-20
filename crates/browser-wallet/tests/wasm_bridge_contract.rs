@@ -5,7 +5,7 @@ use cow_sdk_browser_wallet::{
     InjectedWalletDiscoverySource, InjectedWalletInfo, MockRequestRecord, Origin, WalletEvent,
 };
 use cow_sdk_core::{
-    AsyncSigner, SupportedChainId, TypedDataDomain, TypedDataField, TypedDataPayload,
+    Address, AsyncSigner, SupportedChainId, TypedDataDomain, TypedDataField, TypedDataPayload,
     TypedDataTypes,
 };
 use js_sys::{Array, Object, Reflect};
@@ -342,7 +342,8 @@ async fn legacy_detect_connect_and_signer_requests_cross_the_typed_promise_bridg
         session
             .selected_account
             .as_ref()
-            .map(|value| value.as_str()),
+            .map(Address::to_hex_string)
+            .as_deref(),
         Some(ACCOUNT)
     );
 
@@ -441,7 +442,7 @@ async fn provider_events_keep_session_synchronized_and_listener_cleanup_tracks_r
     assert!(events.iter().any(|event| matches!(
         event,
         WalletEvent::AccountsChanged { accounts }
-            if accounts.len() == 1 && accounts[0].as_str() == ALTERNATE_ACCOUNT
+            if accounts.len() == 1 && accounts[0].to_hex_string() == ALTERNATE_ACCOUNT
     )));
     assert!(events.iter().any(|event| matches!(
         event,

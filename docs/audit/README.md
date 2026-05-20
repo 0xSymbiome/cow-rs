@@ -51,7 +51,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) | Standing audit | `cow-sdk-contracts` `alloy::sol!`-generated binding surfaces | Byte-identity parity on the shipped settlement, vault-relayer, EthFlow, EIP-1967 proxy, ERC-20 / ERC-20 Permit bindings, and the shared EIP-712 domain-separator fixture | Current | 2026-05-17 |
+| [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) | Standing audit | `cow-sdk-contracts` `alloy::sol!`-generated binding surfaces | Byte-identity parity on the shipped settlement, vault-relayer, EthFlow, EIP-1967 proxy, ERC-20 / ERC-20 Permit bindings, and the shared EIP-712 domain-separator fixture | Current | 2026-05-19 |
 | [Deployment Registry Audit](deployment-registry-audit.md) | Standing audit | `cow-sdk-contracts::Registry` typed deployment authority | Typed `(ContractId, SupportedChainId, CowEnv)` key, embedded TOML manifest, per-chain provenance, compile-time validation, and override composition | Current | 2026-05-12 |
 | [Composable Contract Bindings Audit](composable-contract-bindings-audit.md) | Standing audit | Composable Solidity excerpts and deployment registry rows | Conditional-order binding excerpts, schema v2 deployment rows, provenance evidence, and coverage-only Ink posture | Current | 2026-05-15 |
 | [Composable Watch-Tower Boundary Audit](composable-watch-tower-boundary-audit.md) | Standing audit | Composable helper crate boundary | Selector, decoder, event, and single-call provider helper scope with production watcher behavior explicitly out of scope | Current | 2026-05-15 |

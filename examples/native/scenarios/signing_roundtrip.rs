@@ -28,13 +28,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         "order": {
             "primaryType": typed_order.primary_type,
             "digest": generated.order_digest,
-            "orderId": generated.order_id.as_str(),
+            "orderId": generated.order_id.to_hex_string(),
             "signature": signed_order.signature,
             "scheme": format!("{:?}", signed_order.signing_scheme),
             "eip1271PayloadPrefix": text_preview(&eip1271_payload, 18)
         },
         "cancellation": {
-            "orderUid": sample_order_uid().as_str(),
+            "orderUid": sample_order_uid().to_hex_string(),
             "signature": cancellation.signature,
             "scheme": format!("{:?}", cancellation.signing_scheme)
         }

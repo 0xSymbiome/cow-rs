@@ -34,17 +34,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
+    let order_uid_hex = order_uid.to_hex_string();
     Mock::given(method("POST"))
         .and(path("/api/v1/orders"))
-        .respond_with(ResponseTemplate::new(201).set_body_json(order_uid.as_str()))
+        .respond_with(ResponseTemplate::new(201).set_body_json(&order_uid_hex))
         .mount(&server)
         .await;
 
     Mock::given(method("GET"))
-        .and(path(format!(
-            "/api/v1/orders/{}/status",
-            order_uid.as_str()
-        )))
+        .and(path(format!("/api/v1/orders/{order_uid_hex}/status")))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "type": "open",
             "value": null
@@ -93,7 +91,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             "verified": quote.verified
         },
         "order": {
-            "orderId": created_order_uid.as_str(),
+            "orderId": created_order_uid.to_hex_string(),
             "signingScheme": "eip712"
         },
         "status": {

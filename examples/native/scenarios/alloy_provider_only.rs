@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
         "surface": "cow-sdk::alloy_provider::RpcAlloyProvider",
         "address": ADDRESS,
-        "code": code.map(|data| data.as_str().to_owned())
+        "code": code.map(|data| data.to_hex_string())
     });
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())

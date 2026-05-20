@@ -87,8 +87,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
         "surface": "cow-sdk::alloy_signer with consumer async provider",
         "chainId": provider.get_chain_id().await?,
-        "signer": signer.get_address().await?.as_str(),
-        "code": code.map(|data| data.as_str().to_owned()),
+        "signer": signer.get_address().await?.to_hex_string(),
+        "code": code.map(|data| data.to_hex_string()),
         "messageSignatureBytes": (signature.len() - 2) / 2,
         "receipt": {
             "status": receipt.status.map(|status| format!("{status:?}")),

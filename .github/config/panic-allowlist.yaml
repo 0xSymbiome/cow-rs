@@ -43,9 +43,6 @@ allowed:
     item: Registry::default
     reason: The embedded registry manifest is validated by build.rs before runtime use.
   - file: crates/contracts/src/primitives.rs
-    item: zero_address
-    reason: The zero address literal is static and validated by the Address constructor.
-  - file: crates/contracts/src/primitives.rs
     item: sell_balance_name
     reason: In-crate balance mapping covers every currently representable settlement sell-balance variant.
   - file: crates/contracts/src/primitives.rs
@@ -57,36 +54,12 @@ allowed:
   - file: crates/contracts/src/settlement/codec.rs
     item: decode_order_flags
     reason: Bit masks are constrained before reaching unreachable arms.
+  - file: crates/core/src/config/chains.rs
+    item: decode_nibble
+    reason: Compile-time helper reachable only from hex_decode_20, which feeds it bytes drawn from the repository-owned wrapped-native-token hex constants.
   - file: crates/core/src/redaction/body.rs
     item: strip_credential_tokens
     reason: Redaction offsets are computed from in-bounds string match indices.
-  - file: crates/core/src/types/identity.rs
-    item: Address::from_bytes
-    reason: Hex encoder only emits ASCII hex plus the 0x prefix.
-  - file: crates/core/src/types/identity.rs
-    item: AppDataHash::from_bytes
-    reason: Hex encoder only emits ASCII hex plus the 0x prefix.
-  - file: crates/core/src/types/identity.rs
-    item: Hash32::from_bytes
-    reason: Hex encoder only emits ASCII hex plus the 0x prefix.
-  - file: crates/core/src/types/identity.rs
-    item: OrderUid::from_bytes
-    reason: Hex encoder only emits ASCII hex plus the 0x prefix.
-  - file: crates/core/src/types/identity_ext.rs
-    item: AlloyAddress::as_str
-    reason: hex_encode_20 only emits ASCII hex characters plus the 0x prefix.
-  - file: crates/core/src/types/identity_ext.rs
-    item: B256::as_str
-    reason: hex_encode_32 only emits ASCII hex characters plus the 0x prefix.
-  - file: crates/core/src/types/identity_ext.rs
-    item: Bytes::new
-    reason: normalize_hex_payload preserves the 0x prefix on every returned value.
-  - file: crates/core/src/types/identity_ext.rs
-    item: FixedBytes::as_str
-    reason: hex_encode_56 only emits ASCII hex characters plus the 0x prefix.
-  - file: crates/core/src/types/hex.rs
-    item: decode_nibble
-    reason: decode_nibble is only called after hex validation constrains each byte to a valid nibble.
   - file: crates/orderbook/src/builder.rs
     item: OrderBookApiBuilder::base_url
     reason: The convenience method is documented as requiring environment to be set before use.

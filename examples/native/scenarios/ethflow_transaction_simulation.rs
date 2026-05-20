@@ -15,8 +15,8 @@ use cow_sdk_examples_native::support::{
     sample_trader_parameters, text_preview,
 };
 
-fn call_data_prefix(data: &HexData) -> &str {
-    text_preview(data.as_str(), 10)
+fn call_data_prefix(data: &HexData) -> String {
+    text_preview(&data.to_hex_string(), 10).to_owned()
 }
 
 #[tokio::main]
@@ -67,8 +67,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "surface": "cow-sdk::trading::get_eth_flow_transaction + post_sell_native_currency_order",
         "mode": "simulated-transport",
         "ethFlowTransaction": {
-            "orderId": ethflow.order_id.as_str(),
-            "contract": ethflow.transaction.to.as_ref().map(|address| address.as_str()),
+            "orderId": ethflow.order_id.to_hex_string(),
+            "contract": ethflow.transaction.to.as_ref().map(Address::to_hex_string),
             "value": ethflow.transaction.value.as_ref().map(ToString::to_string),
             "gasLimit": ethflow.transaction.gas_limit.as_ref().map(ToString::to_string),
             "callDataPrefix": call_data_prefix(
@@ -78,15 +78,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     .as_ref()
                     .expect("ethflow transaction should include call data"),
             ),
-            "requestedSellToken": params.sell_token.as_str(),
-            "effectiveSellToken": ethflow.order_to_sign.sell_token.as_str(),
-            "buyToken": ethflow.order_to_sign.buy_token.as_str(),
+            "requestedSellToken": params.sell_token.to_hex_string(),
+            "effectiveSellToken": ethflow.order_to_sign.sell_token.to_hex_string(),
+            "buyToken": ethflow.order_to_sign.buy_token.to_hex_string(),
             "quoteId": params.quote_id,
             "appDataHash": app_data.app_data_keccak256.as_str()
         },
         "nativeSellPosting": {
-            "orderId": submitted.order_id.as_str(),
-            "txHash": submitted.tx_hash.as_ref().map(|hash| hash.as_str()),
+            "orderId": submitted.order_id.to_hex_string(),
+            "txHash": submitted.tx_hash.as_ref().map(|hash| hash.to_hex_string()),
             "signingScheme": format!("{:?}", submitted.signing_scheme),
             "uploadedAppDataHash": upload.0.as_str(),
             "uploadedAppDataPreview": text_preview(&upload.1, 96),

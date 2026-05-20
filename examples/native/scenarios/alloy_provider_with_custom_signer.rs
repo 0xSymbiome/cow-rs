@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
         "surface": "cow-sdk::alloy_provider with consumer async signer",
         "chainId": provider.get_chain_id().await?,
-        "signer": signer.get_address().await?.as_str(),
+        "signer": signer.get_address().await?.to_hex_string(),
         "messageSignatureBytes": (signer.sign_message(b"hello").await?.len() - 2) / 2
     });
     println!("{}", serde_json::to_string_pretty(&report)?);

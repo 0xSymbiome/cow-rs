@@ -154,7 +154,7 @@ impl BrowserWalletConsole {
                     "name": chain_label(chain_id),
                     "apiPath": chain_id.api_path(),
                     "wrappedNative": {
-                        "address": wrapped.address.as_str(),
+                        "address": wrapped.address.to_hex_string(),
                         "symbol": wrapped.symbol,
                         "decimals": wrapped.decimals
                     }
@@ -588,7 +588,7 @@ impl BrowserWalletConsole {
             .post_swap_order_async(trade, &signer, None)
             .await
             .map_err(js_string_error)?;
-        *self.last_live_order_uid.lock().unwrap() = Some(posting.order_id.as_str().to_owned());
+        *self.last_live_order_uid.lock().unwrap() = Some(posting.order_id.to_hex_string());
 
         pretty_json(&json!({
             "mode": "injected",
