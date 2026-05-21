@@ -141,10 +141,7 @@ async fn async_sign_order_paths_match_sync_signing_behavior() {
         let calls = signer.calls.borrow();
         assert_eq!(calls.typed_data.len(), 1);
         assert!(calls.messages.is_empty());
-        assert_eq!(
-            calls.typed_data[0].domain.chain_id,
-            Some(alloy_primitives::U256::from(11_155_111u64))
-        );
+        assert_eq!(calls.typed_data[0].domain.chain_id, 11_155_111);
         assert_eq!(
             calls.typed_data[0].value_json,
             serde_json::to_string(&order).unwrap()

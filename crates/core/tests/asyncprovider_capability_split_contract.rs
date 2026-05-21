@@ -93,7 +93,7 @@ impl AsyncSigner for DirectAsyncSigner {
     ) -> Result<String, Self::Error> {
         Ok(format!(
             "{}:{}:{}",
-            domain.name.as_deref().unwrap_or_default(),
+            domain.name,
             fields.len(),
             value_json.len()
         ))
@@ -204,7 +204,7 @@ impl Signer for SyncSigner {
     ) -> Result<String, Self::Error> {
         Ok(format!(
             "sync:{}:{}:{}",
-            domain.name.as_deref().unwrap_or_default(),
+            domain.name,
             fields.len(),
             value_json.len()
         ))

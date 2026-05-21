@@ -208,25 +208,11 @@ pub struct TypedDataDomainDto {
 
 impl From<&TypedDataDomain> for TypedDataDomainDto {
     fn from(value: &TypedDataDomain) -> Self {
-        // The cow `TypedDataDomain` is aliased onto
-        // `alloy_sol_types::Eip712Domain` per ADR 0052; all four fields
-        // are wrapped in `Option` at the alloy shape but cow construction
-        // always sets every one of them. Unwrap with descriptive
-        // fallbacks so a partial domain on the wire surfaces as a typed
-        // host-DTO with empty / zero defaults rather than panicking.
-        let chain_id_u64 = value
-            .chain_id
-            .and_then(|chain_id| u64::try_from(chain_id).ok())
-            .unwrap_or(0);
-        let verifying_contract = value
-            .verifying_contract
-            .map(|address| format!("0x{}", hex::encode(address)))
-            .unwrap_or_default();
         Self {
-            name: value.name.as_deref().unwrap_or_default().to_owned(),
-            version: value.version.as_deref().unwrap_or_default().to_owned(),
-            chain_id: chain_id_u64,
-            verifying_contract,
+            name: value.name.clone(),
+            version: value.version.clone(),
+            chain_id: value.chain_id,
+            verifying_contract: value.verifying_contract.to_hex_string(),
         }
     }
 }

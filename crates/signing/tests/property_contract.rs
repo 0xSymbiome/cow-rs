@@ -109,12 +109,13 @@ fn domain_strategy() -> impl Strategy<Value = TypedDataDomain> {
         address_strategy(),
     )
         .prop_map(
-            |(name, (major, minor, patch), chain_id, verifying_contract)| TypedDataDomain {
-                name: Some(name.into()),
-                version: Some(format!("{major}.{minor}.{patch}").into()),
-                chain_id: Some(alloy_primitives::U256::from(chain_id)),
-                verifying_contract: Some(*verifying_contract.as_alloy()),
-                salt: None,
+            |(name, (major, minor, patch), chain_id, verifying_contract)| {
+                TypedDataDomain::new(
+                    name,
+                    format!("{major}.{minor}.{patch}"),
+                    chain_id,
+                    verifying_contract,
+                )
             },
         )
 }
@@ -125,29 +126,19 @@ fn domain_and_changed_strategy() -> impl Strategy<Value = (TypedDataDomain, Type
     (domain_strategy(), 0u8..=3u8).prop_map(|(domain, which)| {
         let mut changed = domain.clone();
         match which {
-            0 => {
-                let mut name = changed.name.as_deref().unwrap_or_default().to_owned();
-                name.push_str("-alt");
-                changed.name = Some(name.into());
-            }
-            1 => {
-                let mut version = changed.version.as_deref().unwrap_or_default().to_owned();
-                version.push_str(".1");
-                changed.version = Some(version.into());
-            }
-            2 => {
-                let chain_id_u256 = changed.chain_id.unwrap_or(alloy_primitives::U256::ZERO);
-                changed.chain_id =
-                    Some(chain_id_u256.saturating_add(alloy_primitives::U256::from(1u64)));
-            }
+            0 => changed.name.push_str("-alt"),
+            1 => changed.version.push_str(".1"),
+            2 => changed.chain_id = changed.chain_id.saturating_add(1),
             _ => {
-                let current_addr = changed.verifying_contract.unwrap_or_default();
-                let mut bytes = current_addr.into_array();
+                let hex_string = changed.verifying_contract.to_hex_string();
+                let current = hex_string.trim_start_matches("0x");
+                let mut bytes = hex::decode(current).unwrap();
                 bytes[19] ^= 1;
                 if bytes.iter().all(|byte| *byte == 0) {
                     bytes[19] = 1;
                 }
-                changed.verifying_contract = Some(alloy_primitives::Address::from(bytes));
+                changed.verifying_contract =
+                    Address::new(format!("0x{}", hex::encode(bytes))).unwrap();
             }
         }
         (domain, changed)
@@ -433,10 +424,9 @@ proptest! {
             .as_ref()
             .and_then(|options| options.settlement_contract_override.as_ref())
         {
-            let expected = overrides.get(&u64::from(chain)).unwrap();
             prop_assert_eq!(
-                payload.domain.verifying_contract,
-                Some(*expected.as_alloy()),
+                &payload.domain.verifying_contract,
+                overrides.get(&u64::from(chain)).unwrap(),
             );
         }
     }

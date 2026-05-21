@@ -223,13 +223,12 @@ fn equivalent_order_pair_strategy() -> impl Strategy<Value = (Order, Order)> {
 /// domain.
 fn domain_strategy() -> impl Strategy<Value = TypedDataDomain> {
     (address_strategy(), 1u64..=100_000u64).prop_map(|(verifying_contract, chain_id)| {
-        TypedDataDomain {
-            name: Some("Gnosis Protocol".into()),
-            version: Some("v2".into()),
-            chain_id: Some(alloy_primitives::U256::from(chain_id)),
-            verifying_contract: Some(*verifying_contract.as_alloy()),
-            salt: None,
-        }
+        TypedDataDomain::new(
+            "Gnosis Protocol".to_owned(),
+            "v2".to_owned(),
+            chain_id,
+            verifying_contract,
+        )
     })
 }
 

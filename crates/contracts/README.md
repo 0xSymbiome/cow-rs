@@ -24,18 +24,18 @@ cow-sdk-contracts = "0.1"
 use cow_sdk_contracts::{ContractId, Order, Registry, hash_order};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderKind, SellTokenSource,
-    SupportedChainId, UnsignedOrder,
+    SupportedChainId, TypedDataDomain, UnsignedOrder,
 };
 
 let verifying_contract = Registry::default()
     .address(ContractId::Settlement, SupportedChainId::Mainnet, CowEnv::Prod)
     .unwrap();
-let domain = alloy_sol_types::eip712_domain! {
-    name: "Gnosis Protocol",
-    version: "v2",
-    chain_id: u64::from(SupportedChainId::Mainnet),
-    verifying_contract: *verifying_contract.as_alloy(),
-};
+let domain = TypedDataDomain::new(
+    "Gnosis Protocol".to_owned(),
+    "v2".to_owned(),
+    SupportedChainId::Mainnet.into(),
+    verifying_contract,
+);
 let trader_address = Address::new("0x3333333333333333333333333333333333333333").unwrap();
 
 let order = Order::from(&UnsignedOrder::new(

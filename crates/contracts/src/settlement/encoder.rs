@@ -78,12 +78,6 @@ impl SettlementEncoder {
     /// # Errors
     ///
     /// Returns [`ContractsError`] if a stored order UID cannot be decoded.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the encoder's typed-data domain has no `verifyingContract`.
-    /// Cow construction paths always populate the field; a missing value
-    /// here would indicate the encoder was built from a malformed domain.
     pub fn encoded_order_refunds(&self) -> Result<Vec<Interaction>, ContractsError> {
         let mut interactions = Vec::new();
         for (kind, order_uids) in [
@@ -113,21 +107,8 @@ impl SettlementEncoder {
                 }
                 .abi_encode(),
             };
-            // SAFETY: The cow `TypedDataDomain` aliases onto
-            // `alloy_sol_types::Eip712Domain`; every cow construction
-            // path (cow-sdk-signing::get_domain + the
-            // `SettlementEncoder::new(domain)` API) sets
-            // `verifyingContract` unconditionally. A missing value
-            // here would indicate the encoder was built from a
-            // malformed domain that the public surface does not
-            // produce.
             interactions.push(Interaction::new(
-                Address::from_bytes(
-                    self.domain
-                        .verifying_contract
-                        .expect("cow EIP-712 domain always sets verifyingContract")
-                        .into_array(),
-                ),
+                self.domain.verifying_contract,
                 Amount::zero(),
                 Bytes::from(call_data),
             ));
@@ -270,13 +251,12 @@ impl SettlementEncoder {
     pub fn encoded_setup(
         interactions: &[InteractionLike],
     ) -> Result<EncodedSettlement, ContractsError> {
-        let mut encoder = Self::new(TypedDataDomain {
-            name: Some("unused".into()),
-            version: Some("unused".into()),
-            chain_id: Some(alloy_primitives::U256::ZERO),
-            verifying_contract: Some(*Address::zero().as_alloy()),
-            salt: None,
-        });
+        let mut encoder = Self::new(TypedDataDomain::new(
+            "unused".to_owned(),
+            "unused".to_owned(),
+            0,
+            Address::zero(),
+        ));
         for interaction in interactions {
             encoder.encode_interaction(interaction, InteractionStage::Intra)?;
         }
@@ -293,18 +273,14 @@ impl SettlementEncoder {
     }
 
     fn canonical_vault_relayer_target(&self) -> Option<Address> {
-        let chain_id_u256 = self.domain.chain_id?;
-        let chain_id_u64 = u64::try_from(chain_id_u256).ok()?;
-        let chain_id = SupportedChainId::try_from(chain_id_u64).ok()?;
-        let verifying_contract = self.domain.verifying_contract?;
-        let cow_verifying_contract = Address::from_bytes(verifying_contract.into_array());
+        let chain_id = SupportedChainId::try_from(self.domain.chain_id).ok()?;
         let registry = Registry::default();
         let mut matches = registry
             .entries()
             .filter(|(contract_id, entry_chain_id, _, address)| {
                 *contract_id == ContractId::Settlement
                     && *entry_chain_id == chain_id.into()
-                    && **address == cow_verifying_contract
+                    && *address == &self.domain.verifying_contract
             })
             .map(|(_, _, env, _)| env);
 
@@ -353,17 +329,12 @@ mod tests {
 
     #[test]
     fn fill_or_kill_orders_default_the_executed_amount_to_zero() {
-        let domain = TypedDataDomain {
-            name: Some("Gnosis Protocol".into()),
-            version: Some("v2".into()),
-            chain_id: Some(alloy_primitives::U256::from(1u64)),
-            verifying_contract: Some(
-                *Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
-                    .unwrap()
-                    .as_alloy(),
-            ),
-            salt: None,
-        };
+        let domain = TypedDataDomain::new(
+            "Gnosis Protocol".to_owned(),
+            "v2".to_owned(),
+            1,
+            Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
+        );
         let mut encoder = SettlementEncoder::new(domain);
 
         encoder

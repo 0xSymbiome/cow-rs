@@ -54,13 +54,12 @@ struct FuzzInput {
 }
 
 fuzz_target!(|input: FuzzInput| {
-    let domain = TypedDataDomain {
-        name: Some(bounded_ascii(input.domain_name_seed, input.domain_name_len).into()),
-        version: Some(bounded_ascii(input.domain_version_seed, input.domain_version_len).into()),
-        chain_id: Some(alloy_primitives::U256::from(ChainId::from(input.chain_id))),
-        verifying_contract: Some(*Address::from_bytes(input.verifying_contract).as_alloy()),
-        salt: None,
-    };
+    let domain = TypedDataDomain::new(
+        bounded_ascii(input.domain_name_seed, input.domain_name_len),
+        bounded_ascii(input.domain_version_seed, input.domain_version_len),
+        ChainId::from(input.chain_id),
+        Address::from_bytes(input.verifying_contract),
+    );
 
     let uid_count = usize::from(input.uid_count) % (MAX_UID_COUNT + 1);
     let uids = build_uids(

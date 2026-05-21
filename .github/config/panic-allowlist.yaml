@@ -60,9 +60,6 @@ allowed:
   - file: crates/core/src/redaction/body.rs
     item: strip_credential_tokens
     reason: Redaction offsets are computed from in-bounds string match indices.
-  - file: crates/contracts/src/settlement/encoder.rs
-    item: SettlementEncoder::encoded_order_refunds
-    reason: The cow `TypedDataDomain` is aliased onto `alloy_sol_types::Eip712Domain`; the cow construction paths (the `cow-sdk-signing::get_domain` builder + the `SettlementEncoder::new(domain)` API) always populate `verifyingContract`. The `# Panics` rustdoc on `encoded_order_refunds` documents the precondition; the encoder cannot be built from a malformed domain through the public surface.
   - file: crates/orderbook/src/builder.rs
     item: OrderBookApiBuilder::base_url
     reason: The convenience method is documented as requiring environment to be set before use.

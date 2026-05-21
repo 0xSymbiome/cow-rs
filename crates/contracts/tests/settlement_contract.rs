@@ -34,17 +34,12 @@ fn expected_u8(value: &serde_json::Value) -> u8 {
 }
 
 fn sample_domain() -> TypedDataDomain {
-    TypedDataDomain {
-        name: Some("Gnosis Protocol".into()),
-        version: Some("v2".into()),
-        chain_id: Some(alloy_primitives::U256::from(1u64)),
-        verifying_contract: Some(
-            *Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
-                .unwrap()
-                .as_alloy(),
-        ),
-        salt: None,
-    }
+    TypedDataDomain::new(
+        "Gnosis Protocol".to_owned(),
+        "v2".to_owned(),
+        1,
+        Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
+    )
 }
 
 fn sample_order(kind: OrderKind, partially_fillable: bool) -> Order {
@@ -298,15 +293,7 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
 
     let post = encoder.interactions().unwrap()[InteractionStage::Post as usize].clone();
     assert_eq!(post.len(), 2);
-    assert_eq!(
-        post[0].target,
-        Address::from_bytes(
-            domain
-                .verifying_contract
-                .expect("cow EIP-712 domain always sets verifyingContract")
-                .into_array()
-        )
-    );
+    assert_eq!(post[0].target, domain.verifying_contract);
     assert!(
         hex_prefixed(&post[0].call_data).starts_with(&selector(&format!(
             "{}(bytes[])",

@@ -424,46 +424,41 @@ derive is gated entirely behind `target_family = "wasm"`. The
 together, so a single `use cow_sdk_core::prelude::*;` brings every
 strict newtype into scope per ADR 0052.
 
-### EIP-712 Domain Alias
+### EIP-712 Domain Shape
 
-`cow_sdk_core::TypedDataDomain` is a `pub type` alias over
-`alloy_sol_types::Eip712Domain` per ADR 0052. The previous cow-owned
-struct shape (`{ name: String, version: String, chain_id: ChainId,
-verifying_contract: Address }`) is retired entirely. Cow callers
-construct the domain either through `alloy_sol_types::eip712_domain!`
-for compile-time-known constants or through the alloy struct-literal
-form `alloy_sol_types::Eip712Domain { name: Some(_), version: Some(_),
-chain_id: Some(U256::from(chain_id_u64)), verifying_contract:
-Some(verifying_contract_addr), salt: None }` for runtime-computed
-values. The cow constructor `TypedDataDomain::new(...)` is removed; no
-`#[deprecated]` shim ships because the SDK is pre-release.
+`cow_sdk_core::TypedDataDomain` is a cow-owned `#[non_exhaustive]`
+struct with four required fields (`name: String`, `version: String`,
+`chain_id: ChainId`, `verifying_contract: Address`) and no `salt`,
+matching the GPv2 Solidity domain shape that every shipped
+GPv2Settlement instance has burnt into immutable bytecode since 2021.
+Cow callers construct the domain through the cow-owned
+`TypedDataDomain::new(name, version, chain_id, verifying_contract)`
+constructor or via direct struct-literal initialisation. The cow
+struct's derived `Serialize`/`Deserialize` impls emit and parse the
+canonical EIP-1193 `eth_signTypedData_v4` wire shape directly: numeric
+`chainId` (cow `ChainId` newtype serialises through its u64 inner),
+lowercase-hex `verifyingContract`, and no `salt` field on the wire.
 
-The `crates/alloy-signer/src/conversion.rs` cow-to-alloy `TypedData`
-bridge module retires; the `mod conversion;` declaration drops from
-`crates/alloy-signer/src/lib.rs`. The two helpers the alloy-signer
-crate previously called (`cow_flat_to_alloy_typed_data` and
-`cow_typed_data_payload_to_alloy`) are reborn as
-`typed_data_from_flat_fields` and `typed_data_from_payload` inside
-`crates/alloy-signer/src/signer.rs`, both of which now consume
-`payload.domain` directly because the cow type IS
-`alloy_sol_types::Eip712Domain`. The `Resolver`-building plus
-ECDSA-hex normalizer helpers inline alongside.
+The `crates/alloy-signer/src/conversion.rs` module provides the
+one-way cow → alloy adapter the EIP-712 hashing seam needs. Two
+caller helpers (`cow_flat_to_alloy_typed_data` and
+`cow_typed_data_payload_to_alloy`) lift the cow envelope into the
+alloy `Eip712Domain` shape so `alloy_sol_types::SolStruct::eip712_signing_hash`
+can compute the canonical separator and signing hash. The cow type
+remains the public API surface; the alloy type is the transient
+hashing-step helper.
 
-The cow JSON wire shape for the EIP-1193 `eth_signTypedData_v4` request
-stays preserved at the browser-wallet seam. The alloy `Eip712Domain`
-`Serialize` impl emits `chainId` as a `0x`-prefixed hex string and may
-include a `salt` field; the EIP-1193 spec the injected wallets accept
-requires a JSON Number `chainId`, a required `verifyingContract`, and
-no `salt`. `crates/browser-wallet/src/signer.rs::typed_data_request`
-post-processes the alloy-serialised JSON in place: parses the `0x`-hex
-chainId into a `u64` Number, asserts `verifyingContract` is present
-and non-null, and strips `salt` if present. The bridge coercion runs
-unconditionally so any future change to the alloy `Eip712Domain`
-serialize defaults stays absorbed at the cow boundary. The
-`signer_contract.rs::typed_data_request_emits_domain_with_numeric_chain_id_and_required_verifying_contract`
-contract test exercises the coercion on both mainnet chainId 1 and
-sepolia chainId 11155111 inputs and asserts the canonical EIP-1193
-shape.
+The `signer_contract.rs::validate_typed_data_chain_rejects_payload_with_wrong_domain_chain_id`
+contract test exercises the cow `ChainId` field's strict equality
+against the signer's bound chain id, and the `domain_contract.rs`
++ `parity_contract.rs` suites in the `cow-sdk-signing` crate pin the
+canonical wire shape and the byte-identity invariants. The byte-
+identity gates fix the mainnet domain separator
+`0xc078f884a2676e1345748b1feace7b0abee5d00ecadb6e574dcdd109a63e8943`,
+the sepolia separator `0xdaee378bd0eb30ddf479272accf91761e697bc00e067a268f95f1d2732ed230b`,
+the GPv2 Order type hash `0xd5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489`,
+and the canonical EIP-712 reference signature
+`0x34bc8d9249f7f9399d1db57b96bfc3a2f935a25965fe265292142c305284c7241daf1b3049bc75da81012cf33aeac1de09ec5684bccf03afe7274262703780d01c`.
 
 ## Evidence
 
@@ -510,7 +505,9 @@ Primary regression coverage:
 - `crates/trading/tests/parity_contract.rs`
 - `crates/core/tests/wire_format_preservation_contract.rs`
 - `crates/core/tests/property_contract.rs`
-- `crates/browser-wallet/tests/signer_contract.rs::typed_data_request_emits_domain_with_numeric_chain_id_and_required_verifying_contract`
+- `crates/browser-wallet/tests/signer_contract.rs::validate_typed_data_chain_rejects_payload_with_wrong_domain_chain_id`
+- `crates/signing/tests/domain_contract.rs`
+- `crates/signing/tests/parity_contract.rs`
 
 Validation surface:
 

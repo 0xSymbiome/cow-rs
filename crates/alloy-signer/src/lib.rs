@@ -32,6 +32,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 mod builder;
 #[cfg(not(target_arch = "wasm32"))]
+mod conversion;
+#[cfg(not(target_arch = "wasm32"))]
 mod error;
 #[cfg(not(target_arch = "wasm32"))]
 mod signer;

@@ -1,5 +1,5 @@
-use alloy_primitives::Bytes as AlloyBytes;
-use alloy_sol_types::SolStruct;
+use alloy_primitives::{Bytes as AlloyBytes, U256};
+use alloy_sol_types::{Eip712Domain, SolStruct};
 use cow_sdk_core::{Address, Hash32, OrderDigest, OrderUid, TypedDataDomain};
 
 use super::sol_cancellations::OrderCancellations as SolOrderCancellations;
@@ -58,7 +58,8 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
 pub fn hash_order(domain: &TypedDataDomain, order: &Order) -> Result<OrderDigest, ContractsError> {
     let normalized = normalize_order(order)?;
     let sol_order = sol_order_from_normalized(&normalized);
-    let digest = sol_order.eip712_signing_hash(domain);
+    let alloy_domain = alloy_domain_from(domain);
+    let digest = sol_order.eip712_signing_hash(&alloy_domain);
     OrderDigest::new(format!("0x{}", hex::encode(digest.as_slice()))).map_err(Into::into)
 }
 
@@ -95,7 +96,8 @@ pub fn hash_order_cancellations(
     let sol_cancellations = SolOrderCancellations {
         orderUids: order_uids,
     };
-    let digest = sol_cancellations.eip712_signing_hash(domain);
+    let alloy_domain = alloy_domain_from(domain);
+    let digest = sol_cancellations.eip712_signing_hash(&alloy_domain);
     Hash32::new(format!("0x{}", hex::encode(digest.as_slice()))).map_err(Into::into)
 }
 
@@ -122,6 +124,16 @@ fn sol_order_from_normalized(order: &NormalizedOrder) -> SolOrder {
     }
 }
 
+fn alloy_domain_from(domain: &TypedDataDomain) -> Eip712Domain {
+    Eip712Domain {
+        name: Some(domain.name.clone().into()),
+        version: Some(domain.version.clone().into()),
+        chain_id: Some(U256::from(domain.chain_id)),
+        verifying_contract: Some(*domain.verifying_contract.as_alloy()),
+        salt: None,
+    }
+}
+
 fn decode_order_uid_bytes(uid: &OrderUid) -> AlloyBytes {
     AlloyBytes::from(uid.as_slice().to_vec())
 }
@@ -141,20 +153,18 @@ mod tests {
     use std::str::FromStr;
 
     fn sample_domain() -> TypedDataDomain {
-        let verifying_contract = Registry::default()
-            .address(
-                ContractId::Settlement,
-                SupportedChainId::Mainnet,
-                CowEnv::Prod,
-            )
-            .expect("canonical settlement address is registered for every supported chain");
-        TypedDataDomain {
-            name: Some("Gnosis Protocol".into()),
-            version: Some("v2".into()),
-            chain_id: Some(alloy_primitives::U256::from(1u64)),
-            verifying_contract: Some(*verifying_contract.as_alloy()),
-            salt: None,
-        }
+        TypedDataDomain::new(
+            "Gnosis Protocol".to_owned(),
+            "v2".to_owned(),
+            1,
+            Registry::default()
+                .address(
+                    ContractId::Settlement,
+                    SupportedChainId::Mainnet,
+                    CowEnv::Prod,
+                )
+                .expect("canonical settlement address is registered for every supported chain"),
+        )
     }
 
     fn sample_order() -> Order {
@@ -176,12 +186,11 @@ mod tests {
     }
 
     fn encode_u256_word(value: &str) -> [u8; 32] {
-        // Test oracle helper: `alloy_primitives::U256::from_str`
-        // recognises both the decimal and `0x`-prefixed hex forms used
-        // by the parity fixtures, so the cow newtype migration drops
-        // the historical BigUint dependency without losing the
-        // dual-radix surface.
-        alloy_primitives::U256::from_str(value)
+        // Test oracle helper: `U256::from_str` recognises both the decimal
+        // and `0x`-prefixed hex forms used by the parity fixtures, so the
+        // cow newtype migration drops the historical BigUint dependency
+        // without losing the dual-radix surface.
+        U256::from_str(value)
             .expect("test fixture value must parse to U256")
             .to_be_bytes::<32>()
     }
@@ -202,37 +211,15 @@ mod tests {
     }
 
     fn manual_domain_separator(domain: &TypedDataDomain) -> [u8; 32] {
-        // The cow `TypedDataDomain` is aliased onto
-        // `alloy_sol_types::Eip712Domain`; every cow construction path
-        // sets every field. Unwrap with descriptive panics so a
-        // partial domain surfaces here as a test-time abort rather
-        // than a silent wrong digest.
-        let name = domain
-            .name
-            .as_deref()
-            .expect("cow EIP-712 domain always sets name");
-        let version = domain
-            .version
-            .as_deref()
-            .expect("cow EIP-712 domain always sets version");
-        let chain_id = domain
-            .chain_id
-            .expect("cow EIP-712 domain always sets chainId");
-        let verifying_contract = Address::from_bytes(
-            domain
-                .verifying_contract
-                .expect("cow EIP-712 domain always sets verifyingContract")
-                .into_array(),
-        );
         let mut encoded = Vec::new();
         encoded.extend_from_slice(&Keccak256::digest(
             "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
                 .as_bytes(),
         ));
-        encoded.extend_from_slice(&keccak_word(name));
-        encoded.extend_from_slice(&keccak_word(version));
-        encoded.extend_from_slice(&chain_id.to_be_bytes::<32>());
-        encoded.extend_from_slice(&encode_address_word(&verifying_contract));
+        encoded.extend_from_slice(&keccak_word(&domain.name));
+        encoded.extend_from_slice(&keccak_word(&domain.version));
+        encoded.extend_from_slice(&encode_u256_word(&domain.chain_id.to_string()));
+        encoded.extend_from_slice(&encode_address_word(&domain.verifying_contract));
         Keccak256::digest(&encoded).into()
     }
 

@@ -33,13 +33,12 @@ fn hex_prefixed(bytes: &Bytes) -> String {
 }
 
 fn settlement_domain(chain_id: SupportedChainId, verifying_contract: Address) -> TypedDataDomain {
-    TypedDataDomain {
-        name: Some("Gnosis Protocol".into()),
-        version: Some("v2".into()),
-        chain_id: Some(alloy_primitives::U256::from(u64::from(chain_id))),
-        verifying_contract: Some(*verifying_contract.as_alloy()),
-        salt: None,
-    }
+    TypedDataDomain::new(
+        "Gnosis Protocol".to_owned(),
+        "v2".to_owned(),
+        chain_id.into(),
+        verifying_contract,
+    )
 }
 
 #[test]
@@ -198,13 +197,12 @@ fn interaction_encoder_does_not_cross_match_chain_or_env() {
         )
         .unwrap();
 
-    let unsupported_chain_domain = TypedDataDomain {
-        name: Some("Gnosis Protocol".into()),
-        version: Some("v2".into()),
-        chain_id: Some(alloy_primitives::U256::from(424_242u64)),
-        verifying_contract: Some(*settlement.as_alloy()),
-        salt: None,
-    };
+    let unsupported_chain_domain = TypedDataDomain::new(
+        "Gnosis Protocol".to_owned(),
+        "v2".to_owned(),
+        424_242,
+        settlement,
+    );
     let prod_vault_relayer = registry
         .address(ContractId::VaultRelayer, chain_id, CowEnv::Prod)
         .expect("canonical production vault relayer must be registered");

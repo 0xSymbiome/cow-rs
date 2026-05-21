@@ -9,17 +9,12 @@ use cow_sdk_core::{
 use common::fixture_case;
 
 fn sample_domain() -> TypedDataDomain {
-    TypedDataDomain {
-        name: Some("Gnosis Protocol".into()),
-        version: Some("v2".into()),
-        chain_id: Some(alloy_primitives::U256::from(1u64)),
-        verifying_contract: Some(
-            *Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41")
-                .unwrap()
-                .as_alloy(),
-        ),
-        salt: None,
-    }
+    TypedDataDomain::new(
+        "Gnosis Protocol".to_owned(),
+        "v2".to_owned(),
+        1,
+        Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
+    )
 }
 
 fn sample_order(kind: OrderKind) -> Order {

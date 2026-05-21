@@ -45,7 +45,7 @@ impl Signer for MockSigner {
     ) -> Result<String, Self::Error> {
         Ok(format!(
             "{}:{}:{}",
-            domain.name.as_deref().unwrap_or_default(),
+            domain.name,
             fields.len(),
             value_json.len()
         ))
@@ -205,17 +205,12 @@ fn sample_to_address() -> Address {
 }
 
 fn sample_typed_data_domain() -> TypedDataDomain {
-    TypedDataDomain {
-        name: Some("Gnosis Protocol".into()),
-        version: Some("v2".into()),
-        chain_id: Some(alloy_primitives::U256::from(1u64)),
-        verifying_contract: Some(
-            *Address::new("0x3333333333333333333333333333333333333333")
-                .unwrap()
-                .as_alloy(),
-        ),
-        salt: None,
-    }
+    TypedDataDomain::new(
+        "Gnosis Protocol".to_owned(),
+        "v2".to_owned(),
+        1,
+        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+    )
 }
 
 fn sample_typed_data_payload(domain: TypedDataDomain) -> TypedDataPayload {
@@ -250,17 +245,12 @@ fn sample_custom_action_payload() -> TypedDataPayload {
         )],
     );
     TypedDataPayload::new(
-        TypedDataDomain {
-            name: Some("Gnosis Protocol".into()),
-            version: Some("v2".into()),
-            chain_id: Some(alloy_primitives::U256::from(1u64)),
-            verifying_contract: Some(
-                *Address::new("0x3333333333333333333333333333333333333333")
-                    .unwrap()
-                    .as_alloy(),
-            ),
-            salt: None,
-        },
+        TypedDataDomain::new(
+            "Gnosis Protocol".to_owned(),
+            "v2".to_owned(),
+            1,
+            Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+        ),
         "CustomAction".to_owned(),
         types,
         "{\"actor\":\"0x9999999999999999999999999999999999999999\"}".to_owned(),

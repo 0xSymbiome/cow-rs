@@ -1,4 +1,4 @@
-//! Conversion helpers for the native composed Alloy adapter.
+//! Conversion helpers between SDK typed-data values and Alloy signing values.
 
 use std::borrow::Cow;
 
@@ -9,11 +9,6 @@ use alloy_dyn_abi::{
 use alloy_primitives::{Signature, U256};
 use alloy_sol_types::Eip712Domain;
 use cow_sdk_core::{TypedDataDomain, TypedDataField, TypedDataPayload};
-
-pub(crate) use cow_sdk_alloy_provider::__seam::{
-    alloy_to_cow_block_info, alloy_to_cow_receipt, cow_block_tag_to_alloy, cow_request_to_alloy,
-    rpc_error_to_class_and_detail,
-};
 
 /// Converts legacy flat typed-data fields into Alloy's dynamic typed-data shape.
 ///
@@ -114,10 +109,91 @@ fn property_def(type_name: &str, field: &TypedDataField) -> Result<PropertyDef, 
     })
 }
 
-/// Hex-encodes an Alloy signature through the shared ECDSA normalizer.
+/// Hex-encodes an Alloy signature through the shared `CoW` ECDSA normalizer.
+///
+/// Routing through `cow_sdk_contracts::normalized_ecdsa_signature` keeps the
+/// signer leaf aligned with the workspace's single recovery-byte normalization
+/// authority.
 pub(crate) fn alloy_signature_to_hex(
     signature: &Signature,
 ) -> Result<String, cow_sdk_contracts::ContractsError> {
     let raw = format!("0x{}", hex::encode(signature.as_bytes()));
     cow_sdk_contracts::normalized_ecdsa_signature(&raw)
+}
+
+#[cfg(test)]
+mod tests {
+    use cow_sdk_core::{Address, TypedDataDomain, TypedDataField, TypedDataPayload};
+
+    use super::*;
+
+    #[test]
+    fn cow_typed_data_to_alloy_round_trip() {
+        let payload = simple_payload("Greeting");
+        let typed = cow_typed_data_payload_to_alloy(&payload).unwrap();
+
+        assert_eq!(typed.primary_type, "Greeting");
+        assert_eq!(
+            typed.message,
+            serde_json::json!({
+                "message": "hello"
+            })
+        );
+        typed.eip712_signing_hash().unwrap();
+    }
+
+    #[test]
+    fn flat_conversion_uses_message_placeholder_primary_type() {
+        let payload = simple_payload("Greeting");
+        let typed = cow_flat_to_alloy_typed_data(
+            &payload.domain,
+            payload.primary_type_fields().unwrap(),
+            payload.message_json(),
+        )
+        .unwrap();
+
+        assert_eq!(typed.primary_type, "Message");
+        assert_ne!(
+            typed.eip712_signing_hash().unwrap(),
+            cow_typed_data_payload_to_alloy(&payload)
+                .unwrap()
+                .eip712_signing_hash()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn alloy_signature_to_hex_format() {
+        let mut bytes = [1u8; 65];
+        bytes[64] = 27;
+        let signature = Signature::from_raw(&bytes).unwrap();
+        let encoded = alloy_signature_to_hex(&signature).unwrap();
+
+        assert_eq!(encoded.len(), 132);
+        assert!(encoded.starts_with("0x"));
+        assert!(encoded.ends_with("1b"));
+    }
+
+    fn simple_payload(primary_type: &str) -> TypedDataPayload {
+        let domain = TypedDataDomain::new(
+            "CoW".to_owned(),
+            "1".to_owned(),
+            1,
+            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+        );
+        let mut types = cow_sdk_core::TypedDataTypes::new();
+        types.insert(
+            primary_type.to_owned(),
+            vec![TypedDataField::new(
+                "message".to_owned(),
+                "string".to_owned(),
+            )],
+        );
+        TypedDataPayload::new(
+            domain,
+            primary_type.to_owned(),
+            types,
+            serde_json::json!({ "message": "hello" }).to_string(),
+        )
+    }
 }
