@@ -308,9 +308,25 @@ impl<'de> Deserialize<'de> for Amount {
     }
 }
 
+// The `#[track_caller]` annotation on the six `Amount` arithmetic
+// operator impls below preserves the caller's panic location across
+// the cow newtype boundary. The inner `alloy_primitives::U256` (which
+// is `ruint::Uint<256, 4>`) already carries `#[track_caller]` on its
+// arithmetic impls, but the bodies delegate to `wrapping_*` and never
+// panic in any build profile, so for `Amount` the annotation is a
+// chain-link guard rather than a panic-redirect today. The same impls
+// on `SignedAmount` further below ARE load-bearing because
+// `alloy_primitives::I256` panics on overflow in debug builds via
+// `debug_assert!(!overflow)`; without `#[track_caller]` on the cow
+// wrapper the reported panic location would point at this file
+// instead of at the caller's expression. Annotation order is
+// `#[inline]` then `#[track_caller]`, matching the stdlib
+// `core::ops::arith` and alloy `Signed` precedents.
 impl Add<Self> for Amount {
     type Output = Self;
 
+    #[inline]
+    #[track_caller]
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }
@@ -319,9 +335,11 @@ impl Add<Self> for Amount {
 impl Sub<Self> for Amount {
     type Output = Self;
 
+    #[inline]
+    #[track_caller]
     fn sub(self, rhs: Self) -> Self::Output {
         // Delegates to the inner `alloy_primitives::U256` `Sub` impl,
-        // which panics on debug builds and wraps in release on underflow.
+        // which wraps on underflow in both debug and release builds.
         // The cow contract for the typed operator surface matches the
         // upstream `U256` semantics so `a + b - c` operator chains compose
         // without an intermediate `Option` boundary; callers that need
@@ -334,24 +352,32 @@ impl Sub<Self> for Amount {
 impl Mul<Self> for Amount {
     type Output = Self;
 
+    #[inline]
+    #[track_caller]
     fn mul(self, rhs: Self) -> Self::Output {
         Self(self.0 * rhs.0)
     }
 }
 
 impl AddAssign<Self> for Amount {
+    #[inline]
+    #[track_caller]
     fn add_assign(&mut self, rhs: Self) {
         self.0 += rhs.0;
     }
 }
 
 impl SubAssign<Self> for Amount {
+    #[inline]
+    #[track_caller]
     fn sub_assign(&mut self, rhs: Self) {
         self.0 -= rhs.0;
     }
 }
 
 impl MulAssign<Self> for Amount {
+    #[inline]
+    #[track_caller]
     fn mul_assign(&mut self, rhs: Self) {
         self.0 *= rhs.0;
     }
@@ -718,9 +744,19 @@ impl<'de> Deserialize<'de> for SignedAmount {
     }
 }
 
+// `SignedAmount`'s operator impls carry `#[track_caller]` for the
+// same chain-link reason as the `Amount` block above, with one
+// difference: the inner `alloy_primitives::I256` arithmetic panics on
+// overflow in debug builds via `handle_overflow` (which is
+// `debug_assert!(!overflow)`), so the annotation is load-bearing
+// today. Without it, a debug-mode overflow panic would surface with
+// its `info.location()` pointing at this file rather than at the
+// caller's expression.
 impl Add<Self> for SignedAmount {
     type Output = Self;
 
+    #[inline]
+    #[track_caller]
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }
@@ -729,6 +765,8 @@ impl Add<Self> for SignedAmount {
 impl Sub<Self> for SignedAmount {
     type Output = Self;
 
+    #[inline]
+    #[track_caller]
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0 - rhs.0)
     }
@@ -737,24 +775,32 @@ impl Sub<Self> for SignedAmount {
 impl Mul<Self> for SignedAmount {
     type Output = Self;
 
+    #[inline]
+    #[track_caller]
     fn mul(self, rhs: Self) -> Self::Output {
         Self(self.0 * rhs.0)
     }
 }
 
 impl AddAssign<Self> for SignedAmount {
+    #[inline]
+    #[track_caller]
     fn add_assign(&mut self, rhs: Self) {
         self.0 += rhs.0;
     }
 }
 
 impl SubAssign<Self> for SignedAmount {
+    #[inline]
+    #[track_caller]
     fn sub_assign(&mut self, rhs: Self) {
         self.0 -= rhs.0;
     }
 }
 
 impl MulAssign<Self> for SignedAmount {
+    #[inline]
+    #[track_caller]
     fn mul_assign(&mut self, rhs: Self) {
         self.0 *= rhs.0;
     }

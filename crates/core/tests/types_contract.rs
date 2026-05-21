@@ -474,3 +474,107 @@ fn cow_primitive_newtype_zero_constants_equal_alloy_zero() {
     assert_eq!(OrderUid::ZERO, zero_uid);
     assert!(OrderUid::ZERO.is_zero());
 }
+
+// Panic-location regression tests for the `#[track_caller]` annotation
+// chain. These pin the contract that overflow panics from
+// `SignedAmount` arithmetic surface at the user's call site rather
+// than at the cow newtype boundary. The tests rely on
+// `alloy_primitives::I256`'s debug-mode `handle_overflow`
+// (`debug_assert!(!overflow)`); they are gated to debug builds and
+// off `wasm32` because the panic-hook mechanism is unavailable on
+// `wasm32-unknown-unknown` and the `debug_assert!` is compiled out
+// in release.
+//
+// All three tests serialize through `PANIC_HOOK_LOCK` so they do not
+// clobber each other's custom panic hooks under cargo's default
+// parallel test runner.
+#[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
+static PANIC_HOOK_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+#[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
+fn capture_panic_location_for<F>(operation: F) -> Option<(String, u32)>
+where
+    F: FnOnce() + std::panic::UnwindSafe,
+{
+    use std::panic;
+    use std::sync::{Arc, Mutex};
+
+    // Avoid PANIC_HOOK_LOCK poisoning: hold the guard across the
+    // closure and recover from any prior poison by extracting the
+    // inner guard explicitly.
+    let _serialized = PANIC_HOOK_LOCK
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+
+    let captured: Arc<Mutex<Option<(String, u32)>>> = Arc::new(Mutex::new(None));
+    let captured_clone = Arc::clone(&captured);
+
+    let prior_hook = panic::take_hook();
+    panic::set_hook(Box::new(move |info| {
+        if let Some(loc) = info.location() {
+            *captured_clone.lock().unwrap() = Some((loc.file().to_owned(), loc.line()));
+        }
+    }));
+
+    let result = panic::catch_unwind(operation);
+
+    panic::set_hook(prior_hook);
+
+    assert!(
+        result.is_err(),
+        "the operation must panic under debug_assertions",
+    );
+
+    captured.lock().unwrap().clone()
+}
+
+#[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
+#[test]
+fn signed_amount_sub_panic_location_points_at_caller_under_track_caller() {
+    // `SignedAmount` wraps `alloy_primitives::I256`; cow does not yet
+    // expose its own MIN constant, so the test reaches for the alloy
+    // boundary value through the `from_i256` constructor.
+    let captured = capture_panic_location_for(|| {
+        let min = SignedAmount::from_i256(I256::MIN);
+        let one = SignedAmount::new("1").unwrap();
+        let _ = min - one;
+    });
+
+    let (file, _line) = captured.expect("panic hook captured a location");
+    assert!(
+        file.ends_with("types_contract.rs"),
+        "panic location should redirect to the test caller; got file={file}",
+    );
+}
+
+#[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
+#[test]
+fn signed_amount_add_panic_location_points_at_caller_under_track_caller() {
+    let captured = capture_panic_location_for(|| {
+        let max = SignedAmount::from_i256(I256::MAX);
+        let one = SignedAmount::new("1").unwrap();
+        let _ = max + one;
+    });
+
+    let (file, _line) = captured.expect("panic hook captured a location");
+    assert!(
+        file.ends_with("types_contract.rs"),
+        "panic location should redirect to the test caller; got file={file}",
+    );
+}
+
+#[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
+#[test]
+fn signed_amount_mul_panic_location_points_at_caller_under_track_caller() {
+    let captured = capture_panic_location_for(|| {
+        let max = SignedAmount::from_i256(I256::MAX);
+        let two = SignedAmount::new("2").unwrap();
+        let _ = max * two;
+    });
+
+    let (file, _line) = captured.expect("panic hook captured a location");
+    assert!(
+        file.ends_with("types_contract.rs"),
+        "panic location should redirect to the test caller; got file={file}",
+    );
+}
