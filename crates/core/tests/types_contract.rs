@@ -578,3 +578,216 @@ fn signed_amount_mul_panic_location_points_at_caller_under_track_caller() {
         "panic location should redirect to the test caller; got file={file}",
     );
 }
+
+// Contract tests for the narrowed pow / bit_len / bits / MAX / MIN
+// surface on `Amount` and `SignedAmount`. The most load-bearing
+// assertion is `amount_checked_pow_returns_none_on_overflow_proving_pow_body_uses_checked_pow_not_direct_delegation`:
+// it would fail if a future contributor reverted `Amount::pow` to
+// `Self(self.0.pow(exp.0))` (direct ruint delegation) because the
+// inner `ruint::Uint::pow` is `wrapping_pow` and would silently
+// return a wrapped value instead of `None`.
+
+#[test]
+fn amount_max_constant_equals_alloy_u256_max() {
+    assert_eq!(Amount::MAX.into_u256(), U256::MAX);
+    assert!(Amount::MAX > Amount::ZERO);
+}
+
+#[test]
+fn amount_pow_and_checked_pow_match_for_small_inputs() {
+    let two = Amount::new("2").unwrap();
+    let three = Amount::new("3").unwrap();
+    let four = Amount::new("4").unwrap();
+    let five = Amount::new("5").unwrap();
+
+    assert_eq!(two.pow(&Amount::ZERO), Amount::new("1").unwrap());
+    assert_eq!(Amount::ZERO.pow(&Amount::ZERO), Amount::new("1").unwrap());
+    assert_eq!(two.pow(&four), Amount::new("16").unwrap());
+    assert_eq!(three.pow(&five), Amount::new("243").unwrap());
+
+    assert_eq!(two.checked_pow(&four), Some(Amount::new("16").unwrap()));
+    assert_eq!(three.checked_pow(&five), Some(Amount::new("243").unwrap()));
+}
+
+#[test]
+fn amount_checked_pow_returns_none_on_overflow_proving_pow_body_uses_checked_pow_not_direct_delegation()
+ {
+    // If `Amount::pow`'s body were `Self(self.0.pow(exp.0))` (direct
+    // ruint delegation), `checked_pow` on the boundary would also
+    // succeed because the inner `ruint::Uint::pow` is `wrapping_pow`
+    // and returns a wrapped value, not `None`. By delegating to
+    // `U256::checked_pow` (which is the genuine overflow-detecting
+    // variant), the cow `Amount::checked_pow` correctly returns
+    // `None` on overflow — which `pow` then `.expect(...)`s into a
+    // panic with caller location.
+    assert_eq!(Amount::MAX.checked_pow(&Amount::new("2").unwrap()), None,);
+    // Mid-range overflow too: 2^256 itself overflows U256.
+    let two_hundred_fifty_seven = Amount::new("257").unwrap();
+    assert_eq!(
+        Amount::new("2")
+            .unwrap()
+            .checked_pow(&two_hundred_fifty_seven),
+        None,
+    );
+}
+
+#[test]
+fn amount_saturating_pow_saturates_to_max_on_overflow() {
+    assert_eq!(
+        Amount::MAX.saturating_pow(&Amount::new("2").unwrap()),
+        Amount::MAX,
+    );
+    assert_eq!(
+        Amount::new("2")
+            .unwrap()
+            .saturating_pow(&Amount::new("257").unwrap()),
+        Amount::MAX,
+    );
+    // Non-overflowing case stays exact.
+    assert_eq!(
+        Amount::new("2")
+            .unwrap()
+            .saturating_pow(&Amount::new("10").unwrap()),
+        Amount::new("1024").unwrap(),
+    );
+}
+
+#[test]
+fn amount_bit_len_returns_significant_bit_count_across_boundaries() {
+    assert_eq!(Amount::ZERO.bit_len(), 0);
+    assert_eq!(Amount::new("1").unwrap().bit_len(), 1);
+    assert_eq!(Amount::new("2").unwrap().bit_len(), 2);
+    assert_eq!(Amount::new("3").unwrap().bit_len(), 2);
+    assert_eq!(Amount::new("4").unwrap().bit_len(), 3);
+    // U256::MAX has all 256 bits set.
+    assert_eq!(Amount::MAX.bit_len(), 256);
+}
+
+#[test]
+fn signed_amount_max_and_min_constants_equal_alloy_i256_bounds() {
+    assert_eq!(SignedAmount::MAX.into_i256(), I256::MAX);
+    assert_eq!(SignedAmount::MIN.into_i256(), I256::MIN);
+    assert!(SignedAmount::MAX > SignedAmount::ZERO);
+    assert!(SignedAmount::MIN < SignedAmount::ZERO);
+}
+
+#[test]
+fn signed_amount_pow_and_checked_pow_match_for_small_inputs() {
+    let two = SignedAmount::new("2").unwrap();
+    let three = SignedAmount::new("3").unwrap();
+    let neg_two = SignedAmount::new("-2").unwrap();
+
+    let amount_zero = Amount::ZERO;
+    let amount_four = Amount::new("4").unwrap();
+    let amount_five = Amount::new("5").unwrap();
+    let amount_three = Amount::new("3").unwrap();
+
+    assert_eq!(two.pow(&amount_zero), SignedAmount::new("1").unwrap());
+    assert_eq!(two.pow(&amount_four), SignedAmount::new("16").unwrap());
+    assert_eq!(three.pow(&amount_five), SignedAmount::new("243").unwrap());
+    // Negative base, odd exponent stays negative.
+    assert_eq!(neg_two.pow(&amount_three), SignedAmount::new("-8").unwrap());
+    // Negative base, even exponent flips positive.
+    assert_eq!(neg_two.pow(&amount_four), SignedAmount::new("16").unwrap());
+
+    assert_eq!(
+        two.checked_pow(&amount_four),
+        Some(SignedAmount::new("16").unwrap()),
+    );
+}
+
+#[test]
+fn signed_amount_checked_pow_returns_none_on_overflow() {
+    // I256::MAX is roughly 2^255. Squaring it overflows.
+    assert_eq!(
+        SignedAmount::MAX.checked_pow(&Amount::new("2").unwrap()),
+        None,
+    );
+    // Large exponent on a small base overflows.
+    assert_eq!(
+        SignedAmount::new("2")
+            .unwrap()
+            .checked_pow(&Amount::new("256").unwrap()),
+        None,
+    );
+}
+
+#[test]
+fn signed_amount_saturating_pow_saturates_at_signed_bounds() {
+    assert_eq!(
+        SignedAmount::MAX.saturating_pow(&Amount::new("2").unwrap()),
+        SignedAmount::MAX,
+    );
+    // Non-overflowing positive case stays exact.
+    assert_eq!(
+        SignedAmount::new("2")
+            .unwrap()
+            .saturating_pow(&Amount::new("10").unwrap()),
+        SignedAmount::new("1024").unwrap(),
+    );
+    // Negative base with very large odd exponent saturates at MIN.
+    assert_eq!(
+        SignedAmount::new("-2")
+            .unwrap()
+            .saturating_pow(&Amount::new("255").unwrap()),
+        SignedAmount::MIN,
+    );
+}
+
+#[test]
+fn signed_amount_bits_returns_twos_complement_minimum_width_across_boundaries() {
+    // `SignedAmount::bits` delegates to `alloy_primitives::Signed::bits`,
+    // which returns the minimum number of bits needed to represent the
+    // value as a *signed* two's-complement integer (including a sign bit
+    // for positive values that are not negative powers of two). This is
+    // NOT the magnitude bit count.
+    assert_eq!(SignedAmount::ZERO.bits(), 0);
+    // +1 needs a sign bit + value bit = 2 bits in signed representation.
+    assert_eq!(SignedAmount::new("1").unwrap().bits(), 2);
+    // -1 is the special all-ones pattern; just the sign bit suffices.
+    assert_eq!(SignedAmount::new("-1").unwrap().bits(), 1);
+    // +2 needs sign + two value bits = 3 bits.
+    assert_eq!(SignedAmount::new("2").unwrap().bits(), 3);
+    // -2 is a negative power of two; magnitude width is enough.
+    assert_eq!(SignedAmount::new("-2").unwrap().bits(), 2);
+    // I256::MAX = 2^255 - 1; needs 255 magnitude bits + 1 sign bit = 256.
+    assert_eq!(SignedAmount::MAX.bits(), 256);
+    // I256::MIN = -(2^255); is a negative power of two; magnitude
+    // width (256 bits) is enough.
+    assert_eq!(SignedAmount::MIN.bits(), 256);
+}
+
+#[test]
+fn decimal_amount_to_decimal_string_documents_overflow_panic_for_pathological_decimals() {
+    use cow_sdk_core::DecimalAmount;
+
+    // `decimals == 18` is the canonical ERC-20 case; the migration
+    // away from silent `U256::pow` must keep the canonical path
+    // working exactly as before.
+    let amount =
+        DecimalAmount::from_atoms(Amount::new("1500000000000000000").unwrap().into_u256(), 18);
+    assert_eq!(amount.to_decimal_string(), "1.500000000000000000");
+
+    // `decimals == 0` is the integer-form shortcut; the migration
+    // must preserve it.
+    let integer = DecimalAmount::from_atoms(Amount::new("42").unwrap().into_u256(), 0);
+    assert_eq!(integer.to_decimal_string(), "42");
+
+    // `decimals == 77` is the last value for which `10^decimals`
+    // fits in U256. The migration must preserve this boundary case.
+    let near_max = DecimalAmount::from_atoms(Amount::new("1").unwrap().into_u256(), 77);
+    let near_max_str = near_max.to_decimal_string();
+    assert!(near_max_str.starts_with("0.0"));
+    assert_eq!(near_max_str.len(), "0.".len() + 77);
+
+    // `decimals >= 78` is the pathological range the migration
+    // converts from silent-wrap to explicit panic.
+    let result = std::panic::catch_unwind(|| {
+        let pathological = DecimalAmount::from_atoms(Amount::new("1").unwrap().into_u256(), 78);
+        pathological.to_decimal_string()
+    });
+    assert!(
+        result.is_err(),
+        "decimals = 78 must panic because 10^78 > U256::MAX",
+    );
+}
