@@ -1,7 +1,7 @@
 # Wire DTO Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-21
 Owning surface: cow-sdk-orderbook DTO coverage
 Refresh trigger: changes to `parity/openapi/services-orderbook.yml`, changes to `parity/openapi/coverage.yaml`, source-lock refreshes for the services OpenAPI, or public field changes on covered orderbook request or response DTOs
 Related docs:
@@ -36,6 +36,7 @@ It does not cover app-data schema content, contract ABI DTOs, or live orderbook 
 | Forward compatibility | Covered response DTOs do not use `serde(deny_unknown_fields)`, so additive upstream fields do not break deserialization. | Conforms |
 | Request DTO coverage | Every constructed orderbook request payload has a reviewed fixture under `parity/fixtures/orderbook-requests/` with source references to the pinned services revision. | Conforms |
 | OrderCreation fee boundary | `OrderCreation` serializes `feeAmount` as `"0"` and rejects inbound non-zero `feeAmount` during deserialization. | Conforms |
+| OrderCreation app-data routing | `OrderCreation` serialises the `(app_data, app_data_hash)` pair onto the three services `OrderCreationAppData` untagged-enum variants (`Both`, `Hash`, `Full`); the hash-only case keys the hash hex string under the `appData` key per the services `Hash` variant. | Conforms |
 
 ## Current Contract
 
@@ -76,7 +77,7 @@ and the auction-side `quote`.
 
 | DTO type | Source file and Rust type | Audit verdict | Fixture path | Last reviewed |
 | --- | --- | --- | --- | --- |
-| `OrderCreation` | `crates/orderbook/src/types/order.rs::cow_sdk_orderbook::OrderCreation` | Conforms | `parity/fixtures/orderbook-requests/order_creation.json` | 2026-05-12 |
+| `OrderCreation` | `crates/orderbook/src/types/order.rs::cow_sdk_orderbook::OrderCreation` | Conforms | `parity/fixtures/orderbook-requests/order_creation.json` | 2026-05-21 |
 | `OrderQuoteRequest` | `crates/orderbook/src/types/quote.rs::cow_sdk_orderbook::OrderQuoteRequest` | Conforms | `parity/fixtures/orderbook-requests/order_quote_request.json` | 2026-05-12 |
 | `AppDataObject` PUT payload | `crates/orderbook/src/api.rs::cow_sdk_orderbook::AppDataObject` | Conforms | `parity/fixtures/orderbook-requests/app_data_put.json` | 2026-05-04 |
 | `OrderCancellations` | `crates/orderbook/src/types/order.rs::cow_sdk_orderbook::OrderCancellations` | Conforms | `parity/fixtures/orderbook-requests/order_cancellations.json` | 2026-05-12 |
@@ -86,7 +87,7 @@ Request payload semantics reviewed against the services revision pinned in
 
 | DTO | Mandatory fields | Optional fields and defaults | Mutual-exclusion or dependency guard |
 | --- | --- | --- | --- |
-| `OrderCreation` | `sellToken`, `buyToken`, `sellAmount`, `buyAmount`, `validTo`, `appData`, `feeAmount`, `kind`, `partiallyFillable`, `signingScheme`, and `signature` are required by the vendored OpenAPI. The SDK also requires `from` on the typed constructor so owner intent is explicit. | `receiver`, `appDataHash`, `quoteId`, and `fullBalanceCheck` are optional. `sellTokenBalance` and `buyTokenBalance` default to `erc20`. The SDK emits `feeAmount` as `"0"` and deserializes omitted `feeAmount` as zero for compatibility with existing typed payloads. | Non-zero `feeAmount` now fails during `OrderCreation` deserialization with the stable serde error substring. Services also returns `OrderbookRejection::NonZeroFee` if a non-zero order-level fee reaches the backend. App-data hash mismatches remain a services-side `OrderbookRejection::AppDataHashMismatch`. |
+| `OrderCreation` | `sellToken`, `buyToken`, `sellAmount`, `buyAmount`, `validTo`, `appData`, `feeAmount`, `kind`, `partiallyFillable`, `signingScheme`, and `signature` are required by the vendored OpenAPI. The SDK also requires `from` on the typed constructor so owner intent is explicit. | `receiver`, `appDataHash`, `quoteId`, and `fullBalanceCheck` are optional. `sellTokenBalance` and `buyTokenBalance` default to `erc20`. The SDK emits `feeAmount` as `"0"` and deserializes omitted `feeAmount` as zero for compatibility with existing typed payloads. The cow `Serialize` impl is hand-rolled and routes the `(app_data, app_data_hash)` pair onto the services `OrderCreationAppData` untagged-enum variants: `(Some(s), None)` -> services `Full` (`{"appData": s}`); `(None, Some(h))` -> services `Hash` (`{"appData": "0x<hash hex>"}` — the hash hex string lives under the `appData` key); `(Some(s), Some(h))` -> services `Both` (`{"appData": s, "appDataHash": "0x<hash hex>"}`); `(None, None)` omits both fields and surfaces as a services rejection so callers must attach app-data through `with_app_data` or `with_app_data_hash`. | Non-zero `feeAmount` now fails during `OrderCreation` deserialization with the stable serde error substring. Services also returns `OrderbookRejection::NonZeroFee` if a non-zero order-level fee reaches the backend. App-data hash mismatches remain a services-side `OrderbookRejection::AppDataHashMismatch`. |
 | `OrderQuoteRequest` | `sellToken`, `buyToken`, and `from` are required by the vendored OpenAPI. Exactly one side amount is required through the flattened side. | `receiver`, `validFor`, `validTo`, `appData`, `appDataHash`, `sellTokenBalance`, `buyTokenBalance`, `signingScheme`, `onchainOrder`, `verificationGasLimit`, and `timeout` are optional. The SDK constructor sets the public `appData` hash to the zero hash, `sellTokenBalance` and `buyTokenBalance` to `erc20`, `signingScheme` to `eip712`, `onchainOrder` to `false`, and `priceQuality` to `verified`. The `verified` default is retained because it is the most protective public OpenAPI default. | `QuoteSide::is_valid` and `OrderQuoteRequest::validate` reject missing or multiple side amounts with `OrderbookError::InvalidQuoteRequest`. `validate` also rejects `verificationGasLimit` without `eip1271` and ECDSA on-chain quote requests with `OrderbookError::IncompatibleSigningScheme`. |
 | `AppDataObject` PUT payload | `fullAppData` is the single request-body field for `PUT /api/v1/app_data/{hash}`. | The path hash is required by the route. No request-body defaults are applied. | Services validates the full app-data document and returns typed `AppDataInvalid`, `AppDataHashMismatch`, or `AppDataMismatch` rejections. The SDK constructs the body with the single `fullAppData` field. |
 | `OrderCancellations` | `signature` and `signingScheme` are required by the vendored OpenAPI. The services model signs flattened `orderUids` and the SDK always constructs that list explicitly. | `signingScheme` defaults to `eip712` in the SDK constructor. `orderUids` is supplied by callers and the upstream description caps the list at 128 UIDs. | Signature verification remains services-side and maps into orderbook cancellation rejection variants such as malformed or invalid signature responses. There are no mutually exclusive fields in the payload. |
@@ -137,6 +138,8 @@ Primary implementation points:
 
 Primary regression coverage:
 
+- `crates/orderbook/tests/types_contract.rs::order_creation_serialize_routes_app_data_combinations_to_services_variants`
+- `crates/orderbook/tests/types_contract.rs::order_creation_from_quote_serialize_emits_services_hash_variant`
 - `crates/orderbook/tests/order_creation_fee_deserialize.rs::order_creation_deserialize_accepts_zero_or_omitted_fee_amount`
 - `crates/orderbook/tests/order_creation_fee_deserialize.rs::order_creation_deserialize_rejects_non_zero_fee_amount`
 - `crates/orderbook/tests/order_creation_fee_deserialize.rs::order_creation_deserialize_keeps_malformed_fee_amount_parser_error`

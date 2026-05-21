@@ -1,0 +1,890 @@
+{
+  "dto": "cow_sdk_core::TypedDataPayload",
+  "endpoint": "EIP-1193 eth_signTypedData_v4 (params[1])",
+  "reviewed_at": "2026-05-21",
+  "rows": [
+    {
+      "chain_id": 1,
+      "chain_name": "mainnet",
+      "primary_type": "Order",
+      "wire_payload": {
+        "domain": {
+          "chainId": 1,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+          "buyAmount": "1000000000000000000",
+          "buyToken": "0x2222222222222222222222222222222222222222",
+          "buyTokenBalance": "erc20",
+          "feeAmount": "0",
+          "kind": "sell",
+          "partiallyFillable": false,
+          "receiver": "0x3333333333333333333333333333333333333333",
+          "sellAmount": "1000000",
+          "sellToken": "0x1111111111111111111111111111111111111111",
+          "sellTokenBalance": "erc20",
+          "validTo": 1700000000
+        },
+        "primaryType": "Order",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "Order": [
+            {
+              "name": "sellToken",
+              "type": "address"
+            },
+            {
+              "name": "buyToken",
+              "type": "address"
+            },
+            {
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "name": "sellAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "buyAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "validTo",
+              "type": "uint32"
+            },
+            {
+              "name": "appData",
+              "type": "bytes32"
+            },
+            {
+              "name": "feeAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "kind",
+              "type": "string"
+            },
+            {
+              "name": "partiallyFillable",
+              "type": "bool"
+            },
+            {
+              "name": "sellTokenBalance",
+              "type": "string"
+            },
+            {
+              "name": "buyTokenBalance",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 1,
+      "chain_name": "mainnet",
+      "primary_type": "OrderCancellations",
+      "wire_payload": {
+        "domain": {
+          "chainId": 1,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "orderUids": [
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa11111111"
+          ]
+        },
+        "primaryType": "OrderCancellations",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "OrderCancellations": [
+            {
+              "name": "orderUids",
+              "type": "bytes[]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 100,
+      "chain_name": "gnosis",
+      "primary_type": "Order",
+      "wire_payload": {
+        "domain": {
+          "chainId": 100,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+          "buyAmount": "1000000000000000000",
+          "buyToken": "0x2222222222222222222222222222222222222222",
+          "buyTokenBalance": "erc20",
+          "feeAmount": "0",
+          "kind": "sell",
+          "partiallyFillable": false,
+          "receiver": "0x3333333333333333333333333333333333333333",
+          "sellAmount": "1000000",
+          "sellToken": "0x1111111111111111111111111111111111111111",
+          "sellTokenBalance": "erc20",
+          "validTo": 1700000000
+        },
+        "primaryType": "Order",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "Order": [
+            {
+              "name": "sellToken",
+              "type": "address"
+            },
+            {
+              "name": "buyToken",
+              "type": "address"
+            },
+            {
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "name": "sellAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "buyAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "validTo",
+              "type": "uint32"
+            },
+            {
+              "name": "appData",
+              "type": "bytes32"
+            },
+            {
+              "name": "feeAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "kind",
+              "type": "string"
+            },
+            {
+              "name": "partiallyFillable",
+              "type": "bool"
+            },
+            {
+              "name": "sellTokenBalance",
+              "type": "string"
+            },
+            {
+              "name": "buyTokenBalance",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 100,
+      "chain_name": "gnosis",
+      "primary_type": "OrderCancellations",
+      "wire_payload": {
+        "domain": {
+          "chainId": 100,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "orderUids": [
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa11111111"
+          ]
+        },
+        "primaryType": "OrderCancellations",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "OrderCancellations": [
+            {
+              "name": "orderUids",
+              "type": "bytes[]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 137,
+      "chain_name": "polygon",
+      "primary_type": "Order",
+      "wire_payload": {
+        "domain": {
+          "chainId": 137,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+          "buyAmount": "1000000000000000000",
+          "buyToken": "0x2222222222222222222222222222222222222222",
+          "buyTokenBalance": "erc20",
+          "feeAmount": "0",
+          "kind": "sell",
+          "partiallyFillable": false,
+          "receiver": "0x3333333333333333333333333333333333333333",
+          "sellAmount": "1000000",
+          "sellToken": "0x1111111111111111111111111111111111111111",
+          "sellTokenBalance": "erc20",
+          "validTo": 1700000000
+        },
+        "primaryType": "Order",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "Order": [
+            {
+              "name": "sellToken",
+              "type": "address"
+            },
+            {
+              "name": "buyToken",
+              "type": "address"
+            },
+            {
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "name": "sellAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "buyAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "validTo",
+              "type": "uint32"
+            },
+            {
+              "name": "appData",
+              "type": "bytes32"
+            },
+            {
+              "name": "feeAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "kind",
+              "type": "string"
+            },
+            {
+              "name": "partiallyFillable",
+              "type": "bool"
+            },
+            {
+              "name": "sellTokenBalance",
+              "type": "string"
+            },
+            {
+              "name": "buyTokenBalance",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 137,
+      "chain_name": "polygon",
+      "primary_type": "OrderCancellations",
+      "wire_payload": {
+        "domain": {
+          "chainId": 137,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "orderUids": [
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa11111111"
+          ]
+        },
+        "primaryType": "OrderCancellations",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "OrderCancellations": [
+            {
+              "name": "orderUids",
+              "type": "bytes[]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 8453,
+      "chain_name": "base",
+      "primary_type": "Order",
+      "wire_payload": {
+        "domain": {
+          "chainId": 8453,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+          "buyAmount": "1000000000000000000",
+          "buyToken": "0x2222222222222222222222222222222222222222",
+          "buyTokenBalance": "erc20",
+          "feeAmount": "0",
+          "kind": "sell",
+          "partiallyFillable": false,
+          "receiver": "0x3333333333333333333333333333333333333333",
+          "sellAmount": "1000000",
+          "sellToken": "0x1111111111111111111111111111111111111111",
+          "sellTokenBalance": "erc20",
+          "validTo": 1700000000
+        },
+        "primaryType": "Order",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "Order": [
+            {
+              "name": "sellToken",
+              "type": "address"
+            },
+            {
+              "name": "buyToken",
+              "type": "address"
+            },
+            {
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "name": "sellAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "buyAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "validTo",
+              "type": "uint32"
+            },
+            {
+              "name": "appData",
+              "type": "bytes32"
+            },
+            {
+              "name": "feeAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "kind",
+              "type": "string"
+            },
+            {
+              "name": "partiallyFillable",
+              "type": "bool"
+            },
+            {
+              "name": "sellTokenBalance",
+              "type": "string"
+            },
+            {
+              "name": "buyTokenBalance",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 8453,
+      "chain_name": "base",
+      "primary_type": "OrderCancellations",
+      "wire_payload": {
+        "domain": {
+          "chainId": 8453,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "orderUids": [
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa11111111"
+          ]
+        },
+        "primaryType": "OrderCancellations",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "OrderCancellations": [
+            {
+              "name": "orderUids",
+              "type": "bytes[]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 42161,
+      "chain_name": "arbitrum-one",
+      "primary_type": "Order",
+      "wire_payload": {
+        "domain": {
+          "chainId": 42161,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+          "buyAmount": "1000000000000000000",
+          "buyToken": "0x2222222222222222222222222222222222222222",
+          "buyTokenBalance": "erc20",
+          "feeAmount": "0",
+          "kind": "sell",
+          "partiallyFillable": false,
+          "receiver": "0x3333333333333333333333333333333333333333",
+          "sellAmount": "1000000",
+          "sellToken": "0x1111111111111111111111111111111111111111",
+          "sellTokenBalance": "erc20",
+          "validTo": 1700000000
+        },
+        "primaryType": "Order",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "Order": [
+            {
+              "name": "sellToken",
+              "type": "address"
+            },
+            {
+              "name": "buyToken",
+              "type": "address"
+            },
+            {
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "name": "sellAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "buyAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "validTo",
+              "type": "uint32"
+            },
+            {
+              "name": "appData",
+              "type": "bytes32"
+            },
+            {
+              "name": "feeAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "kind",
+              "type": "string"
+            },
+            {
+              "name": "partiallyFillable",
+              "type": "bool"
+            },
+            {
+              "name": "sellTokenBalance",
+              "type": "string"
+            },
+            {
+              "name": "buyTokenBalance",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 42161,
+      "chain_name": "arbitrum-one",
+      "primary_type": "OrderCancellations",
+      "wire_payload": {
+        "domain": {
+          "chainId": 42161,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "orderUids": [
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa11111111"
+          ]
+        },
+        "primaryType": "OrderCancellations",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "OrderCancellations": [
+            {
+              "name": "orderUids",
+              "type": "bytes[]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 11155111,
+      "chain_name": "sepolia",
+      "primary_type": "Order",
+      "wire_payload": {
+        "domain": {
+          "chainId": 11155111,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+          "buyAmount": "1000000000000000000",
+          "buyToken": "0x2222222222222222222222222222222222222222",
+          "buyTokenBalance": "erc20",
+          "feeAmount": "0",
+          "kind": "sell",
+          "partiallyFillable": false,
+          "receiver": "0x3333333333333333333333333333333333333333",
+          "sellAmount": "1000000",
+          "sellToken": "0x1111111111111111111111111111111111111111",
+          "sellTokenBalance": "erc20",
+          "validTo": 1700000000
+        },
+        "primaryType": "Order",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "Order": [
+            {
+              "name": "sellToken",
+              "type": "address"
+            },
+            {
+              "name": "buyToken",
+              "type": "address"
+            },
+            {
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "name": "sellAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "buyAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "validTo",
+              "type": "uint32"
+            },
+            {
+              "name": "appData",
+              "type": "bytes32"
+            },
+            {
+              "name": "feeAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "kind",
+              "type": "string"
+            },
+            {
+              "name": "partiallyFillable",
+              "type": "bool"
+            },
+            {
+              "name": "sellTokenBalance",
+              "type": "string"
+            },
+            {
+              "name": "buyTokenBalance",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 11155111,
+      "chain_name": "sepolia",
+      "primary_type": "OrderCancellations",
+      "wire_payload": {
+        "domain": {
+          "chainId": 11155111,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "orderUids": [
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa11111111"
+          ]
+        },
+        "primaryType": "OrderCancellations",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "OrderCancellations": [
+            {
+              "name": "orderUids",
+              "type": "bytes[]"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "schema_version": 1,
+  "source_refs": [
+    {
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "line_end": 23,
+      "line_start": 17,
+      "path": "packages/common/src/adapters/types/index.ts",
+      "repo": "cow-sdk"
+    },
+    {
+      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "line_end": 116,
+      "line_start": 109,
+      "path": "packages/contracts-ts/src/ContractsTs.ts",
+      "repo": "cow-sdk"
+    },
+    {
+      "commit": "main",
+      "line_end": 36,
+      "line_start": 33,
+      "path": "src/contracts/mixins/GPv2Signing.sol",
+      "repo": "contracts"
+    }
+  ],
+  "surface": "browser-wallet-eth-sign-typed-data-request"
+}

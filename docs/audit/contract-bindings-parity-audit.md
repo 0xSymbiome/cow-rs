@@ -506,8 +506,10 @@ Primary regression coverage:
 - `crates/core/tests/wire_format_preservation_contract.rs`
 - `crates/core/tests/property_contract.rs`
 - `crates/browser-wallet/tests/signer_contract.rs::validate_typed_data_chain_rejects_payload_with_wrong_domain_chain_id`
+- `crates/browser-wallet/tests/signer_contract.rs::typed_data_payload_emits_canonical_eip1193_wire_shape_against_fixture`
 - `crates/signing/tests/domain_contract.rs`
 - `crates/signing/tests/parity_contract.rs`
+- `parity/fixtures/signing/eth_sign_typed_data_request.json`
 
 Validation surface:
 

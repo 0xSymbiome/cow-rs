@@ -3,7 +3,7 @@
   "surface": "orderbook-request-order-creation",
   "dto": "cow_sdk_orderbook::OrderCreation",
   "endpoint": "POST /api/v1/orders",
-  "reviewed_at": "2026-05-04",
+  "reviewed_at": "2026-05-21",
   "source_refs": [
     {
       "repo": "services",
@@ -18,6 +18,13 @@
       "path": "crates/shared/src/order_validation.rs",
       "line_start": 916,
       "line_end": 917
+    },
+    {
+      "repo": "services",
+      "commit": "0720b9bc15138ecc362078f505d0e3ba1c7b9883",
+      "path": "crates/model/src/order.rs",
+      "line_start": 439,
+      "line_end": 461
     }
   ],
   "examples": [
@@ -60,6 +67,27 @@
         "signature": "0x1234",
         "from": "0x0000000000000000000000000000000000000003",
         "quoteId": 7
+      }
+    },
+    {
+      "name": "both_app_data_and_hash_zero_fee",
+      "payload": {
+        "sellToken": "0x0000000000000000000000000000000000000001",
+        "buyToken": "0x0000000000000000000000000000000000000002",
+        "receiver": "0x0000000000000000000000000000000000000003",
+        "sellAmount": "1000000000000000000",
+        "buyAmount": "2000000000000000000",
+        "validTo": 1700000000,
+        "appData": "{\"version\":\"1.0.0\",\"metadata\":{}}",
+        "appDataHash": "0xa3f0b48d4cb38f1ad7ec8a4e2bbe1c2d05ce2e6dfc8db4ec2c8db2d65f25a31a",
+        "feeAmount": "0",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20",
+        "signingScheme": "eip712",
+        "signature": "0x1234",
+        "from": "0x0000000000000000000000000000000000000003"
       }
     }
   ]

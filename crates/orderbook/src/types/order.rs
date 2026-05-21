@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError};
+use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError, ser::SerializeMap};
 
 use super::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, OrderUid, SellTokenSource,
@@ -11,8 +11,16 @@ use super::{
 /// This is kept separate from `QuoteData` because submission adds signature,
 /// signer, signing-scheme, and optional quote-id fields while preserving the
 /// orderbook wire shape expected by `/api/v1/orders`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
+///
+/// The Serialize impl is hand-rolled so the `(app_data, app_data_hash)`
+/// pair routes onto the services `OrderCreationAppData` untagged-enum
+/// shape. Services accepts three variants for app-data: `Both`
+/// (`appData` is the full document string, `appDataHash` is the
+/// explicit hash); `Hash` (the hash lives under the `appData` key —
+/// no separate `appDataHash` field); and `Full` (`appData` is the
+/// document string and services derives the hash). The cow pair maps
+/// onto these variants per the table in the Serialize impl below.
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct OrderCreation {
     /// Sell-token address.
@@ -20,7 +28,6 @@ pub struct OrderCreation {
     /// Buy-token address.
     pub buy_token: Address,
     /// Optional receiver override.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub receiver: Option<Address>,
     /// Sell amount in the upstream decimal-string wire shape.
     pub sell_amount: Amount,
@@ -29,10 +36,8 @@ pub struct OrderCreation {
     /// Absolute UNIX expiry timestamp.
     pub valid_to: u32,
     /// Inline app-data payload when supplied instead of an app-data hash.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub app_data: Option<String>,
     /// App-data hash for the submission payload.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub app_data_hash: Option<AppDataHash>,
     /// Order-level fee hardcoded to `"0"` on every submission.
     ///
@@ -42,7 +47,6 @@ pub struct OrderCreation {
     /// struct-hash contract that hashes it as `uint256(0)`.
     fee_amount: Amount,
     /// Opt-in strict balance check flag accepted by the orderbook services.
-    #[serde(skip_serializing_if = "is_false")]
     full_balance_check: bool,
     /// Order kind.
     pub kind: OrderKind,
@@ -59,8 +63,62 @@ pub struct OrderCreation {
     /// Effective order owner.
     pub from: Address,
     /// Optional quote id from a prior quote response.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub quote_id: Option<i64>,
+}
+
+impl Serialize for OrderCreation {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // Hand-rolled wire shape so the `(app_data, app_data_hash)` pair
+        // routes onto the services `OrderCreationAppData` untagged-enum
+        // variants. The mapping is:
+        //
+        // | (app_data, app_data_hash)   | wire shape                                                     | services variant matched |
+        // | (None, None)                | (both fields omitted; services rejects — programmer error)     | none                     |
+        // | (Some(s), None)             | `{"appData": s}` (s is the JSON-encoded app-data document)     | `Full`                   |
+        // | (None, Some(h))             | `{"appData": "0x<h hex>"}` (hash lives under the appData key)  | `Hash`                   |
+        // | (Some(s), Some(h))          | `{"appData": s, "appDataHash": "0x<h hex>"}`                   | `Both`                   |
+        let mut map = serializer.serialize_map(None)?;
+        map.serialize_entry("sellToken", &self.sell_token)?;
+        map.serialize_entry("buyToken", &self.buy_token)?;
+        if let Some(receiver) = self.receiver.as_ref() {
+            map.serialize_entry("receiver", receiver)?;
+        }
+        map.serialize_entry("sellAmount", &self.sell_amount)?;
+        map.serialize_entry("buyAmount", &self.buy_amount)?;
+        map.serialize_entry("validTo", &self.valid_to)?;
+        match (self.app_data.as_ref(), self.app_data_hash.as_ref()) {
+            (None, None) => {}
+            (Some(full), None) => {
+                map.serialize_entry("appData", full)?;
+            }
+            (None, Some(hash)) => {
+                // services `Hash` variant: the hash hex string lives under the `appData` key.
+                map.serialize_entry("appData", hash)?;
+            }
+            (Some(full), Some(hash)) => {
+                map.serialize_entry("appData", full)?;
+                map.serialize_entry("appDataHash", hash)?;
+            }
+        }
+        map.serialize_entry("feeAmount", &self.fee_amount)?;
+        if self.full_balance_check {
+            map.serialize_entry("fullBalanceCheck", &self.full_balance_check)?;
+        }
+        map.serialize_entry("kind", &self.kind)?;
+        map.serialize_entry("partiallyFillable", &self.partially_fillable)?;
+        map.serialize_entry("sellTokenBalance", &self.sell_token_balance)?;
+        map.serialize_entry("buyTokenBalance", &self.buy_token_balance)?;
+        map.serialize_entry("signingScheme", &self.signing_scheme)?;
+        map.serialize_entry("signature", &self.signature)?;
+        map.serialize_entry("from", &self.from)?;
+        if let Some(quote_id) = self.quote_id.as_ref() {
+            map.serialize_entry("quoteId", quote_id)?;
+        }
+        map.end()
+    }
 }
 
 const fn order_creation_zero_fee_amount() -> Amount {

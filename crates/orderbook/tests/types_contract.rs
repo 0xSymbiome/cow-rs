@@ -222,6 +222,98 @@ fn order_creation_from_quote_keeps_quote_shape_and_quote_id() {
 }
 
 #[test]
+fn order_creation_serialize_routes_app_data_combinations_to_services_variants() {
+    // The cow `OrderCreation::Serialize` impl routes the four
+    // `(app_data, app_data_hash)` combinations onto the three services
+    // `OrderCreationAppData` untagged-enum variants. This test pins
+    // each wire shape against the services contract documented at
+    // `cowprotocol/services` `crates/model/src/order.rs:439-461`:
+    //
+    // - `Both`  -> `appData` is the full document string, `appDataHash`
+    //              is the explicit hash.
+    // - `Hash`  -> `appData` carries the hash hex string (no separate
+    //              `appDataHash` field).
+    // - `Full`  -> `appData` is the full document string; services
+    //              derives the hash.
+    //
+    // The `(None, None)` combination intentionally emits no app-data
+    // field. Services rejects the resulting request because no variant
+    // matches; that is the documented programmer-error surface
+    // (callers must attach app-data via `with_app_data` or
+    // `with_app_data_hash`).
+
+    let base = || {
+        OrderCreation::new(
+            sample_owner(),
+            sample_buy_token(),
+            amount("1000000"),
+            amount("900000"),
+            1_700_000_000,
+            OrderKind::Sell,
+            SigningScheme::Eip712,
+            sample_signature(),
+            sample_owner(),
+        )
+    };
+
+    let full_doc = "{\"version\":\"1.0.0\",\"metadata\":{}}";
+    let hash = sample_app_data_hash();
+    let hash_hex = hash.to_hex_string();
+
+    // (None, None) — both fields omitted. Services rejects; the test
+    // pins the absence so a future change cannot silently restore the
+    // pre-fix `appDataHash`-only emission.
+    let neither = serde_json::to_value(base()).expect("OrderCreation serializes");
+    assert!(neither.get("appData").is_none());
+    assert!(neither.get("appDataHash").is_none());
+
+    // (Some(s), None) — services `Full` variant.
+    let full_only =
+        serde_json::to_value(base().with_app_data(full_doc)).expect("OrderCreation serializes");
+    assert_eq!(full_only["appData"], json!(full_doc));
+    assert!(full_only.get("appDataHash").is_none());
+
+    // (None, Some(h)) — services `Hash` variant. The hash hex string
+    // lives under the `appData` key, NOT `appDataHash`.
+    let hash_only =
+        serde_json::to_value(base().with_app_data_hash(hash)).expect("OrderCreation serializes");
+    assert_eq!(hash_only["appData"], json!(hash_hex));
+    assert!(hash_only.get("appDataHash").is_none());
+
+    // (Some(s), Some(h)) — services `Both` variant.
+    let both = serde_json::to_value(base().with_app_data(full_doc).with_app_data_hash(hash))
+        .expect("OrderCreation serializes");
+    assert_eq!(both["appData"], json!(full_doc));
+    assert_eq!(both["appDataHash"], json!(hash_hex));
+}
+
+#[test]
+fn order_creation_from_quote_serialize_emits_services_hash_variant() {
+    // `from_quote` produces `(app_data: None, app_data_hash: Some(quote.app_data))`
+    // because the quote response carries only the hash; the full
+    // app-data document is not part of the quote shape. The wire
+    // emission must match the services `Hash` variant: the hash hex
+    // string under the `appData` key, no `appDataHash` field.
+
+    let quote_response = serde_json::from_value::<cow_sdk_orderbook::OrderQuoteResponse>(
+        sample_quote_response_json(),
+    )
+    .expect("quote response fixture must deserialize");
+    let order = OrderCreation::from_quote(
+        &quote_response.quote,
+        sample_owner(),
+        None,
+        SigningScheme::EthSign,
+        sample_signature(),
+    );
+
+    let wire = serde_json::to_value(&order).expect("OrderCreation serializes");
+    let expected_hash = sample_app_data_hash().to_hex_string();
+    assert_eq!(wire["appData"], json!(expected_hash));
+    assert!(wire.get("appDataHash").is_none());
+}
+
+#[test]
 fn order_creation_full_balance_check_is_opt_in_on_the_wire() {
     let order = OrderCreation::new(
         sample_owner(),
