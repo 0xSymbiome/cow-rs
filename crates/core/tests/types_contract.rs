@@ -830,3 +830,67 @@ fn decimal_amount_construction_rejects_decimals_above_max_decimals() {
         })),
     ));
 }
+
+#[test]
+fn decimal_amount_to_decimal_string_preserves_trailing_zeros_byte_identically() {
+    // Pins the trailing-zero preservation contract across canonical
+    // and edge-case `(atoms, decimals)` shapes. The load-bearing
+    // contrast is the canonical 1-ether row (atoms = 10^18, decimals
+    // = 18): cow renders this as the full 18-digit fractional
+    // expansion, while the JavaScript ecosystem's `formatUnits`
+    // helper renders it as `"1.0"`. This divergence is the documented
+    // public-contract reason for the cow surface, so the row is
+    // required for any future refactor that touches the formatter.
+
+    // Row 1: zero atoms, zero decimals → integer "0" form.
+    let r1 = DecimalAmount::from_atoms(U256::ZERO, 0).expect("decimals 0 is within MAX_DECIMALS");
+    assert_eq!(r1.to_decimal_string(), "0");
+
+    // Row 2: small atoms, zero decimals → integer form, no padding.
+    let r2 =
+        DecimalAmount::from_atoms(U256::from(42u8), 0).expect("decimals 0 is within MAX_DECIMALS");
+    assert_eq!(r2.to_decimal_string(), "42");
+
+    // Row 3: zero atoms, canonical 18 decimals → "0" plus 18 zeros.
+    let r3 = DecimalAmount::from_atoms(U256::ZERO, 18).expect("decimals 18 is within MAX_DECIMALS");
+    assert_eq!(r3.to_decimal_string(), "0.000000000000000000");
+
+    // Row 4: smallest non-zero atoms, 18 decimals → zero integer
+    // part with the documented zero-padded fractional substring.
+    let r4 =
+        DecimalAmount::from_atoms(U256::from(1u8), 18).expect("decimals 18 is within MAX_DECIMALS");
+    assert_eq!(r4.to_decimal_string(), "0.000000000000000001");
+
+    // Row 5: (atoms=10, decimals=1) is the boundary case where the
+    // cow output coincidentally matches `formatUnits` (both produce
+    // "1.0"). This case pins that the cow format does not over-trim.
+    let r5 =
+        DecimalAmount::from_atoms(U256::from(10u8), 1).expect("decimals 1 is within MAX_DECIMALS");
+    assert_eq!(r5.to_decimal_string(), "1.0");
+
+    // Row 6: canonical 1-ether case — the load-bearing trim contrast.
+    // cow preserves the full 18-digit fractional expansion; the
+    // ethers/viem/services `formatUnits` helper would trim to "1.0".
+    let r6 = DecimalAmount::from_atoms(U256::from(1_000_000_000_000_000_000u128), 18)
+        .expect("decimals 18 is within MAX_DECIMALS");
+    assert_eq!(r6.to_decimal_string(), "1.000000000000000000");
+
+    // Row 7: rounded value (atoms=100, decimals=2) → preserved
+    // trailing zeros (cow: "1.00", JavaScript `formatUnits` would
+    // produce "1.0").
+    let r7 =
+        DecimalAmount::from_atoms(U256::from(100u8), 2).expect("decimals 2 is within MAX_DECIMALS");
+    assert_eq!(r7.to_decimal_string(), "1.00");
+
+    // Row 8: maximum representable decimals (77). One atom at 77
+    // decimals → integer "0" plus 76 zeros plus a trailing "1".
+    let r8 = DecimalAmount::from_atoms(U256::from(1u8), 77)
+        .expect("decimals 77 is the documented maximum");
+    let expected_r8 = format!("0.{}{}", "0".repeat(76), "1");
+    assert_eq!(r8.to_decimal_string(), expected_r8);
+    assert_eq!(
+        r8.to_decimal_string().len(),
+        "0.".len() + 77,
+        "decimals == MAX_DECIMALS must yield a 77-character fractional substring",
+    );
+}

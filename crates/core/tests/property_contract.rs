@@ -515,6 +515,67 @@ proptest! {
         prop_assert!((one_token.to_f64_approx() - 1.0).abs() < 1e-12);
     }
 
+    /// [`DecimalAmount::to_decimal_string`] pins the four invariants
+    /// of its canonical formatted output: (1) no decimal point when
+    /// `decimals == 0`; (2) exactly one decimal point when
+    /// `decimals > 0`; (3) the fractional substring length always
+    /// equals `decimals` (the trailing-zero preservation contract);
+    /// (4) the integer part is the canonical decimal expansion of
+    /// `atoms / 10.pow(decimals)`, with no leading zero unless the
+    /// integer part is itself the literal `"0"`.
+    #[test]
+    fn decimal_amount_to_decimal_string_pins_fractional_length_invariants(
+        bytes in atom_amount_bytes(),
+        decimals in 0u8..=DecimalAmount::MAX_DECIMALS,
+    ) {
+        let atoms = U256::from_be_bytes(bytes);
+        let amount = DecimalAmount::new(atoms, decimals)
+            .expect("the proptest range 0..=MAX_DECIMALS is within bounds by construction");
+        let rendered = amount.to_decimal_string();
+
+        if decimals == 0 {
+            // Invariant 1: no decimal point when decimals == 0.
+            prop_assert!(
+                !rendered.contains('.'),
+                "decimals == 0 must produce no decimal point; got {}",
+                rendered,
+            );
+            prop_assert_eq!(&rendered, &atoms.to_string());
+        } else {
+            // Invariant 2: exactly one decimal point when decimals > 0.
+            let dot_count = rendered.matches('.').count();
+            prop_assert_eq!(
+                dot_count,
+                1,
+                "decimals > 0 must produce exactly one decimal point; got {}",
+                rendered,
+            );
+
+            let mut parts = rendered.splitn(2, '.');
+            let integer = parts.next().expect("split always yields at least one part");
+            let fractional = parts.next().expect("dot_count == 1 guarantees a fractional half");
+
+            // Invariant 3: fractional length always equals decimals.
+            prop_assert_eq!(
+                fractional.len(),
+                usize::from(decimals),
+                "fractional substring length must equal decimals; got {}",
+                rendered,
+            );
+
+            // Invariant 4: integer part has no leading zero unless it
+            // is literally "0".
+            if integer != "0" {
+                let first_byte = integer.as_bytes()[0];
+                prop_assert!(
+                    first_byte != b'0',
+                    "non-zero integer part must not have a leading zero; got {}",
+                    rendered,
+                );
+            }
+        }
+    }
+
     /// Every [`SupportedChainId`] round-trips through its [`ChainId`]
     /// numeric form, and any u64 outside the supported set fails the
     /// [`TryFrom`] conversion.

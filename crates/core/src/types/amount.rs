@@ -621,11 +621,47 @@ impl DecimalAmount {
     ///
     /// The split into the integer and fractional portions is performed via
     /// [`alloy_primitives::U256`] `div_rem` against `10^decimals`, so the
-    /// formatting is exact up to the full `uint256` storage range. Trailing
-    /// zeroes in the fractional portion are preserved so the round-trip back
-    /// through [`DecimalAmount::from_atoms`] (combined with the original
-    /// `decimals` scale) recovers the same atomic value byte-for-byte.
-    /// When `decimals == 0`, the integer form is returned unchanged.
+    /// formatting is exact up to the full `uint256` storage range.
+    ///
+    /// **Trailing zeroes in the fractional portion are preserved**: the
+    /// fractional substring length always equals `self.decimals`, so the
+    /// emitted string can be parsed back into the original
+    /// `(atoms, decimals)` pair by any external lossless decimal parser
+    /// without ambiguity. When `self.decimals == 0` the integer form is
+    /// returned unchanged (no decimal point).
+    ///
+    /// This format intentionally differs from the JavaScript ecosystem's
+    /// `formatUnits` helper (ethers, viem, and the cow-protocol services
+    /// utility chain), which trims trailing zeros: `formatUnits(1e18, 18)`
+    /// returns `"1.0"`, while [`DecimalAmount::to_decimal_string`] on the
+    /// same value returns `"1.000000000000000000"`. The cow format
+    /// preserves the full fractional precision so the
+    /// `(integer, fractional)` digit pair is byte-identical to the
+    /// underlying `(atoms, decimals)`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use alloy_primitives::U256;
+    /// use cow_sdk_core::DecimalAmount;
+    ///
+    /// // Integer form (zero decimals) — no decimal point.
+    /// let answer = DecimalAmount::from_atoms(U256::from(42u8), 0).unwrap();
+    /// assert_eq!(answer.to_decimal_string(), "42");
+    ///
+    /// // Canonical 1 ether — trailing zeros preserved (ethers/viem
+    /// // `formatUnits(1e18, 18)` would return `"1.0"`).
+    /// let one_ether = DecimalAmount::from_atoms(
+    ///     U256::from(1_000_000_000_000_000_000u128),
+    ///     18,
+    /// )
+    /// .unwrap();
+    /// assert_eq!(one_ether.to_decimal_string(), "1.000000000000000000");
+    ///
+    /// // Small atoms, large decimals — fractional length always equals decimals.
+    /// let smallest = DecimalAmount::from_atoms(U256::from(1u8), 18).unwrap();
+    /// assert_eq!(smallest.to_decimal_string(), "0.000000000000000001");
+    /// ```
     ///
     /// # Panics
     ///
