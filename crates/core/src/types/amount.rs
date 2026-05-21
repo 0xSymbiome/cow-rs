@@ -487,39 +487,81 @@ pub struct DecimalAmount {
 }
 
 impl DecimalAmount {
+    /// Maximum representable decimals scale.
+    ///
+    /// `77` is the largest exponent for which `10^decimals` fits in the
+    /// inner `uint256` storage that [`DecimalAmount::to_decimal_string`]
+    /// uses to derive the integer/fractional split: `10^77 < 2^256 - 1`
+    /// while `10^78` overflows. Every ERC-20 token across the
+    /// supported chains ships `decimals <= 18`, so the bound is
+    /// structurally satisfied in practice; the constant is the
+    /// canonical accessor for boundary-aware callers and the public
+    /// contract that `DecimalAmount::new`,
+    /// [`DecimalAmount::from_atoms`], and
+    /// [`DecimalAmount::from_whole_approx`] all enforce at
+    /// construction.
+    pub const MAX_DECIMALS: u8 = 77;
+
     /// Creates a decimal-aware amount from an atomic quantity and decimals scale.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError`] (via
+    /// [`ValidationError::DecimalsOutOfRange`]) when `decimals` exceeds
+    /// [`DecimalAmount::MAX_DECIMALS`].
     #[inline]
-    #[must_use]
-    pub const fn new(atoms: U256, decimals: u8) -> Self {
-        Self { atoms, decimals }
+    pub const fn new(atoms: U256, decimals: u8) -> Result<Self, CoreError> {
+        if decimals > Self::MAX_DECIMALS {
+            return Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
+                actual: decimals,
+                max: Self::MAX_DECIMALS,
+            }));
+        }
+        Ok(Self { atoms, decimals })
     }
 
     /// Creates a decimal-aware amount from a raw [`alloy_primitives::U256`]
     /// atomic quantity and a decimals scale.
     ///
     /// Equivalent to [`DecimalAmount::new`]; preserved as the named
-    /// constructor for callers that came in through the pre-cascade
-    /// `from_atoms(BigUint, u8)` surface and want the same intent at
-    /// the same callsite shape post-migration.
+    /// constructor for callsites that prefer the explicit
+    /// "atoms + decimals" shape.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError`] when `decimals` exceeds
+    /// [`DecimalAmount::MAX_DECIMALS`].
     #[inline]
-    #[must_use]
-    pub const fn from_atoms(atoms: U256, decimals: u8) -> Self {
+    pub const fn from_atoms(atoms: U256, decimals: u8) -> Result<Self, CoreError> {
         Self::new(atoms, decimals)
     }
 
     /// Creates an approximate decimal-aware amount from a whole-unit
     /// floating-point value.
     ///
-    /// Non-finite or negative inputs clamp to zero. The conversion is lossy
-    /// beyond `f64` precision and is intended for display or user-input flows
-    /// rather than settlement arithmetic.
-    #[must_use]
-    pub fn from_whole_approx(whole_units: f64, decimals: u8) -> Self {
+    /// Non-finite or negative whole-unit inputs clamp to zero atoms (with
+    /// the requested decimals scale preserved). The conversion is lossy
+    /// beyond `f64` precision and is intended for display or user-input
+    /// flows rather than settlement arithmetic.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError`] when `decimals` exceeds
+    /// [`DecimalAmount::MAX_DECIMALS`]. The whole-unit value itself is
+    /// always accepted (non-finite and negative inputs clamp to zero
+    /// atoms rather than failing).
+    pub fn from_whole_approx(whole_units: f64, decimals: u8) -> Result<Self, CoreError> {
+        if decimals > Self::MAX_DECIMALS {
+            return Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
+                actual: decimals,
+                max: Self::MAX_DECIMALS,
+            }));
+        }
         if !whole_units.is_finite() || whole_units < 0.0 {
-            return Self {
+            return Ok(Self {
                 atoms: U256::ZERO,
                 decimals,
-            };
+            });
         }
         let scale = 10f64.powi(i32::from(decimals));
         let atoms_f = whole_units * scale;
@@ -535,10 +577,10 @@ impl DecimalAmount {
             reason = "the clamp restricts the input to the non-negative u128 range before truncation"
         )]
         let atoms_u128 = bounded as u128;
-        Self {
+        Ok(Self {
             atoms: U256::from(atoms_u128),
             decimals,
-        }
+        })
     }
 
     /// Returns a borrow of the raw atomic quantity.
@@ -587,27 +629,29 @@ impl DecimalAmount {
     ///
     /// # Panics
     ///
-    /// Panics if `decimals` is large enough that `10^decimals` would
-    /// overflow [`alloy_primitives::U256`] (i.e. `decimals >= 78`,
-    /// since `10^78 > 2^256 - 1`). Every ERC-20 token on every
-    /// `CoW` Protocol-supported chain ships with `decimals <= 18`, so
-    /// the bound is structurally satisfied in practice; the explicit
-    /// panic replaces a silent-wrap path that would otherwise produce
-    /// wrong decimal output for pathological `decimals` values
-    /// exceeding 77.
+    /// Cannot panic in practice. [`DecimalAmount::new`],
+    /// [`DecimalAmount::from_atoms`], and
+    /// [`DecimalAmount::from_whole_approx`] all reject `decimals` values
+    /// above [`DecimalAmount::MAX_DECIMALS`] at construction time, so
+    /// the `10^decimals` scale fits in `U256` by the time this method
+    /// runs. The `expect` call inside the body is belt-and-braces: it
+    /// preserves an explicit panic location should a future
+    /// constructor surface bypass the boundary without re-validating.
     #[must_use]
     #[track_caller]
     pub fn to_decimal_string(&self) -> String {
         if self.decimals == 0 {
             return self.atoms.to_string();
         }
-        // SAFETY: `U256::pow` is `wrapping_pow` and would silently
-        // corrupt the scale when `decimals >= 78` (since
-        // `10^78 > 2^256 - 1`). Use `checked_pow` so the overflow
-        // path becomes an explicit panic with caller location
-        // rather than wrong decimal output. Every supported ERC-20
-        // token ships `decimals <= 18`, so the bound is
-        // structurally satisfied in practice.
+        // SAFETY: `DecimalAmount::new`, `from_atoms`, and
+        // `from_whole_approx` all reject `decimals > MAX_DECIMALS == 77`
+        // at construction time, so `self.decimals <= 77` here and
+        // `10^self.decimals` fits in `U256` (`10^77 < 2^256 - 1`).
+        // The `expect` is belt-and-braces against a future constructor
+        // surface that might skip the boundary; routing through
+        // `checked_pow` rather than the inner `ruint::Uint::pow`
+        // (which is `wrapping_pow`) keeps the explicit panic location
+        // even in that hypothetical regression.
         let scale = U256::from(10u64)
             .checked_pow(U256::from(u64::from(self.decimals)))
             .expect("10^decimals must fit in U256: decimals must be < 78");

@@ -472,12 +472,14 @@ proptest! {
         decimals in 0u8..=30u8,
     ) {
         let atoms = U256::from_be_bytes(bytes);
-        let amount = DecimalAmount::new(atoms, decimals);
+        let amount = DecimalAmount::new(atoms, decimals)
+            .expect("the proptest range 0..=30 is within DecimalAmount::MAX_DECIMALS");
 
         prop_assert_eq!(amount.atoms(), &atoms);
         prop_assert_eq!(amount.decimals(), decimals);
 
-        let rebuilt = DecimalAmount::new(*amount.atoms(), amount.decimals());
+        let rebuilt = DecimalAmount::new(*amount.atoms(), amount.decimals())
+            .expect("rebuilding from a previously accepted amount cannot exceed MAX_DECIMALS");
         prop_assert_eq!(&rebuilt, &amount);
 
         let extracted = amount.into_atoms();
@@ -489,20 +491,25 @@ proptest! {
     /// byte-exactly at 18 decimals.
     #[test]
     fn decimal_amount_from_whole_approx_handles_boundary_inputs(decimals in 0u8..=30u8) {
-        let zero = DecimalAmount::from_whole_approx(0.0, decimals);
+        let zero = DecimalAmount::from_whole_approx(0.0, decimals)
+            .expect("the proptest range 0..=30 is within DecimalAmount::MAX_DECIMALS");
         prop_assert_eq!(zero.atoms(), &U256::ZERO);
         prop_assert_eq!(zero.decimals(), decimals);
 
-        let negative = DecimalAmount::from_whole_approx(-1.5, decimals);
+        let negative = DecimalAmount::from_whole_approx(-1.5, decimals)
+            .expect("the proptest range 0..=30 is within DecimalAmount::MAX_DECIMALS");
         prop_assert_eq!(negative.atoms(), &U256::ZERO);
 
-        let nan = DecimalAmount::from_whole_approx(f64::NAN, decimals);
+        let nan = DecimalAmount::from_whole_approx(f64::NAN, decimals)
+            .expect("the proptest range 0..=30 is within DecimalAmount::MAX_DECIMALS");
         prop_assert_eq!(nan.atoms(), &U256::ZERO);
 
-        let infinity = DecimalAmount::from_whole_approx(f64::INFINITY, decimals);
+        let infinity = DecimalAmount::from_whole_approx(f64::INFINITY, decimals)
+            .expect("the proptest range 0..=30 is within DecimalAmount::MAX_DECIMALS");
         prop_assert!(infinity.atoms() <= &U256::from(u128::MAX));
 
-        let one_token = DecimalAmount::from_whole_approx(1.0, 18);
+        let one_token = DecimalAmount::from_whole_approx(1.0, 18)
+            .expect("decimals 18 is within DecimalAmount::MAX_DECIMALS");
         let expected = U256::from(10u128.pow(18));
         prop_assert_eq!(one_token.atoms(), &expected);
         prop_assert!((one_token.to_f64_approx() - 1.0).abs() < 1e-12);

@@ -206,12 +206,14 @@ fn typed_amount_and_decimal_amount_expose_semantic_accessors() {
     let parsed: Amount = "1000000000000000000".try_into().unwrap();
     assert_eq!(parsed, amount);
 
-    let decimal = DecimalAmount::new(U256::from(1_000_000_000_000_000_000u128), 18);
+    let decimal = DecimalAmount::new(U256::from(1_000_000_000_000_000_000u128), 18)
+        .expect("decimals 18 is within DecimalAmount::MAX_DECIMALS");
     assert_eq!(decimal.decimals(), 18);
     assert_eq!(decimal.atoms(), &U256::from(1_000_000_000_000_000_000u128));
     assert!((decimal.to_f64_approx() - 1.0).abs() < 1e-12);
 
-    let clamped = DecimalAmount::from_whole_approx(-0.5, 18);
+    let clamped = DecimalAmount::from_whole_approx(-0.5, 18)
+        .expect("decimals 18 is within DecimalAmount::MAX_DECIMALS");
     assert_eq!(clamped.atoms(), &U256::ZERO);
 }
 
@@ -758,36 +760,73 @@ fn signed_amount_bits_returns_twos_complement_minimum_width_across_boundaries() 
 }
 
 #[test]
-fn decimal_amount_to_decimal_string_documents_overflow_panic_for_pathological_decimals() {
-    use cow_sdk_core::DecimalAmount;
+fn decimal_amount_construction_rejects_decimals_above_max_decimals() {
+    use cow_sdk_core::{CoreError, DecimalAmount};
 
-    // `decimals == 18` is the canonical ERC-20 case; the migration
-    // away from silent `U256::pow` must keep the canonical path
-    // working exactly as before.
+    // MAX_DECIMALS == 77 because 10^77 < U256::MAX < 10^78; every
+    // ERC-20 token ships decimals <= 18 so the bound is structurally
+    // satisfied in practice. The constant is the public accessor for
+    // boundary-aware callers.
+    assert_eq!(DecimalAmount::MAX_DECIMALS, 77);
+
+    // Canonical 18-decimals path (the everyday ERC-20 case).
     let amount =
-        DecimalAmount::from_atoms(Amount::new("1500000000000000000").unwrap().into_u256(), 18);
+        DecimalAmount::from_atoms(Amount::new("1500000000000000000").unwrap().into_u256(), 18)
+            .expect("decimals 18 is within MAX_DECIMALS");
     assert_eq!(amount.to_decimal_string(), "1.500000000000000000");
 
-    // `decimals == 0` is the integer-form shortcut; the migration
-    // must preserve it.
-    let integer = DecimalAmount::from_atoms(Amount::new("42").unwrap().into_u256(), 0);
+    // Integer-form shortcut (decimals == 0).
+    let integer = DecimalAmount::from_atoms(Amount::new("42").unwrap().into_u256(), 0)
+        .expect("decimals 0 is within MAX_DECIMALS");
     assert_eq!(integer.to_decimal_string(), "42");
 
-    // `decimals == 77` is the last value for which `10^decimals`
-    // fits in U256. The migration must preserve this boundary case.
-    let near_max = DecimalAmount::from_atoms(Amount::new("1").unwrap().into_u256(), 77);
+    // Boundary: decimals == 77 is the documented maximum and is
+    // accepted; the resulting to_decimal_string starts with "0.0"
+    // and has fractional length exactly 77.
+    let near_max = DecimalAmount::from_atoms(Amount::new("1").unwrap().into_u256(), 77)
+        .expect("decimals 77 is the documented maximum");
     let near_max_str = near_max.to_decimal_string();
     assert!(near_max_str.starts_with("0.0"));
     assert_eq!(near_max_str.len(), "0.".len() + 77);
 
-    // `decimals >= 78` is the pathological range the migration
-    // converts from silent-wrap to explicit panic.
-    let result = std::panic::catch_unwind(|| {
-        let pathological = DecimalAmount::from_atoms(Amount::new("1").unwrap().into_u256(), 78);
-        pathological.to_decimal_string()
-    });
-    assert!(
-        result.is_err(),
-        "decimals = 78 must panic because 10^78 > U256::MAX",
-    );
+    // Boundary: decimals == 78 is rejected at construction time with
+    // a documented validation error — the same surface for new(),
+    // from_atoms(), and from_whole_approx().
+    let from_atoms_rejected = DecimalAmount::from_atoms(U256::from(1u64), 78);
+    assert!(matches!(
+        from_atoms_rejected,
+        Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
+            actual: 78,
+            max: 77,
+        })),
+    ));
+
+    let new_rejected = DecimalAmount::new(U256::ZERO, 78);
+    assert!(matches!(
+        new_rejected,
+        Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
+            actual: 78,
+            max: 77,
+        })),
+    ));
+
+    let approx_rejected = DecimalAmount::from_whole_approx(1.0, 78);
+    assert!(matches!(
+        approx_rejected,
+        Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
+            actual: 78,
+            max: 77,
+        })),
+    ));
+
+    // Extreme value (decimals == u8::MAX) is also rejected, proving
+    // the gate scales beyond the immediate 78 case.
+    let extreme = DecimalAmount::new(U256::ZERO, u8::MAX);
+    assert!(matches!(
+        extreme,
+        Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
+            actual: 255,
+            max: 77,
+        })),
+    ));
 }

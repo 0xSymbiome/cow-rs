@@ -68,6 +68,22 @@ pub enum ValidationError {
         /// Maximum supported duration in seconds.
         max: u32,
     },
+    /// A `DecimalAmount` decimals scale was above the maximum representable value.
+    ///
+    /// The maximum is `77` because `10^77 < 2^256 - 1 < 10^78`, so any
+    /// `decimals` value above `77` would make `10^decimals` overflow the
+    /// inner `uint256` storage used by `DecimalAmount::to_decimal_string`.
+    /// Every ERC-20 token across the supported chains ships
+    /// `decimals <= 18`, so the bound is structurally satisfied in
+    /// practice; the explicit error replaces a previous runtime panic
+    /// path with construction-time fail-closed validation.
+    #[error("DecimalAmount decimals scale {actual} exceeds the maximum representable value {max}")]
+    DecimalsOutOfRange {
+        /// The decimals scale that was rejected.
+        actual: u8,
+        /// The maximum representable decimals scale.
+        max: u8,
+    },
 }
 
 /// Top-level core crate error.

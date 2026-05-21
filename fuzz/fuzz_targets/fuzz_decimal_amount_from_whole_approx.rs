@@ -38,8 +38,17 @@ impl<'a> Arbitrary<'a> for DecimalInput {
 }
 
 fuzz_target!(|input: DecimalInput| {
-    let first = DecimalAmount::from_whole_approx(input.whole_units, input.decimals);
-    let second = DecimalAmount::from_whole_approx(input.whole_units, input.decimals);
+    // `DecimalAmount::from_whole_approx` returns `Err` when
+    // `decimals > MAX_DECIMALS == 77`. Skip those inputs: the
+    // construction-time boundary contract is pinned by the dedicated
+    // contract test, and the determinism + clamping properties this
+    // fuzz target exercises only apply to inputs the constructor
+    // accepts.
+    let Ok(first) = DecimalAmount::from_whole_approx(input.whole_units, input.decimals) else {
+        return;
+    };
+    let second = DecimalAmount::from_whole_approx(input.whole_units, input.decimals)
+        .expect("identical input must succeed when the first call succeeded");
     assert_eq!(
         first, second,
         "DecimalAmount::from_whole_approx must be deterministic on identical input",
@@ -52,7 +61,8 @@ fuzz_target!(|input: DecimalInput| {
     );
 
     if !input.whole_units.is_finite() || input.whole_units < 0.0 {
-        let zero = DecimalAmount::from_whole_approx(0.0, input.decimals);
+        let zero = DecimalAmount::from_whole_approx(0.0, input.decimals)
+            .expect("identical decimals must succeed when the first call succeeded");
         assert_eq!(
             first.atoms(),
             zero.atoms(),
