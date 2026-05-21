@@ -1,8 +1,8 @@
 use std::ops::Deref;
 
+use alloy_primitives::keccak256;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sha3::{Digest, Keccak256};
 
 use crate::{
     AppDataDoc, AppDataError, AppDataInfo, app_data_hex_to_cid, cid_to_app_data_hex,
@@ -186,7 +186,7 @@ pub fn get_app_data_info(source: impl AppDataSource) -> Result<AppDataValidated,
     ensure_valid_document(&document)?;
 
     let bytes_used = app_data_content.len();
-    let digest = Keccak256::digest(app_data_content.as_bytes());
+    let digest = keccak256(app_data_content.as_bytes());
     let app_data_hex = format!("0x{}", hex::encode(digest));
     let cid = app_data_hex_to_cid(&app_data_hex)?;
 
