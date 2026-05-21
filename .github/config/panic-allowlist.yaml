@@ -60,6 +60,12 @@ allowed:
   - file: crates/core/src/redaction/body.rs
     item: strip_credential_tokens
     reason: Redaction offsets are computed from in-bounds string match indices.
+  - file: crates/core/src/types/amount.rs
+    item: Amount::pow
+    reason: Amount::pow documents the overflow-panics contract on its rustdoc and routes through Amount::checked_pow because the inner ruint::Uint::pow is wrapping_pow and would otherwise silently corrupt financial values; the .expect call turns the documented overflow path into an explicit debug panic with caller location, while callers needing infallible behaviour use Amount::checked_pow or Amount::saturating_pow.
+  - file: crates/core/src/types/amount.rs
+    item: DecimalAmount::to_decimal_string
+    reason: The 10^decimals scale computation panics when decimals would overflow U256 (decimals >= 78); every supported ERC-20 token ships decimals <= 18, so the bound is structurally satisfied in practice. The explicit panic replaces a previous silent-wrap path that would have produced wrong decimal output for pathological decimals values.
   - file: crates/orderbook/src/builder.rs
     item: OrderBookApiBuilder::base_url
     reason: The convenience method is documented as requiring environment to be set before use.
