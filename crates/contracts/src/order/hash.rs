@@ -60,7 +60,7 @@ pub fn hash_order(domain: &TypedDataDomain, order: &Order) -> Result<OrderDigest
     let sol_order = sol_order_from_normalized(&normalized);
     let alloy_domain = alloy_domain_from(domain);
     let digest = sol_order.eip712_signing_hash(&alloy_domain);
-    OrderDigest::new(format!("0x{}", hex::encode(digest.as_slice()))).map_err(Into::into)
+    Ok(OrderDigest::from_bytes(digest.into()))
 }
 
 /// Computes the EIP-712 digest for a single order cancellation.
@@ -98,7 +98,7 @@ pub fn hash_order_cancellations(
     };
     let alloy_domain = alloy_domain_from(domain);
     let digest = sol_cancellations.eip712_signing_hash(&alloy_domain);
-    Hash32::new(format!("0x{}", hex::encode(digest.as_slice()))).map_err(Into::into)
+    Ok(Hash32::from_bytes(digest.into()))
 }
 
 fn sol_order_from_normalized(order: &NormalizedOrder) -> SolOrder {

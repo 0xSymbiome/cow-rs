@@ -66,6 +66,12 @@ allowed:
   - file: crates/core/src/types/amount.rs
     item: DecimalAmount::to_decimal_string
     reason: The 10^decimals scale computation panics when decimals would overflow U256 (decimals >= 78); every supported ERC-20 token ships decimals <= 18, so the bound is structurally satisfied in practice. The explicit panic replaces a previous silent-wrap path that would have produced wrong decimal output for pathological decimals values.
+  - file: crates/contracts/src/order/uid.rs
+    item: extract_order_uid_params
+    reason: The two slice-to-array conversions in extract_order_uid_params operate on slices whose length is guaranteed by the ORDER_UID_LENGTH guard at the top of the function (bytes.len() == 56); the try_into-to-[u8; 32] and try_into-to-[u8; 20] conversions cannot fail under that guard, and the expect calls document the unreachability proof inline through // SAFETY comments naming the guarantee.
+  - file: crates/contracts/src/signature.rs
+    item: decode_eip1271_signature_data
+    reason: The slice-to-array conversion in decode_eip1271_signature_data operates on a slice whose length is guaranteed by the bytes.len() < 20 early-return guard above; the try_into-to-[u8; 20] conversion cannot fail under that guard, and the expect call documents the unreachability proof inline through a // SAFETY comment naming the guarantee.
   - file: crates/orderbook/src/builder.rs
     item: OrderBookApiBuilder::base_url
     reason: The convenience method is documented as requiring environment to be set before use.

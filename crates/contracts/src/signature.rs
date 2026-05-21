@@ -234,6 +234,16 @@ pub fn encode_eip1271_signature_data(
 /// Returns [`ContractsError::InvalidEip1271SignatureData`] when the payload is
 /// shorter than the verifier address, or another [`ContractsError`] when hex or
 /// address validation fails.
+///
+/// # Panics
+///
+/// Cannot panic in practice. The function returns early with
+/// [`ContractsError::InvalidEip1271SignatureData`] when the decoded
+/// byte length is below 20; after that guard, the 20-byte
+/// slice-to-array conversion for the verifier address is infallible
+/// by construction. The `expect` call inside the body documents the
+/// unreachability proof so a future contributor cannot accidentally
+/// weaken the guard without removing the proof first.
 pub fn decode_eip1271_signature_data(
     signature: &str,
 ) -> Result<Eip1271SignatureData, ContractsError> {
@@ -241,7 +251,13 @@ pub fn decode_eip1271_signature_data(
     if bytes.len() < 20 {
         return Err(ContractsError::InvalidEip1271SignatureData);
     }
-    let verifier = Address::new(format!("0x{}", hex::encode(&bytes[..20])))?;
+    // SAFETY: the `bytes.len() < 20` guard above guarantees `bytes.len() >= 20`
+    // here, so the `[..20]` slice is always 20 bytes and `try_into` cannot fail.
+    let verifier = Address::from_bytes(
+        bytes[..20]
+            .try_into()
+            .expect("slice length 20 is guaranteed by the bytes.len() < 20 check above"),
+    );
     let signature = format!("0x{}", hex::encode(&bytes[20..]));
     Ok(Eip1271SignatureData::new(verifier, signature))
 }

@@ -89,7 +89,7 @@ pub fn deterministic_deployment_address(
                 actual: raw.len(),
             })?;
     let derived = deployer_alloy.create2_from_code(salt, &init_code);
-    Address::new(format!("0x{}", hex::encode(derived.as_slice()))).map_err(Into::into)
+    Ok(Address::from_bytes(derived.into()))
 }
 
 /// Decodes a `0x`-prefixed hex string into raw bytes, mapping prefix and

@@ -163,5 +163,5 @@ fn decode_storage_address(value: &str) -> Result<Address, ContractsError> {
                 actual: raw.len(),
             })?;
     let word = FixedBytes::<32>::from(buf);
-    Address::new(format!("0x{}", hex::encode(SolAddress::from_word(word)))).map_err(Into::into)
+    Ok(Address::from_bytes(SolAddress::from_word(word).into()))
 }
