@@ -90,7 +90,7 @@ fn zero_amount_is_rejected_as_out_of_range() {
         address(PROTOCOL_ADAPTER),
         address(RECEIVER),
         address(TOKEN),
-        Amount::zero(),
+        Amount::ZERO,
     )
     .expect_err("zero amount must fail validation");
     assert!(matches!(
@@ -291,7 +291,7 @@ fn flashloan_v1_7_0_rejects_zero_amount() {
         address(PROTOCOL_ADAPTER),
         address(RECEIVER),
         address(TOKEN),
-        Amount::zero(),
+        Amount::ZERO,
     )
     .expect_err("zero amount must fail validation");
     assert!(matches!(

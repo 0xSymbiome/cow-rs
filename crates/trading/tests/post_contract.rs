@@ -472,7 +472,7 @@ async fn post_swap_order_zero_amount_does_not_upload_or_sign() {
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = CountingSigner::new(address(OWNER));
     let mut params = sample_limit_parameters(OrderKind::Sell);
-    params.sell_amount = Amount::zero();
+    params.sell_amount = Amount::ZERO;
 
     let error = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
         .await

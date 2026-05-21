@@ -145,7 +145,7 @@ fn sample_transaction() -> TransactionRequest {
     TransactionRequest::new(
         Some(Address::new(ADDRESS).unwrap()),
         None,
-        Some(Amount::zero()),
+        Some(Amount::ZERO),
         Some(Amount::from(21_000u32)),
     )
 }

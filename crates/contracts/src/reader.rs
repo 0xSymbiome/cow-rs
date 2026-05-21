@@ -241,7 +241,7 @@ where
         let normalized_trade = serde_json::json!({
             "sellToken": trade.sell_token,
             "buyToken": trade.buy_token,
-            "receiver": trade.receiver.unwrap_or_else(Address::zero),
+            "receiver": trade.receiver.unwrap_or(Address::ZERO),
             "sellAmount": trade.sell_amount,
             "buyAmount": trade.buy_amount,
             "sellTokenBalance": sell_balance_id(trade.sell_token_balance.unwrap_or_default()),

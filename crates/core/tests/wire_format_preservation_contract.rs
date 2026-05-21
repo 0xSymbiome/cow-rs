@@ -407,7 +407,7 @@ fn write_into_matches_to_hex_string_byte_identically() {
 
     // Test zero values
     buffer.clear();
-    let zero_addr = Address::zero();
+    let zero_addr = Address::ZERO;
     zero_addr
         .write_into(&mut buffer)
         .expect("zero Address write_into must succeed");

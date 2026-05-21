@@ -293,7 +293,7 @@ fn trade_with_indices_and_flags(
             .unwrap(),
         Amount::new("1").unwrap(),
         flags,
-        Amount::zero(),
+        Amount::ZERO,
         "0x".to_owned(),
     )
 }

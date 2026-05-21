@@ -15,7 +15,7 @@ pub fn smoke_hash_and_uid() -> Result<String, Box<dyn std::error::Error>> {
         Amount::new("250000000000000000")?,
         1_700_000_000,
         AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")?,
-        Amount::zero(),
+        Amount::ZERO,
         OrderKind::Sell,
         false,
         SellTokenSource::Erc20,

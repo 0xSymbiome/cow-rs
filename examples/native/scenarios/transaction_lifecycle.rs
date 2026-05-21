@@ -185,7 +185,7 @@ fn self_transfer(address: &Address) -> TransactionRequest {
     TransactionRequest::new(
         Some(address.clone()),
         None,
-        Some(Amount::zero()),
+        Some(Amount::ZERO),
         Some(Amount::from(21_000u32)),
     )
 }

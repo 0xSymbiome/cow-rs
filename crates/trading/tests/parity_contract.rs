@@ -644,7 +644,7 @@ fn assert_slippage_helper_bounds(case_id: &str, expected: &Value) {
         app_data_hash(),
         OrderKind::Sell,
     )
-    .with_network_cost_amount(Amount::zero())
+    .with_network_cost_amount(Amount::ZERO)
     .with_receiver(address(OWNER));
     let zero_quote = cow_sdk_orderbook::OrderQuoteResponse::new(
         zero_quote_data,
@@ -1135,7 +1135,7 @@ fn assert_presign_transaction_contract_selection(case_id: &str, expected: &Value
     );
     assert_eq!(
         tx.value,
-        Some(Amount::zero()),
+        Some(Amount::ZERO),
         "case {case_id}: pre-sign transaction.value must equal {expected_value}",
     );
     // Mock signer returns 125_000 from estimate_gas; 125_000 * 1.20 = 150_000.

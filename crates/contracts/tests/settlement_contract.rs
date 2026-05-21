@@ -341,7 +341,7 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
             BuyTokenDestination::Erc20,
         ))
         .unwrap(),
-        Amount::zero(),
+        Amount::ZERO,
         "0x".to_owned(),
     );
     let decoded = decode_order(

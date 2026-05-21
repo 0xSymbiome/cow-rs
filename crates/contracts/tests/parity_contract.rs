@@ -795,7 +795,7 @@ fn sample_ethflow_order() -> EthFlowOrderData {
         Amount::new("2000000000000000000").unwrap(),
         AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             .unwrap(),
-        Amount::zero(),
+        Amount::ZERO,
         0x1234_5678,
         false,
         42,
@@ -1022,7 +1022,7 @@ fn settlement_sample_order(
         valid_to,
         AppDataHex::new("0x0000000000000000000000000000000000000000000000000000000000000000")
             .unwrap(),
-        Amount::zero(),
+        Amount::ZERO,
         OrderKind::Sell,
         false,
         Some(SellTokenSource::Erc20),

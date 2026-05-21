@@ -206,7 +206,7 @@ fn eth_flow_path_accepts_native_sell_token_but_still_enforces_zero_amount() {
         .validate(&order, SigningScheme::Eip1271, None, NOW, true)
         .expect("eth-flow path must admit the native sentinel as sell token");
 
-    order.sell_amount = Amount::zero();
+    order.sell_amount = Amount::ZERO;
     let error = validator
         .validate(&order, SigningScheme::Eip1271, None, NOW, true)
         .expect_err("eth-flow path must still reject zero amounts");
@@ -376,7 +376,7 @@ fn paired_weth_native_guard_requires_configured_weth_to_engage() {
 fn zero_sell_amount_rejects_as_zero_sell_side() {
     let validator = OrderBoundsValidator::services_default();
     let mut order = order();
-    order.sell_amount = Amount::zero();
+    order.sell_amount = Amount::ZERO;
     let error = validator
         .validate(&order, SigningScheme::Eip712, None, NOW, false)
         .expect_err("zero sell amount must reject");
@@ -392,7 +392,7 @@ fn zero_sell_amount_rejects_as_zero_sell_side() {
 fn zero_buy_amount_rejects_as_zero_buy_side() {
     let validator = OrderBoundsValidator::services_default();
     let mut order = order();
-    order.buy_amount = Amount::zero();
+    order.buy_amount = Amount::ZERO;
     let error = validator
         .validate(&order, SigningScheme::Eip712, None, NOW, false)
         .expect_err("zero buy amount must reject");
@@ -515,7 +515,7 @@ fn trade_parameters_validate_rejects_zero_amount() {
         18,
         address(BUY_TOKEN),
         18,
-        cow_sdk_core::Amount::zero(),
+        cow_sdk_core::Amount::ZERO,
     );
     let error = params
         .validate()
@@ -532,8 +532,8 @@ fn trade_parameters_validate_rejects_zero_amount() {
 fn amount_is_zero_matches_the_typed_numeric_predicate() {
     use cow_sdk_core::Amount;
     assert!(
-        Amount::zero().is_zero(),
-        "Amount::zero() must report is_zero() == true"
+        Amount::ZERO.is_zero(),
+        "Amount::ZERO must report is_zero() == true"
     );
     assert!(
         !Amount::new("1").unwrap().is_zero(),
@@ -558,7 +558,7 @@ fn limit_trade_parameters_validate_rejects_zero_buy_amount() {
         address(BUY_TOKEN),
         18,
         cow_sdk_core::Amount::new("1000000").unwrap(),
-        cow_sdk_core::Amount::zero(),
+        cow_sdk_core::Amount::ZERO,
     );
     let error = params
         .validate()

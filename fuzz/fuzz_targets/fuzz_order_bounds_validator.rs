@@ -96,8 +96,8 @@ impl<'a> Arbitrary<'a> for ValidatorInput {
                 is_eth_flow = false;
             }
             5 => order.buy_token = order.sell_token.clone(),
-            6 => order.sell_amount = Amount::zero(),
-            7 => order.buy_amount = Amount::zero(),
+            6 => order.sell_amount = Amount::ZERO,
+            7 => order.buy_amount = Amount::ZERO,
             8 => app_data_signer = Some(address_from_seed(0x33)),
             9 => app_data_signer = Some(address_from_seed(0x44)),
             10 => partner_fee_probe = true,

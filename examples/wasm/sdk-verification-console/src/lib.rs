@@ -734,7 +734,7 @@ fn sample_unsigned_order(chain_id: SupportedChainId) -> UnsignedOrder {
         1_900_000_000,
         AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             .expect("static example app-data hex must remain valid"),
-        Amount::zero(),
+        Amount::ZERO,
         OrderKind::Sell,
         false,
         SellTokenSource::Erc20,

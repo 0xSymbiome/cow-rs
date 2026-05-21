@@ -40,7 +40,7 @@ async fn mock_provider_satisfies_async_provider_contracts() {
             .call(&TransactionRequest::new(
                 Some(Address::new("0x1111111111111111111111111111111111111111").unwrap()),
                 Some(HexData::new("0x1234").unwrap()),
-                Some(Amount::zero()),
+                Some(Amount::ZERO),
                 Some(Amount::from(21_000u32)),
             ))
             .await

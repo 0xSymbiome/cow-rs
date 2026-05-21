@@ -62,7 +62,7 @@ async fn alloy_client_satisfies_trading_sdk_async_boundaries() {
         .unwrap();
     assert!(pre_sign.to.is_some());
     assert!(pre_sign.data.is_some());
-    assert_eq!(pre_sign.value, Some(Amount::zero()));
+    assert_eq!(pre_sign.value, Some(Amount::ZERO));
     assert_eq!(pre_sign.gas_limit, Some(Amount::from(25_200u32)));
 
     let methods = {
@@ -196,7 +196,7 @@ fn sample_transaction() -> TransactionRequest {
     TransactionRequest::new(
         Some(address(COW)),
         Some(HexData::new("0x").unwrap()),
-        Some(Amount::zero()),
+        Some(Amount::ZERO),
         None,
     )
 }

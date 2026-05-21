@@ -81,7 +81,7 @@ fn slippage_bps_clamps_to_expected_bounds() {
         crate::common::app_data_hash(),
         OrderKind::Sell,
     )
-    .with_network_cost_amount(Amount::zero())
+    .with_network_cost_amount(Amount::ZERO)
     .with_receiver(address(OWNER));
     let zero_quote = cow_sdk_orderbook::OrderQuoteResponse::new(
         zero_quote_data,
@@ -177,7 +177,7 @@ fn slippage_clamps_at_zero_for_normal_orders() {
         crate::common::app_data_hash(),
         OrderKind::Sell,
     )
-    .with_network_cost_amount(Amount::zero())
+    .with_network_cost_amount(Amount::ZERO)
     .with_receiver(address(OWNER));
     let quote = cow_sdk_orderbook::OrderQuoteResponse::new(
         quote_data,
@@ -209,7 +209,7 @@ fn slippage_clamps_at_eth_flow_default_for_eth_flow_orders() {
         crate::common::app_data_hash(),
         OrderKind::Sell,
     )
-    .with_network_cost_amount(Amount::zero())
+    .with_network_cost_amount(Amount::ZERO)
     .with_receiver(address(OWNER));
     let quote = cow_sdk_orderbook::OrderQuoteResponse::new(
         quote_data,

@@ -122,7 +122,7 @@ impl Serialize for OrderCreation {
 }
 
 const fn order_creation_zero_fee_amount() -> Amount {
-    Amount::zero()
+    Amount::ZERO
 }
 
 const ORDER_CREATION_NON_ZERO_FEE_ERROR: &str =
@@ -827,11 +827,11 @@ impl Order {
             uid,
             creation_date: String::new(),
             available_balance: None,
-            executed_sell_amount: Amount::zero(),
-            executed_sell_amount_before_fees: Amount::zero(),
-            executed_buy_amount: Amount::zero(),
+            executed_sell_amount: Amount::ZERO,
+            executed_sell_amount_before_fees: Amount::ZERO,
+            executed_buy_amount: Amount::ZERO,
             executed_fee: None,
-            executed_fee_amount: Amount::zero(),
+            executed_fee_amount: Amount::ZERO,
             executed_fee_token: None,
             invalidated: false,
             status: OrderStatus::default(),
@@ -843,7 +843,7 @@ impl Order {
             settlement_contract,
             quote: None,
             interactions: None,
-            total_fee: Amount::zero(),
+            total_fee: Amount::ZERO,
         }
     }
 }

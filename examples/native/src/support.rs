@@ -77,7 +77,7 @@ pub fn sample_unsigned_order() -> UnsignedOrder {
         1_700_000_000,
         AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             .expect("example app-data hex must remain valid"),
-        Amount::zero(),
+        Amount::ZERO,
         OrderKind::Sell,
         false,
         SellTokenSource::Erc20,

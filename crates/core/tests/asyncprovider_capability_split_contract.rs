@@ -300,7 +300,7 @@ fn sample_transaction() -> TransactionRequest {
     TransactionRequest::new(
         Some(sample_address()),
         Some(HexData::new("0x1234").unwrap()),
-        Some(Amount::zero()),
+        Some(Amount::ZERO),
         Some(Amount::from(21_000u32)),
     )
 }

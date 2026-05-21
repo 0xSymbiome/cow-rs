@@ -426,7 +426,7 @@ impl QuoteData {
             buy_amount,
             valid_to,
             app_data,
-            fee_amount: Amount::zero(),
+            fee_amount: Amount::ZERO,
             kind,
             partially_fillable: false,
             sell_token_balance: SellTokenSource::Erc20,

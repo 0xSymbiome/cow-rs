@@ -34,7 +34,7 @@ fn public_api_reexports_cover_primary_root_surface() {
         1_700_000_000,
         AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             .unwrap(),
-        Amount::zero(),
+        Amount::ZERO,
         OrderKind::Sell,
         false,
         SellTokenSource::Erc20,

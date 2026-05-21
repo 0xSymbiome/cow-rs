@@ -74,7 +74,7 @@ fn presign_transaction_uses_zero_value_margin_and_settlement_override() {
     .expect("pre-sign transaction should build");
 
     assert_eq!(tx.to, Some(address(CUSTOM_SETTLEMENT)));
-    assert_eq!(tx.value, Some(Amount::zero()));
+    assert_eq!(tx.value, Some(Amount::ZERO));
     assert_eq!(
         tx.gas_limit,
         Some(Amount::new("150000").expect("test gas literal must be valid"))

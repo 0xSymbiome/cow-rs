@@ -35,7 +35,7 @@ mod tests {
             buy_amount,
             valid_to,
             app_data,
-            Amount::zero(),
+            Amount::ZERO,
             OrderKind::Sell,
             false,
             SellTokenSource::Erc20,

@@ -388,7 +388,7 @@ async fn order_id_collision_retries_with_new_salt_until_success_or_cap() {
         Amount::new("3").expect("test buy amount literal must be valid"),
         MAX_VALID_TO_EPOCH,
         app_data_hash(),
-        Amount::zero(),
+        Amount::ZERO,
         OrderKind::Sell,
         false,
         SellTokenSource::Erc20,

@@ -396,7 +396,7 @@ mod tests {
                 .unwrap(),
             Amount::new("1").unwrap(),
             0,
-            Amount::zero(),
+            Amount::ZERO,
             "0x".to_owned(),
         );
         let tokens = vec![

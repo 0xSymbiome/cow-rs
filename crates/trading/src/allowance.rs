@@ -127,7 +127,7 @@ pub fn approval_transaction(
             &spender,
             &params.amount,
         )?)?),
-        Some(Amount::zero()),
+        Some(Amount::ZERO),
         None,
     ))
 }

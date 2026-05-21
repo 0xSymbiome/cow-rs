@@ -201,7 +201,7 @@ pub fn get_order_to_sign(
     limit_parameters: &LimitTradeParameters,
     app_data_keccak256: &AppDataHash,
 ) -> Result<UnsignedOrder, TradingError> {
-    let network_costs_amount = params.network_costs_amount.unwrap_or_else(Amount::zero);
+    let network_costs_amount = params.network_costs_amount.unwrap_or(Amount::ZERO);
     let receiver = limit_parameters
         .receiver
         .filter(|receiver| !is_zero_address(receiver))
@@ -275,7 +275,7 @@ pub fn get_order_to_sign(
         buy_amount_to_use,
         valid_to,
         *app_data_keccak256,
-        Amount::zero(),
+        Amount::ZERO,
         limit_parameters.kind,
         limit_parameters.partially_fillable,
         limit_parameters.sell_token_balance,

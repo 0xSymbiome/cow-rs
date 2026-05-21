@@ -46,7 +46,7 @@ let order = Order::from(&UnsignedOrder::new(
     Amount::new("900000000000000000").unwrap(),
     0,
     AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000").unwrap(),
-    Amount::zero(),
+    Amount::ZERO,
     OrderKind::Sell,
     false,
     SellTokenSource::Erc20,

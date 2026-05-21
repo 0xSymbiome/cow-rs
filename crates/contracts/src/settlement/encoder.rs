@@ -109,7 +109,7 @@ impl SettlementEncoder {
             };
             interactions.push(Interaction::new(
                 self.domain.verifying_contract,
-                Amount::zero(),
+                Amount::ZERO,
                 Bytes::from(call_data),
             ));
         }
@@ -156,7 +156,7 @@ impl SettlementEncoder {
         let execution = match execution {
             Some(execution) => execution,
             None if order.partially_fillable => return Err(ContractsError::MissingExecutedAmount),
-            None => TradeExecution::new(Amount::zero()),
+            None => TradeExecution::new(Amount::ZERO),
         };
         self.trades.push(encode_settlement_trade(
             &mut self.tokens,
@@ -255,7 +255,7 @@ impl SettlementEncoder {
             "unused".to_owned(),
             "unused".to_owned(),
             0,
-            Address::zero(),
+            Address::ZERO,
         ));
         for interaction in interactions {
             encoder.encode_interaction(interaction, InteractionStage::Intra)?;
@@ -341,6 +341,6 @@ mod tests {
             .encode_trade(&sample_order(false), &sample_signature(), None)
             .unwrap();
 
-        assert_eq!(encoder.trades()[0].executed_amount, Amount::zero());
+        assert_eq!(encoder.trades()[0].executed_amount, Amount::ZERO);
     }
 }

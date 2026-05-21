@@ -1,7 +1,7 @@
 use alloy_primitives::{I256, U256};
 use cow_sdk_core::{
-    Address, Amount, Amounts, AppDataHex, BuyTokenDestination, Costs, DecimalAmount, FeeComponent,
-    Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderKind, OrderUid,
+    Address, Amount, Amounts, AppDataHash, AppDataHex, BuyTokenDestination, Costs, DecimalAmount,
+    FeeComponent, Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderKind, OrderUid,
     QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, SellTokenSource, SignedAmount, UnsignedOrder,
     VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
     addresses_equal, token_id,
@@ -223,7 +223,7 @@ fn amount_addition_is_commutative_across_curated_boundaries() {
     // `u64::MAX`, `1u32`, and zero this exercises the full `U256` storage
     // range without crossing the `uint256` ceiling.
     let boundaries = [
-        Amount::zero(),
+        Amount::ZERO,
         Amount::from(1u32),
         Amount::from(u64::MAX),
         Amount::from(u128::MAX),
@@ -279,7 +279,7 @@ fn amount_checked_arithmetic_preserves_option_shape() {
     );
     assert_eq!(
         small.saturating_sub(&large),
-        Amount::zero(),
+        Amount::ZERO,
         "saturating_sub must clamp underflow to zero instead of wrapping",
     );
     assert_eq!(
@@ -394,8 +394,8 @@ fn signed_amount_add_and_sub_delegate_to_i256() {
     assert_eq!(a + b, SignedAmount::new("4").unwrap());
     assert_eq!(b + a, SignedAmount::new("4").unwrap());
     assert_eq!((a + b) + c, a + (b + c));
-    assert_eq!(a + SignedAmount::zero(), SignedAmount::new("7").unwrap());
-    assert_eq!(a - a, SignedAmount::zero());
+    assert_eq!(a + SignedAmount::ZERO, SignedAmount::new("7").unwrap());
+    assert_eq!(a - a, SignedAmount::ZERO);
 
     let mut total = a;
     total += b;
@@ -431,4 +431,46 @@ fn signed_amount_checked_arithmetic_returns_i256_results() {
         product.into_i256(),
         rhs.as_i256().checked_mul(*multiplier.as_i256()).unwrap()
     );
+}
+
+#[test]
+fn cow_primitive_newtype_zero_constants_equal_alloy_zero() {
+    // Every cow primitive newtype that carries a canonical zero ships
+    // `pub const ZERO: Self`. The constant must equal the value the
+    // typed constructor produces from the canonical zero string and
+    // must report `is_zero()` true.
+
+    // Address (20 zero bytes)
+    let zero_address = Address::new("0x0000000000000000000000000000000000000000").unwrap();
+    assert_eq!(Address::ZERO, zero_address);
+    assert!(Address::ZERO.is_zero());
+
+    // Amount (uint256 zero)
+    let zero_amount = Amount::new("0").unwrap();
+    assert_eq!(Amount::ZERO, zero_amount);
+    assert!(Amount::ZERO.is_zero());
+
+    // SignedAmount (int256 zero)
+    let zero_signed = SignedAmount::new("0").unwrap();
+    assert_eq!(SignedAmount::ZERO, zero_signed);
+    assert!(SignedAmount::ZERO.is_zero());
+
+    // AppDataHash (32 zero bytes)
+    let zero_app_data_hash =
+        AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000")
+            .unwrap();
+    assert_eq!(AppDataHash::ZERO, zero_app_data_hash);
+    assert!(AppDataHash::ZERO.is_zero());
+
+    // Hash32 (32 zero bytes)
+    let zero_hash32 =
+        Hash32::new("0x0000000000000000000000000000000000000000000000000000000000000000").unwrap();
+    assert_eq!(Hash32::ZERO, zero_hash32);
+    assert!(Hash32::ZERO.is_zero());
+
+    // OrderUid (56 zero bytes)
+    let zero_uid_hex = format!("0x{}", "00".repeat(56));
+    let zero_uid = OrderUid::new(&zero_uid_hex).unwrap();
+    assert_eq!(OrderUid::ZERO, zero_uid);
+    assert!(OrderUid::ZERO.is_zero());
 }

@@ -79,7 +79,7 @@ impl FlashloanHints {
     /// Returns [`AppDataError::InvalidFlashloanHints`] on the first field
     /// that falls outside the documented bounds.
     pub fn validate(&self) -> Result<(), AppDataError> {
-        if self.amount == Amount::zero() {
+        if self.amount == Amount::ZERO {
             return Err(AppDataError::InvalidFlashloanHints {
                 field: "amount",
                 reason: ValidationReason::OutOfRange {

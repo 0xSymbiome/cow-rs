@@ -60,7 +60,7 @@ fn sample_order() -> UnsignedOrder {
         1_735_689_600,
         AppDataHash::new("0x337aa6e6c2a7a0d1eb79a35ebd88b08fc963d5f7a3fc953b7ffb2b7f5898a1df")
             .unwrap(),
-        Amount::zero(),
+        Amount::ZERO,
         OrderKind::Sell,
         false,
         SellTokenSource::Erc20,

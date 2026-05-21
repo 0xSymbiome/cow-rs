@@ -127,13 +127,6 @@ impl Amount {
         Ok(Self(parsed))
     }
 
-    /// Returns the zero quantity.
-    #[inline]
-    #[must_use]
-    pub const fn zero() -> Self {
-        Self::ZERO
-    }
-
     /// Creates an amount from a raw [`alloy_primitives::U256`] value.
     #[inline]
     #[must_use]
@@ -543,13 +536,6 @@ impl SignedAmount {
             field: "signed_amount",
         })?;
         Ok(Self(parsed))
-    }
-
-    /// Returns the zero quantity.
-    #[inline]
-    #[must_use]
-    pub const fn zero() -> Self {
-        Self::ZERO
     }
 
     /// Creates a signed amount from a raw [`alloy_primitives::I256`] value.

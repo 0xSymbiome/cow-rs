@@ -29,7 +29,7 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
     Ok(NormalizedOrder::new(
         order.sell_token,
         order.buy_token,
-        order.receiver.unwrap_or_else(Address::zero),
+        order.receiver.unwrap_or(Address::ZERO),
         order.sell_amount,
         order.buy_amount,
         order.valid_to,

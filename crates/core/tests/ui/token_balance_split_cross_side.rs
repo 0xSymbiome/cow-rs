@@ -32,7 +32,7 @@ fn main() {
         0,
         AppDataHex::new("0x0000000000000000000000000000000000000000000000000000000000000000")
             .unwrap(),
-        Amount::zero(),
+        Amount::ZERO,
         OrderKind::Sell,
         false,
         SellTokenSource::Erc20,

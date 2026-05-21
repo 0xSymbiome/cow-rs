@@ -64,6 +64,9 @@ impl Address {
     /// Raw decoded byte length of an EVM address.
     pub const BYTE_LENGTH: usize = 20;
 
+    /// Canonical zero address (`0x00…00`).
+    pub const ZERO: Self = Self(AlloyAddress::ZERO);
+
     /// Creates a validated address from a `0x`-prefixed hexadecimal string.
     ///
     /// # Errors
@@ -147,13 +150,6 @@ impl Address {
     #[must_use]
     pub const fn into_alloy(self) -> AlloyAddress {
         self.0
-    }
-
-    /// Returns the zero address.
-    #[inline]
-    #[must_use]
-    pub const fn zero() -> Self {
-        Self(AlloyAddress::ZERO)
     }
 
     /// Returns `true` when this is the zero address.
@@ -469,6 +465,9 @@ impl AppDataHash {
     /// Raw decoded byte length of an app-data hash.
     pub const BYTE_LENGTH: usize = 32;
 
+    /// Canonical zero app-data hash (32 zero bytes).
+    pub const ZERO: Self = Self(B256::ZERO);
+
     /// Creates a validated app-data hash from a `0x`-prefixed 32-byte hex string.
     ///
     /// # Errors
@@ -550,13 +549,6 @@ impl AppDataHash {
     #[must_use]
     pub const fn into_alloy(self) -> B256 {
         self.0
-    }
-
-    /// Returns the zero app-data hash.
-    #[inline]
-    #[must_use]
-    pub const fn zero() -> Self {
-        Self(B256::ZERO)
     }
 
     /// Returns `true` when this is the zero app-data hash.
@@ -679,6 +671,9 @@ impl Hash32 {
     /// Raw decoded byte length of a 32-byte hash.
     pub const BYTE_LENGTH: usize = 32;
 
+    /// Canonical zero 32-byte hash (32 zero bytes).
+    pub const ZERO: Self = Self(B256::ZERO);
+
     /// Creates a validated 32-byte hash from a `0x`-prefixed hex string.
     ///
     /// # Errors
@@ -748,13 +743,6 @@ impl Hash32 {
     #[must_use]
     pub const fn into_alloy(self) -> B256 {
         self.0
-    }
-
-    /// Returns the zero hash.
-    #[inline]
-    #[must_use]
-    pub const fn zero() -> Self {
-        Self(B256::ZERO)
     }
 
     /// Returns `true` when this is the zero hash.
@@ -862,6 +850,9 @@ impl OrderUid {
     /// Raw decoded byte length of an order UID.
     pub const BYTE_LENGTH: usize = 56;
 
+    /// Canonical zero order UID (56 zero bytes).
+    pub const ZERO: Self = Self(FixedBytes::<56>::ZERO);
+
     /// Creates a validated order UID from a `0x`-prefixed 56-byte hex string.
     ///
     /// # Errors
@@ -931,13 +922,6 @@ impl OrderUid {
     #[must_use]
     pub const fn into_alloy(self) -> FixedBytes<56> {
         self.0
-    }
-
-    /// Returns the zero UID.
-    #[inline]
-    #[must_use]
-    pub const fn zero() -> Self {
-        Self(FixedBytes::<56>::ZERO)
     }
 
     /// Returns `true` when this is the zero UID.

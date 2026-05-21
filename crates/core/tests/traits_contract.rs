@@ -187,7 +187,7 @@ fn sample_transaction() -> TransactionRequest {
     TransactionRequest::new(
         Some(Address::new("0x2222222222222222222222222222222222222222").unwrap()),
         Some(HexData::new("0x01020304").unwrap()),
-        Some(Amount::zero()),
+        Some(Amount::ZERO),
         Some(Amount::from(21_000u32)),
     )
 }
@@ -536,7 +536,7 @@ async fn sync_runtime_contracts_gain_async_compatibility_through_blanket_impls()
     let tx = TransactionRequest::new(
         Some(Address::new("0x8888888888888888888888888888888888888888").unwrap()),
         Some(HexData::new("0x1234").unwrap()),
-        Some(Amount::zero()),
+        Some(Amount::ZERO),
         Some(Amount::from(21_000u32)),
     );
 

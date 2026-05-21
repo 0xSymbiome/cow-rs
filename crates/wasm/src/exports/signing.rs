@@ -700,7 +700,7 @@ fn order_uid_transaction(
     let tx = TransactionRequest::new(
         Some(settlement),
         Some(HexData::new(data).map_err(|error| WasmError::from(error).into_js())?),
-        Some(Amount::zero()),
+        Some(Amount::ZERO),
         Some(default_gas_limit()?),
     );
     Ok(tx)

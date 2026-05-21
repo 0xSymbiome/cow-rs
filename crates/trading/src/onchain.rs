@@ -86,7 +86,7 @@ where
     let mut tx = TransactionRequest::new(
         Some(settlement),
         Some(HexData::new(encode_set_pre_signature(order_uid, true))?),
-        Some(Amount::zero()),
+        Some(Amount::ZERO),
         None,
     );
     let gas = signer
@@ -131,7 +131,7 @@ where
     let mut tx = TransactionRequest::new(
         Some(settlement),
         Some(HexData::new(encode_set_pre_signature(order_uid, true))?),
-        Some(Amount::zero()),
+        Some(Amount::ZERO),
         None,
     );
     let gas = signer
@@ -317,14 +317,14 @@ where
         TransactionRequest::new(
             Some(resolve_eth_flow_address(chain_id, options)),
             Some(HexData::new(encode_ethflow_invalidate_order(order))?),
-            Some(Amount::zero()),
+            Some(Amount::ZERO),
             None,
         )
     } else {
         TransactionRequest::new(
             Some(resolve_settlement_address(chain_id, options)),
             Some(HexData::new(encode_invalidate_order_uid(&order.uid))?),
-            Some(Amount::zero()),
+            Some(Amount::ZERO),
             None,
         )
     };
@@ -364,14 +364,14 @@ where
         TransactionRequest::new(
             Some(resolve_eth_flow_address(chain_id, options)),
             Some(HexData::new(encode_ethflow_invalidate_order(order))?),
-            Some(Amount::zero()),
+            Some(Amount::ZERO),
             None,
         )
     } else {
         TransactionRequest::new(
             Some(resolve_settlement_address(chain_id, options)),
             Some(HexData::new(encode_invalidate_order_uid(&order.uid))?),
-            Some(Amount::zero()),
+            Some(Amount::ZERO),
             None,
         )
     };
@@ -586,7 +586,7 @@ fn encode_ethflow_invalidate_order(order: &Order) -> String {
         order.sell_amount,
         order.buy_amount,
         order.app_data,
-        Amount::zero(),
+        Amount::ZERO,
         order.valid_to,
         false,
         0,

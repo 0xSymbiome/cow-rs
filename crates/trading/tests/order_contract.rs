@@ -25,7 +25,7 @@ fn sample_ethflow_order(buy_amount: &str) -> UnsignedOrder {
         Amount::new(buy_amount).expect("test buy amount literal must be valid"),
         1_700_000_000,
         app_data_hash(),
-        Amount::zero(),
+        Amount::ZERO,
         cow_sdk_core::OrderKind::Sell,
         false,
         SellTokenSource::Erc20,

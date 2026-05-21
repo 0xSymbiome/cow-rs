@@ -189,7 +189,7 @@ mod tests {
             Amount::new("2000000000000000000").unwrap(),
             AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
                 .unwrap(),
-            Amount::zero(),
+            Amount::ZERO,
             0x1234_5678,
             false,
             42,

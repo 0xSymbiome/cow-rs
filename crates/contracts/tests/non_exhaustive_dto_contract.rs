@@ -343,7 +343,7 @@ fn eth_flow_order_data_new_preserves_abi_shape() {
         amount("15"),
         amount("16"),
         app_data(),
-        Amount::zero(),
+        Amount::ZERO,
         77,
         false,
         7,
