@@ -150,6 +150,25 @@ pub fn encode_invalidate_order_calldata(order: &EthFlowOrderData) -> Vec<u8> {
     .abi_encode()
 }
 
+/// Builds the `ICoWSwapEthFlow::EthFlowOrderData` sol-typed struct from the
+/// cow [`EthFlowOrderData`] value.
+///
+/// This helper is intentionally **not** declared `const fn`. The alloy
+/// `From<[u8; N]>` impls on [`alloy_primitives::Address`] and
+/// [`alloy_primitives::FixedBytes`] go through `derive_more::From` or
+/// the `wrap_fixed_bytes!` macro, both of which generate plain
+/// `fn from(...)` rather than `const fn from(...)`. Const-trait support
+/// is not yet stable on the Rust toolchain this crate targets
+/// (RFC 3762 tracks the path).
+///
+/// The only const-callable workaround would use the cow newtype
+/// field-access escape hatch (e.g. `EthFlowOrderData.buy_token.into_alloy().0.0`),
+/// which is documented under ADR 0052 as a non-stable forward-compatibility
+/// surface. Promotion would also buy nothing in practice because every
+/// public caller of this helper routes through `abi_encode`, which
+/// heap-allocates a `Vec<u8>` and is never const-callable; the
+/// pre-encoding step has no observable cost difference between `fn` and
+/// `const fn`.
 fn to_sol_struct(order: &EthFlowOrderData) -> ICoWSwapEthFlow::EthFlowOrderData {
     use alloy_sol_types::private::{Address as SolAddress, FixedBytes};
 
