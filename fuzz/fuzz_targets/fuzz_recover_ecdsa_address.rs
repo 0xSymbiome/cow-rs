@@ -47,23 +47,24 @@ fuzz_target!(|input: Input| {
     let second = signature.recover_ecdsa_address(&digest);
     match (&first, &second) {
         (Ok(left), Ok(right)) => {
+            let left_hex = left.to_hex_string();
+            let right_hex = right.to_hex_string();
             assert_eq!(
-                left.as_str(),
-                right.as_str(),
+                left_hex, right_hex,
                 "recover_ecdsa_address must be deterministic for identical input",
             );
             assert_eq!(left.byte_length(), 20, "recovered address must be 20 bytes");
             assert!(
-                left.as_str().starts_with("0x"),
+                left_hex.starts_with("0x"),
                 "recovered address must be 0x-prefixed",
             );
             assert_eq!(
-                left.as_str().len(),
+                left_hex.len(),
                 42,
                 "recovered address must be exactly 42 characters (0x + 40 hex)",
             );
             assert!(
-                left.as_str()[2..].chars().all(|c| c.is_ascii_hexdigit()),
+                left_hex[2..].chars().all(|c: char| c.is_ascii_hexdigit()),
                 "recovered address tail must be ASCII hex only",
             );
         }

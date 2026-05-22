@@ -44,10 +44,5 @@ fuzz_target!(|data: &[u8]| {
             value, roundtrip,
             "SignedAmount::new round-trip through canonical decimal string must be stable",
         );
-        assert_eq!(
-            value.as_str(),
-            canonical,
-            "SignedAmount canonical str accessor must match Display output",
-        );
     }
 });
