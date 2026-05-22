@@ -44,6 +44,31 @@ fn helper_only() {}
 }
 
 #[test]
+fn property_citations_accept_test_functions_inside_proptest_macro_blocks() {
+    let temp = TempDir::new("property-citations-proptest");
+    temp.write(
+        "crates/demo/tests/contract.rs",
+        r#"
+use proptest::prelude::*;
+
+proptest! {
+    #[test]
+    fn cited_proptest_property_holds(value in 0u32..1024) {
+        let _ = value;
+    }
+}
+"#,
+    );
+    let rows = vec![PropertyRow {
+        id: "PROP-DEMO-001".to_owned(),
+        covered: "Yes".to_owned(),
+        evidence: "`crates/demo/tests/contract.rs::cited_proptest_property_holds`".to_owned(),
+    }];
+
+    assert!(validate_rows(temp.path(), &rows).unwrap().is_empty());
+}
+
+#[test]
 fn property_table_parser_extracts_prop_rows_and_rust_refs() {
     let rows = parse_property_rows(
         "| Id | Crate | Property | Type | Covered | Evidence | Last reviewed |\n\

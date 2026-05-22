@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, bail};
+use proc_macro2::{Delimiter, TokenStream, TokenTree};
 use syn::{Attribute, Item, Visibility, parse::Parser, visit::Visit};
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -396,7 +397,52 @@ impl<'ast> Visit<'ast> for TestFunctionVisitor {
             Item::Fn(function) if is_test_function(function) => {
                 self.output.push(function.sig.ident.to_string());
             }
+            Item::Macro(item_macro)
+                if item_macro
+                    .mac
+                    .path
+                    .segments
+                    .last()
+                    .is_some_and(|segment| segment.ident == "proptest") =>
+            {
+                self.output
+                    .extend(extract_proptest_test_names(&item_macro.mac.tokens));
+            }
             _ => syn::visit::visit_item(self, item),
         }
     }
+}
+
+/// Extracts `#[test] fn NAME(...)` function identifiers from a `proptest!`
+/// macro body. The macro wraps test functions in a proptest-specific
+/// parameter syntax (`arg in strategy`) that `syn` cannot parse as ordinary
+/// items, so the function walks the raw token tree looking for the
+/// `# [test] fn NAME (` pattern.
+fn extract_proptest_test_names(tokens: &TokenStream) -> Vec<String> {
+    let trees: Vec<TokenTree> = tokens.clone().into_iter().collect();
+    let mut names = Vec::new();
+    let mut index = 0usize;
+    while index + 3 < trees.len() {
+        if let (
+            TokenTree::Punct(hash),
+            TokenTree::Group(bracket),
+            TokenTree::Ident(keyword),
+            TokenTree::Ident(name),
+        ) = (
+            &trees[index],
+            &trees[index + 1],
+            &trees[index + 2],
+            &trees[index + 3],
+        ) && hash.as_char() == '#'
+            && bracket.delimiter() == Delimiter::Bracket
+            && bracket.stream().to_string().trim() == "test"
+            && keyword == "fn"
+        {
+            names.push(name.to_string());
+            index += 4;
+            continue;
+        }
+        index += 1;
+    }
+    names
 }

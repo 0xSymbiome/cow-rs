@@ -316,6 +316,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "clap",
+ "proc-macro2",
  "semver",
  "serde",
  "serde_json",
