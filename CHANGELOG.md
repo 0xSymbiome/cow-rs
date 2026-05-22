@@ -14,6 +14,24 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Fixed
 
+- EthFlow on-chain order construction now refuses `receiver == address(0)`
+  at the cow SDK boundary rather than producing calldata the deployed
+  `CoWSwapEthFlow` contract rejects. `EthFlowOrderData::new` and
+  `EthFlowOrderData::from_unsigned_order` return
+  `Result<Self, ContractsError>`, surfacing `ContractsError::ZeroReceiver`
+  on the structurally-illegal input. The construction-time rejection
+  mirrors the deployed contract's `ReceiverMustBeSet()` revert (selector
+  `0xefc9ccdf`), raised from `EthFlowOrder.toCoWSwapOrder` on both the
+  `createOrder` and `invalidateOrder` write paths through the shared
+  library function. The same predicate now backs the regular-order
+  `normalize_order` rejection through a shared private helper so the
+  receiver-rejection rule lives in one place across `cow-sdk-contracts`.
+  Downstream encoders in `cow-sdk-trading` and the `cow-sdk-wasm` bridge
+  propagate the typed error through their existing `Result` surfaces;
+  the trading-layer `OrderBoundsValidator` pre-empts the case before any
+  encoder call, so the new error surface is reachable only through
+  direct `cow-sdk-contracts` consumption.
+
 - App-data canonical JSON serialisation now sorts object keys by UTF-16 code
   unit value per RFC 8785 (JSON Canonicalization Scheme), via `serde_jcs`.
   This closes a latent divergence with the upstream `@cowprotocol/cow-sdk`
@@ -39,6 +57,26 @@ The first functional crate-family release begins at `0.1.0`.
   reject byte contracts.
 
 ### Added
+
+- `cowprotocol/ethflowcontract` joins the parity-source catalog as a
+  Primary capability evidence pin in `parity/source-lock.yaml`, with
+  producer paths `src/CoWSwapEthFlow.sol` and
+  `src/libraries/EthFlowOrder.sol`. The pin anchors the upstream Solidity
+  authority for the EthFlow construction-time invariants recorded in
+  ADR 0020. The `docs/parity-scope.md` Source Lock table and the
+  `docs/parity-sources.md` Pinned Revisions and Primary sources lists
+  reflect the new entry, and the `cow-sdk-contracts` ABI bindings under
+  `crates/contracts/abi/eth-flow/` now trace to a fixed upstream SHA
+  rather than the unpinned upstream repository.
+
+- `PROP-CON-018`: `EthFlowOrderData::new` and
+  `EthFlowOrderData::from_unsigned_order` reject `receiver == Address::ZERO`
+  with `ContractsError::ZeroReceiver`, pre-empting the deployed
+  `CoWSwapEthFlow` contract's `ReceiverMustBeSet()` revert (selector
+  `0xefc9ccdf`) raised by `EthFlowOrder.toCoWSwapOrder` on both the
+  `createOrder` and `invalidateOrder` write paths. The same predicate is
+  shared with `cow_sdk_contracts::order::hash::normalize_order` via a
+  private `reject_zero_receiver` helper. Governed by ADR 0020.
 
 - ADR 0052 (`docs/adr/0052-alloy-primitives-canonical-primitive-layer.md`)
   publishes `alloy_primitives` as the canonical EVM primitive layer and

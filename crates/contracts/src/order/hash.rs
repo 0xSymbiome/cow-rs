@@ -9,11 +9,11 @@ use crate::ContractsError;
 use crate::primitives::{buy_balance_name, order_kind_name, sell_balance_name};
 
 /// Rejects construction paths that would emit `address(0)` as the order
-/// receiver. The cow-protocol GPv2 order surface treats `address(0)` as
+/// receiver. The cow-protocol `GPv2` order surface treats `address(0)` as
 /// the "send to owner" sentinel via `GPv2Order.RECEIVER_SAME_AS_OWNER`,
-/// and the EthFlow contract additionally reverts at calldata-construction
+/// and the `EthFlow` contract additionally reverts at calldata-construction
 /// time with `ReceiverMustBeSet()` (selector `0xefc9ccdf`) because the
-/// order owner is always the EthFlow contract itself — routing proceeds
+/// order owner is always the `EthFlow` contract itself — routing proceeds
 /// to "owner" would strand ERC-20 tokens in the contract.
 ///
 /// See the `EthFlowOrder.toCoWSwapOrder` library function in the
