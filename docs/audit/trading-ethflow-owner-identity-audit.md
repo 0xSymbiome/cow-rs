@@ -1,7 +1,7 @@
 # Trading EthFlow Owner Identity Audit
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-22
 Owning surface: `cow-sdk-trading` EthFlow submission seam,
 including the `EthFlowTransaction` bundle shape, the
 `get_eth_flow_transaction_async` owner resolution, and the
@@ -20,6 +20,7 @@ Related docs:
 - [ADR 0020](../adr/0020-ethflow-owner-threading.md)
 - [ADR 0015](../adr/0015-client-side-order-bounds-validator.md)
 - [Trading Order-Bounds Validator Audit](trading-order-bounds-validator-audit.md)
+- [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) — covers the contracts-crate construction-time receiver invariant adjacent to the trading-layer owner threading
 - [Architecture](../architecture.md)
 
 ## Scope

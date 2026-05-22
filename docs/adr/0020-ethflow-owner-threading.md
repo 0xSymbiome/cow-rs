@@ -93,6 +93,29 @@ the signer.
   receiver-as-preview-owner assignment. No change to the public
   validator surface, the payout semantics, or the EthFlow
   transaction encoding.
+- Construction-time receiver invariant:
+  `cow_sdk_contracts::EthFlowOrderData::new` and
+  `EthFlowOrderData::from_unsigned_order` return
+  `Result<Self, ContractsError>`, rejecting
+  `receiver == Address::ZERO` with `ContractsError::ZeroReceiver`.
+  The same predicate is shared with
+  `cow_sdk_contracts::order::hash::normalize_order` via a private
+  `reject_zero_receiver` helper, so the receiver-rejection rule is
+  expressed in one place across the contracts crate. The shared
+  rule mirrors the deployed `CoWSwapEthFlow` contract's
+  `ReceiverMustBeSet()` revert (selector `0xefc9ccdf`), raised
+  from `EthFlowOrder.toCoWSwapOrder` at the calldata-construction
+  step in both the `createOrder` and `invalidateOrder` write
+  paths through the shared library call. The selector derivation
+  is locked by the unit test
+  `zero_receiver_invariant_matches_ethflow_on_chain_revert_selector`
+  in `crates/contracts/src/eth_flow.rs`, which re-derives
+  `keccak256("ReceiverMustBeSet()")[0..4]` via
+  `alloy_primitives::keccak256` and asserts equality with the
+  hardcoded byte sequence `0xef 0xc9 0xcc 0xdf`. The proptest
+  `ethflow_order_data_new_rejects_zero_receiver_iff_address_is_zero`
+  in `crates/contracts/tests/property_contract.rs` covers the
+  bidirectional invariant under the full 2^160 address space.
 
 ## Alternatives Rejected
 
@@ -128,6 +151,7 @@ the signer.
 **Proven by:**
 
 - [Trading EthFlow Owner Identity Audit](../audit/trading-ethflow-owner-identity-audit.md)
+- [Contract Bindings Parity Audit](../audit/contract-bindings-parity-audit.md)
 
 ## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
 

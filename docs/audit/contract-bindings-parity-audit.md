@@ -70,6 +70,24 @@ variant takes the full `EthFlowOrderData` payload and is distinct from
 the `GPv2Settlement::invalidateOrder(bytes)` call that takes a packed
 order UID.
 
+`EthFlowOrderData::new` and `EthFlowOrderData::from_unsigned_order` return
+`Result<Self, ContractsError>`, rejecting `Address::ZERO` for the
+receiver field with `ContractsError::ZeroReceiver`. The rejection mirrors
+the upstream `EthFlowOrder.toCoWSwapOrder` library function's
+`ReceiverMustBeSet()` revert (selector `0xefc9ccdf`), which fires on both
+the `createOrder` and `invalidateOrder` write paths through the shared
+library call. The same predicate is shared with
+`cow_sdk_contracts::order::hash::normalize_order` via a private
+`reject_zero_receiver` helper, so the receiver-rejection rule lives in
+one place across the contracts crate. The unit test
+`zero_receiver_invariant_matches_ethflow_on_chain_revert_selector` in
+`crates/contracts/src/eth_flow.rs` re-derives the selector via
+`alloy_primitives::keccak256("ReceiverMustBeSet()")[..4]` and pins it
+against any future upstream rename, and the proptest
+`ethflow_order_data_new_rejects_zero_receiver_iff_address_is_zero` in
+`crates/contracts/tests/property_contract.rs` covers the bidirectional
+invariant under the full 2^160 address space.
+
 The EIP-1967 surface (`crates/contracts/src/proxy.rs`) carries the
 `ADMIN_SLOT` and `IMPLEMENTATION_SLOT` storage-slot helpers.
 The regression suite verifies both the canonical hex payloads and the
