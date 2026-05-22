@@ -154,6 +154,7 @@ repositories:
   - crates/orderbook/openapi.yml
   - crates/shared/src/order_validation.rs
   - crates/orderbook/src/app_data.rs
+  - crates/model/src/order.rs
 fixtures: []
 validation:
   standalone_repo_contract: []

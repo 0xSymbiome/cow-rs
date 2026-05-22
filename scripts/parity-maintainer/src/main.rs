@@ -174,6 +174,7 @@ const SERVICES_PATHS: &[&str] = &[
     "crates/orderbook/openapi.yml",
     "crates/shared/src/order_validation.rs",
     "crates/orderbook/src/app_data.rs",
+    "crates/model/src/order.rs",
 ];
 
 const ALLOY_PATHS: &[&str] = &[

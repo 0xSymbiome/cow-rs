@@ -160,6 +160,7 @@ repositories:
   - crates/orderbook/openapi.yml
   - crates/shared/src/order_validation.rs
   - crates/orderbook/src/app_data.rs
+  - crates/model/src/order.rs
 - id: alloy
   remote: https://github.com/alloy-rs/alloy.git
   commit: f3fe4cfff0553e9e234a53208bb69b7c222c66e5
@@ -445,6 +446,8 @@ fixtures:
     path: crates/orderbook/openapi.yml
   - repo: services
     path: crates/shared/src/order_validation.rs
+  - repo: services
+    path: crates/model/src/order.rs
 - surface: orderbook-request-order-quote
   file: parity/fixtures/orderbook-requests/order_quote_request.json
   source_refs:
