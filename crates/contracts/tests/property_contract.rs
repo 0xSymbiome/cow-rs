@@ -21,16 +21,16 @@
 )]
 
 use cow_sdk_contracts::{
-    ContractsError, Eip1271SignatureData, Order, OrderFlags, OrderUidParams, Signature,
-    SigningScheme, TokenRegistry, Trade, TradeExecution, TradeFlags, compute_order_uid,
+    ContractsError, Eip1271SignatureData, EthFlowOrderData, Order, OrderFlags, OrderUidParams,
+    Signature, SigningScheme, TokenRegistry, Trade, TradeExecution, TradeFlags, compute_order_uid,
     decode_eip1271_signature_data, decode_order, decode_order_flags, decode_signing_scheme,
     decode_trade_flags, encode_eip1271_signature_data, encode_order_flags, encode_signing_scheme,
     encode_trade, encode_trade_flags, extract_order_uid_params, hash_order, normalize_order,
     normalized_ecdsa_signature, pack_order_uid_params,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, OrderDigest, OrderKind, SellTokenSource,
-    TypedDataDomain,
+    Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, OrderDigest, OrderKind,
+    SellTokenSource, TypedDataDomain,
 };
 use proptest::prelude::*;
 use proptest::test_runner::{FileFailurePersistence, TestRunner};
@@ -637,6 +637,38 @@ proptest! {
     #[test]
     fn signing_scheme_decode_rejects_unknown_bytes(byte in 4u8..=u8::MAX) {
         prop_assert!(decode_signing_scheme(byte).is_err());
+    }
+
+    /// [`EthFlowOrderData::new`] accepts every non-zero receiver and
+    /// rejects `Address::ZERO` with `ContractsError::ZeroReceiver`,
+    /// pre-empting the upstream `CoWSwapEthFlow` contract's
+    /// `ReceiverMustBeSet()` revert (selector `0xefc9ccdf`). The
+    /// bidirectional invariant covers the full 2^160 address space.
+    #[test]
+    fn ethflow_order_data_new_rejects_zero_receiver_iff_address_is_zero(
+        receiver_bytes in proptest::array::uniform20(any::<u8>()),
+    ) {
+        let receiver_hex = format!("0x{}", hex::encode(receiver_bytes));
+        let receiver = Address::new(receiver_hex).unwrap();
+        let result = EthFlowOrderData::new(
+            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            receiver,
+            Amount::new("1000000000000000000").unwrap(),
+            Amount::new("2000000000000000000").unwrap(),
+            AppDataHash::new(
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            )
+            .unwrap(),
+            Amount::ZERO,
+            0xFFFF_FFFF,
+            false,
+            0,
+        );
+        if receiver.is_zero() {
+            prop_assert!(matches!(result, Err(ContractsError::ZeroReceiver)));
+        } else {
+            prop_assert!(result.is_ok());
+        }
     }
 
 }

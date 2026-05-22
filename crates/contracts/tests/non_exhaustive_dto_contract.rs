@@ -347,7 +347,8 @@ fn eth_flow_order_data_new_preserves_abi_shape() {
         77,
         false,
         7,
-    );
+    )
+    .expect("non-zero receiver fixture must construct successfully");
 
     let actual = encode_create_order_calldata(&order);
     let expected = LocalEthFlow::createOrderCall {

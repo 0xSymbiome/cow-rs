@@ -800,6 +800,7 @@ fn sample_ethflow_order() -> EthFlowOrderData {
         false,
         42,
     )
+    .expect("sample EthFlow order helper uses a non-zero receiver")
 }
 
 fn assert_settlement_invalidate_order_calldata(id: &str, expected: &Value) {
