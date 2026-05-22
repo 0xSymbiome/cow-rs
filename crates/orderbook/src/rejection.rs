@@ -311,12 +311,13 @@ pub enum OrderbookRejection {
     ///
     /// The SDK keeps this variant as a permanent fallback so a new
     /// services-side tag never silently becomes a default placeholder
-    /// or a transport-level failure: callers still receive the typed
-    /// wire code and description through deliberate `Redacted<T>`
-    /// accessors while public renderings preserve sanitized code tags and
-    /// redact free-form descriptions. The `#[non_exhaustive]` attribute
-    /// guarantees that promoting an unknown tag to a dedicated variant remains
-    /// a non-breaking change.
+    /// or falls through the untyped [`crate::OrderbookError::Api`]
+    /// envelope path: callers still receive the typed wire code and
+    /// description through deliberate `Redacted<T>` accessors while
+    /// public renderings preserve sanitized code tags and redact
+    /// free-form descriptions. The `#[non_exhaustive]` attribute
+    /// guarantees that promoting an unknown tag to a dedicated variant
+    /// remains a non-breaking change.
     #[error("unknown rejection code `{code}`: {message}")]
     Unknown {
         /// Sanitized `errorType` tag as supplied by services.
@@ -353,12 +354,15 @@ struct RejectionEnvelope {
 /// `description` string is only diagnostic.
 ///
 /// The parser returns `None` when the supplied `body` is not a JSON
-/// object with a string `errorType` field. Callers treat that case as
-/// a transport-level decode failure and surface
-/// [`crate::OrderbookError::Transport`] rather than
-/// [`crate::OrderbookError::Rejected`]. Unknown tags are preserved as
-/// [`OrderbookRejection::Unknown`] so forward compatibility with new
-/// services codes never degrades to a silent placeholder.
+/// object with a string `errorType` field. Callers surface that case
+/// through [`crate::OrderbookError::Api`] (wrapping the structured
+/// [`crate::OrderBookApiError`] envelope, which preserves the decoded
+/// [`crate::ResponseBody`] — including the `Text` variant for
+/// plain-text bodies — and the derived public message) rather than
+/// through [`crate::OrderbookError::Rejected`]. Unknown tags are
+/// preserved as [`OrderbookRejection::Unknown`] so forward
+/// compatibility with new services codes never degrades to a silent
+/// placeholder.
 ///
 /// The `status` argument is accepted so future dispatchers can key on
 /// the `(status, errorType)` pair for tags that services emits at

@@ -67,7 +67,7 @@ impl MockProvider {
 
     pub fn set_storage(&self, address: &Address, slot: &str, value: &str) {
         self.storage.borrow_mut().insert(
-            (address.normalized_key(), slot.to_ascii_lowercase()),
+            (address.to_hex_string(), slot.to_ascii_lowercase()),
             value.to_owned(),
         );
     }
@@ -124,7 +124,7 @@ impl Provider for MockProvider {
         let value = self
             .storage
             .borrow()
-            .get(&(address.normalized_key(), slot.to_ascii_lowercase()))
+            .get(&(address.to_hex_string(), slot.to_ascii_lowercase()))
             .cloned()
             .ok_or_else(|| MockProviderError(format!("missing storage for {address} at {slot}")))?;
         HexData::new(value).map_err(|error| MockProviderError(error.to_string()))

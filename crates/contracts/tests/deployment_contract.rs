@@ -115,7 +115,7 @@ fn registry_canonical_addresses_are_bound_to_the_reviewed_create2_salt_contract(
                 .address(contract_id, chain, CowEnv::Prod)
                 .unwrap_or_else(|| panic!("{contract_id:?} prod address is missing for {chain:?}"));
             assert_eq!(
-                address.normalized_key(),
+                address.to_hex_string(),
                 expected_address,
                 "{contract_id:?} must keep the deterministic CREATE2 deployment address across prod chains",
             );

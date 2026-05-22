@@ -60,7 +60,7 @@ async fn create_signer_with_empty_hint_falls_back_to_wallet_selected_account() {
         .get_address()
         .await
         .expect("get_address resolves through the selected-account fallback");
-    assert_eq!(address.normalized_key(), primary.normalized_key());
+    assert_eq!(address.to_hex_string(), primary.to_hex_string());
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -73,7 +73,7 @@ async fn create_signer_with_whitespace_hint_trims_to_empty_and_falls_back() {
         .await
         .expect("whitespace-only hint must trim to empty and succeed");
     let address = signer.get_address().await.expect("fallback resolves");
-    assert_eq!(address.normalized_key(), primary.normalized_key());
+    assert_eq!(address.to_hex_string(), primary.to_hex_string());
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -92,7 +92,7 @@ async fn create_signer_with_valid_hint_in_wallet_accounts_returns_signer_bound_t
         .get_address()
         .await
         .expect("get_address returns the explicit hint");
-    assert_eq!(address.normalized_key(), other.normalized_key());
+    assert_eq!(address.to_hex_string(), other.to_hex_string());
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -139,7 +139,7 @@ async fn create_signer_queries_wallet_when_session_accounts_are_empty() {
         .await
         .expect("query-accounts path resolves a matching account");
     let address = signer.get_address().await.expect("get_address resolves");
-    assert_eq!(address.normalized_key(), primary.normalized_key());
+    assert_eq!(address.to_hex_string(), primary.to_hex_string());
 }
 
 #[tokio::test(flavor = "current_thread")]

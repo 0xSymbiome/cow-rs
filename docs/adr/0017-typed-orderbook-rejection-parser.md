@@ -52,9 +52,12 @@ on the happy diagnostic path.
   new tag the orderbook ships before the SDK adopts a typed
   variant. `parse_rejection(status, body) -> Option<OrderbookRejection>`
   classifies a raw `http::StatusCode` plus byte slice; it returns
-  `None` whenever the envelope fails to deserialize so callers
-  preserve transport-level failure semantics instead of silently
-  coercing unknown payloads into a default rejection.
+  `None` whenever the envelope fails to deserialize so the
+  `From<OrderBookApiError>` promotion in `error.rs` falls back to
+  `OrderbookError::Api(Box<OrderBookApiError>)` (preserving the
+  decoded `ResponseBody` — including the `Text` variant for
+  plain-text bodies — and the derived public message) instead of
+  silently coercing unknown payloads into a default rejection.
   `OrderbookError::Rejected { status, rejection, source: Box<OrderBookApiError> }`
   is the typed promotion path on the per-call error tree, wired
   through `From<OrderBookApiError>` whenever the response body

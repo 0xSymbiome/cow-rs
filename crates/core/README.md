@@ -32,7 +32,10 @@ cow-sdk-core = "0.1"
 use cow_sdk_core::{Address, SupportedChainId, addresses_equal};
 
 let address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
-assert_eq!(address.normalized_key(), address.to_hex_string());
+assert_eq!(
+    address.to_hex_string(),
+    "0x1111111111111111111111111111111111111111"
+);
 assert!(addresses_equal(&address, &address));
 let _chain = SupportedChainId::Sepolia;
 ```

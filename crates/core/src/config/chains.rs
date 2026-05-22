@@ -250,7 +250,7 @@ pub fn wrapped_native_token(chain_id: SupportedChainId) -> TokenInfo {
         logo_url: Some(format!(
             "{TOKEN_LIST_IMAGES_PATH}/{}/{}/logo.png",
             ChainId::from(chain_id),
-            address.normalized_key()
+            address.to_hex_string()
         )),
         address,
         decimals,

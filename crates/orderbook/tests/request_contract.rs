@@ -830,6 +830,41 @@ async fn api_errors_keep_plain_text_payloads_out_of_the_json_decoder() {
     }
 }
 
+/// Regression coverage for the services 422 plain-text rejection emitted by
+/// axum's default `Json<OrderQuoteRequest>` extractor on shape failure (for
+/// example a request body that is missing the `from` field). The exact wire
+/// text is pinned so a future axum or services update that changes the
+/// formatting will fail this test rather than silently regress the
+/// captured-on-Text contract.
+#[tokio::test]
+async fn quote_422_axum_json_rejection_plain_text_is_captured_as_text() {
+    let policy = retry_policy(1);
+    let limiter = default_limiter();
+
+    const SERVICES_422_PLAIN_TEXT: &str =
+        "Failed to deserialize the JSON body into the target type: missing field `from` \
+         at line 1 column 2";
+
+    let error = execute_json_with::<serde_json::Value, _, _>(&policy, &limiter, || async {
+        Ok(ResponseEnvelope::text(422, SERVICES_422_PLAIN_TEXT))
+    })
+    .await
+    .expect_err("services 422 plain-text rejection must surface through OrderbookError::Api");
+
+    match error {
+        cow_sdk_orderbook::OrderbookError::Api(api_error) => {
+            assert_eq!(api_error.status, 422);
+            assert_eq!(
+                api_error.body.as_inner(),
+                &ResponseBody::Text(SERVICES_422_PLAIN_TEXT.to_owned()),
+                "the original axum/serde rejection text must be preserved verbatim on the \
+                 structured body so consumers can extract it through `body.as_inner()`",
+            );
+        }
+        other => panic!("expected OrderbookError::Api, got {other:?}"),
+    }
+}
+
 #[tokio::test]
 async fn reqwest_error_classification_strips_url_query_and_host() {
     // Synthetic redaction fixture values. The host is a `.test` reserved

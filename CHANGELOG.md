@@ -14,6 +14,17 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Fixed
 
+- `cow-sdk-orderbook` rejection-parser rustdoc and [ADR 0017](docs/adr/0017-typed-orderbook-rejection-parser.md)
+  now correctly describe the `parse_rejection` non-JSON fallback path. When a
+  non-2xx response body does not deserialize as a rejection envelope, the
+  `From<OrderBookApiError>` promotion in `cow_sdk_orderbook::error` falls back
+  to `OrderbookError::Api(Box<OrderBookApiError>)` (preserving the decoded
+  `ResponseBody`, including the `Text` variant for plain-text bodies, and the
+  derived public message), not `OrderbookError::Transport`. The `parse_rejection`
+  free function docstring, the `OrderbookRejection::Unknown` variant docstring,
+  and the ADR's "Must Remain True" paragraph are aligned with the shipped
+  behaviour. No runtime behaviour changes.
+
 - Cross-ABI DTOs that carry Rust `BTreeMap` fields declare the matching
   TypeScript shape as `Record<string, ...>`, so the generated declaration
   matches the plain JavaScript object that the `serde_wasm_bindgen`
@@ -80,6 +91,16 @@ The first functional crate-family release begins at `0.1.0`.
   previously imported `@cowprotocol/cow-sdk-wasm/full` use
   `@cowprotocol/cow-sdk-wasm` for the same surface. ADR 0044 is amended to
   match the four-flavor enumeration.
+
+- `cow_sdk_core::Address::normalized_key` is removed. The accessor body was
+  identical to `Address::to_hex_string` because the cow `Address` newtype
+  already canonicalises every input to its lowercase 0x-prefixed hex form
+  at construction time. The duplicate accessor was originally preserved for
+  callers that historically routed through it; pre-1.0 with no published
+  consumers, the duplicate is retired and every call site is updated to use
+  `Address::to_hex_string` directly. ADR 0052 is amended to drop the
+  per-type case-insensitive-key accessor from the canonical inherent-method
+  surface enumeration.
 
 ### Added
 

@@ -313,13 +313,13 @@ impl MockEip1193Transport {
         self.state
             .borrow_mut()
             .code_by_address
-            .insert(address.normalized_key(), code_hex.into());
+            .insert(address.to_hex_string(), code_hex.into());
     }
 
     /// Configures storage returned by `eth_getStorageAt` for one address and slot.
     pub fn set_storage(&self, address: &Address, slot: &str, value_hex: impl Into<String>) {
         self.state.borrow_mut().storage_by_key.insert(
-            format!("{}:{}", address.normalized_key(), slot.to_ascii_lowercase()),
+            format!("{}:{}", address.to_hex_string(), slot.to_ascii_lowercase()),
             value_hex.into(),
         );
     }

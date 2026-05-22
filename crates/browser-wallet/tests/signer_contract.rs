@@ -216,7 +216,7 @@ async fn ensure_expected_chain_accepts_matching_session_chain_id() {
         .await
         .expect("matching chain id must pass through to the wallet");
     assert_eq!(
-        address.normalized_key(),
+        address.to_hex_string(),
         PRIMARY_ACCOUNT.to_ascii_lowercase()
     );
 }
@@ -313,7 +313,7 @@ async fn account_returns_hint_when_signer_was_constructed_with_explicit_account(
         .get_address()
         .await
         .expect("hint resolves through the account() fast path");
-    assert_eq!(address.normalized_key(), primary.normalized_key());
+    assert_eq!(address.to_hex_string(), primary.to_hex_string());
 }
 
 /// Regen helper. Captures the canonical wire JSON the cow signer emits

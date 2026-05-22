@@ -295,8 +295,8 @@ fn eip1271_signature_payloads_roundtrip_with_variable_lengths() {
         let encoded = encode_eip1271_signature_data(&data).unwrap();
         let decoded = decode_eip1271_signature_data(&encoded).unwrap();
         assert_eq!(
-            decoded.verifier.normalized_key(),
-            data.verifier.normalized_key()
+            decoded.verifier.to_hex_string(),
+            data.verifier.to_hex_string()
         );
         assert_eq!(decoded.signature, data.signature);
     }

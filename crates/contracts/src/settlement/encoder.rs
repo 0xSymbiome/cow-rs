@@ -125,7 +125,7 @@ impl SettlementEncoder {
     pub fn clearing_prices(&self, prices: &Prices) -> Result<Vec<Amount>, ContractsError> {
         let normalized: BTreeMap<String, Amount> = prices
             .iter()
-            .map(|(token, price)| (token.normalized_key(), *price))
+            .map(|(token, price)| (token.to_hex_string(), *price))
             .collect();
 
         self.tokens
@@ -133,7 +133,7 @@ impl SettlementEncoder {
             .iter()
             .map(|token| {
                 normalized
-                    .get(&token.normalized_key())
+                    .get(&token.to_hex_string())
                     .copied()
                     .ok_or_else(|| ContractsError::MissingClearingPrice { token: *token })
             })

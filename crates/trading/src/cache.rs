@@ -45,7 +45,7 @@ use crate::QuoteResults;
 /// Deterministic cache key derived from the minimal set of inputs that decide
 /// whether two quote requests should share a cached result.
 ///
-/// Address fields are normalized through [`Address::normalized_key`] so legacy
+/// Address fields are normalized through [`Address::to_hex_string`] so legacy
 /// checksum and lowercase variants of the same address hash to identical
 /// keys. Every field is derived purely from the input request, so user
 /// implementations backed by Redis or other shared caches can share entries
@@ -84,7 +84,7 @@ impl QuoteCacheKey {
     ///
     /// Callers that already own the address, amount, and side fields can pass
     /// them directly. Addresses are re-normalized here through the typed
-    /// [`Address::normalized_key`] so the stored key is always in the
+    /// [`Address::to_hex_string`] so the stored key is always in the
     /// lowercase canonical form regardless of how the caller formatted the
     /// input.
     #[must_use]
@@ -99,8 +99,8 @@ impl QuoteCacheKey {
         Self {
             chain_id,
             env,
-            sell_token: sell_token.normalized_key(),
-            buy_token: buy_token.normalized_key(),
+            sell_token: sell_token.to_hex_string(),
+            buy_token: buy_token.to_hex_string(),
             receiver: None,
             owner: None,
             kind,
@@ -115,14 +115,14 @@ impl QuoteCacheKey {
     /// Returns a copy of this key with an explicit receiver.
     #[must_use]
     pub fn with_receiver(mut self, receiver: &Address) -> Self {
-        self.receiver = Some(receiver.normalized_key());
+        self.receiver = Some(receiver.to_hex_string());
         self
     }
 
     /// Returns a copy of this key with an explicit owner.
     #[must_use]
     pub fn with_owner(mut self, owner: &Address) -> Self {
-        self.owner = Some(owner.normalized_key());
+        self.owner = Some(owner.to_hex_string());
         self
     }
 

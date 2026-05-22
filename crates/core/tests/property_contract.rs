@@ -202,7 +202,7 @@ proptest! {
 
     /// Any 20-byte payload rendered as lowercase, uppercase, or mixed-case
     /// hex parses into an [`Address`] whose [`PartialEq`],
-    /// [`addresses_equal`], `normalized_key`, and [`std::hash::Hash`]
+    /// [`addresses_equal`], `to_hex_string`, and [`std::hash::Hash`]
     /// implementations all treat the three renderings as the same address.
     /// `HashMap` and `HashSet` lookups must agree with the equality rule
     /// across every casing variant. The cow `Address` canonicalises every
@@ -230,8 +230,8 @@ proptest! {
 
         prop_assert_eq!(&mixed_address, &lowercase_address);
         prop_assert_eq!(&uppercase_address, &lowercase_address);
-        prop_assert_eq!(mixed_address.normalized_key(), lowercase.clone());
-        prop_assert_eq!(lowercase_address.normalized_key(), uppercase_address.normalized_key());
+        prop_assert_eq!(mixed_address.to_hex_string(), lowercase.clone());
+        prop_assert_eq!(lowercase_address.to_hex_string(), uppercase_address.to_hex_string());
         prop_assert!(addresses_equal(&mixed_address, &lowercase_address));
         prop_assert!(addresses_equal(&uppercase_address, &lowercase_address));
 

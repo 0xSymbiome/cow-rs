@@ -166,16 +166,6 @@ impl Address {
         Self::BYTE_LENGTH
     }
 
-    /// Returns the lowercase key form used for case-insensitive comparisons.
-    ///
-    /// The cow `Address` already serializes to the canonical lowercase form,
-    /// so this accessor returns the same string as [`Address::to_hex_string`]
-    /// and is preserved for callers that historically routed through it.
-    #[inline]
-    #[must_use]
-    pub fn normalized_key(&self) -> String {
-        self.to_hex_string()
-    }
 }
 
 impl fmt::Display for Address {

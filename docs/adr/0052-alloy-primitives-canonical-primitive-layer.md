@@ -1,8 +1,8 @@
 # ADR 0052: Alloy primitives as the canonical primitive layer
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-05-19
-- Last reviewed: 2026-05-19
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy-primitives, alloy-sol-types, eip-712, abi, canonical-types
 - Related: [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0028](0028-account-abstraction-integration-plan.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md)
@@ -108,8 +108,7 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   cow lowercase wire form. Each newtype carries cow-defined inherent
   methods for the canonical accessor surface (`new`, `from_bytes`,
   `to_hex_string`, `as_slice`, `as_alloy`, `into_alloy`, `zero`,
-  `is_zero`, `byte_length`, plus `to_cid` on `AppDataHash` and
-  `normalized_key` on `Address`). The owned hex-string accessor is
+  `is_zero`, `byte_length`, plus `to_cid` on `AppDataHash`). The owned hex-string accessor is
   named `to_hex_string(&self) -> String` (following the Rust stdlib
   convention that `to_*` returns owned and `as_*` returns a borrow);
   the prior cached-struct `as_str(&self) -> &str` shape retires and
@@ -181,7 +180,7 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
 - Cost: every cow newtype carries a cow-owned inherent-method
   accessor surface (`new`, `from_bytes`, `to_hex_string`, `as_slice`,
   `as_alloy`, `into_alloy`, `zero`, `is_zero`, `byte_length`, plus
-  `to_cid` on `AppDataHash` and `normalized_key` on `Address`).
+  `to_cid` on `AppDataHash`).
   `Address`, `Amount`, and `SignedAmount` additionally carry a
   cow-owned trait surface (`Display`, `Serialize`, `Deserialize`);
   `Hash32`, `AppDataHash`, `HexData`, and `OrderUid` forward to alloy
@@ -296,6 +295,18 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
 - [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md)
 - [ADR 0026](0026-alloy-major-release-absorption-plan.md)
 - [Alloy major release runbook](../alloy-major-release-runbook.md)
+
+## Amendment 2026-05-22: retire `Address::normalized_key`
+
+`Address::normalized_key` previously returned the lowercase 0x-prefixed
+hex form. The body was identical to `Address::to_hex_string` because the
+cow `Address` already canonicalises every input to its lowercase
+representation at construction time, so the two accessors produced
+byte-identical output for every input. The duplicate accessor is
+retired; every call site routes through `Address::to_hex_string`
+directly. The canonical inherent-method surface for the cow newtypes
+listed above no longer enumerates a per-type case-insensitive-key
+accessor.
 
 **Proven by:**
 

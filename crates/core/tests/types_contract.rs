@@ -33,7 +33,7 @@ fn shared_type_contract_matches_core_fixture() {
     let lowercase = Address::new("0x742d35cc6634c0532925a3b844bc9e7595f0bebd").unwrap();
 
     assert_eq!(
-        checksummed.normalized_key(),
+        checksummed.to_hex_string(),
         "0x742d35cc6634c0532925a3b844bc9e7595f0bebd"
     );
     assert!(addresses_equal(&checksummed, &lowercase));

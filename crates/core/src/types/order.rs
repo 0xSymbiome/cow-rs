@@ -129,7 +129,7 @@ pub fn addresses_equal(left: &Address, right: &Address) -> bool {
 #[inline]
 #[must_use]
 pub fn token_id(chain_id: ChainId, address: &Address) -> String {
-    format!("{chain_id}:{}", address.normalized_key())
+    format!("{chain_id}:{}", address.to_hex_string())
 }
 
 /// User-domain order shape prepared for signing and trading workflows.

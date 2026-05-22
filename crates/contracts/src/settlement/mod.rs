@@ -283,7 +283,7 @@ impl TokenRegistry {
 
     /// Returns the stable index for `token`, inserting it if needed.
     pub fn index(&mut self, token: &Address) -> usize {
-        let key = token.normalized_key();
+        let key = token.to_hex_string();
         if let Some(index) = self.token_map.get(&key) {
             return *index;
         }

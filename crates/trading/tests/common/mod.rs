@@ -528,7 +528,7 @@ impl MockProvider {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .code_by_address
             .insert(
-                address.normalized_key(),
+                address.to_hex_string(),
                 HexData::new(code).expect("mock code must be valid hex"),
             );
     }
@@ -578,7 +578,7 @@ impl Provider for MockProvider {
         }
         Ok(state
             .code_by_address
-            .get(&address.normalized_key())
+            .get(&address.to_hex_string())
             .cloned())
     }
 

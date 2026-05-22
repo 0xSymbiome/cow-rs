@@ -22,7 +22,7 @@ impl AsyncSigningProvider for Eip1193Provider {
             };
             if !accounts
                 .iter()
-                .any(|candidate| candidate.normalized_key() == expected.normalized_key())
+                .any(|candidate| candidate.to_hex_string() == expected.to_hex_string())
             {
                 return Err(BrowserWalletError::malformed_response(
                     "create_signer",
