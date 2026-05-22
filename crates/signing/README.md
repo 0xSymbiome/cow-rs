@@ -29,6 +29,28 @@ let options = ProtocolOptions::new().with_env(CowEnv::Prod);
 let _domain = domain_separator(SupportedChainId::Sepolia, Some(&options)).unwrap();
 ```
 
+## EIP-712 and EIP-191
+
+EIP-191 message hashing routes through
+`alloy_primitives::eip191_hash_message`. EIP-712 message digests route
+through `alloy_sol_types::SolStruct::eip712_signing_hash` per
+[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md)
+and [ADR 0022](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0022-ecdsa-signature-v-normalization.md).
+65-byte recoverable signature byte representation routes through
+`alloy_primitives::Signature::from_raw` and `Signature::as_bytes`; the
+compact-2098 form routes through `Signature::from_erc2098`.
+
+`cow_sdk_core::traits::typed_data::TypedDataDomain` is a cow-owned
+`#[non_exhaustive]` struct with cow-owned `Serialize` / `Deserialize`
+impls; the cow `Serialize` emits the canonical EIP-1193
+`eth_signTypedData_v4` second-parameter wire shape (numeric `chainId`,
+lowercase-hex `verifyingContract`, no `salt`) directly, pinned by
+`PROP-BWL-007` against
+`parity/fixtures/signing/eth_sign_typed_data_request.json`. The cow-side
+`cow_sdk_alloy_signer::conversion` adapter bridges `TypedDataDomain` to
+`alloy_sol_types::Eip712Domain` at the alloy-signer seam where the
+alloy-primitive form is needed for ECDSA signing.
+
 ## Where to next
 
 - [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)

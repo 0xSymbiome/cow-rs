@@ -162,6 +162,33 @@ Use `--all-features` if the change touches feature-gated documentation:
 cargo doc --workspace --no-deps --all-features
 ```
 
+## Typed-Primitive Conventions
+
+The cow-rs primitive layer uses cow-owned `#[repr(transparent)]` newtypes
+over `alloy_primitives` types for the byte-typed identity family
+(`Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`) and the
+numeric family (`Amount`, `SignedAmount`) per
+[ADR 0052](docs/adr/0052-alloy-primitives-canonical-primitive-layer.md).
+The newtypes carry cow-owned `Display`, `Serialize`, and `Deserialize`
+impls where the cow wire contract diverges from alloy defaults
+(lowercase 0x-prefixed `Address` `Display`; strict-decimal-only
+`Amount` / `SignedAmount` `Deserialize` that rejects `0x`, `0o`, and
+`0b`-prefixed input).
+
+Contributors extending the public surface should preserve the
+`#[repr(transparent)]` layout so cow values remain zero-cost convertible
+to the underlying alloy primitive via `From::from(value).into()` or `.0`
+access, and route accessor methods onto the newtype as inherent methods
+rather than adding extension traits. The canonical owned String
+accessor on the byte-typed identity newtypes is `to_hex_string()`,
+following the Rust stdlib convention that `to_*` returns owned and
+`as_*` returns a borrow.
+
+Pre-release semantic versioning means the cow-rs project ships
+hard-replacement migrations without `#[deprecated]` annotations during
+the 0.x window; the first functional crate-family release at `0.1.0`
+is the first tag carrying stability guarantees.
+
 ## Branch Naming
 
 Use one focused branch per change set.

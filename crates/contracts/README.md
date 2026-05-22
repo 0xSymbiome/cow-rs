@@ -56,6 +56,22 @@ let order = Order::from(&UnsignedOrder::new(
 let _digest = hash_order(&domain, &order).unwrap();
 ```
 
+## Primitive Layer
+
+The `cow_sdk_contracts` crate consumes `Address`, `Hash32`, `OrderUid`,
+and `AppDataHash` from `cow_sdk_core::types::*` as cow-owned
+`#[repr(transparent)]` newtypes around the corresponding `alloy_primitives`
+type per [ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md).
+The cow newtype layer preserves the Rust type-system distinction between
+same-width byte primitives while keeping bit-for-bit layout compatibility
+with the underlying alloy primitive; conversion at the alloy seam is
+zero-cost via `.0` access or `From::from(...)`.
+
+`alloy_sol_types::sol!`-generated structs consume cow newtype values
+through the bit-compatible bridge. EIP-712 domain separators route through
+`alloy_sol_types::Eip712Domain::separator`, and EIP-712 message hashes
+route through `alloy_sol_types::SolStruct::eip712_signing_hash(&domain)`.
+
 ## Where to next
 
 - [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)

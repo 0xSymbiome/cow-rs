@@ -23,3 +23,7 @@ let policy = TransportPolicy::default_orderbook().with_retry(retry);
 
 assert_eq!(policy.retry().max_attempts(), 4);
 ```
+
+`Retry-After` HTTP-date header parsing routes through
+`httpdate::parse_http_date` per RFC 7231, accepting the IMF-fixdate,
+legacy RFC 850, and ANSI C `asctime` date forms.

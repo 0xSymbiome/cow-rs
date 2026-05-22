@@ -40,6 +40,56 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- ADR 0052 (`docs/adr/0052-alloy-primitives-canonical-primitive-layer.md`)
+  publishes `alloy_primitives` as the canonical EVM primitive layer and
+  `alloy_sol_types` as the canonical EIP-712 / Solidity-binding layer
+  across the workspace.
+
+- Cow-owned `#[repr(transparent)]` newtypes for the cow-named identity
+  types (`Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`) and
+  numeric types (`Amount`, `SignedAmount`) over the corresponding
+  `alloy_primitives` type, plus the non-transparent `DecimalAmount`
+  newtype pairing an `Amount` with a `decimals: u8` scale for display
+  and user-input flows.
+
+- Cow-owned `Display`, `Serialize`, and `Deserialize` impls on `Address`,
+  `Amount`, `SignedAmount`, and `DecimalAmount` lock the cow wire form
+  (lowercase 0x-prefixed hex for `Address`; strict-decimal for the
+  numeric family); the other byte-typed identity newtypes forward to
+  alloy defaults that already match the cow lowercase contract.
+
+- Cow-owned arithmetic operator impls (`Add`, `Sub`, `Mul`, `AddAssign`,
+  etc.) on `Amount` and `SignedAmount` plus `checked_*` / `saturating_*`
+  variants and `pow` / `checked_pow` / `saturating_pow`, with `MAX`,
+  `MIN`, and `ZERO` constants and `#[track_caller]` annotations on the
+  operator impls so debug-mode overflow panics redirect to the user call
+  site.
+
+- Strict-decimal-only fail-closed `Deserialize` for `Amount` and
+  `SignedAmount` rejects `0x`, `0o`, and `0b`-prefixed input that alloy's
+  underlying `ruint::Uint::FromStr` would otherwise accept; the cow
+  `Amount::new` and `SignedAmount::new` constructors stay lenient to
+  preserve the existing constructor contract.
+
+- `DecimalAmount::new` rejects `decimals > 77` so the `10.pow(decimals)`
+  scale used by `DecimalAmount::to_decimal_string` is structurally
+  guaranteed to fit `U256`; `to_decimal_string` preserves trailing zeros
+  in the fractional substring so the cow form carries full precision for
+  lossless external decimal parsing.
+
+- `PROP-ORD-010`: the `OrderCreation` `Serialize` impl routes the
+  `(app_data, app_data_hash)` pair onto the services
+  `OrderCreationAppData` untagged-enum variants (`Both`, `Hash`, `Full`),
+  with the hash-only case keying the hash hex under the `appData` JSON
+  key per the services `Hash` variant. Pinned by
+  `parity/fixtures/orderbook-requests/order_creation.json`.
+
+- `PROP-BWL-007`: the cow `TypedDataDomain` `Serialize` impl emits the
+  canonical EIP-1193 `eth_signTypedData_v4` second-parameter wire shape
+  (numeric `chainId`, lowercase-hex `verifyingContract`, no `salt`)
+  byte-identically against
+  `parity/fixtures/signing/eth_sign_typed_data_request.json`.
+
 - Added the `cow-sdk-cow-shed` crate with typed COW Shed core types,
   generated ABI bindings, versioned CREATE2 proxy derivation, EIP-712 domain
   and message hashing, and calldata builders for hook execution. The crate is
@@ -694,6 +744,63 @@ The first functional crate-family release begins at `0.1.0`.
   that omits credential-bearing query strings from observability sinks.
 
 ### Changed
+
+- Cryptographic primitives across the workspace route through
+  `alloy_primitives` and `alloy_sol_types` per ADR 0052: EIP-712 domain
+  separators and message digests through `Eip712Domain::separator` and
+  `SolStruct::eip712_signing_hash`; ECDSA signature byte representation
+  and compact-form handling through `alloy_primitives::Signature`;
+  CREATE2 address derivation through `alloy_primitives::Address::create2`;
+  EIP-191 message hashing through `alloy_primitives::eip191_hash_message`.
+
+- App-data document canonicalisation routes through `serde_jcs::to_vec`
+  per RFC 8785 (the UTF-16 ordering gap closure is documented in the
+  lead `### Fixed` entries below).
+
+- `Retry-After` HTTP-date parsing routes through
+  `httpdate::parse_http_date` (the legacy date-form acceptance is
+  documented in the lead `### Fixed` entries below).
+
+- Workspace duplicate consolidation per ADR 0052: the cow `keccak256`
+  wrapper paths route through `alloy_primitives::keccak256`, the cow
+  `parse_u256` parsers route through `Amount::new`, the cow
+  `encode_address` paths route through `Address::to_hex_string`, the
+  two `SigningScheme` enums (cow-sdk-contracts and cow-sdk-orderbook)
+  interoperate through a typed `From` / `TryFrom` bridge, and the
+  duplicate `Call` ABI structs converge on one canonical declaration.
+
+- The cow identity types (`Address`, `Hash32`, `AppDataHash`, `HexData`,
+  `OrderUid`) and numeric types (`Amount`, `SignedAmount`) are now
+  cow-owned `#[repr(transparent)]` newtypes per ADR 0052. Equality,
+  hash, and ordering route to the packed-byte comparison the alloy
+  primitive provides; cow-owned trait impls cover the surfaces where
+  alloy defaults diverge from the cow wire contract.
+
+- The canonical String accessor on the cow identity newtypes is
+  `to_hex_string(&self) -> String`, following the Rust stdlib convention
+  that `to_*` returns owned and `as_*` returns a borrow. Existing
+  callsites are normalised onto canonical accessors (`Display`,
+  `to_string`, `as_slice`, `is_zero`, `to_hex_string`).
+
+- `cow_sdk_core::types::Address` `Display` always emits lowercase
+  0x-prefixed hex regardless of input casing, overriding the alloy
+  default EIP-55 checksum casing so the cow lowercase wire-form
+  invariant holds.
+
+- `cow_sdk_core::traits::typed_data::TypedDataDomain` is a cow-owned
+  `#[non_exhaustive]` struct with cow-owned `Serialize` / `Deserialize`
+  impls; the cow `Serialize` emits the canonical EIP-1193
+  `eth_signTypedData_v4` wire shape directly. The cow-side
+  `crates/alloy-signer/src/conversion.rs` adapter bridges
+  `TypedDataDomain` to `alloy_sol_types::Eip712Domain` at the
+  alloy-signer seam where the alloy-primitive form is needed for ECDSA
+  signing.
+
+- Workspace-level `sha3` and `num-bigint` declarations now carry zero
+  first-party production consumers: `sha3` is scoped to
+  `[dev-dependencies]` on the parity-oracle test consumers, and
+  `num-bigint` reaches the workspace only transitively through `cid`,
+  `multihash`, and `jsonschema`.
 
 - Clarified public guidance so cow-sdk-wasm is positioned as a specialized
   Rust-parity TypeScript-callable surface, while the upstream
@@ -1757,6 +1864,39 @@ The first functional crate-family release begins at `0.1.0`.
 - No public APIs are deprecated ahead of the first functional release.
 
 ### Removed
+
+- `crates/core/src/types/identity_ext.rs` — the byte-typed extension-trait
+  surface; the cow newtypes carry the accessor surface as inherent
+  methods.
+
+- `crates/core/src/types/hex.rs` — subsumed by `alloy_primitives::hex`.
+
+- The seven `*Ext` extension traits (`AddressExt`, `Hash32Ext`,
+  `AppDataHashExt`, `HexDataExt`, `OrderUidExt`, `AmountExt`,
+  `SignedAmountExt`) — the cow newtypes carry their accessor surface as
+  inherent methods.
+
+- The cached `inner: AlloyAddress, hex: String` two-field layout on every
+  cow identity type — the cow newtypes are now `#[repr(transparent)]`
+  single-field structs over their alloy primitive.
+
+- The cow-side hex helpers in `crates/contracts/src/primitives.rs`
+  (`parse_hex`, `parse_hex_exact`, `parse_address_bytes`,
+  `parse_bytes32_hash`, `parse_hex32`, `normalize_hex_payload`) — hex
+  parsing routes through `alloy_primitives::hex::decode` and the cow
+  newtype validating constructors.
+
+- The cow-to-alloy conversion helpers in
+  `crates/alloy-provider/src/conversion.rs` and
+  `crates/alloy/src/conversion.rs` (`cow_to_alloy_address`,
+  `alloy_address_to_cow_address`, `cow_to_alloy_hash`,
+  `hex_data_from_bytes`, `decode_0x_hex`, `parse_u256_quantity`) — the
+  cow newtypes are bit-for-bit layout-compatible with their alloy
+  primitive, so adapters consume cow values directly via
+  `From::from(value).into()` or `.0` access.
+
+- Redundant `serde_json` dev-dependency declarations across the workspace
+  crates that already carry `serde_json` in `[dependencies]`.
 
 - Removed the migration guide at `docs/migration-from-cowprotocol-cow-sdk.md`.
   Specialized adoption guidance now lives with the WASM package docs under

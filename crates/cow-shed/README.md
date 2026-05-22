@@ -5,6 +5,13 @@ SDK layers: version selection, generated ABI bindings, deterministic proxy
 address derivation, EIP-712 domain and message hashing, and calldata encoders
 for hook execution.
 
+The proxy address type is the cow `Address` newtype around
+`alloy_primitives::Address` per
+[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
+CREATE2 init-code hashing routes through `alloy_primitives::keccak256`,
+and EIP-712 typed-data structs (`Call`, `ExecuteHooks`) are macro-emitted
+by `alloy_sol_types::sol!`.
+
 The crate keeps four authorities separated:
 
 - the deployed factory ABI defines factory calldata, including

@@ -27,6 +27,13 @@ available, this crate populates `TransactionReceipt` fields for status, block,
 gas, sender, and recipient; absent optional fields remain empty, while present
 malformed fields fail closed with a typed browser-wallet error.
 
+Typed-data signing consumes `cow_sdk_core::TypedDataDomain` directly; the
+cow struct emits the canonical EIP-1193 `eth_signTypedData_v4`
+second-parameter wire shape through its own `Serialize` impl per
+[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md),
+pinned by `PROP-BWL-007` against
+`parity/fixtures/signing/eth_sign_typed_data_request.json`.
+
 ## Install
 
 ```toml

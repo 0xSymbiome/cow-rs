@@ -46,6 +46,12 @@ signing, ECDSA signatures are normalized through the shared contracts helper,
 and public error formatting follows the same redaction contract as the provider
 and signer leaves.
 
+The cow-named public types interoperate with their `alloy_primitives`
+counterparts at zero runtime cost via `.0` access or
+`From::from(value).into()` per
+[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
+the adapter consumes cow values directly without per-call conversion.
+
 ## Install
 
 ```toml

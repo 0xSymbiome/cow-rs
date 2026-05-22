@@ -8,6 +8,12 @@ orderbook client, app-data helpers, and the high-level trading
 orchestration surface from one place. Browser-wallet support is optional
 and feature-gated behind `browser-wallet`.
 
+The cow-named identity and numeric primitive types (`Address`, `Hash32`,
+`AppDataHash`, `HexData`, `OrderUid`, `Amount`, `SignedAmount`,
+`DecimalAmount`) re-export through the facade as cow-owned
+`#[repr(transparent)]` newtypes over `alloy_primitives` per
+[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md).
+
 ## Install
 
 ```toml

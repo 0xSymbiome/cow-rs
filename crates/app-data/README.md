@@ -58,6 +58,26 @@ assert_eq!(doc["version"], "1.4.0");
 # }
 ```
 
+## Canonical JSON
+
+App-data document canonicalisation routes through `serde_jcs::to_vec` per
+RFC 8785 (JSON Canonicalization Scheme). The serializer sorts object keys
+by UTF-16 code unit value and emits a deterministic byte sequence for any
+equivalent document shape, so the resulting CID is byte-identical to the
+canonical form the upstream `@cowprotocol/cow-sdk` TypeScript helper would
+produce for the same input. Documents whose object keys carry code points
+whose UTF-16 ordering and UTF-8 byte ordering disagree are pinned by
+`parity/fixtures/app_data/canonical_json_utf16.json`; ASCII-only documents
+are byte-identical to any earlier bytewise canonicalisation.
+
+The cow `AppDataHash` is a cow-owned `#[repr(transparent)]` newtype over
+`alloy_primitives::B256` per
+[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
+the canonical CID conversion lives on the inherent method
+`AppDataHash::to_cid`. The digest input fed to
+`alloy_primitives::keccak256` is the canonical-JSON byte stream produced
+by `serde_jcs`.
+
 ## Where to next
 
 - [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)

@@ -10,6 +10,10 @@ family. Most consumers reach these types through the top-level
 depend on this crate directly when you are building a sibling leaf
 crate or implementing a custom `Signer` or `Provider` adapter.
 
+The cow-named identity and numeric primitive types ship as cow-owned
+`#[repr(transparent)]` newtypes over `alloy_primitives` per
+[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md).
+
 The core runtime traits split transaction lifecycle states explicitly:
 `TransactionBroadcast` is the signer-side broadcast acknowledgement, while
 `TransactionReceipt` is the provider-side mined observation shape with optional

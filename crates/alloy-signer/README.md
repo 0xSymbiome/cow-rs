@@ -38,6 +38,12 @@ Protocol order signing depends on the `Order` domain shape matching the payload.
 The legacy flat typed-data helper keeps its `Message` placeholder isolated to
 the compatibility path.
 
+The cow `TypedDataDomain` is a cow-owned `#[non_exhaustive]` struct per
+[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
+the `conversion` module bridges `TypedDataDomain` to
+`alloy_sol_types::Eip712Domain` at the alloy-signer seam where the
+alloy-primitive form is needed for ECDSA signing.
+
 ECDSA `v` normalization is centralized through the contracts helper shared by
 the SDK. Keeping normalization in one helper prevents provider-specific recovery
 id formats from leaking through the public signing API.
