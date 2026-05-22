@@ -24,6 +24,12 @@ a major-version Alloy release into the cow-rs workspace.
 8. Append the new ADR 0026 compatibility-matrix row and refresh standing
    audits that name the prior pinned versions.
 
+The cow-owned `#[repr(transparent)]` newtype layer per
+[ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md) absorbs
+`alloy_primitives` major bumps at the cow boundary; the workspace-test
+sweep in step 6 pins the cow constructor and wire-serialization invariants
+byte-identically across alloy major-version transitions.
+
 ## Release-Day Execution
 
 1. Rebase the rehearsed branch on the intended release commit.

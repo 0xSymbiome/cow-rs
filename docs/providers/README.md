@@ -61,3 +61,10 @@ The transaction lifecycle is split across the same traits. Signers return
 providers return `Option<TransactionReceipt>` when a transaction is visible to
 receipt lookup. Adapter authors should populate receipt fields when the runtime
 exposes them and should keep receipt polling out of `send_transaction`.
+
+The trait contract is identity-type-agnostic: under
+[ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md), the
+cow identity and numeric types interoperate with alloy types at zero runtime
+cost through `From::from(...)` and `.0` access, so adapter authors bridge
+cow domain types at the adapter boundary without distorting the trait
+surface.

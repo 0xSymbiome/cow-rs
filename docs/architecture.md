@@ -84,11 +84,12 @@ flowchart TD
 | `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `AsyncSigner` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `AsyncProvider`, `AsyncSigningProvider`, and `AsyncSigner` helper flows. |
 | `cow-sdk-composable` | Reserved manifest for composable-order helpers, with current readiness evidence owned by contracts, signing, docs, and parity fixtures | You need to track the planned composable leaf without pulling an unfinished helper API. |
-| `cow-sdk-cow-shed` | Reserved manifest for COW Shed helpers, with current readiness evidence owned by contracts, signing, docs, and parity fixtures | You need to track the planned account-abstraction leaf without pulling an unfinished helper API. |
+| `cow-sdk-cow-shed` | COW Shed account-abstraction proxy address derivation, EIP-712 hook envelopes, and signed-hook payload encoding | You need the COW Shed account-abstraction surface. |
 
-The reserved manifests are not workspace members yet and do not expose crate
-bodies. They keep package identity, MSRV, and evidence paths stable while the
-shared registry, ABI, signature, and documentation surfaces remain reviewable.
+The `cow-sdk-composable` reserved manifest is not a workspace member yet and
+does not expose a crate body. It keeps package identity, MSRV, and evidence
+paths stable while the shared registry, ABI, signature, and documentation
+surfaces remain reviewable.
 
 ## Layering
 
@@ -225,6 +226,18 @@ Use [Integrations](integrations.md) for a worked adapter example.
 
 ## Cross-Cutting Contracts
 
+### Primitive Layer
+
+`alloy_primitives` is the canonical EVM primitive layer and `alloy_sol_types`
+is the canonical EIP-712 / Solidity-binding layer across the workspace per
+[ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md). The
+cow-named identity and numeric public types are cow-owned
+`#[repr(transparent)]` newtypes around the corresponding `alloy_primitives`
+type; `TypedDataDomain` is a cow-owned `#[non_exhaustive]` struct that emits
+the canonical EIP-1193 wire shape through its own `Serialize` impl and
+bridges to `alloy_sol_types::Eip712Domain` via an `into_alloy_domain()`
+adapter at the EIP-712 hashing seam.
+
 ### Runtime Traits
 
 `cow-sdk-core` owns the signer and provider seams used across the workspace.
@@ -240,14 +253,16 @@ provider-specific timing assumptions.
 ### Typed Amounts
 
 `cow-sdk-core` keeps three distinct amount roles at the typed boundary.
-`Amount` stores unsigned atomic quantities as `BigUint` while preserving
-the decimal-string wire form, `DecimalAmount` pairs atoms with a decimals
-scale for display and user-input flows, and `SignedAmount` stores signed
-deltas as `BigInt` while keeping that same decimal-string wire shape for
-serialization. The signed type exposes typed `BigInt` accessors and
-delegates addition, subtraction, and checked arithmetic directly to the
-underlying integer, following the same typed-boundary discipline that
-already governs `Amount`.
+`Amount` and `SignedAmount` are cow-owned `#[repr(transparent)]` newtypes
+over `alloy_primitives::U256` and `alloy_primitives::I256` respectively per
+[ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md),
+preserving the decimal-string wire form; `DecimalAmount` pairs atoms with a
+decimals scale for display and user-input flows. Both numeric newtypes
+carry cow-owned arithmetic operator impls plus `checked_*` and
+`saturating_*` methods, so existing arithmetic call sites work verbatim.
+The cow-owned `Deserialize` impl is strict-decimal-only on the wire
+boundary; the cow `Amount::new` and `SignedAmount::new` constructors stay
+lenient to preserve the existing constructor contract.
 
 ### Transport Seams
 

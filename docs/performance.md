@@ -132,12 +132,28 @@ is invisible to downstream consumers.
 
 ## Address Equality
 
-`cow_sdk_core::Address` compares and hashes case-insensitively through the
-lowercase normalised key while its `as_str` accessor preserves the input
-casing. Equality on the public address boundary is therefore `O(n)` byte
-comparisons without any intermediate allocation, which keeps token-registry
-lookups and order-owner checks out of the allocator on every signed-order
-path.
+`cow_sdk_core::Address` is a cow-owned `#[repr(transparent)]` newtype over
+`alloy_primitives::Address` per
+[ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md), so
+equality and hashing route to the 20-byte packed comparison the alloy
+primitive provides; the cow newtype layer adds no runtime cost. The
+canonical lowercase hex form is available through `Address::to_hex_string()`
+(owned `String`) or through the cow-owned `Display` impl, which overrides
+alloy's EIP-55 checksum default to enforce the cow lowercase wire-form
+invariant. Token-registry lookups and order-owner checks stay out of the
+allocator on every signed-order path because equality is a 20-byte packed
+comparison rather than a hex-string compare.
+
+## Hash
+
+`HashMap<Hash32, ...>` accepts only `Hash32` keys, not `AppDataHash`, because
+the two are distinct cow-owned `#[repr(transparent)]` newtypes per
+[ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md). Both
+wrap `alloy_primitives::B256` so they share an underlying 32-byte width, but
+they remain type-level distinct at the cow boundary so a transform cannot
+silently consume the wrong domain's bytes. Hashing routes to the packed-byte
+hash the alloy primitive provides; the cow newtype layer adds no runtime
+cost.
 
 ## Shared HTTP Transport Pattern
 

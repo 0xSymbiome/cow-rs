@@ -162,3 +162,14 @@ doc-hidden items through private rustdoc tooling.
 
 The internal composition shape and the rationale for keeping it hidden are
 recorded in the adapter ADRs and standing adapter audits.
+
+Under [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md),
+the cow-named identity and numeric public types resolve to cow-owned
+`#[repr(transparent)]` newtypes around the corresponding `alloy_primitives`
+types; the adapter bridges cow types into alloy types at zero runtime cost
+via `From::from(addr).into()` or `.0` access. The signer leaf's typed-data
+signing path consumes the cow `TypedDataDomain` struct directly; the cow
+struct emits the canonical EIP-1193 `eth_signTypedData_v4` wire shape
+through its own `Serialize` impl and bridges to
+`alloy_sol_types::Eip712Domain` at the EIP-712 hashing seam through the
+`into_alloy_domain()` adapter at `crates/alloy-signer/src/conversion.rs`.

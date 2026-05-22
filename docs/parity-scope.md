@@ -87,6 +87,38 @@ packages until their dedicated `cow-rs` leaf crates land.
 | Composable orders | `cow-sdk-composable` reserved manifest | Composable-CoW source locks, Solidity excerpts, selector and EIP-1271 blob fixtures, handler revert fixtures, and watch-tower boundary documentation |
 | COW Shed | `cow-sdk-cow-shed` reserved manifest | COW Shed source locks, Solidity excerpts, proxy creation-code bytes, CREATE2 address fixtures, EIP-712 hook fixtures, and version-call evidence |
 
+## Wire-Format Invariants
+
+The canonical primitive layer per
+[ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md) locks
+the byte-identical wire-format contract across the cow newtype family at the
+following invariants, each pinned by a parity fixture or a contract test:
+
+- `Address` lowercase-canonical hex encoding regardless of input casing
+- `Hash32` mixed-case input acceptance with lowercase-canonical output
+- `HexData` odd-length nibble pad rule
+- `Amount` strict-decimal-only `Deserialize` rejection of `0x`, `0o`, and
+  `0b`-prefixed input that alloy's underlying `ruint::Uint::FromStr` would
+  otherwise accept
+- `SignedAmount` negative-value decimal-string round-trip
+- the cow `TypedDataDomain` direct emission of the EIP-1193
+  `eth_signTypedData_v4` wire shape (numeric `chainId`, required
+  `verifyingContract`, no `salt`)
+- the cow-shed `ExecuteHooks` calldata path
+- the EIP-712 order-digest reference vectors
+- the ECDSA `v`-normalization branches across the `{0, 1, 27, 28}` accepted
+  set
+- the RFC 8785 canonical-JSON UTF-16 code-unit ordering for non-ASCII keys
+- the `Retry-After` HTTP-date IMF-fixdate, legacy RFC 850, and ANSI C
+  `asctime` branches
+
+The invariants are enforced by the parity fixtures under `parity/fixtures/`
+and the regression tests at
+`crates/core/tests/wire_format_preservation_contract.rs` and
+`crates/browser-wallet/tests/signer_contract.rs`. The composable
+multiplexer merkle-proof invariants land alongside the
+`cow-sdk-composable` crate when that reserved manifest ships.
+
 ## Schema Evidence Policy
 
 Schema-derived evidence is a review aid, not a public API shortcut.
@@ -235,9 +267,11 @@ entry for anyone who later considers reintroducing the surface.
   wire-shape regressions in
   `crates/orderbook/tests/fee_amount_is_not_a_public_builder_setter.rs`.
 - **Legacy wire-string `Amount` wrapper** — the Rust SDK consolidated
-  the canonical atomic amount to a single typed newtype
-  `cow_sdk_core::Amount(BigUint)` with custom serde that preserves the
-  decimal-string wire format. The retired wire-string wrapper is simply
+  the canonical atomic amount to a single cow-owned
+  `#[repr(transparent)]` newtype `cow_sdk_core::Amount` over
+  `alloy_primitives::U256` per
+  [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md),
+  with cow-owned serde that preserves the decimal-string wire format. The retired wire-string wrapper is simply
   absent from the workspace; by design, there is no negative test
   because the type does not exist and the Rust compiler itself enforces
   the exclusion at every call site. Governed by
