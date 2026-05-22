@@ -5,9 +5,12 @@ These principles define the public engineering posture of `cow-rs`.
 ## Deterministic Protocol Transforms
 
 Hashing, signing, UID packing, app-data encoding, and CID handling must stay
-deterministic for the same canonical input.
+deterministic for the same canonical input. Domain identities that share an
+underlying byte width remain type-level distinct per
+[ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md), so a
+transform cannot silently consume the wrong domain's bytes.
 
-**Anchored by**: [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md) (primary). Supporting: [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0022](adr/0022-ecdsa-signature-v-normalization.md), [ADR 0023](adr/0023-legacy-compatibility-shim-removal.md).
+**Anchored by**: [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md) (primary). Supporting: [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0022](adr/0022-ecdsa-signature-v-normalization.md), [ADR 0023](adr/0023-legacy-compatibility-shim-removal.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
 ## Explicit Runtime Boundaries
 
@@ -47,7 +50,7 @@ defaults rather than `deny_unknown_fields`, so upstream-services additions
 remain backward-compatible. Wire-DTO field shapes are derived from the
 source-lock-pinned OpenAPI inventory, not from hand-written prior memory.
 
-**Anchored by**: [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md) (primary). Supporting: [ADR 0005](adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0015](adr/0015-client-side-order-bounds-validator.md), [ADR 0016](adr/0016-split-sell-and-buy-token-balance-enums.md), [ADR 0017](adr/0017-typed-orderbook-rejection-parser.md), [ADR 0018](adr/0018-typed-app-data-merge.md), [ADR 0021](adr/0021-orderbook-total-fee-policy.md).
+**Anchored by**: [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md) (primary). Supporting: [ADR 0005](adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0015](adr/0015-client-side-order-bounds-validator.md), [ADR 0016](adr/0016-split-sell-and-buy-token-balance-enums.md), [ADR 0017](adr/0017-typed-orderbook-rejection-parser.md), [ADR 0018](adr/0018-typed-app-data-merge.md), [ADR 0021](adr/0021-orderbook-total-fee-policy.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
 ## Type The Lifecycle
 
@@ -103,9 +106,12 @@ Every ABI binding the SDK emits call-data against is generated through
 `alloy::sol!` from Solidity excerpts committed under
 `crates/contracts/abi/`. Hand-rolled encoders are not allowed in
 shipped crates, and every chain-scoped address lookup routes through the
-typed `Registry` authority in `cow-sdk-contracts`.
+typed `Registry` authority in `cow-sdk-contracts`. The canonical EVM
+primitive layer is `alloy_primitives` and the canonical EIP-712 /
+Solidity-binding layer is `alloy_sol_types` per
+[ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
-**Anchored by**: [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md) (primary). Supporting: [ADR 0020](adr/0020-ethflow-owner-threading.md), [ADR 0022](adr/0022-ecdsa-signature-v-normalization.md), [ADR 0023](adr/0023-legacy-compatibility-shim-removal.md).
+**Anchored by**: [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md) (primary). Supporting: [ADR 0020](adr/0020-ethflow-owner-threading.md), [ADR 0022](adr/0022-ecdsa-signature-v-normalization.md), [ADR 0023](adr/0023-legacy-compatibility-shim-removal.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
 ## Evidence-Backed Public Claims
 
@@ -129,7 +135,7 @@ Deployment authority claims are backed by structured provenance entries in
 confirmation that records `code_hash` and (where ABI permits) selector probes.
 Skipped live checks are never silently allowed in release mode.
 
-**Anchored by**: [ADR 0026](adr/0026-alloy-major-release-absorption-plan.md) (primary). Supporting: [ADR 0025](adr/0025-workspace-url-redaction-convention.md), [ADR 0030](adr/0030-workspace-locked-versioning-tag-baseline.md), [ADR 0032](adr/0032-deployment-authority-machine-readable-provenance.md).
+**Anchored by**: [ADR 0026](adr/0026-alloy-major-release-absorption-plan.md) (primary). Supporting: [ADR 0025](adr/0025-workspace-url-redaction-convention.md), [ADR 0030](adr/0030-workspace-locked-versioning-tag-baseline.md), [ADR 0032](adr/0032-deployment-authority-machine-readable-provenance.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
 ## Forward-Compatible Public Surfaces
 

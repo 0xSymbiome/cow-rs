@@ -12,7 +12,7 @@ principles:
   - id: 1
     name: Deterministic Protocol Transforms
     primary_adr: "0012"
-    supporting_adrs: ["0011", "0022", "0023"]
+    supporting_adrs: ["0011", "0022", "0023", "0052"]
 
   - id: 2
     name: Explicit Runtime Boundaries
@@ -57,7 +57,7 @@ principles:
   - id: 10
     name: Evidence-Backed Public Claims
     primary_adr: "0026"
-    supporting_adrs: ["0025", "0030", "0032"]
+    supporting_adrs: ["0025", "0030", "0032", "0052"]
 
   - id: 11
     name: Forward-Compatible Public Surfaces
