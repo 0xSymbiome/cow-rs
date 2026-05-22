@@ -314,6 +314,17 @@ export interface GeneratedOrderUidDto {
 }
 
 /**
+ * Generic validated 32-byte hash wrapper for user-domain and contract surfaces.
+ *
+ * The wire form is the protocol-canonical `0x`-prefixed 66-character
+ * lowercase hexadecimal string. The newtype is `#[repr(transparent)]` over
+ * [`alloy_primitives::B256`] and forwards `Display`/`Serialize`/
+ * `Deserialize` to the inner alloy type, whose canonical defaults already
+ * emit the cow lowercase wire form.
+ */
+export type Hash32 = string;
+
+/**
  * JS-visible typed error envelope for every wasm export.
  */
 export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; message: string; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; message: string; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "walletTimeout"; schemaVersion: SchemaVersion; message: string; timeoutMs: number } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; message: string } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; message: string; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion; message: string } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; message: string; raw: Value };
@@ -1044,6 +1055,82 @@ export interface TypedDataFieldDto {
      */
     type: string;
 }
+
+/**
+ * Validated 32-byte app-data hash.
+ *
+ * The wire form is the protocol-canonical `0x`-prefixed 66-character
+ * lowercase hexadecimal string. The newtype is `#[repr(transparent)]`
+ * over [`alloy_primitives::B256`], so the in-memory layout is
+ * bit-for-bit identical to the alloy primitive and conversion at the
+ * alloy seam is free at runtime through [`AppDataHash::as_alloy`]
+ * (borrowed), [`AppDataHash::into_alloy`] (owned), or [`From`] /
+ * [`Into`].
+ *
+ * `AppDataHash` forwards [`Serialize`] / [`Deserialize`] to the inner
+ * [`alloy_primitives::B256`] via `#[serde(transparent)]` because the
+ * alloy lowercase 0x-prefixed default already matches the cow wire
+ * form. [`fmt::Display`] is a one-line delegate to the inner primitive
+ * for the same reason.
+ *
+ * Equality, hash, and ordering derive from the packed 32-byte
+ * representation, which is equivalent to the documented
+ * case-insensitive comparison contract because every valid value parses
+ * to the same bytes regardless of input casing.
+ *
+ *
+ */
+export type AppDataHash = string;
+
+/**
+ * Validated EVM address.
+ *
+ * The wire form is the protocol-canonical `0x`-prefixed 42-character
+ * lowercase hexadecimal string. The newtype is `#[repr(transparent)]` over
+ * [`alloy_primitives::Address`], so the in-memory layout is bit-for-bit
+ * identical to the alloy primitive and conversion at the alloy seam is free
+ * at runtime through [`Address::as_alloy`] (borrowed), [`Address::into_alloy`]
+ * (owned), or [`From`] / [`Into`].
+ *
+ * `Address` carries cow-owned [`fmt::Display`], [`Serialize`], and
+ * [`Deserialize`] impls because alloy\'s default `Display` for
+ * [`alloy_primitives::Address`] emits the EIP-55 mixed-case checksum form,
+ * while the cow protocol wire form is lowercase. The cow `Display` impl
+ * writes `format!(\"{:#x}\", self.0)` which routes through alloy\'s
+ * [`fmt::LowerHex`] impl and emits lowercase 0x-prefixed hex.
+ *
+ * [`PartialEq`], [`Eq`], [`Hash`](std::hash::Hash), [`PartialOrd`], and
+ * [`Ord`] derive from the inner alloy primitive, which compares addresses on
+ * the packed 20-byte representation.
+ */
+export type Address = string;
+
+/**
+ * Validated `CoW` order UID.
+ *
+ * The wire form is the protocol-canonical `0x`-prefixed 114-character
+ * lowercase hexadecimal string. The newtype is `#[repr(transparent)]` over
+ * [`alloy_primitives::FixedBytes<56>`] and forwards `Display`/`Serialize`/
+ * `Deserialize` to the inner alloy type, whose canonical defaults already
+ * emit the cow lowercase wire form.
+ *
+ *
+ *
+ */
+export type OrderUid = string;
+
+/**
+ * Validated hex payload used for calldata and byte blobs.
+ *
+ * The wire form is the protocol-canonical `0x`-prefixed lowercase
+ * hexadecimal string. The newtype is `#[repr(transparent)]` over
+ * [`alloy_primitives::Bytes`] and forwards `Display`/`Serialize`/
+ * `Deserialize` to the inner alloy type, whose canonical defaults already
+ * emit the cow lowercase wire form. Odd-length inputs are left-padded with
+ * one zero nibble during construction so the stored value remains
+ * byte-aligned hex.
+ */
+export type HexData = string;
 
 /**
  * Version tag carried by wasm output and error envelopes.
