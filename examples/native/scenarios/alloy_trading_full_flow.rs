@@ -50,10 +50,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let approval_params = ApprovalParameters::new(address(COW), Amount::new("1000")?);
     let approval_tx =
         approval_transaction(&approval_params, SupportedChainId::Mainnet, CowEnv::Prod)?;
-    let approval_receipt =
-        submit_and_wait_for_receipt(&signer, &client, &approval_tx, WaitOptions::approve_default())
-            .await?;
-    assert_eq!(approval_receipt.transaction_hash, TransactionHash::new(HASH)?);
+    let approval_receipt = submit_and_wait_for_receipt(
+        &signer,
+        &client,
+        &approval_tx,
+        WaitOptions::approve_default(),
+    )
+    .await?;
+    assert_eq!(
+        approval_receipt.transaction_hash,
+        TransactionHash::new(HASH)?
+    );
     assert_eq!(approval_receipt.status, Some(TransactionStatus::Success));
 
     let pre_sign = sdk

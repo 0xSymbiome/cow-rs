@@ -18,6 +18,7 @@ default = []
 alloy-provider = ["cow-sdk/alloy-provider"]
 alloy-signer = ["cow-sdk/alloy-signer"]
 alloy = ["cow-sdk/alloy"]
+live-services = ["alloy"]
 
 [dependencies]
 async-trait = "0.1.89"
@@ -123,3 +124,8 @@ required-features = ["alloy"]
 name = "transaction_lifecycle"
 path = "scenarios/transaction_lifecycle.rs"
 required-features = ["alloy"]
+
+[[example]]
+name = "live_order_sepolia"
+path = "scenarios/live_order_sepolia.rs"
+required-features = ["live-services"]

@@ -124,7 +124,8 @@ pub fn sample_limit_parameters() -> LimitTradeParameters {
 }
 
 pub fn sample_trader_parameters() -> TraderParameters {
-    TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-native-examples").expect("app code should validate")
+    TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-native-examples")
+        .expect("app code should validate")
         .with_env(CowEnv::Prod)
 }
 

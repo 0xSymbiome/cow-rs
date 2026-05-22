@@ -16,7 +16,8 @@ use cow_sdk_examples_native::support::{sample_owner, sample_unsigned_order};
 fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
     let sdk = TradingSdkBuilder::ready(
-        TraderParameters::new(chain_id, "cow-rs/native-capability-report").expect("app code should validate"),
+        TraderParameters::new(chain_id, "cow-rs/native-capability-report")
+            .expect("app code should validate"),
         TradingSdkOptions::default(),
     )?;
     let app_data_doc = generate_app_data_doc(
