@@ -1616,7 +1616,6 @@ dependencies = [
  "cow-sdk-contracts",
  "cow-sdk-core",
  "cow-sdk-signing",
- "hex",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
