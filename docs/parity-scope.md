@@ -13,6 +13,7 @@ Pinned sources live in `parity/source-lock.yaml`.
 | --- | --- | --- |
 | `cowprotocol/cow-sdk` | Primary | SDK package configuration, COW Shed TypeScript constants, and shared package-level deployment evidence |
 | `cowprotocol/composable-cow` | Primary capability evidence | Composable-order Solidity excerpts, deployment rows, selector fixtures, EIP-1271 payload shapes, and watch-tower boundary evidence |
+| `cowprotocol/ethflowcontract` | Primary capability evidence | EthFlow Solidity authority (`CoWSwapEthFlow.sol`, `EthFlowOrder.sol`) and the `ReceiverMustBeSet()` revert-selector provenance |
 | `cowdao-grants/cow-shed` | Primary capability evidence | COW Shed Solidity excerpts, proxy creation-code bytes, factory address derivation, hook signature shape, and version-call evidence |
 | `cowprotocol/watch-tower` | Reference-only boundary evidence | Off-chain orchestration behavior used to define what remains outside the SDK |
 

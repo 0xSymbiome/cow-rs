@@ -229,6 +229,10 @@ const WATCH_TOWER_PATHS: &[&str] = &[
     "src/utils/orderBookApi.ts",
     "src/types/index.ts",
 ];
+const ETHFLOWCONTRACT_PATHS: &[&str] = &[
+    "src/CoWSwapEthFlow.sol",
+    "src/libraries/EthFlowOrder.sol",
+];
 const HELPER_REPO_TEMPLATES: &[RepoTemplate] = &[
     RepoTemplate {
         id: "cow-sdk",
@@ -264,6 +268,13 @@ const HELPER_REPO_TEMPLATES: &[RepoTemplate] = &[
         role: "primary",
         local_hint: "<cow-shed-checkout>",
         producer_paths: COW_SHED_PATHS,
+    },
+    RepoTemplate {
+        id: "ethflowcontract",
+        remote: "https://github.com/cowprotocol/ethflowcontract.git",
+        role: "primary",
+        local_hint: "<ethflowcontract-checkout>",
+        producer_paths: ETHFLOWCONTRACT_PATHS,
     },
     RepoTemplate {
         id: "watch-tower",

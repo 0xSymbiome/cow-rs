@@ -230,6 +230,16 @@ repositories:
   - src/interfaces/ICOWAuthHook.sol
   - src/interfaces/IERC1271.sol
   - src/LibAuthenticatedHooks.sol
+- id: ethflowcontract
+  remote: https://github.com/cowprotocol/ethflowcontract.git
+  commit: 762d182674f8f890bd27917872ee62125171b54d
+  role: primary
+  optional_local_path: <ethflowcontract-checkout>
+  pinned_at: 2026-05-22T00:00:00Z
+  pinned_by: cow-rs maintainers
+  producer_paths:
+  - src/CoWSwapEthFlow.sol
+  - src/libraries/EthFlowOrder.sol
 - id: watch-tower
   remote: https://github.com/cowprotocol/watch-tower.git
   commit: 61eeaec55949337a42e66cb9d2439f400dd4e67a

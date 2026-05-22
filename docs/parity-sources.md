@@ -95,6 +95,7 @@ at a different commit than the source-lock pin.
 
 - `cow-sdk`: `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d`
 - `contracts`: `c94c595a791681cf8ba7495117dcde397b932885`
+- `ethflowcontract`: `762d182674f8f890bd27917872ee62125171b54d`
 - `services`: `0720b9bc15138ecc362078f505d0e3ba1c7b9883`
 - `alloy`: `f3fe4cfff0553e9e234a53208bb69b7c222c66e5`
 - `alloy-core`: `e6b30e4c2407cd1d2ea93e79f2768e5a4f21d266`
@@ -112,6 +113,7 @@ Primary sources:
 
 - `https://github.com/cowprotocol/cow-sdk.git`
 - `https://github.com/cowprotocol/contracts.git`
+- `https://github.com/cowprotocol/ethflowcontract.git`
 
 Reference-only source:
 
