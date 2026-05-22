@@ -14,6 +14,9 @@ use alloy_sol_types::{SolCall, sol};
 
 use cow_sdk_core::{Address, Amount, AppDataHash, UnsignedOrder};
 
+use crate::ContractsError;
+use crate::order::hash::reject_zero_receiver;
+
 sol! {
     // Canonical CoWSwapEthFlow ABI surface. Signatures are reproduced verbatim
     // from the mainnet-deployed CoWSwapEthFlow contract (upstream source at
@@ -72,11 +75,20 @@ pub struct EthFlowOrderData {
 
 impl EthFlowOrderData {
     /// Creates an `EthFlowOrderData` payload.
-    #[must_use]
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError::ZeroReceiver`] when `receiver` is the
+    /// zero address. The deployed `CoWSwapEthFlow` contract reverts both
+    /// `createOrder` and `invalidateOrder` calldata with
+    /// `ReceiverMustBeSet()` on this input (selector `0xefc9ccdf`),
+    /// raised from `EthFlowOrder.toCoWSwapOrder` in the upstream
+    /// `cowprotocol/ethflowcontract` Solidity surface, so the SDK
+    /// refuses to produce the calldata in the first place.
     // Mirrors the full current public field set so callers can migrate off
     // struct literals without losing explicit control over any wire field.
     #[allow(clippy::too_many_arguments)]
-    pub const fn new(
+    pub fn new(
         buy_token: Address,
         receiver: Address,
         sell_amount: Amount,
@@ -86,8 +98,9 @@ impl EthFlowOrderData {
         valid_to: u32,
         partially_fillable: bool,
         quote_id: i64,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, ContractsError> {
+        reject_zero_receiver(&receiver)?;
+        Ok(Self {
             buy_token,
             receiver,
             sell_amount,
@@ -97,13 +110,20 @@ impl EthFlowOrderData {
             valid_to,
             partially_fillable,
             quote_id,
-        }
+        })
     }
 
     /// Builds an `EthFlowOrderData` payload from a pre-signature unsigned order
     /// and the originating quote id.
-    #[must_use]
-    pub const fn from_unsigned_order(order: &UnsignedOrder, quote_id: i64) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError::ZeroReceiver`] under the same condition
+    /// as [`Self::new`].
+    pub fn from_unsigned_order(
+        order: &UnsignedOrder,
+        quote_id: i64,
+    ) -> Result<Self, ContractsError> {
         Self::new(
             order.buy_token,
             order.receiver,
@@ -212,6 +232,26 @@ mod tests {
             0x1234_5678,
             false,
             42,
+        )
+        .expect("sample order uses non-zero receiver")
+    }
+
+    fn sample_unsigned_order(receiver: Address) -> UnsignedOrder {
+        use cow_sdk_core::{BuyTokenDestination, OrderKind, SellTokenSource};
+        UnsignedOrder::new(
+            Address::new("0x3333333333333333333333333333333333333333").unwrap(),
+            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            receiver,
+            Amount::new("1000000000000000000").unwrap(),
+            Amount::new("2000000000000000000").unwrap(),
+            0x1234_5678,
+            AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                .unwrap(),
+            Amount::ZERO,
+            OrderKind::Sell,
+            false,
+            SellTokenSource::Erc20,
+            BuyTokenDestination::Erc20,
         )
     }
 
@@ -350,6 +390,57 @@ mod tests {
             word_hex(&encoded, 2),
             "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
             "sellAmount must preserve all 32 bytes of the maximum uint256",
+        );
+    }
+
+    #[test]
+    fn new_rejects_zero_receiver_with_zero_receiver_error() {
+        let result = EthFlowOrderData::new(
+            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+            Address::ZERO,
+            Amount::new("1000000000000000000").unwrap(),
+            Amount::new("2000000000000000000").unwrap(),
+            AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+                .unwrap(),
+            Amount::ZERO,
+            0x1234_5678,
+            false,
+            42,
+        );
+        assert!(
+            matches!(result, Err(ContractsError::ZeroReceiver)),
+            "EthFlowOrderData::new must reject Address::ZERO with ContractsError::ZeroReceiver; got {result:?}",
+        );
+    }
+
+    #[test]
+    fn from_unsigned_order_rejects_zero_receiver_with_zero_receiver_error() {
+        let order = sample_unsigned_order(Address::ZERO);
+        let result = EthFlowOrderData::from_unsigned_order(&order, 42);
+        assert!(
+            matches!(result, Err(ContractsError::ZeroReceiver)),
+            "EthFlowOrderData::from_unsigned_order must reject Address::ZERO with ContractsError::ZeroReceiver; got {result:?}",
+        );
+    }
+
+    #[test]
+    fn zero_receiver_invariant_matches_ethflow_on_chain_revert_selector() {
+        // The cow-sdk-contracts `ContractsError::ZeroReceiver` variant
+        // pre-empts the upstream `CoWSwapEthFlow` contract's
+        // `ReceiverMustBeSet()` revert (selector 0xefc9ccdf) at
+        // calldata-construction time. This test pins the selector by
+        // re-deriving it from first principles via
+        // `alloy_primitives::keccak256("ReceiverMustBeSet()")[0..4]`.
+        // If the assertion fails, the upstream contract has changed its
+        // error signature and ADR 0020's construction-time invariant
+        // needs review.
+        let derived: [u8; 4] = alloy_primitives::keccak256(b"ReceiverMustBeSet()").0[..4]
+            .try_into()
+            .expect("keccak256 output is always 32 bytes, slicing [..4] is infallible");
+        assert_eq!(
+            derived,
+            [0xef, 0xc9, 0xcc, 0xdf],
+            "upstream `error ReceiverMustBeSet()` selector must remain 0xefc9ccdf",
         );
     }
 }
