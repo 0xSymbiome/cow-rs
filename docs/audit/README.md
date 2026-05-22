@@ -26,7 +26,7 @@ fragments, ADR replacement, or generic cleanup diaries.
 | Fix review | `<surface>-fix-review.md` | Focused public follow-up when previously reviewed findings are remediated |
 | Validation note | `<surface>-validation-note.md` | Narrow public confirmation record for an assurance point smaller than a full audit |
 
-The current public set is entirely standing audits.
+The current public set is 53 standing audits and 1 validation note.
 
 ## Status Model
 
@@ -51,11 +51,11 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) | Standing audit | `cow-sdk-contracts` `alloy::sol!`-generated binding surfaces | Byte-identity parity on the shipped settlement, vault-relayer, EthFlow, EIP-1967 proxy, ERC-20 / ERC-20 Permit bindings, and the shared EIP-712 domain-separator fixture | Current | 2026-05-19 |
+| [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) | Standing audit | `cow-sdk-contracts` `alloy::sol!`-generated binding surfaces | Byte-identity parity on the shipped settlement, vault-relayer, EthFlow, EIP-1967 proxy, ERC-20 / ERC-20 Permit bindings, and the shared EIP-712 domain-separator fixture | Current | 2026-05-22 |
 | [Deployment Registry Audit](deployment-registry-audit.md) | Standing audit | `cow-sdk-contracts::Registry` typed deployment authority | Typed `(ContractId, SupportedChainId, CowEnv)` key, embedded TOML manifest, per-chain provenance, compile-time validation, and override composition | Current | 2026-05-12 |
 | [Composable Contract Bindings Audit](composable-contract-bindings-audit.md) | Standing audit | Composable Solidity excerpts and deployment registry rows | Conditional-order binding excerpts, schema v2 deployment rows, provenance evidence, and coverage-only Ink posture | Current | 2026-05-15 |
 | [Composable Watch-Tower Boundary Audit](composable-watch-tower-boundary-audit.md) | Standing audit | Composable helper crate boundary | Selector, decoder, event, and single-call provider helper scope with production watcher behavior explicitly out of scope | Current | 2026-05-15 |
-| [COW Shed Contract Bindings Audit](cow-shed-contract-bindings-audit.md) | Standing audit | COW Shed Solidity excerpts, proxy creation code, and deployment registry rows | Version-keyed proxy creation-code artifacts, digest validation, deployment rows, and factory ABI evidence | Current | 2026-05-17 |
+| [COW Shed Contract Bindings Audit](cow-shed-contract-bindings-audit.md) | Standing audit | COW Shed Solidity excerpts, proxy creation code, and deployment registry rows | Version-keyed proxy creation-code artifacts, digest validation, deployment rows, and factory ABI evidence | Current | 2026-05-22 |
 | [COW Shed App-Data Integration Audit](cow-shed-app-data-integration-audit.md) | Standing audit | COW Shed hook metadata and app-data schema integration | Hook metadata shape, app-data schema reuse, and EIP-1271 signing-boundary evidence | Current | 2026-05-15 |
 | [Lens Chain Evidence Audit](lens-chain-evidence-audit.md) | Standing audit | Deployment registry chain taxonomy | Lens deployment evidence, runtime support exclusion, provenance lockstep, public route probes, and refresh triggers | Current | 2026-05-15 |
 
@@ -94,7 +94,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Browser Wallet Chain Coherence Audit](browser-wallet-chain-coherence-audit.md) | Standing audit | `cow-sdk-browser-wallet` chain-bound signer and typed chain-management contract | Wallet-session chain coherence for browser-wallet-backed flows | Current | 2026-05-13 |
-| [Browser Wallet Trust Posture Audit](browser-wallet-trust-posture-audit.md) | Standing audit | `cow-sdk-browser-wallet` EIP-1193 provider construction and wallet chain-management URL payloads | EIP-6963 provider metadata trust, explicit origin opt-in for anonymous providers, redacted trust failures, and wallet URL payload boundaries | Current | 2026-05-14 |
+| [Browser Wallet Trust Posture Audit](browser-wallet-trust-posture-audit.md) | Standing audit | `cow-sdk-browser-wallet` EIP-1193 provider construction and wallet chain-management URL payloads | EIP-6963 provider metadata trust, explicit origin opt-in for anonymous providers, redacted trust failures, and wallet URL payload boundaries | Current | 2026-05-22 |
 | [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md) | Standing audit | `cow-sdk-browser-wallet` ABI helper family and reachable alloy advisories | Adoption of `alloy-primitives`, `alloy-dyn-abi`, and `alloy-json-abi` with revisit triggers for the reviewed advisories they transit, plus explicit separation from native Alloy adapter dependencies | Current | 2026-05-13 |
 
 ## WASM Example Proof Posture
@@ -112,7 +112,7 @@ If the reviewed surface did not change, leave the audit alone.
 | [WASM Type Generation Audit](wasm-type-generation-audit.md) | Standing audit | `cow-sdk-wasm` DTO exports and TypeScript declarations | tsify policy, host-gating rule, raw and facade declaration snapshots, and package export verification | Current | 2026-05-13 |
 | [WASM EIP-1271 Parity Audit](wasm-eip1271-parity-audit.md) | Standing audit | `cow-sdk-wasm` EIP-1271 payload helpers and smart-account signing callbacks | Native Rust and upstream TypeScript SDK vector parity, facade-resolves-callback contract, callback capability split, and UID/digest string reuse | Current | 2026-05-11 |
 | [WASM Component Model Future Prep Audit](wasm-component-model-future-prep-audit.md) | Standing audit | `cow-sdk-pure-helpers` host-safe helper crate and deterministic helper boundary | Pure-helper crate extraction, JavaScript FFI exclusion, host parity tests, and future adapter readiness without claiming component packaging | Current | 2026-05-13 |
-| [WASM Callback Shape Design Audit](wasm-callback-shape-design-audit.md) | Standing audit | `cow-sdk-wasm` typed JavaScript callback boundary | Named wallet, signer, cancellation, EIP-1271, and HTTP callback shapes; internal registry ownership; timeout/abort mapping; and typed failure behavior | Current | 2026-05-11 |
+| [WASM Callback Shape Design Audit](wasm-callback-shape-design-audit.md) | Standing audit | `cow-sdk-wasm` typed JavaScript callback boundary | Named wallet, signer, cancellation, EIP-1271, and HTTP callback shapes; internal registry ownership; timeout/abort mapping; and typed failure behavior | Current | 2026-05-22 |
 | [WASM Performance Budget Audit](wasm-performance-budget-audit.md) | Standing audit | `cow-sdk-wasm` release profile, flavor build outputs, and size-budget gate | Feature-scoped wasm flavors, optimization pass, measured raw/brotli/gzip budgets, and Cloudflare-specific package budget | Current | 2026-05-12 |
 | [WASM Public API Stability Audit](wasm-public-api-stability-audit.md) | Standing audit | `cow-sdk-wasm` facade declarations, package exports, config shapes, and error envelopes | Facade declaration snapshots, raw export denylist, single-object constructors, transport policy config, and schema-versioned errors | Current | 2026-05-11 |
 | [WASM Schema Versioning Policy Audit](wasm-schema-versioning-policy-audit.md) | Standing audit | `cow-sdk-wasm` JavaScript-visible success and error envelopes | `schemaVersion` output fields, unknown-variant sentinel behavior, facade error normalization, and versioned declaration evidence | Current | 2026-05-11 |
@@ -123,8 +123,8 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [CID Dependency Audit](cid-dependency-audit.md) | Standing audit | `cow-sdk-app-data` CID encoding and published dependency boundary | Supported CID paths, fail-closed encoding, and clean published-upstream posture | Current | 2026-05-17 |
-| [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, direct WASM randomness alignment, canonical advisory tolerance, source whitelist, native Alloy provider/signer dependency allow-lists, `cow-sdk-wasm` wasm32 dependency exclusions, and pure-helper FFI exclusion | Current | 2026-05-11 |
+| [CID Dependency Audit](cid-dependency-audit.md) | Standing audit | `cow-sdk-app-data` CID encoding and published dependency boundary | Supported CID paths, fail-closed encoding, and clean published-upstream posture | Current | 2026-05-22 |
+| [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, direct WASM randomness alignment, canonical advisory tolerance, source whitelist, native Alloy provider/signer dependency allow-lists, `cow-sdk-wasm` wasm32 dependency exclusions, and pure-helper FFI exclusion | Current | 2026-05-22 |
 
 ## Source Provenance
 
@@ -136,7 +136,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | OpenAPI-vendored orderbook response DTO inventories, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-05-12 |
+| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | OpenAPI-vendored orderbook response DTO inventories, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-05-22 |
 
 ## Transport And Routing
 
@@ -156,7 +156,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Trading Order Construction Integrity Audit](trading-order-construction-integrity-audit.md) | Standing audit | `cow-sdk-trading` order assembly and recoverable-signature posting contract | Balance semantics, same-token builder policy, builder terminal parity, and local signature validation | Current | 2026-05-12 |
+| [Trading Order Construction Integrity Audit](trading-order-construction-integrity-audit.md) | Standing audit | `cow-sdk-trading` order assembly and recoverable-signature posting contract | Balance semantics, same-token builder policy, builder terminal parity, and local signature validation | Current | 2026-05-22 |
 | [Trading Order-Bounds Validator Audit](trading-order-bounds-validator-audit.md) | Standing audit | `cow-sdk-trading` `OrderBoundsValidator`, order validity bounds, and client rejection surface | Mandatory client-side submission validation, same-token parity, custom bounds plumbing, EthFlow skip rule, and builder-level subset | Current | 2026-05-12 |
 | [Trading App-Data Merge Audit](trading-app-data-merge-audit.md) | Standing audit | `cow-sdk-trading` quote-to-post app-data edit path | Typed app-data merge, hooks replacement semantics, typed signer derivation, and `merge_and_seal_app_data` / `params_from_doc` public helpers | Current | 2026-05-13 |
 | [Trading EthFlow Owner Identity Audit](trading-ethflow-owner-identity-audit.md) | Standing audit | `cow-sdk-trading` EthFlow submission seam | `EthFlowTransaction.from` owner threading, preview identity selection, and EthFlow-aware validator invocation | Current | 2026-05-12 |
@@ -166,9 +166,9 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Unsafe-Code Policy Audit](unsafe-code-policy-audit.md) | Standing audit | Workspace `unsafe_code = deny` lint declared in `Cargo.toml` workspace lint section | Workspace unsafe-code deny lint, crate lint adoption, public-path source posture, and clippy enforcement | Current | 2026-04-23 |
-| [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site, including native Alloy adapter conversion, trading receipt-wait helpers, wasm exports, pure helpers, and allowlist coverage | Current | 2026-05-13 |
+| [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site, including native Alloy adapter conversion, trading receipt-wait helpers, wasm exports, pure helpers, and allowlist coverage | Current | 2026-05-22 |
 | [Workflow Security Audit](workflow-security-audit.md) | Standing audit | Every `.github/workflows/*.yml` file | SHA-pinned third-party actions, explicit permissions, reviewed action source refs, and guarded `pull_request_target` use | Current | 2026-05-08 |
-| [Fuzz Coverage Audit](fuzz-coverage-audit.md) | Standing audit | The standalone `cow-sdk-fuzz` crate and every `cargo-fuzz` target it ships against the published SDK crates | Target inventory across encoder, signing, validator, parser, classifier, crypto envelope, app-data, transport, browser-wallet adjacent, and trading surfaces; per-target seed contract; stable-toolchain compile gate; nightly enumerate; property traceability; public-surface boundary on `pub(crate)` helpers | Current | 2026-05-14 |
+| [Fuzz Coverage Audit](fuzz-coverage-audit.md) | Standing audit | The standalone `cow-sdk-fuzz` crate and every `cargo-fuzz` target it ships against the published SDK crates | Target inventory across encoder, signing, validator, parser, classifier, crypto envelope, app-data, transport, browser-wallet adjacent, and trading surfaces; per-target seed contract; stable-toolchain compile gate; nightly enumerate; property traceability; public-surface boundary on `pub(crate)` helpers | Current | 2026-05-22 |
 
 ## Cross-Cutting Reviewability And Contract Hygiene
 
@@ -177,6 +177,6 @@ If the reviewed surface did not change, leave the audit alone.
 | [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md) | Standing audit | Cross-cutting credential redaction and typed partner-fee public boundary | Secret-safe route identity, config diagnostics, URL-bearing config redaction, native Alloy key/URL redaction, host-policy failures, `Redacted<T>` wrapper, transport error redaction, and typed user policy | Current | 2026-05-14 |
 | [Credential Surface Audit](credential-surface-audit.md) | Standing audit | Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, Pinata upload-trait headers, wasm error envelopes, and the SDK facade | Redacted credential storage plus sanitized host-policy failures, typed-redacted public error diagnostics, typed-redacted Pinata headers, and redacted JS-visible `WasmError` diagnostics | Current | 2026-05-14 |
 | [URL Credential Redaction Audit](url-credential-redaction-audit.md) | Standing audit | URL-bearing public configuration across core, orderbook, subgraph, browser-wallet, app-data, native Alloy adapters, and wasm error conversion | Redacting URL map and URL value wrappers for public diagnostics with explicit raw dispatch access at HTTP, wallet, Alloy RPC, and wasm error seams | Current | 2026-05-14 |
-| [Shared Logic Reviewability Audit](shared-logic-reviewability-audit.md) | Standing audit | Orderbook, signing, and trading shared-logic reviewability boundary | Shared request execution, signing payload preparation, thin posting wrappers, and justified DTO separation | Current | 2026-05-19 |
+| [Shared Logic Reviewability Audit](shared-logic-reviewability-audit.md) | Standing audit | Orderbook, signing, and trading shared-logic reviewability boundary | Shared request execution, signing payload preparation, thin posting wrappers, and justified DTO separation | Current | 2026-05-22 |
 | [Cooperative Cancellation Contract Audit](cooperative-cancellation-contract-audit.md) | Standing audit | Cross-cutting cooperative cancellation across core, orderbook, subgraph, trading, native Alloy adapters, and wasm callback transport | Shared `CancellationToken` re-export, the `Cancellable` extension-trait combinator, typed `Cancelled` variants, biased-poll drop semantics, trading receipt-wait helpers, native Alloy adapter calls, and wasm callback timeout abort handling | Current | 2026-05-12 |
 | [Signer Error Classification Audit](signer-error-classification-audit.md) | Standing audit | Cross-crate `cow_sdk_core::SignerError` trait and the typed rejection routing in `cow-sdk-signing`, `cow-sdk-browser-wallet`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy` | Trait surface and per-variant implementations, the `signer_error` routing helper, the `SigningError::SignerRejection` variant, the `S::Error: fmt::Display + SignerError` bound on every public signing helper, and the workspace-level end-to-end propagation invariant | Current | 2026-05-19 |

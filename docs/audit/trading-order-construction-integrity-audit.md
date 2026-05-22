@@ -1,7 +1,7 @@
 # Trading Order Construction Integrity Audit
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-22
 Owning surface: `cow-sdk-trading` order assembly, injected-orderbook builder terminal parity, and recoverable-signature posting boundary
 Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` builder terminals with injected orderbooks, recoverable-signature posting validation, upstream services `crates/shared/src/order_validation.rs` same-token semantics, the `TradeParameters::validate` / `LimitTradeParameters::validate` same-token predicate, or the `scripts/check-services-drift.sh` Semantic Surfaces section
 Related docs:
@@ -9,6 +9,7 @@ Related docs:
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)
+- [Wire DTO Coverage Audit](wire-dto-coverage-audit.md)
 
 ## Scope
 
@@ -54,6 +55,12 @@ unset and emits the effective `from` address as the receiver in the signing
 payload. This matches the reviewed upstream helper behavior and avoids signing
 an order with a placeholder receiver when caller intent is to receive proceeds
 at the owner address.
+
+Direct posting and quote-derived posting both consume `OrderCreation` at the
+orderbook-submission seam. The `OrderCreation` serialize contract preserves the
+services `OrderCreationAppData` untagged-enum wire shape (`Full`, `Hash`,
+`Both` variants) per the
+[Wire DTO Coverage Audit](wire-dto-coverage-audit.md) Outcome Summary row.
 
 ### Same-Token Builder And Posting Policy
 

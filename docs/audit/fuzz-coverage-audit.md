@@ -1,7 +1,7 @@
 # Fuzz Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-14
+Last reviewed: 2026-05-22
 Owning surface: the standalone `cow-sdk-fuzz` crate (`fuzz/`) and every
 `cargo-fuzz` target it ships against the published SDK crates
 Refresh trigger: any new public untrusted-input surface, retired fuzz
@@ -16,6 +16,7 @@ Related docs:
 - [ADR 0022](../adr/0022-ecdsa-signature-v-normalization.md)
 - [ADR 0033](../adr/0033-minimum-viable-panic-surface.md)
 - [ADR 0041](../adr/0041-transport-policy-l3-layering.md)
+- [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [Credential Surface Audit](credential-surface-audit.md)
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
 - [ECDSA Signature Normalization Audit](ecdsa-signature-normalization-audit.md)
@@ -143,6 +144,15 @@ The doc-comment header on every target that takes this routing
 discloses the boundary and the rationale, so a reviewer can verify the
 asserted invariant is meaningful for the public surface even when the
 target cannot drive the private helper directly.
+
+The fuzz crate declares `alloy-primitives` as a direct dependency in
+`fuzz/Cargo.toml` so the `Amount` and `SignedAmount` parser harnesses
+and the slippage harnesses can construct `alloy_primitives::U256` and
+`alloy_primitives::I256` boundary inputs without routing through a
+published cow newtype constructor every iteration. The direct
+dependency is fuzz-only; the published SDK crates continue to consume
+`alloy-primitives` through the canonical primitive layer per
+[ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
 ### Invariant Strength
 

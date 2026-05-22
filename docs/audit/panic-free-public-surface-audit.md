@@ -73,7 +73,7 @@ surface signer, provider, timeout, revert, and cancellation outcomes through
 sources without unchecked assumptions.
 
 The canonical panic allowlist is `.github/config/panic-allowlist.yaml`.
-It currently contains 48 reviewed item-path entries covering 58
+It currently contains 52 reviewed item-path entries covering 62
 panic-bearing calls. Each accepted production panic site remains tied to a
 documented static invariant rather than to caller-controlled input.
 

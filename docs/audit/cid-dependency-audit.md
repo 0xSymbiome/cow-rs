@@ -1,10 +1,11 @@
 # CID Dependency Audit
 
 Status: Current
-Last reviewed: 2026-05-17
+Last reviewed: 2026-05-22
 Owning surface: `cow-sdk-app-data` CID encoding, canonical-JSON serialisation, and published dependency boundary
 Refresh trigger: Changes to CID dependencies, the canonical-JSON dependency, the supported CID encoding, or the published dependency posture for the app-data stack
 Related docs:
+- [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [Dependency Gate Audit](dependency-gate-audit.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)
@@ -40,9 +41,18 @@ The current app-data crate uses:
 - `cid` for CID parsing and construction
 - `multihash` for explicit multihash wrapping
 - `multibase` for lowercase base16 CID rendering
-- `sha3` for deterministic app-data digest generation
+- `alloy_primitives::keccak256` (the canonical primitive layer per
+  [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md))
+  for deterministic app-data digest generation
 - `serde_jcs` for RFC 8785 canonical-JSON serialisation of the document
-  whose bytes feed the `sha3` digest input
+  whose bytes feed the `alloy_primitives::keccak256` digest input
+
+The cow `AppDataHash` type is a cow-owned `#[repr(transparent)]` newtype
+over `alloy_primitives::B256` per
+[ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md);
+the `AppDataHash::to_cid` inherent method is the canonical conversion
+path from the cow newtype to the CIDv1 raw-keccak256 string form documented
+under "Supported Input Boundary" below.
 
 The canonical-JSON pass runs through `serde_jcs::to_string` so the key
 ordering follows the RFC 8785 UTF-16 code-unit rule; this closes a latent

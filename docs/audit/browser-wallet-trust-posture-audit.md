@@ -1,13 +1,14 @@
 # Browser Wallet Trust Posture Audit
 
 Status: Current
-Last reviewed: 2026-05-14
+Last reviewed: 2026-05-22
 Owning surface: `cow-sdk-browser-wallet` EIP-1193 provider construction and wallet chain-management URL payloads
 Refresh trigger: Changes to EIP-1193 provider construction, EIP-6963 discovery metadata, wallet origin handling, chain-management URL validation, or browser-wallet error redaction
 Related docs:
 - [ADR 0007](../adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
 - [ADR 0024](../adr/0024-asyncprovider-asyncsigningprovider-capability-split.md)
 - [ADR 0028](../adr/0028-account-abstraction-integration-plan.md)
+- [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [Browser Wallet Chain Coherence Audit](browser-wallet-chain-coherence-audit.md)
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
 - [Verification Matrix](../verification-matrix.md)
@@ -54,6 +55,16 @@ provider can be constructed from the supplied origin.
 Provider-origin trust warnings use the `cow_sdk::trust` tracing target and
 record redacted origin fields. Public error display and debug output do not
 emit raw origin strings for untrusted anonymous providers.
+
+The browser-wallet typed-data signing path consumes
+`cow_sdk_core::TypedDataDomain` directly per
+[ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md). The
+cow struct emits the canonical EIP-1193 `eth_signTypedData_v4` wire shape
+(numeric `chainId`, required `verifyingContract`, no `salt`) through its
+derived `Serialize` impl so no bridge-side JSON coercion is required.
+`crates/browser-wallet/tests/signer_contract.rs::typed_data_payload_emits_canonical_eip1193_wire_shape_against_fixture`
+pins the contract against
+`parity/fixtures/signing/eth_sign_typed_data_request.json`.
 
 ### Wallet URL Payloads
 

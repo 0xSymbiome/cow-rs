@@ -1,11 +1,12 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-05-11
+Last reviewed: 2026-05-22
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
-Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, or browser-wallet alloy advisory posture
+Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, the canonical primitive layer dependency closure per ADR 0052, or browser-wallet alloy advisory posture
 Related docs:
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
+- [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [CID Dependency Audit](cid-dependency-audit.md)
 - [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
 - [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
@@ -61,6 +62,7 @@ architecture reviews.
 | Alloy canary failures | Scheduled canary failures are triaged as upstream-compatibility reports, with local pins changed only after ordinary quality gates pass and without dependency-policy waivers | Conforms |
 | `cow-sdk-wasm` wasm32 tree | The wasm32 dependency graph excludes `cow-sdk-browser-wallet`, `cow-sdk-alloy*`, `alloy-provider`, reqwest, and hyper families; `tokio` is limited to the existing cancellation-token path | Conforms |
 | Pure-helper FFI boundary | `cow-sdk-pure-helpers` remains independent of wasm-bindgen, `js-sys`, `web-sys`, and `serde-wasm-bindgen` | Conforms |
+| Canonical primitive layer dependency closure | The workspace-level `sha3` and `num-bigint` declarations carry zero first-party direct production consumers and only resolve through `[dev-dependencies]` or transitive paths; the alloy-core ABI workspace pins, `httpdate`, and `serde_jcs` are consumed at the documented callsites per [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
 
 ## Current Contract
 
@@ -107,6 +109,28 @@ reviewed advisory has one committed source of truth. The
 `docs-agree-on-release-gates` guard compares the public command examples
 against the same canonical register and fails if any ignored RustSec token
 lacks a matching rationale in this audit.
+
+### Canonical Primitive Layer Closure
+
+The workspace retains the `sha3 = "0.11.0"` and `num-bigint = "0.4.6"`
+declarations at the workspace-dependencies level so the per-crate
+`[dev-dependencies]` `sha3.workspace = true` declarations on
+`cow-sdk-contracts`, `cow-sdk-signing`, and `cow-sdk-cow-shed` resolve
+for their parity-oracle tests, and so the `num-bigint` transitive paths
+through `jsonschema` (consumed by `cow-sdk-app-data`) resolve. No
+first-party crate retains a production direct dependency on either
+crate after the canonical primitive layer landed: the `cow-sdk-app-data`
+digest path routes through `alloy_primitives::keccak256`, and the cow
+`Amount` and `SignedAmount` newtypes wrap `alloy_primitives::U256` and
+`alloy_primitives::I256` directly per
+[ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md).
+The alloy-core ABI workspace dependency family (`alloy-primitives`,
+`alloy-sol-types`, `alloy-sol-macro`, `alloy-dyn-abi`, `alloy-json-abi`,
+`alloy-serde`), `httpdate 1.0` (consumed by `cow-sdk-transport-policy`
+to parse `Retry-After` HTTP-date headers), and `serde_jcs 0.2.0`
+(consumed by `cow-sdk-app-data` for the RFC 8785 canonical JSON that
+feeds the keccak256 digest input) are consumed at the callsites
+enumerated by their respective per-surface audits.
 
 ### Workspace Default-Feature Policy
 

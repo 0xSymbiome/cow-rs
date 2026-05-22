@@ -1,7 +1,7 @@
 # Shared Logic Reviewability Audit
 
 Status: Current  
-Last reviewed: 2026-05-19
+Last reviewed: 2026-05-22
 Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary, plus the canonical primitive-layer invocation paths shared across the cow-rs workspace  
 Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, boundary-specific order DTO separation, or the canonical primitive-layer invocation paths (keccak256, U256 and quantity parsing, address encoding, hex serde, typed-primitive bridges, and identity-wire-form preservation) that materially affect correctness or reviewability  
 Related docs:
@@ -36,7 +36,7 @@ internal refactors that do not affect correctness or reviewability.
 | Shared signing payload preparation | Share payload construction between sync and async signing paths | Conforms |
 | Thin trading posting wrappers | Keep ergonomic entry points thin and route workflow logic through the async implementation path | Conforms |
 | Boundary-specific order DTO separation | Retain distinct DTOs only where ABI, API, normalized, or user-domain boundaries differ materially | Conforms |
-| Canonical primitive-layer invocation | Use one canonical entry point per shared primitive across the workspace, with parallel implementations consolidated under typed `alloy_primitives` re-exports per ADR 0052 | In progress |
+| Canonical primitive-layer invocation | Use one canonical entry point per shared primitive across the workspace, with cow-owned `#[repr(transparent)]` newtypes over `alloy_primitives` per ADR 0052 | Current |
 
 ## Current Contract
 
@@ -125,14 +125,6 @@ between variants is invisible to a reviewer who only reads one site.
   `ruint::Uint::FromStr` accepts four radices, both of which would
   silently relax the cow strict-decimal-only fail-closed contract.
 
-The canonical primitive-layer migration is incremental; the
-`parse_hex` family in `crates/contracts/src/primitives.rs`, the
-`parse_u256_quantity` duplicates across the alloy-adapter crates,
-the `cow_to_alloy_*` helpers in
-`crates/alloy-provider/src/conversion.rs`, and the
-`crates/core/src/types/hex.rs` cow-side hex helpers remain pending
-and will retire as the cow identity and numeric newtypes land their
-final `#[repr(transparent)]` shape per ADR 0052.
 `TypedDataDomain` remains a cow-owned struct (preserved as-is from
 the current working tree); the cow struct owns its
 `Serialize`/`Deserialize` impls and emits the canonical EIP-1193

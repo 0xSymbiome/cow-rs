@@ -1,13 +1,14 @@
 # WASM Callback Shape Design Audit
 
 Status: Current
-Last reviewed: 2026-05-11
+Last reviewed: 2026-05-22
 Owning surface: `cow-sdk-wasm` typed JavaScript wallet, signer, EIP-1271, cancellation, and HTTP callback boundary
 Refresh trigger: Changes to callback type declarations, callback registry ownership, signing callback payloads, cancellation signing, wallet timeout handling, or callback error mapping
 Related docs:
 - [ADR 0040](../adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
 - [ADR 0043](../adr/0043-callback-registry-internalization.md)
 - [ADR 0045](../adr/0045-async-signer-trait-narrowing.md)
+- [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [PROPERTIES.md](../../PROPERTIES.md)
 
 ## Scope
@@ -44,6 +45,15 @@ The package exposes typed callbacks for wallet and runtime responsibilities:
 `DigestSignerCallback`, `CustomEip1271Callback`, and `CowFetchCallback`.
 Each callback receives a typed payload or request DTO and may return either a
 plain value, a Promise, or a thenable.
+
+The cow identity newtypes (`Address`, `Hash32`, `AppDataHash`, `HexData`,
+`OrderUid`) and the cow numeric newtypes (`Amount`, `SignedAmount`) carry a
+`Tsify` derive gated to `target_family = "wasm"` per
+[ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md), so
+when a cow newtype crosses the JavaScript boundary in a callback payload
+the wasm-bindgen ABI shape is the canonical lowercase `0x`-prefixed hex
+string (for the byte-typed identity family) or the strict-decimal string
+(for the `Amount` / `SignedAmount` numeric family).
 
 ### Registry Ownership
 

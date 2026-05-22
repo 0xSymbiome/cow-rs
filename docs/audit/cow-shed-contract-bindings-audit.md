@@ -1,13 +1,14 @@
 # COW Shed Contract Bindings Audit
 
 Status: Current
-Last reviewed: 2026-05-17
+Last reviewed: 2026-05-22
 Owning surface: COW Shed Solidity excerpts, proxy creation-code artifacts, version-call evidence, and deployment registry rows
 Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, or the deployed `VERSION()` return value change upstream.
 Related docs:
 - [ADR 0049](../adr/0049-cow-shed-account-abstraction-proxy.md)
 - [ADR 0050](../adr/0050-eip1271-signature-blob-encoding.md)
 - [ADR 0051](../adr/0051-signing-owned-eip1271-signature-provider-trait.md)
+- [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [COW Shed App-Data Integration Audit](cow-shed-app-data-integration-audit.md)
 
 ## Scope
