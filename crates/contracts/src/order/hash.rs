@@ -8,6 +8,32 @@ use super::{NormalizedOrder, Order, OrderCancellations};
 use crate::ContractsError;
 use crate::primitives::{buy_balance_name, order_kind_name, sell_balance_name};
 
+/// Rejects construction paths that would emit `address(0)` as the order
+/// receiver. The cow-protocol GPv2 order surface treats `address(0)` as
+/// the "send to owner" sentinel via `GPv2Order.RECEIVER_SAME_AS_OWNER`,
+/// and the EthFlow contract additionally reverts at calldata-construction
+/// time with `ReceiverMustBeSet()` (selector `0xefc9ccdf`) because the
+/// order owner is always the EthFlow contract itself — routing proceeds
+/// to "owner" would strand ERC-20 tokens in the contract.
+///
+/// See the `EthFlowOrder.toCoWSwapOrder` library function in the
+/// `cowprotocol/ethflowcontract` Solidity surface for the upstream
+/// rationale; the cow `parity/source-lock.yaml` `id: ethflowcontract`
+/// block pins the canonical SHA.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::ZeroReceiver`] when `receiver` is the zero
+/// address.
+#[inline]
+pub(crate) fn reject_zero_receiver(receiver: &Address) -> Result<(), ContractsError> {
+    if receiver.is_zero() {
+        Err(ContractsError::ZeroReceiver)
+    } else {
+        Ok(())
+    }
+}
+
 /// Normalizes an order into its canonical contract hashing form.
 ///
 /// # Errors
@@ -15,15 +41,8 @@ use crate::primitives::{buy_balance_name, order_kind_name, sell_balance_name};
 /// Returns [`ContractsError::ZeroReceiver`] when the receiver is explicitly set
 /// to the zero address.
 pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError> {
-    if matches!(
-        order
-            .receiver
-            .as_ref()
-            .map(Address::normalized_key)
-            .as_deref(),
-        Some(ZERO_ADDRESS_LOWER)
-    ) {
-        return Err(ContractsError::ZeroReceiver);
+    if let Some(receiver) = order.receiver.as_ref() {
+        reject_zero_receiver(receiver)?;
     }
 
     Ok(NormalizedOrder::new(
@@ -137,8 +156,6 @@ fn alloy_domain_from(domain: &TypedDataDomain) -> Eip712Domain {
 fn decode_order_uid_bytes(uid: &OrderUid) -> AlloyBytes {
     AlloyBytes::from(uid.as_slice().to_vec())
 }
-
-const ZERO_ADDRESS_LOWER: &str = "0x0000000000000000000000000000000000000000";
 
 #[cfg(test)]
 mod tests {

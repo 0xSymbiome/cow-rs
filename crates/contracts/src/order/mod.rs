@@ -8,7 +8,7 @@ pub use self::sol_cancellations::OrderCancellations as GPv2OrderCancellations;
 pub use self::sol_types::Order as GPv2Order;
 pub use self::{hash::*, types::*, uid::*};
 
-mod hash;
+pub(crate) mod hash;
 pub(crate) mod sol_cancellations;
 pub(crate) mod sol_types;
 mod types;
