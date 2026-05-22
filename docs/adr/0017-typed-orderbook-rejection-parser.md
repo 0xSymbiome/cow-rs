@@ -1,10 +1,11 @@
 # ADR 0017: Typed `OrderbookRejection` Parser With Permanent Unknown-Tag Fallback
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-21
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: orderbook, errors, rejections, transport, error-typing
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -109,3 +110,16 @@ on the happy diagnostic path.
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The typed `fee_amount: Amount` field carried by
+`OrderbookRejection::SellAmountDoesNotCoverFee` resolves through the
+cow-owned `#[repr(transparent)]` newtype around `alloy_primitives::U256`
+per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
+decimal-string wire format is preserved through the cow-owned
+`Serialize`/`Deserialize` impls on `Amount`; the strict-decimal-only
+fail-closed contract on the `Deserialize` boundary rejects radix-prefixed
+payloads that alloy's underlying `ruint::Uint::FromStr` would otherwise
+accept.

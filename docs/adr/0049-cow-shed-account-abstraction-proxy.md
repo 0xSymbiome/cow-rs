@@ -1,11 +1,11 @@
 # ADR 0049: COW Shed Account-Abstraction Proxy
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-05-15
-- Last reviewed: 2026-05-15
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: cow-shed, account-abstraction, version-forwarding, proxy-derivation
-- Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md)
+- Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Context
 
@@ -187,3 +187,19 @@ not a dependency direction for cow-shed.
 
 - [COW Shed Contract Bindings Audit](../audit/cow-shed-contract-bindings-audit.md)
 - [COW Shed App Data Integration Audit](../audit/cow-shed-app-data-integration-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The cow-shed EIP-712 typed-data structures (`Call` with
+`target/value/callData/allowFailure/isDelegateCall` fields and
+`ExecuteHooks` over `Call[]`, `nonce`, `deadline`) are macro-emitted by
+`alloy_sol_types::sol!` per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
+proxy address derivation routes through `alloy_primitives::Address`
+plus `alloy_primitives::keccak256` for the CREATE2 init-code hash. The
+EOA signature byte order on the cow-shed hook signature payload is
+`r || s || v` (assembled through `alloy_primitives::Signature::from_erc2098`
+plus `Signature::as_bytes`); the whitespace-free EIP-712 type strings
+between commas, the `isDelegateCall = true` safety-comment-gated
+opt-in builder, and the version-forwarding contract on
+`CowShedVersion` stay unchanged.

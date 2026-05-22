@@ -1,10 +1,11 @@
 # ADR 0015: Typed Client-Side Order-Bounds Validator On Every Trading Submission Seam
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-21
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, validation, client-side, defense-in-depth, error-typing
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -107,3 +108,16 @@ under replay.
 - [Trading Order-Bounds Validator Audit](../audit/trading-order-bounds-validator-audit.md)
 - [Trading App-Data Merge Audit](../audit/trading-app-data-merge-audit.md)
 - [Trading EthFlow Owner Identity Audit](../audit/trading-ethflow-owner-identity-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The `Address`-typed payload fields on `ClientRejection`
+(`AppdataFromMismatch { appdata_signer: Address, from: Address }`,
+`SameBuyAndSellToken { token: Address }`, and
+`OwnerMismatch { expected: Address, recovered: Address }`) and the
+`app_data_signer: Option<Address>` parameter on
+`OrderBoundsValidator::validate` resolve through the cow-owned
+`#[repr(transparent)]` newtype around `alloy_primitives::Address` per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
+wire-form preservation (lowercase `0x`-prefixed hex) is locked through
+the cow-owned `Display`/`Serialize`/`Deserialize` impls on `Address`.

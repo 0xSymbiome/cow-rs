@@ -2,10 +2,10 @@
 
 - Status: Accepted (amended)
 - Date: 2026-05-07
-- Last reviewed: 2026-05-08
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, adapters, trading
-- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0037](0037-alloy-umbrella-adapter.md)
+- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0037](0037-alloy-umbrella-adapter.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -65,3 +65,19 @@ fields are malformed.
 **Proven by:**
 
 - [Transaction Receipt Shape Audit](../audit/transaction-receipt-shape-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The `transaction_hash: TransactionHash` field on `TransactionBroadcast`
+and the `transaction_hash`, `block_hash: Option<BlockHash>`,
+`from: Option<Address>`, and `to: Option<Address>` fields on
+`TransactionReceipt` resolve through the cow-owned
+`#[repr(transparent)]` newtypes per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md):
+`TransactionHash` and `BlockHash` are `pub type` aliases over the cow
+`Hash32` newtype around `alloy_primitives::B256`, and `Address` is the
+cow newtype around `alloy_primitives::Address`. The `TransactionStatus`
+post-EIP-658 success-or-reverted bit is read through the alloy
+`receipt.inner.status_or_post_state().as_eip658()` accessor in the
+adapter conversion; the optional-field tolerance contract on
+receipt-capable providers is preserved.

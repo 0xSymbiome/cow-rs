@@ -1,10 +1,11 @@
 # ADR 0014: Pluggable EIP-1271 Verification Cache With Conservative Caching Semantics
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-21
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, eip1271, caching, security
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -101,3 +102,15 @@ crates away.
 **Proven by:**
 
 - [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The `verifier: Address` parameter on `Eip1271VerificationCache::get` and
+`Eip1271VerificationCache::put` resolves through the cow-owned
+`#[repr(transparent)]` newtype around `alloy_primitives::Address` per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
+`digest: [u8; 32]` parameter stays a raw fixed-size byte array on the
+trait signature so the trait does not couple to a specific cow newtype
+choice; callers that already hold a typed `Hash32` cross the boundary
+via `Hash32::as_alloy()` plus `.into()` or via the
+`#[repr(transparent)]` layout guarantee on the cow newtype.

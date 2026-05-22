@@ -1,10 +1,11 @@
 # ADR 0018: Typed App-Data Merge As The Single Canonical Quote-To-Post Edit Path
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-22
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, app-data, metadata, validation, typed-boundaries
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0015](0015-client-side-order-bounds-validator.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -128,3 +129,14 @@ the three defects unreachable without reintroducing an opaque
 **Proven by:**
 
 - [Trading App-Data Merge Audit](../audit/trading-app-data-merge-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The `signer: Option<Address>` field on `cow_sdk_app_data::AppDataParams`
+that flows through `merge_and_seal_app_data` and `params_from_doc`
+resolves through the cow-owned `#[repr(transparent)]` newtype around
+`alloy_primitives::Address` per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
+wire-form preservation (lowercase `0x`-prefixed hex on the app-data
+metadata document) is locked through the cow-owned
+`Display`/`Serialize`/`Deserialize` impls on `Address`.

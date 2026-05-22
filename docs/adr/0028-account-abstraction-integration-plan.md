@@ -2,10 +2,10 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-27
-- Last reviewed: 2026-05-12
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: account-abstraction, provider, signing, eip1271, eip4337, eip7702, eip7212
-- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
+- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -79,3 +79,15 @@ dependencies in read-only flows and keeps order ownership reviewable.
 - [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)
 - [Browser Wallet Trust Posture Audit](../audit/browser-wallet-trust-posture-audit.md)
 - [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The contributor rule above on cross-ABI DTOs that include an `OrderUid`
+or `OrderDigest` is preserved in substance: the canonical hex string is
+sourced from the cow newtype's `to_hex_string()` accessor (owned hex
+form, following the Rust stdlib convention that `to_*` returns owned)
+or through the `Display` impl, never from `as_bytes()`. The prior
+`as_str()` accessor name retires per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md); the
+cow-owned newtype shape, the canonical lowercase hex wire form, and the
+PROP-WB-004 + contract-test enforcement are preserved unchanged.

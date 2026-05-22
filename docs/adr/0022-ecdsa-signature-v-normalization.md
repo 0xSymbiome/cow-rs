@@ -1,10 +1,11 @@
 # ADR 0022: Canonicalize ECDSA Signature `v` At The Contracts Boundary
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-23
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: contracts, signing, ecdsa, normalization, error-typing
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -103,3 +104,20 @@ produced the signature.
 **Proven by:**
 
 - [ECDSA Signature Normalization Audit](../audit/ecdsa-signature-normalization-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The contracts-boundary ECDSA signature surface routes recovery through
+`alloy_primitives::Signature::from_raw` plus the alloy-primitives
+secp256k1 recovery API on
+`cow_sdk_contracts::Signature::recover_ecdsa_address` per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
+`normalized_ecdsa_signature` helper continues to operate on the raw
+65-byte signature representation: it canonicalizes modern `v = 0` /
+`v = 1` onto the legacy Solidity-compatible `27` / `28` range, preserves
+already-canonical `27` / `28` inputs byte-for-byte, and rejects every
+other recovery byte through `ContractsError::InvalidSignatureRecoveryByte`
+and non-65-byte payloads through `ContractsError::InvalidSignatureLength`.
+The typed length and recovery-byte rejection contract on this helper
+stays independent of the alloy `Signature` surface so the
+hex-encoded `String` shape on the public helper signature is preserved.

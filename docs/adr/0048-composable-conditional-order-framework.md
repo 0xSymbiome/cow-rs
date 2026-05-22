@@ -1,11 +1,11 @@
 # ADR 0048: Composable Conditional Order Framework
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-05-15
-- Last reviewed: 2026-05-15
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: composable, conditional-orders, off-chain-orchestration, watch-tower-boundary
-- Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md)
+- Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Context
 
@@ -187,3 +187,22 @@ dependency of every facade consumer.
 
 - [Composable Contract Bindings Audit](../audit/composable-contract-bindings-audit.md)
 - [Composable Watch-Tower Boundary Audit](../audit/composable-watch-tower-boundary-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The `cow-sdk-composable` crate is not yet rooted in the workspace
+members list and is deferred to a later capability landing. The
+prescribed shape above anchors to the canonical primitive layer per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). When
+the crate lands per the watch-tower boundary above, the
+`#[non_exhaustive]` `PollResult` classification enum sources its
+custom-error selector constants from `alloy_sol_types::SolError::SELECTOR`
+and routes poll-error decoding through `alloy_sol_types::SolInterface`;
+the `Multiplexer` merkle helper routes through
+`rs_merkle::MerkleTree` with an `OzSortedPairKeccakHasher` wrapper that
+preserves the OpenZeppelin double-hashed leaves and sorted-pair
+internal-node contract; params hashing through
+`alloy_sol_types::SolValue::abi_encode` matches `abi.encode(...)`
+byte-for-byte; and the byte-typed identity parameters flowing through
+the composable encoders resolve through the cow-owned
+`#[repr(transparent)]` newtypes per ADR 0052.

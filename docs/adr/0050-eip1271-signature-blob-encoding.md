@@ -1,11 +1,11 @@
 # ADR 0050: EIP-1271 Signature Blob Encoding
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-05-15
-- Last reviewed: 2026-05-15
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: eip-1271, signature-encoding, composable, safe-muxer, erc1271-forwarder
-- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md)
+- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Context
 
@@ -162,3 +162,18 @@ fixture parity assertions catch any future whitespace creep.
 **Proven by:**
 
 - [Composable Contract Bindings Audit](../audit/composable-contract-bindings-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The `cow-sdk-composable` crate that hosts the Shape A and Shape B
+encoders is not yet rooted in the workspace members list and is
+deferred to a later capability landing. The prescribed encoding above
+anchors to the canonical primitive layer per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). When
+the encoders land, Shape A and Shape B encode through
+`alloy_sol_types::SolValue::abi_encode` and decode through the alloy
+`SolInterface` / `SolValue` family; the whitespace-free EIP-712 type
+strings between commas in declaration order are preserved
+byte-identically with the pinned upstream test vectors at
+`parity/fixtures/composable/safe_muxer_signature_blob.json` and
+`parity/fixtures/composable/forwarder_signature_blob.json`.

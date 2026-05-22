@@ -1,10 +1,11 @@
 # ADR 0020: EthFlow Transaction Bundle Carries The Signer-Derived Owner For Pre-HTTP Validation
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-22
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, eth-flow, validation, client-side, defense-in-depth
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0015](0015-client-side-order-bounds-validator.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -127,3 +128,15 @@ the signer.
 **Proven by:**
 
 - [Trading EthFlow Owner Identity Audit](../audit/trading-ethflow-owner-identity-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The `from: cow_sdk_core::Address` field on `EthFlowTransaction` and the
+`Address`-typed `from` parameter on `EthFlowTransaction::new` resolve
+through the cow-owned `#[repr(transparent)]` newtype around
+`alloy_primitives::Address` per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
+owner identity carried onto the bundle and read by the native-currency
+submission seam preserves the lowercase `0x`-prefixed hex wire form
+through the cow-owned `Display`/`Serialize`/`Deserialize` impls on
+`Address`.

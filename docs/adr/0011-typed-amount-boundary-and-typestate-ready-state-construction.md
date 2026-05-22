@@ -2,10 +2,10 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-17
-- Last reviewed: 2026-05-04
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, trading, builders, semver
-- Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
+- Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -117,3 +117,25 @@ architecture record.
 
 - [Trading SDK Runtime Prerequisites Audit](../audit/trading-sdk-runtime-prerequisites-audit.md)
 - [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+`Amount` and `SignedAmount` ship as cow-owned `#[repr(transparent)]`
+newtypes around `alloy_primitives::U256` and `alloy_primitives::I256`
+respectively per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
+newtypes carry cow-owned `Display`, `Serialize`, `Deserialize`, and
+arithmetic operator (`Add`, `Sub`, `Mul`, `AddAssign`, etc.) impls,
+plus checked, saturating, and `pow` arithmetic surfaces. The
+decimal-string wire format is locked by the cow-owned
+`Serialize`/`Deserialize` impls; the strict-decimal-only fail-closed
+contract on the `Deserialize` boundary rejects `0x`/`0X`/`0o`/`0O`/`0b`/`0B`-prefixed
+input that alloy's default `ruint::Uint::FromStr` impl would otherwise
+accept silently. The Decision body's references to `Amount` as a "typed
+`BigUint`" and to the `as_biguint` / `into_biguint` accessor names
+predate the canonical primitive layer; the recorded decision (typed
+atomic-vs-decimal amount boundary and the typestate-builder terminals)
+is preserved verbatim while the inner type and accessor surface follow
+ADR 0052. The owned accessor surface on `Amount` is `as_u256` /
+`into_u256` (and equivalent `as_i256` / `into_i256` on `SignedAmount`),
+named to match the canonical alloy primitive that backs each newtype.

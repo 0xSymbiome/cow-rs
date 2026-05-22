@@ -1,10 +1,11 @@
 # ADR 0023: Remove Legacy Compatibility Shims That Produced Protocol-Incorrect Order Digests
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-24
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: contracts, core, hashing, compatibility
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -70,3 +71,20 @@ for protocol-correct hashing.
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md)
 - `PROP-CON-006` in [PROPERTIES.md](../../PROPERTIES.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+`cow_sdk_contracts::hash_order` and
+`cow_sdk_contracts::compute_order_uid` route the canonical
+`UnsignedOrder` -> `Order` digest path through
+`alloy_sol_types::SolStruct::eip712_signing_hash` on the macro-emitted
+`crate::order::sol_types::Order` struct per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
+EIP-712 hashing seam uses `alloy_sol_types::Eip712Domain` (constructed
+through the `TypedDataDomain::into_alloy_domain()` adapter on the cow
+`TypedDataDomain` struct) and ultimately consumes
+`alloy_primitives::keccak256` for every digest. The byte-typed identity
+fields on the cow `Order` struct (`Address`, `Amount`, `OrderUid`) are
+cow-owned `#[repr(transparent)]` newtypes around their alloy primitives
+per ADR 0052; the digest output is byte-identical against every pinned
+upstream signing fixture.

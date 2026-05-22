@@ -1,12 +1,12 @@
 # ADR 0032: Deployment Authority Uses Machine-Readable Provenance
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-29
-- Last reviewed: 2026-04-29
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: deployments, provenance, contracts, release
 - Anchors: Principle 1 (supporting); Principle 10 (supporting)
-- Related: [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md)
+- Related: [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -78,3 +78,15 @@ Principle 10, Evidence-Backed Public Claims.
 - [Deployment Registry Audit](../audit/deployment-registry-audit.md)
 - `crates/contracts/tests/deployment_provenance_contract.rs`
 - `scripts/validation-smoke/tests/registry_confirm.rs`
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The deployed-contract addresses in `crates/contracts/registry.toml` and
+`crates/contracts/deployment-provenance.yaml` deserialize through the
+cow-owned `#[repr(transparent)]` newtype around
+`alloy_primitives::Address` per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
+`code_hash = keccak256(eth_getCode)` invariant for live confirmation
+routes through `alloy_primitives::keccak256`; the live-RPC bytecode
+comparison preserves bit-for-bit identity against the committed
+evidence.

@@ -1,10 +1,11 @@
 # ADR 0005: Boundary-Specific Runtime Contracts And Strong Domain Types
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-10
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, traits, boundaries
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0002](0002-dedicated-trading-orchestration-crate.md)
+- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -55,3 +56,17 @@ actual runtime seams.
 - [Credential Surface Contract Hygiene Audit](../audit/credential-surface-contract-hygiene-audit.md)
 - [Shared Logic Reviewability Audit](../audit/shared-logic-reviewability-audit.md)
 - [Cooperative Cancellation Contract Audit](../audit/cooperative-cancellation-contract-audit.md)
+
+## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+
+The strong-domain-type contract above is anchored to the canonical
+primitive layer per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
+cow-named identity types `Address`, `Hash32`, `AppDataHash`, `HexData`,
+and `OrderUid` ship as cow-owned `#[repr(transparent)]` newtypes around
+`alloy_primitives::Address`, `alloy_primitives::B256` (twice),
+`alloy_primitives::Bytes`, and `alloy_primitives::FixedBytes<56>`
+respectively; the type-system distinction between same-width byte
+primitives (`Hash32` vs `AppDataHash`, both 32 bytes wide) is preserved
+by the newtype layer rather than by naming convention or extension
+traits. The wire-form preservation contract is unchanged.
