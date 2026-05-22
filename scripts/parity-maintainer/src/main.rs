@@ -10,6 +10,7 @@ use clap::{Args, Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 
 mod audit_refresh;
+mod audit_self_pinning;
 mod check_freshness;
 mod composable_fixtures;
 mod cow_shed_fixtures;
@@ -449,6 +450,10 @@ enum Commands {
     /// Validate that every catalogued composable and COW Shed parity fixture
     /// file is present on disk under the supplied repository root.
     ValidateFixtureCatalog(ValidateFixtureCatalogArgs),
+    /// Audit every JSON fixture under `parity/fixtures/` for a structured
+    /// authority annotation and report fixtures that fall into a rejected
+    /// class without coverage by `parity/self-pinning-allowlist.yaml`.
+    AuditSelfPinning(audit_self_pinning::AuditSelfPinningArgs),
 }
 
 #[derive(Debug, Args)]
@@ -626,6 +631,7 @@ fn main() -> Result<()> {
             );
             Ok(())
         }
+        Commands::AuditSelfPinning(args) => audit_self_pinning::run(&args),
     }
 }
 

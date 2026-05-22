@@ -1,0 +1,133 @@
+# Self-pinning allowlist for parity/fixtures/**/*.json
+#
+# Every entry below is a fixture that the parity-maintainer audit-self-pinning
+# gate (`cargo parity-audit-self-pinning`) would otherwise reject. Each entry
+# carries a documented justification or defer_reason, an explicit review_trigger
+# naming the future event under which the entry is re-evaluated, and (where
+# applicable) an upgrade_to plan describing the structured authority block the
+# fixture is targeted to land.
+#
+# Re-evaluating an entry means one of:
+#   1. Upgrading the fixture to a permit class (a structured `expected_from:`
+#      block, an `@source_ref:` citation, or a clear pure-input shape) and
+#      removing the entry from this allowlist.
+#   2. Re-affirming the entry with an updated review_trigger.
+#
+# This file is read by `cargo parity-audit-self-pinning` on every CI run.
+# The full authority hierarchy is documented in
+# docs/adr/0012-alloy-sol-bindings-and-registry-authority.md.
+
+schema_version: 1
+
+grandfathered:
+  - path: parity/fixtures/ecdsa/v_normalization.json
+    class: RustSelfPin
+    justification: |
+      ECDSA v normalization is a deterministic four-input mapping
+      (0 -> 27, 1 -> 28, 27 -> 27, 28 -> 28) backed by EIP-2098 and EIP-155
+      canonical-v semantics per ADR 0022. The mapping has no equivalent
+      Solidity authority outside the spec documents; it is a wire-encoding
+      convention exercised by unit tests in crates/contracts/src/signature.rs.
+    upgrade_to: |
+      Replace the top-level source annotation with an expected_from array
+      citing EIP-2098 (Compact Signature Format), EIP-155 (Signature
+      Encoding), and ADR-0022 (Canonical v). Once upgraded, remove this
+      entry from the allowlist.
+    review_trigger: ADR 0022 amendment, or upgrade to expected_from shape per upgrade_to
+
+  - path: parity/fixtures/composable/forwarder_signature_blob.json
+    class: FreeFormProse
+    defer_reason: composable-out-of-scope
+    review_trigger: composable crate landing in cow-rs
+
+  - path: parity/fixtures/composable/multiplexer_leaf.json
+    class: FreeFormProse
+    defer_reason: composable-out-of-scope
+    review_trigger: composable crate landing in cow-rs
+
+  - path: parity/fixtures/composable/params_hash.json
+    class: FreeFormProse
+    defer_reason: composable-out-of-scope
+    review_trigger: composable crate landing in cow-rs
+
+  - path: parity/fixtures/composable/safe_muxer_signature_blob.json
+    class: FreeFormProse
+    defer_reason: composable-out-of-scope
+    review_trigger: composable crate landing in cow-rs
+
+  - path: parity/fixtures/composable/selectors.json
+    class: Missing
+    defer_reason: composable-out-of-scope
+    review_trigger: composable crate landing in cow-rs
+
+  - path: parity/fixtures/composable/poll_result_selectors.json
+    class: Missing
+    defer_reason: composable-out-of-scope
+    review_trigger: composable crate landing in cow-rs
+
+  - path: parity/fixtures/composable/poll_result_classification.json
+    class: Missing
+    defer_reason: composable-out-of-scope
+    review_trigger: composable crate landing in cow-rs
+
+  - path: parity/fixtures/composable/conditional_order_params_decode.json
+    class: Missing
+    defer_reason: composable-out-of-scope
+    review_trigger: composable crate landing in cow-rs
+
+  - path: parity/fixtures/composable/perpetual_stable_swap_overflow.json
+    class: Missing
+    defer_reason: composable-out-of-scope
+    review_trigger: composable crate landing in cow-rs
+
+  - path: parity/fixtures/cow_shed/proxy_addresses.json
+    class: FreeFormProse
+    justification: |
+      The COW Shed proxy address derives from the CREATE2 formula applied to
+      the COW Shed factory. The Solidity source is pinned via
+      parity/source-lock.yaml under cow-shed at the documented commit; this
+      fixture documents the formula application. Future expansion will move
+      the attribution to an expected_from array citing the COW Shed Solidity
+      source by file and line.
+    upgrade_to: |
+      Replace the top-level source annotation with an expected_from array
+      that includes a solidity-source entry citing the cow-shed factory
+      source by repository, commit, path, and symbol.
+    review_trigger: COW Shed surface refresh, or upgrade to expected_from shape per upgrade_to
+
+# Entries below are expectation-bearing fixtures targeted for upgrade in the
+# same change set that lands the audit-self-pinning gate in blocking mode.
+# After their `expected_from:` blocks land, these entries are removed and the
+# `in_flight_upgrade:` block becomes empty (or is deleted entirely).
+in_flight_upgrade:
+  - path: parity/fixtures/cow_shed/execute_hooks_digest.json
+    class: Missing
+    upgrade_to: |
+      Add an expected_from array citing the COW Shed Solidity source at
+      src/COWShed.sol#hashHooks (by repo, commit, path, symbol) and the
+      EIP-712 spec for typedDataHash.
+    review_trigger: this change set (the audit gate flips to blocking once the upgrade lands)
+
+  - path: parity/fixtures/cow_shed/execute_hooks_calldata.json
+    class: Missing
+    upgrade_to: |
+      Add an expected_from array citing the COW Shed Solidity source at
+      src/COWShed.sol#executeHooks and the Solidity ABI specification for
+      the encoding contract.
+    review_trigger: this change set
+
+  - path: parity/fixtures/cow_shed/domain_separator.json
+    class: Missing
+    upgrade_to: |
+      Add an expected_from array citing the COW Shed Solidity source at
+      src/COWShed.sol#domainSeparator and EIP-712 for the domain-separator
+      computation.
+    review_trigger: this change set
+
+  - path: parity/fixtures/cow_shed/eoa_signature_byte_order.json
+    class: Missing
+    upgrade_to: |
+      Add an expected_from array citing EIP-2098 (Compact Signature Format)
+      and ADR-0022 (Canonical v) as the protocol-law authorities for the
+      compact signature byte order.
+    review_trigger: this change set
