@@ -11,8 +11,8 @@ use cow_sdk_verification_console::{
 wasm_bindgen_test_configure!(run_in_browser);
 
 const OWNER: &str = "0x4444444444444444444444444444444444444444";
-const MAINNET_WETH: &str = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-const MAINNET_USDC: &str = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
+const MAINNET_WETH: &str = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
+const MAINNET_USDC: &str = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
 
 #[wasm_bindgen_test]
 fn property_0_exports_are_callable_and_constants_are_present() {
