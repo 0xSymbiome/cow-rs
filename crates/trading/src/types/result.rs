@@ -38,7 +38,6 @@ pub struct QuoteResults {
 impl QuoteResults {
     /// Creates a quote-results payload from its required fields.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
     pub const fn new(
         trade_parameters: TradeParameters,
         suggested_slippage_bps: u32,

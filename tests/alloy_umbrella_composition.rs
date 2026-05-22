@@ -191,7 +191,10 @@ fn order_uid() -> OrderUid {
     OrderUid::new(ORDER_UID).unwrap()
 }
 
-#[allow(dead_code)]
+#[allow(
+    dead_code,
+    reason = "test-helper fixture stays available for transaction-request shape coverage even when the active assertions exercise only the helper subset that the current test rows need"
+)]
 fn sample_transaction() -> TransactionRequest {
     TransactionRequest::new(
         Some(address(COW)),

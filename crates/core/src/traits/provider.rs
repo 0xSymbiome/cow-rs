@@ -192,7 +192,10 @@ pub trait Provider {
 ///     requires_signing(&provider);
 /// }
 /// ```
-#[allow(async_fn_in_trait)]
+#[expect(
+    async_fn_in_trait,
+    reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
+)]
 pub trait AsyncProvider {
     /// Error type returned by provider operations.
     type Error;
@@ -413,7 +416,10 @@ where
 /// );
 /// # }
 /// ```
-#[allow(async_fn_in_trait)]
+#[expect(
+    async_fn_in_trait,
+    reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
+)]
 pub trait AsyncSigningProvider: AsyncProvider {
     /// Signer type exposed by this provider.
     type Signer: AsyncSigner<Error = Self::Error>;

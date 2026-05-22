@@ -71,7 +71,6 @@ pub struct TradeParameters {
 impl TradeParameters {
     /// Creates a swap-style trade request with the required trade fields.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
     pub const fn new(
         kind: OrderKind,
         sell_token: Address,
@@ -236,7 +235,6 @@ pub struct LimitTradeParameters {
 impl LimitTradeParameters {
     /// Creates a limit-order request with the required trade fields.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
     pub const fn new(
         kind: OrderKind,
         sell_token: Address,

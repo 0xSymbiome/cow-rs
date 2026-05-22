@@ -82,7 +82,10 @@ pub trait Signer {
 ///
 /// This narrow trait lets async flows ask only for signer ownership when no
 /// signing operation is required.
-#[allow(async_fn_in_trait)]
+#[expect(
+    async_fn_in_trait,
+    reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
+)]
 pub trait AsyncOwner {
     /// Error type returned by owner resolution.
     type Error;
@@ -96,7 +99,10 @@ pub trait AsyncOwner {
 }
 
 /// Asynchronous EIP-712 typed-data signing capability.
-#[allow(async_fn_in_trait)]
+#[expect(
+    async_fn_in_trait,
+    reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
+)]
 pub trait AsyncTypedDataSigner {
     /// Error type returned by typed-data signing.
     type Error;
@@ -132,7 +138,10 @@ pub trait AsyncTypedDataSigner {
 }
 
 /// Asynchronous digest-signing capability.
-#[allow(async_fn_in_trait)]
+#[expect(
+    async_fn_in_trait,
+    reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
+)]
 pub trait AsyncDigestSigner {
     /// Error type returned by digest signing.
     type Error;
@@ -146,7 +155,10 @@ pub trait AsyncDigestSigner {
 }
 
 /// Asynchronous EIP-1193 request capability.
-#[allow(async_fn_in_trait)]
+#[expect(
+    async_fn_in_trait,
+    reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
+)]
 pub trait AsyncEip1193 {
     /// Error type returned by provider requests.
     type Error;
@@ -165,7 +177,10 @@ pub trait AsyncEip1193 {
 /// so native trading flows can keep one async-first internal path. Narrow async
 /// capability traits above are preferred for callback-shaped adapters that only
 /// expose one signing operation.
-#[allow(async_fn_in_trait)]
+#[expect(
+    async_fn_in_trait,
+    reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
+)]
 pub trait AsyncSigner {
     /// Error type returned by signer operations.
     type Error;

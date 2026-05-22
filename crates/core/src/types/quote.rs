@@ -61,7 +61,10 @@ pub struct QuoteRequest {
 impl QuoteRequest {
     /// Creates a user-domain quote request from its optional input fields.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "constructor mirrors the public field set so callers can migrate off struct-literal construction without losing explicit control over any wire field"
+    )]
     pub const fn new(
         kind: OrderKind,
         sell_token: Option<Address>,
@@ -121,7 +124,10 @@ pub struct QuoteResponse {
 impl QuoteResponse {
     /// Creates a user-domain quote response from the canonical amount fields.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "constructor mirrors the public field set so callers can migrate off struct-literal construction without losing explicit control over any wire field"
+    )]
     pub const fn new(
         kind: OrderKind,
         sell_amount: Amount,
@@ -269,7 +275,10 @@ pub struct QuoteAmountsAndCosts<T = Amount> {
 impl<T> QuoteAmountsAndCosts<T> {
     /// Creates a quote-stage breakdown from its individual stage amounts.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "constructor mirrors the public field set so callers can migrate off struct-literal construction without losing explicit control over any wire field"
+    )]
     pub const fn new(
         is_sell: bool,
         costs: Costs<T>,

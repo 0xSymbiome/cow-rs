@@ -207,7 +207,10 @@ impl OrderCreation {
     /// to satisfy the services `NonZeroFee` constraint and the EIP-712
     /// struct-hash contract.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "constructor mirrors the public field set so callers can migrate off struct-literal construction without losing explicit control over any wire field"
+    )]
     pub fn new(
         sell_token: Address,
         buy_token: Address,
@@ -520,7 +523,10 @@ pub struct StoredOrderQuote {
 impl StoredOrderQuote {
     /// Creates stored quote metadata from every required `OpenAPI` field.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "constructor mirrors the public field set so callers can migrate off struct-literal construction without losing explicit control over any wire field"
+    )]
     pub fn new(
         gas_amount: impl Into<String>,
         gas_price: impl Into<String>,
@@ -789,7 +795,10 @@ impl Order {
     /// craft an `Order` for tests or fixtures set additional state through
     /// direct field access on the returned instance.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "constructor mirrors the public field set so callers can migrate off struct-literal construction without losing explicit control over any wire field"
+    )]
     pub fn new(
         sell_token: Address,
         buy_token: Address,

@@ -1,4 +1,7 @@
-#![allow(dead_code)]
+#![allow(
+    dead_code,
+    reason = "shared test-helper module aggregates fixtures, constants, and adapters that not every integration test binary exercises; an integration test may use only a subset of the shared helpers without leaving the others permanently unused"
+)]
 
 use std::{
     collections::BTreeMap,
@@ -576,10 +579,7 @@ impl Provider for MockProvider {
         if let Some(message) = state.get_code_error.clone() {
             return Err(message);
         }
-        Ok(state
-            .code_by_address
-            .get(&address.to_hex_string())
-            .cloned())
+        Ok(state.code_by_address.get(&address.to_hex_string()).cloned())
     }
 
     fn get_transaction_receipt(

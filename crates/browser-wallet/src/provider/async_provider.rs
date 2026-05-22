@@ -14,7 +14,6 @@ use crate::BrowserWalletError;
 
 use super::Eip1193Provider;
 
-#[allow(async_fn_in_trait)]
 impl AsyncProvider for Eip1193Provider {
     type Error = BrowserWalletError;
 

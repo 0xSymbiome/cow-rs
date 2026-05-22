@@ -154,7 +154,10 @@ pub struct Trade {
 impl Trade {
     /// Creates a trade DTO with the required identity and execution fields.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "constructor mirrors the public field set so callers can migrate off struct-literal construction without losing explicit control over any wire field"
+    )]
     pub const fn new(
         block_number: u64,
         log_index: u64,

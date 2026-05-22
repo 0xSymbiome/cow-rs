@@ -838,12 +838,11 @@ async fn api_errors_keep_plain_text_payloads_out_of_the_json_decoder() {
 /// captured-on-Text contract.
 #[tokio::test]
 async fn quote_422_axum_json_rejection_plain_text_is_captured_as_text() {
+    const SERVICES_422_PLAIN_TEXT: &str = "Failed to deserialize the JSON body into the target type: missing field `from` \
+         at line 1 column 2";
+
     let policy = retry_policy(1);
     let limiter = default_limiter();
-
-    const SERVICES_422_PLAIN_TEXT: &str =
-        "Failed to deserialize the JSON body into the target type: missing field `from` \
-         at line 1 column 2";
 
     let error = execute_json_with::<serde_json::Value, _, _>(&policy, &limiter, || async {
         Ok(ResponseEnvelope::text(422, SERVICES_422_PLAIN_TEXT))

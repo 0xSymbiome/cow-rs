@@ -32,9 +32,15 @@ struct Row {
 #[derive(Debug, Deserialize)]
 struct Inputs {
     r: String,
-    #[allow(dead_code)]
+    #[expect(
+        dead_code,
+        reason = "field participates in the serde deserialization shape that mirrors the parity fixture row layout but the contract assertion path only exercises the compact_2098 form and the r byte"
+    )]
     s: String,
-    #[allow(dead_code)]
+    #[expect(
+        dead_code,
+        reason = "field participates in the serde deserialization shape that mirrors the parity fixture row layout but the contract assertion path only exercises the compact_2098 form and the r byte"
+    )]
     v: u8,
     compact_2098: String,
 }

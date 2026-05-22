@@ -71,7 +71,6 @@ impl fmt::Debug for OpaqueTransport {
     }
 }
 
-#[allow(async_fn_in_trait)]
 impl AsyncProvider for RpcAlloyProvider {
     type Error = AsyncProviderError;
 

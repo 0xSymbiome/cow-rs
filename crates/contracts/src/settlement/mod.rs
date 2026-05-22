@@ -228,7 +228,10 @@ impl Trade {
     #[must_use]
     // Mirrors the full current public field set so callers can migrate off
     // struct literals without losing explicit control over any wire field.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "constructor mirrors the public field set so callers can migrate off struct-literal construction without losing explicit control over any wire field"
+    )]
     pub const fn new(
         sell_token_index: usize,
         buy_token_index: usize,

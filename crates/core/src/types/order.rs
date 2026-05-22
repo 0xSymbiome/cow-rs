@@ -202,7 +202,10 @@ pub struct UnsignedOrder {
 impl UnsignedOrder {
     /// Creates an unsigned order from the canonical EIP-712 field set.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "constructor mirrors the canonical EIP-712 field set so callers can migrate off struct-literal construction without losing explicit control over any wire field"
+    )]
     pub const fn new(
         sell_token: Address,
         buy_token: Address,

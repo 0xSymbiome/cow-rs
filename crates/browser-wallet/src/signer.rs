@@ -122,7 +122,6 @@ impl Eip1193Signer {
     }
 }
 
-#[allow(async_fn_in_trait)]
 impl AsyncSigner for Eip1193Signer {
     type Error = BrowserWalletError;
 

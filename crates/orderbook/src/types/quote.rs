@@ -408,7 +408,6 @@ impl QuoteData {
     /// network-cost amount defaults to `"0"` and is populated from the
     /// orderbook wire on deserialization.
     #[must_use]
-    #[allow(clippy::too_many_arguments)]
     pub const fn new(
         sell_token: Address,
         buy_token: Address,

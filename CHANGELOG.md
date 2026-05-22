@@ -829,6 +829,25 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- The workspace clippy lint set adds
+  `clippy::allow_attributes_without_reason = "warn"`, so every `#[allow(...)]`
+  and `#[expect(...)]` attribute in shipped sources must carry an explicit
+  `reason = "..."` field. The existing bare suppressions were either
+  rewritten as `#[expect(name, reason = "...")]` where the lint fires
+  reliably (the seven async-fn-in-trait trait definitions on
+  `cow-sdk-core` plus the constructor sites that exceed the
+  `clippy::too_many_arguments` threshold and the camelCase / partial-field
+  fixture rows under contract and parity tests), as `#[allow(name, reason
+  = "...")]` where the lint may not fire on every build (the six shared
+  `tests/common/mod.rs` helper modules and the example provider
+  scaffold in `cow-sdk-trading`), or deleted entirely where the lint
+  never fired (the four `impl AsyncProvider | AsyncSigner |
+  AsyncSigningProvider` blocks in `cow-sdk-browser-wallet` and
+  `cow-sdk-alloy-provider`, plus three constructors at or below the
+  seven-argument threshold). Future bare `#[allow]` additions fail the
+  `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+  gate so the rationale always travels with the call site.
+
 - Cryptographic primitives across the workspace route through
   `alloy_primitives` and `alloy_sol_types` per ADR 0052: EIP-712 domain
   separators and message digests through `Eip712Domain::separator` and

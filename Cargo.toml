@@ -44,6 +44,10 @@ broken_intra_doc_links = "deny"
 # override the group so a specific deny wins over the group warn.
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
+# Every `#[allow]` and `#[expect]` attribute in the workspace must carry an
+# explicit `reason = "..."` field so the rationale for the suppression travels
+# with the call site rather than living only in commit history or review notes.
+allow_attributes_without_reason = "warn"
 # async_trait(?Send) is the deliberate bridge shape for browser-wallet and
 # other wasm-bound async surfaces, so the nursery future-Send check flags
 # every intentional non-Send future by design.

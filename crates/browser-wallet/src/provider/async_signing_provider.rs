@@ -4,7 +4,6 @@ use crate::{BrowserWalletError, signer::Eip1193Signer};
 
 use super::Eip1193Provider;
 
-#[allow(async_fn_in_trait)]
 impl AsyncSigningProvider for Eip1193Provider {
     type Signer = Eip1193Signer;
 

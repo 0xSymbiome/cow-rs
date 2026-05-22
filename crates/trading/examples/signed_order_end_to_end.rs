@@ -286,10 +286,12 @@ mod native {
 
     /// Optional [`Provider`] implementation kept for completeness; the trading
     /// flow used by this example does not require it.
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "example provider scaffold is kept beside the signer that the trading example actually exercises so readers can see the symmetric Provider shape"
+    )]
     struct ExampleProvider;
 
-    #[allow(dead_code)]
     impl Provider for ExampleProvider {
         type Signer = ExampleSigner;
         type Error = ExampleSignerError;

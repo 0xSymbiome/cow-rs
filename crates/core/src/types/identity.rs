@@ -165,7 +165,6 @@ impl Address {
     pub const fn byte_length(&self) -> usize {
         Self::BYTE_LENGTH
     }
-
 }
 
 impl fmt::Display for Address {

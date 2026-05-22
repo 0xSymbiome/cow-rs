@@ -41,7 +41,10 @@ struct DomainCase {
 }
 
 #[derive(Debug, Deserialize)]
-#[allow(non_snake_case)]
+#[expect(
+    non_snake_case,
+    reason = "fields mirror the upstream services JSON keys in camelCase form so the serde deserialization matches the on-disk parity fixture row layout"
+)]
 struct OrderCase {
     sellToken: String,
     buyToken: String,
