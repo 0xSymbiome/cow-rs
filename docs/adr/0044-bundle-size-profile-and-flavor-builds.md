@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-05-11
-- Last reviewed: 2026-05-12
+- Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, npm, bundle-size, package-flavors
 - Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0047](0047-typescript-facade-architecture.md)
@@ -11,7 +11,7 @@
 
 `cow-sdk-wasm` ships as one Cargo crate and one npm package with multiple
 feature-scoped flavor builds. The public package exposes default, orderbook,
-signing, full, Cloudflare, and Cloudflare wasm subpaths through the package
+signing, Cloudflare, and Cloudflare wasm subpaths through the package
 exports map. Release builds use the workspace release profile and a wasm
 optimization pass before package verification.
 
@@ -79,3 +79,12 @@ recommended choice.
 - [WASM Performance Budget Audit](../audit/wasm-performance-budget-audit.md)
 - [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
 - [cow-sdk-wasm Comparative Benchmark Validation Note](../audit/cow-sdk-wasm-comparative-benchmark-validation-note.md)
+
+## Amendment 2026-05-22: shipped flavor enumeration
+
+The `full` flavor entry was retired before any consumer release. Its feature
+set was mechanically identical to `default` (verified through the shipped
+`flavours.json` descriptor), so it published a duplicate artifact under a
+second subpath without consumer-visible value. The shipped flavor enumeration
+is now four entries: `default`, `orderbook`, `signing`, and `cloudflare`. The
+`./full` subpath is removed from the package exports map.

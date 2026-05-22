@@ -1,7 +1,7 @@
 # WASM Performance Budget Audit
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-22
 Owning surface: `cow-sdk-wasm` release profile, wasm optimization pass, flavor build outputs, and size-budget gate
 Refresh trigger: Changes to wasm feature flavors, package build scripts, release profile size settings, wasm optimization flags, package export targets, or measured size budgets; Cloudflare Workers compressed-size limit changes
 Related docs:
@@ -14,7 +14,7 @@ Related docs:
 
 This audit covers:
 
-- feature-scoped wasm flavor builds for default, orderbook, signing, full, and
+- feature-scoped wasm flavor builds for default, orderbook, signing, and
   Cloudflare targets
 - package build scripts that render package exports and run a wasm optimization
   pass
@@ -38,7 +38,7 @@ application bundler behavior.
 ### Flavor Builds
 
 The package keeps one installable package while exposing flavor-specific public
-subpaths. Default, orderbook, signing, full, and Cloudflare outputs have their
+subpaths. Default, orderbook, signing, and Cloudflare outputs have their
 own declarations and raw wasm snapshots. Public imports use those subpaths
 instead of generated `dist/raw` paths.
 
@@ -66,8 +66,8 @@ equivalent feature subsets.
 
 ### Cloudflare runtime gates
 
-Compressed-size compatibility is enforced on every release build, but full
-Cloudflare Workers support depends on additional release-bundle and
+Compressed-size compatibility is enforced on every release build, but
+end-to-end Cloudflare Workers support depends on additional release-bundle and
 startup-time gates that are tracked separately:
 
 - Release-bundle verification with `wrangler deploy --dry-run`.

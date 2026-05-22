@@ -55,7 +55,6 @@ flavor-orderbook = [
     "transport-policy",
 ]
 flavor-signing = ["signing"]
-flavor-full = ["flavor-default"]
 flavor-cloudflare = [
     "orderbook",
     "signing",

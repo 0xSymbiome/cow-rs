@@ -31,11 +31,6 @@ declare global {
   }
 }
 
-function typedDataForWallet(envelope: { types?: unknown }): string {
-  const types = envelope.types instanceof Map ? Object.fromEntries(envelope.types) : envelope.types;
-  return JSON.stringify({ ...envelope, types });
-}
-
 export async function connectAndSign(
   provider: EthereumProvider = window.ethereum as EthereumProvider
 ): Promise<WasmEnvelope<SignedOrderDto>> {
@@ -56,7 +51,7 @@ export async function connectAndSign(
     async (envelope) => {
       const signature = await provider.request({
         method: "eth_signTypedData_v4",
-        params: [owner, typedDataForWallet(envelope)]
+        params: [owner, JSON.stringify(envelope)]
       });
       if (typeof signature !== "string") {
         throw new Error("MetaMask did not return a signature");

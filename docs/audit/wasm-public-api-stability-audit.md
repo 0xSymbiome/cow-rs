@@ -1,7 +1,7 @@
 # WASM Public API Stability Audit
 
 Status: Current
-Last reviewed: 2026-05-11
+Last reviewed: 2026-05-22
 Owning surface: `cow-sdk-wasm` TypeScript facade declarations, package exports, runtime config shapes, error envelopes, and transport policy configuration
 Refresh trigger: Changes to facade declarations, package export maps, raw wasm-bindgen exports, TypeScript config objects, transport policy fields, or JS-visible error envelope schema
 Related docs:
@@ -62,9 +62,9 @@ handled without losing the raw payload.
 Primary implementation points:
 
 - `crates/wasm/npm/src/index.ts`
+- `crates/wasm/npm/src/default.ts`
 - `crates/wasm/npm/src/orderbook.ts`
 - `crates/wasm/npm/src/signing.ts`
-- `crates/wasm/npm/src/full.ts`
 - `crates/wasm/npm/src/cloudflare.ts`
 - `crates/wasm/npm/src/errors.ts`
 - `crates/wasm/npm/src/envelope.ts`

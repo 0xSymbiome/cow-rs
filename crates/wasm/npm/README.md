@@ -18,7 +18,6 @@ flavor-specific imports without depending on a specific wallet library.
 | Node.js 22 or 24 LTS backend | `<published-cow-sdk-wasm-package>` | Node target works without browser polyfills when transport is configured |
 | Cloudflare Worker proxying CoW orderbook calls | `<published-cow-sdk-wasm-package>/cloudflare` | Worker-compatible web target and explicit wasm module initialization |
 | Signer service or HSM proxy | `<published-cow-sdk-wasm-package>/signing` | Signing primitives without orderbook, trading, subgraph, or IPFS clients |
-| Trading dashboard with quotes, orders, volumes, and app-data reads | `<published-cow-sdk-wasm-package>/full` | Full facade surface in one package flavor |
 | Native Rust service, bot, solver, or treasury automation | `cow-sdk` | Avoids wasm-bindgen and npm packaging entirely |
 | Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm path; this package is for JavaScript hosts |
 
@@ -170,7 +169,6 @@ export default {
 | `<published-cow-sdk-wasm-package>` | Default facade with orderbook, signing, app-data, IPFS, trading, and subgraph | General TypeScript or Node use |
 | `<published-cow-sdk-wasm-package>/orderbook` | Orderbook client, cancellation helpers, and signing helpers | Browser dapps that do not need trading or subgraph clients |
 | `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, deployment, and version helpers | Signer services and HSM-facing adapters |
-| `<published-cow-sdk-wasm-package>/full` | Full facade surface | Consumers that want every current client through one import |
 | `<published-cow-sdk-wasm-package>/cloudflare` | Worker-compatible orderbook and trading facade | Cloudflare Workers |
 | `<published-cow-sdk-wasm-package>/cloudflare/wasm` | Raw Worker wasm module asset | Pass to the Cloudflare `initialize` helper |
 
@@ -188,7 +186,6 @@ The current measured release artifacts are:
 | default | 2.97 MiB | 790 KiB | 1129 KiB | 3.0 MiB raw / 800 KiB brotli |
 | orderbook | 0.98 MiB | 321 KiB | 426 KiB | 1.5 MiB raw / 500 KiB brotli |
 | signing | 0.43 MiB | 150 KiB | 183 KiB | 0.9 MiB raw / 300 KiB brotli |
-| full | 2.97 MiB | 790 KiB | 1129 KiB | 3.0 MiB raw / 1000 KiB brotli |
 | cloudflare | 2.88 MiB | 768 KiB | 1095 KiB | 3.0 MiB raw / 800 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
 The cloudflare flavor's gzip-compressed artifact is below the current

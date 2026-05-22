@@ -48,10 +48,9 @@ const esmOut = join(distRoot, ".facade-esm");
 const cjsOut = join(distRoot, ".facade-cjs");
 const descriptor = JSON.parse(readFileSync(join(packageRoot, "flavours.json"), "utf8"));
 const entries = new Map([
-  ["default", "full"],
+  ["default", "default"],
   ["orderbook", "orderbook"],
   ["signing", "signing"],
-  ["full", "full"],
   ["cloudflare", "cloudflare"]
 ]);
 
@@ -103,15 +102,6 @@ function rewriteCjs(content) {
     .replace(/require\("(\.{1,2}\/[^"]+)\.js"\)/g, 'require("$1.cjs")');
 }
 
-function rewriteDefault(content) {
-  return content
-    .replaceAll("./raw/full.js", "./raw/default.js")
-    .replaceAll("./raw/full.cjs", "./raw/default.cjs")
-    .replaceAll("./raw/full", "./raw/default")
-    .replaceAll("full-bundler", "default-bundler")
-    .replaceAll("full-nodejs", "default-nodejs");
-}
-
 function rewriteNodeTarget(content, flavourName) {
   if (flavourName === "cloudflare") {
     return content;
@@ -147,11 +137,8 @@ for (const flavour of descriptor.flavours) {
   copyTree(cjsOut, targetDir, (name) => name.endsWith(".js") ? name.replace(/\.js$/, ".cjs") : name);
   replaceInFiles(targetDir, (content, file) => {
     let next = extname(file) === ".cjs" ? rewriteCjs(content) : content;
-    if (flavour.name === "default") {
-      next = rewriteDefault(next);
-    }
     if (extname(file) === ".cjs") {
-      next = rewriteNodeTarget(next, flavour.name === "default" ? "default" : flavour.name);
+      next = rewriteNodeTarget(next, flavour.name);
     }
     return next;
   });

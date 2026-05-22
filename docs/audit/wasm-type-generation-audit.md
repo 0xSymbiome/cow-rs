@@ -1,7 +1,7 @@
 # WASM Type Generation Audit
 
 Status: Current
-Last reviewed: 2026-05-13
+Last reviewed: 2026-05-22
 Owning surface: `cow-sdk-wasm` DTO exports, tsify-derived TypeScript declarations, and npm declaration snapshots
 Refresh trigger: Changes to exported DTOs, `tsify` usage, wasm-pack targets, declaration snapshots, or package export targets
 Related docs:
@@ -36,6 +36,7 @@ committed e2e fixtures.
 | Facade snapshots | Public facade declarations hide raw wasm-bindgen internals and callback registry handles | Conforms |
 | Package exports | Every declared npm export target exists and declaration files include required lib references | Conforms |
 | Generated metadata | wasm-pack README and package metadata are removed from nested dist targets before verification | Conforms |
+| Map-typed DTO field alignment | `BTreeMap` and `HashMap` fields on cross-ABI DTOs declare their TypeScript shape as `Record<...>` so the generated declaration matches the plain-object value emitted by the `json_compatible` serializer | Conforms |
 
 ## Current Contract
 
@@ -57,6 +58,18 @@ The committed `crates/wasm/snapshots/facade/` declarations represent the
 consumer-facing package surface. They are checked separately from raw
 wasm-bindgen snapshots so generated implementation classes do not become the
 published TypeScript SDK contract.
+
+### Map-Typed DTO Field Alignment
+
+The cross-ABI serializer is `serde_wasm_bindgen::Serializer::json_compatible`,
+which emits a plain JavaScript object for every Rust `BTreeMap` and `HashMap`
+field on a Tsify-derived DTO. The generated TypeScript declaration would
+otherwise emit `Map<K, V>` for `BTreeMap` fields, which would diverge from
+the runtime shape. Cross-ABI map fields therefore carry an explicit
+`#[tsify(type = "Record<...>")]` override so the declared shape matches the
+runtime shape. The override applies to `TypedDataEnvelopeDto::types`, the
+trading-client settlement and EthFlow contract-override maps, and any
+future `BTreeMap`-typed field added to a cross-ABI DTO.
 
 ### Package Export Verification
 

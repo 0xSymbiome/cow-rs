@@ -50,7 +50,7 @@ export interface TypedDataFieldDto {
 
 export interface TypedDataEnvelopeDto {
   domain: TypedDataDomainDto;
-  types: Map<string, TypedDataFieldDto[]>;
+  types: Record<string, TypedDataFieldDto[]>;
   primaryType: string;
   message: unknown;
 }

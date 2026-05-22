@@ -1,4 +1,4 @@
-import * as raw from "./raw/full.js";
+import * as raw from "./raw/default.js";
 import {
   assertActive,
   callAsync,
@@ -565,7 +565,7 @@ export type {
   TypedDataEnvelopeDto,
   TypedDataFieldDto,
   ValidationResultDto
-} from "./raw/full.js";
+} from "./raw/default.js";
 export type {
   ContractReadCallback,
   CowEip1271SignCallback,

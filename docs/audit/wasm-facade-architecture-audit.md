@@ -1,7 +1,7 @@
 # WASM Facade Architecture Audit
 
 Status: Current
-Last reviewed: 2026-05-11
+Last reviewed: 2026-05-22
 Owning surface: TypeScript facade modules under `crates/wasm/npm/src/**` and their adaptation boundary over raw wasm-bindgen output
 Refresh trigger: Changes to facade source, raw binding adapters, disposal behavior, facade declaration snapshots, raw export denylist, or package resolution tests
 Related docs:
@@ -16,7 +16,7 @@ This audit covers:
 - the TypeScript facade as the public package contract
 - raw wasm-bindgen output kept under package-internal adapter modules
 - facade-owned resource cleanup and callback retention
-- public declaration snapshots for default, orderbook, signing, full, and
+- public declaration snapshots for default, orderbook, signing, and
   Cloudflare flavors
 - package resolution tests that protect public import paths
 
@@ -30,7 +30,7 @@ configuration outside the repository fixtures.
 | Facade ownership | Public APIs are TypeScript facade classes and helpers, not raw wasm-bindgen classes | Conforms |
 | Raw boundary | Raw binding imports remain package-internal and are excluded from public export paths | Conforms |
 | Resource cleanup | Facade clients expose explicit disposal and hide raw resource-management members | Conforms |
-| Runtime flavors | Default, orderbook, signing, full, and Cloudflare declarations match the flavor matrix | Conforms |
+| Runtime flavors | Default, orderbook, signing, and Cloudflare declarations match the flavor matrix | Conforms |
 | Error normalization | Facade errors normalize raw wasm errors into `SdkError` envelopes | Conforms |
 
 ## Current Contract
@@ -59,9 +59,9 @@ schema-versioned envelopes and redacted details.
 Primary implementation points:
 
 - `crates/wasm/npm/src/index.ts`
+- `crates/wasm/npm/src/default.ts`
 - `crates/wasm/npm/src/orderbook.ts`
 - `crates/wasm/npm/src/signing.ts`
-- `crates/wasm/npm/src/full.ts`
 - `crates/wasm/npm/src/cloudflare.ts`
 - `crates/wasm/npm/src/internal.ts`
 - `crates/wasm/npm/src/raw/`

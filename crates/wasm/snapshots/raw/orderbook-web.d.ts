@@ -262,12 +262,19 @@ export interface OrderTraderParametersInput {
     env?: string;
     /**
      * Optional settlement-contract overrides keyed by chain id.
+     *
+     * Typed as `Record` rather than `Map` because the runtime
+     * serializer emits a plain JavaScript object for `BTreeMap`
+     * fields; the override aligns the declaration with the runtime.
      */
-    settlementContractOverride?: Map<number, string>;
+    settlementContractOverride?: Record<string, string>;
     /**
      * Optional `EthFlow` contract overrides keyed by chain id.
+     *
+     * Typed as `Record` rather than `Map` for the same runtime
+     * alignment reason as `settlement_contract_override`.
      */
-    ethFlowContractOverride?: Map<number, string>;
+    ethFlowContractOverride?: Record<string, string>;
 }
 
 /**
@@ -648,8 +655,15 @@ export interface TypedDataEnvelopeDto {
     primaryType: string;
     /**
      * Type map.
+     *
+     * Typed as `Record` because the runtime serializer
+     * (`serde_wasm_bindgen::Serializer::json_compatible`) emits a
+     * plain JavaScript object for `BTreeMap` fields. The override
+     * aligns the generated TypeScript declaration with the runtime
+     * shape so the declared type matches the value the wasm boundary
+     * emits byte-for-byte.
      */
-    types: Map<string, TypedDataFieldDto[]>;
+    types: Record<string, TypedDataFieldDto[]>;
     /**
      * Parsed message body.
      */
@@ -1189,10 +1203,10 @@ export interface InitOutput {
     readonly signOrderWithTypedDataSigner: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly supportedChainIds: (a: number) => void;
     readonly wasmVersion: (a: number) => void;
-    readonly __wasm_bindgen_func_elem_4265: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_4273: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_4266: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_4274: (a: number, b: number, c: number, d: number) => void;
     readonly __wasm_bindgen_func_elem_865: (a: number, b: number, c: number) => number;
-    readonly __wasm_bindgen_func_elem_3917: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_3918: (a: number, b: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

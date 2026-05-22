@@ -66,20 +66,6 @@
       "import": "./dist/signing/index.mjs",
       "default": "./dist/signing/index.mjs"
     },
-    "./full": {
-      "types": "./dist/full/index.d.ts",
-      "node": {
-        "types": "./dist/full/index.d.ts",
-        "require": "./dist/full/index.cjs",
-        "default": "./dist/full/index.cjs"
-      },
-      "browser": {
-        "types": "./dist/full/index.d.ts",
-        "import": "./dist/full/index.mjs"
-      },
-      "import": "./dist/full/index.mjs",
-      "default": "./dist/full/index.mjs"
-    },
     "./cloudflare": {
       "types": "./dist/cloudflare/index.d.ts",
       "browser": {

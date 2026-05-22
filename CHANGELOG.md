@@ -14,6 +14,19 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Fixed
 
+- Cross-ABI DTOs that carry Rust `BTreeMap` fields declare the matching
+  TypeScript shape as `Record<string, ...>`, so the generated declaration
+  matches the plain JavaScript object that the `serde_wasm_bindgen`
+  json-compatible serializer emits at runtime. The override applies to
+  `TypedDataEnvelopeDto::types` in `cow-sdk-wasm` (the EIP-712 envelope
+  shape carried by `signOrderWithTypedDataSigner`, `signOrderWithEip1271`,
+  and the EIP-1271 callback request payload) and to the trading-client
+  settlement and EthFlow contract-override maps on `SwapParametersInput`,
+  `LimitTradeParametersInput`, and `OrderTraderParametersInput`. TypeScript
+  callers reach map entries through plain-object indexing
+  (`types["Order"]`) so the declared shape matches the value the runtime
+  emits byte-for-byte.
+
 - EthFlow on-chain order construction now refuses `receiver == address(0)`
   at the cow SDK boundary rather than producing calldata the deployed
   `CoWSwapEthFlow` contract rejects. `EthFlowOrderData::new` and
@@ -55,6 +68,18 @@ The first functional crate-family release begins at `0.1.0`.
   `parity/fixtures/retry_after/imf_fixdate_reject.json`, and
   `parity/fixtures/retry_after/legacy_rfc850.json` pin the accept and
   reject byte contracts.
+
+### Removed
+
+- The `full` package flavor and `flavor-full` Cargo feature are removed from
+  `cow-sdk-wasm`. The flavor activated the same feature set as `default`
+  (`orderbook`, `signing`, `app-data`, `ipfs`, `cancellation`,
+  `transport-policy`, `trading`, `subgraph`) and published a duplicate
+  artifact under the `./full` package subpath. The shipped flavor enumeration
+  is now `default`, `orderbook`, `signing`, and `cloudflare`; callers that
+  previously imported `@cowprotocol/cow-sdk-wasm/full` use
+  `@cowprotocol/cow-sdk-wasm` for the same surface. ADR 0044 is amended to
+  match the four-flavor enumeration.
 
 ### Added
 

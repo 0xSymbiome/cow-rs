@@ -87,6 +87,14 @@ pub struct TypedDataEnvelopeDto {
     /// Primary type.
     pub primary_type: String,
     /// Type map.
+    ///
+    /// Typed as `Record` because the runtime serializer
+    /// (`serde_wasm_bindgen::Serializer::json_compatible`) emits a
+    /// plain JavaScript object for `BTreeMap` fields. The override
+    /// aligns the generated TypeScript declaration with the runtime
+    /// shape so the declared type matches the value the wasm boundary
+    /// emits byte-for-byte.
+    #[tsify(type = "Record<string, TypedDataFieldDto[]>")]
     pub types: BTreeMap<String, Vec<TypedDataFieldDto>>,
     /// Parsed message body.
     pub message: Value,

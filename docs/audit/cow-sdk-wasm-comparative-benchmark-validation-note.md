@@ -1,7 +1,7 @@
 # cow-sdk-wasm Comparative Benchmark Validation Note
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-22
 Owning surface: `cow-sdk-wasm` crate and npm package
 Refresh trigger:
 - `cow-sdk-wasm` flavor feature change (added, removed, re-scoped)
@@ -102,8 +102,8 @@ It does not cover:
 
 ### Bundle size
 
-`cow-sdk-wasm` ships five feature-scoped flavor builds (default, orderbook,
-signing, full, cloudflare) from a single npm package. The total package size
+`cow-sdk-wasm` ships four feature-scoped flavor builds (default, orderbook,
+signing, cloudflare) from a single npm package. The total package size
 (wasm + JavaScript glue + compiled TypeScript facade) at brotli quality 11 is
 documented below for each flavor's `web` target subpath.
 

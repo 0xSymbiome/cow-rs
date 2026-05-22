@@ -1,1 +1,1 @@
-export * from "./full.js";
+export * from "./default.js";

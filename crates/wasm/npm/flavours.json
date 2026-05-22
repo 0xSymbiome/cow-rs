@@ -45,25 +45,6 @@
       "subpath": "./signing"
     },
     {
-      "name": "full",
-      "features": [
-        "orderbook",
-        "signing",
-        "app-data",
-        "ipfs",
-        "cancellation",
-        "transport-policy",
-        "trading",
-        "subgraph"
-      ],
-      "targets": ["web", "bundler", "nodejs"],
-      "rawBudgetMiB": 3.3,
-      "brotliBudgetKiB": 1000,
-      "gzipFailBytes": 1300000,
-      "gzipWarnBytes": 1200000,
-      "subpath": "./full"
-    },
-    {
       "name": "cloudflare",
       "features": [
         "orderbook",

@@ -171,10 +171,19 @@ pub struct LimitTradeParametersInput {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub env: Option<String>,
     /// Optional settlement-contract overrides keyed by chain id.
+    ///
+    /// Typed as `Record` rather than `Map` because the runtime
+    /// serializer emits a plain JavaScript object for `BTreeMap`
+    /// fields; the override aligns the declaration with the runtime.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[tsify(optional, type = "Record<string, string>")]
     pub settlement_contract_override: Option<BTreeMap<u64, String>>,
     /// Optional `EthFlow` contract overrides keyed by chain id.
+    ///
+    /// Typed as `Record` rather than `Map` for the same runtime
+    /// alignment reason as `settlement_contract_override`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[tsify(optional, type = "Record<string, string>")]
     pub eth_flow_contract_override: Option<BTreeMap<u64, String>>,
     /// Whether partial fills are allowed.
     #[serde(default)]
@@ -224,10 +233,19 @@ pub struct OrderTraderParametersInput {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub env: Option<String>,
     /// Optional settlement-contract overrides keyed by chain id.
+    ///
+    /// Typed as `Record` rather than `Map` because the runtime
+    /// serializer emits a plain JavaScript object for `BTreeMap`
+    /// fields; the override aligns the declaration with the runtime.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[tsify(optional, type = "Record<string, string>")]
     pub settlement_contract_override: Option<BTreeMap<u64, String>>,
     /// Optional `EthFlow` contract overrides keyed by chain id.
+    ///
+    /// Typed as `Record` rather than `Map` for the same runtime
+    /// alignment reason as `settlement_contract_override`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[tsify(optional, type = "Record<string, string>")]
     pub eth_flow_contract_override: Option<BTreeMap<u64, String>>,
 }
 
