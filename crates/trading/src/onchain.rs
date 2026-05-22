@@ -269,7 +269,7 @@ where
             adjusted
                 .quote_id
                 .ok_or(TradingError::MissingQuoteId("EthFlow transaction"))?,
-        ))?),
+        )?)?),
         Some(order_to_sign.sell_amount),
         None,
     );
@@ -316,7 +316,7 @@ where
     let mut tx = if order.ethflow_data.is_some() {
         TransactionRequest::new(
             Some(resolve_eth_flow_address(chain_id, options)),
-            Some(HexData::new(encode_ethflow_invalidate_order(order))?),
+            Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
             Some(Amount::ZERO),
             None,
         )
@@ -363,7 +363,7 @@ where
     let mut tx = if order.ethflow_data.is_some() {
         TransactionRequest::new(
             Some(resolve_eth_flow_address(chain_id, options)),
-            Some(HexData::new(encode_ethflow_invalidate_order(order))?),
+            Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
             Some(Amount::ZERO),
             None,
         )
@@ -573,12 +573,18 @@ fn order_uid_bytes(order_uid: &cow_sdk_core::OrderUid) -> AlloyBytes {
     AlloyBytes::from(order_uid.as_slice().to_vec())
 }
 
-fn encode_ethflow_create_order(order: &cow_sdk_core::UnsignedOrder, quote_id: i64) -> String {
-    let payload = EthFlowOrderData::from_unsigned_order(order, quote_id);
-    format!("0x{}", hex::encode(encode_create_order_calldata(&payload)))
+fn encode_ethflow_create_order(
+    order: &cow_sdk_core::UnsignedOrder,
+    quote_id: i64,
+) -> Result<String, TradingError> {
+    let payload = EthFlowOrderData::from_unsigned_order(order, quote_id)?;
+    Ok(format!(
+        "0x{}",
+        hex::encode(encode_create_order_calldata(&payload))
+    ))
 }
 
-fn encode_ethflow_invalidate_order(order: &Order) -> String {
+fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError> {
     let receiver = order.receiver.unwrap_or(order.owner);
     let payload = EthFlowOrderData::new(
         order.buy_token,
@@ -590,9 +596,9 @@ fn encode_ethflow_invalidate_order(order: &Order) -> String {
         order.valid_to,
         false,
         0,
-    );
-    format!(
+    )?;
+    Ok(format!(
         "0x{}",
         hex::encode(encode_invalidate_order_calldata(&payload))
-    )
+    ))
 }

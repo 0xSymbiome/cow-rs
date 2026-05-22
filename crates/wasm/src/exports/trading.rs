@@ -565,7 +565,8 @@ async fn trading_build_sell_native_currency_tx(
             )
             .into_js()
         })?;
-    let payload = EthFlowOrderData::from_unsigned_order(&order, quote_id);
+    let payload = EthFlowOrderData::from_unsigned_order(&order, quote_id)
+        .map_err(|error| WasmError::from(error).into_js())?;
     let data = HexData::new(format!(
         "0x{}",
         hex::encode(encode_create_order_calldata(&payload))
