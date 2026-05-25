@@ -22,6 +22,12 @@ entries:
       paths:
         - crates/composable/Cargo.toml
         - docs/adr/0048-composable-conditional-order-framework.md
+  - audit: docs/audit/contract-bindings-parity-audit.md
+    owning_surface: canonical alloy::sol! bindings (settlement, vault-relayer, eth-flow, eip1967 proxy, ERC-20, EIP-1271)
+    refresh_triggers:
+      paths:
+        - crates/contracts/abi/**/*.sol
+        - parity/source-lock.yaml
   - audit: docs/audit/cow-shed-contract-bindings-audit.md
     owning_surface: COW Shed contract binding evidence
     refresh_triggers:

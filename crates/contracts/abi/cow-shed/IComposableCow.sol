@@ -1,31 +1,47 @@
-// SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.8.0 <0.9.0;
+// SPDX-License-Identifier: GPL-3.0-or-later
+pragma solidity ^0.8.25;
 
-/**
- * @title IComposableCow
- * @author CoW Protocol developers (cow-shed upstream — pinned at
- *         cow-shed SHA `9e01a88e0010314ee1e4c1a822105897a87d3bda`)
- * @dev Interface that `COWShedForComposableCoW` calls into when
- *      bridging the composable framework to the COW Shed account-
- *      abstraction proxy on Gnosis Chain (chain id 100 only). The
- *      vendored excerpt carries the load-bearing entry points that
- *      the bridge forwarder uses.
- */
+import {IConditionalOrder} from "./IConditionalOrder.sol";
+
 interface IComposableCow {
-    /**
-     * @notice Returns whether `(owner, root, proof)` authorizes the
-     *         conditional-order params on the composable framework.
-     */
-    function singleOrders(address owner, bytes32 hash) external view returns (bool);
+    /// A struct to encapsulate order parameters / offchain input
+    struct PayloadStruct {
+        bytes32[] proof;
+        IConditionalOrder.ConditionalOrderParams params;
+        bytes offchainInput;
+    }
 
-    /**
-     * @notice Returns the merkle root authorized by `owner`.
-     */
-    function roots(address owner) external view returns (bytes32);
+    /// @dev Mapping of owner's single orders
+    function singleOrders(address user, bytes32 _hash) external returns (bool);
 
-    /**
-     * @notice Returns the registered swap guard for `owner`, or
-     *         `address(0)` if none.
-     */
-    function swapGuards(address owner) external view returns (address);
+    /// @dev Domain separator is only used for generating signatures
+    function domainSeparator() external view returns (bytes32);
+
+    /// Authorise a single conditional order
+    /// @param params The parameters of the conditional order
+    /// @param dispatch Whether to dispatch the `ConditionalOrderCreated` event
+    function create(IConditionalOrder.ConditionalOrderParams calldata params, bool dispatch) external;
+
+    /// Remove the authorisation of a single conditional order
+    /// @param singleOrderHash The hash of the single conditional order to remove
+    function remove(bytes32 singleOrderHash) external;
+
+    /// Return the hash of the conditional order parameters
+    /// @param params `ConditionalOrderParams` for the order
+    /// @return hash of the conditional order parameters
+    function hash(IConditionalOrder.ConditionalOrderParams memory params) external pure returns (bytes32);
+
+    /// @dev This function does not make use of the `typeHash` parameter as CoW Protocol does not
+    ///      have more than one type.
+    /// @param encodeData Is the abi encoded `GPv2Order.Data`
+    /// @param payload Is the abi encoded `PayloadStruct`
+    function isValidSafeSignature(
+        address safe,
+        address sender,
+        bytes32 _hash,
+        bytes32 _domainSeparator,
+        bytes32, // typeHash
+        bytes calldata encodeData,
+        bytes calldata payload
+    ) external view returns (bytes4 magic);
 }

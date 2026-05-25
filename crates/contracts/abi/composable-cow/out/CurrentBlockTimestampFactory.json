@@ -1,7 +1,0 @@
-{
-  "_source": "minimal Foundry-artifact-shaped fixture; selectors pinned at pinned composable-cow SHA 471ca59aa95da1bbf3b03e002de96449bc78e6f0; bytecode and ABI sections deliberately omitted (this excerpt is selector-only)",
-  "contractName": "CurrentBlockTimestampFactory",
-  "methodIdentifiers": {
-    "getValue(bytes)": "8b0c2e74"
-  }
-}

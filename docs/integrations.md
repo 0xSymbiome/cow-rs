@@ -76,8 +76,10 @@ on directly copying TypeScript package behavior in seven concrete ways:
 - EIP-1271 custom signature production is owned by `cow-sdk-signing`, so trading
   workflows consume signatures without owning smart-account implementation
   details
-- Solidity excerpts are committed under the contracts crate and bound through
-  `alloy::sol!`, avoiding hand-written ABI encoders
+- Byte-identical Solidity mirrors of every upstream contract surface are
+  committed under the contracts crate and bound through `alloy::sol!`,
+  gated by `cargo parity-verify-sol-provenance`, so hand-written ABI
+  encoders never enter the workspace
 - source commits and npm package integrity evidence are pinned together, with
   public generated documentation treated only as drift signal
 - COW Shed proxy creation-code bytes are hashed at build time before address

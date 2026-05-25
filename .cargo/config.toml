@@ -35,6 +35,7 @@ strategy-doc-lint = "run --quiet --manifest-path scripts/parity-maintainer/Cargo
 url-provenance-check = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- url-provenance-check"
 audit-refresh = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- audit-refresh"
 parity-audit-self-pinning = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- audit-self-pinning"
+parity-verify-sol-provenance = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- verify-sol-provenance"
 
 # Validation-smoke subcommands.
 registry-confirm = "run --quiet --manifest-path scripts/validation-smoke/Cargo.toml -- registry-confirm"

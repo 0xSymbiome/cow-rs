@@ -149,6 +149,25 @@ repositories:
   - test/GPv2Trade/ExtractOrder.t.sol
   - test/GPv2Settlement/OrderRefunds.t.sol
   - test/GPv2Settlement/Swap/Swap.t.sol
+  vendored:
+  - local: settlement/GPv2Settlement.sol
+    upstream: src/contracts/GPv2Settlement.sol
+    sha256: 6a84f5494a012a0196f61b92f61804bd6138c21e30dc0390dc8a11d51b067a66
+  - local: settlement/GPv2Trade.sol
+    upstream: src/contracts/libraries/GPv2Trade.sol
+    sha256: ebf4539e6423849d3ed6c20d0df03c819423a6fcd2a513ccb6c26399673835a5
+  - local: settlement/GPv2Interaction.sol
+    upstream: src/contracts/libraries/GPv2Interaction.sol
+    sha256: a732c592dd92db3aaa5573d50605fe853ad61fb6170c849275c3ec7b6674ce66
+  - local: vault-relayer/GPv2VaultRelayer.sol
+    upstream: src/contracts/GPv2VaultRelayer.sol
+    sha256: d00feb634d51ace8cb61090a9cf0c541df0a1c3a7b33fe7d0a880ed8c17bca90
+  - local: eip1967/GPv2EIP1967.sol
+    upstream: src/contracts/libraries/GPv2EIP1967.sol
+    sha256: b89958bbe72d74f487627d83eb54e445696e44e5fba78aa6b6dd01de9889ba58
+  - local: erc20/IERC20.sol
+    upstream: src/contracts/interfaces/IERC20.sol
+    sha256: dbc6cb6638d66bf57c3d344871e506e1c62afd642cc19beddcb4d4b95a8923b4
 - id: services
   remote: https://github.com/cowprotocol/services.git
   commit: 0720b9bc15138ecc362078f505d0e3ba1c7b9883
@@ -212,6 +231,76 @@ repositories:
   - src/interfaces/IConditionalOrder.sol
   - src/interfaces/ISwapGuard.sol
   - src/interfaces/IValueFactory.sol
+  vendored:
+  - local: composable-cow/BaseConditionalOrder.sol
+    upstream: src/BaseConditionalOrder.sol
+    sha256: 5ee8c20cc6a94c67ed3bdf460beea6915a3b749e2298cd32a91a9755a010adb4
+  - local: composable-cow/ComposableCoW.sol
+    upstream: src/ComposableCoW.sol
+    sha256: d9e8489a7b822d0d967ca8b2b60c0e4352adc5ea5a2e3f4ef71a231f22cf20e2
+  - local: composable-cow/ERC1271Forwarder.sol
+    upstream: src/ERC1271Forwarder.sol
+    sha256: 583e325c69bedf71530198ac72ddf1f2ac2aae9a40b464d3ee3008dee7a35930
+  - local: composable-cow/interfaces/IConditionalOrder.sol
+    upstream: src/interfaces/IConditionalOrder.sol
+    sha256: 210818893b554b14000262b0209e2d8c444585e798148624f4cff9b58961a7e9
+  - local: composable-cow/interfaces/ISwapGuard.sol
+    upstream: src/interfaces/ISwapGuard.sol
+    sha256: a4669f9d538c476346cebe04a4fe38555ae3781648c4ad734e589901b583393f
+  - local: composable-cow/interfaces/IValueFactory.sol
+    upstream: src/interfaces/IValueFactory.sol
+    sha256: a0f9fd101038c4731ce913a98287d795cbe5c8e3b6ad7f742e74fa9efb1e0ebd
+  - local: composable-cow/types/GoodAfterTime.sol
+    upstream: src/types/GoodAfterTime.sol
+    sha256: cd839191cf243cb2d9b66df07338d890433a9212feae76141aef126dc625e2a1
+  - local: composable-cow/types/PerpetualStableSwap.sol
+    upstream: src/types/PerpetualStableSwap.sol
+    sha256: 1e0542572af39a0d74011b6d3746a7f5b4a43695d913dca64d59cf6194bdbf90
+  - local: composable-cow/types/StopLoss.sol
+    upstream: src/types/StopLoss.sol
+    sha256: 7604fceb0149f5c4f5bb1ae82a7e8e18b7d297bed2d5e89449113f381c6f36fc
+  - local: composable-cow/types/TradeAboveThreshold.sol
+    upstream: src/types/TradeAboveThreshold.sol
+    sha256: cebcb115906b64d41b82d7fce1a77380d8cc6a421dbd68a4375654efb0728ea7
+  - local: composable-cow/types/TWAP.sol
+    upstream: src/types/twap/TWAP.sol
+    sha256: 76923c8bfe2328453802dbd276ce89e82088455f45ef468fabf7f4439bc475e4
+  - local: composable-cow/types/TWAPOrder.sol
+    upstream: src/types/twap/libraries/TWAPOrder.sol
+    sha256: 6935f3548aca692a87f43a8758ea145214f7828c8bff80d06faa85adaff06709
+  - local: composable-cow/types/TWAPOrderMathLib.sol
+    upstream: src/types/twap/libraries/TWAPOrderMathLib.sol
+    sha256: 149adb7344cc00a1085bd604ae28a0af454c8327a6c7f985dc7b39a9145dceca
+  - local: composable-cow/value_factories/CurrentBlockTimestampFactory.sol
+    upstream: src/value_factories/CurrentBlockTimestampFactory.sol
+    sha256: bbf5ae52954e3bf253944d61690461efc72103683a6bb319150fff00eea49ab0
+  - local: composable-cow/vendored/CoWSettlement.sol
+    upstream: src/vendored/CoWSettlement.sol
+    sha256: 0e779d0bdfc4a10dcc54c10a55131a35cb6ab9e2463a9e36cdca79d01e64c39b
+- id: composable-cow/lib/safe
+  remote: https://github.com/cowdao-grants/extensible-fallback-handler.git
+  commit: 11273c1f08eda18ed8ff49ec1d4abec5e451ff21
+  role: primary-via-submodule
+  optional_local_path: <composable-cow-checkout>/lib/safe
+  pinned_at: 2026-05-25T00:00:00Z
+  pinned_by: cow-rs maintainers
+  producer_paths:
+  - contracts/handler/ExtensibleFallbackHandler.sol
+  # This row pins the `lib/safe` git submodule reference captured by the
+  # composable-cow repository at
+  # composable-cow@471ca59aa95da1bbf3b03e002de96449bc78e6f0.
+  # The cow-rs vendored mirror at
+  # `crates/contracts/abi/composable-cow/extensible/ExtensibleFallbackHandler.sol`
+  # is byte-identical to `contracts/handler/ExtensibleFallbackHandler.sol`
+  # in the submodule at the pinned commit. A reviewer can verify by
+  # initialising the submodule
+  # (`git -C <composable-cow-checkout> submodule update --init lib/safe`)
+  # and running
+  # `git -C <composable-cow-checkout>/lib/safe show 11273c1f08eda18ed8ff49ec1d4abec5e451ff21:contracts/handler/ExtensibleFallbackHandler.sol | sha256sum`.
+  vendored:
+  - local: composable-cow/extensible/ExtensibleFallbackHandler.sol
+    upstream: contracts/handler/ExtensibleFallbackHandler.sol
+    sha256: a20b6ea1402b442ed1b9944d37b12c33e9b1dbaf840a36e4f633e2f07339cf37
 - id: cow-shed
   remote: https://github.com/cowdao-grants/cow-shed.git
   commit: 9e01a88e0010314ee1e4c1a822105897a87d3bda
@@ -230,6 +319,46 @@ repositories:
   - src/interfaces/ICOWAuthHook.sol
   - src/interfaces/IERC1271.sol
   - src/LibAuthenticatedHooks.sol
+  vendored:
+  - local: cow-shed/COWShed.sol
+    upstream: src/COWShed.sol
+    sha256: 00fdb560d90a369bbd61f6f8fcd814b2493e3cedf7205a87ae7d9e1572f70b75
+  - local: cow-shed/COWShedFactory.sol
+    upstream: src/COWShedFactory.sol
+    sha256: 9a23348b3a36a9160d71146cc9a541815f23144a970393dedb781a96314649d3
+  - local: cow-shed/COWShedForComposableCoW.sol
+    upstream: src/COWShedForComposableCoW.sol
+    sha256: 4412f256baa58bc15833295c32253989181e7ba6cce26201b2c0ea8da45f0fd0
+  - local: cow-shed/COWShedProxy.sol
+    upstream: src/COWShedProxy.sol
+    sha256: c68a1dc4a71df43d059e573437221e3d9a03d4c2c77fcb274a37a76b394e1bc5
+  - local: cow-shed/COWShedStorage.sol
+    upstream: src/COWShedStorage.sol
+    sha256: f019968b12211d65636c17f81523236dddd8ab33eef453a55274be6c611f5fba
+  - local: cow-shed/ERC1271Forwarder.sol
+    upstream: src/ERC1271Forwarder.sol
+    sha256: a84c6b9c67ac445108c6aeb9a7a9e58385e35291e41eb0a8c466a2253165d03b
+  - local: cow-shed/IComposableCow.sol
+    upstream: src/IComposableCow.sol
+    sha256: 2746e671bebdc5710cb3c58f971842a9d3f13ca6a00541f059e0b9f26d4bf7f2
+  - local: cow-shed/ICOWAuthHook.sol
+    upstream: src/ICOWAuthHook.sol
+    sha256: 1a1e1cf83793b6958e9b79c367cc6c345f0e77545b36abfa0aad0ce557fc7109
+  - local: cow-shed/IERC1271.sol
+    upstream: src/IERC1271.sol
+    sha256: cd7430e55812ede73ea701410ebc3bb1f59dc6202a41f98b4190e1a2ac6e6abd
+  - local: cow-shed/IPreSignStorage.sol
+    upstream: src/IPreSignStorage.sol
+    sha256: 697056b4505de4498c8de635dc3042344efb6e72fa7a907f7bb7e180399f7a98
+  - local: cow-shed/LibAuthenticatedHooks.sol
+    upstream: src/LibAuthenticatedHooks.sol
+    sha256: 71e39aa91bba058eb8f355a50306359fa718484430220c1b2e8bf268fa2555c8
+  - local: cow-shed/LibCowOrder.sol
+    upstream: src/LibCowOrder.sol
+    sha256: f1f4c24304c728e26dacd282720183312c4367e7748b02b3d00b266c4680e2f0
+  - local: cow-shed/PreSignStateStorage.sol
+    upstream: src/PreSignStateStorage.sol
+    sha256: 3e15dae10af4029b816f1c7d82d7e3937ac153e697b4c2df5ed77c73f49391ca
 - id: ethflowcontract
   remote: https://github.com/cowprotocol/ethflowcontract.git
   commit: 762d182674f8f890bd27917872ee62125171b54d
@@ -240,6 +369,13 @@ repositories:
   producer_paths:
   - src/CoWSwapEthFlow.sol
   - src/libraries/EthFlowOrder.sol
+  vendored:
+  - local: eth-flow/CoWSwapEthFlow.sol
+    upstream: src/CoWSwapEthFlow.sol
+    sha256: 5c25b4626959c91d2f245816f6c159766943b5e93011113eb64f8a9b72ce0522
+  - local: eth-flow/EthFlowOrder.sol
+    upstream: src/libraries/EthFlowOrder.sol
+    sha256: f6df001444c05bc44ac1140d777bce931f31b8a71e540aaec61623b74180715d
 - id: watch-tower
   remote: https://github.com/cowprotocol/watch-tower.git
   commit: 61eeaec55949337a42e66cb9d2439f400dd4e67a

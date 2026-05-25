@@ -2,7 +2,7 @@
 
 Status: Current
 Last reviewed: 2026-05-25
-Owning surface: COW Shed Solidity excerpts, proxy creation-code artifacts, version-call evidence, and deployment registry rows
+Owning surface: byte-identical COW Shed Solidity mirrors, proxy creation-code artifacts, version-call evidence, and deployment registry rows
 Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, or the deployed `VERSION()` return value change upstream.
 Related docs:
 - [ADR 0049](../adr/0049-cow-shed-account-abstraction-proxy.md)
@@ -15,8 +15,9 @@ Related docs:
 
 This audit covers:
 
-- the vendored COW Shed Solidity excerpts that anchor the SDK's typed
-  bindings;
+- the byte-identical COW Shed Solidity mirrors under
+  `crates/contracts/abi/cow-shed/` that anchor the SDK's typed bindings
+  and are gated by `cargo parity-verify-sol-provenance`;
 - the per-version proxy creation-code artifacts and SHA-256 digest
   neighbors;
 - the per-chain `VERSION()` call evidence captured in
@@ -37,7 +38,7 @@ app-data crate; that boundary is governed by the
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Solidity excerpts | The vendored COW Shed Solidity excerpts compile under `alloy::sol!` and emit type strings byte-identical to the upstream sources, including no whitespace between commas | Conforms |
+| Solidity mirrors | The byte-identical COW Shed Solidity mirrors (gated by `cargo parity-verify-sol-provenance` against SHA-256 rows in `parity/source-lock.yaml`) compile under `alloy::sol!` and emit type strings byte-identical to the upstream sources, including no whitespace between commas | Conforms |
 | Proxy creation-code | `v1.0.0.bin` and `v1.0.1.bin` artifacts ship with adjacent `.sha256` digest neighbors validated by `crates/contracts/build.rs` | Conforms |
 | Version-call evidence | Every per-chain row in `version-call-results.json` records `decoded_version == "1.0.1"` and `expected_sdk_version == "CowShedVersion::V1_0_1"` | Conforms |
 | Deployment registry | COW Shed factory and implementation rows are present in `registry.toml` for every supported chain id; `COWShedForComposableCoW` is present only for chain id 100 | Conforms |
@@ -50,14 +51,17 @@ app-data crate; that boundary is governed by the
 
 ## Current Contract
 
-### Solidity excerpts
+### Solidity mirrors
 
-The vendored COW Shed Solidity excerpts live under
-`crates/contracts/abi/cow-shed/`. The set covers `COWShed.sol`,
+The byte-identical COW Shed Solidity mirrors live under
+`crates/contracts/abi/cow-shed/` and are gated by
+`cargo parity-verify-sol-provenance` against SHA-256 rows in
+`parity/source-lock.yaml`. The set covers `COWShed.sol`,
 `COWShedFactory.sol`, `COWShedForComposableCoW.sol`, `COWShedProxy.sol`,
-`COWShedStorage.sol`, `ERC1271Forwarder.sol`, the two interface modules
-under `interfaces/`, `LibAuthenticatedHooks.sol`, `LibCowOrder.sol`, and
-`PreSignStateStorage.sol`. The EIP-712 type strings inside these excerpts
+`COWShedStorage.sol`, `ERC1271Forwarder.sol`, `IComposableCow.sol`,
+`ICOWAuthHook.sol`, `IERC1271.sol`, `IPreSignStorage.sol`,
+`LibAuthenticatedHooks.sol`, `LibCowOrder.sol`, and
+`PreSignStateStorage.sol`. The EIP-712 type strings inside these mirrors
 carry no whitespace between commas in declaration order; any future
 amendment that adds whitespace is a regression of the byte-identity
 contract.

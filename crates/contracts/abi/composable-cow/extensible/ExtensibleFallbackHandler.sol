@@ -1,80 +1,28 @@
-// SPDX-License-Identifier: GPL-3.0
-pragma solidity >=0.8.0 <0.9.0;
+// SPDX-License-Identifier: LGPL-3.0-only
+pragma solidity >=0.7.0 <0.9.0;
+
+import "./extensible/FallbackHandler.sol";
+import "./extensible/SignatureVerifierMuxer.sol";
+import "./extensible/TokenCallbacks.sol";
+import "./extensible/ERC165Handler.sol";
 
 /**
- * @title ExtensibleFallbackHandler
- * @author CoW Protocol developers (composable-cow upstream — pinned
- *         at composable-cow SHA `471ca59aa95da1bbf3b03e002de96449bc78e6f0`)
- * @dev Vendored excerpt of the Safe ExtensibleFallbackHandler that
- *      ComposableCoW dispatches signature verification through. The
- *      excerpt carries the canonical public surface that the
- *      alloy::sol! bindings consume.
+ * @title ExtensibleFallbackHandler - A fully extensible fallback handler for Safes
+ * @dev Designed to be used with Safe >= 1.3.0.
+ * @author mfw78 <mfw78@rndlabs.xyz>
  */
-
-interface IERC165 {
-    function supportsInterface(bytes4 interfaceId) external view returns (bool);
-}
-
-interface ERC1271 {
-    function isValidSignature(bytes32 _hash, bytes memory _signature)
-        external
-        view
-        returns (bytes4 magicValue);
-}
-
-interface Safe {
-    function getMessageHash(bytes memory message) external view returns (bytes32);
-    function domainSeparator() external view returns (bytes32);
-}
-
-interface ISafeSignatureVerifier {
-    function isValidSafeSignature(
-        Safe safe,
-        address sender,
-        bytes32 _hash,
-        bytes32 domainSeparator,
-        bytes32 typeHash,
-        bytes calldata encodedData,
-        bytes calldata payload
-    ) external view returns (bytes4 magic);
-}
-
-interface ISignatureVerifierMuxer {
-    function defaultVerifier(Safe safe) external view returns (ISafeSignatureVerifier);
-    function domainVerifiers(Safe safe, bytes32 domainSeparator)
-        external
-        view
-        returns (ISafeSignatureVerifier);
-    function setDomainVerifier(bytes32 domainSeparator, ISafeSignatureVerifier verifier)
-        external;
-}
-
-contract ExtensibleFallbackHandler is ISignatureVerifierMuxer, ERC1271, IERC165 {
-    /// @notice The `safeSignature(bytes32,bytes32,bytes,bytes)` selector
-    ///         used by the muxer to dispatch to a registered verifier.
-    bytes32 public constant SIGNATURE_VERIFIER_MUXER_INTERFACE_ID =
-        0x62af8dc2;
-
-    function defaultVerifier(Safe safe) external view returns (ISafeSignatureVerifier) {}
-
-    function domainVerifiers(Safe safe, bytes32 domainSeparator)
-        external
-        view
-        returns (ISafeSignatureVerifier)
-    {}
-
-    function setDomainVerifier(bytes32 domainSeparator, ISafeSignatureVerifier verifier)
-        external
-    {}
-
-    function isValidSignature(bytes32 _hash, bytes memory _signature)
-        external
-        view
-        returns (bytes4 magicValue)
-    {}
-
-    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
-        return interfaceId == 0x62af8dc2
-            || interfaceId == type(IERC165).interfaceId;
+contract ExtensibleFallbackHandler is FallbackHandler, SignatureVerifierMuxer, TokenCallbacks, ERC165Handler {
+    /**
+     * Specify specific interfaces (ERC721 + ERC1155) that this contract supports.
+     * @param interfaceId The interface ID to check for support
+     */
+    function _supportsInterface(bytes4 interfaceId) internal pure override returns (bool) {
+        return
+            interfaceId == type(ERC1271).interfaceId ||
+            interfaceId == type(ISignatureVerifierMuxer).interfaceId ||
+            interfaceId == type(ERC165Handler).interfaceId ||
+            interfaceId == type(IFallbackHandler).interfaceId ||
+            interfaceId == type(ERC721TokenReceiver).interfaceId ||
+            interfaceId == type(ERC1155TokenReceiver).interfaceId;
     }
 }

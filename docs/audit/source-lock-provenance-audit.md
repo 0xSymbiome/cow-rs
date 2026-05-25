@@ -45,6 +45,7 @@ or changing SDK behavior.
 | Schema enforcement | Unsupported source-lock schema versions fail closed with a stable diagnostic, while schema version 3 is accepted | Conforms |
 | Amount fixture roundtrip | Amount-shaped fixture strings parse through the shared `Amount` codec and round-trip byte-identically | Conforms |
 | Historical snapshot scope | Historical progress snapshots stay readable and unmodified while active preflight authority skips them by directory-prefix policy | Conforms |
+| Solidity mirror SHA gate | Every `.sol` file under `crates/contracts/abi/` is a byte-identical mirror of a single upstream source pinned in `parity/source-lock.yaml`, captured as a `vendored:` row under the matching repository; `cargo parity-verify-sol-provenance` enforces SHA-256 equality between the on-disk bytes and the manifest row before the workspace builds | Conforms |
 | Refresh mapping | The public audit-refresh map points source-lock changes and exclusion-policy changes back to this audit | Conforms |
 
 ## Current Contract

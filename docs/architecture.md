@@ -409,7 +409,10 @@ switch success.
   `Registry` authority; hard-coded chain-scoped address constants are not
   allowed in shipped crates.
 - Every ABI binding the SDK emits call-data against is generated through
-  `alloy::sol!` from committed upstream Solidity excerpts.
+  `alloy::sol!` from byte-identical upstream Solidity mirrors committed
+  under `crates/contracts/abi/` and gated by
+  `cargo parity-verify-sol-provenance` against SHA-256 rows in
+  `parity/source-lock.yaml`.
 
 ## Related Docs
 

@@ -10,7 +10,10 @@
 ## Decision
 
 Every ABI binding in `cow-sdk-contracts` is generated through `alloy::sol!`
-from committed Solidity excerpts, and every deployed-address lookup in the
+from byte-identical Solidity mirrors committed under
+`crates/contracts/abi/` and gated by `cargo parity-verify-sol-provenance`
+against SHA-256 rows in `parity/source-lock.yaml`, and every deployed-address
+lookup in the
 workspace resolves through a single typed `Registry` keyed on the
 `(ContractId, SupportedChainId, CowEnv)` tuple. Hand-rolled encoders and
 hard-coded chain-scoped address constants are not allowed in shipped
@@ -35,7 +38,7 @@ the compile-time gate.
 
 - Public surface: every ABI binding the SDK emits call-data against is the
   output of an `alloy::sol!` invocation inside `cow-sdk-contracts` or an
-  equivalent capability crate. The Solidity excerpt used to author the
+  equivalent capability crate. The byte-identical Solidity mirror used to author the
   binding is committed under `crates/contracts/abi/<family>/` so the
   provenance is reviewable at `HEAD`. `Registry::address(contract_id,
   chain_id, env)` is the sole production path for resolving a deployed
@@ -44,6 +47,28 @@ the compile-time gate.
   the embedded manifest. The canonical binding families covered by this
   rule are `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, the
   EIP-1967 proxy slot surface, and `IERC20` / `IERC20Permit`.
+- Solidity provenance discipline: every `.sol` file under
+  `crates/contracts/abi/` is a byte-identical mirror of a single
+  upstream source pinned in `parity/source-lock.yaml`, and
+  `cargo parity-verify-sol-provenance` enforces the gate before the
+  workspace builds. The local path, the upstream path under the
+  repository root, and the SHA-256 of the upstream bytes at the pinned
+  commit live as a `vendored:` row under the matching repository, and
+  the verifier rejects any drift between the on-disk SHA and the
+  manifest SHA. The verifier additionally rejects any drift between
+  the manifest SHA and the live upstream bytes either via
+  `--upstream-root <path>` (local `git show <commit>:<path>`) or via
+  `--upstream-github` (fetch each `vendored:` row from
+  `https://raw.githubusercontent.com/<owner>/<repo>/<commit>/<upstream-path>`
+  and compare); the CI quality-gate runs the GitHub-canonical check on
+  every push so the manifest cannot silently drift from upstream
+  GitHub content. All thirty-seven shipped files follow this posture:
+  there is no documentation-only or excerpt-style `.sol` file in the
+  workspace, so a reviewer's audit is `sha256sum` on every file against
+  the manifest row, or a single `curl` against the same GitHub URL the
+  verifier hits. Every `.sol` is LF-normalised on every host through
+  `.gitattributes` so the SHA gate stays byte-stable across Windows,
+  macOS, and Linux checkouts.
 - Runtime and support: native Alloy provider and local-signer dependencies are
   confined by the policy-maintainer allow-list checks rather than by a
   hand-maintained crate enumeration in this ADR. The `alloy::sol!` machinery

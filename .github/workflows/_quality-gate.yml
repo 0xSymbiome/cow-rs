@@ -201,6 +201,32 @@ jobs:
           shared-key: parity-maintainer-tests
       - name: Run parity-maintainer test suite
         run: cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
+      - name: Verify Solidity provenance (manifest-only)
+        run: |
+          cargo run --quiet \
+            --manifest-path scripts/parity-maintainer/Cargo.toml -- \
+            verify-sol-provenance \
+            --source-lock parity/source-lock.yaml \
+            --abi-root crates/contracts/abi \
+            --mode strict \
+            --json | tee provenance-sol.json
+      - name: Verify Solidity provenance (GitHub canonical cross-check)
+        # Fetches each vendored: row from
+        # https://raw.githubusercontent.com/<owner>/<repo>/<commit>/<path>
+        # (parsed from the row's `remote:` field) and asserts the bytes
+        # match the manifest SHA-256.  Strongest possible trust chain:
+        # the gate verifies manifest == GitHub canonical content at the
+        # pinned commit on every CI run, without requiring any local
+        # upstream checkout.
+        run: |
+          cargo run --quiet \
+            --manifest-path scripts/parity-maintainer/Cargo.toml -- \
+            verify-sol-provenance \
+            --source-lock parity/source-lock.yaml \
+            --abi-root crates/contracts/abi \
+            --mode strict \
+            --upstream-github \
+            --json | tee provenance-sol-github.json
 
   workspace-version-alignment:
     name: Workspace version alignment

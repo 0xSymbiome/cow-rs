@@ -12,9 +12,9 @@ Pinned sources live in `parity/source-lock.yaml`.
 | Producer | Pinned role | Used for |
 | --- | --- | --- |
 | `cowprotocol/cow-sdk` | Primary | SDK package configuration, COW Shed TypeScript constants, and shared package-level deployment evidence |
-| `cowprotocol/composable-cow` | Primary capability evidence | Composable-order Solidity excerpts, deployment rows, selector fixtures, EIP-1271 payload shapes, and watch-tower boundary evidence |
-| `cowprotocol/ethflowcontract` | Primary capability evidence | EthFlow Solidity authority (`CoWSwapEthFlow.sol`, `EthFlowOrder.sol`) and the `ReceiverMustBeSet()` revert-selector provenance |
-| `cowdao-grants/cow-shed` | Primary capability evidence | COW Shed Solidity excerpts, proxy creation-code bytes, factory address derivation, hook signature shape, and version-call evidence |
+| `cowprotocol/composable-cow` | Primary capability evidence | Byte-identical composable-order Solidity mirrors (gated by `cargo parity-verify-sol-provenance` against `parity/source-lock.yaml`), deployment rows, selector fixtures, EIP-1271 payload shapes, and watch-tower boundary evidence |
+| `cowprotocol/ethflowcontract` | Primary capability evidence | Byte-identical EthFlow Solidity mirrors (`CoWSwapEthFlow.sol`, `EthFlowOrder.sol`) and the `ReceiverMustBeSet()` revert-selector provenance |
+| `cowdao-grants/cow-shed` | Primary capability evidence | Byte-identical COW Shed Solidity mirrors, proxy creation-code bytes, factory address derivation, hook signature shape, and version-call evidence |
 | `cowprotocol/watch-tower` | Reference-only boundary evidence | Off-chain orchestration behavior used to define what remains outside the SDK |
 
 Local upstream checkout paths are optional validation inputs. When they are
@@ -62,7 +62,7 @@ buckets:
 The 0.1.0 scope does not claim total method-for-method parity with the
 upstream TypeScript SDK. Composable conditional-order helpers and the COW
 Shed account-abstraction proxy ship as first-release readiness: reserved
-leaf manifests, deployment evidence, ABI excerpts, parity fixtures, and
+leaf manifests, deployment evidence, byte-identical ABI mirrors, parity fixtures, and
 governing ADRs are in scope, with full ergonomic helper bodies arriving in
 the additive landings that follow. Capability families that are explicitly
 deferred for 0.1.0 (cross-chain bridging order construction, hook-trampoline
@@ -75,7 +75,7 @@ packages until their dedicated `cow-rs` leaf crates land.
 | Surface | Rust crate | Pinned evidence |
 | --- | --- | --- |
 | Core config and runtime contracts | `cow-sdk-core` | Common adapter, address, token, config, and selected shared type sources from `cowprotocol/cow-sdk` |
-| Contracts | `cow-sdk-contracts` | `cowprotocol/contracts` Solidity sources, committed excerpts under `crates/contracts/abi/**/*.sol`, `alloy::sol!`-generated bindings, the typed `Registry` deployment authority, and selected upstream test fixtures |
+| Contracts | `cow-sdk-contracts` | `cowprotocol/contracts`, `cowprotocol/ethflowcontract`, `cowprotocol/composable-cow`, and `cowdao-grants/cow-shed` Solidity sources mirrored byte-identically under `crates/contracts/abi/**/*.sol` and gated by `cargo parity-verify-sol-provenance` against SHA-256 rows in `parity/source-lock.yaml`, `alloy::sol!`-generated bindings, the typed `Registry` deployment authority, and selected upstream test fixtures |
 | Signing | `cow-sdk-signing` | Order-signing utilities, typed-data helpers, and contract-signing sources |
 | App-data | `cow-sdk-app-data` | App-data helpers, schema imports, generated schema references, and schema regression tests |
 | Orderbook | `cow-sdk-orderbook` | TypeScript orderbook sources plus selected `cowprotocol/services` OpenAPI and validation references |
@@ -85,8 +85,8 @@ packages until their dedicated `cow-rs` leaf crates land.
 | HTTP transport policy | `cow-sdk-transport-policy` | Retry, rate-limit, cooldown, jitter, and transport-classification behavior shared by typed HTTP clients |
 | Native Alloy adapters | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Alloy runtime and Alloy Core source-lock pins, adapter contract tests, transaction broadcast / receipt shape invariants, and native examples |
 | TypeScript-callable WASM | `cow-sdk-wasm` | Native Rust helper parity for typed-data, UID, digest, app-data, EIP-1271 payloads, orderbook/subgraph/IPFS/trading DTO shape, npm declaration snapshots, and upstream TypeScript SDK EIP-1271 vector coverage |
-| Composable orders | `cow-sdk-composable` reserved manifest | Composable-CoW source locks, Solidity excerpts, selector and EIP-1271 blob fixtures, handler revert fixtures, and watch-tower boundary documentation |
-| COW Shed | `cow-sdk-cow-shed` reserved manifest | COW Shed source locks, Solidity excerpts, proxy creation-code bytes, CREATE2 address fixtures, EIP-712 hook fixtures, and version-call evidence |
+| Composable orders | `cow-sdk-composable` reserved manifest | Composable-CoW source locks, byte-identical Solidity mirrors, selector and EIP-1271 blob fixtures, handler revert fixtures, and watch-tower boundary documentation |
+| COW Shed | `cow-sdk-cow-shed` reserved manifest | COW Shed source locks, byte-identical Solidity mirrors, proxy creation-code bytes, CREATE2 address fixtures, EIP-712 hook fixtures, and version-call evidence |
 
 ## Wire-Format Invariants
 
@@ -169,7 +169,7 @@ The Rust SDK ships in scope:
 - TypeScript-callable wasm-bindgen bindings (`cow-sdk-wasm`) with typed
   JavaScript callbacks for wallet, signer, EIP-1271, and HTTP dispatch
 - composable-order and COW Shed readiness evidence, including reserved crate
-  manifests, contract excerpts, deployment taxonomy rows, fixture artifacts, and
+  manifests, byte-identical contract mirrors, deployment taxonomy rows, fixture artifacts, and
   audit records
 
 Native Alloy transaction parity is scoped to the SDK trait contract, not to
@@ -192,7 +192,7 @@ API surface stabilises.
 ### Composable orders
 
 Composable-CoW readiness is in scope through the reserved
-`cow-sdk-composable` manifest, deployment evidence, ABI excerpts, selector
+`cow-sdk-composable` manifest, deployment evidence, byte-identical ABI mirrors, selector
 fixtures, handler fixtures, and EIP-1271 signature blob fixtures. Full
 order-construction helpers remain additive.
 
@@ -299,8 +299,9 @@ entry for anyone who later considers reintroducing the surface.
   is attempted without `.transport(...)`.
 - **Hand-rolled ABI encoders in `cow-sdk-contracts`** — every binding
   shipped by the contracts crate is generated through `alloy::sol!` from
-  the Solidity excerpts committed under `crates/contracts/abi/`
-  (governed by
+  the byte-identical Solidity mirrors committed under
+  `crates/contracts/abi/` and gated by `cargo parity-verify-sol-provenance`
+  against the SHA-256 rows in `parity/source-lock.yaml` (governed by
   [ADR 0012](./adr/0012-alloy-sol-bindings-and-registry-authority.md)).
   Hand-rolled encoder helpers for `GPv2Settlement`, `GPv2VaultRelayer`,
   `CoWSwapEthFlow`, the EIP-1967 proxy, and ERC-20 / ERC-20 Permit are

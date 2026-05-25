@@ -1,25 +1,39 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.8.0 <0.9.0;
 
-import {GPv2Order} from "../interfaces/IConditionalOrder.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {IERC20, GPv2Order} from "cowprotocol/contracts/libraries/GPv2Order.sol";
+
+import {IConditionalOrder} from "../../../interfaces/IConditionalOrder.sol";
+import {TWAPOrderMathLib} from "./TWAPOrderMathLib.sol";
+
+// --- error strings
+
+string constant INVALID_SAME_TOKEN = "same token";
+string constant INVALID_TOKEN = "invalid token";
+string constant INVALID_PART_SELL_AMOUNT = "invalid part sell amount";
+string constant INVALID_MIN_PART_LIMIT = "invalid min part limit";
+string constant INVALID_START_TIME = "invalid start time";
+string constant INVALID_NUM_PARTS = "invalid num parts";
+string constant INVALID_FREQUENCY = "invalid frequency";
+string constant INVALID_SPAN = "invalid span";
 
 /**
- * @title TWAPOrder
- * @author CoW Protocol developers (composable-cow upstream — pinned
- *         at composable-cow SHA `471ca59aa95da1bbf3b03e002de96449bc78e6f0`)
- * @dev Internal TWAP staticInput struct + validation surface. The
- *      vendored excerpt carries the canonical staticInput shape that
- *      the `TWAP` handler decodes from `ConditionalOrderParams.staticInput`
- *      and the 8 invariants enforced at validate time.
+ * @title Time-weighted Average Order Library
+ * @author mfw78 <mfw78@rndlabs.xyz>
+ * @dev Structs, errors, and functions for time-weighted average orders.
  */
 library TWAPOrder {
-    /// @dev TWAP staticInput packed via `abi.encode`.
+    using SafeCast for uint256;
+
+    // --- structs
+
     struct Data {
         IERC20 sellToken;
         IERC20 buyToken;
         address receiver;
-        uint256 partSellAmount;
-        uint256 minPartLimit;
+        uint256 partSellAmount; // amount of sellToken to sell in each part
+        uint256 minPartLimit; // max price to pay for a unit of buyToken denominated in sellToken
         uint256 t0;
         uint256 n;
         uint256 t;
@@ -27,34 +41,51 @@ library TWAPOrder {
         bytes32 appData;
     }
 
-    /// @notice TWAP validation errors (canonical reason strings).
-    error InvalidSameToken();
-    error InvalidToken();
-    error InvalidPartSellAmount();
-    error InvalidMinPartLimit();
-    error InvalidStartTime();
-    error InvalidNumParts();
-    error InvalidFrequency();
-    error InvalidSpan();
+    // --- functions
 
     /**
-     * @dev Validate the 8 TWAP invariants. Mirrors the upstream
-     *      `TWAPOrder.validate` revert sites byte-for-byte.
+     * @dev revert if the order is invalid
+     * @param self The TWAP order to validate
      */
-    function validate(Data memory data) internal pure {
-        if (data.sellToken == data.buyToken) revert InvalidSameToken();
-        if (address(data.sellToken) == address(0) || address(data.buyToken) == address(0)) {
-            revert InvalidToken();
+    function validate(Data memory self) internal pure {
+        if (!(self.sellToken != self.buyToken)) revert IConditionalOrder.OrderNotValid(INVALID_SAME_TOKEN);
+        if (!(address(self.sellToken) != address(0) && address(self.buyToken) != address(0))) {
+            revert IConditionalOrder.OrderNotValid(INVALID_TOKEN);
         }
-        if (data.partSellAmount == 0) revert InvalidPartSellAmount();
-        if (data.minPartLimit == 0) revert InvalidMinPartLimit();
-        if (data.t0 >= type(uint32).max) revert InvalidStartTime();
-        if (data.n < 2 || data.n > type(uint32).max) revert InvalidNumParts();
-        if (data.t == 0 || data.t > 365 days) revert InvalidFrequency();
-        if (data.span > data.t) revert InvalidSpan();
+        if (!(self.partSellAmount > 0)) revert IConditionalOrder.OrderNotValid(INVALID_PART_SELL_AMOUNT);
+        if (!(self.minPartLimit > 0)) revert IConditionalOrder.OrderNotValid(INVALID_MIN_PART_LIMIT);
+        if (!(self.t0 < type(uint32).max)) revert IConditionalOrder.OrderNotValid(INVALID_START_TIME);
+        if (!(self.n > 1 && self.n <= type(uint32).max)) revert IConditionalOrder.OrderNotValid(INVALID_NUM_PARTS);
+        if (!(self.t > 0 && self.t <= 365 days)) revert IConditionalOrder.OrderNotValid(INVALID_FREQUENCY);
+        if (!(self.span <= self.t)) revert IConditionalOrder.OrderNotValid(INVALID_SPAN);
     }
-}
 
-interface IERC20 {
-    function balanceOf(address account) external view returns (uint256);
+    /**
+     * @dev Generate the `GPv2Order` for the current part of the TWAP order.
+     * @param self The TWAP order to generate the order for.
+     * @return order The `GPv2Order` for the current part.
+     */
+    function orderFor(Data memory self) internal view returns (GPv2Order.Data memory order) {
+        // First, validate and revert if the TWAP is invalid.
+        validate(self);
+
+        // Calculate the `validTo` timestamp for the order. This is unique for each part of the TWAP order.
+        // As `validTo` is unique, there is a corresponding unique `orderUid` for each `GPv2Order`. As
+        // CoWProtocol enforces that each `orderUid` is only used once, this means that each part of the TWAP
+        // order can only be executed once.
+        order = GPv2Order.Data({
+            sellToken: self.sellToken,
+            buyToken: self.buyToken,
+            receiver: self.receiver,
+            sellAmount: self.partSellAmount,
+            buyAmount: self.minPartLimit,
+            validTo: TWAPOrderMathLib.calculateValidTo(self.t0, self.n, self.t, self.span).toUint32(),
+            appData: self.appData,
+            feeAmount: 0,
+            kind: GPv2Order.KIND_SELL,
+            partiallyFillable: false,
+            sellTokenBalance: GPv2Order.BALANCE_ERC20,
+            buyTokenBalance: GPv2Order.BALANCE_ERC20
+        });
+    }
 }

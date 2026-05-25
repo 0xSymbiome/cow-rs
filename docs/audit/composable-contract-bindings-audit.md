@@ -2,7 +2,7 @@
 
 Status: Current
 Last reviewed: 2026-05-15
-Owning surface: composable Solidity excerpts, deployment registry rows, and Layer A parity fixtures
+Owning surface: byte-identical composable-cow Solidity mirrors, deployment registry rows, and Layer A parity fixtures
 Refresh trigger: Refresh when composable-cow deployments, contract ABIs, conditional-order type strings, or selector vectors change upstream.
 Related docs:
 - [ADR 0048](../adr/0048-composable-conditional-order-framework.md)
@@ -13,8 +13,9 @@ Related docs:
 
 This audit covers:
 
-- the vendored composable-cow Solidity excerpts that anchor the SDK's typed
-  bindings;
+- the byte-identical composable-cow Solidity mirrors under
+  `crates/contracts/abi/composable-cow/` that anchor the SDK's typed
+  bindings and are gated by `cargo parity-verify-sol-provenance`;
 - the schema v2 deployment registry rows that pin composable contract
   addresses per chain id;
 - the Layer A parity fixtures (`selectors.json`, `params_hash.json`,
@@ -32,7 +33,7 @@ selectors and decoders; the watch-tower boundary is governed by the
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Solidity excerpts | Vendored excerpts compile under `alloy::sol!` and produce selectors byte-identical to `forge methodIdentifiers` output | Conforms |
+| Solidity mirrors | Byte-identical mirrors of `cowprotocol/composable-cow` Solidity sources (gated by `cargo parity-verify-sol-provenance` against SHA-256 rows in `parity/source-lock.yaml`) compile under `alloy::sol!` and produce selectors byte-identical to `forge methodIdentifiers` output | Conforms |
 | Deployment registry | Schema v2 row count for composable contracts matches the pinned deployment set; no Ink composable rows are present in `registry.toml` | Conforms |
 | Layer A fixtures | `selectors.json`, `params_hash.json`, and `multiplexer_leaf.json` carry real byte-identity values against the pinned upstream test vectors | Conforms |
 | Ink Reality Check | Every Ink composable tuple appears in `deployment-coverage.yaml` with `not_deployed` status and an `eth_getCode` probe captured in `parity/ink-probe-results.json` | Conforms |
@@ -40,19 +41,25 @@ selectors and decoders; the watch-tower boundary is governed by the
 
 ## Current Contract
 
-### Solidity excerpts
+### Solidity mirrors
 
-The vendored composable-cow Solidity excerpts live under
-`crates/contracts/abi/composable-cow/`. The set covers
-`ComposableCoW.sol`, `BaseConditionalOrder.sol`,
-`ERC1271Forwarder.sol`, the four non-TWAP handler contracts
-(`GoodAfterTime.sol`, `StopLoss.sol`, `TradeAboveThreshold.sol`,
-`PerpetualStableSwap.sol`), the TWAP handler at
-`types/twap/TWAP.sol`, the three interface modules under
-`interfaces/`, the `CurrentBlockTimestampFactory.sol` value factory, and the
-local CoW settlement excerpt. Selectors generated from these excerpts via
-`alloy::sol!` are byte-identical to `forge methodIdentifiers` output for the
-same contract set.
+The byte-identical composable-cow Solidity mirrors live under
+`crates/contracts/abi/composable-cow/` and are gated by
+`cargo parity-verify-sol-provenance` against SHA-256 rows in
+`parity/source-lock.yaml`. The set covers `ComposableCoW.sol`,
+`BaseConditionalOrder.sol`, `ERC1271Forwarder.sol`, the four non-TWAP
+handler contracts (`GoodAfterTime.sol`, `StopLoss.sol`,
+`TradeAboveThreshold.sol`, `PerpetualStableSwap.sol`), the TWAP handler
+at `types/twap/TWAP.sol` plus the supporting libraries
+`types/TWAPOrder.sol` and `types/TWAPOrderMathLib.sol`, the three
+interface modules under `interfaces/`, the `CurrentBlockTimestampFactory.sol`
+value factory, the local CoW settlement mirror at
+`vendored/CoWSettlement.sol`, and the Safe Global
+`extensible/ExtensibleFallbackHandler.sol` reached transitively through
+composable-cow's `lib/safe` submodule SHA captured by the pinned
+composable-cow commit. Selectors generated from these mirrors via
+`alloy::sol!` are byte-identical to `forge methodIdentifiers` output for
+the same contract set.
 
 ### Deployment registry
 

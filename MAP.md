@@ -834,10 +834,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/contracts/abi/composable-cow/out/</code> &mdash; 8 file(s)</summary>
+<summary><code>crates/contracts/abi/composable-cow/out/</code> &mdash; 7 file(s)</summary>
 
 - [`ComposableCoW.json`](crates/contracts/abi/composable-cow/out/ComposableCoW.json)
-- [`CurrentBlockTimestampFactory.json`](crates/contracts/abi/composable-cow/out/CurrentBlockTimestampFactory.json)
 - [`ExtensibleFallbackHandler.json`](crates/contracts/abi/composable-cow/out/ExtensibleFallbackHandler.json)
 - [`GoodAfterTime.json`](crates/contracts/abi/composable-cow/out/GoodAfterTime.json)
 - [`PerpetualStableSwap.json`](crates/contracts/abi/composable-cow/out/PerpetualStableSwap.json)
@@ -907,29 +906,31 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/contracts/abi/eip1967/</code> &mdash; 1 file(s)</summary>
 
-- [`Eip1967.sol`](crates/contracts/abi/eip1967/Eip1967.sol)
+- [`GPv2EIP1967.sol`](crates/contracts/abi/eip1967/GPv2EIP1967.sol)
 
 </details>
 
 <details>
-<summary><code>crates/contracts/abi/erc20/</code> &mdash; 2 file(s)</summary>
+<summary><code>crates/contracts/abi/erc20/</code> &mdash; 1 file(s)</summary>
 
 - [`IERC20.sol`](crates/contracts/abi/erc20/IERC20.sol)
-- [`IERC20Permit.sol`](crates/contracts/abi/erc20/IERC20Permit.sol)
 
 </details>
 
 <details>
-<summary><code>crates/contracts/abi/eth-flow/</code> &mdash; 1 file(s)</summary>
+<summary><code>crates/contracts/abi/eth-flow/</code> &mdash; 2 file(s)</summary>
 
 - [`CoWSwapEthFlow.sol`](crates/contracts/abi/eth-flow/CoWSwapEthFlow.sol)
+- [`EthFlowOrder.sol`](crates/contracts/abi/eth-flow/EthFlowOrder.sol)
 
 </details>
 
 <details>
-<summary><code>crates/contracts/abi/settlement/</code> &mdash; 1 file(s)</summary>
+<summary><code>crates/contracts/abi/settlement/</code> &mdash; 3 file(s)</summary>
 
+- [`GPv2Interaction.sol`](crates/contracts/abi/settlement/GPv2Interaction.sol)
 - [`GPv2Settlement.sol`](crates/contracts/abi/settlement/GPv2Settlement.sol)
+- [`GPv2Trade.sol`](crates/contracts/abi/settlement/GPv2Trade.sol)
 
 </details>
 

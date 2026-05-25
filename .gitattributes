@@ -3,3 +3,38 @@
 # `include_str!` produces identical bytes across Windows, macOS, and
 # Linux checkouts.
 *.snap text eol=lf
+
+# Vendored Solidity sources whose byte-exact contents are compared by
+# `parity-maintainer verify-sol-provenance` against the upstream pins in
+# `parity/source-lock.yaml`. Any host that re-normalises CRLF on checkout
+# would break the SHA-256 gate; force LF on every host so the
+# bytes-on-disk SHA matches the git-blob SHA matches the upstream SHA.
+crates/contracts/abi/**/*.sol text eol=lf
+
+# YAML files under parity/openapi/ are byte-compared by Rust tooling:
+# `parity/openapi/services-orderbook.yml` is a vendored upstream
+# snapshot whose four-line "Vendored from cowprotocol/services @
+# <commit>" header pins it to a specific upstream commit, and the
+# `*-inventory.yaml` plus `coverage.yaml` manifests are read by the
+# DTO coverage validator. CRLF on any host would change the bytes
+# under both contracts.
+parity/openapi/**/*.yaml text eol=lf
+parity/openapi/**/*.yml text eol=lf
+
+# Frozen wire-byte fixtures pinned by Rust regression tests through
+# `include_str!`. CRLF would corrupt the byte-equality assertion the
+# fixture is built to enforce.
+parity/fixtures/**/*.json text eol=lf
+
+# Source-lock manifests carry pinned upstream commit hashes and are
+# parsed by `cargo parity-validate`. LF normalisation keeps the parser
+# input identical across hosts.
+parity/source-lock.yaml text eol=lf
+
+# COW Shed proxy creation-code is RAW EVM bytecode, not text. Mark it
+# explicitly `binary` so git neither normalises nor diffs the byte
+# stream. The neighbouring `.sha256` digest files ARE text and stay
+# LF-normalised so `build.rs::validate_cow_shed_proxy_artifacts`
+# sees the same digest bytes on every host.
+crates/contracts/abi/cow-shed/proxy-creation-code/*.bin binary
+crates/contracts/abi/cow-shed/proxy-creation-code/*.sha256 text eol=lf

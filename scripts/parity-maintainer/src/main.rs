@@ -20,6 +20,7 @@ mod stale_phrase_catalog;
 mod stale_phrase_lint;
 mod url_provenance;
 mod vendor_openapi;
+mod verify_sol_provenance;
 
 const GENERATED_AT_UTC: &str = "2026-04-29T00:00:00Z";
 const DEFAULT_SOURCE_LOCK: &str = "parity/source-lock.yaml";
@@ -454,6 +455,18 @@ enum Commands {
     /// authority annotation and report fixtures that fall into a rejected
     /// class without coverage by `parity/self-pinning-allowlist.yaml`.
     AuditSelfPinning(audit_self_pinning::AuditSelfPinningArgs),
+    /// Validate every `.sol` file under `crates/contracts/abi/` against
+    /// the source-lock-pinned upstream sources. Each file is
+    /// SHA-256-checked against the matching `vendored:` row in
+    /// `parity/source-lock.yaml`. With `--upstream-root <path>` the
+    /// verifier additionally cross-checks against the live upstream
+    /// bytes via `git show <commit>:<path>`; with `--upstream-github`
+    /// it fetches the bytes from GitHub raw content at the pinned
+    /// commit so CI can verify the manifest against canonical upstream
+    /// without any local checkout. A provenance-headed excerpt fallback
+    /// is recognised for files whose canonical upstream cannot be
+    /// vendored as a single byte-stream.
+    VerifySolProvenance(verify_sol_provenance::VerifySolProvenanceArgs),
 }
 
 #[derive(Debug, Args)]
@@ -632,6 +645,7 @@ fn main() -> Result<()> {
             Ok(())
         }
         Commands::AuditSelfPinning(args) => audit_self_pinning::run(&args),
+        Commands::VerifySolProvenance(args) => verify_sol_provenance::run(&args),
     }
 }
 
