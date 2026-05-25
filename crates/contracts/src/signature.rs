@@ -1,20 +1,23 @@
 use std::fmt;
 
-use alloy_primitives::{B256, Signature as AlloySignature};
+use alloy_primitives::{B256, Signature as AlloySignature, keccak256};
+use alloy_sol_types::SolCall;
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, AsyncProvider, Hash32, HexData, Provider};
 
-use crate::{ContractsError, primitives::function_selector};
+use crate::ContractsError;
+use crate::eip1271::IERC1271;
 
 /// EIP-1271 success magic value as the canonical `0x`-prefixed hex string
 /// form documented by the protocol.
+///
+/// The byte form of the magic value is the function selector of
+/// `isValidSignature(bytes32,bytes)`, which the cow signature path reaches
+/// through `<IERC1271::isValidSignatureCall as alloy_sol_types::SolCall>::SELECTOR`.
 #[doc(alias = "magic-value")]
 pub const EIP1271_MAGICVALUE: &str = "0x1626ba7e";
 
-/// EIP-1271 success magic value as the 4-byte function selector
-/// (`isValidSignature(bytes32,bytes)`) the protocol uses on the wire.
-pub(crate) const EIP1271_MAGICVALUE_BYTES: [u8; 4] = [0x16, 0x26, 0xba, 0x7e];
 pub(crate) const EIP1271_IS_VALID_SIGNATURE_ABI_JSON: &str = r#"[{"type":"function","name":"isValidSignature","inputs":[{"name":"hash","type":"bytes32"},{"name":"signature","type":"bytes"}],"outputs":[{"name":"","type":"bytes4"}],"stateMutability":"view"}]"#;
 
 /// Supported `CoW` signing schemes.
@@ -309,10 +312,19 @@ pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> 
 }
 
 /// Returns the 4-byte function selector for a Solidity signature.
+///
+/// For symbols that already have an `alloy_sol_types::sol!` binding in this
+/// workspace (such as the EIP-1271 `isValidSignature(bytes32,bytes)` magic
+/// value reached through
+/// `<IERC1271::isValidSignatureCall as alloy_sol_types::SolCall>::SELECTOR`),
+/// prefer the macro-emitted `SELECTOR` constant per the
+/// "Canonical Contract Bindings" principle in `docs/principles.md`. This
+/// helper is the runtime-string fallback for signatures supplied as `&str`
+/// at call time.
 #[must_use]
 pub fn function_magic_value(signature: &str) -> String {
-    let selector = function_selector(signature);
-    format!("0x{}", hex::encode(selector))
+    let hash = keccak256(signature.as_bytes());
+    format!("0x{}", hex::encode(&hash[..4]))
 }
 
 /// Verifies an EIP-1271 signature using a synchronous provider.
@@ -415,11 +427,11 @@ fn has_contract_code(code: Option<&HexData>) -> bool {
 
 fn ensure_magic_value(raw: &str) -> Result<(), ContractsError> {
     let actual = decode_magic_value_response(raw)?;
-    if actual == EIP1271_MAGICVALUE_BYTES {
+    if actual == IERC1271::isValidSignatureCall::SELECTOR {
         Ok(())
     } else {
         Err(ContractsError::Eip1271MagicValueMismatch {
-            expected: EIP1271_MAGICVALUE_BYTES,
+            expected: IERC1271::isValidSignatureCall::SELECTOR,
             actual,
         })
     }

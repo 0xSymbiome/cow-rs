@@ -1,5 +1,3 @@
-use alloy_primitives::keccak256;
-
 use cow_sdk_core::{Address, BuyTokenDestination, OrderKind, SellTokenSource};
 
 pub(crate) const ORDER_UID_LENGTH_BYTES: usize = 56;
@@ -69,11 +67,6 @@ pub fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
         // variants are handled above; new variants must update this codec.
         _ => unreachable!("BuyTokenDestination variants are exhaustively covered"),
     }
-}
-
-pub(crate) fn function_selector(signature: &str) -> [u8; 4] {
-    let hash = keccak256(signature.as_bytes());
-    [hash[0], hash[1], hash[2], hash[3]]
 }
 
 #[cfg(test)]

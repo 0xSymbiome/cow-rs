@@ -13,6 +13,9 @@
 pub mod deploy;
 /// Chain-keyed registry of canonical CoW Protocol contract deployments.
 pub mod deployments;
+/// Typed ABI binding for the EIP-1271 standard signature-validation
+/// interface, generated via the `alloy::sol!` macro.
+pub mod eip1271;
 /// Typed ERC-20 and EIP-2612 Permit bindings generated from the upstream
 /// Solidity surface via the `alloy::sol!` macro.
 pub mod erc20;
@@ -53,6 +56,7 @@ pub use deployments::{
     ContractId, DeploymentChainId, DeploymentCoverage, DeploymentCoverageError,
     DeploymentCoverageStatus, DeploymentEnv, DeploymentVerificationStatus, Registry, RegistryError,
 };
+pub use eip1271::IERC1271;
 pub use erc20::{IERC20, IERC20Permit, PERMIT_TYPE_HASH, permit_typed_data_hash};
 pub use errors::ContractsError;
 pub use eth_flow::{

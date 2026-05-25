@@ -3,9 +3,10 @@ mod common;
 use std::{cell::RefCell, fmt, rc::Rc, sync::Mutex};
 
 use alloy_primitives::Address as AlloyAddress;
+use alloy_sol_types::SolCall;
 use cow_sdk_contracts::{
     ContractsError, EIP1271_MAGICVALUE, Eip1271SignatureData, Eip1271VerificationCache,
-    Eip1271VerificationRequest, Signature, SigningScheme, decode_eip1271_signature_data,
+    Eip1271VerificationRequest, IERC1271, Signature, SigningScheme, decode_eip1271_signature_data,
     decode_signing_scheme, encode_eip1271_signature_data, encode_signing_scheme,
     function_magic_value, normalized_ecdsa_signature, verify_eip1271_signature,
     verify_eip1271_signature_async,
@@ -277,6 +278,17 @@ fn signing_scheme_and_magic_value_match_fixture_contract() {
     );
     assert_eq!(
         function_magic_value("isValidSignature(bytes32,bytes)"),
+        EIP1271_MAGICVALUE
+    );
+    assert_eq!(
+        IERC1271::isValidSignatureCall::SELECTOR,
+        [0x16, 0x26, 0xba, 0x7e]
+    );
+    assert_eq!(
+        format!(
+            "0x{}",
+            hex::encode(IERC1271::isValidSignatureCall::SELECTOR)
+        ),
         EIP1271_MAGICVALUE
     );
 }
