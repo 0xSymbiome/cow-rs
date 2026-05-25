@@ -1,1 +1,0 @@
-{"address":"0x0000000000000000000000000000000000000003","method":"domainSeparator","abiJson":"[{\"name\":\"domainSeparator\",\"type\":\"function\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\"}]}]","argsJson":"[]"}

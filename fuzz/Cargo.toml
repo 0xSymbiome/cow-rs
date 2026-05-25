@@ -314,22 +314,22 @@ doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_hex_quantity_helpers"
-path = "fuzz_targets/fuzz_hex_quantity_helpers.rs"
+name = "fuzz_rpc_error_payload_serde"
+path = "fuzz_targets/fuzz_rpc_error_payload_serde.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_json_to_dyn_value"
-path = "fuzz_targets/fuzz_json_to_dyn_value.rs"
+name = "fuzz_contract_call_serde"
+path = "fuzz_targets/fuzz_contract_call_serde.rs"
 test = false
 doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_transaction_to_rpc"
-path = "fuzz_targets/fuzz_transaction_to_rpc.rs"
+name = "fuzz_transaction_request_serde"
+path = "fuzz_targets/fuzz_transaction_request_serde.rs"
 test = false
 doc = false
 bench = false

@@ -49,11 +49,11 @@ the scheduled-fuzz workflow rather than by this static review.
 | Target inventory | 46 fuzz targets cover every reviewed public untrusted-input boundary across `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-signing`, `cow-sdk-trading`, `cow-sdk-transport-policy`, and `cow-sdk-browser-wallet` | Conforms |
 | Stable-toolchain compile | The fuzz crate compiles under `cargo +stable check --manifest-path fuzz/Cargo.toml` and is gated on every pull request through the shared workspace quality-gate workflow | Conforms |
 | Nightly-toolchain enumerate | `cargo +nightly fuzz list --fuzz-dir fuzz` enumerates all 46 targets | Conforms |
-| Per-target seed contract | Every target ships a corpus directory with a `README.md`, at least 5 tracked seed files, and explicit class coverage (canonical / boundary / adversarial) anchored to a named parity fixture or upstream test fixture | Conforms |
+| Per-target seed contract | Every target ships a corpus directory with a tracked `README.md` enumerating the canonical / boundary / adversarial seed classes the maintainer keeps in local working copies; the seed binaries themselves are local-only (excluded from the repository through `.gitignore`) and reach CI through the workflow's `upload-artifact` step on failure | Conforms |
 | Property traceability | Every target carries a `**Property:**` doc-comment row citing one `PROP-*` invariant identifier from `PROPERTIES.md`; every cited identifier has its evidence column updated to reference the fuzz target source and corpus directory | Conforms |
 | Public-surface boundary | Every target imports only published SDK surface; crate-private helpers are exercised through the nearest public wrapper, with the routing documented in the target doc-comment header | Conforms |
 | Invariant strength | Existing targets carry semantic assertions beyond bare panic-freedom: encoder targets check selector and decoder round-trip, classifier targets check determinism and class boundaries, redaction targets check credential-shape absence including URL userinfo, JWT prefixes, Bearer prefixes, and credential key/value forms | Conforms |
-| Boundary on `pub(crate)` surfaces | Three browser-wallet helpers (`hex_quantity`, `parse_quantity_to_decimal`, `json_to_dyn_value`, `parse_u256`, `parse_i256`, `bytes_from_json`, `decode_hex`, `transaction_to_rpc`) are crate-private and reachable only through `async fn` wrappers. The fuzz crate carries no async executor, so the targets exercise adjacent public deserialization surfaces (`RpcErrorPayload`, `ContractCall`, `TransactionRequest`) and document the routing | Conforms (documented gap) |
+| Boundary on `pub(crate)` surfaces | Eight browser-wallet helpers (`hex_quantity`, `parse_chain_id_value`, `parse_quantity_to_decimal`, `json_to_dyn_value`, `parse_u256`, `parse_i256`, `bytes_from_json`, `decode_hex`, `transaction_to_rpc`) are crate-private and reachable only through `async fn` wrappers. The fuzz crate carries no async executor, so the three fuzz targets named after the adjacent public DTOs (`fuzz_rpc_error_payload_serde`, `fuzz_contract_call_serde`, `fuzz_transaction_request_serde`) fuzz the serde boundaries that feed those helpers; the helpers themselves stay covered by `crates/browser-wallet/tests/` until async-runtime support is added to the fuzz crate | Conforms (documented gap) |
 
 ## Current Contract
 
@@ -76,7 +76,7 @@ declared as a `[[bin]]` entry in `fuzz/Cargo.toml`, has a matching
 | App-data | 6 | CID round-trip, CID-to-hex decoder, schema version `is_semver`, `stringify_deterministic`, app-data size limit, `params_from_doc` |
 | Trading and slippage | 3 | App-data merge, slippage amounts, slippage policy helpers |
 | Orderbook wire totals | 1 | `calculate_total_fee` |
-| Browser-wallet adjacent | 3 | Hex-quantity helpers (adjacent), JSON-to-dyn-value (adjacent), transaction-to-RPC (adjacent) |
+| Browser-wallet DTO serde | 3 | `RpcErrorPayload` serde + `Debug` redaction, `ContractCall` serde, `TransactionRequest` serde |
 
 ### Stable-toolchain Compile Gate
 
@@ -102,17 +102,30 @@ LLVM AddressSanitizer runtime ships with the system clang/llvm package.
 Every target ships a corpus directory under `fuzz/corpus/<target>/`
 that satisfies the contract documented in `fuzz/README.md`:
 
-- at least 5 tracked seed files (excluding the directory `README.md`)
+- a tracked `README.md` that names the parity fixture id (or pinned
+  upstream test fixture) the canonical class is anchored to and
+  enumerates every seed by class and derivation
 - explicit canonical / boundary / adversarial class coverage
-- the per-target `README.md` names the parity fixture id (or pinned
-  upstream test fixture) the canonical class is anchored to, and lists
-  every seed by class and derivation
+  documented in that `README.md`
 
-Seed files are tracked in version control through allow-list entries
-in the workspace `.gitignore`. New corpus directories require both a
-`fuzz/Cargo.toml` `[[bin]]` entry and a matching `.gitignore`
-allow-list so seed files are not silently dropped by the default
-`fuzz/corpus/*` exclusion.
+Seed binaries themselves are **not tracked** in the repository. The
+workspace `.gitignore` excludes `fuzz/corpus/*/*` except `README.md`,
+so binary seeds stay in maintainer-local working copies. CI runs
+generate their own corpus by mutation; on failure, the scheduled fuzz
+workflow's `upload-artifact` step preserves the run-time corpus and
+any crash inputs as a workflow artifact for post-mortem analysis.
+Maintainers regenerate the per-target seed inventory locally from the
+classes documented in each `README.md` when bootstrapping a new
+working copy or expanding coverage for a target.
+
+This posture keeps the public repository footprint small (one
+`README.md` per target plus the target source under
+`fuzz/fuzz_targets/`) while preserving the parity-fixture cross-link
+and the documented seed-class taxonomy. New corpus directories
+require only a `fuzz/Cargo.toml` `[[bin]]` entry and a populated
+`fuzz/corpus/<target>/README.md`; the global `.gitignore` pattern
+covers binary-seed exclusion without needing per-target allow-list
+edits.
 
 ### Property Traceability
 
@@ -181,17 +194,23 @@ panic-freedom. The asserted properties include:
 
 ### Boundary On `pub(crate)` Browser-wallet Helpers
 
-The browser-wallet adjacent targets (`fuzz_hex_quantity_helpers`,
-`fuzz_json_to_dyn_value`, `fuzz_transaction_to_rpc`) name a documented
-gap: the helpers are `pub(crate)` and reachable only through
-`async fn` methods on `AsyncProvider` and `AsyncSigningProvider`. The
-fuzz crate does not link an async executor, so the targets exercise
-the adjacent public deserialization surfaces (`RpcErrorPayload`,
-`ContractCall`, `TransactionRequest`) that participate in the same
-normalization pipeline. The boundary is recorded in the target
-doc-comment headers and in this audit, so a future refresh that adds
-an async runtime or expands the public surface can close the gap with
-no further design change.
+Three fuzz targets (`fuzz_rpc_error_payload_serde`,
+`fuzz_contract_call_serde`, `fuzz_transaction_request_serde`) fuzz
+the public DTO serde boundaries that feed the browser-wallet RPC
+normalization pipeline. The pipeline's internal coercion helpers
+(`hex_quantity`, `parse_chain_id_value`, `parse_quantity_to_decimal`,
+`json_to_dyn_value`, `parse_u256`, `parse_i256`, `bytes_from_json`,
+`decode_hex`, `transaction_to_rpc`) are `pub(crate)` and reachable
+only through `async fn` methods on `AsyncProvider` and
+`AsyncSigningProvider`. The fuzz crate carries no async executor, so
+those helpers stay covered by the synchronous unit and contract
+tests under `crates/browser-wallet/tests/` rather than by a direct
+fuzz harness. The three serde-boundary targets pin the DTOs the
+helpers consume, so a malformed input cannot reach the coercion
+helpers without first crossing the fuzzed deserialization seam. When
+async-runtime support is added to the fuzz crate, direct fuzz
+harnesses for each helper can be added to the inventory without
+disturbing these three targets.
 
 ### Empirical Run Evidence
 
@@ -220,7 +239,7 @@ were corrected before the clean run:
 
 The three fuzz-target invariants that were corrected are documented in
 the target source headers: `fuzz_subgraph_graphql_error_decode` and
-`fuzz_hex_quantity_helpers` no longer assert round-trip equality on
+`fuzz_rpc_error_payload_serde` no longer assert round-trip equality on
 `Redacted<T>` fields (the wrapper's `Serialize` impl deliberately
 writes the sanitized placeholder rather than the inner value), and
 `fuzz_stringify_deterministic` no longer asserts byte-level canonical
@@ -237,11 +256,18 @@ Primary implementation points:
 
 - `fuzz/Cargo.toml`
 - `fuzz/fuzz_targets/` (46 fuzz target source files)
-- `fuzz/corpus/` (46 corpus directories with READMEs and seed files)
+- `fuzz/corpus/<target>/README.md` (46 per-target READMEs that
+  enumerate the seed class taxonomy and parity-fixture provenance;
+  binary seeds are local-only and excluded from the repository)
 - `fuzz/README.md` (per-target seed contract and harness conventions)
-- `.gitignore` (corpus directory allow-list)
+- `.gitignore` (global rule that excludes `fuzz/corpus/*/*` except
+  `README.md`, so binary seeds stay in maintainer-local working
+  copies)
 - `.github/workflows/_quality-gate.yml` (stable-toolchain compile gate
   step `Check fuzz crate against the stable toolchain`)
+- `.github/workflows/fuzz.yml` (scheduled-fuzz workflow with
+  `upload-artifact` step that preserves run-time corpora and crash
+  inputs on failure)
 - `PROPERTIES.md` (22 `PROP-*` rows with fuzz target evidence)
 
 Primary regression coverage:

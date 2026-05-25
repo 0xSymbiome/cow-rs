@@ -44,9 +44,15 @@ cargo +nightly fuzz run <target> --fuzz-dir fuzz -- -max_total_time=60
 
 - `fuzz_targets/` — one `.rs` file per target. The file stem matches the
   `[[bin]]` name declared in `Cargo.toml`.
-- `corpus/<target>/` — tracked baseline seed inputs for the matching
-  target. Filenames describe the boundary case they exercise. Local
-  fuzzing may add additional out-of-band corpus entries.
+- `corpus/<target>/README.md` — the only tracked file in each corpus
+  directory. Enumerates the canonical / boundary / adversarial seed
+  classes the maintainer keeps in local working copies and names the
+  parity-fixture provenance for the canonical class.
+- `corpus/<target>/seed-*.bin` (local-only) — baseline seed inputs for
+  the matching target. Filenames describe the boundary case they
+  exercise. Not tracked in version control (excluded through the
+  global `fuzz/corpus/*/*` `.gitignore` rule). Local fuzzing may add
+  additional out-of-band corpus entries which also stay local-only.
 - `artifacts/<target>/` — crash reproducers written by libFuzzer on
   failure. Also not tracked in version control.
 - `dictionaries/<target>.dict` — optional libFuzzer token dictionary for
@@ -65,23 +71,30 @@ is the codec boundary under test (`order_uid`, `typed_data`,
 
 ## Per-target seed contract
 
-Every target that is part of scheduled fuzzing must ship at least 5
-tracked seed files under `fuzz/corpus/<target>/`, excluding the
-directory README. The tracked corpus must include the following seed
-classes:
+Every target that is part of scheduled fuzzing must ship a tracked
+`fuzz/corpus/<target>/README.md` that enumerates the local seed
+inventory the maintainer keeps for the target. The README documents
+at least the following seed classes, each of which the maintainer
+materializes as one or more local-only files under
+`fuzz/corpus/<target>/`:
 
 - `canonical` — at least one seed derived from `parity/fixtures/*.json`
-  or a pinned upstream test fixture. The corpus README names the fixture
-  id and the derivation step.
+  or a pinned upstream test fixture. The README names the fixture id
+  and the derivation step.
 - `boundary` — at least one seed at an input-domain edge such as an
-  empty payload, all-zero or all-`0xff` bytes, a single-element list, a
-  capped maximum-length list, or a numeric extreme.
-- `adversarial` — at least one seed derived from a documented edge case,
-  upstream regression, named audit risk, or known historical bug.
+  empty payload, all-zero or all-`0xff` bytes, a single-element list,
+  a capped maximum-length list, or a numeric extreme.
+- `adversarial` — at least one seed derived from a documented edge
+  case, upstream regression, named audit risk, or known historical
+  bug.
 
-The remaining seeds needed to reach the 5-file floor may come from any
-of those classes. The per-target README is part of the seed contract and
-must be updated whenever tracked seeds are added, removed, or rederived.
+The recommended local-disk seed count is at least five files per
+target, but the binary seeds themselves stay in maintainer-local
+working copies — the workspace `.gitignore` excludes
+`fuzz/corpus/*/*` except `README.md`, so seed binaries never enter
+the public repository. The README is the canonical record of what
+each maintainer-local working copy must contain; update it whenever
+the local seed inventory is added to, removed from, or rederived.
 
 ## Encoder Fuzz Targets
 
@@ -165,8 +178,9 @@ cargo +nightly fuzz run <target> --fuzz-dir fuzz fuzz/corpus/<target>/<seed>
    arbitrary input), call the helper under test, and assert the
    documented invariant. Keep the assertion messages specific so a
    crash in CI names the diverging field.
-3. Add `corpus/<target>/README.md` and at least 5 deterministic seed
-   files covering the canonical, boundary, and adversarial classes.
+3. Add `corpus/<target>/README.md` (tracked) and at least 5
+   deterministic seed files (local-only, excluded by `.gitignore`)
+   covering the canonical, boundary, and adversarial classes.
 4. Smoke-run locally: `cargo +nightly fuzz run <target> --fuzz-dir fuzz
    -- -runs=1000`.
 

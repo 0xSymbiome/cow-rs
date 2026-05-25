@@ -1,1 +1,0 @@
-{"address":"0x0000000000000000000000000000000000000001","method":"balanceOf","abiJson":"[{\"name\":\"balanceOf\",\"type\":\"function\",\"inputs\":[{\"name\":\"who\",\"type\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}]}]","argsJson":"[\"0x0000000000000000000000000000000000000002\"]"}
