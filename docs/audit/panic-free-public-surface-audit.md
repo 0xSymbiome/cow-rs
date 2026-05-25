@@ -1,7 +1,7 @@
 # Panic-Free Public Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-05-25
 Owning surface: every `crates/*/src/**/*.rs` file accessible from the published public API
 Refresh trigger: any ADR 0033 panic-policy change, panic-allowlist addition, or new `expect`, `unwrap`, or `panic!` site on a path reachable from the published public API
 Related docs:
@@ -52,7 +52,7 @@ Documented public runtime sites:
 | `crates/transport-policy/src/jitter.rs:111`; `crates/transport-policy/src/retry.rs:138`; `crates/transport-policy/src/time.rs:26`; `crates/trading/src/wait.rs:293`; `crates/trading/src/order.rs:219`; `crates/trading/src/onchain.rs:505` | Values are clamped or statically bounded immediately before conversion, so the fallible conversion documents the invariant rather than accepting caller-controlled overflow. |
 | `crates/orderbook/src/request.rs:498` | The public response-envelope helper serializes an in-memory `serde_json::Value` into bytes; the panic would require JSON value serialization itself to fail. |
 | `crates/core/src/types/amount.rs:278` | `Amount::pow` routes through `checked_pow` so the inner `ruint::Uint::pow` (= `wrapping_pow`) overflow path becomes a debug panic with caller location rather than a silent wrap that would corrupt financial values. Callers needing infallible behaviour use `Amount::checked_pow` or `Amount::saturating_pow`. |
-| `crates/core/src/types/amount.rs:693` | `DecimalAmount::to_decimal_string` routes the `10^decimals` scale computation through `checked_pow` with an `expect` call. The expect is structurally unreachable because `DecimalAmount::new`, `DecimalAmount::from_atoms`, and `DecimalAmount::from_whole_approx` reject `decimals > MAX_DECIMALS (= 77)` at construction time; the call is retained as a belt-and-braces guard so the panic location stays explicit should a future constructor surface bypass the boundary. |
+| `crates/core/src/types/amount.rs` | `DecimalAmount::to_decimal_string` calls `alloy_primitives::utils::format_units` with an `expect` on the result. The expect is structurally unreachable because `DecimalAmount::new`, `DecimalAmount::from_atoms`, and `DecimalAmount::from_whole_approx` reject `decimals > MAX_DECIMALS (= 77 = alloy_primitives::utils::Unit::MAX)` at construction time, so the only condition that would make `format_units` return an error cannot arise; the call is retained as a belt-and-braces guard so the panic location stays explicit should a future constructor surface bypass the boundary. |
 | `crates/contracts/src/order/uid.rs:71`; `crates/contracts/src/order/uid.rs:76`; `crates/contracts/src/signature.rs:259` | Length-checked slice-to-array conversions: each `try_into` is preceded by an early-return guard that proves the slice length matches the target array length (`ORDER_UID_LENGTH == 56` in `extract_order_uid_params`; `bytes.len() < 20` short-circuit in `decode_eip1271_signature_data`). The `expect` calls document the unreachability proof inline through `// SAFETY` comments naming the guarantee. |
 
 ## Current Contract

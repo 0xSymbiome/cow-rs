@@ -619,9 +619,11 @@ impl DecimalAmount {
     /// Returns the canonical decimal-string form of this amount with the
     /// decimal point inserted at the configured `decimals` position.
     ///
-    /// The split into the integer and fractional portions is performed via
-    /// [`alloy_primitives::U256`] `div_rem` against `10^decimals`, so the
-    /// formatting is exact up to the full `uint256` storage range.
+    /// The `decimals > 0` arm renders the canonical decimal-point form
+    /// through [`alloy_primitives::utils::format_units`], which splits
+    /// `self.atoms` against `10^self.decimals` and pads the fractional
+    /// substring to length `self.decimals`. The output is exact up to
+    /// the full `uint256` storage range.
     ///
     /// **Trailing zeroes in the fractional portion are preserved**: the
     /// fractional substring length always equals `self.decimals`, so the
@@ -668,11 +670,15 @@ impl DecimalAmount {
     /// Cannot panic in practice. [`DecimalAmount::new`],
     /// [`DecimalAmount::from_atoms`], and
     /// [`DecimalAmount::from_whole_approx`] all reject `decimals` values
-    /// above [`DecimalAmount::MAX_DECIMALS`] at construction time, so
-    /// the `10^decimals` scale fits in `U256` by the time this method
-    /// runs. The `expect` call inside the body is belt-and-braces: it
-    /// preserves an explicit panic location should a future
-    /// constructor surface bypass the boundary without re-validating.
+    /// above [`DecimalAmount::MAX_DECIMALS`] at construction time, and
+    /// [`DecimalAmount::MAX_DECIMALS`] equals
+    /// `alloy_primitives::utils::Unit::MAX`, so every
+    /// `(self.atoms, self.decimals)` pair this method observes is
+    /// inside the range
+    /// [`alloy_primitives::utils::format_units`] accepts. The `expect`
+    /// call is belt-and-braces: it preserves an explicit panic
+    /// location should a future constructor surface bypass the
+    /// boundary without re-validating.
     #[must_use]
     #[track_caller]
     pub fn to_decimal_string(&self) -> String {
@@ -681,26 +687,17 @@ impl DecimalAmount {
         }
         // SAFETY: `DecimalAmount::new`, `from_atoms`, and
         // `from_whole_approx` all reject `decimals > MAX_DECIMALS == 77`
-        // at construction time, so `self.decimals <= 77` here and
-        // `10^self.decimals` fits in `U256` (`10^77 < 2^256 - 1`).
-        // The `expect` is belt-and-braces against a future constructor
-        // surface that might skip the boundary; routing through
-        // `checked_pow` rather than the inner `ruint::Uint::pow`
-        // (which is `wrapping_pow`) keeps the explicit panic location
-        // even in that hypothetical regression.
-        let scale = U256::from(10u64)
-            .checked_pow(U256::from(u64::from(self.decimals)))
-            .expect("10^decimals must fit in U256: decimals must be < 78");
-        let (whole, fraction) = self.atoms.div_rem(scale);
-        let frac_str = fraction.to_string();
-        let pad = usize::from(self.decimals).saturating_sub(frac_str.len());
-        let mut out = whole.to_string();
-        out.push('.');
-        for _ in 0..pad {
-            out.push('0');
-        }
-        out.push_str(&frac_str);
-        out
+        // at construction time, and `MAX_DECIMALS == 77` matches the
+        // `alloy_primitives::utils::Unit::MAX` ceiling, so the
+        // `format_units` call is structurally infallible. The `expect`
+        // retains an explicit panic location should a future
+        // constructor surface bypass the boundary without re-validating.
+        // The trailing-zero preservation contract (fractional substring
+        // length always equals `self.decimals`) is pinned by
+        // `crates/core/tests/types_contract.rs` and the four invariants
+        // in `crates/core/tests/property_contract.rs`.
+        alloy_primitives::utils::format_units(self.atoms, self.decimals)
+            .expect("decimals <= MAX_DECIMALS == Unit::MAX == 77; format_units cannot fail")
     }
 }
 

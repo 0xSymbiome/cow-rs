@@ -99,10 +99,15 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   `Serialize` for `U256` is hex (not decimal) and alloy's `FromStr`
   for `Uint`/`Signed` prefix-sniffs four radices. The cow
   strict-decimal-only fail-closed contract for `Amount` and
-  `SignedAmount` applies only to the `Deserialize` wire boundary;
-  the cow `Amount::new` and `SignedAmount::new` constructors remain
-  lenient (accept both decimal and `0x`-prefixed hex) to preserve the
-  existing constructor contract. `Hash32`, `AppDataHash`, `HexData`,
+  `SignedAmount` applies to both the `Deserialize` wire boundary AND
+  to `SignedAmount::new`, which accepts only the grammar `-?[0-9]+`
+  and rejects every `0x`/`0X`/`0o`/`0O`/`0b`/`0B` prefix that the
+  alloy `I256::from_str` would otherwise silently accept; the
+  `SignedAmount::new` narrowing protects the strict JSON-decimal-only
+  signed wire contract. The cow `Amount::new` constructor remains
+  lenient (accepts both decimal and `0x`-prefixed hex; explicitly
+  rejects `0o`/`0b`) to preserve the existing unsigned-amount
+  constructor contract. `Hash32`, `AppDataHash`, `HexData`,
   and `OrderUid` forward `Display`, `Serialize`, and `Deserialize`
   to the underlying alloy primitive whose defaults already match the
   cow lowercase wire form. Each newtype carries cow-defined inherent

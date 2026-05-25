@@ -893,4 +893,32 @@ fn decimal_amount_to_decimal_string_preserves_trailing_zeros_byte_identically() 
         "0.".len() + 77,
         "decimals == MAX_DECIMALS must yield a 77-character fractional substring",
     );
+
+    // Row 9: `(U256::MAX, 18)` sentinel — pins the wire-byte contract
+    // at the largest representable unsigned integer with the
+    // canonical 18-decimal token scale. The integer part is the full
+    // 60-digit `2^256 - 1 / 10^18` quotient and the fractional part
+    // is the remaining 18 atoms-of-the-quotient padded to length 18.
+    let r9 = DecimalAmount::from_atoms(U256::MAX, 18).expect("decimals 18 is within MAX_DECIMALS");
+    assert_eq!(
+        r9.to_decimal_string(),
+        "115792089237316195423570985008687907853269984665640564039457.584007913129639935",
+    );
+
+    // Row 10: `(U256::MAX, 77)` sentinel — pins the wire-byte contract
+    // at the largest representable unsigned integer paired with the
+    // maximum supported decimals scale. The integer part is the
+    // single digit `1` and the fractional part is the remaining 77
+    // digits of `U256::MAX` with no padding.
+    let r10 =
+        DecimalAmount::from_atoms(U256::MAX, 77).expect("decimals 77 is the documented maximum");
+    assert_eq!(
+        r10.to_decimal_string(),
+        "1.15792089237316195423570985008687907853269984665640564039457584007913129639935",
+    );
+    assert_eq!(
+        r10.to_decimal_string().len(),
+        "1.".len() + 77,
+        "decimals == MAX_DECIMALS must yield a 77-character fractional substring",
+    );
 }

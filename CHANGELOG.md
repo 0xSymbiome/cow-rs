@@ -160,6 +160,40 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_core::DecimalAmount::to_decimal_string` renders the
+  canonical decimal-point form through
+  `alloy_primitives::utils::format_units`. The `decimals == 0` arm
+  emits the integer form unchanged (no decimal point); the
+  `decimals > 0` arm pads the fractional substring to length
+  `self.decimals` so the canonical 1-ether row
+  `(atoms = 10^18, decimals = 18)` renders as
+  `"1.000000000000000000"` and the emitted string can be parsed back
+  into the original `(atoms, decimals)` pair without ambiguity by any
+  lossless decimal parser (the cow trailing-zero preservation
+  contract holds; ethers/viem-style `"1.0"` trimming is explicitly
+  out of scope per ADR 0052). The contract test at
+  `crates/core/tests/types_contract.rs::decimal_amount_to_decimal_string_preserves_trailing_zeros_byte_identically`
+  pins ten wire-byte rows from `(U256::ZERO, 0)` through
+  `(U256::MAX, 77)`, the four invariants in
+  `crates/core/tests/property_contract.rs::decimal_amount_to_decimal_string_pins_fractional_length_invariants`
+  pin the structural contract across the full `(U256, 0..=77)`
+  domain, and the matching panic-allowlist row at
+  `.github/config/panic-allowlist.yaml` for
+  `DecimalAmount::to_decimal_string` names the `format_units` panic
+  site under the structural invariant `MAX_DECIMALS == 77 ==
+  alloy_primitives::utils::Unit::MAX`.
+
+- [ADR 0052](docs/adr/0052-alloy-primitives-canonical-primitive-layer.md)
+  documents the cow strict-decimal-only fail-closed contract: it
+  applies to the `Deserialize` wire boundary AND to
+  `cow_sdk_core::SignedAmount::new`, which accepts only the grammar
+  `-?[0-9]+` and rejects every `0x`/`0X`/`0o`/`0O`/`0b`/`0B` prefix
+  that the alloy `I256::from_str` would otherwise silently accept,
+  so the strict JSON-decimal-only signed wire contract holds at the
+  constructor as well as at the deserialiser. The constructor for
+  `cow_sdk_core::Amount::new` remains lenient (accepts both decimal
+  and `0x`-prefixed hex; explicitly rejects `0o`/`0b`).
+
 - `cow_sdk_contracts::IERC1271` is now a typed `alloy_sol_types::sol!` binding
   for the canonical EIP-1271 `isValidSignature(bytes32,bytes)` interface, with
   Solidity provenance at `crates/contracts/abi/cow-shed/IERC1271.sol` (a

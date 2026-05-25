@@ -20,8 +20,9 @@
 //!   `is_negative`, `checked_neg`, `checked_abs`, and `checked_unsigned_abs`
 //!   on top of the `Amount` surface.
 //! - [`DecimalAmount`] pairs the cow uint256 atomic amount with a
-//!   `decimals` scale; the cow-specific token-decimal formatting via
-//!   `to_decimal_string` stays cow-owned per ADR 0052.
+//!   `decimals` scale and exposes `to_decimal_string`, which emits the
+//!   canonical decimal-point form with the trailing-zero preservation
+//!   contract per ADR 0052.
 
 pub use crate::types::{
     Address, Amount, AppDataHash, DecimalAmount, Hash32, HexData, OrderUid, SignedAmount,
