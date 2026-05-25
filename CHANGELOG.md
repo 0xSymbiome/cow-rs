@@ -160,6 +160,30 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_core::TypedDataDomain` carries an inherent
+  `into_alloy_domain(&self) -> alloy_sol_types::Eip712Domain` adapter
+  that returns the canonical four-field EIP-712 domain shape — `name`,
+  `version`, `chainId` (encoded as `uint256`), and
+  `verifyingContract` — with `salt` set to `None`. This matches the
+  `GPv2` settlement-contract domain, the
+  `EIP712Domain(string name,string version,uint256 chainId,address
+  verifyingContract)` type string used by every shipped digest path,
+  and the EIP-1193 `eth_signTypedData_v4` wire shape expected by JS
+  wallets. Every typed-data path inside the workspace
+  (`cow_sdk_signing::domain::domain_separator_for`,
+  `cow_sdk_contracts::order::hash::hash_order` and
+  `hash_order_cancellations`, and the
+  `cow_typed_data_payload_to_alloy` converters inside
+  `cow_sdk_alloy_signer` and `cow_sdk_alloy`) routes its
+  `alloy_sol_types::Eip712Domain` construction through the new adapter,
+  so the canonical bridge from the cow `TypedDataDomain` newtype to the
+  alloy domain primitive lives in a single place. The
+  `cow_sdk_core::traits::typed_data::tests::into_alloy_domain_emits_the_canonical_five_field_shape`
+  unit test locks the field-by-field byte contract, and the existing
+  `crates/signing/tests/fixtures/domain_separator_parity.json` row and
+  `parity/fixtures/eip712/order_digests.json` rows pin the per-chain
+  and per-order digest byte contracts.
+
 - The four fixed-width identity newtype constructors in `cow_sdk_core`
   (`Address::new`, `AppDataHash::new`, `Hash32::new`, and
   `OrderUid::new`) parse the canonical `0x`-prefixed lowercase

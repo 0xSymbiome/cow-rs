@@ -1,5 +1,3 @@
-use alloy_primitives::U256;
-use alloy_sol_types::Eip712Domain;
 use cow_sdk_contracts::{CANCELLATIONS_TYPE_FIELDS, ContractId, ORDER_TYPE_FIELDS, Registry};
 use cow_sdk_core::{
     CowEnv, ProtocolOptions, SupportedChainId, TypedDataDomain, TypedDataEnvelope, TypedDataField,
@@ -67,12 +65,12 @@ pub fn domain_separator(
 
 /// Computes the domain separator for an explicit typed-data domain.
 ///
-/// Delegates to [`alloy_sol_types::Eip712Domain::separator`], which
-/// composes the canonical `EIP712Domain(string name,string
-/// version,uint256 chainId,address verifyingContract)` type hash with
-/// the packed `(name_hash, version_hash, chain_id_word,
-/// verifying_contract_word)` preimage and returns
-/// `keccak256(type_hash || encoded_data)`. The
+/// Returns the `0x`-prefixed lowercase 32-byte separator
+/// `keccak256(type_hash || encoded_data)` for the canonical
+/// `EIP712Domain(string name,string version,uint256 chainId,address
+/// verifyingContract)` type string, where the encoded data packs
+/// `(name_hash, version_hash, chain_id_word, verifying_contract_word)`
+/// per EIP-712. The
 /// `crates/signing/tests/fixtures/domain_separator_parity.json` row
 /// locks the per-chain byte contract.
 ///
@@ -80,17 +78,9 @@ pub fn domain_separator(
 ///
 /// Returns [`SigningError`] if the verifying-contract address cannot be parsed.
 pub fn domain_separator_for(domain: &TypedDataDomain) -> Result<String, SigningError> {
-    let alloy_addr = *domain.verifying_contract.as_alloy();
-    let alloy_domain = Eip712Domain {
-        name: Some(domain.name.clone().into()),
-        version: Some(domain.version.clone().into()),
-        chain_id: Some(U256::from(domain.chain_id)),
-        verifying_contract: Some(alloy_addr),
-        salt: None,
-    };
     Ok(format!(
         "0x{}",
-        hex::encode(alloy_domain.separator().as_slice())
+        hex::encode(domain.into_alloy_domain().separator().as_slice())
     ))
 }
 

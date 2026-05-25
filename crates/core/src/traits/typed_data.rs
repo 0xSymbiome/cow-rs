@@ -35,6 +35,29 @@ impl TypedDataDomain {
             verifying_contract,
         }
     }
+
+    /// Returns the canonical [`alloy_sol_types::Eip712Domain`] view of this
+    /// domain.
+    ///
+    /// The returned value carries the four required EIP-712 domain fields —
+    /// `name`, `version`, `chainId` (encoded as `uint256`), and
+    /// `verifyingContract` — and leaves `salt` as `None`. This matches the
+    /// `GPv2` settlement-contract domain shape, the
+    /// `EIP712Domain(string name,string version,uint256 chainId,address
+    /// verifyingContract)` type string used by every shipped digest path,
+    /// and the EIP-1193 `eth_signTypedData_v4` wire shape expected by JS
+    /// wallets (numeric `chainId`, lowercase 20-byte `verifyingContract`,
+    /// no `salt`).
+    #[must_use]
+    pub fn into_alloy_domain(&self) -> alloy_sol_types::Eip712Domain {
+        alloy_sol_types::Eip712Domain {
+            name: Some(self.name.clone().into()),
+            version: Some(self.version.clone().into()),
+            chain_id: Some(alloy_primitives::U256::from(self.chain_id)),
+            verifying_contract: Some(*self.verifying_contract.as_alloy()),
+            salt: None,
+        }
+    }
 }
 
 /// A single EIP-712 typed-data field descriptor.
@@ -124,5 +147,31 @@ impl TypedDataPayload {
     #[must_use]
     pub const fn message_json(&self) -> &str {
         self.message.as_str()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn into_alloy_domain_emits_the_canonical_five_field_shape() {
+        let domain = TypedDataDomain::new(
+            "Gnosis Protocol".to_owned(),
+            "v2".to_owned(),
+            1,
+            crate::types::Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
+        );
+
+        let alloy = domain.into_alloy_domain();
+
+        assert_eq!(alloy.name.as_deref(), Some("Gnosis Protocol"));
+        assert_eq!(alloy.version.as_deref(), Some("v2"));
+        assert_eq!(alloy.chain_id, Some(alloy_primitives::U256::from(1u64)));
+        assert_eq!(
+            alloy.verifying_contract,
+            Some(*domain.verifying_contract.as_alloy())
+        );
+        assert!(alloy.salt.is_none());
     }
 }

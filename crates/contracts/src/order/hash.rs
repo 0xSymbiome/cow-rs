@@ -1,5 +1,5 @@
-use alloy_primitives::{Bytes as AlloyBytes, U256};
-use alloy_sol_types::{Eip712Domain, SolStruct};
+use alloy_primitives::Bytes as AlloyBytes;
+use alloy_sol_types::SolStruct;
 use cow_sdk_core::{Address, Hash32, OrderDigest, OrderUid, TypedDataDomain};
 
 use super::sol_cancellations::OrderCancellations as SolOrderCancellations;
@@ -63,13 +63,12 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
 
 /// Computes the EIP-712 digest for an order.
 ///
-/// Delegates to [`alloy_sol_types::SolStruct::eip712_signing_hash`] on
-/// the macro-emitted [`crate::order::sol_types::Order`] struct, which
-/// composes the canonical
+/// Returns the canonical
 /// `keccak256(0x19 || 0x01 || domain_separator || struct_hash)`
-/// envelope per the EIP-712 specification.
-/// The `parity/fixtures/eip712/order_digests.json` rows lock the
-/// per-row byte contract.
+/// envelope per the EIP-712 specification, evaluated against the
+/// macro-emitted [`crate::order::sol_types::Order`] struct hash. The
+/// `parity/fixtures/eip712/order_digests.json` rows lock the per-row
+/// byte contract.
 ///
 /// # Errors
 ///
@@ -77,7 +76,7 @@ pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError>
 pub fn hash_order(domain: &TypedDataDomain, order: &Order) -> Result<OrderDigest, ContractsError> {
     let normalized = normalize_order(order)?;
     let sol_order = sol_order_from_normalized(&normalized);
-    let alloy_domain = alloy_domain_from(domain);
+    let alloy_domain = domain.into_alloy_domain();
     let digest = sol_order.eip712_signing_hash(&alloy_domain);
     Ok(OrderDigest::from_bytes(digest.into()))
 }
@@ -96,9 +95,11 @@ pub fn hash_order_cancellation(
 
 /// Computes the EIP-712 digest for a batch order cancellation payload.
 ///
-/// Delegates to [`alloy_sol_types::SolStruct::eip712_signing_hash`] on
-/// the macro-emitted
-/// [`crate::order::sol_cancellations::OrderCancellations`] struct.
+/// Returns the canonical
+/// `keccak256(0x19 || 0x01 || domain_separator || struct_hash)`
+/// envelope per the EIP-712 specification, evaluated against the
+/// macro-emitted
+/// [`crate::order::sol_cancellations::OrderCancellations`] struct hash.
 ///
 /// # Errors
 ///
@@ -115,7 +116,7 @@ pub fn hash_order_cancellations(
     let sol_cancellations = SolOrderCancellations {
         orderUids: order_uids,
     };
-    let alloy_domain = alloy_domain_from(domain);
+    let alloy_domain = domain.into_alloy_domain();
     let digest = sol_cancellations.eip712_signing_hash(&alloy_domain);
     Ok(Hash32::from_bytes(digest.into()))
 }
@@ -143,16 +144,6 @@ fn sol_order_from_normalized(order: &NormalizedOrder) -> SolOrder {
     }
 }
 
-fn alloy_domain_from(domain: &TypedDataDomain) -> Eip712Domain {
-    Eip712Domain {
-        name: Some(domain.name.clone().into()),
-        version: Some(domain.version.clone().into()),
-        chain_id: Some(U256::from(domain.chain_id)),
-        verifying_contract: Some(*domain.verifying_contract.as_alloy()),
-        salt: None,
-    }
-}
-
 fn decode_order_uid_bytes(uid: &OrderUid) -> AlloyBytes {
     AlloyBytes::from(uid.as_slice().to_vec())
 }
@@ -162,6 +153,7 @@ mod tests {
     use super::*;
     use crate::deployments::{ContractId, Registry};
     use crate::encode_address_word;
+    use alloy_primitives::U256;
     use cow_sdk_core::{
         Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderKind, SellTokenSource,
         SupportedChainId,

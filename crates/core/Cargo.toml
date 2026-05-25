@@ -26,6 +26,7 @@ tracing = ["dep:tracing"]
 
 [dependencies]
 alloy-primitives.workspace = true
+alloy-sol-types.workspace = true
 async-trait.workspace = true
 http.workspace = true
 pin-project-lite.workspace = true

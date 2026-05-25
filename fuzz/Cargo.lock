@@ -798,8 +798,8 @@ name = "cow-sdk-core"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
+ "alloy-sol-types",
  "async-trait",
- "hex",
  "http",
  "pin-project-lite",
  "reqwest",

@@ -1,13 +1,10 @@
 //! Conversion helpers between SDK typed-data values and Alloy signing values.
 
-use std::borrow::Cow;
-
 use alloy_dyn_abi::{
     DynSolType,
     eip712::{PropertyDef, Resolver, TypeDef, TypedData},
 };
-use alloy_primitives::{Signature, U256};
-use alloy_sol_types::Eip712Domain;
+use alloy_primitives::Signature;
 use cow_sdk_core::{TypedDataDomain, TypedDataField, TypedDataPayload};
 
 /// Converts legacy flat typed-data fields into Alloy's dynamic typed-data shape.
@@ -39,7 +36,7 @@ pub(crate) fn cow_flat_to_alloy_typed_data(
 pub(crate) fn cow_typed_data_payload_to_alloy(
     payload: &TypedDataPayload,
 ) -> Result<TypedData, String> {
-    let domain = build_eip712_domain(&payload.domain);
+    let domain = payload.domain.into_alloy_domain();
     let resolver = build_resolver(&payload.types, &payload.primary_type)?;
     let message = serde_json::from_str(payload.message_json())
         .map_err(|error| format!("typed-data message JSON parse error: {error}"))?;
@@ -54,16 +51,6 @@ pub(crate) fn cow_typed_data_payload_to_alloy(
         .eip712_signing_hash()
         .map_err(|error| format!("alloy TypedData rejected by eip712_signing_hash: {error}"))?;
     Ok(typed)
-}
-
-fn build_eip712_domain(domain: &TypedDataDomain) -> Eip712Domain {
-    Eip712Domain {
-        name: Some(Cow::Owned(domain.name.clone())),
-        version: Some(Cow::Owned(domain.version.clone())),
-        chain_id: Some(U256::from(domain.chain_id)),
-        verifying_contract: Some(*domain.verifying_contract.as_alloy()),
-        salt: None,
-    }
 }
 
 fn build_resolver(
