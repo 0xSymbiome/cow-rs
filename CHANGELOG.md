@@ -102,6 +102,25 @@ The first functional crate-family release begins at `0.1.0`.
   per-type case-insensitive-key accessor from the canonical inherent-method
   surface enumeration.
 
+- The `cow_sdk_core::config::chains` compile-time hex decoders `hex_decode_20`
+  and `decode_nibble` are removed. Both were file-private `const fn` helpers
+  that drove the ten `WRAPPED_NATIVE_*_BYTES: [u8; 20]` constants behind the
+  `wrapped_native_token` accessor. Each constant now decodes through the
+  `alloy_primitives::hex!` macro, which carries the same `0x`-prefix tolerance
+  and the same compile-time panic surface (length, prefix, and per-nibble
+  validation now fire through the macro's `const` evaluator rather than
+  through cow-owned helpers). The ten address constants retain their
+  identifiers, their `const [u8; 20]` type, and every byte value across the
+  eleven supported chains, so `wrapped_native_token` and every downstream
+  consumer of the per-chain byte form are unchanged. The matching
+  `decode_nibble` entry is removed from `.github/config/panic-allowlist.yaml`
+  because the cow-owned panic surface no longer exists; the wrapped-native
+  byte constants are now guarded by the alloy macro's compile-time evaluator
+  instead. This is a strict instance of executing the ADR 0052
+  alloy-primitives canonical layer mandate, and the line-705 historical entry
+  documenting the original introduction of the `hex_decode_*` family remains
+  in place as the audit trail for the prior shape.
+
 ### Added
 
 - `cowprotocol/ethflowcontract` joins the parity-source catalog as a

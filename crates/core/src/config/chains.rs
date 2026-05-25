@@ -1,3 +1,4 @@
+use alloy_primitives::hex;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
@@ -7,77 +8,26 @@ use crate::{
 
 use super::TOKEN_LIST_IMAGES_PATH;
 
-/// Decodes a `0x`-prefixed 42-character hex literal into a 20-byte array at
-/// compile time. Used only for the canonical wrapped-native-token address
-/// constants declared in this module.
-///
-/// # Panics
-///
-/// Panics at compile time when the input is not exactly 42 characters, is
-/// missing the `0x` prefix, or contains a non-hex character.
-const fn hex_decode_20(hex: &str) -> [u8; 20] {
-    // SAFETY: the only callers of this helper are the
-    // `WRAPPED_NATIVE_*_BYTES` const declarations below, which are
-    // repository-owned 42-character `0x`-prefixed hex literals. The
-    // length, prefix, and per-nibble assertions therefore fire only as
-    // compile-time guards if the constants are ever edited into an
-    // invalid form.
-    let bytes = hex.as_bytes();
-    assert!(
-        bytes.len() == 42,
-        "hex_decode_20 requires a 42-character input"
-    );
-    assert!(
-        bytes[0] == b'0' && bytes[1] == b'x',
-        "hex_decode_20 requires a 0x prefix"
-    );
-    let mut out = [0u8; 20];
-    let mut i = 0;
-    while i < 20 {
-        out[i] = (decode_nibble(bytes[2 + 2 * i]) << 4) | decode_nibble(bytes[2 + 2 * i + 1]);
-        i += 1;
-    }
-    out
-}
-
-/// Decodes one ASCII hex nibble for the [`hex_decode_20`] compile-time helper.
-///
-/// # Panics
-///
-/// Panics when `c` is not an ASCII hex digit.
-const fn decode_nibble(c: u8) -> u8 {
-    // SAFETY: this helper is only reachable from `hex_decode_20` above,
-    // which feeds it bytes drawn from the repository-owned wrapped-native
-    // token hex constants. The non-hex fallback therefore acts as a
-    // compile-time invariant guard rather than a runtime failure mode.
-    match c {
-        b'0'..=b'9' => c - b'0',
-        b'a'..=b'f' => c - b'a' + 10,
-        b'A'..=b'F' => c - b'A' + 10,
-        _ => panic!("hex nibble must be 0-9, a-f, or A-F"),
-    }
-}
-
 const WRAPPED_NATIVE_MAINNET_BYTES: [u8; 20] =
-    hex_decode_20("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
+    hex!("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2");
 const WRAPPED_NATIVE_GNOSIS_BYTES: [u8; 20] =
-    hex_decode_20("0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d");
+    hex!("0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d");
 const WRAPPED_NATIVE_ARBITRUM_BYTES: [u8; 20] =
-    hex_decode_20("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1");
+    hex!("0x82aF49447D8a07e3bd95BD0d56f35241523fBab1");
 const WRAPPED_NATIVE_BASE_INK_BYTES: [u8; 20] =
-    hex_decode_20("0x4200000000000000000000000000000000000006");
+    hex!("0x4200000000000000000000000000000000000006");
 const WRAPPED_NATIVE_SEPOLIA_BYTES: [u8; 20] =
-    hex_decode_20("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14");
+    hex!("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14");
 const WRAPPED_NATIVE_POLYGON_BYTES: [u8; 20] =
-    hex_decode_20("0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270");
+    hex!("0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270");
 const WRAPPED_NATIVE_AVALANCHE_BYTES: [u8; 20] =
-    hex_decode_20("0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7");
+    hex!("0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7");
 const WRAPPED_NATIVE_BNB_BYTES: [u8; 20] =
-    hex_decode_20("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c");
+    hex!("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c");
 const WRAPPED_NATIVE_PLASMA_BYTES: [u8; 20] =
-    hex_decode_20("0x6100e367285b01f48d07953803a2d8dca5d19873");
+    hex!("0x6100e367285b01f48d07953803a2d8dca5d19873");
 const WRAPPED_NATIVE_LINEA_BYTES: [u8; 20] =
-    hex_decode_20("0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f");
+    hex!("0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f");
 
 /// Supported `CoW` Protocol chain ids with explicit API configuration.
 ///

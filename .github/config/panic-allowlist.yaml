@@ -54,9 +54,6 @@ allowed:
   - file: crates/contracts/src/settlement/codec.rs
     item: decode_order_flags
     reason: Bit masks are constrained before reaching unreachable arms.
-  - file: crates/core/src/config/chains.rs
-    item: decode_nibble
-    reason: Compile-time helper reachable only from hex_decode_20, which feeds it bytes drawn from the repository-owned wrapped-native-token hex constants.
   - file: crates/core/src/redaction/body.rs
     item: strip_credential_tokens
     reason: Redaction offsets are computed from in-bounds string match indices.
