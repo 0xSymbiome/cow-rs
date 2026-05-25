@@ -160,6 +160,36 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- The four fixed-width identity newtype constructors in `cow_sdk_core`
+  (`Address::new`, `AppDataHash::new`, `Hash32::new`, and
+  `OrderUid::new`) parse the canonical `0x`-prefixed lowercase
+  hexadecimal wire form through
+  `alloy_primitives::FixedBytes::<N>::from_str` and a private cow-owned
+  classifier (`classify_alloy_hex_error`) that converts the
+  `alloy_primitives::hex::FromHexError` discriminants into the cow
+  `ValidationError::InvalidHexLength` and
+  `ValidationError::InvalidHexCharacters` variants by `match` rather
+  than `#[from]`/`?` lift, so the alloy
+  `FromHexError::InvalidHexCharacter { c: char, index: usize }`
+  payload (one byte of caller-supplied input plus its byte offset) is
+  dropped at the cow error boundary and never appears in any `Display`,
+  `Debug`, or `Serialize` rendering. The strict `0x`-prefix-lowercase
+  gate is preserved at the constructor entry point, so bare-hex inputs
+  and uppercase `0X`-prefixed inputs continue to fail closed with
+  `ValidationError::InvalidHexPrefix` exactly as before. The
+  `crates/sdk/tests/error_redaction_contract.rs::fixed_width_identity_constructors_drop_offending_input_character_and_offset`
+  sentinel feeds `Address::new("0xZZ...")` (40 `Z` characters) into the
+  constructor and asserts neither `'Z'` nor the literal `"index"`
+  appears in any rendered surface of the returned `CoreError`.
+  `cow_sdk_core` no longer carries a direct workspace dependency on the
+  `hex` crate (the dependency edge is removed from
+  `crates/core/Cargo.toml`); the two remaining `hex::decode` and
+  `hex::encode` call sites inside `cow_sdk_core::types::identity`
+  (`HexData::new` and `AppDataHash::to_cid`) and the proptest hex
+  encoding helpers under `crates/core/tests/property_contract.rs` route
+  through `alloy_primitives::hex` which re-exports the same `const-hex`
+  implementation that previously backed the workspace `hex` dep.
+
 - `cow_sdk_core::DecimalAmount::to_decimal_string` renders the
   canonical decimal-point form through
   `alloy_primitives::utils::format_units`. The `decimals == 0` arm

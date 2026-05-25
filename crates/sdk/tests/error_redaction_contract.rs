@@ -99,6 +99,43 @@ fn validation_and_host_policy_errors_keep_safe_public_diagnostics() {
     assert_all_serialize("HostPolicyError", &host_errors);
 }
 
+/// The four fixed-width identity newtype constructors
+/// ([`Address::new`], `AppDataHash::new`, `Hash32::new`, and
+/// `OrderUid::new`) reject inputs whose payload contains non-hex
+/// characters by emitting [`ValidationError::InvalidHexCharacters`] —
+/// a variant whose `Display` and `Debug` rendering carries only the
+/// `field: &'static str` tag. The classifier inside `crates/core` MUST
+/// discard the offending character and the byte offset before
+/// constructing the cow variant; this test pins that contract by
+/// feeding [`Address::new`] a payload of 40 `'Z'` characters and
+/// asserting neither `Z` nor the literal `"index"` appears in any
+/// rendered surface of the returned [`CoreError`].
+#[test]
+fn fixed_width_identity_constructors_drop_offending_input_character_and_offset() {
+    let result = Address::new("0xZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ");
+    let error = result.expect_err("invalid hex payload must fail closed at the constructor");
+
+    let display = error.to_string();
+    let debug = format!("{error:?}");
+
+    assert!(
+        !display.contains('Z'),
+        "Display rendering leaked the offending input character: {display}",
+    );
+    assert!(
+        !display.contains("index"),
+        "Display rendering leaked the input byte offset: {display}",
+    );
+    assert!(
+        !debug.contains('Z'),
+        "Debug rendering leaked the offending input character: {debug}",
+    );
+    assert!(
+        !debug.contains("index"),
+        "Debug rendering leaked the input byte offset: {debug}",
+    );
+}
+
 #[test]
 fn orderbook_errors_redact_api_transport_and_source_payloads() {
     let api_error =

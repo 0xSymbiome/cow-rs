@@ -133,12 +133,12 @@ fn order_uid_bytes() -> impl Strategy<Value = [u8; 56]> {
 /// prefix, short payload, long payload, and non-hex-character payload.
 fn malformed_address_strategy() -> impl Strategy<Value = String> {
     prop_oneof![
-        any::<[u8; 20]>().prop_map(|bytes| hex::encode(bytes)),
-        any::<[u8; 20]>().prop_map(|bytes| format!("0X{}", hex::encode(bytes))),
-        any::<[u8; 19]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
-        any::<[u8; 21]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        any::<[u8; 20]>().prop_map(|bytes| alloy_primitives::hex::encode(bytes)),
+        any::<[u8; 20]>().prop_map(|bytes| format!("0X{}", alloy_primitives::hex::encode(bytes))),
+        any::<[u8; 19]>().prop_map(|bytes| format!("0x{}", alloy_primitives::hex::encode(bytes))),
+        any::<[u8; 21]>().prop_map(|bytes| format!("0x{}", alloy_primitives::hex::encode(bytes))),
         (any::<[u8; 20]>(), 2usize..42).prop_map(|(bytes, flip)| {
-            let mut encoded = format!("0x{}", hex::encode(bytes)).into_bytes();
+            let mut encoded = format!("0x{}", alloy_primitives::hex::encode(bytes)).into_bytes();
             encoded[flip] = b'g';
             String::from_utf8(encoded).unwrap()
         }),
@@ -152,10 +152,10 @@ fn malformed_hash32_strategy() -> impl Strategy<Value = String> {
     prop_oneof![
         Just(String::new()),
         Just("0x".to_owned()),
-        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
-        any::<[u8; 33]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}", alloy_primitives::hex::encode(bytes))),
+        any::<[u8; 33]>().prop_map(|bytes| format!("0x{}", alloy_primitives::hex::encode(bytes))),
         (any::<[u8; 32]>(), 2usize..66).prop_map(|(bytes, flip)| {
-            let mut encoded = format!("0x{}", hex::encode(bytes)).into_bytes();
+            let mut encoded = format!("0x{}", alloy_primitives::hex::encode(bytes)).into_bytes();
             encoded[flip] = b'z';
             String::from_utf8(encoded).unwrap()
         }),
@@ -166,9 +166,9 @@ fn malformed_hash32_strategy() -> impl Strategy<Value = String> {
 /// [`AppDataHex::new`] must reject.
 fn malformed_app_data_hex_strategy() -> impl Strategy<Value = String> {
     prop_oneof![
-        any::<[u8; 32]>().prop_map(|bytes| hex::encode(bytes)),
-        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
-        any::<[u8; 33]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        any::<[u8; 32]>().prop_map(|bytes| alloy_primitives::hex::encode(bytes)),
+        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}", alloy_primitives::hex::encode(bytes))),
+        any::<[u8; 33]>().prop_map(|bytes| format!("0x{}", alloy_primitives::hex::encode(bytes))),
     ]
 }
 
@@ -176,8 +176,8 @@ fn malformed_app_data_hex_strategy() -> impl Strategy<Value = String> {
 /// [`OrderUid::new`] must reject.
 fn malformed_order_uid_strategy() -> impl Strategy<Value = String> {
     prop_oneof![
-        any::<[u8; 55]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
-        any::<[u8; 57]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
+        any::<[u8; 55]>().prop_map(|bytes| format!("0x{}", alloy_primitives::hex::encode(bytes))),
+        any::<[u8; 57]>().prop_map(|bytes| format!("0x{}", alloy_primitives::hex::encode(bytes))),
     ]
 }
 
@@ -188,7 +188,7 @@ fn malformed_amount_strategy() -> impl Strategy<Value = String> {
     prop_oneof![
         Just(String::new()),
         (1u64..=u64::MAX).prop_map(|value| format!("-{value}")),
-        any::<[u8; 4]>().prop_map(|bytes| format!("0x{}gg", hex::encode(bytes))),
+        any::<[u8; 4]>().prop_map(|bytes| format!("0x{}gg", alloy_primitives::hex::encode(bytes))),
         (1u64..=u64::MAX, 1u64..=u64::MAX).prop_map(|(whole, frac)| format!("{whole}.{frac}")),
         Just(format!("0x1{}", "0".repeat(64))),
     ]
@@ -215,8 +215,8 @@ proptest! {
         casing in prop::collection::vec(any::<bool>(), 40),
     ) {
         let mixed = render_mixed_case(&bytes, &casing);
-        let lowercase = format!("0x{}", hex::encode(bytes));
-        let uppercase = format!("0x{}", hex::encode_upper(bytes));
+        let lowercase = format!("0x{}", alloy_primitives::hex::encode(bytes));
+        let uppercase = format!("0x{}", alloy_primitives::hex::encode_upper(bytes));
 
         let mixed_address = Address::new(&mixed).unwrap();
         let lowercase_address = Address::new(&lowercase).unwrap();
@@ -317,7 +317,7 @@ proptest! {
         bytes in any::<[u8; 32]>(),
         casing in prop::collection::vec(any::<bool>(), 64),
     ) {
-        let canonical = format!("0x{}", hex::encode(bytes));
+        let canonical = format!("0x{}", alloy_primitives::hex::encode(bytes));
         let mixed = render_mixed_case(&bytes, &casing);
 
         let hash = Hash32::new(&canonical).unwrap();
@@ -344,7 +344,7 @@ proptest! {
         bytes in any::<[u8; 32]>(),
         malformed in malformed_app_data_hex_strategy(),
     ) {
-        let canonical = format!("0x{}", hex::encode(bytes));
+        let canonical = format!("0x{}", alloy_primitives::hex::encode(bytes));
 
         let app_data = AppDataHex::new(&canonical).unwrap();
         prop_assert_eq!(app_data.to_hex_string(), canonical.clone());
@@ -361,7 +361,7 @@ proptest! {
         bytes in order_uid_bytes(),
         malformed in malformed_order_uid_strategy(),
     ) {
-        let canonical = format!("0x{}", hex::encode(bytes));
+        let canonical = format!("0x{}", alloy_primitives::hex::encode(bytes));
 
         let uid = OrderUid::new(&canonical).unwrap();
         prop_assert_eq!(uid.to_hex_string(), canonical.clone());
@@ -379,7 +379,7 @@ proptest! {
         prop_assert_eq!(empty.to_hex_string(), "0x".to_owned());
         prop_assert_eq!(HexData::default(), empty);
 
-        let canonical = format!("0x{}", hex::encode(bytes));
+        let canonical = format!("0x{}", alloy_primitives::hex::encode(bytes));
         let data = HexData::new(&canonical).unwrap();
         prop_assert_eq!(data.to_hex_string(), canonical.clone());
         prop_assert_eq!(HexData::new(data.to_hex_string()).unwrap(), data);
@@ -397,8 +397,8 @@ proptest! {
         prop_assume!(first_bytes != second_bytes);
         prop_assume!(chain_a != chain_b);
 
-        let address_a = Address::new(format!("0x{}", hex::encode(first_bytes))).unwrap();
-        let address_b = Address::new(format!("0x{}", hex::encode(second_bytes))).unwrap();
+        let address_a = Address::new(format!("0x{}", alloy_primitives::hex::encode(first_bytes))).unwrap();
+        let address_b = Address::new(format!("0x{}", alloy_primitives::hex::encode(second_bytes))).unwrap();
         let chain_a: ChainId = chain_a.into();
         let chain_b: ChainId = chain_b.into();
 

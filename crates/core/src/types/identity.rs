@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::fmt::{self, Write as FmtWrite};
 use std::str::FromStr;
 
+use alloy_primitives::hex::FromHexError;
 use alloy_primitives::{Address as AlloyAddress, B256, Bytes, FixedBytes};
 use serde::{Deserialize, Serialize};
 
@@ -71,23 +72,19 @@ impl Address {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed, has
-    /// the wrong length, or contains non-hex characters.
+    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed
+    /// (lowercase), has the wrong length, or contains non-hex characters.
     pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
         let value = value.as_ref();
-        validate_hex_field("address", value, EVM_ADDRESS_HEX_CHARS)?;
-        let stripped = value
-            .strip_prefix("0x")
-            .ok_or(ValidationError::InvalidHexPrefix { field: "address" })?;
-        let bytes = hex::decode(stripped)
-            .map_err(|_| ValidationError::InvalidHexCharacters { field: "address" })?;
-        let array: [u8; 20] = bytes
-            .try_into()
-            .map_err(|_| ValidationError::InvalidHexLength {
-                field: "address",
-                expected: EVM_ADDRESS_HEX_CHARS,
-            })?;
-        Ok(Self(AlloyAddress::from(array)))
+        if value.is_empty() {
+            return Err(ValidationError::EmptyField { field: "address" }.into());
+        }
+        if !value.starts_with("0x") {
+            return Err(ValidationError::InvalidHexPrefix { field: "address" }.into());
+        }
+        let inner = AlloyAddress::from_str(value)
+            .map_err(|e| classify_alloy_hex_error("address", EVM_ADDRESS_HEX_CHARS, e))?;
+        Ok(Self(inner))
     }
 
     /// Creates an address from its raw 20-byte representation.
@@ -279,7 +276,7 @@ impl HexData {
         } else {
             Cow::Borrowed(stripped)
         };
-        let bytes = hex::decode(normalized.as_ref())
+        let bytes = alloy_primitives::hex::decode(normalized.as_ref())
             .map_err(|_| ValidationError::InvalidHexCharacters { field: "hex_data" })?;
         Ok(Self(Bytes::from(bytes)))
     }
@@ -461,26 +458,25 @@ impl AppDataHash {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed, has
-    /// the wrong length, or contains non-hex characters.
+    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed
+    /// (lowercase), has the wrong length, or contains non-hex characters.
     pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
         let value = value.as_ref();
-        validate_hex_field("app_data_hash", value, APP_DATA_HASH_HEX_CHARS)?;
-        let stripped = value
-            .strip_prefix("0x")
-            .ok_or(ValidationError::InvalidHexPrefix {
+        if value.is_empty() {
+            return Err(ValidationError::EmptyField {
                 field: "app_data_hash",
-            })?;
-        let bytes = hex::decode(stripped).map_err(|_| ValidationError::InvalidHexCharacters {
-            field: "app_data_hash",
-        })?;
-        let array: [u8; 32] = bytes
-            .try_into()
-            .map_err(|_| ValidationError::InvalidHexLength {
+            }
+            .into());
+        }
+        if !value.starts_with("0x") {
+            return Err(ValidationError::InvalidHexPrefix {
                 field: "app_data_hash",
-                expected: APP_DATA_HASH_HEX_CHARS,
-            })?;
-        Ok(Self(B256::from(array)))
+            }
+            .into());
+        }
+        let inner = B256::from_str(value)
+            .map_err(|e| classify_alloy_hex_error("app_data_hash", APP_DATA_HASH_HEX_CHARS, e))?;
+        Ok(Self(inner))
     }
 
     /// Creates an app-data hash from its raw 32-byte representation.
@@ -573,7 +569,7 @@ impl AppDataHash {
         cid_bytes[2] = 0x1b; // keccak-256 multihash code
         cid_bytes[3] = 0x20; // 32-byte multihash digest length
         cid_bytes[4..].copy_from_slice(self.as_slice());
-        format!("f{}", hex::encode(cid_bytes))
+        format!("f{}", alloy_primitives::hex::encode(cid_bytes))
     }
 }
 
@@ -667,23 +663,19 @@ impl Hash32 {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed, has
-    /// the wrong length, or contains non-hex characters.
+    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed
+    /// (lowercase), has the wrong length, or contains non-hex characters.
     pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
         let value = value.as_ref();
-        validate_hex_field("hash32", value, HASH32_HEX_CHARS)?;
-        let stripped = value
-            .strip_prefix("0x")
-            .ok_or(ValidationError::InvalidHexPrefix { field: "hash32" })?;
-        let bytes = hex::decode(stripped)
-            .map_err(|_| ValidationError::InvalidHexCharacters { field: "hash32" })?;
-        let array: [u8; 32] = bytes
-            .try_into()
-            .map_err(|_| ValidationError::InvalidHexLength {
-                field: "hash32",
-                expected: HASH32_HEX_CHARS,
-            })?;
-        Ok(Self(B256::from(array)))
+        if value.is_empty() {
+            return Err(ValidationError::EmptyField { field: "hash32" }.into());
+        }
+        if !value.starts_with("0x") {
+            return Err(ValidationError::InvalidHexPrefix { field: "hash32" }.into());
+        }
+        let inner = B256::from_str(value)
+            .map_err(|e| classify_alloy_hex_error("hash32", HASH32_HEX_CHARS, e))?;
+        Ok(Self(inner))
     }
 
     /// Creates a 32-byte hash from its raw 32-byte representation.
@@ -846,23 +838,19 @@ impl OrderUid {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed, has
-    /// the wrong length, or contains non-hex characters.
+    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed
+    /// (lowercase), has the wrong length, or contains non-hex characters.
     pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
         let value = value.as_ref();
-        validate_hex_field("order_uid", value, ORDER_UID_HEX_CHARS)?;
-        let stripped = value
-            .strip_prefix("0x")
-            .ok_or(ValidationError::InvalidHexPrefix { field: "order_uid" })?;
-        let bytes = hex::decode(stripped)
-            .map_err(|_| ValidationError::InvalidHexCharacters { field: "order_uid" })?;
-        let array: [u8; 56] = bytes
-            .try_into()
-            .map_err(|_| ValidationError::InvalidHexLength {
-                field: "order_uid",
-                expected: ORDER_UID_HEX_CHARS,
-            })?;
-        Ok(Self(FixedBytes::<56>::from(array)))
+        if value.is_empty() {
+            return Err(ValidationError::EmptyField { field: "order_uid" }.into());
+        }
+        if !value.starts_with("0x") {
+            return Err(ValidationError::InvalidHexPrefix { field: "order_uid" }.into());
+        }
+        let inner = FixedBytes::<56>::from_str(value)
+            .map_err(|e| classify_alloy_hex_error("order_uid", ORDER_UID_HEX_CHARS, e))?;
+        Ok(Self(inner))
     }
 
     /// Creates an order UID from its raw 56-byte representation.
@@ -974,30 +962,28 @@ impl TryFrom<&str> for OrderUid {
 
 // --- Private validation helpers --------------------------------------------
 
-fn validate_hex_field(
+/// Maps an [`alloy_primitives::hex::FromHexError`] returned by a
+/// fixed-width hex parser onto the cow [`ValidationError`] taxonomy.
+///
+/// The classifier intentionally constructs the cow variant by `match`
+/// rather than lifting the alloy error through `#[from]`/`?`. The
+/// alloy `FromHexError::InvalidHexCharacter { c: char, index: usize }`
+/// payload carries one byte of the user-supplied input plus its offset;
+/// the cow error boundary drops both fields so neither `Display` nor
+/// `Debug` rendering can leak any portion of a caller-supplied secret.
+/// The `crates/sdk/tests/error_redaction_contract.rs` redaction sentinel
+/// pins this contract by constructing a hex-rejecting input through
+/// [`Address::new`] and asserting the rendered error contains neither
+/// the offending character nor the literal `"index"`.
+const fn classify_alloy_hex_error(
     field: &'static str,
-    value: &str,
-    expected_hex_chars: usize,
-) -> Result<(), CoreError> {
-    if value.is_empty() {
-        return Err(ValidationError::EmptyField { field }.into());
-    }
-
-    let Some(hex_data) = value.strip_prefix("0x") else {
-        return Err(ValidationError::InvalidHexPrefix { field }.into());
-    };
-
-    if hex_data.len() != expected_hex_chars {
-        return Err(ValidationError::InvalidHexLength {
-            field,
-            expected: expected_hex_chars,
+    expected: usize,
+    error: FromHexError,
+) -> ValidationError {
+    match error {
+        FromHexError::InvalidHexCharacter { .. } => ValidationError::InvalidHexCharacters { field },
+        FromHexError::OddLength | FromHexError::InvalidStringLength => {
+            ValidationError::InvalidHexLength { field, expected }
         }
-        .into());
     }
-
-    if hex::decode(hex_data).is_err() {
-        return Err(ValidationError::InvalidHexCharacters { field }.into());
-    }
-
-    Ok(())
 }

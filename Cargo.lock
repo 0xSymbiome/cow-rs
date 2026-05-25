@@ -1543,7 +1543,6 @@ version = "0.1.0"
 dependencies = [
  "alloy-primitives",
  "async-trait",
- "hex",
  "http",
  "num-bigint",
  "pin-project-lite",

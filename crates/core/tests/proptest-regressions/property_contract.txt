@@ -4,3 +4,5 @@
 #
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
+cc 4da6f051be7021f0190a0f0293a19134d12811c7c433742ddd55f5d4cba92677 # shrinks to input = "0000000000000000000000000000000000000000"
+cc 0e97fd7c1ef2b3b5773e3ec98bb9b431e7f6238b1b0fe11f5c709e83e571331c # shrinks to bytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], malformed = "0000000000000000000000000000000000000000000000000000000000000000"
