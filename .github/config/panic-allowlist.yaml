@@ -90,12 +90,6 @@ allowed:
   - file: crates/signing/src/domain.rs
     item: get_domain
     reason: Canonical settlement address is guaranteed by the validated deployment registry.
-  - file: crates/signing/src/order_signing.rs
-    item: sell_balance_name
-    reason: Signing balance mapping covers every currently representable sell-balance variant.
-  - file: crates/signing/src/order_signing.rs
-    item: buy_balance_name
-    reason: Signing balance mapping covers every currently representable buy-balance variant.
   - file: crates/subgraph/src/builder.rs
     item: SubgraphApiBuilder::finish
     reason: Typestate terminal methods guarantee chain and API key markers are present before finish.

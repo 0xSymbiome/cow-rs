@@ -21,7 +21,15 @@ pub fn encode_address_word(address: &Address) -> [u8; 32] {
     out
 }
 
-pub(crate) const fn order_kind_name(kind: OrderKind) -> &'static str {
+/// Returns the EIP-712 type-string label for a supported order kind.
+///
+/// The `"buy"` and `"sell"` labels feed into the keccak preimage of the
+/// `GPv2Order` typed-data `kind` field. The mapping is the canonical
+/// shared table that the signing, hashing, and signature-verification
+/// helpers in this workspace route through so the on-chain and
+/// typed-data views agree on the label bytes.
+#[must_use]
+pub const fn order_kind_name(kind: OrderKind) -> &'static str {
     match kind {
         OrderKind::Buy => "buy",
         OrderKind::Sell => "sell",
@@ -34,7 +42,8 @@ pub(crate) const fn order_kind_name(kind: OrderKind) -> &'static str {
 ///
 /// Panics only if a new balance-source variant reaches this internal codec
 /// before the settlement flag mapping is updated.
-pub(crate) fn sell_balance_name(balance: SellTokenSource) -> &'static str {
+#[must_use]
+pub fn sell_balance_name(balance: SellTokenSource) -> &'static str {
     match balance {
         SellTokenSource::Erc20 => "erc20",
         SellTokenSource::External => "external",
@@ -51,7 +60,8 @@ pub(crate) fn sell_balance_name(balance: SellTokenSource) -> &'static str {
 ///
 /// Panics only if a new balance-destination variant reaches this internal codec
 /// before the settlement flag mapping is updated.
-pub(crate) fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
+#[must_use]
+pub fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
     match balance {
         BuyTokenDestination::Erc20 => "erc20",
         BuyTokenDestination::Internal => "internal",

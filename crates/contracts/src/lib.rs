@@ -6,7 +6,7 @@
 #![warn(missing_docs)]
 #![allow(
     clippy::redundant_pub_crate,
-    reason = "items inside the private `primitives` module carry explicit `pub(crate)` markers as cross-module use documentation and as defensive scoping if the module is ever promoted to `pub mod`"
+    reason = "the remaining items inside the private `primitives` module (`ORDER_UID_LENGTH_BYTES`, `function_selector`) carry explicit `pub(crate)` markers as cross-module use documentation and as defensive scoping if the module is ever promoted to `pub mod`"
 )]
 
 /// Deterministic deployment metadata and address derivation helpers.
@@ -43,7 +43,7 @@ pub mod verify;
 mod chain_ids;
 mod primitives;
 
-pub use primitives::encode_address_word;
+pub use primitives::{buy_balance_name, encode_address_word, order_kind_name, sell_balance_name};
 
 pub use deploy::{
     ContractAddresses, ContractName, DEPLOYER_CONTRACT, SALT, deployment_address_hash_input,

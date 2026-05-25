@@ -3,13 +3,13 @@ use std::fmt;
 use alloy_primitives::{Bytes as AlloyBytes, keccak256};
 use alloy_sol_types::SolValue;
 use cow_sdk_contracts::{
-    ContractsError, Order as ContractsOrder, OrderUidParams, SigningScheme, hash_order,
-    normalize_order, normalized_ecdsa_signature, pack_order_uid_params,
+    ContractsError, Order as ContractsOrder, OrderUidParams, SigningScheme, buy_balance_name,
+    hash_order, normalize_order, normalized_ecdsa_signature, order_kind_name,
+    pack_order_uid_params, sell_balance_name,
 };
 use cow_sdk_core::{
-    Address, AsyncDigestSigner, AsyncTypedDataSigner, BuyTokenDestination, OrderDigest, OrderKind,
-    OrderUid, ProtocolOptions, SellTokenSource, Signer, SignerError, SupportedChainId,
-    TypedDataPayload, UnsignedOrder,
+    Address, AsyncDigestSigner, AsyncTypedDataSigner, OrderDigest, OrderUid, ProtocolOptions,
+    Signer, SignerError, SupportedChainId, TypedDataPayload, UnsignedOrder,
 };
 use serde::{Deserialize, Serialize};
 
@@ -375,46 +375,6 @@ fn decode_hex(value: &str, field: &'static str) -> Result<Vec<u8>, SigningError>
         return Err(ContractsError::InvalidHexPrefix { field }.into());
     };
     hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source }.into())
-}
-
-const fn order_kind_name(kind: OrderKind) -> &'static str {
-    match kind {
-        OrderKind::Buy => "buy",
-        OrderKind::Sell => "sell",
-    }
-}
-
-/// Returns the EIP-712 label for a supported sell-token balance source.
-///
-/// # Panics
-///
-/// Panics only if a new balance-source variant reaches this signing codec
-/// before the typed-data label mapping is updated.
-fn sell_balance_name(balance: SellTokenSource) -> &'static str {
-    match balance {
-        SellTokenSource::Erc20 => "erc20",
-        SellTokenSource::External => "external",
-        SellTokenSource::Internal => "internal",
-        // SAFETY: every currently supported signing balance source is mapped
-        // above; new variants must extend this typed-data codec.
-        _ => unreachable!("SellTokenSource variants are exhaustively covered"),
-    }
-}
-
-/// Returns the EIP-712 label for a supported buy-token balance destination.
-///
-/// # Panics
-///
-/// Panics only if a new balance-destination variant reaches this signing codec
-/// before the typed-data label mapping is updated.
-fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
-    match balance {
-        BuyTokenDestination::Erc20 => "erc20",
-        BuyTokenDestination::Internal => "internal",
-        // SAFETY: every currently supported signing balance destination is
-        // mapped above; new variants must extend this typed-data codec.
-        _ => unreachable!("BuyTokenDestination variants are exhaustively covered"),
-    }
 }
 
 #[cfg(test)]

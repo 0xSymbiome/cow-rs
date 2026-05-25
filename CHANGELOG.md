@@ -121,6 +121,20 @@ The first functional crate-family release begins at `0.1.0`.
   documenting the original introduction of the `hex_decode_*` family remains
   in place as the audit trail for the prior shape.
 
+### Changed
+
+- The `cow_sdk_contracts::order_kind_name`, `cow_sdk_contracts::sell_balance_name`,
+  and `cow_sdk_contracts::buy_balance_name` helpers are now part of the public
+  `cow-sdk-contracts` surface. Each helper returns the canonical EIP-712 label
+  for one protocol enum variant (`OrderKind`, `SellTokenSource`,
+  `BuyTokenDestination`); the labels keccak into the type-hash preimage that
+  every signer, hasher, and EIP-1271 verifier in this workspace routes through.
+  The previously private duplicates in `cow-sdk-signing` are removed and the
+  signing crate now imports the canonical helpers from `cow-sdk-contracts`.
+  The matching signing-side entries in
+  `.github/config/panic-allowlist.yaml` are removed because the corresponding
+  panic sites no longer exist; the contracts-side entries remain.
+
 ### Added
 
 - `cowprotocol/ethflowcontract` joins the parity-source catalog as a
