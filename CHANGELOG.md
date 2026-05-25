@@ -123,6 +123,20 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- The `cow_sdk_cow_shed` EIP-712 signing-digest path now flows through a single
+  public entry point. The previous `execute_hooks_message_hash` and
+  `hash_to_sign` helpers are replaced by `execute_hooks_signing_hash`, which
+  delegates to `<ExecuteHooks as alloy_sol_types::SolStruct>::eip712_signing_hash`
+  on the macro-emitted `ExecuteHooks` struct in
+  `crates/cow-shed/src/eip712/sol_types.rs`. The new `cow_shed_eip712_domain`
+  helper exposes the underlying `alloy_sol_types::Eip712Domain` value for
+  callers that need the typed-data domain directly; `cow_shed_domain_separator`
+  is retained as a thin wrapper returning the same domain's `.separator()`
+  byte. The cow-owned hand-rolled 66-byte EIP-712 envelope is removed; the
+  canonical envelope is now produced entirely by the macro-emitted `SolStruct`
+  impl. The `parity/fixtures/cow_shed/execute_hooks_digest.json` rows produce
+  byte-identical output across every supported chain and version row.
+
 - The `cow_sdk_contracts::order_kind_name`, `cow_sdk_contracts::sell_balance_name`,
   and `cow_sdk_contracts::buy_balance_name` helpers are now part of the public
   `cow-sdk-contracts` surface. Each helper returns the canonical EIP-712 label

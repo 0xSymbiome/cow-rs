@@ -1,8 +1,8 @@
 use alloy_primitives::{Address, B256, Bytes, U256};
 use alloy_sol_types::SolStruct;
 use cow_sdk_cow_shed::{
-    Call, CallExt, CowShedVersion, ExecuteHooks, SolCall, cow_shed_domain_separator,
-    execute_hooks_message_hash, hash_to_sign,
+    Call, CallExt, CowShedVersion, ExecuteHooks, SolCall, cow_shed_eip712_domain,
+    execute_hooks_signing_hash,
 };
 use serde::Deserialize;
 
@@ -67,16 +67,16 @@ fn execute_hooks_digest_matches_reference_vectors() {
         );
 
         let version = parse_version(&row.version);
-        let domain = cow_shed_domain_separator(row.chain_id, version, address(&row.proxy));
-        assert_eq!(domain, b256(&row.domain_separator));
+        let domain = cow_shed_eip712_domain(row.chain_id, version, address(&row.proxy));
+        assert_eq!(domain.separator(), b256(&row.domain_separator));
 
         let calls = row.message.calls.iter().map(to_call).collect::<Vec<_>>();
-        let message_hash = execute_hooks_message_hash(
+        let actual = execute_hooks_signing_hash(
+            &domain,
             &calls,
             b256(&row.message.nonce),
             decimal_u256(&row.message.deadline),
         );
-        let actual = hash_to_sign(domain, message_hash);
         assert_eq!(actual, b256(&row.digest));
     }
 }

@@ -203,3 +203,23 @@ plus `Signature::as_bytes`); the whitespace-free EIP-712 type strings
 between commas, the `isDelegateCall = true` safety-comment-gated
 opt-in builder, and the version-forwarding contract on
 `CowShedVersion` stay unchanged.
+
+## Amendment 2026-05-25: EIP-712 envelope consolidation (per ADR 0052)
+
+The COW Shed signing-digest path collapses onto
+`<ExecuteHooks as alloy_sol_types::SolStruct>::eip712_signing_hash(&domain)`
+per [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md).
+The previous three-function flow (`cow_shed_domain_separator` →
+`execute_hooks_message_hash` → `hash_to_sign`) is replaced by a single
+public entry point `execute_hooks_signing_hash(&domain, &calls, nonce,
+deadline) -> B256` plus the new domain builder
+`cow_shed_eip712_domain(chain, version, proxy) -> Eip712Domain`.
+`cow_shed_domain_separator` is retained as a thin wrapper that returns
+the same domain's `.separator()` byte for callers that only need the
+per-proxy separator. The cow-owned hand-rolled 66-byte envelope is
+removed; the canonical envelope is now produced entirely by the
+macro-emitted `SolStruct` impl, which composes the standard
+`keccak256(0x19 || 0x01 || domain_separator || hashStruct(message))`
+through `alloy_primitives::keccak256`. The
+`parity/fixtures/cow_shed/execute_hooks_digest.json` rows confirm
+byte-identical output across every supported chain and version row.

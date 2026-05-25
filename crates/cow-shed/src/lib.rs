@@ -29,7 +29,8 @@ pub use calls::{
     eoa_signature_from_compact,
 };
 pub use eip712::{
-    ExecuteHooks, SolCall, cow_shed_domain_separator, execute_hooks_message_hash, hash_to_sign,
+    ExecuteHooks, SolCall, cow_shed_domain_separator, cow_shed_eip712_domain,
+    execute_hooks_signing_hash,
 };
 pub use errors::{CowShedError, SigSource};
 pub use types::{Call, CallExt, Deadline, Hook, HookList, Nonce, ProxyAddress};

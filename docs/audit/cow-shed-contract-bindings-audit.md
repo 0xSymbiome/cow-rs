@@ -1,7 +1,7 @@
 # COW Shed Contract Bindings Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-05-25
 Owning surface: COW Shed Solidity excerpts, proxy creation-code artifacts, version-call evidence, and deployment registry rows
 Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, or the deployed `VERSION()` return value change upstream.
 Related docs:
@@ -43,7 +43,7 @@ app-data crate; that boundary is governed by the
 | Deployment registry | COW Shed factory and implementation rows are present in `registry.toml` for every supported chain id; `COWShedForComposableCoW` is present only for chain id 100 | Conforms |
 | Gnosis forwarder gate | The Gnosis-only forwarder is reachable only when the caller selects chain id 100; all other chains return the typed `CowShedError::COWShedForComposableCoWGnosisOnly { chain }` variant | Conforms (contract; helper body lands in a later capability landing) |
 | Hook type strings | Canonical type strings carry no whitespace between commas in declaration order; the EOA signature byte order is `r || s || v` | Conforms |
-| EIP-712 hashing | Domain separator, struct hash, and signing digest are produced by `alloy_sol_types::Eip712Domain::separator` and `<ExecuteHooks as SolStruct>::eip712_hash_struct`; bytes match the reference parity fixtures | Conforms |
+| EIP-712 hashing | Domain separator and signing digest are produced by `alloy_sol_types::Eip712Domain::separator` and `<ExecuteHooks as SolStruct>::eip712_signing_hash` respectively; bytes match the reference parity fixtures | Conforms |
 | Call type identity | The macro-emitted `Call` declared in the canonical sol! block is the single source of truth for typed-data hashing, ABI calldata building, and both proxy and factory interface signatures; the four representative `executeHooks` calldata rows in the parity fixture catalog the wire-byte contract | Conforms |
 | CREATE2 derivation | Proxy address derivation routes through `alloy_primitives::Address::create2` over the per-user salt and the proxy init-code hash; the thirty per-chain, per-user rows in the proxy-address parity fixture catalog the wire-byte contract | Conforms |
 | EOA signature byte order | The ERC-2098 compact signature decoder routes through `alloy_primitives::Signature::from_erc2098` and `Signature::as_bytes`, emitting the canonical 65-byte `r \|\| s \|\| v` layout with `v ∈ {27, 28}`; the four representative rows in the EOA signature byte-order parity fixture catalog the wire-byte contract | Conforms |
@@ -114,17 +114,20 @@ end-to-end. The `Call` and `ExecuteHooks` typed-data structs are
 declared via the `alloy_sol_types::sol!` macro in
 `crates/cow-shed/src/eip712/sol_types.rs`; the macro emits the canonical
 type strings at expansion time and rejects any whitespace insertion or
-declaration-order swap at macro expansion. `cow_shed_domain_separator`
+declaration-order swap at macro expansion. `cow_shed_eip712_domain`
 constructs an `alloy_sol_types::Eip712Domain` (name `"COWShed"`, the
 deployed version string, the caller-supplied chain id, the proxy
-address, and no salt) and returns `.separator()`;
-`execute_hooks_message_hash` builds the `ExecuteHooks` struct from the
-input slice and returns
-`<ExecuteHooks as SolStruct>::eip712_hash_struct`; `hash_to_sign`
-keccaks the standard `0x19 || 0x01 || domain_separator || message_hash`
-envelope via `alloy_primitives::keccak256`. Callers that need the
-EIP-712 type-hash bytes call `<T as SolStruct>::eip712_type_hash` on the
-matching struct. The
+address, and no salt) for callers that need the typed-data domain
+value; `cow_shed_domain_separator` is the thin convenience wrapper that
+returns the same domain's `.separator()` byte for callers that only
+need the per-proxy separator. `execute_hooks_signing_hash` builds the
+`ExecuteHooks` struct from the input slice and delegates to
+`<ExecuteHooks as SolStruct>::eip712_signing_hash(&domain)`, which
+composes the canonical EIP-712 envelope (`keccak256(0x19 || 0x01 ||
+domain_separator || hashStruct(message))`) end-to-end through
+`alloy_primitives::keccak256` with no cow-owned envelope code. Callers
+that need the EIP-712 type-hash bytes call
+`<T as SolStruct>::eip712_type_hash` on the matching struct. The
 `parity/fixtures/cow_shed/domain_separator.json` and
 `parity/fixtures/cow_shed/execute_hooks_digest.json` fixtures lock the
 wire-byte contract. The type-hash parity contract test asserts the
