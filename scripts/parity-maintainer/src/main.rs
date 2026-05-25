@@ -214,6 +214,9 @@ const COMPOSABLE_COW_PATHS: &[&str] = &[
     "src/interfaces/ISwapGuard.sol",
     "src/interfaces/IValueFactory.sol",
 ];
+const COMPOSABLE_COW_LIB_SAFE_PATHS: &[&str] = &[
+    "contracts/handler/ExtensibleFallbackHandler.sol",
+];
 const COW_SHED_PATHS: &[&str] = &[
     "networks.json",
     "src/COWShed.sol",
@@ -263,6 +266,13 @@ const HELPER_REPO_TEMPLATES: &[RepoTemplate] = &[
         role: "primary",
         local_hint: "<composable-cow-checkout>",
         producer_paths: COMPOSABLE_COW_PATHS,
+    },
+    RepoTemplate {
+        id: "composable-cow/lib/safe",
+        remote: "https://github.com/cowdao-grants/extensible-fallback-handler.git",
+        role: "primary-via-submodule",
+        local_hint: "<composable-cow-checkout>/lib/safe",
+        producer_paths: COMPOSABLE_COW_LIB_SAFE_PATHS,
     },
     RepoTemplate {
         id: "cow-shed",
