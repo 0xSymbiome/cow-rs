@@ -177,7 +177,7 @@ pub fn required_vault_roles(
             let role = role_hash(vault_address, *selector);
             Ok(RequiredVaultRole::new(
                 (*method).to_owned(),
-                format!("0x{}", alloy_primitives::hex::encode(selector)),
+                alloy_primitives::hex::encode_prefixed(selector),
                 role,
             ))
         })

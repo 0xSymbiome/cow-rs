@@ -218,7 +218,7 @@ pub fn encode_eip1271_signature_data(
     let mut payload = Vec::new();
     payload.extend_from_slice(&data.verifier.into_alloy().0.0);
     payload.extend_from_slice(&decode_hex(&data.signature, "signature")?);
-    Ok(format!("0x{}", alloy_primitives::hex::encode(payload)))
+    Ok(alloy_primitives::hex::encode_prefixed(payload))
 }
 
 /// Decodes a compact EIP-1271 verifier payload.
@@ -252,7 +252,7 @@ pub fn decode_eip1271_signature_data(
             .try_into()
             .expect("slice length 20 is guaranteed by the bytes.len() < 20 check above"),
     );
-    let signature = format!("0x{}", alloy_primitives::hex::encode(&bytes[20..]));
+    let signature = alloy_primitives::hex::encode_prefixed(&bytes[20..]);
     Ok(Eip1271SignatureData::new(verifier, signature))
 }
 
@@ -312,7 +312,7 @@ pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> 
         27 | 28 => bytes[64],
         value => return Err(ContractsError::InvalidSignatureRecoveryByte { value }),
     };
-    Ok(format!("0x{}", alloy_primitives::hex::encode(bytes)))
+    Ok(alloy_primitives::hex::encode_prefixed(bytes))
 }
 
 /// Verifies an EIP-1271 signature using a synchronous provider.
@@ -489,7 +489,7 @@ mod tests {
     /// bytes.
     fn function_magic_value(signature: &str) -> String {
         let hash = keccak256(signature.as_bytes());
-        format!("0x{}", alloy_primitives::hex::encode(&hash[..4]))
+        alloy_primitives::hex::encode_prefixed(&hash[..4])
     }
 
     #[test]

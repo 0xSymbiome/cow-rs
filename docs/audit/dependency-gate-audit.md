@@ -63,6 +63,8 @@ architecture reviews.
 | `cow-sdk-wasm` wasm32 tree | The wasm32 dependency graph excludes `cow-sdk-browser-wallet`, `cow-sdk-alloy*`, `alloy-provider`, reqwest, and hyper families; `tokio` is limited to the existing cancellation-token path | Conforms |
 | Pure-helper FFI boundary | `cow-sdk-pure-helpers` remains independent of wasm-bindgen, `js-sys`, `web-sys`, and `serde-wasm-bindgen` | Conforms |
 | Canonical primitive layer dependency closure | The workspace-level `sha3` and `num-bigint` declarations carry zero first-party direct production consumers and only resolve through `[dev-dependencies]` or transitive paths; the alloy-core ABI workspace pins, `httpdate`, and `serde_jcs` are consumed at the documented callsites per [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
+| `encode_prefixed` mechanical fence | The `.github/workflows/encode-prefixed-grep-gate.yml` workflow blocks the `format!("0x{}", alloy_primitives::hex::encode(...))` legacy hand-roll and unqualified `use alloy_primitives::hex::encode` imports in production sources, locking the canonical-primitive-layer hex-string contract from [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
+| Workspace dependency hygiene | The orphan `async-lock` workspace pin has been retired; no first-party crate referenced the pin and the lockfile no longer carries a first-party direct edge into the crate | Conforms |
 
 ## Current Contract
 
@@ -155,6 +157,31 @@ no longer declares `hex` in either its workspace or its package
 dependency block. The workspace lockfile contains a single `hex`
 node, brought in transitively through `const-hex`'s wide compatibility
 range, and is not a direct edge from any first-party manifest.
+
+Every `format!("0x{}", alloy_primitives::hex::encode(...))` hand-roll
+across the workspace has collapsed onto the single-call
+`alloy_primitives::hex::encode_prefixed(...)` form anchored by ADR 0052.
+The cascade touched twenty production call sites plus three sites
+inside `#[cfg(test)] mod tests {}` blocks embedded in `src/`, spanning
+the alloy adapter, contracts, app-data, trading, browser-wallet, and
+wasm crates. The emitted hex strings remain byte-identical. The new
+`.github/workflows/encode-prefixed-grep-gate.yml` workflow fences
+future regression with two parallel jobs: the first rejects any
+production-source `format!("0x{}", alloy_primitives::hex::encode(...))`
+hand-roll on the gate's regex, and the second rejects unqualified
+`use alloy_primitives::hex::encode` imports in production sources so
+the call-site regex's coverage envelope stays honest. Both jobs filter
+`//`-prefixed lines so doc-comment narratives that name the forbidden
+symbol cannot self-trigger them.
+
+The orphan `async-lock = "3.4.2"` workspace dependency declaration has
+been retired from the root `Cargo.toml`. At the prior HEAD the pin had
+zero first-party consumers: no `[dependencies]`, `[dev-dependencies]`,
+or `[target.'cfg(...)'.dependencies]` table inside the eighteen
+workspace members referenced the workspace pin. The lockfile node
+retires on the next `cargo update`, removing one row of supply-chain
+attack surface and one entry from the workspace default-feature
+exception register.
 
 ### Workspace Default-Feature Policy
 
@@ -314,6 +341,7 @@ cargo check-alloy-provider-invariant
 cargo check-alloy-signer-invariant
 cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant
 gh workflow run alloy-release-candidate.yml
+gh workflow run encode-prefixed-grep-gate.yml
 cargo build --workspace --all-features
 cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings

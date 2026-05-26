@@ -151,7 +151,7 @@ fn normalize_signature_hex(value: &str) -> Result<String, ContractsError> {
             field: "signature",
             source,
         })?;
-    Ok(format!("0x{}", alloy_primitives::hex::encode(bytes)))
+    Ok(alloy_primitives::hex::encode_prefixed(bytes))
 }
 
 /// Encodes a normalized order, signature, and execution into a settlement trade.

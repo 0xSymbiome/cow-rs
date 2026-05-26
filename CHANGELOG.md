@@ -14,6 +14,21 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `.github/workflows/encode-prefixed-grep-gate.yml` adds two CI grep
+  gates that mechanically fence the `alloy_primitives::hex::encode_prefixed`
+  canonical contract from
+  [ADR 0052](docs/adr/0052-alloy-primitives-canonical-primitive-layer.md).
+  The first job rejects any production-source
+  `format!("0x{}", alloy_primitives::hex::encode(...))` hand-roll; the
+  second rejects unqualified `use alloy_primitives::hex::encode`
+  imports in production sources so the call-site regex's coverage
+  envelope stays honest. Both jobs filter `//`-prefixed lines so
+  doc-comment narratives that name the forbidden symbol cannot
+  self-trigger them. The
+  [Dependency Gate Audit](docs/audit/dependency-gate-audit.md)
+  validation-surface block enumerates the gate alongside the existing
+  release-gating commands.
+
 - `docs/alloy-doctrine.md` is published as the canonical human-readable
   consolidation of the cow-rs ↔ alloy classification. The doctrine
   documents the three-bucket rule (ALWAYS-ALLOY, COW-OWNED,
@@ -165,6 +180,14 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- The `async-lock = "3.4.2"` workspace dependency declaration is
+  removed from the root `Cargo.toml`. No first-party crate consumed
+  the pin; `cargo tree --workspace --all-features --invert async-lock`
+  prints no dependency path. The lockfile node retires on the next
+  `cargo update`. The
+  [Dependency Gate Audit](docs/audit/dependency-gate-audit.md)
+  outcome-summary row records the retirement.
+
 - The `full` package flavor and `flavor-full` Cargo feature are removed from
   `cow-sdk-wasm`. The flavor activated the same feature set as `default`
   (`orderbook`, `signing`, `app-data`, `ipfs`, `cancellation`,
@@ -238,6 +261,17 @@ The first functional crate-family release begins at `0.1.0`.
   byte-for-byte; the helper had no external consumers.
 
 ### Changed
+
+- Twenty-three call sites across `cow-sdk-alloy-provider`,
+  `cow-sdk-alloy-signer`, `cow-sdk-app-data`, `cow-sdk-browser-wallet`,
+  `cow-sdk-contracts`, `cow-sdk-trading`, and `cow-sdk-wasm` collapse
+  the legacy `format!("0x{}", alloy_primitives::hex::encode(...))`
+  shape into the single-call
+  `alloy_primitives::hex::encode_prefixed(...)` form anchored by
+  [ADR 0052](docs/adr/0052-alloy-primitives-canonical-primitive-layer.md).
+  The cascade covers twenty production sites and three sites inside
+  `#[cfg(test)] mod tests {}` blocks embedded in `src/`. The emitted
+  hex strings remain byte-identical.
 
 - Workspace-wide hex retirement. The upstream `hex` crate is removed
   from the workspace dependency graph: the `[workspace.dependencies]`

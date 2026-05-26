@@ -208,7 +208,7 @@ mod tests {
             deterministic_deployment_address(bytecode, &deployment_arguments)
                 .unwrap()
                 .to_hex_string(),
-            format!("0x{}", alloy_primitives::hex::encode(&expected[12..]))
+            alloy_primitives::hex::encode_prefixed(&expected[12..])
         );
     }
 

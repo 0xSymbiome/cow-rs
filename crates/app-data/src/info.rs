@@ -187,7 +187,7 @@ pub fn get_app_data_info(source: impl AppDataSource) -> Result<AppDataValidated,
 
     let bytes_used = app_data_content.len();
     let digest = keccak256(app_data_content.as_bytes());
-    let app_data_hex = format!("0x{}", alloy_primitives::hex::encode(digest));
+    let app_data_hex = alloy_primitives::hex::encode_prefixed(digest);
     let cid = app_data_hex_to_cid(&app_data_hex)?;
 
     let info = AppDataInfo {

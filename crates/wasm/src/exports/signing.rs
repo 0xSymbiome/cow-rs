@@ -125,7 +125,7 @@ impl AsyncDigestSigner for JsDigestSigner {
     type Error = String;
 
     async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error> {
-        let digest = format!("0x{}", alloy_primitives::hex::encode(digest));
+        let digest = alloy_primitives::hex::encode_prefixed(digest);
         let signature = await_callback_string(
             &self.callback,
             JsValue::from_str(&digest),
@@ -699,7 +699,7 @@ fn settlement_transaction(
             )
             .into_js()
         })?;
-    let data = format!("0x{}", alloy_primitives::hex::encode(calldata));
+    let data = alloy_primitives::hex::encode_prefixed(calldata);
     Ok(TransactionRequest::new(
         Some(settlement),
         Some(HexData::new(data).map_err(|error| WasmError::from(error).into_js())?),

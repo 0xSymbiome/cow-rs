@@ -194,7 +194,7 @@ fn encode_approve_call(spender: &Address, amount: &Amount) -> String {
         spender: (*spender).into(),
         value: *amount.as_u256(),
     };
-    format!("0x{}", alloy_primitives::hex::encode(call.abi_encode()))
+    alloy_primitives::hex::encode_prefixed(call.abi_encode())
 }
 
 fn decode_allowance_result(raw: &str) -> Result<Amount, TradingError> {

@@ -4,7 +4,6 @@ use toml::Value;
 
 const REVIEWED_DEFAULT_FEATURE_EXCEPTIONS: &[&str] = &[
     "alloy-sol-macro",
-    "async-lock",
     "async-trait",
     "console_error_panic_hook",
     "futures-timer",

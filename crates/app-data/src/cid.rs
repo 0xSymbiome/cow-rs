@@ -44,7 +44,7 @@ pub fn cid_to_app_data_hex(cid: &str) -> Result<String, AppDataError> {
     let cid = Cid::try_from(cid).map_err(|_| AppDataError::InvalidCid)?;
     ensure_supported_cid(&cid)?;
     let digest = cid.hash().digest();
-    Ok(format!("0x{}", alloy_primitives::hex::encode(digest)))
+    Ok(alloy_primitives::hex::encode_prefixed(digest))
 }
 
 fn parse_app_data_hex(value: &str) -> Result<Vec<u8>, AppDataError> {

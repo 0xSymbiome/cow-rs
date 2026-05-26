@@ -81,7 +81,6 @@ alloy-sol-macro = "1.5.7"
 alloy-sol-types = { version = "1.5.7", default-features = false, features = ["eip712-serde"] }
 alloy-transport = { version = "2.0.4", default-features = false }
 alloy-transport-http = { version = "2.0.4", default-features = false, features = ["reqwest", "reqwest-rustls-tls"] }
-async-lock = "3.4.2"
 async-trait = "0.1.89"
 console_error_panic_hook = "0.1.7"
 criterion = { version = "0.5", default-features = false, features = ["html_reports"] }
