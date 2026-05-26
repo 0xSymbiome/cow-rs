@@ -569,7 +569,7 @@ async fn trading_build_sell_native_currency_tx(
         .map_err(|error| WasmError::from(error).into_js())?;
     let data = HexData::new(format!(
         "0x{}",
-        hex::encode(encode_create_order_calldata(&payload))
+        alloy_primitives::hex::encode(encode_create_order_calldata(&payload))
     ))
     .map_err(|error| WasmError::from(error).into_js())?;
     let generated = cow_sdk_trading::calculate_unique_order_id(chain, &order, None, Some(&options))

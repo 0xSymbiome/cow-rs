@@ -89,7 +89,7 @@ fn arbitrary_order() -> impl Strategy<Value = OrderCreation> {
                 receiver,
                 partially_fillable,
             )| {
-                let signature = format!("0x{}", hex::encode(signature_seed));
+                let signature = format!("0x{}", alloy_primitives::hex::encode(signature_seed));
                 let mut order = OrderCreation::new(
                     sell_token,
                     buy_token,

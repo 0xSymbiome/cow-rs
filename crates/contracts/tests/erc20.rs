@@ -215,7 +215,7 @@ fn permit_typed_data_hash_matches_an_independent_reference_vector() {
     let nonce = U256::from(7u64);
     let deadline = U256::from(1_767_225_600u64);
     let verifying_contract = Address::from_slice(
-        &hex::decode("A0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48").expect("literal must decode"),
+        &alloy_primitives::hex::decode("A0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48").expect("literal must decode"),
     );
 
     let domain: Eip712Domain = eip712_domain! {

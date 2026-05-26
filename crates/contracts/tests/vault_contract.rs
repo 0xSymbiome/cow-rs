@@ -27,12 +27,12 @@ fn expected_role_hash(vault_bytes: &[u8], selector: [u8; 4]) -> String {
     payload[12..32].copy_from_slice(vault_bytes);
     payload[32..].copy_from_slice(&selector);
     let digest = Keccak256::digest(payload);
-    format!("0x{}", hex::encode(digest))
+    format!("0x{}", alloy_primitives::hex::encode(digest))
 }
 
 fn selector_from_hex(selector: &str) -> [u8; 4] {
     let bytes =
-        hex::decode(selector.trim_start_matches("0x")).expect("selector literal must decode");
+        alloy_primitives::hex::decode(selector.trim_start_matches("0x")).expect("selector literal must decode");
     bytes
         .try_into()
         .expect("selector literal must be exactly four bytes")
@@ -107,7 +107,7 @@ fn vault_role_calls_and_grant_flow_are_stable() {
 #[test]
 fn vault_role_hashes_match_the_canonical_solidity_packed_layout() {
     let vault = Address::new(MAINNET_VAULT_ADDRESS).unwrap();
-    let vault_bytes = hex::decode(vault.to_hex_string().trim_start_matches("0x"))
+    let vault_bytes = alloy_primitives::hex::decode(vault.to_hex_string().trim_start_matches("0x"))
         .expect("vault literal must decode");
 
     let roles = required_vault_roles(&vault).unwrap();

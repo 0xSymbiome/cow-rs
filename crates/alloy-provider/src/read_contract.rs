@@ -260,13 +260,13 @@ fn dyn_value_to_json(value: &DynSolValue) -> Result<Value, AsyncProviderError> {
     match value {
         DynSolValue::Address(address) => Ok(Value::String(format!(
             "0x{}",
-            hex::encode(address.as_slice())
+            alloy_primitives::hex::encode(address.as_slice())
         ))),
         DynSolValue::FixedBytes(word, size) => Ok(Value::String(format!(
             "0x{}",
-            hex::encode(&word.as_slice()[..*size])
+            alloy_primitives::hex::encode(&word.as_slice()[..*size])
         ))),
-        DynSolValue::Bytes(bytes) => Ok(Value::String(format!("0x{}", hex::encode(bytes)))),
+        DynSolValue::Bytes(bytes) => Ok(Value::String(format!("0x{}", alloy_primitives::hex::encode(bytes)))),
         DynSolValue::Int(int, _) => Ok(Value::String(int.to_string())),
         DynSolValue::Uint(uint, _) => Ok(Value::String(uint.to_string())),
         DynSolValue::Bool(flag) => Ok(Value::Bool(*flag)),
@@ -281,7 +281,7 @@ fn dyn_value_to_json(value: &DynSolValue) -> Result<Value, AsyncProviderError> {
         }
         DynSolValue::Function(function) => Ok(Value::String(format!(
             "0x{}",
-            hex::encode(function.as_slice())
+            alloy_primitives::hex::encode(function.as_slice())
         ))),
         DynSolValue::CustomStruct { name, .. } => Err(AsyncProviderError::Validation(format!(
             "unsupported ABI output shape: custom struct `{name}` not supported in this release"

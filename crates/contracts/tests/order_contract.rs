@@ -25,7 +25,7 @@ use cow_sdk_contracts::{
 fn gpv2_order_type_hash_hex() -> String {
     format!(
         "0x{}",
-        hex::encode(GPv2Order::default().eip712_type_hash().as_slice())
+        alloy_primitives::hex::encode(GPv2Order::default().eip712_type_hash().as_slice())
     )
 }
 use cow_sdk_core::{

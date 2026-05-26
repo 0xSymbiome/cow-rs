@@ -122,7 +122,7 @@ fn property_def(type_name: &str, field: &TypedDataField) -> Result<PropertyDef, 
 pub fn alloy_signature_to_hex(
     signature: &Signature,
 ) -> Result<String, cow_sdk_contracts::ContractsError> {
-    let raw = format!("0x{}", hex::encode(signature.as_bytes()));
+    let raw = format!("0x{}", alloy_primitives::hex::encode(signature.as_bytes()));
     cow_sdk_contracts::normalized_ecdsa_signature(&raw)
 }
 

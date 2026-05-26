@@ -125,7 +125,7 @@ impl AsyncDigestSigner for JsDigestSigner {
     type Error = String;
 
     async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error> {
-        let digest = format!("0x{}", hex::encode(digest));
+        let digest = format!("0x{}", alloy_primitives::hex::encode(digest));
         let signature = await_callback_string(
             &self.callback,
             JsValue::from_str(&digest),
@@ -304,7 +304,7 @@ pub async fn sign_order_eth_sign_digest(
         )?;
         let generated = pure::signing::generate_order_id(chain, &order, &owner_address)
             .map_err(|error| WasmError::from(error).into_js())?;
-        let digest = hex::decode(
+        let digest = alloy_primitives::hex::decode(
             generated
                 .order_digest
                 .to_hex_string()
@@ -496,7 +496,7 @@ pub async fn sign_cancellation_eth_sign_digest(
     let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
     run_with_client_options(scope, async move {
         let (uids, _payload, digest) = cancellation_payload(order_uids, chain_id)?;
-        let digest_bytes = hex::decode(digest.to_hex_string().trim_start_matches("0x"))
+        let digest_bytes = alloy_primitives::hex::decode(digest.to_hex_string().trim_start_matches("0x"))
             .map_err(|error| WasmError::invalid("digest", error.to_string()).into_js())?;
         let signer = JsDigestSigner::new(digest_signer, wallet_timeout_ms);
         let signature = signer
@@ -699,7 +699,7 @@ fn settlement_transaction(
             )
             .into_js()
         })?;
-    let data = format!("0x{}", hex::encode(calldata));
+    let data = format!("0x{}", alloy_primitives::hex::encode(calldata));
     Ok(TransactionRequest::new(
         Some(settlement),
         Some(HexData::new(data).map_err(|error| WasmError::from(error).into_js())?),

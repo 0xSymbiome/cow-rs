@@ -47,9 +47,9 @@ fn deployment_constants_and_create2_address_match_fixture_contract() {
 
     let actual = deterministic_deployment_address(bytecode, &args).unwrap();
 
-    let mut init_code = hex::decode(bytecode.trim_start_matches("0x")).unwrap();
+    let mut init_code = alloy_primitives::hex::decode(bytecode.trim_start_matches("0x")).unwrap();
     for arg in &args {
-        init_code.extend_from_slice(&hex::decode(arg.trim_start_matches("0x")).unwrap());
+        init_code.extend_from_slice(&alloy_primitives::hex::decode(arg.trim_start_matches("0x")).unwrap());
     }
     let mut payload = Vec::with_capacity(85);
     payload.push(0xff);
@@ -57,7 +57,7 @@ fn deployment_constants_and_create2_address_match_fixture_contract() {
     payload.extend_from_slice(SALT.as_slice());
     payload.extend_from_slice(&keccak256(init_code));
     let hash = keccak256(payload);
-    let expected = format!("0x{}", hex::encode(&hash[12..]));
+    let expected = format!("0x{}", alloy_primitives::hex::encode(&hash[12..]));
 
     assert_eq!(actual.to_hex_string(), expected);
 }
@@ -151,6 +151,6 @@ fn registry_canonical_addresses_are_bound_to_the_reviewed_create2_salt_contract(
         deterministic_deployment_address(bytecode, &args)
             .unwrap()
             .to_hex_string(),
-        format!("0x{}", hex::encode(&expected[12..]))
+        format!("0x{}", alloy_primitives::hex::encode(&expected[12..]))
     );
 }

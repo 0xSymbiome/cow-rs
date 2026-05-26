@@ -76,7 +76,6 @@ thiserror.workspace = true
 alloy-primitives.workspace = true
 alloy-sol-types.workspace = true
 cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0" }
-hex.workspace = true
 jsonschema.workspace = true
 num-bigint.workspace = true
 serde.workspace = true

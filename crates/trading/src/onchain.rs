@@ -559,14 +559,14 @@ fn encode_set_pre_signature(order_uid: &cow_sdk_core::OrderUid, enabled: bool) -
         orderUid: order_uid_bytes(order_uid),
         signed: enabled,
     };
-    format!("0x{}", hex::encode(call.abi_encode()))
+    format!("0x{}", alloy_primitives::hex::encode(call.abi_encode()))
 }
 
 fn encode_invalidate_order_uid(order_uid: &cow_sdk_core::OrderUid) -> String {
     let call = IGPv2Settlement::invalidateOrderCall {
         orderUid: order_uid_bytes(order_uid),
     };
-    format!("0x{}", hex::encode(call.abi_encode()))
+    format!("0x{}", alloy_primitives::hex::encode(call.abi_encode()))
 }
 
 fn order_uid_bytes(order_uid: &cow_sdk_core::OrderUid) -> AlloyBytes {
@@ -580,7 +580,7 @@ fn encode_ethflow_create_order(
     let payload = EthFlowOrderData::from_unsigned_order(order, quote_id)?;
     Ok(format!(
         "0x{}",
-        hex::encode(encode_create_order_calldata(&payload))
+        alloy_primitives::hex::encode(encode_create_order_calldata(&payload))
     ))
 }
 
@@ -599,6 +599,6 @@ fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError
     )?;
     Ok(format!(
         "0x{}",
-        hex::encode(encode_invalidate_order_calldata(&payload))
+        alloy_primitives::hex::encode(encode_invalidate_order_calldata(&payload))
     ))
 }

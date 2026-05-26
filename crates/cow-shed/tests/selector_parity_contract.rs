@@ -30,7 +30,7 @@ fn gnosis_forwarder_selector_matches_erc1271() {
 }
 
 fn hex4(value: &str) -> [u8; 4] {
-    let bytes = hex::decode(value).expect("selector fixture parses");
+    let bytes = alloy_primitives::hex::decode(value).expect("selector fixture parses");
     let mut out = [0_u8; 4];
     out.copy_from_slice(&bytes);
     out

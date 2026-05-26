@@ -75,7 +75,7 @@ fn order_digest_fixture_rows_hold() {
         fixture.order_type_hash,
         format!(
             "0x{}",
-            hex::encode(GPv2Order::default().eip712_type_hash().as_slice())
+            alloy_primitives::hex::encode(GPv2Order::default().eip712_type_hash().as_slice())
         ),
         "fixture order_type_hash matches GPv2Order::eip712_type_hash",
     );

@@ -90,7 +90,7 @@ fn independent_payload(order: &cow_sdk_core::UnsignedOrder, ecdsa_signature: &st
     encoded.extend_from_slice(&keccak256(b"erc20"));
     encoded.extend_from_slice(&encode_usize(32 * 13));
 
-    let signature = hex::decode(ecdsa_signature.trim_start_matches("0x")).unwrap();
+    let signature = alloy_primitives::hex::decode(ecdsa_signature.trim_start_matches("0x")).unwrap();
     encoded.extend_from_slice(&encode_usize(signature.len()));
     encoded.extend_from_slice(&signature);
     encoded.extend(std::iter::repeat_n(
@@ -98,7 +98,7 @@ fn independent_payload(order: &cow_sdk_core::UnsignedOrder, ecdsa_signature: &st
         padded_len(signature.len()) - signature.len(),
     ));
 
-    format!("0x{}", hex::encode(encoded))
+    format!("0x{}", alloy_primitives::hex::encode(encoded))
 }
 
 // Hand-rolled `sha3::Keccak256` helper used by the assertions above.
@@ -115,7 +115,7 @@ fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
 
 fn encode_address(value: &str) -> [u8; 32] {
     let mut out = [0u8; 32];
-    let bytes = hex::decode(value.trim_start_matches("0x")).unwrap();
+    let bytes = alloy_primitives::hex::decode(value.trim_start_matches("0x")).unwrap();
     out[12..].copy_from_slice(&bytes);
     out
 }
@@ -149,7 +149,7 @@ fn encode_usize(value: usize) -> [u8; 32] {
 }
 
 fn parse_hex32(value: &str) -> [u8; 32] {
-    let bytes = hex::decode(value.trim_start_matches("0x")).unwrap();
+    let bytes = alloy_primitives::hex::decode(value.trim_start_matches("0x")).unwrap();
     let mut out = [0u8; 32];
     out.copy_from_slice(&bytes);
     out

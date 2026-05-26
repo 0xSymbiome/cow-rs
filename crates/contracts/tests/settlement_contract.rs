@@ -68,18 +68,18 @@ fn sample_signature() -> Signature {
 
 fn selector(signature: &str) -> String {
     let digest = Keccak256::digest(signature.as_bytes());
-    format!("0x{}", hex::encode(&digest[..4]))
+    format!("0x{}", alloy_primitives::hex::encode(&digest[..4]))
 }
 
 fn bytes_from_hex_literal(literal: &str) -> Bytes {
     let stripped = literal
         .strip_prefix("0x")
         .expect("hex literal must start with 0x");
-    Bytes::from(hex::decode(stripped).expect("hex literal must decode"))
+    Bytes::from(alloy_primitives::hex::decode(stripped).expect("hex literal must decode"))
 }
 
 fn hex_prefixed(bytes: &Bytes) -> String {
-    format!("0x{}", hex::encode(bytes))
+    format!("0x{}", alloy_primitives::hex::encode(bytes))
 }
 
 fn u256_word(value: u64) -> [u8; 32] {
@@ -381,7 +381,7 @@ fn order_refund_call_data_matches_the_canonical_abi_byte_layout() {
         0x11, 0x11, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
         0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x00, 0x00, 0x00, 0x00,
     ];
-    let uid_hex = format!("0x{}", hex::encode(uid_bytes));
+    let uid_hex = format!("0x{}", alloy_primitives::hex::encode(uid_bytes));
     let uid = OrderUid::new(uid_hex).unwrap();
 
     let mut encoder = SettlementEncoder::new(sample_domain());

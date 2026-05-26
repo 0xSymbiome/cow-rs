@@ -97,5 +97,5 @@ fn eoa_signature_compact_fixture_rows_hold() {
 }
 
 fn decode_hex(value: &str) -> Vec<u8> {
-    hex::decode(value.trim_start_matches("0x")).expect("hex fixture parses")
+    alloy_primitives::hex::decode(value.trim_start_matches("0x")).expect("hex fixture parses")
 }

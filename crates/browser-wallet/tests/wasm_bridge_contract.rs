@@ -382,7 +382,7 @@ async fn legacy_detect_connect_and_signer_requests_cross_the_typed_promise_bridg
     assert_eq!(
         personal_sign.params,
         Some(json!([
-            format!("0x{}", hex::encode(b"cow-rs bridge")),
+            format!("0x{}", alloy_primitives::hex::encode(b"cow-rs bridge")),
             ACCOUNT
         ]))
     );

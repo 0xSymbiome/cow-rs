@@ -33,7 +33,7 @@ fn uint256_word(value: &U256) -> String {
     // big-endian ABI word that the production encoder emits. The
     // `to_be_bytes::<32>()` byte stream is hex-encoded to the canonical
     // 64-character zero-padded lowercase form.
-    hex::encode(value.to_be_bytes::<32>())
+    alloy_primitives::hex::encode(value.to_be_bytes::<32>())
 }
 
 fn set_estimated_gas(signer: &MockSigner, estimate: u64) {

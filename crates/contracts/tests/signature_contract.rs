@@ -68,7 +68,7 @@ fn synthetic_signature_with_v(v: u8) -> String {
 
 fn deterministic_signing_key() -> SigningKey {
     SigningKey::from_slice(
-        &hex::decode("4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318").unwrap(),
+        &alloy_primitives::hex::decode("4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318").unwrap(),
     )
     .unwrap()
 }
@@ -82,11 +82,11 @@ fn ecdsa_signature_for_prehash(signing_key: &SigningKey, prehash: &[u8; 32]) -> 
     let mut bytes = [0_u8; 65];
     bytes[..64].copy_from_slice(signature.to_bytes().as_slice());
     bytes[64] = recovery_id.to_byte() + 27;
-    format!("0x{}", hex::encode(bytes))
+    format!("0x{}", alloy_primitives::hex::encode(bytes))
 }
 
 fn cow_eth_sign_prehash(digest: &Hash32) -> [u8; 32] {
-    let digest_bytes = hex::decode(digest.to_hex_string().trim_start_matches("0x")).unwrap();
+    let digest_bytes = alloy_primitives::hex::decode(digest.to_hex_string().trim_start_matches("0x")).unwrap();
     let mut payload = Vec::with_capacity(60);
     payload.extend_from_slice(b"\x19Ethereum Signed Message:\n32");
     payload.extend_from_slice(&digest_bytes);
@@ -284,7 +284,7 @@ fn signing_scheme_and_magic_value_match_fixture_contract() {
     assert_eq!(
         format!(
             "0x{}",
-            hex::encode(IERC1271::isValidSignatureCall::SELECTOR)
+            alloy_primitives::hex::encode(IERC1271::isValidSignatureCall::SELECTOR)
         ),
         fixture_magic
     );
@@ -573,7 +573,7 @@ fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
     assert_eq!(
         format!(
             "0x{}",
-            hex::encode(IERC1271::isValidSignatureCall::SELECTOR)
+            alloy_primitives::hex::encode(IERC1271::isValidSignatureCall::SELECTOR)
         ),
         "0x1626ba7e",
         "IERC1271 selector must render to the canonical EIP-1271 magic-value hex",

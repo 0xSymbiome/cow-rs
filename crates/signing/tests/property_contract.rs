@@ -58,14 +58,14 @@ fn address_strategy() -> impl Strategy<Value = Address> {
         if bytes.iter().all(|byte| *byte == 0) {
             bytes[19] = 1;
         }
-        Address::new(format!("0x{}", hex::encode(bytes))).unwrap()
+        Address::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap()
     })
 }
 
 /// Strategy that emits an [`AppDataHex`] payload.
 fn app_data_strategy() -> impl Strategy<Value = AppDataHex> {
     any::<[u8; 32]>()
-        .prop_map(|bytes| AppDataHex::new(format!("0x{}", hex::encode(bytes))).unwrap())
+        .prop_map(|bytes| AppDataHex::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap())
 }
 
 /// Strategy that emits an [`Amount`] with at least one non-zero byte.
@@ -74,7 +74,7 @@ fn amount_strategy() -> impl Strategy<Value = Amount> {
         if bytes.iter().all(|byte| *byte == 0) {
             bytes[31] = 1;
         }
-        Amount::new(format!("0x{}", hex::encode(bytes))).unwrap()
+        Amount::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap()
     })
 }
 
@@ -89,7 +89,7 @@ fn order_uid_strategy() -> impl Strategy<Value = OrderUid> {
         let mut bytes = [0u8; 56];
         bytes[..32].copy_from_slice(&first);
         bytes[32..].copy_from_slice(&second);
-        OrderUid::new(format!("0x{}", hex::encode(bytes))).unwrap()
+        OrderUid::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap()
     })
 }
 
@@ -132,13 +132,13 @@ fn domain_and_changed_strategy() -> impl Strategy<Value = (TypedDataDomain, Type
             _ => {
                 let hex_string = changed.verifying_contract.to_hex_string();
                 let current = hex_string.trim_start_matches("0x");
-                let mut bytes = hex::decode(current).unwrap();
+                let mut bytes = alloy_primitives::hex::decode(current).unwrap();
                 bytes[19] ^= 1;
                 if bytes.iter().all(|byte| *byte == 0) {
                     bytes[19] = 1;
                 }
                 changed.verifying_contract =
-                    Address::new(format!("0x{}", hex::encode(bytes))).unwrap();
+                    Address::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap();
             }
         }
         (domain, changed)
@@ -334,7 +334,7 @@ proptest! {
         prop_assert!(message_calls.typed_data.is_empty());
         prop_assert_eq!(message_calls.messages.len(), 1);
         prop_assert_eq!(
-            format!("0x{}", hex::encode(&message_calls.messages[0])),
+            format!("0x{}", alloy_primitives::hex::encode(&message_calls.messages[0])),
             expected_digest.to_hex_string().clone(),
         );
     }
@@ -387,7 +387,7 @@ proptest! {
         prop_assert!(message_calls.typed_data.is_empty());
         prop_assert_eq!(message_calls.messages.len(), 1);
         prop_assert_eq!(
-            format!("0x{}", hex::encode(&message_calls.messages[0])),
+            format!("0x{}", alloy_primitives::hex::encode(&message_calls.messages[0])),
             expected_digest.to_hex_string().clone(),
         );
     }
@@ -446,9 +446,9 @@ proptest! {
             .map(|index| (seed.wrapping_add(index as u64) as u8) ^ 0x5A)
             .collect();
         signature_bytes[64] = if (seed & 1) == 0 { 27 } else { 28 };
-        let signature = format!("0x{}", hex::encode(&signature_bytes));
+        let signature = format!("0x{}", alloy_primitives::hex::encode(&signature_bytes));
         let payload = eip1271_signature_payload(&order, &signature).unwrap();
-        let encoded = hex::decode(payload.trim_start_matches("0x")).unwrap();
+        let encoded = alloy_primitives::hex::decode(payload.trim_start_matches("0x")).unwrap();
 
         let offset_word_start = 32 * 12;
         let length_word_start = 32 * 13;

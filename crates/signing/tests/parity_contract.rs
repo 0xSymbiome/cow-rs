@@ -424,11 +424,11 @@ fn assert_eip1271_encoding(id: &str, expected: &Value) {
 
     let order = sample_order();
     let signature = synthetic_ecdsa_signature(27);
-    let signature_bytes = hex::decode(signature.trim_start_matches("0x")).unwrap();
+    let signature_bytes = alloy_primitives::hex::decode(signature.trim_start_matches("0x")).unwrap();
     let payload =
         eip1271_signature_payload(&order, &signature).expect("EIP-1271 payload must encode");
     let payload_hex = payload.trim_start_matches("0x");
-    let payload_bytes = hex::decode(payload_hex).unwrap();
+    let payload_bytes = alloy_primitives::hex::decode(payload_hex).unwrap();
     assert_eq!(
         payload_hex.len() % 2,
         0,
@@ -447,7 +447,7 @@ fn assert_eip1271_encoding(id: &str, expected: &Value) {
             "sellTokenBalance" | "buyTokenBalance" => b"erc20",
             other => panic!("case {id}: unsupported string field {other}"),
         };
-        let marker_hex = hex::encode(marker);
+        let marker_hex = alloy_primitives::hex::encode(marker);
         assert!(
             !payload_hex.contains(&marker_hex),
             "case {id}: {field_label} must be hashed before encoding, but raw UTF-8 bytes appear in the payload",

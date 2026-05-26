@@ -3,7 +3,7 @@ members = []
 resolver = "2"
 
 [workspace.dependencies]
-hex = "0.4.3"
+alloy-primitives = { version = "1.5", default-features = false }
 
 [package]
 name = "cow-sdk-examples-native"
@@ -21,10 +21,10 @@ alloy = ["cow-sdk/alloy"]
 live-services = ["alloy"]
 
 [dependencies]
+alloy-primitives = { workspace = true }
 async-trait = "0.1.89"
 cow-sdk = { path = "../../crates/sdk" }
 cow-sdk-subgraph = { path = "../../crates/subgraph" }
-hex = { workspace = true }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 tokio = { version = "1.51.1", features = ["macros", "rt-multi-thread", "time"] }

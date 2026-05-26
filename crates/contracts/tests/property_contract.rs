@@ -81,20 +81,20 @@ fn address_strategy() -> impl Strategy<Value = Address> {
         if bytes.iter().all(|byte| *byte == 0) {
             bytes[19] = 1;
         }
-        Address::new(format!("0x{}", hex::encode(bytes))).unwrap()
+        Address::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap()
     })
 }
 
 /// Strategy that emits a 32-byte order digest wrapped in [`OrderDigest`].
 fn order_digest_strategy() -> impl Strategy<Value = OrderDigest> {
     any::<[u8; 32]>()
-        .prop_map(|bytes| OrderDigest::new(format!("0x{}", hex::encode(bytes))).unwrap())
+        .prop_map(|bytes| OrderDigest::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap())
 }
 
 /// Strategy that emits an [`AppDataHex`] payload.
 fn app_data_strategy() -> impl Strategy<Value = AppDataHex> {
     any::<[u8; 32]>()
-        .prop_map(|bytes| AppDataHex::new(format!("0x{}", hex::encode(bytes))).unwrap())
+        .prop_map(|bytes| AppDataHex::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap())
 }
 
 /// Strategy that emits an [`Amount`] with at least one non-zero byte so
@@ -104,7 +104,7 @@ fn amount_strategy() -> impl Strategy<Value = Amount> {
         if bytes.iter().all(|byte| *byte == 0) {
             bytes[31] = 1;
         }
-        Amount::new(format!("0x{}", hex::encode(bytes))).unwrap()
+        Amount::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap()
     })
 }
 
@@ -244,7 +244,7 @@ fn scheme_and_signature_strategy() -> impl Strategy<Value = (SigningScheme, Sign
                     scheme,
                     Signature::Ecdsa {
                         scheme,
-                        data: format!("0x{}", hex::encode(bytes)),
+                        data: format!("0x{}", alloy_primitives::hex::encode(bytes)),
                     },
                 )
             })
@@ -256,7 +256,7 @@ fn scheme_and_signature_strategy() -> impl Strategy<Value = (SigningScheme, Sign
                     Signature::Eip1271 {
                         data: Eip1271SignatureData::new(
                             verifier,
-                            format!("0x{}", hex::encode(bytes)),
+                            format!("0x{}", alloy_primitives::hex::encode(bytes)),
                         ),
                     },
                 )
@@ -274,7 +274,7 @@ fn signature_with_v(r_bytes: &[u8; 32], s_bytes: &[u8; 32], v_byte: u8) -> Strin
     bytes[..32].copy_from_slice(r_bytes);
     bytes[32..64].copy_from_slice(s_bytes);
     bytes[64] = v_byte;
-    format!("0x{}", hex::encode(bytes))
+    format!("0x{}", alloy_primitives::hex::encode(bytes))
 }
 
 fn trade_with_indices_and_flags(
@@ -385,7 +385,7 @@ fn ecdsa_v_normalization_rejects_every_excluded_byte_value() {
                     match v_byte {
                         0 | 1 | 27 | 28 => {
                             let normalized = normalized_ecdsa_signature(&signature).unwrap();
-                            let output = hex::decode(normalized.trim_start_matches("0x")).unwrap();
+                            let output = alloy_primitives::hex::decode(normalized.trim_start_matches("0x")).unwrap();
                             let expected_v = if matches!(v_byte, 0 | 27) { 27 } else { 28 };
 
                             prop_assert_eq!(&output[..32], r_bytes.as_slice());
@@ -598,7 +598,7 @@ proptest! {
         let normalized = normalized_ecdsa_signature(&normalized_signature).unwrap();
         prop_assert_eq!(normalized.clone(), normalized.to_ascii_lowercase());
         prop_assert_eq!(
-            hex::decode(normalized.trim_start_matches("0x")).unwrap(),
+            alloy_primitives::hex::decode(normalized.trim_start_matches("0x")).unwrap(),
             normalized_payload_bytes,
         );
 
@@ -610,11 +610,11 @@ proptest! {
         let decoded = decode_eip1271_signature_data(&encoded).unwrap();
 
         prop_assert_eq!(&decoded.verifier, &verifier);
-        prop_assert_eq!(decoded.signature, format!("0x{}", hex::encode(&payload_bytes)));
+        prop_assert_eq!(decoded.signature, format!("0x{}", alloy_primitives::hex::encode(&payload_bytes)));
         prop_assert_eq!(encoded.len(), 2 + ((20 + byte_len) * 2));
 
-        let encoded_bytes = hex::decode(encoded.trim_start_matches("0x")).unwrap();
-        let verifier_bytes = hex::decode(verifier.to_hex_string().trim_start_matches("0x")).unwrap();
+        let encoded_bytes = alloy_primitives::hex::decode(encoded.trim_start_matches("0x")).unwrap();
+        let verifier_bytes = alloy_primitives::hex::decode(verifier.to_hex_string().trim_start_matches("0x")).unwrap();
         prop_assert_eq!(encoded_bytes.len(), 20 + byte_len);
         prop_assert_eq!(&encoded_bytes[..20], verifier_bytes.as_slice());
         prop_assert_eq!(&encoded_bytes[20..], payload_bytes.as_slice());
@@ -648,7 +648,7 @@ proptest! {
     fn ethflow_order_data_new_rejects_zero_receiver_iff_address_is_zero(
         receiver_bytes in proptest::array::uniform20(any::<u8>()),
     ) {
-        let receiver_hex = format!("0x{}", hex::encode(receiver_bytes));
+        let receiver_hex = format!("0x{}", alloy_primitives::hex::encode(receiver_bytes));
         let receiver = Address::new(receiver_hex).unwrap();
         let result = EthFlowOrderData::new(
             Address::new("0x1111111111111111111111111111111111111111").unwrap(),

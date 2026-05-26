@@ -50,7 +50,7 @@ fn sample_order() -> UnsignedOrder {
 }
 
 fn assert_recovery_byte_is_legacy(signature: &str) {
-    let bytes = hex::decode(signature.trim_start_matches("0x")).unwrap();
+    let bytes = alloy_primitives::hex::decode(signature.trim_start_matches("0x")).unwrap();
     assert_eq!(bytes.len(), 65);
     assert!(matches!(bytes[64], 27 | 28));
 }

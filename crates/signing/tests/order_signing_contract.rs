@@ -93,7 +93,7 @@ fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
     .unwrap();
 
     assert_eq!(
-        format!("0x{}", hex::encode(&signer.calls.borrow().messages[0])),
+        format!("0x{}", alloy_primitives::hex::encode(&signer.calls.borrow().messages[0])),
         expected_digest.to_hex_string()
     );
 }
@@ -121,7 +121,7 @@ fn eth_sign_routes_raw_32_byte_digest_to_sign_message() {
     let captured = signer.calls.borrow().messages[0].clone();
     assert_eq!(captured.len(), 32);
     assert_eq!(
-        format!("0x{}", hex::encode(&captured)),
+        format!("0x{}", alloy_primitives::hex::encode(&captured)),
         expected_digest.to_hex_string()
     );
     assert!(!captured.starts_with(b"\x19Ethereum Signed Message:\n32"));
@@ -225,7 +225,7 @@ fn eip1271_signature_payload_matches_the_manual_contract_encoding() {
 
     let signature = format!("0x{}1b", "aa".repeat(64));
     let payload = eip1271_signature_payload(&order, &signature).unwrap();
-    let signature_bytes = hex::decode(signature.trim_start_matches("0x")).unwrap();
+    let signature_bytes = alloy_primitives::hex::decode(signature.trim_start_matches("0x")).unwrap();
 
     let mut expected = Vec::with_capacity(32 * 15 + padded_len_manual(signature_bytes.len()));
     expected.extend_from_slice(&encode_address_word(&order.sell_token.to_hex_string()));
@@ -248,7 +248,7 @@ fn eip1271_signature_payload_matches_the_manual_contract_encoding() {
         padded_len_manual(signature_bytes.len()) - signature_bytes.len(),
     ));
 
-    assert_eq!(payload, format!("0x{}", hex::encode(expected)));
+    assert_eq!(payload, format!("0x{}", alloy_primitives::hex::encode(expected)));
 }
 
 #[test]
@@ -258,7 +258,7 @@ fn eip1271_signature_payload_keeps_full_bytes32_app_data_and_exact_word_padding(
 
     let signature = format!("0x{}1b", "cd".repeat(64));
     let payload = eip1271_signature_payload(&order, &signature).unwrap();
-    let encoded = hex::decode(payload.trim_start_matches("0x")).unwrap();
+    let encoded = alloy_primitives::hex::decode(payload.trim_start_matches("0x")).unwrap();
     assert_eq!(encoded.len(), 32 * 17);
 
     let app_data_word_offset = 32 * 6;
@@ -274,7 +274,7 @@ fn eip1271_signature_payload_keeps_full_bytes32_app_data_and_exact_word_padding(
     );
     assert_eq!(
         &encoded[dynamic_length_offset + 32..dynamic_length_offset + 32 + 65],
-        &hex::decode(signature.trim_start_matches("0x")).unwrap()
+        &alloy_primitives::hex::decode(signature.trim_start_matches("0x")).unwrap()
     );
     assert!(
         encoded[dynamic_length_offset + 32 + 65..]
@@ -301,7 +301,7 @@ fn contracts_order(order: &cow_sdk_core::UnsignedOrder) -> ContractsOrder {
 }
 
 fn parse_hex_word(value: &str, expected_len: usize) -> Vec<u8> {
-    let bytes = hex::decode(value.trim_start_matches("0x")).unwrap();
+    let bytes = alloy_primitives::hex::decode(value.trim_start_matches("0x")).unwrap();
     assert_eq!(bytes.len(), expected_len);
     bytes
 }

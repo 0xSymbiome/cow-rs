@@ -55,14 +55,14 @@ fn proxy_constants_and_storage_readers_match_contract_surface() {
 fn eip1967_slot_bytes_match_the_canonical_hex_payload() {
     let admin_bytes = Eip1967Slot::Admin.as_bytes();
     assert_eq!(
-        format!("0x{}", hex::encode(admin_bytes)),
+        format!("0x{}", alloy_primitives::hex::encode(admin_bytes)),
         Eip1967Slot::Admin.as_hex_str(),
         "admin slot bytes must round-trip through the typed hex accessor",
     );
 
     let implementation_bytes = Eip1967Slot::Implementation.as_bytes();
     assert_eq!(
-        format!("0x{}", hex::encode(implementation_bytes)),
+        format!("0x{}", alloy_primitives::hex::encode(implementation_bytes)),
         Eip1967Slot::Implementation.as_hex_str(),
         "implementation slot bytes must round-trip through the typed hex accessor",
     );
@@ -110,7 +110,7 @@ fn canonical_eip1967_slot(label: &str) -> String {
             break;
         }
     }
-    format!("0x{}", hex::encode(bytes))
+    format!("0x{}", alloy_primitives::hex::encode(bytes))
 }
 
 #[test]

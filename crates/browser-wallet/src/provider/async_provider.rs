@@ -89,7 +89,7 @@ impl AsyncProvider for Eip1193Provider {
                 "eth_call",
                 Some(json!([{
                     "to": request.address.to_hex_string(),
-                    "data": format!("0x{}", hex::encode(input)),
+                    "data": format!("0x{}", alloy_primitives::hex::encode(input)),
                 }, "latest"])),
             )
             .await?;
@@ -607,12 +607,12 @@ fn json_to_dyn_value(
 fn dyn_value_to_json(value: &DynSolValue) -> Value {
     match value {
         DynSolValue::Address(address) => {
-            Value::String(format!("0x{}", hex::encode(address.as_slice())))
+            Value::String(format!("0x{}", alloy_primitives::hex::encode(address.as_slice())))
         }
         DynSolValue::FixedBytes(word, size) => {
-            Value::String(format!("0x{}", hex::encode(&word.as_slice()[..*size])))
+            Value::String(format!("0x{}", alloy_primitives::hex::encode(&word.as_slice()[..*size])))
         }
-        DynSolValue::Bytes(bytes) => Value::String(format!("0x{}", hex::encode(bytes))),
+        DynSolValue::Bytes(bytes) => Value::String(format!("0x{}", alloy_primitives::hex::encode(bytes))),
         DynSolValue::Int(int, _) => Value::String(int.to_string()),
         DynSolValue::Uint(uint, _) => Value::String(uint.to_string()),
         DynSolValue::Bool(flag) => Value::Bool(*flag),
@@ -630,7 +630,7 @@ fn dyn_value_to_json(value: &DynSolValue) -> Value {
                 .collect::<Map<_, _>>(),
         ),
         DynSolValue::Function(function) => {
-            Value::String(format!("0x{}", hex::encode(function.as_slice())))
+            Value::String(format!("0x{}", alloy_primitives::hex::encode(function.as_slice())))
         }
     }
 }
@@ -712,7 +712,7 @@ fn decode_hex(value: &str, method: &str) -> Result<Vec<u8>, BrowserWalletError> 
     let stripped = value.strip_prefix("0x").ok_or_else(|| {
         BrowserWalletError::malformed_response(method, "hex value must be 0x-prefixed")
     })?;
-    hex::decode(stripped)
+    alloy_primitives::hex::decode(stripped)
         .map_err(|error| BrowserWalletError::malformed_response(method, error.to_string()))
 }
 

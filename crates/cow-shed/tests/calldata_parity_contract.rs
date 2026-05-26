@@ -149,7 +149,7 @@ fn decimal_u256(value: &str) -> U256 {
 }
 
 fn bytes(value: &str) -> Bytes {
-    Bytes::from(hex::decode(value.trim_start_matches("0x")).expect("fixture hex parses"))
+    Bytes::from(alloy_primitives::hex::decode(value.trim_start_matches("0x")).expect("fixture hex parses"))
 }
 
 fn address(value: &str) -> Address {
@@ -157,7 +157,7 @@ fn address(value: &str) -> Address {
 }
 
 fn b256(value: &str) -> B256 {
-    let bytes = hex::decode(value.trim_start_matches("0x")).expect("fixture hash parses");
+    let bytes = alloy_primitives::hex::decode(value.trim_start_matches("0x")).expect("fixture hash parses");
     let mut out = [0_u8; 32];
     out.copy_from_slice(&bytes);
     B256::from(out)

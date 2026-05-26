@@ -136,7 +136,7 @@ impl AsyncSigner for Eip1193Signer {
             .request(
                 "personal_sign",
                 Some(json!([
-                    format!("0x{}", hex::encode(message)),
+                    format!("0x{}", alloy_primitives::hex::encode(message)),
                     account.to_hex_string()
                 ])),
             )

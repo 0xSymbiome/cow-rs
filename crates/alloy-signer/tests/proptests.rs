@@ -134,7 +134,7 @@ fn sample_order() -> UnsignedOrder {
 fn prop_assert_legacy_recovery_byte(
     signature: &str,
 ) -> Result<(), proptest::test_runner::TestCaseError> {
-    let bytes = hex::decode(signature.trim_start_matches("0x")).unwrap();
+    let bytes = alloy_primitives::hex::decode(signature.trim_start_matches("0x")).unwrap();
     prop_assert_eq!(bytes.len(), 65);
     prop_assert!(matches!(bytes[64], 27 | 28));
     Ok(())

@@ -119,7 +119,7 @@ fn reordered_document(value: &Value) -> Value {
 
 /// Strategy that emits a 32-byte app-data hex digest.
 fn app_data_hex_strategy() -> impl Strategy<Value = String> {
-    any::<[u8; 32]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes)))
+    any::<[u8; 32]>().prop_map(|bytes| format!("0x{}", alloy_primitives::hex::encode(bytes)))
 }
 
 /// Strategy that emits the union of malformed hex shapes
@@ -127,10 +127,10 @@ fn app_data_hex_strategy() -> impl Strategy<Value = String> {
 /// byte length, and non-hex characters in the payload.
 fn malformed_app_data_hex_strategy() -> impl Strategy<Value = String> {
     prop_oneof![
-        any::<[u8; 32]>().prop_map(|bytes| hex::encode(bytes)),
-        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
-        any::<[u8; 33]>().prop_map(|bytes| format!("0x{}", hex::encode(bytes))),
-        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}gg", hex::encode(bytes))),
+        any::<[u8; 32]>().prop_map(|bytes| alloy_primitives::hex::encode(bytes)),
+        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}", alloy_primitives::hex::encode(bytes))),
+        any::<[u8; 33]>().prop_map(|bytes| format!("0x{}", alloy_primitives::hex::encode(bytes))),
+        any::<[u8; 31]>().prop_map(|bytes| format!("0x{}gg", alloy_primitives::hex::encode(bytes))),
     ]
 }
 

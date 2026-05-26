@@ -27,7 +27,7 @@ use common::{MockProvider, fixture_case};
 
 fn balance_id(name: &str) -> String {
     let digest = Keccak256::digest(name.as_bytes());
-    format!("0x{}", hex::encode(digest))
+    format!("0x{}", alloy_primitives::hex::encode(digest))
 }
 
 #[test]

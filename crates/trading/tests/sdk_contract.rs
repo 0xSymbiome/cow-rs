@@ -38,7 +38,7 @@ fn uint256_word(value: &U256) -> String {
     // Test oracle helper: emit the canonical 32-byte big-endian ABI
     // word for the cow uint256 value as a 64-character zero-padded
     // lowercase hex string.
-    hex::encode(value.to_be_bytes::<32>())
+    alloy_primitives::hex::encode(value.to_be_bytes::<32>())
 }
 
 #[tokio::test]

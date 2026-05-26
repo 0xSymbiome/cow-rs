@@ -132,26 +132,29 @@ to parse `Retry-After` HTTP-date headers), and `serde_jcs 0.2.0`
 feeds the keccak256 digest input) are consumed at the callsites
 enumerated by their respective per-surface audits.
 
-The workspace also retains the `hex = "0.4.3"` declaration at the
-workspace-dependencies level so the per-crate `[dev-dependencies]`
-`hex.workspace = true` declarations across `cow-sdk-core`,
-`cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-cow-shed`, and the
-`cow-sdk` facade resolve for their integration-test fixture parsing
-paths. `cow-sdk-core`, `cow-sdk-contracts`, and `cow-sdk-signing` do
-not declare a production direct dependency on the upstream `hex`
-crate: all production hex encode and decode callsites under
-`crates/contracts/src/**` and `crates/signing/src/**` route through
-`alloy_primitives::hex::{encode, decode}`, which resolves to the
-`const-hex 1.18.x` re-export carried by `alloy-primitives 1.5.x`. The
+The workspace has fully retired the upstream `hex` crate from its
+dependency graph. No `[workspace.dependencies]` entry for `hex`
+remains in the root `Cargo.toml`; no per-crate `[dependencies]` or
+`[dev-dependencies]` entry for `hex.workspace = true` remains in any
+first-party crate under `crates/`. Every production and test hex
+encode and decode callsite across `crates/core/**`,
+`crates/contracts/**`, `crates/signing/**`,
+`crates/alloy-provider/**`, `crates/alloy-signer/**`,
+`crates/alloy/**`, `crates/app-data/**`, `crates/trading/**`,
+`crates/browser-wallet/**`, `crates/wasm/**`, and
+`crates/cow-shed/**` routes through `alloy_primitives::hex::{encode,
+decode}`, which resolves transitively to the `const-hex 1.18.x`
+re-export carried by `alloy-primitives 1.5.x`. The
 `ContractsError::DecodeHex { source }` variant carries the typed
 `alloy_primitives::hex::FromHexError` value (a re-export of
 `const_hex::FromHexError`) so the production error surface no longer
-references the upstream `hex` crate's error type. The native Alloy
-adapter family (`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`,
-`cow-sdk-alloy`), `cow-sdk-app-data`, `cow-sdk-trading`,
-`cow-sdk-browser-wallet`, and `cow-sdk-wasm` continue to declare
-`hex.workspace = true` under `[dependencies]` at the per-crate level
-consistent with each crate's own per-surface audit posture.
+references the upstream `hex` crate's error type. The standalone
+example workspace at `examples/native/Cargo.toml` carries its own
+`alloy-primitives` declaration for the same canonical resolution and
+no longer declares `hex` in either its workspace or its package
+dependency block. The workspace lockfile contains a single `hex`
+node, brought in transitively through `const-hex`'s wide compatibility
+range, and is not a direct edge from any first-party manifest.
 
 ### Workspace Default-Feature Policy
 

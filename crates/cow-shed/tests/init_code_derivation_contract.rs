@@ -48,7 +48,7 @@ fn parse_version(value: &str) -> CowShedVersion {
 }
 
 fn b256(value: &str) -> B256 {
-    let bytes = hex::decode(value.trim_start_matches("0x")).expect("fixture hash parses");
+    let bytes = alloy_primitives::hex::decode(value.trim_start_matches("0x")).expect("fixture hash parses");
     let mut out = [0_u8; 32];
     out.copy_from_slice(&bytes);
     B256::from(out)

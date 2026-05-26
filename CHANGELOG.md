@@ -239,6 +239,26 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- Workspace-wide hex retirement. The upstream `hex` crate is removed
+  from the workspace dependency graph: the `[workspace.dependencies]`
+  pin in the root `Cargo.toml` and every per-crate
+  `hex.workspace = true` declaration across `cow-sdk-contracts`,
+  `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-browser-wallet`,
+  `cow-sdk-wasm`, `cow-sdk-trading`, `cow-sdk-cow-shed`,
+  `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`,
+  and the `cow-sdk` facade are deleted. Every production and test
+  hex encode and decode callsite now resolves through
+  `alloy_primitives::hex::{encode, decode}`, which routes to the
+  `const-hex 1.18.x` re-export carried by `alloy-primitives 1.5.x`.
+  Output is byte-identical on every input; the change is internal
+  to the dependency closure. The standalone example workspace at
+  `examples/native/Cargo.toml` adopts an `alloy-primitives` direct
+  dependency for the same canonical resolution and drops its local
+  `hex` declarations. The single `hex` node that remains in
+  `Cargo.lock` is a transitive resolution of `const-hex`'s wide
+  compatibility range and is not a direct edge from any first-party
+  manifest.
+
 - `cow-sdk-wasm`: the cancellation calldata path
   (`buildPresignTx`, `buildCancelOrderTx`) routes through the
   `IGPv2Settlement::setPreSignatureCall` and

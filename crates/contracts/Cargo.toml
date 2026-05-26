@@ -49,7 +49,6 @@ toml.workspace = true
 cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0" }
 cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0" }
 criterion.workspace = true
-hex.workspace = true
 k256 = { version = "0.13.4", default-features = false, features = ["ecdsa"] }
 proptest.workspace = true
 serde_yaml.workspace = true

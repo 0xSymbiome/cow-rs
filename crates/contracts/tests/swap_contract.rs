@@ -45,11 +45,11 @@ fn bytes_from_hex_literal(literal: &str) -> Bytes {
     let stripped = literal
         .strip_prefix("0x")
         .expect("hex literal must start with 0x");
-    Bytes::from(hex::decode(stripped).expect("hex literal must decode"))
+    Bytes::from(alloy_primitives::hex::decode(stripped).expect("hex literal must decode"))
 }
 
 fn hex_prefixed(bytes: &Bytes) -> String {
-    format!("0x{}", hex::encode(bytes))
+    format!("0x{}", alloy_primitives::hex::encode(bytes))
 }
 
 #[test]

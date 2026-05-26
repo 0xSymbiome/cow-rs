@@ -208,7 +208,7 @@ fn assert_order_type_hash(id: &str, expected: &Value) {
         .unwrap_or_else(|| panic!("case {id}: expected.hash must be a string"));
     let actual_hash = format!(
         "0x{}",
-        hex::encode(GPv2Order::default().eip712_type_hash().as_slice())
+        alloy_primitives::hex::encode(GPv2Order::default().eip712_type_hash().as_slice())
     );
     assert_eq!(
         actual_hash, expected_hash,
@@ -391,7 +391,7 @@ fn assert_eip1271_magic_value(id: &str, expected: &Value) {
     // `0x{hex}` matches the fixture's wire representation.
     let actual = format!(
         "0x{}",
-        hex::encode(<IERC1271::isValidSignatureCall as SolCall>::SELECTOR)
+        alloy_primitives::hex::encode(<IERC1271::isValidSignatureCall as SolCall>::SELECTOR)
     );
     assert_eq!(
         actual.as_str(),
@@ -572,12 +572,12 @@ fn assert_order_refund_method_names(id: &str, expected: &Value) {
         .map(|method| {
             let signature = format!("{method}(bytes[])");
             let hash = keccak256(signature.as_bytes());
-            format!("0x{}", hex::encode(&hash[..4]))
+            format!("0x{}", alloy_primitives::hex::encode(&hash[..4]))
         })
         .collect();
 
     for (interaction, selector) in interactions.iter().zip(method_selectors.iter()) {
-        let call_data_hex = format!("0x{}", hex::encode(&interaction.call_data));
+        let call_data_hex = format!("0x{}", alloy_primitives::hex::encode(&interaction.call_data));
         assert!(
             call_data_hex.starts_with(selector),
             "case {id}: refund interaction call-data must start with {selector}",
@@ -758,7 +758,7 @@ fn keccak256(bytes: &[u8]) -> [u8; 32] {
 }
 
 fn assert_calldata_hex(id: &str, actual_bytes: &[u8], expected_hex: &str) {
-    let actual_hex = format!("0x{}", hex::encode(actual_bytes));
+    let actual_hex = format!("0x{}", alloy_primitives::hex::encode(actual_bytes));
     assert_eq!(
         actual_hex.as_str(),
         expected_hex,
@@ -767,7 +767,7 @@ fn assert_calldata_hex(id: &str, actual_bytes: &[u8], expected_hex: &str) {
 }
 
 fn parse_address_bytes(address: &Address) -> [u8; 20] {
-    let hex_bytes = hex::decode(
+    let hex_bytes = alloy_primitives::hex::decode(
         address
             .to_hex_string()
             .strip_prefix("0x")
@@ -799,7 +799,7 @@ fn sample_secondary_order_uid() -> OrderUid {
 }
 
 fn order_uid_as_sol_bytes(uid: &OrderUid) -> SolBytes {
-    let hex_bytes = hex::decode(
+    let hex_bytes = alloy_primitives::hex::decode(
         uid.to_hex_string()
             .strip_prefix("0x")
             .expect("OrderUid must carry a 0x prefix"),
@@ -1154,7 +1154,7 @@ fn assert_erc20_permit_typed_data_hash(id: &str, expected: &Value) {
     };
 
     let digest = permit_typed_data_hash(&domain, &permit);
-    let digest_hex = format!("0x{}", hex::encode(digest));
+    let digest_hex = format!("0x{}", alloy_primitives::hex::encode(digest));
 
     assert_eq!(
         digest_hex.as_str(),
