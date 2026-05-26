@@ -1,8 +1,8 @@
 use alloy_sol_types::SolCall as _;
 use cow_sdk_contracts::{ContractId, IERC20, Registry};
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, AsyncSigner, ContractCall, Provider, Signer, SupportedChainId,
-    TransactionHash, TransactionRequest,
+    Address, Amount, AsyncProvider, AsyncSigner, ContractCall, SupportedChainId, TransactionHash,
+    TransactionRequest,
 };
 
 use crate::{ApprovalParameters, TradingError};
@@ -23,54 +23,14 @@ fn resolve_vault_relayer(chain_id: SupportedChainId, env: cow_sdk_core::CowEnv) 
 
 const ERC20_ALLOWANCE_ABI_JSON: &str = r#"[{"type":"function","name":"allowance","inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#;
 
-/// Reads the `CoW` Protocol vault-relayer allowance using a sync provider.
+/// Reads the `CoW` Protocol vault-relayer allowance.
 ///
 /// # Errors
 ///
 /// Returns [`TradingError`] when the contract call cannot be encoded, the
 /// provider read fails, or the returned allowance cannot be decoded into an
 /// [`Amount`].
-pub fn get_cow_protocol_allowance<P>(
-    provider: &P,
-    token_address: &Address,
-    owner: &Address,
-    chain_id: SupportedChainId,
-    env: cow_sdk_core::CowEnv,
-    vault_relayer_override: Option<&Address>,
-) -> Result<Amount, TradingError>
-where
-    P: Provider,
-    P::Error: std::fmt::Display,
-{
-    let spender = vault_relayer_override
-        .copied()
-        .unwrap_or_else(|| resolve_vault_relayer(chain_id, env));
-    let args_json = serde_json::to_string(&(owner.to_hex_string(), spender.to_hex_string()))
-        .map_err(|error| {
-            TradingError::Contracts(cow_sdk_contracts::ContractsError::Serialization(error))
-        })?;
-    let raw = provider
-        .read_contract(&ContractCall::new(
-            *token_address,
-            "allowance".to_owned(),
-            ERC20_ALLOWANCE_ABI_JSON.to_owned(),
-            args_json,
-        ))
-        .map_err(|error| TradingError::Provider {
-            operation: "read_contract",
-            message: error.to_string().into(),
-        })?;
-    decode_allowance_result(&raw)
-}
-
-/// Reads the `CoW` Protocol vault-relayer allowance using an async provider.
-///
-/// # Errors
-///
-/// Returns [`TradingError`] when the contract call cannot be encoded, the
-/// provider read fails, or the returned allowance cannot be decoded into an
-/// [`Amount`].
-pub async fn get_cow_protocol_allowance_async<P>(
+pub async fn get_cow_protocol_allowance<P>(
     provider: &P,
     token_address: &Address,
     owner: &Address,
@@ -132,37 +92,12 @@ pub fn approval_transaction(
     ))
 }
 
-/// Sends the approval transaction using a sync signer.
+/// Sends the approval transaction.
 ///
 /// # Errors
 ///
 /// Returns [`TradingError`] when transaction construction or submission fails.
-pub fn approve_cow_protocol<S>(
-    signer: &S,
-    params: &ApprovalParameters,
-    chain_id: SupportedChainId,
-    env: cow_sdk_core::CowEnv,
-) -> Result<TransactionHash, TradingError>
-where
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
-    let tx = approval_transaction(params, chain_id, env)?;
-    signer
-        .send_transaction(&tx)
-        .map(|broadcast| broadcast.transaction_hash)
-        .map_err(|error| TradingError::Signer {
-            operation: "send_transaction",
-            message: error.to_string().into(),
-        })
-}
-
-/// Sends the approval transaction using an async signer.
-///
-/// # Errors
-///
-/// Returns [`TradingError`] when transaction construction or submission fails.
-pub async fn approve_cow_protocol_async<S>(
+pub async fn approve_cow_protocol<S>(
     signer: &S,
     params: &ApprovalParameters,
     chain_id: SupportedChainId,

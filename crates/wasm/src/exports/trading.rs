@@ -526,7 +526,7 @@ async fn trading_post_limit_order(
     params.owner = params.owner.or_else(|| Some(owner.clone()));
     let signer = JsTradingSigner::new(owner, signer_callback, wallet_timeout_ms);
     let result = inner
-        .post_limit_order_async(params, &signer, None)
+        .post_limit_order(params, &signer, None)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(result))
@@ -598,7 +598,7 @@ async fn trading_get_cow_protocol_allowance(
     let params: AllowanceParameters = from_json_value("params", params.into_value()?)?;
     let provider = JsContractReadProvider::new(read_contract_callback);
     let allowance = inner
-        .get_cow_protocol_allowance_async(&provider, &params)
+        .get_cow_protocol_allowance(&provider, &params)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(allowance))

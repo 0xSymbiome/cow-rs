@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-05-26
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, validation, client-side, defense-in-depth, error-typing
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -47,10 +47,11 @@ under replay.
   `InvalidNativeSellToken`, `ZeroAmount` (discriminated by
   `AmountSide`), and `OwnerMismatch`. `OrderValidityBounds` exposes
   a `SERVICES_DEFAULT` constant tracking the published production
-  config and is honoured end-to-end by every submission seam:
-  `post_swap_order`, `post_limit_order`,
-  `post_swap_order_from_quote`, the matching `_async` variants, and
-  `post_sell_native_currency_order` for the eth-flow path.
+  config and is honoured end-to-end by every public submission
+  seam: `post_swap_order`, `post_limit_order`,
+  `post_swap_order_from_quote`, and `post_sell_native_currency_order`
+  for the eth-flow path. Each public seam is a single async entry
+  point bounded on `cow_sdk_core::AsyncSigner`.
 - Runtime and support: the validator is pure. It performs no network
   I/O, reads no environment variables, and no system clock. Callers
   supply the `now` parameter so deterministic regression tests and
@@ -71,10 +72,12 @@ under replay.
   in the same suite.
 - Cost: one new module (`crates/trading/src/validation.rs`), one
   typed error variant on `TradingError`, one builder setter on
-  `TradingSdkBuilder`, and four `_with_bounds` companion functions
-  on the module-level submission helpers. The pure-function shape
-  means no runtime overhead beyond the existing `OrderCreation`
-  construction.
+  `TradingSdkBuilder`, and three `_with_bounds` companion functions
+  on the module-level submission helpers
+  (`post_swap_order_with_bounds`, `post_limit_order_with_bounds`,
+  `post_swap_order_from_quote_with_bounds`). The pure-function
+  shape means no runtime overhead beyond the existing
+  `OrderCreation` construction.
 
 ## Alternatives Rejected
 
@@ -121,3 +124,16 @@ The `Address`-typed payload fields on `ClientRejection`
 [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
 wire-form preservation (lowercase `0x`-prefixed hex) is locked through
 the cow-owned `Display`/`Serialize`/`Deserialize` impls on `Address`.
+
+## Amendment 2026-05-26: single-async-entry public submission surface
+
+`cow-sdk-trading` ships one async entry point per public submission
+operation — `post_swap_order`, `post_limit_order`,
+`post_swap_order_from_quote`, `post_sell_native_currency_order` —
+each bounded on `cow_sdk_core::AsyncSigner`. The previous paired
+sync-bounded entries are removed. The `OrderBoundsValidator`
+continues to run end-to-end on every public submission seam; the
+validator's public signature is unchanged. The corresponding
+`_with_bounds` companions collapse to one per seam
+(`post_swap_order_with_bounds`, `post_limit_order_with_bounds`,
+`post_swap_order_from_quote_with_bounds`).

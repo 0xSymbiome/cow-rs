@@ -64,8 +64,8 @@ async fn offchain_cancellation_rejects_call_level_chain_conflicts_with_orderbook
     assert!(orderbook.state().cancellations.is_empty());
 }
 
-#[test]
-fn cancellation_gas_estimation_fallback_uses_documented_constant() {
+#[tokio::test]
+async fn cancellation_gas_estimation_fallback_uses_documented_constant() {
     let signer = MockSigner::default();
     signer
         .state
@@ -79,6 +79,7 @@ fn cancellation_gas_estimation_fallback_uses_documented_constant() {
         &crate::common::regular_order(),
         None,
     )
+    .await
     .expect("on-chain cancellation must fall back when gas estimation fails");
 
     assert_eq!(

@@ -2,6 +2,24 @@
 
 //! High-level `CoW` Protocol trading workflows for quoting, signing, posting,
 //! allowance management, and on-chain order actions.
+//!
+//! # Async-first entry points
+//!
+//! Every public free function and [`TradingSdk`] method in this crate is
+//! `pub async fn` and accepts any signer implementing
+//! [`cow_sdk_core::AsyncSigner`]. The crate ships one canonical async
+//! entry per operation; callers in non-async contexts thread an executor
+//! at the call site.
+//!
+//! Cooperative cancellation through
+//! [`cow_sdk_core::Cancellable::cancel_with`] composes on every public
+//! async entry. Each entry lifts a fired cancellation token into the
+//! crate-level [`TradingError::Cancelled`] variant.
+//!
+//! Narrow async signer capability traits ([`cow_sdk_core::AsyncOwner`],
+//! [`cow_sdk_core::AsyncTypedDataSigner`],
+//! [`cow_sdk_core::AsyncDigestSigner`]) remain available for
+//! callback-shaped adapters that expose only one signing operation.
 
 #![warn(missing_docs)]
 
@@ -42,22 +60,17 @@ pub mod validation;
 /// Broadcast-then-poll helpers for mined transaction receipts.
 pub mod wait;
 
-pub use allowance::{
-    approval_transaction, approve_cow_protocol, approve_cow_protocol_async,
-    get_cow_protocol_allowance, get_cow_protocol_allowance_async,
-};
+pub use allowance::{approval_transaction, approve_cow_protocol, get_cow_protocol_allowance};
 pub use app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
 pub use cache::{
     Clock, DEFAULT_QUOTE_CACHE_CAPACITY, DEFAULT_QUOTE_CACHE_TTL, InMemoryQuoteCache,
     NoopQuoteCache, QuoteCache, QuoteCacheKey, SystemClock,
 };
-pub use cancel::{off_chain_cancel_order, off_chain_cancel_order_async};
+pub use cancel::off_chain_cancel_order;
 pub use error::{OrderbookContextValue, TradingError};
 pub use onchain::{
-    EthFlowTransaction, cancel_order_onchain, cancel_order_onchain_async, get_eth_flow_transaction,
-    get_eth_flow_transaction_async, get_pre_sign_transaction, get_pre_sign_transaction_async,
-    onchain_cancellation_transaction, onchain_cancellation_transaction_async,
-    protocol_options_for_order,
+    EthFlowTransaction, cancel_order_onchain, get_eth_flow_transaction, get_pre_sign_transaction,
+    onchain_cancellation_transaction, protocol_options_for_order,
 };
 pub use order::{
     OrderToSignParams, adjust_ethflow_limit_parameters, adjust_ethflow_trade_parameters,
@@ -65,12 +78,10 @@ pub use order::{
     swap_params_to_limit_order_params,
 };
 pub use post::{
-    post_cow_protocol_trade, post_cow_protocol_trade_async, post_limit_order,
-    post_limit_order_async, post_sell_native_currency_order, post_sell_native_currency_order_async,
-    post_swap_order, post_swap_order_async, post_swap_order_from_quote,
-    post_swap_order_from_quote_async,
+    post_cow_protocol_trade, post_limit_order, post_sell_native_currency_order, post_swap_order,
+    post_swap_order_from_quote,
 };
-pub use quote::{get_quote_only, get_quote_results, get_quote_results_async};
+pub use quote::{get_quote_only, get_quote_results};
 pub use sdk::{
     AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, HelperOnlySdk, TradingSdk,
     TradingSdkBuilder,

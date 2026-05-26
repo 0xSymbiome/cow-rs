@@ -9,8 +9,8 @@ use cow_sdk_trading::{
 
 use crate::common::{ALT_RECEIVER, COW, MockProvider, MockSigner, OWNER, address};
 
-#[test]
-fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
+#[tokio::test]
+async fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
     let provider = MockProvider::default();
     let result = get_cow_protocol_allowance(
         &provider,
@@ -20,6 +20,7 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
         CowEnv::Prod,
         None,
     )
+    .await
     .expect("allowance read should succeed");
     let state = provider
         .state
@@ -74,8 +75,8 @@ fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
     assert!(data_lower.contains(&custom_inner));
 }
 
-#[test]
-fn approval_submission_returns_transaction_hash() {
+#[tokio::test]
+async fn approval_submission_returns_transaction_hash() {
     let signer = MockSigner::default();
     let tx_hash = approve_cow_protocol(
         &signer,
@@ -88,6 +89,7 @@ fn approval_submission_returns_transaction_hash() {
         SupportedChainId::Sepolia,
         CowEnv::Prod,
     )
+    .await
     .expect("approval send should succeed");
 
     assert_eq!(tx_hash.to_hex_string(), crate::common::TX_HASH);

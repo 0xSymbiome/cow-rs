@@ -1,4 +1,4 @@
-use cow_sdk_core::{AsyncSigner, Signer};
+use cow_sdk_core::AsyncSigner;
 
 use super::TradingSdk;
 use crate::{
@@ -7,47 +7,13 @@ use crate::{
 };
 
 impl TradingSdk {
-    /// Quotes and posts a swap order using a sync signer.
+    /// Quotes and posts a swap order.
     ///
     /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site; cancellation
-    /// only affects pre-broadcast work, because once the signed order payload
-    /// has been accepted by the orderbook, the order cannot be un-submitted.
-    ///
-    /// # Errors
-    ///
-    /// Returns any error from [`Self::post_swap_order_async`].
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(
-            skip_all,
-            fields(
-                chain = ?self.trader_defaults.chain_id,
-                env = ?self.trader_defaults.env,
-                endpoint = "trading.post_swap_order",
-            ),
-        ),
-    )]
-    pub async fn post_swap_order<S>(
-        &self,
-        params: TradeParameters,
-        signer: &S,
-        advanced_settings: Option<&SwapAdvancedSettings>,
-    ) -> Result<crate::OrderPostingResult, TradingError>
-    where
-        S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-    {
-        self.post_swap_order_async(params, signer, advanced_settings)
-            .await
-    }
-
-    /// Quotes and posts a swap order using an async signer.
-    ///
-    /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site; cancellation
-    /// only affects pre-broadcast work, because once the signed order payload
-    /// has been accepted by the orderbook, the order cannot be un-submitted.
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site;
+    /// cancellation only affects pre-broadcast work, because once the signed
+    /// order payload has been accepted by the orderbook, the order cannot be
+    /// un-submitted.
     ///
     /// # Errors
     ///
@@ -65,11 +31,11 @@ impl TradingSdk {
             fields(
                 chain = ?self.trader_defaults.chain_id,
                 env = ?self.trader_defaults.env,
-                endpoint = "trading.post_swap_order_async",
+                endpoint = "trading.post_swap_order",
             ),
         ),
     )]
-    pub async fn post_swap_order_async<S>(
+    pub async fn post_swap_order<S>(
         &self,
         mut params: TradeParameters,
         signer: &S,
@@ -82,7 +48,7 @@ impl TradingSdk {
         params.owner = params.owner.or(self.trader_defaults.owner);
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
-        crate::post::post_swap_order_async_with_bounds(
+        crate::post::post_swap_order_with_bounds(
             &params,
             &trader,
             signer,
@@ -93,47 +59,13 @@ impl TradingSdk {
         .await
     }
 
-    /// Posts a swap order from previously computed quote results using a sync signer.
+    /// Posts a swap order from previously computed quote results.
     ///
     /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site; cancellation
-    /// only affects pre-broadcast work, because once the signed order payload
-    /// has been accepted by the orderbook, the order cannot be un-submitted.
-    ///
-    /// # Errors
-    ///
-    /// Returns any error from [`Self::post_swap_order_from_quote_async`].
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(
-            skip_all,
-            fields(
-                chain = ?self.trader_defaults.chain_id,
-                env = ?self.trader_defaults.env,
-                endpoint = "trading.post_swap_order_from_quote",
-            ),
-        ),
-    )]
-    pub async fn post_swap_order_from_quote<S>(
-        &self,
-        quote_results: &QuoteResults,
-        signer: &S,
-        advanced_settings: Option<&SwapAdvancedSettings>,
-    ) -> Result<crate::OrderPostingResult, TradingError>
-    where
-        S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-    {
-        self.post_swap_order_from_quote_async(quote_results, signer, advanced_settings)
-            .await
-    }
-
-    /// Posts a swap order from previously computed quote results using an async signer.
-    ///
-    /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site; cancellation
-    /// only affects pre-broadcast work, because once the signed order payload
-    /// has been accepted by the orderbook, the order cannot be un-submitted.
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site;
+    /// cancellation only affects pre-broadcast work, because once the signed
+    /// order payload has been accepted by the orderbook, the order cannot be
+    /// un-submitted.
     ///
     /// # Errors
     ///
@@ -152,11 +84,11 @@ impl TradingSdk {
             fields(
                 chain = ?self.trader_defaults.chain_id,
                 env = ?self.trader_defaults.env,
-                endpoint = "trading.post_swap_order_from_quote_async",
+                endpoint = "trading.post_swap_order_from_quote",
             ),
         ),
     )]
-    pub async fn post_swap_order_from_quote_async<S>(
+    pub async fn post_swap_order_from_quote<S>(
         &self,
         quote_results: &QuoteResults,
         signer: &S,
@@ -169,7 +101,7 @@ impl TradingSdk {
         let (trader, orderbook) =
             self.resolve_orderbook_trader(None, quote_results.trade_parameters.env)?;
 
-        crate::post::post_swap_order_from_quote_async_with_bounds(
+        crate::post::post_swap_order_from_quote_with_bounds(
             quote_results,
             &trader,
             signer,
@@ -180,47 +112,13 @@ impl TradingSdk {
         .await
     }
 
-    /// Posts a limit order using a sync signer.
+    /// Posts a limit order.
     ///
     /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site; cancellation
-    /// only affects pre-broadcast work, because once the signed order payload
-    /// has been accepted by the orderbook, the order cannot be un-submitted.
-    ///
-    /// # Errors
-    ///
-    /// Returns any error from [`Self::post_limit_order_async`].
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(
-            skip_all,
-            fields(
-                chain = ?self.trader_defaults.chain_id,
-                env = ?self.trader_defaults.env,
-                endpoint = "trading.post_limit_order",
-            ),
-        ),
-    )]
-    pub async fn post_limit_order<S>(
-        &self,
-        params: LimitTradeParameters,
-        signer: &S,
-        advanced_settings: Option<&LimitOrderAdvancedSettings>,
-    ) -> Result<crate::OrderPostingResult, TradingError>
-    where
-        S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-    {
-        self.post_limit_order_async(params, signer, advanced_settings)
-            .await
-    }
-
-    /// Posts a limit order using an async signer.
-    ///
-    /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site; cancellation
-    /// only affects pre-broadcast work, because once the signed order payload
-    /// has been accepted by the orderbook, the order cannot be un-submitted.
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site;
+    /// cancellation only affects pre-broadcast work, because once the signed
+    /// order payload has been accepted by the orderbook, the order cannot be
+    /// un-submitted.
     ///
     /// # Errors
     ///
@@ -238,11 +136,11 @@ impl TradingSdk {
             fields(
                 chain = ?self.trader_defaults.chain_id,
                 env = ?self.trader_defaults.env,
-                endpoint = "trading.post_limit_order_async",
+                endpoint = "trading.post_limit_order",
             ),
         ),
     )]
-    pub async fn post_limit_order_async<S>(
+    pub async fn post_limit_order<S>(
         &self,
         mut params: LimitTradeParameters,
         signer: &S,
@@ -255,7 +153,7 @@ impl TradingSdk {
         params.owner = params.owner.or(self.trader_defaults.owner);
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
-        crate::post::post_limit_order_async_with_bounds(
+        crate::post::post_limit_order_with_bounds(
             &params,
             &trader,
             signer,

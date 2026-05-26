@@ -1,9 +1,9 @@
 # Trading Quote Orderbook Binding Audit
 
 Status: Current  
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-26
 Owning surface: `cow-sdk-trading` quote-origin runtime binding for quote-derived posting  
-Refresh trigger: Changes to `QuoteResults` binding capture, `post_swap_order_from_quote*` submission validation, or serialization and reuse semantics for quote-derived posting state  
+Refresh trigger: Changes to `QuoteResults` binding capture, `post_swap_order_from_quote` submission validation, or serialization and reuse semantics for quote-derived posting state  
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [Architecture](../architecture.md)
@@ -15,7 +15,7 @@ Related docs:
 This audit covers:
 
 - swap quote results produced by `cow-sdk-trading`
-- the `post_swap_order_from_quote*` helper surface
+- the `post_swap_order_from_quote` helper surface
 - runtime binding between quote creation and order submission
 
 It does not cover direct limit-order posting, approval, allowance, or on-chain
@@ -34,7 +34,7 @@ transaction-building helpers that do not reuse quote-derived posting state.
 
 ### Captured Binding
 
-`get_quote_results*` stores the originating orderbook runtime binding inside
+`get_quote_results` stores the originating orderbook runtime binding inside
 the returned `QuoteResults`. That binding captures:
 
 - `chain_id`
@@ -43,7 +43,7 @@ the returned `QuoteResults`. That binding captures:
 
 ### Submission Validation
 
-`post_swap_order_from_quote*` validates the submission-time orderbook client
+`post_swap_order_from_quote` validates the submission-time orderbook client
 against the captured binding before it merges app-data overrides, signs, or
 submits the order.
 

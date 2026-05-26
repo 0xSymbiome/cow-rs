@@ -288,14 +288,14 @@ that id before calling the post method:
 ```rust,ignore
 use cow_sdk::trading::{swap_params_to_limit_order_params, TradingError};
 
-let quote = sdk.get_quote_results_async(params.clone(), signer, None).await?;
+let quote = sdk.get_quote_results(params.clone(), signer, None).await?;
 let quote_id = quote
     .quote_response
     .id
     .ok_or(TradingError::MissingQuoteId("EthFlow order posting"))?;
 let limit = swap_params_to_limit_order_params(&params, &quote.quote_response)?
     .with_quote_id(quote_id);
-let order = sdk.post_limit_order_async(limit, signer, None).await?;
+let order = sdk.post_limit_order(limit, signer, None).await?;
 ```
 
 The essential step is passing the returned identifier with

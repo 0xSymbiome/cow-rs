@@ -1,4 +1,4 @@
-use cow_sdk_core::{Address, AsyncSigner, Signer};
+use cow_sdk_core::{Address, AsyncSigner};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 
 use super::generic::{current_unix_seconds, wrapped_native_address};
@@ -9,50 +9,7 @@ use crate::{
     TradingAppDataInfo, TradingError,
 };
 
-/// Submits an `EthFlow`-style native-currency sell order using a synchronous signer.
-///
-/// This path uploads the supplied app-data, sends the prepared transaction through the signer, and
-/// returns the resulting transaction hash. Callers that need cooperative
-/// cancellation wrap this future through
-/// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
-///
-/// # Errors
-///
-/// Returns an error when transaction preparation fails, when app-data upload fails, or when the
-/// signer cannot send the transaction.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "the post-trade submission seam threads orchestration, validator, and runtime context through one entry point for parity with the reviewed services authority"
-)]
-pub async fn post_sell_native_currency_order<O, S>(
-    orderbook: &O,
-    app_data: &TradingAppDataInfo,
-    params: &LimitTradeParameters,
-    additional_params: &crate::types::PostTradeAdditionalParams,
-    trader: &TraderParameters,
-    signer: &S,
-    order_bounds: crate::validation::OrderValidityBounds,
-    app_data_signer: Option<Address>,
-) -> Result<OrderPostingResult, TradingError>
-where
-    O: OrderbookClient + ?Sized,
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
-    post_sell_native_currency_order_async(
-        orderbook,
-        app_data,
-        params,
-        additional_params,
-        trader,
-        signer,
-        order_bounds,
-        app_data_signer,
-    )
-    .await
-}
-
-/// Submits an `EthFlow`-style native-currency sell order using an asynchronous signer.
+/// Submits an `EthFlow`-style native-currency sell order.
 ///
 /// This path uploads the supplied app-data, sends the prepared transaction through the signer, and
 /// returns the resulting transaction hash. Callers that need cooperative
@@ -75,7 +32,7 @@ where
         fields(
             chain = ?trader.chain_id,
             env = ?trader.env,
-            endpoint = "trading.post_sell_native_currency_order_async",
+            endpoint = "trading.post_sell_native_currency_order",
         ),
     ),
 )]
@@ -83,7 +40,7 @@ where
     clippy::too_many_arguments,
     reason = "the eth-flow submission seam threads orchestration, validator, and runtime context through one entry point for parity with the reviewed services authority"
 )]
-pub async fn post_sell_native_currency_order_async<O, S>(
+pub async fn post_sell_native_currency_order<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
     params: &LimitTradeParameters,
@@ -107,7 +64,7 @@ where
     let mut params = params.clone();
     params.env = Some(canonical_env);
 
-    let tx = crate::get_eth_flow_transaction_async(
+    let tx = crate::get_eth_flow_transaction(
         &app_data.app_data_keccak256,
         &params,
         canonical_chain_id,

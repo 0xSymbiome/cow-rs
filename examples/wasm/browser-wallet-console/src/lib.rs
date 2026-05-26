@@ -209,11 +209,11 @@ impl BrowserWalletConsole {
             .build_ready()
             .map_err(js_string_error)?;
         let posting = sdk
-            .post_swap_order_async(trade, &signer, None)
+            .post_swap_order(trade, &signer, None)
             .await
             .map_err(js_string_error)?;
         let cancellation = sdk
-            .off_chain_cancel_order_async(
+            .off_chain_cancel_order(
                 &OrderTraderParameters::new(posting.order_id.clone())
                     .with_chain_id(chain_id)
                     .with_env(env),
@@ -320,11 +320,11 @@ impl BrowserWalletConsole {
             .map_err(js_string_error)?;
         let signer = self.mock_wallet.signer();
         let posting = sdk
-            .post_swap_order_async(trade, &signer, None)
+            .post_swap_order(trade, &signer, None)
             .await
             .map_err(js_string_error)?;
         let cancellation = sdk
-            .off_chain_cancel_order_async(
+            .off_chain_cancel_order(
                 &OrderTraderParameters::new(posting.order_id.clone())
                     .with_chain_id(chain_id)
                     .with_env(env),
@@ -554,7 +554,7 @@ impl BrowserWalletConsole {
             .await
             .map_err(js_string_error)?;
         let quote = sdk
-            .get_quote_results_async(trade, &signer, None)
+            .get_quote_results(trade, &signer, None)
             .await
             .map_err(js_string_error)?;
 
@@ -585,7 +585,7 @@ impl BrowserWalletConsole {
             .await
             .map_err(js_string_error)?;
         let posting = sdk
-            .post_swap_order_async(trade, &signer, None)
+            .post_swap_order(trade, &signer, None)
             .await
             .map_err(js_string_error)?;
         *self.last_live_order_uid.lock().unwrap() = Some(posting.order_id.to_hex_string());
@@ -617,7 +617,7 @@ impl BrowserWalletConsole {
             .await
             .map_err(js_string_error)?;
         let cancelled = sdk
-            .off_chain_cancel_order_async(
+            .off_chain_cancel_order(
                 &OrderTraderParameters::new(order_uid)
                     .with_chain_id(chain_id)
                     .with_env(env),

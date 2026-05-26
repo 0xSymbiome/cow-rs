@@ -1,7 +1,7 @@
-use cow_sdk_core::{AsyncSigner, Signer};
+use cow_sdk_core::AsyncSigner;
 
 use super::generic::{
-    apply_settings_to_limit_trade_parameters, post_cow_protocol_trade_async, swap_additional_params,
+    apply_settings_to_limit_trade_parameters, post_cow_protocol_trade, swap_additional_params,
 };
 use crate::types::validate_quote_orderbook_binding;
 use crate::{
@@ -9,42 +9,7 @@ use crate::{
     TradingError, merge_and_seal_app_data, params_from_doc, swap_params_to_limit_order_params,
 };
 
-/// Signs and submits a swap order from previously computed quote results using a synchronous
-/// signer.
-///
-/// When advanced app-data settings are provided, they are merged on top of the quote-derived
-/// document before submission. The submission orderbook must match the runtime
-/// binding captured by the quote flow.
-///
-/// # Errors
-///
-/// Returns an error when the quoted trade cannot be converted into a postable order, when app-data
-/// merging fails, when signing fails, or when the orderbook rejects the order submission.
-pub async fn post_swap_order_from_quote<O, S>(
-    quote_results: &QuoteResults,
-    trader: &TraderParameters,
-    signer: &S,
-    advanced_settings: Option<&SwapAdvancedSettings>,
-    orderbook: &O,
-) -> Result<OrderPostingResult, TradingError>
-where
-    O: OrderbookClient + ?Sized,
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
-    post_swap_order_from_quote_async_with_bounds(
-        quote_results,
-        trader,
-        signer,
-        advanced_settings,
-        orderbook,
-        crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
-    )
-    .await
-}
-
-/// Signs and submits a swap order from previously computed quote results using an asynchronous
-/// signer.
+/// Signs and submits a swap order from previously computed quote results.
 ///
 /// When advanced app-data settings are provided, they are merged on top of the quote-derived
 /// document before submission. The submission orderbook must match the runtime
@@ -65,11 +30,11 @@ where
         fields(
             chain = ?trader.chain_id,
             env = ?trader.env,
-            endpoint = "trading.post_swap_order_from_quote_async",
+            endpoint = "trading.post_swap_order_from_quote",
         ),
     ),
 )]
-pub async fn post_swap_order_from_quote_async<O, S>(
+pub async fn post_swap_order_from_quote<O, S>(
     quote_results: &QuoteResults,
     trader: &TraderParameters,
     signer: &S,
@@ -81,7 +46,7 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
-    post_swap_order_from_quote_async_with_bounds(
+    post_swap_order_from_quote_with_bounds(
         quote_results,
         trader,
         signer,
@@ -92,15 +57,15 @@ where
     .await
 }
 
-/// Variant of [`post_swap_order_from_quote_async`] that accepts a
-/// caller-supplied [`crate::validation::OrderValidityBounds`].
+/// Variant of [`post_swap_order_from_quote`] that accepts a caller-supplied
+/// [`crate::validation::OrderValidityBounds`].
 ///
 /// # Errors
 ///
 /// Returns an error when the quoted trade cannot be converted into a
 /// postable order, when app-data merging fails, when signing fails, or when
 /// the orderbook rejects the order submission.
-pub async fn post_swap_order_from_quote_async_with_bounds<O, S>(
+pub async fn post_swap_order_from_quote_with_bounds<O, S>(
     quote_results: &QuoteResults,
     trader: &TraderParameters,
     signer: &S,
@@ -146,7 +111,7 @@ where
         ..additional
     };
 
-    post_cow_protocol_trade_async(
+    post_cow_protocol_trade(
         orderbook,
         &app_data_info,
         &params,

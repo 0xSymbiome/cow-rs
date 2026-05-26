@@ -1,7 +1,7 @@
 //! Signed order end-to-end journey against in-process mocks.
 //!
 //! This native example shows the public `cow-sdk-trading` builder API plus
-//! the `post_swap_order_async` entry point that drives the full quote → sign
+//! the `post_swap_order` entry point that drives the full quote → sign
 //! → post journey against an injected orderbook client and an injected
 //! signer. It runs without RPC credentials because every external seam
 //! (orderbook HTTP, signer, quote fixture) is supplied locally by the example.
@@ -84,10 +84,9 @@ mod native {
             .map_err(TradingErrorReport::from)?;
 
         // Full journey: quote fetch, order signing, and order submission all run
-        // inside `post_swap_order_async` against the injected orderbook and
-        // signer.
+        // inside `post_swap_order` against the injected orderbook and signer.
         let posting = sdk
-            .post_swap_order_async(
+            .post_swap_order(
                 sample_trade_parameters(OrderKind::Sell, &owner),
                 &signer,
                 None,

@@ -83,23 +83,17 @@ fn trading_sdk_source_directory_aggregates_public_async_methods() {
     let root = workspace_root();
     let public_async = public_async_methods(&root, &["crates/trading/src/sdk"], "TradingSdk");
     let expected = [
-        "approve_cow_protocol_async",
-        "get_cow_protocol_allowance_async",
+        "approve_cow_protocol",
+        "get_cow_protocol_allowance",
         "get_order",
-        "get_pre_sign_transaction_async",
+        "get_pre_sign_transaction",
         "get_quote_only",
         "get_quote_results",
-        "get_quote_results_async",
         "off_chain_cancel_order",
-        "off_chain_cancel_order_async",
         "on_chain_cancel_order",
-        "on_chain_cancel_order_async",
         "post_limit_order",
-        "post_limit_order_async",
         "post_swap_order",
-        "post_swap_order_async",
         "post_swap_order_from_quote",
-        "post_swap_order_from_quote_async",
     ]
     .into_iter()
     .map(ToOwned::to_owned)

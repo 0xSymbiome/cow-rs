@@ -55,8 +55,8 @@ fn gas_overhead_cases() -> [u64; 6] {
     [1, 7, 100, 1_000, 100_000, u64::MAX / 2]
 }
 
-#[test]
-fn presign_transaction_uses_zero_value_margin_and_settlement_override() {
+#[tokio::test]
+async fn presign_transaction_uses_zero_value_margin_and_settlement_override() {
     let signer = MockSigner::default();
     let options = cow_sdk_core::ProtocolOptions::new()
         .with_env(CowEnv::Staging)
@@ -71,6 +71,7 @@ fn presign_transaction_uses_zero_value_margin_and_settlement_override() {
         &order_uid(),
         Some(&options),
     )
+    .await
     .expect("pre-sign transaction should build");
 
     assert_eq!(tx.to, Some(address(CUSTOM_SETTLEMENT)));
@@ -81,13 +82,14 @@ fn presign_transaction_uses_zero_value_margin_and_settlement_override() {
     );
 }
 
-#[test]
-fn pre_sign_gas_estimate_applies_documented_floor_overhead() {
+#[tokio::test]
+async fn pre_sign_gas_estimate_applies_documented_floor_overhead() {
     for estimate in gas_overhead_cases() {
         let signer = MockSigner::default();
         set_estimated_gas(&signer, estimate);
 
         let tx = get_pre_sign_transaction(&signer, SupportedChainId::Sepolia, &order_uid(), None)
+            .await
             .expect("pre-sign transaction should build");
 
         assert_eq!(
@@ -246,8 +248,8 @@ async fn ethflow_transaction_sign_extends_negative_quote_id_in_the_encoded_tuple
     );
 }
 
-#[test]
-fn onchain_cancellation_routes_regular_orders_to_settlement_and_ethflow_orders_to_ethflow() {
+#[tokio::test]
+async fn onchain_cancellation_routes_regular_orders_to_settlement_and_ethflow_orders_to_ethflow() {
     let signer = MockSigner::default();
     let options = cow_sdk_core::ProtocolOptions::new()
         .with_env(CowEnv::Staging)
@@ -265,6 +267,7 @@ fn onchain_cancellation_routes_regular_orders_to_settlement_and_ethflow_orders_t
         &regular_order(),
         Some(&options),
     )
+    .await
     .expect("regular cancellation should build");
     let ethflow_tx = onchain_cancellation_transaction(
         &signer,
@@ -272,14 +275,15 @@ fn onchain_cancellation_routes_regular_orders_to_settlement_and_ethflow_orders_t
         &ethflow_order(),
         Some(&options),
     )
+    .await
     .expect("ethflow cancellation should build");
 
     assert_eq!(regular_tx.to, Some(address(CUSTOM_SETTLEMENT)));
     assert_eq!(ethflow_tx.to, Some(address(CUSTOM_ETHFLOW)));
 }
 
-#[test]
-fn onchain_cancellation_uses_fallback_gas_when_estimation_fails() {
+#[tokio::test]
+async fn onchain_cancellation_uses_fallback_gas_when_estimation_fails() {
     let signer = MockSigner::default();
     signer
         .state
@@ -293,6 +297,7 @@ fn onchain_cancellation_uses_fallback_gas_when_estimation_fails() {
         &regular_order(),
         None,
     )
+    .await
     .expect("fallback cancellation should build");
 
     let expected = GAS_LIMIT_DEFAULT.to_string();
@@ -302,11 +307,12 @@ fn onchain_cancellation_uses_fallback_gas_when_estimation_fails() {
     );
 }
 
-#[test]
-fn cancel_order_onchain_sends_transaction_and_returns_hash() {
+#[tokio::test]
+async fn cancel_order_onchain_sends_transaction_and_returns_hash() {
     let signer = MockSigner::default();
 
     let tx_hash = cancel_order_onchain(&signer, SupportedChainId::Sepolia, &regular_order(), None)
+        .await
         .expect("onchain cancellation should send");
 
     assert_eq!(tx_hash.to_hex_string(), crate::common::TX_HASH);

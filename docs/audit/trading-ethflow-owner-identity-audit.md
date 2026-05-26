@@ -1,15 +1,15 @@
 # Trading EthFlow Owner Identity Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-05-26
 Owning surface: `cow-sdk-trading` EthFlow submission seam,
 including the `EthFlowTransaction` bundle shape, the
-`get_eth_flow_transaction_async` owner resolution, and the
-`post_sell_native_currency_order_async` pre-HTTP validation
+`get_eth_flow_transaction` owner resolution, and the
+`post_sell_native_currency_order` pre-HTTP validation
 preview that feeds `OrderBoundsValidator::validate`.
 Refresh trigger: Changes to the `EthFlowTransaction` public
 field set or constructor signature; changes to the
-`get_eth_flow_transaction_async` owner resolution; any change
+`get_eth_flow_transaction` owner resolution; any change
 that lets `preview_from` diverge from `tx.from` on the
 submission seam; any extension to
 `OrderBoundsValidator::validate` that reads a different
@@ -31,11 +31,9 @@ This audit covers:
   public `from: cow_sdk_core::Address` field
 - the `EthFlowTransaction::new` constructor and the owner
   parameter it accepts
-- the synchronous and asynchronous
-  `get_eth_flow_transaction` / `get_eth_flow_transaction_async`
-  helpers and the owner resolution that populates
-  `EthFlowTransaction.from`
-- the `post_sell_native_currency_order_async` submission seam
+- the `get_eth_flow_transaction` helper and the owner
+  resolution that populates `EthFlowTransaction.from`
+- the `post_sell_native_currency_order` submission seam
   and its `preview_from = tx.from.clone()` read when building
   the preview `OrderCreation` for
   `OrderBoundsValidator::validate`
@@ -54,8 +52,8 @@ or the orderbook authoritative server-side validation.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Bundle shape | `EthFlowTransaction` carries a public typed `from: Address` field populated at construction | Conforms |
-| Owner resolution | `get_eth_flow_transaction_async` resolves the owner through `AsyncSigner::get_address` exactly once and stores the value on the returned bundle | Conforms |
-| Submission preview | `post_sell_native_currency_order_async` reads `preview_from = tx.from.clone()` when building the validator preview; no receiver-as-owner fallback remains | Conforms |
+| Owner resolution | `get_eth_flow_transaction` resolves the owner through `AsyncSigner::get_address` exactly once and stores the value on the returned bundle | Conforms |
+| Submission preview | `post_sell_native_currency_order` reads `preview_from = tx.from.clone()` when building the validator preview; no receiver-as-owner fallback remains | Conforms |
 | Identity on rejections | `ClientRejection::AppdataFromMismatch { appdata_signer, from }` reports the owner in `from`, not the payout receiver | Conforms |
 | EthFlow-aware invariants | The validator still fires for zero amount, same token, owner mismatch, and lifetime bounds on the EthFlow path; only the native-currency-sentinel sell-token check is skipped | Conforms |
 | Receiver semantics | Receiver continues to carry the payout-recipient role and may legitimately differ from owner without triggering false rejections | Conforms |
@@ -76,19 +74,16 @@ field explicitly.
 
 ### Owner Resolution
 
-`get_eth_flow_transaction_async` resolves the owner through a
+`get_eth_flow_transaction` resolves the owner through a
 single `signer.get_address().await` call near the top of the
 helper. The resolved value is threaded into `OrderToSignParams`
 for order-body derivation and forwarded onto the returned
-`EthFlowTransaction` bundle via the new typed field. No second
-signer round-trip happens on the submission seam; the
-synchronous `get_eth_flow_transaction` companion resolves the
-owner through the synchronous signer equivalent and populates
-the bundle the same way.
+`EthFlowTransaction` bundle via the typed `from` field. No
+second signer round-trip happens on the submission seam.
 
 ### Submission Preview
 
-`post_sell_native_currency_order_async` reads
+`post_sell_native_currency_order` reads
 `let preview_from = tx.from.clone()` when constructing the
 preview `OrderCreation` for
 `OrderBoundsValidator::validate`. The previous assignment that

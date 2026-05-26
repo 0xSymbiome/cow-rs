@@ -130,7 +130,7 @@ async fn parity_fixture_cases_hold() {
                 assert_limit_order_disable_adjustments(&case_id, &expected).await;
             }
             "trading-presign-transaction-contract-selection" => {
-                assert_presign_transaction_contract_selection(&case_id, &expected);
+                assert_presign_transaction_contract_selection(&case_id, &expected).await;
             }
             "trading-ethflow-transaction-contract-selection" => {
                 assert_ethflow_transaction_contract_selection(&case_id, &expected).await;
@@ -139,7 +139,7 @@ async fn parity_fixture_cases_hold() {
                 assert_native_sell_post_flow(&case_id, &expected).await;
             }
             "trading-onchain-cancellation-routing" => {
-                assert_onchain_cancellation_routing(&case_id, &expected);
+                assert_onchain_cancellation_routing(&case_id, &expected).await;
             }
             "trading-sdk-quote-only-owner-mode" => {
                 assert_sdk_quote_only_owner_mode(&case_id, &expected).await;
@@ -1092,7 +1092,7 @@ async fn assert_limit_order_disable_adjustments(case_id: &str, expected: &Value)
     );
 }
 
-fn assert_presign_transaction_contract_selection(case_id: &str, expected: &Value) {
+async fn assert_presign_transaction_contract_selection(case_id: &str, expected: &Value) {
     let gas_margin = expected["gas_margin_percent"]
         .as_u64()
         .unwrap_or_else(|| panic!("case {case_id}: expected.gas_margin_percent must be a u64"));
@@ -1124,6 +1124,7 @@ fn assert_presign_transaction_contract_selection(case_id: &str, expected: &Value
         &crate::common::order_uid(),
         Some(&options),
     )
+    .await
     .unwrap_or_else(|error| {
         panic!("case {case_id}: pre-sign transaction must build, got {error:?}")
     });
@@ -1299,7 +1300,7 @@ async fn assert_native_sell_post_flow(case_id: &str, expected: &Value) {
     );
 }
 
-fn assert_onchain_cancellation_routing(case_id: &str, expected: &Value) {
+async fn assert_onchain_cancellation_routing(case_id: &str, expected: &Value) {
     assert!(
         expected["regular_orders_use_settlement"]
             .as_bool()
@@ -1339,6 +1340,7 @@ fn assert_onchain_cancellation_routing(case_id: &str, expected: &Value) {
         &regular_order(),
         Some(&options),
     )
+    .await
     .unwrap_or_else(|error| {
         panic!("case {case_id}: regular cancellation tx must build, got {error:?}")
     });
@@ -1354,6 +1356,7 @@ fn assert_onchain_cancellation_routing(case_id: &str, expected: &Value) {
         &ethflow_order(),
         Some(&options),
     )
+    .await
     .unwrap_or_else(|error| {
         panic!("case {case_id}: ethflow cancellation tx must build, got {error:?}")
     });
@@ -1376,6 +1379,7 @@ fn assert_onchain_cancellation_routing(case_id: &str, expected: &Value) {
         &regular_order(),
         None,
     )
+    .await
     .unwrap_or_else(|error| {
         panic!("case {case_id}: fallback cancellation tx must build, got {error:?}")
     });

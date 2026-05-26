@@ -14,6 +14,58 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_trading` ships one async entry point per public
+  operation. The `_async`-suffixed sibling functions on the module
+  surface (`post_swap_order_async`,
+  `post_swap_order_from_quote_async`, `post_limit_order_async`,
+  `post_cow_protocol_trade_async`,
+  `post_sell_native_currency_order_async`,
+  `off_chain_cancel_order_async`, `cancel_order_onchain_async`,
+  `onchain_cancellation_transaction_async`,
+  `get_pre_sign_transaction_async`, `get_eth_flow_transaction_async`,
+  `get_quote_results_async`, `get_cow_protocol_allowance_async`,
+  `approve_cow_protocol_async`) and the corresponding sibling
+  methods on `TradingSdk` are removed. Each operation now exposes a
+  single canonical name (`post_swap_order`, `post_limit_order`,
+  `post_swap_order_from_quote`, `post_cow_protocol_trade`,
+  `post_sell_native_currency_order`, `off_chain_cancel_order`,
+  `cancel_order_onchain`, `onchain_cancellation_transaction`,
+  `get_pre_sign_transaction`, `get_eth_flow_transaction`,
+  `get_quote_results`, `get_cow_protocol_allowance`,
+  `approve_cow_protocol`) that is `pub async fn` and accepts any
+  signer that implements `cow_sdk_core::AsyncSigner`. The `Signer`
+  and `AsyncSigner` trait method sets are unchanged per
+  [ADR 0029](docs/adr/0029-trait-evolution-extension-traits.md). The
+  `_with_bounds` companions collapse from four variants to three
+  (`post_swap_order_with_bounds`, `post_limit_order_with_bounds`,
+  `post_swap_order_from_quote_with_bounds`), each `pub async fn` on
+  the same `AsyncSigner` bound. Cooperative cancellation composition
+  through `cow_sdk_core::Cancellable::cancel_with(&token)` continues
+  on every renamed entry. Tracing span endpoint fields drop the
+  `_async` suffix where it previously appeared
+  (`trading.post_swap_order`, `trading.post_swap_order_from_quote`,
+  `trading.post_limit_order`,
+  `trading.post_sell_native_currency_order`,
+  `trading.get_quote_results`, `trading.off_chain_cancel_order`,
+  `trading.on_chain_cancel_order`,
+  `trading.get_pre_sign_transaction`,
+  `trading.get_cow_protocol_allowance`,
+  `trading.approve_cow_protocol`). Browser-wallet flows per
+  [ADR 0040](docs/adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
+  remain bound on `AsyncSigner` and are unaffected at the JS
+  contract layer; the wasm-bindgen surface (`postSwapOrder`,
+  `postLimitOrder`, `getCowProtocolAllowance`, and the rest) is
+  unchanged. Pre-1.0 breaking change. Callers using the
+  `_async`-suffixed names drop the suffix at the call site; callers
+  that previously used the synchronous
+  `cow_sdk_trading::approve_cow_protocol`,
+  `cow_sdk_trading::get_cow_protocol_allowance`,
+  `cow_sdk_trading::get_pre_sign_transaction`,
+  `cow_sdk_trading::onchain_cancellation_transaction`, or
+  `cow_sdk_trading::cancel_order_onchain` move to the async path and
+  `.await` the result, or thread an executor at the call site if
+  calling from non-async code.
+
 - `cow_sdk_trading::TradeParameters` and
   `cow_sdk_trading::LimitTradeParameters` carry the protocol-level
   fields only. The `sell_token_decimals` and `buy_token_decimals`

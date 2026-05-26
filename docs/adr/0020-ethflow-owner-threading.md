@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-22
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-05-26
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, eth-flow, validation, client-side, defense-in-depth
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -10,11 +10,11 @@
 ## Decision
 
 The EthFlow transaction bundle returned by
-`cow_sdk_trading::get_eth_flow_transaction_async` exposes a typed
+`cow_sdk_trading::get_eth_flow_transaction` exposes a typed
 `from: cow_sdk_core::Address` field carrying the signer-derived
 owner resolved during transaction construction via
 `AsyncSigner::get_address`. The submission seam
-`post_sell_native_currency_order_async` builds its pre-HTTP
+`post_sell_native_currency_order` builds its pre-HTTP
 validation preview from `tx.from.clone()`, not from
 `tx.order_to_sign.receiver.clone()`. Receiver continues to carry
 the payout-recipient semantic unchanged; owner is always
@@ -37,7 +37,7 @@ receiver and a matching app-data signer raises a false
 `AppdataFromMismatch`, and a tampered flow whose crafted app-data
 signer equals the receiver slips past the check entirely. The
 owner is already resolved inside
-`get_eth_flow_transaction_async` through
+`get_eth_flow_transaction` through
 `signer.get_address().await`; threading it onto the returned
 bundle closes both directions without a second signer round-trip.
 Surfacing the field as a public, typed member of
@@ -53,18 +53,18 @@ the signer.
   struct remains `#[non_exhaustive]`, and the
   `EthFlowTransaction::new` constructor accepts the owner as a
   required parameter so every construction path populates the
-  field explicitly. `get_eth_flow_transaction_async` and its
-  synchronous companion `get_eth_flow_transaction` populate
-  `from` with the resolved signer address before returning the
-  bundle. Receiver semantics are unchanged: `tx.order_to_sign.receiver`
+  field explicitly. `get_eth_flow_transaction` populates `from`
+  with the resolved signer address before returning the bundle.
+  No second signer round-trip is performed on the submission
+  seam. Receiver semantics are unchanged: `tx.order_to_sign.receiver`
   remains the payout identity and may legitimately differ from
   `tx.from`.
-- Runtime and support: `post_sell_native_currency_order_async`
+- Runtime and support: `post_sell_native_currency_order`
   reads `let preview_from = tx.from.clone()` when building the
   preview `OrderCreation` for `OrderBoundsValidator::validate`.
   No receiver-as-owner fallback remains on the submission path.
   The owner is resolved exactly once inside
-  `get_eth_flow_transaction_async` and forwarded onto the
+  `get_eth_flow_transaction` and forwarded onto the
   bundle; the submission seam does not call
   `signer.get_address()` a second time. The validator continues
   to compare `app_data_signer` against `order.from`, so the
@@ -87,12 +87,11 @@ the signer.
 - Cost: one new typed field on `EthFlowTransaction`, one
   parameter added to the public `EthFlowTransaction::new`
   constructor, one reuse of the existing local `from` inside
-  `get_eth_flow_transaction_async` at the return site, and one
-  single-line change inside
-  `post_sell_native_currency_order_async` replacing the prior
-  receiver-as-preview-owner assignment. No change to the public
-  validator surface, the payout semantics, or the EthFlow
-  transaction encoding.
+  `get_eth_flow_transaction` at the return site, and one
+  single-line change inside `post_sell_native_currency_order`
+  replacing the prior receiver-as-preview-owner assignment. No
+  change to the public validator surface, the payout semantics,
+  or the EthFlow transaction encoding.
 - Construction-time receiver invariant:
   `cow_sdk_contracts::EthFlowOrderData::new` and
   `EthFlowOrderData::from_unsigned_order` return
@@ -164,3 +163,11 @@ owner identity carried onto the bundle and read by the native-currency
 submission seam preserves the lowercase `0x`-prefixed hex wire form
 through the cow-owned `Display`/`Serialize`/`Deserialize` impls on
 `Address`.
+
+## Amendment 2026-05-26: single-async-entry EthFlow submission surface
+
+`get_eth_flow_transaction` and `post_sell_native_currency_order` are
+single async entry points bounded on `cow_sdk_core::AsyncSigner`.
+The previous sync-bounded `get_eth_flow_transaction` companion is
+removed. The `EthFlowTransaction` bundle shape and the
+owner-threading invariant are unchanged.

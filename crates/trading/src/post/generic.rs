@@ -1,11 +1,11 @@
-use cow_sdk_core::{Address, AsyncSigner, ProtocolOptions, Signer};
+use cow_sdk_core::{Address, AsyncSigner, ProtocolOptions};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use cow_sdk_signing::{
     SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order_async,
     sign_order_with_scheme_async,
 };
 
-use super::native::post_sell_native_currency_order_async;
+use super::native::post_sell_native_currency_order;
 use crate::types::{
     QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
     apply_quote_request_parameter_overrides, validate_orderbook_context,
@@ -17,47 +17,6 @@ use crate::{
     SwapAdvancedSettings, TraderParameters, TradingAppDataInfo, TradingError,
     adjust_ethflow_limit_parameters, get_order_to_sign, is_ethflow_order,
 };
-
-/// Signs and submits a `CoW` Protocol order using a synchronous signer.
-///
-/// `EthFlow` sell orders are routed to the native-currency transaction path. Other orders are signed
-/// and submitted through the orderbook.
-///
-/// # Errors
-///
-/// Returns an error when `EthFlow` routing prerequisites are missing, when signing fails, when
-/// app-data upload fails, or when the orderbook rejects the order submission.
-#[allow(
-    clippy::too_many_arguments,
-    reason = "the trade-posting submission seam threads orchestration, validator, and runtime context through one entry point for parity with the reviewed services authority"
-)]
-pub async fn post_cow_protocol_trade<O, S>(
-    orderbook: &O,
-    app_data: &TradingAppDataInfo,
-    params: &LimitTradeParameters,
-    additional_params: &crate::types::PostTradeAdditionalParams,
-    trader: &TraderParameters,
-    signer: &S,
-    order_bounds: crate::validation::OrderValidityBounds,
-    app_data_signer: Option<Address>,
-) -> Result<OrderPostingResult, TradingError>
-where
-    O: OrderbookClient + ?Sized,
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
-    post_cow_protocol_trade_async(
-        orderbook,
-        app_data,
-        params,
-        additional_params,
-        trader,
-        signer,
-        order_bounds,
-        app_data_signer,
-    )
-    .await
-}
 
 fn build_order_body(
     order_to_sign: &cow_sdk_core::UnsignedOrder,
@@ -90,7 +49,7 @@ fn build_order_body(
     order_body
 }
 
-/// Signs and submits a `CoW` Protocol order using an asynchronous signer.
+/// Signs and submits a `CoW` Protocol order.
 ///
 /// Any explicit chain or environment must agree with the injected orderbook client, which is then
 /// used as the canonical runtime authority for order construction, signing, and submission.
@@ -108,7 +67,7 @@ fn build_order_body(
     clippy::too_many_arguments,
     reason = "the function linearly sequences one trade-posting orchestration path whose steps must stay co-located to preserve reviewed precedence; the parameter list threads orchestration, validator, and runtime context through one entry point"
 )]
-pub async fn post_cow_protocol_trade_async<O, S>(
+pub async fn post_cow_protocol_trade<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
     params: &LimitTradeParameters,
@@ -137,7 +96,7 @@ where
             return Err(TradingError::MissingQuoteId("EthFlow order posting"));
         }
         let adjusted = adjust_ethflow_limit_parameters(canonical_chain_id, &params);
-        return post_sell_native_currency_order_async(
+        return post_sell_native_currency_order(
             orderbook,
             app_data,
             &adjusted,

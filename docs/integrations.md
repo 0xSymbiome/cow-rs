@@ -410,7 +410,7 @@ For example, the trading crate exposes allowance helpers over the provider seam:
 
 ```rust
 use cow_sdk_core::{Address, CowEnv, SupportedChainId};
-use cow_sdk_trading::get_cow_protocol_allowance_async;
+use cow_sdk_trading::get_cow_protocol_allowance;
 
 async fn read_allowance(
     provider: &StaticProvider,
@@ -418,7 +418,7 @@ async fn read_allowance(
     let token = Address::new("0xfff9976782d46cc05630d1f6ebab18b2324d6b14")?;
     let owner = Address::new("0x1111111111111111111111111111111111111111")?;
 
-    let allowance = get_cow_protocol_allowance_async(
+    let allowance = get_cow_protocol_allowance(
         provider,
         &token,
         &owner,

@@ -170,23 +170,16 @@ also wraps its lower-level contract call in a
 
 - `get_quote_only`
 - `get_quote_results`
-- `get_quote_results_async`
 - `post_swap_order`
-- `post_swap_order_async`
 - `post_swap_order_from_quote`
-- `post_swap_order_from_quote_async`
 - `post_limit_order`
-- `post_limit_order_async`
-- `get_pre_sign_transaction_async`
+- `get_pre_sign_transaction`
 - `get_order`
 - `off_chain_cancel_order`
-- `off_chain_cancel_order_async`
 - `on_chain_cancel_order`
-- `on_chain_cancel_order_async`
-- `get_cow_protocol_allowance_async`
-- `approve_cow_protocol_async`
-- `post_swap_order_from_quote_async` (module-level)
-- `post_sell_native_currency_order_async` (module-level)
+- `get_cow_protocol_allowance`
+- `approve_cow_protocol`
+- `post_sell_native_currency_order` (module-level)
 
 ### `cow-sdk-contracts`
 

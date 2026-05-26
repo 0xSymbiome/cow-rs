@@ -37,7 +37,7 @@ fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParameters) -> P
 use cow_sdk_trading::{
     LimitOrderAdvancedSettings, LimitTradeParameters, PartnerFeePolicy, PostTradeAdditionalParams,
     QuoteRequestOverride, SwapAdvancedSettings, TradingError, build_app_data, get_quote_results,
-    post_limit_order, post_limit_order_async, post_sell_native_currency_order, post_swap_order,
+    post_limit_order, post_sell_native_currency_order, post_swap_order,
     post_swap_order_from_quote,
 };
 
@@ -255,36 +255,6 @@ async fn limit_posting_disables_cost_slippage_adjustments_for_sell_and_buy_order
 }
 
 #[tokio::test]
-async fn limit_posting_sync_signer_wrapper_matches_async_suffix_path() {
-    let trader = sample_trader_parameters();
-    let signer = MockSigner::default();
-    let mut params = sample_limit_parameters(OrderKind::Sell);
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .expect("UNIX_EPOCH must remain reachable")
-        .as_secs();
-    params.valid_to = Some(u32::try_from(now + 3600).expect("valid_to must fit in u32"));
-
-    let wrapper_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
-    let async_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
-
-    let wrapper_result = post_limit_order(&params, &trader, &signer, None, &wrapper_orderbook)
-        .await
-        .expect("wrapper limit order should succeed");
-    let async_result = post_limit_order_async(&params, &trader, &signer, None, &async_orderbook)
-        .await
-        .expect("async suffix limit order should succeed");
-
-    assert_eq!(wrapper_result.order_to_sign, async_result.order_to_sign);
-    assert_eq!(wrapper_result.signature, async_result.signature);
-    assert_eq!(wrapper_result.signing_scheme, async_result.signing_scheme);
-    assert_eq!(
-        wrapper_orderbook.state().sent_orders,
-        async_orderbook.state().sent_orders
-    );
-}
-
-#[tokio::test]
 async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_collision_checks() {
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
@@ -339,7 +309,7 @@ async fn native_sell_posting_requires_quote_id_before_signing_or_submission() {
     params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
     params.quote_id = None;
 
-    let error = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
+    let error = post_limit_order(&params, &trader, &signer, None, &orderbook)
         .await
         .expect_err("native sell posting must require a quote id");
 
@@ -407,7 +377,7 @@ async fn post_swap_order_appdata_from_mismatch_does_not_upload_or_sign() {
         cow_sdk_app_data::AppDataParams::default().with_signer(address(ALT_RECEIVER)),
     );
 
-    let error = post_limit_order_async(&params, &trader, &signer, Some(&advanced), &orderbook)
+    let error = post_limit_order(&params, &trader, &signer, Some(&advanced), &orderbook)
         .await
         .expect_err("mismatched app-data signer must reject before upload or signing");
 
@@ -430,7 +400,7 @@ async fn post_swap_order_same_buy_sell_token_does_not_upload_or_sign() {
     let mut params = sample_limit_parameters(OrderKind::Buy);
     params.buy_token = params.sell_token;
 
-    let error = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
+    let error = post_limit_order(&params, &trader, &signer, None, &orderbook)
         .await
         .expect_err("buy-side same-token limit order must reject before upload or signing");
 
@@ -453,7 +423,7 @@ async fn post_swap_order_sell_side_same_buy_sell_token_uploads_signs_and_submits
     let mut params = sample_limit_parameters(OrderKind::Sell);
     params.buy_token = params.sell_token;
 
-    let result = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
+    let result = post_limit_order(&params, &trader, &signer, None, &orderbook)
         .await
         .expect("sell-side same-token limit order must reach submission");
 
@@ -474,7 +444,7 @@ async fn post_swap_order_zero_amount_does_not_upload_or_sign() {
     let mut params = sample_limit_parameters(OrderKind::Sell);
     params.sell_amount = Amount::ZERO;
 
-    let error = post_limit_order_async(&params, &trader, &signer, None, &orderbook)
+    let error = post_limit_order(&params, &trader, &signer, None, &orderbook)
         .await
         .expect_err("zero-amount limit order must reject before upload or signing");
 

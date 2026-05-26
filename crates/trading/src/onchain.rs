@@ -6,8 +6,8 @@ use cow_sdk_contracts::eth_flow::{
 use cow_sdk_contracts::settlement::IGPv2Settlement;
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
-    Address, Amount, AsyncSigner, HexData, ProtocolOptions, Signer, SupportedChainId,
-    TransactionHash, TransactionRequest,
+    Address, Amount, AsyncSigner, HexData, ProtocolOptions, SupportedChainId, TransactionHash,
+    TransactionRequest,
 };
 use cow_sdk_orderbook::Order;
 
@@ -59,7 +59,7 @@ impl EthFlowTransaction {
     }
 }
 
-/// Builds a pre-sign transaction using a sync signer.
+/// Builds a pre-sign transaction.
 ///
 /// When gas estimation fails, the helper falls back to the documented default
 /// gas limit instead of failing closed.
@@ -72,52 +72,7 @@ impl EthFlowTransaction {
 /// # Errors
 ///
 /// Returns [`TradingError`] when ABI encoding or gas-margin conversion fails.
-pub fn get_pre_sign_transaction<S>(
-    signer: &S,
-    chain_id: SupportedChainId,
-    order_uid: &cow_sdk_core::OrderUid,
-    options: Option<&ProtocolOptions>,
-) -> Result<TransactionRequest, TradingError>
-where
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
-    let settlement = resolve_settlement_address(chain_id, options);
-    let mut tx = TransactionRequest::new(
-        Some(settlement),
-        Some(HexData::new(encode_set_pre_signature(order_uid, true))?),
-        Some(Amount::ZERO),
-        None,
-    );
-    let gas = signer
-        .estimate_gas(&tx)
-        .map_err(|error| TradingError::Signer {
-            operation: "estimate_gas",
-            message: error.to_string().into(),
-        });
-    let gas_limit = match gas {
-        Ok(value) => gas_with_margin(&value)?,
-        Err(_) => default_gas_limit(),
-    };
-
-    tx.gas_limit = Some(gas_limit);
-    Ok(tx)
-}
-
-/// Builds a pre-sign transaction using an async signer.
-///
-/// When gas estimation fails, the helper falls back to the documented default
-/// gas limit instead of failing closed.
-///
-/// ## Gas overhead
-///
-/// Successful gas estimates receive a 20% overhead using integer floor
-/// division: `gas + (gas * 20) / 100`.
-///
-/// # Errors
-///
-/// Returns [`TradingError`] when ABI encoding or gas-margin conversion fails.
-pub async fn get_pre_sign_transaction_async<S>(
+pub async fn get_pre_sign_transaction<S>(
     signer: &S,
     chain_id: SupportedChainId,
     order_uid: &cow_sdk_core::OrderUid,
@@ -150,40 +105,7 @@ where
     Ok(tx)
 }
 
-/// Builds an `EthFlow` order-creation transaction using a sync signer.
-///
-/// ## Gas overhead
-///
-/// Successful gas estimates receive a 20% overhead using integer floor
-/// division: `gas + (gas * 20) / 100`.
-///
-/// # Errors
-///
-/// Returns any error from [`get_eth_flow_transaction_async`].
-pub async fn get_eth_flow_transaction<S>(
-    app_data_keccak256: &cow_sdk_core::AppDataHash,
-    params: &crate::LimitTradeParameters,
-    chain_id: SupportedChainId,
-    additional_params: &crate::types::PostTradeAdditionalParams,
-    trader: &TraderParameters,
-    signer: &S,
-) -> Result<EthFlowTransaction, TradingError>
-where
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
-    get_eth_flow_transaction_async(
-        app_data_keccak256,
-        params,
-        chain_id,
-        additional_params,
-        trader,
-        signer,
-    )
-    .await
-}
-
-/// Builds an `EthFlow` order-creation transaction using an async signer.
+/// Builds an `EthFlow` order-creation transaction.
 ///
 /// `EthFlow` order ids are generated against the wrapped-native sell token and
 /// `MAX_VALID_TO_EPOCH`, then retried by decrementing buy amount until the
@@ -198,7 +120,7 @@ where
 ///
 /// Returns [`TradingError`] when signer address resolution, transaction
 /// encoding, unique-order-id generation, or gas-margin conversion fails.
-pub async fn get_eth_flow_transaction_async<S>(
+pub async fn get_eth_flow_transaction<S>(
     app_data_keccak256: &cow_sdk_core::AppDataHash,
     params: &crate::LimitTradeParameters,
     chain_id: SupportedChainId,
@@ -294,7 +216,7 @@ where
     })
 }
 
-/// Builds an on-chain cancellation transaction using a sync signer.
+/// Builds an on-chain cancellation transaction.
 ///
 /// Regular orders call the settlement contract. `EthFlow` orders call the
 /// `EthFlow` contract. When gas estimation fails, the helper falls back to the
@@ -303,54 +225,7 @@ where
 /// # Errors
 ///
 /// Returns [`TradingError`] when ABI encoding or gas conversion fails.
-pub fn onchain_cancellation_transaction<S>(
-    signer: &S,
-    chain_id: SupportedChainId,
-    order: &Order,
-    options: Option<&ProtocolOptions>,
-) -> Result<TransactionRequest, TradingError>
-where
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
-    let mut tx = if order.ethflow_data.is_some() {
-        TransactionRequest::new(
-            Some(resolve_eth_flow_address(chain_id, options)),
-            Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
-            Some(Amount::ZERO),
-            None,
-        )
-    } else {
-        TransactionRequest::new(
-            Some(resolve_settlement_address(chain_id, options)),
-            Some(HexData::new(encode_invalidate_order_uid(&order.uid))?),
-            Some(Amount::ZERO),
-            None,
-        )
-    };
-    let gas = signer
-        .estimate_gas(&tx)
-        .map_err(|error| TradingError::Signer {
-            operation: "estimate_gas",
-            message: error.to_string().into(),
-        });
-    tx.gas_limit = Some(match gas {
-        Ok(value) => Amount::new(parse_integer("gas", &value.to_string())?.to_string())?,
-        Err(_) => default_gas_limit(),
-    });
-    Ok(tx)
-}
-
-/// Builds an on-chain cancellation transaction using an async signer.
-///
-/// Regular orders call the settlement contract. `EthFlow` orders call the
-/// `EthFlow` contract. When gas estimation fails, the helper falls back to the
-/// documented default gas limit.
-///
-/// # Errors
-///
-/// Returns [`TradingError`] when ABI encoding or gas conversion fails.
-pub async fn onchain_cancellation_transaction_async<S>(
+pub async fn onchain_cancellation_transaction<S>(
     signer: &S,
     chain_id: SupportedChainId,
     order: &Order,
@@ -389,37 +264,12 @@ where
     Ok(tx)
 }
 
-/// Cancels an order on-chain using a sync signer.
+/// Cancels an order on-chain.
 ///
 /// # Errors
 ///
 /// Returns [`TradingError`] when transaction construction or submission fails.
-pub fn cancel_order_onchain<S>(
-    signer: &S,
-    chain_id: SupportedChainId,
-    order: &Order,
-    options: Option<&ProtocolOptions>,
-) -> Result<TransactionHash, TradingError>
-where
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
-    let tx = onchain_cancellation_transaction(signer, chain_id, order, options)?;
-    let broadcast = signer
-        .send_transaction(&tx)
-        .map_err(|error| TradingError::Signer {
-            operation: "send_transaction",
-            message: error.to_string().into(),
-        })?;
-    Ok(broadcast.transaction_hash)
-}
-
-/// Cancels an order on-chain using an async signer.
-///
-/// # Errors
-///
-/// Returns [`TradingError`] when transaction construction or submission fails.
-pub async fn cancel_order_onchain_async<S>(
+pub async fn cancel_order_onchain<S>(
     signer: &S,
     chain_id: SupportedChainId,
     order: &Order,
@@ -429,7 +279,7 @@ where
     S: AsyncSigner,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
-    let tx = onchain_cancellation_transaction_async(signer, chain_id, order, options).await?;
+    let tx = onchain_cancellation_transaction(signer, chain_id, order, options).await?;
     let broadcast = signer
         .send_transaction(&tx)
         .await

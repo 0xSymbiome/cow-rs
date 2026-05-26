@@ -12,5 +12,5 @@ fn main() {
         .unwrap();
 
     let signer = ();
-    let _ = sdk.off_chain_cancel_order_async(&order_parameters(), &signer);
+    let _ = sdk.off_chain_cancel_order(&order_parameters(), &signer);
 }

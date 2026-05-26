@@ -1,9 +1,9 @@
-use cow_sdk_core::{AsyncSigner, Signer};
+use cow_sdk_core::AsyncSigner;
 
 use super::TradingSdk;
 use crate::{
     QuoteResults, SwapAdvancedSettings, TradeParameters, TradingError, get_quote_only,
-    get_quote_results_async,
+    get_quote_results,
 };
 
 impl TradingSdk {
@@ -46,14 +46,16 @@ impl TradingSdk {
         .await
     }
 
-    /// Fetches quote results for a sync signer.
+    /// Fetches quote results.
     ///
-    /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
+    /// Owner precedence is: call-level `owner`, SDK default `owner`, signer
+    /// address. Callers that need cooperative cancellation wrap this future
+    /// through [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
     ///
     /// # Errors
     ///
-    /// Returns any error from [`Self::get_quote_results_async`].
+    /// Returns [`TradingError`] when required defaults are missing, signer
+    /// address resolution fails, or downstream quote construction fails.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -67,41 +69,6 @@ impl TradingSdk {
     )]
     pub async fn get_quote_results<S>(
         &self,
-        params: TradeParameters,
-        signer: &S,
-        advanced_settings: Option<&SwapAdvancedSettings>,
-    ) -> Result<QuoteResults, TradingError>
-    where
-        S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-    {
-        self.get_quote_results_async(params, signer, advanced_settings)
-            .await
-    }
-
-    /// Fetches quote results for an async signer.
-    ///
-    /// Owner precedence is: call-level `owner`, SDK default `owner`, signer address.
-    /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError`] when required defaults are missing, signer
-    /// address resolution fails, or downstream quote construction fails.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(
-            skip_all,
-            fields(
-                chain = ?self.trader_defaults.chain_id,
-                env = ?self.trader_defaults.env,
-                endpoint = "trading.quote_results_async",
-            ),
-        ),
-    )]
-    pub async fn get_quote_results_async<S>(
-        &self,
         mut params: TradeParameters,
         signer: &S,
         advanced_settings: Option<&SwapAdvancedSettings>,
@@ -113,7 +80,7 @@ impl TradingSdk {
         params.owner = params.owner.or(self.trader_defaults.owner);
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
-        get_quote_results_async(
+        get_quote_results(
             &params,
             &trader,
             signer,

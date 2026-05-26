@@ -1,30 +1,11 @@
-use cow_sdk_core::{AsyncSigner, ProtocolOptions, Signer};
+use cow_sdk_core::{AsyncSigner, ProtocolOptions};
 use cow_sdk_orderbook::{EcdsaSigningScheme, OrderCancellations};
 use cow_sdk_signing::{SigningScheme as SigningSchemeContract, sign_order_cancellations_async};
 
 use crate::types::{validate_orderbook_chain_context, validate_orderbook_env_context};
 use crate::{OrderTraderParameters, OrderbookClient, TraderParameters, TradingError};
 
-/// Signs and submits an off-chain cancellation using a sync signer.
-///
-/// # Errors
-///
-/// Returns [`TradingError`] when signing or orderbook submission fails.
-pub async fn off_chain_cancel_order<O, S>(
-    orderbook: &O,
-    params: &OrderTraderParameters,
-    trader: &TraderParameters,
-    signer: &S,
-) -> Result<bool, TradingError>
-where
-    O: OrderbookClient + ?Sized,
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
-    off_chain_cancel_order_async(orderbook, params, trader, signer).await
-}
-
-/// Signs and submits an off-chain cancellation using an async signer.
+/// Signs and submits an off-chain cancellation.
 ///
 /// Any explicit chain or environment must agree with the injected orderbook
 /// client, which remains the canonical runtime authority for signing and
@@ -34,7 +15,7 @@ where
 ///
 /// Returns [`TradingError`] when signing fails, unsupported local signing
 /// schemes are produced, or the orderbook rejects the cancellation.
-pub async fn off_chain_cancel_order_async<O, S>(
+pub async fn off_chain_cancel_order<O, S>(
     orderbook: &O,
     params: &OrderTraderParameters,
     trader: &TraderParameters,

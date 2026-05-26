@@ -330,7 +330,7 @@ use cow_sdk_core::Cancellable;
 
 let token = cow_sdk_core::CancellationToken::new();
 let result = sdk
-    .post_swap_order_async(params, &signer, None)
+    .post_swap_order(params, &signer, None)
     .cancel_with(&token)
     .await?;
 ```

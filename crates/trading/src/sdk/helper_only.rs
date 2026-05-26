@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use cow_sdk_core::{
-    Amount, AsyncProvider, AsyncSigner, CowEnv, Provider, Signer, SupportedChainId, TransactionHash,
+    Amount, AsyncProvider, AsyncSigner, CowEnv, SupportedChainId, TransactionHash,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_orderbook::OrderBookApi;
@@ -10,9 +10,9 @@ use cow_sdk_orderbook::OrderBookApi;
 use super::{HelperOnlySdk, helpers::ResolvedOrderbookBinding};
 use crate::{
     AllowanceParameters, ApprovalParameters, OrderTraderParameters, PartialTraderParameters,
-    TradingError, TradingSdkOptions, cancel_order_onchain_async, get_cow_protocol_allowance,
-    get_cow_protocol_allowance_async, get_pre_sign_transaction, get_pre_sign_transaction_async,
-    onchain::protocol_options_for_partial_order, types::validate_orderbook_context,
+    TradingError, TradingSdkOptions, cancel_order_onchain, get_cow_protocol_allowance,
+    get_pre_sign_transaction, onchain::protocol_options_for_partial_order,
+    types::validate_orderbook_context,
 };
 
 impl HelperOnlySdk {
@@ -28,31 +28,7 @@ impl HelperOnlySdk {
         &self.options
     }
 
-    /// Builds the pre-sign transaction for an order using a sync signer.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError`] when trader defaults are incomplete or gas
-    /// estimation / transaction construction fails.
-    pub fn get_pre_sign_transaction<S>(
-        &self,
-        params: &OrderTraderParameters,
-        signer: &S,
-    ) -> Result<cow_sdk_core::TransactionRequest, TradingError>
-    where
-        S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-    {
-        let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
-        let chain_id = trader
-            .chain_id
-            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
-        let options = protocol_options_for_partial_order(params, &trader);
-
-        get_pre_sign_transaction(signer, chain_id, &params.order_uid, Some(&options))
-    }
-
-    /// Builds the pre-sign transaction for an order using an async signer.
+    /// Builds the pre-sign transaction for an order.
     ///
     /// Callers that need cooperative cancellation wrap this future through
     /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
@@ -68,12 +44,12 @@ impl HelperOnlySdk {
             fields(
                 chain = ?params.chain_id,
                 env = ?params.env,
-                endpoint = "trading.helper_only.get_pre_sign_transaction_async",
+                endpoint = "trading.helper_only.get_pre_sign_transaction",
                 order_uid = %params.order_uid,
             ),
         ),
     )]
-    pub async fn get_pre_sign_transaction_async<S>(
+    pub async fn get_pre_sign_transaction<S>(
         &self,
         params: &OrderTraderParameters,
         signer: &S,
@@ -88,39 +64,10 @@ impl HelperOnlySdk {
             .ok_or(TradingError::MissingTraderParameters("chainId"))?;
         let options = protocol_options_for_partial_order(params, &trader);
 
-        get_pre_sign_transaction_async(signer, chain_id, &params.order_uid, Some(&options)).await
+        get_pre_sign_transaction(signer, chain_id, &params.order_uid, Some(&options)).await
     }
 
-    /// Cancels an order on-chain using a sync signer.
-    ///
-    /// # Errors
-    ///
-    /// Returns any error from [`Self::on_chain_cancel_order_async`].
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(
-            skip_all,
-            fields(
-                chain = ?params.chain_id,
-                env = ?params.env,
-                endpoint = "trading.helper_only.on_chain_cancel_order",
-                order_uid = %params.order_uid,
-            ),
-        ),
-    )]
-    pub async fn on_chain_cancel_order<S>(
-        &self,
-        params: &OrderTraderParameters,
-        signer: &S,
-    ) -> Result<TransactionHash, TradingError>
-    where
-        S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-    {
-        self.on_chain_cancel_order_async(params, signer).await
-    }
-
-    /// Cancels an order on-chain using an async signer.
+    /// Cancels an order on-chain.
     ///
     /// Callers that need cooperative cancellation wrap this future through
     /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
@@ -136,12 +83,12 @@ impl HelperOnlySdk {
             fields(
                 chain = ?params.chain_id,
                 env = ?params.env,
-                endpoint = "trading.helper_only.on_chain_cancel_order_async",
+                endpoint = "trading.helper_only.on_chain_cancel_order",
                 order_uid = %params.order_uid,
             ),
         ),
     )]
-    pub async fn on_chain_cancel_order_async<S>(
+    pub async fn on_chain_cancel_order<S>(
         &self,
         params: &OrderTraderParameters,
         signer: &S,
@@ -161,22 +108,36 @@ impl HelperOnlySdk {
         };
         let options = protocol_options_for_partial_order(&effective_params, &trader);
 
-        cancel_order_onchain_async(signer, orderbook.chain_id, &order, Some(&options)).await
+        cancel_order_onchain(signer, orderbook.chain_id, &order, Some(&options)).await
     }
 
-    /// Reads the `CoW` Protocol allowance using a sync provider.
+    /// Reads the `CoW` Protocol allowance.
+    ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
     ///
     /// # Errors
     ///
     /// Returns [`TradingError`] when trader defaults are incomplete or provider
     /// reads fail.
-    pub fn get_cow_protocol_allowance<P>(
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?params.chain_id,
+                env = ?params.env,
+                endpoint = "trading.helper_only.get_cow_protocol_allowance",
+            ),
+        ),
+    )]
+    pub async fn get_cow_protocol_allowance<P>(
         &self,
         provider: &P,
         params: &AllowanceParameters,
     ) -> Result<Amount, TradingError>
     where
-        P: Provider,
+        P: AsyncProvider,
         P::Error: std::fmt::Display,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
@@ -193,79 +154,10 @@ impl HelperOnlySdk {
             env,
             params.vault_relayer_override.as_ref(),
         )
-    }
-
-    /// Reads the `CoW` Protocol allowance using an async provider.
-    ///
-    /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError`] when trader defaults are incomplete or provider
-    /// reads fail.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(
-            skip_all,
-            fields(
-                chain = ?params.chain_id,
-                env = ?params.env,
-                endpoint = "trading.helper_only.get_cow_protocol_allowance_async",
-            ),
-        ),
-    )]
-    pub async fn get_cow_protocol_allowance_async<P>(
-        &self,
-        provider: &P,
-        params: &AllowanceParameters,
-    ) -> Result<Amount, TradingError>
-    where
-        P: AsyncProvider,
-        P::Error: std::fmt::Display,
-    {
-        let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
-        let chain_id = trader
-            .chain_id
-            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
-        let env = trader.env.unwrap_or(CowEnv::Prod);
-
-        get_cow_protocol_allowance_async(
-            provider,
-            &params.token_address,
-            &params.owner,
-            chain_id,
-            env,
-            params.vault_relayer_override.as_ref(),
-        )
         .await
     }
 
-    /// Sends an approval transaction using a sync signer.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError`] when trader defaults are incomplete or
-    /// transaction submission fails.
-    pub fn approve_cow_protocol<S>(
-        &self,
-        signer: &S,
-        params: &ApprovalParameters,
-    ) -> Result<TransactionHash, TradingError>
-    where
-        S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-    {
-        let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
-        let chain_id = trader
-            .chain_id
-            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
-        let env = trader.env.unwrap_or(CowEnv::Prod);
-
-        crate::approve_cow_protocol(signer, params, chain_id, env)
-    }
-
-    /// Sends an approval transaction using an async signer.
+    /// Sends an approval transaction.
     ///
     /// Callers that need cooperative cancellation wrap this future through
     /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
@@ -281,11 +173,11 @@ impl HelperOnlySdk {
             fields(
                 chain = ?params.chain_id,
                 env = ?params.env,
-                endpoint = "trading.helper_only.approve_cow_protocol_async",
+                endpoint = "trading.helper_only.approve_cow_protocol",
             ),
         ),
     )]
-    pub async fn approve_cow_protocol_async<S>(
+    pub async fn approve_cow_protocol<S>(
         &self,
         signer: &S,
         params: &ApprovalParameters,
@@ -300,7 +192,7 @@ impl HelperOnlySdk {
             .ok_or(TradingError::MissingTraderParameters("chainId"))?;
         let env = trader.env.unwrap_or(CowEnv::Prod);
 
-        crate::approve_cow_protocol_async(signer, params, chain_id, env).await
+        crate::approve_cow_protocol(signer, params, chain_id, env).await
     }
 
     fn resolve_chain_partial_trader(

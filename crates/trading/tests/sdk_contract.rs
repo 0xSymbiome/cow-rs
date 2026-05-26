@@ -213,8 +213,8 @@ async fn sdk_helper_only_shortcut_builds_helper_only_type() {
     assert!(helper_only.trader_defaults().app_code.is_none());
 }
 
-#[test]
-fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
+#[tokio::test]
+async fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
     let provider = MockProvider::default();
     let signer = MockSigner::default();
     let sdk = TradingSdk::builder()
@@ -230,6 +230,7 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
                 .with_chain_id(SupportedChainId::Mainnet)
                 .with_env(CowEnv::Prod),
         )
+        .await
         .expect("allowance read should succeed");
     assert_eq!(
         allowance,
@@ -247,6 +248,7 @@ fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
             .with_env(CowEnv::Prod)
             .with_vault_relayer_override(address(ALT_RECEIVER)),
         )
+        .await
         .expect("approval should succeed");
     let sent = signer
         .state()
@@ -283,7 +285,7 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
         .expect("helper-only sdk construction should succeed");
 
     let allowance = sdk
-        .get_cow_protocol_allowance_async(
+        .get_cow_protocol_allowance(
             &provider,
             &cow_sdk_trading::AllowanceParameters::new(address(COW), address(OWNER))
                 .with_chain_id(SupportedChainId::Mainnet)
@@ -297,7 +299,7 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
     );
 
     let approval_hash = sdk
-        .approve_cow_protocol_async(
+        .approve_cow_protocol(
             &signer,
             &ApprovalParameters::new(
                 address(COW),
@@ -347,6 +349,7 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
                 )])),
             &signer,
         )
+        .await
         .expect("pre-sign transaction should succeed");
     assert_eq!(pre_sign_tx.to, Some(address(CUSTOM_SETTLEMENT)));
 

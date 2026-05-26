@@ -1,4 +1,4 @@
-use cow_sdk_core::{AsyncSigner, ProtocolOptions, Signer};
+use cow_sdk_core::{AsyncSigner, ProtocolOptions};
 use cow_sdk_orderbook::{OrderQuoteRequest, PriceQuality, QuoteSide, SigningScheme};
 use cow_sdk_signing::order_typed_data;
 
@@ -51,10 +51,11 @@ where
     .await
 }
 
-/// Builds quote results using a synchronous signer for owner resolution.
+/// Builds quote results.
 ///
-/// `trade_parameters.owner` takes precedence. When it is absent, the signer address becomes the
-/// effective owner. Advanced settings override overlapping trade fields before quote construction.
+/// `trade_parameters.owner` takes precedence. When it is absent, the signer
+/// address becomes the effective owner. Advanced settings override overlapping
+/// trade fields before quote construction.
 ///
 /// # Errors
 ///
@@ -62,38 +63,6 @@ where
 /// when app-data generation fails, when the orderbook quote request fails, or when the derived
 /// signing payload cannot be constructed.
 pub async fn get_quote_results<O, S>(
-    trade_parameters: &TradeParameters,
-    trader: &TraderParameters,
-    signer: &S,
-    advanced_settings: Option<&SwapAdvancedSettings>,
-    orderbook: &O,
-) -> Result<QuoteResults, TradingError>
-where
-    O: OrderbookClient + ?Sized,
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
-    get_quote_results_async(
-        trade_parameters,
-        trader,
-        signer,
-        advanced_settings,
-        orderbook,
-    )
-    .await
-}
-
-/// Builds quote results using an asynchronous signer for owner resolution.
-///
-/// `trade_parameters.owner` takes precedence. When it is absent, the signer address becomes the
-/// effective owner. Advanced settings override overlapping trade fields before quote construction.
-///
-/// # Errors
-///
-/// Returns an error when signer address resolution fails, when quote validity inputs conflict,
-/// when app-data generation fails, when the orderbook quote request fails, or when the derived
-/// signing payload cannot be constructed.
-pub async fn get_quote_results_async<O, S>(
     trade_parameters: &TradeParameters,
     trader: &TraderParameters,
     signer: &S,

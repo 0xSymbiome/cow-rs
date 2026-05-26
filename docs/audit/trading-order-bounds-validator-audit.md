@@ -1,7 +1,7 @@
 # Trading Order-Bounds Validator Audit
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-26
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
 `OrderValidityBounds`, `SubmissionClass`, `ClientRejection`,
 `AmountSide`, and the `TradingError::ClientRejected` lifting variant.
@@ -28,12 +28,12 @@ This audit covers:
   constant, and the `SubmissionClass` discriminator
 - the `ClientRejection` enum and the `TradingError::ClientRejected`
   lifting variant
-- the validator wiring on every public submission seam
-  (`post_swap_order`, `post_swap_order_async`, `post_limit_order`,
-  `post_limit_order_async`, `post_swap_order_from_quote`,
-  `post_swap_order_from_quote_async`,
-  `post_sell_native_currency_order`, the matching `_with_bounds`
-  variants, and the central `post_cow_protocol_trade_async` sink)
+- the validator wiring on every public submission seam:
+  `post_swap_order`, `post_limit_order`,
+  `post_swap_order_from_quote`, `post_sell_native_currency_order`,
+  the matching `_with_bounds` companions, and the central
+  `post_cow_protocol_trade` sink. Each public seam is a single
+  async entry point bounded on `cow_sdk_core::AsyncSigner`.
 - the `TradingSdkBuilder::with_order_bounds` setter and the
   `TradingSdk` field that carries the configured policy
 - the offline `TradeParameters::validate` and
@@ -121,7 +121,7 @@ strings.
 populated from the builder's `with_order_bounds` setter (default
 `SERVICES_DEFAULT`). Every public `TradingSdk` post method forwards
 `self.order_bounds` to the matching `_with_bounds` companion on the
-module-level helper. The central `post_cow_protocol_trade_async`
+module-level helper. The central `post_cow_protocol_trade`
 sink constructs the validator from the supplied bounds, attaches
 the chain-specific WETH address through `with_weth_address`, and
 runs the `validate` call between order construction and the HTTP
@@ -145,7 +145,7 @@ selected chain.
 
 ### EthFlow Skip Rule And WETH-Paired Guard
 
-`post_sell_native_currency_order_async` invokes the validator with
+`post_sell_native_currency_order` invokes the validator with
 `is_eth_flow: true` so the native-currency-sentinel sell-token
 check is skipped while every other invariant (zero amount, same
 token buy-side rejection, owner mismatch, lifetime bounds) still fires. When

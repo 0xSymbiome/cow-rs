@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build_helper_only()?;
 
     let allowance = sdk
-        .get_cow_protocol_allowance_async(
+        .get_cow_protocol_allowance(
             &client,
             &AllowanceParameters::new(address(COW), address(OWNER)),
         )
@@ -64,7 +64,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     assert_eq!(approval_receipt.status, Some(TransactionStatus::Success));
 
     let pre_sign = sdk
-        .get_pre_sign_transaction_async(&OrderTraderParameters::new(order_uid()), &signer)
+        .get_pre_sign_transaction(&OrderTraderParameters::new(order_uid()), &signer)
         .await?;
     assert_eq!(pre_sign.gas_limit, Some(Amount::from(25_200u32)));
 

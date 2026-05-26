@@ -127,7 +127,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let allowance_params = AllowanceParameters::new(sell_token, owner);
     let current_allowance = sdk
-        .get_cow_protocol_allowance_async(&client, &allowance_params)
+        .get_cow_protocol_allowance(&client, &allowance_params)
         .await?;
 
     let approval_tx_hash = if current_allowance < sell_amount {
@@ -144,7 +144,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let trade = TradeParameters::new(OrderKind::Sell, sell_token, buy_token, sell_amount)
         .with_slippage_bps(slippage_bps);
-    let result = sdk.post_swap_order_async(trade, &signer, None).await?;
+    let result = sdk.post_swap_order(trade, &signer, None).await?;
 
     let initial_report = json!({
         "mode": "live",

@@ -1,7 +1,7 @@
 # Shared Logic Reviewability Audit
 
 Status: Current  
-Last reviewed: 2026-05-22
+Last reviewed: 2026-05-26
 Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary, plus the canonical primitive-layer invocation paths shared across the cow-rs workspace  
 Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, boundary-specific order DTO separation, or the canonical primitive-layer invocation paths (keccak256, U256 and quantity parsing, address encoding, hex serde, typed-primitive bridges, and identity-wire-form preservation) that materially affect correctness or reviewability  
 Related docs:
@@ -148,7 +148,6 @@ Primary regression coverage:
 - `crates/orderbook/tests/request_contract.rs::rate_limiter_spaces_requests_after_token_budget_is_consumed`
 - `crates/signing/tests/order_signing_contract.rs::async_sign_order_paths_match_sync_signing_behavior`
 - `crates/signing/tests/cancellation_contract.rs::async_cancellation_signing_paths_match_sync_variants`
-- `crates/trading/tests/post_contract.rs::limit_posting_sync_signer_wrapper_matches_async_suffix_path`
 - `crates/contracts/tests/order_contract.rs::unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit`
 - `crates/orderbook/tests/types_contract.rs::order_creation_from_quote_keeps_quote_shape_and_quote_id`
 - `crates/orderbook/tests/signing_scheme_bridge_contract.rs`
