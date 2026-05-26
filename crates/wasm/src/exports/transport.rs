@@ -85,16 +85,7 @@ impl JsCallbackHttpTransport {
     }
 
     fn resolve_url(&self, path: &str) -> String {
-        if path.starts_with("http://")
-            || path.starts_with("https://")
-            || self.base_url.as_inner().is_empty()
-        {
-            path.to_owned()
-        } else if path.starts_with('/') {
-            format!("{}{}", self.base_url.as_inner(), path)
-        } else {
-            format!("{}/{}", self.base_url.as_inner(), path)
-        }
+        cow_sdk_core::transport::join_request_url(self.base_url.as_inner(), path)
     }
 }
 

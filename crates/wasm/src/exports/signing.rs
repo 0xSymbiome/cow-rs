@@ -22,7 +22,7 @@ use cow_sdk_signing::GeneratedOrderId;
 use cow_sdk_signing::order_cancellations_typed_data_payload;
 use js_sys::{Array, Function, Promise, Reflect};
 use serde_json::json;
-use wasm_bindgen::{JsCast, closure::Closure, prelude::*};
+use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 
 use crate::exports::{
@@ -758,36 +758,19 @@ fn uid_strings(uids: &[OrderUid]) -> Vec<String> {
     uids.iter().map(|uid| uid.to_hex_string()).collect()
 }
 
-struct WalletTimeoutGuard {
-    parts: Rc<RefCell<Option<WalletTimeoutParts>>>,
-}
-
-struct WalletTimeoutParts {
-    handle: JsValue,
-    on_timeout: Closure<dyn FnMut()>,
-}
-
-impl Drop for WalletTimeoutGuard {
-    fn drop(&mut self) {
-        if let Some(parts) = self.parts.borrow_mut().take() {
-            global_clear_timeout_raw(&parts.handle);
-            drop(parts.on_timeout);
-        }
-    }
-}
-
-fn wallet_timeout_promise(timeout_ms: u32) -> (Promise, WalletTimeoutGuard) {
-    let parts = Rc::new(RefCell::new(None));
-    let parts_for_executor = Rc::clone(&parts);
+fn wallet_timeout_promise(timeout_ms: u32) -> (Promise, gloo_timers::callback::Timeout) {
+    let reject_holder: Rc<RefCell<Option<Function>>> = Rc::new(RefCell::new(None));
+    let reject_setter = Rc::clone(&reject_holder);
     let promise = Promise::new(&mut |_resolve, reject| {
-        let error = WasmError::wallet_timeout(timeout_ms).into_js();
-        let on_timeout = Closure::<dyn FnMut()>::new(move || {
-            let _ = reject.call1(&JsValue::NULL, &error);
-        });
-        let handle = global_set_timeout_raw(on_timeout.as_ref().unchecked_ref(), timeout_ms);
-        *parts_for_executor.borrow_mut() = Some(WalletTimeoutParts { handle, on_timeout });
+        *reject_setter.borrow_mut() = Some(reject);
     });
-    (promise, WalletTimeoutGuard { parts })
+    let error = WasmError::wallet_timeout(timeout_ms).into_js();
+    let timer = gloo_timers::callback::Timeout::new(timeout_ms, move || {
+        if let Some(reject) = reject_holder.borrow_mut().take() {
+            let _ = reject.call1(&JsValue::NULL, &error);
+        }
+    });
+    (promise, timer)
 }
 
 fn is_wasm_error_kind(value: &JsValue, expected: &str) -> bool {
@@ -795,13 +778,4 @@ fn is_wasm_error_kind(value: &JsValue, expected: &str) -> bool {
         .ok()
         .and_then(|kind| kind.as_string())
         .is_some_and(|kind| kind == expected)
-}
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = globalThis, js_name = setTimeout)]
-    fn global_set_timeout_raw(handler: &Function, ms: u32) -> JsValue;
-
-    #[wasm_bindgen(js_namespace = globalThis, js_name = clearTimeout)]
-    fn global_clear_timeout_raw(handle: &JsValue);
 }

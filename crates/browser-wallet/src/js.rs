@@ -509,22 +509,9 @@ fn typed_provider(provider: &JsValue) -> &Eip1193ProviderBinding {
 
 #[cfg(target_arch = "wasm32")]
 async fn wait_for_detection_timeout(timeout_ms: u32) -> Result<(), BrowserWalletError> {
-    let window = browser_window()?;
-    let promise = Promise::new(&mut move |resolve, reject| {
-        let callback = Closure::once_into_js(move || {
-            let _ = resolve.call0(&JsValue::UNDEFINED);
-        });
-        if let Err(error) = window.set_timeout_with_callback_and_timeout_and_arguments_0(
-            callback.unchecked_ref(),
-            timeout_ms as i32,
-        ) {
-            let _ = reject.call1(&JsValue::UNDEFINED, &error);
-        }
-    });
-    JsFuture::from(promise)
-        .await
-        .map(|_| ())
-        .map_err(|error| BrowserWalletError::js(js_value_to_string(&error)))
+    use core::time::Duration;
+    gloo_timers::future::sleep(Duration::from_millis(u64::from(timeout_ms))).await;
+    Ok(())
 }
 
 #[cfg(target_arch = "wasm32")]

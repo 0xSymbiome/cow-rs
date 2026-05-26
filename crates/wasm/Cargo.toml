@@ -87,6 +87,7 @@ cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0", optional = true }
 cow-sdk-trading = { path = "../trading", version = "0.1.0", optional = true }
 cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0", optional = true }
 getrandom = { workspace = true }
+gloo-timers = { workspace = true }
 js-sys.workspace = true
 serde-wasm-bindgen.workspace = true
 tsify.workspace = true

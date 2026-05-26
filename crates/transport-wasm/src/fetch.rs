@@ -172,16 +172,7 @@ impl FetchTransport {
     }
 
     fn resolve_url(&self, path: &str) -> String {
-        if path.starts_with("http://")
-            || path.starts_with("https://")
-            || self.base_url.as_inner().is_empty()
-        {
-            path.to_owned()
-        } else if path.starts_with('/') {
-            format!("{}{}", self.base_url.as_inner(), path)
-        } else {
-            format!("{}/{}", self.base_url.as_inner(), path)
-        }
+        cow_sdk_core::transport::join_request_url(self.base_url.as_inner(), path)
     }
 
     async fn dispatch(
@@ -240,14 +231,14 @@ impl FetchTransport {
         let init = build_request_init(method, body, headers)?;
         let effective_timeout = timeout.or(self.timeout);
         let mut abort_timeout = match effective_timeout {
-            Some(timeout) => Some(install_abort_timeout(&window, &init, timeout)?),
+            Some(timeout) => Some(install_abort_timeout(&init, timeout)?),
             None => None,
         };
         let request = match Request::new_with_str_and_init(&url, &init) {
             Ok(request) => request,
             Err(error) => {
                 if let Some(handle) = abort_timeout.take() {
-                    handle.cancel(&window);
+                    handle.cancel();
                 }
                 return Err(configuration_error("could not build fetch request", &error));
             }
@@ -256,7 +247,7 @@ impl FetchTransport {
             Ok(value) => value,
             Err(error) => {
                 if let Some(handle) = abort_timeout.take() {
-                    handle.cancel(&window);
+                    handle.cancel();
                 }
                 return Err(classify_fetch_rejection(&error));
             }
@@ -265,7 +256,7 @@ impl FetchTransport {
             Ok(response) => response,
             Err(_) => {
                 if let Some(handle) = abort_timeout.take() {
-                    handle.cancel(&window);
+                    handle.cancel();
                 }
                 return Err(decode_error(
                     "fetch returned a value that was not a Response",
@@ -278,14 +269,14 @@ impl FetchTransport {
             Ok(promise) => promise,
             Err(error) => {
                 if let Some(handle) = abort_timeout.take() {
-                    handle.cancel(&window);
+                    handle.cancel();
                 }
                 return Err(body_error("could not read response body", &error));
             }
         };
         let body_result = JsFuture::from(text_promise).await;
         if let Some(handle) = abort_timeout.take() {
-            handle.cancel(&window);
+            handle.cancel();
         }
         let text_value =
             body_result.map_err(|error| body_error("could not decode response body", &error))?;
@@ -416,25 +407,18 @@ fn build_request_init(
 
 struct AbortTimeoutHandle {
     controller: AbortController,
-    timeout_id: i32,
-    _on_timeout: wasm_bindgen::closure::Closure<dyn FnMut()>,
+    timer: gloo_timers::callback::Timeout,
 }
 
 impl AbortTimeoutHandle {
-    fn cancel(self, window: &Window) {
-        let Self {
-            controller,
-            timeout_id,
-            _on_timeout,
-        } = self;
-        window.clear_timeout_with_handle(timeout_id);
+    fn cancel(self) {
+        let Self { controller, timer } = self;
+        drop(timer);
         drop(controller);
-        drop(_on_timeout);
     }
 }
 
 fn install_abort_timeout(
-    window: &Window,
     init: &RequestInit,
     timeout: Duration,
 ) -> Result<AbortTimeoutHandle, TransportError> {
@@ -442,27 +426,22 @@ fn install_abort_timeout(
         configuration_error("could not build an AbortController for the timeout", &error)
     })?;
     init.set_signal(Some(&controller.signal()));
-    let ms = timeout.as_millis();
-    let ms = i32::try_from(ms).map_err(|_| TransportError::Configuration {
+    let ms_u128 = timeout.as_millis();
+    let ms = u32::try_from(ms_u128).map_err(|_| TransportError::Configuration {
         message: Redacted::new(format!(
-            "timeout {ms} ms exceeds the supported browser setTimeout range"
+            "timeout {ms_u128} ms exceeds the supported browser setTimeout range"
         )),
     })?;
     let controller_clone = controller.clone();
-    let on_timeout = wasm_bindgen::closure::Closure::<dyn FnMut()>::new(move || {
+    // `gloo_timers::callback::Timeout::new` requires a `FnOnce() + 'static`
+    // closure. `'static` is mandatory because the timer outlives the
+    // enclosing stack frame; `Send` is irrelevant on wasm32 (single-
+    // threaded) but the move-capture of `controller_clone` keeps the
+    // closure naturally `Send`-shaped on any future native-thread port.
+    let timer = gloo_timers::callback::Timeout::new(ms, move || {
         controller_clone.abort();
     });
-    let timeout_id = window
-        .set_timeout_with_callback_and_timeout_and_arguments_0(
-            on_timeout.as_ref().unchecked_ref(),
-            ms,
-        )
-        .map_err(|error| configuration_error("could not schedule the timeout callback", &error))?;
-    Ok(AbortTimeoutHandle {
-        controller,
-        timeout_id,
-        _on_timeout: on_timeout,
-    })
+    Ok(AbortTimeoutHandle { controller, timer })
 }
 
 fn classify_fetch_rejection(error: &JsValue) -> TransportError {

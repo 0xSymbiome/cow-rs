@@ -262,6 +262,23 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow-sdk-transport-wasm`, `cow-sdk-wasm`, and `cow-sdk-browser-wallet`
+  retire three hand-rolled `Promise + setTimeout + Closure` timer
+  scaffolds in favor of the maintained `gloo-timers` crate. The
+  browser fetch transport's `AbortController` timeout, the wasm-side
+  wallet-response timeout, and the EIP-6963 provider-detection
+  deadline now share a single drop-guarded `Timeout` shape, so timer
+  cancellation runs through the same upstream-tested cleanup path
+  on every return.
+
+- `cow-sdk-core` adds `transport::join_request_url`, the canonical
+  request-URL join helper used by every workspace `HttpTransport`
+  implementation. The three former byte-identical `resolve_url`
+  bodies in the native reqwest transport, the browser fetch
+  transport, and the JS-callback transport collapse onto this single
+  free function. Credential-bearing base URLs continue to flow
+  through `Redacted::as_inner()` at the dispatch seam.
+
 - `cow-sdk-contracts` exposes a new `hex_field` module with two
   `pub fn` helpers for decoding `0x`-prefixed hexadecimal payloads
   into raw bytes:

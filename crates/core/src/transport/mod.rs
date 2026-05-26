@@ -103,3 +103,79 @@ pub fn sanitize_public_base_url(base_url: &str) -> String {
 fn is_supported_public_scheme(scheme: &str) -> bool {
     scheme.eq_ignore_ascii_case("http") || scheme.eq_ignore_ascii_case("https")
 }
+
+/// Joins a request `path` against a `base_url` using the canonical
+/// SDK transport join semantics.
+///
+/// This helper is the single seam every workspace `HttpTransport`
+/// implementation uses to compose request URLs, so cross-transport
+/// URL composition stays byte-identical between the native
+/// [`ReqwestTransport`], the browser fetch transport, and any
+/// callback-backed transport built on top of `HttpTransport`.
+///
+/// The join rules are:
+///
+/// - if `path` is itself an absolute `http://` or `https://` URL, the
+///   `base_url` is ignored and `path` is returned verbatim;
+/// - if `base_url` is empty, `path` is returned verbatim;
+/// - if `path` starts with `/`, the result is `format!("{base_url}{path}")`;
+/// - otherwise, the result is `format!("{base_url}/{path}")`.
+///
+/// The helper does not perform URL validation; both inputs are
+/// assumed pre-validated by the calling transport configuration.
+/// The helper does not log or store either input, and reads the
+/// credential-bearing `base_url` only through the caller-supplied
+/// `&str` slice produced by `Redacted::as_inner()` at the dispatch
+/// seam, preserving the workspace credential-redaction posture.
+#[must_use]
+pub fn join_request_url(base_url: &str, path: &str) -> String {
+    if path.starts_with("http://") || path.starts_with("https://") || base_url.is_empty() {
+        path.to_owned()
+    } else if path.starts_with('/') {
+        format!("{base_url}{path}")
+    } else {
+        format!("{base_url}/{path}")
+    }
+}
+
+#[cfg(test)]
+mod join_request_url_tests {
+    use super::join_request_url;
+
+    #[test]
+    fn absolute_http_path_returns_path_verbatim() {
+        assert_eq!(
+            join_request_url("https://api.example.com", "http://other.example/orders"),
+            "http://other.example/orders"
+        );
+    }
+
+    #[test]
+    fn absolute_https_path_returns_path_verbatim() {
+        assert_eq!(
+            join_request_url("https://api.example.com", "https://other.example/orders"),
+            "https://other.example/orders"
+        );
+    }
+
+    #[test]
+    fn empty_base_returns_path_verbatim() {
+        assert_eq!(join_request_url("", "/api/v1/orders"), "/api/v1/orders");
+    }
+
+    #[test]
+    fn leading_slash_path_concatenates_without_inserted_slash() {
+        assert_eq!(
+            join_request_url("https://api.example.com", "/api/v1/orders"),
+            "https://api.example.com/api/v1/orders"
+        );
+    }
+
+    #[test]
+    fn non_leading_slash_path_concatenates_with_inserted_slash() {
+        assert_eq!(
+            join_request_url("https://api.example.com", "api/v1/orders"),
+            "https://api.example.com/api/v1/orders"
+        );
+    }
+}

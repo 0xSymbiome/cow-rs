@@ -38,6 +38,7 @@ tracing = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { workspace = true }
+gloo-timers = { workspace = true }
 js-sys.workspace = true
 serde-wasm-bindgen.workspace = true
 wasm-bindgen.workspace = true
