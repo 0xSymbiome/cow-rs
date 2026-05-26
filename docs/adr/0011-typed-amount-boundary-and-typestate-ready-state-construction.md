@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-17
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-05-26
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, trading, builders, semver
 - Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -76,6 +76,14 @@ widening the runtime surface.
   one each. The single canonical `Amount(BigUint)` newtype replaces the
   retired wire-string wrapper, so every amount-adjacent surface carries
   one accessor shape instead of two.
+- Trade-parameter surface: `TradeParameters` and `LimitTradeParameters`
+  carry the protocol-level fields (kind, tokens, amounts, and the
+  documented optional overrides) and do not accept token-decimal
+  arguments at their `::new` constructors. The wasm input DTOs
+  `SwapParametersInput` and `LimitTradeParametersInput` follow the
+  same scope. `DecimalAmount` remains the canonical
+  typed-amount-boundary home for token decimals across every
+  display and user-input flow.
 
 ## Alternatives Rejected
 
@@ -139,3 +147,15 @@ is preserved verbatim while the inner type and accessor surface follow
 ADR 0052. The owned accessor surface on `Amount` is `as_u256` /
 `into_u256` (and equivalent `as_i256` / `into_i256` on `SignedAmount`),
 named to match the canonical alloy primitive that backs each newtype.
+
+## Amendment 2026-05-26: trade-parameter decimals scope
+
+`TradeParameters` and `LimitTradeParameters` carry the protocol-level
+fields only. The `sell_token_decimals` and `buy_token_decimals`
+fields, the matching positional `u8` arguments on `::new`, and the
+equivalents on the wasm `SwapParametersInput` and
+`LimitTradeParametersInput` DTOs are removed from the public surface;
+the generated TypeScript declaration snapshots are refreshed in the
+same change set. `DecimalAmount` remains the canonical
+typed-amount-boundary home for token decimals; the typed-amount
+invariants recorded above are preserved verbatim.

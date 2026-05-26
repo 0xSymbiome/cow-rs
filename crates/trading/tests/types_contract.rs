@@ -338,16 +338,12 @@ fn trade_parameters_new_seeds_documented_defaults_and_with_setters_attach_fields
     let trade = TradeParameters::new(
         OrderKind::Sell,
         valid_address(),
-        18,
         other_address(),
-        6,
         Amount::from(1_000_000_u64),
     );
     assert_eq!(trade.kind, OrderKind::Sell);
     assert_eq!(trade.sell_token, valid_address());
-    assert_eq!(trade.sell_token_decimals, 18);
     assert_eq!(trade.buy_token, other_address());
-    assert_eq!(trade.buy_token_decimals, 6);
     assert_eq!(trade.amount, Amount::from(1_000_000_u64));
     assert!(trade.owner.is_none());
     assert!(trade.env.is_none());
@@ -388,9 +384,7 @@ fn limit_trade_parameters_new_seeds_documented_defaults_and_with_setters_attach_
     let limit = LimitTradeParameters::new(
         OrderKind::Buy,
         valid_address(),
-        18,
         other_address(),
-        6,
         Amount::from(2_000_u64),
         Amount::from(1_000_u64),
     );

@@ -26,8 +26,7 @@
 //!   skip the post-placement order-status loop.
 //! - `COW_SMOKE_LIVE_ORDER_BUY_TOKEN` — default Sepolia COW
 //!   `0x0625afb445c3b6b7b929342a04a22599fd5dbb59`. Override to use a
-//!   different Sepolia ERC-20 (the example assumes 18 decimals; see
-//!   safety note in the rendered docs for the USDC-on-Sepolia footgun).
+//!   different Sepolia ERC-20.
 //!
 //! # Safety
 //!
@@ -61,7 +60,6 @@ use cow_sdk::{
 
 const SEPOLIA_WETH: &str = "0xfff9976782d46cc05630d1f6ebab18b2324d6b14";
 const SEPOLIA_COW: &str = "0x0625afb445c3b6b7b929342a04a22599fd5dbb59";
-const TOKEN_DECIMALS: u8 = 18;
 
 const DEFAULT_SELL_AMOUNT_WEI: &str = "1000000000000000";
 const DEFAULT_SLIPPAGE_BPS: u32 = 50;
@@ -144,15 +142,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         None
     };
 
-    let trade = TradeParameters::new(
-        OrderKind::Sell,
-        sell_token,
-        TOKEN_DECIMALS,
-        buy_token,
-        TOKEN_DECIMALS,
-        sell_amount,
-    )
-    .with_slippage_bps(slippage_bps);
+    let trade = TradeParameters::new(OrderKind::Sell, sell_token, buy_token, sell_amount)
+        .with_slippage_bps(slippage_bps);
     let result = sdk.post_swap_order_async(trade, &signer, None).await?;
 
     let initial_report = json!({

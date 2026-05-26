@@ -109,9 +109,7 @@ mod native {
         TradeParameters::new(
             kind,
             Address::new(WETH).expect("example WETH literal must be valid"),
-            18,
             Address::new(COW_TOKEN).expect("example COW token literal must be valid"),
-            18,
             Amount::new("100000000000000000").expect("example amount literal must be valid"),
         )
         .with_owner(*owner)

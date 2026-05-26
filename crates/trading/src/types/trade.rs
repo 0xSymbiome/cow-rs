@@ -25,12 +25,8 @@ pub struct TradeParameters {
     pub owner: Option<Address>,
     /// Sell-token address.
     pub sell_token: Address,
-    /// Sell-token decimals used by higher-level consumers and examples.
-    pub sell_token_decimals: u8,
     /// Buy-token address.
     pub buy_token: Address,
-    /// Buy-token decimals used by higher-level consumers and examples.
-    pub buy_token_decimals: u8,
     /// Amount interpreted according to `kind`.
     pub amount: Amount,
     /// Optional environment override for endpoint and contract resolution.
@@ -74,18 +70,14 @@ impl TradeParameters {
     pub const fn new(
         kind: OrderKind,
         sell_token: Address,
-        sell_token_decimals: u8,
         buy_token: Address,
-        buy_token_decimals: u8,
         amount: Amount,
     ) -> Self {
         Self {
             kind,
             owner: None,
             sell_token,
-            sell_token_decimals,
             buy_token,
-            buy_token_decimals,
             amount,
             env: None,
             settlement_contract_override: None,
@@ -184,12 +176,8 @@ pub struct LimitTradeParameters {
     pub owner: Option<Address>,
     /// Sell-token address.
     pub sell_token: Address,
-    /// Sell-token decimals used by higher-level consumers and examples.
-    pub sell_token_decimals: u8,
     /// Buy-token address.
     pub buy_token: Address,
-    /// Buy-token decimals used by higher-level consumers and examples.
-    pub buy_token_decimals: u8,
     /// Sell amount before transformations.
     pub sell_amount: Amount,
     /// Buy amount before transformations.
@@ -238,9 +226,7 @@ impl LimitTradeParameters {
     pub const fn new(
         kind: OrderKind,
         sell_token: Address,
-        sell_token_decimals: u8,
         buy_token: Address,
-        buy_token_decimals: u8,
         sell_amount: Amount,
         buy_amount: Amount,
     ) -> Self {
@@ -248,9 +234,7 @@ impl LimitTradeParameters {
             kind,
             owner: None,
             sell_token,
-            sell_token_decimals,
             buy_token,
-            buy_token_decimals,
             sell_amount,
             buy_amount,
             quote_id: None,

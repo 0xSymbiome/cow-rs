@@ -89,9 +89,7 @@ pub fn sample_trade_parameters() -> TradeParameters {
     TradeParameters::new(
         OrderKind::Sell,
         sample_sell_token(),
-        18,
         sample_buy_token(),
-        18,
         Amount::new("100000000000000000").expect("example trade amount must remain valid"),
     )
     .with_owner(sample_owner())
@@ -107,9 +105,7 @@ pub fn sample_limit_parameters() -> LimitTradeParameters {
     let mut params = LimitTradeParameters::new(
         OrderKind::Sell,
         sample_sell_token(),
-        18,
         sample_buy_token(),
-        18,
         quote.quote.sell_amount.clone(),
         quote.quote.buy_amount.clone(),
     )

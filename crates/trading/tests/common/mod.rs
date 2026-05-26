@@ -116,7 +116,7 @@ pub fn sample_trade_parameters(kind: OrderKind) -> cow_sdk_trading::TradeParamet
     } else {
         Amount::new("400000000000000000000").expect("test buy amount literal must be valid")
     };
-    cow_sdk_trading::TradeParameters::new(kind, address(WETH), 18, address(COW), 18, amount)
+    cow_sdk_trading::TradeParameters::new(kind, address(WETH), address(COW), amount)
         .with_owner(address(OWNER))
         .with_slippage_bps(50)
 }
@@ -139,9 +139,7 @@ pub fn sample_limit_parameters(kind: OrderKind) -> cow_sdk_trading::LimitTradePa
     let mut params = cow_sdk_trading::LimitTradeParameters::new(
         kind,
         address(WETH),
-        18,
         address(COW),
-        18,
         sell_amount,
         buy_amount,
     )

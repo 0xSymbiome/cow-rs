@@ -480,9 +480,7 @@ fn trade_parameters_validate_enforces_builder_subset() {
     let params = TradeParameters::new(
         OrderKind::Sell,
         native,
-        18,
         address(BUY_TOKEN),
-        18,
         cow_sdk_core::Amount::new("1000000").unwrap(),
     );
     let error = params
@@ -496,9 +494,7 @@ fn trade_parameters_validate_rejects_buy_side_same_tokens() {
     let params = TradeParameters::new(
         OrderKind::Buy,
         address(SELL_TOKEN),
-        18,
         address(SELL_TOKEN),
-        18,
         cow_sdk_core::Amount::new("1000000").unwrap(),
     );
     let error = params
@@ -512,9 +508,7 @@ fn trade_parameters_validate_rejects_zero_amount() {
     let params = TradeParameters::new(
         OrderKind::Sell,
         address(SELL_TOKEN),
-        18,
         address(BUY_TOKEN),
-        18,
         cow_sdk_core::Amount::ZERO,
     );
     let error = params
@@ -554,9 +548,7 @@ fn limit_trade_parameters_validate_rejects_zero_buy_amount() {
     let params = LimitTradeParameters::new(
         OrderKind::Sell,
         address(SELL_TOKEN),
-        18,
         address(BUY_TOKEN),
-        18,
         cow_sdk_core::Amount::new("1000000").unwrap(),
         cow_sdk_core::Amount::ZERO,
     );

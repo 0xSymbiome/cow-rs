@@ -855,9 +855,7 @@ fn sample_trade_parameters(chain_id: SupportedChainId) -> TradeParameters {
     TradeParameters::new(
         OrderKind::Sell,
         wrapped_native_token(chain_id).address,
-        18,
         sample_buy_token(),
-        18,
         Amount::new("10000000000000000").unwrap(),
     )
     .with_slippage_bps(50)

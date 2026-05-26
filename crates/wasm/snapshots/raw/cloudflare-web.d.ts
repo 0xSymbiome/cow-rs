@@ -332,17 +332,9 @@ export interface LimitTradeParametersInput {
      */
     sellToken: string;
     /**
-     * Sell-token decimals.
-     */
-    sellTokenDecimals: number;
-    /**
      * Buy-token address.
      */
     buyToken: string;
-    /**
-     * Buy-token decimals.
-     */
-    buyTokenDecimals: number;
     /**
      * Sell amount before transformations.
      */
@@ -892,17 +884,9 @@ export interface SwapParametersInput {
      */
     sellToken: string;
     /**
-     * Sell-token decimals.
-     */
-    sellTokenDecimals: number;
-    /**
      * Buy-token address.
      */
     buyToken: string;
-    /**
-     * Buy-token decimals.
-     */
-    buyTokenDecimals: number;
     /**
      * Amount interpreted according to `kind`.
      */

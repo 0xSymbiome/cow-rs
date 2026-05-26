@@ -225,8 +225,6 @@ fn swap_params_to_limit_order_params_preserves_generated_quote_to_limit_shape() 
         assert_eq!(limit.owner, trade.owner);
         assert_eq!(limit.sell_token, trade.sell_token);
         assert_eq!(limit.buy_token, trade.buy_token);
-        assert_eq!(limit.sell_token_decimals, trade.sell_token_decimals);
-        assert_eq!(limit.buy_token_decimals, trade.buy_token_decimals);
         assert_eq!(limit.sell_amount, quote.quote.sell_amount);
         assert_eq!(limit.buy_amount, quote.quote.buy_amount);
         assert_eq!(limit.quote_id, quote.id);

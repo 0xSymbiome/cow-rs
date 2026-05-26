@@ -52,9 +52,7 @@ fn public_api_reexports_cover_primary_root_surface() {
     let _trade = TradeParameters::new(
         OrderKind::Sell,
         Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        18,
         Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-        18,
         Amount::new("100000000000000000").unwrap(),
     )
     .with_owner(owner)

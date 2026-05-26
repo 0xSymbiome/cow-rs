@@ -14,6 +14,21 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_trading::TradeParameters` and
+  `cow_sdk_trading::LimitTradeParameters` carry the protocol-level
+  fields only. The `sell_token_decimals` and `buy_token_decimals`
+  fields and their positional `u8` arguments on `::new` are removed,
+  and the same fields are removed from the wasm input DTOs
+  `cow_sdk_wasm::SwapParametersInput` and
+  `cow_sdk_wasm::LimitTradeParametersInput`. The generated TypeScript
+  declaration snapshots are refreshed in the same change set.
+  `cow_sdk_core::DecimalAmount` remains the canonical
+  typed-amount-boundary home for token decimals across display and
+  user-input flows per
+  [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
+  Callers that previously passed positional `u8` decimal arguments
+  drop those arguments at the call site.
+
 - `cow_sdk_trading::InMemoryQuoteCache::new` now takes
   `(ttl, capacity)` instead of `(ttl)`. The previous unbounded posture
   grew the cache map without limit on long-running sessions; the new

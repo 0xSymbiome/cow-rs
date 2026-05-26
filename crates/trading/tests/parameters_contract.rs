@@ -29,9 +29,7 @@ fn trade_parameters(kind: OrderKind, sell_token: &str, buy_token: &str) -> Trade
     TradeParameters::new(
         kind,
         address(sell_token),
-        18,
         address(buy_token),
-        18,
         amount("1000000"),
     )
 }
@@ -44,9 +42,7 @@ fn limit_trade_parameters(
     LimitTradeParameters::new(
         kind,
         address(sell_token),
-        18,
         address(buy_token),
-        18,
         amount("1000000"),
         amount("2000000"),
     )

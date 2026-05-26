@@ -9,9 +9,7 @@ fn sample_limit_parameters() -> LimitTradeParameters {
     LimitTradeParameters::new(
         OrderKind::Sell,
         Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
-        18,
         Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        18,
         Amount::new("1000000000000000000").unwrap(),
         Amount::new("2000000000000000000000").unwrap(),
     )

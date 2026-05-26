@@ -97,12 +97,8 @@ pub struct SwapParametersInput {
     pub owner: Option<String>,
     /// Sell-token address.
     pub sell_token: String,
-    /// Sell-token decimals.
-    pub sell_token_decimals: u8,
     /// Buy-token address.
     pub buy_token: String,
-    /// Buy-token decimals.
-    pub buy_token_decimals: u8,
     /// Amount interpreted according to `kind`.
     pub amount: String,
     /// Optional environment override.
@@ -154,12 +150,8 @@ pub struct LimitTradeParametersInput {
     pub owner: Option<String>,
     /// Sell-token address.
     pub sell_token: String,
-    /// Sell-token decimals.
-    pub sell_token_decimals: u8,
     /// Buy-token address.
     pub buy_token: String,
-    /// Buy-token decimals.
-    pub buy_token_decimals: u8,
     /// Sell amount before transformations.
     pub sell_amount: String,
     /// Buy amount before transformations.
