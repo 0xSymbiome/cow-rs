@@ -17,9 +17,10 @@
 //!   only) when the decoded byte length does not match the const
 //!   generic `N`.
 //!
-//! Use [`decode_hex_field`] when the caller validates the length
-//! itself, and [`decode_hex_field_exact`] when the length is known at
-//! compile time and a `[u8; N]` return is preferred.
+//! Use [`crate::hex_field::decode_hex_field`] when the caller validates
+//! the length itself, and [`crate::hex_field::decode_hex_field_exact`]
+//! when the length is known at compile time and a `[u8; N]` return is
+//! preferred.
 
 use crate::errors::ContractsError;
 
