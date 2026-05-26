@@ -593,3 +593,61 @@ async fn read_contract_rejects_array_for_bool_argument() {
         "array argument for bool input must reject; got {result:?}",
     );
 }
+
+// -------------------------------------------------------------------------
+// Umbrella-side variant pins. The leaf provider's `execute_read_contract`
+// emits `AsyncProviderError::Validation` on every rejection path; the
+// umbrella's `From<AsyncProviderError>` impl preserves the discriminant so
+// `AlloyClient::read_contract` surfaces `AlloyClientError::Validation`
+// end-to-end. These pins lock that contract at the umbrella layer.
+// -------------------------------------------------------------------------
+
+#[tokio::test]
+async fn read_contract_invalid_abi_type_surfaces_validation_variant() {
+    use cow_sdk_alloy::AlloyClientError;
+
+    let response = "0x";
+    let client = client_with_eth_call(response).await;
+    let request = ContractCall::new(
+        Address::from_bytes([0x40; 20]),
+        "f".to_owned(),
+        r#"[{"type":"function","name":"f","inputs":[{"name":"x","type":"notatype"}],"outputs":[],"stateMutability":"view"}]"#
+            .to_owned(),
+        r#"["0"]"#.to_owned(),
+    );
+
+    let err = client
+        .read_contract(&request)
+        .await
+        .expect_err("malformed ABI type must reject the call");
+
+    assert!(
+        matches!(err, AlloyClientError::Validation(_)),
+        "expected AlloyClientError::Validation, got {err:?}",
+    );
+}
+
+#[tokio::test]
+async fn read_contract_overload_resolution_surfaces_validation_variant() {
+    use cow_sdk_alloy::AlloyClientError;
+
+    let response = "0x";
+    let client = client_with_eth_call(response).await;
+    let request = ContractCall::new(
+        Address::from_bytes([0x41; 20]),
+        "f".to_owned(),
+        r#"[{"type":"function","name":"f","inputs":[{"type":"uint256","name":"a"}],"outputs":[]},{"type":"function","name":"f","inputs":[{"type":"address","name":"a"}],"outputs":[]}]"#
+            .to_owned(),
+        r#"["0"]"#.to_owned(),
+    );
+
+    let err = client
+        .read_contract(&request)
+        .await
+        .expect_err("overloaded function must reject the call");
+
+    assert!(
+        matches!(err, AlloyClientError::Validation(_)),
+        "expected AlloyClientError::Validation, got {err:?}",
+    );
+}

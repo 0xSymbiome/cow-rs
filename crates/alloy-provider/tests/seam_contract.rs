@@ -156,3 +156,84 @@ async fn seam_rpc_error_to_class_and_detail_classifies_remote_error() {
         other => panic!("expected Remote variant, got {other:?}"),
     }
 }
+
+// -------------------------------------------------------------------------
+// Storage-hex format equivalence — pins the `B256::from(value).to_string()`
+// byte sequence against the historical width-64 format string so future
+// alloy releases that touch the `Display` impl on `FixedBytes` are caught
+// before the `HexData` consumers downstream.
+// -------------------------------------------------------------------------
+
+#[test]
+fn storage_value_hex_matches_legacy_width_64_format() {
+    use alloy_primitives::{B256, U256};
+
+    let cases = [
+        U256::ZERO,
+        U256::from(1_u64),
+        U256::from(0xdead_beef_u64),
+        U256::MAX,
+    ];
+
+    for value in cases {
+        let legacy = format!("0x{value:064x}");
+        let modern = B256::from(value).to_string();
+        assert_eq!(
+            legacy, modern,
+            "B256::from(U256).to_string() must match the legacy padded hex format for {value}",
+        );
+    }
+}
+
+// -------------------------------------------------------------------------
+// Read-contract seam entry — pins that the canonical read-contract
+// algorithm is reachable through the inter-crate seam and that
+// validation errors continue to surface as `AsyncProviderError::Validation`
+// so sibling adapter crates can rely on the variant discriminant.
+// -------------------------------------------------------------------------
+
+#[tokio::test]
+async fn read_contract_path_propagates_validation_for_malformed_args_json() {
+    use cow_sdk_alloy_provider::{AsyncProviderError, RpcAlloyProvider};
+    use cow_sdk_core::{AsyncProvider, ContractCall};
+    use wiremock::MockServer;
+
+    // Compile-time pin: reference the seam entry so the test crate fails
+    // to build if the inter-adapter seam ever loses the read-contract
+    // export. The reference is taken by path, not invoked, so it produces
+    // no runtime effect.
+    #[allow(
+        path_statements,
+        reason = "compile-time reference proves the seam symbol exists"
+    )]
+    {
+        __seam::execute_read_contract;
+    }
+
+    let server = MockServer::start().await;
+    let provider = RpcAlloyProvider::builder()
+        .http(server.uri())
+        .unwrap()
+        .build()
+        .await
+        .unwrap();
+    let _server: &'static MockServer = Box::leak(Box::new(server));
+
+    let request = ContractCall::new(
+        Address::new("0x0000000000000000000000000000000000000004")
+            .expect("static valid address parses"),
+        "allowance".to_owned(),
+        r#"[{"type":"function","name":"allowance","inputs":[{"type":"address","name":"owner"},{"type":"address","name":"spender"}],"outputs":[{"type":"uint256","name":""}],"stateMutability":"view"}]"#.to_owned(),
+        "not valid json".to_owned(),
+    );
+
+    let err = provider
+        .read_contract(&request)
+        .await
+        .expect_err("malformed args_json must reject the call");
+
+    assert!(
+        matches!(err, AsyncProviderError::Validation(_)),
+        "expected Validation variant, got {err:?}",
+    );
+}

@@ -123,10 +123,17 @@ The documented consumer surface is limited to `AlloyClient`,
 typestate markers explicitly exported from `lib.rs`, and the namespaced
 provider and signer re-exports of the leaf adapter public surfaces.
 
-The umbrella duplicates the read-contract and typed-data conversion modules
-from the leaf adapters by design. The workspace read-contract parity invariant
-asserts byte-for-byte equality for pinned ABI fixtures, and maintainers mirror
-bug fixes across both copies before submitting.
+The umbrella consumes the read-contract and typed-data conversion modules
+from the leaf adapters through their `#[doc(hidden)] __seam` entries. The
+provider leaf owns the `execute_read_contract` entry point and the
+JSON-RPC request, block-tag, receipt, and block-info conversions; the
+signer leaf owns the EIP-712 typed-data conversion and signature
+normalization. The workspace `alloy_read_contract_parity_invariant`
+integration test continues to assert byte-for-byte equality between the
+umbrella's `AlloyClient::read_contract` output and the leaf provider's
+`RpcAlloyProvider::read_contract` output for pinned ABI fixtures, even
+though both call sites now converge on the same function body — the test
+remains a regression pin against any future re-fork.
 
 ## Links
 

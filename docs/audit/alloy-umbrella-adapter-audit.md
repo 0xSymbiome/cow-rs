@@ -1,9 +1,9 @@
 # Alloy Umbrella Adapter Audit
 
 Status: Current
-Last reviewed: 2026-05-14
+Last reviewed: 2026-05-26
 Owning surface: `cow-sdk-alloy` `AlloyClient`, its builder, its `AsyncProvider` implementation, and its owned signer handle
-Refresh trigger: ADR 0038 - transaction lifecycle types, or changes to the umbrella public API, `AsyncProvider`, `AsyncSigningProvider`, `AsyncSigner`, wallet-filler transaction submission, typed-data conversion, chain-coherence validation, read-contract conversion parity, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
+Refresh trigger: ADR 0038 - transaction lifecycle types, or changes to the umbrella public API, `AsyncProvider`, `AsyncSigningProvider`, `AsyncSigner`, wallet-filler transaction submission, typed-data conversion, chain-coherence validation, read-contract consumption from the provider seam, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
 Related docs:
 - [ADR 0037](../adr/0037-alloy-umbrella-adapter.md)
 - [ADR 0024](../adr/0024-asyncprovider-asyncsigningprovider-capability-split.md)
@@ -27,7 +27,9 @@ This audit covers:
 - EIP-191, EIP-712, transaction submission, gas estimation, and raw
   transaction-signing behavior on the handle
 - `AlloyClientError` classification, redaction, and cancellation propagation
-- the provider-leaf conversion seam consumed by the umbrella crate
+- the provider-leaf and signer-leaf inter-crate seams consumed by the
+  umbrella crate for read-contract dispatch, typed-data conversion, and
+  signature normalization
 - dependency allow-lists for the native Alloy provider and signer-local family
 
 It does not cover upstream Alloy internals, browser-wallet behavior, live RPC
@@ -41,13 +43,13 @@ operator reliability, or smart-account signing.
 | Builder typestate | HTTP transport, private-key source, and chain id are selected before `build()` is available; marker states remain sealed | Conforms |
 | Chain coherence | `build_checked()` rejects configured-chain and remote-chain mismatches directly, while `verify_chain_id().await` exposes the same check for clients built through `build()` | Conforms |
 | Provider coverage | Every `AsyncProvider` method delegates through the inner Alloy provider with SDK-owned conversions | Conforms |
-| Read-contract parity | The umbrella read-contract decoder remains byte-for-byte aligned with the provider leaf for supported ABI outputs and rejects unsupported decoded shapes as validation errors | Conforms |
+| Read-contract parity | The umbrella's read-contract path consumes the provider leaf's `execute_read_contract` entry through the doc-hidden inter-crate seam and lifts the provider's error variants through the `From<AsyncProviderError> for AlloyClientError` impl. The workspace `alloy_read_contract_parity_invariant` integration test continues to assert byte-for-byte equality between the umbrella and the provider for pinned ABI fixtures as a regression pin against any future re-fork. | Conforms |
 | Signing-provider coverage | `create_signer` returns an owned handle that survives parent client drop | Conforms |
 | Typed-data signing | Canonical payload signing preserves the caller's primary type and matches the CoW order reference vector | Conforms |
 | Transaction behavior | `send_transaction` uses the Alloy wallet-filler provider and reads the broadcast hash through `*pending.tx_hash()` without waiting for confirmation; returns `TransactionBroadcast`. `get_transaction_receipt` delegates to the provider crate, which populates rich receipt fields from the Alloy receipt. `estimate_gas` delegates to the provider. | Conforms |
 | Raw transaction deferral | `sign_transaction` returns `UnsupportedTransactionRequest` without dispatching HTTP | Conforms |
 | Error and cancellation | Error classes cover validation, transport, remote, signing, pending transaction, unsupported request, cancelled, and internal failures; sensitive details are redacted | Conforms |
-| Stability boundary | Documented client, builder, trait, signer-handle, and error-class surfaces are consumer API; doc-hidden conversion seams are sibling-crate internals and not semver-guaranteed | Conforms |
+| Stability boundary | Documented client, builder, trait, signer-handle, and error-class surfaces are consumer API; the doc-hidden inter-crate seams on both the provider leaf (`cow_sdk_alloy_provider::__seam`) and the signer leaf (`cow_sdk_alloy_signer::__seam`) that the umbrella consumes are sibling-crate internals and not semver-guaranteed | Conforms |
 | Dependency boundary | The umbrella is the only crate, alongside the provider and signer leaves, allowed to consume the native Alloy provider and signer-local families | Conforms |
 
 ## Evidence

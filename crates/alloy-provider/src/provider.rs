@@ -9,7 +9,7 @@ use cow_sdk_core::{
     TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
-use alloy_primitives::U256;
+use alloy_primitives::{B256, U256};
 
 use crate::{
     builder::RpcAlloyProviderBuilder,
@@ -124,7 +124,7 @@ impl AsyncProvider for RpcAlloyProvider {
             .get_storage_at(*address.as_alloy(), slot)
             .await
             .map_err(AsyncProviderError::from_alloy_transport)?;
-        HexData::new(format!("0x{value:064x}"))
+        HexData::new(B256::from(value).to_string())
             .map_err(|error| AsyncProviderError::Internal(format!("storage conversion: {error}")))
     }
 

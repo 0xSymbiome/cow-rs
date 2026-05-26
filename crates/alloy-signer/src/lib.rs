@@ -47,3 +47,20 @@ pub use builder::{
 pub use error::{AsyncSignerError, AsyncSignerErrorClass};
 #[cfg(not(target_arch = "wasm32"))]
 pub use signer::LocalAlloyKeystoreSigner;
+
+/// Inter-crate seam for sibling `CoW` Protocol Alloy adapter crates.
+///
+/// This module is not a stable consumer API. Anything exported here may
+/// change without notice across minor releases; it exists so sibling
+/// adapter crates can reuse the reviewed EIP-712 typed-data conversion
+/// and signature normalization helpers without duplicating them.
+///
+/// See the Stability section of
+/// `docs/adr/0036-alloy-signer-adapter.md` for the semver posture.
+#[cfg(not(target_arch = "wasm32"))]
+#[doc(hidden)]
+pub mod __seam {
+    pub use crate::conversion::{
+        alloy_signature_to_hex, cow_flat_to_alloy_typed_data, cow_typed_data_payload_to_alloy,
+    };
+}

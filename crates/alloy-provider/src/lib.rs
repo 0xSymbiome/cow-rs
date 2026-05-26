@@ -138,4 +138,19 @@ pub mod __seam {
     ) -> RpcErrorClassification {
         crate::error::__transport_classification::rpc_error_to_class_and_detail(error).into()
     }
+
+    /// Executes the canonical read-contract algorithm.
+    ///
+    /// Inter-crate seam entry; not part of the semver-stable consumer API.
+    /// Sibling adapter crates use this to reuse the dynamic-ABI encode,
+    /// dispatch, decode, and JSON serialization path without copying it.
+    /// Errors propagate as [`crate::AsyncProviderError`] and may be lifted
+    /// into a sibling adapter's error type through that crate's
+    /// [`From`] impl. The argument shape may change in any minor release.
+    pub async fn execute_read_contract(
+        provider: &alloy_provider::DynProvider<alloy_network::Ethereum>,
+        request: &cow_sdk_core::ContractCall,
+    ) -> Result<String, crate::AsyncProviderError> {
+        crate::read_contract::execute_read_contract(provider, request).await
+    }
 }

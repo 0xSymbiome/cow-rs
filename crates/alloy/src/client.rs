@@ -11,7 +11,8 @@ use cow_sdk_core::{
     HexData, TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
-use alloy_primitives::U256;
+use alloy_primitives::{B256, U256};
+use cow_sdk_alloy_provider::__seam::execute_read_contract as execute_read_contract_seam;
 
 use crate::{
     builder::AlloyClientBuilder,
@@ -20,7 +21,6 @@ use crate::{
     },
     error::AlloyClientError,
     handle::AlloyClientSignerHandle,
-    read_contract::execute_read_contract,
 };
 
 pub(crate) struct AlloyClientInner {
@@ -168,7 +168,7 @@ impl AsyncProvider for AlloyClient {
             .get_storage_at(*address.as_alloy(), slot)
             .await
             .map_err(AlloyClientError::from_alloy_transport)?;
-        HexData::new(format!("0x{value:064x}"))
+        HexData::new(B256::from(value).to_string())
             .map_err(|error| AlloyClientError::Internal(format!("storage conversion: {error}")))
     }
 
@@ -184,7 +184,9 @@ impl AsyncProvider for AlloyClient {
     }
 
     async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
-        execute_read_contract(&self.inner.provider, request).await
+        execute_read_contract_seam(&self.inner.provider, request)
+            .await
+            .map_err(AlloyClientError::from)
     }
 
     async fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error> {

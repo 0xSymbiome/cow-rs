@@ -1,9 +1,9 @@
 # Alloy Provider Adapter Audit
 
 Status: Current
-Last reviewed: 2026-05-14
+Last reviewed: 2026-05-26
 Owning surface: `cow-sdk-alloy-provider` `RpcAlloyProvider`, its builder, and its `AsyncProvider` implementation
-Refresh trigger: ADR 0038 - rich receipt population, or changes to the provider public API, the `AsyncProvider` trait, transport classification, the `read_contract` algorithm, the workspace Alloy runtime pin, or the crate dependency boundary
+Refresh trigger: ADR 0038 - rich receipt population, or changes to the provider public API, the `AsyncProvider` trait, transport classification, the `read_contract` algorithm, the inter-crate seam entries consumed by sibling Alloy adapters, the workspace Alloy runtime pin, or the crate dependency boundary
 Related docs:
 - [ADR 0035](../adr/0035-alloy-provider-adapter.md)
 - [ADR 0038](../adr/0038-transaction-lifecycle-types.md)
@@ -22,7 +22,9 @@ This audit covers:
 - the `AsyncProviderError` and `AsyncProviderErrorClass` surfaces
 - conversion between `cow-sdk-core` domain types and Alloy RPC values
 - the `read_contract` ABI encode, dispatch, decode, and JSON result path
-- the doc-hidden helper seam used by sibling Alloy adapter crates
+- the doc-hidden helper seam used by sibling Alloy adapter crates,
+  including the `execute_read_contract` entry that the umbrella adapter
+  consumes for its own `AsyncProvider::read_contract` implementation
 - dependency boundaries for the read-only provider crate
 
 It does not cover upstream Alloy internals, signer or wallet support, WS or IPC
@@ -52,8 +54,9 @@ transport support, browser-wallet behavior, or transaction submission.
 private state and keeps raw transport labels out of debug output.
 
 The `__seam` module is `#[doc(hidden)]` and exists only for sibling `cow-rs`
-Alloy adapter crates. Its conversion and classification functions are not part
-of the documented consumer API and are not semver-guaranteed for downstream
+Alloy adapter crates. Its conversion, classification, and read-contract
+functions (including `execute_read_contract`) are not part of the
+documented consumer API and are not semver-guaranteed for downstream
 consumers.
 
 ### Provider Methods

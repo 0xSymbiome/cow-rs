@@ -75,6 +75,15 @@ The documented consumer surface is limited to `LocalAlloyKeystoreSigner`,
 `LocalAlloyKeystoreSignerBuilder`, `AsyncSignerError`, and the typestate
 markers explicitly exported from `lib.rs`.
 
+The signer crate also exposes a `#[doc(hidden)] pub mod __seam` module
+following the same posture as `cow_sdk_alloy_provider::__seam`. The seam
+re-exports the EIP-712 typed-data conversion helpers
+(`cow_typed_data_payload_to_alloy`, `cow_flat_to_alloy_typed_data`) and
+the shared signature normalizer (`alloy_signature_to_hex`) so the
+sibling umbrella adapter can consume them without duplicating the
+implementation. Anything inside the seam may change without notice in
+any minor release.
+
 ## Links
 
 - [Alloy Provider Adapter ADR](0035-alloy-provider-adapter.md)

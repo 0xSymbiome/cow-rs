@@ -14,6 +14,52 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `docs/alloy-doctrine.md` is published as the canonical human-readable
+  consolidation of the cow-rs ↔ alloy classification. The doctrine
+  documents the three-bucket rule (ALWAYS-ALLOY, COW-OWNED,
+  BOUNDARY-ADAPTER), the decision tree for assigning a new primitive
+  to a bucket, six worked examples (EIP-2930 access lists, adding a
+  new chain, a new wallet provider, EIP-4844 blob transactions,
+  post-quantum signing, and an alloy major U256 API change), and the
+  canonical roster of nine never-swap exceptions. The doc is
+  read-only over the ADR set; doctrine evolution requires an ADR
+  amendment plus a refresh of the supporting-ADR lists in
+  `.github/config/principle-adr-map.yaml`. `docs/README.md` and
+  `docs/principles.md` cross-link the doctrine under "Focused
+  Reviews And Design History", "Chain-RPC Runtime Neutrality", and
+  "Canonical Contract Bindings".
+
+- `.github/workflows/never-swap-gates.yml` adds eight CI grep gates
+  that mechanically fence the never-swap surfaces: ECDSA `v`
+  normalization (ADR 0022), `Amount` and `SignedAmount` radix
+  sniffing (ADR 0052), `Address::Display` lowercase (ADR 0052),
+  the `alloy-chains` workspace-dependency ban (ADR 0005, ADR 0011),
+  `TypedDataDomain` DTO field shape (ADR 0052, ADR 0040), the
+  EIP-1271 Shape A vs Shape B encoder distinctness (ADR 0050), the
+  REST transport versus alloy JSON-RPC fence (ADR 0010, ADR 0019,
+  ADR 0041, ADR 0046), and a census gate that locks the count of
+  inline `DO NOT SWAP` comment blocks at ten. The five
+  source-scanning gates filter out `//`-prefixed lines so the
+  explanatory text inside the `DO NOT SWAP` blocks does not
+  self-trigger them.
+
+- Ten inline `DO NOT SWAP` comment blocks anchor the doctrine at the
+  load-bearing call sites across `crates/contracts/src/signature.rs`
+  (above `normalized_ecdsa_signature`), `crates/core/src/types/amount.rs`
+  (paired blocks above `Amount::new` and `SignedAmount::new`),
+  `crates/core/src/types/identity.rs` (above `impl fmt::Display for
+  Address`), `crates/core/src/config/chains.rs` (paired blocks above
+  `SupportedChainId` and `api_path`),
+  `crates/core/src/traits/typed_data.rs` (above
+  `pub struct TypedDataDomain`),
+  `crates/signing/src/eip1271/sol_types.rs` (above the `sol!`
+  block),
+  `crates/transport-policy/src/retry_after.rs` (above
+  `parse_retry_after`), and `crates/transport-wasm/src/fetch.rs`
+  (module-level, anchoring the `AbortController` lifecycle). Each
+  block cites the binding ADR, the corresponding doctrine row, and
+  the CI gate that mechanizes the fence.
+
 - New CI gate `cargo parity-verify-sol-provenance` enforces a
   byte-identity contract on every `.sol` file under
   `crates/contracts/abi/`. All 37 shipped files are byte-identical
@@ -159,6 +205,47 @@ The first functional crate-family release begins at `0.1.0`.
   in place as the audit trail for the prior shape.
 
 ### Changed
+
+- The native composed `cow-sdk-alloy` adapter no longer duplicates the
+  read-contract and EIP-712 typed-data conversion modules from the
+  leaf adapters. `AlloyClient::read_contract` consumes
+  `cow_sdk_alloy_provider::__seam::execute_read_contract` and lifts
+  the leaf's `AsyncProviderError` into `AlloyClientError` through the
+  existing `From` impl. The umbrella's typed-data conversion module
+  is reduced to a thin re-export shim over both leaf adapters'
+  inter-crate seams. The previous 461-line
+  `crates/alloy/src/read_contract.rs` and the duplicated ~90-line
+  typed-data block in `crates/alloy/src/conversion.rs` are retired.
+  Behaviour is byte-identical, and the workspace
+  `alloy_read_contract_parity_invariant` integration test continues
+  to assert byte-for-byte equality between the umbrella and the
+  provider for pinned ABI fixtures as a regression pin against any
+  future re-fork. ADR 0037's Stability section is amended to
+  describe the seam-based consumption posture.
+
+- `cow-sdk-alloy-provider`'s `#[doc(hidden)] __seam` module exposes
+  `execute_read_contract` so sibling adapter crates reuse the
+  canonical dynamic-ABI encode, dispatch, decode, and JSON
+  serialization path without copying it. Inter-crate seam, not a
+  stable consumer API; the seam may change without notice in any
+  minor release per ADR 0035.
+
+- `cow-sdk-alloy-signer` introduces a `#[doc(hidden)] pub mod __seam`
+  module following the provider's posture. The seam re-exports the
+  EIP-712 typed-data conversion helpers
+  (`cow_typed_data_payload_to_alloy`, `cow_flat_to_alloy_typed_data`)
+  and the shared signature normalizer (`alloy_signature_to_hex`).
+  Inter-crate seam, not a stable consumer API; the seam may change
+  without notice in any minor release per ADR 0036.
+
+- `cow-sdk-alloy-provider::RpcAlloyProvider::get_storage_at` and
+  `cow-sdk-alloy::AlloyClient::get_storage_at` build the
+  0x-prefixed 64-hex storage value through
+  `alloy_primitives::B256::from(value).to_string()` instead of a
+  manual width-64 format string. Output is byte-identical; the new
+  `crates/alloy-provider/tests/seam_contract.rs::storage_value_hex_matches_legacy_width_64_format`
+  test pins the equivalence against four representative `U256`
+  values (`ZERO`, `1`, `0xdeadbeef`, `MAX`).
 
 - `cow_sdk_core::TypedDataDomain` carries an inherent
   `into_alloy_domain(&self) -> alloy_sol_types::Eip712Domain` adapter

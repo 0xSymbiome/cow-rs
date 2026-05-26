@@ -13,7 +13,13 @@ use cow_sdk_core::{TypedDataDomain, TypedDataField, TypedDataPayload};
 /// placeholder primary type `"Message"`. Canonical `CoW` order signing must
 /// use [`cow_typed_data_payload_to_alloy`] so the original primary type is
 /// preserved.
-pub(crate) fn cow_flat_to_alloy_typed_data(
+///
+/// # Errors
+///
+/// Returns the error returned by [`cow_typed_data_payload_to_alloy`] when the
+/// underlying typed-data payload cannot be converted into Alloy's dynamic
+/// typed-data shape.
+pub fn cow_flat_to_alloy_typed_data(
     domain: &TypedDataDomain,
     fields: &[TypedDataField],
     value_json: &str,
@@ -33,7 +39,15 @@ pub(crate) fn cow_flat_to_alloy_typed_data(
 ///
 /// This is the canonical EIP-712 path because it preserves the payload's
 /// primary type and full type map end to end.
-pub(crate) fn cow_typed_data_payload_to_alloy(
+///
+/// # Errors
+///
+/// Returns a descriptive error string when the payload's primary type is not
+/// defined in the type map, when a declared field carries an unsupported or
+/// invalid EIP-712 kind, when the payload's message JSON cannot be parsed, or
+/// when Alloy rejects the resulting typed-data shape during the EIP-712
+/// signing-hash computation.
+pub fn cow_typed_data_payload_to_alloy(
     payload: &TypedDataPayload,
 ) -> Result<TypedData, String> {
     let domain = payload.domain.into_alloy_domain();
@@ -101,7 +115,13 @@ fn property_def(type_name: &str, field: &TypedDataField) -> Result<PropertyDef, 
 /// Routing through `cow_sdk_contracts::normalized_ecdsa_signature` keeps the
 /// signer leaf aligned with the workspace's single recovery-byte normalization
 /// authority.
-pub(crate) fn alloy_signature_to_hex(
+///
+/// # Errors
+///
+/// Returns the [`cow_sdk_contracts::ContractsError`] surfaced by
+/// `normalized_ecdsa_signature` when the hex-encoded signature is not exactly
+/// 65 bytes or carries an unsupported recovery byte.
+pub fn alloy_signature_to_hex(
     signature: &Signature,
 ) -> Result<String, cow_sdk_contracts::ContractsError> {
     let raw = format!("0x{}", hex::encode(signature.as_bytes()));

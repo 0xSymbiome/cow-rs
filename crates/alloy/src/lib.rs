@@ -49,8 +49,6 @@ mod conversion;
 mod error;
 #[cfg(not(target_arch = "wasm32"))]
 mod handle;
-#[cfg(not(target_arch = "wasm32"))]
-mod read_contract;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use builder::{

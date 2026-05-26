@@ -13,7 +13,7 @@ use serde_json::Value;
 use crate::error::AsyncProviderError;
 
 /// Executes the canonical read-contract algorithm through an Alloy provider.
-pub(crate) async fn execute_read_contract(
+pub async fn execute_read_contract(
     provider: &DynProvider<Ethereum>,
     request: &ContractCall,
 ) -> Result<String, AsyncProviderError> {

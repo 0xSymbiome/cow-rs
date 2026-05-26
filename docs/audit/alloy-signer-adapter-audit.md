@@ -1,9 +1,9 @@
 # Alloy Signer Adapter Audit
 
 Status: Current
-Last reviewed: 2026-05-07
+Last reviewed: 2026-05-26
 Owning surface: `cow-sdk-alloy-signer` `LocalAlloyKeystoreSigner`, its builder, and its `AsyncSigner` implementation
-Refresh trigger: ADR 0038 - `send_transaction` return type clarification, or changes to the signer public API, the `AsyncSigner` trait, typed-data conversion, signature normalization, cancellation propagation, the workspace Alloy signer pin, or the crate dependency boundary
+Refresh trigger: ADR 0038 - `send_transaction` return type clarification, or changes to the signer public API, the `AsyncSigner` trait, typed-data conversion, signature normalization, the inter-crate seam entries consumed by sibling Alloy adapters, cancellation propagation, the workspace Alloy signer pin, or the crate dependency boundary
 Related docs:
 - [ADR 0036](../adr/0036-alloy-signer-adapter.md)
 - [ADR 0038](../adr/0038-transaction-lifecycle-types.md)
@@ -23,6 +23,8 @@ This audit covers:
 - the `AsyncSignerError` and `AsyncSignerErrorClass` surfaces
 - conversion from SDK EIP-712 typed-data payloads into Alloy dynamic typed data
 - EIP-191 and EIP-712 signature normalization through `cow-sdk-contracts`
+- the doc-hidden inter-crate seam that re-exports the typed-data conversion
+  and signature normalization helpers for sibling Alloy adapter crates
 - cancellation propagation through the signer error type
 - dependency boundaries for the local signer crate
 
@@ -51,6 +53,14 @@ or submission, browser-wallet behavior, or smart-account signing.
 `LocalAlloyKeystoreSignerBuilderError`, `AsyncSignerError`, and
 `AsyncSignerErrorClass`. The signer stores the upstream Alloy private-key
 signer in private state and redacts it from debug output.
+
+The crate also exposes a `#[doc(hidden)] pub mod __seam` module so
+sibling `cow-rs` Alloy adapter crates can reuse the EIP-712 typed-data
+conversion helpers (`cow_typed_data_payload_to_alloy`,
+`cow_flat_to_alloy_typed_data`) and the shared signature normalizer
+(`alloy_signature_to_hex`) without duplicating the implementation.
+Anything inside the seam is not part of the documented consumer API and
+is not semver-guaranteed for downstream consumers.
 
 The builder accepts hex or raw 32-byte private keys and a
 `cow_sdk_core::SupportedChainId`. Invalid key material returns a typed builder
