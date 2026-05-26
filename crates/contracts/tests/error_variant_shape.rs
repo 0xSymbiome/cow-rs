@@ -129,7 +129,7 @@ fn forbidden_interaction_target_carries_typed_target_address() {
 
 #[test]
 fn decode_hex_variant_wraps_hex_from_hex_error_source() {
-    let source = hex::decode("zzzz").unwrap_err();
+    let source = alloy_primitives::hex::decode("zzzz").unwrap_err();
     let error = ContractsError::DecodeHex {
         field: "appData",
         source,

@@ -177,7 +177,7 @@ pub fn required_vault_roles(
             let role = role_hash(vault_address, *selector);
             Ok(RequiredVaultRole::new(
                 (*method).to_owned(),
-                format!("0x{}", hex::encode(selector)),
+                format!("0x{}", alloy_primitives::hex::encode(selector)),
                 role,
             ))
         })
@@ -246,6 +246,6 @@ fn role_hash(vault_address: &Address, selector: [u8; 4]) -> String {
     packed[32..36].copy_from_slice(&selector);
     format!(
         "0x{}",
-        hex::encode(alloy_primitives::keccak256(packed).as_slice())
+        alloy_primitives::hex::encode(alloy_primitives::keccak256(packed).as_slice())
     )
 }

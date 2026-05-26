@@ -316,3 +316,30 @@ accessor.
 **Proven by:**
 
 - [Shared Logic Reviewability Audit](../audit/shared-logic-reviewability-audit.md)
+
+## Amendment 2026-05-26: retire direct `hex` dependency from contracts and signing
+
+The canonical hex API for the cow workspace is `alloy_primitives::hex::*`,
+which resolves to the `const-hex` crate re-exported through
+`alloy-primitives 1.5.x`. The doctrinal boundary that previously closed
+on `cow-sdk-core` now closes on `cow-sdk-contracts` and `cow-sdk-signing`
+as well: every production `hex::encode` and `hex::decode` callsite under
+`crates/contracts/src/**` and `crates/signing/src/**` routes through
+`alloy_primitives::hex::{encode, decode}`, and both crates retire their
+`[dependencies]` declaration of the upstream `hex` crate.
+
+The `ContractsError::DecodeHex { source }` variant carries the typed
+`alloy_primitives::hex::FromHexError` value (a re-export of
+`const_hex::FromHexError`) so the production error surface no longer
+references the upstream `hex` crate's error type. The variant remains
+`#[non_exhaustive]` through the enum-level marker.
+
+A permanent carve-out remains for `[dev-dependencies]`: any cow crate
+whose integration tests parse hex fixtures may continue to declare
+`hex.workspace = true` under `[dev-dependencies]` without violating the
+canonical-primitive-layer mandate. The carve-out applies to test
+fixture parsing only and does not extend to production code.
+
+**Proven by:**
+
+- [Dependency Gate Audit](../audit/dependency-gate-audit.md)

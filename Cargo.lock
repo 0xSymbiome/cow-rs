@@ -1352,6 +1352,7 @@ dependencies = [
 name = "cow-sdk"
 version = "0.1.0"
 dependencies = [
+ "alloy-primitives",
  "alloy-sol-types",
  "cow-sdk-alloy",
  "cow-sdk-alloy-provider",

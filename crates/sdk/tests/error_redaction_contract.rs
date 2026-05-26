@@ -375,7 +375,7 @@ fn contracts_and_signing_errors_redact_secret_bearing_messages() {
         ContractsError::Abi(alloy_sol_types::Error::Overrun),
         ContractsError::DecodeHex {
             field: "signature",
-            source: hex::decode("zz").unwrap_err(),
+            source: alloy_primitives::hex::decode("zz").unwrap_err(),
         },
         ContractsError::InvalidHexPrefix { field: "signature" },
         ContractsError::InvalidDecodedLength {

@@ -273,7 +273,7 @@ mod tests {
         assert_eq!(sol_order.eip712_hash_struct().0, expected_struct_hash);
         assert_eq!(
             hash_order(&domain, &order).unwrap().to_hex_string(),
-            format!("0x{}", hex::encode(expected_digest))
+            format!("0x{}", alloy_primitives::hex::encode(expected_digest))
         );
     }
 

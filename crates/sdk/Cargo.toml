@@ -73,6 +73,7 @@ cow-sdk-core = { path = "../core", version = "0.1.0" }
 thiserror.workspace = true
 
 [dev-dependencies]
+alloy-primitives.workspace = true
 alloy-sol-types.workspace = true
 cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0" }
 hex.workspace = true

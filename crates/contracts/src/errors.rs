@@ -68,8 +68,8 @@ pub enum ContractsError {
     /// The verifier returned an unexpected EIP-1271 magic value.
     #[error(
         "unexpected EIP-1271 magic value: expected 0x{}, got 0x{}",
-        hex::encode(expected),
-        hex::encode(actual)
+        alloy_primitives::hex::encode(expected),
+        alloy_primitives::hex::encode(actual)
     )]
     Eip1271MagicValueMismatch {
         /// Expected 4-byte magic value.
@@ -118,14 +118,14 @@ pub enum ContractsError {
     #[error("ABI error: {0}")]
     Abi(#[from] alloy_sol_types::Error),
     /// Hex decoding failed for a named field; the underlying
-    /// [`hex::FromHexError`] is preserved in the error-source chain.
+    /// [`alloy_primitives::hex::FromHexError`] is preserved in the error-source chain.
     #[error("hex decode error for field `{field}`: {source}")]
     DecodeHex {
         /// Public field or payload name that failed to decode.
         field: &'static str,
         /// Typed hex-decode error sourced from the decoder.
         #[source]
-        source: hex::FromHexError,
+        source: alloy_primitives::hex::FromHexError,
     },
     /// A hexadecimal payload was not `0x`-prefixed.
     #[error("field `{field}` must be 0x-prefixed hexadecimal data")]

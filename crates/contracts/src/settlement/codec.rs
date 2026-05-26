@@ -146,11 +146,11 @@ fn normalize_signature_hex(value: &str) -> Result<String, ContractsError> {
     let stripped = value
         .strip_prefix("0x")
         .ok_or(ContractsError::InvalidHexPrefix { field: "signature" })?;
-    let bytes = hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
+    let bytes = alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
         field: "signature",
         source,
     })?;
-    Ok(format!("0x{}", hex::encode(bytes)))
+    Ok(format!("0x{}", alloy_primitives::hex::encode(bytes)))
 }
 
 /// Encodes a normalized order, signature, and execution into a settlement trade.
@@ -213,7 +213,7 @@ pub(super) fn encode_settle_call(
             .strip_prefix("0x")
             .ok_or(ContractsError::InvalidHexPrefix { field })?;
         let bytes =
-            hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source })?;
+            alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source })?;
         Ok(SolBytes::from(bytes))
     }
 

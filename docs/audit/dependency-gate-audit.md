@@ -1,7 +1,7 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-05-26
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, the canonical primitive layer dependency closure per ADR 0052, or browser-wallet alloy advisory posture
 Related docs:
@@ -131,6 +131,27 @@ to parse `Retry-After` HTTP-date headers), and `serde_jcs 0.2.0`
 (consumed by `cow-sdk-app-data` for the RFC 8785 canonical JSON that
 feeds the keccak256 digest input) are consumed at the callsites
 enumerated by their respective per-surface audits.
+
+The workspace also retains the `hex = "0.4.3"` declaration at the
+workspace-dependencies level so the per-crate `[dev-dependencies]`
+`hex.workspace = true` declarations across `cow-sdk-core`,
+`cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-cow-shed`, and the
+`cow-sdk` facade resolve for their integration-test fixture parsing
+paths. `cow-sdk-core`, `cow-sdk-contracts`, and `cow-sdk-signing` do
+not declare a production direct dependency on the upstream `hex`
+crate: all production hex encode and decode callsites under
+`crates/contracts/src/**` and `crates/signing/src/**` route through
+`alloy_primitives::hex::{encode, decode}`, which resolves to the
+`const-hex 1.18.x` re-export carried by `alloy-primitives 1.5.x`. The
+`ContractsError::DecodeHex { source }` variant carries the typed
+`alloy_primitives::hex::FromHexError` value (a re-export of
+`const_hex::FromHexError`) so the production error surface no longer
+references the upstream `hex` crate's error type. The native Alloy
+adapter family (`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`,
+`cow-sdk-alloy`), `cow-sdk-app-data`, `cow-sdk-trading`,
+`cow-sdk-browser-wallet`, and `cow-sdk-wasm` continue to declare
+`hex.workspace = true` under `[dependencies]` at the per-crate level
+consistent with each crate's own per-surface audit posture.
 
 ### Workspace Default-Feature Policy
 

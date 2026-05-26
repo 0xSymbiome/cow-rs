@@ -98,7 +98,7 @@ fn decode_hex_field(value: &str, field: &'static str) -> Result<Vec<u8>, Contrac
     let stripped = value
         .strip_prefix("0x")
         .ok_or(ContractsError::InvalidHexPrefix { field })?;
-    hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source })
+    alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source })
 }
 
 /// Returns the canonical production deployment addresses for a supported chain.
@@ -178,9 +178,9 @@ mod tests {
     #[test]
     fn deployment_hash_input_matches_the_keccak_of_bytecode_and_arguments() {
         let (bytecode, deployment_arguments) = sample_init_code_parts();
-        let mut init_code = hex::decode(bytecode.trim_start_matches("0x")).unwrap();
-        init_code.extend_from_slice(&hex::decode("1234").unwrap());
-        init_code.extend_from_slice(&hex::decode("abcd").unwrap());
+        let mut init_code = alloy_primitives::hex::decode(bytecode.trim_start_matches("0x")).unwrap();
+        init_code.extend_from_slice(&alloy_primitives::hex::decode("1234").unwrap());
+        init_code.extend_from_slice(&alloy_primitives::hex::decode("abcd").unwrap());
 
         assert_eq!(
             deployment_address_hash_input(bytecode, &deployment_arguments).unwrap(),
@@ -192,8 +192,8 @@ mod tests {
     fn deterministic_deployment_address_matches_the_create2_formula() {
         let (bytecode, deployment_arguments) = sample_init_code_parts();
         let hash = deployment_address_hash_input(bytecode, &deployment_arguments).unwrap();
-        let deployer = hex::decode(DEPLOYER_CONTRACT.trim_start_matches("0x")).unwrap();
-        let salt = hex::decode(SALT.trim_start_matches("0x")).unwrap();
+        let deployer = alloy_primitives::hex::decode(DEPLOYER_CONTRACT.trim_start_matches("0x")).unwrap();
+        let salt = alloy_primitives::hex::decode(SALT.trim_start_matches("0x")).unwrap();
 
         let mut payload = Vec::with_capacity(85);
         payload.push(0xff);
@@ -206,7 +206,7 @@ mod tests {
             deterministic_deployment_address(bytecode, &deployment_arguments)
                 .unwrap()
                 .to_hex_string(),
-            format!("0x{}", hex::encode(&expected[12..]))
+            format!("0x{}", alloy_primitives::hex::encode(&expected[12..]))
         );
     }
 }

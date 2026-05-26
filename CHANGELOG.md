@@ -206,6 +206,36 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow-sdk-contracts`: the `ContractsError::DecodeHex { source }` typed
+  source field is now `alloy_primitives::hex::FromHexError` (a re-export
+  of `const_hex::FromHexError`). The variant remains `#[non_exhaustive]`
+  through the enum-level marker, and the public Display rendering of
+  the variant itself is unchanged on every input. The inner
+  `OddLength` source variant's `Display` rendering changes from
+  `"Odd number of digits"` (upstream `hex` crate) to `"odd number of
+  digits"` (alloy primitive layer); the `InvalidHexCharacter { c,
+  index }` and `InvalidStringLength` source variants' renderings are
+  byte-stable. Downstream consumers that pin the typed source via a
+  `match` against `hex::FromHexError` variants or via
+  `std::error::Error::source()` downcast must update their type path;
+  consumers that match the variant wildcard or extract the outer
+  `Display` rendering are unaffected.
+
+- `cow-sdk-contracts` and `cow-sdk-signing`: the production-graph
+  dependency on the upstream `hex` crate is retired. Both crates now
+  resolve `hex` only through the `alloy-primitives → const-hex`
+  transitive path. Every production `hex::encode` and `hex::decode`
+  callsite under `crates/contracts/src/**` and
+  `crates/signing/src/**` (covering EIP-1271 signature payload
+  encoding, normalized ECDSA signatures, vault role hashes,
+  settlement codec, EIP-1967 proxy storage decode, deployment address
+  derivation, EIP-712 envelope assembly, and the domain-separator
+  hex serialization) is re-pointed to `alloy_primitives::hex::*`.
+  Output is byte-stable on every input. The integration test suites
+  of both crates continue to consume the upstream `hex` crate through
+  new `[dev-dependencies]` declarations, so the integration-test
+  files are unchanged in this release.
+
 - The native composed `cow-sdk-alloy` adapter no longer duplicates the
   read-contract and EIP-712 typed-data conversion modules from the
   leaf adapters. `AlloyClient::read_contract` consumes

@@ -274,7 +274,7 @@ mod tests {
 
     fn word_hex(bytes: &[u8], index: usize) -> String {
         let start = 4 + index * 32;
-        hex::encode(&bytes[start..start + 32])
+        alloy_primitives::hex::encode(&bytes[start..start + 32])
     }
 
     #[test]
@@ -369,7 +369,7 @@ mod tests {
         let mut order = sample_order();
         order.quote_id = -1;
         let encoded = encode_create_order_calldata(&order);
-        let word_hex = hex::encode(&encoded[4 + 8 * 32..4 + 9 * 32]);
+        let word_hex = alloy_primitives::hex::encode(&encoded[4 + 8 * 32..4 + 9 * 32]);
         assert_eq!(
             word_hex, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
             "negative int64 quote id must sign-extend to a full 256-bit two's-complement word",
