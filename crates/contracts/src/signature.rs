@@ -8,6 +8,7 @@ use cow_sdk_core::{Address, AsyncProvider, Hash32, HexData, Provider};
 
 use crate::ContractsError;
 use crate::eip1271::IERC1271;
+use crate::hex_field::{decode_hex_field, decode_hex_field_exact};
 
 pub(crate) const EIP1271_IS_VALID_SIGNATURE_ABI_JSON: &str = r#"[{"type":"function","name":"isValidSignature","inputs":[{"name":"hash","type":"bytes32"},{"name":"signature","type":"bytes"}],"outputs":[{"name":"","type":"bytes4"}],"stateMutability":"view"}]"#;
 
@@ -178,7 +179,7 @@ impl Signature {
         };
 
         let normalized = normalized_ecdsa_signature(data)?;
-        let signature_bytes = decode_hex_exact(&normalized, "signature", 65)?;
+        let signature_bytes = decode_hex_field_exact::<65>("signature", &normalized)?;
         let signature = AlloySignature::from_raw(&signature_bytes)
             .map_err(|error| signature_recovery_error(&error))?;
         let prehash = match scheme {
@@ -217,7 +218,7 @@ pub fn encode_eip1271_signature_data(
 ) -> Result<String, ContractsError> {
     let mut payload = Vec::new();
     payload.extend_from_slice(&data.verifier.into_alloy().0.0);
-    payload.extend_from_slice(&decode_hex(&data.signature, "signature")?);
+    payload.extend_from_slice(&decode_hex_field("signature", &data.signature)?);
     Ok(alloy_primitives::hex::encode_prefixed(payload))
 }
 
@@ -241,7 +242,7 @@ pub fn encode_eip1271_signature_data(
 pub fn decode_eip1271_signature_data(
     signature: &str,
 ) -> Result<Eip1271SignatureData, ContractsError> {
-    let bytes = decode_hex(signature, "signature")?;
+    let bytes = decode_hex_field("signature", signature)?;
     if bytes.len() < 20 {
         return Err(ContractsError::InvalidEip1271SignatureData);
     }
@@ -300,7 +301,7 @@ pub fn decode_signing_scheme(flags: u8) -> Result<SigningScheme, ContractsError>
 // canonicalization.
 // CI gate: .github/workflows/never-swap-gates.yml#gate-ecdsa-v.
 pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> {
-    let mut bytes = decode_hex(data, "signature")?;
+    let mut bytes = decode_hex_field("signature", data)?;
     if bytes.len() != 65 {
         return Err(ContractsError::InvalidSignatureLength {
             actual: bytes.len(),
@@ -436,41 +437,11 @@ pub(crate) fn decode_magic_value_response(raw: &str) -> Result<[u8; 4], Contract
         Err(_) => raw.to_owned(),
     };
 
-    let bytes = decode_hex_exact(&candidate, "magicValue", 4).map_err(|_| {
+    let bytes: [u8; 4] = decode_hex_field_exact::<4>("magicValue", &candidate).map_err(|_| {
         ContractsError::MalformedEip1271Response {
             response: raw.to_owned().into(),
         }
     })?;
-    let mut out = [0u8; 4];
-    out.copy_from_slice(&bytes);
-    Ok(out)
-}
-
-/// Decodes a `0x`-prefixed hex string into raw bytes, mapping prefix and
-/// character errors onto the contracts-side typed error surface.
-fn decode_hex(value: &str, field: &'static str) -> Result<Vec<u8>, ContractsError> {
-    let stripped = value
-        .strip_prefix("0x")
-        .ok_or(ContractsError::InvalidHexPrefix { field })?;
-    alloy_primitives::hex::decode(stripped)
-        .map_err(|source| ContractsError::DecodeHex { field, source })
-}
-
-/// Decodes a `0x`-prefixed hex string and asserts it decodes to exactly
-/// `expected` bytes.
-fn decode_hex_exact(
-    value: &str,
-    field: &'static str,
-    expected: usize,
-) -> Result<Vec<u8>, ContractsError> {
-    let bytes = decode_hex(value, field)?;
-    if bytes.len() != expected {
-        return Err(ContractsError::InvalidDecodedLength {
-            field,
-            expected,
-            actual: bytes.len(),
-        });
-    }
     Ok(bytes)
 }
 

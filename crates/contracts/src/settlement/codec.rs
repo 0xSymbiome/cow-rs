@@ -2,6 +2,7 @@ use cow_sdk_core::{Address, Amount, BuyTokenDestination, OrderKind, SellTokenSou
 
 use crate::{
     ContractsError,
+    hex_field::decode_hex_field,
     interaction::Interaction,
     order::{NormalizedOrder, Order},
     signature::{Signature, decode_signing_scheme, encode_eip1271_signature_data},
@@ -143,14 +144,7 @@ pub fn encode_signature_data(signature: &Signature) -> Result<String, ContractsE
 /// Decodes a `0x`-prefixed hex string and re-encodes it as canonical lowercase
 /// hex so the wire form stays byte-identical regardless of input casing.
 fn normalize_signature_hex(value: &str) -> Result<String, ContractsError> {
-    let stripped = value
-        .strip_prefix("0x")
-        .ok_or(ContractsError::InvalidHexPrefix { field: "signature" })?;
-    let bytes =
-        alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
-            field: "signature",
-            source,
-        })?;
+    let bytes = decode_hex_field("signature", value)?;
     Ok(alloy_primitives::hex::encode_prefixed(bytes))
 }
 
@@ -209,13 +203,8 @@ pub(super) fn encode_settle_call(
         *address.as_alloy()
     }
 
-    fn hex_to_bytes(value: &str, field: &'static str) -> Result<SolBytes, ContractsError> {
-        let stripped = value
-            .strip_prefix("0x")
-            .ok_or(ContractsError::InvalidHexPrefix { field })?;
-        let bytes = alloy_primitives::hex::decode(stripped)
-            .map_err(|source| ContractsError::DecodeHex { field, source })?;
-        Ok(SolBytes::from(bytes))
+    fn hex_to_bytes(field: &'static str, value: &str) -> Result<SolBytes, ContractsError> {
+        decode_hex_field(field, value).map(SolBytes::from)
     }
 
     let sol_tokens: Vec<_> = tokens.iter().map(address_to_sol).collect();
@@ -237,7 +226,7 @@ pub(super) fn encode_settle_call(
                     feeAmount: amount_to_u256(&trade.fee_amount),
                     flags: U256::from(trade.flags),
                     executedAmount: amount_to_u256(&trade.executed_amount),
-                    signature: hex_to_bytes(&trade.signature, "signature")?,
+                    signature: hex_to_bytes("signature", &trade.signature)?,
                 })
             },
         )

@@ -3,6 +3,7 @@ use alloy_sol_types::sol;
 use cow_sdk_core::{Address, Provider};
 
 use crate::ContractsError;
+use crate::hex_field::decode_hex_field_exact;
 
 sol! {
     // Canonical EIP-173 ownership proxy interface used by cow-sdk consumers
@@ -149,24 +150,7 @@ where
 fn decode_storage_address(value: &str) -> Result<Address, ContractsError> {
     use alloy_sol_types::private::{Address as SolAddress, FixedBytes};
 
-    let stripped = value
-        .strip_prefix("0x")
-        .ok_or(ContractsError::InvalidHexPrefix {
-            field: "storageSlot",
-        })?;
-    let bytes =
-        alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
-            field: "storageSlot",
-            source,
-        })?;
-    let buf: [u8; 32] =
-        bytes
-            .try_into()
-            .map_err(|raw: Vec<u8>| ContractsError::InvalidDecodedLength {
-                field: "storageSlot",
-                expected: 32,
-                actual: raw.len(),
-            })?;
+    let buf = decode_hex_field_exact::<32>("storageSlot", value)?;
     let word = FixedBytes::<32>::from(buf);
     Ok(Address::from_bytes(SolAddress::from_word(word).into()))
 }

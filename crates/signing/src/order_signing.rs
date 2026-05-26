@@ -3,8 +3,8 @@ use std::fmt;
 use alloy_primitives::{Bytes as AlloyBytes, keccak256};
 use alloy_sol_types::SolValue;
 use cow_sdk_contracts::{
-    ContractsError, Order as ContractsOrder, OrderUidParams, SigningScheme, buy_balance_name,
-    hash_order, normalize_order, normalized_ecdsa_signature, order_kind_name,
+    Order as ContractsOrder, OrderUidParams, SigningScheme, buy_balance_name, hash_order,
+    hex_field::decode_hex_field, normalize_order, normalized_ecdsa_signature, order_kind_name,
     pack_order_uid_params, sell_balance_name,
 };
 use cow_sdk_core::{
@@ -218,7 +218,7 @@ pub fn eip1271_signature_payload(
 ) -> Result<String, SigningError> {
     let normalized = normalize_order(&contracts_order(order))?;
     let signature = normalized_ecdsa_signature(ecdsa_signature)?;
-    let signature_bytes = decode_hex(&signature, "ecdsaSignature")?;
+    let signature_bytes = decode_hex_field("ecdsaSignature", &signature)?;
 
     // The cow `Amount` newtype is `#[repr(transparent)]` over
     // `alloy_primitives::U256` and `AppDataHash` over
@@ -267,7 +267,7 @@ where
             .sign_typed_data_payload(payload)
             .map_err(|error| signer_error("sign_typed_data_payload", error))?,
         SigningScheme::EthSign => {
-            let digest = decode_hex(digest_hex, "digest")?;
+            let digest = decode_hex_field("digest", digest_hex)?;
             signer
                 .sign_message(&digest)
                 .map_err(|error| signer_error("sign_message", error))?
@@ -303,7 +303,7 @@ where
             .await
             .map_err(|error| signer_error("sign_typed_data_payload", error))?,
         SigningScheme::EthSign => {
-            let digest = decode_hex(digest_hex, "digest")?;
+            let digest = decode_hex_field("digest", digest_hex)?;
             signer
                 .sign_digest(&digest)
                 .await
@@ -371,14 +371,6 @@ fn signer_operation_label(operation: &str) -> &'static str {
         "sign_message" | "sign_digest" => "message signature",
         _ => "signing request",
     }
-}
-
-fn decode_hex(value: &str, field: &'static str) -> Result<Vec<u8>, SigningError> {
-    let Some(stripped) = value.strip_prefix("0x") else {
-        return Err(ContractsError::InvalidHexPrefix { field }.into());
-    };
-    alloy_primitives::hex::decode(stripped)
-        .map_err(|source| ContractsError::DecodeHex { field, source }.into())
 }
 
 #[cfg(test)]

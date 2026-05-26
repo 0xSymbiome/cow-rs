@@ -262,6 +262,23 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow-sdk-contracts` exposes a new `hex_field` module with two
+  `pub fn` helpers for decoding `0x`-prefixed hexadecimal payloads
+  into raw bytes:
+  - `decode_hex_field(field, value) -> Result<Vec<u8>, ContractsError>`
+  - `decode_hex_field_exact::<const N: usize>(field, value) ->
+    Result<[u8; N], ContractsError>`
+
+  Both raise typed `ContractsError::InvalidHexPrefix`,
+  `ContractsError::DecodeHex`, and (for the exact-length variant)
+  `ContractsError::InvalidDecodedLength` with a `&'static str` field
+  discriminator. The `_exact` helper returns a fixed-size byte array
+  through a const generic so callers receive `[u8; N]` rather than a
+  `Vec<u8>` that still needs a runtime length check. The underlying
+  [`alloy_primitives::hex::FromHexError`] is preserved through
+  `#[source]` on `DecodeHex` so consumers can introspect the exact
+  decoder failure.
+
 - Twenty-three call sites across `cow-sdk-alloy-provider`,
   `cow-sdk-alloy-signer`, `cow-sdk-app-data`, `cow-sdk-browser-wallet`,
   `cow-sdk-contracts`, `cow-sdk-trading`, and `cow-sdk-wasm` collapse

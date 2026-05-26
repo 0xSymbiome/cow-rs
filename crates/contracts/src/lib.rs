@@ -24,6 +24,12 @@ pub mod errors;
 /// Typed `CoWSwapEthFlow` call-data encoders generated from the upstream
 /// Solidity surface via the `alloy::sol!` macro.
 pub mod eth_flow;
+/// Hex decode helpers for `0x`-prefixed payloads inside the contracts
+/// boundary.
+///
+/// The module raises typed `ContractsError` variants with a
+/// `&'static str` `field` discriminator on every failure mode.
+pub mod hex_field;
 /// Typed interaction models and normalization helpers.
 pub mod interaction;
 /// Order hashing, UID packing, and normalization helpers.

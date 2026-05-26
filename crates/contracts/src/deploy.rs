@@ -6,6 +6,7 @@ use cow_sdk_core::{Address, CowEnv, SupportedChainId};
 use crate::{
     ContractsError,
     deployments::{ContractId, Registry},
+    hex_field::decode_hex_field,
 };
 
 /// Deterministic deployment salt used by `CoW` deployments.
@@ -75,9 +76,9 @@ pub fn deterministic_deployment_address(
     bytecode: &str,
     deployment_arguments: &[String],
 ) -> Result<Address, ContractsError> {
-    let mut init_code = decode_hex_field(bytecode, "bytecode")?;
+    let mut init_code = decode_hex_field("bytecode", bytecode)?;
     for arg in deployment_arguments {
-        init_code.extend_from_slice(&decode_hex_field(arg, "deploymentArgument")?);
+        init_code.extend_from_slice(&decode_hex_field("deploymentArgument", arg)?);
     }
 
     // Delegate the EIP-1014 byte assembly (`0xff || deployer || salt ||
@@ -92,16 +93,6 @@ pub fn deterministic_deployment_address(
     // level.
     let derived = DEPLOYER_CONTRACT.create2_from_code(SALT, &init_code);
     Ok(Address::from_bytes(derived.into()))
-}
-
-/// Decodes a `0x`-prefixed hex string into raw bytes, mapping prefix and
-/// character errors onto the contracts-side typed error surface.
-fn decode_hex_field(value: &str, field: &'static str) -> Result<Vec<u8>, ContractsError> {
-    let stripped = value
-        .strip_prefix("0x")
-        .ok_or(ContractsError::InvalidHexPrefix { field })?;
-    alloy_primitives::hex::decode(stripped)
-        .map_err(|source| ContractsError::DecodeHex { field, source })
 }
 
 /// Returns the canonical production deployment addresses for a supported chain.
@@ -147,9 +138,9 @@ pub fn deployment_address_hash_input(
     bytecode: &str,
     deployment_arguments: &[String],
 ) -> Result<[u8; 32], ContractsError> {
-    let mut init_code = decode_hex_field(bytecode, "bytecode")?;
+    let mut init_code = decode_hex_field("bytecode", bytecode)?;
     for arg in deployment_arguments {
-        init_code.extend_from_slice(&decode_hex_field(arg, "deploymentArgument")?);
+        init_code.extend_from_slice(&decode_hex_field("deploymentArgument", arg)?);
     }
     Ok(keccak256(&init_code).0)
 }

@@ -708,6 +708,13 @@ fn parse_i256(value: &Value, method: &str) -> Result<I256, BrowserWalletError> {
     }
 }
 
+/// Decodes a `0x`-prefixed hex string from an RPC response into raw
+/// bytes.
+///
+/// Errors from the prefix check and from the underlying
+/// [`alloy_primitives::hex::decode`] surface as
+/// [`BrowserWalletError::malformed_response`] carrying the supplied
+/// `method` identifier.
 fn decode_hex(value: &str, method: &str) -> Result<Vec<u8>, BrowserWalletError> {
     let stripped = value.strip_prefix("0x").ok_or_else(|| {
         BrowserWalletError::malformed_response(method, "hex value must be 0x-prefixed")
