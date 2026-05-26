@@ -12,7 +12,37 @@ The first functional crate-family release begins at `0.1.0`.
 
 ## [Unreleased]
 
+### Changed
+
+- `AppDataHash::to_cid` now produces the canonical `CIDv1` multibase
+  string through `cid::Cid::new_v1` and `multihash::Multihash::wrap`
+  instead of the prior byte-stitched hand-roll. The output is
+  byte-identical to the prior form on every input. Two new `.expect`
+  call sites are accepted as statically infallible by the type
+  invariant of `AppDataHash` and the unconditional support of
+  `Base16Lower` multibase encoding; both sites are recorded in the
+  canonical panic-allowlist with inline safety comments naming the
+  invariant.
+
 ### Added
+
+- `AppDataHash::try_from_cid(&str) -> Result<Self, CoreError>` parses a
+  canonical `CIDv1` multibase string back into the cow newtype,
+  completing the round-trip seam between the app-data hash and the
+  canonical CID string form. The accepted shape is `CIDv1`, raw codec
+  (`0x55`), keccak-256 multihash (`0x1b`), 32-byte digest,
+  multibase-encoded in lowercase base16. Every other shape is rejected
+  through the new `CoreError::InvalidCid` variant.
+
+- `CoreError::InvalidCid` variant on the `cow-sdk-core` error enum
+  surfaces the typed rejection from `AppDataHash::try_from_cid`. The
+  variant is additive on the existing `#[non_exhaustive]` enum.
+
+- `cid 0.11.3` and `multihash 0.19.3` are promoted from per-crate pins
+  on `cow-sdk-app-data` to workspace dependencies, so the workspace's
+  CID stack now resolves through a single source of truth. Both
+  `cow-sdk-core` and `cow-sdk-app-data` consume the shared pins; future
+  bumps land atomically across the two crates.
 
 - `.github/workflows/encode-prefixed-grep-gate.yml` adds two CI grep
   gates that mechanically fence the `alloy_primitives::hex::encode_prefixed`

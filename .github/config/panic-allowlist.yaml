@@ -63,6 +63,9 @@ allowed:
   - file: crates/core/src/types/amount.rs
     item: DecimalAmount::to_decimal_string
     reason: The decimals > 0 arm calls alloy_primitives::utils::format_units with an expect on the result. The only error condition format_units returns is a decimals argument that exceeds alloy_primitives::utils::Unit::MAX (= 77). DecimalAmount::new, DecimalAmount::from_atoms, and DecimalAmount::from_whole_approx reject decimals values above MAX_DECIMALS (= 77 = Unit::MAX) at construction time, so the format_units call is structurally infallible and the expect is structurally unreachable; the call is retained to preserve an explicit panic location should a future constructor surface bypass the boundary without re-validating.
+  - file: crates/core/src/types/identity.rs
+    item: AppDataHash::to_cid
+    reason: AppDataHash is #[repr(transparent)] over alloy_primitives::B256 — its byte slice is always exactly 32 bytes, strictly less than the 64-byte capacity of Multihash<64>. The Multihash::wrap call is statically infallible by the type invariant; the .expect documents the unreachability inline. The companion expect on Cid::to_string_of_base(Base16Lower) is statically infallible because Base16Lower is the cow-protocol canonical multibase and is always supported by the cid crate. Both call sites carry inline SAFETY comments naming the invariant.
   - file: crates/contracts/src/order/uid.rs
     item: extract_order_uid_params
     reason: The two slice-to-array conversions in extract_order_uid_params operate on slices whose length is guaranteed by the ORDER_UID_LENGTH guard at the top of the function (bytes.len() == 56); the try_into-to-[u8; 32] and try_into-to-[u8; 20] conversions cannot fail under that guard, and the expect calls document the unreachability proof inline through // SAFETY comments naming the guarantee.

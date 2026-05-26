@@ -1,9 +1,9 @@
 # CID Dependency Audit
 
 Status: Current
-Last reviewed: 2026-05-22
-Owning surface: `cow-sdk-app-data` CID encoding, canonical-JSON serialisation, and published dependency boundary
-Refresh trigger: Changes to CID dependencies, the canonical-JSON dependency, the supported CID encoding, or the published dependency posture for the app-data stack
+Last reviewed: 2026-05-26
+Owning surface: `cow-sdk-app-data` and `cow-sdk-core` CID encoding, canonical-JSON serialisation, and published dependency boundary
+Refresh trigger: Changes to CID dependencies, the canonical-JSON dependency, the supported CID encoding, or the published dependency posture for the app-data and core stacks
 Related docs:
 - [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [Dependency Gate Audit](dependency-gate-audit.md)
@@ -14,9 +14,12 @@ Related docs:
 
 This audit covers:
 
-- the CID and multihash dependencies used by `cow-sdk-app-data`
+- the CID and multihash dependencies used by `cow-sdk-app-data` and
+  `cow-sdk-core`
 - the canonical-JSON dependency that the CID derivation rides on
 - the supported app-data CID construction path
+- the canonical CID conversion methods on `AppDataHash` exposed by
+  `cow-sdk-core`
 - published-upstream dependency posture for the maintained CID stack
 - fail-closed handling for malformed app-data hex and unsupported CID
   encodings
@@ -36,11 +39,14 @@ outside the app-data boundary.
 
 ### Maintained CID Path
 
-The current app-data crate uses:
+The current app-data and core crates use:
 
-- `cid` for CID parsing and construction
-- `multihash` for explicit multihash wrapping
-- `multibase` for lowercase base16 CID rendering
+- `cid` for CID parsing and construction (workspace dep, consumed by
+  `cow-sdk-app-data` and `cow-sdk-core`)
+- `multihash` for explicit multihash wrapping (workspace dep, consumed
+  by `cow-sdk-app-data` and `cow-sdk-core`)
+- `multibase` for lowercase base16 CID rendering (workspace dep,
+  consumed by `cow-sdk-app-data` and `cow-sdk-core`)
 - `alloy_primitives::keccak256` (the canonical primitive layer per
   [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md))
   for deterministic app-data digest generation
@@ -51,8 +57,14 @@ The cow `AppDataHash` type is a cow-owned `#[repr(transparent)]` newtype
 over `alloy_primitives::B256` per
 [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md);
 the `AppDataHash::to_cid` inherent method is the canonical conversion
-path from the cow newtype to the CIDv1 raw-keccak256 string form documented
-under "Supported Input Boundary" below.
+path from the cow newtype to the CIDv1 raw-keccak256 string form
+documented under "Supported Input Boundary" below, and the
+`AppDataHash::try_from_cid` inherent method is the canonical reverse
+parser that closes the round-trip seam against the same shape. Both
+methods route through the maintained `cid` + `multihash` + `multibase`
+trio (rather than a hand-rolled byte assembly), keeping the core crate's
+CID surface byte-for-byte equivalent to the `cow-sdk-app-data`
+helpers.
 
 The canonical-JSON pass runs through `serde_jcs::to_string` so the key
 ordering follows the RFC 8785 UTF-16 code-unit rule; this closes a latent
@@ -104,6 +116,8 @@ Primary implementation points:
 
 - `crates/app-data/src/lib.rs`
 - `crates/app-data/src/cid.rs`
+- `crates/core/src/types/identity.rs` (`AppDataHash::to_cid` and
+  `AppDataHash::try_from_cid` inherent methods)
 
 Primary regression coverage:
 
@@ -114,6 +128,14 @@ Primary regression coverage:
 - `crates/app-data/tests/cid_contract.rs::cid_rejects_non_keccak256_multihash_codecs`
 - `crates/app-data/tests/v0_cid_is_out_of_scope.rs::v0_cid_is_rejected_by_cid_to_app_data_hex`
 - `crates/app-data/tests/canonical_json_contract.rs::canonical_json_utf16_corpus_serialises_to_expected_canonical_bytes`
+- `crates/core/tests/cid_parity_contract.rs::to_cid_matches_upstream_byte_vector_one`
+- `crates/core/tests/cid_parity_contract.rs::to_cid_matches_upstream_byte_vector_two`
+- `crates/core/tests/cid_parity_contract.rs::try_from_cid_matches_upstream_byte_vector_one`
+- `crates/core/tests/cid_parity_contract.rs::try_from_cid_matches_upstream_byte_vector_two`
+- `crates/core/tests/cid_parity_contract.rs::round_trip_preserves_every_input`
+- `crates/core/tests/cid_parity_contract.rs::try_from_cid_rejects_garbage`
+- `crates/core/tests/cid_parity_contract.rs::try_from_cid_rejects_short_digest`
+- `crates/core/tests/cid_parity_contract.rs::round_trip_preserves_zero_byte_input`
 - `parity/fixtures/app_data/canonical_json_utf16.json`
 
 Validation surface:

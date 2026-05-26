@@ -29,11 +29,11 @@ cow-sdk-core = { path = "../core", version = "0.1.0" }
 alloy-primitives.workspace = true
 alloy-serde.workspace = true
 async-trait.workspace = true
-cid = "0.11.3"
+cid.workspace = true
 include_dir = "0.7.4"
 jsonschema.workspace = true
 multibase.workspace = true
-multihash = "0.19.3"
+multihash.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_jcs.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }

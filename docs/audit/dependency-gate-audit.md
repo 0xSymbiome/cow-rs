@@ -23,7 +23,7 @@ This audit covers:
   transport path
 - the shared `cow-sdk-transport-policy` dependency boundary used by
   orderbook and subgraph retry behavior
-- the clean published CID dependency posture recorded for `cow-sdk-app-data`
+- the clean published CID dependency posture recorded for `cow-sdk-app-data` and `cow-sdk-core`
 - the canonical advisory tolerance register shared by the RustSec gates
 - the canonical dependency-source whitelist
 - the workspace dependency default-feature audit
@@ -46,7 +46,7 @@ architecture reviews.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Transport advisories | The reqwest transport path resolves through a reviewed published `rustls-webpki` patch release | Conforms |
-| Published CID posture | The app-data CID stack no longer reaches the yanked `core2` path after the `cid 0.11.3` uplift | Conforms |
+| Published CID posture | The app-data and core CID stack no longer reaches the yanked `core2` path after the `cid 0.11.3` uplift, and both crates consume the published `cid`/`multihash`/`multibase` trio through shared workspace pins | Conforms |
 | Gate ownership | `cargo deny` owns bans, licenses, sources, and yanked advisory policy, while `cargo audit` blocks vulnerabilities plus unsound and unmaintained advisories | Conforms |
 | Advisory tolerance source | `.github/config/deny.toml` is the canonical RustSec ignore register; CI derives `cargo audit` ignore arguments from it | Conforms |
 | Source whitelist | The dependency-source policy allows crates.io registry dependencies and rejects unknown registries and all git sources | Conforms |
@@ -78,13 +78,16 @@ resolves through the advisory-clean line without a workspace override.
 
 ### Published CID Posture
 
-`cow-sdk-app-data` now reaches the refreshed published `cid 0.11.3` and
-`multihash 0.19.5` path. That published path removes the prior yanked
-`core2 0.4.0` reachability, so the CID stack no longer owns any RustSec
-ignore entries. The retired `core2` advisory `RUSTSEC-2026-0105` is not
+`cow-sdk-app-data` and `cow-sdk-core` now both reach the refreshed
+published `cid 0.11.3` and `multihash 0.19.5` path through workspace
+dependency pins. The two crates share the same lockfile resolution, so
+the CID surface stays byte-for-byte equivalent across the workspace.
+That published path removes the prior yanked `core2 0.4.0`
+reachability, so the CID stack no longer owns any RustSec ignore
+entries. The retired `core2` advisory `RUSTSEC-2026-0105` is not
 tolerated by the current gate, and the former `RUSTSEC-2026-0097` `rand`
-tolerance is retired because the lockfile resolves the affected path through
-`rand 0.8.6`.
+tolerance is retired because the lockfile resolves the affected path
+through `rand 0.8.6`.
 
 ### Gate Contract
 
