@@ -47,9 +47,7 @@ pub fn cow_flat_to_alloy_typed_data(
 /// invalid EIP-712 kind, when the payload's message JSON cannot be parsed, or
 /// when Alloy rejects the resulting typed-data shape during the EIP-712
 /// signing-hash computation.
-pub fn cow_typed_data_payload_to_alloy(
-    payload: &TypedDataPayload,
-) -> Result<TypedData, String> {
+pub fn cow_typed_data_payload_to_alloy(payload: &TypedDataPayload) -> Result<TypedData, String> {
     let domain = payload.domain.into_alloy_domain();
     let resolver = build_resolver(&payload.types, &payload.primary_type)?;
     let message = serde_json::from_str(payload.message_json())

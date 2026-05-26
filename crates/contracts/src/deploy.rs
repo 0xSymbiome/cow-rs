@@ -100,7 +100,8 @@ fn decode_hex_field(value: &str, field: &'static str) -> Result<Vec<u8>, Contrac
     let stripped = value
         .strip_prefix("0x")
         .ok_or(ContractsError::InvalidHexPrefix { field })?;
-    alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source })
+    alloy_primitives::hex::decode(stripped)
+        .map_err(|source| ContractsError::DecodeHex { field, source })
 }
 
 /// Returns the canonical production deployment addresses for a supported chain.
@@ -180,7 +181,8 @@ mod tests {
     #[test]
     fn deployment_hash_input_matches_the_keccak_of_bytecode_and_arguments() {
         let (bytecode, deployment_arguments) = sample_init_code_parts();
-        let mut init_code = alloy_primitives::hex::decode(bytecode.trim_start_matches("0x")).unwrap();
+        let mut init_code =
+            alloy_primitives::hex::decode(bytecode.trim_start_matches("0x")).unwrap();
         init_code.extend_from_slice(&alloy_primitives::hex::decode("1234").unwrap());
         init_code.extend_from_slice(&alloy_primitives::hex::decode("abcd").unwrap());
 

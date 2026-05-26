@@ -1,6 +1,6 @@
 use std::fmt;
 
-use alloy_primitives::{B256, Signature as AlloySignature, keccak256};
+use alloy_primitives::{B256, Signature as AlloySignature};
 use alloy_sol_types::SolCall;
 use serde::{Deserialize, Serialize};
 
@@ -315,7 +315,6 @@ pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> 
     Ok(format!("0x{}", alloy_primitives::hex::encode(bytes)))
 }
 
-
 /// Verifies an EIP-1271 signature using a synchronous provider.
 ///
 /// ## Note
@@ -453,7 +452,8 @@ fn decode_hex(value: &str, field: &'static str) -> Result<Vec<u8>, ContractsErro
     let stripped = value
         .strip_prefix("0x")
         .ok_or(ContractsError::InvalidHexPrefix { field })?;
-    alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source })
+    alloy_primitives::hex::decode(stripped)
+        .map_err(|source| ContractsError::DecodeHex { field, source })
 }
 
 /// Decodes a `0x`-prefixed hex string and asserts it decodes to exactly
@@ -477,6 +477,7 @@ fn decode_hex_exact(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloy_primitives::keccak256;
     use alloy_sol_types::SolCall;
 
     /// Test-only runtime keccak fallback used as an independent parity

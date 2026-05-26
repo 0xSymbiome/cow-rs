@@ -154,10 +154,11 @@ fn decode_storage_address(value: &str) -> Result<Address, ContractsError> {
         .ok_or(ContractsError::InvalidHexPrefix {
             field: "storageSlot",
         })?;
-    let bytes = alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
-        field: "storageSlot",
-        source,
-    })?;
+    let bytes =
+        alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
+            field: "storageSlot",
+            source,
+        })?;
     let buf: [u8; 32] =
         bytes
             .try_into()

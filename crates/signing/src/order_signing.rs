@@ -242,7 +242,10 @@ pub fn eip1271_signature_payload(
     };
     let payload: OrderAndSignature = (onchain_order, AlloyBytes::from(signature_bytes));
 
-    Ok(format!("0x{}", alloy_primitives::hex::encode(payload.abi_encode_sequence())))
+    Ok(format!(
+        "0x{}",
+        alloy_primitives::hex::encode(payload.abi_encode_sequence())
+    ))
 }
 
 pub(crate) fn sign_with_scheme<S>(
@@ -374,7 +377,8 @@ fn decode_hex(value: &str, field: &'static str) -> Result<Vec<u8>, SigningError>
     let Some(stripped) = value.strip_prefix("0x") else {
         return Err(ContractsError::InvalidHexPrefix { field }.into());
     };
-    alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source }.into())
+    alloy_primitives::hex::decode(stripped)
+        .map_err(|source| ContractsError::DecodeHex { field, source }.into())
 }
 
 #[cfg(test)]

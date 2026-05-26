@@ -39,7 +39,7 @@ use alloy_sol_types::{
 };
 use cow_sdk_contracts::{
     AllowListReader, CANCELLATIONS_TYPE_FIELDS, ContractId, DEPLOYER_CONTRACT, Eip1967Slot,
-    EthFlowOrderData, IERC1271, IERC20, IERC20Permit, InteractionLike, ORDER_TYPE_FIELDS,
+    EthFlowOrderData, IERC20, IERC20Permit, IERC1271, InteractionLike, ORDER_TYPE_FIELDS,
     ORDER_UID_LENGTH, Order, OrderFlags, Registry, SALT, SettlementEncoder, SettlementReader,
     Signature, SigningScheme, Swap, TokenRegistry, TradeExecution, TradeFlags, TradeSimulator,
     VAULT_INTERFACE, encode_create_order_calldata, encode_invalidate_order_calldata,

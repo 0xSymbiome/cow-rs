@@ -1,8 +1,8 @@
-use cow_sdk_contracts::normalized_ecdsa_signature;
 #[cfg(feature = "cancellation")]
 use alloy_primitives::Bytes as AlloyBytes;
 #[cfg(feature = "cancellation")]
 use alloy_sol_types::SolCall as _;
+use cow_sdk_contracts::normalized_ecdsa_signature;
 #[cfg(feature = "cancellation")]
 use cow_sdk_contracts::settlement::IGPv2Settlement;
 #[cfg(feature = "cancellation")]
@@ -804,4 +804,3 @@ extern "C" {
     #[wasm_bindgen(js_namespace = globalThis, js_name = clearTimeout)]
     fn global_clear_timeout_raw(handle: &JsValue);
 }
-

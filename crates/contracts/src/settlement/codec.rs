@@ -146,10 +146,11 @@ fn normalize_signature_hex(value: &str) -> Result<String, ContractsError> {
     let stripped = value
         .strip_prefix("0x")
         .ok_or(ContractsError::InvalidHexPrefix { field: "signature" })?;
-    let bytes = alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
-        field: "signature",
-        source,
-    })?;
+    let bytes =
+        alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex {
+            field: "signature",
+            source,
+        })?;
     Ok(format!("0x{}", alloy_primitives::hex::encode(bytes)))
 }
 
@@ -212,8 +213,8 @@ pub(super) fn encode_settle_call(
         let stripped = value
             .strip_prefix("0x")
             .ok_or(ContractsError::InvalidHexPrefix { field })?;
-        let bytes =
-            alloy_primitives::hex::decode(stripped).map_err(|source| ContractsError::DecodeHex { field, source })?;
+        let bytes = alloy_primitives::hex::decode(stripped)
+            .map_err(|source| ContractsError::DecodeHex { field, source })?;
         Ok(SolBytes::from(bytes))
     }
 
