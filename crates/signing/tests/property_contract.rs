@@ -64,8 +64,9 @@ fn address_strategy() -> impl Strategy<Value = Address> {
 
 /// Strategy that emits an [`AppDataHex`] payload.
 fn app_data_strategy() -> impl Strategy<Value = AppDataHex> {
-    any::<[u8; 32]>()
-        .prop_map(|bytes| AppDataHex::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap())
+    any::<[u8; 32]>().prop_map(|bytes| {
+        AppDataHex::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap()
+    })
 }
 
 /// Strategy that emits an [`Amount`] with at least one non-zero byte.

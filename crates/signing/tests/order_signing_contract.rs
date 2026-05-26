@@ -93,7 +93,10 @@ fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
     .unwrap();
 
     assert_eq!(
-        format!("0x{}", alloy_primitives::hex::encode(&signer.calls.borrow().messages[0])),
+        format!(
+            "0x{}",
+            alloy_primitives::hex::encode(&signer.calls.borrow().messages[0])
+        ),
         expected_digest.to_hex_string()
     );
 }
@@ -225,7 +228,8 @@ fn eip1271_signature_payload_matches_the_manual_contract_encoding() {
 
     let signature = format!("0x{}1b", "aa".repeat(64));
     let payload = eip1271_signature_payload(&order, &signature).unwrap();
-    let signature_bytes = alloy_primitives::hex::decode(signature.trim_start_matches("0x")).unwrap();
+    let signature_bytes =
+        alloy_primitives::hex::decode(signature.trim_start_matches("0x")).unwrap();
 
     let mut expected = Vec::with_capacity(32 * 15 + padded_len_manual(signature_bytes.len()));
     expected.extend_from_slice(&encode_address_word(&order.sell_token.to_hex_string()));
@@ -248,7 +252,10 @@ fn eip1271_signature_payload_matches_the_manual_contract_encoding() {
         padded_len_manual(signature_bytes.len()) - signature_bytes.len(),
     ));
 
-    assert_eq!(payload, format!("0x{}", alloy_primitives::hex::encode(expected)));
+    assert_eq!(
+        payload,
+        format!("0x{}", alloy_primitives::hex::encode(expected))
+    );
 }
 
 #[test]

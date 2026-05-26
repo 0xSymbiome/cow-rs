@@ -49,7 +49,9 @@ fn deployment_constants_and_create2_address_match_fixture_contract() {
 
     let mut init_code = alloy_primitives::hex::decode(bytecode.trim_start_matches("0x")).unwrap();
     for arg in &args {
-        init_code.extend_from_slice(&alloy_primitives::hex::decode(arg.trim_start_matches("0x")).unwrap());
+        init_code.extend_from_slice(
+            &alloy_primitives::hex::decode(arg.trim_start_matches("0x")).unwrap(),
+        );
     }
     let mut payload = Vec::with_capacity(85);
     payload.push(0xff);

@@ -101,7 +101,8 @@ fn independent_domain_separator(
     encoded.extend_from_slice(&chain_word);
 
     let mut address_word = [0u8; 32];
-    let address_bytes = alloy_primitives::hex::decode(verifying_contract.trim_start_matches("0x")).unwrap();
+    let address_bytes =
+        alloy_primitives::hex::decode(verifying_contract.trim_start_matches("0x")).unwrap();
     address_word[12..].copy_from_slice(&address_bytes);
     encoded.extend_from_slice(&address_word);
 

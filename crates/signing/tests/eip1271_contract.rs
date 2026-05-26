@@ -90,7 +90,8 @@ fn independent_payload(order: &cow_sdk_core::UnsignedOrder, ecdsa_signature: &st
     encoded.extend_from_slice(&keccak256(b"erc20"));
     encoded.extend_from_slice(&encode_usize(32 * 13));
 
-    let signature = alloy_primitives::hex::decode(ecdsa_signature.trim_start_matches("0x")).unwrap();
+    let signature =
+        alloy_primitives::hex::decode(ecdsa_signature.trim_start_matches("0x")).unwrap();
     encoded.extend_from_slice(&encode_usize(signature.len()));
     encoded.extend_from_slice(&signature);
     encoded.extend(std::iter::repeat_n(

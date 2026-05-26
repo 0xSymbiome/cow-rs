@@ -609,9 +609,9 @@ fn dyn_value_to_json(value: &DynSolValue) -> Value {
         DynSolValue::Address(address) => {
             Value::String(alloy_primitives::hex::encode_prefixed(address.as_slice()))
         }
-        DynSolValue::FixedBytes(word, size) => {
-            Value::String(alloy_primitives::hex::encode_prefixed(&word.as_slice()[..*size]))
-        }
+        DynSolValue::FixedBytes(word, size) => Value::String(
+            alloy_primitives::hex::encode_prefixed(&word.as_slice()[..*size]),
+        ),
         DynSolValue::Bytes(bytes) => Value::String(alloy_primitives::hex::encode_prefixed(bytes)),
         DynSolValue::Int(int, _) => Value::String(int.to_string()),
         DynSolValue::Uint(uint, _) => Value::String(uint.to_string()),

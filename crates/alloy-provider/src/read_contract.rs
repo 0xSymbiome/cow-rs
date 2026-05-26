@@ -258,15 +258,15 @@ fn json_to_dyn_value(
 )]
 fn dyn_value_to_json(value: &DynSolValue) -> Result<Value, AsyncProviderError> {
     match value {
-        DynSolValue::Address(address) => Ok(Value::String(
-            alloy_primitives::hex::encode_prefixed(address.as_slice()),
-        )),
+        DynSolValue::Address(address) => Ok(Value::String(alloy_primitives::hex::encode_prefixed(
+            address.as_slice(),
+        ))),
         DynSolValue::FixedBytes(word, size) => Ok(Value::String(
             alloy_primitives::hex::encode_prefixed(&word.as_slice()[..*size]),
         )),
-        DynSolValue::Bytes(bytes) => Ok(Value::String(
-            alloy_primitives::hex::encode_prefixed(bytes),
-        )),
+        DynSolValue::Bytes(bytes) => {
+            Ok(Value::String(alloy_primitives::hex::encode_prefixed(bytes)))
+        }
         DynSolValue::Int(int, _) => Ok(Value::String(int.to_string())),
         DynSolValue::Uint(uint, _) => Ok(Value::String(uint.to_string())),
         DynSolValue::Bool(flag) => Ok(Value::Bool(*flag)),

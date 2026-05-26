@@ -496,8 +496,9 @@ pub async fn sign_cancellation_eth_sign_digest(
     let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
     run_with_client_options(scope, async move {
         let (uids, _payload, digest) = cancellation_payload(order_uids, chain_id)?;
-        let digest_bytes = alloy_primitives::hex::decode(digest.to_hex_string().trim_start_matches("0x"))
-            .map_err(|error| WasmError::invalid("digest", error.to_string()).into_js())?;
+        let digest_bytes =
+            alloy_primitives::hex::decode(digest.to_hex_string().trim_start_matches("0x"))
+                .map_err(|error| WasmError::invalid("digest", error.to_string()).into_js())?;
         let signer = JsDigestSigner::new(digest_signer, wallet_timeout_ms);
         let signature = signer
             .sign_digest(&digest_bytes)

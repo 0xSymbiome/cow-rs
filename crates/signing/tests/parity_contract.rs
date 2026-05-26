@@ -424,7 +424,8 @@ fn assert_eip1271_encoding(id: &str, expected: &Value) {
 
     let order = sample_order();
     let signature = synthetic_ecdsa_signature(27);
-    let signature_bytes = alloy_primitives::hex::decode(signature.trim_start_matches("0x")).unwrap();
+    let signature_bytes =
+        alloy_primitives::hex::decode(signature.trim_start_matches("0x")).unwrap();
     let payload =
         eip1271_signature_payload(&order, &signature).expect("EIP-1271 payload must encode");
     let payload_hex = payload.trim_start_matches("0x");

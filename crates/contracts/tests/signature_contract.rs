@@ -68,7 +68,10 @@ fn synthetic_signature_with_v(v: u8) -> String {
 
 fn deterministic_signing_key() -> SigningKey {
     SigningKey::from_slice(
-        &alloy_primitives::hex::decode("4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318").unwrap(),
+        &alloy_primitives::hex::decode(
+            "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318",
+        )
+        .unwrap(),
     )
     .unwrap()
 }
@@ -86,7 +89,8 @@ fn ecdsa_signature_for_prehash(signing_key: &SigningKey, prehash: &[u8; 32]) -> 
 }
 
 fn cow_eth_sign_prehash(digest: &Hash32) -> [u8; 32] {
-    let digest_bytes = alloy_primitives::hex::decode(digest.to_hex_string().trim_start_matches("0x")).unwrap();
+    let digest_bytes =
+        alloy_primitives::hex::decode(digest.to_hex_string().trim_start_matches("0x")).unwrap();
     let mut payload = Vec::with_capacity(60);
     payload.extend_from_slice(b"\x19Ethereum Signed Message:\n32");
     payload.extend_from_slice(&digest_bytes);

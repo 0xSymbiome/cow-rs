@@ -577,7 +577,10 @@ fn assert_order_refund_method_names(id: &str, expected: &Value) {
         .collect();
 
     for (interaction, selector) in interactions.iter().zip(method_selectors.iter()) {
-        let call_data_hex = format!("0x{}", alloy_primitives::hex::encode(&interaction.call_data));
+        let call_data_hex = format!(
+            "0x{}",
+            alloy_primitives::hex::encode(&interaction.call_data)
+        );
         assert!(
             call_data_hex.starts_with(selector),
             "case {id}: refund interaction call-data must start with {selector}",

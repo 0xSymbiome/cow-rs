@@ -31,8 +31,8 @@ fn expected_role_hash(vault_bytes: &[u8], selector: [u8; 4]) -> String {
 }
 
 fn selector_from_hex(selector: &str) -> [u8; 4] {
-    let bytes =
-        alloy_primitives::hex::decode(selector.trim_start_matches("0x")).expect("selector literal must decode");
+    let bytes = alloy_primitives::hex::decode(selector.trim_start_matches("0x"))
+        .expect("selector literal must decode");
     bytes
         .try_into()
         .expect("selector literal must be exactly four bytes")

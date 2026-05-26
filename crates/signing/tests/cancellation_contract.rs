@@ -95,7 +95,10 @@ fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
     )
     .unwrap();
     assert_eq!(
-        format!("0x{}", alloy_primitives::hex::encode(&signer.calls.borrow().messages[0])),
+        format!(
+            "0x{}",
+            alloy_primitives::hex::encode(&signer.calls.borrow().messages[0])
+        ),
         expected_digest.to_hex_string()
     );
 }
