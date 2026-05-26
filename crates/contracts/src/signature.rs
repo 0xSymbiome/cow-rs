@@ -9,15 +9,6 @@ use cow_sdk_core::{Address, AsyncProvider, Hash32, HexData, Provider};
 use crate::ContractsError;
 use crate::eip1271::IERC1271;
 
-/// EIP-1271 success magic value as the canonical `0x`-prefixed hex string
-/// form documented by the protocol.
-///
-/// The byte form of the magic value is the function selector of
-/// `isValidSignature(bytes32,bytes)`, which the cow signature path reaches
-/// through `<IERC1271::isValidSignatureCall as alloy_sol_types::SolCall>::SELECTOR`.
-#[doc(alias = "magic-value")]
-pub const EIP1271_MAGICVALUE: &str = "0x1626ba7e";
-
 pub(crate) const EIP1271_IS_VALID_SIGNATURE_ABI_JSON: &str = r#"[{"type":"function","name":"isValidSignature","inputs":[{"name":"hash","type":"bytes32"},{"name":"signature","type":"bytes"}],"outputs":[{"name":"","type":"bytes4"}],"stateMutability":"view"}]"#;
 
 /// Supported `CoW` signing schemes.

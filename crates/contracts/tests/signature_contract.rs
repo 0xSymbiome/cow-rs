@@ -5,11 +5,10 @@ use std::{cell::RefCell, fmt, rc::Rc, sync::Mutex};
 use alloy_primitives::Address as AlloyAddress;
 use alloy_sol_types::SolCall;
 use cow_sdk_contracts::{
-    ContractsError, EIP1271_MAGICVALUE, Eip1271SignatureData, Eip1271VerificationCache,
-    Eip1271VerificationRequest, IERC1271, Signature, SigningScheme, decode_eip1271_signature_data,
-    decode_signing_scheme, encode_eip1271_signature_data, encode_signing_scheme,
-    function_magic_value, normalized_ecdsa_signature, verify_eip1271_signature,
-    verify_eip1271_signature_async,
+    ContractsError, Eip1271SignatureData, Eip1271VerificationCache, Eip1271VerificationRequest,
+    IERC1271, Signature, SigningScheme, decode_eip1271_signature_data, decode_signing_scheme,
+    encode_eip1271_signature_data, encode_signing_scheme, function_magic_value,
+    normalized_ecdsa_signature, verify_eip1271_signature, verify_eip1271_signature_async,
 };
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo, ContractCall,
@@ -272,24 +271,26 @@ fn signing_scheme_and_magic_value_match_fixture_contract() {
     assert!(decode_signing_scheme(4).is_err());
 
     let magic = fixture_case("contracts-eip1271-magic-value");
-    assert_eq!(
-        EIP1271_MAGICVALUE,
-        magic["expected"]["magic_value"].as_str().unwrap()
-    );
-    assert_eq!(
-        function_magic_value("isValidSignature(bytes32,bytes)"),
-        EIP1271_MAGICVALUE
-    );
+    let fixture_magic = magic["expected"]["magic_value"].as_str().unwrap();
+    // The fixture, the `sol!`-emitted typed selector, the runtime
+    // keccak helper, and the upstream-documented literal all encode the
+    // same four bytes. Asserting all four shapes here pins the parity
+    // oracle to a single byte source of truth.
+    assert_eq!(fixture_magic, "0x1626ba7e");
     assert_eq!(
         IERC1271::isValidSignatureCall::SELECTOR,
         [0x16, 0x26, 0xba, 0x7e]
+    );
+    assert_eq!(
+        function_magic_value("isValidSignature(bytes32,bytes)"),
+        fixture_magic
     );
     assert_eq!(
         format!(
             "0x{}",
             hex::encode(IERC1271::isValidSignatureCall::SELECTOR)
         ),
-        EIP1271_MAGICVALUE
+        fixture_magic
     );
 }
 
@@ -573,7 +574,14 @@ fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
         }
         other => panic!("expected Eip1271MagicValueMismatch, got {other:?}"),
     }
-    assert_eq!(EIP1271_MAGICVALUE, "0x1626ba7e");
+    assert_eq!(
+        format!(
+            "0x{}",
+            hex::encode(IERC1271::isValidSignatureCall::SELECTOR)
+        ),
+        "0x1626ba7e",
+        "IERC1271 selector must render to the canonical EIP-1271 magic-value hex",
+    );
     assert_eq!(
         mismatch.to_string(),
         "unexpected EIP-1271 magic value: expected 0x1626ba7e, got 0xffffffff",

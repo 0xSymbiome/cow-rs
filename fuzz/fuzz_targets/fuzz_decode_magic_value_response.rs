@@ -36,8 +36,9 @@
 
 use std::{cell::RefCell, fmt, rc::Rc};
 
+use alloy_sol_types::SolCall;
 use cow_sdk_contracts::{
-    ContractsError, EIP1271_MAGICVALUE, Eip1271VerificationRequest, verify_eip1271_signature,
+    ContractsError, Eip1271VerificationRequest, IERC1271, verify_eip1271_signature,
 };
 use cow_sdk_core::{
     Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
@@ -118,13 +119,13 @@ fuzz_target!(|data: &[u8]| {
         }
     }
 
-    // Cross-check the documented constant surface — the public hex form
-    // must match the canonical 4-byte magic value used by the wrapper.
-    let constant_bytes =
-        hex::decode(EIP1271_MAGICVALUE.trim_start_matches("0x")).expect("EIP-1271 constant must decode");
+    // Cross-check the typed selector emitted by the `sol!`-generated
+    // EIP-1271 binding against the canonical 4-byte magic value used by
+    // the wrapper. The selector is the single byte source of truth.
     assert_eq!(
-        constant_bytes, CANONICAL_MAGIC_VALUE_BYTES,
-        "EIP1271_MAGICVALUE constant must equal the canonical 0x1626ba7e magic value",
+        <IERC1271::isValidSignatureCall as SolCall>::SELECTOR,
+        CANONICAL_MAGIC_VALUE_BYTES,
+        "IERC1271::isValidSignatureCall::SELECTOR must equal the canonical 0x1626ba7e magic value",
     );
 });
 

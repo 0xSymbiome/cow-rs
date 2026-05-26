@@ -12,10 +12,12 @@
 //!   parity fixture pins that `BuyTokenDestination` has no `external` variant
 //!   so quote-derived and direct trading orders cannot rewrite the buy-side
 //!   destination silently.
-//! * [`SigningScheme`], [`EIP1271_MAGICVALUE`] — signature scheme discriminants
-//!   and EIP-1271 success value.
+//! * [`SigningScheme`] — signature scheme discriminants. The EIP-1271
+//!   success magic value is the typed selector emitted by the `sol!`-
+//!   generated [`IERC1271::isValidSignatureCall`] binding.
 //! * [`normalize_interaction`] — interaction defaulting rule.
-//! * [`SALT`], [`DEPLOYER_CONTRACT`] — deterministic deployment constants.
+//! * [`SALT`], [`DEPLOYER_CONTRACT`] — deterministic deployment constants
+//!   typed as [`alloy_primitives::B256`] and [`alloy_primitives::Address`].
 //! * [`Eip1967Slot::Implementation`], [`Eip1967Slot::Admin`] — EIP-1967 proxy
 //!   storage slot constants.
 //! * [`encode_order_flags`], [`encode_trade_flags`] — order and trade flag
@@ -29,14 +31,15 @@
 //! Failure messages carry the fixture case id so a reviewer looking at a
 //! broken CI run sees the exact upstream vector that diverged.
 
+use alloy_primitives::{Address as AlloyAddress, B256};
 use alloy_sol_types::{
     Eip712Domain, SolCall, SolStruct,
     private::{Address as SolAddress, Bytes as SolBytes, FixedBytes, U256},
     sol,
 };
 use cow_sdk_contracts::{
-    AllowListReader, CANCELLATIONS_TYPE_FIELDS, ContractId, DEPLOYER_CONTRACT, EIP1271_MAGICVALUE,
-    Eip1967Slot, EthFlowOrderData, IERC20, IERC20Permit, InteractionLike, ORDER_TYPE_FIELDS,
+    AllowListReader, CANCELLATIONS_TYPE_FIELDS, ContractId, DEPLOYER_CONTRACT, Eip1967Slot,
+    EthFlowOrderData, IERC1271, IERC20, IERC20Permit, InteractionLike, ORDER_TYPE_FIELDS,
     ORDER_UID_LENGTH, Order, OrderFlags, Registry, SALT, SettlementEncoder, SettlementReader,
     Signature, SigningScheme, Swap, TokenRegistry, TradeExecution, TradeFlags, TradeSimulator,
     VAULT_INTERFACE, encode_create_order_calldata, encode_invalidate_order_calldata,
@@ -381,9 +384,19 @@ fn assert_eip1271_magic_value(id: &str, expected: &Value) {
     let magic = expected["magic_value"]
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.magic_value must be a string"));
+    // Route through the `sol!`-emitted selector on
+    // `IERC1271::isValidSignatureCall` so the parity oracle compares the
+    // typed-binding byte form against the upstream-documented hex
+    // string. The selector is a `[u8; 4]` const; rendering it as
+    // `0x{hex}` matches the fixture's wire representation.
+    let actual = format!(
+        "0x{}",
+        hex::encode(<IERC1271::isValidSignatureCall as SolCall>::SELECTOR)
+    );
     assert_eq!(
-        EIP1271_MAGICVALUE, magic,
-        "case {id}: EIP1271_MAGICVALUE must equal the standard 0x1626ba7e",
+        actual.as_str(),
+        magic,
+        "case {id}: IERC1271::isValidSignatureCall::SELECTOR must equal the standard 0x1626ba7e",
     );
 }
 
@@ -418,12 +431,20 @@ fn assert_interaction_defaults(id: &str, expected: &Value) {
 }
 
 fn assert_deployment_constants(id: &str, expected: &Value) {
-    let expected_salt = expected["salt"]
+    let expected_salt: B256 = expected["salt"]
         .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.salt must be a string"));
-    let expected_deployer = expected["deployer_contract"]
+        .unwrap_or_else(|| panic!("case {id}: expected.salt must be a string"))
+        .parse()
+        .unwrap_or_else(|error| {
+            panic!("case {id}: expected.salt must parse as 32-byte hex: {error}")
+        });
+    let expected_deployer: AlloyAddress = expected["deployer_contract"]
         .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.deployer_contract must be a string"));
+        .unwrap_or_else(|| panic!("case {id}: expected.deployer_contract must be a string"))
+        .parse()
+        .unwrap_or_else(|error| {
+            panic!("case {id}: expected.deployer_contract must parse as a 20-byte address: {error}")
+        });
 
     assert_eq!(
         SALT, expected_salt,

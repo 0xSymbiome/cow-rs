@@ -1,3 +1,4 @@
+use alloy_primitives::{FixedBytes, fixed_bytes};
 use alloy_sol_types::sol;
 use cow_sdk_core::{Address, Provider};
 
@@ -38,18 +39,21 @@ pub enum Eip1967Slot {
 }
 
 /// 32-byte representation of an EIP-1967 storage slot.
-pub type SlotBytes = alloy_sol_types::private::FixedBytes<32>;
+pub type SlotBytes = FixedBytes<32>;
 
-const ADMIN_SLOT_BYTES: [u8; 32] = [
-    0xb5, 0x31, 0x27, 0x68, 0x4a, 0x56, 0x8b, 0x31, 0x73, 0xae, 0x13, 0xb9, 0xf8, 0xa6, 0x01, 0x6e,
-    0x24, 0x3e, 0x63, 0xb6, 0xe8, 0xee, 0x11, 0x78, 0xd6, 0xa7, 0x17, 0x85, 0x0b, 0x5d, 0x61, 0x03,
-];
+const ADMIN_SLOT: SlotBytes =
+    fixed_bytes!("0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103");
+const IMPLEMENTATION_SLOT: SlotBytes =
+    fixed_bytes!("0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc");
 
-const IMPLEMENTATION_SLOT_BYTES: [u8; 32] = [
-    0x36, 0x08, 0x94, 0xa1, 0x3b, 0xa1, 0xa3, 0x21, 0x06, 0x67, 0xc8, 0x28, 0x49, 0x2d, 0xb9, 0x8d,
-    0xca, 0x3e, 0x20, 0x76, 0xcc, 0x37, 0x35, 0xa9, 0x20, 0xa3, 0xca, 0x50, 0x5d, 0x38, 0x2b, 0xbc,
-];
-
+// The hex-form constants below are the same 32 bytes rendered as
+// `0x`-prefixed lowercase hex. They exist on the
+// `Provider::get_storage_at(&self, proxy: &Address, slot: &str)`
+// trait-shape stability seam — the trait method takes the slot as a
+// string at the cow-side `Provider` surface. The
+// `eip1967_slot_hex_strings_match_their_byte_forms` round-trip test in
+// `crates/contracts/tests/proxy_contract.rs` pins the relationship
+// between the byte form and the string form.
 const ADMIN_SLOT_HEX: &str = "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103";
 const IMPLEMENTATION_SLOT_HEX: &str =
     "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
@@ -59,8 +63,8 @@ impl Eip1967Slot {
     #[must_use]
     pub const fn as_bytes(self) -> SlotBytes {
         match self {
-            Self::Admin => SlotBytes::new(ADMIN_SLOT_BYTES),
-            Self::Implementation => SlotBytes::new(IMPLEMENTATION_SLOT_BYTES),
+            Self::Admin => ADMIN_SLOT,
+            Self::Implementation => IMPLEMENTATION_SLOT,
         }
     }
 

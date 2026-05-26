@@ -1,6 +1,6 @@
 use alloy_primitives::{Address, B256};
 use cow_sdk_cow_shed::CowShedVersion;
-use cow_sdk_cow_shed::address::{implementation_for, init_code_hash, proxy_of, user_salt};
+use cow_sdk_cow_shed::address::{implementation_for, init_code_hash, proxy_of};
 use serde::Deserialize;
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/cow_shed/proxy_addresses.json");
@@ -30,7 +30,7 @@ fn init_code_is_derived_per_implementation_and_user() {
         let implementation = address(&row.implementation);
         let user = address(&row.user);
         assert_eq!(implementation_for(version, factory), implementation);
-        assert_eq!(B256::from(user_salt(user)), b256(&row.salt));
+        assert_eq!(user.into_word(), b256(&row.salt));
         assert_eq!(
             B256::from(init_code_hash(version, implementation, user)),
             b256(&row.init_code_hash)

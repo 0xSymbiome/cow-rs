@@ -36,8 +36,7 @@ const V1_0_1_GNOSIS_IMPLEMENTATION: Address = Address::new([
 pub fn proxy_of(version: CowShedVersion, factory: Address, user: Address) -> Address {
     let implementation = implementation_for(version, factory);
     let init_code_hash = init_code_hash(version, implementation, user);
-    let salt = user_salt(user);
-    factory.create2(salt, init_code_hash)
+    factory.create2(user.into_word(), init_code_hash)
 }
 
 /// Returns the implementation used by a version and factory pair.
@@ -50,17 +49,6 @@ pub const fn implementation_for(version: CowShedVersion, factory: Address) -> Ad
         }
         CowShedVersion::V1_0_1 => V1_0_1_DEFAULT_IMPLEMENTATION,
     }
-}
-
-/// Returns the CREATE2 salt used by COW Shed factories.
-///
-/// The salt is the user address left-padded with twelve zero bytes to
-/// fill a 32-byte word.
-#[must_use]
-pub fn user_salt(user: Address) -> [u8; 32] {
-    let mut salt = [0_u8; 32];
-    salt[12..].copy_from_slice(user.as_slice());
-    salt
 }
 
 /// Returns the CREATE2 init-code hash for a proxy constructor pair.

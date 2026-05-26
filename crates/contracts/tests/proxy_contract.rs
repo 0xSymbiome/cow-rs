@@ -69,6 +69,23 @@ fn eip1967_slot_bytes_match_the_canonical_hex_payload() {
 }
 
 #[test]
+fn eip1967_slot_hex_strings_match_their_byte_forms() {
+    // Pins the relationship between the `fixed_bytes!`-emitted byte
+    // form (the typed source of truth) and the parallel `&'static str`
+    // hex form (consumed by the `Provider::get_storage_at(slot: &str)`
+    // trait-shape stability seam). If a future contributor edits one
+    // without the other, this round-trip assertion catches the drift
+    // before the canonical-keccak parity test below does.
+    for slot in [Eip1967Slot::Admin, Eip1967Slot::Implementation] {
+        assert_eq!(
+            slot.as_hex_str(),
+            format!("{:#x}", slot.as_bytes()),
+            "EIP-1967 slot hex string must equal the LowerHex rendering of the byte form for {slot:?}",
+        );
+    }
+}
+
+#[test]
 fn eip173_proxy_interface_exposes_the_expected_function_selectors() {
     use alloy_sol_types::SolCall;
 

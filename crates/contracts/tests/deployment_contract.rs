@@ -1,5 +1,6 @@
 mod common;
 
+use alloy_primitives::{Address as AlloyAddress, B256};
 use sha3::{Digest, Keccak256};
 
 use cow_sdk_contracts::{
@@ -25,11 +26,18 @@ fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
 #[test]
 fn deployment_constants_and_create2_address_match_fixture_contract() {
     let fixture = fixture_case("contracts-deployment-constants");
-    assert_eq!(SALT, fixture["expected"]["salt"].as_str().unwrap());
-    assert_eq!(
-        DEPLOYER_CONTRACT,
-        fixture["expected"]["deployer_contract"].as_str().unwrap()
-    );
+    let expected_salt: B256 = fixture["expected"]["salt"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    let expected_deployer: AlloyAddress = fixture["expected"]["deployer_contract"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert_eq!(SALT, expected_salt);
+    assert_eq!(DEPLOYER_CONTRACT, expected_deployer);
 
     let bytecode = "0x608060405234801561001057600080fd5b506040516102c73803806102c78339";
     let args = vec![
@@ -45,8 +53,8 @@ fn deployment_constants_and_create2_address_match_fixture_contract() {
     }
     let mut payload = Vec::with_capacity(85);
     payload.push(0xff);
-    payload.extend_from_slice(&hex::decode(DEPLOYER_CONTRACT.trim_start_matches("0x")).unwrap());
-    payload.extend_from_slice(&hex::decode(SALT.trim_start_matches("0x")).unwrap());
+    payload.extend_from_slice(DEPLOYER_CONTRACT.as_slice());
+    payload.extend_from_slice(SALT.as_slice());
     payload.extend_from_slice(&keccak256(init_code));
     let hash = keccak256(payload);
     let expected = format!("0x{}", hex::encode(&hash[12..]));
@@ -91,11 +99,18 @@ fn deployment_for_chain_uses_core_protocol_addresses() {
 #[test]
 fn registry_canonical_addresses_are_bound_to_the_reviewed_create2_salt_contract() {
     let fixture = fixture_case("contracts-deployment-constants");
-    assert_eq!(SALT, fixture["expected"]["salt"].as_str().unwrap());
-    assert_eq!(
-        DEPLOYER_CONTRACT,
-        fixture["expected"]["deployer_contract"].as_str().unwrap()
-    );
+    let expected_salt: B256 = fixture["expected"]["salt"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    let expected_deployer: AlloyAddress = fixture["expected"]["deployer_contract"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert_eq!(SALT, expected_salt);
+    assert_eq!(DEPLOYER_CONTRACT, expected_deployer);
 
     let registry = Registry::default();
     let canonical = [
@@ -127,8 +142,8 @@ fn registry_canonical_addresses_are_bound_to_the_reviewed_create2_salt_contract(
     let init_hash = deployment_address_hash_input(bytecode, &args).unwrap();
     let mut payload = Vec::with_capacity(85);
     payload.push(0xff);
-    payload.extend_from_slice(&hex::decode(DEPLOYER_CONTRACT.trim_start_matches("0x")).unwrap());
-    payload.extend_from_slice(&hex::decode(SALT.trim_start_matches("0x")).unwrap());
+    payload.extend_from_slice(DEPLOYER_CONTRACT.as_slice());
+    payload.extend_from_slice(SALT.as_slice());
     payload.extend_from_slice(&init_hash);
     let expected = keccak256(payload);
 

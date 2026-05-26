@@ -204,7 +204,62 @@ The first functional crate-family release begins at `0.1.0`.
   documenting the original introduction of the `hex_decode_*` family remains
   in place as the audit trail for the prior shape.
 
+- Pre-1.0 breaking change. `cow_sdk_contracts::EIP1271_MAGICVALUE` is
+  removed from the shipped surface. Consumers comparing against the
+  EIP-1271 success magic value should reach the typed selector emitted
+  by the `sol!`-generated `IERC1271` binding through
+  `<cow_sdk_contracts::IERC1271::isValidSignatureCall as alloy_sol_types::SolCall>::SELECTOR`,
+  which is the `[u8; 4]` constant the production verifier already
+  compares against. The four-byte payload `[0x16, 0x26, 0xba, 0x7e]`
+  is unchanged; only the parallel `&'static str` declaration is
+  removed.
+
+- `cow_sdk_cow_shed::address::user_salt` is removed. The helper body
+  was byte-identical to `alloy_primitives::Address::into_word`
+  (`[0; 32]` followed by `copy_from_slice` over `[12..]`). The single
+  production caller in `cow_sdk_cow_shed::address::proxy_of` now
+  inlines `user.into_word()` directly into the
+  `alloy_primitives::Address::create2` call. The 30-row
+  `parity/fixtures/cow_shed/proxy_addresses.json` fixture (five users
+  across two deployed versions across three chains) continues to pass
+  byte-for-byte; the helper had no external consumers.
+
 ### Changed
+
+- Pre-1.0 breaking change. `cow_sdk_contracts::SALT` is re-typed from
+  `&'static str` to `alloy_primitives::B256`. The 32-byte payload
+  (`Mattresses in Berlin!` ASCII followed by eleven zero bytes,
+  `0x4d61...0000`) is unchanged and continues to drive the canonical
+  CREATE2 derivation of every Settlement, VaultRelayer, and EthFlow
+  deployment address recorded in `crates/contracts/registry.toml`. The
+  constant is now emitted by the `alloy_primitives::fixed_bytes!`
+  compile-time macro and reaches `Address::create2_from_code` as a
+  typed `B256` directly. Callers that consumed the string form should
+  reach the byte form through `SALT.as_slice()` or render to the
+  canonical hex through `format!("{SALT:#x}")`.
+
+- Pre-1.0 breaking change. `cow_sdk_contracts::DEPLOYER_CONTRACT` is
+  re-typed from `&'static str` to `alloy_primitives::Address`. The
+  20-byte payload (`0x4e59b44847b379578588920ca78fbf26c0b4956c`, the
+  Arachnid deterministic-deployment proxy) is unchanged. The constant
+  is now emitted by the `alloy_primitives::address!` compile-time macro,
+  and `deterministic_deployment_address` consumes
+  `DEPLOYER_CONTRACT.create2_from_code(SALT, &init_code)` directly
+  without intermediate hex decoding.
+
+- EIP-1967 storage-slot byte constants in `cow_sdk_contracts::proxy`
+  are emitted via `alloy_primitives::fixed_bytes!` as the single byte
+  source of truth. The `SlotBytes` alias is re-pointed to
+  `alloy_primitives::FixedBytes<32>` (the same type as the previous
+  `alloy_sol_types::private::FixedBytes<32>` re-export). The
+  `Eip1967Slot::as_hex_str` accessor continues to return a
+  `&'static str` because the cow-side `Provider::get_storage_at`
+  trait method takes the slot as a hex string; the new
+  `eip1967_slot_hex_strings_match_their_byte_forms` test in
+  `crates/contracts/tests/proxy_contract.rs` pins the round-trip
+  contract between the byte form and the hex string. The existing
+  keccak-minus-one parity test continues to pin both forms against
+  the canonical EIP-1967 derivation.
 
 - `cow-sdk-contracts`: the `ContractsError::DecodeHex { source }` typed
   source field is now `alloy_primitives::hex::FromHexError` (a re-export

@@ -1,4 +1,4 @@
-use alloy_primitives::keccak256;
+use alloy_primitives::{B256, address, fixed_bytes, keccak256};
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, CowEnv, SupportedChainId};
@@ -9,9 +9,19 @@ use crate::{
 };
 
 /// Deterministic deployment salt used by `CoW` deployments.
-pub const SALT: &str = "0x4d61747472657373657320696e204265726c696e210000000000000000000000";
+///
+/// Pinned to the 32-byte payload `0x4d61...0000` and emitted as a typed
+/// [`alloy_primitives::B256`] compile-time literal via [`fixed_bytes!`];
+/// see ADR 0052 for the canonical-primitive-layer doctrine.
+pub const SALT: B256 =
+    fixed_bytes!("0x4d61747472657373657320696e204265726c696e210000000000000000000000");
 /// Deployer contract address used for deterministic deployment derivation.
-pub const DEPLOYER_CONTRACT: &str = "0x4e59b44847b379578588920ca78fbf26c0b4956c";
+///
+/// Pinned to the 20-byte payload `0x4e59b448...956c` (the Arachnid
+/// deterministic-deployment proxy) and emitted as a typed
+/// [`alloy_primitives::Address`] compile-time literal via [`address!`].
+pub const DEPLOYER_CONTRACT: alloy_primitives::Address =
+    address!("0x4e59b44847b379578588920ca78fbf26c0b4956c");
 
 /// Supported named `CoW` deployment artifacts.
 ///
@@ -74,21 +84,13 @@ pub fn deterministic_deployment_address(
     // keccak256(init_code)`) and the final keccak256 to the maintained
     // primitive. `Address::create2_from_code` computes the init-code hash
     // internally and slices the trailing 20 bytes to form the derived
-    // address. The inline regression test in this module reconstructs the
-    // canonical EIP-1014 formula from first principles and asserts the
-    // helper output matches at the byte level.
-    let deployer = Address::new(DEPLOYER_CONTRACT)?;
-    let deployer_alloy = deployer.into_alloy();
-    let salt_bytes = decode_hex_field(SALT, "salt")?;
-    let salt: [u8; 32] =
-        salt_bytes
-            .try_into()
-            .map_err(|raw: Vec<u8>| ContractsError::InvalidDecodedLength {
-                field: "salt",
-                expected: 32,
-                actual: raw.len(),
-            })?;
-    let derived = deployer_alloy.create2_from_code(salt, &init_code);
+    // address. `DEPLOYER_CONTRACT` and `SALT` are typed compile-time
+    // literals, so the CREATE2 inputs reach the alloy primitive without
+    // any runtime hex decoding. The inline regression test in this
+    // module reconstructs the canonical EIP-1014 formula from first
+    // principles and asserts the helper output matches at the byte
+    // level.
+    let derived = DEPLOYER_CONTRACT.create2_from_code(SALT, &init_code);
     Ok(Address::from_bytes(derived.into()))
 }
 
@@ -192,13 +194,11 @@ mod tests {
     fn deterministic_deployment_address_matches_the_create2_formula() {
         let (bytecode, deployment_arguments) = sample_init_code_parts();
         let hash = deployment_address_hash_input(bytecode, &deployment_arguments).unwrap();
-        let deployer = alloy_primitives::hex::decode(DEPLOYER_CONTRACT.trim_start_matches("0x")).unwrap();
-        let salt = alloy_primitives::hex::decode(SALT.trim_start_matches("0x")).unwrap();
 
         let mut payload = Vec::with_capacity(85);
         payload.push(0xff);
-        payload.extend_from_slice(&deployer);
-        payload.extend_from_slice(&salt);
+        payload.extend_from_slice(DEPLOYER_CONTRACT.as_slice());
+        payload.extend_from_slice(SALT.as_slice());
         payload.extend_from_slice(&hash);
         let expected = keccak256(payload);
 
@@ -208,5 +208,32 @@ mod tests {
                 .to_hex_string(),
             format!("0x{}", alloy_primitives::hex::encode(&expected[12..]))
         );
+    }
+
+    #[test]
+    fn salt_bytes_match_pinned_literal() {
+        // Pinned 32-byte form of "Mattresses in Berlin!" followed by 11
+        // zero bytes. The independent literal here proves the
+        // `fixed_bytes!` macro emits the canonical bytes; if a future
+        // contributor inadvertently shifts the SALT declaration, this
+        // assertion catches the drift before the parity oracle does.
+        let pinned: [u8; 32] = [
+            0x4d, 0x61, 0x74, 0x74, 0x72, 0x65, 0x73, 0x73, 0x65, 0x73, 0x20, 0x69, 0x6e, 0x20,
+            0x42, 0x65, 0x72, 0x6c, 0x69, 0x6e, 0x21, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00,
+        ];
+        assert_eq!(SALT.0, pinned);
+    }
+
+    #[test]
+    fn deployer_contract_bytes_match_pinned_arachnid_proxy() {
+        // Pinned 20-byte form of the Arachnid deterministic-deployment
+        // proxy address. The independent literal here proves the
+        // `address!` macro emits the canonical bytes.
+        let pinned: [u8; 20] = [
+            0x4e, 0x59, 0xb4, 0x48, 0x47, 0xb3, 0x79, 0x57, 0x85, 0x88, 0x92, 0x0c, 0xa7, 0x8f,
+            0xbf, 0x26, 0xc0, 0xb4, 0x95, 0x6c,
+        ];
+        assert_eq!(DEPLOYER_CONTRACT.into_array(), pinned);
     }
 }

@@ -85,7 +85,7 @@ pub use settlement::{
     encode_trade_flags,
 };
 pub use signature::{
-    EIP1271_MAGICVALUE, Eip1271SignatureData, Eip1271VerificationRequest, Signature, SigningScheme,
+    Eip1271SignatureData, Eip1271VerificationRequest, Signature, SigningScheme,
     decode_eip1271_signature_data, decode_signing_scheme, encode_eip1271_signature_data,
     encode_signing_scheme, function_magic_value, normalized_ecdsa_signature,
     verify_eip1271_signature,

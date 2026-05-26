@@ -1,7 +1,7 @@
 # COW Shed Contract Bindings Audit
 
 Status: Current
-Last reviewed: 2026-05-25
+Last reviewed: 2026-05-26
 Owning surface: byte-identical COW Shed Solidity mirrors, proxy creation-code artifacts, version-call evidence, and deployment registry rows
 Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, or the deployed `VERSION()` return value change upstream.
 Related docs:
@@ -173,10 +173,10 @@ Proxy address derivation in
 [`alloy_primitives::Address::create2`], which assembles the canonical
 EIP-1014 preimage (`0xff || factory || salt || init_code_hash`) and
 keccak256-hashes it internally. The salt is the user address left-padded
-with twelve zero bytes to fill a 32-byte word
-(`user_salt(user)`); the init-code hash concatenates the embedded
-per-version proxy creation code with the canonical ABI encoding of the
-`(implementation, user)` constructor tuple via
+with twelve zero bytes to fill a 32-byte word via
+[`alloy_primitives::Address::into_word`]; the init-code hash concatenates
+the embedded per-version proxy creation code with the canonical ABI
+encoding of the `(implementation, user)` constructor tuple via
 [`alloy_sol_types::SolValue::abi_encode`] and hashes the result with
 [`alloy_primitives::keccak256`]. The implementation address is selected
 by `implementation_for(version, factory)`, which returns the Gnosis
