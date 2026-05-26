@@ -100,6 +100,10 @@ without widening the default facade.
 
 **Anchored by**: [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0014](adr/0014-eip1271-verification-cache.md), [ADR 0028](adr/0028-account-abstraction-integration-plan.md).
 
+**Operational doctrine**: [Alloy Doctrine](alloy-doctrine.md) — the
+three-bucket classification (ALWAYS-ALLOY, COW-OWNED, BOUNDARY-ADAPTER)
+and the decision tree for when a new primitive joins each bucket.
+
 ## Canonical Contract Bindings
 
 Every ABI binding the SDK emits call-data against is generated through
@@ -113,6 +117,10 @@ EIP-712 / Solidity-binding layer is `alloy_sol_types` per
 [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
 **Anchored by**: [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md) (primary). Supporting: [ADR 0020](adr/0020-ethflow-owner-threading.md), [ADR 0022](adr/0022-ecdsa-signature-v-normalization.md), [ADR 0023](adr/0023-legacy-compatibility-shim-removal.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
+
+**Operational doctrine**: [Alloy Doctrine](alloy-doctrine.md) — the
+three-bucket classification (ALWAYS-ALLOY, COW-OWNED, BOUNDARY-ADAPTER)
+and the decision tree for when a new primitive joins each bucket.
 
 ## Evidence-Backed Public Claims
 

@@ -4,6 +4,29 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::{Address, ChainId};
 /// Typed-data domain metadata used for EIP-712 signing.
+// DO NOT SWAP for alloy_sol_types::Eip712Domain.
+//
+// cow `TypedDataDomain` is the EIP-1193 `eth_signTypedData_v4` wire
+// shape: four required fields, numeric `chainId` (camelCase via
+// serde), no `salt` field. alloy `Eip712Domain` is the hashing-side
+// type with `Option<>` on every field, `U256` for `chainId`
+// (serializes as hex when `eip712-serde` is enabled), and an extra
+// `salt: Option<B256>` field.
+//
+// Swapping would silently break every JS wallet integration —
+// MetaMask, Rabby, WalletConnect, and Frame all reject `null`
+// fields, hex `chainId`, and unexpected `salt` in the domain.
+//
+// The bridge to the hashing-side type is `into_alloy_domain()`
+// (defined on this same impl block); use that adapter for hashing
+// and keep this struct as the wire-side type.
+//
+// ADR: docs/adr/0052-alloy-primitives-canonical-primitive-layer.md
+// (lines 124-131), docs/adr/0040-wallet-provider-callback-boundary-for-js-consumers.md
+// (lines 38-39).
+// Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `TypedDataDomain`
+// JSON wire shape.
+// CI gate: .github/workflows/never-swap-gates.yml#gate-typed-data-domain.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

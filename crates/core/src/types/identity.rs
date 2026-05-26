@@ -164,6 +164,27 @@ impl Address {
     }
 }
 
+// DO NOT SWAP for #[derive(Display)] or alloy's default Address Display.
+//
+// cow-rs wire form for Address is lowercase (`0x` followed by 40
+// lowercase hex digits) because every parity fixture under
+// `parity/fixtures/`, every services-backend response, and every
+// EIP-712 JSON-stringified payload uses lowercase. alloy's default
+// Display emits the EIP-55 mixed-case checksum.
+//
+// Swapping to derived Display or calling `.to_checksum()` would diff
+// every parity fixture on hash, falsely report mismatches against
+// lowercase-emitting tools, and silently change the EIP-712 digest
+// where address strings get hashed for transport.
+//
+// The `{:#x}` format spec routes through alloy's `LowerHex` impl,
+// which emits the lowercase byte sequence we depend on; keep it.
+//
+// ADR: docs/adr/0052-alloy-primitives-canonical-primitive-layer.md
+// (lines 96-99).
+// Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `Address::Display`
+// lowercase emission.
+// CI gate: .github/workflows/never-swap-gates.yml#gate-address-display.
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:#x}", self.0)

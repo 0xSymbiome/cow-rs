@@ -5,6 +5,13 @@
 # out_of_scope_adrs with a written rationale.
 #
 # ADRs 0029-0033 are accepted and covered by the blocking ADR coverage lane.
+#
+# Doctrines: `docs/alloy-doctrine.md` is the canonical human-readable
+# consolidation of the ADRs listed under principles 8 (Chain-RPC Runtime
+# Neutrality) and 9 (Canonical Contract Bindings). The doctrine is
+# read-only over the ADR set; it does not introduce policy. Doctrine
+# evolution requires an ADR amendment plus a refresh of this map's
+# supporting_adrs lists.
 
 version: 1
 

@@ -1,0 +1,264 @@
+name: never-swap-gates
+
+# Mechanical floor for the alloy doctrine. Each job below is one
+# never-swap constraint anchored by `docs/alloy-doctrine.md` (the nine
+# never-swap exceptions list) and the corresponding ADRs under
+# `docs/adr/`.
+#
+# Each job is independent; a single failed gate does not short-circuit
+# the others, so a PR author sees every fence they tripped in one
+# workflow run.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/never-swap-gates.yml'
+      - 'crates/**/*.rs'
+      - 'crates/**/Cargo.toml'
+      - 'Cargo.toml'
+  push:
+    branches:
+      - main
+      - 'feat/**'
+      - 'release/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  gate-ecdsa-v:
+    name: ECDSA v normalization (ADR 0022)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Reject alloy normalize_v on contracts and signing surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t sources < <(find crates/contracts/src crates/signing/src -type f -name '*.rs' 2>/dev/null | sort || true)
+          if [ "${#sources[@]}" -eq 0 ]; then
+            echo "No protected sources found; gate has no candidates."
+            exit 0
+          fi
+          # Filter out `//`-prefixed lines so the `// DO NOT SWAP` comment
+          # blocks (which intentionally name the forbidden symbols in their
+          # explanatory text) do not self-trigger this gate.
+          violations="$(grep -nE '\bnormalize_v\b|\balloy_primitives::Signature::v\b' "${sources[@]}" 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' || true)"
+          if [ -n "$violations" ]; then
+            printf '%s\n' "$violations" >&2
+            echo "::error::Never-swap fence: alloy normalize_v collapses the recovery byte to a parity bit. cow-rs emits v in {27, 28} for on-chain ecrecover (ADR 0022). Reroute through cow_sdk_contracts::normalized_ecdsa_signature."
+            exit 1
+          fi
+
+  gate-amount-radix:
+    name: Amount / SignedAmount radix sniffing (ADR 0052)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Reject U256::from_str / I256::from_str inside amount.rs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f crates/core/src/types/amount.rs ]; then
+            echo "::error::amount.rs not found; refusing to silently pass."
+            exit 1
+          fi
+          # Filter out `//`-prefixed lines so the `// DO NOT SWAP` comment
+          # blocks (which intentionally name the forbidden symbols in their
+          # explanatory text) do not self-trigger this gate.
+          violations="$(grep -nE '\b(U256|I256)::from_str\s*\(' crates/core/src/types/amount.rs 2>/dev/null | grep -vE '^[0-9]+:[[:space:]]*//' || true)"
+          if [ -n "$violations" ]; then
+            printf '%s\n' "$violations" >&2
+            echo "::error::Never-swap fence: alloy U256/I256 from_str sniffs 0x/0o/0b radix prefixes. cow Amount and SignedAmount enforce explicit radix via from_str_radix and from_dec_str (ADR 0052)."
+            exit 1
+          fi
+
+  gate-address-display:
+    name: Address Display lowercase (ADR 0052)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Reject derived Display and to_checksum on identity.rs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f crates/core/src/types/identity.rs ]; then
+            echo "::error::identity.rs not found; refusing to silently pass."
+            exit 1
+          fi
+          # Filter out `//`-prefixed lines so the `// DO NOT SWAP` comment
+          # blocks (which intentionally name the forbidden symbols in their
+          # explanatory text) do not self-trigger this gate.
+          violations="$(grep -nE '#\[derive\([^)]*Display[^)]*\)\]|\bto_checksum(_buffer)?\s*\(|\.to_checksum\b' crates/core/src/types/identity.rs 2>/dev/null | grep -vE '^[0-9]+:[[:space:]]*//' || true)"
+          if [ -n "$violations" ]; then
+            printf '%s\n' "$violations" >&2
+            echo "::error::Never-swap fence: cow Address wire form is lowercase; alloy default Display is EIP-55 checksum (ADR 0052). Hand-write Display via {:#x}; do not derive."
+            exit 1
+          fi
+
+  gate-alloy-chains:
+    name: alloy-chains workspace dep ban (ADR 0005, ADR 0011)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Reject alloy-chains as a direct workspace dep
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scan the manifests that participate in cargo's build graph:
+          # the root workspace manifest plus every Cargo.toml under
+          # crates/, examples/, and fuzz/. These are the only manifests
+          # where a direct alloy-chains dependency would land.
+          manifests=("Cargo.toml")
+          while IFS= read -r path; do manifests+=("$path"); done < <(find crates -type f -name 'Cargo.toml' 2>/dev/null | sort || true)
+          while IFS= read -r path; do manifests+=("$path"); done < <(find examples -type f -name 'Cargo.toml' 2>/dev/null | sort || true)
+          if [ -f fuzz/Cargo.toml ]; then
+            manifests+=("fuzz/Cargo.toml")
+          fi
+          if [ ! -f Cargo.toml ]; then
+            echo "::error::Workspace Cargo.toml not found; refusing to silently pass."
+            exit 1
+          fi
+          if grep -nE '^\s*alloy[-_]chains\s*[=:]' "${manifests[@]}"; then
+            echo "::error::Never-swap fence: alloy-chains is forbidden as a direct workspace dep. cow-rs uses SupportedChainId as the only authority for orderbook-supported chains plus the cow-specific URL grammar. ADR 0005, ADR 0011."
+            exit 1
+          fi
+
+  gate-typed-data-domain:
+    name: TypedDataDomain DTO field fence (ADR 0052, ADR 0040)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Reject Eip712Domain as a public DTO field
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t sources < <(find \
+            crates/core/src/traits crates/core/src/types crates/signing/src \
+            -type f -name '*.rs' 2>/dev/null | sort || true)
+          if [ "${#sources[@]}" -eq 0 ]; then
+            echo "No typed-data DTO sources found; gate has no candidates."
+            exit 0
+          fi
+          if grep -nE '^\s*pub\s+\w+\s*:\s*(alloy_sol_types::)?Eip712Domain\b' "${sources[@]}"; then
+            echo "::error::Never-swap fence: alloy Eip712Domain is the hashing-side type with Option<> fields, U256 chainId, and salt. cow TypedDataDomain emits the EIP-1193 eth_signTypedData_v4 wire shape. ADR 0052, ADR 0040. Use TypedDataDomain on DTO fields; bridge through .into_alloy_domain() for hashing."
+            exit 1
+          fi
+
+  gate-eip1271-shape:
+    name: EIP-1271 Shape A vs Shape B encoder fence (ADR 0050)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Reject unified blob encoders taking a shape flag
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t sources < <(find crates/signing/src/eip1271 crates/composable/src 2>/dev/null -type f -name '*.rs' | sort || true)
+          if [ "${#sources[@]}" -eq 0 ]; then
+            echo "No EIP-1271 encoder sources found; gate has no candidates."
+            exit 0
+          fi
+          # Filter out `//`-prefixed lines so the `// DO NOT SWAP` comment
+          # blocks (which intentionally name the forbidden symbols in their
+          # explanatory text) do not self-trigger this gate.
+          violations="$(grep -nE '(shape|kind|variant)\s*:\s*(Shape|BlobShape|Eip1271(Blob)?Shape)\b|fn\s+encode_eip1271_blob\s*<|fn\s+encode_blob_(any|either|both)\b' "${sources[@]}" 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' || true)"
+          if [ -n "$violations" ]; then
+            printf '%s\n' "$violations" >&2
+            echo "::error::Never-swap fence: ADR 0050 requires Shape A (Safe muxer, selector-prefixed) and Shape B (raw forwarder, no selector) to be distinct encoder entry points. Do not pass a shape: ShapeKind flag."
+            exit 1
+          fi
+
+  gate-transport-stack:
+    name: REST transport vs alloy JSON-RPC transport (ADR 0010, 0019, 0041, 0046)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Reject alloy-transport in protected REST crates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t sources < <(find \
+            crates/transport-policy/src crates/transport-wasm/src \
+            crates/orderbook/src crates/subgraph/src \
+            -type f -name '*.rs' 2>/dev/null | sort || true)
+          if [ "${#sources[@]}" -eq 0 ]; then
+            echo "::error::No REST transport sources found; refusing to silently pass."
+            exit 1
+          fi
+          if [ -d crates/core/src/transport ]; then
+            while IFS= read -r path; do
+              sources+=("$path")
+            done < <(find crates/core/src/transport -type f -name '*.rs' 2>/dev/null | sort || true)
+          fi
+          # Filter out `//`-prefixed lines so the `// DO NOT SWAP` comment
+          # blocks (which intentionally name the forbidden symbols in their
+          # explanatory text) do not self-trigger this gate.
+          violations="$(grep -nE '\balloy_transport(_http)?\b|\bRequestPacket\b|\bResponsePacket\b|alloy[_-]json[_-]rpc::|\bRetryBackoffLayer\b' "${sources[@]}" 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' || true)"
+          if [ -n "$violations" ]; then
+            printf '%s\n' "$violations" >&2
+            echo "::error::Never-swap fence: alloy transport is tower::Service<RequestPacket> over JSON-RPC. cow-rs REST transport is HttpTransport over arbitrary JSON bodies. ADR 0010, 0019, 0041, 0046. REST crates must not import alloy-transport."
+            exit 1
+          fi
+
+  gate-do-not-swap-census:
+    name: DO NOT SWAP comment census (10 expected)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Count and lock DO NOT SWAP comments at 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t sources < <(find crates -type f -name '*.rs' 2>/dev/null | sort || true)
+          if [ "${#sources[@]}" -eq 0 ]; then
+            echo "::error::No crate sources found; refusing to silently pass."
+            exit 1
+          fi
+          # Ten anchor blocks land at eight never-swap surfaces; the
+          # `Amount::new` / `SignedAmount::new` surface carries two blocks
+          # (one per constructor) and the `SupportedChainId` enum /
+          # `api_path()` surface carries two blocks (one per anchor).
+          count="$(grep -RIc 'DO NOT SWAP' "${sources[@]}" | awk -F: '{s+=$2} END {print s+0}')"
+          if [ "$count" -ne 10 ]; then
+            echo "::error::Never-swap fence: expected exactly 10 DO NOT SWAP comment blocks across crates/ (one per anchor; two anchors carry paired blocks). Found ${count}. Either restore the missing comment or update this gate's expected count and amend docs/alloy-doctrine.md."
+            exit 1
+          fi
+          echo "Found ${count} DO NOT SWAP comment blocks — census matches."

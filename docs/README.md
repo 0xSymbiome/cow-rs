@@ -120,9 +120,13 @@ subscriber setup, the complete structured-field registry, and the
 
 - [Audits](audit/README.md)
 - [ADRs](adr/README.md)
+- [Alloy Doctrine](alloy-doctrine.md)
 
 Audits are current-state review records for named trust-significant surfaces.
 ADRs capture durable design decisions and their rationale.
+The Alloy Doctrine is the canonical human-readable consolidation of the
+ADR set on when cow-rs uses alloy directly, when it owns logic, and when
+it routes through an adapter.
 
 ## For Contributors
 

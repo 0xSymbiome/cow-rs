@@ -295,6 +295,19 @@ pub fn decode_signing_scheme(flags: u8) -> Result<SigningScheme, ContractsError>
 ///
 /// Returns [`ContractsError`] if the signature is not valid hex, is not
 /// exactly 65 bytes, or carries an unsupported recovery byte.
+// DO NOT SWAP for alloy_primitives::normalize_v.
+//
+// cow-rs emits the legacy Solidity recovery byte v ∈ {27, 28}, the form
+// on-chain `ecrecover(hash, v, r, s)` expects. alloy `normalize_v`
+// collapses every input to a parity bool, which produces `address(0)`
+// when fed back to `ecrecover` and reverts every smart-contract
+// signature verification.
+//
+// ADR: docs/adr/0022-ecdsa-signature-v-normalization.md (Decision §,
+// amendment block at :108-123).
+// Doctrine: docs/alloy-doctrine.md, Bucket 2 row for ECDSA `v` byte
+// canonicalization.
+// CI gate: .github/workflows/never-swap-gates.yml#gate-ecdsa-v.
 pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> {
     let mut bytes = decode_hex(data, "signature")?;
     if bytes.len() != 65 {

@@ -43,6 +43,30 @@
 //! contract. Callers that need manual redirect inspection run the request
 //! through their own fetch bridge rather than through this default adapter.
 
+// DO NOT SWAP for any alloy transport.
+//
+// alloy ships no browser-fetch transport. The alloy transport stack
+// (`alloy_transport_http`, `alloy_transport`, etc.) wraps
+// `tower::Service` over JSON-RPC packet types and hard-depends on
+// `tokio` for `Service::poll_ready` — both incompatible with the
+// `wasm32-unknown-unknown` target. Swapping would force a tokio
+// runtime into the browser bundle and explode the bundle size
+// budget pinned in ADR 0044.
+//
+// The `AbortController` lifecycle in this module (declared at the
+// `use web_sys::AbortController` import below and wired through the
+// dispatch path and the abort-timeout helper) is the cow-owned
+// timeout-cancellation seam. The per-call timeout contract
+// documented above is part of the cow public API; the alloy
+// ecosystem does not own this seam.
+//
+// ADR: docs/adr/0010-runtime-neutral-async-and-transport-posture.md
+// (lines 19-31),
+// docs/adr/0046-transport-policy-js-exposure.md (lines 25-31).
+// Doctrine: docs/alloy-doctrine.md, Bucket 2 row for Browser
+// `FetchTransport` with `AbortController` lifecycle.
+// CI gate: .github/workflows/never-swap-gates.yml#gate-transport-stack.
+
 #[cfg(feature = "tracing")]
 use std::borrow::Cow;
 use std::time::Duration;

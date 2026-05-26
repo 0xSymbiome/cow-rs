@@ -128,6 +128,25 @@ impl Amount {
     /// minus, has an `0o` / `0b` radix prefix, contains characters
     /// outside the recognised decimal or hex digit set, or exceeds
     /// `uint256` bounds.
+    // DO NOT SWAP for alloy_primitives::U256::from_str (or I256::from_str).
+    //
+    // alloy's `Uint::FromStr` sniffs four radix prefixes (`0x`, `0X`, `0o`,
+    // `0O`, `0b`, `0B`) per ruint-1.18.0/src/string.rs:225-240. The cow
+    // constructor explicitly rejects the octal and binary prefixes so a
+    // config typo like "0o755" surfaces as `InvalidNumeric` instead of
+    // silently parsing as 493 wei. The constructor uses
+    // `U256::from_str_radix(_, 10)` and `U256::from_str_radix(hex, 16)` to
+    // pick the radix explicitly; do not collapse onto `U256::from_str`.
+    //
+    // `SignedAmount::new` (sibling impl below) is strict-decimal-only (no
+    // `0x` accepted) per the JSON wire contract; that asymmetry is
+    // deliberate.
+    //
+    // ADR: docs/adr/0052-alloy-primitives-canonical-primitive-layer.md
+    // (lines 99-104).
+    // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `Amount::new` /
+    // `SignedAmount::new` lenient constructors.
+    // CI gate: .github/workflows/never-swap-gates.yml#gate-amount-radix.
     pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
         let value = value.as_ref();
         if value.is_empty() {
@@ -782,6 +801,21 @@ impl SignedAmount {
     /// Returns [`CoreError`] when the input is empty, has a forbidden
     /// radix prefix, contains a leading plus sign, contains non-decimal
     /// characters, or exceeds `int256` bounds.
+    // DO NOT SWAP for alloy_primitives::I256::from_str.
+    //
+    // `SignedAmount::new` is strict-decimal-only by design: it rejects
+    // every radix prefix (`0x`, `0o`, `0b`, plus uppercase variants),
+    // every leading plus sign, and every non-decimal character before
+    // delegating to `I256::from_dec_str`. alloy `I256::from_str` would
+    // accept `0x`-hex inputs, which would silently widen the JSON wire
+    // contract beyond decimal-only. The stricter contract is documented
+    // in the doctrine and pinned by the redaction-safe error grammar.
+    //
+    // ADR: docs/adr/0052-alloy-primitives-canonical-primitive-layer.md
+    // (lines 99-104).
+    // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `Amount::new` /
+    // `SignedAmount::new` lenient constructors.
+    // CI gate: .github/workflows/never-swap-gates.yml#gate-amount-radix.
     pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
         let value = value.as_ref();
         validate_strict_decimal_signed("signed_amount", value)?;

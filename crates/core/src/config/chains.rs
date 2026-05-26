@@ -52,6 +52,30 @@ const WRAPPED_NATIVE_LINEA_BYTES: [u8; 20] = hex!("0xe5d7c2a44ffddf6b295a15c1481
 ///     }
 /// }
 /// ```
+// DO NOT SWAP for alloy_chains::NamedChain.
+//
+// `SupportedChainId` encodes only the chains the CoW orderbook
+// supports; `alloy_chains::NamedChain` covers 100+ chains globally
+// with no concept of orderbook support. Swapping would silently
+// accept chains with no backend, and every orderbook call would 404
+// against a non-existent URL path.
+//
+// The `api_path()` arm carries CoW-specific URL segments —
+// `GnosisChain → "xdai"` and `ArbitrumOne → "arbitrum_one"` — that
+// are not recoverable from any alloy chain identity. Replacing
+// `api_path()` with `chain.name().to_lowercase()` would break the
+// orderbook URL grammar.
+//
+// The `#[non_exhaustive]` carve-out is the additive growth path:
+// new chains land as new variants with their own `api_path()` arms
+// and registry rows. Do not "centralize" through `alloy-chains`.
+//
+// ADR: docs/adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md
+// (strong domain types), docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md
+// (typestate binding on `SupportedChainId`).
+// Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `SupportedChainId`
+// orderbook support-set enum + `api_path()` URL grammar.
+// CI gate: .github/workflows/never-swap-gates.yml#gate-alloy-chains.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[repr(u64)]
@@ -97,6 +121,18 @@ impl SupportedChainId {
     ];
 
     /// Returns the path segment used by `CoW` API base URLs for this chain.
+    // DO NOT SWAP for any alloy chain-name lookup.
+    //
+    // Each arm here is a CoW-orderbook-specific URL segment
+    // (`GnosisChain → "xdai"`, `ArbitrumOne → "arbitrum_one"`). These
+    // mappings are not derivable from `alloy_chains::NamedChain` or
+    // any other alloy primitive; the orderbook backend defines them.
+    // Adding a new variant means adding the matching arm here.
+    //
+    // ADR: docs/adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md.
+    // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `SupportedChainId`
+    // orderbook support-set enum + `api_path()` URL grammar.
+    // CI gate: .github/workflows/never-swap-gates.yml#gate-alloy-chains.
     #[must_use]
     pub const fn api_path(self) -> &'static str {
         match self {

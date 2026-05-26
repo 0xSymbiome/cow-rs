@@ -17,6 +17,31 @@
 //! the canonical `abi.encode(order, signature)` byte layout (no outer
 //! tuple offset wrap).
 
+// DO NOT SWAP: do not collapse Shape A and Shape B into a single blob
+// encoder.
+//
+// Shape A (Safe muxer) is `selector(safeSignature(...)) ||
+// abi.encode(handler, params, GPv2Order.Data, payload)`. The 4-byte
+// selector prefix is load-bearing for Safe muxer dispatch; dropping
+// it makes the muxer fail to route and the on-chain signature
+// verification reverts at the Safe layer.
+//
+// Shape B (raw forwarder, this module) is `abi.encode(GPv2Order.Data,
+// signature)` with no selector prefix. Adding a 4-byte prefix shifts
+// every ABI field offset by 4 and the verifier `abi.decode` fails
+// with `InvalidData`.
+//
+// The two shapes must remain distinct encoder entry points. Do not
+// add a `fn encode_eip1271_blob<S: ShapeKind>(...)` helper that picks
+// the shape from an enum argument; the failure mode is silent
+// on-chain revert, not a compile error.
+//
+// ADR: docs/adr/0050-eip1271-signature-blob-encoding.md (lines 31-37,
+// Must Remain True at :117-120, amendment at :166-179 deferring the
+// composable crate).
+// Doctrine: docs/alloy-doctrine.md, Bucket 2 rows for EIP-1271
+// signature blob Shape A (Safe muxer) and Shape B (raw forwarder).
+// CI gate: .github/workflows/never-swap-gates.yml#gate-eip1271-shape.
 alloy_sol_types::sol! {
     /// On-chain `GPv2Order.Data` representation as ABI-encoded into the
     /// EIP-1271 verifier payload. The `kind`, `sellTokenBalance`, and
