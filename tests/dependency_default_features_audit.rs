@@ -5,6 +5,7 @@ use toml::Value;
 const REVIEWED_DEFAULT_FEATURE_EXCEPTIONS: &[&str] = &[
     "alloy-sol-macro",
     "async-trait",
+    "cid",
     "console_error_panic_hook",
     "futures-timer",
     "getrandom",
@@ -14,6 +15,7 @@ const REVIEWED_DEFAULT_FEATURE_EXCEPTIONS: &[&str] = &[
     "httpdate",
     "js-sys",
     "multibase",
+    "multihash",
     "num-bigint",
     "parking_lot",
     "pin-project-lite",

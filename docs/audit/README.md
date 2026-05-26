@@ -123,7 +123,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [CID Dependency Audit](cid-dependency-audit.md) | Standing audit | `cow-sdk-app-data` CID encoding and published dependency boundary | Supported CID paths, fail-closed encoding, and clean published-upstream posture | Current | 2026-05-22 |
+| [CID Dependency Audit](cid-dependency-audit.md) | Standing audit | `cow-sdk-app-data` and `cow-sdk-core` CID encoding and published dependency boundary | Supported CID paths, fail-closed encoding, and clean published-upstream posture | Current | 2026-05-26 |
 | [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, direct WASM randomness alignment, canonical advisory tolerance, source whitelist, native Alloy provider/signer dependency allow-lists, `cow-sdk-wasm` wasm32 dependency exclusions, and pure-helper FFI exclusion | Current | 2026-05-26 |
 
 ## Source Provenance
@@ -166,7 +166,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [Unsafe-Code Policy Audit](unsafe-code-policy-audit.md) | Standing audit | Workspace `unsafe_code = deny` lint declared in `Cargo.toml` workspace lint section | Workspace unsafe-code deny lint, crate lint adoption, public-path source posture, and clippy enforcement | Current | 2026-04-23 |
-| [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site, including native Alloy adapter conversion, trading receipt-wait helpers, wasm exports, pure helpers, and allowlist coverage | Current | 2026-05-25 |
+| [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site, including native Alloy adapter conversion, trading receipt-wait helpers, wasm exports, pure helpers, and allowlist coverage | Current | 2026-05-26 |
 | [Workflow Security Audit](workflow-security-audit.md) | Standing audit | Every `.github/workflows/*.yml` file | SHA-pinned third-party actions, explicit permissions, reviewed action source refs, and guarded `pull_request_target` use | Current | 2026-05-08 |
 | [Fuzz Coverage Audit](fuzz-coverage-audit.md) | Standing audit | The standalone `cow-sdk-fuzz` crate and every `cargo-fuzz` target it ships against the published SDK crates | Target inventory across encoder, signing, validator, parser, classifier, crypto envelope, app-data, transport, browser-wallet adjacent, and trading surfaces; per-target seed contract; stable-toolchain compile gate; nightly enumerate; property traceability; public-surface boundary on `pub(crate)` helpers | Current | 2026-05-22 |
 
