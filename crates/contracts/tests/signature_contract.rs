@@ -7,8 +7,8 @@ use alloy_sol_types::SolCall;
 use cow_sdk_contracts::{
     ContractsError, Eip1271SignatureData, Eip1271VerificationCache, Eip1271VerificationRequest,
     IERC1271, Signature, SigningScheme, decode_eip1271_signature_data, decode_signing_scheme,
-    encode_eip1271_signature_data, encode_signing_scheme, function_magic_value,
-    normalized_ecdsa_signature, verify_eip1271_signature, verify_eip1271_signature_async,
+    encode_eip1271_signature_data, encode_signing_scheme, normalized_ecdsa_signature,
+    verify_eip1271_signature, verify_eip1271_signature_async,
 };
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo, ContractCall,
@@ -272,18 +272,14 @@ fn signing_scheme_and_magic_value_match_fixture_contract() {
 
     let magic = fixture_case("contracts-eip1271-magic-value");
     let fixture_magic = magic["expected"]["magic_value"].as_str().unwrap();
-    // The fixture, the `sol!`-emitted typed selector, the runtime
-    // keccak helper, and the upstream-documented literal all encode the
-    // same four bytes. Asserting all four shapes here pins the parity
-    // oracle to a single byte source of truth.
+    // The fixture, the `sol!`-emitted typed selector, and the
+    // upstream-documented literal all encode the same four bytes.
+    // Asserting all three shapes here pins the parity oracle to a
+    // single byte source of truth.
     assert_eq!(fixture_magic, "0x1626ba7e");
     assert_eq!(
         IERC1271::isValidSignatureCall::SELECTOR,
         [0x16, 0x26, 0xba, 0x7e]
-    );
-    assert_eq!(
-        function_magic_value("isValidSignature(bytes32,bytes)"),
-        fixture_magic
     );
     assert_eq!(
         format!(

@@ -204,6 +204,19 @@ The first functional crate-family release begins at `0.1.0`.
   documenting the original introduction of the `hex_decode_*` family remains
   in place as the audit trail for the prior shape.
 
+- Pre-1.0 breaking change. `cow_sdk_contracts::function_magic_value` is
+  removed from the shipped surface. The runtime keccak-over-signature
+  helper has no remaining production callers: the encoder paths in
+  `cow-sdk-trading` and `cow-sdk-wasm` now route through the
+  workspace `alloy::sol!` bindings, and the helper survives only as
+  a crate-private parity oracle inside the `cow-sdk-contracts` test
+  module. Production callers reach the same four bytes through the
+  `SELECTOR` constant emitted by the matching `sol!` binding
+  (for example, `IERC1271::isValidSignatureCall::SELECTOR`,
+  `IERC20::approveCall::SELECTOR`, or
+  `IGPv2Settlement::setPreSignatureCall::SELECTOR`) per
+  [ADR 0012](docs/adr/0012-alloy-sol-bindings-and-registry-authority.md).
+
 - Pre-1.0 breaking change. `cow_sdk_contracts::EIP1271_MAGICVALUE` is
   removed from the shipped surface. Consumers comparing against the
   EIP-1271 success magic value should reach the typed selector emitted
@@ -225,6 +238,28 @@ The first functional crate-family release begins at `0.1.0`.
   byte-for-byte; the helper had no external consumers.
 
 ### Changed
+
+- `cow-sdk-wasm`: the cancellation calldata path
+  (`buildPresignTx`, `buildCancelOrderTx`) routes through the
+  `IGPv2Settlement::setPreSignatureCall` and
+  `IGPv2Settlement::invalidateOrderCall` bindings emitted by the
+  workspace `alloy::sol!` block; the previous hand-rolled selector
+  plus head/length/padding word emitter is removed. Calldata bytes
+  are byte-identical at the wire layer; the change is internal.
+  Malformed JS-supplied order UIDs now surface as the typed
+  `OrderUid::new` validation error rather than the previous ad-hoc
+  hex-decode rejection, which is a strict improvement in error shape.
+
+- `cow-sdk-trading`: the ERC-20 approve calldata path
+  (`approval_transaction`, `approve_cow_protocol`,
+  `approve_cow_protocol_async`) routes through the
+  `IERC20::approveCall` binding emitted by the workspace
+  `alloy::sol!` block; the previous keccak-over-signature plus
+  address-word plus uint-word assembler is removed. Calldata bytes
+  are byte-identical at the wire layer; the change is internal. The
+  byte equivalence is pinned by the existing
+  `contracts-erc20-approve-calldata` fixture row exercised at
+  `crates/contracts/tests/parity_contract.rs::assert_erc20_approve_calldata`.
 
 - Pre-1.0 breaking change. `cow_sdk_contracts::SALT` is re-typed from
   `&'static str` to `alloy_primitives::B256`. The 32-byte payload

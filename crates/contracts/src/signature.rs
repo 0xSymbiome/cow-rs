@@ -315,21 +315,6 @@ pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> 
     Ok(format!("0x{}", alloy_primitives::hex::encode(bytes)))
 }
 
-/// Returns the 4-byte function selector for a Solidity signature.
-///
-/// For symbols that already have an `alloy_sol_types::sol!` binding in this
-/// workspace (such as the EIP-1271 `isValidSignature(bytes32,bytes)` magic
-/// value reached through
-/// `<IERC1271::isValidSignatureCall as alloy_sol_types::SolCall>::SELECTOR`),
-/// prefer the macro-emitted `SELECTOR` constant per the
-/// "Canonical Contract Bindings" principle in `docs/principles.md`. This
-/// helper is the runtime-string fallback for signatures supplied as `&str`
-/// at call time.
-#[must_use]
-pub fn function_magic_value(signature: &str) -> String {
-    let hash = keccak256(signature.as_bytes());
-    format!("0x{}", alloy_primitives::hex::encode(&hash[..4]))
-}
 
 /// Verifies an EIP-1271 signature using a synchronous provider.
 ///
@@ -487,4 +472,33 @@ fn decode_hex_exact(
         });
     }
     Ok(bytes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloy_sol_types::SolCall;
+
+    /// Test-only runtime keccak fallback used as an independent parity
+    /// oracle. Production code must reach the EIP-1271 success magic
+    /// value through `IERC1271::isValidSignatureCall::SELECTOR` (the
+    /// typed `[u8; 4]` constant emitted by the workspace `alloy::sol!`
+    /// binding) per ADR 0012; this helper exists solely to assert that
+    /// the canonical Solidity signature keccak-hashes to the same four
+    /// bytes.
+    fn function_magic_value(signature: &str) -> String {
+        let hash = keccak256(signature.as_bytes());
+        format!("0x{}", alloy_primitives::hex::encode(&hash[..4]))
+    }
+
+    #[test]
+    fn keccak_of_canonical_signature_matches_the_typed_eip1271_selector() {
+        let runtime = function_magic_value("isValidSignature(bytes32,bytes)");
+        let typed = format!(
+            "0x{}",
+            alloy_primitives::hex::encode(IERC1271::isValidSignatureCall::SELECTOR)
+        );
+        assert_eq!(runtime, typed);
+        assert_eq!(runtime, "0x1626ba7e");
+    }
 }

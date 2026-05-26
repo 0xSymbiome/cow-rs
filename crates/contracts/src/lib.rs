@@ -87,8 +87,7 @@ pub use settlement::{
 pub use signature::{
     Eip1271SignatureData, Eip1271VerificationRequest, Signature, SigningScheme,
     decode_eip1271_signature_data, decode_signing_scheme, encode_eip1271_signature_data,
-    encode_signing_scheme, function_magic_value, normalized_ecdsa_signature,
-    verify_eip1271_signature,
+    encode_signing_scheme, normalized_ecdsa_signature, verify_eip1271_signature,
 };
 pub use swap::{BatchSwapStep, EncodedSwap, Swap, SwapEncoder, SwapExecution, encode_swap_step};
 pub use vault::{

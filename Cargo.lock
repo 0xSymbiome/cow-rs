@@ -1737,6 +1737,7 @@ name = "cow-sdk-wasm"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
+ "alloy-sol-types",
  "async-trait",
  "console_error_panic_hook",
  "cow-sdk-app-data",

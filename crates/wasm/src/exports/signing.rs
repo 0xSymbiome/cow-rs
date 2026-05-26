@@ -1,5 +1,11 @@
 use cow_sdk_contracts::normalized_ecdsa_signature;
 #[cfg(feature = "cancellation")]
+use alloy_primitives::Bytes as AlloyBytes;
+#[cfg(feature = "cancellation")]
+use alloy_sol_types::SolCall as _;
+#[cfg(feature = "cancellation")]
+use cow_sdk_contracts::settlement::IGPv2Settlement;
+#[cfg(feature = "cancellation")]
 use cow_sdk_contracts::{ContractId, Registry};
 use std::{cell::RefCell, rc::Rc};
 
@@ -339,7 +345,8 @@ pub async fn sign_order_eth_sign_digest(
     unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
 )]
 pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
-    let tx = order_uid_transaction(params, "setPreSignature(bytes,bool)", true)?;
+    let calldata = encode_set_pre_signature_calldata(params.order_uid.as_str())?;
+    let tx = settlement_transaction(params, calldata)?;
     to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
 
@@ -358,7 +365,8 @@ pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, J
     unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
 )]
 pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
-    let tx = order_uid_transaction(params, "invalidateOrder(bytes)", false)?;
+    let calldata = encode_invalidate_order_calldata(params.order_uid.as_str())?;
+    let tx = settlement_transaction(params, calldata)?;
     to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
 
@@ -663,10 +671,9 @@ fn cancellation_payload(
 }
 
 #[cfg(feature = "cancellation")]
-fn order_uid_transaction(
+fn settlement_transaction(
     params: OrderTraderParametersInput,
-    selector: &'static str,
-    include_bool: bool,
+    calldata: Vec<u8>,
 ) -> Result<TransactionRequest, JsValue> {
     let chain_id = params
         .chain_id
@@ -692,18 +699,13 @@ fn order_uid_transaction(
             )
             .into_js()
         })?;
-    let data = if include_bool {
-        encode_selector_and_dynamic_bytes_bool(selector, params.order_uid.as_str(), true)?
-    } else {
-        encode_selector_and_dynamic_bytes(selector, params.order_uid.as_str())?
-    };
-    let tx = TransactionRequest::new(
+    let data = format!("0x{}", hex::encode(calldata));
+    Ok(TransactionRequest::new(
         Some(settlement),
         Some(HexData::new(data).map_err(|error| WasmError::from(error).into_js())?),
         Some(Amount::ZERO),
         Some(default_gas_limit()?),
-    );
-    Ok(tx)
+    ))
 }
 
 #[cfg(feature = "cancellation")]
@@ -712,71 +714,42 @@ fn default_gas_limit() -> Result<Amount, JsValue> {
         .map_err(|error| WasmError::invalid("gasLimit", error.to_string()).into_js())
 }
 
+/// Parses the JS-supplied order UID hex string and returns the typed
+/// 56-byte payload as an [`alloy_primitives::Bytes`] suitable for the
+/// `IGPv2Settlement::*Call` Solidity `bytes` field. Routes through
+/// `OrderUid::new` so malformed input surfaces as a typed `WasmError`
+/// rather than the previous ad-hoc hex decode path.
 #[cfg(feature = "cancellation")]
-fn encode_selector_and_dynamic_bytes(signature: &str, bytes_hex: &str) -> Result<String, JsValue> {
-    let selector = selector_bytes(signature)?;
-    let bytes = decode_hex_field("bytes", bytes_hex)?;
-    let mut encoded = Vec::new();
-    encoded.extend_from_slice(&selector);
-    encoded.extend_from_slice(&encode_usize_word(32));
-    encoded.extend_from_slice(&encode_usize_word(bytes.len()));
-    encoded.extend_from_slice(&pad_to_word(bytes));
-    Ok(format!("0x{}", hex::encode(encoded)))
+fn order_uid_bytes_from_str(uid: &str) -> Result<AlloyBytes, JsValue> {
+    let order_uid =
+        OrderUid::new(uid.to_owned()).map_err(|error| WasmError::from(error).into_js())?;
+    Ok(AlloyBytes::from(order_uid.as_slice().to_vec()))
 }
 
+/// Encodes the `setPreSignature(bytes,bool)` calldata for the given order
+/// UID through the workspace `alloy::sol!`-generated
+/// `IGPv2Settlement::setPreSignatureCall` binding (ADR 0012). The selector,
+/// the dynamic-bytes head/length words, and the bool word are emitted at
+/// compile time through `SolCall::abi_encode`.
 #[cfg(feature = "cancellation")]
-fn encode_selector_and_dynamic_bytes_bool(
-    signature: &str,
-    bytes_hex: &str,
-    flag: bool,
-) -> Result<String, JsValue> {
-    let selector = selector_bytes(signature)?;
-    let bytes = decode_hex_field("bytes", bytes_hex)?;
-    let mut encoded = Vec::new();
-    encoded.extend_from_slice(&selector);
-    encoded.extend_from_slice(&encode_usize_word(64));
-    encoded.extend_from_slice(&encode_bool_word(flag));
-    encoded.extend_from_slice(&encode_usize_word(bytes.len()));
-    encoded.extend_from_slice(&pad_to_word(bytes));
-    Ok(format!("0x{}", hex::encode(encoded)))
+fn encode_set_pre_signature_calldata(uid: &str) -> Result<Vec<u8>, JsValue> {
+    let order_uid_bytes = order_uid_bytes_from_str(uid)?;
+    Ok(IGPv2Settlement::setPreSignatureCall {
+        orderUid: order_uid_bytes,
+        signed: true,
+    }
+    .abi_encode())
 }
 
+/// Encodes the `invalidateOrder(bytes)` calldata for the given order UID
+/// through the `IGPv2Settlement::invalidateOrderCall` binding.
 #[cfg(feature = "cancellation")]
-fn selector_bytes(signature: &str) -> Result<[u8; 4], JsValue> {
-    let selector = cow_sdk_contracts::function_magic_value(signature);
-    let bytes = decode_hex_field("selector", &selector)?;
-    let mut out = [0u8; 4];
-    out.copy_from_slice(&bytes);
-    Ok(out)
-}
-
-#[cfg(feature = "cancellation")]
-fn decode_hex_field(field: &'static str, value: &str) -> Result<Vec<u8>, JsValue> {
-    let Some(stripped) = value.strip_prefix("0x") else {
-        return Err(WasmError::invalid(field, "hex value must start with 0x").into_js());
-    };
-    hex::decode(stripped).map_err(|error| WasmError::invalid(field, error.to_string()).into_js())
-}
-
-#[cfg(feature = "cancellation")]
-fn encode_usize_word(value: usize) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[24..].copy_from_slice(&(value as u64).to_be_bytes());
-    out
-}
-
-#[cfg(feature = "cancellation")]
-fn encode_bool_word(value: bool) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[31] = u8::from(value);
-    out
-}
-
-#[cfg(feature = "cancellation")]
-fn pad_to_word(mut bytes: Vec<u8>) -> Vec<u8> {
-    let padding = (32 - (bytes.len() % 32)) % 32;
-    bytes.extend(std::iter::repeat_n(0u8, padding));
-    bytes
+fn encode_invalidate_order_calldata(uid: &str) -> Result<Vec<u8>, JsValue> {
+    let order_uid_bytes = order_uid_bytes_from_str(uid)?;
+    Ok(IGPv2Settlement::invalidateOrderCall {
+        orderUid: order_uid_bytes,
+    }
+    .abi_encode())
 }
 
 #[cfg(feature = "cancellation")]
@@ -831,3 +804,4 @@ extern "C" {
     #[wasm_bindgen(js_namespace = globalThis, js_name = clearTimeout)]
     fn global_clear_timeout_raw(handle: &JsValue);
 }
+

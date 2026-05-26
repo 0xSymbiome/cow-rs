@@ -1,4 +1,5 @@
-use cow_sdk_contracts::{ContractId, Registry, encode_address_word};
+use alloy_sol_types::SolCall as _;
+use cow_sdk_contracts::{ContractId, IERC20, Registry};
 use cow_sdk_core::{
     Address, Amount, AsyncProvider, AsyncSigner, ContractCall, Provider, Signer, SupportedChainId,
     TransactionHash, TransactionRequest,
@@ -21,7 +22,6 @@ fn resolve_vault_relayer(chain_id: SupportedChainId, env: cow_sdk_core::CowEnv) 
 }
 
 const ERC20_ALLOWANCE_ABI_JSON: &str = r#"[{"type":"function","name":"allowance","inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#;
-const ERC20_APPROVE_SIGNATURE: &str = "approve(address,uint256)";
 
 /// Reads the `CoW` Protocol vault-relayer allowance using a sync provider.
 ///
@@ -126,7 +126,7 @@ pub fn approval_transaction(
         Some(cow_sdk_core::HexData::new(encode_approve_call(
             &spender,
             &params.amount,
-        )?)?),
+        ))?),
         Some(Amount::ZERO),
         None,
     ))
@@ -183,36 +183,18 @@ where
         })
 }
 
-fn encode_approve_call(spender: &Address, amount: &Amount) -> Result<String, TradingError> {
-    let selector = cow_sdk_contracts::function_magic_value(ERC20_APPROVE_SIGNATURE);
-    let mut encoded = Vec::new();
-    encoded.extend_from_slice(&decode_hex_field(&selector)?);
-    encoded.extend_from_slice(&encode_address_word(spender));
-    encoded.extend_from_slice(&encode_uint_word(amount));
-    Ok(format!("0x{}", hex::encode(encoded)))
-}
-
-fn decode_hex_field(value: &str) -> Result<Vec<u8>, TradingError> {
-    let Some(stripped) = value.strip_prefix("0x") else {
-        return Err(TradingError::InvalidNumeric {
-            field: "hex",
-            value: value.to_owned().into(),
-        });
+fn encode_approve_call(spender: &Address, amount: &Amount) -> String {
+    // Routes through the workspace `alloy::sol!`-generated
+    // `IERC20::approveCall` binding per ADR 0012. The selector, the
+    // address word, and the uint256 word are emitted at compile time
+    // through `SolCall::abi_encode`; the wire bytes are pinned
+    // byte-for-byte by the parity fixture exercised at
+    // `crates/contracts/tests/parity_contract.rs::assert_erc20_approve_calldata`.
+    let call = IERC20::approveCall {
+        spender: (*spender).into(),
+        value: *amount.as_u256(),
     };
-    hex::decode(stripped).map_err(|_| TradingError::InvalidNumeric {
-        field: "hex",
-        value: value.to_owned().into(),
-    })
-}
-
-const fn encode_uint_word(value: &Amount) -> [u8; 32] {
-    // The cow `Amount` newtype is `#[repr(transparent)]` over
-    // `alloy_primitives::U256` per ADR 0052, so the uint256 ceiling is
-    // enforced at construction and the conversion to a 32-byte
-    // big-endian word is the bit-for-bit `U256::to_be_bytes::<32>()`
-    // form; the historical overflow guard collapses to a constant-true
-    // invariant.
-    value.as_u256().to_be_bytes::<32>()
+    format!("0x{}", hex::encode(call.abi_encode()))
 }
 
 fn decode_allowance_result(raw: &str) -> Result<Amount, TradingError> {
