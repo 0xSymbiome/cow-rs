@@ -14,6 +14,20 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_trading::InMemoryQuoteCache::new` now takes
+  `(ttl, capacity)` instead of `(ttl)`. The previous unbounded posture
+  grew the cache map without limit on long-running sessions; the new
+  constructor enforces a capacity bound and an oldest-first eviction
+  policy by insertion timestamp. Callers who want the prior default
+  call `InMemoryQuoteCache::default()` (5-minute TTL,
+  `DEFAULT_QUOTE_CACHE_CAPACITY` of 256 entries); callers who want a
+  tighter or wider bound pass an explicit `usize`. The
+  `Mutex<HashMap>` storage is replaced with
+  `parking_lot::RwLock<HashMap>`, which removes the manual
+  `PoisonError::into_inner` recovery path without changing observable
+  lookup or insert semantics. Lazy expiry on lookup remains the
+  observable contract.
+
 - `AppDataHash::to_cid` now produces the canonical `CIDv1` multibase
   string through `cid::Cid::new_v1` and `multihash::Multihash::wrap`
   instead of the prior byte-stitched hand-roll. The output is
@@ -25,6 +39,21 @@ The first functional crate-family release begins at `0.1.0`.
   invariant.
 
 ### Added
+
+- `cow_sdk_trading::cache` now ships a capacity-bounded, TTL-respecting
+  `InMemoryQuoteCache` that mirrors the cache primitive pattern
+  [ADR 0014](docs/adr/0014-eip1271-verification-cache.md) established
+  for `InMemoryEip1271VerificationCache`. The cache exposes a `Clock`
+  trait with a default `SystemClock` and a blanket `Fn() -> Instant`
+  impl, a `with_clock` constructor for deterministic TTL tests, `ttl`,
+  `capacity`, `len`, `is_empty`, and `clear` accessors, and a `Default`
+  impl that uses `DEFAULT_QUOTE_CACHE_TTL` (5 minutes) and
+  `DEFAULT_QUOTE_CACHE_CAPACITY` (256 entries). Storage is
+  `parking_lot::RwLock<HashMap<QuoteCacheKey, _>>` and eviction is
+  oldest-first by insertion timestamp on every insert past the
+  capacity bound. `wasm32-unknown-unknown` support is covered by the
+  new `crates/trading/tests/wasm_cache_contract.rs` contract test that
+  mirrors the signing-side wasm cache contract.
 
 - `AppDataHash::try_from_cid(&str) -> Result<Self, CoreError>` parses a
   canonical `CIDv1` multibase string back into the cow newtype,

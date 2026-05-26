@@ -81,7 +81,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md) | Standing audit | `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `Noop` and `InMemory` canonical impls | Trait contract, conservative caching semantics, verification telemetry, pre-interaction scope, thread-safety on the in-memory implementation, and its integration with `verify_eip1271_signature_async` | Current | 2026-05-01 |
+| [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md) | Standing audit | `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `Noop` and `InMemory` canonical impls, with cross-reference to the `cow-sdk-trading` `InMemoryQuoteCache` sibling reference implementation | Trait contract, conservative caching semantics, verification telemetry, pre-interaction scope, thread-safety on the in-memory implementation, the shared cache primitive pattern reused by the trading-side `InMemoryQuoteCache`, and its integration with `verify_eip1271_signature_async` | Current | 2026-05-26 |
 
 ## Signature Normalization
 

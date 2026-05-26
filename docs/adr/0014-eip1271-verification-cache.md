@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-05-26
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, eip1271, caching, security
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -114,3 +114,51 @@ trait signature so the trait does not couple to a specific cow newtype
 choice; callers that already hold a typed `Hash32` cross the boundary
 via `Hash32::as_alloy()` plus `.into()` or via the
 `#[repr(transparent)]` layout guarantee on the cow newtype.
+
+## Amendment 2026-05-26: trading quote cache reuses the cache primitive pattern
+
+The `cow-sdk-trading` crate ships an `InMemoryQuoteCache` reference
+implementation of its `QuoteCache` trait that mirrors the cache
+primitive pattern this ADR established for
+`InMemoryEip1271VerificationCache`. The shared pattern covers:
+
+- `parking_lot::RwLock<HashMap<K, V>>` as the storage primitive.
+- A `Clock` trait with `now(&self) -> Instant` plus a default
+  `SystemClock` ZST and a blanket `Fn() -> Instant` impl, exposed via a
+  `with_clock` constructor for deterministic TTL tests.
+- A capacity bound enforced through an oldest-first
+  `min_by_key(inserted_at)` scan on every insert past the bound, with
+  the trade-off documented as "Eviction Trade-Off" in the rustdoc.
+- A TTL bound enforced through
+  `now.duration_since(inserted_at) > self.ttl`, so entries stay valid
+  at the exact boundary and expire strictly after it.
+- A 300-second default TTL exposed as a public constant
+  (`DEFAULT_QUOTE_CACHE_TTL`).
+- A wasm32-compatible time source via `web_time::Instant` behind the
+  same `cfg(target_arch = "wasm32")` arm both crates already use.
+- A wasm-target contract test asserting round-trip plus
+  controlled-clock TTL boundary on `wasm32-unknown-unknown`.
+
+The EIP-1271-specific conservative-cache semantics (only `Ok(())` and
+`Eip1271MagicValueMismatch` cached, every other error class never
+cached) remain scoped to `InMemoryEip1271VerificationCache` and the
+`verify_eip1271_signature_async` call shape — the trading quote cache
+caches every result the `QuoteCache` trait passes through `insert`
+because the trading flow caller already decides what is safe to
+memoize before it calls `insert`. The pattern primitive is shared; the
+caching policy is not.
+
+The trading-side default capacity is `256` rather than the signing-side
+`1024` because the trading key fan-out (chain × env × token-pair × side
+× amount × balance source/destination) is narrower than the EIP-1271
+fan-out (verifier × digest). Both values stay tunable through their
+respective two-argument `new(ttl, capacity)` constructors.
+
+No new transitive dependency is added by the extension; `parking_lot`
+was already the cache lock primitive this ADR named for the signing
+crate, and is now also a direct dependency of `cow-sdk-trading`. The
+trading-side lookup path takes a write guard rather than the
+signing-side read-then-write split because the trading cache preserves
+the existing lazy-expiry-on-lookup property: changing it to a read-only
+hot path would silently shift observable behaviour for downstream code
+that relies on lookup-driven eviction.

@@ -1,7 +1,7 @@
 # EIP-1271 Verification Cache Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-05-26
 Owning surface: `cow-sdk-contracts` `Eip1271VerificationCache` trait and its `NoopEip1271VerificationCache` and `InMemoryEip1271VerificationCache` default implementations shipped from `cow-sdk-signing::cache`
 Refresh trigger: Changes to the trait signature, the caching semantics (what is cached and what is not), the `verify_eip1271_signature_async` call shape, the verification tracing fields, the default TTL or capacity on the in-memory implementation, the clock injection seam, the platform time-source selection, or the thread-safety posture; a new canonical implementation that ships in the workspace
 Related docs:
@@ -141,6 +141,21 @@ tasks against the same key space and asserts every key written by a
 racing task is observable through `get` after the tasks join. Linear
 value ordering between racing writers is not required — only that no
 write is lost.
+
+### Sibling Cache Pattern
+
+The `cow-sdk-trading` crate ships `InMemoryQuoteCache` as a sibling
+reference implementation of the `QuoteCache` trait that mirrors this
+cache primitive pattern (lock primitive, clock seam, eviction policy,
+capacity-as-bound, TTL boundary semantics, wasm posture).
+[ADR 0014](../adr/0014-eip1271-verification-cache.md) carries the
+2026-05-26 amendment scoping the shared primitive across both
+implementations while leaving the EIP-1271-specific conservative-cache
+policy (`Ok(())` and `Eip1271MagicValueMismatch` cached, every other
+error class never cached) bound to this audit's surface. The trading
+quote cache uses every result `QuoteCache::insert` receives because
+the trading flow caller already decides what is safe to memoize; the
+EIP-1271 cache's caller-blind safety contract does not extend there.
 
 ## Evidence
 

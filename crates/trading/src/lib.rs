@@ -47,7 +47,10 @@ pub use allowance::{
     get_cow_protocol_allowance, get_cow_protocol_allowance_async,
 };
 pub use app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
-pub use cache::{InMemoryQuoteCache, NoopQuoteCache, QuoteCache, QuoteCacheKey};
+pub use cache::{
+    Clock, DEFAULT_QUOTE_CACHE_CAPACITY, DEFAULT_QUOTE_CACHE_TTL, InMemoryQuoteCache,
+    NoopQuoteCache, QuoteCache, QuoteCacheKey, SystemClock,
+};
 pub use cancel::{off_chain_cancel_order, off_chain_cancel_order_async};
 pub use error::{OrderbookContextValue, TradingError};
 pub use onchain::{

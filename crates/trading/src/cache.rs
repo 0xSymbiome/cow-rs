@@ -22,13 +22,12 @@
 //! use cow_sdk_trading::{InMemoryQuoteCache, QuoteCache, TradingSdkBuilder};
 //!
 //! let cache: Arc<dyn QuoteCache> =
-//!     Arc::new(InMemoryQuoteCache::new(Duration::from_secs(30)));
+//!     Arc::new(InMemoryQuoteCache::new(Duration::from_secs(30), 256));
 //! let builder = TradingSdkBuilder::new().with_quote_cache(cache);
 //! ```
 
 use std::collections::HashMap;
 use std::fmt;
-use std::sync::Mutex;
 
 #[cfg(target_arch = "wasm32")]
 use std::time::Duration;
@@ -39,8 +38,60 @@ use web_time::Instant;
 
 use async_trait::async_trait;
 use cow_sdk_core::{Address, BuyTokenDestination, OrderKind, SellTokenSource};
+use parking_lot::RwLock;
 
 use crate::QuoteResults;
+
+/// Default TTL applied by [`InMemoryQuoteCache`].
+///
+/// Five minutes mirrors
+/// `cow_sdk_signing::cache::DEFAULT_EIP1271_VERIFICATION_CACHE_TTL` and stays
+/// within the orderbook's quote validity envelope: standard `valid_to`
+/// windows on production quotes are tens of seconds to a few minutes, so a
+/// five-minute upper bound makes the cache a hot-path memoizer rather than a
+/// stale-quote source. Callers who want a tighter or looser TTL pass it to
+/// [`InMemoryQuoteCache::new`].
+pub const DEFAULT_QUOTE_CACHE_TTL: Duration = Duration::from_secs(300);
+
+/// Default capacity applied by [`InMemoryQuoteCache`].
+///
+/// 256 entries fits the observed key fan-out of the trading flow (chain ×
+/// env × sell-token × buy-token × side × amount × balance
+/// source/destination) for active sessions and keeps the oldest-first
+/// eviction scan bounded under the signing-cache scan envelope. Callers with
+/// a wider working set pass a higher capacity to [`InMemoryQuoteCache::new`].
+pub const DEFAULT_QUOTE_CACHE_CAPACITY: usize = 256;
+
+/// Time source used by [`InMemoryQuoteCache`].
+///
+/// The default [`SystemClock`] implementation calls [`Instant::now`]. Tests
+/// can implement this trait with a deterministic clock to assert TTL
+/// boundaries without sleeping. On `wasm32`, [`Instant`] resolves to
+/// `web_time::Instant`; on native targets it resolves to
+/// [`std::time::Instant`].
+pub trait Clock: Send + Sync + 'static {
+    /// Returns the current instant for cache timestamp comparisons.
+    fn now(&self) -> Instant;
+}
+
+/// Wall-clock [`Clock`] used by default cache constructors.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct SystemClock;
+
+impl Clock for SystemClock {
+    fn now(&self) -> Instant {
+        Instant::now()
+    }
+}
+
+impl<F> Clock for F
+where
+    F: Fn() -> Instant + Send + Sync + 'static,
+{
+    fn now(&self) -> Instant {
+        self()
+    }
+}
 
 /// Deterministic cache key derived from the minimal set of inputs that decide
 /// whether two quote requests should share a cached result.
@@ -205,75 +256,165 @@ struct CachedQuote {
     inserted_at: Instant,
 }
 
-/// In-process TTL-based [`QuoteCache`] reference implementation.
+/// Capacity-bounded, TTL-respecting in-memory [`QuoteCache`] backed by
+/// [`parking_lot::RwLock`].
 ///
-/// Entries are evicted lazily the next time they are looked up after the TTL
-/// elapses; this keeps the implementation lock-free on the insert path and
-/// matches the usage pattern of short-lived deployments.
-pub struct InMemoryQuoteCache {
+/// The cache evicts the oldest entry (by insertion timestamp) when inserting
+/// beyond the configured capacity, and refuses to return entries older than
+/// the configured TTL. The default TTL is five minutes
+/// ([`DEFAULT_QUOTE_CACHE_TTL`]) and the default capacity is 256 entries
+/// ([`DEFAULT_QUOTE_CACHE_CAPACITY`]).
+///
+/// The store is `Send + Sync + 'static`, so the cache may be wrapped in
+/// [`std::sync::Arc`] and shared across `tokio` tasks.
+/// [`InMemoryQuoteCache::with_clock`] accepts a custom [`Clock`] for
+/// deterministic TTL tests and embedders that already centralize time;
+/// [`InMemoryQuoteCache::new`] preserves the default wall-clock behaviour.
+///
+/// # Eviction Trade-Off
+///
+/// Eviction beyond capacity is `O(N)` per insert: the oldest entry is found
+/// by scanning the map for the minimum insertion timestamp. The default
+/// `256`-entry bound keeps the scan comfortably bounded for the target
+/// workloads (interactive sessions and bot loops at human quote rates).
+/// Consumers that require a much larger key space should compose a proper
+/// LRU-backed impl of [`QuoteCache`] rather than grow the in-memory cache
+/// past a few thousand entries.
+pub struct InMemoryQuoteCache<C = SystemClock> {
+    entries: RwLock<HashMap<QuoteCacheKey, CachedQuote>>,
     ttl: Duration,
-    entries: Mutex<HashMap<QuoteCacheKey, CachedQuote>>,
+    capacity: usize,
+    clock: C,
 }
 
-impl InMemoryQuoteCache {
-    /// Creates a new TTL-driven quote cache.
+impl Default for InMemoryQuoteCache<SystemClock> {
+    fn default() -> Self {
+        Self::new(DEFAULT_QUOTE_CACHE_TTL, DEFAULT_QUOTE_CACHE_CAPACITY)
+    }
+}
+
+impl InMemoryQuoteCache<SystemClock> {
+    /// Creates a cache with the supplied TTL and capacity bound.
     #[must_use]
-    pub fn new(ttl: Duration) -> Self {
+    pub fn new(ttl: Duration, capacity: usize) -> Self {
+        Self::with_clock(ttl, capacity, SystemClock)
+    }
+}
+
+impl<C> InMemoryQuoteCache<C>
+where
+    C: Clock,
+{
+    /// Creates a cache with the supplied TTL, capacity bound, and clock.
+    ///
+    /// The provided [`Clock`] is used for both write timestamps and read
+    /// expiry checks. This keeps TTL behaviour deterministic in tests while
+    /// leaving [`InMemoryQuoteCache::new`] on the production wall clock.
+    #[must_use]
+    pub fn with_clock(ttl: Duration, capacity: usize, clock: C) -> Self {
+        let capacity = capacity.max(1);
         Self {
+            entries: RwLock::new(HashMap::with_capacity(capacity)),
             ttl,
-            entries: Mutex::new(HashMap::new()),
+            capacity,
+            clock,
         }
     }
 
-    /// Returns the configured TTL for this cache.
+    /// Returns the configured TTL.
     #[must_use]
     pub const fn ttl(&self) -> Duration {
         self.ttl
     }
 
-    fn lock_entries(&self) -> std::sync::MutexGuard<'_, HashMap<QuoteCacheKey, CachedQuote>> {
-        self.entries
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    /// Returns the configured capacity bound.
+    #[must_use]
+    pub const fn capacity(&self) -> usize {
+        self.capacity
+    }
+
+    /// Returns the current number of entries held in the cache.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.entries.read().len()
+    }
+
+    /// Returns whether the cache currently holds zero entries.
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.entries.read().is_empty()
+    }
+
+    /// Removes every entry from the cache.
+    pub fn clear(&self) {
+        self.entries.write().clear();
     }
 }
 
-impl fmt::Debug for InMemoryQuoteCache {
+impl<C> fmt::Debug for InMemoryQuoteCache<C>
+where
+    C: Clock,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("InMemoryQuoteCache")
             .field("ttl", &self.ttl)
+            .field("capacity", &self.capacity)
             .finish_non_exhaustive()
     }
 }
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-impl QuoteCache for InMemoryQuoteCache {
+impl<C> QuoteCache for InMemoryQuoteCache<C>
+where
+    C: Clock,
+{
+    #[allow(
+        clippy::significant_drop_tightening,
+        reason = "the write guard is held across the entire `lookup` body on purpose: \
+                  this cache purges expired entries on lookup, so the guard must \
+                  stay live while the entry is observed and potentially removed. \
+                  Releasing it early would either require a second acquisition for \
+                  the remove (introducing a TOCTOU race with concurrent inserts) \
+                  or split lookup into a read-then-write shape that loses the \
+                  lazy-expiry-on-lookup property."
+    )]
     async fn lookup(&self, key: &QuoteCacheKey) -> Option<QuoteResults> {
-        let mut entries = self.lock_entries();
-        let expired = entries
-            .get(key)
-            .is_some_and(|entry| entry.inserted_at.elapsed() > self.ttl);
-        if expired {
-            entries.remove(key);
-            return None;
+        let now = self.clock.now();
+        let mut entries = self.entries.write();
+        if let Some(entry) = entries.get(key) {
+            if now.duration_since(entry.inserted_at) > self.ttl {
+                entries.remove(key);
+                return None;
+            }
+            return Some(entry.value.clone());
         }
-        entries.get(key).map(|entry| entry.value.clone())
+        None
     }
 
     async fn insert(&self, key: QuoteCacheKey, value: QuoteResults) {
-        let mut entries = self.lock_entries();
-        entries.insert(
-            key,
-            CachedQuote {
-                value,
-                inserted_at: Instant::now(),
-            },
-        );
+        let entry = CachedQuote {
+            value,
+            inserted_at: self.clock.now(),
+        };
+        let mut entries = self.entries.write();
+        entries.insert(key, entry);
+        while entries.len() > self.capacity {
+            let oldest_key = entries
+                .iter()
+                .min_by_key(|(_, value)| value.inserted_at)
+                .map(|(key, _)| key.clone());
+            match oldest_key {
+                Some(key) => {
+                    entries.remove(&key);
+                }
+                None => break,
+            }
+        }
+        drop(entries);
     }
 
     async fn invalidate(&self, key: &QuoteCacheKey) {
-        let mut entries = self.lock_entries();
-        entries.remove(key);
+        self.entries.write().remove(key);
     }
 }
