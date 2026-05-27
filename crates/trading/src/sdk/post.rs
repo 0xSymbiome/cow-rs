@@ -52,13 +52,12 @@ impl TradingSdk {
         params.owner = params.owner.or(self.trader_defaults.owner);
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
-        crate::post::post_swap_order_with_bounds(
+        crate::post::post_swap_order(
             &params,
             &trader,
             signer,
             advanced_settings,
             orderbook.client.as_ref(),
-            self.order_bounds,
         )
         .await
     }
@@ -110,13 +109,12 @@ impl TradingSdk {
         let (trader, orderbook) =
             self.resolve_orderbook_trader(None, quote_results.trade_parameters.env)?;
 
-        crate::post::post_swap_order_from_quote_with_bounds(
+        crate::post::post_swap_order_from_quote(
             quote_results,
             &trader,
             signer,
             advanced_settings,
             orderbook.client.as_ref(),
-            self.order_bounds,
         )
         .await
     }
@@ -167,13 +165,12 @@ impl TradingSdk {
         params.owner = params.owner.or(self.trader_defaults.owner);
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
-        crate::post::post_limit_order_with_bounds(
+        crate::post::post_limit_order(
             &params,
             &trader,
             signer,
             advanced_settings,
             orderbook.client.as_ref(),
-            self.order_bounds,
         )
         .await
     }

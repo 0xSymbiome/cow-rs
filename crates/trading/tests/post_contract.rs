@@ -283,7 +283,6 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
         &additional,
         &trader,
         &signer,
-        cow_sdk_trading::OrderValidityBounds::SERVICES_DEFAULT,
         None,
     )
     .await
@@ -677,7 +676,6 @@ async fn ethflow_validation_uses_signer_owner_not_receiver() {
         &additional,
         &trader,
         &signer,
-        cow_sdk_trading::OrderValidityBounds::SERVICES_DEFAULT,
         Some(address(OWNER)),
     )
     .await
@@ -715,7 +713,6 @@ async fn ethflow_validation_rejects_mismatched_signer() {
         &additional,
         &trader,
         &signer,
-        cow_sdk_trading::OrderValidityBounds::SERVICES_DEFAULT,
         Some(mismatched_signer),
     )
     .await
@@ -766,7 +763,6 @@ async fn ethflow_validation_accepts_matched_signer_with_default_receiver() {
         &additional,
         &trader,
         &signer,
-        cow_sdk_trading::OrderValidityBounds::SERVICES_DEFAULT,
         Some(address(OWNER)),
     )
     .await

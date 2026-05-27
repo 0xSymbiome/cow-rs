@@ -17,8 +17,8 @@
 use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use cow_sdk_trading::{
-    AmountSide, ClientRejection, LimitTradeParameters, OrderBoundsValidator, OrderValidityBounds,
-    SubmissionClass, TradeParameters, TradingError,
+    AmountSide, ClientRejection, LimitTradeParameters, OrderBoundsValidator, TradeParameters,
+    TradingError,
 };
 
 const FROM: &str = "0x1111111111111111111111111111111111111111";
@@ -123,39 +123,6 @@ fn pre_sign_scheme_bypasses_the_lifetime_ceiling() {
 }
 
 #[test]
-fn liquidity_class_bypasses_the_lifetime_ceiling() {
-    let validator = OrderBoundsValidator::new(
-        OrderValidityBounds::SERVICES_DEFAULT,
-        SubmissionClass::Liquidity,
-    );
-    let mut order = order();
-    order.valid_to = u32::try_from(NOW + 31_536_001).expect("valid_to must fit in u32");
-    validator
-        .validate(&order, SigningScheme::Eip712, None, NOW, false)
-        .expect("Liquidity class must bypass the lifetime ceiling");
-}
-
-#[test]
-fn market_class_rejects_valid_to_above_three_hours() {
-    let validator = OrderBoundsValidator::new(
-        OrderValidityBounds::SERVICES_DEFAULT,
-        SubmissionClass::Market,
-    );
-    let mut order = order();
-    order.valid_to = u32::try_from(NOW + 10_801).expect("valid_to must fit in u32");
-    let error = validator
-        .validate(&order, SigningScheme::Eip712, None, NOW, false)
-        .expect_err("market class must enforce the 3h ceiling");
-    assert!(matches!(
-        error,
-        ClientRejection::ValidToExcessive {
-            max_seconds: 10_800,
-            ..
-        }
-    ));
-}
-
-#[test]
 fn limit_class_accepts_valid_to_above_three_hours() {
     let validator = OrderBoundsValidator::services_default();
     let mut order = order();
@@ -163,27 +130,6 @@ fn limit_class_accepts_valid_to_above_three_hours() {
     validator
         .validate(&order, SigningScheme::Eip712, None, NOW, false)
         .expect("limit class must admit beyond the 3h ceiling");
-}
-
-#[test]
-fn custom_bounds_from_builder_actually_apply_to_the_validator() {
-    let tighter = OrderValidityBounds {
-        min: std::time::Duration::from_secs(120),
-        ..OrderValidityBounds::SERVICES_DEFAULT
-    };
-    let validator = OrderBoundsValidator::new(tighter, SubmissionClass::Limit);
-    let mut order = order();
-    order.valid_to = u32::try_from(NOW + 60).expect("valid_to must fit in u32");
-    let error = validator
-        .validate(&order, SigningScheme::Eip712, None, NOW, false)
-        .expect_err("custom 120s minimum must reject a 60s lifetime");
-    assert!(matches!(
-        error,
-        ClientRejection::ValidToInsufficient {
-            min_seconds: 120,
-            ..
-        }
-    ));
 }
 
 #[test]

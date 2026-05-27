@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-05-26
+- Last reviewed: 2026-05-27
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, validation, client-side, defense-in-depth, error-typing
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -16,9 +16,13 @@ and no `SystemTime::now` is read inside it — and pairs the typed
 `OrderValidityBounds` policy with a `SubmissionClass` discriminator.
 Failures raise `TradingError::ClientRejected(ClientRejection)` so the
 typed reason is observable without parsing free-form strings. The
-default policy is `OrderValidityBounds::SERVICES_DEFAULT` (60 s
-minimum, 3 h market maximum, 1 y limit-class ceiling) and is
-configurable through `TradingSdkBuilder::with_order_bounds`.
+validator runs at `OrderValidityBounds::SERVICES_DEFAULT` (60 s
+minimum, 3 h market maximum, 1 y limit-class ceiling), which mirrors
+the reviewed services production configuration. The chain-aware
+default constructor `OrderBoundsValidator::services_default_for_chain`
+attaches the chain-specific wrapped-native-token address for the
+same-token paired guard so the validator's behavior matches services
+end-to-end without any caller-side configuration.
 
 ## Why
 
@@ -39,7 +43,11 @@ under replay.
 
 - Public surface: `OrderBoundsValidator::validate(&order, scheme,
   app_data_signer: Option<Address>, now: u64, is_eth_flow: bool) ->
-  Result<(), ClientRejection>` is the canonical entry point. The
+  Result<(), ClientRejection>` is the canonical entry point.
+  `OrderBoundsValidator::services_default()` and
+  `OrderBoundsValidator::services_default_for_chain(chain_id)` are
+  the public constructors; the latter attaches the chain's
+  wrapped-native-token address for the same-token paired guard. The
   `ClientRejection` enum is `#[non_exhaustive]` and ships every
   variant the reviewed services validator surfaces:
   `ValidToInsufficient`, `ValidToExcessive`, `MissingFrom`,
@@ -47,8 +55,8 @@ under replay.
   `InvalidNativeSellToken`, `ZeroAmount` (discriminated by
   `AmountSide`), and `OwnerMismatch`. `OrderValidityBounds` exposes
   a `SERVICES_DEFAULT` constant tracking the published production
-  config and is honoured end-to-end by every public submission
-  seam: `post_swap_order`, `post_limit_order`,
+  config; the validator runs at that policy on every public
+  submission seam: `post_swap_order`, `post_limit_order`,
   `post_swap_order_from_quote`, and `post_sell_native_currency_order`
   for the eth-flow path. Each public seam is a single async entry
   point bounded on `cow_sdk_core::Signer`.
@@ -64,20 +72,22 @@ under replay.
   reviewed services authority.
 - Validation and review: dedicated fixture coverage exists for every
   `ClientRejection` variant in
-  `crates/trading/tests/validation_contract.rs`. The custom-bounds
-  end-to-end fixture proves `with_order_bounds` propagates from the
-  builder to the submission seam, the paired sell-WETH /
-  buy-native-sentinel fixture proves the WETH-bound validator
-  rejects locally, and the `Amount::is_zero` predicate is covered
-  in the same suite.
-- Cost: one new module (`crates/trading/src/validation.rs`), one
-  typed error variant on `TradingError`, one builder setter on
-  `TradingSdkBuilder`, and three `_with_bounds` companion functions
-  on the module-level submission helpers
-  (`post_swap_order_with_bounds`, `post_limit_order_with_bounds`,
-  `post_swap_order_from_quote_with_bounds`). The pure-function
-  shape means no runtime overhead beyond the existing
-  `OrderCreation` construction.
+  `crates/trading/tests/validation_contract.rs`. The paired
+  sell-WETH / buy-native-sentinel fixture proves the WETH-bound
+  validator rejects locally on buy-side orders and accepts on
+  sell-side orders (matching the reviewed production `AllowSell`
+  same-token policy), and the `Amount::is_zero` predicate is covered
+  in the same suite. The chain-aware default validator constructed
+  by `OrderBoundsValidator::services_default_for_chain` is exercised
+  on the submission seam by `crates/trading/tests/post_contract.rs`.
+- Cost: one new module (`crates/trading/src/validation.rs`) and one
+  typed error variant on `TradingError`. The pure-function shape
+  means no runtime overhead beyond the existing `OrderCreation`
+  construction. Every public submission seam constructs the
+  chain-aware validator internally from
+  `OrderBoundsValidator::services_default_for_chain` so the policy
+  matches the reviewed services authority without any caller-side
+  configuration knob.
 
 ## Alternatives Rejected
 
@@ -125,15 +135,18 @@ The `Address`-typed payload fields on `ClientRejection`
 wire-form preservation (lowercase `0x`-prefixed hex) is locked through
 the cow-owned `Display`/`Serialize`/`Deserialize` impls on `Address`.
 
-## Amendment 2026-05-26: single-async-entry public submission surface
+## Amendment 2026-05-27: single submission seam, services-default validator
 
 `cow-sdk-trading` ships one async entry point per public submission
 operation — `post_swap_order`, `post_limit_order`,
-`post_swap_order_from_quote`, `post_sell_native_currency_order` —
-each bounded on `cow_sdk_core::Signer`. The previous paired
-sync-bounded entries are removed. The `OrderBoundsValidator`
-continues to run end-to-end on every public submission seam; the
-validator's public signature is unchanged. The corresponding
-`_with_bounds` companions collapse to one per seam
-(`post_swap_order_with_bounds`, `post_limit_order_with_bounds`,
-`post_swap_order_from_quote_with_bounds`).
+`post_swap_order_from_quote`, and `post_sell_native_currency_order`
+for the eth-flow path — each bounded on `cow_sdk_core::Signer`. The
+validator runs at the reviewed `OrderValidityBounds::SERVICES_DEFAULT`
+policy on every seam. The chain-aware default constructor
+`OrderBoundsValidator::services_default_for_chain(chain_id)` attaches
+the chain's wrapped-native-token address for the same-token paired
+guard. The validator's `validate` entry point and the
+`ClientRejection` typed channel are unchanged; the
+`SERVICES_DEFAULT` constant, `EthFlow` skip rule, `PreSign` and
+`Liquidity` exemptions, and `Amount::is_zero` predicate all remain
+in force.

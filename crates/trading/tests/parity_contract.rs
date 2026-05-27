@@ -1272,7 +1272,6 @@ async fn assert_native_sell_post_flow(case_id: &str, expected: &Value) {
         &additional,
         &trader,
         &signer,
-        cow_sdk_trading::OrderValidityBounds::SERVICES_DEFAULT,
         None,
     )
     .await

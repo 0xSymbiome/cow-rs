@@ -31,7 +31,6 @@ pub struct TradingSdkBuilder<C = ChainIdUnset, A = AppCodeUnset> {
     trader_defaults: PartialTraderParameters,
     options: TradingSdkOptions,
     app_code_error: Option<AppCodeError>,
-    order_bounds: crate::validation::OrderValidityBounds,
     _state: PhantomData<(C, A)>,
 }
 
@@ -41,7 +40,6 @@ impl Default for TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
             trader_defaults: PartialTraderParameters::default(),
             options: TradingSdkOptions::default(),
             app_code_error: None,
-            order_bounds: crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
             _state: PhantomData,
         }
     }
@@ -153,7 +151,6 @@ impl<C, A> TradingSdkBuilder<C, A> {
             },
             options: self.options,
             app_code_error: self.app_code_error,
-            order_bounds: self.order_bounds,
             _state: PhantomData,
         }
     }
@@ -185,7 +182,6 @@ impl<C, A> TradingSdkBuilder<C, A> {
             },
             options: self.options,
             app_code_error,
-            order_bounds: self.order_bounds,
             _state: PhantomData,
         }
     }
@@ -250,29 +246,6 @@ impl<C, A> TradingSdkBuilder<C, A> {
     pub fn with_quote_cache(mut self, quote_cache: Arc<dyn crate::cache::QuoteCache>) -> Self {
         self.options = self.options.with_quote_cache(quote_cache);
         self
-    }
-
-    /// Returns a copy of this builder with a custom [`crate::validation::OrderValidityBounds`].
-    ///
-    /// The default is [`crate::validation::OrderValidityBounds::SERVICES_DEFAULT`],
-    /// which matches the reviewed services production configuration
-    /// (minimum 60 seconds, market-class maximum 3 hours, limit-class
-    /// maximum 1 year). A tighter policy may be supplied to enforce
-    /// stricter client-side lifetime bounds before any bytes cross the
-    /// wire.
-    #[must_use]
-    pub const fn with_order_bounds(
-        mut self,
-        bounds: crate::validation::OrderValidityBounds,
-    ) -> Self {
-        self.order_bounds = bounds;
-        self
-    }
-
-    /// Returns the configured [`crate::validation::OrderValidityBounds`] for this builder.
-    #[must_use]
-    pub const fn order_bounds(&self) -> crate::validation::OrderValidityBounds {
-        self.order_bounds
     }
 
     fn validate_injected_orderbook_binding(&self) -> Result<(), TradingError> {
@@ -375,7 +348,6 @@ impl TradingSdkBuilder<ChainIdSet, AppCodeSet> {
         Ok(TradingSdk {
             trader_defaults: self.trader_defaults,
             options: self.options,
-            order_bounds: self.order_bounds,
         })
     }
 }

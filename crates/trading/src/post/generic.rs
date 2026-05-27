@@ -74,7 +74,6 @@ pub async fn post_cow_protocol_trade<O, S>(
     additional_params: &crate::types::PostTradeAdditionalParams,
     trader: &TraderParameters,
     signer: &S,
-    order_bounds: crate::validation::OrderValidityBounds,
     app_data_signer: Option<Address>,
 ) -> Result<OrderPostingResult, TradingError>
 where
@@ -101,7 +100,6 @@ where
             additional_params,
             trader,
             signer,
-            order_bounds,
             app_data_signer,
         )
         .await;
@@ -181,9 +179,7 @@ where
         from,
         &params,
     );
-    let validator =
-        OrderBoundsValidator::new(order_bounds, crate::validation::SubmissionClass::Limit)
-            .with_weth_address(wrapped_native_address(chain_id));
+    let validator = OrderBoundsValidator::services_default_for_chain(chain_id);
     validator
         .validate(
             &preview,
@@ -238,10 +234,6 @@ pub(super) fn current_unix_seconds() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_secs())
         .unwrap_or(0)
-}
-
-pub(super) fn wrapped_native_address(chain_id: cow_sdk_core::SupportedChainId) -> Address {
-    cow_sdk_core::wrapped_native_token(chain_id).address
 }
 
 pub(super) fn apply_settings_to_limit_trade_parameters(

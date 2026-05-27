@@ -1,14 +1,14 @@
 # Trading Order-Bounds Validator Audit
 
 Status: Current
-Last reviewed: 2026-05-26
+Last reviewed: 2026-05-27
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
 `OrderValidityBounds`, `SubmissionClass`, `ClientRejection`,
 `AmountSide`, and the `TradingError::ClientRejected` lifting variant.
 Refresh trigger: Changes to the `validate` signature, the
 `ClientRejection` variant set, the `OrderValidityBounds::SERVICES_DEFAULT`
-constants, the `TradingSdkBuilder::with_order_bounds` plumbing, the
-eth-flow `is_eth_flow` skip rule, upstream services
+constants, the `OrderBoundsValidator::services_default_for_chain`
+constructor, the eth-flow `is_eth_flow` skip rule, upstream services
 `crates/shared/src/order_validation.rs` same-token semantics, the
 WETH-paired-with-native-buy guard, the offline `TradeParameters::validate`
 / `LimitTradeParameters::validate` builder-level subset, or the
@@ -30,12 +30,14 @@ This audit covers:
   lifting variant
 - the validator wiring on every public submission seam:
   `post_swap_order`, `post_limit_order`,
-  `post_swap_order_from_quote`, `post_sell_native_currency_order`,
-  the matching `_with_bounds` companions, and the central
-  `post_cow_protocol_trade` sink. Each public seam is a single
-  async entry point bounded on `cow_sdk_core::Signer`.
-- the `TradingSdkBuilder::with_order_bounds` setter and the
-  `TradingSdk` field that carries the configured policy
+  `post_swap_order_from_quote`, and `post_sell_native_currency_order`,
+  routed through the central `post_cow_protocol_trade` sink. Each
+  public seam is a single async entry point bounded on
+  `cow_sdk_core::Signer`.
+- the chain-aware default validator constructed by
+  `OrderBoundsValidator::services_default_for_chain`, which attaches
+  the chain-specific wrapped-native-token address for the same-token
+  paired guard
 - the offline `TradeParameters::validate` and
   `LimitTradeParameters::validate` builder-level subset
 - the `cow_sdk_core::Amount::is_zero` predicate consumed by
@@ -52,9 +54,9 @@ encoder.
 | Validator signature | `validate(&order, scheme, app_data_signer: Option<Address>, now: u64, is_eth_flow: bool) -> Result<(), ClientRejection>` is the canonical entry point | Conforms |
 | Variant coverage | Every reviewed services protocol-invariant rejection has a typed `ClientRejection` variant; the enum is `#[non_exhaustive]` | Conforms |
 | Default policy | `OrderValidityBounds::SERVICES_DEFAULT` matches the published 60 s minimum, 3 h market maximum, and 1 y limit-class ceiling | Conforms |
-| Builder plumbing | `TradingSdkBuilder::with_order_bounds` flows through `TradingSdk` to every submission seam; the configured policy is honoured at validation time | Conforms |
+| Submission-seam policy | Every public submission seam constructs the validator via `OrderBoundsValidator::services_default_for_chain` and runs `validate` between order construction and HTTP upload | Conforms |
 | EthFlow skip rule | `is_eth_flow: true` skips the native-currency-sentinel sell-token check and runs every other invariant | Conforms |
-| Same-token policy | Same-token and WETH/native-sentinel pairs accept on sell-side orders and reject on buy-side orders with `SameBuyAndSellToken` | Conforms |
+| Same-token policy | Mirrors the reviewed services `AllowSell` policy: exact same-token and WETH-paired-with-native-sentinel orders accept on sell-side and reject on buy-side with `SameBuyAndSellToken` | Conforms |
 | WETH-paired guard | A WETH-bound validator rejects buy-side `sell_token = WETH` paired with `buy_token = native sentinel` as `SameBuyAndSellToken { token: weth }` and accepts the sell-side pair | Conforms |
 | Purity | The validator reads no system clock or environment, performs no I/O, and is idempotent for a given input tuple | Conforms |
 | Time-source determinism | Property coverage compares validation classifications at `now` and `now + delta` while both observations remain inside the same validity window | Conforms |
@@ -117,25 +119,30 @@ strings.
 
 ### Submission-Seam Plumbing
 
-`TradingSdk` carries an `order_bounds: OrderValidityBounds` field
-populated from the builder's `with_order_bounds` setter (default
-`SERVICES_DEFAULT`). Every public `TradingSdk` post method forwards
-`self.order_bounds` to the matching `_with_bounds` companion on the
-module-level helper. The central `post_cow_protocol_trade`
-sink constructs the validator from the supplied bounds, attaches
-the chain-specific WETH address through `with_weth_address`, and
-runs the `validate` call between order construction and the HTTP
-upload.
+Every public submission entry point constructs the chain-aware
+default validator through `OrderBoundsValidator::services_default_for_chain(chain_id)`
+on the orderbook's canonical chain id, runs `validate` between order
+construction and the HTTP upload, and surfaces failures through
+`TradingError::ClientRejected(ClientRejection)`. The central
+`post_cow_protocol_trade` sink is the shared submission helper; the
+eth-flow native-currency seam routes through
+`post_sell_native_currency_order` with `is_eth_flow: true`. No
+caller-side configuration of the validator policy is exposed on the
+public surface; the policy is the reviewed services-default policy,
+which `OrderValidityBounds::SERVICES_DEFAULT` records as a public
+constant for documentation reference.
 
 ### Same-Token And Native-Sentinel Parity
 
-`OrderBoundsValidator::validate` mirrors the services same-token policy for
-the reviewed local validator surface. Exact same-token orders and
-WETH-paired-with-native-sentinel orders are accepted when `OrderKind::Sell`
-is submitted and rejected when `OrderKind::Buy` is submitted. Buy-side
-rejections continue to surface through
-`ClientRejection::SameBuyAndSellToken { token }`; no `TradingError` or
-`ClientRejection` variant is renamed for the policy split.
+`OrderBoundsValidator::validate` mirrors the reviewed services
+`AllowSell` same-token policy in `cow-sdk-trading`. Exact same-token
+orders and WETH-paired-with-native-sentinel orders are accepted
+when `OrderKind::Sell` is submitted and rejected when
+`OrderKind::Buy` is submitted. Buy-side rejections surface through
+`ClientRejection::SameBuyAndSellToken { token }`. The
+reviewed-services configuration in production deployments runs the
+same `AllowSell` mode (the `Disallow` and `Allow` modes are
+upstream policy variants out of scope for `cow-sdk-trading`).
 
 `TradeParameters::validate` and `LimitTradeParameters::validate` apply the
 same buy-only exact same-token rule at the chain-agnostic builder layer. The

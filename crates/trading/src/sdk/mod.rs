@@ -33,7 +33,6 @@ pub struct AppCodeSet(());
 pub struct TradingSdk {
     trader_defaults: PartialTraderParameters,
     options: TradingSdkOptions,
-    order_bounds: crate::validation::OrderValidityBounds,
 }
 
 /// Helper-only trading facade for chain-bound helper workflows.

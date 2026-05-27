@@ -46,38 +46,6 @@ where
     S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
-    post_swap_order_from_quote_with_bounds(
-        quote_results,
-        trader,
-        signer,
-        advanced_settings,
-        orderbook,
-        crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
-    )
-    .await
-}
-
-/// Variant of [`post_swap_order_from_quote`] that accepts a caller-supplied
-/// [`crate::validation::OrderValidityBounds`].
-///
-/// # Errors
-///
-/// Returns an error when the quoted trade cannot be converted into a
-/// postable order, when app-data merging fails, when signing fails, or when
-/// the orderbook rejects the order submission.
-pub async fn post_swap_order_from_quote_with_bounds<O, S>(
-    quote_results: &QuoteResults,
-    trader: &TraderParameters,
-    signer: &S,
-    advanced_settings: Option<&TradeAdvancedSettings>,
-    orderbook: &O,
-    order_bounds: crate::validation::OrderValidityBounds,
-) -> Result<OrderPostingResult, TradingError>
-where
-    O: OrderbookClient + ?Sized,
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
     validate_quote_orderbook_binding(orderbook, quote_results.orderbook_binding.as_ref())?;
 
     let (app_data_info, merged_params) = if let Some(app_data_override) =
@@ -119,7 +87,6 @@ where
         &additional_params,
         trader,
         signer,
-        order_bounds,
         app_data_signer,
     )
     .await

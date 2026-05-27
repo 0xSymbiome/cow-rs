@@ -291,8 +291,7 @@ entries:
 ```rust,ignore
 use cow_sdk::trading::{
     get_eth_flow_transaction, post_sell_native_currency_order,
-    swap_params_to_limit_order_params, OrderValidityBounds,
-    PostTradeAdditionalParams,
+    swap_params_to_limit_order_params, PostTradeAdditionalParams,
 };
 
 let quote = sdk.get_quote_results(params.clone(), signer, None).await?;
@@ -307,7 +306,6 @@ let order = post_sell_native_currency_order(
     &PostTradeAdditionalParams::default(),
     trader,
     signer,
-    OrderValidityBounds::SERVICES_DEFAULT,
     None,
 )
 .await?;

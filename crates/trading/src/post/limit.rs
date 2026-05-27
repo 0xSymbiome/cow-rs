@@ -30,37 +30,6 @@ where
     S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
-    post_limit_order_with_bounds(
-        params,
-        trader,
-        signer,
-        advanced_settings,
-        orderbook,
-        crate::validation::OrderValidityBounds::SERVICES_DEFAULT,
-    )
-    .await
-}
-
-/// Variant of [`post_limit_order`] that accepts a caller-supplied
-/// [`crate::validation::OrderValidityBounds`].
-///
-/// # Errors
-///
-/// Returns an error when app-data generation fails, when signing fails, or
-/// when the orderbook rejects the order submission.
-pub async fn post_limit_order_with_bounds<O, S>(
-    params: &LimitTradeParameters,
-    trader: &TraderParameters,
-    signer: &S,
-    advanced_settings: Option<&TradeAdvancedSettings>,
-    orderbook: &O,
-    order_bounds: crate::validation::OrderValidityBounds,
-) -> Result<OrderPostingResult, TradingError>
-where
-    O: OrderbookClient + ?Sized,
-    S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
-{
     let app_data_signer = advanced_settings
         .and_then(|settings| settings.app_data.as_ref())
         .and_then(|params| params.signer);
@@ -95,7 +64,6 @@ where
         &additional,
         trader,
         signer,
-        order_bounds,
         app_data_signer,
     )
     .await

@@ -1,7 +1,7 @@
 use cow_sdk_core::{Address, Signer};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 
-use super::generic::{current_unix_seconds, wrapped_native_address};
+use super::generic::current_unix_seconds;
 use crate::types::{validate_orderbook_context, validate_orderbook_env_context};
 use crate::validation::OrderBoundsValidator;
 use crate::{
@@ -47,7 +47,6 @@ pub async fn post_sell_native_currency_order<O, S>(
     additional_params: &crate::types::PostTradeAdditionalParams,
     trader: &TraderParameters,
     signer: &S,
-    order_bounds: crate::validation::OrderValidityBounds,
     app_data_signer: Option<Address>,
 ) -> Result<OrderPostingResult, TradingError>
 where
@@ -87,9 +86,7 @@ where
         String::new(),
         preview_from,
     );
-    let validator =
-        OrderBoundsValidator::new(order_bounds, crate::validation::SubmissionClass::Limit)
-            .with_weth_address(wrapped_native_address(canonical_chain_id));
+    let validator = OrderBoundsValidator::services_default_for_chain(canonical_chain_id);
     validator
         .validate(
             &preview,

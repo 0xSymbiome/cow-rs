@@ -17,7 +17,7 @@
 
 use std::time::Duration;
 
-use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
+use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use serde::{Deserialize, Serialize};
 
@@ -114,11 +114,9 @@ pub enum AmountSide {
 
 /// Configured lifetime bounds enforced by [`OrderBoundsValidator`].
 ///
-/// The reviewed services production defaults are exposed as
-/// [`OrderValidityBounds::SERVICES_DEFAULT`]. Callers that want a tighter
-/// policy for their own surface can construct a different
-/// [`OrderValidityBounds`] and pass it through
-/// [`crate::TradingSdkBuilder::with_order_bounds`].
+/// The reviewed services production defaults are exposed as the public
+/// constant [`OrderValidityBounds::SERVICES_DEFAULT`]; the validator
+/// applied at every public submission seam uses those defaults.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OrderValidityBounds {
     /// Minimum lifetime enforced for every submission class.
@@ -184,9 +182,18 @@ impl OrderBoundsValidator {
         }
     }
 
-    /// Creates a validator with the supplied bounds and submission class.
+    /// Creates a validator with the reviewed services-default bounds, the
+    /// limit-class lifetime ceiling, and the chain-specific wrapped-native
+    /// token address attached for the same-token paired guard.
     #[must_use]
-    pub const fn new(bounds: OrderValidityBounds, class: SubmissionClass) -> Self {
+    pub fn services_default_for_chain(chain_id: SupportedChainId) -> Self {
+        Self::services_default()
+            .with_weth_address(cow_sdk_core::wrapped_native_token(chain_id).address)
+    }
+
+    /// Creates a validator with the supplied bounds and submission class.
+    #[cfg(test)]
+    const fn new(bounds: OrderValidityBounds, class: SubmissionClass) -> Self {
         Self {
             bounds,
             class,
@@ -410,4 +417,91 @@ pub fn assert_owner_matches_signer(
         });
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass,
+    };
+    use cow_sdk_core::{Address, Amount, OrderKind};
+    use cow_sdk_orderbook::{OrderCreation, SigningScheme};
+
+    const FROM: &str = "0x1111111111111111111111111111111111111111";
+    const SELL_TOKEN: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const BUY_TOKEN: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const NOW: u64 = 1_700_000_000;
+    const VALID_TO: u32 = 1_700_003_600;
+
+    fn address(hex: &str) -> Address {
+        Address::new(hex).expect("fixture address must be valid")
+    }
+
+    fn order() -> OrderCreation {
+        OrderCreation::new(
+            address(SELL_TOKEN),
+            address(BUY_TOKEN),
+            Amount::new("1000000000000000000").expect("test amount literal must be valid"),
+            Amount::new("1000000").expect("test amount literal must be valid"),
+            VALID_TO,
+            OrderKind::Sell,
+            SigningScheme::Eip712,
+            "0x",
+            address(FROM),
+        )
+    }
+
+    #[test]
+    fn liquidity_class_bypasses_the_lifetime_ceiling() {
+        let validator = OrderBoundsValidator::new(
+            OrderValidityBounds::SERVICES_DEFAULT,
+            SubmissionClass::Liquidity,
+        );
+        let mut order = order();
+        order.valid_to = u32::try_from(NOW + 31_536_001).expect("valid_to must fit in u32");
+        validator
+            .validate(&order, SigningScheme::Eip712, None, NOW, false)
+            .expect("Liquidity class must bypass the lifetime ceiling");
+    }
+
+    #[test]
+    fn market_class_rejects_valid_to_above_three_hours() {
+        let validator = OrderBoundsValidator::new(
+            OrderValidityBounds::SERVICES_DEFAULT,
+            SubmissionClass::Market,
+        );
+        let mut order = order();
+        order.valid_to = u32::try_from(NOW + 10_801).expect("valid_to must fit in u32");
+        let error = validator
+            .validate(&order, SigningScheme::Eip712, None, NOW, false)
+            .expect_err("market class must enforce the 3h ceiling");
+        assert!(matches!(
+            error,
+            ClientRejection::ValidToExcessive {
+                max_seconds: 10_800,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn validator_constructed_with_tighter_min_rejects_short_lifetime() {
+        let tighter = OrderValidityBounds {
+            min: std::time::Duration::from_secs(120),
+            ..OrderValidityBounds::SERVICES_DEFAULT
+        };
+        let validator = OrderBoundsValidator::new(tighter, SubmissionClass::Limit);
+        let mut order = order();
+        order.valid_to = u32::try_from(NOW + 60).expect("valid_to must fit in u32");
+        let error = validator
+            .validate(&order, SigningScheme::Eip712, None, NOW, false)
+            .expect_err("custom 120s minimum must reject a 60s lifetime");
+        assert!(matches!(
+            error,
+            ClientRejection::ValidToInsufficient {
+                min_seconds: 120,
+                ..
+            }
+        ));
+    }
 }

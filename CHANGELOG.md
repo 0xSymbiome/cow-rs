@@ -83,11 +83,8 @@ The first functional crate-family release begins at `0.1.0`.
   `get_cow_protocol_allowance`, and `approve_cow_protocol`. Each
   function is `pub async fn` and accepts any signer that implements
   `cow_sdk_core::Signer`. The trait method set is the one pinned by
-  [ADR 0029](docs/adr/0029-trait-evolution-extension-traits.md). The
-  `_with_bounds` companions are `post_swap_order_with_bounds`,
-  `post_limit_order_with_bounds`, and
-  `post_swap_order_from_quote_with_bounds`, each on the same `Signer`
-  bound. Cooperative cancellation composition through
+  [ADR 0029](docs/adr/0029-trait-evolution-extension-traits.md).
+  Cooperative cancellation composition through
   `cow_sdk_core::Cancellable::cancel_with(&token)` is supported on
   every entry. Tracing span endpoint fields use
   `trading.post_swap_order`, `trading.post_swap_order_from_quote`,
@@ -101,6 +98,26 @@ The first functional crate-family release begins at `0.1.0`.
   bind on `Signer` and the wasm-bindgen surface (`postSwapOrder`,
   `postLimitOrder`, `getCowProtocolAllowance`, and the rest) keeps
   its JS contract.
+
+- `cow_sdk_trading` removes the public bounds-customization surface.
+  `TradingSdkBuilder::with_order_bounds` and its paired getter are
+  removed; the SDK's stored bounds field is removed. The three
+  module-level submission helpers no longer carry `order_bounds`
+  parameters and the matching companion functions
+  (`post_swap_order_with_bounds`, `post_limit_order_with_bounds`,
+  `post_swap_order_from_quote_with_bounds`) are deleted in the same
+  change. `OrderBoundsValidator` continues to run at the reviewed
+  `OrderValidityBounds::SERVICES_DEFAULT` policy on every public
+  submission seam; the typed `ClientRejection` channel is unchanged.
+  The new public constructor
+  `OrderBoundsValidator::services_default_for_chain(chain_id)`
+  builds a validator with the chain-specific wrapped-native-token
+  address attached for the same-token paired guard.
+  `OrderBoundsValidator::services_default` and
+  `OrderBoundsValidator::with_weth_address` remain the public
+  validator constructors. See the
+  [ADR 0015](docs/adr/0015-client-side-order-bounds-validator.md)
+  amendment.
 
 - `cow_sdk_trading::TradeParameters` and
   `cow_sdk_trading::LimitTradeParameters` carry the protocol-level
