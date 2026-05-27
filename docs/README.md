@@ -47,11 +47,10 @@ and [cow-sdk-wasm](../crates/wasm/README.md).
   [Architecture](architecture.md#facade-and-adapter-faq) and
   [ADR 0003](adr/0003-separate-read-only-subgraph-crate.md).
 - Where do native runtime integrations fit? `cow-sdk-core::{Signer,
-  AsyncSigner, AsyncSigningProvider, Provider, AsyncProvider}` defines the stable extension contract
-  for signer and RPC adapters. Native Alloy integrations ship as opt-in
-  adapter crates, and other provider-specific integrations remain additive
-  leaf crates rather than widening the default facade. See
-  [Integrations](integrations.md) and
+  SigningProvider, Provider}` defines the stable extension contract for signer
+  and RPC adapters. Native Alloy integrations ship as opt-in adapter crates,
+  and other provider-specific integrations remain additive leaf crates rather
+  than widening the default facade. See [Integrations](integrations.md) and
   [Architecture](architecture.md#provider-and-signer-adapter-seams).
 - Which Alloy crate should I use? Use `cow-sdk-alloy-provider` for read-only
   RPC, `cow-sdk-alloy-signer` for local private-key signing, and

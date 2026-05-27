@@ -1,8 +1,8 @@
 //! On-chain EIP-1271 signature verification with optional caching.
 //!
-//! [`verify_eip1271_signature_async`] orchestrates the canonical
+//! [`verify_eip1271_signature_cached`] orchestrates the canonical
 //! `isValidSignature` dispatch against the verifier contract through an
-//! injected [`cow_sdk_core::AsyncProvider`], consulting an
+//! injected [`cow_sdk_core::Provider`], consulting an
 //! [`Eip1271VerificationCache`] before reaching the chain. The trait is
 //! defined here so the contracts crate can take it as a parameter
 //! without depending on its sibling crates; callers typically reach for
@@ -28,16 +28,16 @@
 use std::fmt;
 
 use alloy_sol_types::SolCall;
-use cow_sdk_core::{Address, AsyncProvider};
+use cow_sdk_core::{Address, Provider};
 
 use crate::ContractsError;
 use crate::eip1271::IERC1271;
 use crate::signature::{
     EIP1271_IS_VALID_SIGNATURE_ABI_JSON, Eip1271VerificationRequest, decode_magic_value_response,
-    ensure_contract_code_async,
+    ensure_contract_code,
 };
 
-/// Optional caching seam consumed by [`verify_eip1271_signature_async`].
+/// Optional caching seam consumed by [`verify_eip1271_signature_cached`].
 ///
 /// Implementations carry the boolean outcome of an EIP-1271
 /// magic-value check keyed by the `(verifier, digest)` pair. The trait
@@ -92,13 +92,13 @@ pub trait Eip1271VerificationCache: Send + Sync + 'static {
         fields(verifier = %request.verifier),
     ),
 )]
-pub async fn verify_eip1271_signature_async<P, C>(
+pub async fn verify_eip1271_signature_cached<P, C>(
     provider: &P,
     request: &Eip1271VerificationRequest,
     cache: &C,
 ) -> Result<(), ContractsError>
 where
-    P: AsyncProvider,
+    P: Provider,
     P::Error: fmt::Display,
     C: Eip1271VerificationCache + ?Sized,
 {
@@ -120,7 +120,7 @@ where
         cache_status = "miss",
     );
 
-    let code_result = ensure_contract_code_async(provider, &request.verifier).await;
+    let code_result = ensure_contract_code(provider, &request.verifier).await;
     #[cfg(feature = "tracing")]
     if code_result.is_err() {
         emit_cache_skip_event();

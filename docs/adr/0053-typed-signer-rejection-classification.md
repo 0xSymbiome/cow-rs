@@ -17,11 +17,11 @@
 - Every typed signer error in the workspace implements
   `SignerError` against its own variants:
   `cow_sdk_browser_wallet::BrowserWalletError` returns the code from
-  the `UserRejectedRequest` variant; `cow_sdk_alloy_signer::AsyncSignerError`
+  the `UserRejectedRequest` variant; `cow_sdk_alloy_signer::SignerError`
   and `cow_sdk_alloy::AlloyClientError` return `None` for every
   variant because local-key signing cannot produce an EIP-1193 4xxx
   user rejection.
-- The async and sync helpers in `cow-sdk-signing` bound the signer's
+- The helpers in `cow-sdk-signing` bound the signer's
   associated error on `fmt::Display + cow_sdk_core::SignerError`.
   `signer_error` consumes the trait result first: when the code is
   present it emits `SigningError::SignerRejection { label, code }`
@@ -36,18 +36,18 @@
 This is the first **shared classification trait** in the workspace.
 The existing convention is per-type classification: every error
 type owns its own `class()` accessor returning a
-type-specific enum (`AsyncSignerError::class()` →
-`AsyncSignerErrorClass`, `AlloyClientError::class()` →
-`AlloyClientErrorClass`, `AsyncProviderError::class()` →
-`AsyncProviderErrorClass`), and typed-rejection surfaces follow
+type-specific enum (`cow_sdk_alloy_signer::SignerError::class()` →
+`SignerErrorClass`, `AlloyClientError::class()` →
+`AlloyClientErrorClass`, `ProviderError::class()` →
+`ProviderErrorClass`), and typed-rejection surfaces follow
 [ADR 0017](0017-typed-orderbook-rejection-parser.md)'s per-crate
 `#[non_exhaustive]` enum plus parser-function shape. Introducing a
 new pattern requires a specific justification — the rest of this
 section is that justification.
 
-The signing crate's public helpers (`sign_order_async`,
-`sign_order_cancellation_async`, and the synchronous siblings) are
-**generic over `S: AsyncTypedDataSigner`** with the associated
+The signing crate's public helpers (`sign_order`,
+`sign_order_cancellation`, and their cancellation-batch siblings) are
+**generic over `S: TypedDataSigner`** with the associated
 `Error` type opaque. The crate cannot pattern-match on
 `BrowserWalletError::UserRejectedRequest` because it never sees
 the concrete signer type at any of its call sites. Three
@@ -58,7 +58,7 @@ alternatives were considered before adopting the shared trait:
   classification at the consumer (the wasm-typescript console
   example), keeping the signing crate ignorant of rejection
   classes. Rejected because it pushes the responsibility onto
-  every consumer of `sign_*_async`, defeats the discoverable
+  every consumer of `sign_*`, defeats the discoverable
   typed-error surface the signing crate already exposes, and
   cannot extend to a future hardware-wallet or transport-bridged
   signer that surfaces EIP-1193 4xxx codes through its own typed
@@ -90,8 +90,9 @@ problem the existing per-type `class()` convention does not.
 
 - Public surface: `cow_sdk_core::SignerError` is a new trait in the
   workspace's public-API perimeter. Signer crates and downstream
-  callers that implement `AsyncTypedDataSigner` (or the synchronous
-  `Signer`) must implement `SignerError` for their associated
+  callers that implement `TypedDataSigner` (or any other capability
+  trait that routes through the signing helpers) must implement
+  `SignerError` for their associated
   `Error` type. The trait carries a `None` default so adoption is a
   one-line `impl SignerError for MyError {}` for signers that never
   represent EIP-1193 rejections. Courtesy impls on `String`,
@@ -108,7 +109,7 @@ problem the existing per-type `class()` convention does not.
   bound lives on every signing-helper signature in
   `cow-sdk-signing` plus every trading SDK API that forwards an
   upstream signer error. The bound is **not** added to the
-  `AsyncTypedDataSigner` trait itself; signer adapters that never
+  `TypedDataSigner` trait itself; signer adapters that never
   route through the signing crate stay free of the requirement.
 - Validation and review: per-crate `signer_error_trait_contract`
   host tests enumerate every variant of every implementer and pin
@@ -137,7 +138,7 @@ problem the existing per-type `class()` convention does not.
   participation guarantee.
 - **String-shape parsing of the upstream `Display`**: see *Why*
   above. Brittle, no compile-time signal under upstream refactor.
-- **Bound `AsyncTypedDataSigner::Error: SignerError` on the trait
+- **Bound `TypedDataSigner::Error: SignerError` on the trait
   itself**: forces every implementer of the trait to pay the bound
   even if they never route through the signing crate. The current
   decision narrows the requirement to the actual call sites and

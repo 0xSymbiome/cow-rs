@@ -10,7 +10,7 @@
 
 ## Decision
 
-`AsyncProvider` and `AsyncSigningProvider` freeze their `0.1.0`
+`Provider` and `SigningProvider` freeze their `0.1.0`
 shape. New capabilities ship as `*Ext` traits with blanket
 implementations in their owning leaf crates. Default-method bodies on
 the core traits are forbidden until Rust stabilizes full-bandwidth
@@ -34,7 +34,7 @@ helpers available through explicit imports.
 
 ## Must Remain True
 
-- `AsyncProvider` and `AsyncSigningProvider` method sets remain frozen
+- `Provider` and `SigningProvider` method sets remain frozen
   through `0.x.y`.
 - Each extension trait name ends in `Ext`.
 - Each extension trait is documented as opt-in at the import boundary.

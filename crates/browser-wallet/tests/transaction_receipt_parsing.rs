@@ -5,7 +5,7 @@
 use cow_sdk_browser_wallet::{
     BrowserWallet, BrowserWalletError, Eip1193Provider, MockEip1193Transport,
 };
-use cow_sdk_core::{AsyncProvider, TransactionHash, TransactionStatus};
+use cow_sdk_core::{Provider, TransactionHash, TransactionStatus};
 use serde_json::{Value, json};
 
 const HASH_1: &str = "0x0000000000000000000000000000000000000000000000000000000000000001";

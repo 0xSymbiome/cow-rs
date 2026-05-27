@@ -4,10 +4,10 @@ use std::{error::Error, fmt};
 
 use cow_sdk_core::{Redacted, TransportErrorClass};
 
-/// Coarse classification for [`AsyncProviderError`].
+/// Coarse classification for [`ProviderError`].
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum AsyncProviderErrorClass {
+pub enum ProviderErrorClass {
     /// The caller supplied an invalid request.
     Validation,
     /// Transport or response decoding failed before a remote JSON-RPC error.
@@ -20,7 +20,7 @@ pub enum AsyncProviderErrorClass {
     Internal,
 }
 
-impl AsyncProviderErrorClass {
+impl ProviderErrorClass {
     /// Returns the stable lowercase class label.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
@@ -34,7 +34,7 @@ impl AsyncProviderErrorClass {
     }
 }
 
-impl fmt::Display for AsyncProviderErrorClass {
+impl fmt::Display for ProviderErrorClass {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
@@ -42,7 +42,7 @@ impl fmt::Display for AsyncProviderErrorClass {
 
 /// Error returned by [`crate::RpcAlloyProvider`].
 #[non_exhaustive]
-pub enum AsyncProviderError {
+pub enum ProviderError {
     /// Caller-controlled input failed validation.
     Validation(String),
     /// The HTTP transport, JSON-RPC envelope, or response decoding failed.
@@ -65,16 +65,16 @@ pub enum AsyncProviderError {
     Internal(String),
 }
 
-impl AsyncProviderError {
+impl ProviderError {
     /// Returns this error's coarse class.
     #[must_use]
-    pub const fn class(&self) -> AsyncProviderErrorClass {
+    pub const fn class(&self) -> ProviderErrorClass {
         match self {
-            Self::Validation(_) => AsyncProviderErrorClass::Validation,
-            Self::Transport { .. } => AsyncProviderErrorClass::Transport,
-            Self::Remote { .. } => AsyncProviderErrorClass::Remote,
-            Self::Cancelled => AsyncProviderErrorClass::Cancelled,
-            Self::Internal(_) => AsyncProviderErrorClass::Internal,
+            Self::Validation(_) => ProviderErrorClass::Validation,
+            Self::Transport { .. } => ProviderErrorClass::Transport,
+            Self::Remote { .. } => ProviderErrorClass::Remote,
+            Self::Cancelled => ProviderErrorClass::Cancelled,
+            Self::Internal(_) => ProviderErrorClass::Internal,
         }
     }
 
@@ -99,7 +99,7 @@ impl AsyncProviderError {
     }
 }
 
-impl fmt::Debug for AsyncProviderError {
+impl fmt::Debug for ProviderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Validation(_) => f
@@ -125,7 +125,7 @@ impl fmt::Debug for AsyncProviderError {
     }
 }
 
-impl fmt::Display for AsyncProviderError {
+impl fmt::Display for ProviderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Validation(_) => f.write_str("validation error: [redacted]"),
@@ -141,15 +141,15 @@ impl fmt::Display for AsyncProviderError {
     }
 }
 
-impl Error for AsyncProviderError {}
+impl Error for ProviderError {}
 
-impl From<cow_sdk_core::CoreError> for AsyncProviderError {
+impl From<cow_sdk_core::CoreError> for ProviderError {
     fn from(error: cow_sdk_core::CoreError) -> Self {
         Self::Validation(error.to_string())
     }
 }
 
-impl From<cow_sdk_core::Cancelled> for AsyncProviderError {
+impl From<cow_sdk_core::Cancelled> for ProviderError {
     fn from(_: cow_sdk_core::Cancelled) -> Self {
         Self::Cancelled
     }

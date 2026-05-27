@@ -32,7 +32,7 @@ This audit covers:
 
 It does not cover user-agent layering, retry heuristics outside the
 orderbook request executor, or the
-`AsyncProvider` chain-RPC seam (a separate runtime contract).
+`Provider` chain-RPC seam (a separate runtime contract).
 
 ## Outcome Summary
 

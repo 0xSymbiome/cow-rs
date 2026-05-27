@@ -42,8 +42,8 @@ use common::MockSigner;
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/signing.json");
 
-#[test]
-fn parity_fixture_cases_hold() {
+#[tokio::test]
+async fn parity_fixture_cases_hold() {
     let fixture: Value = serde_json::from_str(FIXTURE).expect("fixture must parse as JSON");
 
     assert_eq!(
@@ -75,8 +75,12 @@ fn parity_fixture_cases_hold() {
             "signing-domain-resolution-precedence" => {
                 assert_domain_resolution_precedence(id, expected);
             }
-            "signing-signer-supported-schemes" => assert_signer_supported_schemes(id, expected),
-            "signing-unsupported-mode-errors" => assert_unsupported_mode_errors(id, expected),
+            "signing-signer-supported-schemes" => {
+                assert_signer_supported_schemes(id, expected).await;
+            }
+            "signing-unsupported-mode-errors" => {
+                assert_unsupported_mode_errors(id, expected).await;
+            }
             "signing-generate-order-id" => assert_generate_order_id(id, expected),
             "signing-eip1271-encoding" => assert_eip1271_encoding(id, expected),
             "signing-ecdsa-v-normalization" => assert_ecdsa_v_normalization(id, expected),
@@ -265,7 +269,7 @@ fn assert_domain_resolution_precedence(id: &str, expected: &Value) {
     );
 }
 
-fn assert_signer_supported_schemes(id: &str, expected: &Value) {
+async fn assert_signer_supported_schemes(id: &str, expected: &Value) {
     let signer_generated: Vec<&str> = expected["signer_generated"]
         .as_array()
         .unwrap_or_else(|| panic!("case {id}: expected.signer_generated must be an array"))
@@ -294,7 +298,7 @@ fn assert_signer_supported_schemes(id: &str, expected: &Value) {
     for scheme_label in &signer_generated {
         let scheme = scheme_label_to_rust(id, scheme_label);
         let result =
-            sign_order_with_scheme(&order, SupportedChainId::Mainnet, &signer, scheme, None);
+            sign_order_with_scheme(&order, SupportedChainId::Mainnet, &signer, scheme, None).await;
         assert!(
             result.is_ok(),
             "case {id}: signer-generated scheme {scheme_label} must sign successfully; got {result:?}",
@@ -307,6 +311,7 @@ fn assert_signer_supported_schemes(id: &str, expected: &Value) {
         let scheme = scheme_label_to_rust(id, scheme_label);
         let error =
             sign_order_with_scheme(&order, SupportedChainId::Mainnet, &signer, scheme, None)
+                .await
                 .expect_err("typed-external scheme must reject through SigningError");
         match error {
             SigningError::UnsupportedSignerGeneratedScheme { scheme: rejected } => {
@@ -322,7 +327,7 @@ fn assert_signer_supported_schemes(id: &str, expected: &Value) {
     }
 }
 
-fn assert_unsupported_mode_errors(id: &str, expected: &Value) {
+async fn assert_unsupported_mode_errors(id: &str, expected: &Value) {
     let unsupported: Vec<&str> = expected["unsupported_modes"]
         .as_array()
         .unwrap_or_else(|| panic!("case {id}: expected.unsupported_modes must be an array"))
@@ -347,6 +352,7 @@ fn assert_unsupported_mode_errors(id: &str, expected: &Value) {
         let scheme = scheme_label_to_rust(id, scheme_label);
         let error =
             sign_order_with_scheme(&order, SupportedChainId::Mainnet, &signer, scheme, None)
+                .await
                 .expect_err("unsupported scheme must reject through SigningError");
         assert!(
             matches!(error, SigningError::UnsupportedSignerGeneratedScheme { .. }),

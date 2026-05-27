@@ -30,14 +30,13 @@ pub use cache::{
 };
 pub use cancellation::{
     ORDER_CANCELLATIONS_PRIMARY_TYPE, order_cancellation_typed_data_payload,
-    order_cancellations_typed_data_payload, sign_order_cancellation, sign_order_cancellation_async,
-    sign_order_cancellation_with_scheme, sign_order_cancellation_with_scheme_async,
-    sign_order_cancellations, sign_order_cancellations_async, sign_order_cancellations_with_scheme,
-    sign_order_cancellations_with_scheme_async,
+    order_cancellations_typed_data_payload, sign_order_cancellation,
+    sign_order_cancellation_with_scheme, sign_order_cancellations,
+    sign_order_cancellations_with_scheme,
 };
 pub use cow_sdk_contracts::SigningScheme;
 pub use cow_sdk_contracts::{
-    Eip1271VerificationRequest, verify_eip1271_signature, verify_eip1271_signature_async,
+    Eip1271VerificationRequest, verify_eip1271_signature, verify_eip1271_signature_cached,
 };
 pub use domain::{
     ORDER_PRIMARY_TYPE, OrderTypedData, cancellation_fields, domain_fields, domain_separator,
@@ -49,5 +48,5 @@ pub use eip1271::{
 pub use errors::SigningError;
 pub use order_signing::{
     GeneratedOrderId, SigningResult, eip1271_signature_payload, generate_order_id, sign_order,
-    sign_order_async, sign_order_with_scheme, sign_order_with_scheme_async,
+    sign_order_with_scheme,
 };

@@ -17,15 +17,15 @@ use cow_sdk_contracts::{OrderCancellations, SigningScheme, hash_order_cancellati
 use cow_sdk_core::SupportedChainId;
 use cow_sdk_signing::{
     ORDER_CANCELLATIONS_PRIMARY_TYPE, SigningError, get_domain,
-    order_cancellations_typed_data_payload, sign_order_cancellation, sign_order_cancellation_async,
-    sign_order_cancellation_with_scheme, sign_order_cancellations_async,
+    order_cancellations_typed_data_payload, sign_order_cancellation,
+    sign_order_cancellation_with_scheme, sign_order_cancellations,
     sign_order_cancellations_with_scheme,
 };
 
 use common::{MockSigner, sample_order_uid};
 
-#[test]
-fn single_and_batch_cancellation_signing_are_first_class() {
+#[tokio::test]
+async fn single_and_batch_cancellation_signing_are_first_class() {
     let signer = MockSigner::new();
     let order_uid = sample_order_uid();
     let batch_uids = vec![
@@ -36,8 +36,9 @@ fn single_and_batch_cancellation_signing_are_first_class() {
         .unwrap(),
     ];
 
-    let single =
-        sign_order_cancellation(&order_uid, SupportedChainId::Sepolia, &signer, None).unwrap();
+    let single = sign_order_cancellation(&order_uid, SupportedChainId::Sepolia, &signer, None)
+        .await
+        .unwrap();
     assert_eq!(single.signing_scheme, SigningScheme::Eip712);
 
     let batch = sign_order_cancellations_with_scheme(
@@ -47,12 +48,13 @@ fn single_and_batch_cancellation_signing_are_first_class() {
         SigningScheme::EthSign,
         None,
     )
+    .await
     .unwrap();
     assert_eq!(batch.signing_scheme, SigningScheme::EthSign);
 }
 
-#[test]
-fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
+#[tokio::test]
+async fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
     let signer = MockSigner::new();
     let order_uid = sample_order_uid();
     let payload = order_cancellations_typed_data_payload(
@@ -67,7 +69,9 @@ fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
     let order_uid_hex = order_uid.to_hex_string();
     assert!(payload.message.contains(&order_uid_hex));
 
-    sign_order_cancellation(&order_uid, SupportedChainId::Sepolia, &signer, None).unwrap();
+    sign_order_cancellation(&order_uid, SupportedChainId::Sepolia, &signer, None)
+        .await
+        .unwrap();
     assert_eq!(signer.calls.borrow().typed_data.len(), 1);
     assert_eq!(
         signer.calls.borrow().typed_data[0].fields[0].kind,
@@ -87,6 +91,7 @@ fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
         SigningScheme::EthSign,
         None,
     )
+    .await
     .unwrap();
 
     let expected_digest = hash_order_cancellations(
@@ -103,8 +108,8 @@ fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
     );
 }
 
-#[test]
-fn unsupported_cancellation_modes_fail_with_typed_error() {
+#[tokio::test]
+async fn unsupported_cancellation_modes_fail_with_typed_error() {
     let signer = MockSigner::new();
     let order_uid = sample_order_uid();
 
@@ -115,6 +120,7 @@ fn unsupported_cancellation_modes_fail_with_typed_error() {
         SigningScheme::PreSign,
         None,
     )
+    .await
     .unwrap_err();
 
     assert!(matches!(
@@ -126,17 +132,16 @@ fn unsupported_cancellation_modes_fail_with_typed_error() {
 }
 
 #[tokio::test]
-async fn async_cancellation_signing_paths_match_sync_variants() {
+async fn batch_cancellation_signing_routes_to_typed_data_for_default_scheme() {
     let signer = MockSigner::new();
     let order_uid = sample_order_uid();
 
-    let single =
-        sign_order_cancellation_async(&order_uid, SupportedChainId::Sepolia, &signer, None)
-            .await
-            .unwrap();
+    let single = sign_order_cancellation(&order_uid, SupportedChainId::Sepolia, &signer, None)
+        .await
+        .unwrap();
     assert_eq!(single.signing_scheme, SigningScheme::Eip712);
 
-    let batch = sign_order_cancellations_async(
+    let batch = sign_order_cancellations(
         std::slice::from_ref(&order_uid),
         SupportedChainId::Sepolia,
         &signer,
@@ -165,8 +170,8 @@ mod tracing_contract {
         subscriber::Interest,
     };
 
-    #[test]
-    fn cancellation_emits_debug_event_with_uid_field() {
+    #[tokio::test]
+    async fn cancellation_emits_debug_event_with_uid_field() {
         let capture = TraceCapture::install();
         let signer = MockSigner::new();
         let order_uid = sample_order_uid();
@@ -178,6 +183,7 @@ mod tracing_contract {
             SigningScheme::Eip712,
             None,
         )
+        .await
         .expect("cancellation signing should succeed");
 
         let events = capture.events();

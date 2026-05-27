@@ -2,91 +2,16 @@ use crate::types::{Address, Amount};
 
 use super::transaction::{TransactionBroadcast, TransactionRequest};
 use super::typed_data::{TypedDataDomain, TypedDataField, TypedDataPayload};
-/// Synchronous signing boundary for native or test signers.
-///
-/// This is an active SDK contract: signing and trading workflows accept it
-/// directly, and any implementor also gets `AsyncSigner` through the blanket
-/// implementation below.
-pub trait Signer {
-    /// Provider type that can be attached to this signer.
-    type Provider;
-    /// Error type returned by signer operations.
-    type Error;
 
-    /// Attaches a provider or provider-like runtime to the signer.
-    fn connect(&mut self, provider: Self::Provider);
-    /// Returns the signer address.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined signer error when address resolution fails.
-    fn get_address(&self) -> Result<Address, Self::Error>;
-    /// Signs arbitrary bytes according to the backend's message-signing rules.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined signer error when signing fails.
-    fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error>;
-    /// Signs a transaction payload.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined signer error when signing fails.
-    fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
-    /// Signs an explicit typed-data payload.
-    ///
-    /// # Errors
-    ///
-    /// Returns any error from [`Signer::sign_typed_data`].
-    fn sign_typed_data_payload(&self, payload: &TypedDataPayload) -> Result<String, Self::Error> {
-        self.sign_typed_data(
-            &payload.domain,
-            payload.primary_type_fields().unwrap_or_default(),
-            payload.message_json(),
-        )
-    }
-    /// Signs typed-data components using the compatibility field-based contract.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined signer error when signing fails.
-    fn sign_typed_data(
-        &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
-    ) -> Result<String, Self::Error>;
-    /// Sends a transaction and returns the broadcast transaction hash.
-    ///
-    /// This confirms only that the signer backend returned a transaction hash.
-    /// Use [`crate::Provider::get_transaction_receipt`] or a higher-level
-    /// `cow-sdk-trading` wait helper to observe mining status and receipt
-    /// fields.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined signer error when submission fails.
-    fn send_transaction(
-        &self,
-        tx: &TransactionRequest,
-    ) -> Result<TransactionBroadcast, Self::Error>;
-    /// Estimates gas for a transaction request.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined signer error when estimation fails.
-    fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error>;
-}
-
-/// Asynchronous owner-address capability.
+/// Owner-address capability.
 ///
-/// This narrow trait lets async flows ask only for signer ownership when no
+/// This narrow trait lets flows ask only for signer ownership when no
 /// signing operation is required.
 #[expect(
     async_fn_in_trait,
     reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
 )]
-pub trait AsyncOwner {
+pub trait Owner {
     /// Error type returned by owner resolution.
     type Error;
 
@@ -98,12 +23,12 @@ pub trait AsyncOwner {
     async fn get_address(&self) -> Result<Address, Self::Error>;
 }
 
-/// Asynchronous EIP-712 typed-data signing capability.
+/// EIP-712 typed-data signing capability.
 #[expect(
     async_fn_in_trait,
     reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
 )]
-pub trait AsyncTypedDataSigner {
+pub trait TypedDataSigner {
     /// Error type returned by typed-data signing.
     type Error;
 
@@ -111,7 +36,7 @@ pub trait AsyncTypedDataSigner {
     ///
     /// # Errors
     ///
-    /// Returns any error from [`AsyncTypedDataSigner::sign_typed_data`].
+    /// Returns any error from [`TypedDataSigner::sign_typed_data`].
     async fn sign_typed_data_payload(
         &self,
         payload: &TypedDataPayload,
@@ -137,12 +62,12 @@ pub trait AsyncTypedDataSigner {
     ) -> Result<String, Self::Error>;
 }
 
-/// Asynchronous digest-signing capability.
+/// Digest-signing capability.
 #[expect(
     async_fn_in_trait,
     reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
 )]
-pub trait AsyncDigestSigner {
+pub trait DigestSigner {
     /// Error type returned by digest signing.
     type Error;
 
@@ -154,12 +79,12 @@ pub trait AsyncDigestSigner {
     async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error>;
 }
 
-/// Asynchronous EIP-1193 request capability.
+/// EIP-1193 request capability.
 #[expect(
     async_fn_in_trait,
     reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
 )]
-pub trait AsyncEip1193 {
+pub trait Eip1193 {
     /// Error type returned by provider requests.
     type Error;
 
@@ -171,17 +96,16 @@ pub trait AsyncEip1193 {
     async fn request(&self, method: &str, params: &[String]) -> Result<String, Self::Error>;
 }
 
-/// Asynchronous signing boundary for wallets and async runtimes.
+/// Signing boundary for wallets and runtimes.
 ///
-/// Synchronous signers implement this trait through the blanket implementation
-/// so native trading flows can keep one async-first internal path. Narrow async
-/// capability traits above are preferred for callback-shaped adapters that only
-/// expose one signing operation.
+/// Production adapters implement this trait directly. Narrow capability
+/// traits above are preferred for callback-shaped adapters that only expose
+/// one signing operation.
 #[expect(
     async_fn_in_trait,
     reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
 )]
-pub trait AsyncSigner {
+pub trait Signer {
     /// Error type returned by signer operations.
     type Error;
 
@@ -207,7 +131,7 @@ pub trait AsyncSigner {
     ///
     /// # Errors
     ///
-    /// Returns any error from [`AsyncSigner::sign_typed_data`].
+    /// Returns any error from [`Signer::sign_typed_data`].
     async fn sign_typed_data_payload(
         &self,
         payload: &TypedDataPayload,
@@ -233,7 +157,7 @@ pub trait AsyncSigner {
     /// Sends a transaction and returns the broadcast transaction hash.
     ///
     /// This confirms only that the signer backend returned a transaction hash.
-    /// Use [`crate::AsyncProvider::get_transaction_receipt`] or a higher-level
+    /// Use [`crate::Provider::get_transaction_receipt`] or a higher-level
     /// `cow-sdk-trading` wait helper to observe mining status and receipt
     /// fields.
     ///
@@ -252,59 +176,20 @@ pub trait AsyncSigner {
     async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error>;
 }
 
-impl<T> AsyncSigner for T
+impl<T> Owner for T
 where
     T: Signer,
 {
     type Error = T::Error;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
-        Signer::get_address(self)
-    }
-
-    async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
-        Signer::sign_message(self, message)
-    }
-
-    async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Signer::sign_transaction(self, tx)
-    }
-
-    async fn sign_typed_data(
-        &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
-    ) -> Result<String, Self::Error> {
-        Signer::sign_typed_data(self, domain, fields, value_json)
-    }
-
-    async fn send_transaction(
-        &self,
-        tx: &TransactionRequest,
-    ) -> Result<TransactionBroadcast, Self::Error> {
-        Signer::send_transaction(self, tx)
-    }
-
-    async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error> {
-        Signer::estimate_gas(self, tx)
+        Signer::get_address(self).await
     }
 }
 
-impl<T> AsyncOwner for T
+impl<T> TypedDataSigner for T
 where
-    T: AsyncSigner,
-{
-    type Error = T::Error;
-
-    async fn get_address(&self) -> Result<Address, Self::Error> {
-        AsyncSigner::get_address(self).await
-    }
-}
-
-impl<T> AsyncTypedDataSigner for T
-where
-    T: AsyncSigner,
+    T: Signer,
 {
     type Error = T::Error;
 
@@ -312,7 +197,7 @@ where
         &self,
         payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
-        AsyncSigner::sign_typed_data_payload(self, payload).await
+        Signer::sign_typed_data_payload(self, payload).await
     }
 
     async fn sign_typed_data(
@@ -321,18 +206,18 @@ where
         fields: &[TypedDataField],
         value_json: &str,
     ) -> Result<String, Self::Error> {
-        AsyncSigner::sign_typed_data(self, domain, fields, value_json).await
+        Signer::sign_typed_data(self, domain, fields, value_json).await
     }
 }
 
-impl<T> AsyncDigestSigner for T
+impl<T> DigestSigner for T
 where
-    T: AsyncSigner,
+    T: Signer,
 {
     type Error = T::Error;
 
     async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error> {
-        AsyncSigner::sign_message(self, digest).await
+        Signer::sign_message(self, digest).await
     }
 }
 

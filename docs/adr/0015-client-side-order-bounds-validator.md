@@ -51,7 +51,7 @@ under replay.
   seam: `post_swap_order`, `post_limit_order`,
   `post_swap_order_from_quote`, and `post_sell_native_currency_order`
   for the eth-flow path. Each public seam is a single async entry
-  point bounded on `cow_sdk_core::AsyncSigner`.
+  point bounded on `cow_sdk_core::Signer`.
 - Runtime and support: the validator is pure. It performs no network
   I/O, reads no environment variables, and no system clock. Callers
   supply the `now` parameter so deterministic regression tests and
@@ -130,7 +130,7 @@ the cow-owned `Display`/`Serialize`/`Deserialize` impls on `Address`.
 `cow-sdk-trading` ships one async entry point per public submission
 operation — `post_swap_order`, `post_limit_order`,
 `post_swap_order_from_quote`, `post_sell_native_currency_order` —
-each bounded on `cow_sdk_core::AsyncSigner`. The previous paired
+each bounded on `cow_sdk_core::Signer`. The previous paired
 sync-bounded entries are removed. The `OrderBoundsValidator`
 continues to run end-to-end on every public submission seam; the
 validator's public signature is unchanged. The corresponding

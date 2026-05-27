@@ -6,7 +6,7 @@ use alloy_primitives::Signature as AlloySignature;
 use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
 use cow_sdk_contracts::{Order as ContractsOrder, SigningScheme, hash_order};
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, AsyncSigner, BuyTokenDestination, Hash32, OrderKind,
+    Address, Amount, AppDataHash, Signer, BuyTokenDestination, Hash32, OrderKind,
     SellTokenSource, SupportedChainId, UnsignedOrder,
 };
 use cow_sdk_signing::{get_domain, order_typed_data_payload};

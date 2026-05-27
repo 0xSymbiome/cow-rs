@@ -1,4 +1,4 @@
-use cow_sdk_core::AsyncSigner;
+use cow_sdk_core::Signer;
 
 use super::from_quote::post_swap_order_from_quote_with_bounds;
 use crate::{
@@ -23,7 +23,7 @@ pub async fn post_swap_order<O, S>(
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_swap_order_with_bounds(
@@ -56,7 +56,7 @@ pub async fn post_swap_order_with_bounds<O, S>(
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let quote_results = crate::get_quote_results(

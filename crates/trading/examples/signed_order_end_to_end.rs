@@ -243,24 +243,21 @@ mod native {
     }
 
     impl Signer for ExampleSigner {
-        type Provider = ();
         type Error = ExampleSignerError;
 
-        fn connect(&mut self, _provider: Self::Provider) {}
-
-        fn get_address(&self) -> Result<Address, Self::Error> {
+        async fn get_address(&self) -> Result<Address, Self::Error> {
             Ok(self.address)
         }
 
-        fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
+        async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
             Ok(TYPED_SIGNATURE.to_owned())
         }
 
-        fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+        async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
             Ok(TYPED_SIGNATURE.to_owned())
         }
 
-        fn sign_typed_data(
+        async fn sign_typed_data(
             &self,
             _domain: &TypedDataDomain,
             _fields: &[TypedDataField],
@@ -269,14 +266,14 @@ mod native {
             Ok(TYPED_SIGNATURE.to_owned())
         }
 
-        fn send_transaction(
+        async fn send_transaction(
             &self,
             _tx: &TransactionRequest,
         ) -> Result<TransactionBroadcast, Self::Error> {
             Err(ExampleSignerError::Unsupported("send_transaction"))
         }
 
-        fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
+        async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
             Err(ExampleSignerError::Unsupported("estimate_gas"))
         }
     }
@@ -290,53 +287,44 @@ mod native {
     struct ExampleProvider;
 
     impl Provider for ExampleProvider {
-        type Signer = ExampleSigner;
         type Error = ExampleSignerError;
 
-        fn signer_or_null(&self) -> Option<&Self::Signer> {
-            None
-        }
-
-        fn get_chain_id(&self) -> Result<cow_sdk_core::ChainId, Self::Error> {
+        async fn get_chain_id(&self) -> Result<cow_sdk_core::ChainId, Self::Error> {
             Err(ExampleSignerError::Unsupported("get_chain_id"))
         }
 
-        fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
+        async fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
             Err(ExampleSignerError::Unsupported("get_code"))
         }
 
-        fn get_transaction_receipt(
+        async fn get_transaction_receipt(
             &self,
             _transaction_hash: &TransactionHash,
         ) -> Result<Option<TransactionReceipt>, Self::Error> {
             Err(ExampleSignerError::Unsupported("get_transaction_receipt"))
         }
 
-        fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-            Err(ExampleSignerError::Unsupported("create_signer"))
-        }
-
-        fn get_storage_at(&self, _address: &Address, _slot: &str) -> Result<HexData, Self::Error> {
+        async fn get_storage_at(
+            &self,
+            _address: &Address,
+            _slot: &str,
+        ) -> Result<HexData, Self::Error> {
             Err(ExampleSignerError::Unsupported("get_storage_at"))
         }
 
-        fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
+        async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
             Err(ExampleSignerError::Unsupported("call"))
         }
 
-        fn read_contract(&self, _request: &ContractCall) -> Result<String, Self::Error> {
+        async fn read_contract(&self, _request: &ContractCall) -> Result<String, Self::Error> {
             Err(ExampleSignerError::Unsupported("read_contract"))
         }
 
-        fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
+        async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
             Err(ExampleSignerError::Unsupported("get_block"))
         }
 
-        fn set_signer(&mut self, _signer: Self::Signer) {}
-
-        fn set_provider(&mut self, _provider_hint: String) {}
-
-        fn get_contract(
+        async fn get_contract(
             &self,
             _address: &Address,
             _abi_json: &str,

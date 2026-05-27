@@ -12,8 +12,8 @@ Use it when you want to connect the SDK to:
 The stable extension seam is owned by `cow-sdk-core`.
 
 The root `cow-sdk` facade re-exports the traits for convenience, but the
-contract itself lives in `cow-sdk-core::{Signer, AsyncSigner,
-AsyncSigningProvider, Provider, AsyncProvider}`.
+contract itself lives in `cow-sdk-core::{Signer, Provider,
+SigningProvider}`.
 
 ## Why This Guide Exists
 
@@ -53,10 +53,10 @@ for the numeric types (`Amount`, `SignedAmount`).
 
 The native Alloy family is opt-in:
 
-- `cow-sdk-alloy-provider` implements read-only `AsyncProvider`.
-- `cow-sdk-alloy-signer` implements local private-key `AsyncSigner`.
+- `cow-sdk-alloy-provider` implements read-only `Provider`.
+- `cow-sdk-alloy-signer` implements local private-key `Signer`.
 - `cow-sdk-alloy` composes provider and signer support and implements
-  `AsyncSigningProvider` for `TradingSdk` helper flows.
+  `SigningProvider` for `TradingSdk` helper flows.
 
 The root facade exposes matching features named `alloy-provider`,
 `alloy-signer`, and `alloy`. These features are native-only and hard-fail on
@@ -88,38 +88,29 @@ on directly copying TypeScript package behavior in seven concrete ways:
   simulation boundaries; service loops, persistence, notification delivery, and
   automatic order posting remain outside the SDK
 
-## The Six Runtime Seams
+## Runtime Seams
 
 Import the owning traits from `cow-sdk-core`:
 
 ```rust
-use cow_sdk_core::{
-    AsyncProvider, AsyncSigner, AsyncSigningProvider, HttpTransport, Provider, Signer,
-};
+use cow_sdk_core::{Provider, Signer, SigningProvider, HttpTransport};
 ```
 
 Their roles are:
 
 `Signer`
 
-- synchronous signing and transaction submission for native or test runtimes
-
-`AsyncSigner`
-
-- asynchronous signing for browser wallets and async-native runtimes
+- signing and transaction submission for browser wallets, hosted-key services,
+  native key stores, and async-native runtimes
 
 `Provider`
 
-- synchronous chain reads, contract reads, signer creation, and signer
-  attachment
+- chain reads and contract reads for any runtime
 
-`AsyncProvider`
+`SigningProvider`
 
-- asynchronous chain reads and contract reads for browser or async runtimes
-
-`AsyncSigningProvider`
-
-- signer creation for async providers that can create wallet or hosted signers
+- signer creation for providers that can construct wallet, hosted, or
+  locally managed signers
 
 `HttpTransport`
 
@@ -129,6 +120,11 @@ Their roles are:
   install through the builder's `.transport(Arc::new(...))` setter on
   both `OrderBookApi::builder()` and `SubgraphApi::builder()`. See
   [Transport](transport.md) for the full seam.
+
+`cow-sdk-core` also ships narrower capability traits — [`Owner`],
+[`TypedDataSigner`], and [`DigestSigner`] per
+[ADR 0045](adr/0045-async-signer-trait-narrowing.md) — for callback-shaped
+adapters that expose only one signing operation.
 
 ## TypeScript And JavaScript Runtime Boundary
 
@@ -176,9 +172,8 @@ The traits are intentionally narrow.
 
 ### `Signer`
 
-A sync signer owns:
+An async signer owns:
 
-- provider attachment via `connect`
 - address resolution via `get_address`
 - message signing via `sign_message`
 - transaction signing via `sign_transaction`
@@ -188,62 +183,29 @@ A sync signer owns:
   receipt and does not prove block inclusion or execution success.
 - gas estimation via `estimate_gas`
 
-### `AsyncSigner`
-
-An async signer owns the same conceptual operations as `Signer`, but exposes
-them as async methods.
-
-Browser-wallet support implements `AsyncSigner` directly.
+Browser-wallet support implements `Signer` directly. Native key-store
+adapters such as `cow-sdk-alloy-signer` implement `Signer` against their
+own private-key backend.
 
 ### `Provider`
 
-A sync provider owns:
+An async provider owns:
 
-- optional signer exposure through `signer_or_null`
 - chain id lookup
 - code lookup
 - transaction-receipt lookup
-- signer creation from a runtime-specific hint
 - storage lookup
 - generic call execution
 - typed contract reads through `read_contract`
 - block lookup
-- signer replacement
-- provider replacement
 - typed contract-handle creation
 
-### `AsyncProvider`
+### `SigningProvider`
 
-An async provider owns the read-side operations from `Provider` in async form.
-
-It does not expose signer creation, `set_signer`, or `set_provider`.
-
-### `AsyncSigningProvider`
-
-An async signing provider extends `AsyncProvider` with signer creation for
-providers that can create wallet, hosted, or locally managed signers.
+An async signing provider extends `Provider` with signer creation for
+providers that can construct wallet, hosted, or locally managed signers.
 
 Read-only async providers do not implement this extension.
-
-Those mutating hooks remain part of the sync provider seam.
-
-## Important Compatibility Rule
-
-You do **not** always need to implement all runtime traits separately.
-
-`cow-sdk-core` already provides blanket implementations:
-
-- any `T: Signer` also implements `AsyncSigner`
-- any `T: Provider` also implements `AsyncProvider`
-- any `T: Provider` also implements `AsyncSigningProvider` when `T::Signer` satisfies
-  `AsyncSigner<Error = T::Error>`
-
-That means a synchronous native adapter can often implement only:
-
-- `Signer`
-- `Provider`
-
-and still satisfy async-first downstream helper paths through the blanket impls.
 
 ## Minimal Worked Example
 
@@ -259,7 +221,7 @@ Its job is to demonstrate the trait shape, not to model a production RPC stack.
 ```rust
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ChainId, ContractCall, ContractHandle, CoreError, HexData,
-    Provider, Signer, TransactionBroadcast, TransactionHash, TransactionReceipt,
+    Provider, Signer, SigningProvider, TransactionBroadcast, TransactionHash, TransactionReceipt,
     TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField,
 };
 
@@ -271,24 +233,21 @@ struct StaticSigner {
 }
 
 impl Signer for StaticSigner {
-    type Provider = ();
     type Error = CoreError;
 
-    fn connect(&mut self, _provider: Self::Provider) {}
-
-    fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn get_address(&self) -> Result<Address, Self::Error> {
         Ok(self.address.clone())
     }
 
-    fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
+    async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
         Ok("0xfeedface".to_owned())
     }
 
-    fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
         Ok("0xdeadbeef".to_owned())
     }
 
-    fn sign_typed_data(
+    async fn sign_typed_data(
         &self,
         _domain: &TypedDataDomain,
         _fields: &[TypedDataField],
@@ -297,14 +256,14 @@ impl Signer for StaticSigner {
         Ok("0xtypeddata".to_owned())
     }
 
-    fn send_transaction(
+    async fn send_transaction(
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
         Ok(TransactionBroadcast::new(self.receipt_hash.clone()))
     }
 
-    fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
+    async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
         Ok(self.gas_limit.clone())
     }
 }
@@ -317,22 +276,17 @@ struct StaticProvider {
 }
 
 impl Provider for StaticProvider {
-    type Signer = StaticSigner;
     type Error = CoreError;
 
-    fn signer_or_null(&self) -> Option<&Self::Signer> {
-        Some(&self.signer)
-    }
-
-    fn get_chain_id(&self) -> Result<ChainId, Self::Error> {
+    async fn get_chain_id(&self) -> Result<ChainId, Self::Error> {
         Ok(self.chain_id)
     }
 
-    fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
+    async fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
         Ok(None)
     }
 
-    fn get_transaction_receipt(
+    async fn get_transaction_receipt(
         &self,
         transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
@@ -345,33 +299,27 @@ impl Provider for StaticProvider {
         ))
     }
 
-    fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        Ok(self.signer.clone())
-    }
-
-    fn get_storage_at(&self, _address: &Address, _slot: &str) -> Result<HexData, Self::Error> {
+    async fn get_storage_at(
+        &self,
+        _address: &Address,
+        _slot: &str,
+    ) -> Result<HexData, Self::Error> {
         HexData::new("0x00")
     }
 
-    fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
+    async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         HexData::new("0x")
     }
 
-    fn read_contract(&self, _request: &ContractCall) -> Result<String, Self::Error> {
+    async fn read_contract(&self, _request: &ContractCall) -> Result<String, Self::Error> {
         Ok(self.allowance_result.clone())
     }
 
-    fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
+    async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(1, None))
     }
 
-    fn set_signer(&mut self, signer: Self::Signer) {
-        self.signer = signer;
-    }
-
-    fn set_provider(&mut self, _provider_hint: String) {}
-
-    fn get_contract(
+    async fn get_contract(
         &self,
         address: &Address,
         abi_json: &str,
@@ -379,32 +327,33 @@ impl Provider for StaticProvider {
         Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
     }
 }
+
+impl SigningProvider for StaticProvider {
+    type Signer = StaticSigner;
+
+    async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
+        Ok(self.signer.clone())
+    }
+}
 ```
 
 ### What The Example Shows
 
-The example is intentionally small, but it already satisfies the stable native
+The example is intentionally small, but it already satisfies the stable
 integration contract:
 
 - address resolution comes from the signer
 - transaction submission comes from the signer
 - transaction observation comes from the provider receipt lookup
 - typed contract reads come from the provider
-- signer creation is provider-owned
+- signer creation is provider-owned through `SigningProvider`
 - the provider keeps chain authority
-
-Because `StaticSigner` implements `Signer`, it also satisfies `AsyncSigner`
-through the blanket implementation.
-
-Because `StaticProvider` implements `Provider`, it also satisfies
-`AsyncProvider`. Because its signer satisfies `AsyncSigner`, it also satisfies
-`AsyncSigningProvider`.
 
 ## Using The Adapter With Downstream Helpers
 
 Once your adapter implements the traits, you can pass it into downstream
-helpers that are generic over `Provider`, `AsyncProvider`, `Signer`, or
-`AsyncSigningProvider`, or `AsyncSigner`.
+helpers that are generic over `Provider`, `Signer`, or
+`SigningProvider`.
 
 For example, the trading crate exposes allowance helpers over the provider seam:
 
@@ -449,21 +398,6 @@ When you build a production adapter crate:
   trait call itself
 - keep secret-bearing transport config and logging policy outside generic
   public examples
-
-## Sync Versus Async Choice
-
-Use a sync-first adapter when:
-
-- you are integrating a native runtime
-- your signer and provider already expose blocking operations
-- you want the blanket async compatibility for high-level SDK helpers
-
-Use an async-direct adapter when:
-
-- the runtime is browser-bound
-- the wallet or transport is inherently async
-- you want explicit control over async behavior rather than relying on the
-  blanket implementation
 
 ## Relationship To The Default Facade
 

@@ -1,4 +1,4 @@
-use cow_sdk_core::AsyncSigner;
+use cow_sdk_core::Signer;
 
 use super::generic::{
     apply_settings_to_limit_trade_parameters, limit_additional_params, post_cow_protocol_trade,
@@ -27,7 +27,7 @@ pub async fn post_limit_order<O, S>(
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_limit_order_with_bounds(
@@ -58,7 +58,7 @@ pub async fn post_limit_order_with_bounds<O, S>(
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let app_data_signer = advanced_settings

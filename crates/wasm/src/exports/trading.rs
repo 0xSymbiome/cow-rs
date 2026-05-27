@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use cow_sdk_contracts::eth_flow::{EthFlowOrderData, encode_create_order_calldata};
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, AsyncSigner, AsyncTypedDataSigner, BlockInfo, ContractCall,
+    Address, Amount, Provider, Signer, TypedDataSigner, BlockInfo, ContractCall,
     ContractHandle, EVM_NATIVE_CURRENCY_ADDRESS, HexData, ProtocolOptions, TransactionBroadcast,
     TransactionHash, TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
 };
@@ -687,7 +687,7 @@ impl JsTradingSigner {
     }
 }
 
-impl AsyncSigner for JsTradingSigner {
+impl Signer for JsTradingSigner {
     type Error = String;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
@@ -751,7 +751,7 @@ impl JsContractReadProvider {
     }
 }
 
-impl AsyncProvider for JsContractReadProvider {
+impl Provider for JsContractReadProvider {
     type Error = String;
 
     async fn get_chain_id(&self) -> Result<u64, Self::Error> {

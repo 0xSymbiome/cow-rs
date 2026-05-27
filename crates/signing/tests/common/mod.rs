@@ -61,25 +61,22 @@ impl Default for MockSigner {
 }
 
 impl Signer for MockSigner {
-    type Provider = String;
     type Error = MockSignerError;
 
-    fn connect(&mut self, _provider: Self::Provider) {}
-
-    fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn get_address(&self) -> Result<Address, Self::Error> {
         Ok(self.address)
     }
 
-    fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
+    async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
         self.calls.borrow_mut().messages.push(message.to_vec());
         Ok(self.message_signature.clone())
     }
 
-    fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
         Ok("0xsigned-transaction".to_owned())
     }
 
-    fn sign_typed_data(
+    async fn sign_typed_data(
         &self,
         domain: &TypedDataDomain,
         fields: &[TypedDataField],
@@ -93,7 +90,7 @@ impl Signer for MockSigner {
         Ok(self.typed_data_signature.clone())
     }
 
-    fn send_transaction(
+    async fn send_transaction(
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
@@ -102,7 +99,7 @@ impl Signer for MockSigner {
         ))
     }
 
-    fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
+    async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
         Ok(Amount::from(21_000u32))
     }
 }

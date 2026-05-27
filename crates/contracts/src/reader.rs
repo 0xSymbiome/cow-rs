@@ -180,7 +180,7 @@ where
     ///
     /// Returns [`ContractsError`] if request serialization, provider execution,
     /// or result decoding fails.
-    pub fn are_solvers(&self, solvers: &[Address]) -> Result<bool, ContractsError> {
+    pub async fn are_solvers(&self, solvers: &[Address]) -> Result<bool, ContractsError> {
         let raw = read_storage(
             &self.provider,
             &self.allow_list_address,
@@ -189,7 +189,8 @@ where
             &self.reader_abi_json,
             "areSolvers",
             &serde_json::to_value(solvers)?,
-        )?;
+        )
+        .await?;
         serde_json::from_str(&raw).map_err(ContractsError::from)
     }
 }
@@ -205,7 +206,7 @@ where
     ///
     /// Returns [`ContractsError`] if request serialization, provider execution,
     /// or result decoding fails.
-    pub fn filled_amounts_for_orders(
+    pub async fn filled_amounts_for_orders(
         &self,
         order_uids: &[cow_sdk_core::OrderUid],
     ) -> Result<Vec<Amount>, ContractsError> {
@@ -217,7 +218,8 @@ where
             &self.reader_abi_json,
             "filledAmountsForOrders",
             &serde_json::to_value(order_uids)?,
-        )?;
+        )
+        .await?;
         serde_json::from_str(&raw).map_err(ContractsError::from)
     }
 }
@@ -232,7 +234,7 @@ where
     /// # Errors
     ///
     /// Returns [`ContractsError`] if provider execution or response decoding fails.
-    pub fn simulate_trade(
+    pub async fn simulate_trade(
         &self,
         trade: &TradeSimulation,
         interactions: &[(InteractionStage, Vec<InteractionLike>)],
@@ -259,12 +261,13 @@ where
             &self.simulator_abi_json,
             "simulateTrade",
             &serde_json::json!([normalized_trade, normalized_interactions]),
-        )?;
+        )
+        .await?;
         serde_json::from_str(&raw).map_err(ContractsError::from)
     }
 }
 
-fn read_storage<P>(
+async fn read_storage<P>(
     provider: &P,
     base_address: &Address,
     base_abi_json: &str,
@@ -290,6 +293,7 @@ where
             })
             .to_string(),
         ))
+        .await
         .map_err(|error| ContractsError::Provider {
             operation: "read_contract",
             message: error.to_string().into(),

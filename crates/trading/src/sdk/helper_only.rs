@@ -2,7 +2,7 @@
 use std::sync::Arc;
 
 use cow_sdk_core::{
-    Amount, AsyncProvider, AsyncSigner, CowEnv, SupportedChainId, TransactionHash,
+    Amount, Provider, Signer, CowEnv, SupportedChainId, TransactionHash,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_orderbook::OrderBookApi;
@@ -55,7 +55,7 @@ impl HelperOnlySdk {
         signer: &S,
     ) -> Result<cow_sdk_core::TransactionRequest, TradingError>
     where
-        S: AsyncSigner,
+        S: Signer,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
@@ -94,7 +94,7 @@ impl HelperOnlySdk {
         signer: &S,
     ) -> Result<TransactionHash, TradingError>
     where
-        S: AsyncSigner,
+        S: Signer,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, orderbook) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
@@ -137,7 +137,7 @@ impl HelperOnlySdk {
         params: &AllowanceParameters,
     ) -> Result<Amount, TradingError>
     where
-        P: AsyncProvider,
+        P: Provider,
         P::Error: std::fmt::Display,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
@@ -183,7 +183,7 @@ impl HelperOnlySdk {
         params: &ApprovalParameters,
     ) -> Result<TransactionHash, TradingError>
     where
-        S: AsyncSigner,
+        S: Signer,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;

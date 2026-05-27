@@ -1,7 +1,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use cow_sdk_alloy::AlloyClient;
-use cow_sdk_core::{AsyncSigner, AsyncSigningProvider, SupportedChainId};
+use cow_sdk_core::{Signer, SigningProvider, SupportedChainId};
 
 const TEST_KEY: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 const EXPECTED_ADDRESS: &str = "0x70997970c51812dc3a010c7d01b50e0d17dc79c8";

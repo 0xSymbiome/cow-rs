@@ -32,9 +32,8 @@ fields are malformed.
 
 ## Must Remain True
 
-- Public surface: `Signer::send_transaction` and
-  `AsyncSigner::send_transaction` return `TransactionBroadcast`; provider
-  receipt lookups return `Option<TransactionReceipt>`.
+- Public surface: `Signer::send_transaction` returns `TransactionBroadcast`;
+  provider receipt lookups return `Option<TransactionReceipt>`.
 - Runtime and support: adapters must not poll for receipts during
   `send_transaction`; mined observation is explicit through provider receipt
   lookup or a higher-level wait helper.

@@ -573,8 +573,8 @@ fn sdk_error_facade_redacts_nested_public_errors() {
 fn alloy_adapter_errors_redact_secret_bearing_payloads() {
     use cow_sdk::{
         alloy::AlloyClientError,
-        alloy_provider::AsyncProviderError,
-        alloy_signer::AsyncSignerError,
+        alloy_provider::ProviderError,
+        alloy_signer::SignerError,
         core::{Redacted, TransportErrorClass},
     };
 
@@ -595,23 +595,23 @@ fn alloy_adapter_errors_redact_secret_bearing_payloads() {
     assert_all_render("AlloyClientError", &client_errors);
 
     let provider_errors = [
-        AsyncProviderError::Validation(secret_payload()),
-        AsyncProviderError::Transport {
+        ProviderError::Validation(secret_payload()),
+        ProviderError::Transport {
             class: TransportErrorClass::Other,
             detail: Redacted::new(secret_payload()),
         },
-        AsyncProviderError::Internal(secret_payload()),
+        ProviderError::Internal(secret_payload()),
     ];
-    assert_all_render("AsyncProviderError", &provider_errors);
+    assert_all_render("ProviderError", &provider_errors);
 
     let signer_errors = [
-        AsyncSignerError::Validation(secret_payload()),
-        AsyncSignerError::Signing {
+        SignerError::Validation(secret_payload()),
+        SignerError::Signing {
             detail: Redacted::new(secret_payload()),
         },
-        AsyncSignerError::Internal(secret_payload()),
+        SignerError::Internal(secret_payload()),
     ];
-    assert_all_render("AsyncSignerError", &signer_errors);
+    assert_all_render("SignerError", &signer_errors);
 
     assert_render(
         "AlloyClientError::Remote",
@@ -621,8 +621,8 @@ fn alloy_adapter_errors_redact_secret_bearing_payloads() {
         },
     );
     assert_render(
-        "AsyncProviderError::Remote",
-        &AsyncProviderError::Remote {
+        "ProviderError::Remote",
+        &ProviderError::Remote {
             code: -32_000,
             message: "execution reverted".to_owned(),
         },
@@ -635,8 +635,8 @@ fn alloy_adapter_errors_redact_secret_bearing_payloads() {
         },
     );
     assert_render(
-        "AsyncSignerError::ProviderRequired",
-        &AsyncSignerError::ProviderRequired {
+        "SignerError::ProviderRequired",
+        &SignerError::ProviderRequired {
             method: "send_transaction",
         },
     );

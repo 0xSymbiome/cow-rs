@@ -79,7 +79,7 @@ fn seam_cow_block_tag_to_alloy_accepts_full_block_hash_form() {
 
 // -------------------------------------------------------------------------
 // Transaction-request and receipt seam wrappers — driven through the
-// wider AsyncProvider integration on a wiremock server so the wrappers
+// wider Provider integration on a wiremock server so the wrappers
 // receive realistic upstream values.
 // -------------------------------------------------------------------------
 
@@ -117,7 +117,7 @@ async fn seam_cow_request_to_alloy_round_trips_minimal_request() {
 #[tokio::test]
 async fn seam_rpc_error_to_class_and_detail_classifies_remote_error() {
     use cow_sdk_alloy_provider::RpcAlloyProvider;
-    use cow_sdk_core::AsyncProvider;
+    use cow_sdk_core::Provider;
     use serde_json::json;
     use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
@@ -142,7 +142,7 @@ async fn seam_rpc_error_to_class_and_detail_classifies_remote_error() {
         .unwrap();
     let _server: &'static MockServer = Box::leak(Box::new(server));
 
-    // Driving any AsyncProvider method through the wiremock-driven JSON-RPC
+    // Driving any Provider method through the wiremock-driven JSON-RPC
     // error exercises the seam classifier wrapper internally on the way back
     // up the stack. The error must carry the documented remote code.
     let err = provider
@@ -150,7 +150,7 @@ async fn seam_rpc_error_to_class_and_detail_classifies_remote_error() {
         .await
         .expect_err("RPC error must propagate");
     match err {
-        cow_sdk_alloy_provider::AsyncProviderError::Remote { code, .. } => {
+        cow_sdk_alloy_provider::ProviderError::Remote { code, .. } => {
             assert_eq!(code, -32_603);
         }
         other => panic!("expected Remote variant, got {other:?}"),
@@ -188,14 +188,14 @@ fn storage_value_hex_matches_legacy_width_64_format() {
 // -------------------------------------------------------------------------
 // Read-contract seam entry — pins that the canonical read-contract
 // algorithm is reachable through the inter-crate seam and that
-// validation errors continue to surface as `AsyncProviderError::Validation`
+// validation errors continue to surface as `ProviderError::Validation`
 // so sibling adapter crates can rely on the variant discriminant.
 // -------------------------------------------------------------------------
 
 #[tokio::test]
 async fn read_contract_path_propagates_validation_for_malformed_args_json() {
-    use cow_sdk_alloy_provider::{AsyncProviderError, RpcAlloyProvider};
-    use cow_sdk_core::{AsyncProvider, ContractCall};
+    use cow_sdk_alloy_provider::{ProviderError, RpcAlloyProvider};
+    use cow_sdk_core::{Provider, ContractCall};
     use wiremock::MockServer;
 
     // Compile-time pin: reference the seam entry so the test crate fails
@@ -233,7 +233,7 @@ async fn read_contract_path_propagates_validation_for_malformed_args_json() {
         .expect_err("malformed args_json must reject the call");
 
     assert!(
-        matches!(err, AsyncProviderError::Validation(_)),
+        matches!(err, ProviderError::Validation(_)),
         "expected Validation variant, got {err:?}",
     );
 }

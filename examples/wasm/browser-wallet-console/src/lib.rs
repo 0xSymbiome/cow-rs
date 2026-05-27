@@ -18,10 +18,10 @@ use cow_sdk::orderbook::{
     OrderQuoteResponse,
 };
 use cow_sdk::prelude::{
-    Address, Amount, AsyncSigner, CowEnv, OrderBookApi, OrderUid, SupportedChainId,
+    Address, Amount, Signer, CowEnv, OrderBookApi, OrderUid, SupportedChainId,
     TradeParameters, TradingSdk,
 };
-use cow_sdk::signing::{generate_order_id, sign_order_async};
+use cow_sdk::signing::{generate_order_id, sign_order};
 use cow_sdk::trading::OrderbookClient;
 use cow_sdk::trading::{
     ApprovalParameters, OrderTraderParameters, TradingSdkOptions, approval_transaction,
@@ -518,7 +518,7 @@ impl BrowserWalletConsole {
             .await
             .map_err(js_string_error)?;
         let owner = signer.get_address().await.map_err(js_string_error)?;
-        let signing = sign_order_async(&order, chain_id, &signer, None)
+        let signing = sign_order(&order, chain_id, &signer, None)
             .await
             .map_err(js_string_error)?;
         let generated =

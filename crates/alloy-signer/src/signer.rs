@@ -1,11 +1,11 @@
-//! `AsyncSigner` implementation backed by Alloy's local private-key signer.
+//! `Signer` implementation backed by Alloy's local private-key signer.
 
 use std::{fmt, sync::Arc};
 
 use alloy_signer::Signer as AlloySigner;
 use alloy_signer_local::PrivateKeySigner;
 use cow_sdk_core::{
-    Address, Amount, AsyncSigner, ChainId, TransactionBroadcast, TransactionRequest,
+    Address, Amount, Signer, ChainId, TransactionBroadcast, TransactionRequest,
     TypedDataDomain, TypedDataField, TypedDataPayload,
 };
 
@@ -14,7 +14,7 @@ use crate::{
     conversion::{
         alloy_signature_to_hex, cow_flat_to_alloy_typed_data, cow_typed_data_payload_to_alloy,
     },
-    error::AsyncSignerError,
+    error::SignerError,
 };
 
 /// Alloy-backed local-keystore signer for native SDK consumers.
@@ -58,8 +58,8 @@ impl fmt::Debug for LocalAlloyKeystoreSigner {
     }
 }
 
-impl AsyncSigner for LocalAlloyKeystoreSigner {
-    type Error = AsyncSignerError;
+impl Signer for LocalAlloyKeystoreSigner {
+    type Error = SignerError;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
         let alloy_address = AlloySigner::address(self.upstream_signer());
@@ -69,12 +69,12 @@ impl AsyncSigner for LocalAlloyKeystoreSigner {
     async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
         let signature = AlloySigner::sign_message(self.upstream_signer(), message)
             .await
-            .map_err(|error| AsyncSignerError::from_alloy_signer(&error))?;
+            .map_err(|error| SignerError::from_alloy_signer(&error))?;
         Ok(alloy_signature_to_hex(&signature)?)
     }
 
     async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Err(AsyncSignerError::ProviderRequired {
+        Err(SignerError::ProviderRequired {
             method: "sign_transaction",
         })
     }
@@ -86,17 +86,17 @@ impl AsyncSigner for LocalAlloyKeystoreSigner {
         #[cfg(feature = "eip712")]
         {
             let typed =
-                cow_typed_data_payload_to_alloy(payload).map_err(AsyncSignerError::Validation)?;
+                cow_typed_data_payload_to_alloy(payload).map_err(SignerError::Validation)?;
             let signature = AlloySigner::sign_dynamic_typed_data(self.upstream_signer(), &typed)
                 .await
-                .map_err(|error| AsyncSignerError::from_alloy_signer(&error))?;
+                .map_err(|error| SignerError::from_alloy_signer(&error))?;
             Ok(alloy_signature_to_hex(&signature)?)
         }
 
         #[cfg(not(feature = "eip712"))]
         {
             let _ = payload;
-            Err(AsyncSignerError::Unsupported(
+            Err(SignerError::Unsupported(
                 "sign_typed_data_payload requires the eip712 feature",
             ))
         }
@@ -111,17 +111,17 @@ impl AsyncSigner for LocalAlloyKeystoreSigner {
         #[cfg(feature = "eip712")]
         {
             let typed = cow_flat_to_alloy_typed_data(domain, fields, value_json)
-                .map_err(AsyncSignerError::Validation)?;
+                .map_err(SignerError::Validation)?;
             let signature = AlloySigner::sign_dynamic_typed_data(self.upstream_signer(), &typed)
                 .await
-                .map_err(|error| AsyncSignerError::from_alloy_signer(&error))?;
+                .map_err(|error| SignerError::from_alloy_signer(&error))?;
             Ok(alloy_signature_to_hex(&signature)?)
         }
 
         #[cfg(not(feature = "eip712"))]
         {
             let _ = (domain, fields, value_json);
-            Err(AsyncSignerError::Unsupported(
+            Err(SignerError::Unsupported(
                 "sign_typed_data requires the eip712 feature",
             ))
         }
@@ -131,13 +131,13 @@ impl AsyncSigner for LocalAlloyKeystoreSigner {
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
-        Err(AsyncSignerError::ProviderRequired {
+        Err(SignerError::ProviderRequired {
             method: "send_transaction",
         })
     }
 
     async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
-        Err(AsyncSignerError::ProviderRequired {
+        Err(SignerError::ProviderRequired {
             method: "estimate_gas",
         })
     }
@@ -145,7 +145,7 @@ impl AsyncSigner for LocalAlloyKeystoreSigner {
 
 #[cfg(test)]
 mod tests {
-    use cow_sdk_core::{AsyncSigner as _, SupportedChainId};
+    use cow_sdk_core::{Signer as _, SupportedChainId};
 
     use super::*;
 
@@ -168,19 +168,19 @@ mod tests {
 
         assert!(matches!(
             signer.sign_transaction(&tx).await,
-            Err(AsyncSignerError::ProviderRequired {
+            Err(SignerError::ProviderRequired {
                 method: "sign_transaction"
             })
         ));
         assert!(matches!(
             signer.send_transaction(&tx).await,
-            Err(AsyncSignerError::ProviderRequired {
+            Err(SignerError::ProviderRequired {
                 method: "send_transaction"
             })
         ));
         assert!(matches!(
             signer.estimate_gas(&tx).await,
-            Err(AsyncSignerError::ProviderRequired {
+            Err(SignerError::ProviderRequired {
                 method: "estimate_gas"
             })
         ));

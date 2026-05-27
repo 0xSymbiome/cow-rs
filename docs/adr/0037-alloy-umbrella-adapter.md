@@ -10,13 +10,13 @@
 
 The workspace ships `cow-sdk-alloy` as the native composed Alloy adapter.
 `AlloyClient` owns an Alloy HTTP provider configured with a local wallet
-filler and implements both `cow_sdk_core::AsyncProvider` and
-`cow_sdk_core::AsyncSigningProvider`.
+filler and implements both `cow_sdk_core::Provider` and
+`cow_sdk_core::SigningProvider`.
 
 `create_signer` returns an owned `AlloyClientSignerHandle`. The handle keeps an
 `Arc` to the client inner state, so it remains usable after the parent client
 value is dropped and does not borrow from the client. The handle implements
-`AsyncSigner`, preserves canonical EIP-712 payload primary types, normalizes
+`Signer`, preserves canonical EIP-712 payload primary types, normalizes
 ECDSA recovery bytes through `cow-sdk-contracts`, submits transactions through
 the wallet-filler provider, and returns `TransactionBroadcast` with the
 broadcast hash read through `*pending.tx_hash()` without waiting for
@@ -32,14 +32,14 @@ browser-wallet signing plus consumer-supplied EIP-1193 provider reads.
 
 ## Why
 
-Native consumers often want a single client that exposes both `AsyncProvider`
-and `AsyncSigningProvider` so trading flows can drive the same client for chain
+Native consumers often want a single client that exposes both `Provider`
+and `SigningProvider` so trading flows can drive the same client for chain
 reads, EIP-712 typed-data signing, and transaction submission. The provider and
 signer leaves keep capability boundaries available for users that need only
 one side; the umbrella composes them for the common native wallet-provider case
 without changing the default facade dependency graph.
 
-The owned handle shape follows the `AsyncSigningProvider` trait contract, which
+The owned handle shape follows the `SigningProvider` trait contract, which
 has no lifetime parameter. Returning a borrowed signer would either fail to
 compile or expose a fragile lifetime model to downstream users.
 
@@ -63,9 +63,9 @@ to success through Alloy's higher-level `status()` helper.
 - Builder state: construction requires HTTP transport, private-key source, and
   chain id before `build()` is callable; external callers cannot construct the
   marker states directly.
-- Trait coverage: `AlloyClient` implements `AsyncProvider` and
-  `AsyncSigningProvider`; `AlloyClientSignerHandle` implements `AsyncSigner`
-  and does not implement `AsyncProvider` or sync `Signer`.
+- Trait coverage: `AlloyClient` implements `Provider` and
+  `SigningProvider`; `AlloyClientSignerHandle` implements `Signer`
+  and does not implement `Provider`.
 - Runtime behavior: `send_transaction` uses the Alloy wallet-filler provider,
   reads the broadcast hash through `*pending.tx_hash()`, and returns
   `TransactionBroadcast`; `sign_transaction` returns

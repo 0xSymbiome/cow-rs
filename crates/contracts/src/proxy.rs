@@ -86,12 +86,15 @@ impl Eip1967Slot {
 ///
 /// Returns [`ContractsError`] when the provider call fails or the storage value
 /// cannot be decoded into an address.
-pub fn implementation_address<P>(provider: &P, proxy: &Address) -> Result<Address, ContractsError>
+pub async fn implementation_address<P>(
+    provider: &P,
+    proxy: &Address,
+) -> Result<Address, ContractsError>
 where
     P: Provider,
     P::Error: std::fmt::Display,
 {
-    read_address_slot(provider, proxy, Eip1967Slot::Implementation)
+    read_address_slot(provider, proxy, Eip1967Slot::Implementation).await
 }
 
 /// Reads the administrator address from the proxy admin slot.
@@ -100,12 +103,12 @@ where
 ///
 /// Returns [`ContractsError`] when the provider call fails or the storage value
 /// cannot be decoded into an address.
-pub fn admin_address<P>(provider: &P, proxy: &Address) -> Result<Address, ContractsError>
+pub async fn admin_address<P>(provider: &P, proxy: &Address) -> Result<Address, ContractsError>
 where
     P: Provider,
     P::Error: std::fmt::Display,
 {
-    read_address_slot(provider, proxy, Eip1967Slot::Admin)
+    read_address_slot(provider, proxy, Eip1967Slot::Admin).await
 }
 
 /// Reads the administrator address stored at the EIP-1967 admin slot.
@@ -117,15 +120,15 @@ where
 ///
 /// Returns [`ContractsError`] when the provider call fails or the storage value
 /// cannot be decoded into an address.
-pub fn owner_address<P>(provider: &P, proxy: &Address) -> Result<Address, ContractsError>
+pub async fn owner_address<P>(provider: &P, proxy: &Address) -> Result<Address, ContractsError>
 where
     P: Provider,
     P::Error: std::fmt::Display,
 {
-    admin_address(provider, proxy)
+    admin_address(provider, proxy).await
 }
 
-fn read_address_slot<P>(
+async fn read_address_slot<P>(
     provider: &P,
     proxy: &Address,
     slot: Eip1967Slot,
@@ -140,6 +143,7 @@ where
     // typed slot instead of an ad-hoc literal.
     let word = provider
         .get_storage_at(proxy, slot.as_hex_str())
+        .await
         .map_err(|error| ContractsError::Provider {
             operation: "get_storage_at",
             message: error.to_string().into(),

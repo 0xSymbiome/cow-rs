@@ -1,7 +1,7 @@
 use alloy_sol_types::SolCall as _;
 use cow_sdk_contracts::{ContractId, IERC20, Registry};
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, AsyncSigner, ContractCall, SupportedChainId, TransactionHash,
+    Address, Amount, Provider, Signer, ContractCall, SupportedChainId, TransactionHash,
     TransactionRequest,
 };
 
@@ -39,7 +39,7 @@ pub async fn get_cow_protocol_allowance<P>(
     vault_relayer_override: Option<&Address>,
 ) -> Result<Amount, TradingError>
 where
-    P: AsyncProvider,
+    P: Provider,
     P::Error: std::fmt::Display,
 {
     let spender = vault_relayer_override
@@ -104,7 +104,7 @@ pub async fn approve_cow_protocol<S>(
     env: cow_sdk_core::CowEnv,
 ) -> Result<TransactionHash, TradingError>
 where
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let tx = approval_transaction(params, chain_id, env)?;

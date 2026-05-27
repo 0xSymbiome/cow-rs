@@ -1,7 +1,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use cow_sdk_alloy::{AlloyClient, AlloyClientError, AlloyClientErrorClass};
-use cow_sdk_core::{AsyncSigningProvider, Redacted, SupportedChainId, TransportErrorClass};
+use cow_sdk_core::{SigningProvider, Redacted, SupportedChainId, TransportErrorClass};
 
 const TEST_KEY: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 const SECRET_URL: &str = "https://user:secret@example.invalid/rpc?api_key=top-secret";

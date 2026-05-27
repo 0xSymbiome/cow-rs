@@ -114,13 +114,13 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Alloy provider builder diagnostics can grow with additional transport and configuration checks.
-  - name: AsyncProviderErrorClass
+  - name: ProviderErrorClass
     file: crates/alloy-provider/src/error.rs
     line: 10
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Provider error classes can grow as adapter transport and RPC failure modes expand.
-  - name: AsyncProviderError
+  - name: ProviderError
     file: crates/alloy-provider/src/error.rs
     line: 45
     category: sdk-local-state
@@ -138,13 +138,13 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Alloy signer builder diagnostics can grow with additional key-source validation.
-  - name: AsyncSignerErrorClass
+  - name: SignerErrorClass
     file: crates/alloy-signer/src/error.rs
     line: 10
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Signer error classes can grow as signer capabilities expand.
-  - name: AsyncSignerError
+  - name: SignerError
     file: crates/alloy-signer/src/error.rs
     line: 48
     category: sdk-local-state

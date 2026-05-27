@@ -42,7 +42,7 @@ those are governed by the [Composable Contract Bindings Audit](composable-contra
 The composable helper crate exposes typed encoders, decoders, custom-error
 selector constants, the `#[non_exhaustive]` `PollResult` classification
 enum, the single-call `ComposableCowApi::poll_async` over an injected
-`AsyncProvider`, `event_scan_async` as a single-call provider operation
+`Provider`, `event_scan_async` as a single-call provider operation
 over a caller-bounded block range, the local `local_poll_async` simulator
 that replays a `PollResult` from a captured input tuple without any RPC,
 and a reference watcher example crate that lives outside the published

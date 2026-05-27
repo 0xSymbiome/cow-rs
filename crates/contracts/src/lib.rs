@@ -100,4 +100,4 @@ pub use vault::{
     GrantRoleCall, RequiredVaultRole, VAULT_INTERFACE, grant_required_roles,
     required_vault_role_calls, required_vault_roles,
 };
-pub use verify::{Eip1271VerificationCache, verify_eip1271_signature_async};
+pub use verify::{Eip1271VerificationCache, verify_eip1271_signature_cached};

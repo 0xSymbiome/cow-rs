@@ -1,10 +1,10 @@
-use cow_sdk_core::{Address, AsyncSigningProvider};
+use cow_sdk_core::{Address, SigningProvider};
 
 use crate::{BrowserWalletError, signer::Eip1193Signer};
 
 use super::Eip1193Provider;
 
-impl AsyncSigningProvider for Eip1193Provider {
+impl SigningProvider for Eip1193Provider {
     type Signer = Eip1193Signer;
 
     async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error> {

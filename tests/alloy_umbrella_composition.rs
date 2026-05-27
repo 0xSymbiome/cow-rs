@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use cow_sdk_alloy::AlloyClient;
 use cow_sdk_core::{
-    Amount, AsyncSigningProvider, CowEnv, HexData, OrderUid, SupportedChainId, TransactionHash,
+    Amount, SigningProvider, CowEnv, HexData, OrderUid, SupportedChainId, TransactionHash,
     TransactionRequest,
 };
 use cow_sdk_trading::{AllowanceParameters, ApprovalParameters, OrderTraderParameters, TradingSdk};
@@ -19,7 +19,7 @@ const OWNER: &str = "0xc8c753Ee51E8Fc80e199AB297fB575634a1aC1d3";
 const ORDER_UID: &str = "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f42e1a42f0ad0b7795e18767259cc253a2af471dbc4c72b49516ffffffff";
 
 #[tokio::test]
-async fn alloy_client_satisfies_trading_sdk_async_boundaries() {
+async fn alloy_client_satisfies_trading_sdk_boundaries() {
     let server = MockServer::start().await;
     let methods = mount_rpc(&server).await;
     let client = AlloyClient::builder()

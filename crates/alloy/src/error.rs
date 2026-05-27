@@ -261,20 +261,20 @@ impl From<cow_sdk_contracts::ContractsError> for AlloyClientError {
     }
 }
 
-impl From<cow_sdk_alloy_provider::AsyncProviderError> for AlloyClientError {
-    fn from(error: cow_sdk_alloy_provider::AsyncProviderError) -> Self {
+impl From<cow_sdk_alloy_provider::ProviderError> for AlloyClientError {
+    fn from(error: cow_sdk_alloy_provider::ProviderError) -> Self {
         match error {
-            cow_sdk_alloy_provider::AsyncProviderError::Validation(detail) => {
+            cow_sdk_alloy_provider::ProviderError::Validation(detail) => {
                 Self::Validation(detail)
             }
-            cow_sdk_alloy_provider::AsyncProviderError::Transport { class, detail } => {
+            cow_sdk_alloy_provider::ProviderError::Transport { class, detail } => {
                 Self::Transport { class, detail }
             }
-            cow_sdk_alloy_provider::AsyncProviderError::Remote { code, message } => {
+            cow_sdk_alloy_provider::ProviderError::Remote { code, message } => {
                 Self::Remote { code, message }
             }
-            cow_sdk_alloy_provider::AsyncProviderError::Cancelled => Self::Cancelled,
-            cow_sdk_alloy_provider::AsyncProviderError::Internal(detail) => Self::Internal(detail),
+            cow_sdk_alloy_provider::ProviderError::Cancelled => Self::Cancelled,
+            cow_sdk_alloy_provider::ProviderError::Internal(detail) => Self::Internal(detail),
             _ => Self::Internal("unknown alloy provider error".to_owned()),
         }
     }

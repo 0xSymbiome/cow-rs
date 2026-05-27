@@ -2,14 +2,14 @@ use std::fmt;
 
 use cow_sdk_contracts::{OrderCancellations, SigningScheme};
 use cow_sdk_core::{
-    AsyncDigestSigner, AsyncTypedDataSigner, OrderUid, ProtocolOptions, Signer, SignerError,
-    SupportedChainId, TypedDataPayload,
+    DigestSigner, OrderUid, ProtocolOptions, SignerError, SupportedChainId, TypedDataPayload,
+    TypedDataSigner,
 };
 
 use crate::{
     SigningError,
     domain::{cancellation_fields, get_domain, serialize_message, typed_data_types},
-    order_signing::{sign_with_scheme, sign_with_scheme_async, signer_error},
+    order_signing::{sign_with_scheme, signer_error},
 };
 
 /// Primary type name for `CoW` order-cancellation payloads.
@@ -25,35 +25,17 @@ struct CancellationSigningPayload {
 /// # Errors
 ///
 /// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
-pub fn sign_order_cancellation<S>(
+pub async fn sign_order_cancellation<S>(
     order_uid: &OrderUid,
     chain_id: SupportedChainId,
     signer: &S,
     options: Option<&ProtocolOptions>,
 ) -> Result<crate::SigningResult, SigningError>
 where
-    S: Signer,
+    S: TypedDataSigner,
     S::Error: fmt::Display + SignerError,
 {
-    sign_order_cancellation_with_scheme(order_uid, chain_id, signer, SigningScheme::Eip712, options)
-}
-
-/// Signs a single order cancellation asynchronously using `Eip712`.
-///
-/// # Errors
-///
-/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
-pub async fn sign_order_cancellation_async<S>(
-    order_uid: &OrderUid,
-    chain_id: SupportedChainId,
-    signer: &S,
-    options: Option<&ProtocolOptions>,
-) -> Result<crate::SigningResult, SigningError>
-where
-    S: AsyncTypedDataSigner,
-    S::Error: fmt::Display + SignerError,
-{
-    sign_order_cancellations_async(std::slice::from_ref(order_uid), chain_id, signer, options).await
+    sign_order_cancellations(std::slice::from_ref(order_uid), chain_id, signer, options).await
 }
 
 /// Signs a single order cancellation using an explicit local signing scheme.
@@ -72,7 +54,7 @@ where
         ),
     ),
 )]
-pub fn sign_order_cancellation_with_scheme<S>(
+pub async fn sign_order_cancellation_with_scheme<S>(
     order_uid: &OrderUid,
     chain_id: SupportedChainId,
     signer: &S,
@@ -80,46 +62,10 @@ pub fn sign_order_cancellation_with_scheme<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<crate::SigningResult, SigningError>
 where
-    S: Signer,
-    S::Error: fmt::Display + SignerError,
+    S: TypedDataSigner + DigestSigner<Error = <S as TypedDataSigner>::Error>,
+    <S as TypedDataSigner>::Error: fmt::Display + SignerError,
 {
     sign_order_cancellations_with_scheme(
-        std::slice::from_ref(order_uid),
-        chain_id,
-        signer,
-        scheme,
-        options,
-    )
-}
-
-/// Signs a single order cancellation asynchronously using an explicit local scheme.
-///
-/// # Errors
-///
-/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(
-        skip_all,
-        fields(
-            chain = ?chain_id,
-            scheme = ?scheme,
-            endpoint = "signing.order_cancellation",
-        ),
-    ),
-)]
-pub async fn sign_order_cancellation_with_scheme_async<S>(
-    order_uid: &OrderUid,
-    chain_id: SupportedChainId,
-    signer: &S,
-    scheme: SigningScheme,
-    options: Option<&ProtocolOptions>,
-) -> Result<crate::SigningResult, SigningError>
-where
-    S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
-    <S as AsyncTypedDataSigner>::Error: fmt::Display + SignerError,
-{
-    sign_order_cancellations_with_scheme_async(
         std::slice::from_ref(order_uid),
         chain_id,
         signer,
@@ -134,38 +80,14 @@ where
 /// # Errors
 ///
 /// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
-pub fn sign_order_cancellations<S>(
+pub async fn sign_order_cancellations<S>(
     order_uids: &[OrderUid],
     chain_id: SupportedChainId,
     signer: &S,
     options: Option<&ProtocolOptions>,
 ) -> Result<crate::SigningResult, SigningError>
 where
-    S: Signer,
-    S::Error: fmt::Display + SignerError,
-{
-    sign_order_cancellations_with_scheme(
-        order_uids,
-        chain_id,
-        signer,
-        SigningScheme::Eip712,
-        options,
-    )
-}
-
-/// Signs a batch order cancellation asynchronously using `Eip712`.
-///
-/// # Errors
-///
-/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
-pub async fn sign_order_cancellations_async<S>(
-    order_uids: &[OrderUid],
-    chain_id: SupportedChainId,
-    signer: &S,
-    options: Option<&ProtocolOptions>,
-) -> Result<crate::SigningResult, SigningError>
-where
-    S: AsyncTypedDataSigner,
+    S: TypedDataSigner,
     S::Error: fmt::Display + SignerError,
 {
     #[cfg(feature = "tracing")]
@@ -202,7 +124,7 @@ where
         ),
     ),
 )]
-pub fn sign_order_cancellations_with_scheme<S>(
+pub async fn sign_order_cancellations_with_scheme<S>(
     order_uids: &[OrderUid],
     chain_id: SupportedChainId,
     signer: &S,
@@ -210,8 +132,8 @@ pub fn sign_order_cancellations_with_scheme<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<crate::SigningResult, SigningError>
 where
-    S: Signer,
-    S::Error: fmt::Display + SignerError,
+    S: TypedDataSigner + DigestSigner<Error = <S as TypedDataSigner>::Error>,
+    <S as TypedDataSigner>::Error: fmt::Display + SignerError,
 {
     #[cfg(feature = "tracing")]
     tracing::debug!(
@@ -221,45 +143,7 @@ where
         "signing order cancellation",
     );
     let payload = cancellation_signing_payload(order_uids, chain_id, options)?;
-    sign_with_scheme(signer, scheme, &payload.payload, &payload.digest)
-}
-
-/// Signs a batch order cancellation asynchronously using an explicit local scheme.
-///
-/// # Errors
-///
-/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(
-        skip_all,
-        fields(
-            chain = ?chain_id,
-            scheme = ?scheme,
-            endpoint = "signing.order_cancellations",
-        ),
-    ),
-)]
-pub async fn sign_order_cancellations_with_scheme_async<S>(
-    order_uids: &[OrderUid],
-    chain_id: SupportedChainId,
-    signer: &S,
-    scheme: SigningScheme,
-    options: Option<&ProtocolOptions>,
-) -> Result<crate::SigningResult, SigningError>
-where
-    S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
-    <S as AsyncTypedDataSigner>::Error: fmt::Display + SignerError,
-{
-    #[cfg(feature = "tracing")]
-    tracing::debug!(
-        target: "cow_sdk::signing",
-        order_uid = %order_uids.first().map(OrderUid::to_hex_string).as_deref().unwrap_or("<empty>"),
-        order_uid_count = order_uids.len(),
-        "signing order cancellation",
-    );
-    let payload = cancellation_signing_payload(order_uids, chain_id, options)?;
-    sign_with_scheme_async(signer, scheme, &payload.payload, &payload.digest).await
+    sign_with_scheme(signer, scheme, &payload.payload, &payload.digest).await
 }
 
 /// Builds the signer-facing payload for a single order cancellation.

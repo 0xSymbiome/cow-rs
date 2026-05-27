@@ -10,24 +10,24 @@ use alloy_provider::{DynProvider, Provider};
 use cow_sdk_core::{Address, ContractCall};
 use serde_json::Value;
 
-use crate::error::AsyncProviderError;
+use crate::error::ProviderError;
 
 /// Executes the canonical read-contract algorithm through an Alloy provider.
 pub(crate) async fn execute_read_contract(
     provider: &DynProvider<Ethereum>,
     request: &ContractCall,
-) -> Result<String, AsyncProviderError> {
+) -> Result<String, ProviderError> {
     let abi = load_abi(&request.abi_json, request.method.as_str())?;
     let function = resolve_function(&abi, request.method.as_str())?;
     let args = serde_json::from_str::<Value>(&request.args_json).map_err(|error| {
-        AsyncProviderError::Validation(format!(
+        ProviderError::Validation(format!(
             "args_json for `{}` is not valid JSON: {error}",
             request.method
         ))
     })?;
     let values = json_args_to_dyn_values(&function.inputs, &args, request.method.as_str())?;
     let calldata = function.abi_encode_input(&values).map_err(|error| {
-        AsyncProviderError::Validation(format!(
+        ProviderError::Validation(format!(
             "ABI-encoding inputs for `{}` failed: {error}",
             request.method
         ))
@@ -39,11 +39,11 @@ pub(crate) async fn execute_read_contract(
     let output = provider
         .call(tx)
         .await
-        .map_err(AsyncProviderError::from_alloy_transport)?;
+        .map_err(ProviderError::from_alloy_transport)?;
     let decoded = function
         .abi_decode_output(output.as_ref())
         .map_err(|error| {
-            AsyncProviderError::Validation(format!(
+            ProviderError::Validation(format!(
                 "ABI-decoding output of `{}` failed: {error}",
                 request.method
             ))
@@ -59,39 +59,39 @@ pub(crate) async fn execute_read_contract(
         )
     };
     serde_json::to_string(&json).map_err(|error| {
-        AsyncProviderError::Internal(format!(
+        ProviderError::Internal(format!(
             "JSON-encoding read_contract output failed: {error}"
         ))
     })
 }
 
-fn load_abi(abi_json: &str, method: &str) -> Result<JsonAbi, AsyncProviderError> {
+fn load_abi(abi_json: &str, method: &str) -> Result<JsonAbi, ProviderError> {
     serde_json::from_str::<JsonAbi>(abi_json).map_err(|error| {
-        AsyncProviderError::Validation(format!("failed to load ABI for `{method}`: {error}"))
+        ProviderError::Validation(format!("failed to load ABI for `{method}`: {error}"))
     })
 }
 
 fn resolve_function<'abi>(
     abi: &'abi JsonAbi,
     method: &str,
-) -> Result<&'abi Function, AsyncProviderError> {
+) -> Result<&'abi Function, ProviderError> {
     let functions = abi.function(method).ok_or_else(|| {
-        AsyncProviderError::Validation(format!("ABI has no function named `{method}`"))
+        ProviderError::Validation(format!("ABI has no function named `{method}`"))
     })?;
     if functions.len() > 1 {
-        return Err(AsyncProviderError::Validation(format!(
+        return Err(ProviderError::Validation(format!(
             "ABI defines {} overloads for `{method}`; read_contract requires a unique function name",
             functions.len()
         )));
     }
     functions.first().ok_or_else(|| {
-        AsyncProviderError::Validation(format!("ABI has no function named `{method}`"))
+        ProviderError::Validation(format!("ABI has no function named `{method}`"))
     })
 }
 
-fn resolve_param_type(param: &Param, method: &str) -> Result<DynSolType, AsyncProviderError> {
+fn resolve_param_type(param: &Param, method: &str) -> Result<DynSolType, ProviderError> {
     DynSolType::parse(&param.selector_type()).map_err(|error| {
-        AsyncProviderError::Validation(format!(
+        ProviderError::Validation(format!(
             "failed to resolve ABI type `{}` for `{method}`: {error}",
             param.ty
         ))
@@ -102,11 +102,11 @@ fn json_args_to_dyn_values(
     inputs: &[Param],
     args: &Value,
     method: &str,
-) -> Result<Vec<DynSolValue>, AsyncProviderError> {
+) -> Result<Vec<DynSolValue>, ProviderError> {
     match args {
         Value::Array(items) => {
             if items.len() != inputs.len() {
-                return Err(AsyncProviderError::Validation(format!(
+                return Err(ProviderError::Validation(format!(
                     "method `{method}`: expected {} ABI arguments, received {}",
                     inputs.len(),
                     items.len()
@@ -130,7 +130,7 @@ fn json_args_to_dyn_values(
                 .iter()
                 .map(|param| {
                     let value = map.get(&param.name).ok_or_else(|| {
-                        AsyncProviderError::Validation(format!(
+                        ProviderError::Validation(format!(
                             "method `{method}`: missing ABI argument `{}`",
                             param.name
                         ))
@@ -144,7 +144,7 @@ fn json_args_to_dyn_values(
             let ty = resolve_param_type(&inputs[0], method)?;
             Ok(vec![json_to_dyn_value(&ty, other, method)?])
         }
-        _ => Err(AsyncProviderError::Validation(format!(
+        _ => Err(ProviderError::Validation(format!(
             "method `{method}`: contract arguments must be a JSON array, object, or single value"
         ))),
     }
@@ -158,11 +158,11 @@ fn json_to_dyn_value(
     ty: &DynSolType,
     value: &Value,
     method: &str,
-) -> Result<DynSolValue, AsyncProviderError> {
+) -> Result<DynSolValue, ProviderError> {
     match ty {
         DynSolType::Address => {
             let address = value.as_str().ok_or_else(|| {
-                AsyncProviderError::Validation(format!(
+                ProviderError::Validation(format!(
                     "method `{method}`: address must be a string"
                 ))
             })?;
@@ -172,13 +172,13 @@ fn json_to_dyn_value(
         DynSolType::Uint(bits) => Ok(DynSolValue::Uint(parse_u256(value, method)?, *bits)),
         DynSolType::Int(bits) => Ok(DynSolValue::Int(parse_i256(value, method)?, *bits)),
         DynSolType::Bool => value.as_bool().map(DynSolValue::Bool).ok_or_else(|| {
-            AsyncProviderError::Validation(format!("method `{method}`: bool must be a boolean"))
+            ProviderError::Validation(format!("method `{method}`: bool must be a boolean"))
         }),
         DynSolType::String => value
             .as_str()
             .map(|item| DynSolValue::String(item.to_owned()))
             .ok_or_else(|| {
-                AsyncProviderError::Validation(format!(
+                ProviderError::Validation(format!(
                     "method `{method}`: string must be a string"
                 ))
             }),
@@ -186,7 +186,7 @@ fn json_to_dyn_value(
         DynSolType::FixedBytes(length) => {
             let bytes = bytes_from_json(value, method)?;
             if bytes.len() != *length {
-                return Err(AsyncProviderError::Validation(format!(
+                return Err(ProviderError::Validation(format!(
                     "method `{method}`: expected {length} fixed bytes, received {}",
                     bytes.len()
                 )));
@@ -197,7 +197,7 @@ fn json_to_dyn_value(
         }
         DynSolType::Array(inner) => {
             let items = value.as_array().ok_or_else(|| {
-                AsyncProviderError::Validation(format!(
+                ProviderError::Validation(format!(
                     "method `{method}`: array argument must be a JSON array"
                 ))
             })?;
@@ -209,12 +209,12 @@ fn json_to_dyn_value(
         }
         DynSolType::FixedArray(inner, length) => {
             let items = value.as_array().ok_or_else(|| {
-                AsyncProviderError::Validation(format!(
+                ProviderError::Validation(format!(
                     "method `{method}`: array argument must be a JSON array"
                 ))
             })?;
             if items.len() != *length {
-                return Err(AsyncProviderError::Validation(format!(
+                return Err(ProviderError::Validation(format!(
                     "method `{method}`: expected fixed array of length {length}, received {}",
                     items.len()
                 )));
@@ -227,12 +227,12 @@ fn json_to_dyn_value(
         }
         DynSolType::Tuple(components) => {
             let items = value.as_array().ok_or_else(|| {
-                AsyncProviderError::Validation(format!(
+                ProviderError::Validation(format!(
                     "method `{method}`: tuple arguments must be represented as a JSON array"
                 ))
             })?;
             if items.len() != components.len() {
-                return Err(AsyncProviderError::Validation(format!(
+                return Err(ProviderError::Validation(format!(
                     "method `{method}`: expected tuple of length {}, received {}",
                     components.len(),
                     items.len()
@@ -245,7 +245,7 @@ fn json_to_dyn_value(
                 .collect::<Result<Vec<_>, _>>()
                 .map(DynSolValue::Tuple)
         }
-        _ => Err(AsyncProviderError::Validation(format!(
+        _ => Err(ProviderError::Validation(format!(
             "method `{method}`: unsupported ABI type `{ty:?}`"
         ))),
     }
@@ -256,7 +256,7 @@ fn json_to_dyn_value(
     clippy::match_wildcard_for_single_variants,
     reason = "the wildcard rejects future DynSolValue variants instead of mapping them to null"
 )]
-fn dyn_value_to_json(value: &DynSolValue) -> Result<Value, AsyncProviderError> {
+fn dyn_value_to_json(value: &DynSolValue) -> Result<Value, ProviderError> {
     match value {
         DynSolValue::Address(address) => Ok(Value::String(alloy_primitives::hex::encode_prefixed(
             address.as_slice(),
@@ -283,25 +283,25 @@ fn dyn_value_to_json(value: &DynSolValue) -> Result<Value, AsyncProviderError> {
             "0x{}",
             alloy_primitives::hex::encode(function.as_slice())
         ))),
-        DynSolValue::CustomStruct { name, .. } => Err(AsyncProviderError::Validation(format!(
+        DynSolValue::CustomStruct { name, .. } => Err(ProviderError::Validation(format!(
             "unsupported ABI output shape: custom struct `{name}` not supported in this release"
         ))),
-        other => Err(AsyncProviderError::Validation(format!(
+        other => Err(ProviderError::Validation(format!(
             "unsupported ABI output shape: {other:?}"
         ))),
     }
 }
 
-fn bytes_from_json(value: &Value, method: &str) -> Result<Vec<u8>, AsyncProviderError> {
+fn bytes_from_json(value: &Value, method: &str) -> Result<Vec<u8>, ProviderError> {
     match value {
         Value::String(raw) => {
             let stripped = raw.strip_prefix("0x").ok_or_else(|| {
-                AsyncProviderError::Validation(format!(
+                ProviderError::Validation(format!(
                     "method `{method}`: hex value must be 0x-prefixed"
                 ))
             })?;
             alloy_primitives::hex::decode(stripped).map_err(|error| {
-                AsyncProviderError::Validation(format!("method `{method}`: {error}"))
+                ProviderError::Validation(format!("method `{method}`: {error}"))
             })
         }
         Value::Array(items) => items
@@ -310,24 +310,24 @@ fn bytes_from_json(value: &Value, method: &str) -> Result<Vec<u8>, AsyncProvider
                 item.as_u64()
                     .and_then(|value| u8::try_from(value).ok())
                     .ok_or_else(|| {
-                        AsyncProviderError::Validation(format!(
+                        ProviderError::Validation(format!(
                             "method `{method}`: byte arrays must contain u8-compatible numbers"
                         ))
                     })
             })
             .collect(),
-        _ => Err(AsyncProviderError::Validation(format!(
+        _ => Err(ProviderError::Validation(format!(
             "method `{method}`: bytes must be a hex string or byte array"
         ))),
     }
 }
 
-fn parse_u256(value: &Value, method: &str) -> Result<U256, AsyncProviderError> {
+fn parse_u256(value: &Value, method: &str) -> Result<U256, ProviderError> {
     let raw = match value {
         Value::String(raw) => raw.clone(),
         Value::Number(number) => number.to_string(),
         _ => {
-            return Err(AsyncProviderError::Validation(format!(
+            return Err(ProviderError::Validation(format!(
                 "method `{method}`: numeric arguments must be strings or numbers"
             )));
         }
@@ -340,32 +340,32 @@ fn parse_u256(value: &Value, method: &str) -> Result<U256, AsyncProviderError> {
     // argument JSON. The historical hand-rolled four-radix sniffer is
     // retired in favour of the canonical alloy parser per ADR 0052.
     U256::from_str(&raw).map_err(|error| {
-        AsyncProviderError::Validation(format!(
+        ProviderError::Validation(format!(
             "method `{method}`: invalid integer `{raw}`: {error}"
         ))
     })
 }
 
-fn parse_i256(value: &Value, method: &str) -> Result<I256, AsyncProviderError> {
+fn parse_i256(value: &Value, method: &str) -> Result<I256, ProviderError> {
     let raw = match value {
         Value::String(raw) => raw.clone(),
         Value::Number(number) => number.to_string(),
         _ => {
-            return Err(AsyncProviderError::Validation(format!(
+            return Err(ProviderError::Validation(format!(
                 "method `{method}`: numeric arguments must be strings or numbers"
             )));
         }
     };
     if let Some(hex) = raw.strip_prefix("0x") {
         let unsigned = U256::from_str_radix(hex, 16).map_err(|error| {
-            AsyncProviderError::Validation(format!(
+            ProviderError::Validation(format!(
                 "method `{method}`: invalid hexadecimal signed integer `{raw}`: {error}"
             ))
         })?;
         Ok(I256::from_raw(unsigned))
     } else {
         I256::from_dec_str(&raw).map_err(|error| {
-            AsyncProviderError::Validation(format!(
+            ProviderError::Validation(format!(
                 "method `{method}`: invalid signed integer `{raw}`: {error}"
             ))
         })
@@ -443,7 +443,7 @@ mod tests {
 
         let error = dyn_value_to_json(&custom).expect_err("custom struct must be rejected");
 
-        assert!(matches!(error, AsyncProviderError::Validation(_)));
+        assert!(matches!(error, ProviderError::Validation(_)));
         let message = error.to_string();
         assert!(
             message.contains("[redacted]"),
@@ -459,7 +459,7 @@ mod tests {
         .unwrap();
         assert!(matches!(
             resolve_function(&abi, "f"),
-            Err(AsyncProviderError::Validation(_))
+            Err(ProviderError::Validation(_))
         ));
     }
 }

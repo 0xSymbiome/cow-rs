@@ -6,7 +6,7 @@ use alloy_primitives::{B256, I256, U256};
 use serde_json::{Map, Value, json};
 
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, BlockHash, BlockInfo, ChainId, ContractCall, ContractHandle,
+    Address, Amount, Provider, BlockHash, BlockInfo, ChainId, ContractCall, ContractHandle,
     HexData, TransactionHash, TransactionReceipt, TransactionRequest, TransactionStatus,
 };
 
@@ -14,7 +14,7 @@ use crate::BrowserWalletError;
 
 use super::Eip1193Provider;
 
-impl AsyncProvider for Eip1193Provider {
+impl Provider for Eip1193Provider {
     type Error = BrowserWalletError;
 
     async fn get_chain_id(&self) -> Result<ChainId, Self::Error> {

@@ -10,7 +10,7 @@
 
 The workspace ships `cow-sdk-alloy-provider` as a native, read-only Alloy
 adapter. `RpcAlloyProvider` wraps an `Arc<alloy_provider::DynProvider<Ethereum>>`
-internally and exposes it through `cow_sdk_core::AsyncProvider`.
+internally and exposes it through `cow_sdk_core::Provider`.
 
 The documented public API remains SDK-owned: callers see the provider,
 typestate builder, sealed transport markers, builder error, and provider error
@@ -29,9 +29,9 @@ the `cow-sdk-core` domain types. Keeping that conversion in a first-party leaf
 crate gives it shared tests, redaction review, cancellation compatibility, and a
 single dependency boundary.
 
-ADR 0024 makes the split viable: the read-only `AsyncProvider` trait has no
+ADR 0024 makes the split viable: the read-only `Provider` trait has no
 signer creation method. Consumers who need signing can pair this provider with
-an `AsyncSigner` or use the composed Alloy client crate without forcing signer
+a `Signer` or use the composed Alloy client crate without forcing signer
 dependencies onto read-only users.
 
 ## Must Remain True
@@ -39,14 +39,14 @@ dependencies onto read-only users.
 - Public surface: documented constructors and provider methods expose SDK-owned
   types, not upstream Alloy provider or transport types. The doc-hidden seam is
   reserved for sibling adapter crates and may change without notice.
-- Trait coverage: `RpcAlloyProvider` implements every `AsyncProvider` method and
-  does not implement `AsyncSigningProvider`, `AsyncSigner`, or sync `Signer`.
+- Trait coverage: `RpcAlloyProvider` implements every `Provider` method and
+  does not implement `SigningProvider` or `Signer`.
 - Builder state: `RpcAlloyProviderBuilder::build` is available only after HTTP
   transport has been selected, and the URL-bearing state stores
   `Redacted<reqwest::Url>`.
 - Runtime support: native HTTP is the only enabled transport. WS, IPC, pubsub,
   and local-node helper features are deferred until they have complete tests.
-- Error posture: `AsyncProviderError` is non-exhaustive, classifies validation,
+- Error posture: `ProviderError` is non-exhaustive, classifies validation,
   transport, remote, cancelled, and internal failures, and keeps transport
   details redacted.
 - Validation: contract tests cover all provider methods, `read_contract` parity,
@@ -71,10 +71,10 @@ seam for sibling `cow-rs` adapter crates. It is not a semver-stable consumer
 API. Anything inside the seam may change in any minor release without notice.
 Consumers who write code against it do so at their own risk; the documented
 consumer surface is limited to `RpcAlloyProvider`,
-`RpcAlloyProviderBuilder`, `AsyncProviderError`, and the typestate markers
+`RpcAlloyProviderBuilder`, `ProviderError`, and the typestate markers
 explicitly exported from `lib.rs`.
 
-The same posture applies to `AsyncProviderError::from_alloy_transport`. It is
+The same posture applies to `ProviderError::from_alloy_transport`. It is
 gated `#[doc(hidden)]` and documented in source as an inter-crate seam
 constructor, not as a stable consumer API.
 

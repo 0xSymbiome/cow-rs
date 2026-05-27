@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use cow_sdk_alloy::AlloyClient;
 use cow_sdk_core::{
-    Address, Amount, AsyncSigner, AsyncSigningProvider, SupportedChainId, TransactionRequest,
+    Address, Amount, Signer, SigningProvider, SupportedChainId, TransactionRequest,
 };
 use serde_json::{Value, json};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};

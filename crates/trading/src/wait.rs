@@ -12,7 +12,7 @@ use std::time::Instant;
 use web_time::Instant;
 
 use cow_sdk_core::{
-    AsyncProvider, AsyncSigner, Cancelled, TransactionBroadcast, TransactionHash,
+    Provider, Signer, Cancelled, TransactionBroadcast, TransactionHash,
     TransactionReceipt, TransactionRequest, TransactionStatus,
 };
 
@@ -175,8 +175,8 @@ where
 
 /// Broadcasts a transaction and polls until the mined receipt is observed.
 ///
-/// This helper calls [`AsyncSigner::send_transaction`] exactly once, then
-/// repeatedly calls [`AsyncProvider::get_transaction_receipt`] for the returned
+/// This helper calls [`Signer::send_transaction`] exactly once, then
+/// repeatedly calls [`Provider::get_transaction_receipt`] for the returned
 /// hash until the provider returns a receipt or [`WaitOptions::timeout`] is
 /// reached. Wrap the returned future with
 /// [`cow_sdk_core::Cancellable::cancel_with`] to propagate cooperative
@@ -197,8 +197,8 @@ pub async fn submit_and_wait_for_receipt<S, P>(
     options: WaitOptions,
 ) -> Result<TransactionReceipt, WaitError<S::Error, P::Error>>
 where
-    S: AsyncSigner,
-    P: AsyncProvider,
+    S: Signer,
+    P: Provider,
 {
     let broadcast: TransactionBroadcast = signer
         .send_transaction(tx)
@@ -226,7 +226,7 @@ pub async fn poll_for_receipt<P>(
     options: WaitOptions,
 ) -> Result<TransactionReceipt, WaitError<std::convert::Infallible, P::Error>>
 where
-    P: AsyncProvider,
+    P: Provider,
 {
     poll_for_receipt_inner::<std::convert::Infallible, P>(provider, transaction_hash, options).await
 }
@@ -237,7 +237,7 @@ async fn poll_for_receipt_inner<B, P>(
     options: WaitOptions,
 ) -> Result<TransactionReceipt, WaitError<B, P::Error>>
 where
-    P: AsyncProvider,
+    P: Provider,
 {
     let started_at = Instant::now();
 

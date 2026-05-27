@@ -8,10 +8,10 @@ use cow_sdk_contracts::{
     ContractsError, Eip1271SignatureData, Eip1271VerificationCache, Eip1271VerificationRequest,
     IERC1271, Signature, SigningScheme, decode_eip1271_signature_data, decode_signing_scheme,
     encode_eip1271_signature_data, encode_signing_scheme, normalized_ecdsa_signature,
-    verify_eip1271_signature, verify_eip1271_signature_async,
+    verify_eip1271_signature, verify_eip1271_signature_cached,
 };
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo, ContractCall,
+    Address, Amount, Provider, Signer, SigningProvider, BlockInfo, ContractCall,
     ContractHandle, Hash32, HexData, TransactionBroadcast, TransactionReceipt, TransactionRequest,
 };
 use k256::ecdsa::SigningKey;
@@ -107,9 +107,9 @@ impl fmt::Display for AsyncMockProviderError {
 }
 
 #[derive(Debug, Clone, Default)]
-struct DummyAsyncSigner;
+struct DummySigner;
 
-impl AsyncSigner for DummyAsyncSigner {
+impl Signer for DummySigner {
     type Error = AsyncMockProviderError;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
@@ -185,7 +185,7 @@ impl AsyncMockProvider {
     }
 }
 
-impl AsyncProvider for AsyncMockProvider {
+impl Provider for AsyncMockProvider {
     type Error = AsyncMockProviderError;
 
     async fn get_chain_id(&self) -> Result<u64, Self::Error> {
@@ -239,11 +239,11 @@ impl AsyncProvider for AsyncMockProvider {
     }
 }
 
-impl AsyncSigningProvider for AsyncMockProvider {
-    type Signer = DummyAsyncSigner;
+impl SigningProvider for AsyncMockProvider {
+    type Signer = DummySigner;
 
     async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        Ok(DummyAsyncSigner)
+        Ok(DummySigner)
     }
 }
 
@@ -467,8 +467,8 @@ fn normalized_ecdsa_signature_rejects_invalid_hex() {
     ));
 }
 
-#[test]
-fn eip1271_verification_reads_contract_code_and_magic_value() {
+#[tokio::test]
+async fn eip1271_verification_reads_contract_code_and_magic_value() {
     let provider = MockProvider::new();
     let verifier = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
     provider.set_code(Some("0x6001600055"));
@@ -482,6 +482,7 @@ fn eip1271_verification_reads_contract_code_and_magic_value() {
             HexData::new("0x1234").unwrap(),
         ),
     )
+    .await
     .unwrap();
 
     let call = provider.calls.borrow().last().cloned().unwrap();
@@ -493,8 +494,8 @@ fn eip1271_verification_reads_contract_code_and_magic_value() {
     assert_eq!(args[1], "0x1234");
 }
 
-#[test]
-fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
+#[tokio::test]
+async fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
     let provider = MockProvider::new();
     let verifier = Address::new("0x1111111111111111111111111111111111111111").unwrap();
 
@@ -506,6 +507,7 @@ fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
             HexData::new("0x").unwrap(),
         ),
     )
+    .await
     .unwrap_err();
     match &missing {
         ContractsError::UnsupportedEip1271Verifier { verifier: got } => {
@@ -524,6 +526,7 @@ fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
             HexData::new("0x1234").unwrap(),
         ),
     )
+    .await
     .unwrap_err();
     match transport {
         ContractsError::Eip1271Provider { operation, message } => {
@@ -534,8 +537,8 @@ fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
     }
 }
 
-#[test]
-fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
+#[tokio::test]
+async fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
     let provider = MockProvider::new();
     let verifier = Address::new("0x2222222222222222222222222222222222222222").unwrap();
     provider.set_code(Some("0x6001600055"));
@@ -549,6 +552,7 @@ fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
             HexData::new("0x1234").unwrap(),
         ),
     )
+    .await
     .unwrap_err();
     match &malformed {
         ContractsError::MalformedEip1271Response { response } => {
@@ -566,6 +570,7 @@ fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
             HexData::new("0x1234").unwrap(),
         ),
     )
+    .await
     .unwrap_err();
     match &mismatch {
         ContractsError::Eip1271MagicValueMismatch { expected, actual } => {
@@ -595,7 +600,7 @@ async fn async_eip1271_verification_reads_contract_code_and_magic_value() {
     provider.set_code(Some("0x6001600055"));
     provider.set_response("\"0x1626ba7e\"");
 
-    verify_eip1271_signature_async(
+    verify_eip1271_signature_cached(
         &provider,
         &Eip1271VerificationRequest::new(
             verifier,
@@ -618,7 +623,7 @@ async fn async_eip1271_cache_hit_false_fails_closed_without_provider_call() {
     let verifier = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
     let cache = RecordingCache::with_hit(Some(false));
 
-    let error = verify_eip1271_signature_async(
+    let error = verify_eip1271_signature_cached(
         &provider,
         &Eip1271VerificationRequest::new(
             verifier,
@@ -655,7 +660,7 @@ async fn async_eip1271_verification_caches_only_magic_value_outcomes_by_digest()
     let cache = RecordingCache::default();
 
     provider.set_response("\"0x1626ba7e\"");
-    verify_eip1271_signature_async(
+    verify_eip1271_signature_cached(
         &provider,
         &Eip1271VerificationRequest::new(
             verifier,
@@ -669,7 +674,7 @@ async fn async_eip1271_verification_caches_only_magic_value_outcomes_by_digest()
     assert_eq!(cache.writes(), vec![(verifier, [0x77; 32], true)]);
 
     provider.set_response("\"0xffffffff\"");
-    let mismatch = verify_eip1271_signature_async(
+    let mismatch = verify_eip1271_signature_cached(
         &provider,
         &Eip1271VerificationRequest::new(
             verifier,
@@ -694,7 +699,7 @@ async fn async_eip1271_verification_caches_only_magic_value_outcomes_by_digest()
 
     provider.set_response("{\"unexpected\":true}");
     let before_malformed = cache.writes();
-    let malformed = verify_eip1271_signature_async(
+    let malformed = verify_eip1271_signature_cached(
         &provider,
         &Eip1271VerificationRequest::new(
             verifier,
@@ -721,7 +726,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
     let provider = AsyncMockProvider::new();
     let verifier = Address::new("0x1111111111111111111111111111111111111111").unwrap();
 
-    let missing = verify_eip1271_signature_async(
+    let missing = verify_eip1271_signature_cached(
         &provider,
         &Eip1271VerificationRequest::new(
             verifier,
@@ -741,7 +746,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
 
     provider.set_code(Some("0x6001600055"));
     provider.set_response_error(Some("rpc unavailable"));
-    let transport = verify_eip1271_signature_async(
+    let transport = verify_eip1271_signature_cached(
         &provider,
         &Eip1271VerificationRequest::new(
             verifier,
@@ -762,7 +767,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
 
     provider.set_response_error(None);
     provider.set_code_error(Some("code lookup unavailable"));
-    let code_error = verify_eip1271_signature_async(
+    let code_error = verify_eip1271_signature_cached(
         &provider,
         &Eip1271VerificationRequest::new(
             verifier,

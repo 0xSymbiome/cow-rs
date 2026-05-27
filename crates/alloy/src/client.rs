@@ -7,7 +7,7 @@ use alloy_provider::{DynProvider, Provider as _, ProviderBuilder};
 use alloy_signer::Signer as AlloySigner;
 use alloy_signer_local::PrivateKeySigner;
 use cow_sdk_core::{
-    Address, AsyncProvider, AsyncSigningProvider, BlockInfo, ChainId, ContractCall, ContractHandle,
+    Address, Provider, SigningProvider, BlockInfo, ChainId, ContractCall, ContractHandle,
     HexData, TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
@@ -33,8 +33,8 @@ pub(crate) struct AlloyClientInner {
 /// Native composed Alloy provider and signer client.
 ///
 /// `AlloyClient` owns a wallet-filler Alloy provider and a concrete local
-/// signer. It implements [`AsyncProvider`] for read-only RPC calls and
-/// [`AsyncSigningProvider`] for creating an owned [`AlloyClientSignerHandle`].
+/// signer. It implements [`Provider`] for read-only RPC calls and
+/// [`SigningProvider`] for creating an owned [`AlloyClientSignerHandle`].
 #[derive(Clone)]
 pub struct AlloyClient {
     pub(crate) inner: Arc<AlloyClientInner>,
@@ -111,7 +111,7 @@ impl fmt::Debug for AlloyClient {
     }
 }
 
-impl AsyncProvider for AlloyClient {
+impl Provider for AlloyClient {
     type Error = AlloyClientError;
 
     async fn get_chain_id(&self) -> Result<ChainId, Self::Error> {
@@ -212,7 +212,7 @@ impl AsyncProvider for AlloyClient {
     }
 }
 
-impl AsyncSigningProvider for AlloyClient {
+impl SigningProvider for AlloyClient {
     type Signer = AlloyClientSignerHandle;
 
     async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {

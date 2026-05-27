@@ -4,9 +4,9 @@
 //!
 //! [`AlloyClient`] combines an Alloy HTTP provider with an Alloy local private
 //! key signer through Alloy's wallet-filler stack. It implements
-//! [`cow_sdk_core::AsyncProvider`] and
-//! [`cow_sdk_core::AsyncSigningProvider`], while the handle returned by
-//! `create_signer` implements [`cow_sdk_core::AsyncSigner`].
+//! [`cow_sdk_core::Provider`] and
+//! [`cow_sdk_core::SigningProvider`], while the handle returned by
+//! `create_signer` implements [`cow_sdk_core::Signer`].
 //!
 //! ```rust,no_run
 //! use cow_sdk_alloy::AlloyClient;
@@ -27,7 +27,7 @@
 //! `send_transaction` submits through the wallet-filler provider and returns
 //! [`cow_sdk_core::TransactionBroadcast`] with the broadcast transaction hash
 //! from Alloy's pending transaction handle. It does not wait for receipt
-//! observation. Use [`cow_sdk_core::AsyncProvider::get_transaction_receipt`]
+//! observation. Use [`cow_sdk_core::Provider::get_transaction_receipt`]
 //! on the client when mined status, block, gas, sender, or recipient fields are
 //! needed. Raw `sign_transaction` is intentionally not exposed by this release
 //! because Alloy's provider method routes to the remote JSON-RPC peer rather

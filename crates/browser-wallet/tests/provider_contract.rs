@@ -4,11 +4,11 @@ use cow_sdk_browser_wallet::{
     BrowserWallet, BrowserWalletError, Eip1193ProviderBuilder, MockEip1193Transport, Origin,
     WalletChainParameters,
 };
-use cow_sdk_core::AsyncProvider;
+use cow_sdk_core::Provider;
 use cow_sdk_core::{Address, Amount, ContractCall, HexData, SupportedChainId, TransactionRequest};
 
 #[tokio::test(flavor = "current_thread")]
-async fn mock_provider_satisfies_async_provider_contracts() {
+async fn mock_provider_satisfies_provider_contracts() {
     let transport = MockEip1193Transport::sepolia();
     transport.set_connected(true);
     let wallet = BrowserWallet::from_transport_or_panic(transport.clone());

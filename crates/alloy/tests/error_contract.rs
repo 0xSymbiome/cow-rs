@@ -7,19 +7,19 @@
 //! - the `class().as_str()` label table across every variant;
 //! - `AlloyClientErrorClass::Display` forwarding through `as_str`;
 //! - every documented `From<...>` lift used by `?`-style propagation across
-//!   `CoreError`, `Cancelled`, `ContractsError`, and `AsyncProviderError`.
+//!   `CoreError`, `Cancelled`, `ContractsError`, and `ProviderError`.
 //!
 //! The seam constructors `from_alloy_transport`, `from_alloy_signer`, and
 //! `from_pending_tx_error` are covered indirectly through the wiremock-driven
-//! end-to-end RPC scenarios in `asyncprovider_contract.rs` and
-//! `asyncsigningprovider_contract.rs`; constructing the upstream Alloy error
+//! end-to-end RPC scenarios in `provider_contract.rs` and
+//! `signing_provider_contract.rs`; constructing the upstream Alloy error
 //! shapes directly is intentionally avoided because their internal fields are
 //! private.
 
 #![cfg(not(target_arch = "wasm32"))]
 
 use cow_sdk_alloy::{AlloyClientError, AlloyClientErrorClass};
-use cow_sdk_alloy_provider::AsyncProviderError;
+use cow_sdk_alloy_provider::ProviderError;
 use cow_sdk_core::{Cancelled, Redacted, TransportErrorClass};
 
 // -------------------------------------------------------------------------
@@ -104,20 +104,20 @@ fn class_label_table_covers_every_variant() {
 }
 
 // -------------------------------------------------------------------------
-// From<AsyncProviderError> lift — exercises the inter-adapter seam
+// From<ProviderError> lift — exercises the inter-adapter seam
 // -------------------------------------------------------------------------
 
 #[test]
-fn from_async_provider_error_validation_lifts_to_validation_variant() {
-    let upstream = AsyncProviderError::Validation("invalid chain id".to_owned());
+fn from_provider_error_validation_lifts_to_validation_variant() {
+    let upstream = ProviderError::Validation("invalid chain id".to_owned());
     let lifted: AlloyClientError = upstream.into();
     assert!(matches!(lifted, AlloyClientError::Validation(_)));
     assert_eq!(lifted.class(), AlloyClientErrorClass::Validation);
 }
 
 #[test]
-fn from_async_provider_error_transport_lifts_to_transport_variant() {
-    let upstream = AsyncProviderError::Transport {
+fn from_provider_error_transport_lifts_to_transport_variant() {
+    let upstream = ProviderError::Transport {
         class: TransportErrorClass::Timeout,
         detail: Redacted::new("timed out".to_owned()),
     };
@@ -131,8 +131,8 @@ fn from_async_provider_error_transport_lifts_to_transport_variant() {
 }
 
 #[test]
-fn from_async_provider_error_remote_lifts_to_remote_variant() {
-    let upstream = AsyncProviderError::Remote {
+fn from_provider_error_remote_lifts_to_remote_variant() {
+    let upstream = ProviderError::Remote {
         code: -32_000,
         message: "execution reverted".to_owned(),
     };
@@ -147,16 +147,16 @@ fn from_async_provider_error_remote_lifts_to_remote_variant() {
 }
 
 #[test]
-fn from_async_provider_error_cancelled_lifts_to_cancelled_variant() {
-    let upstream = AsyncProviderError::Cancelled;
+fn from_provider_error_cancelled_lifts_to_cancelled_variant() {
+    let upstream = ProviderError::Cancelled;
     let lifted: AlloyClientError = upstream.into();
     assert!(matches!(lifted, AlloyClientError::Cancelled));
     assert_eq!(lifted.class(), AlloyClientErrorClass::Cancelled);
 }
 
 #[test]
-fn from_async_provider_error_internal_lifts_to_internal_variant() {
-    let upstream = AsyncProviderError::Internal("internal detail".to_owned());
+fn from_provider_error_internal_lifts_to_internal_variant() {
+    let upstream = ProviderError::Internal("internal detail".to_owned());
     let lifted: AlloyClientError = upstream.into();
     assert!(matches!(lifted, AlloyClientError::Internal(_)));
     assert_eq!(lifted.class(), AlloyClientErrorClass::Internal);

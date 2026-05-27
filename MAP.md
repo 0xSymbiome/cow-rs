@@ -346,12 +346,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/alloy-provider/tests/</code> &mdash; 10 file(s)</summary>
 
-- [`asyncprovider_contract.rs`](crates/alloy-provider/tests/asyncprovider_contract.rs)
 - [`builder_contract.rs`](crates/alloy-provider/tests/builder_contract.rs)
 - [`cancellation_contract.rs`](crates/alloy-provider/tests/cancellation_contract.rs)
 - [`compile_fail.rs`](crates/alloy-provider/tests/compile_fail.rs)
 - [`dependency_boundary_contract.rs`](crates/alloy-provider/tests/dependency_boundary_contract.rs)
 - [`error_class_contract.rs`](crates/alloy-provider/tests/error_class_contract.rs)
+- [`provider_contract.rs`](crates/alloy-provider/tests/provider_contract.rs)
 - [`read_contract_no_panic.rs`](crates/alloy-provider/tests/read_contract_no_panic.rs)
 - [`read_contract_parity.rs`](crates/alloy-provider/tests/read_contract_parity.rs)
 - [`redaction_contract.rs`](crates/alloy-provider/tests/redaction_contract.rs)
@@ -360,16 +360,14 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/alloy-provider/tests/trybuild/</code> &mdash; 8 file(s)</summary>
+<summary><code>crates/alloy-provider/tests/trybuild/</code> &mdash; 6 file(s)</summary>
 
 - [`external_marker_construction_fails.rs`](crates/alloy-provider/tests/trybuild/external_marker_construction_fails.rs)
 - [`external_marker_construction_fails.stderr`](crates/alloy-provider/tests/trybuild/external_marker_construction_fails.stderr)
-- [`no_async_signer.rs`](crates/alloy-provider/tests/trybuild/no_async_signer.rs)
-- [`no_async_signer.stderr`](crates/alloy-provider/tests/trybuild/no_async_signer.stderr)
+- [`no_signer.rs`](crates/alloy-provider/tests/trybuild/no_signer.rs)
+- [`no_signer.stderr`](crates/alloy-provider/tests/trybuild/no_signer.stderr)
 - [`no_signing_provider.rs`](crates/alloy-provider/tests/trybuild/no_signing_provider.rs)
 - [`no_signing_provider.stderr`](crates/alloy-provider/tests/trybuild/no_signing_provider.stderr)
-- [`no_sync_signer.rs`](crates/alloy-provider/tests/trybuild/no_sync_signer.rs)
-- [`no_sync_signer.stderr`](crates/alloy-provider/tests/trybuild/no_sync_signer.stderr)
 
 </details>
 
@@ -395,7 +393,6 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/alloy-signer/tests/</code> &mdash; 9 file(s)</summary>
 
-- [`asyncsigner_contract.rs`](crates/alloy-signer/tests/asyncsigner_contract.rs)
 - [`cancellation_contract.rs`](crates/alloy-signer/tests/cancellation_contract.rs)
 - [`compile_fail.rs`](crates/alloy-signer/tests/compile_fail.rs)
 - [`dependency_boundary_contract.rs`](crates/alloy-signer/tests/dependency_boundary_contract.rs)
@@ -403,21 +400,20 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`eip712_reference_vectors.rs`](crates/alloy-signer/tests/eip712_reference_vectors.rs)
 - [`proptests.rs`](crates/alloy-signer/tests/proptests.rs)
 - [`redaction_contract.rs`](crates/alloy-signer/tests/redaction_contract.rs)
+- [`signer_contract.rs`](crates/alloy-signer/tests/signer_contract.rs)
 - [`signer_error_trait_contract.rs`](crates/alloy-signer/tests/signer_error_trait_contract.rs)
 
 </details>
 
 <details>
-<summary><code>crates/alloy-signer/tests/trybuild/</code> &mdash; 8 file(s)</summary>
+<summary><code>crates/alloy-signer/tests/trybuild/</code> &mdash; 6 file(s)</summary>
 
 - [`external_marker_construction_fails.rs`](crates/alloy-signer/tests/trybuild/external_marker_construction_fails.rs)
 - [`external_marker_construction_fails.stderr`](crates/alloy-signer/tests/trybuild/external_marker_construction_fails.stderr)
-- [`no_async_provider.rs`](crates/alloy-signer/tests/trybuild/no_async_provider.rs)
-- [`no_async_provider.stderr`](crates/alloy-signer/tests/trybuild/no_async_provider.stderr)
-- [`no_async_signing_provider.rs`](crates/alloy-signer/tests/trybuild/no_async_signing_provider.rs)
-- [`no_async_signing_provider.stderr`](crates/alloy-signer/tests/trybuild/no_async_signing_provider.stderr)
-- [`no_sync_signer.rs`](crates/alloy-signer/tests/trybuild/no_sync_signer.rs)
-- [`no_sync_signer.stderr`](crates/alloy-signer/tests/trybuild/no_sync_signer.stderr)
+- [`no_provider.rs`](crates/alloy-signer/tests/trybuild/no_provider.rs)
+- [`no_provider.stderr`](crates/alloy-signer/tests/trybuild/no_provider.stderr)
+- [`no_signing_provider.rs`](crates/alloy-signer/tests/trybuild/no_signing_provider.rs)
+- [`no_signing_provider.stderr`](crates/alloy-signer/tests/trybuild/no_signing_provider.stderr)
 
 </details>
 
@@ -437,8 +433,6 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/alloy/tests/</code> &mdash; 15 file(s)</summary>
 
-- [`asyncprovider_contract.rs`](crates/alloy/tests/asyncprovider_contract.rs)
-- [`asyncsigningprovider_contract.rs`](crates/alloy/tests/asyncsigningprovider_contract.rs)
 - [`builder_contract.rs`](crates/alloy/tests/builder_contract.rs)
 - [`cancellation_contract.rs`](crates/alloy/tests/cancellation_contract.rs)
 - [`chain_coherence_mismatch.rs`](crates/alloy/tests/chain_coherence_mismatch.rs)
@@ -448,22 +442,22 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`error_contract.rs`](crates/alloy/tests/error_contract.rs)
 - [`handle_survives_drop.rs`](crates/alloy/tests/handle_survives_drop.rs)
 - [`no_broadcast_for_sign_transaction.rs`](crates/alloy/tests/no_broadcast_for_sign_transaction.rs)
+- [`provider_contract.rs`](crates/alloy/tests/provider_contract.rs)
 - [`read_contract_contract.rs`](crates/alloy/tests/read_contract_contract.rs)
 - [`redaction_contract.rs`](crates/alloy/tests/redaction_contract.rs)
 - [`send_transaction_does_not_wait_for_confirmation.rs`](crates/alloy/tests/send_transaction_does_not_wait_for_confirmation.rs)
 - [`signer_error_trait_contract.rs`](crates/alloy/tests/signer_error_trait_contract.rs)
+- [`signing_provider_contract.rs`](crates/alloy/tests/signing_provider_contract.rs)
 
 </details>
 
 <details>
-<summary><code>crates/alloy/tests/trybuild/</code> &mdash; 6 file(s)</summary>
+<summary><code>crates/alloy/tests/trybuild/</code> &mdash; 4 file(s)</summary>
 
-- [`no_async_provider_on_handle.rs`](crates/alloy/tests/trybuild/no_async_provider_on_handle.rs)
-- [`no_async_provider_on_handle.stderr`](crates/alloy/tests/trybuild/no_async_provider_on_handle.stderr)
-- [`no_sync_signer_on_client.rs`](crates/alloy/tests/trybuild/no_sync_signer_on_client.rs)
-- [`no_sync_signer_on_client.stderr`](crates/alloy/tests/trybuild/no_sync_signer_on_client.stderr)
-- [`no_sync_signer_on_handle.rs`](crates/alloy/tests/trybuild/no_sync_signer_on_handle.rs)
-- [`no_sync_signer_on_handle.stderr`](crates/alloy/tests/trybuild/no_sync_signer_on_handle.stderr)
+- [`no_provider_on_handle.rs`](crates/alloy/tests/trybuild/no_provider_on_handle.rs)
+- [`no_provider_on_handle.stderr`](crates/alloy/tests/trybuild/no_provider_on_handle.stderr)
+- [`no_signer_on_client.rs`](crates/alloy/tests/trybuild/no_signer_on_client.rs)
+- [`no_signer_on_client.stderr`](crates/alloy/tests/trybuild/no_signer_on_client.stderr)
 
 </details>
 
@@ -735,11 +729,11 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/browser-wallet/src/provider/</code> &mdash; 6 file(s)</summary>
 
-- [`async_provider.rs`](crates/browser-wallet/src/provider/async_provider.rs)
-- [`async_signing_provider.rs`](crates/browser-wallet/src/provider/async_signing_provider.rs)
 - [`builder.rs`](crates/browser-wallet/src/provider/builder.rs)
 - [`mod.rs`](crates/browser-wallet/src/provider/mod.rs)
 - [`origin.rs`](crates/browser-wallet/src/provider/origin.rs)
+- [`provider_impl.rs`](crates/browser-wallet/src/provider/provider_impl.rs)
+- [`signing_provider_impl.rs`](crates/browser-wallet/src/provider/signing_provider_impl.rs)
 - [`transport.rs`](crates/browser-wallet/src/provider/transport.rs)
 
 </details>
@@ -1189,10 +1183,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/core/tests/</code> &mdash; 13 file(s)</summary>
 
-- [`asyncprovider_capability_split_contract.rs`](crates/core/tests/asyncprovider_capability_split_contract.rs)
 - [`cancellation_contract.rs`](crates/core/tests/cancellation_contract.rs)
 - [`cancellation_coverage_validator.rs`](crates/core/tests/cancellation_coverage_validator.rs)
 - [`config_contract.rs`](crates/core/tests/config_contract.rs)
+- [`provider_capability_split_contract.rs`](crates/core/tests/provider_capability_split_contract.rs)
 - [`property_contract.rs`](crates/core/tests/property_contract.rs)
 - [`redaction_contract.rs`](crates/core/tests/redaction_contract.rs)
 - [`token_balance_parity.rs`](crates/core/tests/token_balance_parity.rs)

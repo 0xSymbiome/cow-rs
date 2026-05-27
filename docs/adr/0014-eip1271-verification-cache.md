@@ -10,7 +10,7 @@
 ## Decision
 
 EIP-1271 signature verification threads an `Eip1271VerificationCache`
-trait through `verify_eip1271_signature_async`. The trait is defined in
+trait through `verify_eip1271_signature_cached`. The trait is defined in
 `cow-sdk-contracts` so the function that consumes it does not pull a
 reverse dependency on the signing crate, and it is re-exported from
 `cow-sdk-signing::cache` where the default implementations live. Two
@@ -43,7 +43,7 @@ crates away.
   `get(verifier: Address, digest: [u8; 32]) -> Option<bool>` and
   `put(verifier: Address, digest: [u8; 32], result: bool)` as the sole
   methods, and `Send + Sync + 'static` as the bound. The function
-  `verify_eip1271_signature_async` takes `&impl Eip1271VerificationCache`
+  `verify_eip1271_signature_cached` takes `&impl Eip1271VerificationCache`
   as a required parameter — there is no overload that defaults the
   cache. `NoopEip1271VerificationCache` and
   `InMemoryEip1271VerificationCache` are the shipped canonical impls;
@@ -142,7 +142,7 @@ primitive pattern this ADR established for
 The EIP-1271-specific conservative-cache semantics (only `Ok(())` and
 `Eip1271MagicValueMismatch` cached, every other error class never
 cached) remain scoped to `InMemoryEip1271VerificationCache` and the
-`verify_eip1271_signature_async` call shape — the trading quote cache
+`verify_eip1271_signature_cached` call shape — the trading quote cache
 caches every result the `QuoteCache` trait passes through `insert`
 because the trading flow caller already decides what is safe to
 memoize before it calls `insert`. The pattern primitive is shared; the

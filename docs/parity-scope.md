@@ -218,7 +218,7 @@ release.
 
 Additional provider ecosystems beyond the native Alloy adapter and the
 browser-wallet leaf are not in scope for the first release. Consumers can
-implement the SDK's `AsyncProvider`, `AsyncSigningProvider`, and `AsyncSigner`
+implement the SDK's `Provider`, `SigningProvider`, and `Signer`
 trait seams to bridge a custom ecosystem.
 
 ### TypeScript-tooling-only packages

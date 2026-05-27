@@ -183,7 +183,7 @@ also wraps its lower-level contract call in a
 
 ### `cow-sdk-contracts`
 
-`verify_eip1271_signature_async` emits one span named `verify.eip1271`
+`verify_eip1271_signature_cached` emits one span named `verify.eip1271`
 with target `cow_sdk::verify_eip1271`. The contracts-layer span records
 only `verifier`; it does not record `chain_id`, signature bytes, raw
 digest content, provider URLs, or response bodies.
@@ -203,11 +203,8 @@ and is not surfaced as a span field. Cancellation signing also emits a
 without logging signatures or private material.
 
 - `sign_order_with_scheme`
-- `sign_order_with_scheme_async`
 - `sign_order_cancellation_with_scheme`
-- `sign_order_cancellation_with_scheme_async`
 - `sign_order_cancellations_with_scheme`
-- `sign_order_cancellations_with_scheme_async`
 
 ### `cow-sdk-browser-wallet`
 
@@ -224,8 +221,8 @@ Native Alloy adapter telemetry follows the same redaction posture as the rest
 of the SDK. Provider URLs, private-key material, typed-data payload contents,
 signature bytes, raw transaction payloads, and response bodies are not trace
 fields. Downstream applications that need provider-specific telemetry can add
-their own spans around the `AsyncProvider`, `AsyncSigningProvider`, or
-`AsyncSigner` calls.
+their own spans around the `Provider`, `SigningProvider`, or
+`Signer` calls.
 
 Keep transaction lifecycle telemetry separated at the host boundary:
 submission spans should record broadcast acknowledgement details such as the

@@ -15,9 +15,9 @@ use async_trait::async_trait;
 use serde_json::json;
 
 use cow_sdk_core::{
-    Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, AsyncProvider, AsyncSigner, BlockHash,
-    BlockInfo, ContractCall, ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid,
-    Provider, Signer, SupportedChainId, TransactionBroadcast, TransactionHash, TransactionReceipt,
+    Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, BlockHash, BlockInfo, ContractCall,
+    ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer,
+    SupportedChainId, TransactionBroadcast, TransactionHash, TransactionReceipt,
     TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField, TypedDataPayload,
 };
 use cow_sdk_orderbook::{
@@ -320,7 +320,7 @@ impl CountingSigner {
     }
 }
 
-impl AsyncSigner for CountingSigner {
+impl Signer for CountingSigner {
     type Error = String;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
@@ -432,24 +432,21 @@ impl MockSigner {
 }
 
 impl Signer for MockSigner {
-    type Provider = ();
     type Error = String;
 
-    fn connect(&mut self, _provider: Self::Provider) {}
-
-    fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn get_address(&self) -> Result<Address, Self::Error> {
         Ok(self.address)
     }
 
-    fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
+    async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
         Ok(MESSAGE_SIGNATURE.to_owned())
     }
 
-    fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
         Ok(TX_HASH.to_owned())
     }
 
-    fn sign_typed_data(
+    async fn sign_typed_data(
         &self,
         domain: &TypedDataDomain,
         _fields: &[TypedDataField],
@@ -462,7 +459,7 @@ impl Signer for MockSigner {
         Ok(TYPED_SIGNATURE.to_owned())
     }
 
-    fn send_transaction(
+    async fn send_transaction(
         &self,
         tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
@@ -474,7 +471,7 @@ impl Signer for MockSigner {
         Ok(TransactionBroadcast::new(state.tx_hash))
     }
 
-    fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
+    async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -558,18 +555,13 @@ impl MockProvider {
 }
 
 impl Provider for MockProvider {
-    type Signer = MockSigner;
     type Error = String;
 
-    fn signer_or_null(&self) -> Option<&Self::Signer> {
-        self.signer.as_ref()
-    }
-
-    fn get_chain_id(&self) -> Result<u64, Self::Error> {
+    async fn get_chain_id(&self) -> Result<u64, Self::Error> {
         Ok(u64::from(SupportedChainId::Mainnet))
     }
 
-    fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
+    async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
         let state = self
             .state
             .lock()
@@ -580,26 +572,26 @@ impl Provider for MockProvider {
         Ok(state.code_by_address.get(&address.to_hex_string()).cloned())
     }
 
-    fn get_transaction_receipt(
+    async fn get_transaction_receipt(
         &self,
         _transaction_hash: &Hash32,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
         Ok(None)
     }
 
-    fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        Ok(self.signer.clone().unwrap_or_default())
-    }
-
-    fn get_storage_at(&self, _address: &Address, _slot: &str) -> Result<HexData, Self::Error> {
+    async fn get_storage_at(
+        &self,
+        _address: &Address,
+        _slot: &str,
+    ) -> Result<HexData, Self::Error> {
         Ok(HexData::empty())
     }
 
-    fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
+    async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Ok(HexData::empty())
     }
 
-    fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
+    async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
         let mut state = self
             .state
             .lock()
@@ -619,22 +611,24 @@ impl Provider for MockProvider {
         }
     }
 
-    fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
+    async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(0, None))
     }
 
-    fn set_signer(&mut self, signer: Self::Signer) {
-        self.signer = Some(signer);
-    }
-
-    fn set_provider(&mut self, _provider_hint: String) {}
-
-    fn get_contract(
+    async fn get_contract(
         &self,
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
         Ok(ContractHandle::new(*address, abi_json.to_owned()))
+    }
+}
+
+impl cow_sdk_core::SigningProvider for MockProvider {
+    type Signer = MockSigner;
+
+    async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
+        Ok(self.signer.clone().unwrap_or_default())
     }
 }
 
@@ -800,7 +794,7 @@ impl FakeSigner {
     }
 }
 
-impl AsyncSigner for FakeSigner {
+impl Signer for FakeSigner {
     type Error = FakeSignerError;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
@@ -926,7 +920,7 @@ impl FakeProvider {
     }
 }
 
-impl AsyncProvider for FakeProvider {
+impl Provider for FakeProvider {
     type Error = FakeProviderError;
 
     async fn get_chain_id(&self) -> Result<u64, Self::Error> {

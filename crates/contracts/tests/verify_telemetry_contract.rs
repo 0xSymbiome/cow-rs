@@ -17,7 +17,7 @@ use std::{
 use common::MockProvider;
 use cow_sdk_contracts::{
     ContractsError, Eip1271VerificationCache, Eip1271VerificationRequest,
-    verify_eip1271_signature_async,
+    verify_eip1271_signature_cached,
 };
 use cow_sdk_core::{Address, Hash32, HexData};
 use tracing::{
@@ -35,7 +35,7 @@ async fn verifier_emits_canonical_span_and_safe_miss_store_events() {
     provider.set_code(Some("0x6001600055"));
     provider.set_response("\"0x1626ba7e\"");
 
-    verify_eip1271_signature_async(
+    verify_eip1271_signature_cached(
         &provider,
         &verification_request(verifier, "11"),
         &TestCache::default(),
@@ -65,7 +65,7 @@ async fn verifier_emits_hit_event_without_reaching_provider() {
     let provider = MockProvider::new();
     let cache = TestCache::with_cached(false);
 
-    let error = verify_eip1271_signature_async(
+    let error = verify_eip1271_signature_cached(
         &provider,
         &verification_request(address("0x1111111111111111111111111111111111111111"), "22"),
         &cache,
@@ -95,7 +95,7 @@ async fn verifier_emits_skip_event_for_non_cacheable_errors() {
     provider.set_code(Some("0x6001600055"));
     provider.set_response("{\"unexpected\":true}");
 
-    let error = verify_eip1271_signature_async(
+    let error = verify_eip1271_signature_cached(
         &provider,
         &verification_request(address("0x2222222222222222222222222222222222222222"), "33"),
         &cache,

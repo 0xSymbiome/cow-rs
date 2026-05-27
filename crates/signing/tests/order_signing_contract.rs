@@ -21,7 +21,7 @@ use alloy_primitives::U256;
 use cow_sdk_signing::{
     GeneratedOrderId, ORDER_PRIMARY_TYPE, SigningError, eip1271_signature_payload,
     generate_order_id, get_domain, order_typed_data, order_typed_data_payload, sign_order,
-    sign_order_async, sign_order_with_scheme, sign_order_with_scheme_async,
+    sign_order_with_scheme,
 };
 use sha3::{Digest, Keccak256};
 
@@ -64,12 +64,14 @@ fn order_typed_data_matches_fixture_contract_and_consumer_shape() {
     assert_eq!(typed.message, order);
 }
 
-#[test]
-fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
+#[tokio::test]
+async fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
     let order = sample_order();
     let signer = MockSigner::new();
 
-    let typed_result = sign_order(&order, SupportedChainId::Sepolia, &signer, None).unwrap();
+    let typed_result = sign_order(&order, SupportedChainId::Sepolia, &signer, None)
+        .await
+        .unwrap();
     assert_eq!(typed_result.signing_scheme, SigningScheme::Eip712);
     assert_eq!(typed_result.signature, signer.typed_data_signature);
     assert_eq!(signer.calls.borrow().typed_data.len(), 1);
@@ -82,6 +84,7 @@ fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
         SigningScheme::EthSign,
         None,
     )
+    .await
     .unwrap();
     assert_eq!(ethsign_result.signing_scheme, SigningScheme::EthSign);
     assert_eq!(ethsign_result.signature, signer.message_signature);
@@ -101,8 +104,8 @@ fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
     );
 }
 
-#[test]
-fn eth_sign_routes_raw_32_byte_digest_to_sign_message() {
+#[tokio::test]
+async fn eth_sign_routes_raw_32_byte_digest_to_sign_message() {
     let order = sample_order();
     let signer = MockSigner::new();
     let expected_digest = hash_order(
@@ -118,6 +121,7 @@ fn eth_sign_routes_raw_32_byte_digest_to_sign_message() {
         SigningScheme::EthSign,
         None,
     )
+    .await
     .unwrap();
 
     assert_eq!(result.signing_scheme, SigningScheme::EthSign);
@@ -131,11 +135,11 @@ fn eth_sign_routes_raw_32_byte_digest_to_sign_message() {
 }
 
 #[tokio::test]
-async fn async_sign_order_paths_match_sync_signing_behavior() {
+async fn sign_order_routes_typed_data_fields_to_signer() {
     let order = sample_order();
     let signer = MockSigner::new();
 
-    let typed_result = sign_order_async(&order, SupportedChainId::Sepolia, &signer, None)
+    let typed_result = sign_order(&order, SupportedChainId::Sepolia, &signer, None)
         .await
         .unwrap();
     assert_eq!(typed_result.signing_scheme, SigningScheme::Eip712);
@@ -154,11 +158,11 @@ async fn async_sign_order_paths_match_sync_signing_behavior() {
                 .fields
                 .iter()
                 .any(|field| field.name == "sellToken" && field.kind == "address"),
-            "async EIP-712 signing must route the order typed-data fields to sign_typed_data",
+            "EIP-712 signing must route the order typed-data fields to sign_typed_data",
         );
     }
 
-    let ethsign_result = sign_order_with_scheme_async(
+    let ethsign_result = sign_order_with_scheme(
         &order,
         SupportedChainId::Sepolia,
         &signer,
@@ -173,14 +177,15 @@ async fn async_sign_order_paths_match_sync_signing_behavior() {
     assert_eq!(signer.calls.borrow().messages.len(), 1);
 }
 
-#[test]
-fn unsupported_local_signer_modes_fail_with_typed_errors() {
+#[tokio::test]
+async fn unsupported_local_signer_modes_fail_with_typed_errors() {
     let order = sample_order();
     let signer = MockSigner::new();
 
     for scheme in [SigningScheme::Eip1271, SigningScheme::PreSign] {
         let error =
             sign_order_with_scheme(&order, SupportedChainId::Mainnet, &signer, scheme, None)
+                .await
                 .unwrap_err();
 
         assert!(matches!(

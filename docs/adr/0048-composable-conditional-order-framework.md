@@ -57,7 +57,7 @@ The watch-tower boundary is binding. `cow-sdk-composable` DOES expose:
   `ConditionalOrderParams`, `GPv2Order.Data`, signature blobs (per
   [ADR 0050](0050-eip1271-signature-blob-encoding.md)), and merkle leaves;
 - the single-call `ComposableCowApi::poll_async` over an injected
-  `AsyncProvider` (one `eth_call` per invocation);
+  `Provider` (one `eth_call` per invocation);
 - `event_scan_async` as a single-call provider operation over a
   caller-bounded block range (one `eth_getLogs` per invocation);
 - the local poll simulator `local_poll_async` that replays a `PollResult`

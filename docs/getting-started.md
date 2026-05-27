@@ -572,7 +572,7 @@ Use these examples when you want local or transport-mocked Rust flows:
 
 `alloy_provider_only`
 
-- shows read-only Alloy RPC through `AsyncProvider`
+- shows read-only Alloy RPC through `Provider`
 
 `alloy_signer_only`
 

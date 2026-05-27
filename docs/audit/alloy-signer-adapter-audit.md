@@ -2,8 +2,8 @@
 
 Status: Current
 Last reviewed: 2026-05-26
-Owning surface: `cow-sdk-alloy-signer` `LocalAlloyKeystoreSigner`, its builder, and its `AsyncSigner` implementation
-Refresh trigger: ADR 0038 - `send_transaction` return type clarification, or changes to the signer public API, the `AsyncSigner` trait, typed-data conversion, signature normalization, the inter-crate seam entries consumed by sibling Alloy adapters, cancellation propagation, the workspace Alloy signer pin, or the crate dependency boundary
+Owning surface: `cow-sdk-alloy-signer` `LocalAlloyKeystoreSigner`, its builder, and its `Signer` implementation
+Refresh trigger: ADR 0038 - `send_transaction` return type clarification, or changes to the signer public API, the `Signer` trait, typed-data conversion, signature normalization, the inter-crate seam entries consumed by sibling Alloy adapters, cancellation propagation, the workspace Alloy signer pin, or the crate dependency boundary
 Related docs:
 - [ADR 0036](../adr/0036-alloy-signer-adapter.md)
 - [ADR 0038](../adr/0038-transaction-lifecycle-types.md)
@@ -17,10 +17,10 @@ Related docs:
 
 This audit covers:
 
-- the `LocalAlloyKeystoreSigner` public type and its `AsyncSigner`
+- the `LocalAlloyKeystoreSigner` public type and its `Signer`
   implementation
 - the private-key plus chain-id typestate builder and builder error type
-- the `AsyncSignerError` and `AsyncSignerErrorClass` surfaces
+- the `SignerError` and `SignerErrorClass` surfaces
 - conversion from SDK EIP-712 typed-data payloads into Alloy dynamic typed data
 - EIP-191 and EIP-712 signature normalization through `cow-sdk-contracts`
 - the doc-hidden inter-crate seam that re-exports the typed-data conversion
@@ -36,7 +36,7 @@ or submission, browser-wallet behavior, or smart-account signing.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Public API exposure | Documented signer and builder methods expose SDK-owned domain types; upstream Alloy local signer values remain private | Conforms |
-| Trait coverage | `LocalAlloyKeystoreSigner` implements `AsyncSigner` and compile-fail tests assert it is not an `AsyncProvider`, `AsyncSigningProvider`, or sync `Signer` | Conforms |
+| Trait coverage | `LocalAlloyKeystoreSigner` implements `Signer` and compile-fail tests assert it is not a `Provider` or `SigningProvider` | Conforms |
 | Builder typestate | `build()` is callable only after private-key source and chain id are selected; externally constructed marker states cannot bypass the builder | Conforms |
 | EIP-191 signing | Message signatures match the committed reference vector and recover to the local signer address | Conforms |
 | EIP-712 signing | Canonical order typed-data signatures preserve `Order` as the primary type, match the committed reference vector, and recover through the contracts crate | Conforms |
@@ -50,8 +50,8 @@ or submission, browser-wallet behavior, or smart-account signing.
 
 `cow-sdk-alloy-signer` exposes `LocalAlloyKeystoreSigner`,
 `LocalAlloyKeystoreSignerBuilder`, sealed builder-state marker names,
-`LocalAlloyKeystoreSignerBuilderError`, `AsyncSignerError`, and
-`AsyncSignerErrorClass`. The signer stores the upstream Alloy private-key
+`LocalAlloyKeystoreSignerBuilderError`, `SignerError`, and
+`SignerErrorClass`. The signer stores the upstream Alloy private-key
 signer in private state and redacts it from debug output.
 
 The crate also exposes a `#[doc(hidden)] pub mod __seam` module so
@@ -90,7 +90,7 @@ aligned with the shared Solidity-compatible recovery-byte contract.
 
 ### Error And Cancellation
 
-`AsyncSignerError` is non-exhaustive and partitions errors into validation,
+`SignerError` is non-exhaustive and partitions errors into validation,
 signing, provider-required, unsupported, cancelled, and internal classes.
 Validation, signing, and internal details are redacted in public formatting.
 
@@ -117,7 +117,7 @@ Primary implementation points:
 
 Primary regression coverage:
 
-- `crates/alloy-signer/tests/asyncsigner_contract.rs`
+- `crates/alloy-signer/tests/signer_contract.rs`
 - `crates/alloy-signer/tests/eip191_reference_vectors.rs`
 - `crates/alloy-signer/tests/eip712_reference_vectors.rs`
 - `crates/alloy-signer/tests/redaction_contract.rs`
@@ -125,9 +125,8 @@ Primary regression coverage:
 - `crates/alloy-signer/tests/dependency_boundary_contract.rs`
 - `crates/alloy-signer/tests/proptests.rs`
 - `crates/alloy-signer/tests/compile_fail.rs`
-- `crates/alloy-signer/tests/trybuild/no_async_provider.rs`
-- `crates/alloy-signer/tests/trybuild/no_async_signing_provider.rs`
-- `crates/alloy-signer/tests/trybuild/no_sync_signer.rs`
+- `crates/alloy-signer/tests/trybuild/no_provider.rs`
+- `crates/alloy-signer/tests/trybuild/no_signing_provider.rs`
 - `crates/alloy-signer/tests/trybuild/external_marker_construction_fails.rs`
 
 Validation surface:

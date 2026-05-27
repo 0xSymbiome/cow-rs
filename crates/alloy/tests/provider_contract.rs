@@ -2,7 +2,7 @@
 
 use cow_sdk_alloy::AlloyClient;
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, ContractCall, HexData, SupportedChainId, TransactionHash,
+    Address, Amount, Provider, ContractCall, HexData, SupportedChainId, TransactionHash,
     TransactionRequest, TransactionStatus,
 };
 use serde_json::{Value, json};

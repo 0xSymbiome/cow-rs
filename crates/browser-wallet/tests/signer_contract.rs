@@ -12,7 +12,7 @@
 //!   the documented "wallet does not currently expose any account" message
 //!   when the wallet's exposed account list is empty
 //!
-//! Every test drives the public `AsyncSigner` boundary; no private signer
+//! Every test drives the public `Signer` boundary; no private signer
 //! state is inspected.
 
 #![cfg(not(target_arch = "wasm32"))]
@@ -21,7 +21,7 @@ use std::collections::BTreeMap;
 
 use cow_sdk_browser_wallet::{BrowserWallet, BrowserWalletError, MockEip1193Transport};
 use cow_sdk_core::{
-    Address, AsyncSigner, AsyncSigningProvider, SupportedChainId, TypedDataDomain, TypedDataField,
+    Address, Signer, SigningProvider, SupportedChainId, TypedDataDomain, TypedDataField,
     TypedDataPayload,
 };
 

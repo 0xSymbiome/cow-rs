@@ -1,13 +1,13 @@
-//! Typed EIP-1193 provider bridge and `AsyncProvider` implementation.
+//! Typed EIP-1193 provider bridge and `Provider` implementation.
 //!
 //! This module keeps browser-wallet request execution typed and local to the leaf crate. It does
 //! not expose a generic raw wallet-RPC passthrough beyond the transport seam used by the typed
 //! provider and signer adapters.
 
-mod async_provider;
-mod async_signing_provider;
 mod builder;
 mod origin;
+mod provider_impl;
+mod signing_provider_impl;
 mod transport;
 
 use std::{cell::RefCell, fmt, rc::Rc};
@@ -21,15 +21,15 @@ use crate::{
     events::{WalletRuntimeBindingHandle, update_wallet_session},
 };
 
-use self::async_provider::parse_address_array;
+use self::provider_impl::parse_address_array;
 
-pub(crate) use self::async_provider::{
+pub(crate) use self::provider_impl::{
     hex_quantity, parse_chain_id_value, parse_quantity_to_decimal, transaction_to_rpc,
 };
 pub use self::{builder::Eip1193ProviderBuilder, origin::Origin, transport::Eip1193Transport};
 
-/// Typed browser-wallet provider that implements [`cow_sdk_core::AsyncProvider`]
-/// and [`cow_sdk_core::AsyncSigningProvider`].
+/// Typed browser-wallet provider that implements [`cow_sdk_core::Provider`]
+/// and [`cow_sdk_core::SigningProvider`].
 #[derive(Clone)]
 pub struct Eip1193Provider {
     transport: Rc<dyn Eip1193Transport>,

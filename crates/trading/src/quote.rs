@@ -1,4 +1,4 @@
-use cow_sdk_core::{AsyncSigner, ProtocolOptions};
+use cow_sdk_core::{Signer, ProtocolOptions};
 use cow_sdk_orderbook::{OrderQuoteRequest, PriceQuality, QuoteSide, SigningScheme};
 use cow_sdk_signing::order_typed_data;
 
@@ -71,7 +71,7 @@ pub async fn get_quote_results<O, S>(
 ) -> Result<QuoteResults, TradingError>
 where
     O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let mut effective_trade_parameters =

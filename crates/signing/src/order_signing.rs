@@ -8,8 +8,8 @@ use cow_sdk_contracts::{
     pack_order_uid_params, sell_balance_name,
 };
 use cow_sdk_core::{
-    Address, AsyncDigestSigner, AsyncTypedDataSigner, OrderDigest, OrderUid, ProtocolOptions,
-    Signer, SignerError, SupportedChainId, TypedDataPayload, UnsignedOrder,
+    Address, DigestSigner, OrderDigest, OrderUid, ProtocolOptions, SignerError, SupportedChainId,
+    TypedDataPayload, TypedDataSigner, UnsignedOrder,
 };
 use serde::{Deserialize, Serialize};
 
@@ -73,32 +73,14 @@ struct OrderSigningPayload {
 /// # Errors
 ///
 /// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
-pub fn sign_order<S>(
+pub async fn sign_order<S>(
     order: &UnsignedOrder,
     chain_id: SupportedChainId,
     signer: &S,
     options: Option<&ProtocolOptions>,
 ) -> Result<SigningResult, SigningError>
 where
-    S: Signer,
-    S::Error: fmt::Display + SignerError,
-{
-    sign_order_with_scheme(order, chain_id, signer, SigningScheme::Eip712, options)
-}
-
-/// Signs an order asynchronously using `Eip712`.
-///
-/// # Errors
-///
-/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
-pub async fn sign_order_async<S>(
-    order: &UnsignedOrder,
-    chain_id: SupportedChainId,
-    signer: &S,
-    options: Option<&ProtocolOptions>,
-) -> Result<SigningResult, SigningError>
-where
-    S: AsyncTypedDataSigner,
+    S: TypedDataSigner,
     S::Error: fmt::Display + SignerError,
 {
     let payload = order_signing_payload(order, chain_id, options)?;
@@ -128,7 +110,7 @@ where
         ),
     ),
 )]
-pub fn sign_order_with_scheme<S>(
+pub async fn sign_order_with_scheme<S>(
     order: &UnsignedOrder,
     chain_id: SupportedChainId,
     signer: &S,
@@ -136,42 +118,11 @@ pub fn sign_order_with_scheme<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<SigningResult, SigningError>
 where
-    S: Signer,
-    S::Error: fmt::Display + SignerError,
+    S: TypedDataSigner + DigestSigner<Error = <S as TypedDataSigner>::Error>,
+    <S as TypedDataSigner>::Error: fmt::Display + SignerError,
 {
     let payload = order_signing_payload(order, chain_id, options)?;
-    sign_with_scheme(signer, scheme, &payload.payload, &payload.digest)
-}
-
-/// Signs an order asynchronously using an explicit local signing scheme.
-///
-/// # Errors
-///
-/// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(
-        skip_all,
-        fields(
-            chain = ?chain_id,
-            scheme = ?scheme,
-            endpoint = "signing.order",
-        ),
-    ),
-)]
-pub async fn sign_order_with_scheme_async<S>(
-    order: &UnsignedOrder,
-    chain_id: SupportedChainId,
-    signer: &S,
-    scheme: SigningScheme,
-    options: Option<&ProtocolOptions>,
-) -> Result<SigningResult, SigningError>
-where
-    S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
-    <S as AsyncTypedDataSigner>::Error: fmt::Display + SignerError,
-{
-    let payload = order_signing_payload(order, chain_id, options)?;
-    sign_with_scheme_async(signer, scheme, &payload.payload, &payload.digest).await
+    sign_with_scheme(signer, scheme, &payload.payload, &payload.digest).await
 }
 
 /// Generates the compact order UID for an order and owner.
@@ -248,50 +199,15 @@ pub fn eip1271_signature_payload(
     ))
 }
 
-pub(crate) fn sign_with_scheme<S>(
+pub(crate) async fn sign_with_scheme<S>(
     signer: &S,
     scheme: SigningScheme,
     payload: &TypedDataPayload,
     digest_hex: &str,
 ) -> Result<SigningResult, SigningError>
 where
-    S: Signer,
-    S::Error: fmt::Display + SignerError,
-{
-    if !scheme.is_ecdsa() {
-        return Err(SigningError::UnsupportedSignerGeneratedScheme { scheme });
-    }
-
-    let signature = match scheme {
-        SigningScheme::Eip712 => signer
-            .sign_typed_data_payload(payload)
-            .map_err(|error| signer_error("sign_typed_data_payload", error))?,
-        SigningScheme::EthSign => {
-            let digest = decode_hex_field("digest", digest_hex)?;
-            signer
-                .sign_message(&digest)
-                .map_err(|error| signer_error("sign_message", error))?
-        }
-        _ => {
-            return Err(SigningError::UnsupportedSignerGeneratedScheme { scheme });
-        }
-    };
-
-    Ok(SigningResult {
-        signature: normalized_ecdsa_signature(&signature)?,
-        signing_scheme: scheme,
-    })
-}
-
-pub(crate) async fn sign_with_scheme_async<S>(
-    signer: &S,
-    scheme: SigningScheme,
-    payload: &TypedDataPayload,
-    digest_hex: &str,
-) -> Result<SigningResult, SigningError>
-where
-    S: AsyncTypedDataSigner + AsyncDigestSigner<Error = <S as AsyncTypedDataSigner>::Error>,
-    <S as AsyncTypedDataSigner>::Error: fmt::Display + SignerError,
+    S: TypedDataSigner + DigestSigner<Error = <S as TypedDataSigner>::Error>,
+    <S as TypedDataSigner>::Error: fmt::Display + SignerError,
 {
     if !scheme.is_ecdsa() {
         return Err(SigningError::UnsupportedSignerGeneratedScheme { scheme });
@@ -403,12 +319,12 @@ mod signer_error_tests {
     }
 
     #[derive(Default)]
-    struct RecordingAsyncSigner {
+    struct RecordingSigner {
         typed_data_messages: Mutex<Vec<String>>,
         digest_messages: Mutex<Vec<Vec<u8>>>,
     }
 
-    impl AsyncTypedDataSigner for RecordingAsyncSigner {
+    impl TypedDataSigner for RecordingSigner {
         type Error = FakeSignerError;
 
         async fn sign_typed_data(
@@ -425,7 +341,7 @@ mod signer_error_tests {
         }
     }
 
-    impl AsyncDigestSigner for RecordingAsyncSigner {
+    impl DigestSigner for RecordingSigner {
         type Error = FakeSignerError;
 
         async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error> {
@@ -461,13 +377,13 @@ mod signer_error_tests {
     }
 
     #[tokio::test]
-    async fn async_sign_with_scheme_routes_eip712_to_typed_data_signer() {
-        let signer = RecordingAsyncSigner::default();
+    async fn sign_with_scheme_routes_eip712_to_typed_data_signer() {
+        let signer = RecordingSigner::default();
         let payload = test_payload();
 
-        let result = sign_with_scheme_async(&signer, SigningScheme::Eip712, &payload, "0x")
+        let result = sign_with_scheme(&signer, SigningScheme::Eip712, &payload, "0x")
             .await
-            .expect("EIP-712 async signing must use the typed-data signer path");
+            .expect("EIP-712 signing must use the typed-data signer path");
 
         assert_eq!(result.signing_scheme, SigningScheme::Eip712);
         assert_eq!(result.signature, test_signature("aa"));

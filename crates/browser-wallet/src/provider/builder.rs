@@ -124,7 +124,7 @@ fn warn_wallet_origin(origin: &Origin, allowed: bool) {
 }
 
 #[cfg(not(feature = "tracing"))]
-fn warn_wallet_origin(_origin: &Origin, _allowed: bool) {}
+const fn warn_wallet_origin(_origin: &Origin, _allowed: bool) {}
 
 #[cfg(feature = "tracing")]
 fn warn_anonymous_wallet_origin() {
@@ -137,4 +137,4 @@ fn warn_anonymous_wallet_origin() {
 }
 
 #[cfg(not(feature = "tracing"))]
-fn warn_anonymous_wallet_origin() {}
+const fn warn_anonymous_wallet_origin() {}

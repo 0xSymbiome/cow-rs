@@ -1,7 +1,7 @@
 //! Optional caching seam for EIP-1271 signature verification.
 //!
 //! [`Eip1271VerificationCache`] is the narrow trait consumed by
-//! [`cow_sdk_contracts::verify_eip1271_signature_async`]. The cache stores
+//! [`cow_sdk_contracts::verify_eip1271_signature_cached`]. The cache stores
 //! the boolean outcome of an EIP-1271 magic-value check so compositions
 //! that replay the same `(verifier, digest)` probe (composable orders,
 //! flash-loans, bridging) avoid hitting the chain on every call. Two
@@ -53,7 +53,7 @@ pub const DEFAULT_EIP1271_VERIFICATION_CACHE_CAPACITY: usize = 1024;
 /// [`None`]; every [`put`](Eip1271VerificationCache::put) call is a
 /// no-op. Callers that do not want EIP-1271 caching pass a reference
 /// to this type to keep the cache parameter on
-/// `verify_eip1271_signature_async` mandatory without paying any
+/// `verify_eip1271_signature_cached` mandatory without paying any
 /// allocation or synchronization overhead.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct NoopEip1271VerificationCache;

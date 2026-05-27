@@ -58,7 +58,7 @@ This audit covers:
 
 It does not cover order hashing or EIP-1271 on-chain verification beyond
 confirming that EIP-1271 remains routed through
-`cow_sdk_contracts::verify::verify_eip1271_signature_async`.
+`cow_sdk_contracts::verify::verify_eip1271_signature_cached`.
 
 ## Outcome Summary
 
@@ -116,7 +116,7 @@ variants fail through `ContractsError::SignatureSchemeNotEcdsa`.
 EIP-1271 returns its verifier contract, pre-sign returns its owner, and
 ECDSA returns `None` because the signer is recovered cryptographically.
 EIP-1271 smart-account verification remains on the existing
-`verify_eip1271_signature_async` path in `cow_sdk_contracts::verify`.
+`verify_eip1271_signature_cached` path in `cow_sdk_contracts::verify`.
 
 ### Review Evidence
 

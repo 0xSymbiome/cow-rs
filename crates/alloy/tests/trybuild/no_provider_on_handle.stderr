@@ -1,0 +1,21 @@
+error[E0277]: the trait bound `AlloyClientSignerHandle: Provider` is not satisfied
+ --> tests/trybuild/no_provider_on_handle.rs:7:25
+  |
+7 |     requires_provider::<AlloyClientSignerHandle>();
+  |                         ^^^^^^^^^^^^^^^^^^^^^^^ the trait `Provider` is not implemented for `AlloyClientSignerHandle`
+  |
+help: the following other types implement trait `Provider`
+ --> src/client.rs
+  |
+  | impl Provider for AlloyClient {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `AlloyClient`
+  |
+ ::: $WORKSPACE/crates/alloy-provider/src/provider.rs
+  |
+  | impl Provider for RpcAlloyProvider {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `RpcAlloyProvider`
+note: required by a bound in `requires_provider`
+ --> tests/trybuild/no_provider_on_handle.rs:4:25
+  |
+4 | fn requires_provider<P: Provider>() {}
+  |                         ^^^^^^^^ required by this bound in `requires_provider`

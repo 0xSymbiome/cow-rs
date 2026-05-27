@@ -33,7 +33,7 @@ This audit covers:
   `post_swap_order_from_quote`, `post_sell_native_currency_order`,
   the matching `_with_bounds` companions, and the central
   `post_cow_protocol_trade` sink. Each public seam is a single
-  async entry point bounded on `cow_sdk_core::AsyncSigner`.
+  async entry point bounded on `cow_sdk_core::Signer`.
 - the `TradingSdkBuilder::with_order_bounds` setter and the
   `TradingSdk` field that carries the configured policy
 - the offline `TradeParameters::validate` and

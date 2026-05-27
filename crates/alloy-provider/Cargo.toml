@@ -6,7 +6,7 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
-description = "Alloy-backed read-only AsyncProvider adapter for the CoW Protocol Rust SDK"
+description = "Alloy-backed read-only Provider adapter for the CoW Protocol Rust SDK"
 readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-alloy-provider"
 homepage = "https://github.com/cowdao-grants/cow-rs"

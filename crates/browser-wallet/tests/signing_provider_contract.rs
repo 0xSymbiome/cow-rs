@@ -1,4 +1,4 @@
-//! Behaviour tests for `AsyncSigningProvider for Eip1193Provider`.
+//! Behaviour tests for `SigningProvider for Eip1193Provider`.
 //!
 //! `create_signer` is the only method on this trait and binds a returned
 //! [`Eip1193Signer`] to either an explicit account hint (when the caller
@@ -19,7 +19,7 @@
 //!   before validating the hint
 //!
 //! Internal state is intentionally not inspected; behavioural assertions
-//! go through the public `AsyncSigner::get_address` boundary, the typed
+//! go through the public `Signer::get_address` boundary, the typed
 //! `BrowserWalletError` shape, and the `Redacted<String>` contents on
 //! the error variants.
 //!
@@ -28,7 +28,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use cow_sdk_browser_wallet::{BrowserWallet, BrowserWalletError, MockEip1193Transport};
-use cow_sdk_core::{Address, AsyncSigner, AsyncSigningProvider};
+use cow_sdk_core::{Address, Signer, SigningProvider};
 
 const PRIMARY_ACCOUNT: &str = "0x1111111111111111111111111111111111111111";
 const OTHER_ACCOUNT: &str = "0x2222222222222222222222222222222222222222";

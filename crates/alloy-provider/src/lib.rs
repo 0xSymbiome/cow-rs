@@ -1,9 +1,9 @@
 #![cfg_attr(doctest, doc = include_str!("../README.md"))]
 
-//! Alloy-backed read-only `AsyncProvider` adapter for the `CoW` Protocol Rust SDK.
+//! Alloy-backed read-only `Provider` adapter for the `CoW` Protocol Rust SDK.
 //!
 //! [`RpcAlloyProvider`] wraps an Alloy `DynProvider` and exposes it through
-//! [`cow_sdk_core::AsyncProvider`]. The adapter is read-only: it does not
+//! [`cow_sdk_core::Provider`]. The adapter is read-only: it does not
 //! implement signer creation, synchronous provider traits, or signer traits.
 //!
 //! ```rust,no_run
@@ -44,7 +44,7 @@ pub use builder::{
     TransportUnset,
 };
 #[cfg(not(target_arch = "wasm32"))]
-pub use error::{AsyncProviderError, AsyncProviderErrorClass};
+pub use error::{ProviderError, ProviderErrorClass};
 #[cfg(not(target_arch = "wasm32"))]
 pub use provider::RpcAlloyProvider;
 
@@ -144,13 +144,13 @@ pub mod __seam {
     /// Inter-crate seam entry; not part of the semver-stable consumer API.
     /// Sibling adapter crates use this to reuse the dynamic-ABI encode,
     /// dispatch, decode, and JSON serialization path without copying it.
-    /// Errors propagate as [`crate::AsyncProviderError`] and may be lifted
+    /// Errors propagate as [`crate::ProviderError`] and may be lifted
     /// into a sibling adapter's error type through that crate's
     /// [`From`] impl. The argument shape may change in any minor release.
     pub async fn execute_read_contract(
         provider: &alloy_provider::DynProvider<alloy_network::Ethereum>,
         request: &cow_sdk_core::ContractCall,
-    ) -> Result<String, crate::AsyncProviderError> {
+    ) -> Result<String, crate::ProviderError> {
         crate::read_contract::execute_read_contract(provider, request).await
     }
 }

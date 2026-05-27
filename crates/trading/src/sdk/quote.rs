@@ -1,4 +1,4 @@
-use cow_sdk_core::AsyncSigner;
+use cow_sdk_core::Signer;
 
 use super::TradingSdk;
 use crate::{
@@ -74,7 +74,7 @@ impl TradingSdk {
         advanced_settings: Option<&SwapAdvancedSettings>,
     ) -> Result<QuoteResults, TradingError>
     where
-        S: AsyncSigner,
+        S: Signer,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         params.owner = params.owner.or(self.trader_defaults.owner);

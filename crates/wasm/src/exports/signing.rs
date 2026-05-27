@@ -9,12 +9,12 @@ use cow_sdk_contracts::settlement::IGPv2Settlement;
 use cow_sdk_contracts::{ContractId, Registry};
 use std::{cell::RefCell, rc::Rc};
 
-use cow_sdk_core::{Address, AsyncDigestSigner, AsyncEip1193};
+use cow_sdk_core::{Address, DigestSigner, Eip1193};
 #[cfg(feature = "cancellation")]
 use cow_sdk_core::{Amount, Hash32, HexData, OrderUid, TransactionRequest};
 #[cfg(feature = "trading")]
 use cow_sdk_core::{
-    AsyncOwner, AsyncTypedDataSigner, TypedDataDomain, TypedDataField, TypedDataPayload,
+    Owner, TypedDataSigner, TypedDataDomain, TypedDataField, TypedDataPayload,
 };
 use cow_sdk_pure_helpers as pure;
 use cow_sdk_signing::GeneratedOrderId;
@@ -67,7 +67,7 @@ impl JsTypedDataSigner {
 }
 
 #[cfg(feature = "trading")]
-impl AsyncOwner for JsTypedDataSigner {
+impl Owner for JsTypedDataSigner {
     type Error = String;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
@@ -76,7 +76,7 @@ impl AsyncOwner for JsTypedDataSigner {
 }
 
 #[cfg(feature = "trading")]
-impl AsyncTypedDataSigner for JsTypedDataSigner {
+impl TypedDataSigner for JsTypedDataSigner {
     type Error = String;
 
     async fn sign_typed_data_payload(
@@ -121,7 +121,7 @@ impl JsDigestSigner {
     }
 }
 
-impl AsyncDigestSigner for JsDigestSigner {
+impl DigestSigner for JsDigestSigner {
     type Error = String;
 
     async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error> {
@@ -152,7 +152,7 @@ impl JsEip1193Requester {
     }
 }
 
-impl AsyncEip1193 for JsEip1193Requester {
+impl Eip1193 for JsEip1193Requester {
     type Error = JsValue;
 
     async fn request(&self, method: &str, params: &[String]) -> Result<String, Self::Error> {

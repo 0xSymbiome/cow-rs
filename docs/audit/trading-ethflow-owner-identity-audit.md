@@ -52,7 +52,7 @@ or the orderbook authoritative server-side validation.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Bundle shape | `EthFlowTransaction` carries a public typed `from: Address` field populated at construction | Conforms |
-| Owner resolution | `get_eth_flow_transaction` resolves the owner through `AsyncSigner::get_address` exactly once and stores the value on the returned bundle | Conforms |
+| Owner resolution | `get_eth_flow_transaction` resolves the owner through `Signer::get_address` exactly once and stores the value on the returned bundle | Conforms |
 | Submission preview | `post_sell_native_currency_order` reads `preview_from = tx.from.clone()` when building the validator preview; no receiver-as-owner fallback remains | Conforms |
 | Identity on rejections | `ClientRejection::AppdataFromMismatch { appdata_signer, from }` reports the owner in `from`, not the payout receiver | Conforms |
 | EthFlow-aware invariants | The validator still fires for zero amount, same token, owner mismatch, and lifetime bounds on the EthFlow path; only the native-currency-sentinel sell-token check is skipped | Conforms |

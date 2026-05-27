@@ -44,7 +44,7 @@ impl TransactionRequest {
 /// This value confirms that a backend accepted or observed a transaction hash.
 /// It does not imply that the transaction has been mined, succeeded, or even
 /// become visible to a read provider. Use [`crate::Provider::get_transaction_receipt`],
-/// [`crate::AsyncProvider::get_transaction_receipt`], or a higher-level
+/// [`crate::Provider::get_transaction_receipt`], or a higher-level
 /// `cow-sdk-trading` wait helper when lifecycle state is required.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

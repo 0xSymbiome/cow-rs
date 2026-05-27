@@ -61,14 +61,14 @@ The current browser-wallet contract-call bridge uses:
 
 These three crates replace the previously unmaintained `ethabi 18.0.0`
 dependency. The swap is isolated to
-`crates/browser-wallet/src/provider/async_provider.rs` plus the matching
+`crates/browser-wallet/src/provider/provider_impl.rs` plus the matching
 workspace and crate manifests.
 
 ### Public API Boundary
 
 The alloy types stay private to `cow-sdk-browser-wallet`. The workspace-level
 public API never exposes an `alloy_*` type in any `pub fn` signature. The
-bridge keeps its public shape on `cow_sdk_core::{AsyncProvider,
+bridge keeps its public shape on `cow_sdk_core::{Provider,
 ContractCall, ContractHandle, ...}` so consumers reach typed results
 without pulling alloy into their own surfaces.
 
@@ -113,7 +113,7 @@ arguments from that change.
 
 Primary implementation points:
 
-- `crates/browser-wallet/src/provider/async_provider.rs`
+- `crates/browser-wallet/src/provider/provider_impl.rs`
 - `crates/browser-wallet/Cargo.toml`
 - `Cargo.toml` (workspace dependencies)
 - `.github/config/deny.toml`

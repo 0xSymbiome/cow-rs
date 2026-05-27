@@ -125,7 +125,7 @@ Every console ships with:
   on the smallest adapter surface they exercise. The `transaction_lifecycle`
   scenario shows the broadcast-hash result without receipt polling.
 - Native runtime integrations plug into
-  `cow-sdk-core::{Signer, AsyncSigner, AsyncSigningProvider, Provider, AsyncProvider}`. That keeps
+  `cow-sdk-core::{Signer, Provider, SigningProvider}`. That keeps
   provider-specific choices outside the default facade while preserving one
   stable seam for downstream adapters. See [Integrations](integrations.md) when
   you are ready to wire a custom runtime.

@@ -34,13 +34,13 @@ should remain `Current` in the same change set.
 
 ### Runtime And Typed-Data Contracts
 
-`cow-sdk-core` owns the shared runtime seams. Sync and async signer/provider
-contracts stay explicit, and typed-data payloads remain structured rather than
-being reconstructed from field-name heuristics. Review configuration changes at
+`cow-sdk-core` owns the shared runtime seams. Signer and provider
+contracts are async by construction, and typed-data payloads remain structured
+rather than being reconstructed from field-name heuristics. Review configuration changes at
 the owning crate boundary as well: default diagnostics and serialized forms for
 credential-bearing config must keep secrets redacted while leaving explicit
 inputs and override seams intact. EIP-1271 verification routes through
-`verify_eip1271_signature_async` with a mandatory
+`verify_eip1271_signature_cached` with a mandatory
 `Eip1271VerificationCache` argument; only `Ok(())` and
 `Eip1271MagicValueMismatch` outcomes are cached, every other error class
 re-hits the chain.

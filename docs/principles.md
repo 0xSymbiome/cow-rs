@@ -87,7 +87,7 @@ marker types use private tuple fields so external crates cannot construct them.
 ## Chain-RPC Runtime Neutrality
 
 The default SDK path stays provider-neutral. Consumers own their chain-RPC
-runtime through the `AsyncProvider` seam in `cow-sdk-core`, while native Alloy
+runtime through the `Provider` seam in `cow-sdk-core`, while native Alloy
 support is available only through explicit adapter crates and facade features.
 The `alloy-provider` and `alloy-signer-local` allow-list checks are
 release-gating invariants rather than aspirations.

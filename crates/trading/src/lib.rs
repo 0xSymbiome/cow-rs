@@ -7,7 +7,7 @@
 //!
 //! Every public free function and [`TradingSdk`] method in this crate is
 //! `pub async fn` and accepts any signer implementing
-//! [`cow_sdk_core::AsyncSigner`]. The crate ships one canonical async
+//! [`cow_sdk_core::Signer`]. The crate ships one canonical async
 //! entry per operation; callers in non-async contexts thread an executor
 //! at the call site.
 //!
@@ -16,9 +16,9 @@
 //! async entry. Each entry lifts a fired cancellation token into the
 //! crate-level [`TradingError::Cancelled`] variant.
 //!
-//! Narrow async signer capability traits ([`cow_sdk_core::AsyncOwner`],
-//! [`cow_sdk_core::AsyncTypedDataSigner`],
-//! [`cow_sdk_core::AsyncDigestSigner`]) remain available for
+//! Narrow async signer capability traits ([`cow_sdk_core::Owner`],
+//! [`cow_sdk_core::TypedDataSigner`],
+//! [`cow_sdk_core::DigestSigner`]) remain available for
 //! callback-shaped adapters that expose only one signing operation.
 
 #![warn(missing_docs)]

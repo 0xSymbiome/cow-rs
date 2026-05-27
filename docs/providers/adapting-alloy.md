@@ -15,8 +15,8 @@ free of transport plumbing.
 
 | Need | Crate or facade feature |
 | --- | --- |
-| Read-only chain RPC through `AsyncProvider` | `cow-sdk-alloy-provider` or `cow-sdk` feature `alloy-provider` |
-| Local private-key signing through `AsyncSigner` | `cow-sdk-alloy-signer` or `cow-sdk` feature `alloy-signer` |
+| Read-only chain RPC through `Provider` | `cow-sdk-alloy-provider` or `cow-sdk` feature `alloy-provider` |
+| Local private-key signing through `Signer` | `cow-sdk-alloy-signer` or `cow-sdk` feature `alloy-signer` |
 | Composed provider plus signer for `TradingSdk` async helpers | `cow-sdk-alloy` or `cow-sdk` feature `alloy` |
 
 The default `cow-sdk` facade remains provider-neutral. Native Alloy support is
@@ -28,14 +28,14 @@ browser runtime.
 ## Umbrella Client
 
 `cow-sdk-alloy::AlloyClient` combines an Alloy HTTP provider with an Alloy
-local private-key signer. The client implements `AsyncProvider` and
-`AsyncSigningProvider`; the owned signer handle returned by `create_signer`
-implements `AsyncSigner` and remains usable after the parent client is
+local private-key signer. The client implements `Provider` and
+`SigningProvider`; the owned signer handle returned by `create_signer`
+implements `Signer` and remains usable after the parent client is
 dropped.
 
 ```rust,no_run
 use cow_sdk_alloy::AlloyClient;
-use cow_sdk_core::{AsyncSigningProvider, SupportedChainId};
+use cow_sdk_core::{SigningProvider, SupportedChainId};
 
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 let client = AlloyClient::builder()

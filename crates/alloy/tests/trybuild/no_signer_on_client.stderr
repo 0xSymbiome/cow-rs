@@ -1,0 +1,21 @@
+error[E0277]: the trait bound `AlloyClient: Signer` is not satisfied
+ --> tests/trybuild/no_signer_on_client.rs:7:23
+  |
+7 |     requires_signer::<AlloyClient>();
+  |                       ^^^^^^^^^^^ the trait `Signer` is not implemented for `AlloyClient`
+  |
+help: the following other types implement trait `Signer`
+ --> src/handle.rs
+  |
+  | impl Signer for AlloyClientSignerHandle {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `AlloyClientSignerHandle`
+  |
+ ::: $WORKSPACE/crates/alloy-signer/src/signer.rs
+  |
+  | impl Signer for LocalAlloyKeystoreSigner {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `LocalAlloyKeystoreSigner`
+note: required by a bound in `requires_signer`
+ --> tests/trybuild/no_signer_on_client.rs:4:23
+  |
+4 | fn requires_signer<S: Signer>() {}
+  |                       ^^^^^^ required by this bound in `requires_signer`

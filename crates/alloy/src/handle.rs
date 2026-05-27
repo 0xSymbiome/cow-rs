@@ -5,7 +5,7 @@ use std::{fmt, sync::Arc};
 use alloy_provider::Provider as AlloyProviderTrait;
 use alloy_signer::Signer as AlloySigner;
 use cow_sdk_core::{
-    Address, Amount, AsyncSigner, TransactionBroadcast, TransactionHash, TransactionRequest,
+    Address, Amount, Signer, TransactionBroadcast, TransactionHash, TransactionRequest,
     TypedDataDomain, TypedDataField, TypedDataPayload,
 };
 
@@ -49,7 +49,7 @@ impl fmt::Debug for AlloyClientSignerHandle {
     }
 }
 
-impl AsyncSigner for AlloyClientSignerHandle {
+impl Signer for AlloyClientSignerHandle {
     type Error = AlloyClientError;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
@@ -124,7 +124,7 @@ impl AsyncSigner for AlloyClientSignerHandle {
     /// The returned [`TransactionBroadcast`] confirms the broadcast was
     /// accepted by the underlying Alloy provider; it does not prove inclusion
     /// or execution success. Use
-    /// [`cow_sdk_core::AsyncProvider::get_transaction_receipt`] or a
+    /// [`cow_sdk_core::Provider::get_transaction_receipt`] or a
     /// higher-level `cow-sdk-trading` wait helper to observe mined status.
     /// The umbrella reads the broadcast hash through
     /// `pending.tx_hash()`, Alloy's immediate accessor, so it does not wait

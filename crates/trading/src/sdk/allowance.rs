@@ -1,4 +1,4 @@
-use cow_sdk_core::{Amount, AsyncProvider, AsyncSigner, CowEnv, TransactionHash};
+use cow_sdk_core::{Amount, Provider, Signer, CowEnv, TransactionHash};
 
 use super::TradingSdk;
 use crate::{
@@ -32,7 +32,7 @@ impl TradingSdk {
         params: &AllowanceParameters,
     ) -> Result<Amount, TradingError>
     where
-        P: AsyncProvider,
+        P: Provider,
         P::Error: std::fmt::Display,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
@@ -80,7 +80,7 @@ impl TradingSdk {
         params: &ApprovalParameters,
     ) -> Result<TransactionHash, TradingError>
     where
-        S: AsyncSigner,
+        S: Signer,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;

@@ -8,14 +8,14 @@
 
 ## Decision
 
-`AsyncProvider` is the read-only async chain-RPC trait. It owns the provider
+`Provider` is the read-only async chain-RPC trait. It owns the provider
 error type and read methods such as chain-id lookup, bytecode lookup, contract
 calls, storage reads, block reads, and contract-handle construction.
 
-Signer creation lives in `AsyncSigningProvider: AsyncProvider`. That extension
-owns `type Signer: AsyncSigner<Error = Self::Error>` and
+Signer creation lives in `SigningProvider: Provider`. That extension
+owns `type Signer: Signer<Error = Self::Error>` and
 `create_signer`. Wallet-capable providers implement both traits. Read-only
-adapters implement only `AsyncProvider`.
+adapters implement only `Provider`.
 
 ## Why
 
@@ -28,14 +28,14 @@ separate capability bound.
 
 ## Must Remain True
 
-- Public surface: `AsyncProvider` carries no `Signer` associated type and no
-  `create_signer` method. `AsyncSigningProvider: AsyncProvider` carries both.
+- Public surface: `Provider` carries no `Signer` associated type and no
+  `create_signer` method. `SigningProvider: Provider` carries both.
 - Runtime and support: wallet-capable providers implement both traits; read-only
-  adapters implement only `AsyncProvider`.
+  adapters implement only `Provider`.
 - Dependency posture: read-only adapter crates do not need signer crates or
   wallet-runtime bindings to satisfy the provider trait.
-- Validation: contract tests cover read-only dispatch, signing-capable dispatch,
-  and blanket compatibility from sync `Provider` implementations.
+- Validation: contract tests cover read-only dispatch and signing-capable
+  dispatch on the same provider type.
 
 ## Alternatives Rejected
 

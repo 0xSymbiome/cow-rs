@@ -1,4 +1,4 @@
-use cow_sdk_core::{Address, AsyncSigner};
+use cow_sdk_core::{Address, Signer};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 
 use super::generic::{current_unix_seconds, wrapped_native_address};
@@ -52,7 +52,7 @@ pub async fn post_sell_native_currency_order<O, S>(
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     validate_orderbook_context(orderbook, Some(trader.chain_id), trader.env)?;

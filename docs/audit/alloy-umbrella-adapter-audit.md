@@ -2,8 +2,8 @@
 
 Status: Current
 Last reviewed: 2026-05-26
-Owning surface: `cow-sdk-alloy` `AlloyClient`, its builder, its `AsyncProvider` implementation, and its owned signer handle
-Refresh trigger: ADR 0038 - transaction lifecycle types, or changes to the umbrella public API, `AsyncProvider`, `AsyncSigningProvider`, `AsyncSigner`, wallet-filler transaction submission, typed-data conversion, chain-coherence validation, read-contract consumption from the provider seam, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
+Owning surface: `cow-sdk-alloy` `AlloyClient`, its builder, its `Provider` implementation, and its owned signer handle
+Refresh trigger: ADR 0038 - transaction lifecycle types, or changes to the umbrella public API, `Provider`, `SigningProvider`, `Signer`, wallet-filler transaction submission, typed-data conversion, chain-coherence validation, read-contract consumption from the provider seam, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
 Related docs:
 - [ADR 0037](../adr/0037-alloy-umbrella-adapter.md)
 - [ADR 0024](../adr/0024-asyncprovider-asyncsigningprovider-capability-split.md)
@@ -21,7 +21,7 @@ This audit covers:
 
 - the `AlloyClient` public type, typestate builder, and native-only support
   posture
-- the `AsyncProvider` and `AsyncSigningProvider` implementations on
+- the `Provider` and `SigningProvider` implementations on
   `AlloyClient`
 - the owned `AlloyClientSignerHandle` returned by `create_signer`
 - EIP-191, EIP-712, transaction submission, gas estimation, and raw
@@ -42,8 +42,8 @@ operator reliability, or smart-account signing.
 | Public API exposure | `AlloyClient`, its builder, the signer handle, and errors expose SDK-owned types; upstream Alloy state remains private and redacted | Conforms |
 | Builder typestate | HTTP transport, private-key source, and chain id are selected before `build()` is available; marker states remain sealed | Conforms |
 | Chain coherence | `build_checked()` rejects configured-chain and remote-chain mismatches directly, while `verify_chain_id().await` exposes the same check for clients built through `build()` | Conforms |
-| Provider coverage | Every `AsyncProvider` method delegates through the inner Alloy provider with SDK-owned conversions | Conforms |
-| Read-contract parity | The umbrella's read-contract path consumes the provider leaf's `execute_read_contract` entry through the doc-hidden inter-crate seam and lifts the provider's error variants through the `From<AsyncProviderError> for AlloyClientError` impl. The workspace `alloy_read_contract_parity_invariant` integration test continues to assert byte-for-byte equality between the umbrella and the provider for pinned ABI fixtures as a regression pin against any future re-fork. | Conforms |
+| Provider coverage | Every `Provider` method delegates through the inner Alloy provider with SDK-owned conversions | Conforms |
+| Read-contract parity | The umbrella's read-contract path consumes the provider leaf's `execute_read_contract` entry through the doc-hidden inter-crate seam and lifts the provider's error variants through the `From<ProviderError> for AlloyClientError` impl. The workspace `alloy_read_contract_parity_invariant` integration test continues to assert byte-for-byte equality between the umbrella and the provider for pinned ABI fixtures as a regression pin against any future re-fork. | Conforms |
 | Signing-provider coverage | `create_signer` returns an owned handle that survives parent client drop | Conforms |
 | Typed-data signing | Canonical payload signing preserves the caller's primary type and matches the CoW order reference vector | Conforms |
 | Transaction behavior | `send_transaction` uses the Alloy wallet-filler provider and reads the broadcast hash through `*pending.tx_hash()` without waiting for confirmation; returns `TransactionBroadcast`. `get_transaction_receipt` delegates to the provider crate, which populates rich receipt fields from the Alloy receipt. `estimate_gas` delegates to the provider. | Conforms |
@@ -54,8 +54,8 @@ operator reliability, or smart-account signing.
 
 ## Evidence
 
-- `crates/alloy/tests/asyncprovider_contract.rs`
-- `crates/alloy/tests/asyncsigningprovider_contract.rs`
+- `crates/alloy/tests/provider_contract.rs`
+- `crates/alloy/tests/signing_provider_contract.rs`
 - `crates/alloy/tests/builder_contract.rs`
 - `crates/alloy/tests/error_contract.rs`
 - `crates/alloy/tests/read_contract_contract.rs`

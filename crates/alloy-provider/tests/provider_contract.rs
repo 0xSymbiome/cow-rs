@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use cow_sdk_alloy_provider::{AsyncProviderError, RpcAlloyProvider};
+use cow_sdk_alloy_provider::{ProviderError, RpcAlloyProvider};
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, ContractCall, HexData, TransactionHash, TransactionRequest,
+    Address, Amount, Provider, ContractCall, HexData, TransactionHash, TransactionRequest,
     TransactionStatus, TransportErrorClass,
 };
 use serde_json::{Value, json};
@@ -195,7 +195,7 @@ async fn network_failure_maps_to_transport_error_class() {
     let error = provider.get_chain_id().await.unwrap_err();
     assert_eq!(
         error.class(),
-        cow_sdk_alloy_provider::AsyncProviderErrorClass::Transport
+        cow_sdk_alloy_provider::ProviderErrorClass::Transport
     );
 }
 
@@ -212,7 +212,7 @@ async fn jsonrpc_error_maps_to_remote_error_class() {
 
     assert!(matches!(
         error,
-        AsyncProviderError::Remote {
+        ProviderError::Remote {
             code: -32000,
             message
         } if message == "execution reverted"
@@ -228,7 +228,7 @@ async fn null_response_maps_to_decode_transport_class() {
 
     assert!(matches!(
         error,
-        AsyncProviderError::Transport {
+        ProviderError::Transport {
             class: TransportErrorClass::Decode,
             ..
         }

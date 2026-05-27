@@ -307,29 +307,33 @@ proptest! {
         prop_assert_eq!(&generated, &repeated_generated);
         prop_assert_eq!(&generated.order_digest, &expected_digest);
 
+        let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
+
         let typed_signer = MockSigner::new();
-        let typed_result = sign_order_with_scheme(
-            &order,
-            chain,
-            &typed_signer,
-            SigningScheme::Eip712,
-            None,
-        )
-        .unwrap();
+        let typed_result = rt
+            .block_on(sign_order_with_scheme(
+                &order,
+                chain,
+                &typed_signer,
+                SigningScheme::Eip712,
+                None,
+            ))
+            .unwrap();
         let typed_calls = typed_signer.calls.borrow().clone();
         prop_assert_eq!(typed_result.signing_scheme, SigningScheme::Eip712);
         prop_assert_eq!(typed_calls.typed_data.len(), 1);
         prop_assert!(typed_calls.messages.is_empty());
 
         let message_signer = MockSigner::new();
-        let message_result = sign_order_with_scheme(
-            &order,
-            chain,
-            &message_signer,
-            SigningScheme::EthSign,
-            None,
-        )
-        .unwrap();
+        let message_result = rt
+            .block_on(sign_order_with_scheme(
+                &order,
+                chain,
+                &message_signer,
+                SigningScheme::EthSign,
+                None,
+            ))
+            .unwrap();
         let message_calls = message_signer.calls.borrow().clone();
         prop_assert_eq!(message_result.signing_scheme, SigningScheme::EthSign);
         prop_assert!(message_calls.typed_data.is_empty());
@@ -360,29 +364,33 @@ proptest! {
 
         prop_assert_eq!(&payload, &repeated_payload);
 
+        let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
+
         let typed_signer = MockSigner::new();
-        let typed_result = sign_order_cancellations_with_scheme(
-            &order_uids,
-            chain,
-            &typed_signer,
-            SigningScheme::Eip712,
-            None,
-        )
-        .unwrap();
+        let typed_result = rt
+            .block_on(sign_order_cancellations_with_scheme(
+                &order_uids,
+                chain,
+                &typed_signer,
+                SigningScheme::Eip712,
+                None,
+            ))
+            .unwrap();
         let typed_calls = typed_signer.calls.borrow().clone();
         prop_assert_eq!(typed_result.signing_scheme, SigningScheme::Eip712);
         prop_assert_eq!(typed_calls.typed_data.len(), 1);
         prop_assert!(typed_calls.messages.is_empty());
 
         let message_signer = MockSigner::new();
-        let message_result = sign_order_cancellations_with_scheme(
-            &order_uids,
-            chain,
-            &message_signer,
-            SigningScheme::EthSign,
-            None,
-        )
-        .unwrap();
+        let message_result = rt
+            .block_on(sign_order_cancellations_with_scheme(
+                &order_uids,
+                chain,
+                &message_signer,
+                SigningScheme::EthSign,
+                None,
+            ))
+            .unwrap();
         let message_calls = message_signer.calls.borrow().clone();
         prop_assert_eq!(message_result.signing_scheme, SigningScheme::EthSign);
         prop_assert!(message_calls.typed_data.is_empty());

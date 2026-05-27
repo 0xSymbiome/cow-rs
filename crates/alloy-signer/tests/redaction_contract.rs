@@ -1,31 +1,31 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use cow_sdk_alloy_signer::{AsyncSignerError, AsyncSignerErrorClass, LocalAlloyKeystoreSigner};
+use cow_sdk_alloy_signer::{SignerError, SignerErrorClass, LocalAlloyKeystoreSigner};
 use cow_sdk_core::{Redacted, SupportedChainId};
 
 #[test]
 fn validation_display_and_debug_do_not_leak_input() {
     let secret = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
-    let error = AsyncSignerError::Validation(secret.to_owned());
+    let error = SignerError::Validation(secret.to_owned());
 
     assert_redacted(&error, secret);
-    assert_eq!(error.class(), AsyncSignerErrorClass::Validation);
+    assert_eq!(error.class(), SignerErrorClass::Validation);
 }
 
 #[test]
 fn signing_display_and_debug_redact_detail() {
     let secret = "raw signer backend included private material";
-    let error = AsyncSignerError::Signing {
+    let error = SignerError::Signing {
         detail: Redacted::new(secret.to_owned()),
     };
 
     assert_redacted(&error, secret);
-    assert_eq!(error.class(), AsyncSignerErrorClass::Signing);
+    assert_eq!(error.class(), SignerErrorClass::Signing);
 }
 
 #[test]
 fn provider_required_includes_method_only() {
-    let error = AsyncSignerError::ProviderRequired {
+    let error = SignerError::ProviderRequired {
         method: "send_transaction",
     };
 
@@ -34,24 +34,24 @@ fn provider_required_includes_method_only() {
     assert!(display.contains("send_transaction"));
     assert!(debug.contains("send_transaction"));
     assert!(!display.contains("private"));
-    assert_eq!(error.class(), AsyncSignerErrorClass::ProviderRequired);
+    assert_eq!(error.class(), SignerErrorClass::ProviderRequired);
 }
 
 #[test]
 fn unsupported_message_is_static() {
-    let error = AsyncSignerError::Unsupported("typed data disabled");
+    let error = SignerError::Unsupported("typed data disabled");
 
     assert!(error.to_string().contains("typed data disabled"));
-    assert_eq!(error.class(), AsyncSignerErrorClass::Unsupported);
+    assert_eq!(error.class(), SignerErrorClass::Unsupported);
 }
 
 #[test]
 fn internal_display_and_debug_do_not_leak_input() {
     let secret = "internal private key fragment";
-    let error = AsyncSignerError::Internal(secret.to_owned());
+    let error = SignerError::Internal(secret.to_owned());
 
     assert_redacted(&error, secret);
-    assert_eq!(error.class(), AsyncSignerErrorClass::Internal);
+    assert_eq!(error.class(), SignerErrorClass::Internal);
 }
 
 #[test]
@@ -86,30 +86,30 @@ fn signer_debug_redacts_private_key_material() {
 fn error_class_covers_every_variant() {
     let cases = [
         (
-            AsyncSignerError::Validation("invalid".to_owned()),
-            AsyncSignerErrorClass::Validation,
+            SignerError::Validation("invalid".to_owned()),
+            SignerErrorClass::Validation,
         ),
         (
-            AsyncSignerError::Signing {
+            SignerError::Signing {
                 detail: Redacted::new("secret".to_owned()),
             },
-            AsyncSignerErrorClass::Signing,
+            SignerErrorClass::Signing,
         ),
         (
-            AsyncSignerError::ProviderRequired { method: "send" },
-            AsyncSignerErrorClass::ProviderRequired,
+            SignerError::ProviderRequired { method: "send" },
+            SignerErrorClass::ProviderRequired,
         ),
         (
-            AsyncSignerError::Unsupported("unsupported"),
-            AsyncSignerErrorClass::Unsupported,
+            SignerError::Unsupported("unsupported"),
+            SignerErrorClass::Unsupported,
         ),
         (
-            AsyncSignerError::Cancelled,
-            AsyncSignerErrorClass::Cancelled,
+            SignerError::Cancelled,
+            SignerErrorClass::Cancelled,
         ),
         (
-            AsyncSignerError::Internal("internal".to_owned()),
-            AsyncSignerErrorClass::Internal,
+            SignerError::Internal("internal".to_owned()),
+            SignerErrorClass::Internal,
         ),
     ];
 
@@ -118,7 +118,7 @@ fn error_class_covers_every_variant() {
     }
 }
 
-fn assert_redacted(error: &AsyncSignerError, secret: &str) {
+fn assert_redacted(error: &SignerError, secret: &str) {
     let display = error.to_string();
     let debug = format!("{error:?}");
     assert!(!display.contains(secret), "{display}");

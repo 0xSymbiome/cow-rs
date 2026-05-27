@@ -1,15 +1,15 @@
 //! End-to-end propagation invariant for the EIP-1193 4001
 //! user-rejection classification.
 //!
-//! Drives the real `cow_sdk_signing::sign_order_async` against an
-//! `AsyncTypedDataSigner` mock whose error type is the real
+//! Drives the real `cow_sdk_signing::sign_order` against a
+//! `TypedDataSigner` mock whose error type is the real
 //! [`cow_sdk_browser_wallet::BrowserWalletError`] and asserts the
 //! resulting [`cow_sdk_signing::SigningError`] is the typed
 //! `SignerRejection { label, code }` variant — verifying every layer
 //! between the wallet error variant and the SDK error surface
 //! preserves the classification.
 //!
-//! The mock implements the same `AsyncTypedDataSigner` contract as
+//! The mock implements the same `TypedDataSigner` contract as
 //! the production browser-wallet adapter (returning the same typed
 //! error class on rejection) but stays pure-Rust so the invariant
 //! exercises the trait wiring without a running browser. The
@@ -21,16 +21,16 @@
 
 use cow_sdk_browser_wallet::BrowserWalletError;
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, AsyncTypedDataSigner, BuyTokenDestination, OrderKind,
-    SellTokenSource, SupportedChainId, TypedDataPayload, UnsignedOrder,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
+    SupportedChainId, TypedDataPayload, TypedDataSigner, UnsignedOrder,
 };
-use cow_sdk_signing::{SigningError, sign_order_async};
+use cow_sdk_signing::{SigningError, sign_order};
 
 struct RejectingSigner {
     error: BrowserWalletError,
 }
 
-impl AsyncTypedDataSigner for RejectingSigner {
+impl TypedDataSigner for RejectingSigner {
     type Error = BrowserWalletError;
 
     async fn sign_typed_data_payload(
@@ -78,7 +78,7 @@ async fn typed_data_signing_rejection_propagates_as_typed_signer_rejection() {
         },
     };
     let order = sample_order();
-    let result = sign_order_async(&order, SupportedChainId::Mainnet, &signer, None).await;
+    let result = sign_order(&order, SupportedChainId::Mainnet, &signer, None).await;
     match result {
         Err(SigningError::SignerRejection { label, code }) => {
             assert_eq!(label, "typed-data signature");
@@ -101,7 +101,7 @@ async fn typed_data_signing_rejection_renders_user_facing_label_and_code() {
         },
     };
     let order = sample_order();
-    let rendered = sign_order_async(&order, SupportedChainId::Mainnet, &signer, None)
+    let rendered = sign_order(&order, SupportedChainId::Mainnet, &signer, None)
         .await
         .expect_err("signing must fail when the signer rejects")
         .to_string();
@@ -127,7 +127,7 @@ async fn non_rejection_signer_errors_keep_the_redacted_display_path() {
         },
     };
     let order = sample_order();
-    let result = sign_order_async(&order, SupportedChainId::Mainnet, &signer, None).await;
+    let result = sign_order(&order, SupportedChainId::Mainnet, &signer, None).await;
     match result {
         Err(SigningError::Signer { operation, message }) => {
             assert_eq!(operation, "sign_typed_data_payload");

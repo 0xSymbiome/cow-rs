@@ -1,5 +1,5 @@
-use cow_sdk_alloy_provider::{AsyncProviderError, RpcAlloyProvider};
-use cow_sdk_core::{Address, AsyncProvider, ContractCall};
+use cow_sdk_alloy_provider::{ProviderError, RpcAlloyProvider};
+use cow_sdk_core::{Address, Provider, ContractCall};
 use serde_json::json;
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
@@ -53,8 +53,8 @@ fn call(abi_json: &str, args_json: &str) -> ContractCall {
     )
 }
 
-fn assert_validation(result: &Result<String, AsyncProviderError>) {
-    assert!(matches!(result, Err(AsyncProviderError::Validation(_))));
+fn assert_validation(result: &Result<String, ProviderError>) {
+    assert!(matches!(result, Err(ProviderError::Validation(_))));
 }
 
 async fn provider() -> RpcAlloyProvider {

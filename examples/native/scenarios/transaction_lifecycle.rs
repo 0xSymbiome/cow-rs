@@ -9,7 +9,7 @@ use std::{
 
 use cow_sdk::alloy::AlloyClient;
 use cow_sdk::core::{
-    Address, Amount, AsyncSigner, AsyncSigningProvider, SupportedChainId, TransactionBroadcast,
+    Address, Amount, Signer, SigningProvider, SupportedChainId, TransactionBroadcast,
     TransactionRequest, TransactionStatus,
 };
 use cow_sdk::trading::{WaitOptions, submit_and_wait_for_receipt};

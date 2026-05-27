@@ -24,10 +24,10 @@ use std::{
 };
 
 use cow_sdk_contracts::{
-    ContractsError, Eip1271VerificationRequest, verify_eip1271_signature_async,
+    ContractsError, Eip1271VerificationRequest, verify_eip1271_signature_cached,
 };
 use cow_sdk_core::{
-    Address, AsyncProvider, BlockInfo, ContractCall, ContractHandle, Hash32, HexData,
+    Address, Provider, BlockInfo, ContractCall, ContractHandle, Hash32, HexData,
     TransactionReceipt, TransactionRequest,
 };
 use cow_sdk_signing::cache::{
@@ -168,7 +168,7 @@ async fn cache_skips_every_non_cacheable_error_class() {
         let provider = ScenarioProvider::new(scenario);
         let cache = InMemoryEip1271VerificationCache::default();
 
-        let first = verify_eip1271_signature_async(&provider, &request, &cache)
+        let first = verify_eip1271_signature_cached(&provider, &request, &cache)
             .await
             .expect_err("non-cacheable scenario must fail closed");
         assert_known_non_cacheable_error(&first);
@@ -180,7 +180,7 @@ async fn cache_skips_every_non_cacheable_error_class() {
         );
         let first_counts = provider.counts();
 
-        let second = verify_eip1271_signature_async(&provider, &request, &cache)
+        let second = verify_eip1271_signature_cached(&provider, &request, &cache)
             .await
             .expect_err("non-cacheable scenario must fail closed again");
         assert_known_non_cacheable_error(&second);
@@ -211,7 +211,7 @@ async fn eip1271_eoa_verifier_does_not_cache() {
     let cache = InMemoryEip1271VerificationCache::default();
 
     for attempt in 1..=2 {
-        let error = verify_eip1271_signature_async(&provider, &request, &cache)
+        let error = verify_eip1271_signature_cached(&provider, &request, &cache)
             .await
             .expect_err("EOA verifier must fail before signature verification");
         assert!(matches!(
@@ -451,7 +451,7 @@ impl ScenarioProvider {
     }
 }
 
-impl AsyncProvider for ScenarioProvider {
+impl Provider for ScenarioProvider {
     type Error = ScenarioProviderError;
 
     async fn get_chain_id(&self) -> Result<u64, Self::Error> {

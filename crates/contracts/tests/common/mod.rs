@@ -94,36 +94,27 @@ impl MockProvider {
 }
 
 impl Provider for MockProvider {
-    type Signer = DummySigner;
     type Error = MockProviderError;
 
-    fn signer_or_null(&self) -> Option<&Self::Signer> {
-        None
-    }
-
-    fn get_chain_id(&self) -> Result<u64, Self::Error> {
+    async fn get_chain_id(&self) -> Result<u64, Self::Error> {
         Ok(self.chain_id)
     }
 
-    fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
+    async fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
         if let Some(message) = self.code_error.borrow().clone() {
             return Err(MockProviderError(message));
         }
         Ok(self.code.borrow().clone())
     }
 
-    fn get_transaction_receipt(
+    async fn get_transaction_receipt(
         &self,
         _transaction_hash: &Hash32,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
         Ok(None)
     }
 
-    fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        Ok(DummySigner)
-    }
-
-    fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
+    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
         let value = self
             .storage
             .borrow()
@@ -133,11 +124,11 @@ impl Provider for MockProvider {
         HexData::new(value).map_err(|error| MockProviderError(error.to_string()))
     }
 
-    fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
+    async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Err(MockProviderError("call not implemented".to_owned()))
     }
 
-    fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
+    async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
         self.calls.borrow_mut().push(request.clone());
         if let Some(message) = self.response_error.borrow().clone() {
             return Err(MockProviderError(message));
@@ -145,15 +136,11 @@ impl Provider for MockProvider {
         Ok(self.response.borrow().clone())
     }
 
-    fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
+    async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(0, None))
     }
 
-    fn set_signer(&mut self, _signer: Self::Signer) {}
-
-    fn set_provider(&mut self, _provider_hint: String) {}
-
-    fn get_contract(
+    async fn get_contract(
         &self,
         address: &Address,
         abi_json: &str,

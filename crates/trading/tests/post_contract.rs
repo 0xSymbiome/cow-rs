@@ -563,7 +563,7 @@ async fn async_order_level_eip1271_verification_is_explicit_and_reuses_contract_
     provider.set_code(&verifier, "0x6001600055");
     provider.set_contract_response("isValidSignature", "\"0x1626ba7e\"");
 
-    cow_sdk_trading::post::verify_eip1271_order_signature_async(
+    cow_sdk_trading::post::verify_eip1271_order_signature(
         &provider,
         &order_to_sign,
         trader.chain_id,
@@ -603,7 +603,7 @@ async fn order_level_eip1271_verification_surfaces_contract_failures_explicitly(
     provider.set_code(&verifier, "0x6001600055");
     provider.set_contract_response("isValidSignature", "\"0xffffffff\"");
 
-    let error = cow_sdk_trading::post::verify_eip1271_order_signature_async(
+    let error = cow_sdk_trading::post::verify_eip1271_order_signature(
         &provider,
         &order_to_sign,
         trader.chain_id,

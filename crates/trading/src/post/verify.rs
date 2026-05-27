@@ -1,4 +1,4 @@
-use cow_sdk_core::{AsyncProvider, ProtocolOptions, Provider};
+use cow_sdk_core::{Provider, ProtocolOptions};
 
 use crate::TradingError;
 
@@ -25,13 +25,13 @@ pub fn eip1271_order_verification_request(
     ))
 }
 
-/// Verifies an EIP-1271 order signature with a synchronous provider.
+/// Verifies an EIP-1271 order signature against a provider.
 ///
 /// # Errors
 ///
 /// Returns an error when the verification request cannot be derived or when the provider reports
 /// missing code, malformed responses, or an invalid EIP-1271 magic value.
-pub fn verify_eip1271_order_signature<P>(
+pub async fn verify_eip1271_order_signature<P>(
     provider: &P,
     order_to_sign: &cow_sdk_core::UnsignedOrder,
     chain_id: cow_sdk_core::SupportedChainId,
@@ -44,30 +44,7 @@ where
 {
     let request =
         eip1271_order_verification_request(order_to_sign, chain_id, verification, options)?;
-    cow_sdk_contracts::verify_eip1271_signature(provider, &request)?;
-    Ok(())
-}
-
-/// Verifies an EIP-1271 order signature with an asynchronous provider.
-///
-/// # Errors
-///
-/// Returns an error when the verification request cannot be derived or when the provider reports
-/// missing code, malformed responses, or an invalid EIP-1271 magic value.
-pub async fn verify_eip1271_order_signature_async<P>(
-    provider: &P,
-    order_to_sign: &cow_sdk_core::UnsignedOrder,
-    chain_id: cow_sdk_core::SupportedChainId,
-    verification: &crate::types::Eip1271VerificationParameters,
-    options: Option<&ProtocolOptions>,
-) -> Result<(), TradingError>
-where
-    P: AsyncProvider,
-    P::Error: std::fmt::Display,
-{
-    let request =
-        eip1271_order_verification_request(order_to_sign, chain_id, verification, options)?;
-    let verification = cow_sdk_contracts::verify_eip1271_signature_async(
+    let verification = cow_sdk_contracts::verify_eip1271_signature_cached(
         provider,
         &request,
         &cow_sdk_signing::NoopEip1271VerificationCache,

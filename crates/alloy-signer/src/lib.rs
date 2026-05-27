@@ -1,12 +1,12 @@
 #![cfg_attr(doctest, doc = include_str!("../README.md"))]
 
-//! Alloy-backed local-keystore `AsyncSigner` adapter for the `CoW` Protocol Rust SDK.
+//! Alloy-backed local-keystore `Signer` adapter for the `CoW` Protocol Rust SDK.
 //!
 //! [`LocalAlloyKeystoreSigner`] wraps an Alloy local private-key signer and
-//! exposes message and typed-data signing through [`cow_sdk_core::AsyncSigner`].
+//! exposes message and typed-data signing through [`cow_sdk_core::Signer`].
 //! The crate intentionally does not provide provider-backed transaction
 //! methods: `sign_transaction`, `send_transaction`, and `estimate_gas` return
-//! [`AsyncSignerError::ProviderRequired`] because a standalone signer cannot
+//! [`SignerError::ProviderRequired`] because a standalone signer cannot
 //! fill nonce, fee, chain, or transaction-type fields.
 //!
 //! ```rust,no_run
@@ -44,7 +44,7 @@ pub use builder::{
     LocalAlloyKeystoreSignerBuilder, LocalAlloyKeystoreSignerBuilderError, PrivateKeySource,
 };
 #[cfg(not(target_arch = "wasm32"))]
-pub use error::{AsyncSignerError, AsyncSignerErrorClass};
+pub use error::{SignerError, SignerErrorClass};
 #[cfg(not(target_arch = "wasm32"))]
 pub use signer::LocalAlloyKeystoreSigner;
 

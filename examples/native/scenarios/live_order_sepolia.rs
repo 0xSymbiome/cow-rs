@@ -50,7 +50,7 @@ use serde_json::json;
 use cow_sdk::{
     SupportedChainId, TradingSdk,
     alloy::AlloyClient,
-    core::{Address, Amount, AsyncSigner, AsyncSigningProvider, OrderKind, Redacted},
+    core::{Address, Amount, Signer, SigningProvider, OrderKind, Redacted},
     orderbook::{ApiContext, CowEnv, OrderBookApi, OrderStatus},
     trading::{
         AllowanceParameters, ApprovalParameters, TradeParameters, WaitOptions,

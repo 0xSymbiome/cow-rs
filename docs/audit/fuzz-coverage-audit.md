@@ -201,8 +201,8 @@ normalization pipeline. The pipeline's internal coercion helpers
 (`hex_quantity`, `parse_chain_id_value`, `parse_quantity_to_decimal`,
 `json_to_dyn_value`, `parse_u256`, `parse_i256`, `bytes_from_json`,
 `decode_hex`, `transaction_to_rpc`) are `pub(crate)` and reachable
-only through `async fn` methods on `AsyncProvider` and
-`AsyncSigningProvider`. The fuzz crate carries no async executor, so
+only through `async fn` methods on `Provider` and
+`SigningProvider`. The fuzz crate carries no async executor, so
 those helpers stay covered by the synchronous unit and contract
 tests under `crates/browser-wallet/tests/` rather than by a direct
 fuzz harness. The three serde-boundary targets pin the DTOs the

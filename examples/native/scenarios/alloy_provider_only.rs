@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use cow_sdk::alloy_provider::RpcAlloyProvider;
-use cow_sdk::core::{Address, AsyncProvider};
+use cow_sdk::core::{Address, Provider};
 use serde_json::json;
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 

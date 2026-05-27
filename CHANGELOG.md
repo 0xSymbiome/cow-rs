@@ -14,57 +14,52 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
-- `cow_sdk_trading` ships one async entry point per public
-  operation. The `_async`-suffixed sibling functions on the module
-  surface (`post_swap_order_async`,
-  `post_swap_order_from_quote_async`, `post_limit_order_async`,
-  `post_cow_protocol_trade_async`,
-  `post_sell_native_currency_order_async`,
-  `off_chain_cancel_order_async`, `cancel_order_onchain_async`,
-  `onchain_cancellation_transaction_async`,
-  `get_pre_sign_transaction_async`, `get_eth_flow_transaction_async`,
-  `get_quote_results_async`, `get_cow_protocol_allowance_async`,
-  `approve_cow_protocol_async`) and the corresponding sibling
-  methods on `TradingSdk` are removed. Each operation now exposes a
-  single canonical name (`post_swap_order`, `post_limit_order`,
-  `post_swap_order_from_quote`, `post_cow_protocol_trade`,
-  `post_sell_native_currency_order`, `off_chain_cancel_order`,
-  `cancel_order_onchain`, `onchain_cancellation_transaction`,
-  `get_pre_sign_transaction`, `get_eth_flow_transaction`,
-  `get_quote_results`, `get_cow_protocol_allowance`,
-  `approve_cow_protocol`) that is `pub async fn` and accepts any
-  signer that implements `cow_sdk_core::AsyncSigner`. The `Signer`
-  and `AsyncSigner` trait method sets are unchanged per
+- `cow_sdk_core` exposes a single async trait family for the signer
+  and provider boundaries: `Signer`, `Provider`, `SigningProvider`,
+  `Owner`, `TypedDataSigner`, `DigestSigner`, and `Eip1193`. The
+  unsuffixed names carry the async contract, matching the Alloy
+  convention. Signer creation lives on the
+  [`SigningProvider`](crates/core/src/traits/provider.rs) extension
+  trait so read-only providers stay free of signer dependencies.
+
+- `cow_sdk_signing` and `cow_sdk_contracts` expose one async entry
+  per public signing or verification operation: `sign_order`,
+  `sign_order_with_scheme`, `sign_order_cancellation`,
+  `sign_order_cancellation_with_scheme`, `sign_order_cancellations`,
+  `sign_order_cancellations_with_scheme`, `verify_eip1271_signature`,
+  and `ensure_contract_code`. The trading-level helper
+  `cow_sdk_trading::post::verify_eip1271_order_signature` is async on
+  the same shape. The cached EIP-1271 verifier ships as
+  `verify_eip1271_signature_cached` alongside the uncached helper in
+  the same crate.
+
+- `cow_sdk_trading` ships one async entry point per public operation:
+  `post_swap_order`, `post_limit_order`, `post_swap_order_from_quote`,
+  `post_cow_protocol_trade`, `post_sell_native_currency_order`,
+  `off_chain_cancel_order`, `cancel_order_onchain`,
+  `onchain_cancellation_transaction`, `get_pre_sign_transaction`,
+  `get_eth_flow_transaction`, `get_quote_results`,
+  `get_cow_protocol_allowance`, and `approve_cow_protocol`. Each
+  function is `pub async fn` and accepts any signer that implements
+  `cow_sdk_core::Signer`. The trait method set is the one pinned by
   [ADR 0029](docs/adr/0029-trait-evolution-extension-traits.md). The
-  `_with_bounds` companions collapse from four variants to three
-  (`post_swap_order_with_bounds`, `post_limit_order_with_bounds`,
-  `post_swap_order_from_quote_with_bounds`), each `pub async fn` on
-  the same `AsyncSigner` bound. Cooperative cancellation composition
-  through `cow_sdk_core::Cancellable::cancel_with(&token)` continues
-  on every renamed entry. Tracing span endpoint fields drop the
-  `_async` suffix where it previously appeared
-  (`trading.post_swap_order`, `trading.post_swap_order_from_quote`,
+  `_with_bounds` companions are `post_swap_order_with_bounds`,
+  `post_limit_order_with_bounds`, and
+  `post_swap_order_from_quote_with_bounds`, each on the same `Signer`
+  bound. Cooperative cancellation composition through
+  `cow_sdk_core::Cancellable::cancel_with(&token)` is supported on
+  every entry. Tracing span endpoint fields use
+  `trading.post_swap_order`, `trading.post_swap_order_from_quote`,
   `trading.post_limit_order`,
   `trading.post_sell_native_currency_order`,
   `trading.get_quote_results`, `trading.off_chain_cancel_order`,
-  `trading.on_chain_cancel_order`,
-  `trading.get_pre_sign_transaction`,
-  `trading.get_cow_protocol_allowance`,
-  `trading.approve_cow_protocol`). Browser-wallet flows per
+  `trading.on_chain_cancel_order`, `trading.get_pre_sign_transaction`,
+  `trading.get_cow_protocol_allowance`, and
+  `trading.approve_cow_protocol`. Browser-wallet flows per
   [ADR 0040](docs/adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
-  remain bound on `AsyncSigner` and are unaffected at the JS
-  contract layer; the wasm-bindgen surface (`postSwapOrder`,
-  `postLimitOrder`, `getCowProtocolAllowance`, and the rest) is
-  unchanged. Pre-1.0 breaking change. Callers using the
-  `_async`-suffixed names drop the suffix at the call site; callers
-  that previously used the synchronous
-  `cow_sdk_trading::approve_cow_protocol`,
-  `cow_sdk_trading::get_cow_protocol_allowance`,
-  `cow_sdk_trading::get_pre_sign_transaction`,
-  `cow_sdk_trading::onchain_cancellation_transaction`, or
-  `cow_sdk_trading::cancel_order_onchain` move to the async path and
-  `.await` the result, or thread an executor at the call site if
-  calling from non-async code.
+  bind on `Signer` and the wasm-bindgen surface (`postSwapOrder`,
+  `postLimitOrder`, `getCowProtocolAllowance`, and the rest) keeps
+  its JS contract.
 
 - `cow_sdk_trading::TradeParameters` and
   `cow_sdk_trading::LimitTradeParameters` carry the protocol-level
@@ -1151,7 +1146,7 @@ The first functional crate-family release begins at `0.1.0`.
 - Optional caching seam for EIP-1271 signature verification.
   `cow_sdk_signing::Eip1271VerificationCache` is a narrow `Send + Sync`
   trait keyed by `(verifier, digest)` that
-  `cow_sdk_contracts::verify_eip1271_signature_async` consults before
+  `cow_sdk_contracts::verify_eip1271_signature_cached` consults before
   any on-chain `isValidSignature` call. Two default implementations
   ship from the signing crate: the zero-sized
   `NoopEip1271VerificationCache` for callers that do not want caching

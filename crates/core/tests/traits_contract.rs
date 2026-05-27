@@ -1,9 +1,8 @@
 use cow_sdk_core::{
-    Address, Amount, AsyncDigestSigner, AsyncOwner, AsyncProvider, AsyncSigner,
-    AsyncSigningProvider, AsyncTypedDataSigner, BlockInfo, ContractCall, ContractHandle,
-    GraphTransport, Hash32, HexData, PinningTransport, Provider, Signer, TransactionBroadcast,
-    TransactionReceipt, TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField,
-    TypedDataPayload, TypedDataTypes,
+    Address, Amount, BlockInfo, ContractCall, ContractHandle, DigestSigner, GraphTransport,
+    Hash32, HexData, Owner, PinningTransport, Provider, Signer, SigningProvider,
+    TransactionBroadcast, TransactionReceipt, TransactionRequest, TransactionStatus,
+    TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataSigner, TypedDataTypes,
 };
 
 const HASH_1: &str = "0x1111111111111111111111111111111111111111111111111111111111111111";
@@ -14,30 +13,24 @@ const TO_ADDR: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 #[derive(Clone)]
 struct MockSigner {
     address: Address,
-    provider_hint: Option<String>,
 }
 
 impl Signer for MockSigner {
-    type Provider = String;
     type Error = String;
 
-    fn connect(&mut self, provider: Self::Provider) {
-        self.provider_hint = Some(provider);
-    }
-
-    fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn get_address(&self) -> Result<Address, Self::Error> {
         Ok(self.address)
     }
 
-    fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
+    async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
         Ok(format!("signed-message:{}", message.len()))
     }
 
-    fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
+    async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
         Ok(format!("signed-transaction:{}", tx.to.is_some()))
     }
 
-    fn sign_typed_data(
+    async fn sign_typed_data(
         &self,
         domain: &TypedDataDomain,
         fields: &[TypedDataField],
@@ -51,7 +44,7 @@ impl Signer for MockSigner {
         ))
     }
 
-    fn send_transaction(
+    async fn send_transaction(
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
@@ -60,33 +53,27 @@ impl Signer for MockSigner {
         ))
     }
 
-    fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
+    async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
         Ok(Amount::from(21_000u32))
     }
 }
 
 struct MockProvider {
     signer: Option<MockSigner>,
-    provider_hint: String,
 }
 
 impl Provider for MockProvider {
-    type Signer = MockSigner;
     type Error = String;
 
-    fn signer_or_null(&self) -> Option<&Self::Signer> {
-        self.signer.as_ref()
-    }
-
-    fn get_chain_id(&self) -> Result<u64, Self::Error> {
+    async fn get_chain_id(&self) -> Result<u64, Self::Error> {
         Ok(1)
     }
 
-    fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
+    async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
         Ok(Some(HexData::new(address.to_hex_string()).unwrap()))
     }
 
-    fn get_transaction_receipt(
+    async fn get_transaction_receipt(
         &self,
         transaction_hash: &cow_sdk_core::TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
@@ -101,43 +88,39 @@ impl Provider for MockProvider {
         ))
     }
 
-    fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        Ok(self.signer.clone().unwrap())
-    }
-
-    fn get_storage_at(&self, _address: &Address, slot: &str) -> Result<HexData, Self::Error> {
+    async fn get_storage_at(&self, _address: &Address, slot: &str) -> Result<HexData, Self::Error> {
         Ok(HexData::new(format!("0x{slot:0>4}")).unwrap())
     }
 
-    fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
+    async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Ok(HexData::new("0x63616c6c").unwrap())
     }
 
-    fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
+    async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
         Ok(format!("read:{}", request.method))
     }
 
-    fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
+    async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(
             1,
             Some(Hash32::new(format!("0x{}", "ab".repeat(32))).unwrap()),
         ))
     }
 
-    fn set_signer(&mut self, signer: Self::Signer) {
-        self.signer = Some(signer);
-    }
-
-    fn set_provider(&mut self, provider_hint: String) {
-        self.provider_hint = provider_hint;
-    }
-
-    fn get_contract(
+    async fn get_contract(
         &self,
         address: &Address,
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
         Ok(ContractHandle::new(*address, abi_json.to_owned()))
+    }
+}
+
+impl SigningProvider for MockProvider {
+    type Signer = MockSigner;
+
+    async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
+        Ok(self.signer.clone().unwrap())
     }
 }
 
@@ -172,14 +155,12 @@ impl PinningTransport for MockPinning {
 fn sample_signer() -> MockSigner {
     MockSigner {
         address: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        provider_hint: None,
     }
 }
 
-fn sample_provider(signer: MockSigner) -> MockProvider {
+const fn sample_provider(signer: MockSigner) -> MockProvider {
     MockProvider {
         signer: Some(signer),
-        provider_hint: "initial".to_owned(),
     }
 }
 
@@ -257,22 +238,24 @@ fn sample_custom_action_payload() -> TypedDataPayload {
     )
 }
 
-fn assert_signer_contracts(
-    active_signer: &mut MockSigner,
+async fn assert_signer_contracts(
+    active_signer: &MockSigner,
     tx: &TransactionRequest,
     domain: &TypedDataDomain,
 ) {
-    active_signer.connect("rpc://local".to_owned());
     assert_eq!(
-        Signer::get_address(active_signer).unwrap().to_hex_string(),
+        Signer::get_address(active_signer)
+            .await
+            .unwrap()
+            .to_hex_string(),
         "0x1111111111111111111111111111111111111111"
     );
     assert_eq!(
-        Signer::sign_message(active_signer, b"cow").unwrap(),
+        Signer::sign_message(active_signer, b"cow").await.unwrap(),
         "signed-message:3"
     );
     assert_eq!(
-        Signer::sign_transaction(active_signer, tx).unwrap(),
+        Signer::sign_transaction(active_signer, tx).await.unwrap(),
         "signed-transaction:true"
     );
     assert_eq!(
@@ -285,37 +268,37 @@ fn assert_signer_contracts(
             )],
             "{\"kind\":\"sell\"}"
         )
+        .await
         .unwrap(),
         "Gnosis Protocol:1:15"
     );
     assert_eq!(
         Signer::sign_typed_data_payload(active_signer, &sample_typed_data_payload(domain.clone()))
+            .await
             .unwrap(),
         "Gnosis Protocol:1:15"
     );
     assert_eq!(
-        Signer::estimate_gas(active_signer, tx).unwrap(),
+        Signer::estimate_gas(active_signer, tx).await.unwrap(),
         Amount::from(21_000u32)
     );
     assert_eq!(
         Signer::send_transaction(active_signer, tx)
+            .await
             .unwrap()
             .transaction_hash,
         Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap()
     );
 }
 
-fn assert_provider_contracts(
-    provider: &mut MockProvider,
-    signer: MockSigner,
-    tx: &TransactionRequest,
-) {
-    assert_eq!(Provider::get_chain_id(provider).unwrap(), 1);
+async fn assert_provider_contracts(provider: &MockProvider, tx: &TransactionRequest) {
+    assert_eq!(Provider::get_chain_id(provider).await.unwrap(), 1);
     assert_eq!(
         Provider::get_code(
             provider,
             &Address::new("0x4444444444444444444444444444444444444444").unwrap(),
         )
+        .await
         .unwrap()
         .unwrap(),
         HexData::new("0x4444444444444444444444444444444444444444").unwrap()
@@ -323,6 +306,7 @@ fn assert_provider_contracts(
     let receipt_hash = Hash32::new(format!("0x{}", "be".repeat(32))).unwrap();
     assert_eq!(
         Provider::get_transaction_receipt(provider, &receipt_hash)
+            .await
             .unwrap()
             .unwrap()
             .transaction_hash,
@@ -334,11 +318,12 @@ fn assert_provider_contracts(
             &Address::new("0x5555555555555555555555555555555555555555").unwrap(),
             "0",
         )
+        .await
         .unwrap(),
         HexData::new("0x0000").unwrap()
     );
     assert_eq!(
-        Provider::call(provider, tx).unwrap(),
+        Provider::call(provider, tx).await.unwrap(),
         HexData::new("0x63616c6c").unwrap()
     );
     assert_eq!(
@@ -351,19 +336,21 @@ fn assert_provider_contracts(
                 "[\"0xabc\"]".to_owned(),
             ),
         )
+        .await
         .unwrap(),
         "read:balanceOf"
     );
-    assert_eq!(Provider::get_block(provider, "latest").unwrap().number, 1);
-    provider.set_provider("rpc://updated".to_owned());
-    provider.set_signer(signer);
-    assert_eq!(provider.provider_hint, "rpc://updated");
+    assert_eq!(
+        Provider::get_block(provider, "latest").await.unwrap().number,
+        1
+    );
     assert_eq!(
         Provider::get_contract(
             provider,
             &Address::new("0x7777777777777777777777777777777777777777").unwrap(),
             "[{\"type\":\"function\"}]",
         )
+        .await
         .unwrap()
         .abi_json,
         "[{\"type\":\"function\"}]"
@@ -371,14 +358,13 @@ fn assert_provider_contracts(
 }
 
 #[tokio::test]
-async fn async_signer_returns_transaction_broadcast() {
+async fn signer_returns_transaction_broadcast() {
     let signer = MockSigner {
         address: Address::new("0x9999999999999999999999999999999999999999").unwrap(),
-        provider_hint: None,
     };
     let tx = sample_transaction();
 
-    let broadcast = AsyncSigner::send_transaction(&signer, &tx).await.unwrap();
+    let broadcast = Signer::send_transaction(&signer, &tx).await.unwrap();
 
     assert_eq!(
         broadcast,
@@ -387,11 +373,11 @@ async fn async_signer_returns_transaction_broadcast() {
 }
 
 #[tokio::test]
-async fn async_provider_returns_rich_transaction_receipt() {
+async fn provider_returns_rich_transaction_receipt() {
     let provider = sample_provider(sample_signer());
     let tx_hash = transaction_hash(HASH_1);
 
-    let receipt = AsyncProvider::get_transaction_receipt(&provider, &tx_hash)
+    let receipt = Provider::get_transaction_receipt(&provider, &tx_hash)
         .await
         .unwrap()
         .unwrap();
@@ -489,16 +475,18 @@ fn transaction_broadcast_minimal_serde_shape() {
     );
 }
 
-#[test]
-fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
+#[tokio::test]
+async fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
     let signer = sample_signer();
-    let mut provider = sample_provider(signer.clone());
+    let provider = sample_provider(signer.clone());
     let tx = sample_transaction();
     let domain = sample_typed_data_domain();
-    let mut active_signer = Provider::create_signer(&provider, "local").unwrap();
+    let active_signer = SigningProvider::create_signer(&provider, "local")
+        .await
+        .unwrap();
 
-    assert_signer_contracts(&mut active_signer, &tx, &domain);
-    assert_provider_contracts(&mut provider, signer, &tx);
+    assert_signer_contracts(&active_signer, &tx, &domain).await;
+    assert_provider_contracts(&provider, &tx).await;
 }
 
 #[test]
@@ -523,14 +511,12 @@ fn graph_and_pinning_transports_cover_shared_io_boundaries() {
 }
 
 #[tokio::test]
-async fn sync_runtime_contracts_gain_async_compatibility_through_blanket_impls() {
+async fn signer_satisfies_owner_typed_data_and_digest_capabilities() {
     let signer = MockSigner {
         address: Address::new("0x9999999999999999999999999999999999999999").unwrap(),
-        provider_hint: None,
     };
     let provider = MockProvider {
         signer: Some(signer.clone()),
-        provider_hint: "rpc://test".to_owned(),
     };
 
     let tx = TransactionRequest::new(
@@ -540,56 +526,56 @@ async fn sync_runtime_contracts_gain_async_compatibility_through_blanket_impls()
         Some(Amount::from(21_000u32)),
     );
 
-    let async_signer = AsyncSigningProvider::create_signer(&provider, "blanket")
+    let active_signer = SigningProvider::create_signer(&provider, "active")
         .await
         .unwrap();
     assert_eq!(
-        AsyncSigner::get_address(&async_signer)
+        Signer::get_address(&active_signer)
             .await
             .unwrap()
             .to_hex_string(),
         "0x9999999999999999999999999999999999999999"
     );
     assert_eq!(
-        AsyncOwner::get_address(&async_signer)
+        Owner::get_address(&active_signer)
             .await
             .unwrap()
             .to_hex_string(),
         "0x9999999999999999999999999999999999999999"
     );
     assert_eq!(
-        AsyncSigner::estimate_gas(&async_signer, &tx).await.unwrap(),
+        Signer::estimate_gas(&active_signer, &tx).await.unwrap(),
         Amount::from(21_000u32)
     );
     let payload = sample_custom_action_payload();
     assert_eq!(
-        AsyncSigner::sign_typed_data_payload(&async_signer, &payload)
+        Signer::sign_typed_data_payload(&active_signer, &payload)
             .await
             .unwrap(),
         "Gnosis Protocol:1:54"
     );
     assert_eq!(
-        AsyncTypedDataSigner::sign_typed_data_payload(&async_signer, &payload)
+        TypedDataSigner::sign_typed_data_payload(&active_signer, &payload)
             .await
             .unwrap(),
         "Gnosis Protocol:1:54"
     );
     assert_eq!(
-        AsyncDigestSigner::sign_digest(&async_signer, b"cow")
+        DigestSigner::sign_digest(&active_signer, b"cow")
             .await
             .unwrap(),
         "signed-message:3"
     );
     assert_eq!(
-        AsyncSigner::send_transaction(&async_signer, &tx)
+        Signer::send_transaction(&active_signer, &tx)
             .await
             .unwrap()
             .transaction_hash,
         Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap()
     );
-    assert_eq!(AsyncProvider::get_chain_id(&provider).await.unwrap(), 1);
+    assert_eq!(Provider::get_chain_id(&provider).await.unwrap(), 1);
     assert_eq!(
-        AsyncProvider::call(&provider, &tx).await.unwrap(),
+        Provider::call(&provider, &tx).await.unwrap(),
         HexData::new("0x63616c6c").unwrap()
     );
 }

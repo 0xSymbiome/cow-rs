@@ -33,7 +33,7 @@ internal refactors that do not affect correctness or reviewability.
 | --- | --- | --- |
 | Shared HTTP request construction | Use one shared orderbook request path | Conforms |
 | Shared retry, status, and rate-limit execution | Use one shared executor for JSON, text, and empty responses | Conforms |
-| Shared signing payload preparation | Share payload construction between sync and async signing paths | Conforms |
+| Shared signing payload preparation | Share payload construction across the async signing entry points | Conforms |
 | Thin trading posting wrappers | Keep ergonomic entry points thin and route workflow logic through the async implementation path | Conforms |
 | Boundary-specific order DTO separation | Retain distinct DTOs only where ABI, API, normalized, or user-domain boundaries differ materially | Conforms |
 | Canonical primitive-layer invocation | Use one canonical entry point per shared primitive across the workspace, with cow-owned `#[repr(transparent)]` newtypes over `alloy_primitives` per ADR 0052 | Current |
@@ -48,8 +48,8 @@ Orderbook request execution is shared through internal helpers in
 
 ### Signing Payload Preparation
 
-Signing keeps separate sync and async entry points while sharing payload
-construction through:
+Signing ships one async entry point per public operation while sharing
+payload construction through:
 
 - `crates/signing/src/order_signing.rs::order_signing_payload`
 - `crates/signing/src/cancellation.rs::cancellation_signing_payload`

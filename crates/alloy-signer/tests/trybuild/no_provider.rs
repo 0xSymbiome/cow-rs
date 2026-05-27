@@ -1,7 +1,7 @@
 use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
-use cow_sdk_core::{AsyncSigningProvider, SupportedChainId};
+use cow_sdk_core::{Provider, SupportedChainId};
 
-fn requires_async_signing_provider<P: AsyncSigningProvider>(_provider: &P) {}
+fn requires_provider<P: Provider>(_provider: &P) {}
 
 fn main() {
     let signer = LocalAlloyKeystoreSigner::builder()
@@ -11,5 +11,5 @@ fn main() {
         .build()
         .unwrap();
 
-    requires_async_signing_provider(&signer);
+    requires_provider(&signer);
 }

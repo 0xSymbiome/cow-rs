@@ -18,7 +18,7 @@ use cow_sdk_browser_wallet::{
     InjectedWalletDiscoverySource, InjectedWalletInfo, MockEip1193Transport, WalletChainChangeKind,
     WalletChainParameters, WalletEvent, WalletNativeCurrency,
 };
-use cow_sdk_core::AsyncSigner;
+use cow_sdk_core::Signer;
 use cow_sdk_core::{
     SupportedChainId, TransactionRequest, TypedDataDomain, TypedDataField, TypedDataPayload,
     TypedDataTypes,

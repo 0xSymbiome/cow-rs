@@ -45,7 +45,7 @@ pub mod events;
 pub mod js;
 /// Deterministic mock transport used for tests, examples, and proof-oriented verification.
 pub mod mock;
-/// Typed EIP-1193 provider transport and `AsyncProvider` bridge.
+/// Typed EIP-1193 provider transport and `Provider` bridge.
 pub mod provider;
 /// Typed EIP-1193 signer and typed-data signing helpers.
 pub mod signer;
@@ -63,4 +63,4 @@ pub use wallet::{
     WalletChainParameters, WalletNativeCurrency,
 };
 
-pub use cow_sdk_core::{AsyncProvider, AsyncSigner, AsyncSigningProvider};
+pub use cow_sdk_core::{Provider, Signer, SigningProvider};

@@ -4,10 +4,10 @@ use std::{error::Error, fmt};
 
 use cow_sdk_core::Redacted;
 
-/// Coarse classification for [`AsyncSignerError`].
+/// Coarse classification for [`SignerError`].
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum AsyncSignerErrorClass {
+pub enum SignerErrorClass {
     /// Caller-controlled input failed validation.
     Validation,
     /// The upstream signing backend failed.
@@ -22,7 +22,7 @@ pub enum AsyncSignerErrorClass {
     Internal,
 }
 
-impl AsyncSignerErrorClass {
+impl SignerErrorClass {
     /// Returns the stable lowercase class label.
     #[must_use]
     pub const fn as_str(self) -> &'static str {
@@ -37,7 +37,7 @@ impl AsyncSignerErrorClass {
     }
 }
 
-impl fmt::Display for AsyncSignerErrorClass {
+impl fmt::Display for SignerErrorClass {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
@@ -45,7 +45,7 @@ impl fmt::Display for AsyncSignerErrorClass {
 
 /// Error returned by [`crate::LocalAlloyKeystoreSigner`].
 #[non_exhaustive]
-pub enum AsyncSignerError {
+pub enum SignerError {
     /// Caller-controlled input failed validation.
     Validation(String),
     /// The upstream signer failed.
@@ -66,17 +66,17 @@ pub enum AsyncSignerError {
     Internal(String),
 }
 
-impl AsyncSignerError {
+impl SignerError {
     /// Returns this error's coarse class.
     #[must_use]
-    pub const fn class(&self) -> AsyncSignerErrorClass {
+    pub const fn class(&self) -> SignerErrorClass {
         match self {
-            Self::Validation(_) => AsyncSignerErrorClass::Validation,
-            Self::Signing { .. } => AsyncSignerErrorClass::Signing,
-            Self::ProviderRequired { .. } => AsyncSignerErrorClass::ProviderRequired,
-            Self::Unsupported(_) => AsyncSignerErrorClass::Unsupported,
-            Self::Cancelled => AsyncSignerErrorClass::Cancelled,
-            Self::Internal(_) => AsyncSignerErrorClass::Internal,
+            Self::Validation(_) => SignerErrorClass::Validation,
+            Self::Signing { .. } => SignerErrorClass::Signing,
+            Self::ProviderRequired { .. } => SignerErrorClass::ProviderRequired,
+            Self::Unsupported(_) => SignerErrorClass::Unsupported,
+            Self::Cancelled => SignerErrorClass::Cancelled,
+            Self::Internal(_) => SignerErrorClass::Internal,
         }
     }
 
@@ -93,7 +93,7 @@ impl AsyncSignerError {
     }
 }
 
-impl fmt::Debug for AsyncSignerError {
+impl fmt::Debug for SignerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Validation(_) => f
@@ -115,7 +115,7 @@ impl fmt::Debug for AsyncSignerError {
     }
 }
 
-impl fmt::Display for AsyncSignerError {
+impl fmt::Display for SignerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Validation(_) => f.write_str("validation error: [redacted]"),
@@ -130,9 +130,9 @@ impl fmt::Display for AsyncSignerError {
     }
 }
 
-impl Error for AsyncSignerError {}
+impl Error for SignerError {}
 
-impl From<cow_sdk_contracts::ContractsError> for AsyncSignerError {
+impl From<cow_sdk_contracts::ContractsError> for SignerError {
     fn from(error: cow_sdk_contracts::ContractsError) -> Self {
         Self::Signing {
             detail: Redacted::new(error.to_string()),
@@ -140,7 +140,7 @@ impl From<cow_sdk_contracts::ContractsError> for AsyncSignerError {
     }
 }
 
-impl From<cow_sdk_core::Cancelled> for AsyncSignerError {
+impl From<cow_sdk_core::Cancelled> for SignerError {
     fn from(_: cow_sdk_core::Cancelled) -> Self {
         Self::Cancelled
     }
@@ -148,7 +148,7 @@ impl From<cow_sdk_core::Cancelled> for AsyncSignerError {
 
 /// `LocalAlloyKeystoreSigner` operates on a locally-held private key
 /// and never goes through an EIP-1193 provider, so no variant of
-/// `AsyncSignerError` can represent a user rejection in the sense
+/// `SignerError` can represent a user rejection in the sense
 /// EIP-1193 defines (codes `4001`, `4100`, etc.). The trait impl
 /// returns `None` for every variant, which routes every leaf-signer
 /// failure through the redacted `SigningError::Signer` path. If a
@@ -157,7 +157,7 @@ impl From<cow_sdk_core::Cancelled> for AsyncSignerError {
 /// impl alongside the new variant so the signing crate can re-classify
 /// it. The contract is pinned by
 /// `crates/alloy-signer/tests/signer_error_trait_contract.rs`.
-impl cow_sdk_core::SignerError for AsyncSignerError {
+impl cow_sdk_core::SignerError for SignerError {
     fn user_rejection_code(&self) -> Option<i32> {
         match self {
             Self::Validation(_)
@@ -180,30 +180,30 @@ mod tests {
     fn class_returns_expected_discriminant_for_every_variant() {
         let cases = [
             (
-                AsyncSignerError::Validation("invalid".to_owned()),
-                AsyncSignerErrorClass::Validation,
+                SignerError::Validation("invalid".to_owned()),
+                SignerErrorClass::Validation,
             ),
             (
-                AsyncSignerError::Signing {
+                SignerError::Signing {
                     detail: Redacted::new("secret".to_owned()),
                 },
-                AsyncSignerErrorClass::Signing,
+                SignerErrorClass::Signing,
             ),
             (
-                AsyncSignerError::ProviderRequired { method: "send" },
-                AsyncSignerErrorClass::ProviderRequired,
+                SignerError::ProviderRequired { method: "send" },
+                SignerErrorClass::ProviderRequired,
             ),
             (
-                AsyncSignerError::Unsupported("unsupported"),
-                AsyncSignerErrorClass::Unsupported,
+                SignerError::Unsupported("unsupported"),
+                SignerErrorClass::Unsupported,
             ),
             (
-                AsyncSignerError::Cancelled,
-                AsyncSignerErrorClass::Cancelled,
+                SignerError::Cancelled,
+                SignerErrorClass::Cancelled,
             ),
             (
-                AsyncSignerError::Internal("secret".to_owned()),
-                AsyncSignerErrorClass::Internal,
+                SignerError::Internal("secret".to_owned()),
+                SignerErrorClass::Internal,
             ),
         ];
 
@@ -215,7 +215,7 @@ mod tests {
 
     #[test]
     fn display_redacts_signing_detail() {
-        let error = AsyncSignerError::Signing {
+        let error = SignerError::Signing {
             detail: Redacted::new("private-key-fragment".to_owned()),
         };
 
@@ -229,7 +229,7 @@ mod tests {
 
     #[test]
     fn provider_required_includes_method_name() {
-        let error = AsyncSignerError::ProviderRequired {
+        let error = SignerError::ProviderRequired {
             method: "estimate_gas",
         };
 
@@ -238,7 +238,7 @@ mod tests {
 
     #[test]
     fn unsupported_includes_static_message() {
-        let error = AsyncSignerError::Unsupported("typed data disabled");
+        let error = SignerError::Unsupported("typed data disabled");
 
         assert!(error.to_string().contains("typed data disabled"));
     }

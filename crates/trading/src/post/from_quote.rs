@@ -1,4 +1,4 @@
-use cow_sdk_core::AsyncSigner;
+use cow_sdk_core::Signer;
 
 use super::generic::{
     apply_settings_to_limit_trade_parameters, post_cow_protocol_trade, swap_additional_params,
@@ -43,7 +43,7 @@ pub async fn post_swap_order_from_quote<O, S>(
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     post_swap_order_from_quote_with_bounds(
@@ -75,7 +75,7 @@ pub async fn post_swap_order_from_quote_with_bounds<O, S>(
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     validate_quote_orderbook_binding(orderbook, quote_results.orderbook_binding.as_ref())?;

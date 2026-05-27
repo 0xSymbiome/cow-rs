@@ -1,7 +1,7 @@
 //! Typed EIP-1193 signer implementation for browser wallets.
 
 use cow_sdk_core::{
-    Address, Amount, AsyncSigner, SupportedChainId, TransactionBroadcast, TransactionRequest,
+    Address, Amount, Signer, SupportedChainId, TransactionBroadcast, TransactionRequest,
     TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
 use serde_json::{Value, json};
@@ -11,7 +11,7 @@ use crate::{
     provider::{Eip1193Provider, parse_quantity_to_decimal, transaction_to_rpc},
 };
 
-/// Browser-wallet signer that implements [`cow_sdk_core::AsyncSigner`].
+/// Browser-wallet signer that implements [`cow_sdk_core::Signer`].
 #[derive(Debug, Clone)]
 pub struct Eip1193Signer {
     provider: Eip1193Provider,
@@ -103,7 +103,7 @@ impl Eip1193Signer {
     ///
     /// This helper is intentionally narrow. It supports only the `CoW` order and order-cancellation
     /// field layouts that legacy browser-wallet integrations expect. For other primary types, use
-    /// [`cow_sdk_core::AsyncSigner::sign_typed_data_payload`] with an explicit
+    /// [`cow_sdk_core::Signer::sign_typed_data_payload`] with an explicit
     /// [`TypedDataPayload`].
     ///
     /// # Errors
@@ -122,7 +122,7 @@ impl Eip1193Signer {
     }
 }
 
-impl AsyncSigner for Eip1193Signer {
+impl Signer for Eip1193Signer {
     type Error = BrowserWalletError;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {

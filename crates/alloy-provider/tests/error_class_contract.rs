@@ -1,49 +1,49 @@
-//! Behaviour tests for `AsyncProviderError` class labels and From conversions.
+//! Behaviour tests for `ProviderError` class labels and From conversions.
 //!
 //! The existing `redaction_contract.rs` covers `Debug` / `Display` redaction
 //! and the `class()` mapping for the variants used in transport scenarios.
 //! This file complements that by exercising the lowercase class-label table,
-//! the `AsyncProviderErrorClass::Display` forwarding through `as_str`, and
+//! the `ProviderErrorClass::Display` forwarding through `as_str`, and
 //! the documented `From<CoreError>` and `From<Cancelled>` lifts used by
 //! `?`-style propagation in provider call sites.
 
 #![cfg(not(target_arch = "wasm32"))]
 
-use cow_sdk_alloy_provider::{AsyncProviderError, AsyncProviderErrorClass};
+use cow_sdk_alloy_provider::{ProviderError, ProviderErrorClass};
 use cow_sdk_core::{Cancelled, Redacted, TransportErrorClass};
 
 #[test]
 fn class_label_table_covers_every_variant() {
-    let cases: &[(AsyncProviderError, AsyncProviderErrorClass, &str)] = &[
+    let cases: &[(ProviderError, ProviderErrorClass, &str)] = &[
         (
-            AsyncProviderError::Validation("ignored".to_owned()),
-            AsyncProviderErrorClass::Validation,
+            ProviderError::Validation("ignored".to_owned()),
+            ProviderErrorClass::Validation,
             "validation",
         ),
         (
-            AsyncProviderError::Transport {
+            ProviderError::Transport {
                 class: TransportErrorClass::Timeout,
                 detail: Redacted::new("ignored".to_owned()),
             },
-            AsyncProviderErrorClass::Transport,
+            ProviderErrorClass::Transport,
             "transport",
         ),
         (
-            AsyncProviderError::Remote {
+            ProviderError::Remote {
                 code: -32_000,
                 message: "execution reverted".to_owned(),
             },
-            AsyncProviderErrorClass::Remote,
+            ProviderErrorClass::Remote,
             "remote",
         ),
         (
-            AsyncProviderError::Cancelled,
-            AsyncProviderErrorClass::Cancelled,
+            ProviderError::Cancelled,
+            ProviderErrorClass::Cancelled,
             "cancelled",
         ),
         (
-            AsyncProviderError::Internal("ignored".to_owned()),
-            AsyncProviderErrorClass::Internal,
+            ProviderError::Internal("ignored".to_owned()),
+            ProviderErrorClass::Internal,
             "internal",
         ),
     ];
@@ -66,10 +66,10 @@ fn class_label_table_covers_every_variant() {
 
 #[test]
 fn from_cancelled_token_lifts_to_cancelled_variant() {
-    let lifted: AsyncProviderError = Cancelled.into();
-    assert!(matches!(lifted, AsyncProviderError::Cancelled));
+    let lifted: ProviderError = Cancelled.into();
+    assert!(matches!(lifted, ProviderError::Cancelled));
     assert_eq!(lifted.to_string(), "operation cancelled");
-    assert_eq!(lifted.class(), AsyncProviderErrorClass::Cancelled);
+    assert_eq!(lifted.class(), ProviderErrorClass::Cancelled);
 }
 
 #[test]
@@ -79,9 +79,9 @@ fn from_core_error_lifts_into_validation_variant_with_redacted_display() {
         expected: 40,
     }
     .into();
-    let lifted: AsyncProviderError = core_err.into();
-    assert!(matches!(lifted, AsyncProviderError::Validation(_)));
-    assert_eq!(lifted.class(), AsyncProviderErrorClass::Validation);
+    let lifted: ProviderError = core_err.into();
+    assert!(matches!(lifted, ProviderError::Validation(_)));
+    assert_eq!(lifted.class(), ProviderErrorClass::Validation);
 
     let rendered = lifted.to_string();
     assert!(rendered.starts_with("validation error:"));
@@ -90,7 +90,7 @@ fn from_core_error_lifts_into_validation_variant_with_redacted_display() {
 
 #[test]
 fn internal_variant_display_emits_redacted_placeholder() {
-    let err = AsyncProviderError::Internal("operator-only detail".to_owned());
+    let err = ProviderError::Internal("operator-only detail".to_owned());
     let rendered = err.to_string();
     let debug = format!("{err:?}");
 
@@ -120,8 +120,8 @@ fn internal_variant_display_emits_redacted_placeholder() {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod wiremock_transport {
-    use cow_sdk_alloy_provider::{AsyncProviderError, AsyncProviderErrorClass, RpcAlloyProvider};
-    use cow_sdk_core::AsyncProvider;
+    use cow_sdk_alloy_provider::{ProviderError, ProviderErrorClass, RpcAlloyProvider};
+    use cow_sdk_core::Provider;
     use serde_json::json;
     use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
@@ -161,7 +161,7 @@ mod wiremock_transport {
             .await
             .expect_err("RPC error must propagate");
         match err {
-            AsyncProviderError::Remote { code, message } => {
+            ProviderError::Remote { code, message } => {
                 assert_eq!(code, -32_000);
                 assert_eq!(message, "execution reverted");
             }
@@ -185,7 +185,7 @@ mod wiremock_transport {
         assert!(
             !matches!(
                 class,
-                AsyncProviderErrorClass::Validation | AsyncProviderErrorClass::Cancelled,
+                ProviderErrorClass::Validation | ProviderErrorClass::Cancelled,
             ),
             "HTTP 500 must not classify as Validation or Cancelled; got {class:?}",
         );
@@ -217,7 +217,7 @@ mod wiremock_transport {
         assert!(
             !matches!(
                 class,
-                AsyncProviderErrorClass::Validation | AsyncProviderErrorClass::Cancelled,
+                ProviderErrorClass::Validation | ProviderErrorClass::Cancelled,
             ),
             "malformed JSON must not classify as Validation or Cancelled; got {class:?}",
         );

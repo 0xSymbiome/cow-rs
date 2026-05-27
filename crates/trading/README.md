@@ -55,7 +55,7 @@ approve-then-settle flows:
 ```rust,no_run
 # use std::error::Error;
 # use cow_sdk_core::{
-#     AsyncProvider, AsyncSigner, TransactionRequest, TransactionStatus,
+#     Provider, Signer, TransactionRequest, TransactionStatus,
 # };
 use cow_sdk_trading::{WaitError, WaitOptions, submit_and_wait_for_receipt};
 #
@@ -65,9 +65,9 @@ use cow_sdk_trading::{WaitError, WaitOptions, submit_and_wait_for_receipt};
 #     approve_tx: &TransactionRequest,
 # ) -> Result<(), Box<dyn Error>>
 # where
-#     S: AsyncSigner,
+#     S: Signer,
 #     S::Error: Error + 'static,
-#     P: AsyncProvider,
+#     P: Provider,
 #     P::Error: Error + 'static,
 # {
 
@@ -108,7 +108,7 @@ assert_eq!(receipt.status, Some(TransactionStatus::Success));
 
 The companion `poll_for_receipt` helper is available when a workflow already
 has a transaction hash from a separate broadcast path. Both helpers are generic
-over `AsyncSigner` and `AsyncProvider`, so they work with the native Alloy
+over `Signer` and `Provider`, so they work with the native Alloy
 client, separate Alloy provider and signer adapters, browser-wallet adapters,
 and custom integrations.
 

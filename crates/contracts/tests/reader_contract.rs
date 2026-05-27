@@ -30,8 +30,8 @@ fn balance_id(name: &str) -> String {
     format!("0x{}", alloy_primitives::hex::encode(digest))
 }
 
-#[test]
-fn reader_helpers_match_fixture_surface_and_encode_storage_requests() {
+#[tokio::test]
+async fn reader_helpers_match_fixture_surface_and_encode_storage_requests() {
     let fixture = fixture_case("contracts-reader-helper-surface");
     let helpers = fixture["expected"]["helpers"]
         .as_array()
@@ -59,7 +59,7 @@ fn reader_helpers_match_fixture_surface_and_encode_storage_requests() {
         Address::new("0x3333333333333333333333333333333333333333").unwrap(),
         Address::new("0x4444444444444444444444444444444444444444").unwrap(),
     ];
-    assert!(allow_list.are_solvers(&solvers).unwrap());
+    assert!(allow_list.are_solvers(&solvers).await.unwrap());
 
     let call = provider.calls.borrow().last().cloned().unwrap();
     assert_eq!(call.method, "areSolvers");
@@ -72,8 +72,8 @@ fn reader_helpers_match_fixture_surface_and_encode_storage_requests() {
     assert_eq!(payload["parameters"], serde_json::json!(solvers));
 }
 
-#[test]
-fn settlement_reader_and_trade_simulator_decode_typed_results() {
+#[tokio::test]
+async fn settlement_reader_and_trade_simulator_decode_typed_results() {
     let provider = MockProvider::new();
     provider.set_response("[\"1\",\"2\"]");
 
@@ -105,6 +105,7 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
     assert_eq!(
         settlement_reader
             .filled_amounts_for_orders(&order_uids)
+            .await
             .unwrap(),
         vec![Amount::new("1").unwrap(), Amount::new("2").unwrap()]
     );
@@ -155,6 +156,7 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
                 )],
             )],
         )
+        .await
         .unwrap();
     assert_eq!(result.gas_used.to_string(), "21000");
     assert_eq!(result.executed_buy_amount.to_string(), "1980");
@@ -180,8 +182,8 @@ fn settlement_reader_and_trade_simulator_decode_typed_results() {
     assert_eq!(parameters[1][2], serde_json::json!([]));
 }
 
-#[test]
-fn settlement_reader_filled_amounts_decodes_known_payload() {
+#[tokio::test]
+async fn settlement_reader_filled_amounts_decodes_known_payload() {
     let provider = MockProvider::new();
     provider.set_response("[\"1000000000000000000\",\"42\"]");
 
@@ -214,6 +216,7 @@ fn settlement_reader_filled_amounts_decodes_known_payload() {
     assert_eq!(
         settlement_reader
             .filled_amounts_for_orders(&order_uids)
+            .await
             .unwrap(),
         vec![
             Amount::new("1000000000000000000").unwrap(),

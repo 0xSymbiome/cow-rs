@@ -1,7 +1,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use cow_sdk_alloy_signer::{AsyncSignerError, LocalAlloyKeystoreSigner};
-use cow_sdk_core::{AsyncSigner, Cancellable, CancellationToken, SupportedChainId};
+use cow_sdk_alloy_signer::{SignerError, LocalAlloyKeystoreSigner};
+use cow_sdk_core::{Signer, Cancellable, CancellationToken, SupportedChainId};
 
 #[tokio::test]
 async fn cancel_with_propagates_cancelled_through_question_mark() {
@@ -15,7 +15,7 @@ async fn cancel_with_propagates_cancelled_through_question_mark() {
         .build()
         .unwrap();
 
-    let result: Result<_, AsyncSignerError> = async {
+    let result: Result<_, SignerError> = async {
         signer
             .sign_message(b"cancelled")
             .cancel_with(&token)
@@ -24,5 +24,5 @@ async fn cancel_with_propagates_cancelled_through_question_mark() {
     }
     .await;
 
-    assert!(matches!(result, Err(AsyncSignerError::Cancelled)));
+    assert!(matches!(result, Err(SignerError::Cancelled)));
 }

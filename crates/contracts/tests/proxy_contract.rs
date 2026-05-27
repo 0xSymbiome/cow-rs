@@ -8,8 +8,8 @@ use sha3::{Digest, Keccak256};
 
 use common::{MockProvider, fixture_case};
 
-#[test]
-fn proxy_constants_and_storage_readers_match_contract_surface() {
+#[tokio::test]
+async fn proxy_constants_and_storage_readers_match_contract_surface() {
     let fixture = fixture_case("contracts-proxy-storage-slots");
     assert_eq!(
         Eip1967Slot::Implementation.as_hex_str(),
@@ -36,17 +36,27 @@ fn proxy_constants_and_storage_readers_match_contract_surface() {
 
     assert_eq!(
         implementation_address(&provider, &proxy)
+            .await
             .unwrap()
             .to_hex_string(),
         "0x1111111111111111111111111111111111111111"
     );
     assert_eq!(
-        admin_address(&provider, &proxy).unwrap().to_hex_string(),
+        admin_address(&provider, &proxy)
+            .await
+            .unwrap()
+            .to_hex_string(),
         "0x2222222222222222222222222222222222222222"
     );
     assert_eq!(
-        owner_address(&provider, &proxy).unwrap().to_hex_string(),
-        admin_address(&provider, &proxy).unwrap().to_hex_string(),
+        owner_address(&provider, &proxy)
+            .await
+            .unwrap()
+            .to_hex_string(),
+        admin_address(&provider, &proxy)
+            .await
+            .unwrap()
+            .to_hex_string(),
         "owner_address is the legacy alias for admin_address",
     );
 }

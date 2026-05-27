@@ -1,8 +1,8 @@
-use cow_sdk_core::{Address, AsyncSigner, ProtocolOptions};
+use cow_sdk_core::{Address, Signer, ProtocolOptions};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use cow_sdk_signing::{
-    SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order_async,
-    sign_order_with_scheme_async,
+    SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order,
+    sign_order_with_scheme,
 };
 
 use super::native::post_sell_native_currency_order;
@@ -79,7 +79,7 @@ pub async fn post_cow_protocol_trade<O, S>(
 ) -> Result<OrderPostingResult, TradingError>
 where
     O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     validate_orderbook_context(orderbook, Some(trader.chain_id), trader.env)?;
@@ -302,7 +302,7 @@ async fn sign_order_for_submission<S>(
     from: &cow_sdk_core::Address,
 ) -> Result<(String, SigningScheme), TradingError>
 where
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     match scheme {
@@ -320,7 +320,7 @@ where
                 Ok((signature, SigningScheme::Eip1271))
             } else {
                 let signing_result =
-                    sign_order_async(order_to_sign, chain_id, signer, Some(options)).await?;
+                    sign_order(order_to_sign, chain_id, signer, Some(options)).await?;
                 let payload = eip1271_signature_payload(order_to_sign, &signing_result.signature)?;
                 Ok((payload, SigningScheme::Eip1271))
             }
@@ -338,7 +338,7 @@ where
                     });
                 }
             };
-            let signing_result = sign_order_with_scheme_async(
+            let signing_result = sign_order_with_scheme(
                 order_to_sign,
                 chain_id,
                 signer,

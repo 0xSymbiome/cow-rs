@@ -5,7 +5,7 @@ use cow_sdk_browser_wallet::{
     InjectedWalletDiscoverySource, InjectedWalletInfo, MockRequestRecord, Origin, WalletEvent,
 };
 use cow_sdk_core::{
-    Address, AsyncSigner, SupportedChainId, TypedDataDomain, TypedDataField, TypedDataPayload,
+    Address, Signer, SupportedChainId, TypedDataDomain, TypedDataField, TypedDataPayload,
     TypedDataTypes,
 };
 use js_sys::{Array, Object, Reflect};

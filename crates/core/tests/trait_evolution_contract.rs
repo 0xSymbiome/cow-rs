@@ -18,22 +18,6 @@ fn signer_trait_shape_unchanged() {
     assert_eq!(
         trait_method_signatures(CORE_TRAITS_SOURCE, "Signer"),
         [
-            "fn connect(&mut self, provider: Self::Provider);",
-            "fn get_address(&self) -> Result<Address, Self::Error>;",
-            "fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error>;",
-            "fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;",
-            "fn sign_typed_data(&self, domain: &TypedDataDomain, fields: &[TypedDataField], value_json: &str) -> Result<String, Self::Error>;",
-            "fn send_transaction(&self, tx: &TransactionRequest) -> Result<TransactionBroadcast, Self::Error>;",
-            "fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error>;",
-        ],
-    );
-}
-
-#[test]
-fn async_signer_trait_shape_unchanged() {
-    assert_eq!(
-        trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncSigner"),
-        [
             "async fn get_address(&self) -> Result<Address, Self::Error>;",
             "async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error>;",
             "async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;",
@@ -45,39 +29,39 @@ fn async_signer_trait_shape_unchanged() {
 }
 
 #[test]
-fn narrow_async_signer_capability_traits_are_stable() {
+fn narrow_signer_capability_traits_are_stable() {
     assert_eq!(
-        trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncOwner"),
+        trait_method_signatures(CORE_TRAITS_SOURCE, "Owner"),
         ["async fn get_address(&self) -> Result<Address, Self::Error>;"],
     );
     assert_eq!(
-        trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncTypedDataSigner"),
+        trait_method_signatures(CORE_TRAITS_SOURCE, "TypedDataSigner"),
         [
             "async fn sign_typed_data(&self, domain: &TypedDataDomain, fields: &[TypedDataField], value_json: &str) -> Result<String, Self::Error>;"
         ],
     );
     assert_eq!(
-        trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncDigestSigner"),
+        trait_method_signatures(CORE_TRAITS_SOURCE, "DigestSigner"),
         ["async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error>;"],
     );
     assert_eq!(
-        trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncEip1193"),
+        trait_method_signatures(CORE_TRAITS_SOURCE, "Eip1193"),
         [
             "async fn request(&self, method: &str, params: &[String]) -> Result<String, Self::Error>;"
         ],
     );
 
-    let typed_data_body = trait_body(CORE_TRAITS_SOURCE, "AsyncTypedDataSigner");
+    let typed_data_body = trait_body(CORE_TRAITS_SOURCE, "TypedDataSigner");
     assert!(
         typed_data_body.contains("async fn sign_typed_data_payload("),
-        "AsyncTypedDataSigner must expose the explicit typed-data payload helper"
+        "TypedDataSigner must expose the explicit typed-data payload helper"
     );
 }
 
 #[test]
-fn async_provider_trait_shape_unchanged() {
+fn provider_trait_shape_unchanged() {
     assert_eq!(
-        trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncProvider"),
+        trait_method_signatures(CORE_TRAITS_SOURCE, "Provider"),
         [
             "async fn get_chain_id(&self) -> Result<ChainId, Self::Error>;",
             "async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error>;",
@@ -92,9 +76,9 @@ fn async_provider_trait_shape_unchanged() {
 }
 
 #[test]
-fn async_signing_provider_trait_shape_unchanged() {
+fn signing_provider_trait_shape_unchanged() {
     assert_eq!(
-        trait_method_signatures(CORE_TRAITS_SOURCE, "AsyncSigningProvider"),
+        trait_method_signatures(CORE_TRAITS_SOURCE, "SigningProvider"),
         ["async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error>;"],
     );
 }

@@ -15,12 +15,12 @@ concrete backend.
   REST and GraphQL traffic. The native default is `ReqwestTransport`
   in `cow-sdk-core`; the browser default is `FetchTransport` in the
   dedicated `cow-sdk-transport-wasm` crate.
-- **`AsyncProvider`** in `cow-sdk-core` is the read-only chain-RPC seam used by
+- **`Provider`** in `cow-sdk-core` is the read-only chain-RPC seam used by
   on-chain helpers (allowance reads, EIP-1271 verification, on-chain
   cancellation). Consumers can bring their own provider through the
   `docs/providers/` adapter guide or use the native Alloy provider adapter.
-- **`AsyncSigningProvider`** in `cow-sdk-core` extends `AsyncProvider` for
-  async providers that can create signers. Read-only provider adapters do not
+- **`SigningProvider`** in `cow-sdk-core` extends `Provider` for
+  providers that can create signers. Read-only provider adapters do not
   implement this extension.
 
 Native Alloy runtime dependencies are explicit opt-ins. `alloy-provider` is
@@ -33,8 +33,8 @@ provider-neutral.
 
 ## Native Alloy Adapters
 
-`cow-sdk-alloy-provider` implements `AsyncProvider` for read-only Alloy RPC
-access. `cow-sdk-alloy-signer` implements `AsyncSigner` for local private-key
+`cow-sdk-alloy-provider` implements `Provider` for read-only Alloy RPC
+access. `cow-sdk-alloy-signer` implements `Signer` for local private-key
 message and typed-data signing. `cow-sdk-alloy` composes both through an Alloy
 wallet-filler provider so allowance, approval, pre-sign, and on-chain
 cancellation helpers can use one native client.
@@ -391,8 +391,7 @@ rate-limit state instance-scoped.
 - [Architecture](architecture.md) — how `HttpTransport` fits into the
   workspace's published family
 - [Integrations](integrations.md) — broader runtime-adapter guide
-  covering `Signer`, `AsyncSigner`, `Provider`, `AsyncProvider`,
-  `AsyncSigningProvider`, and `HttpTransport`
+  covering `Signer`, `Provider`, `SigningProvider`, and `HttpTransport`
 - [Performance](performance.md) — shared-client pooling recipes and
   default-transport policy
 - [Observability](observability.md) — tracing boundary and the

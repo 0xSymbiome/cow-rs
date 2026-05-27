@@ -1,11 +1,11 @@
-//! [`cow_sdk_core::AsyncProvider`] implementation over Alloy HTTP RPC.
+//! [`cow_sdk_core::Provider`] implementation over Alloy HTTP RPC.
 
 use std::{fmt, sync::Arc};
 
 use alloy_network::Ethereum;
 use alloy_provider::{DynProvider, Provider as AlloyProviderTrait};
 use cow_sdk_core::{
-    Address, AsyncProvider, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, Redacted,
+    Address, Provider, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, Redacted,
     TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
@@ -16,13 +16,13 @@ use crate::{
     conversion::{
         alloy_to_cow_block_info, alloy_to_cow_receipt, cow_block_tag_to_alloy, cow_request_to_alloy,
     },
-    error::AsyncProviderError,
+    error::ProviderError,
     read_contract::execute_read_contract,
 };
 
 /// Alloy-backed read-only provider for the `CoW` Protocol Rust SDK.
 ///
-/// The adapter implements only [`AsyncProvider`]. It does not implement signer
+/// The adapter implements only [`Provider`]. It does not implement signer
 /// creation, synchronous provider traits, or signer traits.
 #[derive(Clone)]
 pub struct RpcAlloyProvider {
@@ -71,14 +71,14 @@ impl fmt::Debug for OpaqueTransport {
     }
 }
 
-impl AsyncProvider for RpcAlloyProvider {
-    type Error = AsyncProviderError;
+impl Provider for RpcAlloyProvider {
+    type Error = ProviderError;
 
     async fn get_chain_id(&self) -> Result<ChainId, Self::Error> {
         self.inner()
             .get_chain_id()
             .await
-            .map_err(AsyncProviderError::from_alloy_transport)
+            .map_err(ProviderError::from_alloy_transport)
     }
 
     async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
@@ -86,7 +86,7 @@ impl AsyncProvider for RpcAlloyProvider {
             .inner()
             .get_code_at(*address.as_alloy())
             .await
-            .map_err(AsyncProviderError::from_alloy_transport)?;
+            .map_err(ProviderError::from_alloy_transport)?;
         if bytes.is_empty() {
             Ok(None)
         } else {
@@ -102,7 +102,7 @@ impl AsyncProvider for RpcAlloyProvider {
             .inner()
             .get_transaction_receipt(*transaction_hash.as_alloy())
             .await
-            .map_err(AsyncProviderError::from_alloy_transport)?
+            .map_err(ProviderError::from_alloy_transport)?
             .map(|receipt| alloy_to_cow_receipt(&receipt));
         Ok(receipt)
     }
@@ -115,7 +115,7 @@ impl AsyncProvider for RpcAlloyProvider {
                 |hex| U256::from_str_radix(hex, 16),
             )
             .map_err(|error| {
-                AsyncProviderError::Validation(format!(
+                ProviderError::Validation(format!(
                     "storage slot `{slot}` is not a valid U256: {error}"
                 ))
             })?;
@@ -123,18 +123,18 @@ impl AsyncProvider for RpcAlloyProvider {
             .inner()
             .get_storage_at(*address.as_alloy(), slot)
             .await
-            .map_err(AsyncProviderError::from_alloy_transport)?;
+            .map_err(ProviderError::from_alloy_transport)?;
         HexData::new(B256::from(value).to_string())
-            .map_err(|error| AsyncProviderError::Internal(format!("storage conversion: {error}")))
+            .map_err(|error| ProviderError::Internal(format!("storage conversion: {error}")))
     }
 
     async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error> {
-        let tx = cow_request_to_alloy(tx).map_err(AsyncProviderError::Validation)?;
+        let tx = cow_request_to_alloy(tx).map_err(ProviderError::Validation)?;
         let bytes = self
             .inner()
             .call(tx)
             .await
-            .map_err(AsyncProviderError::from_alloy_transport)?;
+            .map_err(ProviderError::from_alloy_transport)?;
         Ok(HexData::from(bytes))
     }
 
@@ -143,14 +143,14 @@ impl AsyncProvider for RpcAlloyProvider {
     }
 
     async fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error> {
-        let block_id = cow_block_tag_to_alloy(block_tag).map_err(AsyncProviderError::Validation)?;
+        let block_id = cow_block_tag_to_alloy(block_tag).map_err(ProviderError::Validation)?;
         let block = self
             .inner()
             .get_block(block_id)
             .await
-            .map_err(AsyncProviderError::from_alloy_transport)?
+            .map_err(ProviderError::from_alloy_transport)?
             .ok_or_else(|| {
-                AsyncProviderError::Validation(format!("block `{block_tag}` not found on remote"))
+                ProviderError::Validation(format!("block `{block_tag}` not found on remote"))
             })?;
         Ok(alloy_to_cow_block_info(&block))
     }

@@ -74,7 +74,7 @@ the compile-time gate.
   hand-maintained crate enumeration in this ADR. The `alloy::sol!` machinery
   (`alloy-sol-types`, `alloy-sol-macro`, `alloy-primitives`) is wasm-safe and
   carries no tokio-bound network client. Consumers select their own chain-RPC
-  runtime through the `AsyncProvider` seam in `cow-sdk-core`.
+  runtime through the `Provider` seam in `cow-sdk-core`.
 - Validation and review: parity scope is byte-identity on implemented
   surfaces. Every migrated binding has a regression test that asserts the
   generated call-data matches a TypeScript-SDK-derived fixture bit for

@@ -3,7 +3,7 @@
 Native Alloy-backed read-only provider adapter for the `cow-rs` SDK.
 
 This crate wraps an Alloy HTTP RPC provider and exposes it through
-`cow_sdk_core::AsyncProvider`. It is intentionally read-only: it does not
+`cow_sdk_core::Provider`. It is intentionally read-only: it does not
 create signers, sign messages, sign transactions, or submit transactions.
 
 ## Install
@@ -19,7 +19,7 @@ cow-sdk-alloy-provider = "0.1"
 use std::time::Duration;
 
 use cow_sdk_alloy_provider::RpcAlloyProvider;
-use cow_sdk_core::AsyncProvider;
+use cow_sdk_core::Provider;
 
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 let provider = RpcAlloyProvider::builder()
@@ -40,7 +40,7 @@ typed builder error without echoing the supplied value.
 
 ## Capability Boundary
 
-`RpcAlloyProvider` implements `AsyncProvider` only. The crate provides all
+`RpcAlloyProvider` implements `Provider` only. The crate provides all
 read methods required by the core trait:
 
 - `get_chain_id`
@@ -85,7 +85,7 @@ errors.
 
 ## Error Model
 
-Provider failures use `AsyncProviderError`. Transport details are redacted,
+Provider failures use `ProviderError`. Transport details are redacted,
 remote JSON-RPC errors preserve their code and message, caller input failures
 are typed as validation errors, and cooperative cancellation propagates through
 the `Cancelled` variant when callers use `cow_sdk_core::Cancellable`.

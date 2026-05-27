@@ -1,110 +1,29 @@
 use crate::types::{Address, ChainId, HexData, TransactionHash};
 
 use super::contract::{ContractCall, ContractHandle};
-use super::signer::AsyncSigner;
+use super::signer::Signer;
 use super::transaction::{BlockInfo, TransactionReceipt, TransactionRequest};
-/// Synchronous provider boundary for native contract reads and transactions.
-///
-/// Contracts and trading helpers use this trait for provider-backed reads such
-/// as storage lookups, allowance checks, and contract calls.
-pub trait Provider {
-    /// Signer type exposed by this provider.
-    type Signer;
-    /// Error type returned by provider operations.
-    type Error;
 
-    /// Returns the currently attached signer, if one exists.
-    fn signer_or_null(&self) -> Option<&Self::Signer>;
-    /// Returns the current chain id.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when the chain id cannot be loaded.
-    fn get_chain_id(&self) -> Result<ChainId, Self::Error>;
-    /// Returns deployed bytecode for an address, if present.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when the backend lookup fails.
-    fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error>;
-    /// Returns mined receipt information for a transaction hash, if known.
-    ///
-    /// Implementations may return hash-only receipts while richer lifecycle
-    /// fields are unavailable from the backend.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when the backend lookup fails.
-    fn get_transaction_receipt(
-        &self,
-        transaction_hash: &TransactionHash,
-    ) -> Result<Option<TransactionReceipt>, Self::Error>;
-    /// Creates a signer from an implementation-defined hint.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when signer creation fails.
-    fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error>;
-    /// Reads a storage slot from a contract address.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when the storage lookup fails.
-    fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error>;
-    /// Executes a read-only call.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when the call fails.
-    fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error>;
-    /// Executes a typed contract read request.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when the contract read fails.
-    fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error>;
-    /// Returns block information for a backend-specific block tag.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when the block lookup fails.
-    fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error>;
-    /// Replaces the attached signer.
-    fn set_signer(&mut self, signer: Self::Signer);
-    /// Replaces the provider runtime using an implementation-defined hint.
-    fn set_provider(&mut self, provider_hint: String);
-    /// Returns a typed contract handle for an address and ABI.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when contract creation fails.
-    fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error>;
-}
-
-/// Read-only asynchronous provider boundary for browser wallets, native RPC
-/// adapters, and async runtimes.
+/// Read-only provider boundary for browser wallets, native RPC adapters, and
+/// runtimes that expose chain data.
 ///
 /// This trait intentionally contains only read-only chain RPC methods. Providers
-/// that can create signers implement [`AsyncSigningProvider`] in addition to
-/// this trait. This keeps read-only adapters free from signer dependencies while
+/// that can create signers implement [`SigningProvider`] in addition to this
+/// trait. This keeps read-only adapters free from signer dependencies while
 /// preserving signer creation for wallet-capable providers.
 ///
 /// # Examples
 ///
-/// A read-only provider implements `AsyncProvider` without any signer wiring:
+/// A read-only provider implements `Provider` without any signer wiring:
 ///
 /// ```
 /// # use cow_sdk_core::{
-/// #     Address, AsyncProvider, BlockInfo, ContractCall, ContractHandle, Hash32, HexData,
+/// #     Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
 /// #     TransactionHash, TransactionReceipt, TransactionRequest,
 /// # };
 /// struct ReadOnlyProvider;
 ///
-/// impl AsyncProvider for ReadOnlyProvider {
+/// impl Provider for ReadOnlyProvider {
 ///     type Error = String;
 ///
 ///     async fn get_chain_id(&self) -> Result<u64, Self::Error> {
@@ -152,16 +71,16 @@ pub trait Provider {
 /// # }
 /// ```
 ///
-/// Read-only providers do not satisfy `AsyncSigningProvider` unless they
+/// Read-only providers do not satisfy `SigningProvider` unless they
 /// explicitly implement the signing-capable extension:
 ///
 /// ```compile_fail
 /// # use cow_sdk_core::{
-/// #     Address, AsyncProvider, AsyncSigningProvider, BlockInfo, ContractCall, ContractHandle,
-/// #     HexData, TransactionHash, TransactionReceipt, TransactionRequest,
+/// #     Address, BlockInfo, ContractCall, ContractHandle, HexData, Provider, SigningProvider,
+/// #     TransactionHash, TransactionReceipt, TransactionRequest,
 /// # };
 /// # struct ReadOnlyProvider;
-/// # impl AsyncProvider for ReadOnlyProvider {
+/// # impl Provider for ReadOnlyProvider {
 /// #     type Error = String;
 /// #     async fn get_chain_id(&self) -> Result<u64, Self::Error> { Ok(1) }
 /// #     async fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> { Ok(None) }
@@ -185,7 +104,7 @@ pub trait Provider {
 /// #         Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
 /// #     }
 /// # }
-/// fn requires_signing<P: AsyncSigningProvider>(_provider: &P) {}
+/// fn requires_signing<P: SigningProvider>(_provider: &P) {}
 ///
 /// fn main() {
 ///     let provider = ReadOnlyProvider;
@@ -196,7 +115,7 @@ pub trait Provider {
     async_fn_in_trait,
     reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
 )]
-pub trait AsyncProvider {
+pub trait Provider {
     /// Error type returned by provider operations.
     type Error;
 
@@ -260,69 +179,23 @@ pub trait AsyncProvider {
     ) -> Result<ContractHandle, Self::Error>;
 }
 
-impl<T> AsyncProvider for T
-where
-    T: Provider,
-{
-    type Error = T::Error;
-
-    async fn get_chain_id(&self) -> Result<ChainId, Self::Error> {
-        Provider::get_chain_id(self)
-    }
-
-    async fn get_code(&self, address: &Address) -> Result<Option<HexData>, Self::Error> {
-        Provider::get_code(self, address)
-    }
-
-    async fn get_transaction_receipt(
-        &self,
-        transaction_hash: &TransactionHash,
-    ) -> Result<Option<TransactionReceipt>, Self::Error> {
-        Provider::get_transaction_receipt(self, transaction_hash)
-    }
-
-    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
-        Provider::get_storage_at(self, address, slot)
-    }
-
-    async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error> {
-        Provider::call(self, tx)
-    }
-
-    async fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
-        Provider::read_contract(self, request)
-    }
-
-    async fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error> {
-        Provider::get_block(self, block_tag)
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Provider::get_contract(self, address, abi_json)
-    }
-}
-
-/// Signing-capable extension for asynchronous provider implementations.
+/// Signing-capable extension for provider implementations.
 ///
 /// Wallet-capable providers implement this trait in addition to
-/// [`AsyncProvider`]. Read-only adapters implement only `AsyncProvider`.
+/// [`Provider`]. Read-only adapters implement only `Provider`.
 ///
 /// # Examples
 ///
 /// ```
 /// # use cow_sdk_core::{
-/// #     Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo,
-/// #     ContractCall, ContractHandle, Hash32, HexData, TransactionHash, TransactionReceipt,
-/// #     TransactionBroadcast, TransactionRequest, TypedDataDomain, TypedDataField,
+/// #     Address, Amount, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
+/// #     Signer, SigningProvider, TransactionHash, TransactionReceipt, TransactionBroadcast,
+/// #     TransactionRequest, TypedDataDomain, TypedDataField,
 /// # };
 /// #[derive(Clone)]
 /// struct WalletSigner;
 ///
-/// impl AsyncSigner for WalletSigner {
+/// impl Signer for WalletSigner {
 ///     type Error = String;
 ///
 ///     async fn get_address(&self) -> Result<Address, Self::Error> {
@@ -357,7 +230,7 @@ where
 ///
 /// struct WalletProvider;
 ///
-/// impl AsyncProvider for WalletProvider {
+/// impl Provider for WalletProvider {
 ///     type Error = String;
 ///
 ///     async fn get_chain_id(&self) -> Result<u64, Self::Error> {
@@ -398,7 +271,7 @@ where
 /// #   }
 /// }
 ///
-/// impl AsyncSigningProvider for WalletProvider {
+/// impl SigningProvider for WalletProvider {
 ///     type Signer = WalletSigner;
 ///
 ///     async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
@@ -420,9 +293,9 @@ where
     async_fn_in_trait,
     reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
 )]
-pub trait AsyncSigningProvider: AsyncProvider {
+pub trait SigningProvider: Provider {
     /// Signer type exposed by this provider.
-    type Signer: AsyncSigner<Error = Self::Error>;
+    type Signer: Signer<Error = Self::Error>;
 
     /// Creates a signer from an implementation-defined hint.
     ///
@@ -430,16 +303,4 @@ pub trait AsyncSigningProvider: AsyncProvider {
     ///
     /// Returns the implementation-defined provider error when signer creation fails.
     async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error>;
-}
-
-impl<T> AsyncSigningProvider for T
-where
-    T: Provider,
-    T::Signer: AsyncSigner<Error = T::Error>,
-{
-    type Signer = T::Signer;
-
-    async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        Provider::create_signer(self, signer_hint)
-    }
 }

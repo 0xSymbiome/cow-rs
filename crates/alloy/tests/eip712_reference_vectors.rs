@@ -2,7 +2,7 @@
 
 use cow_sdk_alloy::AlloyClient;
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, AsyncSigner, AsyncSigningProvider, BuyTokenDestination,
+    Address, Amount, AppDataHash, Signer, SigningProvider, BuyTokenDestination,
     OrderKind, SellTokenSource, SupportedChainId, UnsignedOrder,
 };
 use cow_sdk_signing::{ORDER_PRIMARY_TYPE, order_typed_data_payload};

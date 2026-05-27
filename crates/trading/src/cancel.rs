@@ -1,6 +1,6 @@
-use cow_sdk_core::{AsyncSigner, ProtocolOptions};
+use cow_sdk_core::{Signer, ProtocolOptions};
 use cow_sdk_orderbook::{EcdsaSigningScheme, OrderCancellations};
-use cow_sdk_signing::{SigningScheme as SigningSchemeContract, sign_order_cancellations_async};
+use cow_sdk_signing::{SigningScheme as SigningSchemeContract, sign_order_cancellations};
 
 use crate::types::{validate_orderbook_chain_context, validate_orderbook_env_context};
 use crate::{OrderTraderParameters, OrderbookClient, TraderParameters, TradingError};
@@ -23,7 +23,7 @@ pub async fn off_chain_cancel_order<O, S>(
 ) -> Result<bool, TradingError>
 where
     O: OrderbookClient + ?Sized,
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     validate_orderbook_chain_context(orderbook, Some(trader.chain_id))?;
@@ -49,7 +49,7 @@ where
     {
         options = options.with_eth_flow_contract_override(overrides);
     }
-    let signing = sign_order_cancellations_async(
+    let signing = sign_order_cancellations(
         std::slice::from_ref(&params.order_uid),
         canonical_chain_id,
         signer,

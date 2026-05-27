@@ -1,5 +1,5 @@
 use cow_sdk_alloy_provider::{
-    AsyncProviderError, AsyncProviderErrorClass, RpcAlloyProvider, RpcAlloyProviderBuilderError,
+    ProviderError, ProviderErrorClass, RpcAlloyProvider, RpcAlloyProviderBuilderError,
 };
 use cow_sdk_core::{Redacted, TransportErrorClass};
 
@@ -7,7 +7,7 @@ const SECRET_URL: &str = "https://user:secret@example.invalid/rpc?api_key=top-se
 
 #[test]
 fn validation_display_does_not_leak_url() {
-    let error = AsyncProviderError::Validation(SECRET_URL.to_owned());
+    let error = ProviderError::Validation(SECRET_URL.to_owned());
 
     assert_no_secret(&format!("{error}"));
     assert_no_secret(&format!("{error:?}"));
@@ -15,7 +15,7 @@ fn validation_display_does_not_leak_url() {
 
 #[test]
 fn transport_display_redacts_detail() {
-    let error = AsyncProviderError::Transport {
+    let error = ProviderError::Transport {
         class: TransportErrorClass::Other,
         detail: Redacted::new(SECRET_URL.to_owned()),
     };
@@ -27,7 +27,7 @@ fn transport_display_redacts_detail() {
 
 #[test]
 fn transport_source_chain_does_not_leak_url() {
-    let error = AsyncProviderError::Transport {
+    let error = ProviderError::Transport {
         class: TransportErrorClass::Other,
         detail: Redacted::new(SECRET_URL.to_owned()),
     };
@@ -39,7 +39,7 @@ fn transport_source_chain_does_not_leak_url() {
 
 #[test]
 fn remote_display_emits_code_and_message() {
-    let error = AsyncProviderError::Remote {
+    let error = ProviderError::Remote {
         code: -32000,
         message: "execution reverted".to_owned(),
     };
@@ -52,7 +52,7 @@ fn remote_display_emits_code_and_message() {
 
 #[test]
 fn internal_display_does_not_leak_input() {
-    let error = AsyncProviderError::Internal(SECRET_URL.to_owned());
+    let error = ProviderError::Internal(SECRET_URL.to_owned());
 
     assert_no_secret(&format!("{error}"));
     assert_no_secret(&format!("{error:?}"));
@@ -61,32 +61,32 @@ fn internal_display_does_not_leak_input() {
 #[test]
 fn error_class_covers_every_variant() {
     assert_eq!(
-        AsyncProviderError::Validation("bad input".to_owned()).class(),
-        AsyncProviderErrorClass::Validation
+        ProviderError::Validation("bad input".to_owned()).class(),
+        ProviderErrorClass::Validation
     );
     assert_eq!(
-        AsyncProviderError::Transport {
+        ProviderError::Transport {
             class: TransportErrorClass::Other,
             detail: Redacted::new("transport".to_owned()),
         }
         .class(),
-        AsyncProviderErrorClass::Transport
+        ProviderErrorClass::Transport
     );
     assert_eq!(
-        AsyncProviderError::Remote {
+        ProviderError::Remote {
             code: -32000,
             message: "execution reverted".to_owned(),
         }
         .class(),
-        AsyncProviderErrorClass::Remote
+        ProviderErrorClass::Remote
     );
     assert_eq!(
-        AsyncProviderError::Cancelled.class(),
-        AsyncProviderErrorClass::Cancelled
+        ProviderError::Cancelled.class(),
+        ProviderErrorClass::Cancelled
     );
     assert_eq!(
-        AsyncProviderError::Internal("internal".to_owned()).class(),
-        AsyncProviderErrorClass::Internal
+        ProviderError::Internal("internal".to_owned()).class(),
+        ProviderErrorClass::Internal
     );
 }
 

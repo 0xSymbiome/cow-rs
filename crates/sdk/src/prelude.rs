@@ -21,12 +21,11 @@ pub use cow_sdk_browser_wallet::Eip1193Signer as BrowserWalletSigner;
 pub use cow_sdk_contracts::{ContractsError, Order, Signature};
 // core
 pub use cow_sdk_core::{
-    Address, Amount, AsyncProvider, Cancellable, CowEnv, HttpTransport, OrderUid, SupportedChainId,
+    Address, Amount, Cancellable, CowEnv, HttpTransport, OrderUid, Provider, Signer,
+    SupportedChainId,
 };
 // orderbook
 pub use cow_sdk_orderbook::{OrderBookApi, OrderBookApiBuilder, OrderbookError};
-// signing
-pub use cow_sdk_core::{AsyncSigner, Signer};
 // trading
 pub use cow_sdk_trading::{
     AppCode, AppCodeError, HelperOnlySdk, TradeParameters, TraderParameters, TradingError,

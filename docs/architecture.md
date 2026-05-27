@@ -80,9 +80,9 @@ flowchart TD
 | `cow-sdk-transport-wasm` | Browser-target `HttpTransport` implementation (`FetchTransport`) | You build for `wasm32-unknown-unknown` and need the shipped browser default. |
 | `cow-sdk-wasm` | TypeScript-callable wasm-bindgen bindings over deterministic SDK helpers, typed callbacks, orderbook/subgraph/IPFS clients, and trading flows | JavaScript or TypeScript should call the Rust SDK through wasm exports. |
 | `cow-sdk-browser-wallet` | Browser-runtime wallet integration | You need EIP-1193 wallet flows in WASM. |
-| `cow-sdk-alloy-provider` | Native Alloy-backed `AsyncProvider` adapter | You need read-only chain RPC through Alloy without a signer dependency. |
-| `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `AsyncSigner` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
-| `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `AsyncProvider`, `AsyncSigningProvider`, and `AsyncSigner` helper flows. |
+| `cow-sdk-alloy-provider` | Native Alloy-backed `Provider` adapter | You need read-only chain RPC through Alloy without a signer dependency. |
+| `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `Signer` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
+| `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `Provider`, `SigningProvider`, and `Signer` helper flows. |
 | `cow-sdk-composable` | Reserved manifest for composable-order helpers, with current readiness evidence owned by contracts, signing, docs, and parity fixtures | You need to track the planned composable leaf without pulling an unfinished helper API. |
 | `cow-sdk-cow-shed` | COW Shed account-abstraction proxy address derivation, EIP-712 hook envelopes, and signed-hook payload encoding | You need the COW Shed account-abstraction surface. |
 
@@ -185,7 +185,7 @@ Native runtime integrations plug in through the stable traits owned by
 `cow-sdk-core`:
 
 ```rust
-use cow_sdk_core::{AsyncProvider, AsyncSigner, AsyncSigningProvider, Provider, Signer};
+use cow_sdk_core::{Provider, Signer, SigningProvider};
 ```
 
 The same seam also owns the transaction lifecycle boundary. Signers return
@@ -203,14 +203,16 @@ implements the same traits. If `cow-sdk-trading` depended on a concrete
 provider library directly, the wasm path would have to pull native-only
 dependencies or fork trading helpers per runtime.
 
-For most custom native integrations, implement `Provider` and `Signer` on the
-adapter type that owns your RPC or signer backend. The blanket implementations
-then let that same adapter satisfy the read-only async surface through
-`AsyncProvider`, and the signing-capable async surface through
-`AsyncSigningProvider` when the signer supports the async contract. Native
-Alloy support is already shipped as `cow-sdk-alloy-provider`,
-`cow-sdk-alloy-signer`, and `cow-sdk-alloy`; browser-wallet support implements
-the async side directly without widening the native facade.
+For custom integrations, implement `Provider` for the RPC backend and `Signer`
+for the signer backend; the narrower [`Owner`], [`TypedDataSigner`], and
+[`DigestSigner`] capability traits per
+[ADR 0045](adr/0045-async-signer-trait-narrowing.md) remain available for
+callback-shaped adapters that expose only one signing operation.
+Wallet-capable adapters implement `SigningProvider`, which extends `Provider`
+with signer creation. Native Alloy support is already shipped as
+`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy`;
+browser-wallet support implements the same traits directly without widening
+the native facade.
 
 The native Alloy adapter family ships as three crates so a consumer can pull
 only the capabilities they exercise: `cow-sdk-alloy-provider` for read-only
@@ -241,8 +243,9 @@ adapter at the EIP-712 hashing seam.
 ### Runtime Traits
 
 `cow-sdk-core` owns the signer and provider seams used across the workspace.
-Sync and async contracts stay explicit, and typed-data payloads stay structured
-rather than being reconstructed from ad hoc field lists. Credential-bearing
+The trait surface is async by construction, and typed-data payloads stay
+structured rather than being reconstructed from ad hoc field lists.
+Credential-bearing
 config stays explicit as input, but the default diagnostic and serialized
 surfaces owned by `cow-sdk-core`, `cow-sdk-orderbook`, and `cow-sdk-app-data`
 redact secret material instead of treating it as routine log data.
@@ -274,12 +277,12 @@ browser consumers get `FetchTransport` from the dedicated
 `cow-sdk-transport-wasm` leaf crate. Retry, cooldown, rate-limit, and
 transport-error classification policy lives in `cow-sdk-transport-policy`
 so orderbook and subgraph clients keep the same behavior without widening
-the raw `HttpTransport` trait. The `AsyncProvider` trait (also in
-`cow-sdk-core`) is the read-only chain-RPC seam used by on-chain helpers such
-as allowance reads, EIP-1271 verification, and on-chain cancellation. Signer
-creation for async-capable providers lives in `AsyncSigningProvider`; no
-provider implementation ships by default, so consumers bring their own through
-the [Providers](providers/README.md) adapter guide.
+the raw `HttpTransport` trait. The `Provider` trait (also in `cow-sdk-core`)
+is the read-only chain-RPC seam used by on-chain helpers such as allowance
+reads, EIP-1271 verification, and on-chain cancellation. Signer creation for
+wallet-capable providers lives in `SigningProvider`; no provider implementation
+ships by default, so consumers bring their own through the
+[Providers](providers/README.md) adapter guide.
 
 The trait is dyn-compatible, so injected clients compose transports behind
 `Arc<dyn HttpTransport + Send + Sync>`. Typed failures flow through a single

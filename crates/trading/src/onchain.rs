@@ -6,7 +6,7 @@ use cow_sdk_contracts::eth_flow::{
 use cow_sdk_contracts::settlement::IGPv2Settlement;
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
-    Address, Amount, AsyncSigner, HexData, ProtocolOptions, SupportedChainId, TransactionHash,
+    Address, Amount, Signer, HexData, ProtocolOptions, SupportedChainId, TransactionHash,
     TransactionRequest,
 };
 use cow_sdk_orderbook::Order;
@@ -28,7 +28,7 @@ pub struct EthFlowTransaction {
     /// Unsigned order payload used to derive `order_id` and the transaction body.
     pub order_to_sign: cow_sdk_core::UnsignedOrder,
     /// Signer-derived owner resolved at transaction construction via
-    /// [`AsyncSigner::get_address`].
+    /// [`Signer::get_address`].
     ///
     /// Downstream submission uses this value as `OrderCreation.from` for
     /// pre-HTTP validation — not `order_to_sign.receiver`, which is the
@@ -79,7 +79,7 @@ pub async fn get_pre_sign_transaction<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<TransactionRequest, TradingError>
 where
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let settlement = resolve_settlement_address(chain_id, options);
@@ -129,7 +129,7 @@ pub async fn get_eth_flow_transaction<S>(
     signer: &S,
 ) -> Result<EthFlowTransaction, TradingError>
 where
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let from = signer
@@ -232,7 +232,7 @@ pub async fn onchain_cancellation_transaction<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<TransactionRequest, TradingError>
 where
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let mut tx = if order.ethflow_data.is_some() {
@@ -276,7 +276,7 @@ pub async fn cancel_order_onchain<S>(
     options: Option<&ProtocolOptions>,
 ) -> Result<TransactionHash, TradingError>
 where
-    S: AsyncSigner,
+    S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let tx = onchain_cancellation_transaction(signer, chain_id, order, options).await?;

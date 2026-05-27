@@ -13,7 +13,7 @@ The EthFlow transaction bundle returned by
 `cow_sdk_trading::get_eth_flow_transaction` exposes a typed
 `from: cow_sdk_core::Address` field carrying the signer-derived
 owner resolved during transaction construction via
-`AsyncSigner::get_address`. The submission seam
+`Signer::get_address`. The submission seam
 `post_sell_native_currency_order` builds its pre-HTTP
 validation preview from `tx.from.clone()`, not from
 `tx.order_to_sign.receiver.clone()`. Receiver continues to carry
@@ -167,7 +167,7 @@ through the cow-owned `Display`/`Serialize`/`Deserialize` impls on
 ## Amendment 2026-05-26: single-async-entry EthFlow submission surface
 
 `get_eth_flow_transaction` and `post_sell_native_currency_order` are
-single async entry points bounded on `cow_sdk_core::AsyncSigner`.
+single async entry points bounded on `cow_sdk_core::Signer`.
 The previous sync-bounded `get_eth_flow_transaction` companion is
 removed. The `EthFlowTransaction` bundle shape and the
 owner-threading invariant are unchanged.

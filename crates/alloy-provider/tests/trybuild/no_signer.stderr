@@ -1,11 +1,11 @@
 error[E0277]: the trait bound `RpcAlloyProvider: Signer` is not satisfied
- --> tests/trybuild/no_sync_signer.rs:6:19
+ --> tests/trybuild/no_signer.rs:6:19
   |
 6 |     assert_impl::<RpcAlloyProvider>();
   |                   ^^^^^^^^^^^^^^^^ the trait `Signer` is not implemented for `RpcAlloyProvider`
   |
 note: required by a bound in `assert_impl`
- --> tests/trybuild/no_sync_signer.rs:5:23
+ --> tests/trybuild/no_signer.rs:5:23
   |
 5 |     fn assert_impl<T: Signer>() {}
   |                       ^^^^^^ required by this bound in `assert_impl`

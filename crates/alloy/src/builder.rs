@@ -2,7 +2,7 @@
 
 use alloy_primitives::B256;
 use alloy_signer_local::PrivateKeySigner;
-use cow_sdk_core::{AsyncProvider, ChainId, Redacted, SupportedChainId};
+use cow_sdk_core::{Provider, ChainId, Redacted, SupportedChainId};
 use thiserror::Error;
 
 use crate::{client::AlloyClient, error::AlloyClientError};

@@ -10,7 +10,7 @@
 
 The workspace ships `cow-sdk-alloy-signer` as a native Alloy local-keystore
 adapter. `LocalAlloyKeystoreSigner` wraps an Alloy private-key signer internally
-and exposes it through `cow_sdk_core::AsyncSigner`.
+and exposes it through `cow_sdk_core::Signer`.
 
 The crate is a signer leaf, not a provider. It signs EIP-191 messages and
 EIP-712 typed-data payloads, preserves explicit typed-data primary types on the
@@ -37,8 +37,8 @@ signature bytes and the Solidity-compatible form used by the contracts crate.
 
 - Public surface: documented constructors and signer methods expose SDK-owned
   types, not upstream Alloy provider or transport types.
-- Trait coverage: `LocalAlloyKeystoreSigner` implements `AsyncSigner` and does
-  not implement `AsyncProvider`, `AsyncSigningProvider`, or sync `Signer`.
+- Trait coverage: `LocalAlloyKeystoreSigner` implements `Signer` and does
+  not implement `Provider` or `SigningProvider`.
 - Builder state: `build()` is available only after a private key and chain id
   have both been selected; builder markers remain sealed from external
   construction.
@@ -65,14 +65,14 @@ signature bytes and the Solidity-compatible form used by the contracts crate.
 
 ## Stability
 
-The public `AsyncSignerError::from_alloy_signer` constructor is gated
+The public `SignerError::from_alloy_signer` constructor is gated
 `#[doc(hidden)]` and documented in source as an inter-crate seam constructor.
 It exists so sibling adapter crates can lift `alloy_signer::Error` values into
 the signer's typed error surface. It is not a semver-stable consumer API and
 may change in any minor release.
 
 The documented consumer surface is limited to `LocalAlloyKeystoreSigner`,
-`LocalAlloyKeystoreSignerBuilder`, `AsyncSignerError`, and the typestate
+`LocalAlloyKeystoreSignerBuilder`, `SignerError`, and the typestate
 markers explicitly exported from `lib.rs`.
 
 The signer crate also exposes a `#[doc(hidden)] pub mod __seam` module

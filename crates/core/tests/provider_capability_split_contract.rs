@@ -1,9 +1,9 @@
 use std::fmt;
 
 use cow_sdk_core::{
-    Address, Amount, AsyncProvider, AsyncSigner, AsyncSigningProvider, BlockInfo, ContractCall,
-    ContractHandle, Hash32, HexData, Provider, Signer, TransactionBroadcast, TransactionHash,
-    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField,
+    Address, Amount, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider, Signer,
+    SigningProvider, TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest,
+    TypedDataDomain, TypedDataField,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -18,7 +18,7 @@ impl fmt::Display for TestError {
 #[derive(Clone)]
 struct ReadOnlyProvider;
 
-impl AsyncProvider for ReadOnlyProvider {
+impl Provider for ReadOnlyProvider {
     type Error = TestError;
 
     async fn get_chain_id(&self) -> Result<u64, Self::Error> {
@@ -66,11 +66,11 @@ impl AsyncProvider for ReadOnlyProvider {
 }
 
 #[derive(Clone)]
-struct DirectAsyncSigner {
+struct DirectSigner {
     address: Address,
 }
 
-impl AsyncSigner for DirectAsyncSigner {
+impl Signer for DirectSigner {
     type Error = TestError;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
@@ -114,12 +114,12 @@ impl AsyncSigner for DirectAsyncSigner {
 }
 
 #[derive(Clone)]
-struct SigningAsyncProvider {
+struct WalletProvider {
     read: ReadOnlyProvider,
-    signer: DirectAsyncSigner,
+    signer: DirectSigner,
 }
 
-impl AsyncProvider for SigningAsyncProvider {
+impl Provider for WalletProvider {
     type Error = TestError;
 
     async fn get_chain_id(&self) -> Result<u64, Self::Error> {
@@ -162,129 +162,11 @@ impl AsyncProvider for SigningAsyncProvider {
     }
 }
 
-impl AsyncSigningProvider for SigningAsyncProvider {
-    type Signer = DirectAsyncSigner;
+impl SigningProvider for WalletProvider {
+    type Signer = DirectSigner;
 
     async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
         Ok(self.signer.clone())
-    }
-}
-
-#[derive(Clone)]
-struct SyncSigner {
-    address: Address,
-    provider_hint: Option<String>,
-}
-
-impl Signer for SyncSigner {
-    type Provider = String;
-    type Error = String;
-
-    fn connect(&mut self, provider: Self::Provider) {
-        self.provider_hint = Some(provider);
-    }
-
-    fn get_address(&self) -> Result<Address, Self::Error> {
-        Ok(self.address)
-    }
-
-    fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
-        Ok(format!("sync-message:{}", message.len()))
-    }
-
-    fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Ok(format!("sync-tx:{}", tx.to.is_some()))
-    }
-
-    fn sign_typed_data(
-        &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
-    ) -> Result<String, Self::Error> {
-        Ok(format!(
-            "sync:{}:{}:{}",
-            domain.name,
-            fields.len(),
-            value_json.len()
-        ))
-    }
-
-    fn send_transaction(
-        &self,
-        _tx: &TransactionRequest,
-    ) -> Result<TransactionBroadcast, Self::Error> {
-        Ok(TransactionBroadcast::new(
-            Hash32::new(format!("0x{}", "bb".repeat(32))).unwrap(),
-        ))
-    }
-
-    fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
-        Ok(Amount::from(21_000u32))
-    }
-}
-
-struct SyncProvider {
-    signer: SyncSigner,
-}
-
-impl Provider for SyncProvider {
-    type Signer = SyncSigner;
-    type Error = String;
-
-    fn signer_or_null(&self) -> Option<&Self::Signer> {
-        Some(&self.signer)
-    }
-
-    fn get_chain_id(&self) -> Result<u64, Self::Error> {
-        Ok(1)
-    }
-
-    fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
-        Ok(Some(HexData::new("0x6000").unwrap()))
-    }
-
-    fn get_transaction_receipt(
-        &self,
-        transaction_hash: &TransactionHash,
-    ) -> Result<Option<TransactionReceipt>, Self::Error> {
-        Ok(Some(TransactionReceipt::new(*transaction_hash)))
-    }
-
-    fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        Ok(self.signer.clone())
-    }
-
-    fn get_storage_at(&self, _address: &Address, _slot: &str) -> Result<HexData, Self::Error> {
-        Ok(HexData::new("0x12").unwrap())
-    }
-
-    fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
-        Ok(HexData::new("0x34").unwrap())
-    }
-
-    fn read_contract(&self, request: &ContractCall) -> Result<String, Self::Error> {
-        Ok(format!("read:{}", request.method))
-    }
-
-    fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
-        Ok(BlockInfo::new(42, None))
-    }
-
-    fn set_signer(&mut self, signer: Self::Signer) {
-        self.signer = signer;
-    }
-
-    fn set_provider(&mut self, provider_hint: String) {
-        self.signer.provider_hint = Some(provider_hint);
-    }
-
-    fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 
@@ -316,7 +198,7 @@ fn sample_contract_call() -> ContractCall {
 
 async fn assert_read_methods<P>(provider: &P)
 where
-    P: AsyncProvider,
+    P: Provider,
     P::Error: fmt::Debug,
 {
     let address = sample_address();
@@ -362,7 +244,7 @@ where
 }
 
 #[tokio::test]
-async fn read_only_async_provider_dispatches_all_read_methods_without_signer_wiring() {
+async fn read_only_provider_dispatches_all_read_methods_without_signer_wiring() {
     let provider = ReadOnlyProvider;
 
     assert_read_methods(&provider).await;
@@ -370,15 +252,15 @@ async fn read_only_async_provider_dispatches_all_read_methods_without_signer_wir
 
 #[tokio::test]
 async fn signing_extension_preserves_signer_creation() {
-    let provider = SigningAsyncProvider {
+    let provider = WalletProvider {
         read: ReadOnlyProvider,
-        signer: DirectAsyncSigner {
+        signer: DirectSigner {
             address: sample_address(),
         },
     };
 
     assert_read_methods(&provider).await;
-    let signer = AsyncSigningProvider::create_signer(&provider, "primary")
+    let signer = SigningProvider::create_signer(&provider, "primary")
         .await
         .unwrap();
     assert_eq!(signer.get_address().await.unwrap(), sample_address());
@@ -389,24 +271,29 @@ async fn signing_extension_preserves_signer_creation() {
 }
 
 #[tokio::test]
-async fn sync_provider_blankets_split_read_and_signing_capabilities() {
-    let provider = SyncProvider {
-        signer: SyncSigner {
+async fn provider_and_signing_provider_split_cleanly_so_read_only_adapters_skip_signing() {
+    let read_only = ReadOnlyProvider;
+    let wallet = WalletProvider {
+        read: ReadOnlyProvider,
+        signer: DirectSigner {
             address: sample_address(),
-            provider_hint: None,
         },
     };
 
-    assert_read_methods(&provider).await;
-    let signer = AsyncSigningProvider::create_signer(&provider, "sync")
+    // Both adapters satisfy the read-only `Provider` contract.
+    assert_eq!(Provider::get_chain_id(&read_only).await.unwrap(), 1);
+    assert_eq!(Provider::get_chain_id(&wallet).await.unwrap(), 1);
+
+    // Only the wallet-capable adapter satisfies the signing extension.
+    let signer = SigningProvider::create_signer(&wallet, "primary")
         .await
         .unwrap();
     assert_eq!(
-        AsyncSigner::get_address(&signer).await.unwrap(),
+        Signer::get_address(&signer).await.unwrap(),
         sample_address()
     );
     assert_eq!(
-        AsyncSigner::sign_message(&signer, b"cow").await.unwrap(),
-        "sync-message:3"
+        Signer::sign_message(&signer, b"cow").await.unwrap(),
+        "message:3"
     );
 }

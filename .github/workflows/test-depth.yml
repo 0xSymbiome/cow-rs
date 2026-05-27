@@ -161,7 +161,7 @@ jobs:
                 --file crates/browser-wallet/src/wallet/chain.rs \
                 --file crates/browser-wallet/src/wallet/chain_mgmt.rs \
                 --file crates/browser-wallet/src/provider/mod.rs \
-                --file crates/browser-wallet/src/provider/async_provider.rs \
+                --file crates/browser-wallet/src/provider/provider_impl.rs \
                 --file crates/browser-wallet/src/error.rs \
                 --annotations none \
                 --no-times \

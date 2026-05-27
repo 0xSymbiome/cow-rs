@@ -16,7 +16,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use cow_sdk_alloy::AlloyClient;
-use cow_sdk_core::{Address, AsyncProvider, ContractCall, SupportedChainId};
+use cow_sdk_core::{Address, Provider, ContractCall, SupportedChainId};
 use serde_json::{Value, json};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
@@ -596,8 +596,8 @@ async fn read_contract_rejects_array_for_bool_argument() {
 
 // -------------------------------------------------------------------------
 // Umbrella-side variant pins. The leaf provider's `execute_read_contract`
-// emits `AsyncProviderError::Validation` on every rejection path; the
-// umbrella's `From<AsyncProviderError>` impl preserves the discriminant so
+// emits `ProviderError::Validation` on every rejection path; the
+// umbrella's `From<ProviderError>` impl preserves the discriminant so
 // `AlloyClient::read_contract` surfaces `AlloyClientError::Validation`
 // end-to-end. These pins lock that contract at the umbrella layer.
 // -------------------------------------------------------------------------

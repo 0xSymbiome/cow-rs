@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-05-19
 Owning surface: `cow-sdk-core`, `cow-sdk-signing`, `cow-sdk-browser-wallet`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`
-Refresh trigger: any new signer crate, any new variant on `BrowserWalletError`, `AsyncSignerError`, or `AlloyClientError`, any change to `SignerError`'s method set, or any change to `SigningError::SignerRejection`'s field set
+Refresh trigger: any new signer crate, any new variant on `BrowserWalletError`, `cow_sdk_alloy_signer::SignerError`, or `AlloyClientError`, any change to `cow_sdk_core::SignerError`'s method set, or any change to `SigningError::SignerRejection`'s field set
 Related docs:
 - [ADR 0053](../adr/0053-typed-signer-rejection-classification.md)
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
@@ -14,14 +14,15 @@ Related docs:
 This audit covers:
 
 - The `cow_sdk_core::SignerError` trait and its `user_rejection_code` method
-- Every signer-error type that implements `SignerError` (`BrowserWalletError`,
-  `AsyncSignerError`, `AlloyClientError`, the test mocks in `cow-sdk-signing`,
+- Every signer-error type that implements `cow_sdk_core::SignerError`
+  (`BrowserWalletError`, `cow_sdk_alloy_signer::SignerError`,
+  `AlloyClientError`, the test mocks in `cow-sdk-signing`,
   and the trading native example)
 - The `cow_sdk_signing::signer_error` routing helper plus
   the `cow_sdk_signing::SigningError::SignerRejection` variant
 - The cross-crate propagation path through
-  `cow_sdk_signing::sign_order_async` and
-  `sign_order_cancellation*_async`
+  `cow_sdk_signing::sign_order` and
+  `sign_order_cancellation*`
 
 It does not cover any non-signing classification surface (transport
 classes, provider error classes, contracts errors).
@@ -32,7 +33,7 @@ classes, provider error classes, contracts errors).
 | --- | --- | --- |
 | `SignerError` trait | Exposes only the EIP-1193 numeric code; never an implementer-controlled string | Conforms |
 | `BrowserWalletError` impl | `UserRejectedRequest` returns the carried code; every other variant returns `None` | Conforms |
-| `AsyncSignerError` impl | Every variant returns `None` because local-key signing never produces EIP-1193 rejections | Conforms |
+| `cow_sdk_alloy_signer::SignerError` impl | Every variant returns `None` because local-key signing never produces EIP-1193 rejections | Conforms |
 | `AlloyClientError` impl | Every variant returns `None`; umbrella adapter never routes wallet prompts | Conforms |
 | `signer_error` helper | Routes through the trait, emitting `SignerRejection` only when the trait returns `Some(_)` | Conforms |
 | `SigningError::SignerRejection` | Display renders `User rejected {label} ({code})`; fields are static label plus numeric code only | Conforms |
@@ -101,7 +102,7 @@ Primary regression coverage:
 - `crates/signing/src/order_signing.rs::signer_error_tests`
   (helper-routing unit tests)
 - `tests/signer_rejection_propagation_invariant.rs` (workspace
-  end-to-end propagation through `sign_order_async`)
+  end-to-end propagation through `sign_order`)
 - `crates/sdk/tests/error_redaction_contract.rs` (redaction sweep
   including `SignerRejection`)
 

@@ -2,8 +2,8 @@
 
 Status: Current
 Last reviewed: 2026-05-26
-Owning surface: `cow-sdk-alloy-provider` `RpcAlloyProvider`, its builder, and its `AsyncProvider` implementation
-Refresh trigger: ADR 0038 - rich receipt population, or changes to the provider public API, the `AsyncProvider` trait, transport classification, the `read_contract` algorithm, the inter-crate seam entries consumed by sibling Alloy adapters, the workspace Alloy runtime pin, or the crate dependency boundary
+Owning surface: `cow-sdk-alloy-provider` `RpcAlloyProvider`, its builder, and its `Provider` implementation
+Refresh trigger: ADR 0038 - rich receipt population, or changes to the provider public API, the `Provider` trait, transport classification, the `read_contract` algorithm, the inter-crate seam entries consumed by sibling Alloy adapters, the workspace Alloy runtime pin, or the crate dependency boundary
 Related docs:
 - [ADR 0035](../adr/0035-alloy-provider-adapter.md)
 - [ADR 0038](../adr/0038-transaction-lifecycle-types.md)
@@ -17,14 +17,14 @@ Related docs:
 
 This audit covers:
 
-- the `RpcAlloyProvider` public type and its `AsyncProvider` implementation
+- the `RpcAlloyProvider` public type and its `Provider` implementation
 - the `RpcAlloyProviderBuilder` HTTP typestate builder and builder error type
-- the `AsyncProviderError` and `AsyncProviderErrorClass` surfaces
+- the `ProviderError` and `ProviderErrorClass` surfaces
 - conversion between `cow-sdk-core` domain types and Alloy RPC values
 - the `read_contract` ABI encode, dispatch, decode, and JSON result path
 - the doc-hidden helper seam used by sibling Alloy adapter crates,
   including the `execute_read_contract` entry that the umbrella adapter
-  consumes for its own `AsyncProvider::read_contract` implementation
+  consumes for its own `Provider::read_contract` implementation
 - dependency boundaries for the read-only provider crate
 
 It does not cover upstream Alloy internals, signer or wallet support, WS or IPC
@@ -35,10 +35,10 @@ transport support, browser-wallet behavior, or transaction submission.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Public API exposure | Documented provider and builder methods expose SDK-owned domain types; upstream Alloy values remain internal apart from the doc-hidden sibling seam, which is not semver-guaranteed consumer API | Conforms |
-| Trait coverage | `RpcAlloyProvider` implements all eight `AsyncProvider` methods from `cow-sdk-core` | Conforms |
-| Negative capability boundary | Compile-fail tests assert the provider is not an `AsyncSigningProvider`, `AsyncSigner`, or sync `Signer` | Conforms |
+| Trait coverage | `RpcAlloyProvider` implements all eight `Provider` methods from `cow-sdk-core` | Conforms |
+| Negative capability boundary | Compile-fail tests assert the provider is not a `SigningProvider` or `Signer` | Conforms |
 | Builder typestate | `build()` is callable only on the HTTP-selected builder state; transport state stores the URL through `Redacted<reqwest::Url>` | Conforms |
-| Error classification | `AsyncProviderError::class()` covers validation, transport, remote, cancelled, and internal failures | Conforms |
+| Error classification | `ProviderError::class()` covers validation, transport, remote, cancelled, and internal failures | Conforms |
 | Credential redaction | Invalid URL errors carry no input detail, provider debug output redacts the transport, and transport details use `Redacted<String>` | Conforms |
 | `read_contract` | The adapter loads the ABI, resolves a single function, parses JSON arguments, ABI-encodes, dispatches `eth_call`, decodes the response, serializes supported JSON value strings, and rejects unsupported decoded shapes as validation errors | Conforms |
 | Dependency boundary | The crate declares no direct signer-family dependency and the resolved normal graph excludes `alloy-signer-local`; upstream Alloy's internal `alloy-signer` dependency does not enable local signing | Conforms |
@@ -49,8 +49,8 @@ transport support, browser-wallet behavior, or transaction submission.
 
 `cow-sdk-alloy-provider` exposes `RpcAlloyProvider`,
 `RpcAlloyProviderBuilder`, sealed transport-state marker names,
-`RpcAlloyProviderBuilderError`, `AsyncProviderError`, and
-`AsyncProviderErrorClass`. The provider stores the upstream `DynProvider` in
+`RpcAlloyProviderBuilderError`, `ProviderError`, and
+`ProviderErrorClass`. The provider stores the upstream `DynProvider` in
 private state and keeps raw transport labels out of debug output.
 
 The `__seam` module is `#[doc(hidden)]` and exists only for sibling `cow-rs`
@@ -91,7 +91,7 @@ of panicking.
 
 ### Error And Cancellation
 
-`AsyncProviderError` has validation, transport, remote, cancelled, and internal
+`ProviderError` has validation, transport, remote, cancelled, and internal
 classes. Transport errors carry a shared `TransportErrorClass` plus redacted
 detail. Remote JSON-RPC errors keep their code and message because those fields
 are the peer's structured protocol response.
@@ -121,7 +121,7 @@ Primary implementation points:
 
 Primary regression coverage:
 
-- `crates/alloy-provider/tests/asyncprovider_contract.rs`
+- `crates/alloy-provider/tests/provider_contract.rs`
 - `crates/alloy-provider/tests/builder_contract.rs`
 - `crates/alloy-provider/tests/error_class_contract.rs`
 - `crates/alloy-provider/tests/seam_contract.rs`
@@ -137,8 +137,7 @@ Primary regression coverage:
 - `crates/alloy-provider/tests/dependency_boundary_contract.rs`
 - `crates/alloy-provider/tests/compile_fail.rs`
 - `crates/alloy-provider/tests/trybuild/no_signing_provider.rs`
-- `crates/alloy-provider/tests/trybuild/no_async_signer.rs`
-- `crates/alloy-provider/tests/trybuild/no_sync_signer.rs`
+- `crates/alloy-provider/tests/trybuild/no_signer.rs`
 - `crates/alloy-provider/tests/trybuild/external_marker_construction_fails.rs`
 
 Validation surface:

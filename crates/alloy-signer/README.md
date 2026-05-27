@@ -3,7 +3,7 @@
 Native Alloy-backed local signing adapter package for the `cow-rs` SDK.
 
 This crate is the signing leaf for native applications that want
-`cow_sdk_core::AsyncSigner` backed by Alloy local private-key signing. It is
+`cow_sdk_core::Signer` backed by Alloy local private-key signing. It is
 published as a separate opt-in crate so read-only provider users and the default
 `cow-sdk` facade do not pull native local-keystore dependencies.
 
@@ -19,7 +19,7 @@ shipping local-key native dependencies into browser builds.
 
 The package boundary is intentionally narrow:
 
-- `LocalAlloyKeystoreSigner` implements `cow_sdk_core::AsyncSigner`.
+- `LocalAlloyKeystoreSigner` implements `cow_sdk_core::Signer`.
 - It signs EIP-191 messages and EIP-712 typed-data payloads.
 - Canonical typed-data signing preserves the payload primary type.
 - The legacy flat typed-data compatibility path uses `Message` as its
@@ -27,7 +27,7 @@ The package boundary is intentionally narrow:
 - ECDSA signatures are normalized through the shared `cow-sdk-contracts`
   signature helper before they are returned.
 - `sign_transaction`, `send_transaction`, and `estimate_gas` return
-  `AsyncSignerError::ProviderRequired` because a standalone local signer cannot
+  `SignerError::ProviderRequired` because a standalone local signer cannot
   fill nonce, fee, chain, or transaction-type context.
 - Provider-backed transaction submission is owned by `cow-sdk-alloy`, whose
   signer handle returns `TransactionBroadcast`; receipt observation is a
@@ -77,7 +77,7 @@ cow-sdk-alloy-signer = { version = "0.1", default-features = false }
 
 ```rust
 use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
-use cow_sdk_core::{AsyncSigner, SupportedChainId};
+use cow_sdk_core::{Signer, SupportedChainId};
 
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 let signer = LocalAlloyKeystoreSigner::builder()
@@ -98,8 +98,8 @@ builder state by hand.
 
 ## Errors
 
-`AsyncSignerError` is non-exhaustive and exposes a stable
-`AsyncSignerErrorClass` partition:
+`SignerError` is non-exhaustive and exposes a stable
+`SignerErrorClass` partition:
 
 - `validation`
 - `signing`

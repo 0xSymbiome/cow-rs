@@ -2,7 +2,7 @@ use std::{convert::Infallible, error::Error};
 
 use cow_sdk::alloy_provider::RpcAlloyProvider;
 use cow_sdk::core::{
-    Address, Amount, AsyncProvider, AsyncSigner, TransactionBroadcast, TransactionRequest,
+    Address, Amount, Provider, Signer, TransactionBroadcast, TransactionRequest,
     TypedDataDomain, TypedDataField,
 };
 use serde_json::json;
@@ -10,9 +10,9 @@ use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
 const ADDRESS: &str = "0x1111111111111111111111111111111111111111";
 
-struct StaticAsyncSigner;
+struct StaticSigner;
 
-impl AsyncSigner for StaticAsyncSigner {
+impl Signer for StaticSigner {
     type Error = Infallible;
 
     async fn get_address(&self) -> Result<Address, Self::Error> {
@@ -66,7 +66,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .http(server.uri())?
         .build()
         .await?;
-    let signer = StaticAsyncSigner;
+    let signer = StaticSigner;
     let report = json!({
         "surface": "cow-sdk::alloy_provider with consumer async signer",
         "chainId": provider.get_chain_id().await?,

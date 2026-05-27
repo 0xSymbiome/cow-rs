@@ -13,8 +13,8 @@ Account-abstraction support enters through the existing provider and signing
 capability split. EIP-7702 set-code EOAs, EIP-4337 user-operation or paymaster
 flows, and EIP-7212 secp256r1 verification integrate by explicit provider,
 signer, and EIP-1271 signature-provider adapters. Core order construction and
-read-only chain access depend on `AsyncProvider`; signer creation requires
-`AsyncSigningProvider`; signature production flows through `AsyncSigner` or
+read-only chain access depend on `Provider`; signer creation requires
+`SigningProvider`; signature production flows through `Signer` or
 explicit EIP-1271 provider surfaces.
 
 EIP-1271 callbacks for wasm consumers follow the facade-resolves-callback
@@ -44,8 +44,8 @@ dependencies in read-only flows and keeps order ownership reviewable.
 
 ## Must Remain True
 
-- Public surface: read-only operations are bounded by `AsyncProvider`; signer
-  creation is bounded by `AsyncSigningProvider`; bundler and paymaster types
+- Public surface: read-only operations are bounded by `Provider`; signer
+  creation is bounded by `SigningProvider`; bundler and paymaster types
   stay out of the core facade until stabilized.
 - Runtime and support: account-abstraction integrations are explicit adapters;
   the SDK does not silently choose a bundler, paymaster, or wallet runtime.

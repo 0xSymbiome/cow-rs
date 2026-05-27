@@ -1,8 +1,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use cow_sdk_alloy_signer::{AsyncSignerError, LocalAlloyKeystoreSigner};
+use cow_sdk_alloy_signer::{SignerError, LocalAlloyKeystoreSigner};
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, AsyncSigner, BuyTokenDestination, OrderKind, SellTokenSource,
+    Address, Amount, AppDataHash, Signer, BuyTokenDestination, OrderKind, SellTokenSource,
     SupportedChainId, TransactionBroadcast, TransactionRequest, UnsignedOrder,
 };
 use cow_sdk_signing::{ORDER_PRIMARY_TYPE, order_typed_data_payload};
@@ -90,19 +90,19 @@ async fn transaction_methods_return_provider_required() {
 
     assert!(matches!(
         signer.sign_transaction(&tx).await,
-        Err(AsyncSignerError::ProviderRequired {
+        Err(SignerError::ProviderRequired {
             method: "sign_transaction"
         })
     ));
     assert!(matches!(
         send_transaction_signature_is_broadcast(&signer, &tx).await,
-        Err(AsyncSignerError::ProviderRequired {
+        Err(SignerError::ProviderRequired {
             method: "send_transaction"
         })
     ));
     assert!(matches!(
         signer.estimate_gas(&tx).await,
-        Err(AsyncSignerError::ProviderRequired {
+        Err(SignerError::ProviderRequired {
             method: "estimate_gas"
         })
     ));
@@ -111,7 +111,7 @@ async fn transaction_methods_return_provider_required() {
 fn send_transaction_signature_is_broadcast<'a>(
     signer: &'a LocalAlloyKeystoreSigner,
     tx: &'a TransactionRequest,
-) -> impl std::future::Future<Output = Result<TransactionBroadcast, AsyncSignerError>> + 'a {
+) -> impl std::future::Future<Output = Result<TransactionBroadcast, SignerError>> + 'a {
     signer.send_transaction(tx)
 }
 

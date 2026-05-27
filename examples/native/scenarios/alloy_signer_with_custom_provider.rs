@@ -2,7 +2,7 @@ use std::{convert::Infallible, error::Error};
 
 use cow_sdk::alloy_signer::LocalAlloyKeystoreSigner;
 use cow_sdk::core::{
-    Address, Amount, AsyncProvider, AsyncSigner, BlockHash, BlockInfo, ChainId, ContractCall,
+    Address, Amount, Provider, Signer, BlockHash, BlockInfo, ChainId, ContractCall,
     ContractHandle, HexData, SupportedChainId, TransactionHash, TransactionReceipt,
     TransactionRequest, TransactionStatus,
 };
@@ -12,9 +12,9 @@ const TEST_KEY: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f460
 const ADDRESS: &str = "0x1111111111111111111111111111111111111111";
 const HASH: &str = "0x13579bdf2468ace013579bdf2468ace013579bdf2468ace013579bdf2468ace0";
 
-struct StaticAsyncProvider;
+struct StaticProvider;
 
-impl AsyncProvider for StaticAsyncProvider {
+impl Provider for StaticProvider {
     type Error = Infallible;
 
     async fn get_chain_id(&self) -> Result<ChainId, Self::Error> {
@@ -75,7 +75,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .private_key(TEST_KEY)?
         .chain_id(SupportedChainId::Mainnet)
         .build()?;
-    let provider = StaticAsyncProvider;
+    let provider = StaticProvider;
     let address = Address::new(ADDRESS)?;
     let code = provider.get_code(&address).await?;
     let signature = signer.sign_message(b"hello cow").await?;

@@ -1,7 +1,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use cow_sdk_alloy::AlloyClient;
-use cow_sdk_core::{AsyncProvider, AsyncSigningProvider, SupportedChainId};
+use cow_sdk_core::{Provider, SigningProvider, SupportedChainId};
 use serde_json::json;
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 

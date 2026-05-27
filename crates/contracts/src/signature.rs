@@ -4,7 +4,7 @@ use alloy_primitives::{B256, Signature as AlloySignature};
 use alloy_sol_types::SolCall;
 use serde::{Deserialize, Serialize};
 
-use cow_sdk_core::{Address, AsyncProvider, Hash32, HexData, Provider};
+use cow_sdk_core::{Address, Hash32, HexData, Provider};
 
 use crate::ContractsError;
 use crate::eip1271::IERC1271;
@@ -336,7 +336,7 @@ pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> 
 /// Returns [`ContractsError`] if the verifier has no code, the provider call
 /// fails, or the verifier response is malformed or does not match the expected
 /// magic value.
-pub fn verify_eip1271_signature<P>(
+pub async fn verify_eip1271_signature<P>(
     provider: &P,
     request: &Eip1271VerificationRequest,
 ) -> Result<(), ContractsError>
@@ -344,7 +344,7 @@ where
     P: Provider,
     P::Error: fmt::Display,
 {
-    ensure_contract_code(provider, &request.verifier)?;
+    ensure_contract_code(provider, &request.verifier).await?;
     let raw = provider
         .read_contract(&cow_sdk_core::ContractCall::new(
             request.verifier,
@@ -355,6 +355,7 @@ where
                 request.signature.to_hex_string(),
             ))?,
         ))
+        .await
         .map_err(|error| ContractsError::Eip1271Provider {
             operation: "read_contract",
             message: error.to_string().into(),
@@ -363,33 +364,12 @@ where
     ensure_magic_value(&raw)
 }
 
-fn ensure_contract_code<P>(provider: &P, verifier: &Address) -> Result<(), ContractsError>
-where
-    P: Provider,
-    P::Error: fmt::Display,
-{
-    let code = provider
-        .get_code(verifier)
-        .map_err(|error| ContractsError::Eip1271Provider {
-            operation: "get_code",
-            message: error.to_string().into(),
-        })?;
-
-    if has_contract_code(code.as_ref()) {
-        Ok(())
-    } else {
-        Err(ContractsError::UnsupportedEip1271Verifier {
-            verifier: *verifier,
-        })
-    }
-}
-
-pub(crate) async fn ensure_contract_code_async<P>(
+pub(crate) async fn ensure_contract_code<P>(
     provider: &P,
     verifier: &Address,
 ) -> Result<(), ContractsError>
 where
-    P: AsyncProvider,
+    P: Provider,
     P::Error: fmt::Display,
 {
     let code =

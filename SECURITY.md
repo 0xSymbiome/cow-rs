@@ -12,7 +12,7 @@ This policy covers security issues in the `cow-rs` repository, including:
 
 Security-relevant public surfaces worth a reviewer's attention include:
 
-- the `Eip1271VerificationCache` trait on `verify_eip1271_signature_async`
+- the `Eip1271VerificationCache` trait on `verify_eip1271_signature_cached`
   and its conservative caching semantics (only `Ok(())` magic-value
   matches and `Eip1271MagicValueMismatch` outcomes are cached; every
   other error class, including transport, missing-contract-code, decode,
@@ -130,5 +130,5 @@ matches the wallet-reported address before submitting the order. The cow-sdk
 `Signature::recover_ecdsa_address` helper in `cow-sdk-contracts` is the
 canonical entry point for ECDSA recovery. Use `Signature::declared_address` for
 non-ECDSA variants that declare an address directly, and
-`cow_sdk_contracts::verify::verify_eip1271_signature_async` for on-chain
+`cow_sdk_contracts::verify::verify_eip1271_signature_cached` for on-chain
 EIP-1271 smart-account verification.
