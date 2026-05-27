@@ -6,8 +6,8 @@ use alloy_primitives::{B256, I256, U256};
 use serde_json::{Map, Value, json};
 
 use cow_sdk_core::{
-    Address, Amount, Provider, BlockHash, BlockInfo, ChainId, ContractCall, ContractHandle,
-    HexData, TransactionHash, TransactionReceipt, TransactionRequest, TransactionStatus,
+    Address, Amount, BlockHash, BlockInfo, ChainId, ContractCall, ContractHandle, HexData,
+    Provider, TransactionHash, TransactionReceipt, TransactionRequest, TransactionStatus,
 };
 
 use crate::BrowserWalletError;

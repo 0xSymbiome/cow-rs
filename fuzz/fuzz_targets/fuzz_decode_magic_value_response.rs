@@ -41,8 +41,8 @@ use cow_sdk_contracts::{
     ContractsError, Eip1271VerificationRequest, IERC1271, verify_eip1271_signature,
 };
 use cow_sdk_core::{
-    Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
-    TransactionHash, TransactionReceipt, TransactionRequest,
+    Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider, TransactionHash,
+    TransactionReceipt, TransactionRequest,
 };
 use libfuzzer_sys::fuzz_target;
 
@@ -58,8 +58,11 @@ fuzz_target!(|data: &[u8]| {
         HexData::new("0xdeadbeef").expect("static fixture signature must remain valid"),
     );
 
-    let first = verify_eip1271_signature(&provider, &request);
-    let second = verify_eip1271_signature(&provider, &request);
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .expect("current-thread tokio runtime must build for fuzz iteration");
+    let first = rt.block_on(verify_eip1271_signature(&provider, &request));
+    let second = rt.block_on(verify_eip1271_signature(&provider, &request));
 
     match (&first, &second) {
         (Ok(()), Ok(())) => {
@@ -72,8 +75,13 @@ fuzz_target!(|data: &[u8]| {
             );
         }
         (
-            Err(ContractsError::Eip1271MagicValueMismatch { expected, actual: actual_a }),
-            Err(ContractsError::Eip1271MagicValueMismatch { actual: actual_b, .. }),
+            Err(ContractsError::Eip1271MagicValueMismatch {
+                expected,
+                actual: actual_a,
+            }),
+            Err(ContractsError::Eip1271MagicValueMismatch {
+                actual: actual_b, ..
+            }),
         ) => {
             assert_eq!(
                 *expected, CANONICAL_MAGIC_VALUE_BYTES,
@@ -95,7 +103,10 @@ fuzz_target!(|data: &[u8]| {
             // Malformed responses are the documented failure class for
             // every payload that does not decode as 4 bytes of hex.
         }
-        (Err(ContractsError::Eip1271Provider { .. }), Err(ContractsError::Eip1271Provider { .. }))
+        (
+            Err(ContractsError::Eip1271Provider { .. }),
+            Err(ContractsError::Eip1271Provider { .. }),
+        )
         | (
             Err(ContractsError::UnsupportedEip1271Verifier { .. }),
             Err(ContractsError::UnsupportedEip1271Verifier { .. }),
@@ -135,7 +146,10 @@ fn response_matches_canonical_magic_value(response: &str) -> bool {
         Ok(_) => return false,
         Err(_) => response.to_owned(),
     };
-    let Some(stripped) = candidate.strip_prefix("0x").or_else(|| candidate.strip_prefix("0X")) else {
+    let Some(stripped) = candidate
+        .strip_prefix("0x")
+        .or_else(|| candidate.strip_prefix("0X"))
+    else {
         return false;
     };
     let Ok(bytes) = hex::decode(stripped) else {
@@ -153,9 +167,6 @@ impl fmt::Display for StubProviderError {
     }
 }
 
-#[derive(Debug, Default)]
-struct DummySigner;
-
 struct StubProvider {
     response: Rc<RefCell<String>>,
 }
@@ -169,59 +180,50 @@ impl StubProvider {
 }
 
 impl Provider for StubProvider {
-    type Signer = DummySigner;
     type Error = StubProviderError;
 
-    fn signer_or_null(&self) -> Option<&Self::Signer> {
-        None
-    }
-
-    fn get_chain_id(&self) -> Result<u64, Self::Error> {
+    async fn get_chain_id(&self) -> Result<u64, Self::Error> {
         Ok(1)
     }
 
-    fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
+    async fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
         Ok(Some(
             HexData::new("0xfe").expect("static fixture deployed code must remain valid"),
         ))
     }
 
-    fn get_transaction_receipt(
+    async fn get_transaction_receipt(
         &self,
         _transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
         Ok(None)
     }
 
-    fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        Ok(DummySigner)
-    }
-
-    fn get_storage_at(&self, _address: &Address, _slot: &str) -> Result<HexData, Self::Error> {
+    async fn get_storage_at(
+        &self,
+        _address: &Address,
+        _slot: &str,
+    ) -> Result<HexData, Self::Error> {
         Err(StubProviderError(
             "stub provider does not implement get_storage_at".to_owned(),
         ))
     }
 
-    fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
+    async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Err(StubProviderError(
             "stub provider does not implement call".to_owned(),
         ))
     }
 
-    fn read_contract(&self, _request: &ContractCall) -> Result<String, Self::Error> {
+    async fn read_contract(&self, _request: &ContractCall) -> Result<String, Self::Error> {
         Ok(self.response.borrow().clone())
     }
 
-    fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
+    async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(0, None))
     }
 
-    fn set_signer(&mut self, _signer: Self::Signer) {}
-
-    fn set_provider(&mut self, _provider_hint: String) {}
-
-    fn get_contract(
+    async fn get_contract(
         &self,
         address: &Address,
         abi_json: &str,

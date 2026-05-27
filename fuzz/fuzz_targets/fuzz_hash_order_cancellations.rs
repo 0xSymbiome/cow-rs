@@ -149,9 +149,7 @@ fn rotate_uid(seed_digest: &[u8; 32], seed_owner: &[u8; 20], seed_valid_to: u32)
         Address::from_bytes(*seed_owner),
         seed_valid_to.wrapping_add(1),
     ))
-    .unwrap_or_else(|_| {
-        OrderUid::from_bytes([0u8; 56])
-    })
+    .unwrap_or_else(|_| OrderUid::from_bytes([0u8; 56]))
 }
 
 /// Builds a bounded ASCII string from a seed byte and a length byte.

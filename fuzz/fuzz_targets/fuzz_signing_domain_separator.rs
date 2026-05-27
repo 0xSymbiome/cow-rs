@@ -41,8 +41,8 @@ fuzz_target!(|input: FuzzInput| {
 
     let first = domain_separator_for(&domain)
         .expect("domain_separator_for must accept any byte-constructed domain");
-    let second = domain_separator_for(&domain)
-        .expect("domain_separator_for must remain deterministic");
+    let second =
+        domain_separator_for(&domain).expect("domain_separator_for must remain deterministic");
     assert_eq!(
         first, second,
         "domain_separator_for must produce the same digest for identical inputs",
@@ -60,7 +60,9 @@ fuzz_target!(|input: FuzzInput| {
         stripped.len(),
     );
     assert!(
-        stripped.bytes().all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f')),
+        stripped
+            .bytes()
+            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f')),
         "domain separator must be lowercase hex, got {first:?}",
     );
 

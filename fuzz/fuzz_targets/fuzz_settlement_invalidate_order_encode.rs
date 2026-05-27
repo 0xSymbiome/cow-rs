@@ -16,11 +16,7 @@
 //! Inputs are capped at [`MAX_FUZZ_INPUT`] so each run stays bounded
 //! even when libFuzzer explores long adversarial payloads.
 
-use alloy_sol_types::{
-    SolCall,
-    private::Bytes,
-    sol,
-};
+use alloy_sol_types::{SolCall, private::Bytes, sol};
 use libfuzzer_sys::fuzz_target;
 use sha3::{Digest, Keccak256};
 

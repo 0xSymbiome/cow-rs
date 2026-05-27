@@ -47,7 +47,11 @@ fuzz_target!(|data: &[u8]| {
         // missing executed fee as `"0"` and must succeed.
         let zero =
             calculate_total_fee(None).expect("calculate_total_fee(None) must succeed as zero");
-        assert_eq!(zero.to_string(), "0", "missing executed fee must render as zero");
+        assert_eq!(
+            zero.to_string(),
+            "0",
+            "missing executed fee must render as zero"
+        );
         return;
     };
 

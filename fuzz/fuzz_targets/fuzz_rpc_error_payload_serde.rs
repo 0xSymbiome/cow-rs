@@ -25,15 +25,15 @@
 //!
 //! The browser-wallet RPC normalization pipeline also feeds three
 //! crate-private helpers in
-//! `cow_sdk_browser_wallet::provider::async_provider`
+//! `cow_sdk_browser_wallet::provider::provider_impl`
 //! (`hex_quantity`, `parse_chain_id_value`, `parse_quantity_to_decimal`)
-//! that are reachable only through `async fn` wrappers on
-//! `AsyncProvider`. The fuzz crate does not link an async executor, so
+//! that are reachable only through `async fn` wrappers on `Provider`.
+//! The fuzz crate does not link an async executor for this target, so
 //! those helpers cannot be driven directly here today. The gap and the
 //! committed future-target names are tracked in
 //! `docs/audit/fuzz-coverage-audit.md`; when async-runtime support is
-//! added to the fuzz crate, the dedicated targets join the inventory
-//! under their own names without disturbing this one.
+//! added for those targets, the dedicated coverage joins the inventory
+//! under its own name without disturbing this one.
 
 use cow_sdk_browser_wallet::RpcErrorPayload;
 use libfuzzer_sys::fuzz_target;

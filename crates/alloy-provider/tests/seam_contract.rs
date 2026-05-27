@@ -195,7 +195,7 @@ fn storage_value_hex_matches_legacy_width_64_format() {
 #[tokio::test]
 async fn read_contract_path_propagates_validation_for_malformed_args_json() {
     use cow_sdk_alloy_provider::{ProviderError, RpcAlloyProvider};
-    use cow_sdk_core::{Provider, ContractCall};
+    use cow_sdk_core::{ContractCall, Provider};
     use wiremock::MockServer;
 
     // Compile-time pin: reference the seam entry so the test crate fails

@@ -60,8 +60,8 @@ fn fuzz_hex_to_cid(rest: &[u8]) {
         let hex = format!("0x{}", hex::encode(digest));
         let cid = app_data_hex_to_cid(&hex)
             .expect("well-formed 32-byte hex must round-trip through the CID helper");
-        let decoded = cid_to_app_data_hex(&cid)
-            .expect("CID output must decode through cid_to_app_data_hex");
+        let decoded =
+            cid_to_app_data_hex(&cid).expect("CID output must decode through cid_to_app_data_hex");
         assert_eq!(
             decoded.to_lowercase(),
             hex.to_lowercase(),

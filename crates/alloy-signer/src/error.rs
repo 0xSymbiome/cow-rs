@@ -197,10 +197,7 @@ mod tests {
                 SignerError::Unsupported("unsupported"),
                 SignerErrorClass::Unsupported,
             ),
-            (
-                SignerError::Cancelled,
-                SignerErrorClass::Cancelled,
-            ),
+            (SignerError::Cancelled, SignerErrorClass::Cancelled),
             (
                 SignerError::Internal("secret".to_owned()),
                 SignerErrorClass::Internal,

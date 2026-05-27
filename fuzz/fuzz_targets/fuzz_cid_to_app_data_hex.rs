@@ -81,8 +81,8 @@ fuzz_target!(|data: &[u8]| {
     // decode the produced CID again and check the lower-cased hex matches.
     let cid = app_data_hex_to_cid(&hex)
         .expect("decoded 32-byte digest must round-trip through app_data_hex_to_cid");
-    let decoded = cid_to_app_data_hex(&cid)
-        .expect("re-encoded CID must decode through cid_to_app_data_hex");
+    let decoded =
+        cid_to_app_data_hex(&cid).expect("re-encoded CID must decode through cid_to_app_data_hex");
     assert_eq!(
         decoded.to_lowercase(),
         hex.to_lowercase(),

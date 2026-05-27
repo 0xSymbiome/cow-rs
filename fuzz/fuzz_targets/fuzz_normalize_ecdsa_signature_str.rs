@@ -74,7 +74,9 @@ fn exercise_normalize(rest: &[u8]) {
         stripped.len(),
     );
     assert!(
-        stripped.bytes().all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f')),
+        stripped
+            .bytes()
+            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f')),
         "accepted normalized signature must be lowercase hex, got {first:?}",
     );
 

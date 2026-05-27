@@ -2,7 +2,7 @@ use std::{error::Error, sync::Arc};
 
 use serde_json::json;
 
-use cow_sdk::core::{Amount, Provider};
+use cow_sdk::core::Amount;
 use cow_sdk::prelude::{SupportedChainId, TradingSdk};
 use cow_sdk::trading::{
     AllowanceParameters, ApprovalParameters, OrderTraderParameters, TradingSdkOptions,
@@ -18,7 +18,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
     let signer = MockSigner::default();
     let mut provider = MockProvider::default();
-    provider.set_signer(signer.clone());
+    provider.signer = Some(signer.clone());
 
     let sdk = TradingSdk::builder()
         .with_chain_id(SupportedChainId::Sepolia)
@@ -33,17 +33,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let post_result = sdk
         .post_swap_order(sample_trade_parameters(), &signer, None)
         .await?;
-    let allowance = sdk.get_cow_protocol_allowance(
-        &provider,
-        &AllowanceParameters::new(sample_sell_token(), sample_owner()),
-    )?;
-    let approval_tx_hash = sdk.approve_cow_protocol(
-        &signer,
-        &ApprovalParameters::new(
-            sample_sell_token(),
-            Amount::new("1000000000000000000").expect("example approval amount must remain valid"),
-        ),
-    )?;
+    let allowance = sdk
+        .get_cow_protocol_allowance(
+            &provider,
+            &AllowanceParameters::new(sample_sell_token(), sample_owner()),
+        )
+        .await?;
+    let approval_tx_hash = sdk
+        .approve_cow_protocol(
+            &signer,
+            &ApprovalParameters::new(
+                sample_sell_token(),
+                Amount::new("1000000000000000000")
+                    .expect("example approval amount must remain valid"),
+            ),
+        )
+        .await?;
     let cancelled = sdk
         .off_chain_cancel_order(
             &OrderTraderParameters::new(post_result.order_id.clone()),

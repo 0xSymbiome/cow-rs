@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use cow_sdk_alloy_provider::{ProviderError, RpcAlloyProvider};
 use cow_sdk_core::{
-    Address, Amount, Provider, ContractCall, HexData, TransactionHash, TransactionRequest,
+    Address, Amount, ContractCall, HexData, Provider, TransactionHash, TransactionRequest,
     TransactionStatus, TransportErrorClass,
 };
 use serde_json::{Value, json};

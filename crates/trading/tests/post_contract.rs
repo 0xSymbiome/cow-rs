@@ -37,8 +37,7 @@ fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParameters) -> P
 use cow_sdk_trading::{
     LimitOrderAdvancedSettings, LimitTradeParameters, PartnerFeePolicy, PostTradeAdditionalParams,
     QuoteRequestOverride, SwapAdvancedSettings, TradingError, build_app_data, get_quote_results,
-    post_limit_order, post_sell_native_currency_order, post_swap_order,
-    post_swap_order_from_quote,
+    post_limit_order, post_sell_native_currency_order, post_swap_order, post_swap_order_from_quote,
 };
 
 use crate::common::{

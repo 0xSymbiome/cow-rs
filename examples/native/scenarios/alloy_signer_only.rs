@@ -2,7 +2,7 @@ use std::error::Error;
 
 use cow_sdk::alloy_signer::LocalAlloyKeystoreSigner;
 use cow_sdk::core::{
-    Address, Amount, AppDataHash, Signer, BuyTokenDestination, OrderKind, SellTokenSource,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource, Signer,
     SupportedChainId, UnsignedOrder,
 };
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, order_typed_data_payload};

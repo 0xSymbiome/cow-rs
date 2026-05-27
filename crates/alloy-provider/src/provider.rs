@@ -5,7 +5,7 @@ use std::{fmt, sync::Arc};
 use alloy_network::Ethereum;
 use alloy_provider::{DynProvider, Provider as AlloyProviderTrait};
 use cow_sdk_core::{
-    Address, Provider, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, Redacted,
+    Address, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, Provider, Redacted,
     TransactionHash, TransactionReceipt, TransactionRequest,
 };
 

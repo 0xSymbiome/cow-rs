@@ -103,11 +103,7 @@ fuzz_target!(|input: QueryStringInput| {
     );
 });
 
-fn build_descriptor(
-    base: &str,
-    method: HttpMethod,
-    pairs: &[(String, String)],
-) -> FetchParams {
+fn build_descriptor(base: &str, method: HttpMethod, pairs: &[(String, String)]) -> FetchParams {
     let mut params = FetchParams::new(base.to_owned(), method);
     for (key, value) in pairs {
         params = params.with_query(key.clone(), value.clone());
@@ -130,7 +126,10 @@ fn seeded_input(seed_class: u8) -> Option<QueryStringInput> {
             base: "https://api.cow.fi/mainnet/api/v1/orders".to_owned(),
             method_hint: 0,
             pairs: vec![
-                ("owner".to_owned(), "0x0000000000000000000000000000000000000001".to_owned()),
+                (
+                    "owner".to_owned(),
+                    "0x0000000000000000000000000000000000000001".to_owned(),
+                ),
                 ("offset".to_owned(), "0".to_owned()),
                 ("limit".to_owned(), "50".to_owned()),
             ],

@@ -1,4 +1,4 @@
-use cow_sdk_core::{Address, Signer, ProtocolOptions};
+use cow_sdk_core::{Address, ProtocolOptions, Signer};
 use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 use cow_sdk_signing::{
     SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order,
@@ -338,14 +338,9 @@ where
                     });
                 }
             };
-            let signing_result = sign_order_with_scheme(
-                order_to_sign,
-                chain_id,
-                signer,
-                scheme,
-                Some(options),
-            )
-            .await?;
+            let signing_result =
+                sign_order_with_scheme(order_to_sign, chain_id, signer, scheme, Some(options))
+                    .await?;
             Ok((
                 signing_result.signature,
                 map_contract_scheme(signing_result.signing_scheme)?,

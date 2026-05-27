@@ -1,9 +1,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 use std::sync::Arc;
 
-use cow_sdk_core::{
-    Amount, Provider, Signer, CowEnv, SupportedChainId, TransactionHash,
-};
+use cow_sdk_core::{Amount, CowEnv, Provider, Signer, SupportedChainId, TransactionHash};
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_orderbook::OrderBookApi;
 

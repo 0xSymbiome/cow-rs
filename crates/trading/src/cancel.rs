@@ -1,4 +1,4 @@
-use cow_sdk_core::{Signer, ProtocolOptions};
+use cow_sdk_core::{ProtocolOptions, Signer};
 use cow_sdk_orderbook::{EcdsaSigningScheme, OrderCancellations};
 use cow_sdk_signing::{SigningScheme as SigningSchemeContract, sign_order_cancellations};
 

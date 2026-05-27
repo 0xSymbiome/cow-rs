@@ -12,14 +12,16 @@ use cow_sdk_examples_native::support::{
     MockSigner, sample_order_uid, sample_owner, sample_unsigned_order, text_preview,
 };
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
     let signer = MockSigner::default();
     let order = sample_unsigned_order();
-    let signed_order = sign_order(&order, chain_id, &signer, None)?;
+    let signed_order = sign_order(&order, chain_id, &signer, None).await?;
     let typed_order = order_typed_data(chain_id, &order, None)?;
     let generated = generate_order_id(chain_id, &order, &sample_owner(), None)?;
-    let cancellation = sign_order_cancellation(&sample_order_uid(), chain_id, &signer, None)?;
+    let cancellation =
+        sign_order_cancellation(&sample_order_uid(), chain_id, &signer, None).await?;
     let eip1271_payload = eip1271_signature_payload(&order, &signed_order.signature)?;
 
     let report = json!({

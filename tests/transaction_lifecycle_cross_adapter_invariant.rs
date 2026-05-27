@@ -7,8 +7,8 @@ use std::sync::{Arc, Mutex};
 use cow_sdk_alloy::AlloyClient;
 use cow_sdk_browser_wallet::{BrowserWallet, MockEip1193Transport};
 use cow_sdk_core::{
-    Address, Amount, Provider, Signer, SigningProvider, SupportedChainId,
-    TransactionHash, TransactionRequest, TransactionStatus,
+    Address, Amount, Provider, Signer, SigningProvider, SupportedChainId, TransactionHash,
+    TransactionRequest, TransactionStatus,
 };
 use serde_json::{Value, json};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};

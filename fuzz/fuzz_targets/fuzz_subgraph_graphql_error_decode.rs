@@ -56,8 +56,9 @@ fuzz_target!(|data: &[u8]| {
         // and `extensions` deliberately rewrites those fields to the
         // sanitized placeholder during serialization, so we cannot
         // assert byte-for-byte equality on the round-tripped value.
-        let re_encoded = serde_json::to_vec(&single)
-            .expect("serde_json::to_vec must succeed on a successfully decoded SubgraphGraphQlError");
+        let re_encoded = serde_json::to_vec(&single).expect(
+            "serde_json::to_vec must succeed on a successfully decoded SubgraphGraphQlError",
+        );
         let decoded_again: SubgraphGraphQlError =
             serde_json::from_slice(&re_encoded).expect("re-encoded document must decode again");
         // Non-Redacted fields must survive the round-trip byte-identically.

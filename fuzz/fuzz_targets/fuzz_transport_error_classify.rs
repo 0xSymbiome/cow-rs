@@ -71,12 +71,7 @@ fn classify_input(input: TransportInput) -> TransportError {
     let headers = input
         .headers
         .into_iter()
-        .map(|(name, value)| {
-            (
-                redact_response_body(&name),
-                redact_response_body(&value),
-            )
-        })
+        .map(|(name, value)| (redact_response_body(&name), redact_response_body(&value)))
         .collect::<Vec<_>>();
 
     if !(200..=299).contains(&input.status) {
@@ -90,9 +85,10 @@ fn classify_input(input: TransportInput) -> TransportError {
         };
     }
 
-    if headers.iter().any(|(name, value)| {
-        name.trim().is_empty() || name.contains('\n') || value.contains('\n')
-    }) {
+    if headers
+        .iter()
+        .any(|(name, value)| name.trim().is_empty() || name.contains('\n') || value.contains('\n'))
+    {
         return TransportError::Configuration {
             message: "invalid transport header material".to_owned().into(),
         };
@@ -157,7 +153,9 @@ fn contains_credential_key_value(value: &str) -> bool {
         "secret=secret",
         "authorization: secret",
     ];
-    CREDENTIAL_KEYS.iter().any(|needle| lowered.contains(needle))
+    CREDENTIAL_KEYS
+        .iter()
+        .any(|needle| lowered.contains(needle))
 }
 
 fn contains_bearer_prefix(value: &str) -> bool {
@@ -170,9 +168,9 @@ fn contains_jwt_prefix(value: &str) -> bool {
         .any(|token| {
             token.starts_with("eyJ")
                 && token.len() >= 26
-                && token.chars().all(|c| {
-                    c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.'
-                })
+                && token
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
         })
 }
 
@@ -246,11 +244,7 @@ fn seeded_input(seed_class: u8) -> Option<TransportInput> {
     })
 }
 
-fn status_input(
-    status: u16,
-    body: &str,
-    headers: Vec<(&str, &str)>,
-) -> TransportInput {
+fn status_input(status: u16, body: &str, headers: Vec<(&str, &str)>) -> TransportInput {
     TransportInput {
         status,
         body: body.as_bytes().to_vec(),

@@ -127,10 +127,7 @@ fuzz_target!(|input: DecodedBodyInput| {
             input.status,
         ),
         ResponseBody::Json(value) => {
-            assert!(
-                !input.body.is_empty(),
-                "Json body decoded for empty input",
-            );
+            assert!(!input.body.is_empty(), "Json body decoded for empty input",);
             assert!(
                 input.status != 204,
                 "Json body decoded for 204 status: value={value:?}",
@@ -141,14 +138,8 @@ fuzz_target!(|input: DecodedBodyInput| {
             assert_eq!(reparsed, *value, "Json variant must preserve parsed value");
         }
         ResponseBody::Text(_) => {
-            assert!(
-                !input.body.is_empty(),
-                "Text body decoded for empty input",
-            );
-            assert!(
-                input.status != 204,
-                "Text body decoded for 204 status",
-            );
+            assert!(!input.body.is_empty(), "Text body decoded for empty input",);
+            assert!(input.status != 204, "Text body decoded for 204 status",);
         }
     }
 
@@ -182,13 +173,10 @@ fn decode_body_reference(status: u16, content_type: Option<&str>, body: &[u8]) -
         return ResponseBody::Empty;
     }
 
-    let prefer_json = content_type.is_none_or(|ct| {
-        ct.to_ascii_lowercase().starts_with("application/json")
-    });
+    let prefer_json =
+        content_type.is_none_or(|ct| ct.to_ascii_lowercase().starts_with("application/json"));
 
-    if prefer_json
-        && let Ok(value) = serde_json::from_slice::<Value>(body)
-    {
+    if prefer_json && let Ok(value) = serde_json::from_slice::<Value>(body) {
         return ResponseBody::Json(value);
     }
 

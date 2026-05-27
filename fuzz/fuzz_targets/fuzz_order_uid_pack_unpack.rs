@@ -11,9 +11,7 @@
 //! the input triple. Shorter inputs return early instead of panicking so
 //! the fuzzer itself stays alive.
 
-use cow_sdk_contracts::order::{
-    OrderUidParams, extract_order_uid_params, pack_order_uid_params,
-};
+use cow_sdk_contracts::order::{OrderUidParams, extract_order_uid_params, pack_order_uid_params};
 use cow_sdk_core::{Address, OrderDigest};
 use libfuzzer_sys::fuzz_target;
 

@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use cow_sdk_alloy::AlloyClient;
 use cow_sdk_core::{
-    Amount, SigningProvider, CowEnv, HexData, OrderUid, SupportedChainId, TransactionHash,
+    Amount, CowEnv, HexData, OrderUid, SigningProvider, SupportedChainId, TransactionHash,
     TransactionRequest,
 };
 use cow_sdk_trading::{AllowanceParameters, ApprovalParameters, OrderTraderParameters, TradingSdk};

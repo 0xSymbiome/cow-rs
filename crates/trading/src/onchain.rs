@@ -6,7 +6,7 @@ use cow_sdk_contracts::eth_flow::{
 use cow_sdk_contracts::settlement::IGPv2Settlement;
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
-    Address, Amount, Signer, HexData, ProtocolOptions, SupportedChainId, TransactionHash,
+    Address, Amount, HexData, ProtocolOptions, Signer, SupportedChainId, TransactionHash,
     TransactionRequest,
 };
 use cow_sdk_orderbook::Order;

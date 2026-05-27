@@ -1,7 +1,7 @@
 use alloy_sol_types::SolCall as _;
 use cow_sdk_contracts::{ContractId, IERC20, Registry};
 use cow_sdk_core::{
-    Address, Amount, Provider, Signer, ContractCall, SupportedChainId, TransactionHash,
+    Address, Amount, ContractCall, Provider, Signer, SupportedChainId, TransactionHash,
     TransactionRequest,
 };
 

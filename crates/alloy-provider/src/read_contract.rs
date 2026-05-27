@@ -84,9 +84,9 @@ fn resolve_function<'abi>(
             functions.len()
         )));
     }
-    functions.first().ok_or_else(|| {
-        ProviderError::Validation(format!("ABI has no function named `{method}`"))
-    })
+    functions
+        .first()
+        .ok_or_else(|| ProviderError::Validation(format!("ABI has no function named `{method}`")))
 }
 
 fn resolve_param_type(param: &Param, method: &str) -> Result<DynSolType, ProviderError> {
@@ -162,9 +162,7 @@ fn json_to_dyn_value(
     match ty {
         DynSolType::Address => {
             let address = value.as_str().ok_or_else(|| {
-                ProviderError::Validation(format!(
-                    "method `{method}`: address must be a string"
-                ))
+                ProviderError::Validation(format!("method `{method}`: address must be a string"))
             })?;
             let address = Address::new(address)?;
             Ok(DynSolValue::Address(address.into_alloy()))
@@ -178,9 +176,7 @@ fn json_to_dyn_value(
             .as_str()
             .map(|item| DynSolValue::String(item.to_owned()))
             .ok_or_else(|| {
-                ProviderError::Validation(format!(
-                    "method `{method}`: string must be a string"
-                ))
+                ProviderError::Validation(format!("method `{method}`: string must be a string"))
             }),
         DynSolType::Bytes => Ok(DynSolValue::Bytes(bytes_from_json(value, method)?)),
         DynSolType::FixedBytes(length) => {
@@ -300,9 +296,8 @@ fn bytes_from_json(value: &Value, method: &str) -> Result<Vec<u8>, ProviderError
                     "method `{method}`: hex value must be 0x-prefixed"
                 ))
             })?;
-            alloy_primitives::hex::decode(stripped).map_err(|error| {
-                ProviderError::Validation(format!("method `{method}`: {error}"))
-            })
+            alloy_primitives::hex::decode(stripped)
+                .map_err(|error| ProviderError::Validation(format!("method `{method}`: {error}")))
         }
         Value::Array(items) => items
             .iter()

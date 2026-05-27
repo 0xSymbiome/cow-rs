@@ -22,13 +22,13 @@
 //! ## Related coverage gap
 //!
 //! The normalization helper
-//! `cow_sdk_browser_wallet::provider::async_provider::transaction_to_rpc`
+//! `cow_sdk_browser_wallet::provider::provider_impl::transaction_to_rpc`
 //! is `pub(crate)` and reachable only through `async fn` wrappers on
-//! `AsyncProvider` and `AsyncSigningProvider`. The fuzz crate does not
-//! link an async executor, so the helper cannot be driven directly
-//! here today. The gap and the committed future-target name are
-//! tracked in `docs/audit/fuzz-coverage-audit.md`; when async-runtime
-//! support is added to the fuzz crate, the dedicated target joins the
+//! `Provider` and `SigningProvider`. The fuzz crate does not link an
+//! async executor for this target, so the helper cannot be driven
+//! directly here today. The gap and the committed future-target name
+//! are tracked in `docs/audit/fuzz-coverage-audit.md`; when async-runtime
+//! support is added for this target, the dedicated coverage joins the
 //! inventory under its own name without disturbing this one.
 
 use cow_sdk_core::TransactionRequest;
@@ -43,8 +43,8 @@ fuzz_target!(|data: &[u8]| {
         // Round-trip the typed value through serde JSON. The DTO must
         // remain byte-stable for any accepted input so the documented
         // wire shape stays predictable for downstream consumers.
-        let serialized = serde_json::to_vec(request)
-            .expect("TransactionRequest must serialize cleanly");
+        let serialized =
+            serde_json::to_vec(request).expect("TransactionRequest must serialize cleanly");
         let reparsed: TransactionRequest = serde_json::from_slice(&serialized)
             .expect("re-serialized TransactionRequest must remain parseable");
         assert_eq!(

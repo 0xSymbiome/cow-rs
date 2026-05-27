@@ -13,9 +13,7 @@ use cow_sdk_core::{Address, DigestSigner, Eip1193};
 #[cfg(feature = "cancellation")]
 use cow_sdk_core::{Amount, Hash32, HexData, OrderUid, TransactionRequest};
 #[cfg(feature = "trading")]
-use cow_sdk_core::{
-    Owner, TypedDataSigner, TypedDataDomain, TypedDataField, TypedDataPayload,
-};
+use cow_sdk_core::{Owner, TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataSigner};
 use cow_sdk_pure_helpers as pure;
 use cow_sdk_signing::GeneratedOrderId;
 #[cfg(feature = "cancellation")]

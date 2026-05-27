@@ -16,7 +16,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use cow_sdk_alloy::AlloyClient;
-use cow_sdk_core::{Address, Provider, ContractCall, SupportedChainId};
+use cow_sdk_core::{Address, ContractCall, Provider, SupportedChainId};
 use serde_json::{Value, json};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 

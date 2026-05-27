@@ -1,6 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use cow_sdk_alloy_signer::{SignerError, SignerErrorClass, LocalAlloyKeystoreSigner};
+use cow_sdk_alloy_signer::{LocalAlloyKeystoreSigner, SignerError, SignerErrorClass};
 use cow_sdk_core::{Redacted, SupportedChainId};
 
 #[test]
@@ -103,10 +103,7 @@ fn error_class_covers_every_variant() {
             SignerError::Unsupported("unsupported"),
             SignerErrorClass::Unsupported,
         ),
-        (
-            SignerError::Cancelled,
-            SignerErrorClass::Cancelled,
-        ),
+        (SignerError::Cancelled, SignerErrorClass::Cancelled),
         (
             SignerError::Internal("internal".to_owned()),
             SignerErrorClass::Internal,

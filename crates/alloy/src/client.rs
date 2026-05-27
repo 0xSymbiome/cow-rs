@@ -7,8 +7,8 @@ use alloy_provider::{DynProvider, Provider as _, ProviderBuilder};
 use alloy_signer::Signer as AlloySigner;
 use alloy_signer_local::PrivateKeySigner;
 use cow_sdk_core::{
-    Address, Provider, SigningProvider, BlockInfo, ChainId, ContractCall, ContractHandle,
-    HexData, TransactionHash, TransactionReceipt, TransactionRequest,
+    Address, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, Provider, SigningProvider,
+    TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
 use alloy_primitives::{B256, U256};

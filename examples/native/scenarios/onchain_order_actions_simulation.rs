@@ -47,11 +47,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let order_uid = sample_order_uid();
     let params = OrderTraderParameters::new(order_uid.clone()).with_chain_id(chain_id);
 
-    let pre_sign = get_pre_sign_transaction(&preview_signer, chain_id, &order_uid, None)?;
+    let pre_sign = get_pre_sign_transaction(&preview_signer, chain_id, &order_uid, None).await?;
     let regular_preview =
-        onchain_cancellation_transaction(&preview_signer, chain_id, &sample_open_order(), None)?;
+        onchain_cancellation_transaction(&preview_signer, chain_id, &sample_open_order(), None)
+            .await?;
     let ethflow_preview =
-        onchain_cancellation_transaction(&preview_signer, chain_id, &sample_ethflow_order(), None)?;
+        onchain_cancellation_transaction(&preview_signer, chain_id, &sample_ethflow_order(), None)
+            .await?;
 
     let regular_orderbook = MockOrderbook::new(chain_id, sample_quote_response());
     regular_orderbook.push_order(sample_open_order());

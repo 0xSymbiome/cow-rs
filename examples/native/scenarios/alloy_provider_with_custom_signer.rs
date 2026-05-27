@@ -2,8 +2,8 @@ use std::{convert::Infallible, error::Error};
 
 use cow_sdk::alloy_provider::RpcAlloyProvider;
 use cow_sdk::core::{
-    Address, Amount, Provider, Signer, TransactionBroadcast, TransactionRequest,
-    TypedDataDomain, TypedDataField,
+    Address, Amount, Provider, Signer, TransactionBroadcast, TransactionRequest, TypedDataDomain,
+    TypedDataField,
 };
 use serde_json::json;
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};

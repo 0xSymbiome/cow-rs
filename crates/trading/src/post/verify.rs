@@ -1,4 +1,4 @@
-use cow_sdk_core::{Provider, ProtocolOptions};
+use cow_sdk_core::{ProtocolOptions, Provider};
 
 use crate::TradingError;
 

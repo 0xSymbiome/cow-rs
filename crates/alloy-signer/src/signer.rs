@@ -5,8 +5,8 @@ use std::{fmt, sync::Arc};
 use alloy_signer::Signer as AlloySigner;
 use alloy_signer_local::PrivateKeySigner;
 use cow_sdk_core::{
-    Address, Amount, Signer, ChainId, TransactionBroadcast, TransactionRequest,
-    TypedDataDomain, TypedDataField, TypedDataPayload,
+    Address, Amount, ChainId, Signer, TransactionBroadcast, TransactionRequest, TypedDataDomain,
+    TypedDataField, TypedDataPayload,
 };
 
 use crate::{

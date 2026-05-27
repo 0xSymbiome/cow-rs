@@ -5,8 +5,7 @@ use std::{
 
 use cow_sdk::alloy::AlloyClient;
 use cow_sdk::core::{
-    Amount, SigningProvider, CowEnv, OrderUid, SupportedChainId, TransactionHash,
-    TransactionStatus,
+    Amount, CowEnv, OrderUid, SigningProvider, SupportedChainId, TransactionHash, TransactionStatus,
 };
 use cow_sdk::trading::{
     AllowanceParameters, ApprovalParameters, OrderTraderParameters, TradingSdk, WaitOptions,

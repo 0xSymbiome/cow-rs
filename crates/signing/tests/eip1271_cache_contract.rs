@@ -27,7 +27,7 @@ use cow_sdk_contracts::{
     ContractsError, Eip1271VerificationRequest, verify_eip1271_signature_cached,
 };
 use cow_sdk_core::{
-    Address, Provider, BlockInfo, ContractCall, ContractHandle, Hash32, HexData,
+    Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
     TransactionReceipt, TransactionRequest,
 };
 use cow_sdk_signing::cache::{

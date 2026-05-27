@@ -11,8 +11,8 @@ use cow_sdk_contracts::{
     verify_eip1271_signature, verify_eip1271_signature_cached,
 };
 use cow_sdk_core::{
-    Address, Amount, Provider, Signer, SigningProvider, BlockInfo, ContractCall,
-    ContractHandle, Hash32, HexData, TransactionBroadcast, TransactionReceipt, TransactionRequest,
+    Address, Amount, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider, Signer,
+    SigningProvider, TransactionBroadcast, TransactionReceipt, TransactionRequest,
 };
 use k256::ecdsa::SigningKey;
 use sha3::{Digest, Keccak256};

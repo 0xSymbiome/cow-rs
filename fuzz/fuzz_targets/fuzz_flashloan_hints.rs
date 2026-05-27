@@ -103,9 +103,8 @@ fuzz_target!(|data: &[u8]| {
     // Determinism guard: stringify and re-parse from the canonical text form.
     let serialized = serde_json::to_string(&hints)
         .expect("typed FlashloanHints must serialize to a JSON string");
-    let from_string = serde_json::from_str::<FlashloanHints>(&serialized).expect(
-        "typed FlashloanHints serialized form must reparse through serde_json::from_str",
-    );
+    let from_string = serde_json::from_str::<FlashloanHints>(&serialized)
+        .expect("typed FlashloanHints serialized form must reparse through serde_json::from_str");
     assert_eq!(
         from_string, hints,
         "FlashloanHints to_string/from_str must round-trip",

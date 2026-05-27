@@ -122,7 +122,11 @@ fuzz_target!(|data: &[u8]| {
 
             // If the error is TooLarge, its declared actual_bytes must exceed
             // APP_DATA_MAX_BYTES per the documented contract.
-            if let AppDataError::TooLarge { actual_bytes, max_bytes } = left {
+            if let AppDataError::TooLarge {
+                actual_bytes,
+                max_bytes,
+            } = left
+            {
                 assert!(
                     actual_bytes > max_bytes,
                     "TooLarge must carry actual_bytes ({actual_bytes}) > max_bytes ({max_bytes})",

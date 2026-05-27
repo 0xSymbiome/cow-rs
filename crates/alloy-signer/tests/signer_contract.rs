@@ -1,8 +1,8 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use cow_sdk_alloy_signer::{SignerError, LocalAlloyKeystoreSigner};
+use cow_sdk_alloy_signer::{LocalAlloyKeystoreSigner, SignerError};
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, Signer, BuyTokenDestination, OrderKind, SellTokenSource,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource, Signer,
     SupportedChainId, TransactionBroadcast, TransactionRequest, UnsignedOrder,
 };
 use cow_sdk_signing::{ORDER_PRIMARY_TYPE, order_typed_data_payload};

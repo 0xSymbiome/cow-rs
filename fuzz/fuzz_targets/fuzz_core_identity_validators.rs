@@ -91,8 +91,8 @@ fn exercise_hash32(raw: &str) {
             HASH32_LEN,
             "Hash32 Display must remain the canonical 66-char `0x`-prefixed hex form",
         );
-        let roundtrip = Hash32::new(rendered)
-            .expect("Display form of an accepted Hash32 must re-parse");
+        let roundtrip =
+            Hash32::new(rendered).expect("Display form of an accepted Hash32 must re-parse");
         assert_eq!(
             value, roundtrip,
             "Hash32::new round-trip through Display form must be stable",
@@ -151,8 +151,8 @@ fn exercise_order_uid(raw: &str) {
             ORDER_UID_LEN,
             "OrderUid Display must remain the canonical 114-char `0x`-prefixed hex form",
         );
-        let roundtrip = OrderUid::new(rendered)
-            .expect("Display form of an accepted OrderUid must re-parse");
+        let roundtrip =
+            OrderUid::new(rendered).expect("Display form of an accepted OrderUid must re-parse");
         assert_eq!(
             value, roundtrip,
             "OrderUid::new round-trip through Display form must be stable",
@@ -186,8 +186,8 @@ fn exercise_hex_data(raw: &str) {
             "HexData stored payload must have an even hex-character count (odd-length \
              inputs are normalized with a leading zero nibble): rendered = {rendered}",
         );
-        let roundtrip = HexData::new(rendered)
-            .expect("Display form of an accepted HexData must re-parse");
+        let roundtrip =
+            HexData::new(rendered).expect("Display form of an accepted HexData must re-parse");
         assert_eq!(
             value, roundtrip,
             "HexData::new round-trip through Display form must be stable",

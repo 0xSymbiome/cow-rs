@@ -26,8 +26,8 @@
 //! and the two decoder paths receive the remaining bytes up to
 //! `MAX_FUZZ_INPUT` so each run stays bounded.
 
-use cow_sdk_contracts::{Signature, SigningScheme, decode_signing_scheme};
 use cow_sdk_contracts::signature::decode_eip1271_signature_data;
+use cow_sdk_contracts::{Signature, SigningScheme, decode_signing_scheme};
 use libfuzzer_sys::fuzz_target;
 
 /// Maximum input width accepted by the target. The signature

@@ -264,9 +264,7 @@ impl From<cow_sdk_contracts::ContractsError> for AlloyClientError {
 impl From<cow_sdk_alloy_provider::ProviderError> for AlloyClientError {
     fn from(error: cow_sdk_alloy_provider::ProviderError) -> Self {
         match error {
-            cow_sdk_alloy_provider::ProviderError::Validation(detail) => {
-                Self::Validation(detail)
-            }
+            cow_sdk_alloy_provider::ProviderError::Validation(detail) => Self::Validation(detail),
             cow_sdk_alloy_provider::ProviderError::Transport { class, detail } => {
                 Self::Transport { class, detail }
             }

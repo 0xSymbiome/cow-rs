@@ -1,7 +1,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use cow_sdk_alloy_signer::{SignerError, LocalAlloyKeystoreSigner};
-use cow_sdk_core::{Signer, Cancellable, CancellationToken, SupportedChainId};
+use cow_sdk_alloy_signer::{LocalAlloyKeystoreSigner, SignerError};
+use cow_sdk_core::{Cancellable, CancellationToken, Signer, SupportedChainId};
 
 #[tokio::test]
 async fn cancel_with_propagates_cancelled_through_question_mark() {

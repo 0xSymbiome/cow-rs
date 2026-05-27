@@ -1,8 +1,8 @@
 use cow_sdk_core::{
-    Address, Amount, BlockInfo, ContractCall, ContractHandle, DigestSigner, GraphTransport,
-    Hash32, HexData, Owner, PinningTransport, Provider, Signer, SigningProvider,
-    TransactionBroadcast, TransactionReceipt, TransactionRequest, TransactionStatus,
-    TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataSigner, TypedDataTypes,
+    Address, Amount, BlockInfo, ContractCall, ContractHandle, DigestSigner, GraphTransport, Hash32,
+    HexData, Owner, PinningTransport, Provider, Signer, SigningProvider, TransactionBroadcast,
+    TransactionReceipt, TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField,
+    TypedDataPayload, TypedDataSigner, TypedDataTypes,
 };
 
 const HASH_1: &str = "0x1111111111111111111111111111111111111111111111111111111111111111";
@@ -341,7 +341,10 @@ async fn assert_provider_contracts(provider: &MockProvider, tx: &TransactionRequ
         "read:balanceOf"
     );
     assert_eq!(
-        Provider::get_block(provider, "latest").await.unwrap().number,
+        Provider::get_block(provider, "latest")
+            .await
+            .unwrap()
+            .number,
         1
     );
     assert_eq!(

@@ -1,9 +1,7 @@
-use cow_sdk_core::{Amount, Provider, Signer, CowEnv, TransactionHash};
+use cow_sdk_core::{Amount, CowEnv, Provider, Signer, TransactionHash};
 
 use super::TradingSdk;
-use crate::{
-    AllowanceParameters, ApprovalParameters, TradingError, get_cow_protocol_allowance,
-};
+use crate::{AllowanceParameters, ApprovalParameters, TradingError, get_cow_protocol_allowance};
 
 impl TradingSdk {
     /// Reads the `CoW` Protocol allowance.

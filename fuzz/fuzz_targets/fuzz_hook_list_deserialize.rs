@@ -86,8 +86,8 @@ fuzz_target!(|data: &[u8]| {
     }
 
     // Stringified round-trip: ensures the gas-limit string form is canonical.
-    let serialized = serde_json::to_string(&list)
-        .expect("typed HookList must serialize to a JSON string");
+    let serialized =
+        serde_json::to_string(&list).expect("typed HookList must serialize to a JSON string");
     let from_string = serde_json::from_str::<HookList>(&serialized)
         .expect("typed HookList serialized form must reparse through serde_json::from_str");
     assert_eq!(

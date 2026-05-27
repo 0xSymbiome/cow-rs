@@ -1,4 +1,4 @@
-use cow_sdk_core::{Signer, ProtocolOptions};
+use cow_sdk_core::{ProtocolOptions, Signer};
 use cow_sdk_orderbook::{OrderQuoteRequest, PriceQuality, QuoteSide, SigningScheme};
 use cow_sdk_signing::order_typed_data;
 

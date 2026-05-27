@@ -1,5 +1,5 @@
 use cow_sdk_alloy_provider::RpcAlloyProvider;
-use cow_sdk_core::{Address, Provider, ContractCall};
+use cow_sdk_core::{Address, ContractCall, Provider};
 use serde_json::{Value, json};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 

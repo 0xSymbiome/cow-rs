@@ -71,9 +71,7 @@ fuzz_target!(|input: FuzzInput| {
     let verifying_contract = input
         .has_verifying_contract
         .then(|| Address::from(input.verifying_contract));
-    let salt = input
-        .has_salt
-        .then(|| FixedBytes::<32>::from(input.salt));
+    let salt = input.has_salt.then(|| FixedBytes::<32>::from(input.salt));
 
     let domain = Eip712Domain::new(name, version, chain_id, verifying_contract, salt);
 

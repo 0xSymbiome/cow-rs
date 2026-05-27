@@ -18,8 +18,8 @@ use std::{
 };
 
 use cow_sdk_core::{
-    Address, Amount, ApiContext, AppDataHash, Provider, Signer, BlockInfo, Cancellable,
-    ContractCall, ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid, SupportedChainId,
+    Address, Amount, ApiContext, AppDataHash, BlockInfo, Cancellable, ContractCall, ContractHandle,
+    CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer, SupportedChainId,
     TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest, TypedDataDomain,
     TypedDataField, TypedDataPayload,
 };
@@ -33,9 +33,8 @@ use cow_sdk_trading::{
 };
 
 use crate::common::{
-    COW, MESSAGE_SIGNATURE, MockOrderbook, OWNER, TX_HASH, TYPED_SIGNATURE, address,
-    order_uid, regular_order, sample_limit_parameters, sample_trade_parameters,
-    sell_quote_response,
+    COW, MESSAGE_SIGNATURE, MockOrderbook, OWNER, TX_HASH, TYPED_SIGNATURE, address, order_uid,
+    regular_order, sample_limit_parameters, sample_trade_parameters, sell_quote_response,
 };
 
 // Every public async method on `TradingSdk` composes with
