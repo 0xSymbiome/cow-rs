@@ -61,7 +61,7 @@ interface TradingQuoteOutput {
     };
   };
   derived: {
-    limitTradeParameters: {
+    limitTradeParametersFromQuote: {
       sellToken: string;
     };
   };
@@ -144,7 +144,7 @@ test("route-mocked orderbook and subgraph flows return reviewable JSON", async (
   await page.locator("#btn-trading-quote").click();
   const trading = await outputJson<TradingQuoteOutput>(page, "#trading-output");
   expect(trading.quoteResults.quoteResponse.verified).toBe(true);
-  expectAddressEqual(trading.derived.limitTradeParameters.sellToken, MAINNET_WETH);
+  expectAddressEqual(trading.derived.limitTradeParametersFromQuote.sellToken, MAINNET_WETH);
   expect(quoteRequests).toHaveLength(2);
 
   await page.locator("#subgraph-api-key").fill("mock-key");

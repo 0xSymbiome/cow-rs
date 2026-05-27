@@ -35,7 +35,7 @@ fn try_from_limit_rejects_missing_quote_id_with_typed_diagnostic() {
         .expect_err("missing quote id must produce the typed diagnostic");
     assert!(matches!(
         error,
-        TradingError::MissingQuoteId("`EthFlow` order posting")
+        TradingError::MissingQuoteId("EthFlow order posting")
     ));
 }
 

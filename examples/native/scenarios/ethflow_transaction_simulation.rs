@@ -36,6 +36,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let app_data = build_app_data(&trader.app_code, 0, "market", None, None).await?;
     let additional = PostTradeAdditionalParams::default();
 
+    let requested_sell_token = params.sell_token;
+    let requested_quote_id = params.quote_id;
     let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)?;
 
     let ethflow = get_eth_flow_transaction(
@@ -80,10 +82,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     .as_ref()
                     .expect("ethflow transaction should include call data"),
             ),
-            "requestedSellToken": params.sell_token.to_hex_string(),
+            "requestedSellToken": requested_sell_token.to_hex_string(),
             "effectiveSellToken": ethflow.order_to_sign.sell_token.to_hex_string(),
             "buyToken": ethflow.order_to_sign.buy_token.to_hex_string(),
-            "quoteId": params.quote_id,
+            "quoteId": requested_quote_id,
             "appDataHash": app_data.app_data_keccak256.to_hex_string()
         },
         "nativeSellPosting": {

@@ -482,7 +482,6 @@ dependencies = [
  "async-trait",
  "cid",
  "cow-sdk-core",
- "hex",
  "include_dir",
  "jsonschema",
  "multibase",
@@ -504,7 +503,7 @@ dependencies = [
  "async-trait",
  "cow-sdk-core",
  "getrandom 0.4.2",
- "hex",
+ "gloo-timers",
  "js-sys",
  "serde",
  "serde-wasm-bindgen",
@@ -539,7 +538,6 @@ dependencies = [
  "alloy-sol-types",
  "cow-sdk-core",
  "getrandom 0.4.2",
- "hex",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -553,9 +551,12 @@ name = "cow-sdk-core"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
+ "alloy-sol-types",
  "async-trait",
- "hex",
+ "cid",
  "http",
+ "multibase",
+ "multihash",
  "pin-project-lite",
  "reqwest",
  "serde",
@@ -592,7 +593,6 @@ dependencies = [
  "async-trait",
  "cow-sdk-contracts",
  "cow-sdk-core",
- "hex",
  "parking_lot",
  "serde",
  "serde_json",
@@ -627,7 +627,7 @@ dependencies = [
  "cow-sdk-signing",
  "futures-timer",
  "gloo-timers",
- "hex",
+ "parking_lot",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -657,6 +657,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "cow-sdk-core",
+ "gloo-timers",
  "js-sys",
  "serde",
  "wasm-bindgen",
@@ -1092,12 +1093,6 @@ name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
-
-[[package]]
-name = "hex"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hmac"
