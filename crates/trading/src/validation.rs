@@ -421,9 +421,7 @@ pub fn assert_owner_matches_signer(
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass,
-    };
+    use super::{ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass};
     use cow_sdk_core::{Address, Amount, OrderKind};
     use cow_sdk_orderbook::{OrderCreation, SigningScheme};
 

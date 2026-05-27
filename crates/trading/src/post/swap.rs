@@ -35,12 +35,5 @@ where
     )
     .await?;
 
-    post_swap_order_from_quote(
-        &quote_results,
-        trader,
-        signer,
-        advanced_settings,
-        orderbook,
-    )
-    .await
+    post_swap_order_from_quote(&quote_results, trader, signer, advanced_settings, orderbook).await
 }
