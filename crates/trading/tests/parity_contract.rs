@@ -46,12 +46,12 @@ use cow_sdk_core::{
 };
 use cow_sdk_orderbook::{PriceQuality, SigningScheme};
 use cow_sdk_trading::{
-    GAS_LIMIT_DEFAULT, MAX_SLIPPAGE_BPS, OrderToSignParams, OrderTraderParameters,
-    PartnerFeePolicy, PostTradeAdditionalParams, QuoteRequestOverride, QuoterParameters,
-    SwapAdvancedSettings, TraderParameters, TradingError, TradingSdkBuilder, TradingSdkOptions,
-    build_app_data, default_slippage_bps, get_eth_flow_transaction, get_order_to_sign,
-    get_pre_sign_transaction, get_quote_only, get_quote_results, is_ethflow_order,
-    merge_and_seal_app_data, onchain_cancellation_transaction, post_limit_order,
+    GAS_LIMIT_DEFAULT, LimitTradeParametersFromQuote, MAX_SLIPPAGE_BPS, OrderToSignParams,
+    OrderTraderParameters, PartnerFeePolicy, PostTradeAdditionalParams, QuoteRequestOverride,
+    QuoterParameters, TradeAdvancedSettings, TraderParameters, TradingError, TradingSdkBuilder,
+    TradingSdkOptions, build_app_data, default_slippage_bps, get_eth_flow_transaction,
+    get_order_to_sign, get_pre_sign_transaction, get_quote_only, get_quote_results,
+    is_ethflow_order, merge_and_seal_app_data, onchain_cancellation_transaction, post_limit_order,
     post_sell_native_currency_order, post_swap_order, suggest_slippage_bps,
 };
 use serde_json::{Value, json};
@@ -570,7 +570,7 @@ async fn assert_auto_slippage_suggestion(case_id: &str, input: &Value, expected:
     trade.owner = Some(address(OWNER));
     trade.slippage_bps = None;
     let suggest_settings =
-        SwapAdvancedSettings::new().with_slippage_suggester(Arc::new(MockSlippageProvider {
+        TradeAdvancedSettings::new().with_slippage_suggester(Arc::new(MockSlippageProvider {
             response: Some(suggested_bps),
         }));
     let suggested = get_quote_only(&trade, &quoter, Some(&suggest_settings), &suggest_orderbook)
@@ -587,7 +587,7 @@ async fn assert_auto_slippage_suggestion(case_id: &str, input: &Value, expected:
     // suggestion. The Rust chain-default helper exposes the same lower-bound
     // surface the fixture documents for the non-EthFlow path.
     let fallback_orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response());
-    let fallback_settings = SwapAdvancedSettings::new()
+    let fallback_settings = TradeAdvancedSettings::new()
         .with_slippage_suggester(Arc::new(MockSlippageProvider { response: None }));
     let fallback = get_quote_only(
         &trade,
@@ -824,7 +824,7 @@ async fn assert_post_override_propagation(case_id: &str, input: &Value, expected
     let signer = MockSigner::new(address(ALT_RECEIVER));
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.owner = Some(address(OWNER));
-    let advanced = SwapAdvancedSettings::new().with_quote_request(
+    let advanced = TradeAdvancedSettings::new().with_quote_request(
         QuoteRequestOverride::new()
             .with_receiver(address(ALT_RECEIVER))
             .with_valid_to(valid_to)
@@ -1189,9 +1189,11 @@ async fn assert_ethflow_transaction_contract_selection(case_id: &str, expected: 
         address("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
     )]));
 
+    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
+        .expect("parity fixture case must seed a quote id");
     let tx = get_eth_flow_transaction(
         &app_data_hash(),
-        &params,
+        &from_quote,
         SupportedChainId::Sepolia,
         &PostTradeAdditionalParams::default(),
         &trader,
@@ -1261,10 +1263,12 @@ async fn assert_native_sell_post_flow(case_id: &str, expected: &Value) {
     let additional = PostTradeAdditionalParams::new()
         .with_check_eth_flow_order_exists(Arc::new(duplicate_checker));
 
+    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
+        .expect("parity fixture case must seed a quote id");
     post_sell_native_currency_order(
         &orderbook,
         &info,
-        &params,
+        &from_quote,
         &additional,
         &trader,
         &signer,

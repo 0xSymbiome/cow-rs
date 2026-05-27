@@ -29,7 +29,7 @@ use cow_sdk_app_data::{
 };
 use cow_sdk_core::{Amount, HexData, OrderKind};
 use cow_sdk_trading::{
-    ClientRejection, SwapAdvancedSettings, TradingError, get_quote_results,
+    ClientRejection, TradeAdvancedSettings, TradingError, get_quote_results,
     merge_and_seal_app_data, params_from_doc, post_swap_order_from_quote,
 };
 use serde_json::{Value, json};
@@ -372,7 +372,7 @@ async fn base_doc_signer_triggers_appdata_from_mismatch_when_from_differs() {
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.owner = Some(submission_owner);
 
-    let advanced_at_quote = SwapAdvancedSettings::new()
+    let advanced_at_quote = TradeAdvancedSettings::new()
         .with_app_data(AppDataParams::default().with_signer(base_signer));
 
     let quote_results = get_quote_results(
@@ -422,7 +422,7 @@ async fn partner_fee_in_advanced_settings_appdata_merges_through_to_post() {
             .expect("partner-fee fixture must validate"),
     )
     .to_value();
-    let advanced = SwapAdvancedSettings::new().with_app_data(
+    let advanced = TradeAdvancedSettings::new().with_app_data(
         AppDataParams::default().with_metadata(
             serde_json::from_value(json!({
                 "partnerFee": partner_fee,
@@ -472,7 +472,7 @@ async fn base_doc_signer_matches_from_passes_validation() {
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.owner = Some(base_signer);
 
-    let advanced_at_quote = SwapAdvancedSettings::new()
+    let advanced_at_quote = TradeAdvancedSettings::new()
         .with_app_data(AppDataParams::default().with_signer(base_signer));
 
     let quote_results = get_quote_results(
@@ -503,9 +503,9 @@ async fn override_signer_supersedes_base_signer() {
     let mut trade_c = sample_trade_parameters(OrderKind::Sell);
     trade_c.owner = Some(override_signer);
 
-    let advanced_at_quote = SwapAdvancedSettings::new()
+    let advanced_at_quote = TradeAdvancedSettings::new()
         .with_app_data(AppDataParams::default().with_signer(address(OWNER)));
-    let advanced_at_post = SwapAdvancedSettings::new()
+    let advanced_at_post = TradeAdvancedSettings::new()
         .with_app_data(AppDataParams::default().with_signer(override_signer));
 
     let quote_results_c = get_quote_results(

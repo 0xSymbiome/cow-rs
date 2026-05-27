@@ -5,7 +5,7 @@ use super::generic::{current_unix_seconds, wrapped_native_address};
 use crate::types::{validate_orderbook_context, validate_orderbook_env_context};
 use crate::validation::OrderBoundsValidator;
 use crate::{
-    LimitTradeParameters, OrderPostingResult, OrderbookClient, TraderParameters,
+    LimitTradeParametersFromQuote, OrderPostingResult, OrderbookClient, TraderParameters,
     TradingAppDataInfo, TradingError,
 };
 
@@ -43,7 +43,7 @@ use crate::{
 pub async fn post_sell_native_currency_order<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
-    params: &LimitTradeParameters,
+    params: &LimitTradeParametersFromQuote,
     additional_params: &crate::types::PostTradeAdditionalParams,
     trader: &TraderParameters,
     signer: &S,
@@ -56,13 +56,14 @@ where
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     validate_orderbook_context(orderbook, Some(trader.chain_id), trader.env)?;
-    validate_orderbook_env_context(orderbook, params.env)?;
+    validate_orderbook_env_context(orderbook, params.as_limit().env)?;
 
     let orderbook_context = orderbook.context();
     let canonical_chain_id = orderbook_context.chain_id;
     let canonical_env = orderbook_context.env;
-    let mut params = params.clone();
-    params.env = Some(canonical_env);
+    let mut inner = params.as_limit().clone();
+    inner.env = Some(canonical_env);
+    let params = LimitTradeParametersFromQuote::try_from_limit(inner)?;
 
     let tx = crate::get_eth_flow_transaction(
         &app_data.app_data_keccak256,

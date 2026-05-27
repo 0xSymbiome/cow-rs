@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-17
-- Last reviewed: 2026-05-26
+- Last reviewed: 2026-05-27
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, trading, builders, semver
 - Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -84,6 +84,29 @@ widening the runtime surface.
   same scope. `DecimalAmount` remains the canonical
   typed-amount-boundary home for token decimals across every
   display and user-input flow.
+- Trade-parameter lifecycle: `TradeParameters` is the pre-quote
+  request shape carrying a single amount interpreted by `kind`;
+  `LimitTradeParameters` is the post-quote / canonical-submission
+  shape carrying both `sell_amount` and `buy_amount` plus an
+  optional `quote_id`. The lifecycle distinction is enforced
+  through nominal typing on every submission and on-chain helper
+  that needs both amounts. `LimitTradeParametersFromQuote` is a
+  real newtype around `LimitTradeParameters` that guarantees a
+  non-`None` `quote_id` by construction; it is produced exclusively
+  by `swap_params_to_limit_order_params` and accepted by the
+  `EthFlow` native-currency submission seam and the `EthFlow`
+  transaction helper so the quote-identifier requirement is
+  enforced at the type system rather than as a runtime check on
+  the submission path. The `with_*` setter bodies shared by
+  `TradeParameters` and `LimitTradeParameters` are factored
+  through one internal definition that emits inherent methods on
+  each public type without altering the public surface.
+- Advanced-settings surface: one `TradeAdvancedSettings` bundle is
+  accepted by every public quote and post entry. Limit-order
+  callers leave `slippage_suggester` as `None` because the limit
+  submission path does not apply slippage in the same shape as
+  swaps; the field is documented but unused on that flow. The
+  wasm export surface mirrors the same single-type shape.
 
 ## Alternatives Rejected
 
@@ -125,6 +148,7 @@ architecture record.
 
 - [Trading SDK Runtime Prerequisites Audit](../audit/trading-sdk-runtime-prerequisites-audit.md)
 - [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)
+- [Trade-Parameter Lifecycle Audit](../audit/trade-parameter-lifecycle-audit.md)
 
 ## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
 
@@ -159,3 +183,31 @@ the generated TypeScript declaration snapshots are refreshed in the
 same change set. `DecimalAmount` remains the canonical
 typed-amount-boundary home for token decimals; the typed-amount
 invariants recorded above are preserved verbatim.
+
+## Amendment 2026-05-27: trade-parameter consolidation and `LimitTradeParametersFromQuote` newtype
+
+The trade-parameter surface consolidates around the lifecycle
+distinction recorded above. `LimitTradeParametersFromQuote` ships
+as a real newtype around `LimitTradeParameters` that guarantees a
+non-`None` `quote_id` by construction; the prior transparent type
+alias is removed. The `EthFlow` native-currency submission seam
+(`post_sell_native_currency_order`) and the `EthFlow` transaction
+helper (`get_eth_flow_transaction`) accept only
+`LimitTradeParametersFromQuote` on their public entries, lifting
+the prior `MissingQuoteId` runtime check on the `EthFlow` path to
+a compile-time guarantee at the public boundary while preserving
+the public diagnostic shape for callers that explicitly attempt
+construction with a missing quote id.
+
+The two prior advanced-settings types `SwapAdvancedSettings` and
+`LimitOrderAdvancedSettings` collapse into one
+`TradeAdvancedSettings` type accepted by every public post and
+quote entry. Limit-order callers leave `slippage_suggester` as
+`None` because the limit submission path does not apply slippage
+in the same shape as swaps; the field is documented but unused on
+that flow.
+
+The shared `with_*` setter bodies on `TradeParameters` and
+`LimitTradeParameters` continue to exist as inherent methods on
+both public types, with the implementation factored through one
+internal definition that is invoked once per target struct.

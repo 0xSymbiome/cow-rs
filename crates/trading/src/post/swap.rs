@@ -2,7 +2,7 @@ use cow_sdk_core::Signer;
 
 use super::from_quote::post_swap_order_from_quote_with_bounds;
 use crate::{
-    OrderPostingResult, OrderbookClient, SwapAdvancedSettings, TradeParameters, TraderParameters,
+    OrderPostingResult, OrderbookClient, TradeAdvancedSettings, TradeParameters, TraderParameters,
     TradingError,
 };
 
@@ -18,7 +18,7 @@ pub async fn post_swap_order<O, S>(
     trade_parameters: &TradeParameters,
     trader: &TraderParameters,
     signer: &S,
-    advanced_settings: Option<&SwapAdvancedSettings>,
+    advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
 ) -> Result<OrderPostingResult, TradingError>
 where
@@ -50,7 +50,7 @@ pub async fn post_swap_order_with_bounds<O, S>(
     trade_parameters: &TradeParameters,
     trader: &TraderParameters,
     signer: &S,
-    advanced_settings: Option<&SwapAdvancedSettings>,
+    advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
     order_bounds: crate::validation::OrderValidityBounds,
 ) -> Result<OrderPostingResult, TradingError>

@@ -1,15 +1,16 @@
 # Trading Order Construction Integrity Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-05-27
 Owning surface: `cow-sdk-trading` order assembly, injected-orderbook builder terminal parity, and recoverable-signature posting boundary
-Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` builder terminals with injected orderbooks, recoverable-signature posting validation, upstream services `crates/shared/src/order_validation.rs` same-token semantics, the `TradeParameters::validate` / `LimitTradeParameters::validate` same-token predicate, or the `scripts/check-services-drift.sh` Semantic Surfaces section
+Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` builder terminals with injected orderbooks, recoverable-signature posting validation, upstream services `crates/shared/src/order_validation.rs` same-token semantics, the `TradeParameters::validate` / `LimitTradeParameters::validate` same-token predicate, the `LimitTradeParametersFromQuote` newtype invariant or its `EthFlow` entry binding, or the `scripts/check-services-drift.sh` Semantic Surfaces section
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)
 - [Wire DTO Coverage Audit](wire-dto-coverage-audit.md)
+- [Trade-Parameter Lifecycle Audit](trade-parameter-lifecycle-audit.md)
 
 ## Scope
 
@@ -37,6 +38,7 @@ unrelated leaf-crate transport policy.
 | Same-token posting policy | Direct posting rejects buy-side same-token orders before upload or signing and submits sell-side same-token orders | Conforms |
 | `TradingSdk` injected-orderbook terminals | Typestate and total-input builder terminals enforce one fail-fast authority contract | Conforms |
 | Recoverable signature posting | Reject explicit owner or signer mismatch before submission | Conforms |
+| `EthFlow` entry binding | The `EthFlow` native-currency submission entry and the `EthFlow` transaction helper accept only `LimitTradeParametersFromQuote`, lifting the quote-id requirement to the type system at the public boundary while preserving the documented `MissingQuoteId` diagnostic | Conforms |
 
 ## Current Contract
 

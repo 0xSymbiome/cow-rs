@@ -1,7 +1,7 @@
 # Trading EthFlow Owner Identity Audit
 
 Status: Current
-Last reviewed: 2026-05-26
+Last reviewed: 2026-05-27
 Owning surface: `cow-sdk-trading` EthFlow submission seam,
 including the `EthFlowTransaction` bundle shape, the
 `get_eth_flow_transaction` owner resolution, and the
@@ -15,12 +15,15 @@ submission seam; any extension to
 `OrderBoundsValidator::validate` that reads a different
 identity for the `AppdataFromMismatch` check on the EthFlow
 path; changes to the EthFlow-aware invocation of the validator
-(the `is_eth_flow: true` skip rule).
+(the `is_eth_flow: true` skip rule); changes to the
+`LimitTradeParametersFromQuote` newtype invariant or its
+EthFlow entry binding.
 Related docs:
 - [ADR 0020](../adr/0020-ethflow-owner-threading.md)
 - [ADR 0015](../adr/0015-client-side-order-bounds-validator.md)
 - [Trading Order-Bounds Validator Audit](trading-order-bounds-validator-audit.md)
 - [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) — covers the contracts-crate construction-time receiver invariant adjacent to the trading-layer owner threading
+- [Trade-Parameter Lifecycle Audit](trade-parameter-lifecycle-audit.md)
 - [Architecture](../architecture.md)
 
 ## Scope

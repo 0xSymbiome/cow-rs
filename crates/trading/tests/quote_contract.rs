@@ -10,7 +10,7 @@ use cow_sdk_orderbook::{OrderKind, SigningScheme};
 use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{
     ClientRejection, PartnerFeePolicy, QuoteRequestOverride, QuoterParameters,
-    SwapAdvancedSettings, TradeParameters, build_app_data, calculate_unique_order_id,
+    TradeAdvancedSettings, TradeParameters, build_app_data, calculate_unique_order_id,
     get_quote_only, get_quote_results,
 };
 
@@ -172,7 +172,7 @@ async fn auto_slippage_uses_provider_suggestion_and_quote_only_uses_owner_withou
     trade.owner = Some(address(OWNER));
     trade.slippage_bps = None;
     let advanced =
-        SwapAdvancedSettings::new().with_slippage_suggester(Arc::new(MockSlippageProvider {
+        TradeAdvancedSettings::new().with_slippage_suggester(Arc::new(MockSlippageProvider {
             response: Some(200),
         }));
 
@@ -207,7 +207,7 @@ async fn quote_request_override_can_change_receiver_and_price_quality() {
         cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
             .expect("app code should validate");
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
-    let advanced = SwapAdvancedSettings::new().with_quote_request(
+    let advanced = TradeAdvancedSettings::new().with_quote_request(
         QuoteRequestOverride::new()
             .with_receiver(address(crate::common::ALT_RECEIVER))
             .with_price_quality(cow_sdk_orderbook::PriceQuality::Fast),
@@ -246,7 +246,7 @@ async fn quote_results_preserve_non_default_balance_semantics_from_quote_and_ove
         cow_sdk_trading::TraderParameters::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
             .expect("app code should validate");
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
-    let advanced = SwapAdvancedSettings::new().with_quote_request(
+    let advanced = TradeAdvancedSettings::new().with_quote_request(
         QuoteRequestOverride::new()
             .with_sell_token_balance(SellTokenSource::External)
             .with_buy_token_balance(BuyTokenDestination::Internal),
@@ -443,7 +443,7 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
     let mut trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
     trade.owner = None;
     trade.slippage_bps = None;
-    let advanced = SwapAdvancedSettings::new()
+    let advanced = TradeAdvancedSettings::new()
         .with_quote_request(
             QuoteRequestOverride::new()
                 .with_from(address(crate::common::ALT_RECEIVER))
@@ -523,7 +523,7 @@ async fn quote_results_reject_invalid_partner_fee_metadata_before_quoting() {
             .expect("app code should validate")
             .with_env(CowEnv::Prod);
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
-    let advanced = SwapAdvancedSettings::new().with_app_data(
+    let advanced = TradeAdvancedSettings::new().with_app_data(
         cow_sdk_app_data::AppDataParams::default().with_metadata(
             serde_json::from_value(serde_json::json!({
                 "partnerFee": {
@@ -562,7 +562,7 @@ async fn quote_request_validation_runs_before_orderbook_transport() {
             .expect("app code should validate")
             .with_env(CowEnv::Prod);
     let trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
-    let advanced = SwapAdvancedSettings::new().with_quote_request(
+    let advanced = TradeAdvancedSettings::new().with_quote_request(
         QuoteRequestOverride::new()
             .with_signing_scheme(SigningScheme::Eip712)
             .with_onchain_order(true),

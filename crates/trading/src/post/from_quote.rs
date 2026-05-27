@@ -1,11 +1,11 @@
 use cow_sdk_core::Signer;
 
 use super::generic::{
-    apply_settings_to_limit_trade_parameters, post_cow_protocol_trade, swap_additional_params,
+    advanced_additional_params, apply_settings_to_limit_trade_parameters, post_cow_protocol_trade,
 };
 use crate::types::validate_quote_orderbook_binding;
 use crate::{
-    OrderPostingResult, OrderbookClient, QuoteResults, SwapAdvancedSettings, TraderParameters,
+    OrderPostingResult, OrderbookClient, QuoteResults, TradeAdvancedSettings, TraderParameters,
     TradingError, merge_and_seal_app_data, params_from_doc, swap_params_to_limit_order_params,
 };
 
@@ -38,7 +38,7 @@ pub async fn post_swap_order_from_quote<O, S>(
     quote_results: &QuoteResults,
     trader: &TraderParameters,
     signer: &S,
-    advanced_settings: Option<&SwapAdvancedSettings>,
+    advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
 ) -> Result<OrderPostingResult, TradingError>
 where
@@ -69,7 +69,7 @@ pub async fn post_swap_order_from_quote_with_bounds<O, S>(
     quote_results: &QuoteResults,
     trader: &TraderParameters,
     signer: &S,
-    advanced_settings: Option<&SwapAdvancedSettings>,
+    advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
     order_bounds: crate::validation::OrderValidityBounds,
 ) -> Result<OrderPostingResult, TradingError>
@@ -94,15 +94,16 @@ where
         (quote_results.app_data_info.clone(), base_params)
     };
     let app_data_signer = merged_params.signer;
+    let limit_from_quote = swap_params_to_limit_order_params(
+        &quote_results.trade_parameters,
+        &quote_results.quote_response,
+    )?;
     let params = apply_settings_to_limit_trade_parameters(
-        &swap_params_to_limit_order_params(
-            &quote_results.trade_parameters,
-            &quote_results.quote_response,
-        )?,
+        limit_from_quote.as_limit(),
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     )?;
-    let additional = swap_additional_params(advanced_settings);
+    let additional = advanced_additional_params(advanced_settings);
     let additional_params = crate::types::PostTradeAdditionalParams {
         signing_scheme: advanced_settings
             .and_then(|settings| settings.quote_request.as_ref())

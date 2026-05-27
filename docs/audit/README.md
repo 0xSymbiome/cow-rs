@@ -26,7 +26,7 @@ fragments, ADR replacement, or generic cleanup diaries.
 | Fix review | `<surface>-fix-review.md` | Focused public follow-up when previously reviewed findings are remediated |
 | Validation note | `<surface>-validation-note.md` | Narrow public confirmation record for an assurance point smaller than a full audit |
 
-The current public set is 53 standing audits and 1 validation note.
+The current public set is 54 standing audits and 1 validation note.
 
 ## Status Model
 
@@ -65,7 +65,7 @@ If the reviewed surface did not change, leave the audit alone.
 | --- | --- | --- | --- | --- | --- |
 | [HTTP Transport Contract Audit](http-transport-contract-audit.md) | Standing audit | `cow-sdk-core::HttpTransport` trait and its native and browser default adapters | Trait shape, typed `TransportError`, additive response-header surface, orderbook `Retry-After` cooldown honor, URL-redaction contract, and cross-adapter classification parity | Current | 2026-05-14 |
 | [Transport Policy Coverage Audit](transport-policy-coverage-audit.md) | Standing audit | `cow-sdk-transport-policy` public retry, jitter, rate-limit, classification, and `Retry-After` parser surfaces | `parse_retry_after` accept/reject contract across delta-seconds and IMF-fixdate forms, civil-day arithmetic panic-free posture, `JitterStrategy` delay-window invariants, `RetryPolicy` decision points and backoff clamps, `RequestRateLimiter` scope and cancellation, `NetworkErrorKind::from_transport_error_class` total mapping, and the optional `reqwest-classifier` dispatch | Current | 2026-05-17 |
-| [Typestate Builder Contract Audit](typestate-builder-contract-audit.md) | Standing audit | `cow-sdk-orderbook::OrderBookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, `cow-sdk-trading::TradingSdkBuilder`, and native Alloy adapter builders | Required-input typestate, marker sealing, host-policy validation, native default-transport convenience, wasm32 transport-required and injected-orderbook invariants, validated `AppCode`, distinct `TradingSdk`/`HelperOnlySdk` terminals, native Alloy adapter terminals, and retirement of legacy free-function constructors | Current | 2026-05-12 |
+| [Typestate Builder Contract Audit](typestate-builder-contract-audit.md) | Standing audit | `cow-sdk-orderbook::OrderBookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, `cow-sdk-trading::TradingSdkBuilder`, and native Alloy adapter builders | Required-input typestate, marker sealing, host-policy validation, native default-transport convenience, wasm32 transport-required and injected-orderbook invariants, validated `AppCode`, distinct `TradingSdk`/`HelperOnlySdk` terminals, native Alloy adapter terminals, and retirement of legacy free-function constructors | Current | 2026-05-27 |
 
 ## Native Alloy Adapters
 
@@ -150,16 +150,17 @@ If the reviewed surface did not change, leave the audit alone.
 | --- | --- | --- | --- | --- | --- |
 | [Trading Orderbook Context Audit](trading-orderbook-context-audit.md) | Standing audit | `cow-sdk-trading` runtime authority for orderbook-bound helpers | Canonical chain and environment authority when an orderbook client is injected | Current | 2026-05-12 |
 | [Trading Quote Orderbook Binding Audit](trading-quote-orderbook-binding-audit.md) | Standing audit | `cow-sdk-trading` quote-origin binding for quote-derived posting | Runtime binding between quote creation and post-from-quote submission | Current | 2026-05-26 |
-| [Trading SDK Runtime Prerequisites Audit](trading-sdk-runtime-prerequisites-audit.md) | Standing audit | `cow-sdk-trading` ready-state `TradingSdk` and helper-only `HelperOnlySdk` construction | Ready quote/post setup, validated `AppCode`, helper-only setup, and helper prerequisites | Current | 2026-05-14 |
+| [Trading SDK Runtime Prerequisites Audit](trading-sdk-runtime-prerequisites-audit.md) | Standing audit | `cow-sdk-trading` ready-state `TradingSdk` and helper-only `HelperOnlySdk` construction | Ready quote/post setup, validated `AppCode`, helper-only setup, and helper prerequisites | Current | 2026-05-27 |
 
 ## Trading Order Integrity
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Trading Order Construction Integrity Audit](trading-order-construction-integrity-audit.md) | Standing audit | `cow-sdk-trading` order assembly and recoverable-signature posting contract | Balance semantics, same-token builder policy, builder terminal parity, and local signature validation | Current | 2026-05-22 |
+| [Trading Order Construction Integrity Audit](trading-order-construction-integrity-audit.md) | Standing audit | `cow-sdk-trading` order assembly and recoverable-signature posting contract | Balance semantics, same-token builder policy, builder terminal parity, local signature validation, and `EthFlow` newtype-typed entry binding | Current | 2026-05-27 |
 | [Trading Order-Bounds Validator Audit](trading-order-bounds-validator-audit.md) | Standing audit | `cow-sdk-trading` `OrderBoundsValidator`, order validity bounds, and client rejection surface | Mandatory client-side submission validation, same-token parity, custom bounds plumbing, EthFlow skip rule, and builder-level subset | Current | 2026-05-26 |
 | [Trading App-Data Merge Audit](trading-app-data-merge-audit.md) | Standing audit | `cow-sdk-trading` quote-to-post app-data edit path | Typed app-data merge, hooks replacement semantics, typed signer derivation, and `merge_and_seal_app_data` / `params_from_doc` public helpers | Current | 2026-05-13 |
-| [Trading EthFlow Owner Identity Audit](trading-ethflow-owner-identity-audit.md) | Standing audit | `cow-sdk-trading` EthFlow submission seam | `EthFlowTransaction.from` owner threading, preview identity selection, and EthFlow-aware validator invocation | Current | 2026-05-26 |
+| [Trading EthFlow Owner Identity Audit](trading-ethflow-owner-identity-audit.md) | Standing audit | `cow-sdk-trading` EthFlow submission seam | `EthFlowTransaction.from` owner threading, preview identity selection, EthFlow-aware validator invocation, and `LimitTradeParametersFromQuote` newtype-typed entry binding | Current | 2026-05-27 |
+| [Trade-Parameter Lifecycle Audit](trade-parameter-lifecycle-audit.md) | Standing audit | `cow-sdk-trading` trade-parameter input shape and the lifecycle distinction between pre-quote and post-quote request types | Pre-quote `TradeParameters` shape, post-quote `LimitTradeParameters` shape, `LimitTradeParametersFromQuote` newtype invariant, `swap_params_to_limit_order_params` bridge, and the `EthFlow` entry binding | Current | 2026-05-27 |
 
 ## Workspace-Wide Safety And Workflow Security
 

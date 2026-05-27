@@ -10,7 +10,7 @@ use crate::types::{
 };
 use crate::{
     DEFAULT_QUOTE_VALIDITY, OrderbookClient, OrderbookRuntimeBinding, QuoteRequestOverride,
-    QuoteResults, QuoterParameters, SwapAdvancedSettings, TradeParameters, TraderParameters,
+    QuoteResults, QuoterParameters, TradeAdvancedSettings, TradeParameters, TraderParameters,
     TradingAppDataInfo, TradingError, adjust_ethflow_trade_parameters,
     calculate_quote_amounts_and_costs, default_slippage_bps, get_order_to_sign, is_ethflow_order,
     partner_fee_bps, resolve_slippage_suggestion, sanitize_protocol_fee_bps,
@@ -29,7 +29,7 @@ use crate::{
 pub async fn get_quote_only<O>(
     trade_parameters: &TradeParameters,
     trader: &QuoterParameters,
-    advanced_settings: Option<&SwapAdvancedSettings>,
+    advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
 ) -> Result<QuoteResults, TradingError>
 where
@@ -66,7 +66,7 @@ pub async fn get_quote_results<O, S>(
     trade_parameters: &TradeParameters,
     trader: &TraderParameters,
     signer: &S,
-    advanced_settings: Option<&SwapAdvancedSettings>,
+    advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
 ) -> Result<QuoteResults, TradingError>
 where
@@ -108,7 +108,7 @@ where
 async fn get_quote_internal<O>(
     trade_parameters: &TradeParameters,
     trader: &QuoterParameters,
-    advanced_settings: Option<&SwapAdvancedSettings>,
+    advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
 ) -> Result<QuoteResults, TradingError>
 where
@@ -248,10 +248,8 @@ fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, Tr
                 inputs.quote_response.protocol_fee_bps.as_deref(),
             ),
         },
-        &crate::swap_params_to_limit_order_params(
-            &inputs.trade_parameters,
-            &inputs.quote_response,
-        )?,
+        crate::swap_params_to_limit_order_params(&inputs.trade_parameters, &inputs.quote_response)?
+            .as_limit(),
         &inputs.app_data_info.app_data_keccak256,
     )?;
     let order_typed_data =
@@ -271,7 +269,7 @@ fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, Tr
 
 pub(crate) fn apply_advanced_settings_to_trade_parameters(
     trade_parameters: &TradeParameters,
-    advanced_settings: Option<&SwapAdvancedSettings>,
+    advanced_settings: Option<&TradeAdvancedSettings>,
 ) -> Result<TradeParameters, TradingError> {
     let mut trade_parameters = trade_parameters.clone();
 

@@ -94,11 +94,11 @@ pub use slippage::{
 };
 pub use types::{
     AllowanceParameters, AppCode, AppCodeError, ApprovalParameters, EthFlowOrderExistsChecker,
-    LimitOrderAdvancedSettings, LimitTradeParameters, LimitTradeParametersFromQuote,
-    OrderPostingResult, OrderTraderParameters, PartialTraderParameters, PostTradeAdditionalParams,
-    QuoteRequestOverride, QuoteResults, QuoterParameters, SlippageSuggestionProvider,
-    SlippageToleranceRequest, SlippageToleranceResponse, SwapAdvancedSettings, TradeParameters,
-    TraderParameters, TradingAppDataInfo, TradingSdkOptions, TradingTransactionParams,
+    LimitTradeParameters, LimitTradeParametersFromQuote, OrderPostingResult, OrderTraderParameters,
+    PartialTraderParameters, PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults,
+    QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
+    SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
+    TradingAppDataInfo, TradingSdkOptions, TradingTransactionParams,
 };
 pub use validation::{
     AmountSide, ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass,

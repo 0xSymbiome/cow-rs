@@ -1,7 +1,7 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current
-Last reviewed: 2026-05-14
+Last reviewed: 2026-05-27
 Owning surface: `cow-sdk-trading` ready-state `TradingSdk` construction, helper-only `HelperOnlySdk` construction, and helper-specific prerequisite contract
 Refresh trigger: Changes to ready-state `TradingSdk` builder terminals, helper-only setup entry points, method-specific prerequisite enforcement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`
 Related docs:
@@ -11,6 +11,7 @@ Related docs:
 - [README](../../README.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)
+- [Trade-Parameter Lifecycle Audit](trade-parameter-lifecycle-audit.md)
 
 ## Scope
 

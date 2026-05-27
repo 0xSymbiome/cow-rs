@@ -122,7 +122,7 @@ where
 /// encoding, unique-order-id generation, or gas-margin conversion fails.
 pub async fn get_eth_flow_transaction<S>(
     app_data_keccak256: &cow_sdk_core::AppDataHash,
-    params: &crate::LimitTradeParameters,
+    params: &crate::LimitTradeParametersFromQuote,
     chain_id: SupportedChainId,
     additional_params: &crate::types::PostTradeAdditionalParams,
     trader: &TraderParameters,
@@ -140,7 +140,8 @@ where
             message: error.to_string().into(),
         })?;
     let owner = from;
-    let mut adjusted = crate::adjust_ethflow_limit_parameters(chain_id, params);
+    let quote_id = params.quote_id();
+    let mut adjusted = crate::adjust_ethflow_limit_parameters(chain_id, params.as_limit());
     if adjusted.slippage_bps.is_none() {
         adjusted.slippage_bps = Some(crate::default_slippage_bps(chain_id, true));
     }
@@ -188,9 +189,7 @@ where
         Some(resolve_eth_flow_address(chain_id, Some(&options))),
         Some(HexData::new(encode_ethflow_create_order(
             &order_to_sign,
-            adjusted
-                .quote_id
-                .ok_or(TradingError::MissingQuoteId("EthFlow transaction"))?,
+            quote_id,
         )?)?),
         Some(order_to_sign.sell_amount),
         None,

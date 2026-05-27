@@ -6,7 +6,7 @@ use cow_sdk_orderbook::OrderBookApi;
 
 use super::TradingSdk;
 use crate::{
-    OrderbookClient, PartialTraderParameters, QuoterParameters, SwapAdvancedSettings,
+    OrderbookClient, PartialTraderParameters, QuoterParameters, TradeAdvancedSettings,
     TradeParameters, TraderParameters, TradingError, types::validate_orderbook_context,
 };
 
@@ -21,7 +21,7 @@ impl TradingSdk {
     pub(super) fn resolve_quote_owner(
         &self,
         params: &TradeParameters,
-        advanced_settings: Option<&SwapAdvancedSettings>,
+        advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<Address, TradingError> {
         advanced_settings
             .and_then(|settings| settings.quote_request.as_ref())

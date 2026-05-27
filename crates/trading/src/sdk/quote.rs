@@ -2,7 +2,7 @@ use cow_sdk_core::Signer;
 
 use super::TradingSdk;
 use crate::{
-    QuoteResults, SwapAdvancedSettings, TradeParameters, TradingError, get_quote_only,
+    QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError, get_quote_only,
     get_quote_results,
 };
 
@@ -31,7 +31,7 @@ impl TradingSdk {
     pub async fn get_quote_only(
         &self,
         mut params: TradeParameters,
-        advanced_settings: Option<&SwapAdvancedSettings>,
+        advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<QuoteResults, TradingError> {
         params.owner = params.owner.or(self.trader_defaults.owner);
         let owner = self.resolve_quote_owner(&params, advanced_settings)?;
@@ -71,7 +71,7 @@ impl TradingSdk {
         &self,
         mut params: TradeParameters,
         signer: &S,
-        advanced_settings: Option<&SwapAdvancedSettings>,
+        advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<QuoteResults, TradingError>
     where
         S: Signer,

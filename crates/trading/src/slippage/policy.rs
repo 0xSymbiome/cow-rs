@@ -4,7 +4,7 @@ use cow_sdk_core::{Amount, SupportedChainId};
 use cow_sdk_orderbook::{OrderQuoteResponse, PriceQuality};
 
 use crate::{
-    QuoterParameters, SlippageToleranceResponse, SwapAdvancedSettings, TradeParameters,
+    QuoterParameters, SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters,
     TradingError,
 };
 
@@ -170,7 +170,7 @@ pub async fn resolve_slippage_suggestion(
     trader: &QuoterParameters,
     quote: &OrderQuoteResponse,
     is_ethflow: bool,
-    advanced_settings: Option<&SwapAdvancedSettings>,
+    advanced_settings: Option<&TradeAdvancedSettings>,
 ) -> Result<SlippageToleranceResponse, TradingError> {
     let default_suggestion =
         suggest_slippage_bps(quote, trade_parameters, trader, is_ethflow, None)?;

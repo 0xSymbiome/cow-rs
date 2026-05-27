@@ -14,6 +14,47 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_trading::LimitTradeParametersFromQuote` is a real newtype
+  around `LimitTradeParameters` that guarantees a non-`None`
+  `quote_id` by construction. The prior transparent type alias is
+  removed. The newtype is produced exclusively by
+  [`swap_params_to_limit_order_params`](crates/trading/src/order.rs)
+  and accepted by
+  [`post_sell_native_currency_order`](crates/trading/src/post/native.rs)
+  and [`get_eth_flow_transaction`](crates/trading/src/onchain.rs) on
+  their public entries, lifting the prior `MissingQuoteId` runtime
+  check on the `EthFlow` path to a compile-time guarantee at the
+  public boundary. `TradingError::MissingQuoteId("EthFlow order posting")`
+  remains the diagnostic for callers that explicitly attempt
+  construction from a value missing a quote id. The public accessor
+  `quote_id()` returns `i64` without an `Option`, `as_limit()` and
+  `into_limit()` provide reference and owned access to the
+  underlying `LimitTradeParameters`, and `AsRef<LimitTradeParameters>`
+  is implemented for ergonomic interop. ADR 0011 carries a new
+  Must-Remain-True bullet recording the lifecycle distinction and
+  the newtype invariant, with the
+  [Trade-Parameter Lifecycle Audit](docs/audit/trade-parameter-lifecycle-audit.md)
+  as the standing current-state proof.
+
+- `cow_sdk_trading` exposes one advanced-settings bundle accepted by
+  every public post and quote entry. `TradeAdvancedSettings` carries
+  `quote_request`, `app_data`, `additional_params`, and
+  `slippage_suggester`. Limit-order callers leave
+  `slippage_suggester` as `None`; the limit submission path does not
+  apply slippage in the same shape as swaps and the field is
+  documented but unused on that flow. The wasm export surface follows
+  the same single-type shape.
+
+- `cow_sdk_trading::TradeParameters` and
+  `cow_sdk_trading::LimitTradeParameters` share their common `with_*`
+  setter bodies through one internal definition that emits inherent
+  methods on each public type. Public API shape is preserved: every
+  setter remains an inherent method on each public type with the
+  same signature, the same `#[must_use]`, the same `const fn`
+  qualifier, and the same rustdoc text.
+  `cow_sdk_trading::LimitTradeParameters::with_quote_id` remains an
+  inherent method on the limit type because it is limit-only.
+
 - `cow_sdk_core` exposes a single async trait family for the signer
   and provider boundaries: `Signer`, `Provider`, `SigningProvider`,
   `Owner`, `TypedDataSigner`, `DigestSigner`, and `Eip1193`. The
@@ -1361,7 +1402,7 @@ The first functional crate-family release begins at `0.1.0`.
   `TradeParameters`, `LimitTradeParameters`, `TraderParameters`,
   `PartialTraderParameters`, `OrderTraderParameters`, `QuoterParameters`,
   `QuoteResults`, `QuoteRequestOverride`, `OrderPostingResult`,
-  `SwapAdvancedSettings`, `LimitOrderAdvancedSettings`,
+  `TradeAdvancedSettings`,
   `PostTradeAdditionalParams`, `TradingAppDataInfo`, `OrderToSignParams`,
   `AllowanceParameters`, `ApprovalParameters`, `OrderbookRuntimeBinding`,
   `SlippageToleranceRequest`, `SlippageToleranceResponse`, and

@@ -10,8 +10,9 @@ use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
 
 use crate::slippage::parse_integer;
 use crate::{
-    DEFAULT_QUOTE_VALIDITY, EthFlowOrderExistsChecker, LimitTradeParameters, TradeParameters,
-    TradingError, calculate_quote_amounts_and_costs, default_slippage_bps, partner_fee_bps,
+    DEFAULT_QUOTE_VALIDITY, EthFlowOrderExistsChecker, LimitTradeParameters,
+    LimitTradeParametersFromQuote, TradeParameters, TradingError,
+    calculate_quote_amounts_and_costs, default_slippage_bps, partner_fee_bps,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -146,17 +147,22 @@ pub fn adjust_ethflow_limit_parameters(
     adjusted
 }
 
-/// Converts swap-style trade params plus a quote response into limit-order params.
+/// Converts swap-style trade params plus a quote response into the
+/// from-quote limit-order shape.
+///
+/// The returned [`LimitTradeParametersFromQuote`] is the typed
+/// guarantee that the `quote_id` field is present; downstream
+/// `EthFlow` entries require this newtype on their public boundary.
 ///
 /// # Errors
 ///
-/// Returns [`TradingError`] when quoted string amounts cannot be converted into
-/// typed [`Amount`] values.
+/// Returns [`TradingError::MissingQuoteId`] when the orderbook quote
+/// response does not carry an identifier.
 pub fn swap_params_to_limit_order_params(
     trade_parameters: &TradeParameters,
     quote_response: &OrderQuoteResponse,
-) -> Result<LimitTradeParameters, TradingError> {
-    Ok(LimitTradeParameters {
+) -> Result<LimitTradeParametersFromQuote, TradingError> {
+    let inner = LimitTradeParameters {
         kind: trade_parameters.kind,
         owner: trade_parameters.owner,
         sell_token: trade_parameters.sell_token,
@@ -175,7 +181,8 @@ pub fn swap_params_to_limit_order_params(
         valid_for: trade_parameters.valid_for,
         valid_to: trade_parameters.valid_to,
         partner_fee: trade_parameters.partner_fee.clone(),
-    })
+    };
+    LimitTradeParametersFromQuote::try_from_limit(inner)
 }
 
 /// Builds the unsigned order payload used for signing or on-chain helpers.

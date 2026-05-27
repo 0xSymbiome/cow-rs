@@ -93,10 +93,14 @@ impl fmt::Debug for PostTradeAdditionalParams {
     }
 }
 
-/// Advanced settings for swap quote and post flows.
+/// Advanced settings shared by swap and limit-order quote and post workflows.
+///
+/// Limit-order flows leave `slippage_suggester` as `None` because the
+/// limit submission path does not apply slippage in the same shape as
+/// swaps; the field is documented but unused on that flow.
 #[derive(Clone, Default)]
 #[non_exhaustive]
-pub struct SwapAdvancedSettings {
+pub struct TradeAdvancedSettings {
     /// Optional direct orderbook quote-request overrides.
     pub quote_request: Option<QuoteRequestOverride>,
     /// Optional app-data overrides merged into generated app-data documents.
@@ -104,11 +108,14 @@ pub struct SwapAdvancedSettings {
     /// Optional submission-time behavior overrides.
     pub additional_params: Option<PostTradeAdditionalParams>,
     /// Optional custom slippage-suggestion provider.
+    ///
+    /// Ignored on limit-order flows; limit orders do not apply
+    /// slippage in the same shape as swaps.
     pub slippage_suggester: Option<Arc<dyn SlippageSuggestionProvider>>,
 }
 
-impl SwapAdvancedSettings {
-    /// Creates an empty swap-advanced-settings bundle.
+impl TradeAdvancedSettings {
+    /// Creates an empty advanced-settings bundle.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
@@ -136,6 +143,9 @@ impl SwapAdvancedSettings {
     }
 
     /// Returns a copy with a custom slippage-suggestion provider attached.
+    ///
+    /// Limit-order flows ignore this provider; only swap quote and
+    /// post flows read it.
     #[must_use]
     pub fn with_slippage_suggester(
         mut self,
@@ -146,64 +156,13 @@ impl SwapAdvancedSettings {
     }
 }
 
-impl fmt::Debug for SwapAdvancedSettings {
+impl fmt::Debug for TradeAdvancedSettings {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("SwapAdvancedSettings")
+        f.debug_struct("TradeAdvancedSettings")
             .field("quote_request", &self.quote_request)
             .field("app_data", &self.app_data)
             .field("additional_params", &self.additional_params)
             .field("slippage_suggester", &self.slippage_suggester.is_some())
-            .finish()
-    }
-}
-
-/// Advanced settings for limit-order post flows.
-#[derive(Clone, Default)]
-#[non_exhaustive]
-pub struct LimitOrderAdvancedSettings {
-    /// Optional direct orderbook quote-request overrides.
-    pub quote_request: Option<QuoteRequestOverride>,
-    /// Optional app-data overrides merged into generated app-data documents.
-    pub app_data: Option<AppDataParams>,
-    /// Optional submission-time behavior overrides.
-    pub additional_params: Option<PostTradeAdditionalParams>,
-}
-
-impl LimitOrderAdvancedSettings {
-    /// Creates an empty limit-order-advanced-settings bundle.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns a copy with explicit quote-request overrides attached.
-    #[must_use]
-    pub const fn with_quote_request(mut self, overrides: QuoteRequestOverride) -> Self {
-        self.quote_request = Some(overrides);
-        self
-    }
-
-    /// Returns a copy with explicit app-data overrides attached.
-    #[must_use]
-    pub fn with_app_data(mut self, app_data: AppDataParams) -> Self {
-        self.app_data = Some(app_data);
-        self
-    }
-
-    /// Returns a copy with explicit submission-time additional parameters attached.
-    #[must_use]
-    pub fn with_additional_params(mut self, params: PostTradeAdditionalParams) -> Self {
-        self.additional_params = Some(params);
-        self
-    }
-}
-
-impl fmt::Debug for LimitOrderAdvancedSettings {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("LimitOrderAdvancedSettings")
-            .field("quote_request", &self.quote_request)
-            .field("app_data", &self.app_data)
-            .field("additional_params", &self.additional_params)
             .finish()
     }
 }

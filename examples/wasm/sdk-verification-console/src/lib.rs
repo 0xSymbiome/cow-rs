@@ -366,8 +366,8 @@ pub async fn trading_quote_preview_json(
     pretty_json(&json!({
         "quoteResults": results,
         "derived": {
-            "isEthflowOrder": is_ethflow_order(&limit_parameters.sell_token),
-            "limitTradeParameters": limit_parameters
+            "isEthflowOrder": is_ethflow_order(&limit_parameters.as_limit().sell_token),
+            "limitTradeParametersFromQuote": limit_parameters
         }
     }))
 }

@@ -1,10 +1,10 @@
 use cow_sdk_core::Signer;
 
 use super::generic::{
-    apply_settings_to_limit_trade_parameters, limit_additional_params, post_cow_protocol_trade,
+    advanced_additional_params, apply_settings_to_limit_trade_parameters, post_cow_protocol_trade,
 };
 use crate::{
-    LimitOrderAdvancedSettings, LimitTradeParameters, OrderPostingResult, OrderbookClient,
+    LimitTradeParameters, OrderPostingResult, OrderbookClient, TradeAdvancedSettings,
     TraderParameters, TradingError, build_app_data,
 };
 
@@ -22,7 +22,7 @@ pub async fn post_limit_order<O, S>(
     params: &LimitTradeParameters,
     trader: &TraderParameters,
     signer: &S,
-    advanced_settings: Option<&LimitOrderAdvancedSettings>,
+    advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
 ) -> Result<OrderPostingResult, TradingError>
 where
@@ -52,7 +52,7 @@ pub async fn post_limit_order_with_bounds<O, S>(
     params: &LimitTradeParameters,
     trader: &TraderParameters,
     signer: &S,
-    advanced_settings: Option<&LimitOrderAdvancedSettings>,
+    advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
     order_bounds: crate::validation::OrderValidityBounds,
 ) -> Result<OrderPostingResult, TradingError>
@@ -83,7 +83,7 @@ where
     )
     .await?;
 
-    let mut additional = limit_additional_params(advanced_settings);
+    let mut additional = advanced_additional_params(advanced_settings);
     if additional.apply_costs_slippage_and_fees.is_none() {
         additional.apply_costs_slippage_and_fees = Some(false);
     }

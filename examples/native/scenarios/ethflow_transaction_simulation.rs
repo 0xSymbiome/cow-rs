@@ -6,8 +6,8 @@ use serde_json::json;
 use cow_sdk::core::{Address, EVM_NATIVE_CURRENCY_ADDRESS, HexData};
 use cow_sdk::prelude::SupportedChainId;
 use cow_sdk::trading::{
-    OrderValidityBounds, PostTradeAdditionalParams, build_app_data, get_eth_flow_transaction,
-    post_sell_native_currency_order,
+    LimitTradeParametersFromQuote, OrderValidityBounds, PostTradeAdditionalParams, build_app_data,
+    get_eth_flow_transaction, post_sell_native_currency_order,
 };
 
 use cow_sdk_examples_native::support::{
@@ -36,9 +36,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let app_data = build_app_data(&trader.app_code, 0, "market", None, None).await?;
     let additional = PostTradeAdditionalParams::default();
 
+    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)?;
+
     let ethflow = get_eth_flow_transaction(
         &app_data.app_data_keccak256,
-        &params,
+        &from_quote,
         trader.chain_id,
         &additional,
         &trader,
@@ -49,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let submitted = post_sell_native_currency_order(
         &orderbook,
         &app_data,
-        &params,
+        &from_quote,
         &additional,
         &trader,
         &signer,

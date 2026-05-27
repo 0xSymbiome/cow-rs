@@ -20,10 +20,10 @@ use cow_sdk_core::{
 };
 use cow_sdk_orderbook::{OrderbookClient, SigningScheme};
 use cow_sdk_trading::{
-    AppCode, AppCodeError, LimitOrderAdvancedSettings, LimitTradeParameters, NoopQuoteCache,
-    OrderTraderParameters, PartialTraderParameters, PostTradeAdditionalParams, QuoterParameters,
-    SlippageToleranceRequest, SlippageToleranceResponse, SwapAdvancedSettings, TradeParameters,
-    TraderParameters, TradingSdkOptions,
+    AppCode, AppCodeError, LimitTradeParameters, NoopQuoteCache, OrderTraderParameters,
+    PartialTraderParameters, PostTradeAdditionalParams, QuoterParameters, SlippageToleranceRequest,
+    SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
+    TradingSdkOptions,
 };
 
 const VALID_ADDRESS: &str = "0x1111111111111111111111111111111111111111";
@@ -311,18 +311,18 @@ fn post_trade_additional_params_builders_record_fields() {
 
 #[test]
 fn swap_advanced_settings_builders_round_trip_and_debug_renders() {
-    let settings = SwapAdvancedSettings::new();
+    let settings = TradeAdvancedSettings::new();
     let debug = format!("{settings:?}");
-    assert!(debug.contains("SwapAdvancedSettings"));
+    assert!(debug.contains("TradeAdvancedSettings"));
     // The default settings render with `false` flags for trait-object presence.
     assert!(debug.contains("false"));
 }
 
 #[test]
 fn limit_order_advanced_settings_builders_round_trip_and_debug_renders() {
-    let settings = LimitOrderAdvancedSettings::new();
+    let settings = TradeAdvancedSettings::new();
     let debug = format!("{settings:?}");
-    assert!(debug.contains("LimitOrderAdvancedSettings"));
+    assert!(debug.contains("TradeAdvancedSettings"));
 }
 
 // -------------------------------------------------------------------------

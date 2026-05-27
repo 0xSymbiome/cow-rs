@@ -1,7 +1,7 @@
 # Typestate Builder Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-27
 Owning surface: `cow-sdk-orderbook::OrderBookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, and `cow-sdk-trading::TradingSdkBuilder` construction seams
 Refresh trigger: ADR 0038 review confirmed no builder-shape change; future type-parameter or marker visibility changes on any covered builder, a change to the set of required inputs (chain, environment, API key, appCode, or transport), a change to host-policy validation, a change to the native default-transport convenience impl, a change to the wasm32 transport-required or injected-orderbook invariant, or a new `trybuild` witness replacing the current compile-fail coverage
 Related docs:

@@ -16,9 +16,10 @@ use alloy_primitives::U256;
 use cow_sdk_core::{Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId};
 use cow_sdk_orderbook::PriceQuality;
 use cow_sdk_trading::{
-    MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy, PostTradeAdditionalParams,
-    QuoteRequestOverride, QuoterParameters, SwapAdvancedSettings, get_eth_flow_transaction,
-    get_quote_results, suggest_slippage_bps, swap_params_to_limit_order_params,
+    LimitTradeParametersFromQuote, MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy,
+    PostTradeAdditionalParams, QuoteRequestOverride, QuoterParameters, TradeAdvancedSettings,
+    get_eth_flow_transaction, get_quote_results, suggest_slippage_bps,
+    swap_params_to_limit_order_params,
 };
 
 use crate::common::{
@@ -218,8 +219,9 @@ fn swap_params_to_limit_order_params_preserves_generated_quote_to_limit_shape() 
         trade.valid_to = valid_to;
         quote.id = Some(i64::from(rng.next_u32()));
 
-        let limit = swap_params_to_limit_order_params(&trade, &quote)
+        let from_quote = swap_params_to_limit_order_params(&trade, &quote)
             .expect("quote-to-limit conversion should remain deterministic");
+        let limit = from_quote.as_limit();
 
         assert_eq!(limit.kind, trade.kind);
         assert_eq!(limit.owner, trade.owner);
@@ -228,6 +230,10 @@ fn swap_params_to_limit_order_params_preserves_generated_quote_to_limit_shape() 
         assert_eq!(limit.sell_amount, quote.quote.sell_amount);
         assert_eq!(limit.buy_amount, quote.quote.buy_amount);
         assert_eq!(limit.quote_id, quote.id);
+        assert_eq!(
+            from_quote.quote_id(),
+            quote.id.expect("test seeds a quote id")
+        );
         assert_eq!(limit.env, trade.env);
         assert_eq!(limit.partially_fillable, trade.partially_fillable);
         assert_eq!(limit.slippage_bps, trade.slippage_bps);
@@ -258,9 +264,11 @@ async fn ethflow_calldata_preserves_uint256_boundary_values() {
         params.quote_id = Some(quote_id);
         params.valid_to = Some(valid_to);
 
+        let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
+            .expect("test params carry a quote id");
         let transaction = get_eth_flow_transaction(
             &app_data_hash(),
-            &params,
+            &from_quote,
             SupportedChainId::Sepolia,
             &PostTradeAdditionalParams::new().with_apply_costs_slippage_and_fees(false),
             &trader,
@@ -347,7 +355,7 @@ async fn quote_results_preserve_generated_override_shape_across_request_and_orde
         if let Some(partially_fillable) = rng.next_bool().then(|| rng.next_bool()) {
             quote_request = quote_request.with_partially_fillable(partially_fillable);
         }
-        let advanced = SwapAdvancedSettings::new().with_quote_request(quote_request.clone());
+        let advanced = TradeAdvancedSettings::new().with_quote_request(quote_request.clone());
 
         let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
             .await
@@ -358,9 +366,10 @@ async fn quote_results_preserve_generated_override_shape_across_request_and_orde
             .last()
             .cloned()
             .expect("quote request must be recorded");
-        let limit =
+        let from_quote =
             swap_params_to_limit_order_params(&result.trade_parameters, &result.quote_response)
                 .expect("quote result should remain convertible into limit params");
+        let limit = from_quote.as_limit();
 
         let expected_owner = quote_request.from.or(trade.owner).unwrap_or(signer.address);
         let expected_trade_receiver = quote_request.receiver.or(trade.receiver);

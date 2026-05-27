@@ -13,8 +13,8 @@ use crate::types::{
 };
 use crate::validation::OrderBoundsValidator;
 use crate::{
-    LimitOrderAdvancedSettings, LimitTradeParameters, OrderPostingResult, OrderbookClient,
-    SwapAdvancedSettings, TraderParameters, TradingAppDataInfo, TradingError,
+    LimitTradeParameters, LimitTradeParametersFromQuote, OrderPostingResult, OrderbookClient,
+    TradeAdvancedSettings, TraderParameters, TradingAppDataInfo, TradingError,
     adjust_ethflow_limit_parameters, get_order_to_sign, is_ethflow_order,
 };
 
@@ -92,14 +92,12 @@ where
     params.env = Some(canonical_env);
     let is_ethflow = is_ethflow_order(&params.sell_token);
     if is_ethflow {
-        if params.quote_id.is_none() {
-            return Err(TradingError::MissingQuoteId("EthFlow order posting"));
-        }
         let adjusted = adjust_ethflow_limit_parameters(canonical_chain_id, &params);
+        let from_quote = LimitTradeParametersFromQuote::try_from_limit(adjusted)?;
         return post_sell_native_currency_order(
             orderbook,
             app_data,
-            &adjusted,
+            &from_quote,
             additional_params,
             trader,
             signer,
@@ -276,16 +274,8 @@ pub(super) fn apply_settings_to_limit_trade_parameters(
     Ok(params)
 }
 
-pub(super) fn swap_additional_params(
-    advanced_settings: Option<&SwapAdvancedSettings>,
-) -> crate::types::PostTradeAdditionalParams {
-    advanced_settings
-        .and_then(|settings| settings.additional_params.clone())
-        .unwrap_or_default()
-}
-
-pub(super) fn limit_additional_params(
-    advanced_settings: Option<&LimitOrderAdvancedSettings>,
+pub(super) fn advanced_additional_params(
+    advanced_settings: Option<&TradeAdvancedSettings>,
 ) -> crate::types::PostTradeAdditionalParams {
     advanced_settings
         .and_then(|settings| settings.additional_params.clone())

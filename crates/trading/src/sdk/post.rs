@@ -2,8 +2,7 @@ use cow_sdk_core::Signer;
 
 use super::TradingSdk;
 use crate::{
-    LimitOrderAdvancedSettings, LimitTradeParameters, QuoteResults, SwapAdvancedSettings,
-    TradeParameters, TradingError,
+    LimitTradeParameters, QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError,
 };
 
 impl TradingSdk {
@@ -21,9 +20,14 @@ impl TradingSdk {
     /// order submission fails.
     ///
     /// `EthFlow` sell orders require a quote identifier and are routed to the
-    /// native-currency transaction path. Propagate the orderbook quote id with
-    /// `with_quote_id(quote.id)`; otherwise the method returns
-    /// [`TradingError::MissingQuoteId`] before building the transaction.
+    /// native-currency transaction path. The
+    /// [`swap_params_to_limit_order_params`](crate::swap_params_to_limit_order_params)
+    /// bridge produces a [`LimitTradeParametersFromQuote`](crate::LimitTradeParametersFromQuote)
+    /// value that guarantees the quote identifier is present, and the
+    /// `EthFlow` native-currency submission seam accepts only that newtype.
+    /// A `LimitTradeParameters` value constructed without a quote id surfaces
+    /// [`TradingError::MissingQuoteId`] at the typed boundary before the
+    /// transaction is built.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -39,7 +43,7 @@ impl TradingSdk {
         &self,
         mut params: TradeParameters,
         signer: &S,
-        advanced_settings: Option<&SwapAdvancedSettings>,
+        advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: Signer,
@@ -74,9 +78,14 @@ impl TradingSdk {
     /// signing fails, or when the orderbook rejects the submission.
     ///
     /// `EthFlow` sell orders require a quote identifier and are routed to the
-    /// native-currency transaction path. Propagate the orderbook quote id with
-    /// `with_quote_id(quote.id)`; otherwise the method returns
-    /// [`TradingError::MissingQuoteId`] before building the transaction.
+    /// native-currency transaction path. The
+    /// [`swap_params_to_limit_order_params`](crate::swap_params_to_limit_order_params)
+    /// bridge produces a [`LimitTradeParametersFromQuote`](crate::LimitTradeParametersFromQuote)
+    /// value that guarantees the quote identifier is present, and the
+    /// `EthFlow` native-currency submission seam accepts only that newtype.
+    /// A `LimitTradeParameters` value constructed without a quote id surfaces
+    /// [`TradingError::MissingQuoteId`] at the typed boundary before the
+    /// transaction is built.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -92,7 +101,7 @@ impl TradingSdk {
         &self,
         quote_results: &QuoteResults,
         signer: &S,
-        advanced_settings: Option<&SwapAdvancedSettings>,
+        advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: Signer,
@@ -126,9 +135,14 @@ impl TradingSdk {
     /// generation fails, or downstream signing/submission fails.
     ///
     /// `EthFlow` sell orders require a quote identifier and are routed to the
-    /// native-currency transaction path. Propagate the orderbook quote id with
-    /// `with_quote_id(quote.id)`; otherwise the method returns
-    /// [`TradingError::MissingQuoteId`] before building the transaction.
+    /// native-currency transaction path. The
+    /// [`swap_params_to_limit_order_params`](crate::swap_params_to_limit_order_params)
+    /// bridge produces a [`LimitTradeParametersFromQuote`](crate::LimitTradeParametersFromQuote)
+    /// value that guarantees the quote identifier is present, and the
+    /// `EthFlow` native-currency submission seam accepts only that newtype.
+    /// A `LimitTradeParameters` value constructed without a quote id surfaces
+    /// [`TradingError::MissingQuoteId`] at the typed boundary before the
+    /// transaction is built.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -144,7 +158,7 @@ impl TradingSdk {
         &self,
         mut params: LimitTradeParameters,
         signer: &S,
-        advanced_settings: Option<&LimitOrderAdvancedSettings>,
+        advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: Signer,

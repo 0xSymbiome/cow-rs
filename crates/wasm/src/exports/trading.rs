@@ -10,7 +10,7 @@ use cow_sdk_orderbook::{OrderBookApi, SigningScheme};
 use cow_sdk_pure_helpers as pure;
 use cow_sdk_trading::{
     AllowanceParameters, GAS_LIMIT_DEFAULT, LimitTradeParameters, OrderPostingResult,
-    QuoteRequestOverride, SwapAdvancedSettings, TradeParameters, TradingSdk,
+    QuoteRequestOverride, TradeAdvancedSettings, TradeParameters, TradingSdk,
 };
 use cow_sdk_transport_policy::TransportPolicy;
 use js_sys::Function;
@@ -616,7 +616,7 @@ async fn trading_post_swap_order_with_eip1271(
     let owner_address = parse_address("owner", owner.clone())?;
     let mut params: TradeParameters = from_json_value("params", params.into_value()?)?;
     params.owner = Some(owner_address.clone());
-    let quote_settings = SwapAdvancedSettings::new().with_quote_request(
+    let quote_settings = TradeAdvancedSettings::new().with_quote_request(
         QuoteRequestOverride::new()
             .with_from(owner_address.clone())
             .with_signing_scheme(SigningScheme::Eip1271),

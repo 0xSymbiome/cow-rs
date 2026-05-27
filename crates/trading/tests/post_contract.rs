@@ -35,9 +35,10 @@ fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParameters) -> P
     options
 }
 use cow_sdk_trading::{
-    LimitOrderAdvancedSettings, LimitTradeParameters, PartnerFeePolicy, PostTradeAdditionalParams,
-    QuoteRequestOverride, SwapAdvancedSettings, TradingError, build_app_data, get_quote_results,
-    post_limit_order, post_sell_native_currency_order, post_swap_order, post_swap_order_from_quote,
+    LimitTradeParameters, LimitTradeParametersFromQuote, PartnerFeePolicy,
+    PostTradeAdditionalParams, QuoteRequestOverride, TradeAdvancedSettings, TradingError,
+    build_app_data, get_quote_results, post_limit_order, post_sell_native_currency_order,
+    post_swap_order, post_swap_order_from_quote,
 };
 
 use crate::common::{
@@ -133,7 +134,7 @@ async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence()
         .expect("UNIX_EPOCH must remain reachable")
         .as_secs();
     let override_valid_to = u32::try_from(now + 3600).expect("valid_to must fit in u32");
-    let advanced = SwapAdvancedSettings::new()
+    let advanced = TradeAdvancedSettings::new()
         .with_quote_request(
             QuoteRequestOverride::new()
                 .with_receiver(address(ALT_RECEIVER))
@@ -189,7 +190,7 @@ async fn swap_posting_preserves_non_default_balance_semantics_from_quote_to_subm
     let orderbook = MockOrderbook::new(trader.chain_id, quote_response);
     let signer = MockSigner::default();
     let trade = sample_trade_parameters(OrderKind::Sell);
-    let advanced = SwapAdvancedSettings::new().with_quote_request(
+    let advanced = TradeAdvancedSettings::new().with_quote_request(
         QuoteRequestOverride::new()
             .with_sell_token_balance(SellTokenSource::External)
             .with_buy_token_balance(BuyTokenDestination::Internal),
@@ -273,10 +274,12 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
         .with_network_costs_amount(*sell_quote_response().quote.network_cost_amount())
         .with_custom_eip1271_signature(Arc::new(MockEip1271Provider));
 
+    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
+        .expect("test params carry a quote id");
     let result = post_sell_native_currency_order(
         &orderbook,
         &app_data,
-        &params,
+        &from_quote,
         &additional,
         &trader,
         &signer,
@@ -327,7 +330,7 @@ async fn limit_posting_accepts_custom_eip1271_signatures_without_local_re_signin
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = MockSigner::default();
     let params = sample_limit_parameters(OrderKind::Sell);
-    let advanced = LimitOrderAdvancedSettings::new().with_additional_params(
+    let advanced = TradeAdvancedSettings::new().with_additional_params(
         PostTradeAdditionalParams::new()
             .with_signing_scheme(cow_sdk_orderbook::SigningScheme::Eip1271)
             .with_custom_eip1271_signature(Arc::new(MockEip1271Provider)),
@@ -372,7 +375,7 @@ async fn post_swap_order_appdata_from_mismatch_does_not_upload_or_sign() {
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = CountingSigner::new(address(OWNER));
     let params = sample_limit_parameters(OrderKind::Sell);
-    let advanced = LimitOrderAdvancedSettings::new().with_app_data(
+    let advanced = TradeAdvancedSettings::new().with_app_data(
         cow_sdk_app_data::AppDataParams::default().with_signer(address(ALT_RECEIVER)),
     );
 
@@ -665,10 +668,12 @@ async fn ethflow_validation_uses_signer_owner_not_receiver() {
     let params = ethflow_params_with_receiver(Some(address(ALT_RECEIVER)));
     let additional = ethflow_additional_params(&sell_quote_response());
 
+    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
+        .expect("test params carry a quote id");
     let result = post_sell_native_currency_order(
         &orderbook,
         &app_data,
-        &params,
+        &from_quote,
         &additional,
         &trader,
         &signer,
@@ -701,10 +706,12 @@ async fn ethflow_validation_rejects_mismatched_signer() {
     let params = ethflow_params_with_receiver(Some(address(ALT_RECEIVER)));
     let additional = ethflow_additional_params(&sell_quote_response());
 
+    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
+        .expect("test params carry a quote id");
     let error = post_sell_native_currency_order(
         &orderbook,
         &app_data,
-        &params,
+        &from_quote,
         &additional,
         &trader,
         &signer,
@@ -750,10 +757,12 @@ async fn ethflow_validation_accepts_matched_signer_with_default_receiver() {
     let params = ethflow_params_with_receiver(None);
     let additional = ethflow_additional_params(&sell_quote_response());
 
+    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
+        .expect("test params carry a quote id");
     let result = post_sell_native_currency_order(
         &orderbook,
         &app_data,
-        &params,
+        &from_quote,
         &additional,
         &trader,
         &signer,

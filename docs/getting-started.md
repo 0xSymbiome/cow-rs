@@ -282,27 +282,44 @@ Those proofs come from the maintained scenarios below.
 ## EthFlow orders need a quote ID
 
 Native-sell / EthFlow posting requires the quote identifier returned by the
-orderbook. When you turn a quote into limit-style posting parameters, propagate
-that id before calling the post method:
+orderbook. The `swap_params_to_limit_order_params` bridge produces a
+`LimitTradeParametersFromQuote` value that guarantees the quote identifier
+is present by construction, and the EthFlow native-currency submission
+helper and transaction helper accept only that newtype on their public
+entries:
 
 ```rust,ignore
-use cow_sdk::trading::{swap_params_to_limit_order_params, TradingError};
+use cow_sdk::trading::{
+    get_eth_flow_transaction, post_sell_native_currency_order,
+    swap_params_to_limit_order_params, OrderValidityBounds,
+    PostTradeAdditionalParams,
+};
 
 let quote = sdk.get_quote_results(params.clone(), signer, None).await?;
-let quote_id = quote
-    .quote_response
-    .id
-    .ok_or(TradingError::MissingQuoteId("EthFlow order posting"))?;
-let limit = swap_params_to_limit_order_params(&params, &quote.quote_response)?
-    .with_quote_id(quote_id);
-let order = sdk.post_limit_order(limit, signer, None).await?;
+let limit_from_quote = swap_params_to_limit_order_params(
+    &quote.trade_parameters,
+    &quote.quote_response,
+)?;
+let order = post_sell_native_currency_order(
+    orderbook,
+    &quote.app_data_info,
+    &limit_from_quote,
+    &PostTradeAdditionalParams::default(),
+    trader,
+    signer,
+    OrderValidityBounds::SERVICES_DEFAULT,
+    None,
+)
+.await?;
 ```
 
-The essential step is passing the returned identifier with
-`with_quote_id(quote.id)` before posting.
-
-If the quote id is missing, EthFlow posting fails with
-`TradingError::MissingQuoteId` before the native-currency transaction is built.
+If the orderbook quote response does not carry an identifier,
+`swap_params_to_limit_order_params` fails with
+`TradingError::MissingQuoteId("EthFlow order posting")` before the
+native-currency transaction is built. The typed boundary lifts the
+previous runtime check to a compile error when a consumer attempts to
+pass a `LimitTradeParameters` value missing a quote id directly to the
+EthFlow entries.
 
 ## Step 2: Run The Deterministic Signing Scenario
 

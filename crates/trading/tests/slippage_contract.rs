@@ -12,7 +12,7 @@ use cow_sdk_orderbook::{PriceQuality, QuoteData};
 use cow_sdk_trading::{
     MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy, QuoteRequestOverride,
     SlippageSuggestionProvider, SlippageToleranceRequest, SlippageToleranceResponse,
-    SwapAdvancedSettings, partner_fee_bps, resolve_slippage_suggestion, sanitize_protocol_fee_bps,
+    TradeAdvancedSettings, partner_fee_bps, resolve_slippage_suggestion, sanitize_protocol_fee_bps,
     suggest_slippage_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
 };
 
@@ -275,7 +275,7 @@ async fn resolve_slippage_suggestion_skips_provider_for_fast_quotes_and_uses_pro
             .expect("app code should validate");
     let quote = sell_quote_response();
     let fast_calls = Arc::new(AtomicUsize::new(0));
-    let fast_settings = SwapAdvancedSettings::new()
+    let fast_settings = TradeAdvancedSettings::new()
         .with_quote_request(QuoteRequestOverride::new().with_price_quality(PriceQuality::Fast))
         .with_slippage_suggester(Arc::new(CountingProvider {
             calls: fast_calls.clone(),
@@ -297,7 +297,7 @@ async fn resolve_slippage_suggestion_skips_provider_for_fast_quotes_and_uses_pro
 
     let optimal_calls = Arc::new(AtomicUsize::new(0));
     let optimal_settings =
-        SwapAdvancedSettings::new().with_slippage_suggester(Arc::new(CountingProvider {
+        TradeAdvancedSettings::new().with_slippage_suggester(Arc::new(CountingProvider {
             calls: optimal_calls.clone(),
             response: Some(200),
         }));
