@@ -218,47 +218,6 @@ fn typed_amount_and_decimal_amount_expose_semantic_accessors() {
 }
 
 #[test]
-fn amount_addition_is_commutative_across_curated_boundaries() {
-    // The fifth boundary value (`U256::MAX - 1`) is the largest value that
-    // can still participate in a non-overflowing pairwise sum with
-    // `Amount::from(1u32)`. Combined with `Amount::from(u128::MAX)`,
-    // `u64::MAX`, `1u32`, and zero this exercises the full `U256` storage
-    // range without crossing the `uint256` ceiling.
-    let boundaries = [
-        Amount::ZERO,
-        Amount::from(1u32),
-        Amount::from(u64::MAX),
-        Amount::from(u128::MAX),
-        Amount::from_u256(U256::MAX - U256::from(u128::MAX) - U256::from(1u8)),
-    ];
-
-    for &left in &boundaries {
-        for &right in &boundaries {
-            assert_eq!(
-                left + right,
-                right + left,
-                "Amount addition must be commutative for {left} and {right}"
-            );
-        }
-    }
-}
-
-#[test]
-fn amount_addition_is_associative_for_curated_triple() {
-    let a = Amount::from_u256((U256::from(1u8) << 128usize) + U256::from(7u32));
-    let b = Amount::from_u256((U256::from(1u8) << 192usize) + U256::from(11u32));
-    // `c` deliberately stays below `1 << 255` so the curated triple sum
-    // (~`1 << 255 + 1 << 192 + 1 << 128`) does not exceed `U256::MAX`.
-    let c = Amount::from_u256((U256::from(1u8) << 254usize) + U256::from(13u32));
-
-    assert_eq!(
-        (a + b) + c,
-        a + (b + c),
-        "Amount addition must delegate to associative U256 addition"
-    );
-}
-
-#[test]
 fn amount_checked_arithmetic_preserves_option_shape() {
     let small = Amount::from(7u32);
     let large = Amount::from(11u32);
@@ -268,11 +227,6 @@ fn amount_checked_arithmetic_preserves_option_shape() {
         small.checked_add(&large),
         Some(Amount::from(18u32)),
         "checked_add must return Some for in-range U256 inputs"
-    );
-    assert_eq!(
-        large - small,
-        Amount::from(4u32),
-        "Sub must delegate to the inner U256 and return the typed difference",
     );
     assert_eq!(
         small.checked_sub(&large),
@@ -289,12 +243,6 @@ fn amount_checked_arithmetic_preserves_option_shape() {
         Some(Amount::from(33u32)),
         "checked_mul must return Some for in-range U256 inputs"
     );
-
-    let mut running = small;
-    running += large;
-    assert_eq!(running, Amount::from(18u32));
-    running -= Amount::from(8u32);
-    assert_eq!(running, Amount::from(10u32));
 }
 
 #[test]
@@ -385,26 +333,6 @@ fn signed_amount_typed_accessors_preserve_i256_storage() {
     assert_eq!(amount.as_i256(), &value);
     assert_eq!(amount.to_string(), canonical);
     assert_eq!(amount.into_i256(), value);
-}
-
-#[test]
-fn signed_amount_add_and_sub_delegate_to_i256() {
-    let a = SignedAmount::new("7").unwrap();
-    let b = SignedAmount::new("-3").unwrap();
-    let c = SignedAmount::new("12").unwrap();
-
-    assert_eq!(a + b, SignedAmount::new("4").unwrap());
-    assert_eq!(b + a, SignedAmount::new("4").unwrap());
-    assert_eq!((a + b) + c, a + (b + c));
-    assert_eq!(a + SignedAmount::ZERO, SignedAmount::new("7").unwrap());
-    assert_eq!(a - a, SignedAmount::ZERO);
-
-    let mut total = a;
-    total += b;
-    assert_eq!(total, SignedAmount::new("4").unwrap());
-
-    total -= c;
-    assert_eq!(total, SignedAmount::new("-8").unwrap());
 }
 
 #[test]
@@ -517,117 +445,14 @@ fn cow_primitive_newtype_zero_constants_equal_alloy_zero() {
     assert!(OrderUid::ZERO.is_zero());
 }
 
-// Panic-location regression tests for the `#[track_caller]` annotation
-// chain. These pin the contract that overflow panics from
-// `SignedAmount` arithmetic surface at the user's call site rather
-// than at the cow newtype boundary. The tests rely on
-// `alloy_primitives::I256`'s debug-mode `handle_overflow`
-// (`debug_assert!(!overflow)`); they are gated to debug builds and
-// off `wasm32` because the panic-hook mechanism is unavailable on
-// `wasm32-unknown-unknown` and the `debug_assert!` is compiled out
-// in release.
-//
-// All three tests serialize through `PANIC_HOOK_LOCK` so they do not
-// clobber each other's custom panic hooks under cargo's default
-// parallel test runner.
-#[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
-static PANIC_HOOK_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
-
-#[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
-fn capture_panic_location_for<F>(operation: F) -> Option<(String, u32)>
-where
-    F: FnOnce() + std::panic::UnwindSafe,
-{
-    use std::panic;
-    use std::sync::{Arc, Mutex};
-
-    // Avoid PANIC_HOOK_LOCK poisoning: hold the guard across the
-    // closure and recover from any prior poison by extracting the
-    // inner guard explicitly.
-    let _serialized = PANIC_HOOK_LOCK
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner);
-
-    let captured: Arc<Mutex<Option<(String, u32)>>> = Arc::new(Mutex::new(None));
-    let captured_clone = Arc::clone(&captured);
-
-    let prior_hook = panic::take_hook();
-    panic::set_hook(Box::new(move |info| {
-        if let Some(loc) = info.location() {
-            *captured_clone.lock().unwrap() = Some((loc.file().to_owned(), loc.line()));
-        }
-    }));
-
-    let result = panic::catch_unwind(operation);
-
-    panic::set_hook(prior_hook);
-
-    assert!(
-        result.is_err(),
-        "the operation must panic under debug_assertions",
-    );
-
-    captured.lock().unwrap().clone()
-}
-
-#[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
-#[test]
-fn signed_amount_sub_panic_location_points_at_caller_under_track_caller() {
-    // `SignedAmount` wraps `alloy_primitives::I256`; cow does not yet
-    // expose its own MIN constant, so the test reaches for the alloy
-    // boundary value through the `from_i256` constructor.
-    let captured = capture_panic_location_for(|| {
-        let min = SignedAmount::from_i256(I256::MIN);
-        let one = SignedAmount::new("1").unwrap();
-        let _ = min - one;
-    });
-
-    let (file, _line) = captured.expect("panic hook captured a location");
-    assert!(
-        file.ends_with("types_contract.rs"),
-        "panic location should redirect to the test caller; got file={file}",
-    );
-}
-
-#[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
-#[test]
-fn signed_amount_add_panic_location_points_at_caller_under_track_caller() {
-    let captured = capture_panic_location_for(|| {
-        let max = SignedAmount::from_i256(I256::MAX);
-        let one = SignedAmount::new("1").unwrap();
-        let _ = max + one;
-    });
-
-    let (file, _line) = captured.expect("panic hook captured a location");
-    assert!(
-        file.ends_with("types_contract.rs"),
-        "panic location should redirect to the test caller; got file={file}",
-    );
-}
-
-#[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
-#[test]
-fn signed_amount_mul_panic_location_points_at_caller_under_track_caller() {
-    let captured = capture_panic_location_for(|| {
-        let max = SignedAmount::from_i256(I256::MAX);
-        let two = SignedAmount::new("2").unwrap();
-        let _ = max * two;
-    });
-
-    let (file, _line) = captured.expect("panic hook captured a location");
-    assert!(
-        file.ends_with("types_contract.rs"),
-        "panic location should redirect to the test caller; got file={file}",
-    );
-}
-
-// Contract tests for the narrowed pow / bit_len / bits / MAX / MIN
-// surface on `Amount` and `SignedAmount`. The most load-bearing
-// assertion is `amount_checked_pow_returns_none_on_overflow_proving_pow_body_uses_checked_pow_not_direct_delegation`:
-// it would fail if a future contributor reverted `Amount::pow` to
-// `Self(self.0.pow(exp.0))` (direct ruint delegation) because the
-// inner `ruint::Uint::pow` is `wrapping_pow` and would silently
-// return a wrapped value instead of `None`.
+// Contract tests for the narrowed checked / saturating / bit_len /
+// bits / MAX / MIN arithmetic surface on `Amount` and `SignedAmount`.
+// The newtypes expose no bare `+` `-` `*` operators and no `pow`; the
+// only arithmetic is fallible-by-return (`checked_*` -> `Option`) or
+// an explicit `saturating_*` clamp, so overflow can never silently
+// wrap or panic. `checked_pow` is the genuine overflow-detecting
+// variant (the inner `ruint::Uint` / `alloy` `pow` is wrapping),
+// which the `*_checked_pow_returns_none_on_overflow` tests pin.
 
 #[test]
 fn amount_max_constant_equals_alloy_u256_max() {
@@ -636,32 +461,30 @@ fn amount_max_constant_equals_alloy_u256_max() {
 }
 
 #[test]
-fn amount_pow_and_checked_pow_match_for_small_inputs() {
+fn amount_checked_pow_matches_for_small_inputs() {
     let two = Amount::new("2").unwrap();
     let three = Amount::new("3").unwrap();
     let four = Amount::new("4").unwrap();
     let five = Amount::new("5").unwrap();
 
-    assert_eq!(two.pow(&Amount::ZERO), Amount::new("1").unwrap());
-    assert_eq!(Amount::ZERO.pow(&Amount::ZERO), Amount::new("1").unwrap());
-    assert_eq!(two.pow(&four), Amount::new("16").unwrap());
-    assert_eq!(three.pow(&five), Amount::new("243").unwrap());
-
+    assert_eq!(
+        two.checked_pow(&Amount::ZERO),
+        Some(Amount::new("1").unwrap())
+    );
+    assert_eq!(
+        Amount::ZERO.checked_pow(&Amount::ZERO),
+        Some(Amount::new("1").unwrap())
+    );
     assert_eq!(two.checked_pow(&four), Some(Amount::new("16").unwrap()));
     assert_eq!(three.checked_pow(&five), Some(Amount::new("243").unwrap()));
 }
 
 #[test]
-fn amount_checked_pow_returns_none_on_overflow_proving_pow_body_uses_checked_pow_not_direct_delegation()
- {
-    // If `Amount::pow`'s body were `Self(self.0.pow(exp.0))` (direct
-    // ruint delegation), `checked_pow` on the boundary would also
-    // succeed because the inner `ruint::Uint::pow` is `wrapping_pow`
-    // and returns a wrapped value, not `None`. By delegating to
-    // `U256::checked_pow` (which is the genuine overflow-detecting
-    // variant), the cow `Amount::checked_pow` correctly returns
-    // `None` on overflow — which `pow` then `.expect(...)`s into a
-    // panic with caller location.
+fn amount_checked_pow_returns_none_on_overflow() {
+    // `Amount::checked_pow` delegates to `U256::checked_pow`, the
+    // genuine overflow-detecting variant, so it returns `None` rather
+    // than the silently-wrapped value the inner `ruint::Uint::pow`
+    // (= `wrapping_pow`) would produce.
     assert_eq!(Amount::MAX.checked_pow(&Amount::new("2").unwrap()), None,);
     // Mid-range overflow too: 2^256 itself overflows U256.
     let two_hundred_fifty_seven = Amount::new("257").unwrap();
@@ -714,7 +537,7 @@ fn signed_amount_max_and_min_constants_equal_alloy_i256_bounds() {
 }
 
 #[test]
-fn signed_amount_pow_and_checked_pow_match_for_small_inputs() {
+fn signed_amount_checked_pow_matches_for_small_inputs() {
     let two = SignedAmount::new("2").unwrap();
     let three = SignedAmount::new("3").unwrap();
     let neg_two = SignedAmount::new("-2").unwrap();
@@ -724,17 +547,27 @@ fn signed_amount_pow_and_checked_pow_match_for_small_inputs() {
     let amount_five = Amount::new("5").unwrap();
     let amount_three = Amount::new("3").unwrap();
 
-    assert_eq!(two.pow(&amount_zero), SignedAmount::new("1").unwrap());
-    assert_eq!(two.pow(&amount_four), SignedAmount::new("16").unwrap());
-    assert_eq!(three.pow(&amount_five), SignedAmount::new("243").unwrap());
-    // Negative base, odd exponent stays negative.
-    assert_eq!(neg_two.pow(&amount_three), SignedAmount::new("-8").unwrap());
-    // Negative base, even exponent flips positive.
-    assert_eq!(neg_two.pow(&amount_four), SignedAmount::new("16").unwrap());
-
+    assert_eq!(
+        two.checked_pow(&amount_zero),
+        Some(SignedAmount::new("1").unwrap())
+    );
     assert_eq!(
         two.checked_pow(&amount_four),
-        Some(SignedAmount::new("16").unwrap()),
+        Some(SignedAmount::new("16").unwrap())
+    );
+    assert_eq!(
+        three.checked_pow(&amount_five),
+        Some(SignedAmount::new("243").unwrap())
+    );
+    // Negative base, odd exponent stays negative.
+    assert_eq!(
+        neg_two.checked_pow(&amount_three),
+        Some(SignedAmount::new("-8").unwrap())
+    );
+    // Negative base, even exponent flips positive.
+    assert_eq!(
+        neg_two.checked_pow(&amount_four),
+        Some(SignedAmount::new("16").unwrap())
     );
 }
 

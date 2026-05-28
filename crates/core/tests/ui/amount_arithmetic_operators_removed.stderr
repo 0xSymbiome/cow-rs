@@ -1,0 +1,77 @@
+error[E0369]: cannot subtract `Amount` from `Amount`
+  --> tests/ui/amount_arithmetic_operators_removed.rs:15:15
+   |
+15 |     let _ = a - b;
+   |             - ^ - Amount
+   |             |
+   |             Amount
+   |
+note: `Amount` does not implement `Sub`
+  --> src/types/amount.rs
+   |
+   | pub struct Amount(
+   | ^^^^^^^^^^^^^^^^^ `Amount` is defined in another crate
+
+error[E0369]: cannot add `Amount` to `Amount`
+  --> tests/ui/amount_arithmetic_operators_removed.rs:16:15
+   |
+16 |     let _ = a + b;
+   |             - ^ - Amount
+   |             |
+   |             Amount
+   |
+note: `Amount` does not implement `Add`
+  --> src/types/amount.rs
+   |
+   | pub struct Amount(
+   | ^^^^^^^^^^^^^^^^^ `Amount` is defined in another crate
+
+error[E0369]: cannot multiply `Amount` by `Amount`
+  --> tests/ui/amount_arithmetic_operators_removed.rs:17:15
+   |
+17 |     let _ = a * b;
+   |             - ^ - Amount
+   |             |
+   |             Amount
+   |
+note: `Amount` does not implement `Mul`
+  --> src/types/amount.rs
+   |
+   | pub struct Amount(
+   | ^^^^^^^^^^^^^^^^^ `Amount` is defined in another crate
+
+error[E0599]: no method named `pow` found for struct `Amount` in the current scope
+  --> tests/ui/amount_arithmetic_operators_removed.rs:18:15
+   |
+18 |     let _ = a.pow(&b);
+   |               ^^^ method not found in `Amount`
+   |
+help: one of the expressions' fields has a method of the same name
+   |
+18 |     let _ = a.0.pow(&b);
+   |               ++
+
+error[E0369]: cannot subtract `SignedAmount` from `SignedAmount`
+  --> tests/ui/amount_arithmetic_operators_removed.rs:22:15
+   |
+22 |     let _ = s - t;
+   |             - ^ - SignedAmount
+   |             |
+   |             SignedAmount
+   |
+note: `SignedAmount` does not implement `Sub`
+  --> src/types/amount.rs
+   |
+   | pub struct SignedAmount(
+   | ^^^^^^^^^^^^^^^^^^^^^^^ `SignedAmount` is defined in another crate
+
+error[E0599]: no method named `pow` found for struct `SignedAmount` in the current scope
+  --> tests/ui/amount_arithmetic_operators_removed.rs:23:15
+   |
+23 |     let _ = s.pow(&Amount::ZERO);
+   |               ^^^ method not found in `SignedAmount`
+   |
+help: one of the expressions' fields has a method of the same name
+   |
+23 |     let _ = s.0.pow(&Amount::ZERO);
+   |               ++

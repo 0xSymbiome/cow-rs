@@ -1,8 +1,4 @@
-use std::{
-    fmt,
-    ops::{Add, AddAssign, Mul, MulAssign, Sub, SubAssign},
-    str::FromStr,
-};
+use std::{fmt, str::FromStr};
 
 use alloy_primitives::{I256, U256};
 use serde::{Deserialize, Serialize};
@@ -37,15 +33,21 @@ use crate::errors::{CoreError, ValidationError};
 /// The arithmetic surface is intentionally narrower than the inner
 /// [`alloy_primitives::U256`]. `Amount` does **not** expose:
 ///
-/// - `wrapping_add` / `wrapping_sub` / `wrapping_mul` / `wrapping_pow`:
-///   silent overflow is incompatible with financial-amount safety.
-///   Callers needing wrapping arithmetic drop into the inner
-///   primitive through [`Amount::as_u256`] or [`Amount::into_u256`],
-///   making the wrapping intent visible at the type boundary.
-/// - `overflowing_add` / `overflowing_sub` / `overflowing_mul` /
-///   `overflowing_pow`: same rationale; the `(value, overflow)`
-///   tuple form belongs at the low-level primitive seam, not on the
-///   typed financial surface.
+/// - `Add` / `Sub` / `Mul` (and the `*Assign` operators): the bare
+///   `+` `-` `*` operators on the inner `U256` wrap silently on
+///   overflow and underflow, which is incompatible with
+///   financial-amount safety — `a - b` for `a < b` would silently
+///   become a value near `2^256`. Typed arithmetic is therefore
+///   fallible by return: use [`Amount::checked_add`] /
+///   [`Amount::checked_sub`] / [`Amount::checked_mul`] (`-> Option`),
+///   or the explicit [`Amount::saturating_add`] /
+///   [`Amount::saturating_sub`] / [`Amount::saturating_mul`] clamps.
+///   A caller who genuinely wants wrapping reaches through
+///   [`Amount::as_u256`] / [`Amount::into_u256`], making the wrapping
+///   intent visible at the type boundary.
+/// - `wrapping_*` / `overflowing_*`: same rationale; the wrapping and
+///   `(value, overflow)` tuple forms belong at the low-level
+///   primitive seam, not on the typed financial surface.
 /// - Bit-counting helpers (`count_ones`, `count_zeros`,
 ///   `leading_zeros`, `trailing_zeros`, `is_power_of_two`,
 ///   `next_power_of_two`): no demand from the `CoW` Protocol
@@ -54,12 +56,10 @@ use crate::errors::{CoreError, ValidationError};
 ///   question.
 ///
 /// The shipped surface is: [`Amount::ZERO`], [`Amount::MAX`],
-/// [`Amount::new`], `Add` / `Sub` / `Mul` and their `Assign`
-/// variants (all `#[track_caller]`), [`Amount::checked_add`] /
-/// [`Amount::checked_sub`] / [`Amount::checked_mul`] /
-/// [`Amount::checked_pow`], [`Amount::saturating_add`] /
-/// [`Amount::saturating_sub`] / [`Amount::saturating_mul`] /
-/// [`Amount::saturating_pow`], [`Amount::pow`], and
+/// [`Amount::new`], [`Amount::checked_add`] / [`Amount::checked_sub`]
+/// / [`Amount::checked_mul`] / [`Amount::checked_pow`],
+/// [`Amount::saturating_add`] / [`Amount::saturating_sub`] /
+/// [`Amount::saturating_mul`] / [`Amount::saturating_pow`], and
 /// [`Amount::bit_len`]. Combined with [`Amount::as_u256`] /
 /// [`Amount::into_u256`] for the explicit alloy seam, this covers
 /// every operation cow's own crates need to perform on a typed
@@ -270,41 +270,14 @@ impl Amount {
         Self(self.0.saturating_mul(other.0))
     }
 
-    /// Raises `self` to the power `exp`. Debug-panics in debug builds and
-    /// always panics on overflow.
-    ///
-    /// The body routes through [`Amount::checked_pow`] (rather than
-    /// delegating directly to the inner [`alloy_primitives::U256::pow`])
-    /// because the inner method is `wrapping_pow` and would silently
-    /// produce wrong values on overflow. Callers needing infallible
-    /// behaviour use [`Amount::checked_pow`] or
-    /// [`Amount::saturating_pow`] instead.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `self` raised to `exp` would exceed [`Amount::MAX`].
-    #[inline]
-    #[track_caller]
-    #[must_use]
-    pub fn pow(&self, exp: &Self) -> Self {
-        // SAFETY: the documented contract is that `Amount::pow`
-        // panics on overflow; routing through `checked_pow` ensures
-        // the overflow path becomes an explicit panic with caller
-        // location rather than the silent wrap that
-        // `ruint::Uint::pow` (= `wrapping_pow`) would produce on
-        // direct delegation. Callers needing infallible behaviour
-        // use `Amount::checked_pow` or `Amount::saturating_pow`.
-        self.checked_pow(exp).expect("Amount::pow overflow")
-    }
-
-    /// Like [`Amount::pow`], but returns `None` on overflow.
+    /// Raises `self` to the power `exp`, returning `None` on overflow.
     #[inline]
     #[must_use]
     pub fn checked_pow(&self, exp: &Self) -> Option<Self> {
         self.0.checked_pow(exp.0).map(Self)
     }
 
-    /// Like [`Amount::pow`], but saturates to [`Amount::MAX`] on overflow.
+    /// Raises `self` to the power `exp`, saturating to [`Amount::MAX`] on overflow.
     #[inline]
     #[must_use]
     pub fn saturating_pow(&self, exp: &Self) -> Self {
@@ -413,81 +386,6 @@ impl<'de> Deserialize<'de> for Amount {
         validate_strict_decimal_unsigned("amount", value.as_ref())
             .map_err(serde::de::Error::custom)?;
         Self::new(value.as_ref()).map_err(serde::de::Error::custom)
-    }
-}
-
-// The `#[track_caller]` annotation on the six `Amount` arithmetic
-// operator impls below preserves the caller's panic location across
-// the cow newtype boundary. The inner `alloy_primitives::U256` (which
-// is `ruint::Uint<256, 4>`) already carries `#[track_caller]` on its
-// arithmetic impls, but the bodies delegate to `wrapping_*` and never
-// panic in any build profile, so for `Amount` the annotation is a
-// chain-link guard rather than a panic-redirect today. The same impls
-// on `SignedAmount` further below ARE load-bearing because
-// `alloy_primitives::I256` panics on overflow in debug builds via
-// `debug_assert!(!overflow)`; without `#[track_caller]` on the cow
-// wrapper the reported panic location would point at this file
-// instead of at the caller's expression. Annotation order is
-// `#[inline]` then `#[track_caller]`, matching the stdlib
-// `core::ops::arith` and alloy `Signed` precedents.
-impl Add<Self> for Amount {
-    type Output = Self;
-
-    #[inline]
-    #[track_caller]
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
-    }
-}
-
-impl Sub<Self> for Amount {
-    type Output = Self;
-
-    #[inline]
-    #[track_caller]
-    fn sub(self, rhs: Self) -> Self::Output {
-        // Delegates to the inner `alloy_primitives::U256` `Sub` impl,
-        // which wraps on underflow in both debug and release builds.
-        // The cow contract for the typed operator surface matches the
-        // upstream `U256` semantics so `a + b - c` operator chains compose
-        // without an intermediate `Option` boundary; callers that need
-        // total subtraction semantics use [`Amount::checked_sub`] or
-        // [`Amount::saturating_sub`] explicitly.
-        Self(self.0 - rhs.0)
-    }
-}
-
-impl Mul<Self> for Amount {
-    type Output = Self;
-
-    #[inline]
-    #[track_caller]
-    fn mul(self, rhs: Self) -> Self::Output {
-        Self(self.0 * rhs.0)
-    }
-}
-
-impl AddAssign<Self> for Amount {
-    #[inline]
-    #[track_caller]
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 += rhs.0;
-    }
-}
-
-impl SubAssign<Self> for Amount {
-    #[inline]
-    #[track_caller]
-    fn sub_assign(&mut self, rhs: Self) {
-        self.0 -= rhs.0;
-    }
-}
-
-impl MulAssign<Self> for Amount {
-    #[inline]
-    #[track_caller]
-    fn mul_assign(&mut self, rhs: Self) {
-        self.0 *= rhs.0;
     }
 }
 
@@ -733,12 +631,19 @@ impl DecimalAmount {
 /// intentionally smaller than the inner
 /// [`alloy_primitives::Signed`]. `SignedAmount` does **not** expose:
 ///
-/// - `wrapping_add` / `wrapping_sub` / `wrapping_mul` / `wrapping_pow`
-///   / `wrapping_neg` / `wrapping_abs`: silent overflow is
-///   incompatible with financial-amount safety. Callers needing
-///   wrapping arithmetic drop into the inner primitive through
-///   [`SignedAmount::as_i256`] or [`SignedAmount::into_i256`].
-/// - `overflowing_*` variants: same rationale.
+/// - `Add` / `Sub` / `Mul` (and the `*Assign` operators): the bare
+///   operators on the inner `I256` panic on overflow in debug builds
+///   and wrap silently in release, which is incompatible with
+///   financial-amount safety. Typed arithmetic is fallible by return
+///   instead: use [`SignedAmount::checked_add`] /
+///   [`SignedAmount::checked_sub`] / [`SignedAmount::checked_mul`]
+///   (`-> Option`), or the explicit [`SignedAmount::saturating_add`] /
+///   [`SignedAmount::saturating_sub`] / [`SignedAmount::saturating_mul`]
+///   clamps. A caller who genuinely wants wrapping reaches through
+///   [`SignedAmount::as_i256`] / [`SignedAmount::into_i256`].
+/// - `wrapping_*` / `overflowing_*`: same rationale; the wrapping and
+///   `(value, overflow)` tuple forms belong at the low-level
+///   primitive seam.
 /// - Bit-counting helpers beyond [`SignedAmount::bits`]:
 ///   `count_ones`, `count_zeros`, `leading_zeros`,
 ///   `trailing_zeros`, etc. have no `CoW` Protocol use case on
@@ -746,16 +651,15 @@ impl DecimalAmount {
 ///
 /// The shipped surface is: [`SignedAmount::ZERO`],
 /// [`SignedAmount::MAX`], [`SignedAmount::MIN`],
-/// [`SignedAmount::new`], `Add` / `Sub` / `Mul` and their `Assign`
-/// variants (all `#[track_caller]`),
-/// [`SignedAmount::checked_add`] / [`SignedAmount::checked_sub`] /
-/// [`SignedAmount::checked_mul`] / [`SignedAmount::checked_pow`] /
-/// [`SignedAmount::checked_neg`] / [`SignedAmount::checked_abs`] /
+/// [`SignedAmount::new`], [`SignedAmount::checked_add`] /
+/// [`SignedAmount::checked_sub`] / [`SignedAmount::checked_mul`] /
+/// [`SignedAmount::checked_pow`] / [`SignedAmount::checked_neg`] /
+/// [`SignedAmount::checked_abs`] /
 /// [`SignedAmount::checked_unsigned_abs`],
 /// [`SignedAmount::saturating_add`] /
 /// [`SignedAmount::saturating_sub`] /
 /// [`SignedAmount::saturating_mul`] /
-/// [`SignedAmount::saturating_pow`], [`SignedAmount::pow`], and
+/// [`SignedAmount::saturating_pow`], and
 /// [`SignedAmount::bits`]. Combined with
 /// [`SignedAmount::as_i256`] / [`SignedAmount::into_i256`] for the
 /// explicit alloy seam, this covers every signed-amount operation
@@ -946,35 +850,15 @@ impl SignedAmount {
         Some(Amount(absolute.into_raw()))
     }
 
-    /// Raises `self` to the unsigned power `exp`. Panics on overflow in
-    /// debug builds (alloy `Signed::pow` is `debug_assert!(!overflow)`).
-    ///
-    /// Delegates to [`alloy_primitives::Signed::pow`] which already
-    /// carries `#[track_caller]`, so the reported panic location is the
-    /// caller's expression rather than this file. Callers needing
-    /// infallible behaviour use [`SignedAmount::checked_pow`] or
-    /// [`SignedAmount::saturating_pow`] instead.
-    ///
-    /// # Panics
-    ///
-    /// Panics in debug builds if the result would overflow the signed
-    /// `int256` range; in release builds the operation wraps silently
-    /// the same way alloy's underlying `Signed::pow` does.
-    #[inline]
-    #[must_use]
-    pub fn pow(&self, exp: &Amount) -> Self {
-        Self(self.0.pow(exp.0))
-    }
-
-    /// Like [`SignedAmount::pow`], but returns `None` on overflow.
+    /// Raises `self` to the unsigned power `exp`, returning `None` on overflow.
     #[inline]
     #[must_use]
     pub fn checked_pow(&self, exp: &Amount) -> Option<Self> {
         self.0.checked_pow(exp.0).map(Self)
     }
 
-    /// Like [`SignedAmount::pow`], but saturates at the signed numeric
-    /// bounds (positive or negative) on overflow.
+    /// Raises `self` to the unsigned power `exp`, saturating at the signed
+    /// numeric bounds (positive or negative) on overflow.
     #[inline]
     #[must_use]
     pub fn saturating_pow(&self, exp: &Amount) -> Self {
@@ -1053,68 +937,6 @@ impl<'de> Deserialize<'de> for SignedAmount {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let value = <std::borrow::Cow<'_, str>>::deserialize(deserializer)?;
         Self::new(value.as_ref()).map_err(serde::de::Error::custom)
-    }
-}
-
-// `SignedAmount`'s operator impls carry `#[track_caller]` for the
-// same chain-link reason as the `Amount` block above, with one
-// difference: the inner `alloy_primitives::I256` arithmetic panics on
-// overflow in debug builds via `handle_overflow` (which is
-// `debug_assert!(!overflow)`), so the annotation is load-bearing
-// today. Without it, a debug-mode overflow panic would surface with
-// its `info.location()` pointing at this file rather than at the
-// caller's expression.
-impl Add<Self> for SignedAmount {
-    type Output = Self;
-
-    #[inline]
-    #[track_caller]
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0 + rhs.0)
-    }
-}
-
-impl Sub<Self> for SignedAmount {
-    type Output = Self;
-
-    #[inline]
-    #[track_caller]
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self(self.0 - rhs.0)
-    }
-}
-
-impl Mul<Self> for SignedAmount {
-    type Output = Self;
-
-    #[inline]
-    #[track_caller]
-    fn mul(self, rhs: Self) -> Self::Output {
-        Self(self.0 * rhs.0)
-    }
-}
-
-impl AddAssign<Self> for SignedAmount {
-    #[inline]
-    #[track_caller]
-    fn add_assign(&mut self, rhs: Self) {
-        self.0 += rhs.0;
-    }
-}
-
-impl SubAssign<Self> for SignedAmount {
-    #[inline]
-    #[track_caller]
-    fn sub_assign(&mut self, rhs: Self) {
-        self.0 -= rhs.0;
-    }
-}
-
-impl MulAssign<Self> for SignedAmount {
-    #[inline]
-    #[track_caller]
-    fn mul_assign(&mut self, rhs: Self) {
-        self.0 *= rhs.0;
     }
 }
 

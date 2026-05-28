@@ -261,8 +261,11 @@ over `alloy_primitives::U256` and `alloy_primitives::I256` respectively per
 [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md),
 preserving the decimal-string wire form; `DecimalAmount` pairs atoms with a
 decimals scale for display and user-input flows. Both numeric newtypes
-carry cow-owned arithmetic operator impls plus `checked_*` and
-`saturating_*` methods, so existing arithmetic call sites work verbatim.
+expose a fallible-by-return arithmetic surface — `checked_*` (returning
+`Option`) and explicit `saturating_*` clamps — and intentionally ship no
+bare `Add` / `Sub` / `Mul` operators, so an overflow or underflow can
+never silently wrap (or panic) on a typed amount; a caller that needs raw
+wrapping reaches through `as_u256` / `into_u256`.
 The cow-owned `Deserialize` impl is strict-decimal-only on the wire
 boundary; the cow `Amount::new` and `SignedAmount::new` constructors stay
 lenient to preserve the existing constructor contract.

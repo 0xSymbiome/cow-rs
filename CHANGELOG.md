@@ -40,6 +40,13 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_core::Amount` and `cow_sdk_core::SignedAmount` use a checked
+  arithmetic surface — `checked_add` / `checked_sub` / `checked_mul` /
+  `checked_pow` (returning `Option`) and explicit `saturating_*` clamps
+  — rather than bare `Add` / `Sub` / `Mul` operators or a `pow` method,
+  so an overflow or underflow cannot silently wrap a typed amount.
+  Callers that need raw wrapping use `as_u256` / `into_u256`
+  (respectively `as_i256` / `into_i256`).
 - `cow_sdk_app_data::get_app_data_info` surfaces the underlying
   JSON-schema validator detail on validation failure. The lossy
   `AppDataError::InvalidAppDataProvided { reason: BadShape { details: "document failed the embedded JSON schema validation" } }`
