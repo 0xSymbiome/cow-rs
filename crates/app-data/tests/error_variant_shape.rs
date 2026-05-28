@@ -39,14 +39,14 @@ fn schema_variant_wraps_jsonschema_validation_error_through_typed_source() {
         .expect("missing-required-property must surface a validation error")
         .to_owned();
     let error = AppDataError::Schema {
-        message: format!("data {validation_error}").into(),
+        message: format!("data {validation_error}"),
         source: Box::new(validation_error),
     };
 
     let AppDataError::Schema { message, source } = &error else {
         panic!("expected Schema variant, got {error:?}");
     };
-    assert!(message.as_inner().contains("required"));
+    assert!(message.contains("required"));
     assert!(format!("{source}").contains("required"));
 }
 

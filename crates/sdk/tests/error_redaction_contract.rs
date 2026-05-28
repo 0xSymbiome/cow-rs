@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use cow_sdk::{
     SdkError,
-    app_data::{AppDataError, SchemaVersion, ValidationResult},
+    app_data::{AppDataError, SchemaVersion},
     contracts::ContractsError,
     core::{
         Address, Amount, AppCodeError, CoreError, CowEnv, HostPolicyError, TransportError,
@@ -274,10 +274,6 @@ fn app_data_errors_redact_public_serialized_payloads() {
         ),
         AppDataError::MissingSchemaVersion,
         AppDataError::Json(json_error()),
-        AppDataError::Schema {
-            message: secret_payload().into(),
-            source: Box::new(schema_error_source()),
-        },
         AppDataError::InvalidAppDataProvided {
             field: "document",
             reason: ValidationReason::BadShape {
@@ -317,10 +313,6 @@ fn app_data_errors_redact_public_serialized_payloads() {
 
     assert_all_render("AppDataError", &errors);
     assert_all_serialize("AppDataError", &errors);
-
-    let validation_result = ValidationResult::new(false, Some(secret_payload()));
-    assert_debug_render("ValidationResult", &validation_result);
-    assert_serialize("ValidationResult", &validation_result);
 }
 
 #[test]
@@ -881,17 +873,6 @@ fn secret_payload() -> String {
 
 fn json_error() -> serde_json::Error {
     serde_json::from_str::<Value>("{ malformed").unwrap_err()
-}
-
-fn schema_error_source() -> jsonschema::ValidationError<'static> {
-    let schema = json!({"type": "object", "required": ["safe"]});
-    let candidate = json!({});
-    let validator = jsonschema::validator_for(&schema).expect("schema fixture must compile");
-    validator
-        .iter_errors(&candidate)
-        .next()
-        .expect("missing required property must surface a validation error")
-        .to_owned()
 }
 
 fn address(value: &str) -> Address {

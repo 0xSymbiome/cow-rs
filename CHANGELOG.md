@@ -40,6 +40,25 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_app_data::get_app_data_info` surfaces the underlying
+  JSON-schema validator detail on validation failure. The lossy
+  `AppDataError::InvalidAppDataProvided { reason: BadShape { details: "document failed the embedded JSON schema validation" } }`
+  envelope is replaced with the typed `AppDataError::Schema { message, source }`
+  variant carried directly from the validator boundary. The
+  `message` field is now plaintext `String` (was `Redacted<String>`)
+  because the rendering is safe-by-construction: instance values
+  flow through the underlying validator's masking surface and
+  rejected-property-name lists (Draft-7 `additionalProperties: false`
+  failures) are rendered as counts rather than names so caller
+  content cannot leak through `Display`. The typed
+  `jsonschema::ValidationError` source is preserved through the
+  `#[source]` chain for callers that need the unmasked rendering
+  and explicitly cross the redaction boundary by walking
+  `std::error::Error::source`. The `ValidationResult::errors` field
+  tightens symmetrically from `Option<Redacted<String>>` to
+  `Option<String>` because it carries the same safe-by-construction
+  text.
+
 - `cow_sdk_app_data::AppDataParams` exposes a single typed
   construction surface. `AppDataParams::new(app_code: AppCode)`
   replaces the prior five-argument constructor and matches the

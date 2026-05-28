@@ -1,7 +1,7 @@
 use std::{collections::BTreeMap, sync::OnceLock};
 
 use include_dir::{Dir, DirEntry, File, include_dir};
-use jsonschema::{Draft, Resource};
+use jsonschema::{Draft, Resource, error::ValidationErrorKind};
 use serde_json::Value;
 
 use cow_sdk_core::AppCode;
@@ -100,6 +100,12 @@ pub fn get_app_data_schema(version: &str) -> Result<AppDataDoc, AppDataError> {
 
 /// Validates an app-data document against the bundled JSON schema set.
 ///
+/// The returned [`ValidationResult::errors`] string is safe-by-construction:
+/// instance values are masked through the underlying validator's masking API
+/// and rejected-property-name lists are rendered as counts rather than names,
+/// so the rendered text can be logged or surfaced to end users without
+/// crossing the redaction boundary.
+///
 /// # Panics
 ///
 /// Panics only if the embedded schema bundle stops following the committed
@@ -113,12 +119,12 @@ pub fn validate_app_data_doc(app_data_doc: &AppDataDoc) -> ValidationResult {
         },
         Err(err) => {
             let errors = match &err {
-                AppDataError::Schema { message, .. } => message.as_inner().clone(),
+                AppDataError::Schema { message, .. } => message.clone(),
                 _ => err.to_string(),
             };
             ValidationResult {
                 success: false,
-                errors: Some(errors.into()),
+                errors: Some(errors),
             }
         }
     }
@@ -137,7 +143,7 @@ pub fn extract_schema_version(app_data_doc: &AppDataDoc) -> Result<&str, AppData
         .ok_or(AppDataError::MissingSchemaVersion)
 }
 
-fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataError> {
+pub(crate) fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataError> {
     let version = extract_schema_version(app_data_doc)?;
     let schema = get_app_data_schema(version)?;
 
@@ -149,7 +155,7 @@ fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataE
     let validator = options.build(&schema).map_err(|err| {
         let message = render_validation_error(&err);
         AppDataError::Schema {
-            message: message.into(),
+            message,
             source: Box::new(err.to_owned()),
         }
     })?;
@@ -162,7 +168,7 @@ fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataE
             rendered.push_str(&render_validation_error(&error));
         }
         return Err(AppDataError::Schema {
-            message: rendered.into(),
+            message: rendered,
             source: Box::new(first.to_owned()),
         });
     }
@@ -170,13 +176,47 @@ fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataE
     Ok(())
 }
 
+/// Renders one schema-validator error with its instance-path prefix and a
+/// safe-by-construction body.
+///
+/// Instance values flow through the validator's masking surface so failing
+/// values cannot leak into the rendered text. Three kinds carry caller
+/// content in the kind itself rather than in the masked instance slot and
+/// are handled surgically:
+///
+/// - [`ValidationErrorKind::AdditionalProperties`] and
+///   [`ValidationErrorKind::UnevaluatedProperties`] expose the rejected
+///   property names, which on a `additionalProperties: false` schema are
+///   caller-supplied keys. We render the count instead of the names.
+/// - [`ValidationErrorKind::Custom`] passes a user-defined message string.
+///   The bundled app-data schemas use Draft-7 standard keywords only and
+///   never declare custom keywords, so this match arm is a defensive guard.
 fn render_validation_error(error: &jsonschema::ValidationError<'_>) -> String {
     let path = error.instance_path().to_string();
-    if path.is_empty() {
-        format!("data {error}")
+    let prefix = if path.is_empty() {
+        String::from("data")
     } else {
-        format!("data{path} {error}")
-    }
+        format!("data{path}")
+    };
+
+    let body = match error.kind() {
+        ValidationErrorKind::AdditionalProperties { unexpected } => format!(
+            "additional propert{} not allowed ({} unexpected)",
+            if unexpected.len() == 1 { "y" } else { "ies" },
+            unexpected.len(),
+        ),
+        ValidationErrorKind::UnevaluatedProperties { unexpected } => format!(
+            "unevaluated propert{} not allowed ({} unexpected)",
+            if unexpected.len() == 1 { "y" } else { "ies" },
+            unexpected.len(),
+        ),
+        ValidationErrorKind::Custom { keyword, .. } => {
+            format!("custom keyword `{keyword}` rejected the value")
+        }
+        _ => error.masked().to_string(),
+    };
+
+    format!("{prefix} {body}")
 }
 
 fn schema_resources() -> &'static BTreeMap<String, Value> {

@@ -304,7 +304,7 @@ impl From<ValidationResult> for ValidationResultDto {
     fn from(value: ValidationResult) -> Self {
         Self {
             success: value.success,
-            errors: value.errors.map(|errors| errors.to_string()),
+            errors: value.errors,
         }
     }
 }

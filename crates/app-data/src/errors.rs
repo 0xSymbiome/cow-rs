@@ -27,18 +27,40 @@ pub enum AppDataError {
     /// JSON serialization or parsing failed.
     #[error("json error: {0}")]
     Json(#[from] serde_json::Error),
-    /// JSON schema validation or schema construction failed; the path-prefixed
-    /// validator message is exposed through `Display` and the typed underlying
-    /// [`jsonschema::ValidationError`] is preserved through the error-source
-    /// chain.
+    /// JSON schema validation or schema construction failed.
+    ///
+    /// The path-prefixed validator message is safe-by-construction: instance
+    /// values are masked through the underlying validator's masking surface
+    /// and rejected-property-name lists are rendered as counts rather than
+    /// names, so the rendered text can be logged or surfaced to end users
+    /// without crossing the redaction boundary. Callers that need the
+    /// unmasked validator output walk the [`std::error::Error::source`] chain
+    /// and call `to_string()` on the typed [`jsonschema::ValidationError`]
+    /// explicitly.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::error::Error;
+    ///
+    /// use cow_sdk_app_data::AppDataError;
+    ///
+    /// fn report(error: &AppDataError) {
+    ///     if let AppDataError::Schema { message, .. } = error {
+    ///         // `message` is plaintext and safe to log:
+    ///         eprintln!("app-data schema validation failed: {message}");
+    ///     }
+    /// }
+    /// ```
     #[error("schema error: {message}")]
     Schema {
-        /// Path-prefixed validator message rendered for human inspection;
-        /// includes the failing JSON instance path when available so the
-        /// `Display` rendering identifies the offending field.
-        message: Redacted<String>,
+        /// Path-prefixed validator message with instance values masked and
+        /// rejected-property-name lists rendered as counts. Safe-by-construction
+        /// for inclusion in logs and end-user-visible error messages.
+        message: String,
         /// Owned schema-validator error returned by the underlying
-        /// [`jsonschema`] crate.
+        /// [`jsonschema`] crate. Carries the unmasked rendering; callers that
+        /// surface it through `Display` cross the redaction boundary on purpose.
         #[source]
         source: Box<jsonschema::ValidationError<'static>>,
     },

@@ -4,10 +4,7 @@ use alloy_primitives::keccak256;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{
-    AppDataDoc, AppDataError, AppDataInfo, app_data_hex_to_cid, cid_to_app_data_hex,
-    validate_app_data_doc,
-};
+use crate::{AppDataDoc, AppDataError, AppDataInfo, app_data_hex_to_cid, cid_to_app_data_hex};
 
 /// Client-side size ceiling for stringified app-data documents.
 ///
@@ -258,17 +255,7 @@ const fn ensure_document_under_size_limit(
 }
 
 fn ensure_valid_document(document: &AppDataDoc) -> Result<(), AppDataError> {
-    let validation = validate_app_data_doc(document);
-    if validation.success {
-        return Ok(());
-    }
-
-    Err(AppDataError::InvalidAppDataProvided {
-        field: "document",
-        reason: cow_sdk_core::ValidationReason::BadShape {
-            details: "document failed the embedded JSON schema validation",
-        },
-    })
+    crate::schema::validate_app_data_doc_inner(document)
 }
 
 /// Returns only the app-data hex digest.

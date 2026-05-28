@@ -276,8 +276,7 @@ fn flashloan_v1_7_0_rejects_invalid_address() {
     assert!(
         validation
             .errors
-            .as_ref()
-            .map(|errors| errors.as_inner().as_str())
+            .as_deref()
             .is_some_and(|errors| errors.contains("liquidityProvider")),
         "schema error must identify the invalid address field, got {:?}",
         validation.errors,
@@ -316,8 +315,7 @@ fn flashloan_v1_7_0_rejects_missing_field() {
     assert!(
         validation
             .errors
-            .as_ref()
-            .map(|errors| errors.as_inner().as_str())
+            .as_deref()
             .is_some_and(|errors| errors.contains("receiver") || errors.contains("required")),
         "schema error must identify the missing field, got {:?}",
         validation.errors,

@@ -65,8 +65,7 @@ fn validation_supports_latest_docs_and_rejects_invalid_metadata() {
     assert!(
         invalid
             .errors
-            .as_ref()
-            .map(|errors| errors.as_inner().as_str())
+            .as_deref()
             .unwrap()
             .contains("/metadata/referrer/address")
     );
@@ -191,4 +190,55 @@ fn wrappers_v1_13_0_minimal_doc_validates_and_extracts_typed_fields() {
             .is_some_and(|data| data.starts_with("0x")),
         "wrapper calldata must remain hex-encoded",
     );
+}
+
+#[test]
+fn schema_error_message_masks_failing_instance_values() {
+    let secret_bearing_doc = json!({
+        "version": "Bearer eyJleHAiOiAibGVha19jaGVjayJ9",
+        "metadata": {}
+    });
+    let result = validate_app_data_doc(&secret_bearing_doc);
+    assert!(!result.success);
+    let errors = result
+        .errors
+        .as_deref()
+        .expect("schema validation failure must carry a rendered error");
+    assert!(
+        !errors.contains("Bearer"),
+        "masked validator output must not include caller-supplied instance values; got {errors:?}",
+    );
+    assert!(
+        !errors.contains("eyJleHAiOiAibGVha19jaGVjayJ9"),
+        "masked validator output must not include caller-supplied instance values; got {errors:?}",
+    );
+}
+
+#[test]
+fn schema_error_message_does_not_leak_unexpected_property_names() {
+    let extra_prop_doc = json!({
+        "version": "1.14.0",
+        "appCode": "cow-rs",
+        "metadata": {
+            "flashloan": {
+                "leak_check_secret_property_name": "value",
+                "liquidityProvider": "0xb50201558B00496A145fE76f7424749556E326D8",
+                "protocolAdapter": "0x1186B5ad42E3e6d6c6901FC53b4A367540E6EcFE",
+                "receiver": "0x1186B5ad42E3e6d6c6901FC53b4A367540E6EcFE",
+                "token": "0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d",
+                "amount": "1"
+            }
+        }
+    });
+    let result = validate_app_data_doc(&extra_prop_doc);
+    if !result.success {
+        let errors = result
+            .errors
+            .as_deref()
+            .expect("schema validation failure must carry a rendered error");
+        assert!(
+            !errors.contains("leak_check_secret_property_name"),
+            "additional-properties failure must not include caller-supplied property names; got {errors:?}",
+        );
+    }
 }

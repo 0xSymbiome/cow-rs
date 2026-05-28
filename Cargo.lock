@@ -1368,7 +1368,6 @@ dependencies = [
  "cow-sdk-trading",
  "cow-sdk-transport-policy",
  "cow-sdk-wasm",
- "jsonschema",
  "num-bigint",
  "serde",
  "serde_json",

@@ -54,8 +54,7 @@ fn root_schema_version_matrix_validates_minimal_docs_and_rejects_missing_require
             );
             let errors = validation
                 .errors
-                .as_ref()
-                .map(|errors| errors.as_inner().as_str())
+                .as_deref()
                 .expect("invalid schema validation carries a rendered error");
             assert!(
                 errors.contains(required_field) || errors.contains("required"),

@@ -1,9 +1,9 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-14
+Last reviewed: 2026-05-28
 Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, Pinata upload-trait headers, wasm error envelopes, and the SDK facade
-Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, the `redact_response_body` token-detection layers, or any new credential-bearing surface that lands without a redacting storage type
+Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, the `redact_response_body` token-detection layers, the `cow_sdk_app_data::AppDataError::Schema` rendering pipeline or the matching `ValidationResult::errors` field's safe-by-construction masking surface, or any new credential-bearing surface that lands without a redacting storage type or an equivalent safe-by-construction render
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
@@ -35,7 +35,8 @@ It does not cover unrelated transport error redaction or credential handling out
 | Subgraph builder | `SubgraphApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
 | URL configuration | Credential-bearing URL values use redacting storage types for debug, display, and serialization, and unwrap only at dispatch seams | Conforms |
 | Host-policy errors | Orderbook and subgraph host-policy failures retain only a redacted host component and never serialize raw URL credentials, paths, queries, or fragments | Conforms |
-| Public error diagnostics | Provider, signer, RPC, transport, response-body, subgraph context, orderbook API, orderbook rejection, and facade error payloads wrap secret-bearing messages in `Redacted<T>` or sanitize protocol identifiers before rendering, and redact credential-bearing diagnostics across `Debug`, `Display`, and existing `Serialize` surfaces | Conforms |
+| Public error diagnostics | Provider, signer, RPC, transport, response-body, subgraph context, orderbook API, orderbook rejection, and facade error payloads wrap secret-bearing messages in `Redacted<T>`, render through a safe-by-construction sanitization pipeline, or sanitize protocol identifiers before rendering, and redact credential-bearing diagnostics across `Debug`, `Display`, and existing `Serialize` surfaces | Conforms |
+| App-data schema validator output | `AppDataError::Schema.message` and `ValidationResult::errors` carry a path-prefixed validator render produced through `jsonschema::ValidationError::masked()` with surgical paths for the variant kinds that embed caller content in the kind itself (rejected-property-name lists are rendered as counts rather than names), so the rendered text never embeds caller-supplied instance values or property names and is safe to interpolate into `Display`, `Debug`, and `Serialize` without a `Redacted<T>` wrapper | Conforms |
 | Pinata upload trait | `IpfsUploadTransport::post_json` carries `Redacted<String>` header values and the Pinata header vector stays redacted under `Debug` | Conforms |
 | WASM error envelope | `WasmError` maps transport, app-data, signing, orderbook, subgraph, and trading errors through display-safe messages and redacted response-body handling | Conforms |
 | Response-body credential scanner | `redact_response_body` enforces a defense-in-depth detector pipeline (JWT, Bearer, strict URL, bare userinfo, credential-keyed value with recursive key-prefix scanning) and the credential-key matcher recognizes `apikey`, `token`, `secret`, `password`, `authorization`, and `bearer` substrings so a partial or mangled credential key does not bypass redaction | Conforms |
@@ -94,6 +95,35 @@ The SDK facade regression test constructs every reviewed public error family
 with URL, bearer-token, private-key-shaped, and PEM-shaped payloads and
 verifies no secret substring appears in public renderings.
 
+### App-Data Schema Validator Output
+
+`cow_sdk_app_data::AppDataError::Schema.message` and the matching
+`cow_sdk_app_data::ValidationResult::errors` field carry a path-prefixed
+validator render that is safe-by-construction. The render pipeline at
+`crates/app-data/src/schema.rs::render_validation_error` flows each
+`jsonschema::ValidationError` through the validator's masking surface
+(`ValidationError::masked()`), which substitutes the configured placeholder
+for instance values across every standard Draft-7 keyword. Three variant
+kinds carry caller content inside the kind itself rather than in the
+masked instance slot and are handled surgically: `AdditionalProperties`
+and `UnevaluatedProperties` render the count of rejected property names
+rather than the names, and `Custom` renders the schema-defined keyword
+name without the user-defined message. The owning `Schema` variant
+therefore stores the rendered message as plaintext `String` instead of
+`Redacted<String>` because the produced text never embeds caller-supplied
+instance values or property names. The typed `jsonschema::ValidationError`
+source remains behind the `#[source]` chain so callers that need the
+unmasked rendering walk `std::error::Error::source` and explicitly cross
+the redaction boundary by calling `to_string()` on the typed value.
+`ValidationResult::errors` tightens symmetrically from
+`Option<Redacted<String>>` to `Option<String>` because it carries the same
+render. Two regression tests at
+`crates/app-data/tests/schema_contract.rs` pin the contract: a
+type-mismatch case with a Bearer-token-shaped instance value confirms the
+masked path does not echo the value, and an `additionalProperties: false`
+case with a caller-supplied property name confirms the surgical path
+renders only the count.
+
 The wasm surface extends that contract to JavaScript. `WasmError` exposes
 typed discriminants and low-cardinality fields while preserving redaction for
 transport details, HTTP status response bodies, app-data transport detail,
@@ -147,6 +177,8 @@ Primary regression coverage:
 - `crates/app-data/tests/pinning_contract.rs::pinning_headers_debug_redacts_secret_bytes`
 - `crates/app-data/tests/pinning_contract.rs::pinning_config_display_redacts_secret_bytes`
 - `crates/sdk/tests/error_redaction_contract.rs`
+- `crates/app-data/tests/schema_contract.rs::schema_error_message_masks_failing_instance_values`
+- `crates/app-data/tests/schema_contract.rs::schema_error_message_does_not_leak_unexpected_property_names`
 - `crates/core/tests/config_contract.rs::external_host_policy_accepts_canonical_and_explicit_hosts_only`
 - `crates/orderbook/tests/host_policy_contract.rs`
 - `crates/subgraph/tests/host_policy_contract.rs`
