@@ -51,9 +51,12 @@ pub enum ValidationReason {
 ///
 /// Built by classifying a [`reqwest::Error`] through the documented partition
 /// (`is_timeout`, `is_connect`, `is_redirect`, `is_decode`, `is_body`,
-/// `is_builder`, `is_request`, `is_status`, fallthrough). Downstream error
-/// surfaces pair this enum with a redacted detail string to produce the
-/// public `Transport { class, detail }` variant shape.
+/// `is_builder`, `is_request`, `is_status`, fallthrough). The
+/// [`ResponseTooLarge`](Self::ResponseTooLarge) class is the exception: it is
+/// produced by the transport's own response-size guard rather than by
+/// `reqwest` classification. Downstream error surfaces pair this enum with a
+/// redacted detail string to produce the public `Transport { class, detail }`
+/// variant shape.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TransportErrorClass {
@@ -77,6 +80,10 @@ pub enum TransportErrorClass {
     /// for future streaming response API. Not currently produced by any
     /// in-tree transport implementation.
     Upgrade,
+    /// The response body exceeded the configured maximum size, so the
+    /// transport refused to buffer it. Produced by the SDK's response-size
+    /// guard, not by `reqwest` classification.
+    ResponseTooLarge,
     /// The transport failure does not match any of the named categories.
     Other,
 }
@@ -96,6 +103,7 @@ impl TransportErrorClass {
             Self::Request => "request",
             Self::Status => "status",
             Self::Upgrade => "upgrade",
+            Self::ResponseTooLarge => "response_too_large",
             Self::Other => "other",
         }
     }

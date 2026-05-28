@@ -21,6 +21,20 @@ pub const DEFAULT_TRADING_USER_AGENT: &str =
 /// Default IPFS user-agent string.
 pub const DEFAULT_IPFS_USER_AGENT: &str = concat!("cow-sdk-ipfs", "/", env!("CARGO_PKG_VERSION"));
 
+/// Maximum response-body size buffered from the subgraph gateway, in bytes.
+///
+/// The subgraph is untrusted third-party infrastructure, but the SDK's
+/// subgraph queries return small aggregate documents, so this generous
+/// headroom never rejects a legitimate response while still bounding a
+/// hostile or misbehaving gateway.
+pub const SUBGRAPH_MAX_RESPONSE_BYTES: usize = 2 * 1024 * 1024;
+/// Maximum response-body size buffered from an IPFS gateway, in bytes.
+///
+/// Sized at twice the protocol app-data document limit so encoding and
+/// framing overhead never rejects a valid document, while bounding a hostile
+/// gateway to a small read.
+pub const IPFS_MAX_RESPONSE_BYTES: usize = 16 * 1024;
+
 /// Combined HTTP client, retry, rate-limit, and tracing policy.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -86,7 +100,8 @@ impl TransportPolicy {
             // SAFETY: this crate-owned user-agent literal is static and
             // validated by the HTTP header parser.
             client: HttpClientPolicy::new(DEFAULT_SUBGRAPH_USER_AGENT)
-                .expect("static subgraph user-agent must remain valid"),
+                .expect("static subgraph user-agent must remain valid")
+                .with_max_response_bytes(SUBGRAPH_MAX_RESPONSE_BYTES),
             retry: RetryPolicy::builder()
                 .jitter(JitterStrategy::decorrelated_from_seed(DEFAULT_JITTER_SEED))
                 .build(),
@@ -137,7 +152,8 @@ impl TransportPolicy {
             // validated by the HTTP header parser.
             client: HttpClientPolicy::new(DEFAULT_IPFS_USER_AGENT)
                 .expect("static IPFS user-agent must remain valid")
-                .without_timeout(),
+                .without_timeout()
+                .with_max_response_bytes(IPFS_MAX_RESPONSE_BYTES),
             retry: RetryPolicy::no_retry(),
             rate_limit: RequestRateLimiter::unlimited(),
             tracing_enabled: false,

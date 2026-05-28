@@ -104,9 +104,10 @@ pub use settlement::{
     encode_trade_flags,
 };
 pub use signature::{
-    Eip1271SignatureData, Eip1271VerificationRequest, RecoverableSignature, Signature,
-    SigningScheme, decode_eip1271_signature_data, decode_signing_scheme,
-    encode_eip1271_signature_data, encode_signing_scheme, verify_eip1271_signature,
+    Eip1271SignatureData, Eip1271VerificationRequest, MAX_SIGNATURE_HEX_BYTES,
+    RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,
+    decode_signing_scheme, encode_eip1271_signature_data, encode_signing_scheme,
+    verify_eip1271_signature,
 };
 pub use swap::{BatchSwapStep, EncodedSwap, Swap, SwapEncoder, SwapExecution, encode_swap_step};
 pub use vault::{

@@ -1539,6 +1539,7 @@ dependencies = [
  "alloy-sol-types",
  "async-trait",
  "cid",
+ "flate2",
  "http",
  "multibase",
  "multihash",

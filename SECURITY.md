@@ -25,6 +25,10 @@ Security-relevant public surfaces worth a reviewer's attention include:
   partition, including the URL-stripping contract on
   `ReqwestTransport` (native) and the explicit URL omission on
   `FetchTransport` (browser)
+- the `max_response_bytes` transport-policy bound that caps every
+  SDK-owned HTTP response read, refusing an over-limit body with a typed
+  `TransportErrorClass::ResponseTooLarge` outcome and bounding decoded
+  (post-decompression) bytes (see [Bounded response reads](#bounded-response-reads))
 - the `CoWSwapOnchainOrders` `OrderPlacement` / `OrderInvalidation` log
   decoder, which is fail-closed on untrusted chain logs: it validates the
   topic set, the on-chain signing scheme, the EIP-1271 owner-payload length,
@@ -119,6 +123,44 @@ Operator recommendation: use the canonical
 bots that do not need partner-relay support. Use
 `ExternalHostPolicy::Allow` only for reviewed private endpoints, and keep
 `ExternalHostPolicy::Test` limited to loopback test fixtures.
+
+## Bounded response reads
+
+Every HTTP response body the SDK buffers is bounded by a configurable maximum
+size, in decoded bytes, carried on the transport policy as
+`max_response_bytes`. Where the SDK owns the read loop — the native orderbook
+and subgraph transport, the browser fetch transport, and the IPFS app-data
+read — an over-limit body is refused with a typed
+`TransportErrorClass::ResponseTooLarge` outcome rather than buffered, and the
+refusal is never retried. The bound is on decoded bytes, so a compressed body
+that decompresses past the limit is refused on its decoded size. Per-client
+defaults are tighter for untrusted gateways (the subgraph gateway and IPFS
+gateways) than for the trusted orderbook, and every value is caller-overridable
+through the transport policy. Signature hex fields are length-bounded before
+decoding, with a bound equal to the orderbook request-body limit so a valid
+signature is never rejected.
+
+Residual boundaries where the SDK does not own the read loop are bounded by the
+request timeout rather than a streamed byte cap, and are stated here rather
+than presented as hard caps:
+
+- The JSON-RPC client the SDK builds disables response decompression so a
+  hostile or misbehaving endpoint cannot amplify a small compressed body into a
+  very large buffer; it is otherwise bounded by the configured request timeout.
+  An RPC client managed entirely by the underlying provider stack is bounded by
+  the timeout alone.
+- A consumer-supplied JavaScript `fetch` callback materializes the response
+  body before the SDK sees it; the SDK refuses an oversized body but cannot
+  prevent the JavaScript layer from allocating it. The callback contract is the
+  place to impose a body limit before materialization.
+- The browser wallet returns data the wallet has already materialized; the SDK
+  imposes no response-byte cap on that boundary.
+- The IPFS read is byte-bounded but, by default, not time-bounded.
+
+Operator recommendation: route untrusted JSON-RPC and IPFS traffic through a
+trusted node or a size-limiting reverse proxy, and impose a body limit inside
+any custom JavaScript `fetch` callback before returning the response to the
+SDK.
 
 ## Browser-wallet trust posture
 

@@ -72,7 +72,9 @@ use std::borrow::Cow;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use cow_sdk_core::{HttpTransport, Redacted, TransportError, TransportErrorClass};
+use cow_sdk_core::{
+    DEFAULT_MAX_RESPONSE_BYTES, HttpTransport, Redacted, TransportError, TransportErrorClass,
+};
 use js_sys::{Array, Object, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
@@ -86,6 +88,7 @@ use web_sys::{AbortController, Headers, Request, RequestInit, Response, Window};
 pub struct FetchTransportConfig {
     base_url: Redacted<String>,
     timeout: Option<Duration>,
+    max_response_bytes: usize,
 }
 
 impl FetchTransportConfig {
@@ -96,6 +99,7 @@ impl FetchTransportConfig {
         Self {
             base_url: Redacted::new(base_url.into()),
             timeout: None,
+            max_response_bytes: DEFAULT_MAX_RESPONSE_BYTES,
         }
     }
 
@@ -107,6 +111,14 @@ impl FetchTransportConfig {
     #[must_use]
     pub const fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
+        self
+    }
+
+    /// Returns a copy of this configuration with an explicit maximum
+    /// response-body size, in bytes.
+    #[must_use]
+    pub const fn with_max_response_bytes(mut self, max_response_bytes: usize) -> Self {
+        self.max_response_bytes = max_response_bytes;
         self
     }
 
@@ -140,6 +152,12 @@ impl FetchTransportConfig {
     pub const fn timeout(&self) -> Option<Duration> {
         self.timeout
     }
+
+    /// Returns the configured maximum response-body size, in bytes.
+    #[must_use]
+    pub const fn max_response_bytes(&self) -> usize {
+        self.max_response_bytes
+    }
 }
 
 /// Browser fetch-based [`HttpTransport`] implementation.
@@ -152,6 +170,7 @@ impl FetchTransportConfig {
 pub struct FetchTransport {
     base_url: Redacted<String>,
     timeout: Option<Duration>,
+    max_response_bytes: usize,
 }
 
 impl FetchTransport {
@@ -162,6 +181,7 @@ impl FetchTransport {
         Self {
             base_url: Redacted::new(trimmed),
             timeout: config.timeout,
+            max_response_bytes: config.max_response_bytes,
         }
     }
 
@@ -283,6 +303,20 @@ impl FetchTransport {
         let body_text = text_value
             .as_string()
             .ok_or_else(|| decode_error("response body was not a string"))?;
+        // The browser fetch has already materialized the full body into a JS
+        // string by this point, so this bound refuses to hand an oversized body
+        // to the rest of the SDK rather than capping the read mid-stream; the
+        // browser's single-request model keeps the residual allocation small.
+        // The limit bounds decoded bytes.
+        if body_text.len() > self.max_response_bytes {
+            return Err(TransportError::Transport {
+                class: TransportErrorClass::ResponseTooLarge,
+                detail: Redacted::new(format!(
+                    "response body exceeded {} byte limit",
+                    self.max_response_bytes
+                )),
+            });
+        }
         if (200..300).contains(&status) {
             Ok(body_text)
         } else {

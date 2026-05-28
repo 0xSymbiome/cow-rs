@@ -156,6 +156,15 @@ pub enum ContractsError {
         /// Actual decoded byte length.
         actual: usize,
     },
+    /// A hexadecimal payload exceeded the maximum decoded byte length
+    /// permitted for its field.
+    #[error("field `{field}` exceeds the maximum of {max_bytes} decoded bytes")]
+    FieldTooLarge {
+        /// Public field or payload name that exceeded the limit.
+        field: &'static str,
+        /// Maximum decoded byte length permitted for the field.
+        max_bytes: usize,
+    },
     /// Serialization to JSON or ABI-adjacent payloads failed.
     #[error("serialization error: {0}")]
     Serialization(#[from] serde_json::Error),

@@ -110,7 +110,13 @@ impl RpcAlloyProviderBuilder<HttpTransport> {
     pub async fn build(self) -> Result<RpcAlloyProvider, RpcAlloyProviderBuilderError> {
         require_selected_transport(&self.transport);
         let url = self.transport.url.into_inner();
-        let mut client_builder = reqwest::Client::builder();
+        // Disable transparent gzip on the untrusted-RPC client so a hostile or
+        // misbehaving endpoint cannot use response decompression to amplify a
+        // small compressed body into a very large in-memory buffer. The alloy
+        // RPC stack owns the body read, so the SDK does not impose a hard
+        // response-byte cap here; removing decompression eliminates the
+        // amplification class while the request timeout bounds liveness.
+        let mut client_builder = reqwest::Client::builder().no_gzip();
         if let Some(timeout) = self.timeout {
             client_builder = client_builder.timeout(timeout);
         }

@@ -424,7 +424,160 @@ fn transport_error_class_labels_cover_every_documented_variant() {
     assert_eq!(TransportErrorClass::Request.as_str(), "request");
     assert_eq!(TransportErrorClass::Status.as_str(), "status");
     assert_eq!(TransportErrorClass::Upgrade.as_str(), "upgrade");
+    assert_eq!(
+        TransportErrorClass::ResponseTooLarge.as_str(),
+        "response_too_large"
+    );
     assert_eq!(TransportErrorClass::Other.as_str(), "other");
+}
+
+fn build_transport_with_cap(base_url: String, max_response_bytes: usize) -> ReqwestTransport {
+    ReqwestTransport::new(
+        ReqwestTransportConfig::new(base_url)
+            .with_user_agent("cow-rs-tests")
+            .with_max_response_bytes(max_response_bytes),
+    )
+    .expect("reqwest client construction must succeed with a validated user agent")
+}
+
+#[tokio::test]
+async fn response_within_cap_is_returned_intact() {
+    let server = MockServer::start().await;
+    let body = "x".repeat(1024);
+    Mock::given(method("GET"))
+        .and(path("/ok"))
+        .respond_with(ResponseTemplate::new(200).set_body_string(body.clone()))
+        .mount(&server)
+        .await;
+
+    let transport = build_transport_with_cap(server.uri(), 4096);
+    let received = transport
+        .get("/ok", NO_HEADERS, None)
+        .await
+        .expect("a body within the cap must be returned");
+    assert_eq!(received, body);
+}
+
+#[tokio::test]
+async fn response_exceeding_cap_is_rejected_as_response_too_large() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/big"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("x".repeat(8192)))
+        .mount(&server)
+        .await;
+
+    let transport = build_transport_with_cap(server.uri(), 4096);
+    let error = transport
+        .get("/big", NO_HEADERS, None)
+        .await
+        .expect_err("a body over the cap must be rejected");
+    assert_eq!(error.class(), Some(TransportErrorClass::ResponseTooLarge));
+}
+
+#[tokio::test]
+async fn response_exactly_at_cap_is_accepted_and_one_over_is_rejected() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/exact"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("y".repeat(2048)))
+        .mount(&server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/over"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("y".repeat(2049)))
+        .mount(&server)
+        .await;
+
+    let transport = build_transport_with_cap(server.uri(), 2048);
+    let at_cap = transport
+        .get("/exact", NO_HEADERS, None)
+        .await
+        .expect("a body exactly at the cap must be accepted");
+    assert_eq!(at_cap.len(), 2048);
+
+    let over = transport
+        .get("/over", NO_HEADERS, None)
+        .await
+        .expect_err("a body one byte over the cap must be rejected");
+    assert_eq!(over.class(), Some(TransportErrorClass::ResponseTooLarge));
+}
+
+#[tokio::test]
+async fn oversized_error_status_body_is_rejected_as_response_too_large() {
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/err"))
+        .respond_with(ResponseTemplate::new(500).set_body_string("e".repeat(8192)))
+        .mount(&server)
+        .await;
+
+    let transport = build_transport_with_cap(server.uri(), 4096);
+    let error = transport
+        .get("/err", NO_HEADERS, None)
+        .await
+        .expect_err("an oversized error body must be rejected before it is buffered");
+    // An oversized error body is refused rather than surfaced as an HttpStatus
+    // that carries the full body through the typed error channel.
+    assert_eq!(error.class(), Some(TransportErrorClass::ResponseTooLarge));
+}
+
+#[tokio::test]
+async fn non_utf8_body_is_decoded_lossily_without_a_cap_layer_error() {
+    let server = MockServer::start().await;
+    // 0xFF is not valid UTF-8; the lossy decode replaces it rather than
+    // erroring, matching the prior text-based read behavior.
+    Mock::given(method("GET"))
+        .and(path("/binary"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(vec![0xff, 0xfe, 0xfd]))
+        .mount(&server)
+        .await;
+
+    let transport = build_transport_with_cap(server.uri(), 4096);
+    let received = transport
+        .get("/binary", NO_HEADERS, None)
+        .await
+        .expect("a non-UTF-8 body must decode lossily, not error");
+    assert!(received.contains('\u{FFFD}'));
+}
+
+#[tokio::test]
+async fn gzip_bomb_is_rejected_on_decompressed_size() {
+    use std::io::Write as _;
+
+    use flate2::{Compression, write::GzEncoder};
+
+    // A small compressed body that decompresses far past the cap. reqwest
+    // decompresses before yielding chunks, so the cap observes the
+    // decompressed size and rejects the bomb rather than the compressed size.
+    let decompressed = vec![0u8; 1024 * 1024];
+    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+    encoder
+        .write_all(&decompressed)
+        .expect("gzip encoding must succeed");
+    let compressed = encoder.finish().expect("gzip finalize must succeed");
+    assert!(
+        compressed.len() < 64 * 1024,
+        "the compressed bomb must be far smaller than its decompressed size"
+    );
+
+    let server = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/bomb"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("content-encoding", "gzip")
+                .set_body_bytes(compressed),
+        )
+        .mount(&server)
+        .await;
+
+    let transport = build_transport_with_cap(server.uri(), 64 * 1024);
+    let error = transport
+        .get("/bomb", NO_HEADERS, None)
+        .await
+        .expect_err("a decompression bomb must be rejected on its decompressed size");
+    assert_eq!(error.class(), Some(TransportErrorClass::ResponseTooLarge));
 }
 
 #[cfg(feature = "tracing")]

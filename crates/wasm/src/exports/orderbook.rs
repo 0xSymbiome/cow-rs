@@ -64,7 +64,11 @@ impl OrderBookClient {
         let timeout = optional_timeout(config)?;
         let transport_policy =
             transport_policy_from_config(config, TransportPolicy::default_orderbook(), timeout)?;
-        let (transport, callback_guard) = configured_fetch_transport(config, timeout)?;
+        let (transport, callback_guard) = configured_fetch_transport(
+            config,
+            timeout,
+            transport_policy.client_policy().max_response_bytes(),
+        )?;
         Ok(Self {
             inner: build_orderbook(chain_id, env, transport, transport_policy, api_key)?,
             _callback_guard: callback_guard,

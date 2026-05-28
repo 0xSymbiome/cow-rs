@@ -409,9 +409,16 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
             .transport_policy
             .as_ref()
             .and_then(TransportPolicy::timeout);
+        let max_response_bytes = self
+            .transport_policy
+            .as_ref()
+            .map(|policy| policy.client_policy().max_response_bytes());
         let mut config = ReqwestTransportConfig::new(String::new()).with_user_agent(user_agent);
         if let Some(timeout) = timeout {
             config = config.with_timeout(timeout);
+        }
+        if let Some(max_response_bytes) = max_response_bytes {
+            config = config.with_max_response_bytes(max_response_bytes);
         }
         let transport = ReqwestTransport::new(config)
             // SAFETY: the default user-agent comes from a validated static

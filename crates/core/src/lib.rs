@@ -27,11 +27,11 @@ pub mod validation;
 
 pub use cancellation::{Cancellable, Cancelled, WithCancellation};
 pub use config::{
-    AddressPerChain, ApiBaseUrls, ApiContext, CowEnv, DEFAULT_HTTP_TIMEOUT, ENVS_LIST,
-    EVM_NATIVE_CURRENCY_ADDRESS, ExternalHostPolicy, HostPolicyError, HttpClientPolicy,
-    MAX_VALID_TO_EPOCH, ProtocolOptions, SupportedChainId, UrlParseFailureClass,
-    canonical_orderbook_hosts, canonical_subgraph_hosts, default_api_base_urls,
-    validate_external_service_url, wrapped_native_token,
+    AddressPerChain, ApiBaseUrls, ApiContext, CowEnv, DEFAULT_HTTP_TIMEOUT,
+    DEFAULT_MAX_RESPONSE_BYTES, ENVS_LIST, EVM_NATIVE_CURRENCY_ADDRESS, ExternalHostPolicy,
+    HostPolicyError, HttpClientPolicy, MAX_VALID_TO_EPOCH, ProtocolOptions, SupportedChainId,
+    UrlParseFailureClass, canonical_orderbook_hosts, canonical_subgraph_hosts,
+    default_api_base_urls, validate_external_service_url, wrapped_native_token,
 };
 pub use errors::{CoreError, ValidationError};
 pub use redaction::{

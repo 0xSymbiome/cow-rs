@@ -4,7 +4,7 @@ use http::HeaderValue;
 
 use crate::errors::ValidationError;
 
-use super::DEFAULT_HTTP_TIMEOUT;
+use super::{DEFAULT_HTTP_TIMEOUT, DEFAULT_MAX_RESPONSE_BYTES};
 
 /// Shared HTTP client policy used by transport-owning crates.
 #[non_exhaustive]
@@ -12,6 +12,7 @@ use super::DEFAULT_HTTP_TIMEOUT;
 pub struct HttpClientPolicy {
     timeout: Option<Duration>,
     user_agent: String,
+    max_response_bytes: usize,
 }
 
 impl HttpClientPolicy {
@@ -40,6 +41,7 @@ impl HttpClientPolicy {
         Ok(Self {
             timeout: Some(timeout),
             user_agent,
+            max_response_bytes: DEFAULT_MAX_RESPONSE_BYTES,
         })
     }
 
@@ -54,6 +56,15 @@ impl HttpClientPolicy {
     #[must_use]
     pub const fn with_timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
+        self
+    }
+
+    /// Returns a copy of this policy with the supplied maximum response-body
+    /// size, in bytes. The HTTP transport refuses to buffer a response whose
+    /// decoded body would exceed this many bytes.
+    #[must_use]
+    pub const fn with_max_response_bytes(mut self, max_response_bytes: usize) -> Self {
+        self.max_response_bytes = max_response_bytes;
         self
     }
 
@@ -75,6 +86,12 @@ impl HttpClientPolicy {
     #[must_use]
     pub const fn timeout(&self) -> Option<Duration> {
         self.timeout
+    }
+
+    /// Returns the configured maximum response-body size, in bytes.
+    #[must_use]
+    pub const fn max_response_bytes(&self) -> usize {
+        self.max_response_bytes
     }
 
     /// Returns the configured user-agent header value.

@@ -8,9 +8,18 @@ use cow_sdk_core::{Address, Hash32, HexData, Provider};
 
 use crate::ContractsError;
 use crate::eip1271::IERC1271;
-use crate::hex_field::{decode_hex_field, decode_hex_field_exact};
+use crate::hex_field::{decode_hex_field_bounded, decode_hex_field_exact};
 
 pub(crate) const EIP1271_IS_VALID_SIGNATURE_ABI_JSON: &str = r#"[{"type":"function","name":"isValidSignature","inputs":[{"name":"hash","type":"bytes32"},{"name":"signature","type":"bytes"}],"outputs":[{"name":"","type":"bytes4"}],"stateMutability":"view"}]"#;
+
+/// Maximum decoded byte length accepted for a signature hex field.
+///
+/// Set to the upstream orderbook request-body limit, so it can never reject a
+/// signature the orderbook would accept: a signed order, signature included,
+/// must already fit within that request body. The bound exists to refuse
+/// oversized non-transport input — fixtures, fuzz data, or third-party callers
+/// — before the hex decoder allocates a large buffer.
+pub const MAX_SIGNATURE_HEX_BYTES: usize = 16 * 1024;
 
 /// Supported `CoW` signing schemes.
 #[doc(alias = "Scheme")]
@@ -216,7 +225,7 @@ impl RecoverableSignature {
     /// and [`ContractsError::InvalidSignatureRecoveryByte`] for trailing
     /// byte values outside `{0, 1, 27, 28}`.
     pub fn parse_hex(data: &str) -> Result<Self, ContractsError> {
-        let bytes = decode_hex_field("signature", data)?;
+        let bytes = decode_hex_field_bounded("signature", data, MAX_SIGNATURE_HEX_BYTES)?;
         Self::parse_bytes(&bytes)
     }
 
@@ -390,7 +399,11 @@ pub fn encode_eip1271_signature_data(
 ) -> Result<String, ContractsError> {
     let mut payload = Vec::new();
     payload.extend_from_slice(&data.verifier.into_alloy().0.0);
-    payload.extend_from_slice(&decode_hex_field("signature", &data.signature)?);
+    payload.extend_from_slice(&decode_hex_field_bounded(
+        "signature",
+        &data.signature,
+        MAX_SIGNATURE_HEX_BYTES,
+    )?);
     Ok(alloy_primitives::hex::encode_prefixed(payload))
 }
 
@@ -414,7 +427,7 @@ pub fn encode_eip1271_signature_data(
 pub fn decode_eip1271_signature_data(
     signature: &str,
 ) -> Result<Eip1271SignatureData, ContractsError> {
-    let bytes = decode_hex_field("signature", signature)?;
+    let bytes = decode_hex_field_bounded("signature", signature, MAX_SIGNATURE_HEX_BYTES)?;
     if bytes.len() < 20 {
         return Err(ContractsError::InvalidEip1271SignatureData);
     }

@@ -32,7 +32,7 @@ use ::reqwest::{
 use async_trait::async_trait;
 
 use crate::{
-    config::{DEFAULT_TCP_KEEPALIVE, DEFAULT_USER_AGENT},
+    config::{DEFAULT_MAX_RESPONSE_BYTES, DEFAULT_TCP_KEEPALIVE, DEFAULT_USER_AGENT},
     redaction::Redacted,
     transport::{
         CUSTOM_OVERRIDE_ROUTE_IDENTITY, error::TransportError, http::HttpTransport,
@@ -51,6 +51,7 @@ pub struct ReqwestTransportConfig {
     user_agent: String,
     tcp_keepalive: Duration,
     timeout: Option<Duration>,
+    max_response_bytes: usize,
 }
 
 impl ReqwestTransportConfig {
@@ -71,6 +72,7 @@ impl ReqwestTransportConfig {
             user_agent: DEFAULT_USER_AGENT.to_owned(),
             tcp_keepalive: DEFAULT_TCP_KEEPALIVE,
             timeout: None,
+            max_response_bytes: DEFAULT_MAX_RESPONSE_BYTES,
         }
     }
 
@@ -95,6 +97,14 @@ impl ReqwestTransportConfig {
         self
     }
 
+    /// Returns a copy of the configuration with an explicit maximum
+    /// response-body size, in bytes.
+    #[must_use]
+    pub const fn with_max_response_bytes(mut self, max_response_bytes: usize) -> Self {
+        self.max_response_bytes = max_response_bytes;
+        self
+    }
+
     /// Returns the base URL as a borrowed string for deliberate inspection.
     #[must_use]
     pub fn base_url(&self) -> &str {
@@ -112,6 +122,12 @@ impl ReqwestTransportConfig {
     pub const fn tcp_keepalive(&self) -> Duration {
         self.tcp_keepalive
     }
+
+    /// Returns the configured maximum response-body size, in bytes.
+    #[must_use]
+    pub const fn max_response_bytes(&self) -> usize {
+        self.max_response_bytes
+    }
 }
 
 /// Native [`HttpTransport`] implementation backed by a shared [`reqwest::Client`].
@@ -119,6 +135,7 @@ impl ReqwestTransportConfig {
 pub struct ReqwestTransport {
     client: Client,
     base_url: Redacted<String>,
+    max_response_bytes: usize,
 }
 
 impl ReqwestTransport {
@@ -147,7 +164,11 @@ impl ReqwestTransport {
                 message: Redacted::new(format!("could not build reqwest client: {error}")),
             })?;
 
-        Ok(Self { client, base_url })
+        Ok(Self {
+            client,
+            base_url,
+            max_response_bytes: config.max_response_bytes,
+        })
     }
 
     /// Builds a transport from an existing client and a base URL.
@@ -160,6 +181,7 @@ impl ReqwestTransport {
         Self {
             client,
             base_url: Redacted::new(trimmed),
+            max_response_bytes: DEFAULT_MAX_RESPONSE_BYTES,
         }
     }
 
@@ -202,6 +224,7 @@ impl ReqwestTransport {
         endpoint: &str,
         bytes_sent: usize,
     ) -> Result<String, TransportError> {
+        let max_response_bytes = self.max_response_bytes;
         #[cfg(feature = "tracing")]
         {
             use tracing::Instrument as _;
@@ -215,7 +238,7 @@ impl ReqwestTransport {
             );
             let recorder = span.clone();
             async move {
-                let result = dispatch_request(builder).await;
+                let result = dispatch_request(builder, max_response_bytes).await;
                 if let Some(bytes_received) = bytes_received(&result) {
                     recorder.record("bytes_received", bytes_received as u64);
                 }
@@ -228,7 +251,7 @@ impl ReqwestTransport {
         #[cfg(not(feature = "tracing"))]
         {
             let _ = (method, endpoint, bytes_sent);
-            dispatch_request(builder).await
+            dispatch_request(builder, max_response_bytes).await
         }
     }
 }
@@ -293,24 +316,61 @@ impl HttpTransport for ReqwestTransport {
     }
 }
 
-async fn dispatch_request(builder: RequestBuilder) -> Result<String, TransportError> {
+async fn dispatch_request(
+    builder: RequestBuilder,
+    max_response_bytes: usize,
+) -> Result<String, TransportError> {
     let response = builder.send().await.map_err(map_reqwest_error)?;
     let status = response.status();
     if status.is_success() {
-        return response.text().await.map_err(map_reqwest_error);
+        return read_body_capped(response, max_response_bytes).await;
     }
 
     let status_code = status.as_u16();
     let headers = response_headers(&response);
-    let body = response
-        .text()
-        .await
-        .unwrap_or_else(|error| format!("<body unavailable: {error}>"));
+    let body = match read_body_capped(response, max_response_bytes).await {
+        Ok(text) => text,
+        Err(
+            error @ TransportError::Transport {
+                class: TransportErrorClass::ResponseTooLarge,
+                ..
+            },
+        ) => return Err(error),
+        Err(error) => format!("<body unavailable: {error}>"),
+    };
     Err(TransportError::HttpStatus {
         status: status_code,
         headers,
         body: Redacted::new(body),
     })
+}
+
+/// Reads a response body, refusing to buffer more than `max_response_bytes`
+/// decoded bytes.
+///
+/// The body is consumed as a stream of chunks with a pre-extend check, so the
+/// accumulator never exceeds the limit and an over-large (or
+/// decompression-amplified) body is rejected after at most one over-limit
+/// chunk. The limit bounds decoded bytes, which is the only sound bound when
+/// transparent decompression is enabled, and the bytes are decoded leniently
+/// so a non-UTF-8 body is handled the same way the prior text read handled it.
+async fn read_body_capped(
+    mut response: ::reqwest::Response,
+    max_response_bytes: usize,
+) -> Result<String, TransportError> {
+    let mut buf: Vec<u8> = Vec::new();
+    while let Some(chunk) = response.chunk().await.map_err(map_reqwest_error)? {
+        if buf.len() + chunk.len() > max_response_bytes {
+            return Err(TransportError::Transport {
+                class: TransportErrorClass::ResponseTooLarge,
+                detail: Redacted::new(format!(
+                    "response body exceeded {max_response_bytes} byte limit"
+                )),
+            });
+        }
+        buf.extend_from_slice(&chunk);
+    }
+    Ok(String::from_utf8_lossy(&buf).into_owned())
 }
 
 #[cfg(feature = "tracing")]

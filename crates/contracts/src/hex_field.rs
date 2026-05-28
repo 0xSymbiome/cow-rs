@@ -53,6 +53,43 @@ pub fn decode_hex_field(field: &'static str, value: &str) -> Result<Vec<u8>, Con
         .map_err(|source| ContractsError::DecodeHex { field, source })
 }
 
+/// Decodes a `0x`-prefixed hexadecimal string into raw bytes, refusing any
+/// payload whose decoded length would exceed `max_decoded_bytes`.
+///
+/// The bound is checked against the encoded length **before** the decoder
+/// allocates, so an oversized payload is rejected without first materializing
+/// the byte buffer. This guards decode-time allocation for inputs that do not
+/// arrive through the response-capped transport, such as fixtures, fuzz
+/// inputs, or third-party callers deserializing data of unknown origin.
+///
+/// # Errors
+///
+/// - [`ContractsError::InvalidHexPrefix`] when `value` is not `0x`-prefixed.
+/// - [`ContractsError::FieldTooLarge`] when the payload would decode to more
+///   than `max_decoded_bytes` bytes.
+/// - [`ContractsError::DecodeHex`] when the payload contains non-hex
+///   characters or has odd length.
+#[must_use = "decoded bytes carry the only signal of decode success"]
+pub fn decode_hex_field_bounded(
+    field: &'static str,
+    value: &str,
+    max_decoded_bytes: usize,
+) -> Result<Vec<u8>, ContractsError> {
+    let stripped = value
+        .strip_prefix("0x")
+        .ok_or(ContractsError::InvalidHexPrefix { field })?;
+    // Two hex characters encode one byte, so reject before allocating when the
+    // encoded length already exceeds the decoded-byte budget.
+    if stripped.len() > max_decoded_bytes.saturating_mul(2) {
+        return Err(ContractsError::FieldTooLarge {
+            field,
+            max_bytes: max_decoded_bytes,
+        });
+    }
+    alloy_primitives::hex::decode(stripped)
+        .map_err(|source| ContractsError::DecodeHex { field, source })
+}
+
 /// Decodes a `0x`-prefixed hexadecimal string into a fixed-size byte
 /// array.
 ///
@@ -161,6 +198,37 @@ mod tests {
             ContractsError::InvalidHexPrefix {
                 field: "storageSlot"
             }
+        ));
+    }
+
+    #[test]
+    fn decode_hex_field_bounded_accepts_payload_at_the_limit() {
+        // Two hex characters per byte, so a 4-byte limit accepts an 8-char
+        // payload exactly.
+        let bytes = decode_hex_field_bounded("signature", "0xdeadbeef", 4).unwrap();
+        assert_eq!(bytes, vec![0xde, 0xad, 0xbe, 0xef]);
+    }
+
+    #[test]
+    fn decode_hex_field_bounded_rejects_payload_over_the_limit() {
+        // Five decoded bytes exceed the four-byte limit and are refused before
+        // the decoder allocates.
+        let error = decode_hex_field_bounded("signature", "0xdeadbeef00", 4).unwrap_err();
+        assert!(matches!(
+            error,
+            ContractsError::FieldTooLarge {
+                field: "signature",
+                max_bytes: 4,
+            }
+        ));
+    }
+
+    #[test]
+    fn decode_hex_field_bounded_still_requires_the_prefix() {
+        let error = decode_hex_field_bounded("signature", "deadbeef", 4).unwrap_err();
+        assert!(matches!(
+            error,
+            ContractsError::InvalidHexPrefix { field: "signature" }
         ));
     }
 }

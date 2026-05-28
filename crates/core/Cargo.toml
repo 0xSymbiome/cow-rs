@@ -40,7 +40,7 @@ tracing = { workspace = true, optional = true }
 url.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-reqwest = { workspace = true, features = ["json", "rustls"] }
+reqwest = { workspace = true, features = ["rustls"] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 tsify.workspace = true
@@ -55,4 +55,11 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 trybuild.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+# `json` is exercised only by the transport classifier test, which uses
+# reqwest's `.json()` to produce a decode-class error; `gzip` lets the
+# response-cap tests prove the limit applies to decompressed bytes. The
+# library itself reads bodies through the size-capped streaming path and
+# needs neither feature.
+flate2 = "1"
+reqwest = { workspace = true, features = ["json", "gzip"] }
 wiremock.workspace = true

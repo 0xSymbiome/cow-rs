@@ -1,7 +1,7 @@
 # Transport Policy Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-28
+Last reviewed: 2026-05-29
 Owning surface: `cow-sdk-transport-policy` public retry, jitter, rate-limit, classification, and `Retry-After` parser surfaces, the shared `run_with_retry` driver and its `AttemptOutcome`, `RetrySignal`, and `LimiterKey` types, and the target-neutral `system_now` wall clock, including the HTTP-date delegation to `httpdate::parse_http_date` on `retry_after.rs` and the bounded-jitter contract on `jitter.rs`
 Refresh trigger: Changes to any public function on `cow-sdk-transport-policy`; changes to `RetryPolicy`, `JitterStrategy`, `RequestRateLimiter`, `RetryAfter`, `NetworkErrorKind`, or `ErrorClassifier`; changes to `run_with_retry`, `AttemptOutcome`, `RetrySignal`, `LimiterKey`, or `system_now`; changes to the `Retry-After` HTTP-date delegation or its expected accept/reject contract; changes to the workspace `Retry-After` cooldown honor rule documented in `http-transport-contract-audit.md`
 Related docs:
@@ -10,6 +10,7 @@ Related docs:
 - [HTTP Transport Contract Audit](http-transport-contract-audit.md)
 - [Transport](../transport.md)
 - [Fuzz Coverage Audit](fuzz-coverage-audit.md)
+- [Bounded Response Reads Audit](bounded-response-reads-audit.md)
 
 ## Scope
 

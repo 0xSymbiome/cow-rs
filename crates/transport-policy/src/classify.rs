@@ -20,6 +20,10 @@ pub enum NetworkErrorKind {
     Request,
     /// The request could not be built locally.
     Builder,
+    /// The response body exceeded the configured maximum size and was
+    /// refused. This outcome is deterministic for a given response, so it is
+    /// never retried.
+    ResponseTooLarge,
     /// The transport failure does not match a more specific category.
     Other,
 }
@@ -35,6 +39,7 @@ impl NetworkErrorKind {
             TransportErrorClass::Status => Self::HttpStatus(0),
             TransportErrorClass::Request => Self::Request,
             TransportErrorClass::Builder => Self::Builder,
+            TransportErrorClass::ResponseTooLarge => Self::ResponseTooLarge,
             _ => Self::Other,
         }
     }

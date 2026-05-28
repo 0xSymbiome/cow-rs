@@ -35,6 +35,43 @@ fn prop_tpp_002_default_subgraph_transport_policy_is_stable() {
 }
 
 #[test]
+fn default_policies_carry_per_client_response_byte_caps() {
+    use cow_sdk_core::DEFAULT_MAX_RESPONSE_BYTES;
+    use cow_sdk_transport_policy::{IPFS_MAX_RESPONSE_BYTES, SUBGRAPH_MAX_RESPONSE_BYTES};
+
+    assert_eq!(
+        TransportPolicy::default_orderbook()
+            .client_policy()
+            .max_response_bytes(),
+        DEFAULT_MAX_RESPONSE_BYTES
+    );
+    assert_eq!(
+        TransportPolicy::default_trading()
+            .client_policy()
+            .max_response_bytes(),
+        DEFAULT_MAX_RESPONSE_BYTES
+    );
+    assert_eq!(
+        TransportPolicy::default_subgraph()
+            .client_policy()
+            .max_response_bytes(),
+        SUBGRAPH_MAX_RESPONSE_BYTES
+    );
+    assert_eq!(
+        TransportPolicy::default_ipfs()
+            .client_policy()
+            .max_response_bytes(),
+        IPFS_MAX_RESPONSE_BYTES
+    );
+    // The untrusted-gateway caps are deliberately tighter than the
+    // trusted-orderbook default; pin the ordering at compile time.
+    const {
+        assert!(SUBGRAPH_MAX_RESPONSE_BYTES < DEFAULT_MAX_RESPONSE_BYTES);
+        assert!(IPFS_MAX_RESPONSE_BYTES < SUBGRAPH_MAX_RESPONSE_BYTES);
+    }
+}
+
+#[test]
 fn prop_tpp_003_no_retry_policy_is_idempotent() {
     let first = RetryPolicy::no_retry();
     let second = RetryPolicy::no_retry();

@@ -85,7 +85,11 @@ impl TradingClient {
         let timeout = optional_timeout(config)?;
         let transport_policy =
             transport_policy_from_config(config, TransportPolicy::default_trading(), timeout)?;
-        let (transport, callback_guard) = configured_fetch_transport(config, timeout)?;
+        let (transport, callback_guard) = configured_fetch_transport(
+            config,
+            timeout,
+            transport_policy.client_policy().max_response_bytes(),
+        )?;
         let orderbook = build_orderbook(
             chain_id,
             env.clone(),

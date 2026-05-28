@@ -21,6 +21,10 @@ pub const ENVS_LIST: [CowEnv; 2] = [CowEnv::Prod, CowEnv::Staging];
 pub const EVM_NATIVE_CURRENCY_ADDRESS: &str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 /// Default timeout applied to HTTP-backed SDK clients.
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(10);
+/// Default maximum number of bytes the HTTP transport buffers from a single
+/// response body before rejecting it. Applied per client; the transport
+/// policy sets tighter values for untrusted sources.
+pub const DEFAULT_MAX_RESPONSE_BYTES: usize = 10 * 1024 * 1024;
 /// Default user-agent applied by the native HTTP transport.
 pub const DEFAULT_USER_AGENT: &str = concat!("cow-sdk/", env!("CARGO_PKG_VERSION"));
 /// Default TCP keepalive applied by the native HTTP transport.

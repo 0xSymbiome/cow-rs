@@ -141,7 +141,11 @@ impl IpfsClient {
         let ipfs_uri = optional_string(config, "ipfsUri")?;
         let transport_policy =
             transport_policy_from_config(config, TransportPolicy::default_ipfs(), timeout)?;
-        let (transport, callback_guard) = configured_fetch_transport(config, timeout)?;
+        let (transport, callback_guard) = configured_fetch_transport(
+            config,
+            timeout,
+            transport_policy.client_policy().max_response_bytes(),
+        )?;
         Ok(Self {
             adapter: IpfsHttpAdapter::from_parts(transport, transport_policy),
             ipfs_uri,

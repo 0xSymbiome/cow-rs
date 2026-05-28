@@ -25,6 +25,10 @@ fn network_error_kind_mapping_round_trip_is_total() {
         (TransportErrorClass::Status, NetworkErrorKind::HttpStatus(0)),
         (TransportErrorClass::Request, NetworkErrorKind::Request),
         (TransportErrorClass::Builder, NetworkErrorKind::Builder),
+        (
+            TransportErrorClass::ResponseTooLarge,
+            NetworkErrorKind::ResponseTooLarge,
+        ),
         // Wildcard `_` arm: every other class becomes `Other`.
         (TransportErrorClass::Redirect, NetworkErrorKind::Other),
         (TransportErrorClass::Upgrade, NetworkErrorKind::Other),
@@ -37,6 +41,15 @@ fn network_error_kind_mapping_round_trip_is_total() {
             "TransportErrorClass::{class:?} must map to {expected_kind:?}",
         );
     }
+}
+
+#[test]
+fn response_too_large_is_never_retried() {
+    // Retrying an over-cap response is futile and would re-download up to the
+    // limit on every attempt, so the deterministic ResponseTooLarge outcome
+    // must be classified non-retryable.
+    let policy = cow_sdk_transport_policy::RetryPolicy::default();
+    assert!(!policy.should_retry_network(NetworkErrorKind::ResponseTooLarge));
 }
 
 #[cfg(feature = "reqwest-classifier")]

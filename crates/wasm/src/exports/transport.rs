@@ -21,6 +21,7 @@ pub struct JsCallbackHttpTransport {
     base_url: Redacted<String>,
     timeout: Option<Duration>,
     callback_id: FetchCallbackKey,
+    max_response_bytes: usize,
 }
 
 impl JsCallbackHttpTransport {
@@ -33,6 +34,7 @@ impl JsCallbackHttpTransport {
         base_url: String,
         callback_id: FetchCallbackKey,
         timeout: Option<Duration>,
+        max_response_bytes: usize,
     ) -> Result<Self, TransportError> {
         if callback_id.raw() == 0 {
             return Err(TransportError::Configuration {
@@ -46,6 +48,7 @@ impl JsCallbackHttpTransport {
             base_url: Redacted::new(base_url.trim_end_matches('/').to_owned()),
             timeout,
             callback_id,
+            max_response_bytes,
         })
     }
 
@@ -81,7 +84,7 @@ impl JsCallbackHttpTransport {
             .await
             .map_err(map_callback_reject_to_transport)?;
         timer.clear();
-        parse_callback_response(response_value)
+        parse_callback_response(response_value, self.max_response_bytes)
     }
 
     fn resolve_url(&self, path: &str) -> String {
@@ -137,33 +140,40 @@ impl HttpTransport for JsCallbackHttpTransport {
 pub(crate) fn callback_fetch_transport(
     callback: Function,
     timeout: Option<Duration>,
+    max_response_bytes: usize,
 ) -> Result<(Arc<dyn HttpTransport + Send + Sync>, FetchCallbackGuard), JsValue> {
     let guard = register_fetch_callback(callback)?;
-    let transport = callback_fetch_transport_from_handle_id(guard.id(), timeout)?;
+    let transport =
+        callback_fetch_transport_from_handle_id(guard.id(), timeout, max_response_bytes)?;
     Ok((transport, guard))
 }
 
 pub(crate) fn fetch_adapter_transport(
     fetch: Function,
     timeout: Option<Duration>,
+    max_response_bytes: usize,
 ) -> Result<(Arc<dyn HttpTransport + Send + Sync>, FetchCallbackGuard), JsValue> {
     let guard = register_fetch_adapter(fetch)?;
-    let transport = callback_fetch_transport_from_handle_id(guard.id(), timeout)?;
+    let transport =
+        callback_fetch_transport_from_handle_id(guard.id(), timeout, max_response_bytes)?;
     Ok((transport, guard))
 }
 
 fn callback_fetch_transport_from_handle_id(
     handle_id: FetchCallbackKey,
     timeout: Option<Duration>,
+    max_response_bytes: usize,
 ) -> Result<Arc<dyn HttpTransport + Send + Sync>, JsValue> {
-    let transport = JsCallbackHttpTransport::new(String::new(), handle_id, timeout)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let transport =
+        JsCallbackHttpTransport::new(String::new(), handle_id, timeout, max_response_bytes)
+            .map_err(|error| WasmError::from(error).into_js())?;
     Ok(Arc::new(transport))
 }
 
 pub(crate) fn configured_fetch_transport(
     config: &JsValue,
     timeout: Option<Duration>,
+    max_response_bytes: usize,
 ) -> Result<(Arc<dyn HttpTransport + Send + Sync>, FetchCallbackGuard), JsValue> {
     let transport = required_object(config, "transport")?;
     let kind = required_string(&transport, "kind")?;
@@ -171,7 +181,7 @@ pub(crate) fn configured_fetch_transport(
     match kind.as_str() {
         "callback" => {
             let callback = required_function(&transport, "callback")?;
-            callback_fetch_transport(callback, timeout)
+            callback_fetch_transport(callback, timeout, max_response_bytes)
         }
         "fetch" => {
             let fetch = optional_function(&transport, "fetch")?
@@ -183,7 +193,7 @@ pub(crate) fn configured_fetch_transport(
                     )
                     .into_js()
                 })?;
-            fetch_adapter_transport(fetch, timeout)
+            fetch_adapter_transport(fetch, timeout, max_response_bytes)
         }
         other => Err(WasmError::invalid(
             "transport.kind",
@@ -499,7 +509,10 @@ fn map_callback_reject_to_transport(error: JsValue) -> TransportError {
     }
 }
 
-fn parse_callback_response(value: JsValue) -> Result<String, TransportError> {
+fn parse_callback_response(
+    value: JsValue,
+    max_response_bytes: usize,
+) -> Result<String, TransportError> {
     let response: CowFetchResponse =
         serde_wasm_bindgen::from_value(value).map_err(|error| TransportError::Transport {
             class: TransportErrorClass::Decode,
@@ -507,6 +520,19 @@ fn parse_callback_response(value: JsValue) -> Result<String, TransportError> {
                 "fetch callback returned malformed response: {error}"
             )),
         })?;
+
+    // The JS callback has already materialized the full body into a string
+    // before the SDK sees it, so this bound refuses to process an oversized
+    // body rather than capping the read mid-stream; the JS layer owns its own
+    // pre-materialization bound. The limit bounds decoded bytes.
+    if response.body.len() > max_response_bytes {
+        return Err(TransportError::Transport {
+            class: TransportErrorClass::ResponseTooLarge,
+            detail: Redacted::new(format!(
+                "response body exceeded {max_response_bytes} byte limit"
+            )),
+        });
+    }
 
     if (200..300).contains(&response.status) {
         Ok(response.body)
