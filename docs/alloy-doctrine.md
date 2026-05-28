@@ -234,7 +234,7 @@ Numbered ADR cites with the load-bearing topics:
 - **ADR 0012** — canonical `alloy::sol!` bindings + typed `Registry`; hand-rolled encoders forbidden.
 - **ADR 0014** — EIP-1271 verification cache trait + two canonical impls; default-off, explicit-cache-arg contract.
 - **ADR 0019** — `HttpTransport` is the sole live-dispatch surface on `OrderBookApi` / `SubgraphApi`.
-- **ADR 0022** — `normalized_ecdsa_signature` single contracts-boundary normalizer; amendment anchors recovery to `alloy_primitives::Signature::from_raw`.
+- **ADR 0022** — `RecoverableSignature` typestate is the single contracts-boundary recoverable-signature value; pre-validates the v byte against the canonical accept set, then delegates byte assembly to `alloy_primitives::Signature::from_bytes_and_parity` / `Signature::as_bytes`; scheme-bundled recovery routes through `Signature::recover_address_from_prehash`.
 - **ADR 0024** — `Provider` / `SigningProvider` capability split.
 - **ADR 0026** — alloy major-release absorption plan; canary lane; runtime family confined to native adapter crates; amendment records the ADR 0052 widening.
 - **ADR 0027** — non-exhaustive signature boundaries for future schemes (post-quantum, EIP-7212 secp256r1).

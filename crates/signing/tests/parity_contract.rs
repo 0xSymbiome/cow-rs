@@ -26,7 +26,7 @@ mod common;
 
 use std::collections::BTreeMap;
 
-use cow_sdk_contracts::{ContractsError, SigningScheme, normalized_ecdsa_signature};
+use cow_sdk_contracts::{ContractsError, RecoverableSignature, SigningScheme};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, ChainId, CowEnv, OrderKind, ProtocolOptions, SupportedChainId,
     UnsignedOrder,
@@ -521,7 +521,7 @@ fn assert_ecdsa_v_normalization(id: &str, expected: &Value) {
             .as_str()
             .unwrap_or_else(|| panic!("case {id}: positive case normalized must be a string"));
         assert_eq!(
-            normalized_ecdsa_signature(input).unwrap(),
+            RecoverableSignature::parse_hex(input).unwrap().to_hex_string(),
             normalized,
             "case {id}: normalized ECDSA signature must match the pinned output for {input}",
         );
@@ -540,7 +540,7 @@ fn assert_ecdsa_v_normalization(id: &str, expected: &Value) {
                 .unwrap_or_else(|| panic!("case {id}: rejection case value must be a u64")),
         )
         .unwrap_or_else(|_| panic!("case {id}: rejection case value must fit in u8"));
-        let error = normalized_ecdsa_signature(input)
+        let error = RecoverableSignature::parse_hex(input)
             .expect_err("rejection case must fail through ContractsError");
 
         match (discriminant, error) {

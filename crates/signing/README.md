@@ -37,8 +37,12 @@ through `alloy_sol_types::SolStruct::eip712_signing_hash` per
 [ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md)
 and [ADR 0022](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0022-ecdsa-signature-v-normalization.md).
 65-byte recoverable signature byte representation routes through
-`alloy_primitives::Signature::from_raw` and `Signature::as_bytes`; the
-compact-2098 form routes through `Signature::from_erc2098`.
+`cow_sdk_contracts::RecoverableSignature`, which validates the trailing
+recovery byte against the canonical accept set `{0, 1, 27, 28}` and
+delegates byte assembly to alloy's `Signature::from_bytes_and_parity` /
+`Signature::as_bytes`; the compact-2098 form routes through the same
+typestate via `RecoverableSignature::parse_erc2098` and
+`RecoverableSignature::to_erc2098`.
 
 `cow_sdk_core::traits::typed_data::TypedDataDomain` is a cow-owned
 `#[non_exhaustive]` struct with cow-owned `Serialize` / `Deserialize`

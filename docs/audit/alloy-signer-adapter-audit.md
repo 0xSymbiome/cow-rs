@@ -85,7 +85,7 @@ the compatibility placeholder.
 ### Signature Normalization
 
 All returned ECDSA signatures pass through
-`cow_sdk_contracts::normalized_ecdsa_signature`, keeping the local signer
+`cow_sdk_contracts::RecoverableSignature`, keeping the local signer
 aligned with the shared Solidity-compatible recovery-byte contract.
 
 ### Error And Cancellation

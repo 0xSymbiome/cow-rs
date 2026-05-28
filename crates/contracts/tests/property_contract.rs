@@ -22,11 +22,11 @@
 
 use cow_sdk_contracts::{
     ContractsError, Eip1271SignatureData, EthFlowOrderData, Order, OrderFlags, OrderUidParams,
-    Signature, SigningScheme, TokenRegistry, Trade, TradeExecution, TradeFlags, compute_order_uid,
-    decode_eip1271_signature_data, decode_order, decode_order_flags, decode_signing_scheme,
-    decode_trade_flags, encode_eip1271_signature_data, encode_order_flags, encode_signing_scheme,
-    encode_trade, encode_trade_flags, extract_order_uid_params, hash_order, normalize_order,
-    normalized_ecdsa_signature, pack_order_uid_params,
+    RecoverableSignature, Signature, SigningScheme, TokenRegistry, Trade, TradeExecution,
+    TradeFlags, compute_order_uid, decode_eip1271_signature_data, decode_order, decode_order_flags,
+    decode_signing_scheme, decode_trade_flags, encode_eip1271_signature_data, encode_order_flags,
+    encode_signing_scheme, encode_trade, encode_trade_flags, extract_order_uid_params, hash_order,
+    normalize_order, pack_order_uid_params,
 };
 use cow_sdk_core::{
     Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, OrderDigest, OrderKind,
@@ -386,8 +386,8 @@ fn ecdsa_v_normalization_rejects_every_excluded_byte_value() {
                     let signature = signature_with_v(&r_bytes, &s_bytes, v_byte);
                     match v_byte {
                         0 | 1 | 27 | 28 => {
-                            let normalized = normalized_ecdsa_signature(&signature).unwrap();
-                            let output = alloy_primitives::hex::decode(normalized.trim_start_matches("0x")).unwrap();
+                            let sig = RecoverableSignature::parse_hex(&signature).unwrap();
+                            let output = sig.to_bytes();
                             let expected_v = if matches!(v_byte, 0 | 27) { 27 } else { 28 };
 
                             prop_assert_eq!(&output[..32], r_bytes.as_slice());
@@ -395,7 +395,7 @@ fn ecdsa_v_normalization_rejects_every_excluded_byte_value() {
                             prop_assert_eq!(output[64], expected_v);
                         }
                         _ => {
-                            let error = normalized_ecdsa_signature(&signature).unwrap_err();
+                            let error = RecoverableSignature::parse_hex(&signature).unwrap_err();
                             let rejected_with_value = matches!(
                                 error,
                                 ContractsError::InvalidSignatureRecoveryByte { value } if value == v_byte
@@ -569,7 +569,7 @@ proptest! {
     /// and payload bytes across any signature body drawn from the
     /// documented boundary lengths; the encoded form is lowercase and
     /// exactly `2 + (20 + byte_len) * 2` characters long.
-    /// [`normalized_ecdsa_signature`] accepts the canonical 65-byte
+    /// [`RecoverableSignature::parse_hex`] accepts the canonical 65-byte
     /// ECDSA shape, lowercases the hex payload, and preserves the
     /// underlying `r || s || v` bytes when `v` is already in the
     /// legacy `{27, 28}` range.
@@ -597,12 +597,10 @@ proptest! {
         let normalized_signature =
             render_mixed_case(&normalized_payload_bytes, &normalized_casing);
 
-        let normalized = normalized_ecdsa_signature(&normalized_signature).unwrap();
+        let sig = RecoverableSignature::parse_hex(&normalized_signature).unwrap();
+        let normalized = sig.to_hex_string();
         prop_assert_eq!(normalized.clone(), normalized.to_ascii_lowercase());
-        prop_assert_eq!(
-            alloy_primitives::hex::decode(normalized.trim_start_matches("0x")).unwrap(),
-            normalized_payload_bytes,
-        );
+        prop_assert_eq!(sig.to_bytes().to_vec(), normalized_payload_bytes);
 
         let encoded = encode_eip1271_signature_data(&Eip1271SignatureData::new(
             verifier,

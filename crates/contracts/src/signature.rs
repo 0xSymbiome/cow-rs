@@ -165,8 +165,11 @@ impl Signature {
     /// to the recovery backend. For [`SigningScheme::EthSign`], recovery uses
     /// the EIP-191 prehash `keccak256("\x19Ethereum Signed Message:\n32" ||
     /// digest_bytes)` because `CoW Protocol` signs the 32-byte order digest as
-    /// the message body. Recovery is delegated to the `alloy-primitives` 1.5
-    /// secp256k1 recovery API.
+    /// the message body.
+    ///
+    /// Delegates to [`RecoverableSignature::recover`] after parsing through
+    /// [`RecoverableSignature::parse_hex`], so the strict ADR 0022 input
+    /// contract is enforced before any cryptographic operation runs.
     ///
     /// # Errors
     ///
@@ -177,18 +180,187 @@ impl Signature {
         let Self::Ecdsa { scheme, data } = self else {
             return Err(ContractsError::SignatureSchemeNotEcdsa);
         };
+        RecoverableSignature::parse_hex(data)?.recover(digest, *scheme)
+    }
+}
 
-        let normalized = normalized_ecdsa_signature(data)?;
-        let signature_bytes = decode_hex_field_exact::<65>("signature", &normalized)?;
-        let signature = AlloySignature::from_raw(&signature_bytes)
-            .map_err(|error| signature_recovery_error(&error))?;
-        let prehash = match scheme {
+/// A recoverable ECDSA signature that has cleared the contracts-boundary
+/// canonicalization contract.
+///
+/// Construction is closed: the only paths are [`Self::parse_hex`] and
+/// [`Self::parse_bytes`], both of which reject every trailing recovery
+/// byte outside `{0, 1, 27, 28}` through
+/// [`ContractsError::InvalidSignatureRecoveryByte`] before the value
+/// exists. Holding a `RecoverableSignature` is therefore a typestate
+/// proof of canonicalization on the legacy Solidity `{27, 28}` range
+/// per [ADR 0022](../../docs/adr/0022-ecdsa-signature-v-normalization.md).
+///
+/// The internal representation is an [`alloy_primitives::Signature`],
+/// stored by parity rather than by recovery byte. Canonical
+/// serialization through [`Self::to_bytes`] / [`Self::to_hex_string`]
+/// emits the legacy `r || s || (27 + y_parity)` byte layout.
+/// ERC-2098 compact decoding and encoding ride through the same backing
+/// value.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct RecoverableSignature {
+    inner: AlloySignature,
+}
+
+impl RecoverableSignature {
+    /// Parses a 65-byte `0x`-prefixed hex string.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError`] for hex envelope failures,
+    /// [`ContractsError::InvalidSignatureLength`] for non-65-byte payloads,
+    /// and [`ContractsError::InvalidSignatureRecoveryByte`] for trailing
+    /// byte values outside `{0, 1, 27, 28}`.
+    pub fn parse_hex(data: &str) -> Result<Self, ContractsError> {
+        let bytes = decode_hex_field("signature", data)?;
+        Self::parse_bytes(&bytes)
+    }
+
+    /// Parses a 65-byte raw payload.
+    ///
+    /// The trailing recovery byte is validated against the ADR 0022 accept
+    /// set `{0, 1, 27, 28}` and reduced to a parity bit. The parity bit is
+    /// then handed to [`AlloySignature::from_bytes_and_parity`], which
+    /// constructs the signature value directly without re-running the
+    /// wider alloy parity-normalization path that would otherwise admit
+    /// EIP-155 chain-id encoded `v` values.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError::InvalidSignatureLength`] for non-65-byte
+    /// payloads, and [`ContractsError::InvalidSignatureRecoveryByte`]
+    /// for trailing byte values outside `{0, 1, 27, 28}`.
+    // DO NOT SWAP for alloy_primitives::Signature::from_raw.
+    //
+    // `Signature::from_raw` delegates to `normalize_v`, which accepts
+    // v in {0, 1, 27, 28, 35..}. Values >= 35 are the EIP-155 legacy
+    // transaction encoding that mixes the chain id into v. CoW off-chain
+    // order signatures never carry an EIP-155 v value, so this surface
+    // narrows the accept set to {0, 1, 27, 28} and rejects every other
+    // value through the typed `InvalidSignatureRecoveryByte` variant
+    // (ADR 0022).
+    //
+    // After the strict pre-validation produces a parity bool,
+    // `from_bytes_and_parity` consumes the parity directly and skips
+    // `normalize_v` entirely. The legacy `27 + y_parity` byte emerges
+    // from `as_bytes()` by construction.
+    //
+    // ADR: docs/adr/0022-ecdsa-signature-v-normalization.md
+    // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for ECDSA `v` byte
+    // canonicalization.
+    // CI gate: .github/workflows/never-swap-gates.yml#gate-ecdsa-v.
+    pub fn parse_bytes(bytes: &[u8]) -> Result<Self, ContractsError> {
+        if bytes.len() != 65 {
+            return Err(ContractsError::InvalidSignatureLength {
+                actual: bytes.len(),
+            });
+        }
+        let parity = match bytes[64] {
+            0 | 27 => false,
+            1 | 28 => true,
+            value => return Err(ContractsError::InvalidSignatureRecoveryByte { value }),
+        };
+        Ok(Self {
+            inner: AlloySignature::from_bytes_and_parity(&bytes[..64], parity),
+        })
+    }
+
+    /// Returns the canonical 65-byte legacy form (`r || s || (27 + parity)`).
+    #[must_use]
+    pub fn to_bytes(&self) -> [u8; 65] {
+        self.inner.as_bytes()
+    }
+
+    /// Returns the canonical lowercase `0x`-prefixed 65-byte hex form.
+    #[must_use]
+    pub fn to_hex_string(&self) -> String {
+        alloy_primitives::hex::encode_prefixed(self.inner.as_bytes())
+    }
+
+    /// Returns a borrow of the underlying alloy primitive.
+    ///
+    /// The canonicalization contract is enforced by this wrapper; reading
+    /// the inner value and re-serializing through alternative alloy
+    /// representations (for example `Signature::as_rsy`, which writes
+    /// the raw parity byte `{0, 1}` instead of the legacy `{27, 28}`
+    /// form) is forbidden in the contracts and signing surfaces and
+    /// guarded by the `gate-ecdsa-v` workflow.
+    #[must_use]
+    pub const fn as_alloy(&self) -> &AlloySignature {
+        &self.inner
+    }
+
+    /// Returns the low-s canonical form per BIP-62, or `self` if the
+    /// signature is already low-s.
+    ///
+    /// This is opt-in defense in depth against `(r, s)` malleability.
+    /// The orderbook accepts both low-s and high-s recoverable signatures
+    /// today, so this canonicalization is not applied at parse time;
+    /// callers opt in when their downstream invariants require a
+    /// uniquely-shaped signature.
+    #[must_use]
+    pub fn canonicalized_low_s(self) -> Self {
+        Self {
+            inner: self.inner.normalized_s(),
+        }
+    }
+
+    /// Returns the ERC-2098 compact 64-byte form.
+    ///
+    /// The `s` component is normalized to low-s first so the parity bit
+    /// fits in the high bit of the packed `s` word.
+    #[must_use]
+    pub fn to_erc2098(&self) -> [u8; 64] {
+        self.inner.as_erc2098()
+    }
+
+    /// Constructs from an ERC-2098 compact 64-byte payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError::InvalidSignatureLength`] for non-64-byte
+    /// payloads.
+    pub fn parse_erc2098(bytes: &[u8]) -> Result<Self, ContractsError> {
+        if bytes.len() != 64 {
+            return Err(ContractsError::InvalidSignatureLength {
+                actual: bytes.len(),
+            });
+        }
+        Ok(Self {
+            inner: AlloySignature::from_erc2098(bytes),
+        })
+    }
+
+    /// Recovers the signer address against a 32-byte digest under the
+    /// given ECDSA scheme.
+    ///
+    /// [`SigningScheme::Eip712`] recovers against the supplied digest
+    /// directly. [`SigningScheme::EthSign`] applies the canonical
+    /// EIP-191 prehash `keccak256("\x19Ethereum Signed Message:\n32" ||
+    /// digest_bytes)` internally before recovery.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ContractsError::SignatureSchemeNotEcdsa`] for non-ECDSA
+    /// scheme variants, and [`ContractsError::SignatureRecovery`] when
+    /// secp256k1 recovery fails.
+    pub fn recover(
+        &self,
+        digest: &Hash32,
+        scheme: SigningScheme,
+    ) -> Result<Address, ContractsError> {
+        let prehash_bytes = match scheme {
             SigningScheme::Eip712 => hash32_bytes(digest),
             SigningScheme::EthSign => eth_sign_digest_prehash(digest),
             _ => return Err(ContractsError::SignatureSchemeNotEcdsa),
         };
-        let recovered = signature
-            .recover_address_from_prehash(&B256::from(prehash))
+        let recovered = self
+            .inner
+            .recover_address_from_prehash(&B256::from(prehash_bytes))
             .map_err(|error| signature_recovery_error(&error))?;
         Ok(Address::new(recovered.to_string())?)
     }
@@ -272,48 +444,6 @@ pub const fn encode_signing_scheme(scheme: SigningScheme) -> u8 {
 #[inline]
 pub fn decode_signing_scheme(flags: u8) -> Result<SigningScheme, ContractsError> {
     SigningScheme::try_from(flags)
-}
-
-/// Normalizes an ECDSA signature into canonical hex form with a legacy-range
-/// recovery byte (`v ∈ {27, 28}`).
-///
-/// The canonical on-chain form uses `v = 27` or `v = 28`. Modern EIP-2
-/// signers emit `v = 0` or `v = 1`; this helper maps the modern form onto the
-/// legacy form so on-chain `ecrecover` recovers a valid signer.
-///
-/// Accepts `v ∈ {0, 1, 27, 28}` and rejects every other byte.
-///
-/// # Errors
-///
-/// Returns [`ContractsError`] if the signature is not valid hex, is not
-/// exactly 65 bytes, or carries an unsupported recovery byte.
-// DO NOT SWAP for alloy_primitives::normalize_v.
-//
-// cow-rs emits the legacy Solidity recovery byte v ∈ {27, 28}, the form
-// on-chain `ecrecover(hash, v, r, s)` expects. alloy `normalize_v`
-// collapses every input to a parity bool, which produces `address(0)`
-// when fed back to `ecrecover` and reverts every smart-contract
-// signature verification.
-//
-// ADR: docs/adr/0022-ecdsa-signature-v-normalization.md (Decision §,
-// amendment block at :108-123).
-// Doctrine: docs/alloy-doctrine.md, Bucket 2 row for ECDSA `v` byte
-// canonicalization.
-// CI gate: .github/workflows/never-swap-gates.yml#gate-ecdsa-v.
-pub fn normalized_ecdsa_signature(data: &str) -> Result<String, ContractsError> {
-    let mut bytes = decode_hex_field("signature", data)?;
-    if bytes.len() != 65 {
-        return Err(ContractsError::InvalidSignatureLength {
-            actual: bytes.len(),
-        });
-    }
-    bytes[64] = match bytes[64] {
-        0 => 27,
-        1 => 28,
-        27 | 28 => bytes[64],
-        value => return Err(ContractsError::InvalidSignatureRecoveryByte { value }),
-    };
-    Ok(alloy_primitives::hex::encode_prefixed(bytes))
 }
 
 /// Verifies an EIP-1271 signature using a synchronous provider.

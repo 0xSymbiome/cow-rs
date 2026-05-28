@@ -108,22 +108,25 @@ fn property_def(type_name: &str, field: &TypedDataField) -> Result<PropertyDef, 
     })
 }
 
-/// Hex-encodes an Alloy signature through the shared `CoW` ECDSA normalizer.
+/// Hex-encodes an Alloy signature through the contracts-boundary
+/// recoverable-signature typestate.
 ///
-/// Routing through `cow_sdk_contracts::normalized_ecdsa_signature` keeps the
-/// signer leaf aligned with the workspace's single recovery-byte normalization
-/// authority.
+/// Routing through `cow_sdk_contracts::RecoverableSignature` keeps the
+/// signer leaf aligned with the workspace's single canonical
+/// recovery-byte authority and surfaces the typed
+/// `ContractsError::InvalidSignatureRecoveryByte` rejection for
+/// trailing bytes outside the ADR 0022 accept set.
 ///
 /// # Errors
 ///
 /// Returns the [`cow_sdk_contracts::ContractsError`] surfaced by
-/// `normalized_ecdsa_signature` when the hex-encoded signature is not exactly
-/// 65 bytes or carries an unsupported recovery byte.
+/// `RecoverableSignature::parse_bytes` when the encoded signature is
+/// not exactly 65 bytes or carries an unsupported recovery byte.
 pub fn alloy_signature_to_hex(
     signature: &Signature,
 ) -> Result<String, cow_sdk_contracts::ContractsError> {
-    let raw = alloy_primitives::hex::encode_prefixed(signature.as_bytes());
-    cow_sdk_contracts::normalized_ecdsa_signature(&raw)
+    cow_sdk_contracts::RecoverableSignature::parse_bytes(&signature.as_bytes())
+        .map(|sig| sig.to_hex_string())
 }
 
 #[cfg(test)]

@@ -98,12 +98,12 @@ where
         "signing order cancellation",
     );
     let payload = cancellation_signing_payload(order_uids, chain_id, options)?;
-    let signature = signer
+    let raw = signer
         .sign_typed_data_payload(&payload.payload)
         .await
         .map_err(|error| signer_error("sign_typed_data_payload", error))?;
     Ok(crate::SigningResult {
-        signature: cow_sdk_contracts::normalized_ecdsa_signature(&signature)?,
+        signature: cow_sdk_contracts::RecoverableSignature::parse_hex(&raw)?.to_hex_string(),
         signing_scheme: SigningScheme::Eip712,
     })
 }

@@ -2,22 +2,27 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-23
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-05-28
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: contracts, signing, ecdsa, normalization, error-typing
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
-`cow_sdk_contracts::normalized_ecdsa_signature` is the single
-contracts-boundary normalizer for recoverable ECDSA signatures. It
-accepts only 65-byte signatures, canonicalizes modern `v = 0` / `1`
-inputs onto the legacy Solidity-compatible `27` / `28` range, preserves
-already-canonical `27` / `28` inputs byte-for-byte, and rejects every
-other trailing byte through the typed
-`ContractsError::InvalidSignatureRecoveryByte` variant. Length mismatch
-fails through the typed `ContractsError::InvalidSignatureLength`
-variant.
+`cow_sdk_contracts::RecoverableSignature` is the single
+contracts-boundary typestate for recoverable ECDSA signatures. The
+closed constructors (`RecoverableSignature::parse_hex` and
+`RecoverableSignature::parse_bytes`) accept only 65-byte signatures,
+canonicalize modern `v = 0` / `1` inputs onto the legacy
+Solidity-compatible `27` / `28` range, preserve already-canonical
+`27` / `28` inputs byte-for-byte, and reject every other trailing byte
+through the typed `ContractsError::InvalidSignatureRecoveryByte`
+variant. Length mismatch fails through the typed
+`ContractsError::InvalidSignatureLength` variant. Holding a
+`RecoverableSignature` is a compile-time proof that the recovery byte
+has been canonicalised, so downstream signing, recovery, and
+verification helpers consume the typestate directly rather than passing
+raw bytes around.
 
 ## Why
 
@@ -34,42 +39,60 @@ sites.
 
 ## Must Remain True
 
-- Public surface: `normalized_ecdsa_signature(&str) -> Result<String,
-  ContractsError>` accepts only hex-encoded 65-byte signatures. The
-  helper lowercases the output, preserves `r || s`, maps `v = 0` and
-  `27` to `27`, maps `v = 1` and `28` to `28`, rejects any other `v`
-  byte through `InvalidSignatureRecoveryByte { value }`, and rejects any
-  non-65-byte payload through `InvalidSignatureLength { actual }`.
-- Runtime and support: every contracts or signing helper that emits or
-  repackages recoverable ECDSA signatures routes through the same
-  normalizer, so downstream Solidity verification paths always receive
-  the legacy-compatible form. The change is additive: it expands the
-  typed error surface but does not widen the accepted signature family
-  beyond the four reviewed values.
+- Public surface: `RecoverableSignature::parse_hex(&str)` and
+  `RecoverableSignature::parse_bytes(&[u8])` are the only construction
+  paths. Both return a `RecoverableSignature` whose canonical output
+  (via `to_bytes` / `to_hex_string`) lowercases the hex, preserves
+  `r || s`, maps `v = 0` and `27` to `27`, maps `v = 1` and `28` to
+  `28`, rejects any other `v` byte through
+  `InvalidSignatureRecoveryByte { value }`, and rejects any non-65-byte
+  payload through `InvalidSignatureLength { actual }`. The scheme-bundled
+  `RecoverableSignature::recover(digest, scheme)` reaches secp256k1
+  recovery for the contracts-boundary surface.
+- Runtime and support: every contracts, signing, alloy-signer, and
+  WASM helper that emits or repackages recoverable ECDSA signatures
+  routes through `RecoverableSignature`, so downstream Solidity
+  verification paths always receive the legacy-compatible form. The
+  change does not widen the accepted signature family beyond the four
+  reviewed values.
 - Validation and review: curated regression coverage in
-  `crates/contracts/tests/signature_contract.rs` pins the accepted and
-  rejected boundary cases; the signing parity fixture in
-  `parity/fixtures/signing.json` locks the cross-SDK byte mapping; and
-  the fuzz target `fuzz/fuzz_targets/fuzz_ecdsa_v_normalization.rs`
-  asserts that arbitrary 65-byte inputs either preserve `r || s` with a
-  canonical `27` / `28` output or fail through the typed recovery-byte
-  rejection.
+  `crates/contracts/tests/signature_contract.rs` and
+  `crates/contracts/tests/recoverable_signature_contract.rs` pins the
+  accepted and rejected boundary cases; the parity contracts at
+  `crates/contracts/tests/v_normalization_contract.rs` and
+  `crates/signing/tests/parity_contract.rs` drive the accept and
+  rejection rows in `parity/fixtures/ecdsa/v_normalization.json` and
+  `parity/fixtures/signing.json`; the fuzz target
+  `fuzz/fuzz_targets/fuzz_ecdsa_v_normalization.rs` asserts that
+  arbitrary 65-byte inputs either preserve `r || s` with a canonical
+  `27` / `28` output or fail through the typed recovery-byte rejection;
+  and the differential fuzz target
+  `fuzz/fuzz_targets/fuzz_recoverable_signature_differential.rs`
+  asserts that the cow rejection set is a strict refinement of the
+  alloy parity-normalization rejection set on the same 65-byte input
+  space.
 - Cost: two additive `ContractsError` variants and one stricter
   contracts-boundary helper. No new signing scheme, wire format, or
   on-chain ABI surface is introduced.
 
 ## Alternatives Rejected
 
-- Keep `normalized_ecdsa_signature` as a hex-only passthrough: simplest
-  implementation, but leaves the Rust SDK divergent from the TypeScript
-  SDK and the services backend on a reviewed signing invariant.
+- Leave the contracts crate's recoverable-signature surface as a
+  hex-only passthrough: simplest implementation, but leaves the Rust
+  SDK divergent from the TypeScript SDK and the services backend on a
+  reviewed signing invariant.
 - Normalize only in `cow-sdk-signing`: fixes some call sites, but leaves
   other contracts-boundary consumers free to reintroduce the bug and
-  weakens the contracts crate as the canonical signature helper surface.
+  weakens the contracts crate as the canonical signature authority.
 - Silently coerce every trailing byte into the legacy range: avoids an
   error, but destroys typed failure semantics and risks turning malformed
   signatures into different malformed signatures rather than rejecting
   them explicitly.
+- Expose the alloy `Signature` primitive directly as the cow recoverable
+  type (type alias): admits the wider alloy parity-normalization input
+  surface (EIP-155 `v >= 35`) and prevents the typed
+  `InvalidSignatureRecoveryByte` rejection contract from being enforced
+  by the type system.
 
 ## Prefix Ownership
 
@@ -90,7 +113,7 @@ The pinned upstream signing posture signs the keccak digest of
 `hashTypedData(...)` as a personal-sign message, so the wallet/provider layer
 owns the EIP-191 prefix application and recovery-byte direction during signing.
 The SDK normalizes the recovery byte through
-`cow_sdk_contracts::normalized_ecdsa_signature` regardless of which adapter
+`cow_sdk_contracts::RecoverableSignature` regardless of which adapter
 produced the signature.
 
 ## Links
@@ -105,19 +128,55 @@ produced the signature.
 
 - [ECDSA Signature Normalization Audit](../audit/ecdsa-signature-normalization-audit.md)
 
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+## Amendment 2026-05-28: typestate construction (`RecoverableSignature`)
 
-The contracts-boundary ECDSA signature surface routes recovery through
-`alloy_primitives::Signature::from_raw` plus the alloy-primitives
-secp256k1 recovery API on
-`cow_sdk_contracts::Signature::recover_ecdsa_address` per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
-`normalized_ecdsa_signature` helper continues to operate on the raw
-65-byte signature representation: it canonicalizes modern `v = 0` /
-`v = 1` onto the legacy Solidity-compatible `27` / `28` range, preserves
-already-canonical `27` / `28` inputs byte-for-byte, and rejects every
-other recovery byte through `ContractsError::InvalidSignatureRecoveryByte`
-and non-65-byte payloads through `ContractsError::InvalidSignatureLength`.
-The typed length and recovery-byte rejection contract on this helper
-stays independent of the alloy `Signature` surface so the
-hex-encoded `String` shape on the public helper signature is preserved.
+The canonical ECDSA contracts-boundary type is now
+`cow_sdk_contracts::RecoverableSignature`, a `#[repr]`-stable newtype
+that holds an `alloy_primitives::Signature` behind a private field. The
+construction surface is closed at `RecoverableSignature::parse_hex` and
+`RecoverableSignature::parse_bytes`; both validate the trailing recovery
+byte against the ADR 0022 accept set `{0, 1, 27, 28}` and reduce the
+accepted byte to a parity bool before handing the value to
+`alloy_primitives::Signature::from_bytes_and_parity`. The cow accept set
+is a proper subset of alloy's wider parity-normalization input range,
+which admits EIP-155 chain-encoded `v >= 35`. The strict pre-validation
+keeps the typed `InvalidSignatureRecoveryByte` rejection in force on
+the contracts boundary while delegating canonical byte assembly (the
+legacy `r || s || (27 + y_parity)` layout that on-chain `ecrecover`
+expects) to alloy `Signature::as_bytes`.
+
+Holding a `RecoverableSignature` is therefore a compile-time proof that
+the ADR 0022 input contract has been satisfied. Downstream contracts,
+signing, alloy-signer, and WASM helpers consume the typestate directly
+through `RecoverableSignature::to_bytes`,
+`RecoverableSignature::to_hex_string`, and the scheme-bundled
+`RecoverableSignature::recover(digest, scheme)` method.
+
+Recovery routes through the same value: the inner alloy primitive's
+`recover_address_from_prehash` is reached through
+`RecoverableSignature::recover`, which selects the digest preimage by
+scheme (the supplied 32-byte digest for `Eip712`; the canonical
+EIP-191 `"\x19Ethereum Signed Message:\n32" || digest` prehash for
+`EthSign`). `Signature::recover_ecdsa_address` is preserved on the
+scheme-tagged `Signature` enum and now delegates through
+`RecoverableSignature::parse_hex(...)?.recover(...)`.
+
+Two additional surfaces ride on the same typestate:
+
+- `RecoverableSignature::to_erc2098` / `RecoverableSignature::parse_erc2098`
+  expose the ERC-2098 compact 64-byte form for callers that want the
+  packed representation. The compact path delegates to
+  `alloy_primitives::Signature::as_erc2098` / `from_erc2098`.
+- `RecoverableSignature::canonicalized_low_s` exposes the BIP-62 low-s
+  canonicalisation as an opt-in operation. The orderbook accepts both
+  low-s and high-s recoverable signatures today, so this is **not**
+  applied at parse time; callers opt in when their downstream invariants
+  require a uniquely-shaped signature.
+
+The never-swap fence at `.github/workflows/never-swap-gates.yml#gate-ecdsa-v`
+is widened to forbid `Signature::from_raw` and `Signature::as_rsy` in
+the contracts and signing trees alongside the previously-forbidden
+`normalize_v` and `Signature::v` symbols. Both newly-forbidden symbols
+would re-introduce the wider alloy parity-normalization input surface
+or emit the raw parity byte `{0, 1}` instead of the legacy `{27, 28}`
+form.

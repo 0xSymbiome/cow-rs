@@ -3,8 +3,8 @@ use std::fmt;
 use alloy_primitives::{Bytes as AlloyBytes, keccak256};
 use alloy_sol_types::SolValue;
 use cow_sdk_contracts::{
-    Order as ContractsOrder, OrderUidParams, SigningScheme, buy_balance_name, hash_order,
-    hex_field::decode_hex_field, normalize_order, normalized_ecdsa_signature, order_kind_name,
+    Order as ContractsOrder, OrderUidParams, RecoverableSignature, SigningScheme, buy_balance_name,
+    hash_order, hex_field::decode_hex_field, normalize_order, order_kind_name,
     pack_order_uid_params, sell_balance_name,
 };
 use cow_sdk_core::{
@@ -84,12 +84,12 @@ where
     S::Error: fmt::Display + SignerError,
 {
     let payload = order_signing_payload(order, chain_id, options)?;
-    let signature = signer
+    let raw = signer
         .sign_typed_data_payload(&payload.payload)
         .await
         .map_err(|error| signer_error("sign_typed_data_payload", error))?;
     Ok(SigningResult {
-        signature: normalized_ecdsa_signature(&signature)?,
+        signature: RecoverableSignature::parse_hex(&raw)?.to_hex_string(),
         signing_scheme: SigningScheme::Eip712,
     })
 }
@@ -168,8 +168,7 @@ pub fn eip1271_signature_payload(
     ecdsa_signature: &str,
 ) -> Result<String, SigningError> {
     let normalized = normalize_order(&contracts_order(order))?;
-    let signature = normalized_ecdsa_signature(ecdsa_signature)?;
-    let signature_bytes = decode_hex_field("ecdsaSignature", &signature)?;
+    let signature_bytes = RecoverableSignature::parse_hex(ecdsa_signature)?.to_bytes();
 
     // The cow `Amount` newtype is `#[repr(transparent)]` over
     // `alloy_primitives::U256` and `AppDataHash` over
@@ -213,7 +212,7 @@ where
         return Err(SigningError::UnsupportedSignerGeneratedScheme { scheme });
     }
 
-    let signature = match scheme {
+    let raw = match scheme {
         SigningScheme::Eip712 => signer
             .sign_typed_data_payload(payload)
             .await
@@ -231,7 +230,7 @@ where
     };
 
     Ok(SigningResult {
-        signature: normalized_ecdsa_signature(&signature)?,
+        signature: RecoverableSignature::parse_hex(&raw)?.to_hex_string(),
         signing_scheme: scheme,
     })
 }

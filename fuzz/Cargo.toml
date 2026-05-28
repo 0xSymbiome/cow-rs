@@ -119,6 +119,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "fuzz_recoverable_signature_differential"
+path = "fuzz_targets/fuzz_recoverable_signature_differential.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "fuzz_orderbook_rejection_decode"
 path = "fuzz_targets/fuzz_orderbook_rejection_decode.rs"
 test = false
@@ -189,8 +196,15 @@ doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_normalize_ecdsa_signature_str"
-path = "fuzz_targets/fuzz_normalize_ecdsa_signature_str.rs"
+name = "fuzz_recoverable_signature_parse_hex"
+path = "fuzz_targets/fuzz_recoverable_signature_parse_hex.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_eip1271_signature_data_codec"
+path = "fuzz_targets/fuzz_eip1271_signature_data_codec.rs"
 test = false
 doc = false
 bench = false

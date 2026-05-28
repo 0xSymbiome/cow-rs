@@ -2,7 +2,7 @@
 use alloy_primitives::Bytes as AlloyBytes;
 #[cfg(feature = "cancellation")]
 use alloy_sol_types::SolCall as _;
-use cow_sdk_contracts::normalized_ecdsa_signature;
+use cow_sdk_contracts::RecoverableSignature;
 #[cfg(feature = "cancellation")]
 use cow_sdk_contracts::settlement::IGPv2Settlement;
 #[cfg(feature = "cancellation")]
@@ -548,7 +548,9 @@ pub(crate) async fn await_callback_string(
 }
 
 pub(crate) fn normalize_signature(raw_hex: &str) -> Result<String, JsValue> {
-    normalized_ecdsa_signature(raw_hex).map_err(|error| WasmError::from(error).into_js())
+    RecoverableSignature::parse_hex(raw_hex)
+        .map(|sig| sig.to_hex_string())
+        .map_err(|error| WasmError::from(error).into_js())
 }
 
 pub(crate) fn js_error_to_string(value: JsValue) -> String {

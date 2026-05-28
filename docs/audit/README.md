@@ -87,7 +87,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [ECDSA Signature Normalization Audit](ecdsa-signature-normalization-audit.md) | Standing audit | `cow_sdk_contracts::normalized_ecdsa_signature` and `Signature::recover_ecdsa_address` | 65-byte recoverable-signature normalization, typed failure semantics, ECDSA address recovery, declared-address extraction, and parity plus fuzz evidence for the reviewed `27` / `28` contract | Current | 2026-05-17 |
+| [ECDSA Signature Normalization Audit](ecdsa-signature-normalization-audit.md) | Standing audit | `cow_sdk_contracts::RecoverableSignature` and `Signature::recover_ecdsa_address` | 65-byte recoverable-signature canonicalization, typed failure semantics, ECDSA address recovery, declared-address extraction, ERC-2098 compact-form bridge, opt-in low-s canonicalisation, and parity plus fuzz evidence for the reviewed `27` / `28` contract | Current | 2026-05-28 |
 
 ## Browser Wallet
 

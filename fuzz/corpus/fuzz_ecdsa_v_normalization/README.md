@@ -2,11 +2,11 @@
 
 This corpus seeds `fuzz/fuzz_targets/fuzz_ecdsa_v_normalization.rs`.
 The target consumes a fixed 65-byte input through `arbitrary` (`r || s
-|| v`) and runs it through `normalized_ecdsa_signature`. Accepted
-outputs must remain 65 bytes, preserve `r||s` byte-identically, map
-`{0, 27} -> 27` and `{1, 28} -> 28`, and rejected inputs must surface
-through `ContractsError::InvalidSignatureRecoveryByte` with the
-original `v` byte preserved.
+|| v`) and runs it through `RecoverableSignature::parse_bytes`.
+Accepted outputs must remain 65 bytes, preserve `r||s`
+byte-identically, map `{0, 27} -> 27` and `{1, 28} -> 28`, and rejected
+inputs must surface through `ContractsError::InvalidSignatureRecoveryByte`
+with the original `v` byte preserved.
 
 ## Boundary sweep — `seed-v-00.bin` through `seed-v-ff.bin`
 
@@ -17,13 +17,13 @@ cover every possible recovery byte against the same zero-filled
 file is 65 bytes — 64 zero bytes for `r||s` followed by the single
 recovery byte indicated by the file suffix.
 
-The sweep spans every required class because the contract for
-`normalized_ecdsa_signature` partitions the 256-byte input space
+The sweep spans every required class because the canonical accept
+contract for `RecoverableSignature` partitions the 256-byte input space
 deterministically:
 
-- canonical (accepted by the normalizer): `seed-v-00.bin`,
-  `seed-v-01.bin`, `seed-v-1b.bin` (v=27), and `seed-v-1c.bin`
-  (v=28).
+- canonical (accepted by `RecoverableSignature::parse_bytes`):
+  `seed-v-00.bin`, `seed-v-01.bin`, `seed-v-1b.bin` (v=27), and
+  `seed-v-1c.bin` (v=28).
 - boundary (input-domain extremes): `seed-v-00.bin` (minimum value),
   `seed-v-ff.bin` (maximum value), plus the contiguous sweep at
   `seed-v-02.bin..seed-v-1a.bin` and `seed-v-1d.bin..seed-v-fe.bin`
@@ -37,7 +37,7 @@ deterministically:
 
 37 forty-character hex-named seeds retained from prior libFuzzer smoke
 runs. Each is treated as adversarial-class coverage and kept so the
-normalizer keeps any input invariants the prior fuzz sessions
+typestate parser preserves any input invariants the prior fuzz sessions
 exercised. Filenames:
 
 `03d003584fe252f2688c146ef3eb931afefff2e3`,

@@ -40,7 +40,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Reject alloy normalize_v on contracts and signing surfaces
+      - name: Reject alloy parity-normalization symbols on contracts and signing surfaces
         shell: bash
         run: |
           set -euo pipefail
@@ -49,13 +49,25 @@ jobs:
             echo "No protected sources found; gate has no candidates."
             exit 0
           fi
-          # Filter out `//`-prefixed lines so the `// DO NOT SWAP` comment
-          # blocks (which intentionally name the forbidden symbols in their
-          # explanatory text) do not self-trigger this gate.
-          violations="$(grep -nE '\bnormalize_v\b|\balloy_primitives::Signature::v\b' "${sources[@]}" 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' || true)"
+          # Forbidden symbols, in order:
+          #   `normalize_v`                    — the wider alloy parity helper that admits EIP-155 v >= 35.
+          #   `alloy_primitives::Signature::v` — the public alloy parity accessor that returns the
+          #                                      raw bool, easy to mis-route into a non-canonical byte.
+          #   `(AlloySignature|alloy_primitives::Signature)::from_raw` — the alloy constructor that
+          #                                      delegates to `normalize_v`; the cow surface uses
+          #                                      `from_bytes_and_parity` instead, after the strict
+          #                                      ADR 0022 v-set guard.
+          #   `Signature::as_rsy`              — the alloy serializer that writes the raw parity byte
+          #                                      `{0, 1}`; cow emits the legacy `{27, 28}` form
+          #                                      through `RecoverableSignature::to_bytes`.
+          #
+          # Comment lines are filtered out so the explanatory `// DO NOT SWAP`
+          # block (which intentionally names the forbidden symbols in its
+          # body) does not self-trigger.
+          violations="$(grep -nE '\bnormalize_v\b|\balloy_primitives::Signature::v\b|\b(AlloySignature|alloy_primitives::Signature)::from_raw\b|\bSignature::as_rsy\b' "${sources[@]}" 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' || true)"
           if [ -n "$violations" ]; then
             printf '%s\n' "$violations" >&2
-            echo "::error::Never-swap fence: alloy normalize_v collapses the recovery byte to a parity bit. cow-rs emits v in {27, 28} for on-chain ecrecover (ADR 0022). Reroute through cow_sdk_contracts::normalized_ecdsa_signature."
+            echo "::error::Never-swap fence: cow-rs emits v in {27, 28} for on-chain ecrecover (ADR 0022). Reroute through cow_sdk_contracts::RecoverableSignature. Direct alloy parity-normalisation, Signature::from_raw, or Signature::as_rsy widens the input or output surface beyond the canonical contract."
             exit 1
           fi
 

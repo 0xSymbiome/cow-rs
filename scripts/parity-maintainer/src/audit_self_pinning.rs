@@ -737,7 +737,7 @@ mod tests {
     fn rust_self_pin_prefixes_are_detected() {
         assert!(is_rust_self_pin("alloy_sol_types::SolStruct::eip712"));
         assert!(is_rust_self_pin("alloy_primitives::keccak256"));
-        assert!(is_rust_self_pin("cow_sdk_contracts::normalized_ecdsa_signature"));
+        assert!(is_rust_self_pin("cow_sdk_contracts::RecoverableSignature"));
         assert!(is_rust_self_pin("cow-sdk-contracts something"));
         assert!(is_rust_self_pin("crate::module::function"));
         assert!(is_rust_self_pin("super::helper"));

@@ -14,6 +14,13 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- `cow_sdk_contracts::normalized_ecdsa_signature` is removed.
+  Recoverable ECDSA signatures are constructed exclusively through
+  the closed-construction `cow_sdk_contracts::RecoverableSignature`
+  typestate described below; `RecoverableSignature::to_hex_string`
+  provides the hex-encoded wire form when the legacy 65-byte hex
+  shape is required.
+
 - `cow_sdk_trading::TradingSdkBuilder::with_owner`,
   `cow_sdk_trading::PartialTraderParameters::owner`, and
   `cow_sdk_trading::PartialTraderParameters::with_owner` are removed.
@@ -30,6 +37,41 @@ The first functional crate-family release begins at `0.1.0`.
   as the standing current-state proofs.
 
 ### Changed
+
+- `cow_sdk_contracts` exposes one closed-construction typestate for
+  recoverable ECDSA signatures. `RecoverableSignature` holds an
+  `alloy_primitives::Signature` behind a private field and accepts
+  only inputs whose trailing recovery byte is in `{0, 1, 27, 28}`;
+  the wider alloy parity-normalisation input range (which admits the
+  EIP-155 chain-encoded `v >= 35` family) is rejected through the
+  typed `ContractsError::InvalidSignatureRecoveryByte` variant. The
+  constructors `RecoverableSignature::parse_hex`,
+  `RecoverableSignature::parse_bytes`, and
+  `RecoverableSignature::parse_erc2098` are the sole construction
+  paths; canonical serialisation through `to_bytes` /
+  `to_hex_string` emits the legacy `r || s || (27 + y_parity)` byte
+  layout via `alloy_primitives::Signature::as_bytes`; scheme-aware
+  recovery rides on the same value through
+  `RecoverableSignature::recover(digest, scheme)`, which applies the
+  canonical EIP-191 prehash internally for
+  `cow_sdk_contracts::SigningScheme::EthSign` and recovers
+  `cow_sdk_contracts::SigningScheme::Eip712` against the supplied
+  digest directly; opt-in BIP-62 low-s canonicalisation is available
+  through `RecoverableSignature::canonicalized_low_s`; and the
+  ERC-2098 compact 64-byte form round-trips through `to_erc2098` /
+  `parse_erc2098`. Every signing, alloy-signer, and WASM consumer
+  routes through the typestate;
+  `cow_sdk_contracts::Signature::recover_ecdsa_address` delegates
+  through `RecoverableSignature::parse_hex(...)?.recover(...)`. The
+  never-swap fence at
+  `.github/workflows/never-swap-gates.yml#gate-ecdsa-v` widens to
+  forbid `Signature::from_raw` and `Signature::as_rsy` in the
+  contracts and signing trees so the wider alloy
+  parity-normalisation surface cannot return through a future call
+  site. ADR 0022 carries a new amendment block recording the
+  typestate construction, with the
+  [ECDSA Signature Normalization Audit](docs/audit/ecdsa-signature-normalization-audit.md)
+  as the standing current-state proof.
 
 - `cow_sdk_trading::LimitTradeParametersFromQuote` is a real newtype
   around `LimitTradeParameters` that guarantees a non-`None`
@@ -256,7 +298,8 @@ The first functional crate-family release begins at `0.1.0`.
 
 - Ten inline `DO NOT SWAP` comment blocks anchor the doctrine at the
   load-bearing call sites across `crates/contracts/src/signature.rs`
-  (above `normalized_ecdsa_signature`), `crates/core/src/types/amount.rs`
+  (above `RecoverableSignature::parse_bytes`),
+  `crates/core/src/types/amount.rs`
   (paired blocks above `Amount::new` and `SignedAmount::new`),
   `crates/core/src/types/identity.rs` (above `impl fmt::Display for
   Address`), `crates/core/src/config/chains.rs` (paired blocks above
