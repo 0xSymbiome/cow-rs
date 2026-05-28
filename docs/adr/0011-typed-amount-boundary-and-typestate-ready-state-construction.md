@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-17
-- Last reviewed: 2026-05-27
+- Last reviewed: 2026-05-28
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, trading, builders, semver
 - Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -211,3 +211,32 @@ The shared `with_*` setter bodies on `TradeParameters` and
 `LimitTradeParameters` continue to exist as inherent methods on
 both public types, with the implementation factored through one
 internal definition that is invoked once per target struct.
+
+## Amendment 2026-05-28: owner placement
+
+The `owner` field is a per-trade attribution that lives on
+`TradeParameters`, `LimitTradeParameters`, and `OrderTraderParameters`.
+It does not live on `PartialTraderParameters`, on `TraderParameters`,
+or on the `TradingSdkBuilder`. The SDK does not store a default
+owner; the call-level owner is the only owner the SDK observes.
+
+For signer-backed flows (`post_swap_order`,
+`post_swap_order_from_quote`, `post_limit_order`,
+`get_quote_results`) the signer address resolved through
+`Signer::get_address` is the implicit fallback when
+`TradeParameters.owner` is `None`. For quote-only flows
+(`get_quote_only`) the owner must be supplied through
+`TradeParameters.owner` or through
+`advanced_settings.quote_request.from`; missing owner surfaces as
+`TradingError::MissingOwner` at the call boundary.
+
+The retired SDK-default-owner surface
+(`TradingSdkBuilder::with_owner`, `PartialTraderParameters::owner`,
+`PartialTraderParameters::with_owner`) was load-bearing for no shipped
+flow because per-call `TradeParameters.owner` won precedence in every
+observing helper. The removal narrows the public surface without
+changing observable behaviour.
+
+The Trade-Parameter Lifecycle Audit and the Trading SDK Runtime
+Prerequisites Audit are the standing current-state proofs for the
+post-amendment invariant.

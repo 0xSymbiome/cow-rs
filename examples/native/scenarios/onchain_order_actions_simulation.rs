@@ -28,8 +28,7 @@ fn trading_sdk(orderbook: MockOrderbook) -> TradingSdk {
     let trader = sample_trader_parameters();
     let mut builder = TradingSdk::builder()
         .with_chain_id(trader.chain_id)
-        .with_app_code(trader.app_code)
-        .with_owner(sample_owner());
+        .with_app_code(trader.app_code);
     if let Some(env) = trader.env {
         builder = builder.with_env(env);
     }

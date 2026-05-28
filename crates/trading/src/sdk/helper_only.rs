@@ -208,7 +208,6 @@ impl HelperOnlySdk {
             PartialTraderParameters {
                 chain_id: Some(orderbook.chain_id),
                 app_code: self.trader_defaults.app_code.clone(),
-                owner: self.trader_defaults.owner,
                 env: Some(orderbook.env),
                 settlement_contract_override: self
                     .trader_defaults

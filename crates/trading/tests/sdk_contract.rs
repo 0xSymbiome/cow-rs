@@ -578,7 +578,6 @@ async fn get_quote_only_returns_cancelled_when_combinator_token_fires_before_cal
     let sdk = TradingSdk::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cancellation-test")
-        .with_owner(address(OWNER))
         .with_env(CowEnv::Prod)
         .with_options(TradingSdkOptions::new().with_orderbook_client(orderbook))
         .build_ready()
@@ -615,7 +614,6 @@ async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
     let sdk = TradingSdk::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cancellation-test")
-        .with_owner(address(OWNER))
         .with_env(CowEnv::Prod)
         .with_options(TradingSdkOptions::new().with_orderbook_client(orderbook))
         .build_ready()
@@ -661,7 +659,6 @@ async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
 async fn helper_only_sdk_exposes_chain_bound_helper_defaults() {
     let sdk = cow_sdk_trading::TradingSdkBuilder::new()
         .with_chain_id(SupportedChainId::Sepolia)
-        .with_owner(address(OWNER))
         .build_helper_only()
         .expect("helper-only builder must succeed when chain id is set");
 
@@ -669,5 +666,5 @@ async fn helper_only_sdk_exposes_chain_bound_helper_defaults() {
         sdk.trader_defaults().chain_id,
         Some(SupportedChainId::Sepolia)
     );
-    assert_eq!(sdk.trader_defaults().owner.as_ref(), Some(&address(OWNER)));
+    assert!(sdk.trader_defaults().app_code.is_none());
 }

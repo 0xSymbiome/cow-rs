@@ -219,12 +219,10 @@ fn partial_trader_parameters_builders_preserve_inputs() {
 
     let populated = partial
         .with_chain_id(SupportedChainId::Sepolia)
-        .with_owner(valid_address())
         .with_env(CowEnv::Staging)
         .with_app_code("cow-rs")
         .expect("valid app code");
     assert_eq!(populated.chain_id, Some(SupportedChainId::Sepolia));
-    assert_eq!(populated.owner, Some(valid_address()));
     assert_eq!(populated.env, Some(CowEnv::Staging));
     assert_eq!(
         populated.app_code.as_ref().map(AppCode::as_str),

@@ -41,7 +41,7 @@ impl TradingSdk {
     )]
     pub async fn post_swap_order<S>(
         &self,
-        mut params: TradeParameters,
+        params: TradeParameters,
         signer: &S,
         advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<crate::OrderPostingResult, TradingError>
@@ -49,7 +49,6 @@ impl TradingSdk {
         S: Signer,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
-        params.owner = params.owner.or(self.trader_defaults.owner);
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
         crate::post::post_swap_order(
@@ -154,7 +153,7 @@ impl TradingSdk {
     )]
     pub async fn post_limit_order<S>(
         &self,
-        mut params: LimitTradeParameters,
+        params: LimitTradeParameters,
         signer: &S,
         advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<crate::OrderPostingResult, TradingError>
@@ -162,7 +161,6 @@ impl TradingSdk {
         S: Signer,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
-        params.owner = params.owner.or(self.trader_defaults.owner);
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
         crate::post::post_limit_order(

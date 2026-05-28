@@ -102,6 +102,18 @@ by every public post and quote entry. Limit-order callers leave the
 path does not apply slippage in the same shape as swaps; the field
 is documented but unused on that flow.
 
+### Owner Field Placement
+
+The `owner: Option<Address>` field lives on `TradeParameters` and
+`LimitTradeParameters` and is the sole source of trade-level owner
+attribution observed by the SDK. The `OrderTraderParameters` shape
+exposes order-context owner identity through its `order_uid` plus
+chain id; the trader-defaults bag (`PartialTraderParameters`) holds
+no owner field.
+
+Owner precedence in observing helpers is documented in the
+[Trading SDK Runtime Prerequisites Audit](trading-sdk-runtime-prerequisites-audit.md).
+
 ## Evidence
 
 Primary implementation points:

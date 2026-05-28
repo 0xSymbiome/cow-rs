@@ -20,31 +20,62 @@ cow-sdk-trading = "0.1"
 
 ## Minimal example
 
+The `TradingSdkBuilder::ready` one-call shortcut accepts a complete
+`TraderParameters` plus an options bundle and returns a ready-state
+`TradingSdk`:
+
 ```rust
-use cow_sdk_trading::{SupportedChainId, TradingSdk};
+use cow_sdk_core::SupportedChainId;
+use cow_sdk_trading::{TraderParameters, TradingSdkBuilder, TradingSdkOptions};
+
+let _sdk = TradingSdkBuilder::ready(
+    TraderParameters::new(SupportedChainId::Sepolia, "your-app-code")
+        .expect("app code validates"),
+    TradingSdkOptions::default(),
+)
+.expect("ready-state construction");
+```
+
+For fluent control over env, settlement-contract overrides, or transport
+injection, use the full builder:
+
+```rust
+use cow_sdk_core::{CowEnv, SupportedChainId};
+use cow_sdk_trading::{TradingSdk, TradingSdkOptions};
 
 let _sdk = TradingSdk::builder()
     .with_chain_id(SupportedChainId::Sepolia)
     .with_app_code("your-app-code")
+    .with_env(CowEnv::Prod)
+    .with_options(TradingSdkOptions::new())
     .build_ready()
-    .unwrap();
+    .expect("ready-state construction");
 ```
 
-Use `build_helper_only()` for chain-bound helper workflows that do not need
-quote, post, order lookup, or off-chain cancellation submission through the SDK:
+Use `TradingSdkBuilder::helper_only` (or `build_helper_only()` on the
+full builder) for chain-bound helper workflows that do not need quote,
+post, order lookup, or off-chain cancellation submission through the
+SDK:
 
 ```rust
-use cow_sdk_trading::{SupportedChainId, TradingSdk};
+use cow_sdk_core::SupportedChainId;
+use cow_sdk_trading::{TradingSdkBuilder, TradingSdkOptions};
 
-let _sdk = TradingSdk::builder()
-    .with_chain_id(SupportedChainId::Sepolia)
-    .build_helper_only()
-    .unwrap();
+let _sdk = TradingSdkBuilder::helper_only(
+    SupportedChainId::Sepolia,
+    TradingSdkOptions::default(),
+)
+.expect("helper-only construction");
 ```
 
 Helper-only SDKs support allowance reads, approval submission, pre-sign
 transaction construction, and on-chain cancellation. Quote, post, order lookup,
 and off-chain cancellation methods are available only on `TradingSdk`.
+
+Owner attribution lives on the per-trade `TradeParameters` (or
+`LimitTradeParameters`); the SDK does not store a default owner. For
+signer-backed flows the signer's address fills the slot when
+`TradeParameters.owner` is `None`.
 
 ## Waiting for mined receipts
 

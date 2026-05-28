@@ -67,7 +67,6 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
     let sdk = TradingSdk::builder()
         .with_chain_id(chain_id)
         .with_app_code("cow-rs/wasm-console")
-        .with_owner(sample_owner())
         .with_env(env)
         .with_options(TradingSdkOptions::default().with_orderbook_client(Arc::new(
             orderbook_client,
@@ -348,7 +347,6 @@ pub async fn trading_quote_preview_json(
     let sdk = TradingSdk::builder()
         .with_chain_id(chain_id)
         .with_app_code(app_code.trim())
-        .with_owner(owner)
         .with_env(env)
         .with_options(TradingSdkOptions::default().with_orderbook_client(Arc::new(
             orderbook_client,

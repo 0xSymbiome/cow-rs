@@ -12,6 +12,23 @@ The first functional crate-family release begins at `0.1.0`.
 
 ## [Unreleased]
 
+### Removed
+
+- `cow_sdk_trading::TradingSdkBuilder::with_owner`,
+  `cow_sdk_trading::PartialTraderParameters::owner`, and
+  `cow_sdk_trading::PartialTraderParameters::with_owner` are removed.
+  The SDK no longer stores a default owner; per-call
+  `TradeParameters.owner` and `LimitTradeParameters.owner` (with the
+  signer's address as the implicit fallback for signer-backed flows,
+  or `TradeAdvancedSettings::quote_request.from` for quote-only
+  flows) are the sole owner source. ADR 0011 carries the new
+  Must-Remain-True bullet recording the per-trade owner placement,
+  with the
+  [Trading SDK Runtime Prerequisites Audit](docs/audit/trading-sdk-runtime-prerequisites-audit.md)
+  and the
+  [Trade-Parameter Lifecycle Audit](docs/audit/trade-parameter-lifecycle-audit.md)
+  as the standing current-state proofs.
+
 ### Changed
 
 - `cow_sdk_trading::LimitTradeParametersFromQuote` is a real newtype

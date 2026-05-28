@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use cow_sdk_core::{Address, CowEnv, SupportedChainId};
+use cow_sdk_core::{CowEnv, SupportedChainId};
 
 use super::{AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, HelperOnlySdk, TradingSdk};
 use crate::{
@@ -184,13 +184,6 @@ impl<C, A> TradingSdkBuilder<C, A> {
             app_code_error,
             _state: PhantomData,
         }
-    }
-
-    /// Returns a copy of this builder with a default owner.
-    #[must_use]
-    pub const fn with_owner(mut self, owner: Address) -> Self {
-        self.trader_defaults.owner = Some(owner);
-        self
     }
 
     /// Returns a copy of this builder with a default environment.

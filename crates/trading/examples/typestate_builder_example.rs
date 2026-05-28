@@ -21,21 +21,16 @@
 //! cargo run -p cow-sdk-trading --example typestate_builder_example
 //! ```
 
-use cow_sdk_core::{Address, SupportedChainId};
+use cow_sdk_core::SupportedChainId;
 use cow_sdk_trading::TradingSdkBuilder;
 
-const OWNER: &str = "0xc8c753ee51e8fc80e199ab297fb575634a1ac1d3";
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let owner = Address::new(OWNER)?;
-
     // Ready-state path: chain id and app code satisfy the compile-time
     // prerequisites for `build_ready`, which only runs the injected
     // orderbook-binding validator at runtime.
     let ready_sdk = TradingSdkBuilder::new()
         .with_chain_id(SupportedChainId::Mainnet)
         .with_app_code("cow-rs/typestate-example")
-        .with_owner(owner)
         .build_ready()?;
     println!(
         "ready sdk built through the typestate path for chain {:?}",
@@ -48,7 +43,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // post, order-lookup, or off-chain cancellation methods.
     let helper_sdk = TradingSdkBuilder::new()
         .with_chain_id(SupportedChainId::Mainnet)
-        .with_owner(owner)
         .build_helper_only()?;
     assert_eq!(
         helper_sdk.trader_defaults().chain_id,

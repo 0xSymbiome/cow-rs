@@ -68,6 +68,15 @@ impl TraderParameters {
 }
 
 /// Partial trader defaults stored on [`crate::TradingSdk`] and its builder.
+///
+/// Carries the protocol-resolution defaults a `TradingSdk` instance
+/// applies when call-level parameters omit them: chain id, app code,
+/// environment, settlement-contract overrides, and `EthFlow`-contract
+/// overrides. The SDK does not store a default owner; per-call
+/// [`crate::TradeParameters::owner`] (with the signer's address as the
+/// implicit fallback for signer-backed flows, or
+/// `advanced_settings.quote_request.from` for quote-only flows) is the
+/// sole owner source.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
@@ -78,9 +87,6 @@ pub struct PartialTraderParameters {
     /// Default app code written into generated app-data documents.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub app_code: Option<AppCode>,
-    /// Default owner for quote and post flows.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub owner: Option<Address>,
     /// Default environment for endpoint and contract resolution.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub env: Option<CowEnv>,
@@ -119,13 +125,6 @@ impl PartialTraderParameters {
     {
         self.app_code = Some(app_code.try_into().map_err(Into::into)?);
         Ok(self)
-    }
-
-    /// Returns a copy with an explicit default owner.
-    #[must_use]
-    pub const fn with_owner(mut self, owner: Address) -> Self {
-        self.owner = Some(owner);
-        self
     }
 
     /// Returns a copy with an explicit default environment.

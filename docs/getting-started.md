@@ -178,29 +178,31 @@ fn build_ready_sdk() -> Result<TradingSdk, Box<dyn std::error::Error>> {
 }
 ```
 
-Builder with a default owner:
+The owner field belongs on the per-trade `TradeParameters` or
+`LimitTradeParameters`, not on the SDK. The SDK does not store a default
+owner. For signer-backed flows (`post_swap_order`, `post_limit_order`,
+`get_quote_results`), the signer's address fills the slot when
+`TradeParameters.owner` is `None`. For quote-only flows
+(`get_quote_only`), the owner must come from `TradeParameters.owner` or
+from `TradeAdvancedSettings::quote_request.from`.
 
 ```rust
-use cow_sdk::{Address, SupportedChainId, TradingSdk};
+use cow_sdk::core::Amount;
+use cow_sdk::{Address, OrderKind, TradeParameters};
 
-fn build_ready_sdk_with_owner() -> Result<TradingSdk, Box<dyn std::error::Error>> {
-    let owner = Address::new("0x1111111111111111111111111111111111111111")?;
+fn quote_request(owner: Address) -> Result<TradeParameters, Box<dyn std::error::Error>> {
+    let params = TradeParameters::new(
+        OrderKind::Sell,
+        Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")?,
+        Address::new("0x6B175474E89094C44Da98b954EedeAC495271d0F")?,
+        Amount::new("100000000000000000")?,
+    )
+    .with_owner(owner)
+    .with_slippage_bps(50);
 
-    let sdk = TradingSdk::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("your-app-code")
-        .with_owner(owner)
-        .build_ready()?;
-
-    Ok(sdk)
+    Ok(params)
 }
 ```
-
-Use the owner-bearing variant when you want a stable default address across
-quote and post helpers.
-
-Use the minimal builder when you want to keep ownership outside SDK defaults
-and inject it explicitly at the call site.
 
 ### Browser Ready-State Wiring
 

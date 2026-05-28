@@ -151,7 +151,6 @@ async fn trading_sdk_builder_accepts_an_injected_quote_cache_instance() {
     let sdk = TradingSdkBuilder::new()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cache-injection")
-        .with_owner(address(common::OWNER))
         .with_quote_cache(cache.clone())
         .build_ready()
         .expect("builder configured with a quote cache must build successfully");

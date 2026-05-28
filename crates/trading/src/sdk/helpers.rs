@@ -19,7 +19,6 @@ pub(super) struct ResolvedOrderbookBinding {
 
 impl TradingSdk {
     pub(super) fn resolve_quote_owner(
-        &self,
         params: &TradeParameters,
         advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<Address, TradingError> {
@@ -27,7 +26,6 @@ impl TradingSdk {
             .and_then(|settings| settings.quote_request.as_ref())
             .and_then(|override_request| override_request.from)
             .or(params.owner)
-            .or(self.trader_defaults.owner)
             .ok_or(TradingError::MissingOwner)
     }
 
@@ -109,7 +107,6 @@ impl TradingSdk {
             PartialTraderParameters {
                 chain_id: Some(orderbook.chain_id),
                 app_code: self.trader_defaults.app_code.clone(),
-                owner: self.trader_defaults.owner,
                 env: Some(orderbook.env),
                 settlement_contract_override: self
                     .trader_defaults

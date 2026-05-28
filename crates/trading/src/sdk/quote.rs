@@ -9,7 +9,11 @@ use crate::{
 impl TradingSdk {
     /// Fetches quote-only results using SDK defaults plus optional advanced settings.
     ///
-    /// Owner precedence is: quote override `from`, call-level `owner`, SDK default `owner`.
+    /// Owner precedence: advanced-settings `quote_request.from`, then
+    /// call-level [`TradeParameters::owner`]. The SDK does not store a
+    /// default owner; missing owner surfaces as
+    /// [`TradingError::MissingOwner`].
+    ///
     /// Callers that need cooperative cancellation wrap this future through
     /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
     ///
@@ -30,11 +34,10 @@ impl TradingSdk {
     )]
     pub async fn get_quote_only(
         &self,
-        mut params: TradeParameters,
+        params: TradeParameters,
         advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<QuoteResults, TradingError> {
-        params.owner = params.owner.or(self.trader_defaults.owner);
-        let owner = self.resolve_quote_owner(&params, advanced_settings)?;
+        let owner = Self::resolve_quote_owner(&params, advanced_settings)?;
         let (quoter, orderbook) = self.resolve_quoter(owner, params.env)?;
 
         get_quote_only(
@@ -48,8 +51,12 @@ impl TradingSdk {
 
     /// Fetches quote results.
     ///
-    /// Owner precedence is: call-level `owner`, SDK default `owner`, signer
-    /// address. Callers that need cooperative cancellation wrap this future
+    /// Owner precedence: call-level [`TradeParameters::owner`], then the
+    /// signer address resolved through
+    /// [`cow_sdk_core::Signer::get_address`]. The SDK does not store a
+    /// default owner.
+    ///
+    /// Callers that need cooperative cancellation wrap this future
     /// through [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
     ///
     /// # Errors
@@ -69,7 +76,7 @@ impl TradingSdk {
     )]
     pub async fn get_quote_results<S>(
         &self,
-        mut params: TradeParameters,
+        params: TradeParameters,
         signer: &S,
         advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<QuoteResults, TradingError>
@@ -77,7 +84,6 @@ impl TradingSdk {
         S: Signer,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
-        params.owner = params.owner.or(self.trader_defaults.owner);
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
         get_quote_results(
