@@ -26,7 +26,7 @@ fragments, ADR replacement, or generic cleanup diaries.
 | Fix review | `<surface>-fix-review.md` | Focused public follow-up when previously reviewed findings are remediated |
 | Validation note | `<surface>-validation-note.md` | Narrow public confirmation record for an assurance point smaller than a full audit |
 
-The current public set is 54 standing audits and 1 validation note.
+The current public set is 55 standing audits and 1 validation note.
 
 ## Status Model
 
@@ -181,3 +181,4 @@ If the reviewed surface did not change, leave the audit alone.
 | [Shared Logic Reviewability Audit](shared-logic-reviewability-audit.md) | Standing audit | Orderbook, signing, and trading shared-logic reviewability boundary | Shared request execution, signing payload preparation, thin posting wrappers, and justified DTO separation | Current | 2026-05-26 |
 | [Cooperative Cancellation Contract Audit](cooperative-cancellation-contract-audit.md) | Standing audit | Cross-cutting cooperative cancellation across core, orderbook, subgraph, trading, native Alloy adapters, and wasm callback transport | Shared `CancellationToken` re-export, the `Cancellable` extension-trait combinator, typed `Cancelled` variants, biased-poll drop semantics, trading receipt-wait helpers, native Alloy adapter calls, and wasm callback timeout abort handling | Current | 2026-05-26 |
 | [Signer Error Classification Audit](signer-error-classification-audit.md) | Standing audit | Cross-crate `cow_sdk_core::SignerError` trait and the typed rejection routing in `cow-sdk-signing`, `cow-sdk-browser-wallet`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy` | Trait surface and per-variant implementations, the `signer_error` routing helper, the `SigningError::SignerRejection` variant, the `S::Error: fmt::Display + SignerError` bound on every public signing helper, and the workspace-level end-to-end propagation invariant | Current | 2026-05-19 |
+| [Subgraph Error Display Audit](subgraph-error-display-audit.md) | Standing audit | `cow-sdk-subgraph::SubgraphError` `Display` rendering surface | Per-variant pairing of the redacted route identity in `context.api` with at least one piece of plaintext structural diagnostic (chain id, error count, source location, HTTP status, transport class, or response-body byte count), the `first_graphql_location_suffix` helper, the non-tautology invariant proven by the contract sweep, and the `Redacted<T>` posture on free-form upstream content | Current | 2026-05-28 |

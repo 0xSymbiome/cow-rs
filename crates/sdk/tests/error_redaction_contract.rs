@@ -539,6 +539,77 @@ fn subgraph_errors_and_contexts_redact_serialized_request_payloads() {
     assert_all_serialize("SubgraphError", &errors);
 }
 
+/// Every diagnostic `SubgraphError` variant must carry at least one piece of
+/// plaintext structural diagnostic (chain id, error count, status code,
+/// transport class, or response-body byte count) in its `Display` rendering,
+/// so that the default `format!("{e}")` path remains actionable even when
+/// every `Redacted<T>` field collapses to the workspace placeholder.
+///
+/// The check is intentionally coarse: it asserts the rendered string contains
+/// at least one ASCII digit. Every accepted variant carries either a chain id,
+/// a status code, an error count, or a byte count, all of which render as
+/// integers; a regression that drops these into `Redacted<T>`-only territory
+/// collapses the rendered output to a tautological `for [redacted]` shape and
+/// fails the check.
+///
+/// `Cancelled` is excluded because the variant intentionally encodes no
+/// request context, and `NoTotalsFound` is excluded because the typed
+/// variant tag is the entire diagnostic. Both are exhaustively documented
+/// rather than left to inference.
+#[test]
+fn subgraph_display_carries_plaintext_structural_diagnostic() {
+    let graph_error: SubgraphGraphQlError = serde_json::from_value(json!({
+        "message": secret_payload(),
+        "locations": [{ "line": 4, "column": 7 }],
+    }))
+    .expect("GraphQL error fixture must deserialize through the public surface");
+
+    let diagnostic_variants = [
+        SubgraphError::UnsupportedNetwork {
+            chain_id: 11_155_111,
+        },
+        SubgraphError::Transport {
+            context: Box::new(subgraph_context()),
+            class: TransportErrorClass::Timeout,
+            details: secret_payload().into(),
+        },
+        SubgraphError::HttpStatus {
+            context: Box::new(subgraph_context()),
+            status: 503,
+            body: secret_payload().into(),
+        },
+        SubgraphError::Serialization {
+            context: Box::new(subgraph_context()),
+            body: secret_payload().into(),
+            details: secret_payload().into(),
+        },
+        SubgraphError::GraphQl {
+            context: Box::new(subgraph_context()),
+            errors: vec![graph_error],
+        },
+        SubgraphError::MissingData {
+            context: Box::new(subgraph_context()),
+        },
+    ];
+
+    for variant in &diagnostic_variants {
+        let display = variant.to_string();
+        assert!(
+            !display.trim().is_empty(),
+            "SubgraphError Display rendering must not be empty for {variant:?}",
+        );
+        assert!(
+            !display.contains('\n'),
+            "SubgraphError Display rendering must remain single-line for {variant:?}: {display}",
+        );
+        assert!(
+            display.bytes().any(|byte| byte.is_ascii_digit()),
+            "SubgraphError Display rendering was tautological (no plaintext digit) for {variant:?}: {display}",
+        );
+        assert_no_secret("SubgraphError", "Display non-tautology", &display);
+    }
+}
+
 #[test]
 fn sdk_error_facade_redacts_nested_public_errors() {
     let errors = [

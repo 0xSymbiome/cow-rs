@@ -91,6 +91,14 @@ impl SubgraphRequestErrorContext {
 }
 
 /// Typed failure boundary for subgraph helper and raw-query operations.
+///
+/// `Display` for every variant pairs the redacted route identity in
+/// `context.api` with at least one piece of plaintext structural diagnostic
+/// (chain id, error count, source location, HTTP status, transport class, or
+/// response-body byte count) so the default `format!("{e}")` path remains
+/// actionable without breaching the workspace redaction posture (ADR 0025).
+/// The exact format string is not a stability contract; consumers needing
+/// structured access pattern-match on the typed variant fields directly.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum SubgraphError {
@@ -104,7 +112,7 @@ pub enum SubgraphError {
     #[error("No totals found")]
     NoTotalsFound,
     /// Request execution failed before a complete HTTP response was received.
-    #[error("subgraph transport error ({class}) for {}: {details}", context.api)]
+    #[error("subgraph transport error ({class}) for {} (chain {}): {details}", context.api, context.chain_id)]
     Transport {
         /// Resolved request metadata captured at the failure boundary.
         context: Box<SubgraphRequestErrorContext>,
@@ -117,7 +125,7 @@ pub enum SubgraphError {
     #[error(transparent)]
     HostPolicy(#[from] HostPolicyError),
     /// The endpoint returned a non-success HTTP status code.
-    #[error("subgraph http status error for {}: {status}: {body}", context.api)]
+    #[error("subgraph http status error for {} (chain {}): {status}: {body}", context.api, context.chain_id)]
     HttpStatus {
         /// Resolved request metadata captured at the failure boundary.
         context: Box<SubgraphRequestErrorContext>,
@@ -127,7 +135,12 @@ pub enum SubgraphError {
         body: Redacted<String>,
     },
     /// The endpoint returned a success status with a body that could not be decoded.
-    #[error("subgraph serialization error for {}: {details}: {body}", context.api)]
+    #[error(
+        "subgraph serialization error for {} (chain {}, body {} bytes): {details}: {body}",
+        context.api,
+        context.chain_id,
+        body.as_inner().len(),
+    )]
     Serialization {
         /// Resolved request metadata captured at the failure boundary.
         context: Box<SubgraphRequestErrorContext>,
@@ -137,7 +150,20 @@ pub enum SubgraphError {
         details: Redacted<String>,
     },
     /// The GraphQL payload returned one or more typed GraphQL errors.
-    #[error("subgraph graphql error response for {}", context.api)]
+    ///
+    /// `Display` reports the redacted route identity, the chain id, the
+    /// error count, and, when available, the first error's source location
+    /// as `at line:column`. The free-form `errors[i].message` payload stays
+    /// behind `Redacted<String>` and is reached only through explicit typed
+    /// access on the carried `errors` vector.
+    #[error(
+        "subgraph graphql error response for {} (chain {}, {} error{}{})",
+        context.api,
+        context.chain_id,
+        errors.len(),
+        if errors.len() == 1 { "" } else { "s" },
+        first_graphql_location_suffix(errors),
+    )]
     GraphQl {
         /// Resolved request metadata captured at the failure boundary.
         context: Box<SubgraphRequestErrorContext>,
@@ -145,7 +171,7 @@ pub enum SubgraphError {
         errors: Vec<SubgraphGraphQlError>,
     },
     /// The response was otherwise successful but did not contain `data`.
-    #[error("subgraph response missing data for {}", context.api)]
+    #[error("subgraph response missing data for {} (chain {})", context.api, context.chain_id)]
     MissingData {
         /// Resolved request metadata captured at the failure boundary.
         context: Box<SubgraphRequestErrorContext>,
@@ -153,6 +179,21 @@ pub enum SubgraphError {
     /// A long-running subgraph operation was cancelled through a cooperative cancellation token.
     #[error("subgraph operation was cancelled")]
     Cancelled,
+}
+
+/// Renders the first GraphQL error's first source location as
+/// ` at line:column` when present, or the empty string otherwise.
+///
+/// The values rendered are typed `u32` line and column counters defined by
+/// the GraphQL specification as referencing positions within the
+/// SDK-submitted document, so they cannot carry credential-bearing content
+/// and are safe to interpolate into the public `Display` template.
+fn first_graphql_location_suffix(errors: &[SubgraphGraphQlError]) -> String {
+    errors
+        .first()
+        .and_then(|entry| entry.locations.first())
+        .map(|location| format!(" at {}:{}", location.line, location.column))
+        .unwrap_or_default()
 }
 
 impl From<Cancelled> for SubgraphError {
