@@ -38,7 +38,7 @@ impl AppCode {
     /// and contains no NUL or ASCII control characters.
     ///
     /// ```
-    /// use cow_sdk_trading::AppCode;
+    /// use cow_sdk_core::AppCode;
     ///
     /// assert!(AppCode::new("CoW Swap").is_ok());
     /// assert!(AppCode::new("cow-rs/wasm-console").is_ok());
@@ -46,7 +46,7 @@ impl AppCode {
     /// ```
     ///
     /// ```
-    /// use cow_sdk_trading::{AppCode, AppCodeError};
+    /// use cow_sdk_core::{AppCode, AppCodeError};
     ///
     /// assert!(matches!(AppCode::new(""), Err(AppCodeError::Empty)));
     /// assert!(matches!(

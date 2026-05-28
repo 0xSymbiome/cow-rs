@@ -1,6 +1,7 @@
 use serde_json::{Map, Value, json};
 
 use cow_sdk_app_data::{AppDataParams, PartnerFee, generate_app_data_doc, get_app_data_info};
+use cow_sdk_core::AppCode;
 
 use crate::{TradingAppDataInfo, TradingError};
 
@@ -53,7 +54,7 @@ fn default_utm() -> Value {
 /// Returns an error when the merged app-data document cannot be normalized into a valid app-data
 /// payload or hash.
 pub async fn build_app_data(
-    app_code: &str,
+    app_code: &AppCode,
     slippage_bps: u32,
     order_class: &str,
     partner_fee: Option<&PartnerFee>,
@@ -77,7 +78,7 @@ pub async fn build_app_data(
         metadata.insert("utm".to_owned(), default_utm());
     }
 
-    let mut params = AppDataParams::new(Some(app_code.to_owned()), None, None, None, metadata);
+    let mut params = AppDataParams::new(app_code.clone()).with_metadata(metadata);
     if let Some(advanced_params) = advanced_params {
         params = merge_app_data_params(&params, advanced_params);
     }
@@ -200,22 +201,20 @@ pub(crate) fn merge_app_data_params(
         _ => Map::new(),
     };
 
-    let mut params = AppDataParams::new(
-        override_params
-            .app_code
-            .clone()
-            .or_else(|| base.app_code.clone()),
-        override_params
-            .environment
-            .clone()
-            .or_else(|| base.environment.clone()),
-        override_params.signer.or(base.signer),
-        override_params
-            .flashloan
-            .clone()
-            .or_else(|| base.flashloan.clone()),
-        metadata,
-    );
+    let mut params = AppDataParams::default().with_metadata(metadata);
+    params.app_code = override_params
+        .app_code
+        .clone()
+        .or_else(|| base.app_code.clone());
+    params.environment = override_params
+        .environment
+        .clone()
+        .or_else(|| base.environment.clone());
+    params.signer = override_params.signer.or(base.signer);
+    params.flashloan = override_params
+        .flashloan
+        .clone()
+        .or_else(|| base.flashloan.clone());
     params.hooks = if override_params.hooks.is_some() {
         override_params.hooks.clone()
     } else if override_has_metadata_hooks {

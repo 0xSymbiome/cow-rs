@@ -2,8 +2,8 @@
 
 pub use self::overrides::QuoteRequestOverride;
 pub use self::{
-    advanced::*, allowance::*, app_code::*, eip1271::*, options::*, result::*, seams::*,
-    slippage::*, trade::*, trader::*,
+    advanced::*, allowance::*, eip1271::*, options::*, result::*, seams::*, slippage::*, trade::*,
+    trader::*,
 };
 
 /// Compatibility alias for the transaction type returned by trading helpers.
@@ -17,7 +17,6 @@ pub(crate) use self::overrides::{
 
 mod advanced;
 mod allowance;
-mod app_code;
 mod context;
 mod eip1271;
 mod options;

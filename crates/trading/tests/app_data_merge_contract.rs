@@ -27,7 +27,7 @@ use cow_sdk_app_data::{
     AppDataParams, FlashloanHints, Hook, HookList, MetadataMap, PartnerFee, PartnerFeePolicy,
     generate_app_data_doc, get_app_data_info,
 };
-use cow_sdk_core::{Amount, HexData, OrderKind};
+use cow_sdk_core::{Amount, AppCode, HexData, OrderKind};
 use cow_sdk_trading::{
     ClientRejection, TradeAdvancedSettings, TradingError, get_quote_results,
     merge_and_seal_app_data, params_from_doc, post_swap_order_from_quote,
@@ -66,13 +66,9 @@ fn base_params_with_quote_metadata() -> AppDataParams {
         "orderClass": { "orderClass": "market" }
     }))
     .expect("base metadata fixture must build");
-    AppDataParams::new(
-        Some("CoW Swap".to_owned()),
-        Some("production".to_owned()),
-        None,
-        None,
-        metadata,
-    )
+    AppDataParams::new(AppCode::new("CoW Swap").expect("fixture appCode must validate"))
+        .with_environment("production")
+        .with_metadata(metadata)
 }
 
 fn hooks_pre_value() -> Value {
@@ -586,13 +582,12 @@ fn round_trip_idempotency() {
         "utm".to_owned(),
         json!({ "utmSource": "cow-rs", "utmMedium": "test" }),
     );
-    let original = AppDataParams::new(
-        Some("CoW Swap".to_owned()),
-        Some("production".to_owned()),
-        Some(signer),
-        Some(hints),
-        metadata,
-    );
+    let original =
+        AppDataParams::new(AppCode::new("CoW Swap").expect("fixture appCode must validate"))
+            .with_environment("production")
+            .with_signer(signer)
+            .with_flashloan(hints)
+            .with_metadata(metadata);
 
     let doc = generate_app_data_doc(original.clone());
     let recovered = params_from_doc(&doc).expect("round-trip through params_from_doc must succeed");

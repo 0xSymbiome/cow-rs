@@ -1,12 +1,12 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use cow_sdk_core::{CowEnv, SupportedChainId};
+use cow_sdk_core::{AppCode, AppCodeError, CowEnv, SupportedChainId};
 
 use super::{AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, HelperOnlySdk, TradingSdk};
 use crate::{
-    AppCode, AppCodeError, OrderbookClient, PartialTraderParameters, TraderParameters,
-    TradingError, TradingSdkOptions, types::validate_orderbook_context,
+    OrderbookClient, PartialTraderParameters, TraderParameters, TradingError, TradingSdkOptions,
+    types::validate_orderbook_context,
 };
 
 /// Builder for [`TradingSdk`].

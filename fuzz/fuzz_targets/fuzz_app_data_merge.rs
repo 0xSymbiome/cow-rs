@@ -18,7 +18,7 @@
 use cow_sdk_app_data::{
     AppDataParams, FlashloanHints, Hook, HookList, MetadataMap, PartnerFee, PartnerFeePolicy,
 };
-use cow_sdk_core::{Address, Amount, HexData};
+use cow_sdk_core::{Address, Amount, AppCode, HexData};
 use cow_sdk_trading::merge_and_seal_app_data;
 use libfuzzer_sys::{
     arbitrary::{Arbitrary, Unstructured},
@@ -120,13 +120,16 @@ fn override_for_seed(seed_class: u8, bytes: &mut Unstructured<'_>) -> AppDataPar
         8 => AppDataParams::default().with_metadata(metadata_from_value(json!({
             "shared": { "override": true, "value": "override" }
         }))),
-        _ => AppDataParams::new(
-            maybe_string(bytes, "CoW Swap"),
-            maybe_string(bytes, "production"),
-            read_bool(bytes, false).then(|| address_from_bytes(read_address(bytes, 0x77))),
-            read_bool(bytes, false).then(|| flashloan(read_u8(bytes, 0x88))),
-            metadata_from_value(bounded_json(bytes, 0)),
-        ),
+        _ => {
+            let mut params = AppDataParams::default()
+                .with_metadata(metadata_from_value(bounded_json(bytes, 0)));
+            params.app_code = maybe_string(bytes, "CoW Swap").and_then(|s| AppCode::new(s).ok());
+            params.environment = maybe_string(bytes, "production");
+            params.signer =
+                read_bool(bytes, false).then(|| address_from_bytes(read_address(bytes, 0x77)));
+            params.flashloan = read_bool(bytes, false).then(|| flashloan(read_u8(bytes, 0x88)));
+            params
+        }
     }
 }
 

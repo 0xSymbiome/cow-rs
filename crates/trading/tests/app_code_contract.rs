@@ -1,5 +1,5 @@
-use cow_sdk_core::SupportedChainId;
-use cow_sdk_trading::{AppCode, AppCodeError, TradingError, TradingSdkBuilder};
+use cow_sdk_core::{AppCode, AppCodeError, SupportedChainId};
+use cow_sdk_trading::{TradingError, TradingSdkBuilder};
 
 #[test]
 fn app_code_accepts_source_backed_examples_without_extra_shape_rules() {

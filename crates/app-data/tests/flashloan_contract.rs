@@ -15,7 +15,11 @@
 use cow_sdk_app_data::{
     AppDataError, AppDataParams, FlashloanHints, generate_app_data_doc, validate_app_data_doc,
 };
-use cow_sdk_core::{Address, Amount, ValidationReason};
+use cow_sdk_core::{Address, Amount, AppCode, ValidationReason};
+
+fn test_app_code() -> AppCode {
+    AppCode::new("aave-v3-flashloan").expect("fixture appCode must validate")
+}
 use serde_json::{Value, json};
 
 const FIXTURE_PATH: &str = "../../parity/fixtures/app_data/flashloan_v1.7.0.json";
@@ -180,9 +184,7 @@ fn zero_token_is_rejected_as_bad_shape() {
 
 #[test]
 fn flashloan_hint_appears_inside_metadata_of_generated_document() {
-    let params = AppDataParams::default()
-        .with_app_code("aave-v3-flashloan")
-        .with_flashloan(sample_hints());
+    let params = AppDataParams::new(test_app_code()).with_flashloan(sample_hints());
 
     let doc = generate_app_data_doc(params);
     let flashloan = doc
@@ -200,9 +202,7 @@ fn flashloan_hint_appears_inside_metadata_of_generated_document() {
 
 #[test]
 fn bundled_schema_accepts_documents_carrying_the_typed_flashloan_hint() {
-    let params = AppDataParams::default()
-        .with_app_code("aave-v3-flashloan")
-        .with_flashloan(sample_hints());
+    let params = AppDataParams::new(test_app_code()).with_flashloan(sample_hints());
 
     let mut doc = generate_app_data_doc(params);
     if let Value::Object(map) = &mut doc {

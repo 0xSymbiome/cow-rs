@@ -118,13 +118,11 @@ fn assert_custom_doc_generation(id: &str, case: &Value, expected: &Value) {
         .unwrap_or_else(|| panic!("case {id}: input.metadata must be an object"))
         .clone();
 
-    let doc = generate_app_data_doc(AppDataParams::new(
-        None,
-        Some(environment),
-        None,
-        None,
-        metadata,
-    ));
+    let doc = generate_app_data_doc(
+        AppDataParams::default()
+            .with_environment(environment)
+            .with_metadata(metadata),
+    );
 
     assert_eq!(
         doc["version"].as_str(),

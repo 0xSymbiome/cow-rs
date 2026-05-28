@@ -4,9 +4,11 @@ use include_dir::{Dir, DirEntry, File, include_dir};
 use jsonschema::{Draft, Resource};
 use serde_json::Value;
 
+use cow_sdk_core::AppCode;
+
 use crate::{
-    AppDataDoc, AppDataError, AppDataParams, LATEST_APP_DATA_VERSION, SchemaVersion,
-    ValidationResult,
+    AppDataDoc, AppDataError, AppDataParams, DEFAULT_APP_CODE, LATEST_APP_DATA_VERSION,
+    SchemaVersion, ValidationResult,
 };
 
 static SCHEMAS_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/schemas");
@@ -16,6 +18,27 @@ static ROOT_SCHEMAS: OnceLock<BTreeMap<String, Value>> = OnceLock::new();
 const SCHEMA_BASE_URI: &str = "https://cowswap.exchange/schemas/app-data/";
 
 /// Builds a canonical app-data document from typed parameters.
+///
+/// Most callers should prefer the fluent terminal
+/// [`AppDataParams::into_doc`] which chains naturally with the `.with_*`
+/// setters:
+///
+/// ```
+/// use cow_sdk_core::AppCode;
+/// use cow_sdk_app_data::AppDataParams;
+///
+/// # fn main() -> Result<(), cow_sdk_core::AppCodeError> {
+/// let code = AppCode::new("my-app")?;
+/// let doc = AppDataParams::new(code)
+///     .with_environment("production")
+///     .into_doc();
+/// # Ok(())
+/// # }
+/// ```
+///
+/// This free-function form is retained for composed flows such as the
+/// typed merge pipeline and for callers building params through
+/// [`AppDataParams::default`] + reflective mutation.
 ///
 /// The typed `signer` and `flashloan` sub-fields on [`AppDataParams`] are
 /// merged into the nested `metadata` object in their reviewed camelCase
@@ -38,7 +61,11 @@ pub fn generate_app_data_doc(params: AppDataParams) -> AppDataDoc {
     let mut doc = serde_json::Map::new();
     doc.insert(
         "appCode".to_string(),
-        Value::String(params.app_code.unwrap_or_else(|| "CoW Swap".to_string())),
+        Value::String(
+            params
+                .app_code
+                .map_or_else(|| DEFAULT_APP_CODE.to_string(), AppCode::into_inner),
+        ),
     );
     if let Some(environment) = params.environment {
         doc.insert("environment".to_string(), Value::String(environment));

@@ -5,14 +5,14 @@ use cow_sdk::{
     app_data::{AppDataError, SchemaVersion, ValidationResult},
     contracts::ContractsError,
     core::{
-        Address, Amount, CoreError, CowEnv, HostPolicyError, TransportError, TransportErrorClass,
-        UrlParseFailureClass, ValidationError, ValidationReason,
+        Address, Amount, AppCodeError, CoreError, CowEnv, HostPolicyError, TransportError,
+        TransportErrorClass, UrlParseFailureClass, ValidationError, ValidationReason,
     },
     orderbook::{
         OrderBookApiError, OrderbookError, OrderbookRejection, ResponseBody, SigningScheme,
     },
     signing::SigningError,
-    trading::{AppCodeError, ClientRejection, OrderbookContextValue, TradingError},
+    trading::{ClientRejection, OrderbookContextValue, TradingError},
 };
 use cow_sdk_subgraph::{SubgraphError, SubgraphGraphQlError, SubgraphRequestErrorContext};
 use serde::Serialize;

@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use cow_sdk_core::{Address, AddressPerChain, CowEnv, OrderUid, SupportedChainId};
-
-use super::app_code::{AppCode, AppCodeError};
+use cow_sdk_core::{
+    Address, AddressPerChain, AppCode, AppCodeError, CowEnv, OrderUid, SupportedChainId,
+};
 
 /// Fully resolved trader configuration used by order-posting and on-chain flows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

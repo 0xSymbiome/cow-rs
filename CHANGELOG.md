@@ -12,7 +12,74 @@ The first functional crate-family release begins at `0.1.0`.
 
 ## [Unreleased]
 
+### Added
+
+- `cow_sdk_app_data::AppDataParams` gains two fluent terminal methods:
+  `into_doc(self) -> AppDataDoc` produces the canonical JSON
+  document without running the embedded schema validator, and
+  `into_validated(self) -> Result<AppDataValidated, AppDataError>`
+  additionally runs the embedded JSON schema validation and
+  computes the CID, canonical JSON content, and keccak256 hex
+  digest in a single call. The canonical SDK-attribution chain
+  reads `AppDataParams::new(code).with_*(...).into_validated()?`
+  end to end, mirroring the workspace `into_X` consumption
+  convention precedented by
+  `cow_sdk_pure_helpers::AppDataDocInput::into_document`. The free
+  functions `cow_sdk_app_data::generate_app_data_doc` and
+  `cow_sdk_app_data::get_app_data_info` remain available for
+  composed flows such as the typed merge pipeline.
+
+- `cow_sdk_core::AppCode` and `cow_sdk_core::AppCodeError` are the
+  canonical home for the validated application-identifier newtype.
+  `AppCode` joins `cow_sdk_core::Address`, `cow_sdk_core::AppDataHash`,
+  `cow_sdk_core::HexData`, and `cow_sdk_core::OrderUid` as cow-owned
+  identity primitives in `cow-sdk-core`. The `cow_sdk` root facade
+  prelude exposes both types so the canonical user-facing import is
+  `use cow_sdk::AppCode;`. The workspace enum-policy manifest
+  records the source-of-truth file in `cow-sdk-core`.
+
+### Changed
+
+- `cow_sdk_app_data::AppDataParams` exposes a single typed
+  construction surface. `AppDataParams::new(app_code: AppCode)`
+  replaces the prior five-argument constructor and matches the
+  `new()`-as-primary-constructor convention shared by every
+  identity newtype in `cow-sdk-core`. The `app_code` field
+  itself is now typed as `Option<AppCode>` so the struct
+  cannot hold an unvalidated value, the loose
+  `with_app_code(impl Into<String>)` setter is removed, and the
+  remaining `with_environment` / `with_signer` / `with_flashloan` /
+  `with_hooks` / `with_metadata` chain stays unchanged. The trading
+  crate's `build_app_data` helper accepts `&AppCode` so validation
+  propagates with the typed value rather than relying on
+  `Deref<Target = str>` coercion at the boundary. The typed merge
+  pipeline (`merge_and_seal_app_data`, `params_from_doc`,
+  `merge_app_data_params`) continues to produce and consume
+  `AppDataParams` over the same wire shape; only the
+  application-identifier slot tightens from `Option<String>` to
+  `Option<AppCode>`. The wire form of `appCode` is unchanged
+  because `AppCode` serializes as its inner string.
+
+- `cow_sdk_app_data::generate_app_data_doc` interpolates the
+  `cow_sdk_app_data::DEFAULT_APP_CODE` constant in place of the
+  duplicated `"CoW Swap"` literal at the fallback site so a future
+  change to the documented default flows through a single
+  authoritative declaration. The fallback value is unchanged.
+
 ### Removed
+
+- `cow_sdk_trading::AppCode`, `cow_sdk_trading::AppCodeError`, and
+  the trading-crate `crates/trading/src/types/app_code.rs` module
+  are removed. The canonical types live in `cow_sdk_core` and the
+  `cow_sdk` facade re-exports them at the root. Imports update to
+  `use cow_sdk::{AppCode, AppCodeError};` or
+  `use cow_sdk_core::{AppCode, AppCodeError};`.
+
+- `cow_sdk_app_data::AppDataParams::with_app_code` is removed.
+  Construct application-tagged parameters through
+  `AppDataParams::new(AppCode::new(value)?)` so the validation seam
+  rejects malformed identifiers at the boundary rather than
+  silently accepting an unchecked string.
 
 - `cow_sdk_contracts::normalized_ecdsa_signature` is removed.
   Recoverable ECDSA signatures are constructed exclusively through
@@ -37,6 +104,30 @@ The first functional crate-family release begins at `0.1.0`.
   as the standing current-state proofs.
 
 ### Changed
+
+- `cow_sdk_subgraph::SubgraphError`'s `Display` rendering carries
+  plaintext structural diagnostic on every variant. The
+  `GraphQl` variant additionally surfaces `errors.len()` and, when
+  present, the first GraphQL error's first source location formatted
+  as `at line:column` through a new private
+  `first_graphql_location_suffix` helper. The `Transport`,
+  `HttpStatus`, `MissingData`, and `Serialization` variants gain
+  `chain {chain_id}` in their templates; `Serialization` additionally
+  surfaces the redacted response body's byte count derived from
+  `body.as_inner().len()`. The free-form `errors[].message`,
+  `context.api`, `body`, and `details` payloads remain behind the
+  workspace `Redacted<T>` wrapper and continue to render as the
+  workspace redaction placeholder. The exact format string is not a
+  stability contract; consumers needing structured access pattern-match
+  on the typed variant fields. The pairing rule and the non-tautology
+  invariant are pinned by
+  [`crates/subgraph/tests/error_contract.rs`](crates/subgraph/tests/error_contract.rs)
+  (eleven Display-contract cases) and by
+  `crates/sdk/tests/error_redaction_contract.rs::subgraph_display_carries_plaintext_structural_diagnostic`,
+  governed by
+  [ADR 0025](docs/adr/0025-workspace-url-redaction-convention.md), with the
+  [Subgraph Error Display Audit](docs/audit/subgraph-error-display-audit.md)
+  as the standing current-state proof.
 
 - `cow_sdk_orderbook::OrderBookApi::upload_app_data` verifies the
   content-addressed-write invariant at both boundaries. The

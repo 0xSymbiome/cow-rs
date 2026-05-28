@@ -15,7 +15,7 @@
 use cow_sdk_app_data::{
     AppDataParams, Hook, HookList, generate_app_data_doc, validate_app_data_doc,
 };
-use cow_sdk_core::{Address, HexData};
+use cow_sdk_core::{Address, AppCode, HexData};
 use serde_json::{Value, json};
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/app_data/hooks_v1.14.0.json");
@@ -123,8 +123,7 @@ fn app_data_params_lifts_hooks_and_preserves_open_ended_access() {
 #[test]
 fn generated_document_with_typed_hooks_validates_against_bundled_schema() {
     let doc = generate_app_data_doc(
-        AppDataParams::default()
-            .with_app_code("hooks-contract")
+        AppDataParams::new(AppCode::new("hooks-contract").expect("fixture appCode must validate"))
             .with_hooks(sample_hooks()),
     );
     let validation = validate_app_data_doc(&doc);

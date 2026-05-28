@@ -2,6 +2,7 @@ use std::error::Error;
 
 use serde_json::json;
 
+use cow_sdk::AppCode;
 use cow_sdk::app_data::{
     AppDataParams, generate_app_data_doc, get_app_data_info, validate_app_data_doc,
 };
@@ -15,15 +16,14 @@ use cow_sdk_examples_native::support::{sample_owner, sample_unsigned_order};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
+    let app_code = AppCode::new("cow-rs/native-capability-report")?;
     let sdk = TradingSdkBuilder::ready(
-        TraderParameters::new(chain_id, "cow-rs/native-capability-report")
+        TraderParameters::new(chain_id, app_code.clone())
             .expect("app code should validate"),
         TradingSdkOptions::default(),
     )?;
     let app_data_doc = generate_app_data_doc(
-        AppDataParams::default()
-            .with_app_code("cow-rs/native-capability-report")
-            .with_environment("review"),
+        AppDataParams::new(app_code).with_environment("review"),
     );
     let app_data_validation = validate_app_data_doc(&app_data_doc);
     let app_data_info = get_app_data_info(&app_data_doc)?;

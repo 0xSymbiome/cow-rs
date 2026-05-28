@@ -93,8 +93,8 @@ pub use slippage::{
     suggest_slippage_from_fee, suggest_slippage_from_volume,
 };
 pub use types::{
-    AllowanceParameters, AppCode, AppCodeError, ApprovalParameters, EthFlowOrderExistsChecker,
-    LimitTradeParameters, LimitTradeParametersFromQuote, OrderPostingResult, OrderTraderParameters,
+    AllowanceParameters, ApprovalParameters, EthFlowOrderExistsChecker, LimitTradeParameters,
+    LimitTradeParametersFromQuote, OrderPostingResult, OrderTraderParameters,
     PartialTraderParameters, PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults,
     QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
     SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,

@@ -41,9 +41,13 @@ use std::sync::Arc;
 
 use cow_sdk_app_data::PartnerFee;
 use cow_sdk_core::{
-    AddressPerChain, Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId,
-    wrapped_native_token,
+    AddressPerChain, Amount, AppCode, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind,
+    SupportedChainId, wrapped_native_token,
 };
+
+fn test_app_code() -> AppCode {
+    AppCode::new("0x007").expect("fixture appCode must validate")
+}
 use cow_sdk_orderbook::{PriceQuality, SigningScheme};
 use cow_sdk_trading::{
     GAS_LIMIT_DEFAULT, LimitTradeParametersFromQuote, MAX_SLIPPAGE_BPS, OrderToSignParams,
@@ -725,7 +729,7 @@ async fn assert_partner_fee_in_app_data(case_id: &str, input: &Value, expected: 
         PartnerFeePolicy::volume(volume_bps, address(ALT_RECEIVER))
             .expect("fixture volume policy must validate"),
     );
-    let info = build_app_data("0x007", 50, "market", Some(&partner_fee), None)
+    let info = build_app_data(&test_app_code(), 50, "market", Some(&partner_fee), None)
         .await
         .unwrap_or_else(|error| {
             panic!("case {case_id}: build_app_data must succeed, got {error:?}")
@@ -1249,7 +1253,7 @@ async fn assert_native_sell_post_flow(case_id: &str, expected: &Value) {
     params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
     params.quote_id = Some(3);
 
-    let info = build_app_data("0x007", 50, "market", None, None)
+    let info = build_app_data(&test_app_code(), 50, "market", None, None)
         .await
         .unwrap_or_else(|error| {
             panic!("case {case_id}: build_app_data must succeed, got {error:?}")

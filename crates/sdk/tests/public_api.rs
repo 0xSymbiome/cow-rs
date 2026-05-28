@@ -88,9 +88,9 @@ fn cancelled_errors_project_to_the_facade_cancelled_class() {
 
 #[test]
 fn module_reexports_cover_expected_leaf_crates() {
-    let doc = cow_sdk::app_data::generate_app_data_doc(
-        cow_sdk::app_data::AppDataParams::default().with_app_code("cow-rs"),
-    );
+    let doc = cow_sdk::app_data::generate_app_data_doc(cow_sdk::app_data::AppDataParams::new(
+        cow_sdk::AppCode::new("cow-rs").expect("fixture appCode must validate"),
+    ));
     let validation = cow_sdk::app_data::validate_app_data_doc(&doc);
     let schema =
         cow_sdk::app_data::get_app_data_schema(cow_sdk::app_data::SchemaVersion::latest().as_str())

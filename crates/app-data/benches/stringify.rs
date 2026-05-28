@@ -3,6 +3,7 @@ use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use cow_sdk_app_data::{
     AppDataParams, MetadataMap, generate_app_data_doc, stringify_deterministic,
 };
+use cow_sdk_core::AppCode;
 
 fn sample_app_data() -> cow_sdk_app_data::AppDataDoc {
     let mut metadata = MetadataMap::new();
@@ -15,13 +16,11 @@ fn sample_app_data() -> cow_sdk_app_data::AppDataDoc {
         serde_json::json!({ "slippageBips": 50 }),
     );
 
-    generate_app_data_doc(AppDataParams::new(
-        Some("cow-sdk-bench".to_owned()),
-        Some("production".to_owned()),
-        None,
-        None,
-        metadata,
-    ))
+    generate_app_data_doc(
+        AppDataParams::new(AppCode::new("cow-sdk-bench").expect("bench appCode must validate"))
+            .with_environment("production")
+            .with_metadata(metadata),
+    )
 }
 
 fn bench_stringify_deterministic(c: &mut Criterion) {

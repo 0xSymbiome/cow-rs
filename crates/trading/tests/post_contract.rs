@@ -17,9 +17,13 @@ use std::sync::{Arc, Mutex};
 use serde_json::json;
 
 use cow_sdk_core::{
-    Amount, BuyTokenDestination, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderKind, ProtocolOptions,
-    SellTokenSource,
+    Amount, AppCode, BuyTokenDestination, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderKind,
+    ProtocolOptions, SellTokenSource,
 };
+
+fn test_app_code() -> AppCode {
+    AppCode::new("0x007").expect("fixture appCode must validate")
+}
 
 fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParameters) -> ProtocolOptions {
     let mut options = ProtocolOptions::new();
@@ -259,7 +263,7 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = MockSigner::default();
-    let app_data = build_app_data("0x007", 50, "market", None, None)
+    let app_data = build_app_data(&test_app_code(), 50, "market", None, None)
         .await
         .expect("app data should build");
     let mut params: LimitTradeParameters = sample_limit_parameters(OrderKind::Sell);
@@ -549,7 +553,7 @@ async fn post_from_quote_rejects_orderbook_binding_mismatch_before_signing_or_su
 async fn async_order_level_eip1271_verification_is_explicit_and_reuses_contract_helpers() {
     let trader = sample_trader_parameters();
     let params = sample_limit_parameters(OrderKind::Sell);
-    let app_data = build_app_data("0x007", 50, "limit", None, None)
+    let app_data = build_app_data(&test_app_code(), 50, "limit", None, None)
         .await
         .expect("app data should build");
     let order_to_sign = cow_sdk_trading::get_order_to_sign(
@@ -589,7 +593,7 @@ async fn async_order_level_eip1271_verification_is_explicit_and_reuses_contract_
 async fn order_level_eip1271_verification_surfaces_contract_failures_explicitly() {
     let trader = sample_trader_parameters();
     let params = sample_limit_parameters(OrderKind::Sell);
-    let app_data = build_app_data("0x007", 50, "limit", None, None)
+    let app_data = build_app_data(&test_app_code(), 50, "limit", None, None)
         .await
         .expect("app data should build");
     let order_to_sign = cow_sdk_trading::get_order_to_sign(
@@ -661,7 +665,7 @@ async fn ethflow_validation_uses_signer_owner_not_receiver() {
     // which differs from the owner. The typed app-data signer matches the
     // owner, so validation must accept this legitimate receiver override.
     let signer = MockSigner::default();
-    let app_data = build_app_data("0x007", 50, "market", None, None)
+    let app_data = build_app_data(&test_app_code(), 50, "market", None, None)
         .await
         .expect("app data should build");
     let params = ethflow_params_with_receiver(Some(address(ALT_RECEIVER)));
@@ -698,7 +702,7 @@ async fn ethflow_validation_rejects_mismatched_signer() {
     let mismatched_signer =
         cow_sdk_core::Address::new("0xcccccccccccccccccccccccccccccccccccccccc")
             .expect("mismatched signer literal must be valid");
-    let app_data = build_app_data("0x007", 50, "market", None, None)
+    let app_data = build_app_data(&test_app_code(), 50, "market", None, None)
         .await
         .expect("app data should build");
     let params = ethflow_params_with_receiver(Some(address(ALT_RECEIVER)));
@@ -748,7 +752,7 @@ async fn ethflow_validation_accepts_matched_signer_with_default_receiver() {
     // pass validation through the same code path the custom-receiver test
     // exercises.
     let signer = MockSigner::default();
-    let app_data = build_app_data("0x007", 50, "market", None, None)
+    let app_data = build_app_data(&test_app_code(), 50, "market", None, None)
         .await
         .expect("app data should build");
     let params = ethflow_params_with_receiver(None);

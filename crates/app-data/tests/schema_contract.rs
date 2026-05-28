@@ -4,7 +4,7 @@ use cow_sdk_app_data::{
     AppDataParams, FlashloanHints, LATEST_APP_DATA_VERSION, generate_app_data_doc,
     get_app_data_schema, validate_app_data_doc,
 };
-use cow_sdk_core::{Address, Amount};
+use cow_sdk_core::{Address, Amount, AppCode};
 use serde_json::{Value, json};
 
 use crate::common::{app_data_doc_custom, invalid_referrer_doc, parity_fixture};
@@ -38,11 +38,15 @@ fn generation_and_schema_lookup_follow_pinned_contract() {
 
 #[test]
 fn app_data_params_builders_preserve_top_level_wire_fields() {
-    let params = AppDataParams::default()
-        .with_app_code("solver-integration")
-        .with_environment("staging-canary");
+    let params = AppDataParams::new(
+        AppCode::new("solver-integration").expect("fixture appCode must validate"),
+    )
+    .with_environment("staging-canary");
 
-    assert_eq!(params.app_code.as_deref(), Some("solver-integration"));
+    assert_eq!(
+        params.app_code.as_ref().map(AppCode::as_str),
+        Some("solver-integration")
+    );
     assert_eq!(params.environment.as_deref(), Some("staging-canary"));
 
     let generated = generate_app_data_doc(params);
@@ -115,9 +119,10 @@ fn schema_regression_families_are_supported() {
         Amount::new("2000000000000000000").unwrap(),
     )
     .expect("typed flashloan hints must validate");
-    let params = AppDataParams::default()
-        .with_app_code("aave-v3-flashloan")
-        .with_flashloan(hints);
+    let params = AppDataParams::new(
+        AppCode::new("aave-v3-flashloan").expect("fixture appCode must validate"),
+    )
+    .with_flashloan(hints);
     let mut generated = generate_app_data_doc(params);
     if let Value::Object(map) = &mut generated {
         map.insert("version".to_owned(), Value::String("1.7.0".to_owned()));

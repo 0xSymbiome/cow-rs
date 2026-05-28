@@ -2,12 +2,13 @@ use cow_sdk_app_data::AppDataError;
 use cow_sdk_contracts::{ContractsError, SigningScheme};
 use std::fmt;
 
-use cow_sdk_core::{Cancelled, ChainId, CoreError, CowEnv, Redacted, ValidationReason};
+use cow_sdk_core::{
+    AppCodeError, Cancelled, ChainId, CoreError, CowEnv, Redacted, ValidationReason,
+};
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_signing::SigningError;
 use thiserror::Error;
 
-use crate::types::AppCodeError;
 use crate::validation::ClientRejection;
 
 /// Value captured in an orderbook runtime-context conflict.

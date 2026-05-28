@@ -3,9 +3,13 @@ mod common;
 use std::sync::{Arc, Mutex};
 
 use cow_sdk_core::{
-    Amount, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, ProtocolOptions, SellTokenSource,
-    SupportedChainId, UnsignedOrder, ValidationReason, wrapped_native_token,
+    Amount, AppCode, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, ProtocolOptions,
+    SellTokenSource, SupportedChainId, UnsignedOrder, ValidationReason, wrapped_native_token,
 };
+
+fn test_app_code() -> AppCode {
+    AppCode::new("0x007").expect("fixture appCode must validate")
+}
 use cow_sdk_orderbook::{OrderKind, SigningScheme};
 use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{
@@ -648,7 +652,7 @@ async fn build_app_data_injects_default_utm_when_override_absent() {
     const EXPECTED_UTM_TERM: &str = "rs";
     const EXPECTED_UTM_MEDIUM_PREFIX: &str = "cow-rs@";
 
-    let info = build_app_data("0x007", 50, "market", None, None)
+    let info = build_app_data(&test_app_code(), 50, "market", None, None)
         .await
         .expect("default-utm build_app_data must succeed");
     let doc: serde_json::Value = serde_json::from_str(&info.full_app_data)
@@ -693,7 +697,7 @@ async fn build_app_data_injects_default_utm_when_override_absent() {
 
 #[tokio::test]
 async fn default_utm_block_uses_env_cargo_pkg_version() {
-    let info = build_app_data("0x007", 50, "market", None, None)
+    let info = build_app_data(&test_app_code(), 50, "market", None, None)
         .await
         .expect("default app-data construction must succeed");
     let doc: serde_json::Value =
@@ -724,7 +728,7 @@ async fn build_app_data_respects_full_utm_override() {
         .expect("full-utm override metadata must deserialize"),
     );
 
-    let info = build_app_data("0x007", 50, "market", None, Some(&override_params))
+    let info = build_app_data(&test_app_code(), 50, "market", None, Some(&override_params))
         .await
         .expect("full-utm-override build_app_data must succeed");
     let doc: serde_json::Value = serde_json::from_str(&info.full_app_data)
@@ -759,7 +763,7 @@ async fn build_app_data_respects_partial_utm_override() {
         .expect("partial-utm override metadata must deserialize"),
     );
 
-    let info = build_app_data("0x007", 50, "market", None, Some(&override_params))
+    let info = build_app_data(&test_app_code(), 50, "market", None, Some(&override_params))
         .await
         .expect("partial-utm-override build_app_data must succeed");
     let doc: serde_json::Value = serde_json::from_str(&info.full_app_data)

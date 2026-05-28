@@ -163,7 +163,7 @@ Primary implementation points:
 - `crates/subgraph/src/builder.rs`
 - `crates/subgraph/src/api.rs`
 - `crates/trading/src/sdk/builder.rs`
-- `crates/trading/src/types/app_code.rs`
+- `crates/core/src/types/app_code.rs`
 - `crates/alloy-provider/src/builder.rs`
 - `crates/alloy-signer/src/builder.rs`
 - `crates/alloy/src/builder.rs`

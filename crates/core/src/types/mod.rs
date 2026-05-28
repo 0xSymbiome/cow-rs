@@ -1,8 +1,9 @@
 //! Strongly typed user-domain values used across the SDK surface.
 
-pub use self::{amount::*, identity::*, order::*, quote::*, validity::*};
+pub use self::{amount::*, app_code::*, identity::*, order::*, quote::*, validity::*};
 
 mod amount;
+mod app_code;
 mod identity;
 mod order;
 mod quote;

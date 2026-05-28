@@ -9,8 +9,8 @@ use cow_sdk::core::{
     TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField, UnsignedOrder,
 };
 use cow_sdk::orderbook::{
-    ApiContext, AppDataHash, AppDataObject, Order, OrderCancellations, OrderCreation,
-    OrderQuoteRequest, OrderQuoteResponse, OrderbookError,
+    ApiContext, AppDataHash, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
+    OrderQuoteResponse, OrderbookError,
 };
 use cow_sdk::prelude::{Address, CowEnv, OrderUid, SupportedChainId, TradeParameters};
 use cow_sdk::trading::{LimitTradeParameters, OrderbookClient, TraderParameters};
@@ -297,13 +297,13 @@ impl OrderbookClient for MockOrderbook {
         &self,
         app_data_hash: &AppDataHash,
         full_app_data: &str,
-    ) -> Result<AppDataObject, OrderbookError> {
+    ) -> Result<(), OrderbookError> {
         self.state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .uploads
             .push((app_data_hash.clone(), full_app_data.to_owned()));
-        Ok(AppDataObject::new(full_app_data))
+        Ok(())
     }
 }
 

@@ -56,11 +56,11 @@ pub use transport::{HttpTransport, TransportError};
 #[cfg(not(target_arch = "wasm32"))]
 pub use transport::{ReqwestTransport, ReqwestTransportConfig};
 pub use types::{
-    Address, Amount, Amounts, AppDataHash, AppDataHex, BlockHash, BuyTokenDestination, ChainId,
-    Costs, DecimalAmount, FeeComponent, Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, Order,
-    OrderDigest, OrderKind, OrderUid, QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteRequest,
-    QuoteResponse, SellTokenSource, SignedAmount, TokenInfo, Trade, TradeModel, TransactionHash,
-    UnsignedOrder, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
-    addresses_equal, token_id,
+    Address, Amount, Amounts, AppCode, AppCodeError, AppDataHash, AppDataHex, BlockHash,
+    BuyTokenDestination, ChainId, Costs, DecimalAmount, FeeComponent, Hash32, HexData, NetworkFee,
+    ORDER_TYPE_FIELD_NAMES, Order, OrderDigest, OrderKind, OrderUid, QUOTE_AMOUNT_STAGE_NAMES,
+    QuoteAmountsAndCosts, QuoteRequest, QuoteResponse, SellTokenSource, SignedAmount, TokenInfo,
+    Trade, TradeModel, TransactionHash, UnsignedOrder, VALID_TO_MAX_RELATIVE_SECONDS,
+    VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, addresses_equal, token_id,
 };
 pub use validation::{TransportErrorClass, ValidationReason};

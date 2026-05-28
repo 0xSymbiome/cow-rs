@@ -2,6 +2,30 @@
 
 //! `CoW` Protocol app-data generation, schema validation, CID conversion, and
 //! IPFS transport seams.
+//!
+//! # Quick start
+//!
+//! Build a minimal SDK-attribution document tagged with a validated
+//! [`AppCode`](cow_sdk_core::AppCode), validate it against the bundled
+//! JSON schema, and produce a payload ready for `PUT /api/v1/app_data/{hash}`:
+//!
+//! ```
+//! use cow_sdk_core::AppCode;
+//! use cow_sdk_app_data::AppDataParams;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let code = AppCode::new("my-app")?;
+//! let validated = AppDataParams::new(code).into_validated()?;
+//!
+//! // validated.info.app_data_content — canonical JSON for PUT /app_data
+//! // validated.info.app_data_hex     — 0x-prefixed keccak256 digest
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! Chain `with_*` setters before the terminal call to add environment,
+//! signer, hooks, flashloan hints, or open-ended metadata. See
+//! [`AppDataParams`] for the full setter surface and additional examples.
 
 #![warn(missing_docs)]
 
