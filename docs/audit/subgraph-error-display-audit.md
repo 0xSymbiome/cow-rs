@@ -93,6 +93,20 @@ that drops every plaintext field into `Redacted<T>`-only territory and
 collapses the rendered output to a tautological
 `for [redacted]` shape.
 
+### Caller access pattern for upstream-authored content
+
+Consumers that need the upstream-authored GraphQL error text — the
+indexer's `errors[i].message` payload — reach it through explicit typed
+access on the carried `errors` vector. The `.as_inner()` call on the
+workspace `Redacted<T>` wrapper is the deliberate boundary-crossing
+marker; the SDK never routes that payload through `Display`. The
+`GraphQl` variant's rustdoc carries the canonical caller-side shape as
+a doctest so the pattern is discoverable through standard reference
+tooling. Callers that integrate the message into structured logging
+should route it through a named log field rather than through a
+free-form format string, so credential-carrying upstream content does
+not flow into downstream sinks unintentionally.
+
 ## Evidence
 
 Primary implementation points:

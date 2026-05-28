@@ -155,7 +155,27 @@ pub enum SubgraphError {
     /// error count, and, when available, the first error's source location
     /// as `at line:column`. The free-form `errors[i].message` payload stays
     /// behind `Redacted<String>` and is reached only through explicit typed
-    /// access on the carried `errors` vector.
+    /// access on the carried `errors` vector; the `.as_inner()` call is the
+    /// workspace marker that the caller is crossing the redaction boundary
+    /// on purpose.
+    ///
+    /// ```rust,ignore
+    /// use cow_sdk_subgraph::SubgraphError;
+    ///
+    /// fn route_graphql_error_into_structured_log(err: &SubgraphError) {
+    ///     if let SubgraphError::GraphQl { errors, .. } = err {
+    ///         if let Some(first) = errors.first() {
+    ///             let message_text: &str = first.message.as_inner();
+    ///             // Route `message_text` into structured logging
+    ///             // deliberately. The SDK's default `format!("{e}")`
+    ///             // path keeps the message behind `Redacted<T>` so it
+    ///             // never reaches log output without this explicit
+    ///             // caller opt-in.
+    ///             let _ = message_text;
+    ///         }
+    ///     }
+    /// }
+    /// ```
     #[error(
         "subgraph graphql error response for {} (chain {}, {} error{}{})",
         context.api,
